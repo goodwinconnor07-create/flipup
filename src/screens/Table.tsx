@@ -303,6 +303,7 @@ function Felt({ game }: { game: Game }) {
       )}
 
       <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
+        <TableTimer game={game} now={now} mine={myTurn} />
         <div className="table-felt">
           <div className="table-top">
             {hand && (
@@ -335,7 +336,6 @@ function Felt({ game }: { game: Game }) {
       </div>
 
       <div className="action-area">
-        <TurnBar game={game} now={now} mine={myTurn} />
         <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />
       </div>
 
@@ -377,21 +377,51 @@ function Felt({ game }: { game: Game }) {
   );
 }
 
-/** A thin bar across the top of the action area that runs down with whoever's time it is. */
-function TurnBar({ game, now, mine }: { game: Game; now: number; mine: boolean }) {
+/**
+ * The turn timer, wrapped round the table: a bright line along the rail that shrinks back
+ * towards the top as time runs out (blue on your turn, gold for anyone else, red at the end).
+ */
+function TableTimer({ game, now, mine }: { game: Game; now: number; mine: boolean }) {
+  const ref = useRef<SVGSVGElement>(null);
+  const [size, setSize] = useState({ w: 0, h: 0 });
+  useEffect(() => {
+    const el = ref.current?.parentElement;
+    if (!el) return;
+    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
   const hand = game.hand;
-  if (!hand?.deadline || hand.result || !game.settings.turnSeconds) return null;
+  const live = !!hand?.deadline && !hand.result && game.settings.turnSeconds > 0;
   const total = game.settings.turnSeconds * 1000;
-  const left = Math.max(0, Math.min(1, (hand.deadline - now) / total));
-  const low = left * game.settings.turnSeconds <= 5;
+  const left = live ? Math.max(0, Math.min(1, (hand!.deadline! - now) / total)) : 0;
+  const low = live && left * game.settings.turnSeconds <= 5;
+  // A stadium along the middle of the rail, starting at the top middle and running clockwise.
+  const { w, h } = size;
+  const inset = 5.5;
+  const r = (h - inset * 2) / 2;
+  const x0 = inset;
+  const x1 = w - inset;
+  const y0 = inset;
+  const y1 = h - inset;
+  const d = `M ${w / 2} ${y0} H ${x1 - r} A ${r} ${r} 0 0 1 ${x1 - r} ${y1} H ${x0 + r} A ${r} ${r} 0 0 1 ${x0 + r} ${y0} Z`;
   return (
-    <div
-      className={`turn-bar${mine ? ' mine' : ''}${low ? ' low' : ''}`}
-      role="timer"
-      aria-label={`${Math.ceil(left * game.settings.turnSeconds)} seconds left`}
+    <svg
+      ref={ref}
+      className={`table-timer${live ? ' live' : ''}${mine ? ' mine' : ''}${low ? ' low' : ''}`}
+      aria-hidden={!live}
+      role={live ? 'timer' : undefined}
+      aria-label={live ? `${Math.ceil(left * game.settings.turnSeconds)} seconds left` : undefined}
     >
-      <i style={{ width: `${left * 100}%` }} />
-    </div>
+      {w > 0 && live && (
+        <>
+          <path d={d} className="timer-track" pathLength={100} />
+          <path d={d} className="timer-run" pathLength={100} strokeDasharray={`${left * 100} 100`} />
+        </>
+      )}
+    </svg>
   );
 }
 

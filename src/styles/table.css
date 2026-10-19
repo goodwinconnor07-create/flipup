@@ -395,6 +395,7 @@
 /* ── The table: a felt oval with a rail round it ────────────────────────── */
 
 .table-oval {
+  position: relative;
   /* The player's felt colour is set on this element; this is the default. */
   --felt: #1f7a4d;
   --rail-a: #4a4a55;
@@ -1058,39 +1059,48 @@
   bottom: 8px;
 }
 
-/* ── Turn timer: a thin bar that runs down ───────────────────────────────── */
+/* ── Turn timer: a line round the table's rail ──────────────────────────── */
 
-.turn-bar {
+.table-timer {
   position: absolute;
-  left: 0;
-  right: 0;
-  top: 0;
-  height: 5px;
-  border-radius: 3px;
-  background: var(--bg-3);
-  overflow: hidden;
-}
-
-.turn-bar i {
-  display: block;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  border-radius: inherit;
-  background: var(--gold);
+  z-index: 3;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.table-timer path {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.timer-track {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 4;
+}
+
+.timer-run {
+  stroke: var(--gold);
+  stroke-width: 5;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
   transition:
-    width 0.2s linear,
-    background 0.3s ease;
+    stroke-dasharray 0.2s linear,
+    stroke 0.3s ease;
 }
 
-.turn-bar.mine i {
-  background: var(--blue);
+.table-timer.mine .timer-run {
+  stroke: #4aa3ff;
 }
 
-.turn-bar.low i {
-  background: var(--red);
-}
-
-.turn-bar.low {
+.table-timer.low .timer-run {
+  stroke: var(--red-hi);
   animation: pulse 0.8s ease-in-out infinite;
+}
+
+.rail-light .timer-track {
+  stroke: rgba(18, 18, 40, 0.14);
 }
 
 /* ── Before your turn ────────────────────────────────────────────────────── */
@@ -1277,7 +1287,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .turn-bar.low,
+  .table-timer.low .timer-run,
   .pcard {
     animation: none;
   }

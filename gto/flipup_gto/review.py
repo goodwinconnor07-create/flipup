@@ -259,8 +259,13 @@ class _HandContext:
         live = [pid for pid in self.order if pid not in self.folded]
         if len(live) < 2 or not hh.board or len(hh.board) < 3:
             return
+        ranges = None
         if len(live) == 2 and preflop_path is not None:
-            self.review_postflop_solved(live, preflop_path, by_street)
+            ranges = self._ranges_after_preflop(live, preflop_path)
+        elif len(live) == 2:
+            ranges = self._ranges_after_custom_line(live, by_street["preflop"])
+        if ranges is not None:
+            self.review_postflop_solved(live, ranges, by_street)
         else:
             reason = "multiway pot" if len(live) > 2 else "preflop line outside the GTO tree"
             self.notes.append(f"Postflop reviewed heuristically ({reason}).")
@@ -322,6 +327,14 @@ class _HandContext:
                 self.put(pid, to_bb)
         self.new_street()
         return path
+
+    @staticmethod
+    def _match_preflop_action_static(info, a):
+        """Fold/check/call matching without chip state (used for blinds' passive actions)."""
+        types = [x["type"] for x in info["actions"]]
+        if a.move in types:
+            return types.index(a.move), None
+        return None, None
 
     def _match_preflop_action(self, info, a, to_bb):
         acts = info["actions"]
@@ -460,8 +473,13 @@ class _HandContext:
             d["explanation"].append("Assumes " + "; ".join(assumptions) + ".")
         return d
 
-    def _custom_spot(self, actions, k):
-        key = tuple((x.player, x.move, round(x.to / self.bb, 2)) for x in actions[:k + 1])
+    def _custom_spot(self, actions, k, final: bool = False):
+        """Preflop spot replaying actions[:k] exactly (forced), then free play from decision k.
+
+        With final=True every action in `actions` is forced (k = len(actions)); used to get both
+        players' ranges at the flop after a line the standard solution doesn't cover.
+        """
+        key = (final,) + tuple((x.player, x.move, round(x.to / self.bb, 2)) for x in actions[:k + 1])
         cache = self.rv.custom_cache
         if key in cache:
             return cache[key]
@@ -503,9 +521,26 @@ class _HandContext:
             if t in (2, 3, 4):
                 callers_in.add(x.player)
                 street_bet[x.player] = max(street_bet[x.player], to)
-        hero = actions[k]
+        if final:
+            # Blinds checking or completing behind limpers: GTO would raise its strong hands, so
+            # narrow their range by how often the solver takes the action they took.
+            for j in range(start_k, k):
+                x = actions[j]
+                i = self.index[x.player]
+                if i < self.N - 2 or x.move not in ("check", "call"):
+                    continue
+                if x.move == "call" and any(a.move in ("raise", "bet", "allin") for a in actions[:j]):
+                    continue
+                spot_j, _ = self._custom_spot(actions, j)
+                info_j = spot_j.engine.query([0] * j)
+                if info_j["terminal"]:
+                    continue
+                idx, _ = self._match_preflop_action_static(info_j, x)
+                if idx is not None:
+                    ranges[i] = list(np.array(ranges[i]) * np.array(info_j["strategy"][idx]))
         limp = [1 if (i == (0 if self.N == 2 else self.N - 2)) else 0 for i in range(self.N)]
-        limp[self.index[hero.player]] = 1
+        if not final:
+            limp[self.index[actions[k].player]] = 1
         live_now = len(callers_in) + 2
         spot = PreflopSpot(num_players=self.N, stack=self.preflop_stack, ante=self.hh.ante / self.bb,
                            rake_rate=self.rv.settings.rake_rate, rake_cap=self.rv.settings.rake_cap,
@@ -521,10 +556,24 @@ class _HandContext:
         info = self.preflop_spot.engine.query(path)
         return {pid: class_reach_to_combos(info["reach"][self.index[pid]]) for pid in live}
 
-    def review_postflop_solved(self, live, preflop_path, by_street):
+    def _ranges_after_custom_line(self, live, actions):
+        """Both players' flop ranges after an off-tree preflop line (all actions forced)."""
+        try:
+            spot, assumptions = self._custom_spot(actions, len(actions), final=True)
+            info = spot.engine.query([0] * len(actions))
+        except (ValueError, RuntimeError) as e:
+            self.notes.append(f"Couldn't rebuild the preflop line for postflop ranges ({e}).")
+            return None
+        if not info["terminal"]:
+            return None
+        if assumptions:
+            self.notes.append("Postflop ranges assume " + "; ".join(assumptions) + ".")
+        return {pid: class_reach_to_combos(info["reach"][self.index[pid]]) for pid in live}
+
+    def review_postflop_solved(self, live, ranges, by_street):
         rank = lambda pid: (_postflop_rank(self.index[pid], self.N))  # noqa: E731
         oop, ip = sorted(live, key=rank)
-        ranges = self._ranges_after_preflop(live, preflop_path)
+        ranges = {pid: np.array(r, dtype=np.float32) for pid, r in ranges.items()}
         for pid in live:
             if pid in self.reviewed:
                 # Keep the actual hand in its range (tiny weight) so the solver has a strategy for it.

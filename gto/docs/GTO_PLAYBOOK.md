@@ -70,10 +70,14 @@ are left behind and polar when nobody is (or in position against the opener).
 **BB defense.** The BB gets a good price but realizes its equity badly out of position, so it folds
 weak offsuit hands even against small opens. Pot odds against a 2.5× open are 27% without rake.
 
-**Equity realization (EQR) [our solver].** In a BTN-vs-BB single-raised pot, the BB realized only
-64–79% of its raw equity on the boards we measured (e.g. 64% on A♠J♣4♣, 79% on A♣6♣3♣). That's why
-preflop calls need a margin over raw pot odds. The preflop solver's realization model is fitted to
-these measurements (`scripts/calibrate_eqr.py`).
+**Equity realization (EQR) [our solver].** Across 16 random flops in a BTN-vs-BB single-raised pot
+(100bb), the button realized **115%** of its raw equity and the big blind **75%**, in line with
+published figures. Board by board the BB ranged from **52%** (A♦A♣2♣) and 61% (A♠K♥5♥) up to 90%
+(J♥8♠8♣): ace-high and paired-ace boards are terrible for the caller, low and middling boards much
+better. Per hand, strong hands realize far more than their equity (AA about 1.7× in position) and
+weak offsuit hands out of position far less (72o, T6o under 40%). That's why the BB folds trash even
+at a good price, and why preflop calls need a margin over raw pot odds. The preflop solver's
+realization model is fitted to these measurements (`scripts/calibrate_eqr.py`).
 
 ## 5. Postflop principles
 

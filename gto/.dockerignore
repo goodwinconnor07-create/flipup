@@ -1,0 +1,6 @@
+build/
+__pycache__/
+*.so
+flipup_gto/data/cache/
+flipup_gto/data/preflop_tensor3.npz
+.pytest_cache/

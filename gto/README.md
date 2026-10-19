@@ -29,7 +29,7 @@ gto/
 ## Build and run
 
 ```sh
-pip install pybind11 numpy pytest fastapi uvicorn
+pip install -r requirements.txt
 cmake -S engine -B build && cmake --build build -j     # drops _engine*.so into flipup_gto/
 python3 -m pytest tests                                  # Python tests
 ./build/test_eval_exhaustive && ./build/test_solver      # C++ tests

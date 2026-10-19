@@ -6,6 +6,7 @@ the player's choice cost, a grade, and plain-English reasons.
 
 ```sh
 cd gto
+pip install -r requirements.txt
 cmake -S engine -B build && cmake --build build -j
 uvicorn flipup_gto.api:app --host 0.0.0.0 --port 8000
 ```

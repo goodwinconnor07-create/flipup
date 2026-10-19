@@ -152,6 +152,21 @@ def top_percent_169(pct: float) -> np.ndarray:
 
 
 # Assumed ranges for preflop actions that GTO never takes (typical small-stakes tendencies).
+# Below this share of the range, a preflop action counts as off the GTO line.
+RARE_LINE = 0.01
+
+
+def _range_frequency(info: dict, idx: int) -> float:
+    """How often the player to act takes action idx with their whole range (combo weighted)."""
+    from .preflop import CLASS_COMBOS
+    r = np.asarray(info["reach"][info["player"]]) * CLASS_COMBOS
+    tot = r.sum()
+    if tot <= 0:
+        return 0.0
+    strat = np.asarray(info["strategy"]).reshape(len(info["actions"]), -1)
+    return float((strat[idx] * r).sum() / tot)
+
+
 POPULATION_RANGES = {
     "limp": (55.0, 7.0, "a typical limping range (roughly the top 55% of hands minus premiums, which get raised)"),
     "cold_call": (25.0, 5.0, "a typical flatting range (roughly the top 25% of hands minus the strongest)"),
@@ -371,6 +386,15 @@ class _HandContext:
                     elif self.rv_all:
                         self.decisions.append(self._preflop_node_decision(spot, path, pid, a, pot_before, to_call))
                     path = path + [idx]
+                    # A line GTO (almost) never takes leads to spots whose strategies were never
+                    # trained against a real range; review what follows with custom solves instead.
+                    freq = _range_frequency(info, idx)
+                    if freq < RARE_LINE and k + 1 < len(actions):
+                        self.offtree = (k, np.array(info["reach"]))
+                        self.notes.append(f"{self.positions[pid]} {_move_words(a, to_bb)} is something GTO does "
+                                          f"{100 * freq:.1f}% of the time here, so later decisions use custom "
+                                          "solves with assumed ranges.")
+                        path = None
             elif pid in self.reviewed:
                 self.decisions.append(self._custom_preflop_decision(actions, k, pot_before, to_call))
             self.note_action(a)

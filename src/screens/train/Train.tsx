@@ -11,6 +11,8 @@ import { Dots, MiniCards, pct } from '../../train/widgets';
 import { Spinner } from '../../ui/components';
 import { BackIcon, BookIcon, ChartIcon, ListIcon, MenuIcon, PencilIcon } from '../../ui/Icons';
 
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
 const SECTIONS: { id: TrainSection; title: string; hint: string; icon: typeof ListIcon }[] = [
   { id: 'review', title: 'Review hands', hint: 'Every decision, graded by GTO', icon: ListIcon },
   { id: 'library', title: 'Poker library', hint: 'Practise spot by spot', icon: BookIcon },
@@ -242,7 +244,7 @@ function StatsView() {
         <div className="big-num">{stats.decisions ? pct(stats.gtoPct) : '–'}</div>
         <p className="muted">
           {stats.decisions
-            ? `${stats.decisions} decisions reviewed across ${stats.reviewed} hands.`
+            ? `${plural(stats.decisions, 'decision')} reviewed across ${plural(stats.reviewed, 'hand')}.`
             : 'Review some hands to get your GTO score.'}
         </p>
         {stats.decisions > 0 && (
@@ -293,7 +295,7 @@ function StatsView() {
               <div key={s} className="t-row">
                 <span className="t-row-main">
                   <b>{s.charAt(0).toUpperCase() + s.slice(1)}</b>
-                  <small>{stats.byStreet[s].decisions} decisions</small>
+                  <small>{plural(stats.byStreet[s].decisions, 'decision')}</small>
                 </span>
                 <b className="num">{pct(stats.byStreet[s].gtoPct)}</b>
               </div>
@@ -312,7 +314,7 @@ function StatsView() {
                 <button key={s.id} type="button" className="t-row press" disabled={!drill} onClick={() => drill && navigate({ name: 'drill', scenario: drill })}>
                   <span className="t-row-main">
                     <b>{s.title}</b>
-                    <small>{s.samples} decisions</small>
+                    <small>{plural(s.samples, 'decision')}</small>
                     <span className="meter" aria-hidden>
                       <span className="green" style={{ width: pct(s.green / s.samples, 1) }} />
                       <span className="yellow" style={{ width: pct(s.yellow / s.samples, 1) }} />
@@ -336,7 +338,7 @@ function FocusCard({ s, kind }: { s: ScenarioScore; kind: 'weak' | 'strong' }) {
       <span className="t-row-main">
         <b>{s.title}</b>
         <small>
-          {pct(s.score)} GTO over {s.samples} decisions{s.evLoss > 0 ? ` · ${s.evLoss.toFixed(1)}bb lost` : ''}
+          {pct(s.score)} GTO over {plural(s.samples, 'decision')}{s.evLoss > 0 ? ` · ${s.evLoss.toFixed(1)}bb lost` : ''}
         </small>
       </span>
       {drill && (

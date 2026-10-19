@@ -238,6 +238,8 @@
 .pods {
   position: relative;
   height: 174px;
+  /* Players slid out of view wait off to the side; they mustn't make the page scroll sideways. */
+  overflow-x: clip;
 }
 
 .pod {
@@ -1337,12 +1339,6 @@ html[data-theme='dark'] .win-banner {
     0 0 0 3px rgba(245, 158, 11, 0.7),
     0 0 22px rgba(245, 158, 11, 0.3),
     0 6px 16px -6px rgba(0, 0, 0, 0.6);
-}
-
-html[data-theme='dark'] .pod.turn {
-  box-shadow:
-    0 0 0 3px var(--gold),
-    0 0 20px rgba(245, 158, 11, 0.3);
 }
 
 html[data-theme='dark'] .pod-ring {

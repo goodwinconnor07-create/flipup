@@ -281,7 +281,8 @@ let localTimer: ReturnType<typeof setTimeout> | undefined;
 
 function setSession(session: Session | null): void {
   saveSession(session);
-  set({ session, game: viewOf(session, state.deviceId) });
+  // A pending online action can't outlive an online table (it would leave the buttons greyed out).
+  set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
   captureFinishedHand(state.game, state.deviceId);
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
@@ -364,6 +365,10 @@ function send(action: Action): boolean {
     return false;
   }
   set({ sending: id });
+  // If no answer comes back, don't leave the buttons greyed out.
+  setTimeout(() => {
+    if (state.sending === id) set({ sending: null });
+  }, 5000);
   return true;
 }
 

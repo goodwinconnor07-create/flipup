@@ -428,3 +428,19 @@ test('home: three tabs, results from finished tables, training tiles', async ({ 
   await page.getByRole('button', { name: /Poker library/ }).click();
   await expect(page.getByText('Poker library').first()).toBeVisible();
 });
+
+test('a table with players out of view never scrolls sideways', async ({ page }) => {
+  watchErrors(page);
+  await page.setViewportSize({ width: 460, height: 1000 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One more bot' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await page.getByText('Your turn').waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Fold' })).toBeEnabled();
+});

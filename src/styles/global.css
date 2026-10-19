@@ -1164,3 +1164,9 @@ html.calm *::after {
     background: var(--contrast);
   }
 }
+
+/* Nothing should ever make the page scroll sideways. */
+html,
+body {
+  overflow-x: clip;
+}

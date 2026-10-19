@@ -25,6 +25,8 @@ _tables: dict = {}
 
 
 TENSOR_RANK = 4
+# Bump when the preflop model changes (tree sizing, realization model) so cached solutions are rebuilt.
+MODEL_VERSION = 2
 
 
 def tables(with_tensor: bool = True):
@@ -114,12 +116,16 @@ class PreflopSpot:
             limp[0 if n == 2 else n - 2] = 1
         cfg.can_limp = limp
         cfg.max_players_flop = self.max_players_flop
+        cfg.iso_per_limper = 1.5  # isolate limpers bigger: ~4bb over one limper, +1.5bb per extra
         if eff <= 30:
             cfg.allin_threshold = 0.35
         cal = load_calibration() if self.use_calibration else None
         if cal:
-            cfg.eqr_ip = [cfg.eqr_ip[0], cfg.eqr_ip[1], cfg.eqr_ip[2], cal["base_ip"]]
-            cfg.eqr_oop = [cfg.eqr_oop[0], cfg.eqr_oop[1], cfg.eqr_oop[2], cal["base_oop"]]
+            if cal.get("model") == "additive":
+                cfg.eqr_model = 1
+            else:
+                cfg.eqr_ip = [cfg.eqr_ip[0], cfg.eqr_ip[1], cfg.eqr_ip[2], cal["base_ip"]]
+                cfg.eqr_oop = [cfg.eqr_oop[0], cfg.eqr_oop[1], cfg.eqr_oop[2], cal["base_oop"]]
             cfg.class_eqr_ip = [float(cal["ip"][c]) for c in CLASSES]
             cfg.class_eqr_oop = [float(cal["oop"][c]) for c in CLASSES]
         for k, v in self.options.items():

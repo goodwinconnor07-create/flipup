@@ -40,10 +40,11 @@ from .cards import NUM_COMBOS, card_str, cards_str, combo_index, hand_class
 from .concepts import (alpha, board_texture, hand_features, mdf, preflop_hand_description, required_equity,
                        river_bluff_share, spr)
 from .handhistory import STREETS, HandHistory
-from .preflop import CLASS_COMBOS, CLASS_INDEX, CLASSES, PreflopSpot, tables
+from .preflop import CLASS_COMBOS, CLASS_INDEX, CLASSES, MODEL_VERSION, PreflopSpot, load_calibration, tables
 from .ranges import Range
 from .solver import BetSizing, PostflopSolver, StreetSizing
 
+_NO_TREE = object()  # sentinel: the street could not be solved within the memory budget
 STACK_BUCKETS = [8, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 100, 125, 150, 200, 250]
 GRADES = ["best", "correct", "inaccuracy", "mistake", "blunder"]
 
@@ -82,7 +83,9 @@ class PreflopCache:
         if key in self.mem:
             return self.mem[key]
         spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
-        h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes]).encode()).hexdigest()[:16]
+        cal = load_calibration()
+        h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
+                                     cal.get("scenario") if cal else None]).encode()).hexdigest()[:16]
         path = os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
         if os.path.exists(path):
             d = np.load(path)
@@ -130,6 +133,38 @@ def top_percent_range(pct: float) -> np.ndarray:
     return class_reach_to_combos(w169)
 
 
+def top_percent_169(pct: float) -> np.ndarray:
+    """Top pct (0-100) of starting hands as 169 class weights (combo-weighted cut)."""
+    global _strength_order
+    if _strength_order is None:
+        top_percent_range(1.0)
+    target = pct / 100.0 * NUM_COMBOS
+    w = np.zeros(169)
+    acc = 0.0
+    for c in _strength_order:
+        if acc >= target:
+            break
+        take = min(1.0, (target - acc) / CLASS_COMBOS[c])
+        w[c] = take
+        acc += take * CLASS_COMBOS[c]
+    return w
+
+
+# Assumed ranges for preflop actions that GTO never takes (typical small-stakes tendencies).
+POPULATION_RANGES = {
+    "limp": (55.0, 7.0, "a typical limping range (roughly the top 55% of hands minus premiums, which get raised)"),
+    "cold_call": (25.0, 5.0, "a typical flatting range (roughly the top 25% of hands minus the strongest)"),
+    "iso_raise": (20.0, 0.0, "a typical raising range over limpers (roughly the top 20% of hands)"),
+    "three_bet": (7.0, 0.0, "a typical 3-bet range (roughly the top 7% of hands)"),
+    "four_bet": (3.0, 0.0, "a typical 4-bet range (roughly the top 3% of hands)"),
+}
+
+
+def population_range(kind: str) -> np.ndarray:
+    top, minus, _ = POPULATION_RANGES[kind]
+    return np.clip(top_percent_169(top) - top_percent_169(minus), 0.0, 1.0)
+
+
 def preflop_equity_vs(cls_idx: int, opp_reach169) -> float:
     eq, pairs, _ = tables(with_tensor=False)
     w = pairs[cls_idx] * opp_reach169
@@ -148,6 +183,8 @@ class ReviewSettings:
     turn_iterations: int = 300
     river_iterations: int = 500
     target_pct: float = 0.5
+    flop_target_pct: float = 1.0
+    max_memory_mb: float = 3000.0
     rake_rate: float = 0.0
     rake_cap: float = 0.0
 
@@ -157,6 +194,7 @@ class Reviewer:
         self.settings = settings or ReviewSettings()
         cache_dir = cache_dir or os.path.join(os.path.dirname(__file__), "data", "cache")
         self.preflop = PreflopCache(cache_dir, self.settings.preflop_iterations)
+        self.custom_cache: dict = {}
 
     # -- public ---------------------------------------------------------------
     def review(self, hh: HandHistory, hero: str | None = None) -> dict:
@@ -248,7 +286,8 @@ class _HandContext:
             self.notes.append(f"Preflop compared with a {bucket}bb solution (effective stack {eff:.0f}bb).")
 
         path: list | None = []
-        for a in actions:
+        self.offtree = None  # (action index, reach of all players where the line left the tree)
+        for k, a in enumerate(actions):
             pid = a.player
             to_bb = a.to / self.bb
             pot_before = self.pot()
@@ -257,23 +296,26 @@ class _HandContext:
             if path is not None:
                 info = spot.engine.query(path)
                 if info["terminal"] or self.order[info["player"]] != pid:
-                    self.notes.append("Preflop action left the solved tree (unexpected order); "
-                                      "later preflop decisions are not graded.")
+                    self.notes.append("Preflop action left the solved tree (unexpected order).")
+                    self.offtree = (k, None)
                     path = None
                     info = None
             if info is not None:
                 idx, size_note = self._match_preflop_action(info, a, to_bb)
-                if pid in self.reviewed:
-                    self.decisions.append(self._preflop_decision(spot, path, info, pid, a, idx, size_note,
-                                                                 pot_before, to_call))
                 if idx is None:
-                    self.notes.append(f"{self.positions[pid]} {a.move} is not part of the preflop GTO tree; "
-                                      "later decisions use estimated ranges.")
+                    self.offtree = (k, np.array(info["reach"]))
+                    if pid in self.reviewed:
+                        self.decisions.append(self._custom_preflop_decision(actions, k, pot_before, to_call))
+                    self.notes.append(f"{self.positions[pid]} {_move_words(a, to_bb)} isn't part of the GTO "
+                                      "preflop strategy, so later decisions use custom solves with assumed ranges.")
                     path = None
                 else:
+                    if pid in self.reviewed:
+                        self.decisions.append(self._preflop_decision(spot, path, info, pid, a, idx, size_note,
+                                                                     pot_before, to_call))
                     path = path + [idx]
             elif pid in self.reviewed:
-                self.decisions.append(self._heuristic_preflop_decision(pid, a, pot_before, to_call))
+                self.decisions.append(self._custom_preflop_decision(actions, k, pot_before, to_call))
             if a.move == "fold":
                 self.folded.add(pid)
             elif a.move in ("call", "bet", "raise", "allin"):
@@ -397,6 +439,83 @@ class _HandContext:
                 "method": "not_graded", "grade": None,
                 "explanation": ["Earlier action left the solved preflop tree, so this decision isn't graded."]}
 
+    def _custom_preflop_decision(self, actions, k, pot, to_call):
+        """Grade preflop decision k with a solve that forces the real line up to it."""
+        a = actions[k]
+        pid = a.player
+        try:
+            spot, assumptions = self._custom_spot(actions, k)
+        except (ValueError, RuntimeError) as e:
+            d = self._heuristic_preflop_decision(pid, a, pot, to_call)
+            d["explanation"] = [f"This line couldn't be rebuilt in the preflop solver ({e}), so it isn't graded."]
+            return d
+        path = [0] * k
+        info = spot.engine.query(path)
+        idx, size_note = self._match_preflop_action(info, a, a.to / self.bb)
+        d = self._preflop_decision(spot, path, info, pid, a, idx, size_note, pot, to_call)
+        d["method"] = "preflop_custom"
+        d["solution"] += ", custom line"
+        if assumptions:
+            d["assumptions"] = assumptions
+            d["explanation"].append("Assumes " + "; ".join(assumptions) + ".")
+        return d
+
+    def _custom_spot(self, actions, k):
+        key = tuple((x.player, x.move, round(x.to / self.bb, 2)) for x in actions[:k + 1])
+        cache = self.rv.custom_cache
+        if key in cache:
+            return cache[key]
+        from . import _engine
+        types = {"fold": 0, "check": 1, "call": 2, "raise": 3, "bet": 3, "allin": 4}
+        start_k, start_reach = self.offtree if self.offtree else (k, None)
+        if start_reach is None:
+            start_reach = np.ones((self.N, 169), dtype=np.float32)
+        ranges = [list(map(float, start_reach[i])) for i in range(self.N)]
+        assumptions = []
+        forced = []
+        street_bet = {pid: 0.0 for pid in self.order}
+        sb_id = self.order[0] if self.N == 2 else self.order[-2]
+        street_bet[sb_id] = self.hh.small_blind / self.bb
+        street_bet[self.order[-1]] = 1.0
+        raises = 0
+        callers_in = set()
+        for j, x in enumerate(actions[:k]):
+            i = self.index[x.player]
+            to = x.to / self.bb
+            cur = max(street_bet.values())
+            t = types[x.move]
+            if x.move == "allin":
+                t = 2 if to <= cur + 1e-9 else 4
+            forced.append(_engine.PreflopForced(i, t, to))
+            kind = None
+            if j >= start_k and t == 2:
+                kind = "limp" if raises == 0 and i < self.N - 2 else ("cold_call" if x.player not in callers_in
+                                                                       and i < self.N - 2 else None)
+            elif j >= start_k and t in (3, 4) and to > cur:
+                kind = {0: "iso_raise", 1: "three_bet"}.get(raises, "four_bet")
+            if kind:
+                ranges[i] = list(np.minimum(np.array(ranges[i]), population_range(kind)))
+                text = f"the {self.positions[x.player]} holds {POPULATION_RANGES[kind][2]}"
+                if text not in assumptions:
+                    assumptions.append(text)
+            if t in (3, 4) and to > cur:
+                raises += 1
+            if t in (2, 3, 4):
+                callers_in.add(x.player)
+                street_bet[x.player] = max(street_bet[x.player], to)
+        hero = actions[k]
+        limp = [1 if (i == (0 if self.N == 2 else self.N - 2)) else 0 for i in range(self.N)]
+        limp[self.index[hero.player]] = 1
+        live_now = len(callers_in) + 2
+        spot = PreflopSpot(num_players=self.N, stack=self.preflop_stack, ante=self.hh.ante / self.bb,
+                           rake_rate=self.rv.settings.rake_rate, rake_cap=self.rv.settings.rake_cap,
+                           max_players_flop=min(self.N, max(3, live_now + 1)),
+                           options={"forced": forced, "initial_range": ranges, "can_limp": limp,
+                                    "multiway_blinds_only": False})
+        spot.engine.solve(300, 0.005, 100)
+        cache[key] = (spot, assumptions)
+        return spot, assumptions
+
     # -- postflop (solver) -----------------------------------------------------------
     def _ranges_after_preflop(self, live, path):
         info = self.preflop_spot.engine.query(path)
@@ -421,25 +540,27 @@ class _HandContext:
             if not acts:
                 return
             ranges = self._solve_street(street_i, board, oop, ip, ranges, acts)
+            if ranges is _NO_TREE:
+                self.review_postflop_heuristic(live, by_street, start=street_i)
+                return
             if ranges is None:
                 return
             self.new_street()
             if any(p in self.folded for p in live):
                 return
 
-    def _solve_street(self, street_i, board, oop, ip, ranges, acts):
-        st = self.rv.settings
-        pot = self.pot()
-        eff = min(self.stack[oop], self.stack[ip])
-        sizing = BetSizing.light()
+    def _review_sizing(self, street_i, lean, acts, oop, pot):
+        """Bet-size tree for this street plus every size actually used, so the real line is in the tree."""
+        sizing = BetSizing.review(street_i, lean)
         sizing.merge_threshold = 0.02
-        # Insert the sizes actually used so the real line is in the tree.
-        wager = {oop: 0.0, ip: 0.0}
+        wager = {a.player: 0.0 for a in acts}
+        wager.setdefault(oop, 0.0)
         pot_run = pot
         raises = 0
         for a in acts:
             p = 0 if a.player == oop else 1
             to = a.to / self.bb
+            wager.setdefault(a.player, 0.0)
             if a.move in ("bet", "raise", "allin"):
                 facing = max(wager.values())
                 if to <= facing + 1e-9:
@@ -461,10 +582,30 @@ class _HandContext:
                 pot_run += max(wager.values()) - wager[a.player]
                 wager[a.player] = max(wager.values())
         sizing.max_raises = max(sizing.max_raises, raises)
+        return sizing
 
-        solver = PostflopSolver(board, pot, eff, ranges[oop], ranges[ip], sizing=sizing)
+    def _solve_street(self, street_i, board, oop, ip, ranges, acts):
+        st = self.rv.settings
+        pot = self.pot()
+        eff = min(self.stack[oop], self.stack[ip])
+        solver = None
+        for lean in (0, 1, 2):
+            sizing = self._review_sizing(street_i, lean, acts, oop, pot)
+            try:
+                solver = PostflopSolver(board, pot, eff, ranges[oop], ranges[ip], sizing=sizing,
+                                        compress=street_i == 0, max_memory_mb=st.max_memory_mb)
+                if lean:
+                    self.notes.append(f"{['Flop', 'Turn', 'River'][street_i]} solved with a simplified bet-size "
+                                      "tree to fit in memory.")
+                break
+            except MemoryError:
+                continue
+        if solver is None:
+            self.notes.append(f"{['Flop', 'Turn', 'River'][street_i]} tree too large to solve here; "
+                              "the rest of the hand is reviewed heuristically.")
+            return _NO_TREE
         iters = {0: st.flop_iterations, 1: st.turn_iterations, 2: st.river_iterations}[street_i]
-        status = solver.solve(iters, st.target_pct, 25)
+        status = solver.solve(iters, st.flop_target_pct if street_i == 0 else st.target_pct, 25)
         path: list = []
         street = ["flop", "turn", "river"][street_i]
         for a in acts:
@@ -490,7 +631,7 @@ class _HandContext:
             path.append(idx)
         if any(p in self.folded for p in (oop, ip)):
             return ranges
-        end = solver.node(path, with_equity=False)
+        end = solver.node(path, with_equity=False, with_ev=False)
         if end.type != "chance":
             return ranges
         return {oop: end.range_weights(0), ip: end.range_weights(1)}
@@ -551,15 +692,19 @@ class _HandContext:
                 "your_strong_share": round(_strong_share(node, p, board), 4),
                 "opponent_strong_share": round(_strong_share(node, opp, board), 4),
                 "range_strategy": {k: round(v, 4) for k, v in node.range_strategy().items()},
+                "by_category": range_by_category(node, board),
             },
+            "hand_category": hand_category(feats),
         }
         d["explanation"] = _explain_postflop(d, labels, strat, evs, idx, in_range, feats, tex, pot, to_call, street)
         return d
 
     # -- postflop (heuristic) -----------------------------------------------------------
-    def review_postflop_heuristic(self, live, by_street):
+    def review_postflop_heuristic(self, live, by_street, start: int = 0):
         est = {pid: self._estimated_range(pid) for pid in live}
         for street_i, street in enumerate(["flop", "turn", "river"]):
+            if street_i < start:
+                continue
             board = self.hh.board_at(street)
             if len(board) < 3 + street_i:
                 return
@@ -576,20 +721,39 @@ class _HandContext:
             self.new_street()
 
     def _estimated_range(self, pid):
-        acts = [a for a in self.hh.actions if a.street == "preflop" and a.player == pid]
-        moves = [a.move for a in acts]
+        """Rough range for a player in a spot the solvers don't cover, from their preflop actions."""
+        pre = [a for a in self.hh.actions if a.street == "preflop"]
+        mine = [a for a in pre if a.player == pid]
         pos = self.positions[pid]
-        if any(m in ("raise", "allin", "bet") for m in moves):
-            n_raises = sum(1 for a in self.hh.actions if a.street == "preflop" and a.move in ("raise", "bet", "allin")
-                           and self.hh.actions.index(a) <= self.hh.actions.index(acts[-1]))
-            pct = {1: 22.0, 2: 8.0}.get(n_raises, 4.0)
-        elif pos == "BB" and moves in (["check"], []):
-            pct = 100.0
-        elif any(m == "call" for m in moves):
-            pct = 30.0
-        else:
-            pct = 40.0
-        return top_percent_range(pct)
+        raises_before = 0
+        last_kind = None
+        cur = 1.0
+        for a in pre:
+            to = a.to / self.bb
+            if a.player == pid:
+                if a.move in ("raise", "bet", "allin") and to > cur:
+                    last_kind = ("raise", raises_before)
+                elif a.move == "call":
+                    last_kind = ("limp", 0) if cur <= 1.0 + 1e-9 else ("call", raises_before)
+                elif a.move == "check":
+                    last_kind = ("check", 0)
+            if a.move in ("raise", "bet", "allin") and to > cur:
+                raises_before += 1
+                cur = to
+        if last_kind is None or not mine:
+            return top_percent_range(100.0)
+        kind, n = last_kind
+        if kind == "raise":
+            return top_percent_range({0: 22.0, 1: 8.0}.get(n, 4.0))
+        if kind == "limp":
+            if pos == "SB":
+                return top_percent_range(70.0)
+            return class_reach_to_combos(population_range("limp"))
+        if kind == "check":
+            return top_percent_range(100.0)
+        # Called a raise: top ~30% minus the hands that would have re-raised.
+        w = np.clip(top_percent_169({1: 30.0, 2: 12.0}.get(n, 6.0)) - top_percent_169(3.0), 0, 1)
+        return class_reach_to_combos(w)
 
     def _heuristic_postflop(self, pid, a, board, pot, to_call, est, street):
         hero = self.cards(pid)
@@ -604,8 +768,9 @@ class _HandContext:
         n = len(opps) + 1
         multi = max(multi, 0.0)
         feats = hand_features(hero, board)
-        lines = [f"This is a {n}-way pot, which solvers here don't cover, so this uses estimated ranges "
-                 f"(e.g. raisers ~top 20%, callers ~top 30%)."]
+        lines = [f"This is a {n}-way pot, which the solvers here don't cover, so this uses estimated ranges "
+                 "from each player's preflop actions (e.g. limpers ~top 55% minus premiums, callers of a raise "
+                 "~top 30%)."]
         lines.append(f"You have {feats.summary().lower()} ({feats.strength_name}).")
         lines.append("Estimated equity against each opponent: " +
                      ", ".join(f"{self.positions[o]} {100 * e:.0f}%" for o, e in zip(opps, eqs)) +
@@ -664,6 +829,16 @@ class _HandContext:
         }
 
 
+def _move_words(a, to_bb: float) -> str:
+    if a.move in ("fold", "check"):
+        return a.move + "s" if a.move == "check" else "folds"
+    if a.move == "call":
+        return "limps" if to_bb <= 1.0 + 1e-9 else f"calls {to_bb:g}bb"
+    if a.move == "allin":
+        return f"goes all in for {to_bb:g}bb"
+    return f"raises to {to_bb:g}bb"
+
+
 def _postflop_rank(i: int, n: int) -> int:
     if n == 2:
         return 0 if i == 1 else 1
@@ -672,6 +847,51 @@ def _postflop_rank(i: int, n: int) -> int:
     if i == n - 1:
         return 1
     return 2 + i
+
+
+def hand_category(feats) -> str:
+    """Coarse hand categories used to describe how a range plays."""
+    made = feats.made
+    if feats.category >= 3 or made.startswith("Set") or made.startswith("Two pair (top") or \
+            made == "Two pair":
+        return "strong hands (two pair+)"
+    if made.startswith("Overpair") or made.startswith("Top pair"):
+        return "top pair / overpair"
+    if feats.category >= 1 and not made.startswith("Pair on board") and not made.startswith("Two pair on board"):
+        return "weaker pairs"
+    if any(d in ("flush draw", "nut flush draw", "open-ended straight draw") for d in feats.draws):
+        return "strong draws"
+    if feats.draws:
+        return "weak draws"
+    return "no pair, no draw"
+
+
+CATEGORY_ORDER = ["strong hands (two pair+)", "top pair / overpair", "weaker pairs", "strong draws", "weak draws",
+                  "no pair, no draw"]
+
+
+def range_by_category(node, board) -> dict:
+    """{category: {"share": share of the actor's range, action: frequency, ...}} at an action node."""
+    from .cards import combo_cards
+    p = node.player
+    combos = node.info[f"combos{p}"]
+    w = node.info[f"weight{p}"]
+    strat = node.info["strategy"]
+    acc: dict = {}
+    for i, c in enumerate(combos):
+        if w[i] <= 0:
+            continue
+        a, b = combo_cards(c)
+        if a in board or b in board:
+            continue
+        cat = hand_category(hand_features([a, b], board))
+        v = acc.setdefault(cat, np.zeros(len(node.labels) + 1))
+        v[:-1] += w[i] * strat[:, i]
+        v[-1] += w[i]
+    tot = sum(v[-1] for v in acc.values()) or 1.0
+    return {cat: {"share": round(float(acc[cat][-1] / tot), 3),
+                  **{lab: round(float(x / acc[cat][-1]), 3) for lab, x in zip(node.labels, acc[cat][:-1])}}
+            for cat in CATEGORY_ORDER if cat in acc}
 
 
 def _strong_share(node, p, board) -> float:
@@ -721,6 +941,17 @@ def _explain_postflop(d, labels, strat, evs, idx, in_range, feats, tex, pot, to_
     rs = rng["range_strategy"]
     lines.append("With its whole range here GTO plays: " +
                  ", ".join(f"{k} {100 * v:.0f}%" for k, v in rs.items() if v >= 0.01) + ".")
+    cats = rng.get("by_category", {})
+    aggressive = [lab for lab in labels if lab.split()[0] in ("bet", "raise")]
+    if cats and aggressive:
+        verb = "bets" if aggressive[0].startswith("bet") else "raises"
+        parts = []
+        for cat, v in cats.items():
+            f = sum(v.get(lab, 0.0) for lab in aggressive)
+            parts.append(f"{cat} {100 * f:.0f}%")
+        mine = d.get("hand_category")
+        lines.append(f"How often GTO {verb} by hand type: " + ", ".join(parts) +
+                     (f". Your hand counts as {mine}." if mine else "."))
     eq = d.get("equity")
     if to_call > 1e-9:
         bet = to_call

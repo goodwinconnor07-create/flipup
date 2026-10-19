@@ -88,6 +88,10 @@ Solver::Solver(const TreeConfig& config) : cfg_(config) {
       ++num_action_nodes_;
     }
   }
+  const double need_mb = static_cast<double>(offset) * (cfg_.compress ? 4.0 : 8.0) / 1e6;
+  if (cfg_.max_memory_mb > 0 && need_mb > cfg_.max_memory_mb)
+    throw std::length_error("tree needs " + std::to_string(static_cast<long>(need_mb)) + " MB (limit " +
+                            std::to_string(static_cast<long>(cfg_.max_memory_mb)) + " MB)");
   if (cfg_.compress) {
     regret_h_.assign(offset, static_cast<_Float16>(0.0f));
     cum_h_.assign(offset, static_cast<_Float16>(0.0f));
@@ -606,10 +610,23 @@ void Solver::average_strategy(const Node& n, float* out) const {
   std::copy(c, c + nh, sum.begin());
   for (int a = 1; a < na; ++a)
     for (size_t h = 0; h < nh; ++h) sum[h] += c[a * nh + h];
-  const float uniform = 1.0f / na;
-  for (size_t h = 0; h < nh; ++h) sum[h] = sum[h] > 0 ? 1.0f / sum[h] : 0.0f;
+  bool any_empty = false;
+  for (size_t h = 0; h < nh; ++h) {
+    any_empty |= !(sum[h] > 0);
+    sum[h] = sum[h] > 0 ? 1.0f / sum[h] : 0.0f;
+  }
   for (int a = 0; a < na; ++a)
-    for (size_t h = 0; h < nh; ++h) out[a * nh + h] = sum[h] > 0 ? c[a * nh + h] * sum[h] : uniform;
+    for (size_t h = 0; h < nh; ++h) out[a * nh + h] = c[a * nh + h] * sum[h];
+  if (any_empty) {
+    // Hands that (almost) never reach this node have no strategy sum: use the
+    // current regret-matching strategy instead of a uniform guess.
+    thread_local std::vector<float> cur;
+    cur.resize(static_cast<size_t>(na) * nh);
+    current_strategy(n, cur.data());
+    for (size_t h = 0; h < nh; ++h)
+      if (!(sum[h] > 0))
+        for (int a = 0; a < na; ++a) out[a * nh + h] = cur[a * nh + h];
+  }
 }
 
 double Solver::rake(double pot) const {
@@ -1042,7 +1059,20 @@ void Solver::iterate(int iterations) {
     Discount d;
     d.pos = static_cast<float>(ta / (ta + 1));
     d.neg = 0.5f;
-    d.strat = static_cast<float>(std::pow((t - 1) / t, 2.0));
+    if (cfg_.averaging == 1) {
+      // gamma = 3 with the average restarted at every power of 4 (t counted from 0),
+      // which discards the noisy early iterations (as in b-inary/postflop-solver).
+      long t0 = iteration_ - 1;
+      long p4 = 0;
+      if (t0 > 0) {
+        p4 = 1;
+        while (p4 * 4 <= t0) p4 *= 4;
+      }
+      double tg = static_cast<double>(t0 - p4);
+      d.strat = static_cast<float>(std::pow(tg / (tg + 1.0), 3.0));
+    } else {
+      d.strat = static_cast<float>(std::pow((t - 1) / t, 2.0));
+    }
     for (int p = 0; p < 2; ++p) {
       std::vector<float> out(hands_[p].size());
 #pragma omp parallel
@@ -1122,7 +1152,7 @@ std::vector<float> Solver::equity_vs(int p, const std::vector<float>& opp_reach,
   return eq;
 }
 
-NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity) {
+NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity, bool with_ev) {
   if (nodes_.empty()) throw std::logic_error("empty tree");
   int node_id = 0;
   std::array<int, 4> perm = {0, 1, 2, 3};  // real suit -> tree suit
@@ -1208,7 +1238,22 @@ NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity) {
   };
 
   std::array<std::vector<float>, 2> ev_tree;
-  if (n.type == NodeType::ACTION) {
+  if (!with_ev) {
+    // Navigation only: actions and average strategy, no EV passes.
+    for (int p = 0; p < 2; ++p) ev_tree[p].assign(hands_[p].size(), 0.0f);
+    if (n.type == NodeType::ACTION) {
+      const int q = n.player;
+      const size_t nq = hands_[q].size();
+      std::vector<float> sigma(static_cast<size_t>(n.num_children) * nq);
+      average_strategy(n, sigma.data());
+      info.strategy.resize(sigma.size());
+      info.action_ev.assign(sigma.size(), 0.0f);
+      for (int a = 0; a < n.num_children; ++a) {
+        info.actions.push_back(actions_[n.child_begin + a]);
+        for (size_t h = 0; h < nq; ++h) info.strategy[a * nq + h] = sigma[a * nq + to_tree[q][h]];
+      }
+    }
+  } else if (n.type == NodeType::ACTION) {
     const int q = n.player;
     const int na = n.num_children;
     const size_t nq = hands_[q].size();

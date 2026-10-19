@@ -53,6 +53,8 @@ struct TreeConfig {
   double rake_rate = 0.0;
   double rake_cap = 0.0;           // 0 = uncapped
   bool compress = false;           // half-float regrets and strategy sums, scaled per node (half the memory)
+  double max_memory_mb = 0;        // refuse to allocate trees larger than this (0 = no limit)
+  int averaging = 0;               // 0: DCFR gamma=2; 1: gamma=3 restarting at powers of 4
   std::array<std::vector<float>, 2> range;  // 1326 weights per player (0 = not in range)
 };
 
@@ -135,7 +137,7 @@ class Solver {
   int iterations_done() const { return iteration_; }
 
   // Path tokens: action index as decimal string ("0", "1", ...) or a card ("Kh") at chance nodes.
-  NodeInfo query(const std::vector<std::string>& path, bool with_equity = true);
+  NodeInfo query(const std::vector<std::string>& path, bool with_equity = true, bool with_ev = true);
 
   // Equity per hand for player p vs opponent reach on a given board (generic helper).
   std::vector<float> equity_vs(int p, const std::vector<float>& opp_reach, CardMask board) const;

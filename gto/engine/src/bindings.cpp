@@ -54,6 +54,7 @@ const char* action_name(Action::Type t) {
 
 PYBIND11_MODULE(_engine, m) {
   m.doc() = "FlipUp GTO engine core (C++)";
+  py::register_exception<std::length_error>(m, "TreeTooLarge", PyExc_MemoryError);
 
   m.def("parse_card", &parse_card);
   m.def("card_to_string", &card_to_string);
@@ -116,6 +117,13 @@ PYBIND11_MODULE(_engine, m) {
   });
 
 
+  py::class_<PreflopForced>(m, "PreflopForced")
+      .def(py::init([](int player, int type, double to) { return PreflopForced{player, type, to}; }),
+           py::arg("player"), py::arg("type"), py::arg("to") = 0.0)
+      .def_readwrite("player", &PreflopForced::player)
+      .def_readwrite("type", &PreflopForced::type)
+      .def_readwrite("to", &PreflopForced::to);
+
   py::class_<PreflopConfig>(m, "PreflopConfig")
       .def(py::init<>())
       .def_readwrite("num_players", &PreflopConfig::num_players)
@@ -142,10 +150,12 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("multiway_blinds_only", &PreflopConfig::multiway_blinds_only)
       .def_readwrite("eqr_ip", &PreflopConfig::eqr_ip)
       .def_readwrite("eqr_oop", &PreflopConfig::eqr_oop)
+      .def_readwrite("eqr_model", &PreflopConfig::eqr_model)
       .def_readwrite("class_eqr_ip", &PreflopConfig::class_eqr_ip)
       .def_readwrite("class_eqr_oop", &PreflopConfig::class_eqr_oop)
       .def_readwrite("multiway_role", &PreflopConfig::multiway_role)
       .def_readwrite("initial_range", &PreflopConfig::initial_range)
+      .def_readwrite("forced", &PreflopConfig::forced)
       .def("set_tables", [](PreflopConfig& c, py::array_t<float, py::array::c_style | py::array::forcecast> eq,
                             py::array_t<float, py::array::c_style | py::array::forcecast> pairs,
                             py::object ta, py::object tb) {
@@ -266,6 +276,8 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("rake_rate", &TreeConfig::rake_rate)
       .def_readwrite("rake_cap", &TreeConfig::rake_cap)
       .def_readwrite("compress", &TreeConfig::compress)
+      .def_readwrite("max_memory_mb", &TreeConfig::max_memory_mb)
+      .def_readwrite("averaging", &TreeConfig::averaging)
       .def("set_sizes",
            [](TreeConfig& c, int player, int street, const StreetSizes& s) {
              if (player < 0 || player > 1 || street < 0 || street > 2) throw std::out_of_range("player/street");
@@ -312,11 +324,11 @@ PYBIND11_MODULE(_engine, m) {
       .def("request_stop", &Solver::request_stop)
       .def(
           "query",
-          [](Solver& s, const std::vector<std::string>& path, bool with_equity) {
+          [](Solver& s, const std::vector<std::string>& path, bool with_equity, bool with_ev) {
             NodeInfo info;
             {
               py::gil_scoped_release release;
-              info = s.query(path, with_equity);
+              info = s.query(path, with_equity, with_ev);
             }
             py::dict d;
             d["type"] = node_type_name(info.type);
@@ -351,5 +363,5 @@ PYBIND11_MODULE(_engine, m) {
             }
             return d;
           },
-          py::arg("path"), py::arg("with_equity") = true);
+          py::arg("path"), py::arg("with_equity") = true, py::arg("with_ev") = true);
 }

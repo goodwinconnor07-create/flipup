@@ -24,6 +24,14 @@ namespace flipup {
 
 constexpr int PF_CLASSES = 169;
 
+// An action the tree must take at a given point (used to replay a real hand's
+// preflop line exactly, including lines GTO never takes, like open limps).
+struct PreflopForced {
+  int player;
+  int type;   // PreflopAction::Type
+  double to;  // street bet after the action (bb), for calls/raises
+};
+
 struct PreflopConfig {
   int num_players = 6;
   std::vector<double> stacks;  // starting stack per player (bb), before blinds/antes
@@ -50,13 +58,18 @@ struct PreflopConfig {
   // Equity realization (heads-up flops) per SPR bucket: [<1.5, 1.5-4, 4-8, 8+].
   std::array<double, 4> eqr_ip = {1.0, 1.0, 1.04, 1.07};
   std::array<double, 4> eqr_oop = {1.0, 0.95, 0.88, 0.83};
-  std::vector<float> class_eqr_ip;   // optional per-class multipliers (169), default 1
+  // eqr_model 0: multiplicative (class_eqr_* are multipliers on eqr_ip/eqr_oop, default 1).
+  // eqr_model 1: additive (class_eqr_* are share adjustments, default 0; eqr_ip/oop unused).
+  int eqr_model = 0;
+  std::vector<float> class_eqr_ip;
   std::vector<float> class_eqr_oop;
   std::array<double, 3> multiway_role = {0.9, 0.98, 1.12};  // 3-way: OOP-most, middle, IP-most
 
   // Starting ranges (169 weights) per player, default all 1. Used for custom
   // spots (e.g. a limper's range in hand review).
   std::vector<std::vector<float>> initial_range;
+  // The first forced.size() decisions are fixed to these actions.
+  std::vector<PreflopForced> forced;
 
   // Tables: class equity matrix and compatible-pair counts (169x169).
   std::vector<float> equity;

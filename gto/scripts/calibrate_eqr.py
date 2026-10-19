@@ -1,11 +1,14 @@
 """Calibrate the preflop solver's equity-realization model with real postflop solves.
 
-The preflop solver values a pot that sees a flop as a realized share of it:
-    IP share vs a class pair = e*Rip*m_ip[h] / (e*Rip*m_ip[h] + (1-e)*Roop*m_oop[o]).
-This script measures what hands actually realize. It solves a random sample of flops for a
-heads-up single-raised pot (BTN open vs BB call by default) with ranges from the current
-preflop solution, records each class's EV share and raw equity at the flop, then fits the
-per-class multipliers m_ip / m_oop so the model reproduces the measured shares.
+The preflop solver values a heads-up pot that sees a flop as a share of it:
+    IP share for class pair (h, o) = equity(h, o) + adj_ip[h] - adj_oop[o]      (additive model)
+so shares can exceed the pot (strong hands get paid on later streets) or fall well below equity
+(weak hands out of position). This script measures what hands actually realize: it solves a
+random sample of flops for a heads-up single-raised pot (BTN open vs BB call by default) with
+ranges from the current preflop solution and records each class's EV share and equity at the
+flop. It then fits adj_ip / adj_oop as smooth functions of hand features (strength, suitedness,
+pairs, connectivity) by weighted least squares, so classes that barely appear in a range (e.g.
+KK in the BB's calling range) get sensible values from similar hands instead of noise.
 
     python3 scripts/calibrate_eqr.py --flops 30 --out flipup_gto/data/eqr_calibration.json
 
@@ -50,7 +53,7 @@ def measure(spot, path, flops, iterations, target, log):
     acc = {p: {"ev": np.zeros(169), "eq": np.zeros(169), "w": np.zeros(169)} for p in (0, 1)}
     t0 = time.time()
     for k, flop in enumerate(flops):
-        s = PostflopSolver(flop, pot, stack, oop_r, ip_r, sizing=sizing, compress=True)
+        s = PostflopSolver(flop, pot, stack, oop_r, ip_r, sizing=sizing)
         st = s.solve(iterations, target, 25)
         root = s.node([])
         for p in (0, 1):
@@ -76,33 +79,53 @@ def measure(spot, path, flops, iterations, target, log):
     return out, info, ip_idx, oop_idx
 
 
-def fit_multipliers(measured, info, ip_idx, oop_idx, base_ip, base_oop, rounds=200):
+def class_features():
+    """Feature matrix (169 x k) describing each hand class."""
     eq, pairs, _ = tables(with_tensor=False)
-    r_ip = info["reach"][ip_idx]
-    r_oop = info["reach"][oop_idx]
-    m_ip = np.ones(169)
-    m_oop = np.ones(169)
-    tgt_ip = measured[1]["share"]
-    tgt_oop = measured[0]["share"]
-    ok_ip = measured[1]["weight"] > 0
-    ok_oop = measured[0]["weight"] > 0
+    pn = pairs / pairs.sum(axis=1, keepdims=True)
+    er = (eq * pn).sum(axis=1)
+    rows = []
+    for i, cls in enumerate(CLASSES):
+        r1, r2 = "23456789TJQKA".index(cls[0]), "23456789TJQKA".index(cls[1])
+        pair = 1.0 if r1 == r2 else 0.0
+        suited = 1.0 if cls.endswith("s") else 0.0
+        gap = abs(r1 - r2)
+        conn = 0.0 if pair else max(0.0, (4 - gap) / 4.0)
+        e = er[i] - 0.5
+        rows.append([1.0, e, e * e, suited, pair, pair * e, conn, conn * suited, max(r1, r2) / 12.0])
+    return np.array(rows)
+
+
+def fit_additive(measured, info, ip_idx, oop_idx, rounds=50, ridge=1e-3):
+    """Fit adj_ip, adj_oop (169 each) so that equity + adj_ip[h] - mean(adj_oop) matches IP shares, etc."""
+    X = class_features()
+    eq, pairs, _ = tables(with_tensor=False)
+    r_ip, r_oop = info["reach"][ip_idx], info["reach"][oop_idx]
+    w_ip = np.nan_to_num(measured[1]["weight"])
+    w_oop = np.nan_to_num(measured[0]["weight"])
+    sh_ip, eq_ip = np.nan_to_num(measured[1]["share"]), np.nan_to_num(measured[1]["equity"])
+    sh_oop, eq_oop = np.nan_to_num(measured[0]["share"]), np.nan_to_num(measured[0]["equity"])
+    # Opponent-range weights per class (card removal aware) for averaging the other side's adjustment.
+    W_vs_oop = pairs * r_oop[None, :]
+    W_vs_oop /= np.maximum(W_vs_oop.sum(1, keepdims=True), 1e-12)
+    W_vs_ip = pairs * r_ip[None, :]
+    W_vs_ip /= np.maximum(W_vs_ip.sum(1, keepdims=True), 1e-12)
+
+    def wls(target, w):
+        A = X * w[:, None]
+        beta = np.linalg.solve(X.T @ A + ridge * np.eye(X.shape[1]), A.T @ target)
+        return X @ beta
+
+    adj_ip = np.zeros(169)
+    adj_oop = np.zeros(169)
     for _ in range(rounds):
-        a = eq * base_ip * m_ip[:, None]
-        b = (1 - eq) * base_oop * m_oop[None, :]
-        S = a / np.maximum(a + b, 1e-12)  # IP class h vs OOP class o
-        w_ip = pairs * r_oop[None, :]
-        pred_ip = (S * w_ip).sum(1) / np.maximum(w_ip.sum(1), 1e-12)
-        w_oop = pairs * r_ip[None, :]
-        pred_oop = ((1 - S.T) * w_oop).sum(1) / np.maximum(w_oop.sum(1), 1e-12)
-        upd_ip = np.where(ok_ip, np.clip(tgt_ip, 1e-4, None) / np.clip(pred_ip, 1e-4, None), 1.0)
-        upd_oop = np.where(ok_oop, np.clip(tgt_oop, 1e-4, None) / np.clip(pred_oop, 1e-4, None), 1.0)
-        m_ip *= upd_ip ** 0.5
-        m_oop *= upd_oop ** 0.5
-        m_ip = np.clip(m_ip, 0.2, 5.0)
-        m_oop = np.clip(m_oop, 0.2, 5.0)
-    err_ip = np.nanmean(np.abs(pred_ip - tgt_ip)[ok_ip])
-    err_oop = np.nanmean(np.abs(pred_oop - tgt_oop)[ok_oop])
-    return m_ip, m_oop, err_ip, err_oop
+        adj_ip = wls(sh_ip - eq_ip + W_vs_oop @ adj_oop, w_ip)
+        adj_oop = wls(sh_oop - eq_oop + W_vs_ip @ adj_ip, w_oop)
+    pred_ip = eq_ip + adj_ip - W_vs_oop @ adj_oop
+    pred_oop = eq_oop + adj_oop - W_vs_ip @ adj_ip
+    err_ip = float(np.sum(w_ip * np.abs(pred_ip - sh_ip)) / np.sum(w_ip))
+    err_oop = float(np.sum(w_oop * np.abs(pred_oop - sh_oop)) / np.sum(w_oop))
+    return adj_ip, adj_oop, err_ip, err_oop
 
 
 def main():
@@ -115,6 +138,7 @@ def main():
     ap.add_argument("--preflop-iterations", type=int, default=600)
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--calibration", default=None, help="existing calibration to start the preflop solve from")
+    ap.add_argument("--from-raw", default=None, help="refit from a previous output's raw measurements")
     ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data",
                                                   "eqr_calibration.json"))
     args = ap.parse_args()
@@ -123,7 +147,8 @@ def main():
     opts = {}
     if args.calibration:
         cal = json.load(open(args.calibration))
-        opts = {"class_eqr_ip": [cal["ip"][c] for c in CLASSES], "class_eqr_oop": [cal["oop"][c] for c in CLASSES]}
+        opts = {"eqr_model": 1 if cal.get("model") == "additive" else 0,
+                "class_eqr_ip": [cal["ip"][c] for c in CLASSES], "class_eqr_oop": [cal["oop"][c] for c in CLASSES]}
     spot = PreflopSpot(num_players=args.players, stack=args.stack, options=opts, use_calibration=False)
     log(f"solving preflop ({spot.engine.num_nodes} nodes)...")
     spot.solve(args.preflop_iterations, 0.002, 100)
@@ -132,35 +157,43 @@ def main():
     rng = random.Random(args.seed)
     deck = list(range(52))
     flops = [sorted(rng.sample(deck, 3), reverse=True) for _ in range(args.flops)]
-    log(f"measuring realization on {len(flops)} flops...")
-    measured, info, ip_idx, oop_idx = measure(spot, path, flops, args.iterations, args.target, log)
-    base_ip = spot.config.eqr_ip[3]
-    base_oop = spot.config.eqr_oop[3]
-    m_ip, m_oop, e_ip, e_oop = fit_multipliers(measured, info, ip_idx, oop_idx, base_ip, base_oop)
-    log(f"fit error (mean abs share): IP {e_ip:.4f}, OOP {e_oop:.4f}")
+    if args.from_raw:
+        raw = json.load(open(args.from_raw))
+        measured = {int(p): {k: np.array(v, dtype=float) for k, v in d.items()} for p, d in raw["measured"].items()}
+        info = spot.engine.query(spot.resolve(path))
+        ip_idx, oop_idx = (args.players - 3 if args.players > 2 else 0), args.players - 1
+    else:
+        log(f"measuring realization on {len(flops)} flops...")
+        measured, info, ip_idx, oop_idx = measure(spot, path, flops, args.iterations, args.target, log)
+    adj_ip, adj_oop, e_ip, e_oop = fit_additive(measured, info, ip_idx, oop_idx)
+    log(f"fit error (weighted mean abs share): IP {e_ip:.4f}, OOP {e_oop:.4f}")
 
     def eqr(p):
         sh, eqv = measured[p]["share"], measured[p]["equity"]
-        return {CLASSES[i]: (None if not np.isfinite(sh[i]) or eqv[i] <= 0 else round(float(sh[i] / eqv[i]), 4))
+        return {CLASSES[i]: (None if not np.isfinite(sh[i]) or not eqv[i] > 0 else round(float(sh[i] / eqv[i]), 4))
                 for i in range(169)}
 
+    def rng_eqr(p):
+        w = np.nan_to_num(measured[p]["weight"])
+        return float(np.sum(np.nan_to_num(measured[p]["share"]) * w) / np.sum(np.nan_to_num(measured[p]["equity"]) * w))
+
     result = {
+        "model": "additive",
         "scenario": f"{args.players}-max {args.stack:g}bb, BTN open vs BB call, {len(flops)} flops",
-        "base_ip": base_ip, "base_oop": base_oop,
-        "ip": {CLASSES[i]: round(float(m_ip[i]), 4) for i in range(169)},
-        "oop": {CLASSES[i]: round(float(m_oop[i]), 4) for i in range(169)},
+        "ip": {CLASSES[i]: round(float(adj_ip[i]), 5) for i in range(169)},
+        "oop": {CLASSES[i]: round(float(adj_oop[i]), 5) for i in range(169)},
         "measured_eqr_ip": eqr(1), "measured_eqr_oop": eqr(0),
-        "range_eqr_ip": float(np.nansum(measured[1]["share"] * measured[1]["weight"]) /
-                              np.nansum(measured[1]["equity"] * measured[1]["weight"])),
-        "range_eqr_oop": float(np.nansum(measured[0]["share"] * measured[0]["weight"]) /
-                               np.nansum(measured[0]["equity"] * measured[0]["weight"])),
+        "range_eqr_ip": rng_eqr(1), "range_eqr_oop": rng_eqr(0),
+        "measured": {str(p): {k: [None if not np.isfinite(x) else float(x) for x in v] for k, v in d.items()}
+                     for p, d in measured.items()},
     }
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     json.dump(result, open(args.out, "w"), indent=1)
     log(f"range EQR: IP {result['range_eqr_ip']:.3f}, OOP {result['range_eqr_oop']:.3f}; saved {args.out}")
-    for cls in ("AA", "AKs", "AKo", "KQs", "T9s", "76s", "A5s", "K9o", "J8o", "72o", "22", "Q4s", "T6o"):
-        log(f"  {cls}: measured EQR IP {result['measured_eqr_ip'].get(cls)} OOP {result['measured_eqr_oop'].get(cls)}"
-            f" -> multipliers IP {result['ip'][cls]} OOP {result['oop'][cls]}")
+    for cls in ("AA", "KK", "AKs", "AKo", "KQs", "T9s", "76s", "A5s", "K9o", "J8o", "72o", "22", "Q4s", "T6o"):
+        i = CLASSES.index(cls)
+        log(f"  {cls}: measured EQR IP {result['measured_eqr_ip'].get(cls)} OOP "
+            f"{result['measured_eqr_oop'].get(cls)} -> adj IP {adj_ip[i]:+.3f} OOP {adj_oop[i]:+.3f}")
 
 
 if __name__ == "__main__":

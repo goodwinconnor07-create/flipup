@@ -40,6 +40,7 @@ struct PreflopSolver::State {
   int to_act = 0;
   double cur_bet = 0, last_raise = 0;
   int raises = 0, limpers = 0, callers = 0, last_raiser = -1;
+  int step = 0;  // decisions made so far
 };
 
 PreflopSolver::PreflopSolver(const PreflopConfig& cfg) : cfg_(cfg), N_(cfg.num_players) {
@@ -52,12 +53,13 @@ PreflopSolver::PreflopSolver(const PreflopConfig& cfg) : cfg_(cfg), N_(cfg.num_p
     throw std::invalid_argument("equity and pairs tables (169x169) are required");
   if (cfg_.initial_range.empty()) cfg_.initial_range.assign(N_, std::vector<float>(C, 1.0f));
   if (static_cast<int>(cfg_.initial_range.size()) != N_) throw std::invalid_argument("initial_range per player");
-  if (cfg_.class_eqr_ip.empty()) cfg_.class_eqr_ip.assign(C, 1.0f);
-  if (cfg_.class_eqr_oop.empty()) cfg_.class_eqr_oop.assign(C, 1.0f);
+  const float neutral = cfg_.eqr_model == 1 ? 0.0f : 1.0f;
+  if (cfg_.class_eqr_ip.empty()) cfg_.class_eqr_ip.assign(C, neutral);
+  if (cfg_.class_eqr_oop.empty()) cfg_.class_eqr_oop.assign(C, neutral);
   size_t tsize = static_cast<size_t>(C) * cfg_.tensor_rank * C;
   if (cfg_.tensor_rank <= 0 || cfg_.tensor_a.size() != tsize || cfg_.tensor_b.size() != tsize)
     cfg_.max_players_flop = std::min(cfg_.max_players_flop, 2);
-  cfg_.max_players_flop = std::clamp(cfg_.max_players_flop, 2, 3);
+  cfg_.max_players_flop = std::clamp(cfg_.max_players_flop, 2, N_);
 
   class_combos_.resize(C);
   for (int c = 0; c < C; ++c) class_combos_[c] = static_cast<float>(class_combo_count(c));
@@ -74,8 +76,14 @@ PreflopSolver::PreflopSolver(const PreflopConfig& cfg) : cfg_(cfg), N_(cfg.num_p
     for (int h = 0; h < C; ++h)
       for (int o = 0; o < C; ++o) {
         double e = cfg_.equity[h * C + o];
-        // Class multipliers matter less as stacks get shallow (pots play closer to all-in).
+        // Class adjustments matter less as stacks get shallow (pots play closer to all-in).
         static const double fade[4] = {0.0, 0.5, 0.8, 1.0};
+        if (cfg_.eqr_model == 1) {
+          // Additive: IP share = equity + (adj_ip[h] - adj_oop[o]). Shares may leave [0, 1]:
+          // strong hands win more than the pot on later streets, weak ones less than their equity.
+          S[h * C + o] = static_cast<float>(e + fade[b] * (cfg_.class_eqr_ip[h] - cfg_.class_eqr_oop[o]));
+          continue;
+        }
         double rip = cfg_.eqr_ip[b] * (1.0 + (cfg_.class_eqr_ip[h] - 1.0) * fade[b]);
         double roop = cfg_.eqr_oop[b] * (1.0 + (cfg_.class_eqr_oop[o] - 1.0) * fade[b]);
         double den = e * rip + (1 - e) * roop;
@@ -232,6 +240,50 @@ int PreflopSolver::build(const State& s) {
     }
   }
 
+  if (s.step < static_cast<int>(cfg_.forced.size())) {
+    const PreflopForced& f = cfg_.forced[s.step];
+    if (f.player != p)
+      throw std::invalid_argument("forced action " + std::to_string(s.step) + " is for player " +
+                                  std::to_string(f.player) + " but player " + std::to_string(p) + " acts");
+    State ns = s;
+    PreflopAction fa{static_cast<PreflopAction::Type>(f.type), s.bet[p], 0};
+    if (f.type == PreflopAction::FOLD) {
+      if (to_call <= EPS) throw std::invalid_argument("forced fold when checking is free");
+      ns.folded |= 1u << p;
+    } else if (f.type == PreflopAction::CHECK) {
+      if (to_call > EPS) throw std::invalid_argument("forced check facing a bet");
+    } else if (f.type == PreflopAction::CALL) {
+      double amt = std::min(to_call, s.stack[p]);
+      ns.bet[p] += amt;
+      ns.stack[p] -= amt;
+      if (ns.stack[p] <= EPS) ns.allin |= 1u << p;
+      if (s.raises == 0) ++ns.limpers; else ++ns.callers;
+      fa = {PreflopAction::CALL, ns.bet[p], amt};
+    } else {
+      double t = std::min(std::max(f.to, s.cur_bet), max_to);
+      double amt = t - s.bet[p];
+      ns.bet[p] = t;
+      ns.stack[p] -= amt;
+      bool all = ns.stack[p] <= EPS;
+      if (all) {
+        ns.stack[p] = 0;
+        ns.allin |= 1u << p;
+      }
+      if (t > s.cur_bet + EPS) {
+        ns.last_raise = std::max(s.last_raise, t - s.cur_bet);
+        ns.cur_bet = t;
+        ns.raises = s.raises + 1;
+        ns.last_raiser = p;
+        ns.callers = 0;
+        ns.acted = 0;
+      }
+      fa = {all ? PreflopAction::ALLIN : PreflopAction::RAISE, t, amt};
+    }
+    acts.clear();
+    acts.push_back({fa, finish(ns, p)});
+  }
+  for (auto& a : acts) a.second.step = s.step + 1;
+
   std::vector<int> kids;
   std::vector<PreflopAction> labels;
   for (auto& [a, ns] : acts) {
@@ -332,14 +384,21 @@ void PreflopSolver::matvec(const std::vector<float>& M, const std::vector<float>
 void PreflopSolver::strategy_of(const Node& n, std::vector<float>& out, bool average) const {
   const int na = n.num_children;
   out.resize(static_cast<size_t>(na) * C);
-  const float* src = (average ? cum_.data() : regret_.data()) + n.storage;
+  const float* cum = cum_.data() + n.storage;
+  const float* reg = regret_.data() + n.storage;
   for (int h = 0; h < C; ++h) {
     float sum = 0;
-    for (int a = 0; a < na; ++a) sum += average ? src[a * C + h] : std::max(src[a * C + h], 0.0f);
-    for (int a = 0; a < na; ++a) {
-      float v = average ? src[a * C + h] : std::max(src[a * C + h], 0.0f);
-      out[a * C + h] = sum > 0 ? v / sum : 1.0f / na;
+    if (average)
+      for (int a = 0; a < na; ++a) sum += cum[a * C + h];
+    if (average && sum > 0) {
+      for (int a = 0; a < na; ++a) out[a * C + h] = cum[a * C + h] / sum;
+      continue;
     }
+    // Current strategy (regret matching); also the fallback for classes that
+    // never reach this node, which have no average-strategy sum.
+    float rs = 0;
+    for (int a = 0; a < na; ++a) rs += std::max(reg[a * C + h], 0.0f);
+    for (int a = 0; a < na; ++a) out[a * C + h] = rs > 0 ? std::max(reg[a * C + h], 0.0f) / rs : 1.0f / na;
   }
 }
 
@@ -401,10 +460,24 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
       continue;
     }
 
-    // Three players see the flop (or are all in).
+    // Three players see the flop (or are all in). With four or more, use the
+    // 3-way share against the first two opponents times the heads-up equity
+    // against each extra opponent (a rough but monotone approximation).
     int j = -1, k = -1;
-    for (int q : live)
-      if (q != i) (j < 0 ? j : k) = q;
+    std::vector<int> extra;
+    for (int q : live) {
+      if (q == i) continue;
+      if (j < 0) j = q;
+      else if (k < 0) k = q;
+      else extra.push_back(q);
+    }
+    std::array<float, C> extra_factor;
+    extra_factor.fill(1.0f);
+    for (int q : extra) {
+      std::array<float, C> eqm;
+      matvec(Weq_, reach[q], eqm.data());
+      for (int h = 0; h < C; ++h) extra_factor[h] *= eqm[h];  // = m_q(h) * equity vs q's range
+    }
     double adj = 1.0;
     if (n.type == 2) {
       double mean = (cfg_.multiway_role[0] + cfg_.multiway_role[1] + cfg_.multiway_role[2]) / 3.0;
@@ -426,7 +499,9 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
         }
         acc += static_cast<double>(su) * sv;
       }
-      out[h] = fold_prod[h] * static_cast<float>(pot_eff * adj * acc - n.inv[i] * m[j][h] * m[k][h]);
+      float others = m[j][h] * m[k][h];
+      for (int q : extra) others *= m[q][h];
+      out[h] = fold_prod[h] * static_cast<float>(pot_eff * adj * acc * extra_factor[h] - n.inv[i] * others);
     }
   }
 }

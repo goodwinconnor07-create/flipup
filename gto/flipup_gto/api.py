@@ -14,6 +14,7 @@ GET  /preflop/chart?players=6&stack=100&path=fold,fold,raise
 POST /solve/postflop    {"board", "pot", "stack", "oop_range", "ip_range", "path"?, "iterations"?}
 POST /equity            {"hand": "AhKd", "range": "QQ+,AK", "board": "Ks9d5c"}
 GET  /math?pot=10&bet=5 -> pot odds, required equity, MDF, alpha, bluff share
+GET  /glossary          -> definitions of every concept the explanations use (for tooltips)
 """
 from __future__ import annotations
 
@@ -188,6 +189,19 @@ def equity(req: EquityReq):
         raise HTTPException(400, str(e))
     w, t, l = _engine.equity_vs_range(combo, r.w.tolist(), board, 50000)
     return {"win": w, "tie": t, "lose": l, "equity": w + t / 2}
+
+
+_glossary = None
+
+
+@app.get("/glossary")
+def glossary():
+    global _glossary
+    if _glossary is None:
+        import json
+        import os
+        _glossary = json.load(open(os.path.join(os.path.dirname(__file__), "data", "glossary.json")))
+    return _glossary
 
 
 @app.get("/math")

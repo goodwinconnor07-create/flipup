@@ -96,6 +96,27 @@ class BetSizing:
         return cls(oop=dict(sizes), ip=dict(sizes), max_raises=2)
 
     @classmethod
+    def review(cls, street: int, lean: int = 0) -> "BetSizing":
+        """Trees for re-solving one street of a real hand (the actual sizes get added on top).
+
+        The street being reviewed gets a richer abstraction; later streets are simplified because
+        they are re-solved exactly when the hand gets there. `lean` 1/2 shrinks the tree further
+        when memory is tight.
+        """
+        if street == 0:
+            flop = StreetSizing("50%", "60%") if lean < 2 else StreetSizing("", "")
+            later = StreetSizing("75%", "a") if lean == 0 else StreetSizing("75%", "")
+            sizes = {"flop": flop, "turn": later, "river": later}
+            return cls(oop=dict(sizes), ip=dict(sizes), max_raises=1)
+        if street == 1:
+            turn = StreetSizing("50%, 100%", "60%") if lean == 0 else StreetSizing("66%", "a")
+            sizes = {"flop": StreetSizing(), "turn": turn, "river": StreetSizing("75%", "60%")}
+            return cls(oop=dict(sizes), ip=dict(sizes), max_raises=2 if lean == 0 else 1)
+        river = StreetSizing("33%, 75%, 125%", "60%") if lean == 0 else StreetSizing("66%", "a")
+        sizes = {"flop": StreetSizing(), "turn": StreetSizing(), "river": river}
+        return cls(oop=dict(sizes), ip=dict(sizes), max_raises=2)
+
+    @classmethod
     def light(cls) -> "BetSizing":
         """Small tree for fast flop solves (one size per street)."""
         sizes = {"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", "60%"),
@@ -117,7 +138,8 @@ def _to_weights(r) -> list:
 class PostflopSolver:
     def __init__(self, board, pot: float, stack: float, oop_range, ip_range,
                  sizing: BetSizing | None = None, rake_rate: float = 0.0, rake_cap: float = 0.0,
-                 min_bet: float = 1.0, threads: int | None = None, compress: bool = False):
+                 min_bet: float = 1.0, threads: int | None = None, compress: bool = False,
+                 max_memory_mb: float = 0.0):
         if threads:
             os.environ["OMP_NUM_THREADS"] = str(threads)
         self.board = parse_cards(board)
@@ -136,6 +158,7 @@ class PostflopSolver:
         cfg.rake_rate = rake_rate
         cfg.rake_cap = rake_cap
         cfg.compress = compress
+        cfg.max_memory_mb = max_memory_mb
         for p in range(2):
             for st in range(3):
                 ss = self.sizing.get(p, st)
@@ -168,7 +191,7 @@ class PostflopSolver:
         """Translate human labels ('check', 'bet 75%', 'raise 12', 'Kh') to engine tokens."""
         tokens: list[str] = []
         for step in path:
-            info = self.engine.query(tokens, False)
+            info = self.engine.query(tokens, False, False)
             if info["type"] == "chance":
                 tokens.append(card_str(parse_cards(step)[0]) if not isinstance(step, int) else card_str(step))
                 continue
@@ -177,9 +200,9 @@ class PostflopSolver:
             tokens.append(str(match_action(info, step)))
         return tokens
 
-    def node(self, path=(), with_equity: bool = True) -> "NodeView":
+    def node(self, path=(), with_equity: bool = True, with_ev: bool = True) -> "NodeView":
         tokens = self.resolve_path(path)
-        return NodeView(self, tokens, self.engine.query(tokens, with_equity))
+        return NodeView(self, tokens, self.engine.query(tokens, with_equity, with_ev))
 
 
 def action_label(a: dict, pot: float) -> str:

@@ -54,3 +54,33 @@ def test_review_heads_up_shove(tmp_path):
     assert by_player["b"]["grade"] in ("inaccuracy", "mistake", "blunder")
     s = aggregate_session([r])
     assert s["hands"] == 1 and s["total_ev_loss_bb"] > 0
+
+
+slow = pytest.mark.skipif(not os.environ.get("FLIPUP_SLOW"), reason="needs full 6-max solves (set FLIPUP_SLOW=1)")
+
+
+@slow
+def test_open_limp_graded_with_custom_solve():
+    rv = Reviewer()
+    r = rv.review(load("limped_multiway.json"), hero="p1")
+    first = r["decisions"][0]
+    assert first["street"] == "preflop" and first["action"]["move"] == "call"
+    assert first["method"] == "preflop_custom"
+    assert first["best_action"] != "call"            # GTO doesn't open-limp 76s UTG
+    assert first["ev_loss_bb"] >= 0
+    later = [d for d in r["decisions"] if d["street"] != "preflop"]
+    assert later and all(d["method"] == "heuristic" for d in later)  # 4-way flop
+
+
+@slow
+def test_single_raised_pot_full_review():
+    rv = Reviewer()
+    r = rv.review(load("srp_btn_vs_bb.json"))
+    streets = {d["street"] for d in r["decisions"]}
+    assert {"preflop", "flop", "turn", "river"} <= streets
+    for d in r["decisions"]:
+        assert d["grade"] in ("best", "correct", "inaccuracy", "mistake", "blunder")
+        assert d["explanation"]
+        if d["street"] != "preflop":
+            assert d["method"] == "postflop_solver"
+            assert abs(sum(a["frequency"] or 0 for a in d["gto"]) - 1) < 1e-3 or not d["in_gto_range"]

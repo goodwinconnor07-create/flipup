@@ -79,3 +79,28 @@ test('a wrong code says so', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Table code' }).fill('BCDFG');
   await expect(page.getByText("There's no table with that code")).toBeVisible();
 });
+
+test('bots at an online table play on the server', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Host a table' }).click();
+  await setName(page, 'Kavi');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'One more bot' }).click();
+  await page.getByRole('button', { name: 'One more bot' }).click();
+  await page.getByRole('button', { name: 'Open the table' }).click();
+  await tableCode(page);
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  // Nobody else has joined: confirm dealing anyway.
+  await page.getByRole('dialog', { name: 'Deal without friends?' }).getByRole('button', { name: 'Deal' }).click();
+
+  // Play along: the bots' moves come from the server's clock, so the hand finishes without anyone else.
+  for (let i = 0; i < 80; i++) {
+    if (await page.getByRole('button', { name: 'Next hand' }).isVisible()) break;
+    if (await myTurn(page)) await page.locator('.action-buttons .btn-green').click();
+    await page.waitForTimeout(500);
+  }
+  await expect(page.locator('.result-line').first()).toBeVisible();
+  // The next hand deals by itself.
+  await expect(page.locator('.table-title small')).toHaveText('Hand 2', { timeout: 15_000 });
+});

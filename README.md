@@ -1,5 +1,7 @@
 # FlipUp
 
+Live at **https://flipup.kavishahtemu11.workers.dev**
+
 Poker night on your phones. No-limit Texas Hold'em for play chips: the host opens a table, friends join on their own phones with a 5-letter code or link, and bots fill any empty seats. Or play the bots on your own, offline.
 
 - White, clean design with big cards, SF Pro and emoji profile pictures (pick one or type any emoji)

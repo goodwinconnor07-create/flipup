@@ -1055,10 +1055,10 @@ void Solver::iterate(int iterations) {
   for (int it = 0; it < iterations && !stop_flag_; ++it) {
     ++iteration_;
     double t = iteration_;
-    double ta = std::pow(t - 1, 1.5);
+    double ta = std::pow(t - 1, cfg_.dcfr_alpha);
     Discount d;
     d.pos = static_cast<float>(ta / (ta + 1));
-    d.neg = 0.5f;
+    d.neg = static_cast<float>(cfg_.dcfr_neg);
     if (cfg_.averaging == 1) {
       // gamma = 3 with the average restarted at every power of 4 (t counted from 0),
       // which discards the noisy early iterations (as in b-inary/postflop-solver).
@@ -1071,7 +1071,7 @@ void Solver::iterate(int iterations) {
       double tg = static_cast<double>(t0 - p4);
       d.strat = static_cast<float>(std::pow(tg / (tg + 1.0), 3.0));
     } else {
-      d.strat = static_cast<float>(std::pow((t - 1) / t, 2.0));
+      d.strat = static_cast<float>(std::pow((t - 1) / t, cfg_.dcfr_gamma));
     }
     for (int p = 0; p < 2; ++p) {
       std::vector<float> out(hands_[p].size());

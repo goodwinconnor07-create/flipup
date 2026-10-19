@@ -55,6 +55,11 @@ struct TreeConfig {
   bool compress = false;           // half-float regrets and strategy sums, scaled per node (half the memory)
   double max_memory_mb = 0;        // refuse to allocate trees larger than this (0 = no limit)
   int averaging = 0;               // 0: DCFR gamma=2; 1: gamma=3 restarting at powers of 4
+  // DCFR schedule: positive regrets *= t^a/(t^a+1), negative regrets *= neg (0 = CFR+ style reset),
+  // strategy sums *= ((t-1)/t)^gamma (averaging 0 only).
+  double dcfr_alpha = 1.5;
+  double dcfr_neg = 0.5;
+  double dcfr_gamma = 2.0;
   std::array<std::vector<float>, 2> range;  // 1326 weights per player (0 = not in range)
 };
 

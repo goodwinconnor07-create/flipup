@@ -1319,3 +1319,8 @@
 .me-area.has-show {
   padding-bottom: calc(var(--safe-bottom) + 36px);
 }
+
+/* On a phone the stage is just a wrapper: its children lay out as they always did. Desktop turns it into the table room. */
+.stage {
+  display: contents;
+}

@@ -2,17 +2,16 @@ import { useApp } from '../../state/store';
 import { CardText, Sheet, Spinner } from '../../ui/components';
 import { cardsText, type HandLog } from '../../game';
 
-/** Every hand at this table, newest first, move by move (like Poker Now's log). */
-export function LogSheet() {
+/** Every hand at this table, newest first, move by move (like Poker Now's log). Used in the sheet and the desktop side panel. */
+export function HandLogList() {
   const logs = useApp((s) => s.logs);
   const game = useApp((s) => s.game);
   const deviceId = useApp((s) => s.deviceId);
   const me = game?.players.find((p) => p.deviceId === deviceId);
   const live = game?.hand && !game.hand.result ? game.hand : null;
   const myLive = live?.seats.find((s) => s.playerId === me?.id)?.cards ?? [];
-
   return (
-    <Sheet title="Hand log">
+    <>
       {live && <HandBlock title={`Hand #${live.number} · now`} lines={live.log} mine={myLive} />}
       {logs === null ? (
         <Spinner label="Loading the log…" />
@@ -23,6 +22,14 @@ export function LogSheet() {
           .reverse()
           .map((l) => <HandBlock key={l.number} title={`Hand #${l.number}`} lines={l.lines} mine={me ? l.holes[me.id] : undefined} />)
       )}
+    </>
+  );
+}
+
+export function LogSheet() {
+  return (
+    <Sheet title="Hand log">
+      <HandLogList />
     </Sheet>
   );
 }

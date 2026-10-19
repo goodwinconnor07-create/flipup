@@ -5,13 +5,16 @@ import { boot } from './state/store';
 import { ErrorBoundary } from './ui/ErrorBoundary';
 import { installPressEffects } from './ui/effects';
 import { installSoundUnlock } from './ui/sound';
+import { installDesktopScale } from './ui/useDesktop';
 import './styles/global.css';
 import './styles/screens.css';
 import './styles/table.css';
+import './styles/desktop.css';
 
 boot();
 installPressEffects();
 installSoundUnlock();
+installDesktopScale();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

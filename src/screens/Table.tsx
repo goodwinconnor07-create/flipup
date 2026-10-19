@@ -23,9 +23,12 @@ import { ChatIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 import { playSound } from '../ui/sound';
 import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
+import { SidePanel } from './SidePanel';
+import { useDesktop } from '../ui/useDesktop';
 import { Lobby } from './Lobby';
 
 export function Table() {
+  const desktop = useDesktop();
   const game = useApp((s) => s.game);
   const conn = useApp((s) => s.conn);
   const online = useApp((s) => s.session?.mode === 'online');
@@ -41,7 +44,7 @@ export function Table() {
     );
   }
   return (
-    <div className={`screen table-screen status-${game.status}`}>
+    <div className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}`}>
       <TableBar game={game} />
       {online && conn === 'offline' && (
         <div className="conn-pill" role="status">
@@ -49,7 +52,17 @@ export function Table() {
         </div>
       )}
       {game.status === 'lobby' && <Lobby game={game} />}
-      {game.status === 'playing' && <Felt game={game} />}
+      {game.status === 'playing' &&
+        (desktop ? (
+          <div className="desk-body">
+            <div className="desk-main">
+              <Felt game={game} />
+            </div>
+            <SidePanel />
+          </div>
+        ) : (
+          <Felt game={game} />
+        ))}
       {game.status === 'ended' && <Final game={game} />}
     </div>
   );
@@ -161,10 +174,14 @@ const MAX_PODS = 4;
  * right while whoever's furthest left slides out. The window only moves when it has to, so
  * pictures don't jump about.
  */
-function usePodSlots(game: Game, others: Player[]): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number } {
+function usePodSlots(
+  game: Game,
+  others: Player[],
+  windowed: boolean,
+): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number } {
   const start = useRef(0);
   const slots = new Map<string, { slot: number; away: boolean }>();
-  if (others.length <= MAX_PODS) {
+  if (!windowed || others.length <= MAX_PODS) {
     others.forEach((p, i) => slots.set(p.id, { slot: i, away: false }));
     return { slots, n: others.length, hidden: 0 };
   }
@@ -205,7 +222,9 @@ function Felt({ game }: { game: Game }) {
   const mySeat = seatFor(hand, me?.id);
   const others = othersInOrder(game, me);
   const odds = useOdds(hand);
-  const podSlots = usePodSlots(game, others);
+  const desktop = useDesktop();
+  // On a phone the row of four slides; on a computer everyone sits round the table.
+  const podSlots = usePodSlots(game, others, !desktop);
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
   const timed = !!hand?.deadline || (!!hand?.result && !!game.nextHandAt);
   const now = useNow(timed ? 200 : 60_000);
@@ -274,63 +293,84 @@ function Felt({ game }: { game: Game }) {
 
   return (
     <div className="felt">
-      {others.length > 0 && (
-        <div className="pods">
-          {others.map((p) => {
-            const at = podSlots.slots.get(p.id)!;
-            return (
-              <Pod
-                key={p.id}
-                game={game}
-                player={p}
-                seat={seatFor(hand, p.id)}
-                odds={odds?.get(p.id)}
-                reaction={reactions[p.id]}
-                dimCard={dim}
-                glowCard={glow}
-                slot={at.slot}
-                n={podSlots.n}
-                away={at.away}
-              />
-            );
-          })}
-          {podSlots.hidden > 0 && (
-            <span className="pods-more" aria-label={`${podSlots.hidden} more players not shown`}>
-              +{podSlots.hidden}
-            </span>
-          )}
-        </div>
-      )}
-
-      <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
-        <TableTimer game={game} now={now} mine={myTurn} />
-        <div className="table-felt">
-          <div className="table-top">
-            {hand && (
-              <span className="pot-pill" aria-label={`Pot ${chips(pot(hand))}`}>
-                <i className="pot-chip" aria-hidden />
-                <small>Pot</small> <Count value={potNow} />
+      <div className="stage">
+        {others.length > 0 && (
+          <div
+            className={`pods${others.length >= 8 ? ' crowded' : ''}`}
+            style={{ ['--tile' as string]: others.length >= 8 ? '192px' : '232px' }}
+          >
+            {others.map((p, i) => {
+              const at = podSlots.slots.get(p.id)!;
+              // Seat round the table (computers): left, over the top, to the right, in turn order.
+              // A full table of eight others needs a slightly wider sweep so the seats clear each other.
+              const crowded = others.length >= 8;
+              const span = crowded ? 230 : 220;
+              const deg = others.length === 1 ? 90 : 90 + span / 2 - (i * span) / (others.length - 1);
+              const rad = (deg * Math.PI) / 180;
+              const ring = { x: 50 + (crowded ? 41 : 40) * Math.cos(rad), y: 55 - (crowded ? 41 : 40) * Math.sin(rad) };
+              return (
+                <Pod
+                  key={p.id}
+                  game={game}
+                  player={p}
+                  seat={seatFor(hand, p.id)}
+                  odds={odds?.get(p.id)}
+                  reaction={reactions[p.id]}
+                  dimCard={dim}
+                  glowCard={glow}
+                  slot={at.slot}
+                  ring={ring}
+                  n={podSlots.n}
+                  away={at.away}
+                />
+              );
+            })}
+            {podSlots.hidden > 0 && (
+              <span className="pods-more" aria-label={`${podSlots.hidden} more players not shown`}>
+                +{podSlots.hidden}
               </span>
             )}
           </div>
-          <div className="board" aria-label="Board">
-            {[0, 1, 2, 3, 4].map((i) => {
-              const c = hand?.board[i];
-              return c ? (
-                <PlayingCard key={`${hand!.number}-${c}`} card={c} size="lg" dim={dim(c)} glow={glow(c)} flip delay={i < 3 ? i * 160 : 0} />
-              ) : (
-                <CardSlot key={`slot-${i}`} size="lg" />
-              );
-            })}
-          </div>
-          <div className="table-foot">
-            {hand?.result ? (
-              <WinBanner game={game} />
-            ) : pillName ? (
-              <span key={pillName} className="hand-pill pop">
-                {pillName}
-              </span>
-            ) : null}
+        )}
+
+        <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
+          <TableTimer game={game} now={now} mine={myTurn} />
+          <div className="table-felt">
+            <div className="table-top">
+              {hand && (
+                <span className="pot-pill" aria-label={`Pot ${chips(pot(hand))}`}>
+                  <i className="pot-chip" aria-hidden />
+                  <small>Pot</small> <Count value={potNow} />
+                </span>
+              )}
+            </div>
+            <div className="board" aria-label="Board">
+              {[0, 1, 2, 3, 4].map((i) => {
+                const c = hand?.board[i];
+                return c ? (
+                  <PlayingCard
+                    key={`${hand!.number}-${c}`}
+                    card={c}
+                    size="lg"
+                    dim={dim(c)}
+                    glow={glow(c)}
+                    flip
+                    delay={i < 3 ? i * 160 : 0}
+                  />
+                ) : (
+                  <CardSlot key={`slot-${i}`} size="lg" />
+                );
+              })}
+            </div>
+            <div className="table-foot">
+              {hand?.result ? (
+                <WinBanner game={game} />
+              ) : pillName ? (
+                <span key={pillName} className="hand-pill pop">
+                  {pillName}
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -504,6 +544,7 @@ function Pod({
   dimCard,
   glowCard,
   slot,
+  ring,
   n,
   away,
 }: {
@@ -515,6 +556,7 @@ function Pod({
   dimCard: (c: Card) => boolean;
   glowCard: (c: Card) => boolean;
   slot: number;
+  ring: { x: number; y: number };
   n: number;
   away: boolean;
 }) {
@@ -530,7 +572,7 @@ function Pod({
     <button
       type="button"
       className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}`}
-      style={{ ['--slot' as string]: slot, ['--n' as string]: n }}
+      style={{ ['--slot' as string]: slot, ['--n' as string]: n, ['--ax' as string]: `${ring.x}%`, ['--ay' as string]: `${ring.y}%` }}
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
       aria-label={`${player.name}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}`}

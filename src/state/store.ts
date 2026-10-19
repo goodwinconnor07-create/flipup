@@ -374,6 +374,13 @@ export function openLog(): void {
   openSheet({ name: 'log' });
 }
 
+/** Fetches the hand log for the desktop side panel (no sheet). Does nothing if offline. */
+export function refreshLogs(): void {
+  const s = state.session;
+  if (s?.mode === 'local' && s.game) set({ logs: redactLogs(s.game, state.deviceId) });
+  else conn?.send({ t: 'log' });
+}
+
 /** Opens a new table: online with a join code, or bots-only on this phone. */
 export async function openTable(mode: 'online' | 'local', settings: Settings, bots: number): Promise<void> {
   if (state.busy) return;

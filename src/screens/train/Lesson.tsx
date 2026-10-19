@@ -3,7 +3,7 @@ import { recordNet, type HandRecord } from '../../game';
 import type { HandReport } from '../../gto/types';
 import { navigate } from '../../state/store';
 import { loadHistory } from '../../state/training';
-import { reviewAndSave, savedReport } from '../../train/reviews';
+import { reviewHand, savedReport } from '../../train/reviews';
 import { DecisionCard, GradePill, MiniCards, streetName } from '../../train/widgets';
 import { BackBar, Spinner } from '../../ui/components';
 
@@ -36,10 +36,9 @@ export function Lesson({ handKey }: { handKey: string }) {
   const run = async () => {
     if (!hand) return;
     setError(null);
-    setProgress('Solving every street of this hand…');
+    setProgress('Solving every street of this hand. This takes a few minutes; you can leave this screen and come back.');
     try {
-      const out = await reviewAndSave([hand]);
-      setReport(out[hand.key] ?? null);
+      setReport(await reviewHand(hand));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The review failed.');
     } finally {

@@ -38,4 +38,21 @@ export async function reviewAndSave(hands: PlayedHand[], onProgress?: (done: num
   return out;
 }
 
+// Reviews still solving, by hand key, so leaving the screen and coming back picks up the same job.
+const inFlight = new Map<string, Promise<HandReport | null>>();
+
+/** One hand's review: the saved report, the one already solving, or a new one. */
+export function reviewHand(hand: PlayedHand): Promise<HandReport | null> {
+  const saved = savedReport(hand.key);
+  if (saved) return Promise.resolve(saved);
+  let p = inFlight.get(hand.key);
+  if (!p) {
+    p = reviewAndSave([hand])
+      .then((out) => out[hand.key] ?? null)
+      .finally(() => inFlight.delete(hand.key));
+    inFlight.set(hand.key, p);
+  }
+  return p;
+}
+
 export const savedReport = (key: string) => loadReport<HandReport>(key);

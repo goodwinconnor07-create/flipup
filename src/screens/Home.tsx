@@ -124,9 +124,14 @@ export function Home() {
             Play the bots
           </button>
         </div>
-        <button type="button" className="btn btn-link" onClick={() => openSheet({ name: 'rankings' })}>
-          Hand rankings
-        </button>
+        <div className="home-links">
+          <button type="button" className="btn btn-outline" onClick={() => navigate({ name: 'train' })}>
+            Train with GTO
+          </button>
+          <button type="button" className="btn btn-outline" onClick={() => openSheet({ name: 'rankings' })}>
+            Hand rankings
+          </button>
+        </div>
       </div>
     </div>
   );

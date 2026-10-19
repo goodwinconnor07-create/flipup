@@ -8,6 +8,7 @@ import { installSoundUnlock } from './ui/sound';
 import './styles/global.css';
 import './styles/screens.css';
 import './styles/table.css';
+import './styles/train.css';
 
 boot();
 installPressEffects();

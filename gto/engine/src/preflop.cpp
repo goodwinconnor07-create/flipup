@@ -478,11 +478,14 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
       matvec(Weq_, reach[q], eqm.data());
       for (int h = 0; h < C; ++h) extra_factor[h] *= eqm[h];  // = m_q(h) * equity vs q's range
     }
-    double adj = 1.0;
+    // The 3-way share times heads-up equities doesn't add up to the whole pot with four or more
+    // players (four equal hands get 1/3 * 1/2 = 1/6 each, not 1/4). Rescale so equal hands split
+    // the pot evenly: L live players get 1/L instead of (1/3) * (1/2)^(L-3).
+    double adj = live.size() > 3 ? 3.0 * std::pow(2.0, static_cast<double>(live.size()) - 3.0) / live.size() : 1.0;
     if (n.type == 2) {
       double mean = (cfg_.multiway_role[0] + cfg_.multiway_role[1] + cfg_.multiway_role[2]) / 3.0;
       for (int r = 0; r < 3; ++r)
-        if (n.roles[r] == i) adj = cfg_.multiway_role[r] / mean;
+        if (n.roles[r] == i) adj *= cfg_.multiway_role[r] / mean;
     }
     const int R = cfg_.tensor_rank;
     const auto& rj = reach[j];

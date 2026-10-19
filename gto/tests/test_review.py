@@ -25,7 +25,7 @@ def test_flipup_log_adapter():
     log = {"number": 3, "lines": [
         "-- Hand #3 (dealer: Ollie) --", "Stacks: Ollie 200 · Big Al 200 · Con 180",
         "Big Al posts the small blind 1", "Con posts the big blind 2",
-        "Ollie raises to 6", "Big Al folds", "Con calls 6",
+        "Ollie raises to 6", "Big Al folds", "Con calls 4",
         "Flop: [Ks] [9d] [5c]", "Con checks", "Ollie bets 4", "Con folds", "Ollie wins 16"],
         "holes": {"o": ["Ah", "Kd"], "a": [], "c": []}, "shown": []}
     players = [{"id": "o", "name": "Ollie", "seat": 0}, {"id": "a", "name": "Big Al", "seat": 1},

@@ -65,8 +65,9 @@ class HandHistory:
         players = [HHPlayer(str(p["id"]), p.get("name", str(p["id"])), int(p.get("seat", i)), float(p["stack"]),
                             parse_cards(p["cards"]) if p.get("cards") else None)
                    for i, p in enumerate(d["players"])]
+        # Folds made out of turn (a player leaving mid-hand) aren't decisions; leave them out.
         actions = [HHAction(a["street"], str(a["player"]), a["move"], float(a.get("to", 0) or 0))
-                   for a in d["actions"]]
+                   for a in d["actions"] if not (a.get("out_of_turn") or a.get("outOfTurn"))]
         for a in actions:
             if a.street not in STREETS:
                 raise ValueError(f"bad street {a.street!r}")
@@ -98,6 +99,7 @@ class HandHistory:
         street = "preflop"
         actions: list = []
         board: list = []
+        street_bet: dict = {}
         num = lambda s: float(s.replace(",", ""))  # noqa: E731
         for line in log["lines"]:
             m = re.match(r"-- Hand #\d+ \(dealer: (.+)\) --", line)
@@ -113,22 +115,30 @@ class HandHistory:
             if m:
                 street = m.group(1).lower()
                 board = parse_cards(re.findall(r"\[(..)\]", m.group(2)))
+                street_bet = {}
                 continue
             p, rest = who(line)
             if p is None:
                 continue
-            if rest == "folds" or rest == "leaves and folds":
-                actions.append({"street": street, "player": p["id"], "move": "fold"})
+            pid = p["id"]
+            if rest.startswith("posts the small blind ") or rest.startswith("posts the big blind "):
+                street_bet[pid] = num(rest.rsplit(" ", 1)[1])
+            elif rest == "folds":
+                actions.append({"street": street, "player": pid, "move": "fold"})
+            elif rest == "leaves and folds":
+                actions.append({"street": street, "player": pid, "move": "fold", "out_of_turn": True})
             elif rest == "checks":
-                actions.append({"street": street, "player": p["id"], "move": "check"})
+                actions.append({"street": street, "player": pid, "move": "check"})
             elif rest.startswith("calls "):
-                actions.append({"street": street, "player": p["id"], "move": "call", "to": num(rest[6:])})
-            elif rest.startswith("bets "):
-                actions.append({"street": street, "player": p["id"], "move": "bet", "to": num(rest[5:])})
-            elif rest.startswith("raises to "):
-                actions.append({"street": street, "player": p["id"], "move": "raise", "to": num(rest[10:])})
-            elif rest.startswith("goes all in for "):
-                actions.append({"street": street, "player": p["id"], "move": "allin", "to": num(rest[16:])})
+                # FlipUp logs the chips added by a call, not the street total.
+                to = street_bet.get(pid, 0.0) + num(rest[6:])
+                street_bet[pid] = to
+                actions.append({"street": street, "player": pid, "move": "call", "to": to})
+            elif rest.startswith("bets ") or rest.startswith("raises to ") or rest.startswith("goes all in for "):
+                move = "bet" if rest.startswith("bets ") else "raise" if rest.startswith("raises") else "allin"
+                to = num(rest.rsplit(" ", 1)[1])
+                street_bet[pid] = to
+                actions.append({"street": street, "player": pid, "move": move, "to": to})
         if button is None:
             raise ValueError("log has no dealer line")
         holes = log.get("holes", {})

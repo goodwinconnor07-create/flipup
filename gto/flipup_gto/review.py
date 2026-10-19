@@ -43,6 +43,7 @@ from .handhistory import STREETS, HandHistory
 from .preflop import CLASS_COMBOS, CLASS_INDEX, CLASSES, MODEL_VERSION, PreflopSpot, load_calibration, tables
 from .ranges import Range
 from .solver import BetSizing, PostflopSolver, StreetSizing
+from . import coach
 
 _NO_TREE = object()  # sentinel: the street could not be solved within the memory budget
 STACK_BUCKETS = [8, 10, 12, 15, 20, 25, 30, 35, 40, 45, 50, 60, 75, 100, 125, 150, 200, 250]
@@ -165,6 +166,17 @@ def population_range(kind: str) -> np.ndarray:
     return np.clip(top_percent_169(top) - top_percent_169(minus), 0.0, 1.0)
 
 
+_er_cache = None
+
+
+def _equity_vs_random() -> np.ndarray:
+    global _er_cache
+    if _er_cache is None:
+        eq, pairs, _ = tables(with_tensor=False)
+        _er_cache = (eq * (pairs / pairs.sum(axis=1, keepdims=True))).sum(axis=1)
+    return _er_cache
+
+
 def preflop_equity_vs(cls_idx: int, opp_reach169) -> float:
     eq, pairs, _ = tables(with_tensor=False)
     w = pairs[cls_idx] * opp_reach169
@@ -197,9 +209,15 @@ class Reviewer:
         self.custom_cache: dict = {}
 
     # -- public ---------------------------------------------------------------
-    def review(self, hh: HandHistory, hero: str | None = None) -> dict:
-        """Review every decision by players whose cards are known (or only `hero`'s)."""
+    def review(self, hh: HandHistory, hero: str | None = None, analyze: bool = False) -> dict:
+        """Review every decision by players whose cards are known (or only `hero`'s).
+
+        analyze=True (custom hands): every decision also gets the acting player's full strategy
+        grid, players without known cards get grid-only entries, and if the hand stops before it's
+        over, the next decision is added as a "pending" entry (what to do now).
+        """
         ctx = _HandContext(hh, self, hero)
+        ctx.rv_all = analyze
         ctx.run()
         return ctx.report()
 
@@ -221,6 +239,13 @@ class _HandContext:
         self.total_in = {p.id: 0.0 for p in hh.players}
         self.street_bet = {p.id: 0.0 for p in hh.players}
         self.folded: set = set()
+        # Betting history for scenario labels: who raised preflop, who bet on each street.
+        self.preflop_raises = 0
+        self.preflop_limpers = 0
+        self.preflop_aggressor: str | None = None
+        self.bettors: dict = {"flop": [], "turn": [], "river": []}
+        self.cur_street = "preflop"
+        self.rv_all = False
 
     # -- chip bookkeeping --------------------------------------------------------
     def pot(self) -> float:
@@ -236,6 +261,31 @@ class _HandContext:
     def new_street(self):
         for pid in self.street_bet:
             self.street_bet[pid] = 0.0
+
+    def note_action(self, a):
+        """Keeps the betting history used to label scenarios (call before chips move)."""
+        to = a.to / self.bb
+        facing = max(self.street_bet.values()) if self.street_bet else 0.0
+        aggressive = a.move in ("bet", "raise") or (a.move == "allin" and to > facing + 1e-9)
+        if a.street == "preflop":
+            if aggressive:
+                self.preflop_raises += 1
+                self.preflop_aggressor = a.player
+            elif a.move == "call" and self.preflop_raises == 0 and to <= 1.0 + 1e-9:
+                self.preflop_limpers += 1
+        elif aggressive:
+            self.bettors[a.street].append(a.player)
+
+    def scenario_postflop(self, pid, street, facing_bet, in_position, live):
+        streets = ["flop", "turn", "river"]
+        prev = streets[:streets.index(street)]
+        prev_aggr = self.preflop_aggressor if street == "flop" else next(
+            (self.bettors[s][-1] for s in reversed(prev) if self.bettors[s]), None)
+        hero_aggr = prev_aggr == pid if street != "flop" else self.preflop_aggressor == pid
+        villain_bets = sum(1 for s in prev if any(b != pid for b in self.bettors[s]))
+        checked_through = bool(prev) and not self.bettors[prev[-1]]
+        return coach.postflop_scenario(street, live, hero_aggr, facing_bet, len(self.bettors[street]), in_position,
+                                       villain_bets, checked_through, pid in self.bettors[street])
 
     def cards(self, pid):
         return self.hh.player(pid).cards
@@ -318,13 +368,23 @@ class _HandContext:
                     if pid in self.reviewed:
                         self.decisions.append(self._preflop_decision(spot, path, info, pid, a, idx, size_note,
                                                                      pot_before, to_call))
+                    elif self.rv_all:
+                        self.decisions.append(self._preflop_node_decision(spot, path, pid, a, pot_before, to_call))
                     path = path + [idx]
             elif pid in self.reviewed:
                 self.decisions.append(self._custom_preflop_decision(actions, k, pot_before, to_call))
+            self.note_action(a)
             if a.move == "fold":
                 self.folded.add(pid)
             elif a.move in ("call", "bet", "raise", "allin"):
                 self.put(pid, to_bb)
+        if self.rv_all and path is not None:
+            info = spot.engine.query(path)
+            if not info["terminal"]:
+                pid = self.order[info["player"]]
+                d = self._preflop_node_decision(spot, path, pid, None, self.pot(),
+                                                max(self.street_bet.values()) - self.street_bet[pid])
+                self.decisions.append(d)
         self.new_street()
         return path
 
@@ -389,15 +449,94 @@ class _HandContext:
                       "best_action": labels[best_i]})
             d["explanation"] = self._explain_preflop(node, pid, cls, labels, strat, evs, None, in_range, to_call, pot,
                                                      size_note, off_tree=True)
+            d["colour"], d["colour_reason"] = "red", "not one of GTO's options here"
+            self._coach_preflop(d, node, pid, cls, labels, strat, evs, None, in_range, to_call, pot)
             return d
         loss = max(0.0, evs[best_i] - evs[idx])
         g = grade(loss, pot, strat[idx] if in_range else 0.0, idx == top_i)
         d.update({"matched_action": labels[idx], "ev_loss_bb": round(loss, 3),
                   "ev_loss_pct_pot": round(100 * loss / pot, 2), "grade": g, "best_action": labels[best_i]})
+        big_size_gap = False
         if size_note:
             d["note"] = size_note
+            tree_to = node.actions[idx]["to"]
+            big_size_gap = abs(tree_to - a.to / self.bb) / max(tree_to, 1e-9) > 0.35
         d["explanation"] = self._explain_preflop(node, pid, cls, labels, strat, evs, idx, in_range, to_call, pot,
                                                  size_note)
+        d["colour"], d["colour_reason"] = coach.colour_for(g, labels, strat, evs, idx, pot, in_range,
+                                                           size_note=size_note if big_size_gap else None)
+        self._coach_preflop(d, node, pid, cls, labels, strat, evs, idx, in_range, to_call, pot)
+        return d
+
+    def _preflop_opener(self, node, pid):
+        """The player whose raise (or limp) the decision faces, with their range at this node."""
+        cur = max(self.street_bet.values())
+        if cur <= 1.0 + 1e-9:
+            return None
+        agg = max((p for p in self.order if p != pid and p not in self.folded), key=lambda p: self.street_bet[p],
+                  default=None)
+        if agg is None:
+            return None
+        reach = node.info["reach"][self.index[agg]]
+        pct = float((reach * CLASS_COMBOS).sum() / 1326)
+        return {"position": self.positions[agg], "to": self.street_bet[agg],
+                "action": "raised" if self.preflop_raises <= 1 else "re-raised",
+                "pct": pct, "text": coach.range_text(list(reach), CLASSES), "reach": reach}
+
+    def _coach_preflop(self, d, node, pid, cls, labels, strat, evs, idx, in_range, to_call, pot):
+        c = CLASS_INDEX[cls]
+        er = _equity_vs_random()
+        opener = self._preflop_opener(node, pid)
+        if opener is not None:
+            d["equity_vs_opener"] = round(preflop_equity_vs(c, opener["reach"]), 4)
+        # How often the next player folds if we raise (from the child node of each raise).
+        fold_after = {}
+        for i, act in enumerate(node.actions):
+            if act["type"] not in ("raise", "allin"):
+                continue
+            try:
+                child = node.spot.engine.query(node.path + [i])
+            except Exception:  # noqa: BLE001 - informational only
+                continue
+            if child["terminal"] or "fold" not in [x["type"] for x in child["actions"]]:
+                continue
+            q = child["player"]
+            fi = [x["type"] for x in child["actions"]].index("fold")
+            r = child["reach"][q] * CLASS_COMBOS
+            fold_after[labels[i]] = float((child["strategy"][fi] * r).sum() / max(r.sum(), 1e-9))
+        reach = node.info["reach"][node.player] * CLASS_COMBOS
+        cont = 1.0 - (node.range_strategy().get("fold", 0.0))
+        range_pct = float(reach.sum() / 1326) * cont
+        stack = self.preflop_stack
+        d["scenario"] = coach.preflop_scenario(self.preflop_raises, self.preflop_limpers, d["position"],
+                                               opener["position"] if opener else None)
+        d["lesson"] = coach.preflop_lesson(d, labels, strat, evs, idx, in_range, cls, d["position"], self.N, stack,
+                                           to_call, pot, range_pct, opener, fold_after, float(er[c]))
+        d["practice"] = coach.practice_preflop(node, cls, CLASSES, er)
+        d["grid"] = coach.grid_from_preflop(node, CLASSES)
+        d["spot_text"] = self._spot_text("preflop", d["position"], [], pot, to_call)
+
+    def _spot_text(self, street, position, board, pot, to_call):
+        acts = [a for a in self.hh.actions]
+        return (f"{street.capitalize()}, you're in the {position}"
+                + (f" on {' '.join(card_str(c) if isinstance(c, int) else c for c in board)}" if board else "")
+                + f". Pot {pot:.1f}bb" + (f", {to_call:.1f}bb to call." if to_call > 1e-9 else ", checked to you."
+                                         if street != "preflop" else "."))
+
+    def _preflop_node_decision(self, spot, path, pid, a, pot, to_call):
+        node = spot.node(path)
+        d = {"street": "preflop", "player": pid, "position": self.positions[pid], "board": [],
+             "pot_bb": round(pot, 2), "to_call_bb": round(to_call, 2), "method": "preflop_solver",
+             "action": None if a is None else {"move": a.move, "to_bb": round(a.to / self.bb, 2)},
+             "pending": a is None, "grade": None, "colour": None,
+             "gto_range": {k: round(v, 4) for k, v in node.range_strategy().items()},
+             "actions": node.labels, "grid": coach.grid_from_preflop(node, CLASSES), "explanation": []}
+        cards = self.cards(pid)
+        if cards:
+            h = node.hand(hand_class(combo_index(*cards)))
+            d["hand"] = cards_str(cards)
+            d["gto"] = [{"action": lab, "frequency": round(h["strategy"][lab], 4), "ev_bb": round(h["ev"][lab], 3)}
+                        for lab in node.labels]
         return d
 
     def _explain_preflop(self, node, pid, cls, labels, strat, evs, idx, in_range, to_call, pot, size_note,
@@ -587,6 +726,9 @@ class _HandContext:
             if any(self.stack[p] <= 1e-9 for p in live):
                 return  # someone is all in: no decisions left
             if not acts:
+                if self.rv_all:
+                    # Custom hand that stops here: show what the first player should do on this street.
+                    self._solve_street(street_i, board, oop, ip, ranges, [])
                 return
             ranges = self._solve_street(street_i, board, oop, ip, ranges, acts)
             if ranges is _NO_TREE:
@@ -673,11 +815,31 @@ class _HandContext:
             if pid in self.reviewed:
                 self.decisions.append(self._postflop_decision(solver, node, pid, a, idx, street, board, pot_before,
                                                               to_call, status, oop, ip))
+            elif self.rv_all:
+                self.decisions.append(self._node_decision(node, pid, a, street, board, pot_before, to_call))
+            self.note_action(a)
             if a.move == "fold":
                 self.folded.add(pid)
             elif a.move in ("call", "bet", "raise", "allin"):
                 self.put(pid, to)
             path.append(idx)
+        if self.rv_all and not any(p in self.folded for p in (oop, ip)):
+            nxt = solver.node(path)
+            if nxt.type == "action":
+                actor = oop if nxt.player == 0 else ip
+                pot_now = self.pot()
+                call_now = max(self.street_bet.values()) - self.street_bet[actor]
+                if self.cards(actor):
+                    d = self._node_decision(nxt, actor, None, street, board, pot_now, call_now)
+                    h = nxt.hand(combo_index(*self.cards(actor)))
+                    d["hand"] = cards_str(self.cards(actor))
+                    d["gto"] = [{"action": lab, "frequency": round(h["strategy"][lab], 4),
+                                 "ev_bb": round(h["action_ev"][lab], 3)} for lab in nxt.labels]
+                    d["equity"] = h[f"p{nxt.player}"]["equity"]
+                    d["hand_features"] = {"made": hand_features(self.cards(actor), board).made}
+                else:
+                    d = self._node_decision(nxt, actor, None, street, board, pot_now, call_now)
+                self.decisions.append(d)
         if any(p in self.folded for p in (oop, ip)):
             return ranges
         end = solver.node(path, with_equity=False, with_ev=False)
@@ -746,7 +908,58 @@ class _HandContext:
             "hand_category": hand_category(feats),
         }
         d["explanation"] = _explain_postflop(d, labels, strat, evs, idx, in_range, feats, tex, pot, to_call, street)
+        d["colour"], d["colour_reason"] = coach.colour_for(g, labels, strat, evs, idx, pot, in_range, node.actions)
+        self._coach_postflop(d, solver, node, pid, combo, labels, strat, evs, idx, in_range, feats, tex, pot, to_call,
+                             street, board, oop, ip)
         return d
+
+    def _villain_folds(self, solver, node, labels):
+        """How often the opponent folds to each of our bets/raises (range-level, from the child nodes)."""
+        out = {}
+        for i, lab in enumerate(labels):
+            if coach.action_kind(lab) not in ("bet", "raise"):
+                continue
+            child = solver.engine.query(node.tokens + [str(i)], False, False)
+            if child["type"] != "action":
+                continue
+            types = [x["type"] for x in child["actions"]]
+            if "fold" not in types:
+                continue
+            q = child["player"]
+            r = child[f"reach{q}"]
+            out[lab] = float((child["strategy"][types.index("fold")] * r).sum() / max(float(r.sum()), 1e-9))
+        return out
+
+    def _coach_postflop(self, d, solver, node, pid, combo, labels, strat, evs, idx, in_range, feats, tex, pot, to_call,
+                        street, board, oop, ip):
+        p = node.player
+        villain = ip if pid == oop else oop
+        d["_actions"] = node.actions
+        d["scenario"] = self.scenario_postflop(pid, street, to_call > 1e-9, p == 1, 2)
+        eff = min(self.stack[oop], self.stack[ip])
+        d["spr"] = round(eff / pot, 2) if pot > 0 else None
+        d["villain_folds"] = {k: round(v, 4) for k, v in self._villain_folds(solver, node, labels).items()}
+        comp_hero = coach.composition(node, p, board)
+        comp_opp = coach.composition(node, 1 - p, board)
+        d["range"]["your_composition"] = comp_hero
+        d["range"]["opponent_composition"] = comp_opp
+        pct = coach.strength_percentile(node, p, combo)
+        d["lesson"] = coach.postflop_lesson(d, labels, strat, evs, idx, in_range, feats, tex, pot, to_call, street,
+                                            comp_hero, comp_opp, d["villain_folds"], pct, d["spr"] or 0.0,
+                                            self.positions[villain])
+        del d["_actions"]
+        d["practice"] = coach.practice_postflop(node, combo, d["hand_category"], board)
+        d["grid"] = coach.grid_from_node(node)
+        d["spot_text"] = self._spot_text(street, d["position"], board, pot, to_call)
+
+    def _node_decision(self, node, pid, a, street, board, pot, to_call):
+        """Strategy-only entry for a player whose cards aren't known (custom hand analysis)."""
+        return {"street": street, "player": pid, "position": self.positions[pid],
+                "board": [card_str(c) for c in board], "pot_bb": round(pot, 2), "to_call_bb": round(to_call, 2),
+                "method": "postflop_solver", "pending": a is None, "grade": None, "colour": None,
+                "action": None if a is None else {"move": a.move, "to_bb": round(a.to / self.bb, 2)},
+                "gto_range": {k: round(v, 4) for k, v in node.range_strategy().items()},
+                "actions": node.labels, "grid": coach.grid_from_node(node), "explanation": []}
 
     # -- postflop (heuristic) -----------------------------------------------------------
     def review_postflop_heuristic(self, live, by_street, start: int = 0):
@@ -763,6 +976,7 @@ class _HandContext:
                 to_call = max(self.street_bet.values()) - self.street_bet[pid]
                 if pid in self.reviewed:
                     self.decisions.append(self._heuristic_postflop(pid, a, board, pot_before, to_call, est, street))
+                self.note_action(a)
                 if a.move == "fold":
                     self.folded.add(pid)
                 elif a.move in ("call", "bet", "raise", "allin"):
@@ -854,6 +1068,14 @@ class _HandContext:
 
     # -- report ---------------------------------------------------------------------
     def report(self) -> dict:
+        for d in self.decisions:
+            if d.get("grade") and not d.get("colour"):
+                d["colour"] = {"best": "green", "correct": "green", "inaccuracy": "yellow"}.get(d["grade"], "red")
+            if d.get("method") == "heuristic":
+                d.setdefault("scenario", "multiway")
+                d.setdefault("lesson", [{"title": "Multiway pot (rule-based review)", "body": d["explanation"]}])
+            if "lesson" not in d and d.get("explanation"):
+                d["lesson"] = [{"title": "Review", "body": d["explanation"]}]
         graded = [d for d in self.decisions if d.get("grade")]
         losses = [d["ev_loss_bb"] for d in graded if d.get("ev_loss_bb") is not None]
         counts = {g: sum(1 for d in graded if d["grade"] == g) for g in GRADES}
@@ -867,6 +1089,7 @@ class _HandContext:
             "summary": {
                 "decisions": len(self.decisions),
                 "graded": len(graded),
+                "colours": {c: sum(1 for d in graded if d.get("colour") == c) for c in ("green", "yellow", "red")},
                 "total_ev_loss_bb": round(sum(losses), 3),
                 "grades": counts,
                 "worst": None if worst is None else {

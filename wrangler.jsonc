@@ -19,4 +19,7 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TableRoom"] }],
   "observability": { "enabled": true },
+  // Where the GTO coach service (gto/, a separate Python server) runs. /api/gto/* is proxied there.
+  // Set it with `wrangler secret put GTO_URL` or in .dev.vars for local work (e.g. http://localhost:8000).
+  "vars": { "GTO_URL": "" },
 }

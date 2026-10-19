@@ -6,6 +6,10 @@ import { Setup } from './screens/Setup';
 import { Join, JoinTable } from './screens/Join';
 import { Table } from './screens/Table';
 import { SheetHost } from './screens/sheets/SheetHost';
+import { Train } from './screens/train/Train';
+import { Lesson } from './screens/train/Lesson';
+import { Drill } from './screens/train/Drill';
+import { Custom } from './screens/train/Custom';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
@@ -32,6 +36,18 @@ export function App() {
       break;
     case 'table':
       screen = <Table />;
+      break;
+    case 'train':
+      screen = <Train section={route.section} />;
+      break;
+    case 'lesson':
+      screen = <Lesson handKey={route.key} />;
+      break;
+    case 'drill':
+      screen = <Drill key={route.scenario} scenario={route.scenario} />;
+      break;
+    case 'custom':
+      screen = <Custom />;
       break;
   }
 

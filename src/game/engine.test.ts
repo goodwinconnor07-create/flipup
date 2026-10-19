@@ -439,6 +439,24 @@ describe('table', () => {
     expect(after.bought).toBe(200);
   });
 
+  it('without rebuys, keeps the deciding hand on screen for a few seconds before the game ends', () => {
+    let game = table(2, { rebuys: false, startingStack: 100, smallBlind: 5, bigBlind: 10 });
+    const [a, b] = game.hand!.seats.map((s) => nameOf(game, s.playerId)!);
+    game = rig(game, { [a]: 'Ah Ad', [b]: '7c 2d' }, 'Ks 9c 5d 3h Jc');
+    game = act(game, 'allin');
+    game = act(game, 'call');
+    for (let i = 0; i < 6 && !game.hand!.result; i++) {
+      clock = (game.wakeAt ?? clock) + 1;
+      game = must(game, { type: 'tick' }, 'server');
+    }
+    expect(game.status).toBe('playing');
+    expect(game.hand!.result).not.toBeNull();
+    expect(game.wakeAt).toBeGreaterThan(clock + 5000);
+    clock = game.wakeAt! + 1;
+    game = must(game, { type: 'tick' }, 'server');
+    expect(game.status).toBe('ended');
+  });
+
   it('ends with a winner when one player has all the chips, after a window to rebuy', () => {
     let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 });
     const [a, b] = game.hand!.seats.map((s) => nameOf(game, s.playerId)!);

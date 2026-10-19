@@ -25,9 +25,11 @@ test('play hands against the bots on one phone', async ({ page }) => {
   await expect(page.locator('.pod')).toHaveCount(5);
 
   // Play along until a hand finishes.
+  // After a hand it says Next hand, or Rebuy if a bot just took all our chips.
+  const next = page.getByRole('button', { name: /^(Next hand|Rebuy)/ });
   let sawTurn = false;
   for (let i = 0; i < 80; i++) {
-    if (await page.getByRole('button', { name: 'Next hand' }).isVisible()) break;
+    if (await next.isVisible()) break;
     if (await myTurn(page)) {
       if (!sawTurn) await shot(page, '05-my-turn');
       sawTurn = true;
@@ -35,13 +37,13 @@ test('play hands against the bots on one phone', async ({ page }) => {
     }
     await page.waitForTimeout(500);
   }
-  await expect(page.getByRole('button', { name: 'Next hand' })).toBeVisible();
+  await expect(next).toBeVisible();
   await expect(page.locator('.win-banner').first()).toBeVisible();
   await shot(page, '06-result');
 
   // Next hand deals straight away when you're the only person at the table.
-  await page.getByRole('button', { name: 'Next hand' }).click();
-  await expect(page.locator('.table-title small')).toHaveText('Hand 2');
+  await next.click();
+  await expect(page.locator('.table-title small')).toHaveText('Hand 2', { timeout: 10_000 });
 
   // The table survives a reload.
   await page.reload();
@@ -259,4 +261,39 @@ test('with more than four others the row slides, keeps whoever is acting in view
   }
   expect(sawDrop).toBe(true);
   await shot(page, '15-sliding-row');
+});
+
+test('against a bot with rebuys off, the hand that ends the game stays on screen before the winner page', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One less bot' }).click();
+  await page.getByRole('switch', { name: /Rebuys/ }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+
+  // All in every hand until the game is decided.
+  let decided = false;
+  for (let i = 0; i < 300 && !decided; i++) {
+    if (await page.getByText(/The game ends in/).isVisible()) decided = true;
+    else if (await page.getByText('Your turn').isVisible()) {
+      const raise = page.locator('.action-buttons .btn-blue');
+      if (await raise.isVisible()) {
+        await raise.click();
+        await page.locator('.raise-panel').getByRole('button', { name: 'All in' }).click();
+        await page.locator('.raise-panel .btn-blue').click();
+      } else await page.locator('.action-buttons .btn-green').click();
+    } else if (await page.getByRole('button', { name: 'Next hand' }).isVisible())
+      await page.getByRole('button', { name: 'Next hand' }).click();
+    await page.waitForTimeout(250);
+  }
+  expect(decided).toBe(true);
+  // Still on the table: the banner and the cards are there, and the winner page comes after a pause.
+  await expect(page.locator('.win-banner')).toBeVisible();
+  await expect(page.locator('.board .pcard:not(.pcard-slot)')).toHaveCount(5);
+  await expect(page.locator('.podium-step')).toHaveCount(0);
+  await shot(page, '16-deciding-hand');
+  await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 12_000 });
 });

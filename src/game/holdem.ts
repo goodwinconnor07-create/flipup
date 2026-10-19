@@ -18,6 +18,8 @@ export const TIMING = {
   resume: 2000,
   /** One player has all the chips: this long for the others to rebuy before the game ends. */
   rebuyWindow: 20000,
+  /** Without rebuys: how long the deciding hand stays on screen before the winner's page. */
+  endPause: 7000,
 };
 
 /** Hands kept in the hand log. */
@@ -105,7 +107,9 @@ export function canRaise(hand: Hand, seat: Seat): boolean {
 
 /** Deals a new hand, or leaves the table waiting if there aren't enough players. */
 export function startHand(game: Game, ctx: ActionContext): void {
-  game.players = game.players.filter((p) => !p.leaving);
+  // Bots that ran out of chips leave now (not straight after the hand, so their cards can still be seen).
+  // People stay, and can buy back in if the table allows it.
+  game.players = game.players.filter((p) => !p.leaving && !(p.bot && p.stack === 0));
   game.ready = [];
   game.nextHandAt = null;
   if (!canDeal(game)) {
@@ -519,13 +523,11 @@ function finishHand(game: Game, ctx: ActionContext, pause: number): void {
       shown: hand.seats.filter((s) => s.shown).map((s) => s.playerId),
     },
   ].slice(-MAX_LOGS);
-  // Bots that run out of chips leave the table. People stay, and can buy back in if the table allows it.
-  game.players = game.players.filter((p) => !(p.bot && p.stack === 0));
-  // Without rebuys, the table is over once one player has all the chips (or only bots have any).
-  const withChips = game.players.filter((p) => p.stack > 0);
-  if (!game.settings.rebuys && (withChips.length <= 1 || withChips.every((p) => p.bot))) {
-    game.status = 'ended';
-    game.nextHandAt = null;
+  // Without rebuys the table is over once one player has all the chips (or only bots have any).
+  // The table stays up for a few seconds first, so the hand that decided it can be seen.
+  if (!game.settings.rebuys && lastStanding(game)) {
+    game.ready = [];
+    game.nextHandAt = ctx.now + TIMING.endPause;
     schedule(game);
     return;
   }

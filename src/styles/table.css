@@ -840,3 +840,8 @@
   border-bottom-right-radius: 0;
   border-bottom-left-radius: 7px;
 }
+
+/* From an earlier street: still readable, a touch quieter than this street's moves. */
+.bubble-old {
+  opacity: 0.72;
+}

@@ -482,6 +482,31 @@ describe('table', () => {
     expect(game.logs.at(-1)!.lines.at(-1)).toMatch(/shows \[/);
   });
 
+  it("keeps each player's last action for the speech bubble, and a call says what was added", () => {
+    let game = table(3);
+    const hand = game.hand!;
+    const raiser = nameOf(game, hand.toAct)!;
+    game = act(game, 'raise', 30);
+    expect(seat(game, raiser).last).toMatchObject({ move: 'raise', amount: 30 });
+    // The small blind has 5 in already: calling 30 adds 25.
+    const sbName = nameOf(game, hand.sbId)!;
+    const sbTurn = nameOf(game, game.hand!.toAct) === sbName;
+    if (sbTurn) {
+      game = act(game, 'call');
+      expect(seat(game, sbName).last).toMatchObject({ move: 'call', amount: 25 });
+    } else {
+      game = act(game, 'fold');
+      game = act(game, 'call');
+    }
+    // Everyone else calls too. On the flop, the preflop actions are still there, marked as from preflop.
+    while (game.hand!.street === 'preflop')
+      game = act(game, game.hand!.currentBet > seat(game, nameOf(game, game.hand!.toAct)!).bet ? 'call' : 'check');
+    expect(game.hand!.street).toBe('flop');
+    const shown = game.hand!.seats.filter((x) => !x.folded);
+    expect(shown.every((x) => x.last && x.last.street === 'preflop')).toBe(true);
+    expect(shown.find((x) => x.last!.move === 'call')!.last!.amount).toBeGreaterThan(0);
+  });
+
   it('times out a slow player: checks or folds, and sits them out after two', () => {
     let game = table(3, { turnSeconds: 20 });
     const slow = game.hand!.toAct!;

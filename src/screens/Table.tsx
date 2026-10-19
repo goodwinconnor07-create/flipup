@@ -116,12 +116,16 @@ function bubbleText(last: NonNullable<Seat['last']>): string {
 }
 
 /** An iMessage-style bubble: blue for chips going in, grey for check and fold. */
-function Bubble({ last }: { last: NonNullable<Seat['last']> }) {
+function Bubble({ last, street }: { last: NonNullable<Seat['last']>; street?: string }) {
   const text = bubbleText(last);
   const money = last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   // Keyed on the text, so every new move pops in.
   return (
-    <span key={text} className={`bubble pop ${money ? 'bubble-blue' : 'bubble-grey'}`} role="status">
+    <span
+      key={text}
+      className={`bubble pop ${money ? 'bubble-blue' : 'bubble-grey'}${street && last.street !== street ? ' bubble-old' : ''}`}
+      role="status"
+    >
       {text}
     </span>
   );
@@ -291,7 +295,7 @@ function Pod({
         {turn && <span className={`pod-ring${left !== null ? ' timed' : ''}`} aria-hidden />}
         <Avatar emoji={player.emoji} size={50} />
         {hand?.buttonId === player.id && <span className="dealer-chip">D</span>}
-        {seat?.last && !hand?.result && <Bubble last={seat.last} />}
+        {seat?.last && <Bubble last={seat.last} street={hand?.street} />}
       </span>
       <span className="pod-name">{player.name}</span>
       <span className="pod-stack num">{status ?? chips(player.stack)}</span>
@@ -323,7 +327,7 @@ function MyBox({ game, me, seat, odds }: { game: Game; me?: Player; seat?: Seat;
   const won = me ? (game.hand?.result?.won[me.id] ?? 0) : 0;
   return (
     <div className="my-box">
-      {seat?.last && !game.hand?.result && <Bubble last={seat.last} />}
+      {seat?.last && <Bubble last={seat.last} street={game.hand?.street} />}
       <small>Your chips</small>
       <b className="num">{me ? chips(me.stack) : '–'}</b>
       {won > 0 ? (

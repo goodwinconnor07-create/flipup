@@ -169,10 +169,10 @@ export function startHand(game: Game, ctx: ActionContext): void {
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
 
   put(seats[sb], players[sb], game.settings.smallBlind);
-  seats[sb].last = { move: 'sb', amount: seats[sb].bet };
+  seats[sb].last = { move: 'sb', amount: seats[sb].bet, street: 'preflop' };
   log(game, `${players[sb].name} posts the small blind ${n0(seats[sb].bet)}`);
   put(seats[bb], players[bb], game.settings.bigBlind);
-  seats[bb].last = { move: 'bb', amount: seats[bb].bet };
+  seats[bb].last = { move: 'bb', amount: seats[bb].bet, street: 'preflop' };
   log(game, `${players[bb].name} posts the big blind ${n0(seats[bb].bet)}`);
 
   continueFrom(game, bb, ctx);
@@ -200,16 +200,18 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
   switch (move) {
     case 'fold':
       seat.folded = true;
-      seat.last = { move: 'fold', amount: 0 };
+      seat.last = { move: 'fold', amount: 0, street: hand.street };
       break;
     case 'check':
       if (toCall > 0) return `You can't check. It's ${toCall} to call.`;
-      seat.last = { move: 'check', amount: 0 };
+      seat.last = { move: 'check', amount: 0, street: hand.street };
       break;
     case 'call':
       if (toCall <= 0) return 'Nothing to call. Check instead.';
+      // Like Poker Now: a call says how many chips went in with it, not the street's running total.
+      const added = Math.min(toCall, player.stack);
       put(seat, player, toCall);
-      seat.last = { move: seat.allIn ? 'allin' : 'call', amount: seat.bet };
+      seat.last = { move: seat.allIn ? 'allin' : 'call', amount: seat.allIn ? seat.bet : added, street: hand.street };
       break;
     case 'bet':
     case 'raise': {
@@ -230,7 +232,7 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
       }
       hand.currentBet = to;
       hand.aggressorId = seat.playerId;
-      seat.last = { move: seat.allIn ? 'allin' : opening ? 'bet' : 'raise', amount: to };
+      seat.last = { move: seat.allIn ? 'allin' : opening ? 'bet' : 'raise', amount: to, street: hand.street };
       break;
     }
     default:
@@ -270,7 +272,7 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
     return;
   }
   seat.folded = true;
-  seat.last = { move: 'fold', amount: 0 };
+  seat.last = { move: 'fold', amount: 0, street: hand.street };
   log(game, `${nameOf(game, playerId)} leaves and folds`);
   hand.seq += 1;
   if (hand.seats.filter((s) => !s.folded).length === 1) winWithoutShowdown(game, ctx);
@@ -362,7 +364,6 @@ function endStreet(game: Game, ctx: ActionContext): void {
   for (const s of hand.seats) {
     s.bet = 0;
     s.acted = false;
-    if (!s.folded && !s.allIn) s.last = null;
   }
   hand.currentBet = 0;
   hand.minRaise = game.settings.bigBlind;

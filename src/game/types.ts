@@ -52,7 +52,7 @@ export interface Seat {
   /** Cards are face up for everyone. */
   shown: boolean;
   /** The last thing they did, shown under their picture. */
-  last: { move: Move | 'sb' | 'bb'; amount: number } | null;
+  last: { move: Move | 'sb' | 'bb'; amount: number; street: Street } | null;
 }
 
 export interface PotResult {

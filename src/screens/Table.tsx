@@ -180,7 +180,8 @@ function Felt({ game }: { game: Game }) {
     return null;
   }, [hand?.number, hand?.board.length, hand?.result, mySeat?.folded, mySeat?.cards.length]);
   const lit = new Set(highlight?.best ?? []);
-  const dim = (c: Card) => !!highlight && !lit.has(c);
+  // Cards outside the winning hand grey out at showdown only, never while the hand is being played.
+  const dim = (c: Card) => !!hand?.result?.showdown && !!highlight && !lit.has(c);
   const myValue = mySeat && !mySeat.folded && mySeat.cards.length ? describeHand([...mySeat.cards, ...(hand?.board ?? [])]) : null;
   // Before the flop, "High card" says nothing; a pocket pair is worth pointing out.
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? myValue.name : null;

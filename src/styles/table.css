@@ -1,0 +1,636 @@
+/* The table: other players along the top, the board in the middle, your cards at the bottom. */
+
+/* ── Playing cards ───────────────────────────────────────────────────────── */
+
+.pcard {
+  --w: 66px;
+  position: relative;
+  flex: none;
+  width: var(--w);
+  aspect-ratio: 5 / 7;
+  border-radius: calc(var(--w) * 0.2);
+  background: var(--card-face);
+  box-shadow:
+    inset 0 0 0 1px var(--card-edge),
+    var(--card-shadow);
+  color: var(--card-black);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: calc(var(--w) * 0.1) calc(var(--w) * 0.16) calc(var(--w) * 0.14);
+  line-height: 1;
+  user-select: none;
+  transition:
+    opacity 0.25s ease,
+    filter 0.25s ease,
+    background 0.25s ease;
+}
+
+.pcard.red {
+  color: var(--card-red);
+}
+
+.pcard-rank {
+  font-size: calc(var(--w) * 0.54);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+
+.pcard-suit {
+  font-size: calc(var(--w) * 0.4);
+}
+
+/* Not part of the hand that matters: greyed back, like Offsuit does. */
+.pcard.dim {
+  background: var(--bg-3);
+  opacity: 0.55;
+}
+
+.pcard-xl {
+  --w: 100px;
+}
+
+.pcard-lg {
+  --w: min(66px, calc((100vw - 32px - 24px) / 5));
+}
+
+.pcard-md {
+  --w: 48px;
+}
+
+.pcard-sm {
+  --w: 26px;
+  border-radius: 5px;
+  padding: 3px 4px;
+  box-shadow:
+    inset 0 0 0 1px var(--card-edge),
+    0 2px 4px -2px rgba(18, 18, 40, 0.3);
+}
+
+.pcard-sm .pcard-rank {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.pcard-sm .pcard-suit {
+  font-size: 11px;
+}
+
+.pcard-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.12) 0 4px, transparent 4px 8px),
+    linear-gradient(160deg, var(--card-back-1), var(--card-back-2));
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.85),
+    inset 0 0 0 3px var(--card-edge),
+    var(--card-shadow);
+}
+
+.pcard-sm.pcard-back {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.85),
+    0 2px 4px -2px rgba(18, 18, 40, 0.3);
+}
+
+/* Where a card will land. */
+.pcard-slot {
+  background: none;
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.flip-in {
+  animation: flip-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+}
+
+@keyframes flip-in {
+  0% {
+    transform: perspective(600px) rotateY(90deg) translateY(-12px);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: perspective(600px) rotateY(0deg);
+  }
+}
+
+/* ── Layout ──────────────────────────────────────────────────────────────── */
+
+.table-screen {
+  padding-bottom: 0;
+}
+
+.table-bar .table-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+}
+
+.table-bar .table-title b {
+  font-size: var(--fs-body);
+  font-weight: 900;
+}
+
+.table-bar .table-title small {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+}
+
+/* Keeps the title centred when there's no code chip on the right. */
+.table-bar:not(:has(.code-chip))::after {
+  content: '';
+  width: 52px;
+  flex: none;
+}
+
+.code-chip {
+  min-width: 52px;
+  height: 52px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+  font-size: var(--fs-body);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.conn-pill {
+  align-self: center;
+  margin-bottom: 8px;
+}
+
+.felt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+/* ── Other players ───────────────────────────────────────────────────────── */
+
+.pods {
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  gap: 12px 4px;
+  padding-top: 4px;
+}
+
+.pods-one {
+  /* A few players spread out; one or two sit in the middle rather than at the edges. */
+  max-width: calc(var(--cols) * 96px);
+  width: 100%;
+  margin: 0 auto;
+}
+
+.pod {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  transition: opacity 0.25s ease;
+}
+
+.pod.out .pod-pic,
+.pod.out .pod-name,
+.pod.out .pod-stack {
+  opacity: 0.35;
+}
+
+.pod-pic {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 60px;
+  height: 60px;
+}
+
+/* Whose turn it is: a gold ring that runs down like a clock when there's a time limit. */
+.pod-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px var(--gold);
+  animation: pulse-ring 1.2s ease-in-out infinite;
+}
+
+.pod-ring.timed {
+  box-shadow: none;
+  background: conic-gradient(var(--gold) calc(var(--left, 1) * 360deg), var(--bg-3) 0);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3px));
+  animation: none;
+}
+
+@keyframes pulse-ring {
+  50% {
+    box-shadow: 0 0 0 5px var(--gold-hi);
+  }
+}
+
+.dealer-chip {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: var(--fs-micro);
+  font-weight: 900;
+  box-shadow:
+    0 0 0 1px var(--card-edge),
+    var(--shadow-sm);
+}
+
+.pod-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.pod.turn .pod-name {
+  color: var(--ink);
+}
+
+.pod-stack {
+  font-size: var(--fs-lead);
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.pod-under {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 62px;
+  padding-top: 4px;
+}
+
+.pod-cards {
+  display: flex;
+}
+
+.pod-cards .pcard + .pcard {
+  margin-left: -6px;
+}
+
+.pod-tag {
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-caption);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.pod-tag.bet {
+  background: var(--gold-bg);
+  color: var(--gold-ink);
+}
+
+.pod-tag.last {
+  background: var(--bg-2);
+  color: var(--ink-3);
+}
+
+.pod-tag.last-raise,
+.pod-tag.last-bet,
+.pod-tag.last-allin {
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+}
+
+.pod-tag.win {
+  background: var(--green);
+  color: var(--on-color);
+}
+
+.pod-tag.odds {
+  background: var(--contrast);
+  color: var(--on-contrast);
+}
+
+.pod.won .pod-pic {
+  animation: bump 0.5s ease-out 2;
+}
+
+/* ── Board ───────────────────────────────────────────────────────────────── */
+
+.board-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  min-height: 150px;
+}
+
+.board {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.board-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+}
+
+.hand-pill {
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  box-shadow:
+    0 0 0 1px var(--card-edge),
+    var(--shadow-sm);
+  font-size: var(--fs-body);
+  font-weight: 800;
+}
+
+.pot {
+  font-size: var(--fs-h2);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.pot small {
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--ink-3);
+  margin-right: 4px;
+}
+
+/* ── Actions ─────────────────────────────────────────────────────────────── */
+
+.action-area {
+  min-height: 112px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.table-note {
+  margin: 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  text-align: center;
+  font-size: var(--fs-body);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.table-note b {
+  color: var(--ink);
+}
+
+.your-turn {
+  color: var(--ink);
+  font-size: var(--fs-lead);
+  font-weight: 900;
+  min-height: 32px;
+}
+
+.turn-clock {
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.turn-clock.low {
+  color: var(--red);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.action-buttons .btn {
+  min-height: 60px;
+  padding: 0 8px;
+  font-size: var(--fs-lead);
+  gap: 6px;
+}
+
+.btn-fold {
+  background: var(--red-bg);
+  color: var(--red-ink);
+  text-shadow: none;
+  box-shadow: none;
+}
+
+.btn-fold .ripple {
+  background: rgba(225, 29, 72, 0.15);
+}
+
+.result-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.result-line {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fs-body);
+  font-weight: 700;
+}
+
+.result-line.you b {
+  color: var(--green);
+}
+
+/* The next hand deals itself when the bar runs out. */
+.next-btn {
+  position: relative;
+}
+
+.next-fill {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: calc(var(--left, 0) * 100%);
+  background: rgba(255, 255, 255, 0.55);
+  transition: width 0.2s linear;
+}
+
+/* ── Raising ─────────────────────────────────────────────────────────────── */
+
+.raise-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+
+.raise-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--fs-body);
+}
+
+.raise-amount {
+  font-size: var(--fs-display-1);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.raise-presets {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.preset {
+  min-height: 40px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  font-size: var(--fs-small);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.preset.on {
+  background: var(--blue);
+  color: var(--on-color);
+}
+
+.raise-slider {
+  width: 100%;
+  height: 36px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+
+.action-buttons.two {
+  grid-template-columns: 1fr 2fr;
+}
+
+/* ── You ─────────────────────────────────────────────────────────────────── */
+
+.me-area {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 12px 16px calc(var(--safe-bottom) + 16px);
+  background: linear-gradient(to top, var(--bg) 80%, rgba(255, 255, 255, 0));
+}
+
+.my-cards {
+  display: flex;
+  flex: none;
+}
+
+.my-cards .pcard + .pcard {
+  margin-left: -22px;
+}
+
+.my-box {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px;
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 0 0 3px var(--line);
+  text-align: center;
+}
+
+.my-box small {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.my-box b {
+  font-size: var(--fs-h1);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.my-box-note {
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--gold-ink);
+}
+
+.my-box-note.win {
+  color: var(--green);
+}
+
+.odds-box {
+  gap: 0;
+}
+
+.odds-box b {
+  font-size: var(--fs-h2);
+  font-variant-numeric: tabular-nums;
+}
+
+.odds-box .odds-win {
+  color: var(--gold);
+  font-size: var(--fs-h1);
+}
+
+@media (max-width: 370px) {
+  .pcard-xl {
+    --w: 86px;
+  }
+  .my-cards .pcard + .pcard {
+    margin-left: -20px;
+  }
+  .pod-pic {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flip-in,
+  .pod-ring,
+  .pod-tag,
+  .pod.won .pod-pic {
+    animation: none;
+  }
+}

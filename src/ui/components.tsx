@@ -1,0 +1,355 @@
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import {
+  cardName,
+  EMOJIS,
+  firstEmoji,
+  isNameBlocked,
+  isRed,
+  LIMITS,
+  NAME_BLOCKED,
+  rankLabel,
+  SUIT_SYMBOL,
+  suitOf,
+  type Card,
+} from '../game';
+import { back, closeSheet, useApp } from '../state/store';
+import { haptic } from './effects';
+import { BackIcon, CloseIcon, PencilIcon } from './Icons';
+
+/** 1,240 */
+export function chips(n: number): string {
+  return Math.round(n).toLocaleString('en-US');
+}
+
+// ── Players ─────────────────────────────────────────────────────────────────
+
+/** A player's picture: just their emoji, big, like a sticker. */
+export function Avatar({ emoji, size = 48, className = '' }: { emoji: string; size?: number; className?: string }) {
+  return (
+    <span className={`avatar ${className}`} style={{ width: size, height: size, fontSize: size * 0.82 }} aria-hidden>
+      {emoji}
+    </span>
+  );
+}
+
+/** The name step: a big emoji that opens the picker, and a name box under it. */
+export function NameAndPicture({
+  name,
+  emoji,
+  onName,
+  onPicture,
+  onDone,
+}: {
+  name: string;
+  emoji: string;
+  onName: (name: string) => void;
+  onPicture: () => void;
+  onDone?: () => void;
+}) {
+  return (
+    <div className="hero-pic">
+      <button type="button" className="avatar-button" aria-label="Change your emoji" onClick={onPicture}>
+        <span key={emoji} className="hero-pop">
+          <span className="hero-float">
+            <Avatar emoji={emoji} size={132} />
+            <span className="hero-edit-badge" aria-hidden>
+              <PencilIcon width={20} height={20} />
+            </span>
+          </span>
+        </span>
+      </button>
+      <div className="name-box">
+        <input
+          className="field name-field"
+          value={name}
+          placeholder="Your name"
+          aria-label="Your name"
+          maxLength={LIMITS.maxNameLength}
+          autoComplete="given-name"
+          autoCapitalize="words"
+          enterKeyHint="done"
+          autoFocus={!name.trim()}
+          onChange={(e) => onName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter') return;
+            e.currentTarget.blur();
+            onDone?.();
+          }}
+        />
+        {isNameBlocked(name) && (
+          <p className="field-error" role="alert">
+            {NAME_BLOCKED}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/** A grid of emojis to pick from, plus a box to type any emoji at all. */
+export function EmojiPicker({ value, onChange }: { value: string; onChange: (emoji: string) => void }) {
+  const [typed, setTyped] = useState('');
+  const custom = !(EMOJIS as readonly string[]).includes(value);
+  return (
+    <div className="emoji-picker">
+      <div className="emoji-grid" role="radiogroup" aria-label="Emoji">
+        {EMOJIS.map((e) => (
+          <button
+            key={e}
+            type="button"
+            role="radio"
+            aria-checked={value === e}
+            aria-label={e}
+            className={`emoji-option press${value === e ? ' on' : ''}`}
+            onClick={() => {
+              haptic('light');
+              onChange(e);
+            }}
+          >
+            {e}
+          </button>
+        ))}
+      </div>
+      <label className="emoji-custom">
+        <span className={`emoji-custom-pic${custom ? ' on' : ''}`} aria-hidden>
+          {custom ? value : '＋'}
+        </span>
+        <input
+          className="field"
+          value={typed}
+          placeholder="Or type any emoji"
+          aria-label="Type any emoji"
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          onChange={(e) => {
+            const found = firstEmoji(e.target.value);
+            setTyped(found ?? '');
+            if (found) {
+              haptic('light');
+              onChange(found);
+            }
+          }}
+        />
+      </label>
+    </div>
+  );
+}
+
+// ── Cards ───────────────────────────────────────────────────────────────────
+
+export type CardSize = 'xl' | 'lg' | 'md' | 'sm';
+
+/**
+ * A playing card: big rank in the corner, suit under it, like the cards in a real deck's index.
+ * `back` shows the back (a card we can't see). `dim` greys a card that isn't part of the best hand.
+ */
+export function PlayingCard({
+  card,
+  size = 'lg',
+  dim = false,
+  back: showBack = false,
+  flip = false,
+  delay = 0,
+  className = '',
+}: {
+  card?: Card;
+  size?: CardSize;
+  dim?: boolean;
+  back?: boolean;
+  /** Flip over as it appears. */
+  flip?: boolean;
+  delay?: number;
+  className?: string;
+}) {
+  if (showBack || !card) {
+    return <span className={`pcard pcard-${size} pcard-back ${className}`} aria-label="Face-down card" role="img" />;
+  }
+  const red = isRed(card);
+  return (
+    <span
+      className={`pcard pcard-${size}${red ? ' red' : ''}${dim ? ' dim' : ''}${flip ? ' flip-in' : ''} ${className}`}
+      style={flip ? { animationDelay: `${delay}ms` } : undefined}
+      role="img"
+      aria-label={cardName(card)}
+    >
+      <span className="pcard-rank">{rankLabel(card)}</span>
+      <span className="pcard-suit">{SUIT_SYMBOL[suitOf(card)]}</span>
+    </span>
+  );
+}
+
+/** An empty place on the board where a card will go. */
+export function CardSlot({ size = 'lg' }: { size?: CardSize }) {
+  return <span className={`pcard pcard-${size} pcard-slot`} aria-hidden />;
+}
+
+// ── Bits ────────────────────────────────────────────────────────────────────
+
+/** Simple top bar with a back button. */
+export function BackBar({ title, right, onBack = back }: { title?: ReactNode; right?: ReactNode; onBack?: () => void }) {
+  return (
+    <div className="topbar">
+      <button type="button" className="icon-btn press" aria-label="Back" onClick={onBack}>
+        <BackIcon />
+      </button>
+      <div className="topbar-title h3">{title}</div>
+      {right}
+    </div>
+  );
+}
+
+export function Toggle({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className="toggle-row"
+      onClick={() => {
+        haptic('light');
+        onChange(!on);
+      }}
+    >
+      <span className="toggle-text">
+        <b>{label}</b>
+        {hint && <small className="muted">{hint}</small>}
+      </span>
+      <span className={`toggle${on ? ' on' : ''}`} aria-hidden />
+    </button>
+  );
+}
+
+/** A row of choices, one picked. */
+export function Choice<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+  format = String,
+}: {
+  label: string;
+  value: T;
+  options: T[];
+  onChange: (value: T) => void;
+  format?: (value: T) => string;
+}) {
+  return (
+    <div className="choice">
+      <p className="section-title">{label}</p>
+      <div className="choice-row" role="radiogroup" aria-label={label}>
+        {options.map((o) => (
+          <button
+            key={String(o)}
+            type="button"
+            role="radio"
+            aria-checked={o === value}
+            className={`choice-option press${o === value ? ' on' : ''}`}
+            onClick={() => {
+              haptic('light');
+              onChange(o);
+            }}
+          >
+            {format(o)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function Sheet({ title, children, onClose = closeSheet }: { title?: ReactNode; children: ReactNode; onClose?: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const leaving = useApp((s) => s.sheetLeaving);
+  const drag = useRef<{ startY: number; dy: number } | null>(null);
+  useEffect(() => {
+    ref.current?.focus();
+  }, []);
+
+  // Swipe down on the grip or title to close. Past 90px it closes; otherwise it springs back.
+  const onDown = (e: ReactPointerEvent) => {
+    if ((e.target as HTMLElement).closest('button')) return;
+    drag.current = { startY: e.clientY, dy: 0 };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    ref.current?.classList.add('dragging');
+  };
+  const onMove = (e: ReactPointerEvent) => {
+    if (!drag.current || !ref.current) return;
+    drag.current.dy = Math.max(0, e.clientY - drag.current.startY);
+    ref.current.style.transform = `translateY(${drag.current.dy}px)`;
+  };
+  const onUp = () => {
+    const d = drag.current;
+    drag.current = null;
+    const el = ref.current;
+    if (!d || !el) return;
+    el.classList.remove('dragging');
+    if (d.dy > 90) {
+      el.style.setProperty('--drag', `${d.dy}px`);
+      onClose();
+    }
+    el.style.transform = '';
+  };
+  const dragProps = { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp };
+
+  return (
+    <div className={`sheet-backdrop${leaving ? ' leaving' : ''}`} onClick={onClose}>
+      <div
+        className="sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={typeof title === 'string' ? title : undefined}
+        tabIndex={-1}
+        ref={ref}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="sheet-grip-zone" {...dragProps}>
+          <div className="sheet-grip" />
+        </div>
+        {title && (
+          <div className="sheet-head" {...dragProps}>
+            <h2 className="h2" style={{ flex: 1 }}>
+              {title}
+            </h2>
+            <button type="button" className="icon-btn press" aria-label="Close" onClick={onClose}>
+              <CloseIcon />
+            </button>
+          </div>
+        )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function Toasts() {
+  const toasts = useApp((s) => s.toasts);
+  return (
+    <div className="toasts" role="status" aria-live="polite">
+      {toasts.map((t) => (
+        <div key={t.id} className={`toast ${t.kind}`}>
+          {t.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function Spinner({ label }: { label?: string }) {
+  return (
+    <div className="center" style={{ gap: 12, padding: 24 }} role="status">
+      <span className="spinner" aria-hidden />
+      {label && <span className="muted">{label}</span>}
+    </div>
+  );
+}
+
+/** Ticks once a second (or faster) while mounted, for countdowns. */
+export function useNow(every = 250): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), every);
+    return () => clearInterval(t);
+  }, [every]);
+  return now;
+}

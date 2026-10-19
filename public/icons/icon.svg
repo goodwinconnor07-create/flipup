@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ffffff"/>
+  <g transform="translate(64 150) rotate(-12)">
+    <rect width="180" height="252" rx="32" fill="#ffffff" stroke="#dcdce4" stroke-width="6"/>
+    <text x="26" y="104" font-family="-apple-system, 'SF Pro Display', Helvetica, Arial, sans-serif" font-size="100" font-weight="700" fill="#16161d">A</text>
+    <text x="28" y="206" font-family="-apple-system, Helvetica, Arial, sans-serif" font-size="80" fill="#16161d">♠</text>
+  </g>
+  <g transform="translate(250 112) rotate(10)">
+    <rect width="180" height="252" rx="32" fill="#ffffff" stroke="#dcdce4" stroke-width="6"/>
+    <text x="26" y="104" font-family="-apple-system, 'SF Pro Display', Helvetica, Arial, sans-serif" font-size="100" font-weight="700" fill="#e5322d">K</text>
+    <text x="28" y="206" font-family="-apple-system, Helvetica, Arial, sans-serif" font-size="80" fill="#e5322d">♥</text>
+  </g>
+</svg>

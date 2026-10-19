@@ -53,7 +53,12 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     if (newHand) {
       // A new hand starts with the shuffle.
       playSound('shuffle');
-      delay = 450;
+      // Your own two cards land one after the other, as they turn over.
+      if (hand.seats.some((x) => x.playerId === myId && x.cards.length === 2)) {
+        playSound('place', 300);
+        playSound('place', 480);
+      }
+      delay = 650;
     } else if (snap.board > before.board) {
       // The flop is three cards one after another; the turn and river are one.
       const count = snap.board - before.board;

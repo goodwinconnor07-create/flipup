@@ -1,6 +1,9 @@
 #include "flipup/solver.h"
 
 #include <omp.h>
+#ifdef __F16C__
+#include <immintrin.h>
+#endif
 
 #include <algorithm>
 #include <chrono>
@@ -117,6 +120,13 @@ void Solver::init_hands() {
       init_weight_[p].push_back(w);
     }
     if (hands_[p].empty()) throw std::invalid_argument("player " + std::to_string(p) + " has an empty range");
+  }
+  for (int p = 0; p < 2; ++p) {
+    for (auto& v : hands_with_card_[p]) v.clear();
+    for (size_t h = 0; h < hands_[p].size(); ++h) {
+      hands_with_card_[p][hands_[p][h].c1].push_back(static_cast<int>(h));
+      hands_with_card_[p][hands_[p][h].c2].push_back(static_cast<int>(h));
+    }
   }
   for (int p = 0; p < 2; ++p) {
     same_idx_[p].resize(hands_[p].size());
@@ -494,10 +504,26 @@ void encode_half(const float* in, size_t len, _Float16* out, float& scale) {
   for (size_t i = 0; i < len; ++i) mx = std::max(mx, std::fabs(in[i]));
   scale = mx;
   const float inv = mx > 0 ? 1.0f / mx : 0.0f;
-  for (size_t i = 0; i < len; ++i) out[i] = static_cast<_Float16>(in[i] * inv);
+  size_t i = 0;
+#ifdef __F16C__
+  const __m256 vinv = _mm256_set1_ps(inv);
+  for (; i + 8 <= len; i += 8) {
+    __m128i h = _mm256_cvtps_ph(_mm256_mul_ps(_mm256_loadu_ps(in + i), vinv), _MM_FROUND_TO_NEAREST_INT);
+    _mm_storeu_si128(reinterpret_cast<__m128i*>(out + i), h);
+  }
+#endif
+  for (; i < len; ++i) out[i] = static_cast<_Float16>(in[i] * inv);
 }
 void decode_half(const _Float16* in, size_t len, float scale, float* out) {
-  for (size_t i = 0; i < len; ++i) out[i] = static_cast<float>(in[i]) * scale;
+  size_t i = 0;
+#ifdef __F16C__
+  const __m256 vs = _mm256_set1_ps(scale);
+  for (; i + 8 <= len; i += 8) {
+    __m256 f = _mm256_cvtph_ps(_mm_loadu_si128(reinterpret_cast<const __m128i*>(in + i)));
+    _mm256_storeu_ps(out + i, _mm256_mul_ps(f, vs));
+  }
+#endif
+  for (; i < len; ++i) out[i] = static_cast<float>(in[i]) * scale;
 }
 }  // namespace
 
@@ -540,18 +566,25 @@ void Solver::store_cum(const Node& n, const float* in) {
 void Solver::current_strategy(const Node& n, float* out) const {
   const int na = n.num_children;
   const size_t nh = hands_[n.player].size();
-  thread_local std::vector<float> r, sum;
-  r.resize(static_cast<size_t>(na) * nh);
-  load_regret(n, r.data());
-  sum.assign(nh, 0.0f);
-  for (int a = 0; a < na; ++a) {
-    const float* ra = r.data() + a * nh;
+  thread_local std::vector<float> buf, sum;
+  const float* r;
+  if (cfg_.compress) {
+    buf.resize(static_cast<size_t>(na) * nh);
+    load_regret(n, buf.data());
+    r = buf.data();
+  } else {
+    r = regret_.data() + n.storage;
+  }
+  sum.resize(nh);
+  for (size_t h = 0; h < nh; ++h) sum[h] = std::max(r[h], 0.0f);
+  for (int a = 1; a < na; ++a) {
+    const float* ra = r + a * nh;
     for (size_t h = 0; h < nh; ++h) sum[h] += std::max(ra[h], 0.0f);
   }
   const float uniform = 1.0f / na;
   for (size_t h = 0; h < nh; ++h) sum[h] = sum[h] > 0 ? 1.0f / sum[h] : 0.0f;
   for (int a = 0; a < na; ++a) {
-    const float* ra = r.data() + a * nh;
+    const float* ra = r + a * nh;
     float* oa = out + a * nh;
     for (size_t h = 0; h < nh; ++h) oa[h] = sum[h] > 0 ? std::max(ra[h], 0.0f) * sum[h] : uniform;
   }
@@ -560,11 +593,18 @@ void Solver::current_strategy(const Node& n, float* out) const {
 void Solver::average_strategy(const Node& n, float* out) const {
   const int na = n.num_children;
   const size_t nh = hands_[n.player].size();
-  thread_local std::vector<float> c, sum;
-  c.resize(static_cast<size_t>(na) * nh);
-  load_cum(n, c.data());
-  sum.assign(nh, 0.0f);
-  for (int a = 0; a < na; ++a)
+  thread_local std::vector<float> buf, sum;
+  const float* c;
+  if (cfg_.compress) {
+    buf.resize(static_cast<size_t>(na) * nh);
+    load_cum(n, buf.data());
+    c = buf.data();
+  } else {
+    c = cum_strategy_.data() + n.storage;
+  }
+  sum.resize(nh);
+  std::copy(c, c + nh, sum.begin());
+  for (int a = 1; a < na; ++a)
     for (size_t h = 0; h < nh; ++h) sum[h] += c[a * nh + h];
   const float uniform = 1.0f / na;
   for (size_t h = 0; h < nh; ++h) sum[h] = sum[h] > 0 ? 1.0f / sum[h] : 0.0f;
@@ -605,41 +645,64 @@ void Solver::nonconflict_mass(int p, const float* opp_reach, float* S) const {
 }
 
 // diff[h] = (opp mass h beats) - (opp mass that beats h), card removal aware.
-void Solver::showdown_diff(int p, const float* opp_reach, const RiverBoard& rb, float* diff) const {
+// One sweep over both strength-sorted lists, handling ties as groups.
+void Solver::showdown_diff(int p, const float* opp_reach, const RiverBoard& rb, float* diff, float* S) const {
   const SortedEntry* mine = rb.sorted[p].data();
   const SortedEntry* theirs = rb.sorted[1 - p].data();
   const long nm = static_cast<long>(rb.sorted[p].size());
   const long nt = static_cast<long>(rb.sorted[1 - p].size());
-  float card_sum[NUM_CARDS];
-
-  float sum = 0;
-  std::fill(card_sum, card_sum + NUM_CARDS, 0.0f);
-  long j = 0;
-  for (long i = 0; i < nm; ++i) {
-    const SortedEntry& me = mine[i];
-    while (j < nt && theirs[j].strength < me.strength) {
-      float r = opp_reach[theirs[j].idx];
-      sum += r;
-      card_sum[theirs[j].c1] += r;
-      card_sum[theirs[j].c2] += r;
+  thread_local std::vector<float> reach;
+  reach.resize(nt);
+  float total = 0, card_total[NUM_CARDS] = {0};
+  for (long k = 0; k < nt; ++k) {
+    float r = opp_reach[theirs[k].idx];
+    reach[k] = r;
+    total += r;
+    card_total[theirs[k].c1] += r;
+    card_total[theirs[k].c2] += r;
+  }
+  float lt = 0, lt_card[NUM_CARDS] = {0};
+  float eq_card[NUM_CARDS] = {0};
+  long i = 0, j = 0;
+  while (i < nm) {
+    const uint32_t s = mine[i].strength;
+    while (j < nt && theirs[j].strength < s) {
+      float r = reach[j];
+      lt += r;
+      lt_card[theirs[j].c1] += r;
+      lt_card[theirs[j].c2] += r;
       ++j;
     }
-    diff[me.idx] = sum - card_sum[me.c1] - card_sum[me.c2];
-  }
-
-  sum = 0;
-  std::fill(card_sum, card_sum + NUM_CARDS, 0.0f);
-  long k = nt - 1;
-  for (long i = nm - 1; i >= 0; --i) {
-    const SortedEntry& me = mine[i];
-    while (k >= 0 && theirs[k].strength > me.strength) {
-      float r = opp_reach[theirs[k].idx];
-      sum += r;
-      card_sum[theirs[k].c1] += r;
-      card_sum[theirs[k].c2] += r;
-      --k;
+    long k = j;
+    float eq = 0;
+    while (k < nt && theirs[k].strength == s) {
+      float r = reach[k];
+      eq += r;
+      eq_card[theirs[k].c1] += r;
+      eq_card[theirs[k].c2] += r;
+      ++k;
     }
-    diff[me.idx] -= sum - card_sum[me.c1] - card_sum[me.c2];
+    const float gt_total = total - lt - eq;
+    for (; i < nm && mine[i].strength == s; ++i) {
+      const int a = mine[i].c1, b = mine[i].c2;
+      float win = lt - lt_card[a] - lt_card[b];
+      float lose = gt_total - (card_total[a] - lt_card[a] - eq_card[a]) - (card_total[b] - lt_card[b] - eq_card[b]);
+      diff[mine[i].idx] = win - lose;
+      if (S) {
+        int same = same_idx_[p][mine[i].idx];
+        S[mine[i].idx] = total - card_total[a] - card_total[b] + (same >= 0 ? opp_reach[same] : 0.0f);
+      }
+    }
+    // Fold the tie group into the "less than" totals for stronger hands.
+    for (long q = j; q < k; ++q) {
+      float r = reach[q];
+      lt += r;
+      lt_card[theirs[q].c1] += r;
+      lt_card[theirs[q].c2] += r;
+      eq_card[theirs[q].c1] = 0;
+      eq_card[theirs[q].c2] = 0;
+    }
+    j = k;
   }
 }
 
@@ -677,20 +740,24 @@ void Solver::terminal_value(const Node& n, int p, const float* opp_reach, float*
   const size_t np = hands_[p].size();
   thread_local std::vector<float> S, diff;
   S.resize(np);
-  nonconflict_mass(p, opp_reach, S.data());
   const double P = n.pot;
   const double R = rake(P);
   const double c = n.contrib[p];
   if (n.type == NodeType::FOLD) {
-    double payoff = (n.player == p) ? -c : (P - R - c);
-    for (size_t h = 0; h < np; ++h) out[h] = static_cast<float>(payoff * S[h]);
+    nonconflict_mass(p, opp_reach, S.data());
+    const float payoff = static_cast<float>((n.player == p) ? -c : (P - R - c));
+    for (size_t h = 0; h < np; ++h) out[h] = payoff * S[h];
     return;
   }
-  diff.assign(np, 0.0f);
-  if (n.type == NodeType::SHOWDOWN)
-    showdown_diff(p, opp_reach, river_board(n.board), diff.data());
-  else
+  diff.resize(np);
+  if (n.type == NodeType::SHOWDOWN) {
+    // Hands blocked by the board are not in the sorted lists: zero them first.
+    for (int h : board_blocked(p, n.board)) diff[h] = S[h] = 0.0f;
+    showdown_diff(p, opp_reach, river_board(n.board), diff.data(), S.data());
+  } else {
+    nonconflict_mass(p, opp_reach, S.data());
     allin_diff(p, opp_reach, n.board, diff.data());
+  }
   const float half = static_cast<float>((P - R) / 2.0);
   const float cf = static_cast<float>(c);
   for (size_t h = 0; h < np; ++h) out[h] = half * (S[h] + diff[h]) - cf * S[h];
@@ -699,6 +766,81 @@ void Solver::terminal_value(const Node& n, int p, const float* opp_reach, float*
 // ---------------------------------------------------------------------------
 // CFR traversal
 // ---------------------------------------------------------------------------
+
+namespace {
+// Per-thread bump allocator for traversal temporaries. Recursion (and tied
+// OpenMP tasks) release buffers in strict LIFO order.
+struct Arena {
+  std::vector<float> buf;
+  size_t top = 0;
+};
+thread_local Arena g_arena;
+
+class Scratch {
+ public:
+  explicit Scratch(size_t n) : mark_(g_arena.top) {
+    Arena& a = g_arena;
+    if (a.buf.empty()) a.buf.resize(size_t{1} << 23);  // 32 MB per thread, grown on demand below
+    size_t need = (n + 15) & ~size_t{15};
+    if (a.top + need > a.buf.size()) {
+      heap_.resize(n);
+      ptr_ = heap_.data();
+      return;
+    }
+    ptr_ = a.buf.data() + a.top;
+    a.top += need;
+  }
+  ~Scratch() { g_arena.top = mark_; }
+  Scratch(const Scratch&) = delete;
+  Scratch& operator=(const Scratch&) = delete;
+  float* get() { return ptr_; }
+  float& operator[](size_t i) { return ptr_[i]; }
+
+ private:
+  size_t mark_;
+  float* ptr_ = nullptr;
+  std::vector<float> heap_;
+};
+}  // namespace
+
+const std::vector<int>& Solver::board_blocked(int p, CardMask board) const {
+  thread_local std::vector<int> out;
+  out.clear();
+  CardMask m = board;
+  while (m) {
+    int c = __builtin_ctzll(m);
+    m &= m - 1;
+    for (int h : hands_with_card_[p][c]) out.push_back(h);
+  }
+  return out;
+}
+
+// Chance node helper: child reach = parent reach * scale, zero for hands holding `card`.
+static inline void deal_reach(const float* in, float* out, size_t n, float scale, const std::vector<int>& blocked) {
+  for (size_t i = 0; i < n; ++i) out[i] = in[i] * scale;
+  for (int h : blocked) out[h] = 0.0f;
+}
+
+void Solver::chance_combine(const Node& n, int p, const float* results, float* out) const {
+  const size_t np = hands_[p].size();
+  const int K = n.num_children;
+  Scratch acc_s(np * 2);
+  double* acc = reinterpret_cast<double*>(acc_s.get());
+  std::fill(acc, acc + np, 0.0);
+  for (int k = 0; k < K; ++k) {
+    const float* r = results + k * np;
+    for (size_t h = 0; h < np; ++h) acc[h] += r[h];
+    for (int h : hands_with_card_[p][chance_cards_[n.child_begin + k]]) acc[h] -= r[h];
+  }
+  for (int e = 0; e < n.num_iso; ++e) {
+    const IsoEntry& iso = iso_[n.iso_begin + e];
+    const float* r = results + static_cast<size_t>(iso.rep_child) * np;
+    const int32_t* perm = swap_perm_[iso.swap_id][p].data();
+    for (size_t h = 0; h < np; ++h) acc[h] += r[perm[h]];
+    for (int h : hands_with_card_[p][iso.card]) acc[h] -= r[perm[h]];
+  }
+  for (size_t h = 0; h < np; ++h) out[h] = static_cast<float>(acc[h]);
+}
 
 void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_reach, float* out,
                  const Discount& d, int depth) {
@@ -712,7 +854,7 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
     return;
   }
 
-  double opp_total = 0;
+  float opp_total = 0;
   for (size_t i = 0; i < no; ++i) opp_total += opp_reach[i];
   if (opp_total <= 0) {
     std::fill(out, out + np, 0.0f);
@@ -722,16 +864,13 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
   if (n.type == NodeType::CHANCE) {
     const int K = n.num_children;
     const float w = 1.0f / static_cast<float>(NUM_CARDS - __builtin_popcountll(n.board) - 4);
-    std::vector<float> results(static_cast<size_t>(K) * np, 0.0f);
+    Scratch results(static_cast<size_t>(K) * np);
     auto run_child = [&](int k) {
       int card = chance_cards_[n.child_begin + k];
-      std::vector<float> child_opp(no), child_own(np);
-      for (size_t i = 0; i < no; ++i)
-        child_opp[i] = hand_has(hands_[o][i].c1, hands_[o][i].c2, card) ? 0.0f : opp_reach[i] * w;
-      for (size_t h = 0; h < np; ++h)
-        child_own[h] = hand_has(hands_[p][h].c1, hands_[p][h].c2, card) ? 0.0f : own_reach[h];
-      cfr(children_[n.child_begin + k], p, child_opp.data(), child_own.data(), results.data() + k * np, d,
-          depth + 1);
+      Scratch child_opp(no), child_own(np);
+      deal_reach(opp_reach, child_opp.get(), no, w, hands_with_card_[o][card]);
+      deal_reach(own_reach, child_own.get(), np, 1.0f, hands_with_card_[p][card]);
+      cfr(children_[n.child_begin + k], p, child_opp.get(), child_own.get(), results.get() + k * np, d, depth + 1);
     };
     if (parallel_here(depth)) {
 #pragma omp taskloop grainsize(1)
@@ -739,21 +878,7 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
     } else {
       for (int k = 0; k < K; ++k) run_child(k);
     }
-    std::vector<double> acc(np, 0.0);
-    for (int k = 0; k < K; ++k) {
-      int card = chance_cards_[n.child_begin + k];
-      const float* r = results.data() + k * np;
-      for (size_t h = 0; h < np; ++h)
-        if (!hand_has(hands_[p][h].c1, hands_[p][h].c2, card)) acc[h] += r[h];
-    }
-    for (int e = 0; e < n.num_iso; ++e) {
-      const IsoEntry& iso = iso_[n.iso_begin + e];
-      const float* r = results.data() + static_cast<size_t>(iso.rep_child) * np;
-      const auto& perm = swap_perm_[iso.swap_id][p];
-      for (size_t h = 0; h < np; ++h)
-        if (!hand_has(hands_[p][h].c1, hands_[p][h].c2, iso.card)) acc[h] += r[perm[h]];
-    }
-    for (size_t h = 0; h < np; ++h) out[h] = static_cast<float>(acc[h]);
+    chance_combine(n, p, results.get(), out);
     return;
   }
 
@@ -761,15 +886,16 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
   const int q = n.player;
   const int na = n.num_children;
   const size_t nq = hands_[q].size();
-  std::vector<float> sigma(static_cast<size_t>(na) * nq);
-  current_strategy(n, sigma.data());
+  Scratch sigma(static_cast<size_t>(na) * nq);
+  current_strategy(n, sigma.get());
 
   if (q == p) {
-    std::vector<float> cfv(static_cast<size_t>(na) * np);
+    Scratch cfv(static_cast<size_t>(na) * np);
     auto run_child = [&](int a) {
-      std::vector<float> child_own(np);
-      for (size_t h = 0; h < np; ++h) child_own[h] = own_reach[h] * sigma[a * np + h];
-      cfr(children_[n.child_begin + a], p, opp_reach, child_own.data(), cfv.data() + a * np, d, depth + 1);
+      Scratch child_own(np);
+      const float* sa = sigma.get() + a * np;
+      for (size_t h = 0; h < np; ++h) child_own[h] = own_reach[h] * sa[h];
+      cfr(children_[n.child_begin + a], p, opp_reach, child_own.get(), cfv.get() + a * np, d, depth + 1);
     };
     if (parallel_here(depth) && na > 1) {
 #pragma omp taskloop grainsize(1)
@@ -777,33 +903,43 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
     } else {
       for (int a = 0; a < na; ++a) run_child(a);
     }
-    for (size_t h = 0; h < np; ++h) {
-      float v = 0;
-      for (int a = 0; a < na; ++a) v += sigma[a * np + h] * cfv[a * np + h];
-      out[h] = v;
-    }
-    thread_local std::vector<float> reg, cum;
-    reg.resize(static_cast<size_t>(na) * np);
-    cum.resize(static_cast<size_t>(na) * np);
-    load_regret(n, reg.data());
-    load_cum(n, cum.data());
+    std::fill(out, out + np, 0.0f);
     for (int a = 0; a < na; ++a) {
+      const float* sa = sigma.get() + a * np;
+      const float* ca = cfv.get() + a * np;
+      for (size_t h = 0; h < np; ++h) out[h] += sa[h] * ca[h];
+    }
+    const bool packed = cfg_.compress;
+    Scratch reg_s(packed ? static_cast<size_t>(na) * np : 0), cum_s(packed ? static_cast<size_t>(na) * np : 0);
+    float* reg = packed ? reg_s.get() : regret_.data() + n.storage;
+    float* cum = packed ? cum_s.get() : cum_strategy_.data() + n.storage;
+    if (packed) {
+      load_regret(n, reg);
+      load_cum(n, cum);
+    }
+    for (int a = 0; a < na; ++a) {
+      float* ra = reg + a * np;
+      float* ma = cum + a * np;
+      const float* sa = sigma.get() + a * np;
+      const float* ca = cfv.get() + a * np;
       for (size_t h = 0; h < np; ++h) {
-        size_t idx = a * np + h;
-        float r = reg[idx];
+        float r = ra[h];
         r *= (r >= 0) ? d.pos : d.neg;
-        reg[idx] = r + (cfv[idx] - out[h]);
-        cum[idx] = cum[idx] * d.strat + sigma[idx] * own_reach[h];
+        ra[h] = r + (ca[h] - out[h]);
+        ma[h] = ma[h] * d.strat + sa[h] * own_reach[h];
       }
     }
-    store_regret(n, reg.data());
-    store_cum(n, cum.data());
+    if (packed) {
+      store_regret(n, reg);
+      store_cum(n, cum);
+    }
   } else {
-    std::vector<float> results(static_cast<size_t>(na) * np);
+    Scratch results(static_cast<size_t>(na) * np);
     auto run_child = [&](int a) {
-      std::vector<float> child_opp(no);
-      for (size_t i = 0; i < no; ++i) child_opp[i] = opp_reach[i] * sigma[a * no + i];
-      cfr(children_[n.child_begin + a], p, child_opp.data(), own_reach, results.data() + a * np, d, depth + 1);
+      Scratch child_opp(no);
+      const float* sa = sigma.get() + a * no;
+      for (size_t i = 0; i < no; ++i) child_opp[i] = opp_reach[i] * sa[i];
+      cfr(children_[n.child_begin + a], p, child_opp.get(), own_reach, results.get() + a * np, d, depth + 1);
     };
     if (parallel_here(depth) && na > 1) {
 #pragma omp taskloop grainsize(1)
@@ -811,10 +947,10 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
     } else {
       for (int a = 0; a < na; ++a) run_child(a);
     }
-    for (size_t h = 0; h < np; ++h) {
-      float v = 0;
-      for (int a = 0; a < na; ++a) v += results[a * np + h];
-      out[h] = v;
+    std::copy(results.get(), results.get() + np, out);
+    for (int a = 1; a < na; ++a) {
+      const float* ra = results.get() + a * np;
+      for (size_t h = 0; h < np; ++h) out[h] += ra[h];
     }
   }
 }
@@ -829,7 +965,7 @@ void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, Ev
     terminal_value(n, p, opp_reach, out);
     return;
   }
-  double opp_total = 0;
+  float opp_total = 0;
   for (size_t i = 0; i < no; ++i) opp_total += opp_reach[i];
   if (opp_total <= 0) {
     std::fill(out, out + np, 0.0f);
@@ -839,13 +975,12 @@ void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, Ev
   if (n.type == NodeType::CHANCE) {
     const int K = n.num_children;
     const float w = 1.0f / static_cast<float>(NUM_CARDS - __builtin_popcountll(n.board) - 4);
-    std::vector<float> results(static_cast<size_t>(K) * np, 0.0f);
+    Scratch results(static_cast<size_t>(K) * np);
     auto run_child = [&](int k) {
       int card = chance_cards_[n.child_begin + k];
-      std::vector<float> child_opp(no);
-      for (size_t i = 0; i < no; ++i)
-        child_opp[i] = hand_has(hands_[o][i].c1, hands_[o][i].c2, card) ? 0.0f : opp_reach[i] * w;
-      evaluate(children_[n.child_begin + k], p, child_opp.data(), results.data() + k * np, mode, depth + 1);
+      Scratch child_opp(no);
+      deal_reach(opp_reach, child_opp.get(), no, w, hands_with_card_[o][card]);
+      evaluate(children_[n.child_begin + k], p, child_opp.get(), results.get() + k * np, mode, depth + 1);
     };
     if (parallel_here(depth)) {
 #pragma omp taskloop grainsize(1)
@@ -853,37 +988,24 @@ void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, Ev
     } else {
       for (int k = 0; k < K; ++k) run_child(k);
     }
-    std::vector<double> acc(np, 0.0);
-    for (int k = 0; k < K; ++k) {
-      int card = chance_cards_[n.child_begin + k];
-      const float* r = results.data() + k * np;
-      for (size_t h = 0; h < np; ++h)
-        if (!hand_has(hands_[p][h].c1, hands_[p][h].c2, card)) acc[h] += r[h];
-    }
-    for (int e = 0; e < n.num_iso; ++e) {
-      const IsoEntry& iso = iso_[n.iso_begin + e];
-      const float* r = results.data() + static_cast<size_t>(iso.rep_child) * np;
-      const auto& perm = swap_perm_[iso.swap_id][p];
-      for (size_t h = 0; h < np; ++h)
-        if (!hand_has(hands_[p][h].c1, hands_[p][h].c2, iso.card)) acc[h] += r[perm[h]];
-    }
-    for (size_t h = 0; h < np; ++h) out[h] = static_cast<float>(acc[h]);
+    chance_combine(n, p, results.get(), out);
     return;
   }
 
   const int q = n.player;
   const int na = n.num_children;
   const size_t nq = hands_[q].size();
-  std::vector<float> sigma(static_cast<size_t>(na) * nq);
-  average_strategy(n, sigma.data());
-  std::vector<float> results(static_cast<size_t>(na) * np);
+  Scratch sigma(static_cast<size_t>(na) * nq);
+  average_strategy(n, sigma.get());
+  Scratch results(static_cast<size_t>(na) * np);
   auto run_child = [&](int a) {
     if (q == p) {
-      evaluate(children_[n.child_begin + a], p, opp_reach, results.data() + a * np, mode, depth + 1);
+      evaluate(children_[n.child_begin + a], p, opp_reach, results.get() + a * np, mode, depth + 1);
     } else {
-      std::vector<float> child_opp(no);
-      for (size_t i = 0; i < no; ++i) child_opp[i] = opp_reach[i] * sigma[a * no + i];
-      evaluate(children_[n.child_begin + a], p, child_opp.data(), results.data() + a * np, mode, depth + 1);
+      Scratch child_opp(no);
+      const float* sa = sigma.get() + a * no;
+      for (size_t i = 0; i < no; ++i) child_opp[i] = opp_reach[i] * sa[i];
+      evaluate(children_[n.child_begin + a], p, child_opp.get(), results.get() + a * np, mode, depth + 1);
     }
   };
   if (parallel_here(depth) && na > 1) {
@@ -892,19 +1014,18 @@ void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, Ev
   } else {
     for (int a = 0; a < na; ++a) run_child(a);
   }
-  for (size_t h = 0; h < np; ++h) {
-    float v;
-    if (q == p && mode == EvalMode::BEST_RESPONSE) {
-      v = results[h];
-      for (int a = 1; a < na; ++a) v = std::max(v, results[a * np + h]);
-    } else if (q == p) {
-      v = 0;
-      for (int a = 0; a < na; ++a) v += sigma[a * np + h] * results[a * np + h];
-    } else {
-      v = 0;
-      for (int a = 0; a < na; ++a) v += results[a * np + h];
-    }
-    out[h] = v;
+  if (q == p && mode == EvalMode::BEST_RESPONSE) {
+    std::copy(results.get(), results.get() + np, out);
+    for (int a = 1; a < na; ++a)
+      for (size_t h = 0; h < np; ++h) out[h] = std::max(out[h], results[a * np + h]);
+  } else if (q == p) {
+    std::fill(out, out + np, 0.0f);
+    for (int a = 0; a < na; ++a)
+      for (size_t h = 0; h < np; ++h) out[h] += sigma[a * np + h] * results[a * np + h];
+  } else {
+    std::copy(results.get(), results.get() + np, out);
+    for (int a = 1; a < na; ++a)
+      for (size_t h = 0; h < np; ++h) out[h] += results[a * np + h];
   }
 }
 

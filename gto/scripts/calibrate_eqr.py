@@ -44,14 +44,13 @@ def measure(spot, path, flops, iterations, target, log):
     oop_r = class_to_combos(info["reach"][oop_idx])
     pot = info["pot"]
     stack = spot.config.stacks[0] - max(info["invested"])
-    sizing = BetSizing(oop={"flop": StreetSizing("33%, 75%", "60%"), "turn": StreetSizing("75%", "60%"),
-                            "river": StreetSizing("75%", "60%")},
-                       ip={"flop": StreetSizing("33%, 75%", "60%"), "turn": StreetSizing("75%", "60%"),
-                           "river": StreetSizing("75%", "60%")}, max_raises=1)
+    # Lean tree: realization at the flop root is robust to simplified later streets.
+    street = {"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", "a"), "river": StreetSizing("75%", "a")}
+    sizing = BetSizing(oop=dict(street), ip=dict(street), max_raises=1)
     acc = {p: {"ev": np.zeros(169), "eq": np.zeros(169), "w": np.zeros(169)} for p in (0, 1)}
     t0 = time.time()
     for k, flop in enumerate(flops):
-        s = PostflopSolver(flop, pot, stack, oop_r, ip_r, sizing=sizing)
+        s = PostflopSolver(flop, pot, stack, oop_r, ip_r, sizing=sizing, compress=True)
         st = s.solve(iterations, target, 25)
         root = s.node([])
         for p in (0, 1):

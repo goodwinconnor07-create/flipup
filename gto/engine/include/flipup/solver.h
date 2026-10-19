@@ -178,9 +178,11 @@ class Solver {
            const Discount& d, int depth);
   void evaluate(int node_id, int p, const float* opp_reach, float* out, EvalMode mode, int depth);
   void terminal_value(const Node& n, int p, const float* opp_reach, float* out) const;
-  void showdown_diff(int p, const float* opp_reach, const RiverBoard& rb, float* diff) const;
+  void showdown_diff(int p, const float* opp_reach, const RiverBoard& rb, float* diff, float* S = nullptr) const;
   void allin_diff(int p, const float* opp_reach, CardMask board, float* diff) const;
   void nonconflict_mass(int p, const float* opp_reach, float* S) const;
+  void chance_combine(const Node& n, int p, const float* results, float* out) const;
+  const std::vector<int>& board_blocked(int p, CardMask board) const;
   void current_strategy(const Node& n, float* out) const;
   void average_strategy(const Node& n, float* out) const;
   // Storage access (handles compression). Buffers hold num_children * hands floats.
@@ -200,6 +202,7 @@ class Solver {
   std::array<std::vector<float>, 2> init_weight_;
   std::array<std::vector<int>, 2> same_idx_;  // index of the same combo in the opponent's list, or -1
   std::array<std::array<int16_t, NUM_COMBOS>, 2> combo_to_idx_;
+  std::array<std::array<std::vector<int>, NUM_CARDS>, 2> hands_with_card_;
 
   // Suit isomorphism: 6 suit pairs; valid_swap_[k] if the root board and both ranges are invariant.
   std::array<std::pair<int, int>, 6> swap_pairs_;

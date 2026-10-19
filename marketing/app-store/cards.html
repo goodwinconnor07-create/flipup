@@ -5,34 +5,57 @@
 <title>FlipUp App Store cards</title>
 <!--
   The App Store screenshots for FlipUp, at Apple's 6.9" iPhone size (1320 × 2868).
-  Each .card is rendered to a PNG by render.mjs. The phone screens in ./screens come from
-  capture.spec.ts (real bot and online tables), so they're the real app, not mock-ups.
-  Colours match the app's tokens in src/styles/global.css. Inter Display stands in for SF Pro.
+  The eight cards sit side by side in one .strip with one background running through them, so
+  playing cards and phones can cross from one card into the next, the way they line up when
+  someone swipes through the set. Each .card is rendered to a PNG by render.mjs, which also swaps
+  every emoji for Apple's artwork. The phone screens in ./screens come from capture.spec.ts.
 -->
 <style>
   :root {
-    --ink: #0b0b12;
+    --ink: #1a1230;
     --white: #ffffff;
-    --red: #e11d48;
-    --red-lo: #881337;
     --card-red: #e5322d;
-    --felt: #15803d;
-    --felt-lo: #14532d;
-    --blue: #2563eb;
-    --blue-lo: #1e3a8a;
-    --violet: #7c3aed;
-    --violet-lo: #4c1d95;
-    --gold: #f59e0b;
+    --card-blue: #2563eb;
+    --card-green: #16a34a;
+    --card-black: #16161d;
+    --imessage: #1a8cff;
+    --bubble-in: #e9e9eb;
+    --w: 1320px;
     --font: 'Inter Display', 'Inter', -apple-system, system-ui, sans-serif;
   }
   * { box-sizing: border-box; }
-  body { margin: 0; background: #222; font-family: var(--font); display: flex; flex-wrap: wrap; gap: 40px; padding: 40px; }
+  body { margin: 0; background: #222; font-family: var(--font); display: flex; flex-direction: column; gap: 40px; padding: 40px; }
+
+  /* All eight cards side by side, one background through them. Colours sit at each card's centre:
+     white, blue, red, felt green, night, gold, violet, night. */
+  .strip {
+    position: relative;
+    display: flex;
+    width: calc(var(--w) * 8);
+    overflow: hidden;
+    background:
+      radial-gradient(1100px 900px at 1980px 60%, rgba(255, 255, 255, 0.14), transparent 70%),
+      radial-gradient(1100px 900px at 3300px 60%, rgba(255, 255, 255, 0.14), transparent 70%),
+      radial-gradient(1100px 900px at 4620px 50%, rgba(255, 255, 255, 0.12), transparent 70%),
+      radial-gradient(1100px 900px at 7260px 60%, rgba(255, 255, 255, 0.16), transparent 70%),
+      radial-gradient(1100px 900px at 8580px 60%, rgba(255, 255, 255, 0.14), transparent 70%),
+      linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.22) 100%),
+      linear-gradient(90deg,
+        #ffffff 0, #f3f1f8 900px,
+        #2563eb 1980px,
+        #e11d48 3300px,
+        #15803d 4620px,
+        #151027 5940px,
+        #f59e0b 7260px,
+        #7c3aed 8580px,
+        #151027 9900px);
+  }
 
   .card {
     position: relative;
-    width: 1320px;
+    flex: none;
+    width: var(--w);
     height: 2868px;
-    overflow: hidden;
     color: var(--white);
     display: flex;
     flex-direction: column;
@@ -40,17 +63,8 @@
     padding-top: 150px;
     text-align: center;
   }
-  /* Soft light in the top corner, and a glow behind the phone. */
-  .card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(900px 700px at 85% 0%, rgba(255, 255, 255, 0.22), transparent 70%),
-      radial-gradient(1000px 900px at 50% 78%, rgba(255, 255, 255, 0.12), transparent 70%);
-    pointer-events: none;
-  }
   .card > * { position: relative; }
+  .card.light { color: var(--ink); }
 
   .eyebrow {
     display: inline-block;
@@ -62,23 +76,10 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
   }
-  h1 {
-    margin: 52px 80px 0;
-    font-size: 132px;
-    line-height: 1.02;
-    font-weight: 900;
-    letter-spacing: -0.035em;
-  }
-  .sub {
-    margin: 40px 120px 0;
-    font-size: 58px;
-    line-height: 1.25;
-    font-weight: 600;
-    opacity: 0.88;
-  }
+  h1 { margin: 52px 80px 0; font-size: 132px; line-height: 1.02; font-weight: 900; letter-spacing: -0.035em; }
+  .sub { margin: 40px 120px 0; font-size: 58px; line-height: 1.25; font-weight: 600; opacity: 0.88; }
 
-  /* An iPhone with the app screen inside it. */
-  /* Sits right under the caption and runs off the bottom if it has to, like a phone held up. */
+  /* An iPhone with the app screen inside it. Filled in from data-screen by the script below. */
   .phone {
     flex: none;
     margin-top: 96px;
@@ -91,94 +92,94 @@
       0 80px 160px -40px rgba(10, 4, 30, 0.75),
       0 30px 60px -20px rgba(10, 4, 30, 0.5);
   }
-  .screen {
-    position: relative;
-    overflow: hidden;
-    border-radius: 128px;
-    background: #fff;
-  }
+  .screen { position: relative; overflow: hidden; border-radius: 128px; background: #fff; }
   .screen img { display: block; width: 100%; }
-  /* Status bar and Dynamic Island, so the capture reads as a phone. */
   .status {
-    height: 107px;
-    background: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+    height: 107px; background: #fff;
+    display: flex; align-items: center; justify-content: space-between;
     padding: 18px 92px 0 112px;
-    color: var(--ink);
-    font-size: 40px;
-    font-weight: 700;
-    font-family: -apple-system, 'Inter', sans-serif;
+    color: #0b0b12; font-size: 40px; font-weight: 700; font-family: -apple-system, 'Inter', sans-serif;
   }
   .status svg { height: 30px; }
-  .phone.small .status svg { height: 22px; }
-  .island {
-    position: absolute;
-    top: 28px;
-    left: 50%;
-    width: 248px;
-    height: 72px;
-    border-radius: 40px;
-    background: #000;
-    transform: translateX(-50%);
-  }
+  .island { position: absolute; top: 28px; left: 50%; width: 248px; height: 72px; border-radius: 40px; background: #000; transform: translateX(-50%); }
 
-  /* Floating bits that sit over or beside the phone. */
   .float { position: absolute; }
-  .chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 16px;
-    padding: 22px 40px;
-    border-radius: 999px;
-    font-size: 52px;
-    font-weight: 900;
-    letter-spacing: 0.02em;
-    box-shadow: 0 24px 50px -16px rgba(0, 0, 0, 0.45);
-  }
-  .chip svg { width: 44px; height: 44px; }
-  .avatar {
-    display: grid;
-    place-items: center;
-    width: 210px;
-    height: 210px;
-    border-radius: 50%;
-    font-size: 116px;
-    border: 10px solid #fff;
-    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.5);
-  }
-
-
-  .chip.red { background: var(--card-red); }
-  .chip.blue { background: var(--blue); }
-  .chip.dark { background: #0b0b12; }
-  .chip.white { background: #fff; color: var(--ink); }
 
   /* A playing card like the app's: white face, big rank, suit under it. */
   .pc {
     display: flex; flex-direction: column; align-items: flex-start;
-    width: 260px; height: 364px; padding: 22px 30px;
-    border-radius: 32px; background: #fff; color: #16161d;
-    font-size: 150px; font-weight: 800; line-height: 1;
-    box-shadow: 0 40px 80px -24px rgba(0, 0, 0, 0.55);
+    width: 360px; height: 504px; padding: 30px 40px;
+    border-radius: 44px; background: #fff; color: var(--card-black);
+    font-size: 210px; font-weight: 800; line-height: 1; letter-spacing: -0.04em;
+    box-shadow: 0 0 0 3px rgba(18, 18, 40, 0.06), 0 50px 100px -30px rgba(0, 0, 0, 0.6);
   }
-  .pc small { font-size: 96px; margin-top: 18px; }
+  .pc small { font-size: 130px; margin-top: 30px; }
   .pc.r { color: var(--card-red); }
-  .pc.b { color: var(--blue); }
-  .pc.g { color: var(--felt); }
+  .pc.b { color: var(--card-blue); }
+  .pc.g { color: var(--card-green); }
+  .pc.sm { width: 240px; height: 336px; padding: 20px 28px; border-radius: 30px; font-size: 140px; }
+  .pc.sm small { font-size: 88px; margin-top: 18px; }
 
-  .bg-ink { background: linear-gradient(170deg, #2a2140 0%, #120d22 55%, #07060c 100%); }
-  .bg-felt { background: radial-gradient(1400px 1200px at 50% 30%, #22a052 0%, var(--felt) 45%, var(--felt-lo) 100%); }
-  .bg-red { background: linear-gradient(165deg, #fb7185 0%, var(--red) 45%, var(--red-lo) 100%); }
-  .bg-blue { background: linear-gradient(165deg, #3b82f6 0%, var(--blue) 45%, var(--blue-lo) 100%); }
-  .bg-violet { background: linear-gradient(165deg, #a855f7 0%, var(--violet) 45%, var(--violet-lo) 100%); }
-  .bg-gold { background: linear-gradient(165deg, #fbbf24 0%, #f59e0b 40%, #b45309 100%); }
-  .bg-white { background: linear-gradient(180deg, #fff 0%, #f6f4f9 100%); color: var(--ink); }
-  .bg-white .eyebrow { border-color: rgba(26, 18, 48, 0.25); }
-  .bg-white .phone { box-shadow: 0 0 0 4px rgba(255,255,255,0.12) inset, 0 80px 160px -40px rgba(26,18,48,0.45); }
+  /* A clay poker chip. */
+  .chip-coin {
+    width: 300px; height: 300px; border-radius: 50%;
+    background:
+      radial-gradient(circle, #fff 0 34%, transparent 35%),
+      radial-gradient(circle, var(--c) 0 44%, transparent 45%),
+      repeating-conic-gradient(#fff 0 15deg, var(--c) 15deg 45deg);
+    box-shadow: 0 0 0 10px var(--c), 0 40px 80px -24px rgba(0, 0, 0, 0.6);
+    display: grid; place-items: center;
+    color: var(--c); font-size: 64px; font-weight: 900;
+  }
 
-  /* The wordmark: ink "Flip", red "Up", like the app's header. */
+  /* iMessage bubbles from the players. */
+  .msg { display: flex; align-items: flex-end; gap: 22px; text-align: left; }
+  .msg.out { flex-direction: row-reverse; text-align: right; }
+  .face {
+    flex: none; display: grid; place-items: center;
+    width: 132px; height: 132px; border-radius: 50%;
+    font-size: 84px; background: var(--bg, #fff);
+    border: 8px solid #fff;
+    box-shadow: 0 24px 48px -16px rgba(0, 0, 0, 0.5);
+  }
+  .msg small { display: block; margin: 0 0 8px 34px; font-size: 36px; font-weight: 700; opacity: 0.85; }
+  .msg.out small { margin: 0 34px 8px 0; }
+  .bubble {
+    position: relative;
+    padding: 30px 46px;
+    border-radius: 60px;
+    background: var(--bubble-in);
+    color: #0b0b12;
+    font-family: -apple-system, 'Inter', sans-serif;
+    font-size: 62px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em;
+    white-space: nowrap;
+    box-shadow: 0 30px 60px -24px rgba(0, 0, 0, 0.55);
+  }
+  .bubble.big { font-size: 84px; font-weight: 900; letter-spacing: -0.03em; }
+  .msg.out .bubble { background: var(--imessage); color: #fff; }
+  /* The little tail at the bottom corner. */
+  .bubble::after {
+    content: ''; position: absolute; bottom: 0; left: -14px;
+    width: 48px; height: 44px;
+    background: inherit;
+    clip-path: path('M48 0 C 44 26, 30 40, 0 44 C 26 44, 44 38, 48 30 Z');
+  }
+  .msg.out .bubble::after { left: auto; right: -14px; transform: scaleX(-1); }
+  .typing { display: flex; gap: 14px; padding: 40px 46px; }
+  .typing i { width: 26px; height: 26px; border-radius: 50%; background: #8e8e93; }
+  .typing i:nth-child(2) { opacity: 0.7; }
+  .typing i:nth-child(3) { opacity: 0.45; }
+  .seen { display: block; margin: 10px 34px 0 0; font-size: 32px; font-weight: 600; opacity: 0.75; font-family: -apple-system, 'Inter', sans-serif; }
+
+  /* A piece of a screen, cut out and blown up (the raise panel on card 4). */
+  .cutout {
+    width: 1180px;
+    border-radius: 72px;
+    background: url(screens/raise.png) no-repeat;
+    background-size: var(--s) auto;
+    box-shadow: 0 0 0 12px rgba(255, 255, 255, 0.95), 0 60px 120px -30px rgba(0, 0, 0, 0.6);
+  }
+
   .brand { display: flex; align-items: center; gap: 36px; margin-bottom: 8px; }
   .brand img { width: 168px; height: 168px; border-radius: 38px; box-shadow: 0 24px 50px -16px rgba(0, 0, 0, 0.35); }
   .brand b { font-size: 120px; font-weight: 900; letter-spacing: -0.045em; color: var(--ink); }
@@ -186,11 +187,17 @@
 
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 56px 40px; margin: 120px 90px 0; width: calc(100% - 180px); }
   .feature { display: flex; flex-direction: column; align-items: center; gap: 26px; }
-  .feature i { display: grid; place-items: center; width: 168px; height: 168px; border-radius: 48px; background: rgba(255,255,255,0.14); font-style: normal; font-size: 88px; font-weight: 900; }
+  .feature i { display: grid; place-items: center; width: 168px; height: 168px; border-radius: 48px; background: rgba(255, 255, 255, 0.14); font-style: normal; font-size: 88px; }
+  .feature i img { width: 104px !important; height: 104px !important; }
   .feature span { font-size: 52px; font-weight: 700; line-height: 1.2; opacity: 0.92; }
 
-  .card.banner { width: 1920px; height: 1080px; flex-direction: row; align-items: center; padding: 0 0 0 130px; text-align: left; }
-  .banner .copy { flex: none; width: 940px; }
+  /* The header banner: 1920 × 1080, for App Store event cards, featuring and the website. */
+  .card.banner {
+    width: 1920px; height: 1080px; overflow: hidden;
+    flex-direction: row; align-items: center; padding: 0 0 0 130px; text-align: left;
+    background: linear-gradient(110deg, #ffffff 0%, #f3f1f8 45%, #2563eb 75%, #e11d48 100%);
+  }
+  .banner .copy { flex: none; width: 900px; }
   .banner .brand { margin-bottom: 44px; }
   .banner .brand img { width: 136px; height: 136px; border-radius: 32px; }
   .banner .brand b { font-size: 104px; }
@@ -199,106 +206,140 @@
   .banner .phone { position: absolute; margin: 0; width: 520px; padding: 14px; border-radius: 88px; }
   .banner .screen { border-radius: 75px; }
   .banner .status { height: 62px; font-size: 24px; padding: 10px 54px 0 66px; }
+  .banner .status svg { height: 18px; }
   .banner .island { top: 16px; width: 144px; height: 42px; border-radius: 24px; }
   .banner .phone.back { left: 1080px; top: 170px; transform: rotate(-8deg); }
   .banner .phone.front { left: 1380px; top: 90px; transform: rotate(6deg); }
+  .banner .msg { position: absolute; }
+  .banner .bubble { font-size: 44px; padding: 22px 34px; border-radius: 44px; }
+  .banner .face { width: 96px; height: 96px; font-size: 58px; border-width: 6px; }
 </style>
 </head>
 <body>
 
 <!-- 0. The header banner. -->
-<section class="card banner bg-white" id="00-header">
+<section class="card banner light" id="00-header">
   <div class="copy">
     <div class="brand"><img src="../../public/icons/icon.svg" alt="" /><b>Flip<em>Up</em></b></div>
     <h1>Poker night, on your phones.</h1>
     <p class="sub">No-limit Hold'em for play chips. Friends join with a code. Bots fill the empty seats.</p>
   </div>
-  <div class="phone back"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/lobby.png" /></div></div>
-  <div class="phone front"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/turn.png" /></div></div>
+  <div class="phone back" data-screen="lobby"></div>
+  <div class="phone front" data-screen="odds"></div>
+  <div class="msg" style="left: 980px; top: 820px; transform: rotate(-3deg)"><span class="face" style="--bg: #fde68a">🔥</span><div class="bubble">ALL IN. 2,000 😤</div></div>
 </section>
 
-<!-- 1. The hook. White like the app, with the logo's ink and red. -->
-<section class="card bg-white" id="01-hero">
-  <div class="brand"><img src="../../public/icons/icon.svg" alt="" /><b>Flip<em>Up</em></b></div>
-  <h1>Poker night, on your phones.</h1>
-  <p class="sub">No-limit Texas Hold'em for play chips. No money, no accounts.</p>
-  <div class="phone" style="transform: rotate(-4deg); margin-top: 120px"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/turn.png" /></div></div>
-  <div class="float pc" style="top: 1040px; right: 30px; transform: rotate(12deg)">A<small>♠</small></div>
-  <div class="float pc r" style="top: 2280px; left: 30px; transform: rotate(-10deg)">K<small>♥</small></div>
-</section>
+<div class="strip">
 
-<!-- 2. Everyone joins. -->
-<section class="card bg-blue" id="02-friends">
-  <span class="eyebrow">Up to 9 at a table</span>
-  <h1>Everyone on their own phone</h1>
-  <p class="sub">Share a 5-letter code and you're in. Your cards stay on your screen.</p>
-  <div class="phone"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/lobby.png" /></div></div>
-  <div class="float avatar" style="top: 1300px; left: 30px; background: #f59e0b">🦊</div>
-  <div class="float avatar" style="top: 1720px; right: 24px; background: #be123c">🔥</div>
-  <div class="float avatar" style="top: 2380px; left: 60px; background: #1e3a8a">😎</div>
-</section>
+  <!-- 1. The hook. White like the app, with the logo's ink and red. -->
+  <section class="card light" id="01-hero">
+    <div class="brand"><img src="../../public/icons/icon.svg" alt="" /><b>Flip<em>Up</em></b></div>
+    <h1>Poker night, on your phones.</h1>
+    <p class="sub">No-limit Texas Hold'em for play chips. No money, no accounts.</p>
+    <div class="phone" data-screen="turn" style="transform: rotate(-4deg); margin-top: 120px"></div>
+    <!-- The ace runs off the right edge into card 2. -->
+    <div class="float pc" style="top: 1020px; right: -200px; transform: rotate(16deg)">A<small>♠</small></div>
+    <div class="float pc r" style="top: 2140px; left: -40px; transform: rotate(-12deg)">K<small>♥</small></div>
+    <div class="float msg out" style="top: 1560px; right: 50px; transform: rotate(3deg)"><span class="face" style="--bg: #fed7aa">🦊</span><div><div class="bubble">poker at 8? 🃏</div></div></div>
+  </section>
 
-<!-- 3. The drama. -->
-<section class="card bg-red" id="03-allin">
-  <span class="eyebrow">All in</span>
-  <h1>Flip them up. Sweat the river.</h1>
-  <p class="sub">Once every hand's face up, the odds show live as the board runs out.</p>
-  <div class="phone"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/odds.png" /></div></div>
-  <div class="float chip dark" style="top: 1180px; right: 50px; transform: rotate(7deg)">ALL IN</div>
-</section>
+  <!-- 2. Everyone joins. -->
+  <section class="card" id="02-friends">
+    <span class="eyebrow">Up to 9 at a table</span>
+    <h1>Everyone on their own phone</h1>
+    <p class="sub">Share a 5-letter code and you're in. Your cards stay on your screen.</p>
+    <div class="phone" data-screen="lobby"></div>
+    <div class="float msg" style="top: 1960px; left: 30px; transform: rotate(-3deg)"><span class="face" style="--bg: #c7d2fe">😎</span><div><div class="bubble">what's the code 👀</div></div></div>
+    <div class="float msg out" style="top: 2200px; right: 30px; transform: rotate(2deg)"><span class="face" style="--bg: #fed7aa">🦊</span><div class="bubble">just tap the link</div></div>
+    <div class="float msg" style="top: 2440px; left: 40px; transform: rotate(-2deg)"><span class="face" style="--bg: #fecaca">🔥</span><div><div class="bubble">deal me in 🙌</div></div></div>
+    <!-- A red chip rolls over the edge into card 3. -->
+    <div class="float chip-coin" style="--c: #e11d48; top: 2440px; right: -150px; transform: rotate(-18deg)"></div>
+  </section>
 
-<!-- 4. The controls. -->
-<section class="card bg-felt" id="04-raise">
-  <span class="eyebrow">Your turn</span>
-  <h1>Bet in one tap</h1>
-  <p class="sub">Half pot, pot or all in. Slide for anything in between.</p>
-  <div class="phone"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/raise.png" /></div></div>
-</section>
+  <!-- 3. The drama. -->
+  <section class="card" id="03-allin">
+    <span class="eyebrow">All in</span>
+    <h1>Flip them up. Sweat the river.</h1>
+    <p class="sub">Once every hand's face up, the odds show live as the board runs out.</p>
+    <div class="phone" data-screen="odds"></div>
+    <div class="float msg" style="top: 1560px; left: 24px; transform: rotate(-4deg)"><span class="face" style="--bg: #fde68a">🔥</span><div><div class="bubble big">ALL IN. 2,000 😤</div></div></div>
+    <div class="float msg" style="top: 1880px; right: 30px; transform: rotate(3deg)"><span class="face" style="--bg: #c7d2fe">😎</span><div><div class="bubble big">call 💀</div></div></div>
+    <div class="float msg" style="top: 2260px; left: 36px; transform: rotate(-2deg)"><span class="face" style="--bg: #bbf7d0">🐸</span><div><div class="bubble">can't watch 🫣</div></div></div>
+    <div class="float msg out" style="top: 2520px; right: 40px; transform: rotate(2deg)"><span class="face" style="--bg: #fed7aa">🦊</span><div><div class="bubble typing"><i></i><i></i><i></i></div></div></div>
+  </section>
 
-<!-- 5. Solo mode. -->
-<section class="card bg-ink" id="05-bots">
-  <span class="eyebrow">Works offline</span>
-  <h1>Nobody around? Play the bots.</h1>
-  <p class="sub">Up to 8 bots, your blinds, your stack. All on one phone.</p>
-  <div class="phone"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/setup.png" /></div></div>
-</section>
+  <!-- 4. Betting. The phone runs off into card 5. -->
+  <section class="card" id="04-raise">
+    <span class="eyebrow">Your turn</span>
+    <h1>Bet in one tap</h1>
+    <p class="sub">Half pot, pot or all in. Slide for anything in between.</p>
+    <div class="cutout" style="--s: 1180px; height: 726px; margin-top: 110px; background-position: 0 -1682px; transform: rotate(-3deg)"></div>
+    <div class="float phone" data-screen="turn" style="top: 1660px; left: 640px; width: 860px; transform: rotate(10deg)"></div>
+    <div class="float msg out" style="top: 1700px; left: 30px; transform: rotate(-3deg)"><span class="face" style="--bg: #fed7aa">🦊</span><div><div class="bubble big">pot. 😏</div><span class="seen">Read 9:41</span></div></div>
+    <div class="float msg" style="top: 2140px; left: 30px; transform: rotate(-2deg)"><span class="face" style="--bg: #bbf7d0">🐸</span><div><div class="bubble">ok fold 😭</div></div></div>
+  </section>
 
-<!-- 6. The payoff. -->
-<section class="card bg-gold" id="06-win">
-  <span class="eyebrow">Ship it</span>
-  <h1>Showdown, sorted</h1>
-  <p class="sub">The winning hand lights up, the pot slides over, and the next hand is one tap away.</p>
-  <div class="phone"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/result.png" /></div></div>
-</section>
+  <!-- 5. Solo mode. -->
+  <section class="card" id="05-bots">
+    <span class="eyebrow">Works offline</span>
+    <h1>Nobody around? Play the bots.</h1>
+    <p class="sub">Up to 8 bots, your blinds, your stack. All on one phone.</p>
+    <div class="phone" data-screen="setup" style="margin-left: 360px; width: 860px; transform: rotate(3deg)"></div>
+    <div class="float msg" style="top: 2330px; left: 340px; transform: rotate(-3deg)"><span class="face" style="--bg: #e2e8f0">🤖</span><div><div class="bubble">raise. obviously.</div></div></div>
+  </section>
 
-<!-- 7. For newer players. -->
-<section class="card bg-violet" id="07-rankings">
-  <span class="eyebrow">New to poker?</span>
-  <h1>Every hand, explained</h1>
-  <p class="sub">The rankings are one tap from Home, with real cards for each.</p>
-  <div class="phone"><div class="screen"><div class="island"></div><div class="status">9:41<span></span></div><img src="screens/rankings.png" /></div></div>
-</section>
+  <!-- 6. The payoff. The two winning cards fan out into card 7. -->
+  <section class="card" id="06-win">
+    <span class="eyebrow">Ship it</span>
+    <h1>Showdown, sorted</h1>
+    <p class="sub">The winning hand lights up and the chips slide over. Next hand's one tap away.</p>
+    <div class="phone" data-screen="result"></div>
+    <div class="float msg" style="top: 1640px; left: 30px; transform: rotate(-3deg)"><span class="face" style="--bg: #fecaca">🔥</span><div><div class="bubble">rebuy pls 💸</div></div></div>
+    <div class="float msg" style="top: 1900px; right: 60px; transform: rotate(3deg)"><span class="face" style="--bg: #c7d2fe">😎</span><div><div class="bubble">GG 🏆</div></div></div>
+    <div class="float pc g" style="top: 2240px; right: -170px; transform: rotate(-10deg)">A<small>♣</small></div>
+    <div class="float pc r" style="top: 2200px; right: -330px; transform: rotate(14deg)">A<small>♥</small></div>
+  </section>
 
-<!-- 8. Everything else. -->
-<section class="card bg-ink" id="08-more">
-  <h1 style="margin-top: 40px">All this.<br />And plenty more.</h1>
-  <div class="grid">
-    <div class="feature"><i>🃏</i><span>Real no-limit Hold'em rules</span></div>
-    <div class="feature"><i>🙈</i><span>Only you see your cards</span></div>
-    <div class="feature"><i>🤖</i><span>Bots fill empty seats</span></div>
-    <div class="feature"><i>🪙</i><span>Side pots and split pots done for you</span></div>
-    <div class="feature"><i>⏱️</i><span>A turn timer the host sets</span></div>
-    <div class="feature"><i>🔁</i><span>Rebuys if you go bust</span></div>
-    <div class="feature"><i>⚡</i><span>Check/Fold and Call any ahead of your turn</span></div>
-    <div class="feature"><i>😎</i><span>Any emoji as your picture</span></div>
-    <div class="feature"><i>💬</i><span>Quick reactions at the table</span></div>
-    <div class="feature"><i>🔊</i><span>Chip and card sounds</span></div>
-  </div>
-</section>
+  <!-- 7. For newer players. A royal flush fans out from the corner. -->
+  <section class="card" id="07-rankings">
+    <span class="eyebrow">New to poker?</span>
+    <h1>Every hand, explained</h1>
+    <p class="sub">The rankings are one tap from Home, with real cards for each.</p>
+    <div class="phone" data-screen="rankings"></div>
+    <div class="float msg" style="top: 1700px; left: 30px; transform: rotate(-2deg)"><span class="face" style="--bg: #bbf7d0">🐸</span><div><div class="bubble" style="white-space: normal; width: 780px">wait, does a flush beat a straight?</div></div></div>
+    <div class="float msg out" style="top: 2040px; right: 30px; transform: rotate(2deg)"><span class="face" style="--bg: #fed7aa">🦊</span><div class="bubble">yes 😂</div></div>
+    <div class="float pc sm" style="top: 2640px; right: -60px; transform: rotate(-24deg)">10<small>♠</small></div>
+    <div class="float pc sm" style="top: 2590px; right: -150px; transform: rotate(-12deg)">J<small>♠</small></div>
+    <div class="float pc sm" style="top: 2570px; right: -250px; transform: rotate(0deg)">Q<small>♠</small></div>
+    <div class="float pc sm" style="top: 2590px; right: -350px; transform: rotate(12deg)">K<small>♠</small></div>
+    <div class="float pc sm" style="top: 2640px; right: -440px; transform: rotate(24deg)">A<small>♠</small></div>
+  </section>
+
+  <!-- 8. Everything else. -->
+  <section class="card" id="08-more">
+    <h1 style="margin-top: 40px">All this.<br />And plenty more.</h1>
+    <div class="grid">
+      <div class="feature"><i>🃏</i><span>Real no-limit Hold'em rules</span></div>
+      <div class="feature"><i>🙈</i><span>Only you see your cards</span></div>
+      <div class="feature"><i>🤖</i><span>Bots fill empty seats</span></div>
+      <div class="feature"><i>🪙</i><span>Side pots and split pots done for you</span></div>
+      <div class="feature"><i>⏱️</i><span>A turn timer the host sets</span></div>
+      <div class="feature"><i>🔁</i><span>Rebuys if you go bust</span></div>
+      <div class="feature"><i>⚡</i><span>Check/Fold and Call any ahead of your turn</span></div>
+      <div class="feature"><i>😎</i><span>Any emoji as your picture</span></div>
+      <div class="feature"><i>💬</i><span>Quick reactions at the table</span></div>
+      <div class="feature"><i>🔊</i><span>Chip and card sounds</span></div>
+    </div>
+  </section>
+
+</div>
+
 <script>
-  // The same status-bar icons on every phone: signal, Wi-Fi, battery.
+  // Every phone: frame, Dynamic Island, status bar (signal, Wi-Fi, battery) and the app screen.
   const icons = `<svg viewBox="0 0 210 34" fill="#0b0b12"><rect x="0" y="22" width="9" height="12" rx="2"/><rect x="14" y="16" width="9" height="18" rx="2"/><rect x="28" y="9" width="9" height="25" rx="2"/><rect x="42" y="2" width="9" height="32" rx="2"/><path d="M92 8a34 34 0 0 1 46 0l-5 5a27 27 0 0 0-36 0zM100 16a22 22 0 0 1 30 0l-5 5a15 15 0 0 0-20 0zM108 24a10 10 0 0 1 14 0l-7 7z"/><rect x="152" y="5" width="50" height="25" rx="7" fill="none" stroke="#0b0b12" stroke-width="3" opacity="0.45"/><rect x="156" y="9" width="38" height="17" rx="4"/><rect x="204" y="13" width="4" height="9" rx="2" opacity="0.45"/></svg>`;
-  document.querySelectorAll('.status span').forEach((s) => (s.outerHTML = icons));
+  document.querySelectorAll('.phone[data-screen]').forEach((p) => {
+    p.innerHTML = `<div class="screen"><div class="island"></div><div class="status">9:41${icons}</div><img src="screens/${p.dataset.screen}.png" /></div>`;
+  });
 </script>
 </body>
 </html>

@@ -1,10 +1,15 @@
 import { expect, test, type Browser, type Page } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
+import { showAppleEmoji } from './apple-emoji.mjs';
 import { myTurn, setName, tableCode } from '../../e2e/helpers';
 
 const OUT = new URL('./screens', import.meta.url).pathname;
 mkdirSync(OUT, { recursive: true });
-const snap = (page: Page, name: string) => page.screenshot({ path: `${OUT}/${name}.png` });
+async function snap(page: Page, name: string) {
+  const undo = await showAppleEmoji(page);
+  await page.screenshot({ path: `${OUT}/${name}.png`, animations: 'disabled' });
+  await undo();
+}
 
 async function phone(browser: Browser): Promise<Page> {
   const { viewport, deviceScaleFactor, isMobile, hasTouch, baseURL } = test.info().project.use;

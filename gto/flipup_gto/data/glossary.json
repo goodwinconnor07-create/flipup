@@ -1,0 +1,164 @@
+{
+  "gto": {
+    "term": "GTO (game theory optimal)",
+    "short": "A strategy that can't be beaten in the long run, whatever the opponent does.",
+    "long": "In heads-up poker a GTO strategy is a Nash equilibrium: if both players play it, neither gains by changing anything. It doesn't try to exploit anyone, so it doesn't lose to anyone either. Solvers find it by self-play (CFR). With three or more players there's no such guarantee, so multiway advice is 'solver-approved' rather than strictly GTO."
+  },
+  "exploitative": {
+    "term": "Exploitative play",
+    "short": "Deviating from GTO to take advantage of a specific opponent's mistakes.",
+    "long": "If a friend folds too often, bluff more; if they never bluff, fold more. Exploiting wins more than GTO against that player but opens you up to counter-exploitation. GTO is the baseline you deviate from on purpose."
+  },
+  "ev": {
+    "term": "EV (expected value)",
+    "short": "How much a decision wins or loses on average, in big blinds.",
+    "long": "EV averages over every way the hand can go: the cards still to come and how your opponent plays their range. Comparing the EV of each option shows how much a choice cost, even when it happened to win."
+  },
+  "ev_loss": {
+    "term": "EV loss",
+    "short": "How much EV you gave up compared with the best option.",
+    "long": "EV loss = EV of the best action minus EV of the action you took. It's shown in big blinds and as a share of the pot so mistakes in small and big pots compare fairly."
+  },
+  "equity": {
+    "term": "Equity",
+    "short": "Your share of the pot if all the cards were dealt out with no more betting.",
+    "long": "Equity is your chance of winning (counting ties as half) against your opponent's whole range, not one specific hand. 60% equity in a 100bb pot is worth 60bb at showdown."
+  },
+  "range": {
+    "term": "Range",
+    "short": "All the hands a player could have, given how they've played.",
+    "long": "Good players think about ranges instead of putting someone on one hand. Each action narrows a range: a preflop 3-bet range is much stronger than a calling range."
+  },
+  "pot_odds": {
+    "term": "Pot odds",
+    "short": "The price you're getting on a call.",
+    "long": "Calling 50 into a pot of 150 (after their bet) means risking 50 to win 150, or 3 to 1. You need 50 / (150 + 50) = 25% equity to break even, ignoring later streets.",
+    "formula": "required equity = call / (pot after the bet + call)"
+  },
+  "mdf": {
+    "term": "MDF (minimum defense frequency)",
+    "short": "How often you must continue so any two cards can't bluff you profitably.",
+    "long": "Against a half-pot bet you need to continue with about 67% of your range, against a pot-size bet 50%. It's a guide, not a rule: out of position and against strong ranges GTO often defends a little less, and on the flop you also have to think about later streets.",
+    "formula": "MDF = pot / (pot + bet)"
+  },
+  "alpha": {
+    "term": "Alpha (bluff break-even)",
+    "short": "How often a pure bluff needs to work to break even.",
+    "long": "A pot-size bluff risks 1 pot to win 1 pot, so it needs to work 50% of the time; a half-pot bluff needs 33%.",
+    "formula": "alpha = bet / (pot + bet)"
+  },
+  "value_bluff_ratio": {
+    "term": "Value-to-bluff ratio",
+    "short": "How many bluffs a balanced river betting range has for each value hand.",
+    "long": "On the river a balanced range makes the caller indifferent: with a pot-size bet that's 2 value hands per bluff (33% bluffs), with a half-pot bet 3 value hands per bluff (25% bluffs). Earlier streets carry more bluffs because they can still improve.",
+    "formula": "bluff share = bet / (pot + 2 x bet)"
+  },
+  "range_advantage": {
+    "term": "Range advantage",
+    "short": "Whose range has more equity overall on this board.",
+    "long": "The player with the range advantage can bet more often. A preflop raiser usually has it on high-card boards like A-K-7; the big blind often has it on low, connected boards like 7-6-5."
+  },
+  "nut_advantage": {
+    "term": "Nut advantage",
+    "short": "Who has more of the very strongest hands.",
+    "long": "Range advantage decides how often to bet; nut advantage decides how big. With more nutted hands you can bet large or overbet because your opponent can't have many strong hands to fight back with."
+  },
+  "polarized": {
+    "term": "Polarized range",
+    "short": "A range of very strong hands and bluffs, with few medium hands.",
+    "long": "Big bets, overbets and river raises are usually polarized: medium hands check because they'd only get called by better and fold out worse."
+  },
+  "merged": {
+    "term": "Merged (linear) range",
+    "short": "A range of strong and medium hands that bets for thin value and protection.",
+    "long": "Small bets are often merged: lots of decent hands bet because worse hands still call and the small size risks little."
+  },
+  "bluff_catcher": {
+    "term": "Bluff catcher",
+    "short": "A hand that only beats bluffs.",
+    "long": "Calling with a bluff catcher is right when the bettor bluffs often enough relative to the pot odds. At equilibrium the caller is often indifferent with these hands, so mixing calls and folds is fine."
+  },
+  "blockers": {
+    "term": "Blockers",
+    "short": "Cards in your hand that make some of your opponent's hands less likely.",
+    "long": "Holding the ace of a three-flush board means your opponent can't have the nut flush. Good bluffs block your opponent's calling hands and unblock their folds. Blockers are a tiebreaker after hand strength, not a reason on their own."
+  },
+  "equity_realization": {
+    "term": "Equity realization (EQR)",
+    "short": "How much of your raw equity you actually win once the betting is played out.",
+    "long": "Being in position, holding a hand that makes strong pairs or draws, and having the initiative all help you realize more than your equity. Weak offsuit hands out of position realize much less, which is why the big blind folds them even at a good price.",
+    "formula": "EQR = EV / (equity x pot)"
+  },
+  "spr": {
+    "term": "SPR (stack-to-pot ratio)",
+    "short": "Effective stack divided by the pot at the start of a street.",
+    "long": "Low SPR (under about 2) means top pair is usually good enough to get all in; at high SPR (13 and up, typical in single-raised pots) one pair is a hand for pot control.",
+    "formula": "SPR = effective stack / pot"
+  },
+  "geometric_sizing": {
+    "term": "Geometric bet sizing",
+    "short": "Betting the same share of the pot on each street so the last bet is all in.",
+    "long": "In a 100bb single-raised pot, about 116% of the pot on flop, turn and river gets the stacks in by the river. Polarized ranges use it to win the most from strong hands.",
+    "formula": "bet fraction = ((1 + 2 x SPR)^(1/streets) - 1) / 2"
+  },
+  "cbet": {
+    "term": "Continuation bet (c-bet)",
+    "short": "A bet on the flop by the player who raised last before the flop.",
+    "long": "In position on dry high-card boards GTO c-bets very often with a small size; on low, connected boards that favour the caller it checks more."
+  },
+  "donk_bet": {
+    "term": "Donk bet",
+    "short": "Leading out into the player who had the betting lead on the last street.",
+    "long": "Usually rare in GTO, but it shows up when the board changes in the caller's favour, for example the big blind leading on some low turns."
+  },
+  "check_raise": {
+    "term": "Check-raise",
+    "short": "Checking, then raising after your opponent bets.",
+    "long": "It's how the out-of-position player fights back with strong hands and draws, since betting first into a strong range rarely works."
+  },
+  "value_bet": {
+    "term": "Value bet",
+    "short": "A bet you want to get called, because worse hands call.",
+    "long": "On the river a value bet should beat more than half of the hands that call it (somewhat more in position, because you can be raised)."
+  },
+  "thin_value": {
+    "term": "Thin value",
+    "short": "Betting a medium-strength hand that's only slightly ahead of the calling range.",
+    "long": "Thin value bets are usually small. Missing thin value is one of the most common small-stakes leaks."
+  },
+  "semi_bluff": {
+    "term": "Semi-bluff",
+    "short": "Betting a hand that's behind now but can improve, like a flush draw.",
+    "long": "A semi-bluff wins when your opponent folds and still has outs when they call, so it's the best kind of bluff before the river."
+  },
+  "protection": {
+    "term": "Protection (equity denial)",
+    "short": "Betting so your opponent's weak hands can't see free cards and catch up.",
+    "long": "Vulnerable made hands on wet boards bet more for protection; on dry boards there's less to protect against."
+  },
+  "mixed_strategy": {
+    "term": "Mixed strategy",
+    "short": "Taking different actions with the same hand some of the time.",
+    "long": "GTO often splits a hand between two actions with the same EV, for example betting 40% and checking 60%. Choosing either one is not a mistake; the mix just keeps your ranges hard to read."
+  },
+  "indifference": {
+    "term": "Indifference",
+    "short": "When two options have the same EV, so either is fine.",
+    "long": "At equilibrium, hands that mix are indifferent between their actions. That's why the review grades by EV loss, not by whether you picked GTO's most common action."
+  },
+  "open_raise": {
+    "term": "Open raise (RFI)",
+    "short": "The first raise before the flop when everyone before you folded.",
+    "long": "At a 6-handed 100bb table GTO opens roughly 17-23% from UTG, 27-30% from the cutoff and 43-45% from the button. Open-limping (just calling the big blind first in) isn't part of GTO except from the small blind."
+  },
+  "three_bet": {
+    "term": "3-bet",
+    "short": "Re-raising a preflop raise.",
+    "long": "In position 3-bets are about 3x the open; from the blinds about 4x. GTO 3-bets a mix of strong hands and some suited hands that play well as bluffs."
+  },
+  "squeeze": {
+    "term": "Squeeze",
+    "short": "A 3-bet after someone raised and someone else called.",
+    "long": "The squeeze is bigger than a normal 3-bet because there's more money in the pot and two players to get through."
+  }
+}

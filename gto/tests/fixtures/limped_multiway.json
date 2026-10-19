@@ -1,0 +1,34 @@
+{
+  "id": "limp-multiway",
+  "small_blind": 1, "big_blind": 2,
+  "button": "p4",
+  "players": [
+    {"id": "p1", "name": "Ana", "seat": 0, "stack": 300, "cards": ["7h", "6h"]},
+    {"id": "p2", "name": "Ben", "seat": 1, "stack": 250, "cards": null},
+    {"id": "p3", "name": "Cat", "seat": 2, "stack": 180, "cards": null},
+    {"id": "p4", "name": "Dan", "seat": 3, "stack": 400, "cards": null},
+    {"id": "p5", "name": "Eve", "seat": 4, "stack": 200, "cards": null},
+    {"id": "p6", "name": "Fay", "seat": 5, "stack": 200, "cards": null}
+  ],
+  "actions": [
+    {"street": "preflop", "player": "p1", "move": "call", "to": 2},
+    {"street": "preflop", "player": "p2", "move": "call", "to": 2},
+    {"street": "preflop", "player": "p3", "move": "fold"},
+    {"street": "preflop", "player": "p4", "move": "call", "to": 2},
+    {"street": "preflop", "player": "p5", "move": "call", "to": 2},
+    {"street": "preflop", "player": "p6", "move": "check"},
+    {"street": "flop", "player": "p5", "move": "check"},
+    {"street": "flop", "player": "p6", "move": "check"},
+    {"street": "flop", "player": "p1", "move": "bet", "to": 6},
+    {"street": "flop", "player": "p2", "move": "call", "to": 6},
+    {"street": "flop", "player": "p4", "move": "fold"},
+    {"street": "flop", "player": "p5", "move": "fold"},
+    {"street": "flop", "player": "p6", "move": "call", "to": 6},
+    {"street": "turn", "player": "p6", "move": "check"},
+    {"street": "turn", "player": "p1", "move": "check"},
+    {"street": "turn", "player": "p2", "move": "bet", "to": 20},
+    {"street": "turn", "player": "p6", "move": "fold"},
+    {"street": "turn", "player": "p1", "move": "call", "to": 20}
+  ],
+  "board": ["8h", "5c", "2d", "Kc", "Qs"]
+}

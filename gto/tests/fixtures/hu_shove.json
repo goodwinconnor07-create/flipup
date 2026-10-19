@@ -1,0 +1,14 @@
+{
+  "id": "hu-shove",
+  "small_blind": 1, "big_blind": 2,
+  "button": "a",
+  "players": [
+    {"id": "a", "name": "Ollie", "seat": 0, "stack": 24, "cards": ["Kc", "7d"]},
+    {"id": "b", "name": "Connor", "seat": 1, "stack": 60, "cards": ["Qh", "8h"]}
+  ],
+  "actions": [
+    {"street": "preflop", "player": "a", "move": "allin", "to": 24},
+    {"street": "preflop", "player": "b", "move": "fold"}
+  ],
+  "board": []
+}

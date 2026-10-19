@@ -24,7 +24,6 @@ import {
   BoltIcon,
   ClockIcon,
   ExitIcon,
-  EyeIcon,
   GearIcon,
   HelpIcon,
   HomeIcon,
@@ -279,15 +278,6 @@ function MenuSheet() {
     table.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });
   if (host && !ended)
     table.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
-  if (host && !ended && game?.players.some((p) => p.bot)) {
-    const on = !!game.settings.revealBots;
-    table.push({
-      label: on ? "Hide bots' hands" : "Show bots' hands",
-      Icon: EyeIcon,
-      color: on ? 'var(--slate-hi)' : 'var(--red)',
-      onClick: quick(() => dispatch({ type: 'settings', settings: { revealBots: !on } })),
-    });
-  }
   if (host && playing && game.players.length < 9)
     table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--violet)', onClick: quick(() => dispatch({ type: 'addBot' })) });
 

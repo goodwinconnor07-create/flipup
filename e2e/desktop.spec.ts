@@ -20,7 +20,7 @@ test('the table uses the wide screen: everyone seated round it, a side panel, no
   await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
 
   // Everyone is seated (nobody slides away on a computer) and there's a standings and log panel.
-  await expect(page.locator('.pod')).toHaveCount(8);
+  await expect(page.locator('.pod')).toHaveCount(9); // eight others, and mine
   await expect(page.locator('.pod.away')).toHaveCount(0);
   await expect(page.locator('.desk-side')).toBeVisible();
   await expect(page.getByText('Hand #1')).toBeVisible();
@@ -113,4 +113,27 @@ test.describe('animations stay on even if the computer says to reduce motion', (
     await page.reload();
     await expect(page.locator('html')).toHaveClass(/calm/);
   });
+});
+
+test('on a computer my own seat is on the table, with my position', async ({ page }) => {
+  watchErrors(page);
+  await sitDown(page, 2);
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
+  const mine = page.locator('.pod.self');
+  await expect(mine).toBeVisible();
+  await expect(mine).toContainText('Sam');
+  await expect(mine.locator('.pos-chip')).toHaveCount(1);
+  // Its picture matches the profile, and its my-box no longer repeats the marker.
+  await expect(page.locator('.my-box .pos-chip')).toHaveCount(0);
+  // The seat sits on the table, inside the window, clear of the other seats and of my buttons.
+  await expect(mine).toBeInViewport({ ratio: 1 });
+  const box = await mine.boundingBox();
+  const actions = await page.locator('.action-buttons').boundingBox();
+  expect(box!.y + box!.height).toBeLessThan(actions!.y);
+  const others = await page
+    .locator('.pod:not(.self)')
+    .evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).map((r) => ({ l: r.left, r: r.right, t: r.top, b: r.bottom })));
+  for (const o of others)
+    expect(box!.x < o.r - 2 && o.l < box!.x + box!.width - 2 && box!.y < o.b - 2 && o.t < box!.y + box!.height - 2).toBe(false);
+  await shot(page, '23-desktop-self');
 });

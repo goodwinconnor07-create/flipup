@@ -55,12 +55,6 @@ export function SettingsFields({
       )}
       <div className="tile-flat toggles">
         <Toggle
-          label="Reveal bots' hands"
-          hint="Everyone sees the bots' cards"
-          on={!!settings.revealBots}
-          onChange={(revealBots) => onChange({ ...settings, revealBots })}
-        />
-        <Toggle
           label="Rebuys"
           hint="Busted players can buy back in"
           on={settings.rebuys}

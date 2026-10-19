@@ -1033,12 +1033,17 @@ html.calm .pod.won .pod-pic {
     var(--shadow-sm);
 }
 
-.pos-d {
+.pos-btn {
   background: var(--surface);
   color: var(--ink);
   box-shadow:
     0 0 0 1.5px var(--ink),
     var(--shadow-sm);
+}
+
+.pos-other {
+  background: var(--bg-3);
+  color: var(--ink-2);
 }
 
 .pos-sb {
@@ -1294,11 +1299,17 @@ html.calm .table-timer.low .timer-run {
   position: relative;
 }
 
-.show-small {
+.show-row {
   position: absolute;
   left: 50%;
   top: calc(100% + 5px);
   translate: -50% 0;
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.show-small {
   height: 22px;
   padding: 0 10px;
   border: 0;

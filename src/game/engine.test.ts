@@ -8,6 +8,7 @@ import {
   equity,
   isEmoji,
   options,
+  positionOf,
   parseAction,
   redactForDevice,
   redactLogs,
@@ -539,7 +540,24 @@ describe('table', () => {
     expect(parseAction({ type: 'react', id: '<script>' })).toBeNull();
   });
 
-  it("can reveal the bots' hands to everyone, and only the bots'", () => {
+  it('names every position from the button: BTN, SB, BB, then UTG up to the cutoff', () => {
+    const names = (n: number) => {
+      const game = table(n);
+      return game.hand!.seats.map((s) => positionOf(game.hand, s.playerId)!.label);
+    };
+    const around = (n: number) => {
+      const game = table(n);
+      const b = game.hand!.seats.findIndex((s) => s.playerId === game.hand!.buttonId);
+      return game.hand!.seats.map((_, i) => positionOf(game.hand, game.hand!.seats[(b + i) % n].playerId)!.label);
+    };
+    expect(around(2)).toEqual(['BTN/SB', 'BB']);
+    expect(around(3)).toEqual(['BTN', 'SB', 'BB']);
+    expect(around(6)).toEqual(['BTN', 'SB', 'BB', 'UTG', 'HJ', 'CO']);
+    expect(around(9)).toEqual(['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO']);
+    expect(new Set(names(7)).size).toBe(7);
+  });
+
+  it("lets the host reveal every bot's hand once the hand is over, and nobody else's", () => {
     let game = createTable({
       hostDeviceId: HOST,
       name: 'Host',
@@ -551,19 +569,31 @@ describe('table', () => {
     });
     game = must(game, { type: 'join', name: 'Friend', emoji: '🐸' }, 'device-friend');
     game = must(game, { type: 'start' }, HOST);
+    const n = game.hand!.number;
+    // Not while the hand is still being played.
+    expect(applyAction(game, { type: 'revealBots', hand: n }, ctx(HOST)).ok).toBe(false);
+    // Everyone folds round to one player.
+    while (!game.hand!.result) {
+      const id = game.hand!.toAct!;
+      const who = game.players.find((p) => p.id === id)!;
+      game = who.bot
+        ? must(game, { type: 'tick' }, 'server', seededRng(3))
+        : must(game, { type: 'act', hand: game.hand!.number, seq: game.hand!.seq, move: 'fold' }, who.deviceId!);
+      if (who.bot) clock = (game.wakeAt ?? clock) + 1;
+    }
     const bots = game.players.filter((p) => p.bot).map((p) => p.id);
-    const view = (device: string) => redactForDevice(game, device).hand!.seats;
-    const hidden = (device: string, id: string) => view(device).find((s) => s.playerId === id)!.cards.length === 0;
-    expect(bots.every((id) => hidden('device-friend', id))).toBe(true);
-    // Only the host can turn it on.
-    expect(applyAction(game, { type: 'settings', settings: { revealBots: true } }, ctx('device-friend')).ok).toBe(false);
-    game = must(game, { type: 'settings', settings: { revealBots: true } }, HOST);
-    expect(bots.every((id) => !hidden('device-friend', id))).toBe(true);
-    // The friend's own cards stay theirs: the host still can't see them.
+    const hiddenFrom = (device: string, id: string) =>
+      redactForDevice(game, device).hand!.seats.find((s) => s.playerId === id)!.cards.length === 0;
+    const hiddenBots = bots.filter((id) => !game.hand!.seats.find((s) => s.playerId === id)!.shown);
+    expect(hiddenBots.length).toBeGreaterThan(0);
+    // Only the host can.
+    expect(applyAction(game, { type: 'revealBots', hand: n }, ctx('device-friend')).ok).toBe(false);
+    game = must(game, { type: 'revealBots', hand: n }, HOST);
+    expect(bots.every((id) => !hiddenFrom('device-friend', id))).toBe(true);
+    expect(game.logs.at(-1)!.lines.some((l) => /shows \[/.test(l))).toBe(true);
+    // A human who kept their cards hidden still has them hidden.
     const friend = game.players.find((p) => p.deviceId === 'device-friend')!.id;
-    expect(hidden(HOST, friend)).toBe(true);
-    expect(Object.keys(redactLogs(game, HOST)).length).toBe(0);
-    expect(parseAction({ type: 'settings', settings: { revealBots: 'yes' } })).toBeNull();
+    if (!game.hand!.seats.find((s) => s.playerId === friend)!.shown) expect(hiddenFrom(HOST, friend)).toBe(true);
   });
 
   it('times out a slow player: checks or folds, and sits them out after two', () => {

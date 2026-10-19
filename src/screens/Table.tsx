@@ -5,6 +5,7 @@ import {
   lastStanding,
   myPlayer,
   options,
+  positionOf,
   pot,
   REACTIONS,
   reactionText,
@@ -290,11 +291,16 @@ function Felt({ game }: { game: Game }) {
   const potNow = hand && !hand.result ? pot(hand) : 0;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
   const canShow = !!hand?.result && !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
+  // The host can turn every bot's cards over once the hand is done.
+  const canReveal =
+    !!hand?.result &&
+    game.hostDeviceId === deviceId &&
+    hand.seats.some((s) => !s.shown && game.players.find((p) => p.id === s.playerId)?.bot);
 
   return (
     <div className="felt">
       <div className="stage">
-        {others.length > 0 && (
+        {(others.length > 0 || desktop) && (
           <div
             className={`pods${others.length >= 8 ? ' crowded' : ''}`}
             style={{ ['--tile' as string]: others.length >= 8 ? '192px' : '232px' }}
@@ -325,6 +331,23 @@ function Felt({ game }: { game: Game }) {
                 />
               );
             })}
+            {desktop && me && (
+              <Pod
+                key={me.id}
+                game={game}
+                player={me}
+                seat={mySeat}
+                odds={odds?.get(me.id)}
+                reaction={reactions[me.id]}
+                dimCard={dim}
+                glowCard={glow}
+                slot={0}
+                ring={{ x: 50, y: 90 }}
+                n={1}
+                away={false}
+                self
+              />
+            )}
             {podSlots.hidden > 0 && (
               <span className="pods-more" aria-label={`${podSlots.hidden} more players not shown`}>
                 +{podSlots.hidden}
@@ -379,7 +402,7 @@ function Felt({ game }: { game: Game }) {
         <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />
       </div>
 
-      <div className={`me-area${canShow ? ' has-show' : ''}`}>
+      <div className={`me-area${canShow || canReveal ? ' has-show' : ''}`}>
         <div className="my-cards">
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
@@ -400,15 +423,29 @@ function Felt({ game }: { game: Game }) {
               <CardSlot size="xl" />
             </>
           )}
-          {canShow && (
-            <button
-              type="button"
-              className="show-small press"
-              aria-label="Show my cards"
-              onClick={() => dispatch({ type: 'show', hand: hand!.number })}
-            >
-              Show cards
-            </button>
+          {(canShow || canReveal) && (
+            <span className="show-row">
+              {canShow && (
+                <button
+                  type="button"
+                  className="show-small press"
+                  aria-label="Show my cards"
+                  onClick={() => dispatch({ type: 'show', hand: hand!.number })}
+                >
+                  Show cards
+                </button>
+              )}
+              {canReveal && (
+                <button
+                  type="button"
+                  className="show-small press"
+                  aria-label="Reveal the bots' hands"
+                  onClick={() => dispatch({ type: 'revealBots', hand: hand!.number })}
+                >
+                  Reveal bots
+                </button>
+              )}
+            </span>
           )}
         </div>
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} />
@@ -547,6 +584,7 @@ function Pod({
   ring,
   n,
   away,
+  self = false,
 }: {
   game: Game;
   player: Player;
@@ -559,6 +597,8 @@ function Pod({
   ring: { x: number; y: number };
   n: number;
   away: boolean;
+  /** My own seat, at the bottom of the table on a computer. */
+  self?: boolean;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
@@ -571,23 +611,23 @@ function Pod({
   return (
     <button
       type="button"
-      className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}`}
+      className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}${self ? ' self' : ''}`}
       style={{ ['--slot' as string]: slot, ['--n' as string]: n, ['--ax' as string]: `${ring.x}%`, ['--ay' as string]: `${ring.y}%` }}
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
       aria-label={`${player.name}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}`}
-      onClick={() => host && openSheet({ name: 'player', playerId: player.id })}
+      onClick={() => host && !self && openSheet({ name: 'player', playerId: player.id })}
     >
       <span className="pod-pic">
         {turn && <span className="pod-ring" aria-hidden />}
         <Avatar emoji={player.emoji} size={50} />
-        {hand && <PositionChips button={hand.buttonId === player.id} sb={hand.sbId === player.id} bb={hand.bbId === player.id} />}
+        <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? <ReactBubble id={reaction} /> : seat?.last && <Bubble last={seat.last} street={hand?.street} />}
       </span>
       <span className="pod-name">{player.name}</span>
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
       <span className="pod-under">
-        {seat && !seat.folded && (
+        {!self && seat && (!seat.folded || (seat.shown && seat.cards.length > 0)) && (
           <span className="pod-cards">
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)
@@ -654,8 +694,14 @@ function MyBox({
   reaction?: string;
 }) {
   const hand = game.hand;
-  const bubble = reaction ? <ReactBubble id={reaction} /> : seat?.last ? <Bubble last={seat.last} street={hand?.street} /> : null;
-  const pos = hand && me && <PositionChips button={hand.buttonId === me.id} sb={hand.sbId === me.id} bb={hand.bbId === me.id} />;
+  const desktop = useDesktop();
+  // On a computer my seat is on the table (bottom), so the bubble and position are shown there.
+  const bubble = desktop ? null : reaction ? (
+    <ReactBubble id={reaction} />
+  ) : seat?.last ? (
+    <Bubble last={seat.last} street={hand?.street} />
+  ) : null;
+  const pos = me && !desktop && <PositionChips pos={positionOf(hand, me.id)} />;
   if (odds) {
     return (
       <div className="my-box odds-box" aria-label={`Win ${pct(odds.win)}, tie ${pct(odds.tie)}`}>

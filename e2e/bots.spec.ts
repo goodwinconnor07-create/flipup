@@ -317,7 +317,7 @@ test('the recorded sound effects load and decode', async ({ page }) => {
   for (const d of Object.values(durations)) expect(d).toBeGreaterThan(0.3);
 });
 
-test("the host can reveal the bots' hands, and hide them again", async ({ page }) => {
+test("after a hand the host can reveal the bots' hands, next to Show cards", async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play the bots' }).click();
@@ -326,18 +326,41 @@ test("the host can reveal the bots' hands, and hide them again", async ({ page }
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
   await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
-  const faceUp = page.locator('.pod .pod-cards .pcard:not(.pcard-back)');
-  await expect(page.locator('.pod .pod-cards .pcard-back').first()).toBeVisible();
-  await expect(faceUp).toHaveCount(0);
-
+  // Not during the hand, and it isn't a table setting any more.
+  await expect(page.getByRole('button', { name: "Reveal the bots' hands" })).toHaveCount(0);
   await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('button', { name: "Show bots' hands" }).click();
-  // Every bot still in the hand now shows both cards.
+  await expect(page.getByRole('button', { name: /bots' hands/ })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Close' }).click();
+
+  // Fold, and wait for the hand to finish.
+  const reveal = page.getByRole('button', { name: "Reveal the bots' hands" });
+  for (let i = 0; i < 100 && !(await reveal.isVisible()); i++) {
+    if (await page.getByText('Your turn').isVisible()) await page.locator('.action-buttons .btn-fold').click();
+    await page.waitForTimeout(400);
+  }
+  await expect(reveal).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Show my cards' })).toBeVisible();
+  const back = page.locator('.pod .pod-cards .pcard-back');
+  // Anyone who folded kept their cards hidden: some backs are showing, until we reveal.
+  await shot(page, '17-reveal-button');
+  await reveal.click();
   await expect(page.locator('.pod .pod-cards .pcard-back')).toHaveCount(0);
-  expect(await faceUp.count()).toBeGreaterThanOrEqual(2);
-  await shot(page, '17-bots-revealed');
+  await expect(reveal).toHaveCount(0);
+  expect(await back.count()).toBe(0);
+});
 
-  await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('button', { name: "Hide bots' hands" }).click();
-  await expect(faceUp).toHaveCount(0);
+test('every player has a position: yours too', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'One less bot' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
+  // Four seats: BTN, SB, BB and CO between them (one is mine).
+  const labels = await page.locator('.pos-chip').allTextContents();
+  expect(labels.sort()).toEqual(['BB', 'BTN', 'CO', 'SB']);
+  await expect(page.locator('.my-box .pos-chip')).toHaveCount(1);
 });

@@ -20,10 +20,6 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
     if (!isInt(r[key])) return null;
     out[key] = r[key];
   }
-  if (r.revealBots !== undefined) {
-    if (typeof r.revealBots !== 'boolean') return null;
-    out.revealBots = r.revealBots;
-  }
   if (r.rebuys !== undefined) {
     if (typeof r.rebuys !== 'boolean') return null;
     out.rebuys = r.rebuys;
@@ -58,6 +54,7 @@ export function parseAction(raw: unknown): Action | null {
       return { type: 'act', hand: a.hand, seq: a.seq, move: a.move as Move, ...(a.to !== undefined ? { to: a.to as number } : {}) };
     case 'next':
     case 'show':
+    case 'revealBots':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
     case 'react':
       return isReactionId(a.id) ? { type: 'react', id: a.id } : null;

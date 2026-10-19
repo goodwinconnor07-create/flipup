@@ -34,6 +34,39 @@ export function options(game: Game, hand: Hand, seat: Seat): Options {
   };
 }
 
+export interface Position {
+  /** "BTN", "SB", "BB", "UTG", "HJ", "CO"... */
+  label: string;
+  kind: 'btn' | 'sb' | 'bb' | 'other';
+}
+
+/** Names for the seats after the big blind, by how many there are (nearest the big blind first, ending at the cutoff). */
+const MIDDLE: string[][] = [
+  [],
+  ['CO'],
+  ['HJ', 'CO'],
+  ['UTG', 'HJ', 'CO'],
+  ['UTG', 'LJ', 'HJ', 'CO'],
+  ['UTG', 'MP', 'LJ', 'HJ', 'CO'],
+  ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO'],
+];
+
+/** A player's position this hand, counted from the dealer button: BTN, SB, BB, then UTG up to the cutoff. */
+export function positionOf(hand: Hand | null, playerId: string): Position | null {
+  if (!hand) return null;
+  const n = hand.seats.length;
+  const at = hand.seats.findIndex((s) => s.playerId === playerId);
+  const button = hand.seats.findIndex((s) => s.playerId === hand.buttonId);
+  if (at < 0 || button < 0) return null;
+  const offset = (at - button + n) % n;
+  // Heads up the button is also the small blind.
+  if (n === 2) return offset === 0 ? { label: 'BTN/SB', kind: 'btn' } : { label: 'BB', kind: 'bb' };
+  if (offset === 0) return { label: 'BTN', kind: 'btn' };
+  if (offset === 1) return { label: 'SB', kind: 'sb' };
+  if (offset === 2) return { label: 'BB', kind: 'bb' };
+  return { label: MIDDLE[Math.min(n - 3, MIDDLE.length - 1)][offset - 3] ?? 'MP', kind: 'other' };
+}
+
 export function seatFor(hand: Hand | null, playerId: string | undefined): Seat | undefined {
   return hand && playerId ? hand.seats.find((s) => s.playerId === playerId) : undefined;
 }

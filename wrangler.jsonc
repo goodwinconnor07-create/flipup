@@ -19,4 +19,7 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TableRoom"] }],
   "observability": { "enabled": true },
+  // Where the GTO coach service (gto/, a separate Python server) runs. /api/gto/* is proxied there.
+  // Hosted on Fly.io (gto/fly.toml). For local work override it in .dev.vars (e.g. http://127.0.0.1:8000).
+  "vars": { "GTO_URL": "https://flipup-gto.fly.dev" },
 }

@@ -23,6 +23,7 @@ import { haptic, reducedMotion } from '../ui/effects';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
+import { captureFinishedHand } from './training';
 import {
   loadDeviceId,
   loadCalm,
@@ -53,7 +54,14 @@ export type Route =
   | { name: 'setup'; mode: 'online' | 'local' }
   | { name: 'join'; code?: string }
   | { name: 'joinTable'; info: TableInfo }
-  | { name: 'table' };
+  | { name: 'table' }
+  /** Training: reviews, the poker library, stats and custom hands. */
+  | { name: 'train'; section?: TrainSection }
+  | { name: 'lesson'; key: string }
+  | { name: 'drill'; scenario: string }
+  | { name: 'custom' };
+
+export type TrainSection = 'review' | 'library' | 'stats' | 'custom';
 
 export type Sheet =
   | { name: 'menu' }
@@ -274,6 +282,7 @@ let localTimer: ReturnType<typeof setTimeout> | undefined;
 function setSession(session: Session | null): void {
   saveSession(session);
   set({ session, game: viewOf(session, state.deviceId) });
+  captureFinishedHand(state.game, state.deviceId);
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
 }

@@ -15,6 +15,11 @@ POST /solve/postflop    {"board", "pot", "stack", "oop_range", "ip_range", "path
 POST /equity            {"hand": "AhKd", "range": "QQ+,AK", "board": "Ks9d5c"}
 GET  /math?pot=10&bet=5 -> pot odds, required equity, MDF, alpha, bluff share
 GET  /glossary          -> definitions of every concept the explanations use (for tooltips)
+POST /analyze           {"hand": <HandHistory JSON>, "hero": "p1"?}  -> {"job": id}
+                        custom hands: every decision gets the acting player's 13x13 strategy grid, and
+                        a hand that stops early gets a "pending" entry for the next decision
+GET  /library           -> drill scenarios (id, group, title, description, available)
+GET  /library/{id}/drill?seed=1 -> a practice spot: context, your hand, options, and GTO's answer
 """
 from __future__ import annotations
 
@@ -23,7 +28,11 @@ import traceback
 import uuid
 from concurrent.futures import ThreadPoolExecutor
 
+import os
+
+import numpy as np
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from . import _engine
@@ -32,10 +41,14 @@ from .concepts import alpha, mdf, pot_odds_ratio, required_equity, river_bluff_s
 from .handhistory import HandHistory
 from .preflop import CLASSES
 from .ranges import Range
+from . import library
 from .review import Reviewer, aggregate_session
 from .solver import BetSizing, PostflopSolver
 
-app = FastAPI(title="FlipUp GTO", version="0.1")
+app = FastAPI(title="FlipUp GTO", version="0.2")
+# The app may be served from another origin (its Cloudflare Worker); allow it to call us.
+app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FLIPUP_CORS", "*").split(","),
+                   allow_methods=["GET", "POST"], allow_headers=["*"])
 reviewer = Reviewer()
 _jobs: dict = {}
 _lock = threading.Lock()
@@ -84,13 +97,26 @@ def _start_job(fn, total: int) -> str:
 
     def run():
         try:
-            result = fn(lambda k: _jobs[jid].update(progress=k))
+            result = plain(fn(lambda k: _jobs[jid].update(progress=k)))
             _jobs[jid].update(status="done", result=result)
         except Exception as e:  # report the failure to the client
             _jobs[jid].update(status="error", error=f"{type(e).__name__}: {e}", trace=traceback.format_exc())
 
     _pool.submit(run)
     return jid
+
+
+def plain(x):
+    """Numpy scalars and arrays anywhere in a result, as plain JSON-ready Python values."""
+    if isinstance(x, dict):
+        return {str(k): plain(v) for k, v in x.items()}
+    if isinstance(x, (list, tuple)):
+        return [plain(v) for v in x]
+    if isinstance(x, np.ndarray):
+        return plain(x.tolist())
+    if isinstance(x, np.generic):
+        return x.item()
+    return x
 
 
 def _review_many(hhs: list, hero):
@@ -112,7 +138,7 @@ def review_hand(req: HandReq):
         hh = HandHistory.from_dict(req.hand)
     except (KeyError, ValueError) as e:
         raise HTTPException(400, f"bad hand history: {e}")
-    return reviewer.review(hh, req.hero)
+    return plain(reviewer.review(hh, req.hero))
 
 
 @app.post("/review/session")
@@ -131,6 +157,30 @@ def review_flipup(req: FlipUpReq):
     except (KeyError, ValueError) as e:
         raise HTTPException(400, f"bad hand log: {e}")
     return {"job": _start_job(_review_many(hhs, req.hero), len(hhs))}
+
+
+@app.post("/analyze")
+def analyze(req: HandReq):
+    try:
+        hh = HandHistory.from_dict(req.hand)
+    except (KeyError, ValueError) as e:
+        raise HTTPException(400, f"bad hand: {e}")
+    return {"job": _start_job(lambda progress: reviewer.review(hh, req.hero, analyze=True), 1)}
+
+
+@app.get("/library")
+def library_list():
+    return library.catalogue()
+
+
+@app.get("/library/{scenario}/drill")
+def library_drill(scenario: str, seed: int | None = None):
+    if scenario not in library.SCENARIOS:
+        raise HTTPException(404, "no such scenario")
+    try:
+        return plain(library.drill(reviewer, scenario, seed))
+    except ValueError as e:
+        raise HTTPException(404, str(e))
 
 
 @app.get("/jobs/{jid}")

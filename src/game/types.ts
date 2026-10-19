@@ -83,6 +83,38 @@ export interface HandLog {
   holes: Record<string, Card[]>;
   /** Players whose cards everyone saw. */
   shown: string[];
+  /** The same hand as data, for the GTO review (missing on hands from older versions). */
+  record?: HandRecord;
+}
+
+/** One move, as data. `to` is the player's total bet on that street after the move. */
+export interface HandAction {
+  street: Street;
+  playerId: string;
+  move: Move;
+  to: number;
+  /** Folded out of turn (left the table mid-hand). */
+  outOfTurn?: boolean;
+}
+
+/** A finished hand as data: what the GTO review and the training screens work from. */
+export interface HandRecord {
+  tableId: string;
+  number: number;
+  /** When the hand finished. */
+  at: number;
+  smallBlind: number;
+  bigBlind: number;
+  buttonId: string;
+  /** Everyone dealt in, with their chips before the blinds. */
+  players: { id: string; name: string; emoji: string; seat: number; stack: number }[];
+  actions: HandAction[];
+  board: Card[];
+  /** Hole cards this phone may see (its own and any shown). */
+  holes: Record<string, Card[]>;
+  /** Chips each player got back at the end. */
+  won: Record<string, number>;
+  showdown: boolean;
 }
 
 export interface Hand {
@@ -116,6 +148,10 @@ export interface Hand {
   result: HandResult | null;
   /** What's happened so far this hand, for the hand log. */
   log: string[];
+  /** Every move as data (public information). */
+  actions?: HandAction[];
+  /** Each player's chips before the blinds. */
+  startStacks?: Record<string, number>;
 }
 
 export interface Game {

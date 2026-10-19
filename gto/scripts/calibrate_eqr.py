@@ -96,35 +96,44 @@ def class_features():
     return np.array(rows)
 
 
-def fit_additive(measured, info, ip_idx, oop_idx, rounds=50, ridge=1e-3):
-    """Fit adj_ip, adj_oop (169 each) so that equity + adj_ip[h] - mean(adj_oop) matches IP shares, etc."""
-    X = class_features()
+def fit_additive(measured, info, ip_idx, oop_idx, ridge=1e-4):
+    """Fit adj_ip, adj_oop (169 each) for IP share(h, o) = equity + adj_ip[h] - adj_oop[o].
+
+    Both positions share one hand-quality model (strength, suitedness, pairs, connectivity, high
+    card), plus an in-position offset and an out-of-position penalty for weak offsuit hands. Sharing
+    matters: some classes never appear on one side (the BB 3-bets AA rather than calling), and a
+    separate fit per side extrapolates wildly for them. Each side's measured share minus equity is
+    linear in the parameters (its own adjustment minus the opponent-weighted average of the other
+    side's), so this is a single weighted least-squares solve.
+    """
     eq, pairs, _ = tables(with_tensor=False)
+    X0 = class_features()
+    e = X0[:, 1]
+    off = 1 - X0[:, 3] - X0[:, 4]
+    X = np.column_stack([e, X0[:, 3], X0[:, 4], X0[:, 6], X0[:, 8], X0[:, 3] * e])
+    weakoff = off * np.clip(0.05 - e, 0, None)
     r_ip, r_oop = info["reach"][ip_idx], info["reach"][oop_idx]
-    w_ip = np.nan_to_num(measured[1]["weight"])
-    w_oop = np.nan_to_num(measured[0]["weight"])
-    sh_ip, eq_ip = np.nan_to_num(measured[1]["share"]), np.nan_to_num(measured[1]["equity"])
-    sh_oop, eq_oop = np.nan_to_num(measured[0]["share"]), np.nan_to_num(measured[0]["equity"])
-    # Opponent-range weights per class (card removal aware) for averaging the other side's adjustment.
     W_vs_oop = pairs * r_oop[None, :]
     W_vs_oop /= np.maximum(W_vs_oop.sum(1, keepdims=True), 1e-12)
     W_vs_ip = pairs * r_ip[None, :]
     W_vs_ip /= np.maximum(W_vs_ip.sum(1, keepdims=True), 1e-12)
-
-    def wls(target, w):
-        A = X * w[:, None]
-        beta = np.linalg.solve(X.T @ A + ridge * np.eye(X.shape[1]), A.T @ target)
-        return X @ beta
-
-    adj_ip = np.zeros(169)
-    adj_oop = np.zeros(169)
-    for _ in range(rounds):
-        adj_ip = wls(sh_ip - eq_ip + W_vs_oop @ adj_oop, w_ip)
-        adj_oop = wls(sh_oop - eq_oop + W_vs_ip @ adj_ip, w_oop)
-    pred_ip = eq_ip + adj_ip - W_vs_oop @ adj_oop
-    pred_oop = eq_oop + adj_oop - W_vs_ip @ adj_ip
-    err_ip = float(np.sum(w_ip * np.abs(pred_ip - sh_ip)) / np.sum(w_ip))
-    err_oop = float(np.sum(w_oop * np.abs(pred_oop - sh_oop)) / np.sum(w_oop))
+    zero, one = np.zeros((169, 1)), np.ones((169, 1))
+    A_ip = np.hstack([X, one, zero])
+    A_oop = np.hstack([X, zero, weakoff[:, None]])
+    M_ip = A_ip - W_vs_oop @ A_oop
+    M_oop = A_oop - W_vs_ip @ A_ip
+    w_ip = np.nan_to_num(measured[1]["weight"])
+    w_oop = np.nan_to_num(measured[0]["weight"])
+    t_ip = np.nan_to_num(measured[1]["share"] - measured[1]["equity"])
+    t_oop = np.nan_to_num(measured[0]["share"] - measured[0]["equity"])
+    A = np.vstack([M_ip, M_oop])
+    t = np.concatenate([t_ip, t_oop])
+    w = np.concatenate([w_ip / w_ip.sum(), w_oop / w_oop.sum()])
+    Aw = A * w[:, None]
+    theta = np.linalg.solve(A.T @ Aw + ridge * np.eye(A.shape[1]), Aw.T @ t)
+    adj_ip, adj_oop = A_ip @ theta, A_oop @ theta
+    err_ip = float(np.sum(w_ip * np.abs(M_ip @ theta - t_ip)) / w_ip.sum())
+    err_oop = float(np.sum(w_oop * np.abs(M_oop @ theta - t_oop)) / w_oop.sum())
     return adj_ip, adj_oop, err_ip, err_oop
 
 

@@ -1,6 +1,7 @@
 // No-limit Texas Hold'em: dealing, blinds, betting rounds, side pots and the showdown.
 // Everything here works on a copy of the game that applyAction() already made, so it changes it in place.
 
+import { handRecord } from './record';
 import { fullDeck, shuffle, type Card } from './cards';
 import { describeHand } from './evaluate';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
@@ -210,6 +211,8 @@ export function startHand(game: Game, ctx: ActionContext): void {
     deadline: null,
     result: null,
     log: [],
+    actions: [],
+    startStacks: Object.fromEntries(players.map((p) => [p.id, p.stack])),
   };
   game.hand = hand;
   game.hands = (game.hands ?? 0) + 1;
@@ -289,6 +292,7 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
   }
 
   const l = seat.last!;
+  (hand.actions ??= []).push({ street: hand.street, playerId: seat.playerId, move: l.move as Move, to: l.move === 'call' ? seat.bet : l.amount });
   log(
     game,
     `${player.name} ${
@@ -322,6 +326,7 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   }
   seat.folded = true;
   seat.last = { move: 'fold', amount: 0, street: hand.street };
+  (hand.actions ??= []).push({ street: hand.street, playerId, move: 'fold', to: 0, outOfTurn: true });
   log(game, `${nameOf(game, playerId)} leaves and folds`);
   hand.seq += 1;
   if (hand.seats.filter((s) => !s.folded).length === 1) winWithoutShowdown(game, ctx);
@@ -565,6 +570,7 @@ function finishHand(game: Game, ctx: ActionContext, pause: number): void {
       lines: hand.log,
       holes: Object.fromEntries(hand.seats.map((s) => [s.playerId, s.cards])),
       shown: hand.seats.filter((s) => s.shown).map((s) => s.playerId),
+      record: handRecord(game, hand, ctx.now) ?? undefined,
     },
   ].slice(-MAX_LOGS);
   // Without rebuys the table is over once one player has all the chips (or only bots have any).

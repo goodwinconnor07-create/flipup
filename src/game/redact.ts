@@ -23,8 +23,11 @@ export function redactForDevice(game: Game, deviceId: string): Game {
 /** The hand log as one phone may see it: its own hole cards and any that were shown. */
 export function redactLogs(game: Game, deviceId: string): HandLog[] {
   const mine = mineFor(game, deviceId);
+  const visible = (holes: Record<string, string[]>, shown: string[]) =>
+    Object.fromEntries(Object.entries(holes).filter(([id]) => mine.has(id) || shown.includes(id)));
   return (game.logs ?? []).map((l) => ({
     ...l,
-    holes: Object.fromEntries(Object.entries(l.holes).filter(([id]) => mine.has(id) || l.shown.includes(id))),
+    holes: visible(l.holes, l.shown),
+    record: l.record && { ...l.record, holes: visible(l.record.holes, l.shown) },
   }));
 }

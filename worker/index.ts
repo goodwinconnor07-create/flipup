@@ -66,9 +66,25 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   return json({ error: "Couldn't find a free code. Try again." }, 503);
 }
 
+/** /api/gto/*: passed through to the GTO coach service, so the app talks to one origin. */
+async function gtoProxy(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
+  const base = (env.GTO_URL ?? '').replace(/\/$/, '');
+  if (!base) return json({ error: "The GTO coach isn't connected yet." }, 503);
+  const init: RequestInit = { method: request.method, headers: { 'content-type': 'application/json' } };
+  if (request.method === 'POST') init.body = await request.text();
+  try {
+    const res = await fetch(`${base}${pathname.slice('/api/gto'.length)}${search}`, init);
+    return new Response(res.body, { status: res.status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+  } catch {
+    return json({ error: "Couldn't reach the GTO coach." }, 502);
+  }
+}
+
 export default {
   async fetch(request, env): Promise<Response> {
-    const { pathname } = new URL(request.url);
+    const { pathname, search } = new URL(request.url);
+
+    if (pathname.startsWith('/api/gto/')) return gtoProxy(request, env, pathname, search);
 
     if (pathname === '/api/health') return json({ ok: true });
     if (pathname === '/api/tables') {

@@ -246,6 +246,18 @@ export const PaletteIcon = (p: P) => (
   </svg>
 );
 
+export const ChartIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
+  </svg>
+);
+
+export const BookIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5v-15ZM4 19.5A1.5 1.5 0 0 0 5.5 21H20" />
+  </svg>
+);
+
 export const EyeIcon = (p: P) => (
   <svg {...stroke(p)}>
     <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />

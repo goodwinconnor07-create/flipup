@@ -1017,3 +1017,91 @@ button.roster-item:active:not(:disabled) {
   margin: 8px auto 0;
   width: 100%;
 }
+
+/* ── Menu: grouped tiles ─────────────────────────────────────────────────── */
+
+.menu-section {
+  margin: 8px 0 8px;
+  font-size: var(--fs-small);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.menu-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 78px;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  font-size: var(--fs-body);
+  font-weight: 800;
+  text-align: left;
+}
+
+.menu-tile .mi-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: var(--on-color);
+}
+
+.menu-tile .mi-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.menu-rows {
+  margin-top: 4px;
+  border-top: 2px solid var(--line);
+}
+
+/* ── Home: totals and rejoin ─────────────────────────────────────────────── */
+
+.home-rejoin {
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+}
+
+.home-stats {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+}
+
+.stat small {
+  font-size: var(--fs-caption);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.stat b {
+  font-size: var(--fs-h3);
+  font-weight: 900;
+}

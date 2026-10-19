@@ -138,6 +138,10 @@ export interface Game {
   wakeAt: number | null;
   /** Every finished hand at this table, oldest first. Sent to phones only when they open the hand log. */
   logs: HandLog[];
+  /** Each player's latest quick message. `n` goes up with every new one, so phones know it's new. */
+  reactions?: Record<string, { id: string; n: number }>;
+  /** Hands dealt at this table so far (a hand called off still counts). */
+  hands?: number;
 }
 
 export type Action =
@@ -153,6 +157,8 @@ export type Action =
   | { type: 'next'; hand: number }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
+  /** A quick message to the table ("Nice hand!"). */
+  | { type: 'react'; id: string }
   | { type: 'sitOut'; out: boolean }
   | { type: 'rebuy' }
   | { type: 'end' }

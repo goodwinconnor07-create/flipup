@@ -507,6 +507,20 @@ describe('table', () => {
     expect(shown.find((x) => x.last!.move === 'call')!.last!.amount).toBeGreaterThan(0);
   });
 
+  it('takes quick messages from seated players, from the list only', () => {
+    let game = table(2);
+    const device = deviceOf(game, game.hand!.seats[0].playerId);
+    const id = game.hand!.seats[0].playerId;
+    game = must(game, { type: 'react', id: 'nice' }, device);
+    expect(game.reactions![id]).toEqual({ id: 'nice', n: 1 });
+    game = must(game, { type: 'react', id: 'nice' }, device);
+    expect(game.reactions![id].n).toBe(2);
+    expect(applyAction(game, { type: 'react', id: 'nope' }, ctx(device)).ok).toBe(false);
+    expect(applyAction(game, { type: 'react', id: 'nice' }, ctx('stranger')).ok).toBe(false);
+    expect(parseAction({ type: 'react', id: 'lucky' })).toEqual({ type: 'react', id: 'lucky' });
+    expect(parseAction({ type: 'react', id: '<script>' })).toBeNull();
+  });
+
   it('times out a slow player: checks or folds, and sits them out after two', () => {
     let game = table(3, { turnSeconds: 20 });
     const slow = game.hand!.toAct!;

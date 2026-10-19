@@ -84,3 +84,90 @@ export function loadSession(): Session | null {
 export function saveSession(session: Session | null): void {
   write(KEYS.session, session);
 }
+
+// ── Table look, sound, and the Home screen's memory ─────────────────────────
+
+export type Rail = 'dark' | 'wood' | 'light';
+
+export interface TableLook {
+  /** Felt colour, "#rrggbb". */
+  felt: string;
+  rail: Rail;
+}
+
+export const FELTS: { name: string; felt: string }[] = [
+  { name: 'Classic', felt: '#1f7a4d' },
+  { name: 'Teal', felt: '#0f766e' },
+  { name: 'Midnight', felt: '#1d3a8a' },
+  { name: 'Violet', felt: '#5b3aa6' },
+  { name: 'Burgundy', felt: '#8b1e3f' },
+  { name: 'Sunset', felt: '#c2410c' },
+  { name: 'Slate', felt: '#3b4252' },
+  { name: 'Rose', felt: '#be4f7a' },
+];
+export const RAILS: { id: Rail; name: string }[] = [
+  { id: 'dark', name: 'Dark' },
+  { id: 'wood', name: 'Wood' },
+  { id: 'light', name: 'Light' },
+];
+
+const DEFAULT_LOOK: TableLook = { felt: FELTS[0].felt, rail: 'dark' };
+
+export function loadTableLook(): TableLook {
+  const l = read<TableLook>('flipup.table');
+  return {
+    felt: typeof l?.felt === 'string' && /^#[0-9a-f]{6}$/i.test(l.felt) ? l.felt : DEFAULT_LOOK.felt,
+    rail: l?.rail === 'wood' || l?.rail === 'light' || l?.rail === 'dark' ? l.rail : DEFAULT_LOOK.rail,
+  };
+}
+
+export function saveTableLook(look: TableLook): void {
+  write('flipup.table', look);
+}
+
+export function loadMuted(): boolean {
+  return read<boolean>('flipup.muted') === true;
+}
+
+export function saveMuted(muted: boolean): void {
+  write('flipup.muted', muted);
+}
+
+/** Chips up or down over every table this phone has finished, for the Home screen. */
+export interface Stats {
+  net: number;
+  tables: number;
+  hands: number;
+  /** Tables already counted, so leaving twice can't count one twice. */
+  counted: string[];
+}
+
+export function loadStats(): Stats {
+  const s = read<Stats>('flipup.stats');
+  const num = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? n : 0);
+  return {
+    net: num(s?.net),
+    tables: num(s?.tables),
+    hands: num(s?.hands),
+    counted: Array.isArray(s?.counted) ? s.counted.filter((x) => typeof x === 'string') : [],
+  };
+}
+
+export function saveStats(stats: Stats): void {
+  write('flipup.stats', { ...stats, counted: stats.counted.slice(-30) });
+}
+
+/** The last online table this phone sat at, so Home can offer to rejoin it. */
+export interface LastTable {
+  code: string;
+  at: number;
+}
+
+export function loadLastTable(): LastTable | null {
+  const t = read<LastTable>('flipup.last');
+  return t && typeof t.code === 'string' && /^[A-Z]{5}$/.test(t.code) && typeof t.at === 'number' ? t : null;
+}
+
+export function saveLastTable(table: LastTable | null): void {
+  write('flipup.last', table);
+}

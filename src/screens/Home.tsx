@@ -1,7 +1,19 @@
-import { navigate, openSheet, useApp } from '../state/store';
+import { useState } from 'react';
+import { fetchTableInfo } from '../state/api';
+import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
+import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar, PlayingCard } from '../ui/components';
 import { colourWipe } from '../ui/effects';
 import { ArrowIcon } from '../ui/Icons';
+import { signed } from './Final';
+
+function ago(at: number): string {
+  const mins = Math.max(1, Math.round((Date.now() - at) / 60_000));
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 48) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  return `${Math.round(hours / 24)} days ago`;
+}
 
 export function Home() {
   const game = useApp((s) => s.game);
@@ -9,6 +21,29 @@ export function Home() {
   const profile = useApp((s) => s.profile);
   const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
   const named = profile.name.trim().length > 0;
+  const [stats] = useState(loadStats);
+  const [last, setLast] = useState(() => (active ? null : loadLastTable()));
+  const [looking, setLooking] = useState(false);
+
+  // The last online table, if it's still open, is one tap away.
+  const rejoin = async () => {
+    if (!last || looking) return;
+    setLooking(true);
+    try {
+      const info = await fetchTableInfo(last.code);
+      if (!info || info.status === 'ended') {
+        saveLastTable(null);
+        setLast(null);
+        toast('That table has closed.', 'error');
+        return;
+      }
+      navigate({ name: 'joinTable', info });
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn't reach the table.", 'error');
+    } finally {
+      setLooking(false);
+    }
+  };
 
   // No name yet: ask for one first, then carry on.
   const go = (then: 'host' | 'bots' | 'join') => {
@@ -42,6 +77,31 @@ export function Home() {
           <h2 className="hero">Poker night, on your phones.</h2>
           <p className="muted">No-limit Texas Hold'em. Friends join with a code; bots fill the empty seats.</p>
         </div>
+        {last && (
+          <button type="button" className="home-row home-rejoin press" disabled={looking} onClick={() => void rejoin()}>
+            <ArrowIcon width={22} height={22} />
+            <span className="home-row-text">
+              <b>{looking ? 'Looking for the table…' : `Rejoin table ${last.code}`}</b>
+              <small>Last played {ago(last.at)}</small>
+            </span>
+          </button>
+        )}
+        {stats.tables > 0 && (
+          <div className="home-stats" aria-label="Your totals">
+            <div className="stat">
+              <small>Lifetime</small>
+              <b className={`num ${stats.net > 0 ? 'good' : stats.net < 0 ? 'bad' : ''}`}>{signed(stats.net)}</b>
+            </div>
+            <div className="stat">
+              <small>Tables</small>
+              <b className="num">{stats.tables}</b>
+            </div>
+            <div className="stat">
+              <small>Hands</small>
+              <b className="num">{stats.hands}</b>
+            </div>
+          </div>
+        )}
         {active && (
           <button type="button" className="home-row press" onClick={() => navigate({ name: 'table' })}>
             <ArrowIcon width={22} height={22} />

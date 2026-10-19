@@ -165,6 +165,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     log: [],
   };
   game.hand = hand;
+  game.hands = (game.hands ?? 0) + 1;
   log(game, `-- Hand #${hand.number} (dealer: ${button.name}) --`);
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
 

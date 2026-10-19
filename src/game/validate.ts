@@ -1,6 +1,7 @@
 // Checks everything that arrives over the network before it gets near the game.
 
 import { isEmoji } from './emoji';
+import { isReactionId } from './reactions';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
 
@@ -54,6 +55,8 @@ export function parseAction(raw: unknown): Action | null {
     case 'next':
     case 'show':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
+    case 'react':
+      return isReactionId(a.id) ? { type: 'react', id: a.id } : null;
     case 'sitOut':
       return typeof a.out === 'boolean' ? { type: 'sitOut', out: a.out } : null;
     default:

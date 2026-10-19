@@ -22,7 +22,25 @@ import {
 import { haptic, reducedMotion } from '../ui/effects';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
-import { loadDeviceId, loadProfile, loadSession, saveProfile, saveSession, saveSettings, type Profile, type Session } from './persist';
+import { setMuted } from '../ui/sound';
+import {
+  loadDeviceId,
+  loadMuted,
+  loadProfile,
+  loadSession,
+  loadStats,
+  loadTableLook,
+  saveLastTable,
+  saveMuted,
+  saveProfile,
+  saveSession,
+  saveSettings,
+  saveStats,
+  saveTableLook,
+  type Profile,
+  type Session,
+  type TableLook,
+} from './persist';
 
 export type Route =
   | { name: 'home' }
@@ -40,6 +58,7 @@ export type Sheet =
   | { name: 'standings' }
   | { name: 'rankings' }
   | { name: 'log' }
+  | { name: 'theme' }
   | { name: 'emoji' }
   | { name: 'player'; playerId: string }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
@@ -69,6 +88,9 @@ export interface AppState {
   sending: string | null;
   /** The hand log, once asked for (null while it's on its way). */
   logs: HandLog[] | null;
+  /** Felt and rail, as this phone likes them. */
+  look: TableLook;
+  muted: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -99,7 +121,10 @@ let state: AppState = {
   busy: null,
   sending: null,
   logs: null,
+  look: loadTableLook(),
+  muted: loadMuted(),
 };
+setMuted(loadMuted());
 
 function set(patch: Partial<AppState>): void {
   state = { ...state, ...patch };
@@ -303,6 +328,7 @@ function connect(code: string): void {
       set({ sending: null });
     },
     onGone: (message) => {
+      saveLastTable(null);
       closeConnection();
       setSession(null);
       resetTo();
@@ -365,6 +391,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   try {
     const code = await createOnlineTable({ deviceId: state.deviceId, name, emoji, settings, bots });
     setSession({ mode: 'online', code, game: null });
+    saveLastTable({ code, at: Date.now() });
     connect(code);
     resetTo({ name: 'table' });
   } catch (e) {
@@ -382,12 +409,50 @@ export function joinTable(code: string): void {
     return;
   }
   setSession({ mode: 'online', code, game: null, joining: true });
+  saveLastTable({ code, at: Date.now() });
   connect(code);
   resetTo({ name: 'table' });
 }
 
+// ── Settings that live on this phone ────────────────────────────────────────
+
+export function setTableLook(patch: Partial<TableLook>): void {
+  const look = { ...state.look, ...patch };
+  saveTableLook(look);
+  set({ look });
+}
+
+export function toggleMuted(): void {
+  const muted = !state.muted;
+  saveMuted(muted);
+  setMuted(muted);
+  set({ muted });
+}
+
+/** Counts this table's result towards the Home screen's lifetime numbers (once per table). */
+function recordFinished(): void {
+  const game = state.game;
+  const me = game?.players.find((p) => p.deviceId === state.deviceId);
+  const played = game?.hands ?? game?.hand?.number ?? 0;
+  if (!game || !me || played === 0) return;
+  const stats = loadStats();
+  if (stats.counted.includes(game.id)) return;
+  saveStats({
+    net: stats.net + (me.stack - me.bought),
+    tables: stats.tables + 1,
+    hands: stats.hands + played,
+    counted: [...stats.counted, game.id],
+  });
+}
+
+/** Sends a quick message ("Nice hand!") to the table. */
+export function react(id: string): void {
+  dispatch({ type: 'react', id });
+}
+
 /** Leaves the table on this phone. Online, the seat is given up too. */
 export function leaveTable(): void {
+  recordFinished();
   const s = state.session;
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
   if (s?.mode === 'online' && me && state.game?.status !== 'ended') send({ type: 'remove', playerId: me.id });
@@ -399,6 +464,8 @@ export function leaveTable(): void {
 
 /** Forget a finished table and go home. */
 export function closeTable(): void {
+  recordFinished();
+  if (state.session?.mode === 'online') saveLastTable(null);
   closeConnection();
   setSession(null);
   resetTo();

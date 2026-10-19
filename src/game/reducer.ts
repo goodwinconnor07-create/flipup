@@ -5,6 +5,7 @@ import { BOTS, botMove } from './bots';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { canDeal, cardsText, foldOutOfTurn, makeMove, MAX_SEATS, playerById, runoutStep, schedule, startHand, TIMING } from './holdem';
 import { newId } from './ids';
+import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
 import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
@@ -103,6 +104,7 @@ export function createTable(opts: {
     version: 0,
     wakeAt: null,
     logs: [],
+    reactions: {},
   };
   game.players.push(newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }));
   for (let i = 0; i < opts.bots && game.players.length < MAX_SEATS; i++) addBot(game);
@@ -245,6 +247,13 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       // Everyone who's playing has seen enough: deal now.
       const waitingOn = game.players.filter((p) => !p.bot && !p.sittingOut && p.stack > 0 && !game.ready.includes(p.id));
       if (waitingOn.length === 0 && game.nextHandAt !== null && canDeal(game)) startHand(game, ctx);
+      return done();
+    }
+
+    case 'react': {
+      if (!me) return fail("You're not at this table.");
+      if (!isReactionId(action.id)) return fail("That isn't one of the quick messages.");
+      game.reactions = { ...game.reactions, [me.id]: { id: action.id, n: (game.reactions?.[me.id]?.n ?? 0) + 1 } };
       return done();
     }
 

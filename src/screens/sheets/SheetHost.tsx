@@ -12,22 +12,28 @@ import {
   openSheet,
   resetTo,
   setProfile,
+  setTableLook,
+  toggleMuted,
   useApp,
   type Sheet as SheetSpec,
 } from '../../state/store';
-import { Avatar, chips, EmojiPicker, Sheet } from '../../ui/components';
+import { Avatar, Choice, chips, EmojiPicker, PlayingCard, Sheet } from '../../ui/components';
+import { FELTS, RAILS } from '../../state/persist';
 import {
+  ClockIcon,
   ExitIcon,
-  HelpIcon,
-  ListIcon,
-  HomeIcon,
   GearIcon,
+  HelpIcon,
+  HomeIcon,
+  ListIcon,
+  MuteIcon,
+  PaletteIcon,
   PencilIcon,
+  PlusIcon,
+  SoundIcon,
   StopIcon,
   TrophyIcon,
   UsersIcon,
-  ClockIcon,
-  PlusIcon,
 } from '../../ui/Icons';
 import { StandingsList } from '../Final';
 import { SettingsFields } from '../Setup';
@@ -49,6 +55,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <RankingsSheet />;
     case 'log':
       return <LogSheet />;
+    case 'theme':
+      return <ThemeSheet />;
     case 'emoji':
       return <EmojiSheet />;
     case 'player':
@@ -179,65 +187,119 @@ interface Item {
   danger?: boolean;
 }
 
+/** Felt colour, rail and a live preview. Only changes how the table looks on this phone. */
+function ThemeSheet() {
+  const look = useApp((s) => s.look);
+  const custom = !FELTS.some((f) => f.felt.toLowerCase() === look.felt.toLowerCase());
+  return (
+    <Sheet title="Table theme">
+      <div className={`table-oval theme-preview rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
+        <div className="table-felt">
+          <div className="board">
+            {['As', 'Kh', '7d', 'Tc', '2s'].map((c) => (
+              <PlayingCard key={c} card={c} size="md" />
+            ))}
+          </div>
+        </div>
+      </div>
+      <p className="section-title" style={{ margin: '0 0 10px' }}>
+        Felt
+      </p>
+      <div className="swatches" role="radiogroup" aria-label="Felt colour">
+        {FELTS.map((f) => (
+          <button
+            key={f.felt}
+            type="button"
+            role="radio"
+            aria-checked={look.felt.toLowerCase() === f.felt}
+            aria-label={f.name}
+            className={`swatch press${look.felt.toLowerCase() === f.felt ? ' on' : ''}`}
+            style={{ background: f.felt }}
+            onClick={() => setTableLook({ felt: f.felt })}
+          />
+        ))}
+        <label
+          className={`swatch swatch-custom${custom ? ' on' : ''}`}
+          aria-label="Pick any colour"
+          style={custom ? { background: look.felt } : undefined}
+        >
+          <input type="color" value={look.felt} onChange={(e) => setTableLook({ felt: e.target.value })} />
+        </label>
+      </div>
+      <div style={{ marginTop: 20 }}>
+        <Choice
+          label="Rail"
+          value={look.rail}
+          options={RAILS.map((r) => r.id)}
+          format={(id) => RAILS.find((r) => r.id === id)!.name}
+          onChange={(rail) => setTableLook({ rail })}
+        />
+      </div>
+      <button type="button" className="btn btn-dark" style={{ marginTop: 20 }} onClick={closeSheet}>
+        Done
+      </button>
+    </Sheet>
+  );
+}
+
+function Tile({ label, Icon, color, onClick }: Item) {
+  return (
+    <button type="button" className="menu-tile press" onClick={onClick}>
+      <span className="mi-icon" style={{ background: color }}>
+        <Icon />
+      </span>
+      {label}
+    </button>
+  );
+}
+
 function MenuSheet() {
   const game = useApp((s) => s.game);
   const deviceId = useApp((s) => s.deviceId);
   const online = useApp((s) => s.session?.mode === 'online');
+  const muted = useApp((s) => s.muted);
   const host = game?.hostDeviceId === deviceId;
   const me = game ? myPlayer(game, deviceId) : undefined;
   const playing = game?.status === 'playing';
-  const items: Item[] = [];
+  const started = !!game && game.status !== 'lobby';
+  const ended = game?.status === 'ended';
+  const quick = (fn: () => void) => () => {
+    fn();
+    closeSheet();
+  };
 
-  if (game && game.status !== 'lobby')
-    items.push({ label: 'Standings', Icon: TrophyIcon, color: 'var(--gold)', onClick: () => openSheet({ name: 'standings' }) });
-  if (game && game.status !== 'lobby') items.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
-  if (online && game?.code && game.status !== 'ended')
-    items.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });
+  const table: Item[] = [];
+  if (started) table.push({ label: 'Standings', Icon: TrophyIcon, color: 'var(--gold)', onClick: () => openSheet({ name: 'standings' }) });
+  if (started) table.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
+  if (online && game?.code && !ended)
+    table.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });
+  if (host && !ended)
+    table.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
   if (host && playing && game.players.length < 9)
-    items.push({
-      label: 'Add a bot',
-      Icon: PlusIcon,
-      color: 'var(--violet)',
-      onClick: () => {
-        dispatch({ type: 'addBot' });
-        closeSheet();
-      },
-    });
-  if (host && game?.status !== 'ended')
-    items.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
+    table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--violet)', onClick: quick(() => dispatch({ type: 'addBot' })) });
+
+  const you: Item[] = [
+    {
+      label: muted ? 'Sound off' : 'Sound on',
+      Icon: muted ? MuteIcon : SoundIcon,
+      color: muted ? 'var(--slate-hi)' : 'var(--green)',
+      onClick: toggleMuted,
+    },
+    { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
+    { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--red)', onClick: () => navigate({ name: 'profile', then: 'done' }) },
+    { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--blue)', onClick: () => openSheet({ name: 'rankings' }) },
+  ];
   if (me && playing) {
-    items.push(
+    you.push(
       me.sittingOut
-        ? {
-            label: "I'm back",
-            Icon: ClockIcon,
-            color: 'var(--blue)',
-            onClick: () => {
-              dispatch({ type: 'sitOut', out: false });
-              closeSheet();
-            },
-          }
-        : {
-            label: 'Sit out next hand',
-            Icon: ClockIcon,
-            color: 'var(--blue)',
-            onClick: () => {
-              dispatch({ type: 'sitOut', out: true });
-              closeSheet();
-            },
-          },
+        ? { label: "I'm back", Icon: ClockIcon, color: 'var(--blue)', onClick: quick(() => dispatch({ type: 'sitOut', out: false })) }
+        : { label: 'Sit out', Icon: ClockIcon, color: 'var(--slate-hi)', onClick: quick(() => dispatch({ type: 'sitOut', out: true })) },
     );
   }
-  items.push({
-    label: 'Name and emoji',
-    Icon: PencilIcon,
-    color: 'var(--red)',
-    onClick: () => navigate({ name: 'profile', then: 'done' }),
-  });
-  items.push({ label: 'Hand rankings', Icon: HelpIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'rankings' }) });
-  items.push({ label: 'Home', Icon: HomeIcon, color: 'var(--green)', onClick: () => resetTo() });
-  if (host && game && game.status !== 'ended') {
-    items.push({
+
+  const leave: Item[] = [{ label: 'Home', Icon: HomeIcon, color: 'var(--green)', onClick: () => resetTo() }];
+  if (host && game && !ended) {
+    leave.push({
       label: 'End the game',
       Icon: StopIcon,
       color: 'var(--red)',
@@ -252,10 +314,10 @@ function MenuSheet() {
         }),
     });
   }
-  if (game?.status === 'ended') {
-    items.push({ label: 'Close table', Icon: ExitIcon, color: 'var(--red)', danger: true, onClick: closeTable });
+  if (ended) {
+    leave.push({ label: 'Close table', Icon: ExitIcon, color: 'var(--red)', danger: true, onClick: closeTable });
   } else if (game && (!host || online)) {
-    items.push({
+    leave.push({
       label: 'Leave table',
       Icon: ExitIcon,
       color: 'var(--red)',
@@ -275,14 +337,32 @@ function MenuSheet() {
 
   return (
     <Sheet title="Menu">
-      {items.map(({ label, Icon, color, onClick, danger }) => (
-        <button key={label} type="button" className={`menu-item press${danger ? ' danger' : ''}`} onClick={onClick}>
-          <span className="mi-icon" style={{ background: color }}>
-            <Icon />
-          </span>
-          {label}
-        </button>
-      ))}
+      {table.length > 0 && (
+        <>
+          <p className="menu-section">Table</p>
+          <div className="menu-grid">
+            {table.map((t) => (
+              <Tile key={t.label} {...t} />
+            ))}
+          </div>
+        </>
+      )}
+      <p className="menu-section">You</p>
+      <div className="menu-grid">
+        {you.map((t) => (
+          <Tile key={t.label} {...t} />
+        ))}
+      </div>
+      <div className="menu-rows">
+        {leave.map(({ label, Icon, color, onClick, danger }) => (
+          <button key={label} type="button" className={`menu-item press${danger ? ' danger' : ''}`} onClick={onClick}>
+            <span className="mi-icon" style={{ background: color }}>
+              <Icon />
+            </span>
+            {label}
+          </button>
+        ))}
+      </div>
     </Sheet>
   );
 }

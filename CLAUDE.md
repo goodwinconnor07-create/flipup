@@ -20,6 +20,9 @@ Poker night on your phones: no-limit Texas Hold'em for play chips. A host opens 
   - `reducer.ts`: `applyAction()`, the only way a table changes. Server and phone run the same code.
   - `bots.ts`, `selectors.ts`, `validate.ts` (`parseAction()` for anything from the network), `redact.ts`
 - `src/state/store.ts`: the app store and every screen command. Bots-only tables run `applyAction()` locally with their own clock; online tables send actions to the server and show what it sends back.
+- `src/ui/sound.ts` (synthesised table sounds, no files) and `src/ui/useTableSounds.ts` (plays them by watching how the game changes). `Count` in `components.tsx` is the counting-number animation for pot and stacks.
+- Per-phone settings live in `src/state/persist.ts`: table felt/rail (`flipup.table`), mute, lifetime totals and the last online table for Home. Pre-actions (Check/Fold, Call any) are screen state in `Table.tsx`, never sent to the server until your turn.
+- Quick messages are `react` actions from the fixed list in `src/game/reactions.ts`; nothing typed is ever accepted.
 - `worker/room.ts`: one `TableRoom` Durable Object per join code, the only true copy of an online table and its deck. Its alarm is the table's clock (bots, turn timers, run-outs, next deal) and also deletes tables idle for 3 days.
 
 ## Rules that matter

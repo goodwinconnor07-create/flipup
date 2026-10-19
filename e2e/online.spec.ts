@@ -65,7 +65,7 @@ test('two phones: join with a code, play a hand, see odds only once both hands a
   await shot(friend, '14-friend-runout');
 
   // The board runs out and someone wins (or they split).
-  await expect(host.locator('.result-line').first()).toBeVisible({ timeout: 20_000 });
+  await expect(host.locator('.win-banner').first()).toBeVisible({ timeout: 20_000 });
   await expect(host.locator('.board .pcard:not(.pcard-slot)')).toHaveCount(5);
   await shot(host, '15-host-result');
 
@@ -100,7 +100,7 @@ test('bots at an online table play on the server', async ({ page }) => {
     if (await myTurn(page)) await page.locator('.action-buttons .btn-green').click();
     await page.waitForTimeout(500);
   }
-  await expect(page.locator('.result-line').first()).toBeVisible();
+  await expect(page.locator('.win-banner').first()).toBeVisible();
   // The next hand deals by itself.
   await expect(page.locator('.table-title small')).toHaveText('Hand 2', { timeout: 15_000 });
 });

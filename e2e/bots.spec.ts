@@ -36,7 +36,7 @@ test('play hands against the bots on one phone', async ({ page }) => {
     await page.waitForTimeout(500);
   }
   await expect(page.getByRole('button', { name: 'Next hand' })).toBeVisible();
-  await expect(page.locator('.result-line').first()).toBeVisible();
+  await expect(page.locator('.win-banner').first()).toBeVisible();
   await shot(page, '06-result');
 
   // Next hand deals straight away when you're the only person at the table.
@@ -122,4 +122,93 @@ test('the raise panel fits on a short screen, and the hand log records the hand'
   await expect(log.getByText(/^Sam shows/)).toBeVisible();
   await expect(log.getByText(/^Your hand:/)).toBeVisible();
   await shot(page, '10-hand-log');
+});
+
+test('quick messages, table theme, sound toggle and the pre-action buttons', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One less bot' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+
+  // The dealer button and blinds are marked.
+  await expect(page.locator('.pos-chip').first()).toBeVisible();
+
+  // Quick message: a small button, a small panel, and it shows as a bubble on your chips box.
+  await page.getByRole('button', { name: 'Quick messages' }).click();
+  await shot(page, '11-quick-messages');
+  await page.getByRole('menuitem', { name: 'Nice hand!' }).click();
+  await expect(page.locator('.my-box .bubble-react')).toHaveText('Nice hand!');
+  await expect(page.getByRole('menu')).toBeHidden();
+
+  // Theme: pick a felt and a rail, and it sticks after a reload.
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Table theme' }).click();
+  await page.getByRole('radio', { name: 'Burgundy' }).click();
+  await page.getByRole('radio', { name: 'Light' }).click();
+  await shot(page, '12-theme');
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect(page.locator('.table-oval').first()).toHaveAttribute('style', /#8b1e3f/);
+  await expect(page.locator('.table-oval').first()).toHaveClass(/rail-light/);
+  await page.reload();
+  await expect(page.locator('.table-oval').first()).toHaveAttribute('style', /#8b1e3f/);
+
+  // Sound can be switched off from the menu, and stays off.
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Sound on' }).click();
+  await expect(page.getByRole('button', { name: 'Sound off' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
+
+  // Pre-action: while the bot is thinking, "Call any" can be armed, and then it plays itself on our turn.
+  let armed = false;
+  for (let i = 0; i < 120 && !armed; i++) {
+    if (await page.getByText('Your turn').isVisible()) {
+      const check = page.getByRole('button', { name: 'Check', exact: true });
+      if (await check.isVisible()) await check.click();
+      else await page.locator('.action-buttons .btn-green').click();
+    }
+    const call = page.getByRole('button', { name: 'Call any' });
+    if (await call.isVisible()) {
+      await call.click();
+      await expect(call).toHaveAttribute('aria-pressed', 'true');
+      armed = true;
+    }
+    await page.waitForTimeout(200);
+  }
+  expect(armed).toBe(true);
+  await shot(page, '13-pre-action');
+  // From here our own buttons should never sit waiting for a tap on this street. (A new street clears it.)
+  const boardCount = () => page.locator('.board .pcard:not(.pcard-slot)').count();
+  const armedOn = await boardCount();
+  let waiting = 0;
+  for (let i = 0; i < 40; i++) {
+    if ((await boardCount()) !== armedOn) break;
+    const visible = await page.locator('.action-buttons .btn-fold').isVisible();
+    waiting = visible ? waiting + 1 : 0;
+    expect(waiting).toBeLessThan(8);
+    if (await page.locator('.win-banner').isVisible()) break;
+    await page.waitForTimeout(150);
+  }
+});
+
+test('ending a game adds to the Home totals', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'End the game' }).click();
+  await page.getByRole('dialog', { name: 'End the game for everyone?' }).getByRole('button', { name: 'End game' }).click();
+  await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 10_000 });
+  await page.getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByLabel('Your totals')).toBeVisible();
+  await expect(page.getByLabel('Your totals').getByText('Tables')).toBeVisible();
+  await shot(page, '14-home-totals');
 });

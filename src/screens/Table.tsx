@@ -6,6 +6,8 @@ import {
   myPlayer,
   options,
   pot,
+  REACTIONS,
+  reactionText,
   seatFor,
   type Card,
   type Equity,
@@ -14,10 +16,12 @@ import {
   type Player,
   type Seat,
 } from '../game';
-import { dispatch, openSheet, useApp } from '../state/store';
-import { Avatar, CardSlot, chips, PlayingCard, Spinner, useNow } from '../ui/components';
+import { dispatch, openSheet, react, useApp } from '../state/store';
+import { Avatar, CardSlot, chips, Count, PlayingCard, PositionChips, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
-import { MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { ChatIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { playSound } from '../ui/sound';
+import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
 import { Lobby } from './Lobby';
 
@@ -147,9 +151,12 @@ function useOdds(hand: Hand | null): Map<string, { win: number; tie: number }> |
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
+type PreAction = 'checkfold' | 'callany' | null;
+
 function Felt({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);
   const sending = useApp((s) => s.sending);
+  const look = useApp((s) => s.look);
   const me = myPlayer(game, deviceId);
   const hand = game.hand;
   const mySeat = seatFor(hand, me?.id);
@@ -158,6 +165,8 @@ function Felt({ game }: { game: Game }) {
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
   const timed = !!hand?.deadline || (!!hand?.result && !!game.nextHandAt);
   const now = useNow(timed ? 200 : 60_000);
+  const reactions = useReactions(game);
+  useTableSounds(game, me?.id);
 
   // A buzz when it's your turn, and confetti when you win a pot.
   const turnKey = myTurn ? `${hand!.number}-${hand!.seq}` : '';
@@ -172,6 +181,28 @@ function Felt({ game }: { game: Game }) {
     confetti(CONFETTI.win, { x: innerWidth / 2, y: innerHeight * 0.75 });
   }, [winKey]);
 
+  // A tick for each of your last five seconds.
+  const secsLeft = myTurn && hand?.deadline ? Math.max(0, Math.ceil((hand.deadline - now) / 1000)) : null;
+  useEffect(() => {
+    if (secsLeft !== null && secsLeft > 0 && secsLeft <= 5) playSound('tick');
+  }, [secsLeft]);
+
+  // Pre-actions: tap Check/Fold or Call any before your turn and it plays itself when it comes round.
+  // They're cleared on each new street, because the situation has changed.
+  const [pre, setPre] = useState<PreAction>(null);
+  const streetKey = hand ? `${hand.number}-${hand.street}` : '';
+  useEffect(() => setPre(null), [streetKey]);
+  useEffect(() => {
+    if (!pre || !myTurn || !hand || !mySeat) return;
+    const o = options(game, hand, mySeat);
+    const move = o.canCheck ? 'check' : pre === 'callany' ? 'call' : 'fold';
+    const t = setTimeout(() => {
+      setPre(null);
+      dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move });
+    }, 400);
+    return () => clearTimeout(t);
+  }, [pre, myTurn, hand?.number, hand?.seq]);
+
   // Which cards make the hand that matters: yours while you're in, the winner's at a showdown.
   const highlight = useMemo(() => {
     if (!hand || hand.board.length < 3) return null;
@@ -184,12 +215,16 @@ function Felt({ game }: { game: Game }) {
     return null;
   }, [hand?.number, hand?.board.length, hand?.result, mySeat?.folded, mySeat?.cards.length]);
   const lit = new Set(highlight?.best ?? []);
-  // Cards outside the winning hand grey out at showdown only, never while the hand is being played.
-  const dim = (c: Card) => !!hand?.result?.showdown && !!highlight && !lit.has(c);
+  // At showdown the winning five cards lift and glow and the rest grey out. Never while the hand is being played.
+  const showdown = !!hand?.result?.showdown && !!highlight;
+  const dim = (c: Card) => showdown && !lit.has(c);
+  const glow = (c: Card) => showdown && lit.has(c);
   const myValue = mySeat && !mySeat.folded && mySeat.cards.length ? describeHand([...mySeat.cards, ...(hand?.board ?? [])]) : null;
   // Before the flop, "High card" says nothing; a pocket pair is worth pointing out.
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? myValue.name : null;
   const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
+  // The pot counts down to nothing as it's pushed to the winner.
+  const potNow = hand && !hand.result ? pot(hand) : 0;
 
   return (
     <div className="felt">
@@ -198,39 +233,54 @@ function Felt({ game }: { game: Game }) {
         style={{ ['--cols' as string]: others.length > 5 ? Math.ceil(others.length / 2) : Math.max(others.length, 1) }}
       >
         {others.map((p) => (
-          <Pod key={p.id} game={game} player={p} seat={seatFor(hand, p.id)} odds={odds?.get(p.id)} now={now} dimCard={dim} />
+          <Pod
+            key={p.id}
+            game={game}
+            player={p}
+            seat={seatFor(hand, p.id)}
+            odds={odds?.get(p.id)}
+            reaction={reactions[p.id]}
+            dimCard={dim}
+            glowCard={glow}
+          />
         ))}
       </div>
 
-      <div className="board-area">
-        <div className="board" aria-label="Board">
-          {[0, 1, 2, 3, 4].map((i) => {
-            const c = hand?.board[i];
-            return c ? (
-              <PlayingCard key={`${hand!.number}-${c}`} card={c} size="lg" dim={dim(c)} flip delay={i < 3 ? i * 160 : 0} />
-            ) : (
-              <CardSlot key={`slot-${i}`} size="lg" />
-            );
-          })}
-        </div>
-        <div className="board-meta">
-          {pillName ? (
-            <span key={pillName} className="hand-pill pop">
-              {pillName}
-            </span>
-          ) : (
-            <span />
-          )}
-          {hand && (
-            <span className="pot" aria-label={`Pot ${pot(hand)}`}>
-              <small>Pot</small> {chips(pot(hand))}
-            </span>
-          )}
+      <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
+        <div className="table-felt">
+          <div className="table-top">
+            {hand && (
+              <span className="pot-pill" aria-label={`Pot ${chips(pot(hand))}`}>
+                <i className="pot-chip" aria-hidden />
+                <small>Pot</small> <Count value={potNow} />
+              </span>
+            )}
+          </div>
+          <div className="board" aria-label="Board">
+            {[0, 1, 2, 3, 4].map((i) => {
+              const c = hand?.board[i];
+              return c ? (
+                <PlayingCard key={`${hand!.number}-${c}`} card={c} size="lg" dim={dim(c)} glow={glow(c)} flip delay={i < 3 ? i * 160 : 0} />
+              ) : (
+                <CardSlot key={`slot-${i}`} size="lg" />
+              );
+            })}
+          </div>
+          <div className="table-foot">
+            {hand?.result ? (
+              <WinBanner game={game} />
+            ) : pillName ? (
+              <span key={pillName} className="hand-pill pop">
+                {pillName}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 
       <div className="action-area">
-        <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} />
+        <TurnBar game={game} now={now} mine={myTurn} />
+        <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />
       </div>
 
       <div className="me-area">
@@ -242,6 +292,7 @@ function Felt({ game }: { game: Game }) {
                 card={c}
                 size="xl"
                 dim={mySeat.folded || dim(c)}
+                glow={glow(c)}
                 flip
                 delay={i * 180}
                 className={`my-card my-card-${i}`}
@@ -254,9 +305,97 @@ function Felt({ game }: { game: Game }) {
             </>
           )}
         </div>
-        <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} />
+        <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} />
       </div>
     </div>
+  );
+}
+
+/** A thin bar across the top of the action area that runs down with whoever's time it is. */
+function TurnBar({ game, now, mine }: { game: Game; now: number; mine: boolean }) {
+  const hand = game.hand;
+  if (!hand?.deadline || hand.result || !game.settings.turnSeconds) return null;
+  const total = game.settings.turnSeconds * 1000;
+  const left = Math.max(0, Math.min(1, (hand.deadline - now) / total));
+  const low = left * game.settings.turnSeconds <= 5;
+  return (
+    <div
+      className={`turn-bar${mine ? ' mine' : ''}${low ? ' low' : ''}`}
+      role="timer"
+      aria-label={`${Math.ceil(left * game.settings.turnSeconds)} seconds left`}
+    >
+      <i style={{ width: `${left * 100}%` }} />
+    </div>
+  );
+}
+
+/** "Remi wins 340 · Two pair, kings and fives", on the table when a hand finishes. */
+function WinBanner({ game }: { game: Game }) {
+  const deviceId = useApp((s) => s.deviceId);
+  const hand = game.hand!;
+  const result = hand.result!;
+  const winners = Object.entries(result.won)
+    .map(([id, amount]) => ({ p: game.players.find((x) => x.id === id), id, amount }))
+    .filter((w) => w.p)
+    .sort((a, b) => b.amount - a.amount);
+  if (!winners.length) return null;
+  const top = winners[0];
+  const split = winners.length > 1;
+  const you = top.p!.deviceId === deviceId;
+  const title = split
+    ? `Split pot · ${winners.map((w) => w.p!.name).join(' & ')}`
+    : `${you ? 'You win' : `${top.p!.name} wins`} ${chips(top.amount)}`;
+  const how = result.showdown ? result.names[top.id] : 'Everyone else folded';
+  return (
+    <div key={hand.number} className="win-banner pop" role="status">
+      <Avatar emoji={top.p!.emoji} size={34} />
+      <span className="win-text">
+        <b>{title}</b>
+        {how && <small>{how}</small>}
+      </span>
+    </div>
+  );
+}
+
+/** Each player's latest quick message, shown for a few seconds after it arrives. */
+function useReactions(game: Game): Record<string, string> {
+  const seen = useRef<Record<string, number> | null>(null);
+  const [active, setActive] = useState<Record<string, string>>({});
+  const reactions = game.reactions;
+  useEffect(() => {
+    const now = reactions ?? {};
+    if (seen.current === null) {
+      // Whatever was said before you arrived stays unsaid.
+      seen.current = Object.fromEntries(Object.entries(now).map(([id, r]) => [id, r.n]));
+      return;
+    }
+    for (const [id, r] of Object.entries(now)) {
+      if (seen.current[id] === r.n) continue;
+      seen.current[id] = r.n;
+      setActive((a) => ({ ...a, [id]: r.id }));
+      playSound('pop');
+      setTimeout(
+        () =>
+          setActive((a) => {
+            if (a[id] !== r.id) return a;
+            const { [id]: _gone, ...rest } = a;
+            return rest;
+          }),
+        3800,
+      );
+    }
+  }, [reactions]);
+  return active;
+}
+
+/** A quick message bubble: white with a border, to tell it from an action. */
+function ReactBubble({ id }: { id: string }) {
+  const text = reactionText(id);
+  const emoji = !/[A-Za-z]/.test(text);
+  return (
+    <span key={`${id}-${text}`} className={`bubble bubble-react pop${emoji ? ' bubble-emoji' : ''}`} role="status">
+      {text}
+    </span>
   );
 }
 
@@ -265,15 +404,17 @@ function Pod({
   player,
   seat,
   odds,
-  now,
+  reaction,
   dimCard,
+  glowCard,
 }: {
   game: Game;
   player: Player;
   seat: Seat | undefined;
   odds?: { win: number; tie: number };
-  now: number;
+  reaction?: string;
   dimCard: (c: Card) => boolean;
+  glowCard: (c: Card) => boolean;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
@@ -281,7 +422,6 @@ function Pod({
   const turn = !!hand && !hand.result && hand.toAct === player.id;
   const out = !seat || seat.folded;
   const won = hand?.result?.won[player.id] ?? 0;
-  const left = turn && hand!.deadline ? Math.max(0, (hand!.deadline - now) / (game.settings.turnSeconds * 1000)) : null;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
 
   return (
@@ -291,19 +431,19 @@ function Pod({
       aria-label={`${player.name}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}`}
       onClick={() => host && openSheet({ name: 'player', playerId: player.id })}
     >
-      <span className="pod-pic" style={left !== null ? { ['--left' as string]: left } : undefined}>
-        {turn && <span className={`pod-ring${left !== null ? ' timed' : ''}`} aria-hidden />}
+      <span className="pod-pic">
+        {turn && <span className="pod-ring" aria-hidden />}
         <Avatar emoji={player.emoji} size={50} />
-        {hand?.buttonId === player.id && <span className="dealer-chip">D</span>}
-        {seat?.last && <Bubble last={seat.last} street={hand?.street} />}
+        {hand && <PositionChips button={hand.buttonId === player.id} sb={hand.sbId === player.id} bb={hand.bbId === player.id} />}
+        {reaction ? <ReactBubble id={reaction} /> : seat?.last && <Bubble last={seat.last} street={hand?.street} />}
       </span>
       <span className="pod-name">{player.name}</span>
-      <span className="pod-stack num">{status ?? chips(player.stack)}</span>
+      <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
       <span className="pod-under">
         {seat && !seat.folded && (
           <span className="pod-cards">
             {seat.cards.length
-              ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} flip />)
+              ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)
               : [0, 1].map((i) => <PlayingCard key={i} back size="sm" />)}
           </span>
         )}
@@ -313,28 +453,88 @@ function Pod({
   );
 }
 
-function MyBox({ game, me, seat, odds }: { game: Game; me?: Player; seat?: Seat; odds?: { win: number; tie: number } }) {
+/** Quick messages: a small button, and a small panel of phrases and emoji that closes as soon as you pick one. */
+function ReactMenu() {
+  const [open, setOpen] = useState(false);
+  const [cooling, setCooling] = useState(false);
+  const send = (id: string) => {
+    if (cooling) return;
+    haptic('light');
+    react(id);
+    setOpen(false);
+    setCooling(true);
+    setTimeout(() => setCooling(false), 2500);
+  };
+  return (
+    <>
+      <button type="button" className="react-btn press" aria-label="Quick messages" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+        <ChatIcon />
+      </button>
+      {open && (
+        <>
+          <div className="react-scrim" onClick={() => setOpen(false)} />
+          <div className="react-pop rise" role="menu" aria-label="Quick messages">
+            {REACTIONS.map((r) => (
+              <button
+                key={r.id}
+                type="button"
+                role="menuitem"
+                className={`react-item press${/[A-Za-z]/.test(r.text) ? '' : ' react-emoji'}`}
+                disabled={cooling}
+                onClick={() => send(r.id)}
+              >
+                {r.text}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </>
+  );
+}
+
+function MyBox({
+  game,
+  me,
+  seat,
+  odds,
+  reaction,
+}: {
+  game: Game;
+  me?: Player;
+  seat?: Seat;
+  odds?: { win: number; tie: number };
+  reaction?: string;
+}) {
+  const hand = game.hand;
+  const bubble = reaction ? <ReactBubble id={reaction} /> : seat?.last ? <Bubble last={seat.last} street={hand?.street} /> : null;
+  const pos = hand && me && <PositionChips button={hand.buttonId === me.id} sb={hand.sbId === me.id} bb={hand.bbId === me.id} />;
   if (odds) {
     return (
       <div className="my-box odds-box" aria-label={`Win ${pct(odds.win)}, tie ${pct(odds.tie)}`}>
+        {bubble}
         <small>Win</small>
         <b className="odds-win">{pct(odds.win)}</b>
         <small>Tie</small>
         <b>{pct(odds.tie)}</b>
+        {pos}
+        {me && <ReactMenu />}
       </div>
     );
   }
-  const won = me ? (game.hand?.result?.won[me.id] ?? 0) : 0;
+  const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
   return (
     <div className="my-box">
-      {seat?.last && <Bubble last={seat.last} street={game.hand?.street} />}
+      {bubble}
       <small>Your chips</small>
-      <b className="num">{me ? chips(me.stack) : '–'}</b>
+      <b>{me ? <Count value={me.stack} /> : '–'}</b>
       {won > 0 ? (
         <span className="my-box-note win">+{chips(won)}</span>
-      ) : seat && seat.bet > 0 && !game.hand?.result ? (
+      ) : seat && seat.bet > 0 && !hand?.result ? (
         <span className="my-box-note">In: {chips(seat.bet)}</span>
       ) : null}
+      {pos}
+      {me && <ReactMenu />}
     </div>
   );
 }
@@ -346,6 +546,8 @@ function ActionArea({
   myTurn,
   sending,
   now,
+  pre,
+  setPre,
 }: {
   game: Game;
   me?: Player;
@@ -353,6 +555,8 @@ function ActionArea({
   myTurn: boolean;
   sending: boolean;
   now: number;
+  pre: PreAction;
+  setPre: (p: PreAction) => void;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
@@ -361,25 +565,49 @@ function ActionArea({
   if (!me) return <p className="table-note">You're watching this table.</p>;
 
   if (hand && !hand.result) {
-    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} now={now} />;
+    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <p className="table-note">Running it out…</p>;
+    // Still in the hand with chips behind: you can set what to do before your turn comes round.
+    const canPre = !!seat && !seat.folded && !seat.allIn && !me.sittingOut;
     return (
-      <p className="table-note">
-        {who ? (
-          <>
-            <b>{who.name}</b> {who.bot ? 'is thinking' : 'to act'}
-            <span className="dots" aria-hidden>
-              <i />
-              <i />
-              <i />
-            </span>
-          </>
-        ) : (
-          '…'
+      <div className="stack">
+        <p className="table-note">
+          {who ? (
+            <>
+              <b>{who.name}</b> {who.bot ? 'is thinking' : 'to act'}
+              <span className="dots" aria-hidden>
+                <i />
+                <i />
+                <i />
+              </span>
+            </>
+          ) : (
+            '…'
+          )}
+          {me.sittingOut && <SitBack />}
+        </p>
+        {canPre && (
+          <div className="pre-actions" role="group" aria-label="Before your turn">
+            <button
+              type="button"
+              aria-pressed={pre === 'checkfold'}
+              className={`pre-btn press${pre === 'checkfold' ? ' on' : ''}`}
+              onClick={() => setPre(pre === 'checkfold' ? null : 'checkfold')}
+            >
+              Check / Fold
+            </button>
+            <button
+              type="button"
+              aria-pressed={pre === 'callany'}
+              className={`pre-btn press${pre === 'callany' ? ' on' : ''}`}
+              onClick={() => setPre(pre === 'callany' ? null : 'callany')}
+            >
+              Call any
+            </button>
+          </div>
         )}
-        {me.sittingOut && <SitBack />}
-      </p>
+      </div>
     );
   }
 
@@ -469,46 +697,31 @@ function SitBack() {
   );
 }
 
-/** "Remi wins 340 with two pair". One line per winner. */
+/** Under the table once a hand is over: the winner is on the table itself, so this is just "Show my cards". */
 function ResultLine({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);
-  const result = game.hand?.result;
-  if (!result) return null;
+  if (!game.hand?.result) return null;
   const me = myPlayer(game, deviceId);
   const mySeat = seatFor(game.hand, me?.id);
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
   const canShow = !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
-  const lines = Object.entries(result.won).map(([id, amount]) => {
-    const p = game.players.find((x) => x.id === id);
-    const you = p?.deviceId === deviceId;
-    return { id, name: you ? 'You' : (p?.name ?? 'Someone'), you, amount, how: result.names[id] };
-  });
+  if (!canShow) return null;
   return (
-    <div className="result-lines" role="status">
-      {lines.map((l) => (
-        <p key={l.id} className={`result-line pop${l.you ? ' you' : ''}`}>
-          <b>{l.name}</b> {l.you ? 'win' : 'wins'} <b className="num">{chips(l.amount)}</b>
-          {l.how && <span className="muted"> · {l.how}</span>}
-        </p>
-      ))}
-      {canShow && (
-        <button type="button" className="btn-link-small show-btn" onClick={() => dispatch({ type: 'show', hand: game.hand!.number })}>
-          Show my cards
-        </button>
-      )}
+    <div className="result-lines">
+      <button type="button" className="btn btn-outline show-btn" onClick={() => dispatch({ type: 'show', hand: game.hand!.number })}>
+        Show my cards
+      </button>
     </div>
   );
 }
 
-function MyTurn({ game, hand, seat, sending, now }: { game: Game; hand: Hand; seat: Seat; sending: boolean; now: number }) {
+function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: Seat; sending: boolean }) {
   const o = options(game, hand, seat);
   const [raising, setRaising] = useState(false);
   const act = (move: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin', to?: number) => {
     setRaising(false);
     dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move, ...(to !== undefined ? { to } : {}) });
   };
-  const left = hand.deadline ? Math.max(0, Math.ceil((hand.deadline - now) / 1000)) : null;
-
   if (raising)
     return (
       <RaisePanel
@@ -522,9 +735,7 @@ function MyTurn({ game, hand, seat, sending, now }: { game: Game; hand: Hand; se
 
   return (
     <div className="stack">
-      <p className="table-note your-turn">
-        Your turn{left !== null && <span className={`turn-clock${left <= 5 ? ' low' : ''}`}> · {left}s</span>}
-      </p>
+      <p className="table-note your-turn">Your turn</p>
       <div className="action-buttons">
         <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
           Fold

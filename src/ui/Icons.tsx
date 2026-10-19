@@ -216,3 +216,32 @@ export const ClockIcon = (p: P) => (
     <path d="M12 7.4V12l3.2 2" />
   </svg>
 );
+
+export const ChatIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-7l-5 4v-4H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
+  </svg>
+);
+
+export const SoundIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" />
+    <path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11" />
+  </svg>
+);
+
+export const MuteIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" />
+    <path d="M16 9.5l5 5M21 9.5l-5 5" />
+  </svg>
+);
+
+export const PaletteIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.6-1-2.7 0-1 .8-1.6 1.8-1.6H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3z" />
+    <circle cx="7.5" cy="11" r="1" />
+    <circle cx="10" cy="7" r="1" />
+    <circle cx="15" cy="7.5" r="1" />
+  </svg>
+);

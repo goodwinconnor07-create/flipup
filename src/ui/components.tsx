@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import { cardName, EMOJIS, firstEmoji, isNameBlocked, LIMITS, NAME_BLOCKED, rankLabel, SUIT_SYMBOL, suitOf, type Card } from '../game';
 import { back, closeSheet, useApp } from '../state/store';
-import { haptic } from './effects';
+import { haptic, reducedMotion } from './effects';
 import { BackIcon, CloseIcon, PencilIcon } from './Icons';
 
 /** 1,240 */
@@ -136,6 +136,7 @@ export function PlayingCard({
   card,
   size = 'lg',
   dim = false,
+  glow = false,
   back: showBack = false,
   flip = false,
   delay = 0,
@@ -144,6 +145,8 @@ export function PlayingCard({
   card?: Card;
   size?: CardSize;
   dim?: boolean;
+  /** Part of the winning hand at showdown: lifts and gets a gold edge. */
+  glow?: boolean;
   back?: boolean;
   /** Flip over as it appears. */
   flip?: boolean;
@@ -157,7 +160,7 @@ export function PlayingCard({
   const suit = suitOf(card);
   return (
     <span
-      className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${flip ? ' flip-in' : ''} ${className}`}
+      className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${glow ? ' glow' : ''}${flip ? ' flip-in' : ''} ${className}`}
       style={flip ? { animationDelay: `${delay}ms` } : undefined}
       role="img"
       aria-label={cardName(card)}
@@ -349,6 +352,69 @@ export function Spinner({ label }: { label?: string }) {
       <span className="spinner" aria-hidden />
       {label && <span className="muted">{label}</span>}
     </div>
+  );
+}
+
+/**
+ * A number that counts to its new value instead of jumping: chips going into the pot, or a stack
+ * growing after a win. Fast (about half a second), and skipped with Reduce Motion.
+ */
+export function useCountUp(target: number, ms = 600): { value: number; dir: 'up' | 'down' | null } {
+  const [value, setValue] = useState(target);
+  const [dir, setDir] = useState<'up' | 'down' | null>(null);
+  const shown = useRef(target);
+  useEffect(() => {
+    if (shown.current === target) return;
+    if (reducedMotion()) {
+      shown.current = target;
+      setValue(target);
+      return;
+    }
+    const from = shown.current;
+    const start = performance.now();
+    setDir(target > from ? 'up' : 'down');
+    let raf = 0;
+    const frame = (now: number) => {
+      const t = Math.min(1, (now - start) / ms);
+      const eased = 1 - Math.pow(1 - t, 3);
+      shown.current = t >= 1 ? target : Math.round(from + (target - from) * eased);
+      setValue(shown.current);
+      if (t < 1) raf = requestAnimationFrame(frame);
+      else setDir(null);
+    };
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [target, ms]);
+  return { value, dir };
+}
+
+/** Chips as text that counts up or down (green while rising, red while falling). */
+export function Count({ value, className = '' }: { value: number; className?: string }) {
+  const { value: v, dir } = useCountUp(value);
+  return <span className={`count num ${dir ?? ''} ${className}`}>{chips(v)}</span>;
+}
+
+/** Dealer button and blinds, beside a player's picture. */
+export function PositionChips({ button, sb, bb }: { button: boolean; sb: boolean; bb: boolean }) {
+  if (!button && !sb && !bb) return null;
+  return (
+    <span className="pos-chips">
+      {button && (
+        <span className="pos-chip pos-d" title="Dealer" aria-label="Dealer">
+          D
+        </span>
+      )}
+      {sb && (
+        <span className="pos-chip pos-sb" title="Small blind" aria-label="Small blind">
+          SB
+        </span>
+      )}
+      {bb && (
+        <span className="pos-chip pos-bb" title="Big blind" aria-label="Big blind">
+          BB
+        </span>
+      )}
+    </span>
   );
 }
 

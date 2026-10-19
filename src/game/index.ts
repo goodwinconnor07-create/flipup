@@ -11,6 +11,7 @@ export * from './reducer';
 export * from './validate';
 export * from './protocol';
 export * from './redact';
+export * from './reactions';
 export * from './ids';
 export * from './names';
 export * from './emoji';

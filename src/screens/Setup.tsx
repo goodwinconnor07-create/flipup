@@ -8,8 +8,9 @@ import { MinusIcon, PlusIcon } from '../ui/Icons';
 /** The longest wait between blind rises on the slider (0 is never). */
 export const BLIND_MINUTE_MAX = 20;
 
-/** Blinds offered for a starting stack: at least 10 big blinds deep, and no tiny blinds on a 10,000 stack. */
-const levelsFor = (stack: number) => BLIND_LEVELS.filter(([, bb]) => bb <= stack / 10 && (stack < 10_000 || bb >= 20));
+/** Blinds offered for a starting stack: at least 10 big blinds deep, with no tiny blinds on big stacks (no 1/2 at 5,000, no 5/10 either at 10,000). */
+const smallestBigBlind = (stack: number) => (stack >= 10_000 ? 20 : stack >= 5_000 ? 10 : 0);
+const levelsFor = (stack: number) => BLIND_LEVELS.filter(([, bb]) => bb <= stack / 10 && bb >= smallestBigBlind(stack));
 
 export const blindsLabel = ([sb, bb]: [number, number]) => `${chips(sb)}/${chips(bb)}`;
 export const timerLabel = (s: number) => (s === 0 ? 'Off' : `${s}s`);

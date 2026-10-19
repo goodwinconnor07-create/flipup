@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { net, standings, type Game } from '../game';
 import { closeTable, openLog, useApp } from '../state/store';
 import { Avatar, chips } from '../ui/components';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
+import { playSound } from '../ui/sound';
 
 export function signed(n: number): string {
   return n > 0 ? `+${chips(n)}` : n < 0 ? `−${chips(-n)}` : '0';
@@ -40,6 +41,13 @@ export function Final({ game }: { game: Game }) {
   const podium = rows.length >= 2;
   const first = rows.length >= 3 ? 0 : 1;
   const [step, setStep] = useState(() => (!podium || reducedMotion() ? 3 : first));
+  // The reveal builds: a drum roll for 3rd, a higher one for 2nd, then the winner and the fanfare.
+  const sounded = useRef(-1);
+  useEffect(() => {
+    if (!podium || sounded.current >= step) return;
+    sounded.current = step;
+    playSound(step === 0 ? 'build0' : step === 1 ? 'build1' : step === 2 ? 'build2' : 'victory');
+  }, [step, podium]);
   useEffect(() => {
     if (step >= 3) return;
     const t = setTimeout(

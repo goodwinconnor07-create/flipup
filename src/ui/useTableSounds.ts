@@ -51,14 +51,13 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     const newHand = before.hand !== snap.hand;
     let delay = 0;
     if (newHand) {
-      // Two cards each, so a couple of quick flicks.
-      playSound('deal');
-      playSound('deal', 140);
-      delay = 300;
+      // A new hand starts with the shuffle.
+      playSound('shuffle');
+      delay = 450;
     } else if (snap.board > before.board) {
       // The flop is three cards one after another; the turn and river are one.
       const count = snap.board - before.board;
-      for (let i = 0; i < count; i++) playSound('flip', i * 160);
+      for (let i = 0; i < count; i++) playSound('place', i * 160);
     }
 
     // Anyone's new move (or blind) makes its sound.

@@ -1,7 +1,61 @@
 // Table sounds, made with the Web Audio API so there are no files to download.
 // Browsers only allow sound after a tap, so the audio context wakes up on the first touch.
 
-export type SoundName = 'deal' | 'flip' | 'chip' | 'chips' | 'allin' | 'check' | 'fold' | 'turn' | 'tick' | 'win' | 'collect' | 'pop';
+export type SoundName =
+  | 'deal'
+  | 'flip'
+  | 'shuffle'
+  | 'place'
+  | 'chip'
+  | 'chips'
+  | 'allin'
+  | 'check'
+  | 'fold'
+  | 'turn'
+  | 'tick'
+  | 'win'
+  | 'collect'
+  | 'pop'
+  | 'build0'
+  | 'build1'
+  | 'build2'
+  | 'victory';
+
+/** Recorded sounds. Anything not listed here is made in code. */
+const SAMPLES: Partial<Record<SoundName, string>> = {
+  allin: '/sounds/all-in.mp3',
+  chip: '/sounds/betting-calling.mp3',
+  place: '/sounds/card-placed.mp3',
+  shuffle: '/sounds/cards-shuffled.mp3',
+};
+const buffers = new Map<string, AudioBuffer>();
+let loading = false;
+
+/** Fetches and decodes the recorded sounds once (they're tiny). Until they arrive, nothing plays for them. */
+function loadSamples(c: AudioContext): void {
+  if (loading) return;
+  loading = true;
+  for (const url of new Set(Object.values(SAMPLES))) {
+    fetch(url)
+      .then((r) => r.arrayBuffer())
+      .then((data) => new Promise<AudioBuffer>((ok, fail) => c.decodeAudioData(data, ok, fail)))
+      .then((buf) => buffers.set(url, buf))
+      .catch(() => undefined);
+  }
+}
+
+/** Plays a recorded sound, a touch different each time (pitch) so repeats don't sound like a loop. */
+function sample(c: AudioContext, url: string, at: number, gain = 0.85, rate = 1): void {
+  const buf = buffers.get(url);
+  if (!buf) return;
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.value = rate * (0.97 + Math.random() * 0.06);
+  const env = c.createGain();
+  env.gain.value = gain;
+  src.connect(env).connect(master!);
+  src.start(at);
+}
 
 let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
@@ -22,6 +76,7 @@ function audio(): AudioContext | null {
       master = ctx.createGain();
       master.gain.value = 0.7;
       master.connect(ctx.destination);
+      loadSamples(ctx);
     } catch {
       return null;
     }
@@ -129,15 +184,22 @@ export function playSound(name: SoundName, offsetMs = 0): void {
     case 'flip':
       hiss(c, t, 0.12, 2600, 1100, 0.26, 0.8);
       break;
+    case 'shuffle':
+      sample(c, SAMPLES.shuffle!, t, 0.8);
+      break;
+    case 'place':
+      sample(c, SAMPLES.place!, t, 0.8);
+      break;
     case 'chip':
-      clink(c, t);
-      clink(c, t + 0.07, 0.14);
+      sample(c, SAMPLES.chip!, t);
       break;
     case 'chips':
-      for (let i = 0; i < 4; i++) clink(c, t + i * 0.065 + Math.random() * 0.015, 0.2 - i * 0.025);
+      // A bigger bet: the chips go down twice.
+      sample(c, SAMPLES.chip!, t);
+      sample(c, SAMPLES.chip!, t + 0.18, 0.7, 1.06);
       break;
     case 'allin':
-      for (let i = 0; i < 9; i++) clink(c, t + i * 0.055 + Math.random() * 0.025, 0.22);
+      sample(c, SAMPLES.allin!, t, 0.95);
       break;
     case 'check':
       tone(c, t, 0.09, 190, 90, 0.4);
@@ -160,6 +222,38 @@ export function playSound(name: SoundName, offsetMs = 0): void {
     case 'collect':
       for (let i = 0; i < 5; i++) clink(c, t + i * 0.05, 0.14);
       break;
+    case 'build0':
+    case 'build1':
+    case 'build2': {
+      // Each reveal on the winners' page is a drum roll that climbs a little higher than the last.
+      const level = name === 'build0' ? 0 : name === 'build1' ? 1 : 2;
+      const len = 0.55 + level * 0.15;
+      const hits = 9 + level * 4;
+      for (let i = 0; i < hits; i++) {
+        const k = i / (hits - 1);
+        hiss(c, t + k * len, 0.07, 3200, 1800, 0.12 + k * 0.2 + level * 0.04, 0.8);
+        tone(c, t + k * len, 0.06, 150, 90, 0.1 + k * 0.1);
+      }
+      const from = 220 * Math.pow(1.26, level * 2);
+      tone(c, t, len + 0.1, from, from * 1.9, 0.08 + level * 0.02, 'triangle');
+      // The last hit of the roll: a cymbal tap.
+      hiss(c, t + len, 0.35, 7000, 5000, 0.14 + level * 0.04, 1.2);
+      break;
+    }
+    case 'victory': {
+      // A short fanfare: a rising run into a held major chord, with a cymbal wash and chips pouring.
+      hiss(c, t, 1.4, 8000, 4500, 0.22, 0.6);
+      [392, 494, 587, 784].forEach((f, i) => {
+        tone(c, t + i * 0.11, 0.22, f, f, 0.16, 'sawtooth');
+        tone(c, t + i * 0.11, 0.22, f * 2, f * 2, 0.07, 'triangle');
+      });
+      [523, 659, 784, 1046].forEach((f) => {
+        tone(c, t + 0.5, 1.5, f, f, 0.12, 'sawtooth');
+        tone(c, t + 0.5, 1.5, f / 2, f / 2, 0.08, 'triangle');
+      });
+      for (let i = 0; i < 14; i++) sample(c, SAMPLES.chip!, t + 0.55 + i * 0.07 + Math.random() * 0.03, 0.4, 1 + Math.random() * 0.15);
+      break;
+    }
     case 'pop':
       tone(c, t, 0.1, 520, 880, 0.18, 'triangle');
       break;

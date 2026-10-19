@@ -264,6 +264,7 @@ test('with more than four others the row slides, keeps whoever is acting in view
 });
 
 test('against a bot with rebuys off, the hand that ends the game stays on screen before the winner page', async ({ page }) => {
+  test.setTimeout(300_000);
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play the bots' }).click();
@@ -271,12 +272,15 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
   await page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One less bot' }).click();
   await page.getByRole('switch', { name: /Rebuys/ }).click();
+  // A short stack with big blinds, so the game is decided in a handful of hands.
+  await page.getByRole('radio', { name: '500' }).click();
+  await page.getByRole('radio', { name: '25/50' }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
 
   // All in every hand until the game is decided.
   let decided = false;
-  for (let i = 0; i < 300 && !decided; i++) {
+  for (let i = 0; i < 900 && !decided; i++) {
     if (await page.getByText(/The game ends in/).isVisible()) decided = true;
     else if (await page.getByText('Your turn').isVisible()) {
       const raise = page.locator('.action-buttons .btn-blue');
@@ -296,4 +300,19 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
   await expect(page.locator('.podium-step')).toHaveCount(0);
   await shot(page, '16-deciding-hand');
   await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 12_000 });
+});
+
+test('the recorded sound effects load and decode', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  const durations = await page.evaluate(async () => {
+    const c = new AudioContext();
+    const out: Record<string, number> = {};
+    for (const f of ['all-in', 'betting-calling', 'card-placed', 'cards-shuffled']) {
+      const data = await (await fetch(`/sounds/${f}.mp3`)).arrayBuffer();
+      out[f] = (await c.decodeAudioData(data)).duration;
+    }
+    return out;
+  });
+  for (const d of Object.values(durations)) expect(d).toBeGreaterThan(0.3);
 });

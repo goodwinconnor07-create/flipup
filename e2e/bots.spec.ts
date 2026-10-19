@@ -316,3 +316,28 @@ test('the recorded sound effects load and decode', async ({ page }) => {
   });
   for (const d of Object.values(durations)) expect(d).toBeGreaterThan(0.3);
 });
+
+test("the host can reveal the bots' hands, and hide them again", async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
+  const faceUp = page.locator('.pod .pod-cards .pcard:not(.pcard-back)');
+  await expect(page.locator('.pod .pod-cards .pcard-back').first()).toBeVisible();
+  await expect(faceUp).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: "Show bots' hands" }).click();
+  // Every bot still in the hand now shows both cards.
+  await expect(page.locator('.pod .pod-cards .pcard-back')).toHaveCount(0);
+  expect(await faceUp.count()).toBeGreaterThanOrEqual(2);
+  await shot(page, '17-bots-revealed');
+
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: "Hide bots' hands" }).click();
+  await expect(faceUp).toHaveCount(0);
+});

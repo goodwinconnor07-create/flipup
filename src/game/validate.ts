@@ -20,6 +20,10 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
     if (!isInt(r[key])) return null;
     out[key] = r[key];
   }
+  if (r.revealBots !== undefined) {
+    if (typeof r.revealBots !== 'boolean') return null;
+    out.revealBots = r.revealBots;
+  }
   if (r.rebuys !== undefined) {
     if (typeof r.rebuys !== 'boolean') return null;
     out.rebuys = r.rebuys;

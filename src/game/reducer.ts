@@ -54,6 +54,7 @@ export function validSettings(s: Settings): boolean {
     s.bigBlind >= s.smallBlind &&
     s.bigBlind <= s.startingStack / 2 &&
     typeof s.rebuys === 'boolean' &&
+    (s.revealBots === undefined || typeof s.revealBots === 'boolean') &&
     int(s.turnSeconds) &&
     s.turnSeconds >= 0 &&
     s.turnSeconds <= LIMITS.maxTurnSeconds

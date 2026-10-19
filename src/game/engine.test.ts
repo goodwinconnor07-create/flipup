@@ -539,6 +539,33 @@ describe('table', () => {
     expect(parseAction({ type: 'react', id: '<script>' })).toBeNull();
   });
 
+  it("can reveal the bots' hands to everyone, and only the bots'", () => {
+    let game = createTable({
+      hostDeviceId: HOST,
+      name: 'Host',
+      emoji: '😎',
+      settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 },
+      bots: 2,
+      code: null,
+      now: clock,
+    });
+    game = must(game, { type: 'join', name: 'Friend', emoji: '🐸' }, 'device-friend');
+    game = must(game, { type: 'start' }, HOST);
+    const bots = game.players.filter((p) => p.bot).map((p) => p.id);
+    const view = (device: string) => redactForDevice(game, device).hand!.seats;
+    const hidden = (device: string, id: string) => view(device).find((s) => s.playerId === id)!.cards.length === 0;
+    expect(bots.every((id) => hidden('device-friend', id))).toBe(true);
+    // Only the host can turn it on.
+    expect(applyAction(game, { type: 'settings', settings: { revealBots: true } }, ctx('device-friend')).ok).toBe(false);
+    game = must(game, { type: 'settings', settings: { revealBots: true } }, HOST);
+    expect(bots.every((id) => !hidden('device-friend', id))).toBe(true);
+    // The friend's own cards stay theirs: the host still can't see them.
+    const friend = game.players.find((p) => p.deviceId === 'device-friend')!.id;
+    expect(hidden(HOST, friend)).toBe(true);
+    expect(Object.keys(redactLogs(game, HOST)).length).toBe(0);
+    expect(parseAction({ type: 'settings', settings: { revealBots: 'yes' } })).toBeNull();
+  });
+
   it('times out a slow player: checks or folds, and sits them out after two', () => {
     let game = table(3, { turnSeconds: 20 });
     const slow = game.hand!.toAct!;

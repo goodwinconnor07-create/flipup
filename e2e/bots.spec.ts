@@ -286,7 +286,7 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
       const raise = page.locator('.action-buttons .btn-blue');
       if (await raise.isVisible()) {
         await raise.click();
-        await page.locator('.raise-panel').getByRole('button', { name: 'All in' }).click();
+        await page.locator('.raise-panel .preset[aria-label="All in"]').click();
         await page.locator('.raise-panel .btn-blue').click();
       } else await page.locator('.action-buttons .btn-green').click();
     } else if (await page.getByRole('button', { name: 'Next hand' }).isVisible())

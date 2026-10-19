@@ -1,0 +1,31 @@
+# Fly.io config for the GTO coach service. Deploy from this folder: `fly deploy`.
+# The machine sleeps when nobody is using the coach and wakes on the next request,
+# so you pay per second of use (see the README's "Hosting" section).
+
+app = "flipup-gto"            # must be unique on Fly; change it if the name is taken
+primary_region = "lhr"        # pick the region closest to your players (`fly platform regions`)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  FLIPUP_CORS = "*"           # the app calls through its own Worker, so this can stay open
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 20
+
+# Solved preflop games are cached here so they survive restarts (a cold solve takes ~13 minutes).
+[mounts]
+  source = "gto_cache"
+  destination = "/app/flipup_gto/data/cache"
+
+[[vm]]
+  size = "performance-4x"     # 4 dedicated CPUs, 8 GB: solves are CPU-bound

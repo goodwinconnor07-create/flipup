@@ -194,10 +194,18 @@ PYBIND11_MODULE(_engine, m) {
       })
       .def("player_ev", &PreflopSolver::player_ev, py::call_guard<py::gil_scoped_release>())
       .def("cumulative_strategy", [](const PreflopSolver& s) { return to_numpy(s.cumulative_strategy()); })
+      .def("regrets", [](const PreflopSolver& s) { return to_numpy(s.regrets()); })
       .def("load_cumulative_strategy",
-           [](PreflopSolver& s, py::array_t<float, py::array::c_style | py::array::forcecast> a, int iterations) {
-             s.load_cumulative_strategy(std::vector<float>(a.data(), a.data() + a.size()), iterations);
-           })
+           [](PreflopSolver& s, py::array_t<float, py::array::c_style | py::array::forcecast> a, int iterations,
+              py::object regrets) {
+             std::vector<float> r;
+             if (!regrets.is_none()) {
+               auto ra = regrets.cast<py::array_t<float, py::array::c_style | py::array::forcecast>>();
+               r.assign(ra.data(), ra.data() + ra.size());
+             }
+             s.load_cumulative_strategy(std::vector<float>(a.data(), a.data() + a.size()), iterations, r);
+           },
+           py::arg("cum"), py::arg("iterations"), py::arg("regrets") = py::none())
       .def("solve", [](PreflopSolver& s, int max_iterations, double target_bb, int check_every, py::object cb) {
         std::function<bool(int, double)> f = nullptr;
         if (!cb.is_none())

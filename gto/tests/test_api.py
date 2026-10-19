@@ -37,3 +37,18 @@ def test_review_hand_heads_up_shove():
     r = client.post("/review/hand", json={"hand": hand}).json()
     assert r["summary"]["decisions"] == 2
     assert {d["player"] for d in r["decisions"]} == {"a", "b"}
+
+
+def test_job_results_are_plain_json():
+    import numpy as np
+    from flipup_gto.api import plain
+    out = plain({"a": np.float32(0.5), "b": [np.int64(3), np.array([1.0, 2.0])], 4: (np.bool_(True),)})
+    assert out == {"a": 0.5, "b": [3, [1.0, 2.0]], "4": [True]}
+    json.dumps(out)
+
+
+def test_library_lists_scenarios():
+    r = client.get("/library").json()
+    ids = {s["id"] for s in r}
+    assert {"rfi", "vs_3bet", "cbet_ip", "vs_triple_barrel"} <= ids
+    assert all(s["available"] for s in r if s["group"] == "Preflop")

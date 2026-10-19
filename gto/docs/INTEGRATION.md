@@ -117,7 +117,28 @@ as a mistake:
 | mistake | loses ≤ 8% of the pot |
 | blunder | loses more |
 
-Suggested colours: best/correct green, inaccuracy yellow, mistake orange, blunder red.
+Every graded decision also carries a traffic-light `colour` (what the app shows) and a
+`colour_reason`:
+
+| colour | rule |
+|---|---|
+| green | best or correct; also a bet or raise at a different size, within 25% of the pot of a size GTO uses at least 20% of the time with this hand, that loses ≤ 1.5% of the pot ("close enough sizing") |
+| yellow | inaccuracy; or the right aggressive action at the wrong size, losing ≤ 5% of the pot |
+| red | everything else |
+
+### Coaching fields
+
+Each reviewed decision also has:
+
+| field | meaning |
+|---|---|
+| `scenario` | the spot type (`rfi`, `vs_3bet`, `cbet_ip`, `vs_checkraise`, `vs_double_barrel`, ...), used for stats and to pick a library drill |
+| `lesson` | `[{title, body: [sentences]}]` sections: The spot, Ranges, Your hand, The math (pot odds, MDF, SPR, fold equity), What GTO does, Verdict |
+| `practice` | 2–3 similar hands from the same solved spot, each with GTO's frequencies and EVs, for a "what would you do?" quiz |
+| `grid` | `{class: {"weight": reach, action: frequency}}`: the acting player's whole strategy for a 13×13 grid |
+| `spot_text`, `spr`, `villain_folds` | a one-line summary, stack-to-pot ratio, and how often the opponent folds to each bet size |
+
+`summary.colours` counts green/yellow/red over the hand.
 
 ### SessionSummary (the "big hand log")
 
@@ -133,6 +154,31 @@ Suggested colours: best/correct green, inaccuracy yellow, mistake orange, blunde
                        "best_action": "fold", "ev_loss_bb": 9.5, "grade": "blunder"}, ...]
 }
 ```
+
+## Custom hands
+
+`POST /analyze` takes the same body as `/review/hand` and returns a job. It differs from a review in
+three ways: every player's decisions get a strategy `grid` (players without known cards get
+grid-only entries with `gto_range`, GTO's whole-range frequencies), off-tree heads-up flops get
+ranges from a forced-line solve, and if the hand stops mid-street the next decision is added with
+`"pending": true` ("what to do now").
+
+## Poker library
+
+- `GET /library`: the scenarios: `[{id, group, title, description, available, spots}]`. Preflop
+  drills come from the solved preflop game; postflop ones from spots precomputed by
+  `scripts/build_library.py` into `flipup_gto/data/library/*.json`.
+- `GET /library/{scenario}/drill?seed=123`: one drill: position, history, board, pot, the dealt
+  hand, the options, and `answer.options[]` with each option's GTO frequency, EV, EV loss and
+  colour, plus `tips` and the range `grid`. Preflop drills only use lines GTO actually plays (every
+  raise in the line at least 2% of the range).
+
+## The app's proxy
+
+The Worker forwards `/api/gto/*` to the service at `GTO_URL` (a Wrangler var; empty means the
+coach shows "isn't connected yet"). For local work put `GTO_URL=http://127.0.0.1:8000` in
+`.dev.vars` and run the service with uvicorn next to `npm run dev`. Set `FLIPUP_CORS` on the
+service to the app's origin in production.
 
 ## Other endpoints
 

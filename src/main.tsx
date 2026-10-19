@@ -10,6 +10,7 @@ import './styles/global.css';
 import './styles/screens.css';
 import './styles/table.css';
 import './styles/desktop.css';
+import './styles/train.css';
 
 boot();
 installPressEffects();

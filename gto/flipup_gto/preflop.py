@@ -26,7 +26,7 @@ _tables: dict = {}
 
 TENSOR_RANK = 4
 # Bump when the preflop model changes (tree sizing, realization model) so cached solutions are rebuilt.
-MODEL_VERSION = 2
+MODEL_VERSION = 5
 
 
 def tables(with_tensor: bool = True):

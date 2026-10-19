@@ -58,8 +58,8 @@ struct TreeConfig {
   // DCFR schedule: positive regrets *= t^a/(t^a+1), negative regrets *= neg (0 = CFR+ style reset),
   // strategy sums *= ((t-1)/t)^gamma (averaging 0 only).
   double dcfr_alpha = 1.5;
-  double dcfr_neg = 0.5;
-  double dcfr_gamma = 2.0;
+  double dcfr_neg = 0.0;
+  double dcfr_gamma = 3.0;
   // Predictive DCFR+ (Xu et al. 2024): regrets clipped at zero, and each strategy is computed from
   // the regrets plus the last instantaneous regret as a prediction. Needs ~50% more memory.
   bool predictive = false;

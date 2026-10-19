@@ -121,7 +121,10 @@ class PreflopSolver {
 
   // Average-strategy state, for caching solved spots on disk.
   const std::vector<float>& cumulative_strategy() const { return cum_; }
-  void load_cumulative_strategy(const std::vector<float>& cum, int iterations);
+  const std::vector<float>& regrets() const { return regret_; }
+  /** Restores a saved solve. `regrets` may be empty (older saves): low-reach spots then play uniform. */
+  void load_cumulative_strategy(const std::vector<float>& cum, int iterations,
+                                const std::vector<float>& regrets = {});
   void request_stop() { stop_ = true; }
 
  private:
@@ -159,6 +162,8 @@ class PreflopSolver {
   size_t num_action_nodes_ = 0;
   std::vector<float> regret_, cum_;
   int iteration_ = 0;
+  // Discounted sum of iteration weights: what a hand that always reaches a node accumulates in cum_.
+  double weight_sum_ = 0;
   std::atomic<bool> stop_{false};
 
   // Precomputed 169x169 matrices.

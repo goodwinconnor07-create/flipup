@@ -12,6 +12,7 @@ namespace flipup {
 namespace {
 constexpr int C = PF_CLASSES;
 constexpr double EPS = 1e-9;
+constexpr double kMinAverageReach = 1e-3;
 
 int class_combo_count(int c) {
   int row = c / 13, col = c % 13;
@@ -180,6 +181,11 @@ int PreflopSolver::build(const State& s) {
       if (q != p && !(s.folded >> q & 1) && s.bet[q] >= s.cur_bet - EPS) ++matched;
     bool cap_ok = matched + 1 <= cfg_.max_players_flop;
     if (matched + 1 >= 3 && cfg_.multiway_blinds_only && p < N_ - 2 && N_ > 2) cap_ok = false;
+    // The cap keeps flops to the players the equity model handles. Calling an all-in never sees
+    // a flop decision, and denying it locked raisers out of pots (folding AA to a shove once the
+    // blinds had called), which made every 3-bet look like a losing play.
+    const bool facing_allin = s.last_raiser >= 0 && (s.allin >> s.last_raiser & 1);
+    if (facing_allin) cap_ok = true;
     bool allowed = limp ? (cfg_.can_limp[p] != 0) : (cfg_.allow_cold_call || p >= N_ - 2);
     if (limp && !cap_ok) allowed = false;
     if (!limp && !cap_ok) allowed = false;
@@ -390,12 +396,15 @@ void PreflopSolver::strategy_of(const Node& n, std::vector<float>& out, bool ave
     float sum = 0;
     if (average)
       for (int a = 0; a < na; ++a) sum += cum[a * C + h];
-    if (average && sum > 0) {
+    // The average is only meaningful where the hand actually reached this node. A hand whose
+    // reach collapsed to zero early keeps whatever (near-uniform) mix it had then forever, so
+    // below 0.1% average reach use the current regret-matching strategy instead.
+    if (average && sum > 0 && sum >= kMinAverageReach * weight_sum_) {
       for (int a = 0; a < na; ++a) out[a * C + h] = cum[a * C + h] / sum;
       continue;
     }
     // Current strategy (regret matching); also the fallback for classes that
-    // never reach this node, which have no average-strategy sum.
+    // never (or almost never) reach this node.
     float rs = 0;
     for (int a = 0; a < na; ++a) rs += std::max(reg[a * C + h], 0.0f);
     for (int a = 0; a < na; ++a) out[a * C + h] = rs > 0 ? std::max(reg[a * C + h], 0.0f) / rs : 1.0f / na;
@@ -571,6 +580,7 @@ void PreflopSolver::iterate(int iters) {
     double ta = std::pow(t - 1, 1.5);
     std::array<float, 3> d = {static_cast<float>(ta / (ta + 1)), 0.5f,
                               static_cast<float>(std::pow((t - 1) / t, 2.0))};
+    weight_sum_ = weight_sum_ * d[2] + 1.0;
     Vecs reach = cfg_.initial_range;
     Vecs m = reach_mass(reach);
     Vecs cfv(N_, std::vector<float>(C));
@@ -679,10 +689,16 @@ int PreflopSolver::solve(int max_iterations, double target_bb, int check_every,
   return iteration_;
 }
 
-void PreflopSolver::load_cumulative_strategy(const std::vector<float>& cum, int iterations) {
+void PreflopSolver::load_cumulative_strategy(const std::vector<float>& cum, int iterations,
+                                             const std::vector<float>& regrets) {
   if (cum.size() != cum_.size()) throw std::invalid_argument("saved strategy does not match this tree");
+  if (!regrets.empty() && regrets.size() != regret_.size())
+    throw std::invalid_argument("saved regrets do not match this tree");
   cum_ = cum;
+  if (!regrets.empty()) regret_ = regrets;
   iteration_ = iterations;
+  weight_sum_ = 0;
+  for (int t = 1; t <= iterations; ++t) weight_sum_ = weight_sum_ * std::pow((t - 1.0) / t, 2.0) + 1.0;
 }
 
 PreflopNodeInfo PreflopSolver::query(const std::vector<int>& path) {

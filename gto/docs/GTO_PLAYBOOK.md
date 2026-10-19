@@ -150,3 +150,19 @@ recreational players:
 - Flop trees are the expensive part: a BTN-vs-BB single-raised pot with full ranges and one size per
   street is ~300k decision nodes. The review simplifies turn/river betting in flop solves, then
   re-solves those streets exactly when the hand gets there.
+- Three preflop bugs found by playing library drills (UTG "shoving 100bb with 83% of its range
+  against a 3-bet"):
+  1. The three-player pot cap also applied to calling an all-in. Once a cold caller filled the
+     third seat, the original raiser couldn't call a shove and had to fold, even with AA. The
+     equilibrium exploited this, so HJ 3-bet 0% against UTG and AA's 3-bet was valued at −5bb. All-in
+     calls are now exempt from the cap: they never see a flop decision. After the fix, HJ 3-bets
+     about 5% against UTG, close to published solutions.
+  2. The average strategy of a hand whose reach dropped to zero after the first iteration stays at
+     that iteration's uniform mix forever. Below 0.1% average reach the engine now uses the current
+     regret-matching strategy, and cached solves store regrets as well.
+  3. With four or more players all in, "3-way share × heads-up equity against each extra player"
+     paid out only part of the pot (1/6 each instead of 1/4 for four equal hands). Shares are now
+     rescaled so equal hands split the pot evenly. This mattered little in practice; (1) was the
+     real cause.
+- Drills and reviews treat preflop lines GTO plays with less than 1–2% of its range as off-tree:
+  strategies behind them were never trained against a real range.

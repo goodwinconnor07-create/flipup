@@ -90,12 +90,13 @@ class PreflopCache:
         path = os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
         if os.path.exists(path):
             d = np.load(path)
-            spot.engine.load_cumulative_strategy(d["cum"].astype(np.float32), int(d["iterations"]))
+            spot.engine.load_cumulative_strategy(d["cum"].astype(np.float32), int(d["iterations"]),
+                                                 d["regret"].astype(np.float32) if "regret" in d else None)
         else:
             spot.solve(self.iterations, 0.002, 100)
             os.makedirs(self.cache_dir, exist_ok=True)
             np.savez_compressed(path, cum=spot.engine.cumulative_strategy().astype(np.float32),
-                                iterations=spot.engine.iterations)
+                                regret=spot.engine.regrets().astype(np.float32), iterations=spot.engine.iterations)
         self.mem[key] = spot
         return spot
 

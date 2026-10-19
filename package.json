@@ -14,7 +14,9 @@
     "e2e": "playwright test",
     "check": "npm run typecheck && npm run test && npm run build",
     "deploy": "npm run build && wrangler deploy",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "store:capture": "playwright test -c marketing/app-store/capture.config.ts",
+    "store:render": "node marketing/app-store/render.mjs"
   },
   "engines": {
     "node": ">=20"

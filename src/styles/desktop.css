@@ -1,0 +1,537 @@
+/* Computers and tablets in landscape. Everything here sits inside one media query (the same one as
+   useDesktop in src/ui/useDesktop.ts), so phones keep exactly the layout they had.
+   - Other screens: the same column, 25% bigger.
+   - The table: players seated round a big oval, your cards, the actions and your chips along the bottom,
+     and a side panel with standings and the live hand log. */
+
+@media (min-width: 960px) and (min-height: 600px) {
+  /* ── Every screen except the table in play: the same layout, bigger. ─────── */
+
+  .screen:not(.status-playing) {
+    zoom: calc(1.25 * var(--desk-zoom, 1));
+    min-height: calc(100dvh / (1.25 * var(--desk-zoom, 1)));
+  }
+
+  /* The lobby and the winners' page get a little more width. */
+  .screen.status-lobby,
+  .screen.status-ended {
+    max-width: 720px;
+  }
+
+  .sheet-backdrop {
+    align-items: center;
+  }
+
+  /* The menu's tiles sit three across. */
+  .menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .sheet:has(.menu-grid) {
+    max-width: 600px;
+  }
+
+  /* Home: the cards and headline on the left, the buttons on the right. */
+  .screen.home {
+    max-width: 1020px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr;
+    column-gap: 56px;
+  }
+
+  .screen.home > .home-head {
+    grid-column: 1 / -1;
+  }
+
+  .screen.home > .home-body {
+    grid-column: 1;
+    grid-row: 2;
+    justify-content: center;
+  }
+
+  .screen.home > .screen-foot {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    position: static;
+    margin: 0;
+    padding: 0;
+    background: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .sheet {
+    zoom: calc(1.15 * var(--desk-zoom, 1));
+    max-height: calc(88dvh / (1.15 * var(--desk-zoom, 1)));
+    border-radius: var(--r-xl);
+    padding-bottom: 24px;
+  }
+
+  .toasts {
+    bottom: 40px;
+  }
+
+  /* ── The table ────────────────────────────────────────────────────────── */
+
+  .screen.status-playing {
+    zoom: var(--desk-zoom, 1);
+    max-width: 1520px;
+    height: calc(100dvh / var(--desk-zoom, 1));
+    min-height: 0;
+    padding: 0 32px;
+  }
+
+  .screen.status-playing > .topbar:first-child {
+    margin: 0 -32px 12px;
+    padding: 14px 32px 10px;
+  }
+
+  .desk-body {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 360px;
+    gap: 28px;
+    padding-bottom: 24px;
+  }
+
+  .desk-main {
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The table room on top; your cards, the buttons and your chips in a row underneath. */
+  .felt {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-rows: minmax(0, 1fr) auto;
+    column-gap: 28px;
+    row-gap: 12px;
+    align-items: end;
+  }
+
+  .stage {
+    grid-column: 1 / -1;
+    align-self: stretch;
+    display: block;
+    position: relative;
+    min-height: 0;
+  }
+
+  .stage .table-oval {
+    position: absolute;
+    inset: 27% 15% 10%;
+    z-index: 1;
+    min-height: 0;
+    max-height: none;
+    padding: 16px;
+  }
+
+  .table-oval .pcard-lg {
+    --w: clamp(62px, 6.4vw, 104px);
+  }
+
+  .board {
+    gap: 10px;
+  }
+
+  .table-top,
+  .table-foot {
+    min-height: 46px;
+  }
+
+  .pot-pill {
+    padding: 5px 20px 5px 12px;
+    font-size: 26px;
+    gap: 10px;
+  }
+
+  .pot-chip {
+    width: 26px;
+    height: 26px;
+  }
+
+  .pot-pill small {
+    font-size: 15px;
+  }
+
+  .hand-pill {
+    padding: 8px 22px;
+    font-size: 19px;
+  }
+
+  .win-banner {
+    padding: 6px 24px 6px 8px;
+  }
+
+  .win-banner .avatar {
+    width: 48px !important;
+    height: 48px !important;
+    font-size: 40px !important;
+  }
+
+  .win-text b {
+    font-size: 20px;
+  }
+
+  .win-text small {
+    font-size: 15px;
+  }
+
+  /* Everyone else sits round the table, each on a white tile that rests on the rail. */
+  .stage .pods {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    height: auto;
+    pointer-events: none;
+  }
+
+  .stage .pod {
+    pointer-events: auto;
+    top: var(--ay);
+    left: var(--ax);
+    width: var(--tile, 232px);
+    padding: 9px 12px 9px 9px;
+    border-radius: 22px;
+    background: var(--surface);
+    box-shadow:
+      0 0 0 1px var(--card-edge),
+      var(--shadow-soft);
+    transform: translate(-50%, -50%);
+    transition: opacity 0.3s ease;
+    /* Picture, then name over chips, then the cards: a compact strip, so eight fit round the table. */
+    display: grid;
+    grid-template-columns: 62px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'pic name under'
+      'pic stack under';
+    column-gap: 8px;
+    align-items: center;
+    justify-items: start;
+  }
+
+  .stage .pod.turn {
+    box-shadow:
+      0 0 0 3px var(--gold),
+      var(--shadow);
+  }
+
+  .stage .pod.away {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .pods-more {
+    display: none;
+  }
+
+  /* Eight others: slimmer strips so none touch. */
+  .pods.crowded .pod-name {
+    font-size: 16px;
+  }
+
+  .pods.crowded .pod-stack {
+    font-size: 21px;
+  }
+
+  .pods.crowded .pcard-sm {
+    --w: 28px;
+  }
+
+  .pods.crowded .pod {
+    padding: 7px 10px 7px 7px;
+    column-gap: 6px;
+    grid-template-columns: 52px minmax(0, 1fr) auto;
+  }
+
+  .pods.crowded .pod-pic {
+    width: 52px;
+    height: 52px;
+  }
+
+  .pods.crowded .pod .avatar {
+    width: 50px !important;
+    height: 50px !important;
+    font-size: 42px !important;
+  }
+
+  .pod-pic {
+    grid-area: pic;
+    width: 62px;
+    height: 60px;
+  }
+
+  .pod .avatar {
+    width: 58px !important;
+    height: 58px !important;
+    font-size: 48px !important;
+  }
+
+  .pod-name {
+    grid-area: name;
+    align-self: end;
+    max-width: 100%;
+    font-size: 18px;
+  }
+
+  .pod-stack {
+    grid-area: stack;
+    align-self: start;
+    font-size: 24px;
+  }
+
+  .pod-under {
+    grid-area: under;
+    min-height: 0;
+    padding: 0;
+    gap: 6px;
+  }
+
+  .pcard-sm {
+    --w: 32px;
+    border-radius: 7px;
+    padding: 4px 5px;
+  }
+
+  .pcard-sm .pcard-rank {
+    font-size: 17px;
+  }
+
+  .pcard-sm .pcard-suit {
+    font-size: 14px;
+  }
+
+  .pod-cards .pcard + .pcard {
+    margin-left: -8px;
+  }
+
+  .pod-tag {
+    font-size: 15px;
+    padding: 3px 10px;
+  }
+
+  .pod-ring {
+    display: none;
+  }
+
+  .bubble {
+    font-size: 15px;
+    padding: 5px 12px;
+  }
+
+  /* Small markers at the bottom-left corner of the picture: clear of the name, the chips and the speech bubble. */
+  .stage .pos-chips {
+    left: -8px;
+    right: auto;
+    top: auto;
+    bottom: -6px;
+    gap: 1px;
+  }
+
+  .stage .pos-chip {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 5px;
+    font-size: 11px;
+    border-radius: 11px;
+    box-shadow:
+      0 0 0 1.5px var(--surface),
+      var(--shadow-sm);
+  }
+
+  .my-box .pos-chip {
+    min-width: 22px;
+    height: 22px;
+    font-size: 10px;
+    border-radius: 11px;
+  }
+
+  /* ── Along the bottom: cards, actions, chips ──────────────────────────── */
+
+  .me-area {
+    display: contents;
+  }
+
+  .my-cards {
+    grid-column: 1;
+    grid-row: 2;
+    margin-bottom: 30px;
+  }
+
+  .pcard-xl {
+    --w: 120px;
+  }
+
+  .my-cards .pcard + .pcard {
+    margin-left: -28px;
+  }
+
+  .action-area {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: end;
+    min-height: 140px;
+    margin-bottom: 30px;
+  }
+
+  .my-box {
+    grid-column: 3;
+    grid-row: 2;
+    align-self: end;
+    width: 300px;
+    min-height: 168px;
+    margin-bottom: 30px;
+  }
+
+  .my-box small {
+    font-size: 17px;
+  }
+
+  .my-box b {
+    font-size: 44px;
+  }
+
+  .my-box-note {
+    font-size: 18px;
+  }
+
+  .react-btn {
+    width: 40px;
+    height: 40px;
+    top: 10px;
+    left: 10px;
+  }
+
+  .my-box .pos-chips {
+    left: 12px;
+    bottom: 12px;
+  }
+
+  .odds-box b {
+    font-size: 30px;
+  }
+
+  .odds-box .odds-win {
+    font-size: 40px;
+  }
+
+  .table-note {
+    font-size: 20px;
+    min-height: 56px;
+  }
+
+  .your-turn {
+    font-size: 26px;
+  }
+
+  .action-buttons .btn {
+    min-height: 76px;
+    font-size: 26px;
+    border-radius: var(--r-lg);
+  }
+
+  .pre-btn {
+    min-height: 58px;
+    font-size: 18px;
+  }
+
+  .show-row {
+    top: calc(100% + 8px);
+  }
+
+  .show-small {
+    height: 28px;
+    font-size: 14px;
+  }
+
+  .bubble-react {
+    font-size: 15px;
+  }
+
+  /* The bet sizer: a centred panel, not a strip along the bottom. */
+  .raise-layer {
+    align-items: center;
+  }
+
+  .raise-panel {
+    zoom: calc(1.2 * var(--desk-zoom, 1));
+    max-width: 560px;
+    border-radius: var(--r-xl);
+    padding-bottom: 16px;
+  }
+
+  /* ── Side panel ───────────────────────────────────────────────────────── */
+
+  .desk-side {
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .desk-card {
+    min-height: 0;
+    padding: 18px 20px;
+    border-radius: var(--r-lg);
+    background: var(--bg-2);
+  }
+
+  .desk-side .desk-card:first-child {
+    max-height: 44%;
+    overflow-y: auto;
+  }
+
+  .desk-card .section-title {
+    margin: 0 0 12px;
+  }
+
+  .desk-card .standing {
+    background: var(--surface);
+  }
+
+  .desk-card .standing.you {
+    background: var(--blue-bg);
+  }
+
+  .desk-log {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .desk-log-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    margin-right: -8px;
+    padding-right: 8px;
+  }
+
+  .desk-log .log-line {
+    font-size: 15px;
+  }
+}
+
+@media (min-width: 960px) and (min-height: 600px) {
+  /* My own seat, at the bottom of the table. */
+  .stage .pod.self {
+    box-shadow:
+      0 0 0 2px var(--blue),
+      var(--shadow-soft);
+  }
+
+  .stage .pod.self.turn {
+    box-shadow:
+      0 0 0 3px var(--gold),
+      var(--shadow);
+  }
+}

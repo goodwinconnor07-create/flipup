@@ -911,14 +911,12 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .flip-in,
-  .flip-in::after,
-  .pod-ring,
-  .pod-tag,
-  .pod.won .pod-pic {
-    animation: none;
-  }
+html.calm .flip-in,
+html.calm .flip-in::after,
+html.calm .pod-ring,
+html.calm .pod-tag,
+html.calm .pod.won .pod-pic {
+  animation: none;
 }
 
 /* ── Speech bubbles: what someone just did, like an iMessage ─────────────── */
@@ -1035,12 +1033,17 @@
     var(--shadow-sm);
 }
 
-.pos-d {
+.pos-btn {
   background: var(--surface);
   color: var(--ink);
   box-shadow:
     0 0 0 1.5px var(--ink),
     var(--shadow-sm);
+}
+
+.pos-other {
+  background: var(--bg-3);
+  color: var(--ink-2);
 }
 
 .pos-sb {
@@ -1286,11 +1289,8 @@
   cursor: pointer;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .table-timer.low .timer-run,
-  .pcard {
-    animation: none;
-  }
+html.calm .table-timer.low .timer-run {
+  animation: none;
 }
 
 /* ── Show cards: a very small button under your cards ────────────────────── */
@@ -1299,11 +1299,17 @@
   position: relative;
 }
 
-.show-small {
+.show-row {
   position: absolute;
   left: 50%;
   top: calc(100% + 5px);
   translate: -50% 0;
+  display: flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.show-small {
   height: 22px;
   padding: 0 10px;
   border: 0;
@@ -1318,4 +1324,9 @@
 
 .me-area.has-show {
   padding-bottom: calc(var(--safe-bottom) + 36px);
+}
+
+/* On a phone the stage is just a wrapper: its children lay out as they always did. Desktop turns it into the table room. */
+.stage {
+  display: contents;
 }

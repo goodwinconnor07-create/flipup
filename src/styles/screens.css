@@ -859,15 +859,13 @@ button.roster-item:active:not(:disabled) {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .hero-pop,
-  .hero-float,
-  .roster-pic,
-  .roster-float,
-  .home-card,
-  .dots i {
-    animation: none;
-  }
+html.calm .hero-pop,
+html.calm .hero-float,
+html.calm .roster-pic,
+html.calm .roster-float,
+html.calm .home-card,
+html.calm .dots i {
+  animation: none;
 }
 
 /* ── Hand log ────────────────────────────────────────────────────────────── */

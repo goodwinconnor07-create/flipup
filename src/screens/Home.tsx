@@ -4,7 +4,7 @@ import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar, PlayingCard } from '../ui/components';
 import { colourWipe } from '../ui/effects';
-import { ArrowIcon } from '../ui/Icons';
+import { ArrowIcon, ChartIcon } from '../ui/Icons';
 import { signed } from './Final';
 
 function ago(at: number): string {
@@ -111,6 +111,13 @@ export function Home() {
             </span>
           </button>
         )}
+        <button type="button" className="home-row press" onClick={() => navigate({ name: 'train' })}>
+          <ChartIcon width={22} height={22} />
+          <span className="home-row-text">
+            <b>GTO training</b>
+            <small>Review your hands, drills, stats and custom hands</small>
+          </span>
+        </button>
       </div>
       <div className="screen-foot">
         <button type="button" className="btn btn-dark btn-xl" onClick={(e) => colourWipe(e, () => go('host'))}>
@@ -124,14 +131,9 @@ export function Home() {
             Play the bots
           </button>
         </div>
-        <div className="home-links">
-          <button type="button" className="btn btn-outline" onClick={() => navigate({ name: 'train' })}>
-            Train with GTO
-          </button>
-          <button type="button" className="btn btn-outline" onClick={() => openSheet({ name: 'rankings' })}>
-            Hand rankings
-          </button>
-        </div>
+        <button type="button" className="btn btn-link" onClick={() => openSheet({ name: 'rankings' })}>
+          Hand rankings
+        </button>
       </div>
     </div>
   );

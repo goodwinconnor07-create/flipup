@@ -193,6 +193,8 @@ export type Action =
   | { type: 'next'; hand: number }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
+  /** After a hand, the host turns every bot's cards face up for everyone. */
+  | { type: 'revealBots'; hand: number }
   /** A quick message to the table ("Nice hand!"). */
   | { type: 'react'; id: string }
   | { type: 'sitOut'; out: boolean }

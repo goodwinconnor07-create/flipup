@@ -26,12 +26,14 @@ import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
 import {
   loadDeviceId,
+  loadCalm,
   loadMuted,
   loadProfile,
   loadSession,
   loadStats,
   loadTableLook,
   saveLastTable,
+  saveCalm,
   saveMuted,
   saveProfile,
   saveSession,
@@ -99,6 +101,8 @@ export interface AppState {
   /** Felt and rail, as this phone likes them. */
   look: TableLook;
   muted: boolean;
+  /** Animations switched off. */
+  calm: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -131,7 +135,9 @@ let state: AppState = {
   logs: null,
   look: loadTableLook(),
   muted: loadMuted(),
+  calm: loadCalm(),
 };
+document.documentElement.classList.toggle('calm', state.calm);
 setMuted(loadMuted());
 
 function set(patch: Partial<AppState>): void {
@@ -383,6 +389,13 @@ export function openLog(): void {
   openSheet({ name: 'log' });
 }
 
+/** Fetches the hand log for the desktop side panel (no sheet). Does nothing if offline. */
+export function refreshLogs(): void {
+  const s = state.session;
+  if (s?.mode === 'local' && s.game) set({ logs: redactLogs(s.game, state.deviceId) });
+  else conn?.send({ t: 'log' });
+}
+
 /** Opens a new table: online with a join code, or bots-only on this phone. */
 export async function openTable(mode: 'online' | 'local', settings: Settings, bots: number): Promise<void> {
   if (state.busy) return;
@@ -436,6 +449,13 @@ export function toggleMuted(): void {
   saveMuted(muted);
   setMuted(muted);
   set({ muted });
+}
+
+export function toggleCalm(): void {
+  const calm = !state.calm;
+  saveCalm(calm);
+  document.documentElement.classList.toggle('calm', calm);
+  set({ calm });
 }
 
 /** Counts this table's result towards the Home screen's lifetime numbers (once per table). */

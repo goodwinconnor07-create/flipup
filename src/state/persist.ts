@@ -125,6 +125,15 @@ export function saveTableLook(look: TableLook): void {
   write('flipup.table', look);
 }
 
+/** True if the player turned Animations off. Animations are on until they do. */
+export function loadCalm(): boolean {
+  return read<boolean>('flipup.calm') === true;
+}
+
+export function saveCalm(calm: boolean): void {
+  write('flipup.calm', calm);
+}
+
 export function loadMuted(): boolean {
   return read<boolean>('flipup.muted') === true;
 }

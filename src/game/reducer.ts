@@ -250,6 +250,25 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return done();
     }
 
+    case 'revealBots': {
+      const hand = game.hand;
+      if (!host) return fail('Only the host can reveal the bots.');
+      if (!hand || !hand.result || hand.number !== action.hand) return fail('Wait until the hand is over.');
+      const entry = game.logs?.find((l) => l.number === hand.number);
+      let changed = false;
+      for (const seat of hand.seats) {
+        const player = playerById(game, seat.playerId);
+        if (!player?.bot || seat.shown || seat.cards.length !== 2) continue;
+        seat.shown = true;
+        changed = true;
+        if (entry) {
+          entry.shown.push(player.id);
+          entry.lines.push(`${player.name} shows ${cardsText(seat.cards)}`);
+        }
+      }
+      return done(changed);
+    }
+
     case 'react': {
       if (!me) return fail("You're not at this table.");
       if (!isReactionId(action.id)) return fail("That isn't one of the quick messages.");

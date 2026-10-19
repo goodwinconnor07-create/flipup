@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import { cardName, EMOJIS, firstEmoji, isNameBlocked, LIMITS, NAME_BLOCKED, rankLabel, SUIT_SYMBOL, suitOf, type Card } from '../game';
+import {
+  cardName,
+  EMOJIS,
+  firstEmoji,
+  isNameBlocked,
+  LIMITS,
+  NAME_BLOCKED,
+  rankLabel,
+  SUIT_SYMBOL,
+  suitOf,
+  type Card,
+  type Position,
+} from '../game';
 import { back, closeSheet, useApp } from '../state/store';
 import { haptic, reducedMotion } from './effects';
 import { BackIcon, CloseIcon, PencilIcon } from './Icons';
@@ -395,25 +407,13 @@ export function Count({ value, className = '' }: { value: number; className?: st
 }
 
 /** Dealer button and blinds, beside a player's picture. */
-export function PositionChips({ button, sb, bb }: { button: boolean; sb: boolean; bb: boolean }) {
-  if (!button && !sb && !bb) return null;
+export function PositionChips({ pos }: { pos: Position | null }) {
+  if (!pos) return null;
   return (
     <span className="pos-chips">
-      {button && (
-        <span className="pos-chip pos-d" title="Dealer" aria-label="Dealer">
-          D
-        </span>
-      )}
-      {sb && (
-        <span className="pos-chip pos-sb" title="Small blind" aria-label="Small blind">
-          SB
-        </span>
-      )}
-      {bb && (
-        <span className="pos-chip pos-bb" title="Big blind" aria-label="Big blind">
-          BB
-        </span>
-      )}
+      <span className={`pos-chip pos-${pos.kind}`} title={`Position: ${pos.label}`} aria-label={`Position ${pos.label}`}>
+        {pos.label}
+      </span>
     </span>
   );
 }

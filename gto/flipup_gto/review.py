@@ -212,7 +212,7 @@ class ReviewSettings:
     river_iterations: int = 500
     target_pct: float = 0.5
     flop_target_pct: float = 1.0
-    max_memory_mb: float = 3000.0
+    max_memory_mb: float = 4000.0
     rake_rate: float = 0.0
     rake_cap: float = 0.0
 
@@ -765,9 +765,13 @@ class _HandContext:
             if any(p in self.folded for p in live):
                 return
 
-    def _review_sizing(self, street_i, lean, acts, oop, pot):
+    def _review_sizing(self, street_i, lean, acts, oop, pot, ip=None):
         """Bet-size tree for this street plus every size actually used, so the real line is in the tree."""
-        sizing = BetSizing.review(street_i, lean)
+        # As in GTO Wizard's trees, no lead sizes for OOP into the previous street's aggressor
+        # (a donk bet actually made is still added below). After a street checks through OOP may probe.
+        prev = self.preflop_aggressor if street_i == 0 else (
+            (self.bettors.get(["flop", "turn", "river"][street_i - 1]) or [None])[-1])
+        sizing = BetSizing.review(street_i, lean, oop_leads=ip is None or prev != ip)
         sizing.merge_threshold = 0.02
         wager = {a.player: 0.0 for a in acts}
         wager.setdefault(oop, 0.0)
@@ -806,7 +810,7 @@ class _HandContext:
         eff = min(self.stack[oop], self.stack[ip])
         solver = None
         for lean in (0, 1, 2):
-            sizing = self._review_sizing(street_i, lean, acts, oop, pot)
+            sizing = self._review_sizing(street_i, lean, acts, oop, pot, ip)
             try:
                 solver = PostflopSolver(board, pot, eff, ranges[oop], ranges[ip], sizing=sizing,
                                         compress=street_i == 0, max_memory_mb=st.max_memory_mb)

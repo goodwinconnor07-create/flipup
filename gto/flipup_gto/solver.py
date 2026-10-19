@@ -96,25 +96,35 @@ class BetSizing:
         return cls(oop=dict(sizes), ip=dict(sizes), max_raises=2)
 
     @classmethod
-    def review(cls, street: int, lean: int = 0) -> "BetSizing":
+    def review(cls, street: int, lean: int = 0, oop_leads: bool = True) -> "BetSizing":
         """Trees for re-solving one street of a real hand (the actual sizes get added on top).
 
-        The street being reviewed gets a richer abstraction; later streets are simplified because
-        they are re-solved exactly when the hand gets there. `lean` 1/2 shrinks the tree further
-        when memory is tight.
+        The street being reviewed gets GTO Wizard-style sizes (33% / 75% / 125% pot, a raise, and
+        all-in); later streets are simplified because they are re-solved exactly when the hand gets
+        there. `oop_leads=False` drops the out-of-position player's lead sizes when leading would be
+        a donk bet into the previous aggressor (a donk actually made in the hand is still added).
+        `lean` 1/2 shrinks the tree further when memory is tight.
         """
+        rich = "33%, 75%, 125%"
         if street == 0:
-            flop = StreetSizing("50%", "60%") if lean < 2 else StreetSizing("", "")
+            flop = (StreetSizing(rich, "60%") if lean == 0 else StreetSizing("33%, 75%", "60%") if lean == 1
+                    else StreetSizing("50%", ""))
             later = StreetSizing("75%", "a") if lean == 0 else StreetSizing("75%", "")
             sizes = {"flop": flop, "turn": later, "river": later}
-            return cls(oop=dict(sizes), ip=dict(sizes), max_raises=1)
-        if street == 1:
-            turn = StreetSizing("50%, 100%", "60%") if lean == 0 else StreetSizing("66%", "a")
+            out = cls(oop=dict(sizes), ip=dict(sizes), max_raises=1)
+        elif street == 1:
+            turn = StreetSizing(rich, "60%") if lean == 0 else StreetSizing("66%", "a")
             sizes = {"flop": StreetSizing(), "turn": turn, "river": StreetSizing("75%", "60%")}
-            return cls(oop=dict(sizes), ip=dict(sizes), max_raises=2 if lean == 0 else 1)
-        river = StreetSizing("33%, 75%, 125%", "60%") if lean == 0 else StreetSizing("66%", "a")
-        sizes = {"flop": StreetSizing(), "turn": StreetSizing(), "river": river}
-        return cls(oop=dict(sizes), ip=dict(sizes), max_raises=2)
+            out = cls(oop=dict(sizes), ip=dict(sizes), max_raises=2 if lean == 0 else 1)
+        else:
+            river = StreetSizing(rich, "60%") if lean == 0 else StreetSizing("66%", "a")
+            sizes = {"flop": StreetSizing(), "turn": StreetSizing(), "river": river}
+            out = cls(oop=dict(sizes), ip=dict(sizes), max_raises=2)
+        if not oop_leads:
+            name = STREETS[street]
+            cur = out.oop[name]
+            out.oop = {**out.oop, name: StreetSizing("", cur.raise_)}
+        return out
 
     @classmethod
     def light(cls) -> "BetSizing":

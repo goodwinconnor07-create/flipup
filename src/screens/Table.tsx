@@ -92,16 +92,40 @@ function othersInOrder(game: Game, me: Player | undefined): Player[] {
   return [...all.slice(i + 1), ...all.slice(0, i)];
 }
 
-const LAST_WORD: Record<string, string> = {
-  fold: 'Fold',
-  check: 'Check',
-  call: 'Call',
-  bet: 'Bet',
-  raise: 'Raise',
-  allin: 'All in',
-  sb: 'SB',
-  bb: 'BB',
-};
+/** What a player's last move says in their speech bubble: "Call 150", "Fold". */
+function bubbleText(last: NonNullable<Seat['last']>): string {
+  const n = chips(last.amount);
+  switch (last.move) {
+    case 'fold':
+      return 'Fold';
+    case 'check':
+      return 'Check';
+    case 'call':
+      return `Call ${n}`;
+    case 'bet':
+      return `Bet ${n}`;
+    case 'raise':
+      return `Raise ${n}`;
+    case 'allin':
+      return `All in ${n}`;
+    case 'sb':
+      return `SB ${n}`;
+    default:
+      return `BB ${n}`;
+  }
+}
+
+/** An iMessage-style bubble: blue for chips going in, grey for check and fold. */
+function Bubble({ last }: { last: NonNullable<Seat['last']> }) {
+  const text = bubbleText(last);
+  const money = last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
+  // Keyed on the text, so every new move pops in.
+  return (
+    <span key={text} className={`bubble pop ${money ? 'bubble-blue' : 'bubble-grey'}`} role="status">
+      {text}
+    </span>
+  );
+}
 
 /** Win and tie chances, only during an all-in run-out when every live hand is face up. */
 function useOdds(hand: Hand | null): Map<string, { win: number; tie: number }> | null {
@@ -266,6 +290,7 @@ function Pod({
         {turn && <span className={`pod-ring${left !== null ? ' timed' : ''}`} aria-hidden />}
         <Avatar emoji={player.emoji} size={50} />
         {hand?.buttonId === player.id && <span className="dealer-chip">D</span>}
+        {seat?.last && !hand?.result && <Bubble last={seat.last} />}
       </span>
       <span className="pod-name">{player.name}</span>
       <span className="pod-stack num">{status ?? chips(player.stack)}</span>
@@ -277,15 +302,7 @@ function Pod({
               : [0, 1].map((i) => <PlayingCard key={i} back size="sm" />)}
           </span>
         )}
-        {won > 0 ? (
-          <span className="pod-tag win">+{chips(won)}</span>
-        ) : odds ? (
-          <span className="pod-tag odds">{pct(odds.win)}</span>
-        ) : seat?.bet ? (
-          <span className="pod-tag bet">{chips(seat.bet)}</span>
-        ) : seat?.last && !hand?.result ? (
-          <span className={`pod-tag last last-${seat.last.move}`}>{LAST_WORD[seat.last.move]}</span>
-        ) : null}
+        {won > 0 ? <span className="pod-tag win">+{chips(won)}</span> : odds ? <span className="pod-tag odds">{pct(odds.win)}</span> : null}
       </span>
     </button>
   );
@@ -305,6 +322,7 @@ function MyBox({ game, me, seat, odds }: { game: Game; me?: Player; seat?: Seat;
   const won = me ? (game.hand?.result?.won[me.id] ?? 0) : 0;
   return (
     <div className="my-box">
+      {seat?.last && !game.hand?.result && <Bubble last={seat.last} />}
       <small>Your chips</small>
       <b className="num">{me ? chips(me.stack) : '–'}</b>
       {won > 0 ? (

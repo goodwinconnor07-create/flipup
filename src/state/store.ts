@@ -490,6 +490,7 @@ function recordFinished(): void {
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length }],
   });
 }
 

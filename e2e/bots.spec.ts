@@ -404,3 +404,27 @@ test('dark mode: a switch in the menu that changes the whole app and sticks', as
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
+
+test('home: three tabs, results from finished tables, training tiles', async ({ page }) => {
+  watchErrors(page);
+  await page.addInitScript(() => {
+    if (localStorage.getItem('flipup.stats')) return;
+    localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Connor', emoji: '😎' }));
+    const at = Date.now() - 3_600_000;
+    localStorage.setItem(
+      'flipup.stats',
+      JSON.stringify({ net: 200, tables: 2, hands: 40, counted: [], games: [{ at, net: 300, hands: 20, players: 4 }, { at, net: -100, hands: 20, players: 5 }] }),
+    );
+  });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Welcome back, Connor' })).toBeVisible();
+  await expect(page.getByText("You're up 200 chips this week.")).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Host a table' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Insights' }).click();
+  await expect(page.getByText('+200', { exact: true })).toBeVisible();
+  await expect(page.getByText('Recent tables')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Insights' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Poker library/ }).click();
+  await expect(page.getByText('Poker library').first()).toBeVisible();
+});

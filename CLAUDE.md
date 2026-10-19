@@ -19,6 +19,7 @@ Poker night on your phones: no-limit Texas Hold'em for play chips. A host opens 
   - `holdem.ts`: dealing, blinds, betting rounds, side pots, showdown
   - `reducer.ts`: `applyAction()`, the only way a table changes. Server and phone run the same code.
   - `bots.ts`, `selectors.ts`, `validate.ts` (`parseAction()` for anything from the network), `redact.ts`
+- Home (`src/screens/Home.tsx`, `HomeInsights.tsx`, `HomeTrain.tsx`, `src/styles/home.css`): a felt backdrop, a glass sheet and a floating tab bar (Play, Insights, Train; a left rail on desktop). Insights reads the per-table results in `flipup.stats.games` and the training stats.
 - `src/state/store.ts`: the app store and every screen command. Bots-only tables run `applyAction()` locally with their own clock; online tables send actions to the server and show what it sends back.
 - `src/ui/sound.ts` (synthesised table sounds, no files) and `src/ui/useTableSounds.ts` (plays them by watching how the game changes). `Count` in `components.tsx` is the counting-number animation for pot and stacks.
 - Per-phone settings live in `src/state/persist.ts`: table felt/rail (`flipup.table`), mute, lifetime totals and the last online table for Home. Pre-actions (Check/Fold, Call any) are screen state in `Table.tsx`, never sent to the server until your turn.

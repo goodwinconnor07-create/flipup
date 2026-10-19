@@ -11,6 +11,7 @@ import './styles/screens.css';
 import './styles/table.css';
 import './styles/desktop.css';
 import './styles/train.css';
+import './styles/home.css';
 
 boot();
 installPressEffects();

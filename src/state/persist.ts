@@ -157,6 +157,15 @@ export interface Stats {
   hands: number;
   /** Tables already counted, so leaving twice can't count one twice. */
   counted: string[];
+  /** One line per finished table, newest last, for the Insights chart. */
+  games: GameResult[];
+}
+
+export interface GameResult {
+  at: number;
+  net: number;
+  hands: number;
+  players: number;
 }
 
 export function loadStats(): Stats {
@@ -167,11 +176,16 @@ export function loadStats(): Stats {
     tables: num(s?.tables),
     hands: num(s?.hands),
     counted: Array.isArray(s?.counted) ? s.counted.filter((x) => typeof x === 'string') : [],
+    games: Array.isArray(s?.games)
+      ? s.games
+          .filter((g) => g && [g.at, g.net, g.hands, g.players].every((n) => typeof n === 'number' && Number.isFinite(n)))
+          .map((g) => ({ at: g.at, net: g.net, hands: g.hands, players: g.players }))
+      : [],
   };
 }
 
 export function saveStats(stats: Stats): void {
-  write('flipup.stats', { ...stats, counted: stats.counted.slice(-30) });
+  write('flipup.stats', { ...stats, counted: stats.counted.slice(-30), games: stats.games.slice(-40) });
 }
 
 /** The last online table this phone sat at, so Home can offer to rejoin it. */

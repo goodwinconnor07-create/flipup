@@ -1,7 +1,7 @@
 // No-limit Texas Hold'em: dealing, blinds, betting rounds, side pots and the showdown.
 // Everything here works on a copy of the game that applyAction() already made, so it changes it in place.
 
-import { fullDeck, shuffle } from './cards';
+import { fullDeck, shuffle, type Card } from './cards';
 import { describeHand } from './evaluate';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
 
@@ -16,7 +16,27 @@ export const TIMING = {
   afterShowdown: 9000,
   /** Someone joined or came back: give the table a beat before dealing. */
   resume: 2000,
+  /** One player has all the chips: this long for the others to rebuy before the game ends. */
+  rebuyWindow: 20000,
 };
+
+/** Hands kept in the hand log. */
+export const MAX_LOGS = 150;
+
+/** "[Ah] [Kd]" */
+export const cardsText = (cards: Card[]) => cards.map((c) => `[${c}]`).join(' ');
+const nameOf = (game: Game, id: string) => playerById(game, id)?.name ?? 'Someone';
+const n0 = (n: number) => n.toLocaleString('en-US');
+
+function log(game: Game, line: string): void {
+  game.hand?.log.push(line);
+}
+
+/** Only one player (or only bots) has chips: nobody left to play against. */
+export function lastStanding(game: Game): boolean {
+  const withChips = game.players.filter((p) => p.stack > 0);
+  return withChips.length <= 1 || withChips.every((p) => p.bot);
+}
 
 export const MAX_SEATS = 9;
 
@@ -89,6 +109,8 @@ export function startHand(game: Game, ctx: ActionContext): void {
   game.ready = [];
   game.nextHandAt = null;
   if (!canDeal(game)) {
+    // Nobody rebought in time: the last player with chips wins.
+    if (game.hand && lastStanding(game)) game.status = 'ended';
     schedule(game);
     return;
   }
@@ -140,13 +162,18 @@ export function startHand(game: Game, ctx: ActionContext): void {
     actAt: null,
     deadline: null,
     result: null,
+    log: [],
   };
   game.hand = hand;
+  log(game, `-- Hand #${hand.number} (dealer: ${button.name}) --`);
+  log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
 
   put(seats[sb], players[sb], game.settings.smallBlind);
   seats[sb].last = { move: 'sb', amount: seats[sb].bet };
+  log(game, `${players[sb].name} posts the small blind ${n0(seats[sb].bet)}`);
   put(seats[bb], players[bb], game.settings.bigBlind);
   seats[bb].last = { move: 'bb', amount: seats[bb].bet };
+  log(game, `${players[bb].name} posts the big blind ${n0(seats[bb].bet)}`);
 
   continueFrom(game, bb, ctx);
 }
@@ -210,6 +237,23 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
       return "That's not a move.";
   }
 
+  const l = seat.last!;
+  log(
+    game,
+    `${player.name} ${
+      l.move === 'fold'
+        ? 'folds'
+        : l.move === 'check'
+          ? 'checks'
+          : l.move === 'call'
+            ? `calls ${n0(l.amount)}`
+            : l.move === 'bet'
+              ? `bets ${n0(l.amount)}`
+              : l.move === 'raise'
+                ? `raises to ${n0(l.amount)}`
+                : `goes all in for ${n0(l.amount)}`
+    }`,
+  );
   seat.acted = true;
   hand.seq += 1;
   continueFrom(game, idx, ctx);
@@ -227,6 +271,7 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   }
   seat.folded = true;
   seat.last = { move: 'fold', amount: 0 };
+  log(game, `${nameOf(game, playerId)} leaves and folds`);
   hand.seq += 1;
   if (hand.seats.filter((s) => !s.folded).length === 1) winWithoutShowdown(game, ctx);
 }
@@ -281,6 +326,7 @@ function returnUncalled(game: Game): void {
   top.total -= extra;
   const player = playerById(game, top.playerId);
   if (player) player.stack += extra;
+  log(game, `Uncalled ${n0(extra)} returned to ${nameOf(game, top.playerId)}`);
   if (top.allIn && player && player.stack > 0) top.allIn = false;
 }
 
@@ -292,6 +338,13 @@ function dealStreet(hand: Hand): void {
   const count = next === 'flop' ? 3 : 1;
   for (let i = 0; i < count; i++) hand.board.push(hand.deck.shift()!);
   hand.street = next;
+  const label = next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';
+  // Like Poker Now: the new card on its own after the ones already out.
+  hand.log.push(
+    count === 3
+      ? `${label}: ${cardsText(hand.board)}`
+      : `${label}: ${cardsText(hand.board.slice(0, -1))} ${cardsText(hand.board.slice(-1))}`,
+  );
 }
 
 function endStreet(game: Game, ctx: ActionContext): void {
@@ -319,7 +372,11 @@ function endStreet(game: Game, ctx: ActionContext): void {
   if (live.length <= 1) {
     // No more betting possible: everyone still in turns their cards over and the board runs out.
     hand.runout = true;
-    for (const s of hand.seats) if (!s.folded) s.shown = true;
+    for (const s of hand.seats) {
+      if (s.folded) continue;
+      s.shown = true;
+      log(game, `${nameOf(game, s.playerId)} shows ${cardsText(s.cards)}`);
+    }
     hand.actAt = ctx.now + TIMING.runoutStep;
     schedule(game);
     return;
@@ -400,9 +457,12 @@ function showdown(game: Game, ctx: ActionContext): void {
     if (seat.folded) continue;
     const v = values.get(seat.playerId)!;
     if (seat.shown || v.score >= bestShown || won[seat.playerId]) {
+      if (!seat.shown || hand.runout) log(game, `${nameOf(game, seat.playerId)} shows ${cardsText(seat.cards)} (${v.detail})`);
       seat.shown = true;
       names[seat.playerId] = v.detail;
       bestShown = Math.max(bestShown, v.score);
+    } else {
+      log(game, `${nameOf(game, seat.playerId)} mucks`);
     }
   }
 
@@ -410,6 +470,15 @@ function showdown(game: Game, ctx: ActionContext): void {
     const p = playerById(game, id);
     if (p) p.stack += chips;
   }
+  pots.forEach((pot, i) => {
+    const which = pots.length > 1 ? (i === 0 ? ' from the main pot' : ' from a side pot') : '';
+    const each = Math.floor(pot.amount / pot.winners.length);
+    for (const id of pot.winners)
+      log(
+        game,
+        `${nameOf(game, id)} wins ${n0(each)}${which}${names[id] ? ` with ${names[id].charAt(0).toLowerCase()}${names[id].slice(1)}` : ''}`,
+      );
+  });
   hand.result = { pots, won, names, showdown: true };
   finishHand(game, ctx, TIMING.afterShowdown);
 }
@@ -430,6 +499,7 @@ function winWithoutShowdown(game: Game, ctx: ActionContext): void {
     names: {},
     showdown: false,
   };
+  log(game, `${nameOf(game, winner.playerId)} wins ${n0(amount)}`);
   finishHand(game, ctx, TIMING.afterFold);
 }
 
@@ -437,6 +507,16 @@ function finishHand(game: Game, ctx: ActionContext, pause: number): void {
   const hand = game.hand!;
   for (const s of hand.seats) s.bet = 0;
   hand.runout = false;
+  if (hand.board.length) log(game, `Board: ${cardsText(hand.board)}`);
+  game.logs = [
+    ...(game.logs ?? []),
+    {
+      number: hand.number,
+      lines: hand.log,
+      holes: Object.fromEntries(hand.seats.map((s) => [s.playerId, s.cards])),
+      shown: hand.seats.filter((s) => s.shown).map((s) => s.playerId),
+    },
+  ].slice(-MAX_LOGS);
   // Bots that run out of chips leave the table. People stay, and can buy back in if the table allows it.
   game.players = game.players.filter((p) => !(p.bot && p.stack === 0));
   // Without rebuys, the table is over once one player has all the chips (or only bots have any).
@@ -448,7 +528,8 @@ function finishHand(game: Game, ctx: ActionContext, pause: number): void {
     return;
   }
   game.ready = [];
-  game.nextHandAt = canDeal(game) ? ctx.now + pause : null;
+  // One player left with chips: the others get a short window to rebuy, then the game ends.
+  game.nextHandAt = lastStanding(game) ? ctx.now + TIMING.rebuyWindow : canDeal(game) ? ctx.now + pause : null;
   schedule(game);
 }
 

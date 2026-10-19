@@ -104,3 +104,48 @@ test('bots at an online table play on the server', async ({ page }) => {
   // The next hand deals by itself.
   await expect(page.locator('.table-title small')).toHaveText('Hand 2', { timeout: 15_000 });
 });
+
+test('heads-up: when one player has all the chips, the game ends on the podium', async ({ browser }) => {
+  const hostCtx = await browser.newContext();
+  const friendCtx = await browser.newContext();
+  const host = await hostCtx.newPage();
+  const friend = await friendCtx.newPage();
+  await host.goto('/');
+  await host.getByRole('button', { name: 'Host a table' }).click();
+  await setName(host, 'Kavi');
+  await host.getByRole('button', { name: 'Next' }).click();
+  await host.getByRole('switch', { name: /Rebuys/ }).click(); // off: no rebuy window to wait out
+  await host.getByRole('button', { name: 'Open the table' }).click();
+  const code = await tableCode(host);
+  await friend.goto(`/${code}`);
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await setName(friend, 'Oliver');
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await expect(host.locator('.roster-item', { hasText: 'Oliver' })).toBeVisible();
+  await host.getByRole('button', { name: 'Deal', exact: true }).click();
+
+  // All in every hand until someone has everything.
+  for (let i = 0; i < 200; i++) {
+    if (await host.getByText(/wins?!$/).isVisible()) break;
+    for (const page of [host, friend]) {
+      if (!(await myTurn(page))) continue;
+      const raise = page.locator('.action-buttons .btn-blue');
+      if (await raise.isVisible()) {
+        await raise.click();
+        await page.locator('.raise-panel').getByRole('button', { name: 'All in' }).click();
+        await page.locator('.raise-panel .btn-blue').click();
+      } else await page.locator('.action-buttons .btn-green').click();
+    }
+    const next = host.getByRole('button', { name: 'Next hand' });
+    if (await next.isVisible()) await next.click().catch(() => undefined);
+    const next2 = friend.getByRole('button', { name: 'Next hand' });
+    if (await next2.isVisible()) await next2.click().catch(() => undefined);
+    await host.waitForTimeout(300);
+  }
+  await expect(host.getByText(/wins?!$/)).toBeVisible({ timeout: 20_000 });
+  await expect(friend.getByText(/wins?!$/)).toBeVisible();
+  await expect(host.locator('.podium-step')).toHaveCount(2);
+  await shot(host, '16-podium');
+  await hostCtx.close();
+  await friendCtx.close();
+});

@@ -52,7 +52,8 @@ export function parseAction(raw: unknown): Action | null {
       if (a.to !== undefined && !isInt(a.to)) return null;
       return { type: 'act', hand: a.hand, seq: a.seq, move: a.move as Move, ...(a.to !== undefined ? { to: a.to as number } : {}) };
     case 'next':
-      return isInt(a.hand) ? { type: 'next', hand: a.hand } : null;
+    case 'show':
+      return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
     case 'sitOut':
       return typeof a.out === 'boolean' ? { type: 'sitOut', out: a.out } : null;
     default:

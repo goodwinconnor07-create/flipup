@@ -8,6 +8,7 @@ import {
   getState,
   leaveTable,
   navigate,
+  openLog,
   openSheet,
   resetTo,
   setProfile,
@@ -15,11 +16,24 @@ import {
   type Sheet as SheetSpec,
 } from '../../state/store';
 import { Avatar, chips, EmojiPicker, Sheet } from '../../ui/components';
-import { ExitIcon, HelpIcon, HomeIcon, GearIcon, PencilIcon, StopIcon, TrophyIcon, UsersIcon, ClockIcon, PlusIcon } from '../../ui/Icons';
+import {
+  ExitIcon,
+  HelpIcon,
+  ListIcon,
+  HomeIcon,
+  GearIcon,
+  PencilIcon,
+  StopIcon,
+  TrophyIcon,
+  UsersIcon,
+  ClockIcon,
+  PlusIcon,
+} from '../../ui/Icons';
 import { StandingsList } from '../Final';
 import { SettingsFields } from '../Setup';
 import { InviteSheet } from './InviteSheet';
 import { RankingsSheet } from './RankingsSheet';
+import { LogSheet } from './LogSheet';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
   switch (sheet.name) {
@@ -33,6 +47,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <StandingsSheet />;
     case 'rankings':
       return <RankingsSheet />;
+    case 'log':
+      return <LogSheet />;
     case 'emoji':
       return <EmojiSheet />;
     case 'player':
@@ -174,6 +190,7 @@ function MenuSheet() {
 
   if (game && game.status !== 'lobby')
     items.push({ label: 'Standings', Icon: TrophyIcon, color: 'var(--gold)', onClick: () => openSheet({ name: 'standings' }) });
+  if (game && game.status !== 'lobby') items.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
   if (online && game?.code && game.status !== 'ended')
     items.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });
   if (host && playing && game.players.length < 9)

@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { net, standings, type Game } from '../game';
-import { closeTable, useApp } from '../state/store';
+import { closeTable, openLog, useApp } from '../state/store';
 import { Avatar, chips } from '../ui/components';
-import { confetti, CONFETTI } from '../ui/effects';
+import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 
 export function signed(n: number): string {
   return n > 0 ? `+${chips(n)}` : n < 0 ? `−${chips(-n)}` : '0';
@@ -31,27 +31,80 @@ export function StandingsList({ game }: { game: Game }) {
   );
 }
 
+/** 3rd, then 2nd, then the winner, like the golf app's podium. A tap skips ahead. */
 export function Final({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);
-  const top = standings(game)[0];
+  const rows = standings(game);
+  const top = rows[0];
   const iWon = top?.deviceId === deviceId;
+  const podium = rows.length >= 2;
+  const first = rows.length >= 3 ? 0 : 1;
+  const [step, setStep] = useState(() => (!podium || reducedMotion() ? 3 : first));
   useEffect(() => {
-    confetti(iWon ? CONFETTI.win : CONFETTI.party);
-  }, [iWon]);
+    if (step >= 3) return;
+    const t = setTimeout(
+      () => {
+        haptic(step === 2 ? 'heavy' : 'medium');
+        setStep((x) => x + 1);
+      },
+      step === 0 ? 500 : step === 2 ? 1300 : 1000,
+    );
+    return () => clearTimeout(t);
+  }, [step]);
+  useEffect(() => {
+    if (step < 3) return;
+    haptic('success');
+    confetti(iWon ? CONFETTI.win : CONFETTI.party, { x: innerWidth / 2, y: innerHeight * 0.25 }, 150);
+  }, [step, iWon]);
+
+  const headline = !top ? 'Table closed' : iWon ? 'You win!' : `${top.name} wins!`;
   return (
     <>
-      <div className="screen-body">
-        <div className="final-hero center">
-          {top && <Avatar emoji={top.emoji} size={120} className="pop final-pic" />}
-          <h1 className="h1">{top ? (iWon ? 'You won the night!' : `${top.name} won the night`) : 'Table closed'}</h1>
-          {top && <p className="muted">{signed(net(top))} chips</p>}
-        </div>
-        <p className="section-title">Final standings</p>
-        <StandingsList game={game} />
+      <div className="screen-body final-body" onClick={step < 3 ? () => setStep(3) : undefined}>
+        <h1 className="h1 center" aria-live="polite">
+          {step >= 3 ? headline : step === 2 ? 'In 2nd…' : 'And in 3rd…'}
+        </h1>
+        {step >= 3 && top && (
+          <p className="h3 muted center" style={{ margin: '-8px 0 0' }}>
+            {signed(net(top))} chips{game.hand ? ` after ${game.hand.number} hand${game.hand.number === 1 ? '' : 's'}` : ''}
+          </p>
+        )}
+        {podium && (
+          // Read in place order; laid out 2-1-3 like a real podium.
+          <ol className="podium">
+            {rows.slice(0, 3).map((p, i) => {
+              const shown = step >= 3 - i;
+              return (
+                <li key={p.id} className={`podium-step podium-${i + 1}${shown ? ' shown' : ''}`}>
+                  {shown ? (
+                    <>
+                      {i === 0 && <span className="podium-crown">👑</span>}
+                      <Avatar emoji={p.emoji} size={i === 0 ? 72 : 56} className="pop" />
+                      <span className="podium-name">{p.deviceId === deviceId ? 'You' : p.name}</span>
+                      <span className={`podium-score num ${net(p) > 0 ? 'good' : net(p) < 0 ? 'bad' : ''}`}>{signed(net(p))}</span>
+                    </>
+                  ) : (
+                    <span className="podium-q">?</span>
+                  )}
+                  <span className="podium-block">{i + 1}</span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+        {step >= 3 && (
+          <>
+            <p className="section-title">Final standings</p>
+            <StandingsList game={game} />
+          </>
+        )}
       </div>
       <div className="screen-foot">
         <button type="button" className="btn btn-xl btn-dark" onClick={closeTable}>
           Done
+        </button>
+        <button type="button" className="btn btn-link" onClick={openLog}>
+          Hand log
         </button>
       </div>
     </>

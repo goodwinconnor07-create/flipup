@@ -1,6 +1,6 @@
 // Messages between the app and the table server (a Cloudflare Durable Object).
 
-import type { Action, Game, Settings, Status } from './types';
+import type { Action, Game, HandLog, Settings, Status } from './types';
 
 /** What the join screen needs to know about a table. */
 export interface TableInfo {
@@ -29,9 +29,12 @@ export type ClientMessage =
   | { t: 'act'; id: string; a: Action }
   /** Ask for the latest state. */
   | { t: 'sync' }
+  /** Ask for the hand log. */
+  | { t: 'log' }
   | { t: 'ping' };
 
-export type ServerMessage = { t: 'state'; game: Game; ack?: string } | { t: 'reject'; id?: string; error: string } | { t: 'pong' };
+export type ServerMessage =
+  { t: 'state'; game: Game; ack?: string } | { t: 'reject'; id?: string; error: string } | { t: 'log'; logs: HandLog[] } | { t: 'pong' };
 
 /** Heartbeats are fixed strings so the server can answer without waking up. */
 export const PING = '{"t":"ping"}';

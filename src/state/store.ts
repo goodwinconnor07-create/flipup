@@ -11,6 +11,8 @@ import {
   newId,
   normalizeCode,
   redactForDevice,
+  redactLogs,
+  type HandLog,
   type Action,
   type Game,
   type ServerMessage,
@@ -37,6 +39,7 @@ export type Sheet =
   | { name: 'settings' }
   | { name: 'standings' }
   | { name: 'rankings' }
+  | { name: 'log' }
   | { name: 'emoji' }
   | { name: 'player'; playerId: string }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
@@ -64,6 +67,8 @@ export interface AppState {
   busy: string | null;
   /** An action sent to the server that hasn't come back yet. */
   sending: string | null;
+  /** The hand log, once asked for (null while it's on its way). */
+  logs: HandLog[] | null;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -93,6 +98,7 @@ let state: AppState = {
   toasts: [],
   busy: null,
   sending: null,
+  logs: null,
 };
 
 function set(patch: Partial<AppState>): void {
@@ -268,6 +274,8 @@ function onServerMessage(msg: ServerMessage): void {
     setSession({ ...s, game: msg.game, joining: s.joining && !mine });
     // Arrived from the join screen: take a seat.
     if (s.joining && !mine && msg.game.status !== 'ended') sendJoin();
+  } else if (msg.t === 'log') {
+    set({ logs: msg.logs });
   } else if (msg.t === 'reject') {
     if (msg.id === state.sending) set({ sending: null });
     toast(msg.error, 'error');
@@ -327,6 +335,17 @@ export function dispatch(action: Action): boolean {
   }
   if (r.changed) setSession({ ...s, game: r.game });
   return true;
+}
+
+/** Opens the hand log. Online it's fetched from the server; a bots-only table has it on the phone. */
+export function openLog(): void {
+  const s = state.session;
+  if (s?.mode === 'local' && s.game) set({ logs: redactLogs(s.game, state.deviceId) });
+  else {
+    set({ logs: null });
+    if (!conn?.send({ t: 'log' })) toast("You're offline. The hand log needs a connection.", 'error');
+  }
+  openSheet({ name: 'log' });
 }
 
 /** Opens a new table: online with a join code, or bots-only on this phone. */

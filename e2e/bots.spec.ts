@@ -81,3 +81,45 @@ test('hand rankings from Home', async ({ page }) => {
   await expect(page.locator('.ranking')).toHaveCount(10);
   await shot(page, '08-rankings');
 });
+
+test('the raise panel fits on a short screen, and the hand log records the hand', async ({ page }) => {
+  watchErrors(page);
+  // About what's left of an iPhone screen with Safari's bars showing.
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
+  await page.locator('.action-buttons .btn-blue').click();
+  const panel = page.locator('.raise-panel');
+  await expect(panel).toBeVisible();
+  await page.waitForTimeout(300);
+  // Every option is on screen without scrolling.
+  for (const el of [
+    panel.getByRole('button', { name: 'Min' }),
+    panel.getByRole('button', { name: 'All in' }),
+    panel.locator('.btn-blue'),
+    panel.getByRole('button', { name: 'Back' }),
+  ]) {
+    await expect(el).toBeInViewport({ ratio: 1 });
+  }
+  await shot(page, '09-raise-short');
+  await panel.getByRole('button', { name: 'Back' }).click();
+  await page.locator('.action-buttons .btn-fold').click();
+  await expect(page.getByRole('button', { name: 'Show my cards' })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Show my cards' }).click();
+  await expect(page.getByRole('button', { name: 'Show my cards' })).toBeHidden();
+
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Hand log' }).click();
+  const log = page.getByRole('dialog', { name: 'Hand log' });
+  await expect(log.getByText('Hand #1')).toBeVisible();
+  await expect(log.getByText(/posts the big blind/)).toBeVisible();
+  await expect(log.getByText('Sam folds')).toBeVisible();
+  await expect(log.getByText(/^Sam shows/)).toBeVisible();
+  await expect(log.getByText(/^Your hand:/)).toBeVisible();
+  await shot(page, '10-hand-log');
+});

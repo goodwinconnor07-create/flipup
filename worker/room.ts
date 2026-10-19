@@ -8,6 +8,7 @@ import {
   PING,
   PONG,
   redactForDevice,
+  redactLogs,
   type Action,
   type Game,
   type ServerMessage,
@@ -96,6 +97,7 @@ export class TableRoom extends DurableObject<Env> {
       return;
     }
     if (t === 'sync') return this.send(ws, { t: 'state', game: redactForDevice(game, deviceId) });
+    if (t === 'log') return this.send(ws, { t: 'log', logs: redactLogs(game, deviceId) });
     if (t !== 'act') return;
 
     const id = typeof rawId === 'string' && rawId.length <= 40 ? rawId : undefined;

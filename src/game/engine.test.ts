@@ -10,6 +10,7 @@ import {
   options,
   parseAction,
   redactForDevice,
+  redactLogs,
   scoreHand,
   seededRng,
   type Action,
@@ -436,6 +437,49 @@ describe('table', () => {
     const after = game.players.find((p) => p.name === b)!;
     expect(after.stack).toBe(100);
     expect(after.bought).toBe(200);
+  });
+
+  it('ends with a winner when one player has all the chips, after a window to rebuy', () => {
+    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 });
+    const [a, b] = game.hand!.seats.map((s) => nameOf(game, s.playerId)!);
+    game = rig(game, { [a]: 'Ah Ad', [b]: '7c 2d' }, 'Ks 9c 5d 3h Jc');
+    game = act(game, 'allin');
+    game = act(game, 'call');
+    for (let i = 0; i < 6 && !game.hand!.result; i++) {
+      clock = (game.wakeAt ?? clock) + 1;
+      game = must(game, { type: 'tick' }, 'server');
+    }
+    expect(game.status).toBe('playing');
+    // The winner tapping Next hand doesn't skip the loser's chance to rebuy.
+    game = must(game, { type: 'next', hand: game.hand!.number }, game.players.find((p) => p.name === a)!.deviceId!);
+    expect(game.status).toBe('playing');
+    clock = game.wakeAt! + 1;
+    game = must(game, { type: 'tick' }, 'server');
+    expect(game.status).toBe('ended');
+  });
+
+  it('logs every action, and lets a player show their cards after the hand', () => {
+    let game = table(3);
+    const n = game.hand!.number;
+    game = act(act(game, 'raise', 30), 'fold');
+    game = act(game, 'fold');
+    const entry = game.logs.at(-1)!;
+    expect(entry.number).toBe(n);
+    expect(entry.lines[0]).toMatch(/^-- Hand #1 \(dealer: /);
+    expect(entry.lines.some((l) => /posts the big blind 10/.test(l))).toBe(true);
+    expect(entry.lines.some((l) => /raises to 30/.test(l))).toBe(true);
+    expect(entry.lines.some((l) => /Uncalled 20 returned/.test(l))).toBe(true);
+    expect(entry.lines.at(-1)).toMatch(/wins 25$/);
+    // Phones never get the log with state updates, and only see their own cards in it.
+    const folder = game.hand!.seats.find((s) => s.folded)!;
+    const device = deviceOf(game, folder.playerId);
+    expect(redactForDevice(game, device).logs).toEqual([]);
+    expect(Object.keys(redactLogs(game, device)[0].holes)).toEqual([folder.playerId]);
+    // They show their folded hand: everyone sees it now.
+    game = must(game, { type: 'show', hand: n }, device);
+    expect(game.hand!.seats.find((s) => s.playerId === folder.playerId)!.shown).toBe(true);
+    expect(redactForDevice(game, 'someone-else').hand!.seats.find((s) => s.playerId === folder.playerId)!.cards.length).toBe(2);
+    expect(game.logs.at(-1)!.lines.at(-1)).toMatch(/shows \[/);
   });
 
   it('times out a slow player: checks or folds, and sits them out after two', () => {

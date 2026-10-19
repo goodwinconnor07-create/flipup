@@ -3,7 +3,7 @@
 
 import { BOTS, botMove } from './bots';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
-import { canDeal, foldOutOfTurn, makeMove, MAX_SEATS, playerById, runoutStep, schedule, startHand, TIMING } from './holdem';
+import { canDeal, cardsText, foldOutOfTurn, makeMove, MAX_SEATS, playerById, runoutStep, schedule, startHand, TIMING } from './holdem';
 import { newId } from './ids';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
@@ -102,6 +102,7 @@ export function createTable(opts: {
     ready: [],
     version: 0,
     wakeAt: null,
+    logs: [],
   };
   game.players.push(newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }));
   for (let i = 0; i < opts.bots && game.players.length < MAX_SEATS; i++) addBot(game);
@@ -243,7 +244,21 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       game.ready.push(me.id);
       // Everyone who's playing has seen enough: deal now.
       const waitingOn = game.players.filter((p) => !p.bot && !p.sittingOut && p.stack > 0 && !game.ready.includes(p.id));
-      if (waitingOn.length === 0 && game.nextHandAt !== null) startHand(game, ctx);
+      if (waitingOn.length === 0 && game.nextHandAt !== null && canDeal(game)) startHand(game, ctx);
+      return done();
+    }
+
+    case 'show': {
+      const hand = game.hand;
+      const seat = seatFor(hand, me?.id);
+      if (!me || !hand || !hand.result || hand.number !== action.hand || !seat) return fail('There are no cards to show.');
+      if (seat.shown) return done(false);
+      seat.shown = true;
+      const entry = game.logs?.find((l) => l.number === hand.number);
+      if (entry) {
+        entry.shown.push(me.id);
+        entry.lines.push(`${me.name} shows ${cardsText(seat.cards)}`);
+      }
       return done();
     }
 
@@ -265,7 +280,11 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       me.stack = game.settings.startingStack;
       me.bought += game.settings.startingStack;
       me.sittingOut = false;
+      // Bought back in during the last-player-standing window: deal again soon.
+      if (game.status === 'playing' && game.hand?.result && canDeal(game))
+        game.nextHandAt = Math.min(game.nextHandAt ?? Infinity, ctx.now + TIMING.resume);
       wakeIfWaiting(game, ctx);
+      schedule(game);
       return done();
     }
 

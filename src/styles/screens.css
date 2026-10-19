@@ -869,3 +869,151 @@ button.roster-item:active:not(:disabled) {
     animation: none;
   }
 }
+
+/* ── Hand log ────────────────────────────────────────────────────────────── */
+
+.log-hand {
+  padding: 12px 0;
+  border-bottom: 2px solid var(--line);
+}
+
+.log-hand:last-child {
+  border-bottom: 0;
+}
+
+.log-title {
+  margin: 0 0 6px;
+  font-size: var(--fs-body);
+  font-weight: 900;
+}
+
+.log-line {
+  margin: 0;
+  padding: 2px 0;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.log-street {
+  margin-top: 4px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.log-win {
+  color: var(--green-ink);
+  font-weight: 800;
+}
+
+.log-mine {
+  color: var(--blue-ink);
+  font-weight: 800;
+}
+
+/* ── Final podium (from CardShot) ────────────────────────────────────────── */
+
+.podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Laid out 2-1-3; read 1-2-3. */
+.podium-1 {
+  order: 2;
+}
+
+.podium-2 {
+  order: 1;
+}
+
+.podium-3 {
+  order: 3;
+}
+
+.podium-step {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.podium-step.shown > :not(.podium-block) {
+  animation: rise 0.4s ease-out both;
+}
+
+.podium-crown {
+  font-size: var(--fs-h1);
+  line-height: 1;
+  margin-bottom: -8px;
+}
+
+.podium-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-lead);
+  font-weight: 900;
+}
+
+.podium-score {
+  font-size: var(--fs-h3);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.podium-q {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--bg-2);
+  color: var(--ink-3);
+  font-size: var(--fs-h2);
+  font-weight: 900;
+}
+
+.podium-block {
+  width: 100%;
+  margin-top: 4px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-md) var(--r-md) 0 0;
+  background: var(--bg-2);
+  box-shadow: inset 0 0 0 1px var(--line);
+  color: var(--ink-3);
+  font-size: var(--fs-h1);
+  font-weight: 900;
+}
+
+.podium-1 .podium-block {
+  height: 120px;
+  background: linear-gradient(180deg, var(--gold-hi), var(--gold));
+  box-shadow: none;
+  color: var(--gold-ink-2);
+}
+
+.podium-2 .podium-block {
+  height: 84px;
+}
+
+.podium-3 .podium-block {
+  height: 60px;
+}
+
+/* Only two players: no third step to keep a gap for. */
+.podium:not(:has(.podium-3)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 280px;
+  margin: 8px auto 0;
+  width: 100%;
+}

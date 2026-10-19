@@ -72,6 +72,17 @@ export interface HandResult {
   showdown: boolean;
 }
 
+/** One finished hand, for the hand log. */
+export interface HandLog {
+  number: number;
+  /** What happened, in order. Cards are written like [Ah]. */
+  lines: string[];
+  /** Everyone's hole cards. Phones only get their own and any that were shown. */
+  holes: Record<string, Card[]>;
+  /** Players whose cards everyone saw. */
+  shown: string[];
+}
+
 export interface Hand {
   /** 1 for the first hand at the table. */
   number: number;
@@ -101,6 +112,8 @@ export interface Hand {
   /** When the current person's time runs out (for the timer ring). */
   deadline: number | null;
   result: HandResult | null;
+  /** What's happened so far this hand, for the hand log. */
+  log: string[];
 }
 
 export interface Game {
@@ -123,6 +136,8 @@ export interface Game {
   version: number;
   /** When the server should wake up to move things along. null = nothing timed. */
   wakeAt: number | null;
+  /** Every finished hand at this table, oldest first. Sent to phones only when they open the hand log. */
+  logs: HandLog[];
 }
 
 export type Action =
@@ -136,6 +151,8 @@ export type Action =
   | { type: 'start' }
   | { type: 'act'; hand: number; seq: number; move: Move; to?: number }
   | { type: 'next'; hand: number }
+  /** Turn your cards face up once the hand is over. */
+  | { type: 'show'; hand: number }
   | { type: 'sitOut'; out: boolean }
   | { type: 'rebuy' }
   | { type: 'end' }

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   describeHand,
   equity,
+  lastStanding,
   myPlayer,
   options,
   pot,
@@ -16,7 +17,7 @@ import {
 import { dispatch, openSheet, useApp } from '../state/store';
 import { Avatar, CardSlot, chips, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
-import { MenuIcon } from '../ui/Icons';
+import { MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 import { Final } from './Final';
 import { Lobby } from './Lobby';
 
@@ -360,6 +361,24 @@ function ActionArea({
   }
 
   // Between hands.
+  if (game.status === 'playing' && hand?.result && lastStanding(game) && game.nextHandAt) {
+    // One player has all the chips: the others have a few seconds to rebuy, then the game ends.
+    const secs = Math.max(0, Math.ceil((game.nextHandAt - now) / 1000));
+    return (
+      <div className="stack">
+        <ResultLine game={game} />
+        {me.stack === 0 && game.settings.rebuys ? (
+          <button type="button" className="btn btn-green" onClick={() => dispatch({ type: 'rebuy' })}>
+            Rebuy for {chips(game.settings.startingStack)} · {secs}s
+          </button>
+        ) : (
+          <p className="table-note">
+            {me.stack > 0 ? 'Everyone else is out of chips.' : "You're out of chips."} The game ends in {secs}s.
+          </p>
+        )}
+      </div>
+    );
+  }
   if (me.stack === 0) {
     return game.settings.rebuys ? (
       <div className="stack">
@@ -432,6 +451,10 @@ function ResultLine({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);
   const result = game.hand?.result;
   if (!result) return null;
+  const me = myPlayer(game, deviceId);
+  const mySeat = seatFor(game.hand, me?.id);
+  // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
+  const canShow = !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
   const lines = Object.entries(result.won).map(([id, amount]) => {
     const p = game.players.find((x) => x.id === id);
     const you = p?.deviceId === deviceId;
@@ -445,6 +468,11 @@ function ResultLine({ game }: { game: Game }) {
           {l.how && <span className="muted"> · {l.how}</span>}
         </p>
       ))}
+      {canShow && (
+        <button type="button" className="btn-link-small show-btn" onClick={() => dispatch({ type: 'show', hand: game.hand!.number })}>
+          Show my cards
+        </button>
+      )}
     </div>
   );
 }
@@ -528,41 +556,62 @@ function RaisePanel({
   ];
   const step = Math.max(1, Math.min(bb, Math.floor((o.maxTo - o.minTo) / 50) || 1));
 
+  const nudge = (dir: 1 | -1) => setTo((t) => clamp(t + dir * step));
+
+  // A panel pinned to the bottom of the screen, over your cards, so every option is in view without scrolling.
   return (
-    <div className="raise-panel rise">
-      <div className="raise-head">
-        <span className="muted">{o.word} to</span>
-        <b className="raise-amount num">{chips(to)}</b>
-      </div>
-      <div className="raise-presets">
-        {presets.map((p) => (
-          <button key={p.label} type="button" className={`preset press${p.to === to ? ' on' : ''}`} onClick={() => setTo(p.to)}>
-            {p.label}
+    <div className="raise-layer" onClick={onCancel}>
+      <div className="raise-panel" role="dialog" aria-label={`${o.word} amount`} onClick={(e) => e.stopPropagation()}>
+        <div className="raise-head">
+          <span className="muted">{o.word} to</span>
+          <b className="raise-amount num">{chips(to)}</b>
+          <span className="muted raise-of">of {chips(o.maxTo)}</span>
+        </div>
+        <div className="raise-presets">
+          {presets.map((p) => (
+            <button
+              key={p.label}
+              type="button"
+              aria-label={p.label}
+              className={`preset press${p.to === to ? ' on' : ''}`}
+              onClick={() => setTo(p.to)}
+            >
+              <b>{p.label}</b>
+              <small className="num">{chips(p.to)}</small>
+            </button>
+          ))}
+        </div>
+        <div className="raise-fine">
+          <button type="button" className="icon-btn press" aria-label="Less" disabled={to <= o.minTo} onClick={() => nudge(-1)}>
+            <MinusIcon />
           </button>
-        ))}
-      </div>
-      <input
-        ref={range}
-        className="raise-slider"
-        type="range"
-        min={o.minTo}
-        max={o.maxTo}
-        step={step}
-        value={to}
-        aria-label={`${o.word} amount`}
-        onChange={(e) => {
-          const v = Number(e.target.value);
-          // Snap to all in at the top, so the last step isn't lost to rounding.
-          setTo(v + step > o.maxTo ? o.maxTo : v);
-        }}
-      />
-      <div className="action-buttons two">
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>
-          Back
-        </button>
-        <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
-          {to >= o.maxTo ? 'All in' : `${o.word} ${chips(to)}`}
-        </button>
+          <input
+            ref={range}
+            className="raise-slider"
+            type="range"
+            min={o.minTo}
+            max={o.maxTo}
+            step={step}
+            value={to}
+            aria-label={`${o.word} amount`}
+            onChange={(e) => {
+              const v = Number(e.target.value);
+              // Snap to all in at the top, so the last step isn't lost to rounding.
+              setTo(v + step > o.maxTo ? o.maxTo : v);
+            }}
+          />
+          <button type="button" className="icon-btn press" aria-label="More" disabled={to >= o.maxTo} onClick={() => nudge(1)}>
+            <PlusIcon />
+          </button>
+        </div>
+        <div className="action-buttons two">
+          <button type="button" className="btn btn-ghost" onClick={onCancel}>
+            Back
+          </button>
+          <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
+            {to >= o.maxTo ? 'All in' : `${o.word} ${chips(to)}`}
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -1,17 +1,5 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
-import {
-  cardName,
-  EMOJIS,
-  firstEmoji,
-  isNameBlocked,
-  isRed,
-  LIMITS,
-  NAME_BLOCKED,
-  rankLabel,
-  SUIT_SYMBOL,
-  suitOf,
-  type Card,
-} from '../game';
+import { cardName, EMOJIS, firstEmoji, isNameBlocked, LIMITS, NAME_BLOCKED, rankLabel, SUIT_SYMBOL, suitOf, type Card } from '../game';
 import { back, closeSheet, useApp } from '../state/store';
 import { haptic } from './effects';
 import { BackIcon, CloseIcon, PencilIcon } from './Icons';
@@ -165,10 +153,11 @@ export function PlayingCard({
   if (showBack || !card) {
     return <span className={`pcard pcard-${size} pcard-back ${className}`} aria-label="Face-down card" role="img" />;
   }
-  const red = isRed(card);
+  // A four-colour deck: spades black, hearts red, diamonds blue, clubs green.
+  const suit = suitOf(card);
   return (
     <span
-      className={`pcard pcard-${size}${red ? ' red' : ''}${dim ? ' dim' : ''}${flip ? ' flip-in' : ''} ${className}`}
+      className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${flip ? ' flip-in' : ''} ${className}`}
       style={flip ? { animationDelay: `${delay}ms` } : undefined}
       role="img"
       aria-label={cardName(card)}
@@ -176,6 +165,25 @@ export function PlayingCard({
       <span className="pcard-rank">{rankLabel(card)}</span>
       <span className="pcard-suit">{SUIT_SYMBOL[suitOf(card)]}</span>
     </span>
+  );
+}
+
+/** Log text with cards written like [Ah]: the cards come out as small coloured "A♥". */
+export function CardText({ text }: { text: string }) {
+  const parts = text.split(/(\[[2-9TJQKA][shdc]\])/);
+  return (
+    <>
+      {parts.map((p, i) =>
+        /^\[[2-9TJQKA][shdc]\]$/.test(p) ? (
+          <span key={i} className={`card-chip suit-${p[2]}`} aria-label={cardName(p.slice(1, 3))}>
+            {rankLabel(p.slice(1, 3))}
+            {SUIT_SYMBOL[p[2] as 's']}
+          </span>
+        ) : (
+          <span key={i}>{p}</span>
+        ),
+      )}
+    </>
   );
 }
 

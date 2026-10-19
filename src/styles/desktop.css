@@ -328,11 +328,31 @@
     padding: 5px 12px;
   }
 
-  .pos-chip {
-    min-width: 26px;
-    height: 26px;
-    font-size: 12px;
-    border-radius: 13px;
+  /* Small markers at the bottom-left corner of the picture: clear of the name, the chips and the speech bubble. */
+  .stage .pos-chips {
+    left: -8px;
+    right: auto;
+    top: auto;
+    bottom: -6px;
+    gap: 1px;
+  }
+
+  .stage .pos-chip {
+    min-width: 21px;
+    height: 21px;
+    padding: 0 4px;
+    font-size: 10px;
+    border-radius: 11px;
+    box-shadow:
+      0 0 0 1.5px var(--surface),
+      var(--shadow-sm);
+  }
+
+  .my-box .pos-chip {
+    min-width: 22px;
+    height: 22px;
+    font-size: 10px;
+    border-radius: 11px;
   }
 
   /* ── Along the bottom: cards, actions, chips ──────────────────────────── */

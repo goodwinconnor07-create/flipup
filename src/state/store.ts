@@ -25,12 +25,14 @@ import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import {
   loadDeviceId,
+  loadCalm,
   loadMuted,
   loadProfile,
   loadSession,
   loadStats,
   loadTableLook,
   saveLastTable,
+  saveCalm,
   saveMuted,
   saveProfile,
   saveSession,
@@ -91,6 +93,8 @@ export interface AppState {
   /** Felt and rail, as this phone likes them. */
   look: TableLook;
   muted: boolean;
+  /** Animations switched off. */
+  calm: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -123,7 +127,9 @@ let state: AppState = {
   logs: null,
   look: loadTableLook(),
   muted: loadMuted(),
+  calm: loadCalm(),
 };
+document.documentElement.classList.toggle('calm', state.calm);
 setMuted(loadMuted());
 
 function set(patch: Partial<AppState>): void {
@@ -434,6 +440,13 @@ export function toggleMuted(): void {
   saveMuted(muted);
   setMuted(muted);
   set({ muted });
+}
+
+export function toggleCalm(): void {
+  const calm = !state.calm;
+  saveCalm(calm);
+  document.documentElement.classList.toggle('calm', calm);
+  set({ calm });
 }
 
 /** Counts this table's result towards the Home screen's lifetime numbers (once per table). */

@@ -91,3 +91,26 @@ test.describe('a phone is left as it was', () => {
     expect(await page.locator('.pod:not(.away)').count()).toBeLessThanOrEqual(4);
   });
 });
+
+test.describe('animations stay on even if the computer says to reduce motion', () => {
+  test.use({ contextOptions: { reducedMotion: 'reduce' } });
+  test('cards flip, and the menu switch turns animations off', async ({ page }) => {
+    watchErrors(page);
+    await sitDown(page, 2);
+    const flip = page.locator('.my-cards .flip-in').first();
+    await expect(flip).toBeVisible();
+    const anim = await flip.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { name: cs.animationName, ms: parseFloat(cs.animationDuration) * (cs.animationDuration.endsWith('ms') ? 1 : 1000) };
+    });
+    expect(anim.name).toBe('flip-in');
+    expect(anim.ms).toBeGreaterThan(300);
+
+    await page.getByRole('button', { name: 'Menu' }).click();
+    await page.getByRole('button', { name: 'Animations on' }).click();
+    await expect(page.getByRole('button', { name: 'Animations off' })).toBeVisible();
+    await expect(page.locator('html')).toHaveClass(/calm/);
+    await page.reload();
+    await expect(page.locator('html')).toHaveClass(/calm/);
+  });
+});

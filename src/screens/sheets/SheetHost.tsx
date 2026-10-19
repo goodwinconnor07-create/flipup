@@ -13,6 +13,7 @@ import {
   resetTo,
   setProfile,
   setTableLook,
+  toggleCalm,
   toggleMuted,
   useApp,
   type Sheet as SheetSpec,
@@ -20,6 +21,7 @@ import {
 import { Avatar, Choice, chips, EmojiPicker, PlayingCard, Sheet } from '../../ui/components';
 import { FELTS, RAILS } from '../../state/persist';
 import {
+  BoltIcon,
   ClockIcon,
   ExitIcon,
   GearIcon,
@@ -258,6 +260,7 @@ function MenuSheet() {
   const deviceId = useApp((s) => s.deviceId);
   const online = useApp((s) => s.session?.mode === 'online');
   const muted = useApp((s) => s.muted);
+  const calm = useApp((s) => s.calm);
   const host = game?.hostDeviceId === deviceId;
   const me = game ? myPlayer(game, deviceId) : undefined;
   const playing = game?.status === 'playing';
@@ -284,6 +287,12 @@ function MenuSheet() {
       Icon: muted ? MuteIcon : SoundIcon,
       color: muted ? 'var(--slate-hi)' : 'var(--green)',
       onClick: toggleMuted,
+    },
+    {
+      label: calm ? 'Animations off' : 'Animations on',
+      Icon: BoltIcon,
+      color: calm ? 'var(--slate-hi)' : 'var(--gold)',
+      onClick: toggleCalm,
     },
     { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
     { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--red)', onClick: () => navigate({ name: 'profile', then: 'done' }) },

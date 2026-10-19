@@ -12,8 +12,9 @@ const PATTERNS: Record<HapticKind, number | number[]> = {
   error: [32, 40, 32],
 };
 
+/** True only if the player switched Animations off in the menu (the computer's own setting isn't used). */
 export function reducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return typeof document !== 'undefined' && document.documentElement.classList.contains('calm');
 }
 
 /** A tap on the phone: vibrate on Android browsers (iPhone browsers ignore it). */

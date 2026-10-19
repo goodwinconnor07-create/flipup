@@ -911,14 +911,12 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .flip-in,
-  .flip-in::after,
-  .pod-ring,
-  .pod-tag,
-  .pod.won .pod-pic {
-    animation: none;
-  }
+html.calm .flip-in,
+html.calm .flip-in::after,
+html.calm .pod-ring,
+html.calm .pod-tag,
+html.calm .pod.won .pod-pic {
+  animation: none;
 }
 
 /* ── Speech bubbles: what someone just did, like an iMessage ─────────────── */
@@ -1286,11 +1284,8 @@
   cursor: pointer;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .table-timer.low .timer-run,
-  .pcard {
-    animation: none;
-  }
+html.calm .table-timer.low .timer-run {
+  animation: none;
 }
 
 /* ── Show cards: a very small button under your cards ────────────────────── */

@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.so
+build/
+.pytest_cache/
+gmon.out

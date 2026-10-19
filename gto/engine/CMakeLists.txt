@@ -1,0 +1,39 @@
+cmake_minimum_required(VERSION 3.18)
+project(flipup_engine CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
+set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+option(FLIPUP_NATIVE "Optimize for the build machine's CPU" ON)
+if(FLIPUP_NATIVE)
+  add_compile_options(-march=native)
+endif()
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+find_package(OpenMP REQUIRED)
+
+add_library(flipup_core STATIC src/cards.cpp src/eval.cpp src/solver.cpp)
+target_include_directories(flipup_core PUBLIC include)
+target_link_libraries(flipup_core PUBLIC OpenMP::OpenMP_CXX)
+target_compile_options(flipup_core PRIVATE -Wall -Wextra)
+
+add_executable(test_eval_exhaustive tests/test_eval_exhaustive.cpp)
+target_link_libraries(test_eval_exhaustive flipup_core)
+add_executable(test_solver tests/test_solver.cpp)
+target_link_libraries(test_solver flipup_core)
+
+find_package(Python3 COMPONENTS Interpreter Development.Module)
+if(Python3_FOUND)
+  execute_process(COMMAND ${Python3_EXECUTABLE} -m pybind11 --cmakedir
+                  OUTPUT_VARIABLE pybind11_DIR OUTPUT_STRIP_TRAILING_WHITESPACE ERROR_QUIET)
+  find_package(pybind11 CONFIG QUIET)
+  if(pybind11_FOUND)
+    pybind11_add_module(_engine src/bindings.cpp)
+    target_link_libraries(_engine PRIVATE flipup_core)
+    # Drop the compiled module straight into the Python package.
+    set_target_properties(_engine PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/../flipup_gto)
+  endif()
+endif()

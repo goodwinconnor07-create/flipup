@@ -234,32 +234,54 @@
 
 /* ── Other players ───────────────────────────────────────────────────────── */
 
+/* One row of up to four players. Each sits in a slot and slides between slots, so you can see where everyone goes. */
 .pods {
-  display: grid;
-  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
-  gap: 12px 4px;
-  padding-top: 4px;
-}
-
-.pods-one {
-  /* A few players spread out; one or two sit in the middle rather than at the edges. */
-  max-width: calc(var(--cols) * 96px);
-  width: 100%;
-  margin: 0 auto;
+  position: relative;
+  height: 174px;
 }
 
 .pod {
-  position: relative;
+  position: absolute;
+  /* Room above the picture for the speech bubble. */
+  top: 24px;
+  left: 0;
+  width: 25%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  gap: 0;
+  transform: translateX(calc(100% * (var(--slot, 0) + (4 - var(--n, 4)) / 2)));
+  transition:
+    transform 0.55s cubic-bezier(0.3, 0.9, 0.25, 1),
+    opacity 0.3s ease;
   min-width: 0;
   padding: 0;
   border: 0;
   background: none;
   color: var(--ink);
-  transition: opacity 0.25s ease;
+}
+
+/* Not at the table right now (folded, or off to the side): slid out of view. */
+.pod.away {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    transform 0.55s cubic-bezier(0.3, 0.9, 0.25, 1),
+    opacity 0.3s ease,
+    visibility 0s linear 0.55s;
+}
+
+.pods-more {
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--bg-2);
+  color: var(--ink-3);
+  font-size: var(--fs-caption);
+  font-weight: 800;
 }
 
 .pod.out .avatar,
@@ -272,10 +294,8 @@
   position: relative;
   display: grid;
   place-items: center;
-  width: 60px;
-  height: 60px;
-  /* Room for the dealer and blind chips under the picture. */
-  margin-bottom: 12px;
+  width: 56px;
+  height: 54px;
 }
 
 /* Whose turn it is: a gold ring. */
@@ -294,6 +314,7 @@
 }
 
 .pod-name {
+  line-height: 1.15;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -310,7 +331,7 @@
 .pod-stack {
   font-size: var(--fs-lead);
   font-weight: 800;
-  line-height: 1.1;
+  line-height: 1.05;
 }
 
 .pod-under {
@@ -318,7 +339,7 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  min-height: 56px;
+  min-height: 52px;
   padding-top: 4px;
 }
 
@@ -374,6 +395,8 @@
 /* ── The table: a felt oval with a rail round it ────────────────────────── */
 
 .table-oval {
+  /* The player's felt colour is set on this element; this is the default. */
+  --felt: #1f7a4d;
   --rail-a: #4a4a55;
   --rail-b: #1b1b22;
   flex: 1;
@@ -407,7 +430,6 @@
 }
 
 .table-felt {
-  --felt: #1f7a4d;
   position: relative;
   flex: 1;
   min-width: 0;
@@ -884,7 +906,7 @@
   }
   .pod-pic {
     width: 52px;
-    height: 52px;
+    height: 50px;
   }
 }
 
@@ -899,11 +921,6 @@
 }
 
 /* ── Speech bubbles: what someone just did, like an iMessage ─────────────── */
-
-/* Room above the pictures for the bubbles. */
-.pods {
-  padding-top: 26px;
-}
 
 .bubble {
   position: absolute;
@@ -995,26 +1012,25 @@
 
 .pos-chips {
   position: absolute;
-  left: 50%;
-  bottom: -13px;
-  translate: -50% 0;
+  right: -7px;
+  bottom: -3px;
   z-index: 2;
   display: flex;
-  gap: 3px;
+  gap: 2px;
 }
 
 .pos-chip {
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
-  border-radius: 13px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 900;
   line-height: 1;
   box-shadow:
-    0 0 0 2px var(--surface),
+    0 0 0 1.5px var(--surface),
     var(--shadow-sm);
 }
 
@@ -1022,7 +1038,7 @@
   background: var(--surface);
   color: var(--ink);
   box-shadow:
-    0 0 0 2px var(--ink),
+    0 0 0 1.5px var(--ink),
     var(--shadow-sm);
 }
 
@@ -1038,8 +1054,8 @@
 
 .my-box .pos-chips {
   left: 8px;
+  right: auto;
   bottom: 8px;
-  translate: none;
 }
 
 /* ── Turn timer: a thin bar that runs down ───────────────────────────────── */
@@ -1265,4 +1281,31 @@
   .pcard {
     animation: none;
   }
+}
+
+/* ── Show cards: a very small button under your cards ────────────────────── */
+
+.my-cards {
+  position: relative;
+}
+
+.show-small {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 5px);
+  translate: -50% 0;
+  height: 22px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 11px;
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+  animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
+}
+
+.me-area.has-show {
+  padding-bottom: calc(var(--safe-bottom) + 36px);
 }

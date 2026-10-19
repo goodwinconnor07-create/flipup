@@ -153,6 +153,22 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
   await page.getByRole('button', { name: 'Done' }).click();
   await expect(page.locator('.table-oval').first()).toHaveAttribute('style', /#8b1e3f/);
   await expect(page.locator('.table-oval').first()).toHaveClass(/rail-light/);
+  // The felt really changes colour (it used to ignore the choice).
+  const feltColour = () =>
+    page
+      .locator('.table-felt')
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundImage);
+  const burgundy = await feltColour();
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Table theme' }).click();
+  await page.getByRole('radio', { name: 'Midnight' }).click();
+  await page.getByRole('button', { name: 'Done' }).click();
+  expect(await feltColour()).not.toBe(burgundy);
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Table theme' }).click();
+  await page.getByRole('radio', { name: 'Burgundy' }).click();
+  await page.getByRole('button', { name: 'Done' }).click();
   await page.reload();
   await expect(page.locator('.table-oval').first()).toHaveAttribute('style', /#8b1e3f/);
 
@@ -211,4 +227,36 @@ test('ending a game adds to the Home totals', async ({ page }) => {
   await expect(page.getByLabel('Your totals')).toBeVisible();
   await expect(page.getByLabel('Your totals').getByText('Tables')).toBeVisible();
   await shot(page, '14-home-totals');
+});
+
+test('with more than four others the row slides, keeps whoever is acting in view, and drops folded players', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One more bot' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.locator('.pod')).toHaveCount(7);
+
+  let sawSlide = false;
+  let sawDrop = false;
+  const firstShown = async () => page.locator('.pod:not(.away) .pod-name').first().textContent();
+  let before = await firstShown();
+  for (let i = 0; i < 60; i++) {
+    expect(await page.locator('.pod:not(.away)').count()).toBeLessThanOrEqual(4);
+    // Whoever is acting is always one of the visible players.
+    const acting = page.locator('.pod.turn');
+    if (await acting.count()) await expect(acting.first()).not.toHaveClass(/away/);
+    const now = await firstShown();
+    if (now !== before) sawSlide = true;
+    before = now;
+    if ((await page.locator('.pod.away').count()) > 3) sawDrop = true;
+    if (await page.getByText('Your turn').isVisible()) await page.locator('.action-buttons .btn-fold').click();
+    if (sawSlide && sawDrop) break;
+    await page.waitForTimeout(400);
+  }
+  expect(sawDrop).toBe(true);
+  await shot(page, '15-sliding-row');
 });

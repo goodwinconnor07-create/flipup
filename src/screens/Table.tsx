@@ -153,6 +153,49 @@ const pct = (n: number) => `${Math.round(n * 100)}%`;
 
 type PreAction = 'checkfold' | 'callany' | null;
 
+const MAX_PODS = 4;
+
+/**
+ * Up to four players show along the top. With more at the table the row moves: players who've
+ * folded slide out, and when the action reaches someone off to the right they slide in from the
+ * right while whoever's furthest left slides out. The window only moves when it has to, so
+ * pictures don't jump about.
+ */
+function usePodSlots(game: Game, others: Player[]): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number } {
+  const start = useRef(0);
+  const slots = new Map<string, { slot: number; away: boolean }>();
+  if (others.length <= MAX_PODS) {
+    others.forEach((p, i) => slots.set(p.id, { slot: i, away: false }));
+    return { slots, n: others.length, hidden: 0 };
+  }
+  const hand = game.hand;
+  // Who's still worth looking at: anyone who hasn't folded (everyone, between hands).
+  const live = others.filter((p) => {
+    if (!hand) return true;
+    const seat = seatFor(hand, p.id);
+    return !!seat && !seat.folded;
+  });
+  const n = Math.min(MAX_PODS, live.length);
+  // The player to keep in view: whoever's turn it is, or the winner once the hand is over.
+  const focus = hand?.result ? Object.entries(hand.result.won).sort((a, b) => b[1] - a[1])[0]?.[0] : hand?.toAct;
+  let s = Math.max(0, Math.min(start.current, live.length - n));
+  const at = live.findIndex((p) => p.id === focus);
+  if (at >= 0) {
+    if (at < s) s = at;
+    else if (at > s + n - 1) s = at - n + 1;
+  }
+  start.current = s;
+  const visible = live.slice(s, s + n);
+  const first = visible.length ? others.findIndex((p) => p.id === visible[0].id) : others.length;
+  others.forEach((p, i) => {
+    const k = visible.findIndex((v) => v.id === p.id);
+    if (k >= 0) slots.set(p.id, { slot: k, away: false });
+    // Out of view: to the left if they come before the ones showing, otherwise to the right.
+    else slots.set(p.id, { slot: i < first ? -1 : n, away: true });
+  });
+  return { slots, n, hidden: others.length - n };
+}
+
 function Felt({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);
   const sending = useApp((s) => s.sending);
@@ -162,6 +205,7 @@ function Felt({ game }: { game: Game }) {
   const mySeat = seatFor(hand, me?.id);
   const others = othersInOrder(game, me);
   const odds = useOdds(hand);
+  const podSlots = usePodSlots(game, others);
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
   const timed = !!hand?.deadline || (!!hand?.result && !!game.nextHandAt);
   const now = useNow(timed ? 200 : 60_000);
@@ -225,26 +269,38 @@ function Felt({ game }: { game: Game }) {
   const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
   // The pot counts down to nothing as it's pushed to the winner.
   const potNow = hand && !hand.result ? pot(hand) : 0;
+  // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
+  const canShow = !!hand?.result && !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
 
   return (
     <div className="felt">
-      <div
-        className={`pods pods-${others.length > 5 ? 'two' : 'one'}`}
-        style={{ ['--cols' as string]: others.length > 5 ? Math.ceil(others.length / 2) : Math.max(others.length, 1) }}
-      >
-        {others.map((p) => (
-          <Pod
-            key={p.id}
-            game={game}
-            player={p}
-            seat={seatFor(hand, p.id)}
-            odds={odds?.get(p.id)}
-            reaction={reactions[p.id]}
-            dimCard={dim}
-            glowCard={glow}
-          />
-        ))}
-      </div>
+      {others.length > 0 && (
+        <div className="pods">
+          {others.map((p) => {
+            const at = podSlots.slots.get(p.id)!;
+            return (
+              <Pod
+                key={p.id}
+                game={game}
+                player={p}
+                seat={seatFor(hand, p.id)}
+                odds={odds?.get(p.id)}
+                reaction={reactions[p.id]}
+                dimCard={dim}
+                glowCard={glow}
+                slot={at.slot}
+                n={podSlots.n}
+                away={at.away}
+              />
+            );
+          })}
+          {podSlots.hidden > 0 && (
+            <span className="pods-more" aria-label={`${podSlots.hidden} more players not shown`}>
+              +{podSlots.hidden}
+            </span>
+          )}
+        </div>
+      )}
 
       <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
         <div className="table-felt">
@@ -283,7 +339,7 @@ function Felt({ game }: { game: Game }) {
         <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />
       </div>
 
-      <div className="me-area">
+      <div className={`me-area${canShow ? ' has-show' : ''}`}>
         <div className="my-cards">
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
@@ -303,6 +359,16 @@ function Felt({ game }: { game: Game }) {
               <CardSlot size="xl" />
               <CardSlot size="xl" />
             </>
+          )}
+          {canShow && (
+            <button
+              type="button"
+              className="show-small press"
+              aria-label="Show my cards"
+              onClick={() => dispatch({ type: 'show', hand: hand!.number })}
+            >
+              Show cards
+            </button>
           )}
         </div>
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} />
@@ -407,6 +473,9 @@ function Pod({
   reaction,
   dimCard,
   glowCard,
+  slot,
+  n,
+  away,
 }: {
   game: Game;
   player: Player;
@@ -415,6 +484,9 @@ function Pod({
   reaction?: string;
   dimCard: (c: Card) => boolean;
   glowCard: (c: Card) => boolean;
+  slot: number;
+  n: number;
+  away: boolean;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
@@ -427,7 +499,10 @@ function Pod({
   return (
     <button
       type="button"
-      className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}`}
+      className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}`}
+      style={{ ['--slot' as string]: slot, ['--n' as string]: n }}
+      tabIndex={away ? -1 : undefined}
+      aria-hidden={away || undefined}
       aria-label={`${player.name}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}`}
       onClick={() => host && openSheet({ name: 'player', playerId: player.id })}
     >
@@ -617,7 +692,6 @@ function ActionArea({
     const secs = Math.max(0, Math.ceil((game.nextHandAt - now) / 1000));
     return (
       <div className="stack">
-        <ResultLine game={game} />
         {me.stack === 0 && game.settings.rebuys ? (
           <button type="button" className="btn btn-green" onClick={() => dispatch({ type: 'rebuy' })}>
             Rebuy for {chips(game.settings.startingStack)} · {secs}s
@@ -633,14 +707,12 @@ function ActionArea({
   if (me.stack === 0) {
     return game.settings.rebuys ? (
       <div className="stack">
-        <ResultLine game={game} />
         <button type="button" className="btn btn-green" onClick={() => dispatch({ type: 'rebuy' })}>
           Rebuy for {chips(game.settings.startingStack)}
         </button>
       </div>
     ) : (
       <div className="stack">
-        <ResultLine game={game} />
         <p className="table-note">You're out of chips. Stick around and watch.</p>
       </div>
     );
@@ -648,7 +720,6 @@ function ActionArea({
   if (me.sittingOut) {
     return (
       <div className="stack">
-        <ResultLine game={game} />
         <button type="button" className="btn btn-green" onClick={() => dispatch({ type: 'sitOut', out: false })}>
           I'm back. Deal me in
         </button>
@@ -658,7 +729,6 @@ function ActionArea({
   if (!hand?.result || game.nextHandAt === null) {
     return (
       <div className="stack">
-        {hand?.result && <ResultLine game={game} />}
         <p className="table-note">Waiting for more players…</p>
         {host && (
           <button type="button" className="btn btn-outline" onClick={() => dispatch({ type: 'addBot' })}>
@@ -674,7 +744,6 @@ function ActionArea({
   const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
   return (
     <div className="stack">
-      <ResultLine game={game} />
       <button
         type="button"
         className="btn btn-dark next-btn"
@@ -694,24 +763,6 @@ function SitBack() {
     <button type="button" className="btn-link-small" onClick={() => dispatch({ type: 'sitOut', out: false })}>
       I'm back
     </button>
-  );
-}
-
-/** Under the table once a hand is over: the winner is on the table itself, so this is just "Show my cards". */
-function ResultLine({ game }: { game: Game }) {
-  const deviceId = useApp((s) => s.deviceId);
-  if (!game.hand?.result) return null;
-  const me = myPlayer(game, deviceId);
-  const mySeat = seatFor(game.hand, me?.id);
-  // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
-  const canShow = !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
-  if (!canShow) return null;
-  return (
-    <div className="result-lines">
-      <button type="button" className="btn btn-outline show-btn" onClick={() => dispatch({ type: 'show', hand: game.hand!.number })}>
-        Show my cards
-      </button>
-    </div>
   );
 }
 

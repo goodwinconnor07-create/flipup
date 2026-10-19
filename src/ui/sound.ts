@@ -79,12 +79,40 @@ function tone(c: AudioContext, at: number, dur: number, from: number, to: number
   osc.stop(at + dur + 0.02);
 }
 
-/** One poker chip landing on another: a tiny click with a ceramic ring. */
+/** A tone that dies away almost at once: the ring of something hard being tapped. */
+function ring(c: AudioContext, at: number, freq: number, decay: number, gain: number): void {
+  const osc = c.createOscillator();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  const env = c.createGain();
+  env.gain.setValueAtTime(gain, at);
+  env.gain.exponentialRampToValueAtTime(0.0001, at + decay);
+  osc.connect(env).connect(master!);
+  osc.start(at);
+  osc.stop(at + decay + 0.02);
+}
+
+/**
+ * One poker chip landing on another. A clay chip is a quick "clack": a few ringing partials that
+ * aren't in tune with each other (that's what makes it sound like a solid object, not a beep) and
+ * a soft low knock under them. No noise in it, so nothing scratchy.
+ */
 function clink(c: AudioContext, at: number, gain = 0.2): void {
-  const pitch = 1900 + Math.random() * 700;
-  tone(c, at, 0.06, pitch, pitch * 0.78, gain, 'triangle');
-  tone(c, at, 0.04, pitch * 1.9, pitch * 1.5, gain * 0.35, 'sine');
-  hiss(c, at, 0.035, 5200, 3600, gain * 0.9, 2);
+  const base = 1500 + Math.random() * 500;
+  ring(c, at, base, 0.055, gain);
+  ring(c, at, base * 2.41, 0.04, gain * 0.7);
+  ring(c, at, base * 3.97, 0.026, gain * 0.4);
+  // The body of the chip: a short low thud.
+  const thud = c.createOscillator();
+  thud.type = 'sine';
+  thud.frequency.setValueAtTime(420 + Math.random() * 80, at);
+  thud.frequency.exponentialRampToValueAtTime(180, at + 0.03);
+  const env = c.createGain();
+  env.gain.setValueAtTime(gain * 1.3, at);
+  env.gain.exponentialRampToValueAtTime(0.0001, at + 0.035);
+  thud.connect(env).connect(master!);
+  thud.start(at);
+  thud.stop(at + 0.06);
 }
 
 export function playSound(name: SoundName, offsetMs = 0): void {
@@ -103,13 +131,13 @@ export function playSound(name: SoundName, offsetMs = 0): void {
       break;
     case 'chip':
       clink(c, t);
-      clink(c, t + 0.055, 0.15);
+      clink(c, t + 0.07, 0.14);
       break;
     case 'chips':
-      for (let i = 0; i < 4; i++) clink(c, t + i * 0.05, 0.2 - i * 0.02);
+      for (let i = 0; i < 4; i++) clink(c, t + i * 0.065 + Math.random() * 0.015, 0.2 - i * 0.025);
       break;
     case 'allin':
-      for (let i = 0; i < 9; i++) clink(c, t + i * 0.045 + Math.random() * 0.02, 0.22);
+      for (let i = 0; i < 9; i++) clink(c, t + i * 0.055 + Math.random() * 0.025, 0.22);
       break;
     case 'check':
       tone(c, t, 0.09, 190, 90, 0.4);

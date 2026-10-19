@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { BLIND_LEVELS, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings } from '../game';
+import { BLIND_LEVELS, BLIND_MINUTE_CHOICES, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
 import { BackBar, Choice, chips, Toggle } from '../ui/components';
@@ -43,6 +43,13 @@ export function SettingsFields({
           const [smallBlind, bigBlind] = levels.find((l) => blindsLabel(l) === label)!;
           onChange({ ...settings, smallBlind, bigBlind });
         }}
+      />
+      <Choice
+        label="Blinds go up"
+        value={settings.blindMinutes ?? 0}
+        options={BLIND_MINUTE_CHOICES}
+        format={(m) => (m === 0 ? 'Never' : `${m} min`)}
+        onChange={(blindMinutes) => onChange({ ...settings, blindMinutes })}
       />
       {timer && (
         <Choice

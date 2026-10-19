@@ -252,3 +252,9 @@ export const EyeIcon = (p: P) => (
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
+
+export const MoonIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />
+  </svg>
+);

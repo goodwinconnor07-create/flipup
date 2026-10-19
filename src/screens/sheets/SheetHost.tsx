@@ -14,6 +14,7 @@ import {
   setProfile,
   setTableLook,
   toggleCalm,
+  toggleDark,
   toggleMuted,
   useApp,
   type Sheet as SheetSpec,
@@ -28,6 +29,7 @@ import {
   HelpIcon,
   HomeIcon,
   ListIcon,
+  MoonIcon,
   MuteIcon,
   PaletteIcon,
   PencilIcon,
@@ -261,6 +263,7 @@ function MenuSheet() {
   const online = useApp((s) => s.session?.mode === 'online');
   const muted = useApp((s) => s.muted);
   const calm = useApp((s) => s.calm);
+  const dark = useApp((s) => s.dark);
   const host = game?.hostDeviceId === deviceId;
   const me = game ? myPlayer(game, deviceId) : undefined;
   const playing = game?.status === 'playing';
@@ -293,6 +296,12 @@ function MenuSheet() {
       Icon: BoltIcon,
       color: calm ? 'var(--slate-hi)' : 'var(--gold)',
       onClick: toggleCalm,
+    },
+    {
+      label: dark ? 'Dark mode on' : 'Dark mode off',
+      Icon: MoonIcon,
+      color: dark ? 'var(--violet)' : 'var(--slate-hi)',
+      onClick: toggleDark,
     },
     { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
     { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--red)', onClick: () => navigate({ name: 'profile', then: 'done' }) },

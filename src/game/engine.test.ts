@@ -550,7 +550,7 @@ describe('table', () => {
       const b = game.hand!.seats.findIndex((s) => s.playerId === game.hand!.buttonId);
       return game.hand!.seats.map((_, i) => positionOf(game.hand, game.hand!.seats[(b + i) % n].playerId)!.label);
     };
-    expect(around(2)).toEqual(['BTN/SB', 'BB']);
+    expect(around(2)).toEqual(['B/SB', 'BB']);
     expect(around(3)).toEqual(['BTN', 'SB', 'BB']);
     expect(around(6)).toEqual(['BTN', 'SB', 'BB', 'UTG', 'HJ', 'CO']);
     expect(around(9)).toEqual(['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO']);
@@ -594,6 +594,40 @@ describe('table', () => {
     // A human who kept their cards hidden still has them hidden.
     const friend = game.players.find((p) => p.deviceId === 'device-friend')!.id;
     if (!game.hand!.seats.find((s) => s.playerId === friend)!.shown) expect(hiddenFrom(HOST, friend)).toBe(true);
+  });
+
+  it('raises the blinds on the clock, as the next hand is dealt, and not past half a stack', () => {
+    let game = table(2, { blindMinutes: 5, startingStack: 1000 });
+    expect(game.hand!.number).toBe(1);
+    expect(game.blindsRaiseAt).toBe(clock + 5 * 60_000);
+    expect(game.settings.bigBlind).toBe(10);
+    // Fold the hand. Blinds don't change mid-hand or before the time.
+    game = act(game, 'fold');
+    clock = game.wakeAt! + 1;
+    game = must(game, { type: 'tick' }, 'server');
+    expect(game.hand!.number).toBe(2);
+    expect(game.settings.bigBlind).toBe(10);
+    // Once the five minutes are up, the next hand is dealt at the next level.
+    game = act(game, 'fold');
+    clock = game.blindsRaiseAt! + 1;
+    game = must(game, { type: 'tick' }, 'server');
+    expect(game.hand!.number).toBe(3);
+    expect([game.settings.smallBlind, game.settings.bigBlind]).toEqual([10, 20]);
+    expect(game.hand!.log.some((l) => /Blinds go up to 10\/20/.test(l))).toBe(true);
+    // The clock restarts for the next level.
+    expect(game.blindsRaiseAt).toBe(clock + 5 * 60_000);
+    // The top is half a starting stack: 1000 chips can't go past a 500 big blind.
+    for (let i = 0; i < 20; i++) {
+      game = act(game, 'fold');
+      clock = game.blindsRaiseAt! + 1;
+      game = must(game, { type: 'tick' }, 'server');
+    }
+    expect(game.settings.bigBlind).toBeLessThanOrEqual(500);
+    // Turning it off stops the clock.
+    game = must(game, { type: 'settings', settings: { blindMinutes: 0 } }, HOST);
+    expect(game.blindsRaiseAt).toBeNull();
+    expect(parseAction({ type: 'settings', settings: { blindMinutes: 'soon' } })).toBeNull();
+    expect(applyAction(game, { type: 'settings', settings: { blindMinutes: 500 } }, ctx(HOST)).ok).toBe(false);
   });
 
   it('times out a slow player: checks or folds, and sits them out after two', () => {

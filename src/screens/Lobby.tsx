@@ -89,6 +89,11 @@ export function Lobby({ game }: { game: Game }) {
               Timer <b>{timerLabel(s.turnSeconds)}</b>
             </span>
           )}
+          {!!s.blindMinutes && (
+            <span className="info-chip">
+              Blinds up <b>{s.blindMinutes} min</b>
+            </span>
+          )}
           <span className="info-chip">
             Rebuys <b>{s.rebuys ? 'On' : 'Off'}</b>
           </span>

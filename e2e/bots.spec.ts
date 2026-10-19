@@ -364,3 +364,43 @@ test('every player has a position: yours too', async ({ page }) => {
   expect(labels.sort()).toEqual(['BB', 'BTN', 'CO', 'SB']);
   await expect(page.locator('.my-box .pos-chip')).toHaveCount(1);
 });
+
+test('rising blinds: a setting, a countdown on the table', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('radiogroup', { name: 'Blinds go up' }).getByRole('radio', { name: '5 min', exact: true }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await expect(page.getByText('Blinds up 5 min')).toBeVisible();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.locator('.table-title small')).toContainText(/blinds up in 4:\d\d|blinds up in 5:00/);
+  await shot(page, '18-blind-clock');
+});
+
+test('dark mode: a switch in the menu that changes the whole app and sticks', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(await bg()).toBe('rgb(255, 255, 255)');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await page.getByText('Your turn').waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await shot(page, '19-menu-light');
+  await page.getByRole('button', { name: 'Dark mode off' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(await bg()).toBe('rgb(14, 15, 20)');
+  await shot(page, '19-menu-dark');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await page.waitForTimeout(500);
+  await shot(page, '19-table-dark');
+  // Nothing on the table is still white-on-white: the text colour has flipped too.
+  expect(await page.evaluate(() => getComputedStyle(document.body).color)).toBe('rgb(244, 244, 248)');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});

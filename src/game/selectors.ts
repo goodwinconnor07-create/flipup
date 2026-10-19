@@ -60,7 +60,7 @@ export function positionOf(hand: Hand | null, playerId: string): Position | null
   if (at < 0 || button < 0) return null;
   const offset = (at - button + n) % n;
   // Heads up the button is also the small blind.
-  if (n === 2) return offset === 0 ? { label: 'BTN/SB', kind: 'btn' } : { label: 'BB', kind: 'bb' };
+  if (n === 2) return offset === 0 ? { label: 'B/SB', kind: 'btn' } : { label: 'BB', kind: 'bb' };
   if (offset === 0) return { label: 'BTN', kind: 'btn' };
   if (offset === 1) return { label: 'SB', kind: 'sb' };
   if (offset === 2) return { label: 'BB', kind: 'bb' };

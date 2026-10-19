@@ -26,6 +26,7 @@ import { setMuted } from '../ui/sound';
 import {
   loadDeviceId,
   loadCalm,
+  loadDark,
   loadMuted,
   loadProfile,
   loadSession,
@@ -33,6 +34,7 @@ import {
   loadTableLook,
   saveLastTable,
   saveCalm,
+  saveDark,
   saveMuted,
   saveProfile,
   saveSession,
@@ -95,6 +97,7 @@ export interface AppState {
   muted: boolean;
   /** Animations switched off. */
   calm: boolean;
+  dark: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -128,7 +131,9 @@ let state: AppState = {
   look: loadTableLook(),
   muted: loadMuted(),
   calm: loadCalm(),
+  dark: loadDark(),
 };
+applyTheme(state.dark);
 document.documentElement.classList.toggle('calm', state.calm);
 setMuted(loadMuted());
 
@@ -440,6 +445,20 @@ export function toggleMuted(): void {
   saveMuted(muted);
   setMuted(muted);
   set({ muted });
+}
+
+/** Dark or light for the whole app: a data-theme on <html> that the stylesheet's colour tokens follow. */
+function applyTheme(dark: boolean): void {
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'))
+    meta.setAttribute('content', dark ? '#0e0f14' : '#ffffff');
+}
+
+export function toggleDark(): void {
+  const dark = !state.dark;
+  saveDark(dark);
+  applyTheme(dark);
+  set({ dark });
 }
 
 export function toggleCalm(): void {

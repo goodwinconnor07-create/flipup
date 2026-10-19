@@ -125,6 +125,14 @@ export function saveTableLook(look: TableLook): void {
   write('flipup.table', look);
 }
 
+export function loadDark(): boolean {
+  return read<boolean>('flipup.dark') === true;
+}
+
+export function saveDark(dark: boolean): void {
+  write('flipup.dark', dark);
+}
+
 /** True if the player turned Animations off. Animations are on until they do. */
 export function loadCalm(): boolean {
   return read<boolean>('flipup.calm') === true;

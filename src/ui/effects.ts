@@ -143,9 +143,8 @@ function solidColour(look: CSSStyleDeclaration): string {
  * null puts the normal white back.
  */
 function tintBrowser(colour: string | null): void {
-  // One tag per colour scheme; set both so whichever is active follows.
+  const dark = document.documentElement.dataset.theme === 'dark';
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
-    const dark = meta.media.includes('dark');
     meta.setAttribute('content', colour ?? (dark ? '#0e0f14' : '#ffffff'));
   }
 }

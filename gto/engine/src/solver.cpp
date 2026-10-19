@@ -88,7 +88,7 @@ Solver::Solver(const TreeConfig& config) : cfg_(config) {
       ++num_action_nodes_;
     }
   }
-  const double need_mb = static_cast<double>(offset) * (cfg_.compress ? 4.0 : 8.0) / 1e6;
+  const double need_mb = static_cast<double>(offset) * (cfg_.compress ? 4.0 : 8.0) * (cfg_.predictive ? 1.5 : 1.0) / 1e6;
   if (cfg_.max_memory_mb > 0 && need_mb > cfg_.max_memory_mb)
     throw std::length_error("tree needs " + std::to_string(static_cast<long>(need_mb)) + " MB (limit " +
                             std::to_string(static_cast<long>(cfg_.max_memory_mb)) + " MB)");
@@ -97,9 +97,14 @@ Solver::Solver(const TreeConfig& config) : cfg_(config) {
     cum_h_.assign(offset, static_cast<_Float16>(0.0f));
     regret_scale_.assign(num_action_nodes_, 0.0f);
     cum_scale_.assign(num_action_nodes_, 0.0f);
+    if (cfg_.predictive) {
+      pred_h_.assign(offset, static_cast<_Float16>(0.0f));
+      pred_scale_.assign(num_action_nodes_, 0.0f);
+    }
   } else {
     regret_.assign(offset, 0.0f);
     cum_strategy_.assign(offset, 0.0f);
+    if (cfg_.predictive) pred_.assign(offset, 0.0f);
   }
 
   init_river_boards();
@@ -211,9 +216,9 @@ const Solver::RiverBoard& Solver::river_board(CardMask board) const {
 }
 
 size_t Solver::memory_bytes() const {
-  size_t bytes = (regret_.size() + cum_strategy_.size()) * sizeof(float) +
-                 (regret_h_.size() + cum_h_.size()) * sizeof(_Float16) +
-                 (regret_scale_.size() + cum_scale_.size()) * sizeof(float);
+  size_t bytes = (regret_.size() + cum_strategy_.size() + pred_.size()) * sizeof(float) +
+                 (regret_h_.size() + cum_h_.size() + pred_h_.size()) * sizeof(_Float16) +
+                 (regret_scale_.size() + cum_scale_.size() + pred_scale_.size()) * sizeof(float);
   bytes += nodes_.size() * sizeof(Node) + children_.size() * (sizeof(int32_t) + sizeof(Action) + 1);
   for (const auto& rb : river_boards_) bytes += (rb.sorted[0].size() + rb.sorted[1].size()) * sizeof(SortedEntry);
   return bytes;
@@ -567,6 +572,24 @@ void Solver::store_cum(const Node& n, const float* in) {
   encode_half(in, len, cum_h_.data() + n.storage, cum_scale_[n.slot]);
 }
 
+void Solver::load_pred(const Node& n, float* out) const {
+  const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+  if (!cfg_.compress) {
+    std::copy(pred_.begin() + n.storage, pred_.begin() + n.storage + len, out);
+    return;
+  }
+  decode_half(pred_h_.data() + n.storage, len, pred_scale_[n.slot], out);
+}
+
+void Solver::store_pred(const Node& n, const float* in) {
+  const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+  if (!cfg_.compress) {
+    std::copy(in, in + len, pred_.begin() + n.storage);
+    return;
+  }
+  encode_half(in, len, pred_h_.data() + n.storage, pred_scale_[n.slot]);
+}
+
 void Solver::current_strategy(const Node& n, float* out) const {
   const int na = n.num_children;
   const size_t nh = hands_[n.player].size();
@@ -578,6 +601,16 @@ void Solver::current_strategy(const Node& n, float* out) const {
     r = buf.data();
   } else {
     r = regret_.data() + n.storage;
+  }
+  if (cfg_.predictive) {
+    // Strategy from the discounted regrets plus the predicted (last) instantaneous regret.
+    thread_local std::vector<float> q, m;
+    const size_t len = static_cast<size_t>(na) * nh;
+    q.resize(len);
+    m.resize(len);
+    load_pred(n, m.data());
+    for (size_t i = 0; i < len; ++i) q[i] = r[i] * pred_pos_ + m[i];
+    r = q.data();
   }
   sum.resize(nh);
   for (size_t h = 0; h < nh; ++h) sum[h] = std::max(r[h], 0.0f);
@@ -934,16 +967,35 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
       load_regret(n, reg);
       load_cum(n, cum);
     }
-    for (int a = 0; a < na; ++a) {
-      float* ra = reg + a * np;
-      float* ma = cum + a * np;
-      const float* sa = sigma.get() + a * np;
-      const float* ca = cfv.get() + a * np;
-      for (size_t h = 0; h < np; ++h) {
-        float r = ra[h];
-        r *= (r >= 0) ? d.pos : d.neg;
-        ra[h] = r + (ca[h] - out[h]);
-        ma[h] = ma[h] * d.strat + sa[h] * own_reach[h];
+    if (cfg_.predictive) {
+      Scratch pred_s(static_cast<size_t>(na) * np);
+      float* pred = pred_s.get();
+      for (int a = 0; a < na; ++a) {
+        float* ra = reg + a * np;
+        float* ma = cum + a * np;
+        float* pa = pred + a * np;
+        const float* sa = sigma.get() + a * np;
+        const float* ca = cfv.get() + a * np;
+        for (size_t h = 0; h < np; ++h) {
+          const float inst = ca[h] - out[h];
+          ra[h] = std::max(ra[h] * d.pos + inst, 0.0f);
+          pa[h] = inst;
+          ma[h] = ma[h] * d.strat + sa[h] * own_reach[h];
+        }
+      }
+      store_pred(n, pred);
+    } else {
+      for (int a = 0; a < na; ++a) {
+        float* ra = reg + a * np;
+        float* ma = cum + a * np;
+        const float* sa = sigma.get() + a * np;
+        const float* ca = cfv.get() + a * np;
+        for (size_t h = 0; h < np; ++h) {
+          float r = ra[h];
+          r *= (r >= 0) ? d.pos : d.neg;
+          ra[h] = r + (ca[h] - out[h]);
+          ma[h] = ma[h] * d.strat + sa[h] * own_reach[h];
+        }
       }
     }
     if (packed) {
@@ -1059,6 +1111,8 @@ void Solver::iterate(int iterations) {
     Discount d;
     d.pos = static_cast<float>(ta / (ta + 1));
     d.neg = static_cast<float>(cfg_.dcfr_neg);
+    // Predictive mode: the strategy this iteration uses the regrets as they'll be discounted now.
+    pred_pos_ = d.pos;
     if (cfg_.averaging == 1) {
       // gamma = 3 with the average restarted at every power of 4 (t counted from 0),
       // which discards the noisy early iterations (as in b-inary/postflop-solver).

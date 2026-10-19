@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { BLIND_LEVELS, BLIND_MINUTE_CHOICES, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings } from '../game';
+import { BLIND_LEVELS, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
 import { BackBar, Choice, chips, Toggle } from '../ui/components';
 import { MinusIcon, PlusIcon } from '../ui/Icons';
+
+/** The longest wait between blind rises on the slider (0 is never). */
+export const BLIND_MINUTE_MAX = 20;
 
 export const blindsLabel = ([sb, bb]: [number, number]) => `${chips(sb)}/${chips(bb)}`;
 export const timerLabel = (s: number) => (s === 0 ? 'Off' : `${s}s`);
@@ -44,13 +47,26 @@ export function SettingsFields({
           onChange({ ...settings, smallBlind, bigBlind });
         }}
       />
-      <Choice
-        label="Blinds go up"
-        value={settings.blindMinutes ?? 0}
-        options={BLIND_MINUTE_CHOICES}
-        format={(m) => (m === 0 ? 'Never' : `${m} min`)}
-        onChange={(blindMinutes) => onChange({ ...settings, blindMinutes })}
-      />
+      <div className="choice">
+        <p className="section-title slider-title">
+          <span>Blinds go up every</span>
+          <b className="num">{settings.blindMinutes ? `${settings.blindMinutes} min` : 'Never'}</b>
+        </p>
+        <input
+          type="range"
+          className="raise-slider"
+          aria-label="Blinds go up every"
+          min={0}
+          max={BLIND_MINUTE_MAX}
+          step={1}
+          value={settings.blindMinutes ?? 0}
+          onChange={(e) => onChange({ ...settings, blindMinutes: Number(e.target.value) })}
+        />
+        <div className="slider-ends" aria-hidden>
+          <span>Never</span>
+          <span>{BLIND_MINUTE_MAX} min</span>
+        </div>
+      </div>
       {timer && (
         <Choice
           label="Time to act"

@@ -371,7 +371,7 @@ test('rising blinds: a setting, a countdown on the table', async ({ page }) => {
   await page.getByRole('button', { name: 'Play the bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('radiogroup', { name: 'Blinds go up' }).getByRole('radio', { name: '5 min', exact: true }).click();
+  await page.getByRole('slider', { name: 'Blinds go up every' }).fill('5');
   await page.getByRole('button', { name: 'Sit down' }).click();
   await expect(page.getByText('Blinds up 5 min')).toBeVisible();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();

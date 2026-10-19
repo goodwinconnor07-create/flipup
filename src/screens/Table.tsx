@@ -178,7 +178,7 @@ function Felt({ game }: { game: Game }) {
           {[0, 1, 2, 3, 4].map((i) => {
             const c = hand?.board[i];
             return c ? (
-              <PlayingCard key={`${hand!.number}-${c}`} card={c} size="lg" dim={dim(c)} flip delay={i < 3 ? i * 90 : 0} />
+              <PlayingCard key={`${hand!.number}-${c}`} card={c} size="lg" dim={dim(c)} flip delay={i < 3 ? i * 160 : 0} />
             ) : (
               <CardSlot key={`slot-${i}`} size="lg" />
             );
@@ -214,7 +214,7 @@ function Felt({ game }: { game: Game }) {
                 size="xl"
                 dim={mySeat.folded || dim(c)}
                 flip
-                delay={i * 120}
+                delay={i * 180}
                 className={`my-card my-card-${i}`}
               />
             ))

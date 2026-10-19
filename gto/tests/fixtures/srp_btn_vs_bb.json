@@ -1,0 +1,30 @@
+{
+  "id": "srp-btn-bb",
+  "small_blind": 1, "big_blind": 2, "ante": 0,
+  "button": "btn",
+  "players": [
+    {"id": "utg", "name": "Ana", "seat": 0, "stack": 200, "cards": null},
+    {"id": "hj", "name": "Ben", "seat": 1, "stack": 200, "cards": null},
+    {"id": "co", "name": "Cat", "seat": 2, "stack": 200, "cards": null},
+    {"id": "btn", "name": "Ollie", "seat": 3, "stack": 200, "cards": ["Ah", "Kd"]},
+    {"id": "sb", "name": "Dan", "seat": 4, "stack": 200, "cards": null},
+    {"id": "bb", "name": "Connor", "seat": 5, "stack": 200, "cards": ["Qc", "Js"]}
+  ],
+  "actions": [
+    {"street": "preflop", "player": "utg", "move": "fold"},
+    {"street": "preflop", "player": "hj", "move": "fold"},
+    {"street": "preflop", "player": "co", "move": "fold"},
+    {"street": "preflop", "player": "btn", "move": "raise", "to": 5},
+    {"street": "preflop", "player": "sb", "move": "fold"},
+    {"street": "preflop", "player": "bb", "move": "call", "to": 5},
+    {"street": "flop", "player": "bb", "move": "check"},
+    {"street": "flop", "player": "btn", "move": "bet", "to": 4},
+    {"street": "flop", "player": "bb", "move": "call", "to": 4},
+    {"street": "turn", "player": "bb", "move": "check"},
+    {"street": "turn", "player": "btn", "move": "bet", "to": 14},
+    {"street": "turn", "player": "bb", "move": "call", "to": 14},
+    {"street": "river", "player": "bb", "move": "check"},
+    {"street": "river", "player": "btn", "move": "check"}
+  ],
+  "board": ["Ks", "9d", "5c", "Th", "2h"]
+}

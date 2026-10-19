@@ -52,6 +52,7 @@ struct TreeConfig {
   double merge_threshold = 0.1;        // drop bet sizes within threshold * pot of a larger kept size
   double rake_rate = 0.0;
   double rake_cap = 0.0;           // 0 = uncapped
+  bool compress = false;           // half-float regrets and strategy sums, scaled per node (half the memory)
   std::array<std::vector<float>, 2> range;  // 1326 weights per player (0 = not in range)
 };
 
@@ -76,6 +77,7 @@ struct Node {
   int32_t child_begin = 0;
   int32_t num_children = 0;
   int64_t storage = -1;  // offset into regret / strategy arrays (ACTION only)
+  int32_t slot = -1;     // action-node ordinal (per-node scales when compressed)
   int32_t iso_begin = 0; // CHANCE: isomorphic (skipped) cards
   int32_t num_iso = 0;
 };
@@ -181,6 +183,11 @@ class Solver {
   void nonconflict_mass(int p, const float* opp_reach, float* S) const;
   void current_strategy(const Node& n, float* out) const;
   void average_strategy(const Node& n, float* out) const;
+  // Storage access (handles compression). Buffers hold num_children * hands floats.
+  void load_regret(const Node& n, float* out) const;
+  void store_regret(const Node& n, const float* in);
+  void load_cum(const Node& n, float* out) const;
+  void store_cum(const Node& n, const float* in);
   double rake(double pot) const;
   bool parallel_here(int depth) const;
 
@@ -208,6 +215,10 @@ class Solver {
 
   std::vector<float> regret_;
   std::vector<float> cum_strategy_;
+  std::vector<_Float16> regret_h_;    // compressed regrets (value / node scale)
+  std::vector<_Float16> cum_h_;       // compressed strategy sums (value / node scale)
+  std::vector<float> regret_scale_;   // per action node
+  std::vector<float> cum_scale_;
 
   std::unordered_map<CardMask, int> river_index_;
   std::vector<RiverBoard> river_boards_;

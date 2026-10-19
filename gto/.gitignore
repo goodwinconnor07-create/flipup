@@ -4,3 +4,5 @@ __pycache__/
 build/
 .pytest_cache/
 gmon.out
+flipup_gto/data/preflop_tensor3.npz
+flipup_gto/data/cache/

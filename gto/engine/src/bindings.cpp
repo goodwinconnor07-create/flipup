@@ -5,7 +5,9 @@
 #include <pybind11/stl.h>
 
 #include "flipup/cards.h"
+#include "flipup/equity.h"
 #include "flipup/eval.h"
+#include "flipup/preflop.h"
 #include "flipup/solver.h"
 
 namespace py = pybind11;
@@ -62,6 +64,178 @@ PYBIND11_MODULE(_engine, m) {
   m.def("strength_category", &strength_category);
   m.def("category_name", &category_name);
 
+  m.def("combo_class", &combo_class);
+  m.def(
+      "equity_vs_range",
+      [](int combo, const std::vector<float>& range, const std::vector<int>& board, int samples, uint64_t seed) {
+        EquityResult r;
+        {
+          py::gil_scoped_release release;
+          r = equity_vs_range(combo, range, board, samples, seed);
+        }
+        return py::make_tuple(r.win, r.tie, r.lose);
+      },
+      py::arg("combo"), py::arg("range"), py::arg("board"), py::arg("samples") = 20000, py::arg("seed") = 1);
+  m.def(
+      "range_equities",
+      [](const std::vector<float>& hero, const std::vector<float>& villain, const std::vector<int>& board,
+         int samples, uint64_t seed) {
+        std::vector<float> r;
+        {
+          py::gil_scoped_release release;
+          r = range_equities(hero, villain, board, samples, seed);
+        }
+        return to_numpy(r);
+      },
+      py::arg("hero"), py::arg("villain"), py::arg("board"), py::arg("samples") = 20000, py::arg("seed") = 1);
+  m.def("preflop_equity_exact", [](int a, int b) {
+    EquityResult r;
+    {
+      py::gil_scoped_release release;
+      r = preflop_equity_exact(a, b);
+    }
+    return py::make_tuple(r.win, r.tie, r.lose);
+  });
+  m.def("preflop_class_matrix", [](int samples, uint64_t seed) {
+    ClassMatrix cm;
+    {
+      py::gil_scoped_release release;
+      cm = preflop_class_matrix(samples, seed);
+    }
+    return py::make_tuple(to_numpy_2d(cm.equity, NUM_CLASSES), to_numpy_2d(cm.pairs, NUM_CLASSES));
+  });
+  m.def("preflop_class_tensor3", [](int samples, uint64_t seed) {
+    std::vector<float> t;
+    {
+      py::gil_scoped_release release;
+      t = preflop_class_tensor3(samples, seed);
+    }
+    py::array_t<float> a({NUM_CLASSES, NUM_CLASSES, NUM_CLASSES});
+    std::copy(t.begin(), t.end(), a.mutable_data());
+    return a;
+  });
+
+
+  py::class_<PreflopConfig>(m, "PreflopConfig")
+      .def(py::init<>())
+      .def_readwrite("num_players", &PreflopConfig::num_players)
+      .def_readwrite("stacks", &PreflopConfig::stacks)
+      .def_readwrite("sb", &PreflopConfig::sb)
+      .def_readwrite("bb", &PreflopConfig::bb)
+      .def_readwrite("ante", &PreflopConfig::ante)
+      .def_readwrite("rake_rate", &PreflopConfig::rake_rate)
+      .def_readwrite("rake_cap", &PreflopConfig::rake_cap)
+      .def_readwrite("open_size", &PreflopConfig::open_size)
+      .def_readwrite("can_limp", &PreflopConfig::can_limp)
+      .def_readwrite("iso_per_limper", &PreflopConfig::iso_per_limper)
+      .def_readwrite("bb_raise_vs_limp", &PreflopConfig::bb_raise_vs_limp)
+      .def_readwrite("threebet_ip", &PreflopConfig::threebet_ip)
+      .def_readwrite("threebet_oop", &PreflopConfig::threebet_oop)
+      .def_readwrite("squeeze_per_caller", &PreflopConfig::squeeze_per_caller)
+      .def_readwrite("fourbet_ip", &PreflopConfig::fourbet_ip)
+      .def_readwrite("fourbet_oop", &PreflopConfig::fourbet_oop)
+      .def_readwrite("allin_threshold", &PreflopConfig::allin_threshold)
+      .def_readwrite("allin_option_stack", &PreflopConfig::allin_option_stack)
+      .def_readwrite("max_raises", &PreflopConfig::max_raises)
+      .def_readwrite("max_players_flop", &PreflopConfig::max_players_flop)
+      .def_readwrite("allow_cold_call", &PreflopConfig::allow_cold_call)
+      .def_readwrite("multiway_blinds_only", &PreflopConfig::multiway_blinds_only)
+      .def_readwrite("eqr_ip", &PreflopConfig::eqr_ip)
+      .def_readwrite("eqr_oop", &PreflopConfig::eqr_oop)
+      .def_readwrite("class_eqr_ip", &PreflopConfig::class_eqr_ip)
+      .def_readwrite("class_eqr_oop", &PreflopConfig::class_eqr_oop)
+      .def_readwrite("multiway_role", &PreflopConfig::multiway_role)
+      .def_readwrite("initial_range", &PreflopConfig::initial_range)
+      .def("set_tables", [](PreflopConfig& c, py::array_t<float, py::array::c_style | py::array::forcecast> eq,
+                            py::array_t<float, py::array::c_style | py::array::forcecast> pairs,
+                            py::object ta, py::object tb) {
+        c.equity.assign(eq.data(), eq.data() + eq.size());
+        c.pairs.assign(pairs.data(), pairs.data() + pairs.size());
+        c.tensor_rank = 0;
+        c.tensor_a.clear();
+        c.tensor_b.clear();
+        if (!ta.is_none() && !tb.is_none()) {
+          auto a = ta.cast<py::array_t<float, py::array::c_style | py::array::forcecast>>();
+          auto b = tb.cast<py::array_t<float, py::array::c_style | py::array::forcecast>>();
+          if (a.ndim() != 3 || a.shape(0) != NUM_CLASSES || a.shape(2) != NUM_CLASSES)
+            throw std::invalid_argument("tensor factors must be [169][rank][169]");
+          c.tensor_rank = static_cast<int>(a.shape(1));
+          c.tensor_a.assign(a.data(), a.data() + a.size());
+          c.tensor_b.assign(b.data(), b.data() + b.size());
+        }
+      }, py::arg("equity"), py::arg("pairs"), py::arg("tensor_a") = py::none(), py::arg("tensor_b") = py::none());
+
+  m.def("position_names", &position_names);
+
+  py::class_<PreflopSolver>(m, "PreflopSolver")
+      .def(py::init<const PreflopConfig&>(), py::call_guard<py::gil_scoped_release>())
+      .def_property_readonly("num_nodes", &PreflopSolver::num_nodes)
+      .def_property_readonly("num_action_nodes", &PreflopSolver::num_action_nodes)
+      .def_property_readonly("iterations", &PreflopSolver::iterations_done)
+      .def("iterate", &PreflopSolver::iterate, py::call_guard<py::gil_scoped_release>())
+      .def("nash_conv", [](PreflopSolver& s) {
+        std::vector<double> per;
+        double total;
+        {
+          py::gil_scoped_release release;
+          total = s.nash_conv(&per);
+        }
+        return py::make_tuple(total, per);
+      })
+      .def("player_ev", &PreflopSolver::player_ev, py::call_guard<py::gil_scoped_release>())
+      .def("cumulative_strategy", [](const PreflopSolver& s) { return to_numpy(s.cumulative_strategy()); })
+      .def("load_cumulative_strategy",
+           [](PreflopSolver& s, py::array_t<float, py::array::c_style | py::array::forcecast> a, int iterations) {
+             s.load_cumulative_strategy(std::vector<float>(a.data(), a.data() + a.size()), iterations);
+           })
+      .def("solve", [](PreflopSolver& s, int max_iterations, double target_bb, int check_every, py::object cb) {
+        std::function<bool(int, double)> f = nullptr;
+        if (!cb.is_none())
+          f = [cb](int it, double nc) {
+            py::gil_scoped_acquire gil;
+            py::object r = cb(it, nc);
+            return r.is_none() ? true : r.cast<bool>();
+          };
+        py::gil_scoped_release release;
+        return s.solve(max_iterations, target_bb, check_every, f);
+      }, py::arg("max_iterations") = 1000, py::arg("target_bb") = 0.01, py::arg("check_every") = 25,
+         py::arg("callback") = py::none())
+      .def("query", [](PreflopSolver& s, const std::vector<int>& path) {
+        PreflopNodeInfo info;
+        {
+          py::gil_scoped_release release;
+          info = s.query(path);
+        }
+        static const char* names[] = {"fold", "check", "call", "raise", "allin"};
+        py::dict d;
+        d["terminal"] = info.terminal;
+        d["terminal_kind"] = info.terminal_kind;
+        d["player"] = info.player;
+        d["pot"] = info.pot;
+        d["invested"] = info.invested;
+        d["folded"] = info.folded;
+        py::list acts;
+        for (const auto& a : info.actions) {
+          py::dict ad;
+          ad["type"] = names[a.type];
+          ad["to"] = a.to;
+          ad["added"] = a.added;
+          acts.append(ad);
+        }
+        d["actions"] = acts;
+        std::vector<float> flat;
+        for (const auto& r : info.reach) flat.insert(flat.end(), r.begin(), r.end());
+        d["reach"] = to_numpy_2d(flat, info.reach.size());
+        if (!info.terminal) {
+          d["strategy"] = to_numpy_2d(info.strategy, info.actions.size());
+          d["action_ev"] = to_numpy_2d(info.action_ev, info.actions.size());
+          d["ev"] = to_numpy(info.ev);
+        } else {
+          d["ev"] = to_numpy_2d(info.ev, info.invested.size());
+        }
+        return d;
+      });
+
   py::class_<BetSize>(m, "BetSize")
       .def(py::init([](int kind, double value) {
              BetSize b;
@@ -91,6 +265,7 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("merge_threshold", &TreeConfig::merge_threshold)
       .def_readwrite("rake_rate", &TreeConfig::rake_rate)
       .def_readwrite("rake_cap", &TreeConfig::rake_cap)
+      .def_readwrite("compress", &TreeConfig::compress)
       .def("set_sizes",
            [](TreeConfig& c, int player, int street, const StreetSizes& s) {
              if (player < 0 || player > 1 || street < 0 || street > 2) throw std::out_of_range("player/street");

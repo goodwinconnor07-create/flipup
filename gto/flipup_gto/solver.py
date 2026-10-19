@@ -117,7 +117,7 @@ def _to_weights(r) -> list:
 class PostflopSolver:
     def __init__(self, board, pot: float, stack: float, oop_range, ip_range,
                  sizing: BetSizing | None = None, rake_rate: float = 0.0, rake_cap: float = 0.0,
-                 min_bet: float = 1.0, threads: int | None = None):
+                 min_bet: float = 1.0, threads: int | None = None, compress: bool = False):
         if threads:
             os.environ["OMP_NUM_THREADS"] = str(threads)
         self.board = parse_cards(board)
@@ -135,6 +135,7 @@ class PostflopSolver:
         cfg.min_bet = min_bet
         cfg.rake_rate = rake_rate
         cfg.rake_cap = rake_cap
+        cfg.compress = compress
         for p in range(2):
             for st in range(3):
                 ss = self.sizing.get(p, st)

@@ -15,7 +15,7 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(OpenMP REQUIRED)
 
-add_library(flipup_core STATIC src/cards.cpp src/eval.cpp src/solver.cpp)
+add_library(flipup_core STATIC src/cards.cpp src/eval.cpp src/equity.cpp src/preflop.cpp src/solver.cpp)
 target_include_directories(flipup_core PUBLIC include)
 target_link_libraries(flipup_core PUBLIC OpenMP::OpenMP_CXX)
 target_compile_options(flipup_core PRIVATE -Wall -Wextra)

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstring>
 #include <numeric>
 #include <stdexcept>
 
@@ -79,12 +80,20 @@ Solver::Solver(const TreeConfig& config) : cfg_(config) {
   for (auto& n : nodes_) {
     if (n.type == NodeType::ACTION) {
       n.storage = offset;
+      n.slot = static_cast<int32_t>(num_action_nodes_);
       offset += static_cast<int64_t>(n.num_children) * static_cast<int64_t>(hands_[n.player].size());
       ++num_action_nodes_;
     }
   }
-  regret_.assign(offset, 0.0f);
-  cum_strategy_.assign(offset, 0.0f);
+  if (cfg_.compress) {
+    regret_h_.assign(offset, static_cast<_Float16>(0.0f));
+    cum_h_.assign(offset, static_cast<_Float16>(0.0f));
+    regret_scale_.assign(num_action_nodes_, 0.0f);
+    cum_scale_.assign(num_action_nodes_, 0.0f);
+  } else {
+    regret_.assign(offset, 0.0f);
+    cum_strategy_.assign(offset, 0.0f);
+  }
 
   init_river_boards();
 
@@ -188,7 +197,9 @@ const Solver::RiverBoard& Solver::river_board(CardMask board) const {
 }
 
 size_t Solver::memory_bytes() const {
-  size_t bytes = (regret_.size() + cum_strategy_.size()) * sizeof(float);
+  size_t bytes = (regret_.size() + cum_strategy_.size()) * sizeof(float) +
+                 (regret_h_.size() + cum_h_.size()) * sizeof(_Float16) +
+                 (regret_scale_.size() + cum_scale_.size()) * sizeof(float);
   bytes += nodes_.size() * sizeof(Node) + children_.size() * (sizeof(int32_t) + sizeof(Action) + 1);
   for (const auto& rb : river_boards_) bytes += (rb.sorted[0].size() + rb.sorted[1].size()) * sizeof(SortedEntry);
   return bytes;
@@ -475,20 +486,72 @@ int Solver::make_terminal_or_next(const BuildState& s, uint8_t dealt_suits) {
 // Strategy helpers
 // ---------------------------------------------------------------------------
 
+namespace {
+// Half floats normalized by the node's largest magnitude: ~0.05% relative precision
+// down to 1e-4 of the max, with subnormals reaching ~6e-8.
+void encode_half(const float* in, size_t len, _Float16* out, float& scale) {
+  float mx = 0;
+  for (size_t i = 0; i < len; ++i) mx = std::max(mx, std::fabs(in[i]));
+  scale = mx;
+  const float inv = mx > 0 ? 1.0f / mx : 0.0f;
+  for (size_t i = 0; i < len; ++i) out[i] = static_cast<_Float16>(in[i] * inv);
+}
+void decode_half(const _Float16* in, size_t len, float scale, float* out) {
+  for (size_t i = 0; i < len; ++i) out[i] = static_cast<float>(in[i]) * scale;
+}
+}  // namespace
+
+void Solver::load_regret(const Node& n, float* out) const {
+  const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+  if (!cfg_.compress) {
+    std::copy(regret_.begin() + n.storage, regret_.begin() + n.storage + len, out);
+    return;
+  }
+  decode_half(regret_h_.data() + n.storage, len, regret_scale_[n.slot], out);
+}
+
+void Solver::store_regret(const Node& n, const float* in) {
+  const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+  if (!cfg_.compress) {
+    std::copy(in, in + len, regret_.begin() + n.storage);
+    return;
+  }
+  encode_half(in, len, regret_h_.data() + n.storage, regret_scale_[n.slot]);
+}
+
+void Solver::load_cum(const Node& n, float* out) const {
+  const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+  if (!cfg_.compress) {
+    std::copy(cum_strategy_.begin() + n.storage, cum_strategy_.begin() + n.storage + len, out);
+    return;
+  }
+  decode_half(cum_h_.data() + n.storage, len, cum_scale_[n.slot], out);
+}
+
+void Solver::store_cum(const Node& n, const float* in) {
+  const size_t len = static_cast<size_t>(n.num_children) * hands_[n.player].size();
+  if (!cfg_.compress) {
+    std::copy(in, in + len, cum_strategy_.begin() + n.storage);
+    return;
+  }
+  encode_half(in, len, cum_h_.data() + n.storage, cum_scale_[n.slot]);
+}
+
 void Solver::current_strategy(const Node& n, float* out) const {
   const int na = n.num_children;
   const size_t nh = hands_[n.player].size();
-  const float* r = regret_.data() + n.storage;
-  thread_local std::vector<float> sum;
+  thread_local std::vector<float> r, sum;
+  r.resize(static_cast<size_t>(na) * nh);
+  load_regret(n, r.data());
   sum.assign(nh, 0.0f);
   for (int a = 0; a < na; ++a) {
-    const float* ra = r + a * nh;
+    const float* ra = r.data() + a * nh;
     for (size_t h = 0; h < nh; ++h) sum[h] += std::max(ra[h], 0.0f);
   }
   const float uniform = 1.0f / na;
   for (size_t h = 0; h < nh; ++h) sum[h] = sum[h] > 0 ? 1.0f / sum[h] : 0.0f;
   for (int a = 0; a < na; ++a) {
-    const float* ra = r + a * nh;
+    const float* ra = r.data() + a * nh;
     float* oa = out + a * nh;
     for (size_t h = 0; h < nh; ++h) oa[h] = sum[h] > 0 ? std::max(ra[h], 0.0f) * sum[h] : uniform;
   }
@@ -497,8 +560,9 @@ void Solver::current_strategy(const Node& n, float* out) const {
 void Solver::average_strategy(const Node& n, float* out) const {
   const int na = n.num_children;
   const size_t nh = hands_[n.player].size();
-  const float* c = cum_strategy_.data() + n.storage;
-  thread_local std::vector<float> sum;
+  thread_local std::vector<float> c, sum;
+  c.resize(static_cast<size_t>(na) * nh);
+  load_cum(n, c.data());
   sum.assign(nh, 0.0f);
   for (int a = 0; a < na; ++a)
     for (size_t h = 0; h < nh; ++h) sum[h] += c[a * nh + h];
@@ -718,8 +782,11 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
       for (int a = 0; a < na; ++a) v += sigma[a * np + h] * cfv[a * np + h];
       out[h] = v;
     }
-    float* reg = regret_.data() + n.storage;
-    float* cum = cum_strategy_.data() + n.storage;
+    thread_local std::vector<float> reg, cum;
+    reg.resize(static_cast<size_t>(na) * np);
+    cum.resize(static_cast<size_t>(na) * np);
+    load_regret(n, reg.data());
+    load_cum(n, cum.data());
     for (int a = 0; a < na; ++a) {
       for (size_t h = 0; h < np; ++h) {
         size_t idx = a * np + h;
@@ -729,6 +796,8 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
         cum[idx] = cum[idx] * d.strat + sigma[idx] * own_reach[h];
       }
     }
+    store_regret(n, reg.data());
+    store_cum(n, cum.data());
   } else {
     std::vector<float> results(static_cast<size_t>(na) * np);
     auto run_child = [&](int a) {

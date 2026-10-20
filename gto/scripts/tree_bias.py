@@ -25,10 +25,11 @@ TREES = {
                             "river": StreetSizing("75%", "")},
                        ip={"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", ""),
                            "river": StreetSizing("75%", "")}, max_raises=1)),
-    "rich": (BetSizing(oop={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("50%, 100%", "a"),
-                            "river": StreetSizing("33%, 75%, a", "a")},
-                       ip={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("50%, 100%", "a"),
-                           "river": StreetSizing("33%, 75%, a", "a")}, max_raises=2)),
+    # About 4x the lean tree's memory (5.3GB at 100bb in a 6bb pot): GTO Wizard's flop sizes, two raises.
+    "rich": (BetSizing(oop={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("66%", "a"),
+                            "river": StreetSizing("75%", "a")},
+                       ip={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("66%", "a"),
+                           "river": StreetSizing("75%", "a")}, max_raises=2)),
 }
 
 
@@ -36,8 +37,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kind", type=int, default=2)
     ap.add_argument("--flops", type=int, default=4)
-    ap.add_argument("--iterations", type=int, default=300)
-    ap.add_argument("--target", type=float, default=0.3)
+    ap.add_argument("--iterations", type=int, default=200)
+    ap.add_argument("--target", type=float, default=0.5)
     ap.add_argument("--trees", default="lean,rich")
     args = ap.parse_args()
     log = lambda m: print(m, flush=True)  # noqa: E731

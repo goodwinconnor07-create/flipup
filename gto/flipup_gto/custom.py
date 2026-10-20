@@ -38,7 +38,7 @@ SOLVE = {  # max iterations, target exploitability (% of pot)
 
 
 FLOP_FIRST_PASS = 15   # iterations before the first (provisional) flop answer
-REFINE_CHUNK = 10      # iterations per background step (queries wait at most one step)
+REFINE_CHUNK = 5       # iterations per background step (queries wait at most one step)
 FORCED_ITERATIONS = 150  # preflop re-solve after an off-script action
 
 
@@ -212,7 +212,8 @@ class Explorer:
         with self.lock:
             store[key] = solver
             while len(store) > (1 if street == "flop" else 8):
-                store.popitem(last=False)
+                _, dropped = store.popitem(last=False)
+                dropped._stop = True  # its background refine stops instead of taking CPU from this one
         return solver
 
     def _forced_spot(self, n, bucket, line, reach_before, solve):
@@ -259,7 +260,7 @@ class Explorer:
     @staticmethod
     def _refine(solver, its, target):
         try:
-            while True:
+            while not getattr(solver, "_stop", False):
                 with solver._lock:
                     done = solver.engine.iterations
                     if done >= its:

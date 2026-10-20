@@ -297,8 +297,29 @@
   gap: 12px;
 }
 
+.choice {
+  padding: 14px 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+}
+
 .choice .section-title {
-  margin: 0 0 8px;
+  margin: 0 0 12px;
+}
+
+.choice .choice-option {
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(18, 18, 40, 0.06);
+}
+
+.choice .choice-option.on {
+  background: var(--contrast);
+  box-shadow: none;
+}
+
+.choice-row.wrap {
+  grid-auto-flow: row;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
 }
 
 .choice-row {

@@ -274,7 +274,8 @@ input {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-bottom: 16px;
+  /* Room to scroll past the last card, clear of the sticky footer and its fade. */
+  padding-bottom: 56px;
 }
 
 .screen-foot {
@@ -767,7 +768,7 @@ input {
   overscroll-behavior: contain;
   background: var(--surface);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
-  padding: 12px 20px calc(var(--safe-bottom) + 20px);
+  padding: 12px 20px calc(var(--safe-bottom) + 36px);
   animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.05);
 }
 

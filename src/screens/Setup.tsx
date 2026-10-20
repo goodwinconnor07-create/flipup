@@ -44,6 +44,7 @@ export function SettingsFields({
       />
       <Choice
         label="Blinds"
+        columns={3}
         value={blindKey}
         options={levels.map(blindsLabel)}
         onChange={(label) => {

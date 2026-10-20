@@ -167,25 +167,31 @@ recreational players:
 - Drills and reviews treat preflop lines GTO plays with less than 1–2% of its range as off-tree:
   strategies behind them were never trained against a real range.
 
-## 11. Benchmarks against GTO Wizard (6-max, 100bb, NL50 rake 5% capped at 4bb, GW open sizes)
+## 11. Benchmarks against GTO Wizard (6-max, 100bb, rake 5% capped at 4bb (NL50) or 0.6bb (NL500), GW open sizes)
 
 Published GW figures are quoted from their blog text (charts are images); "~" figures are approximate.
+"Old rake" raked only the pot on the flop; "flop rake x growth" rakes the pot each flop is expected to end
+with (data/rake_growth.json, measured by scripts/measure_rake.py).
 
-| Spot | Ours (one realization model) | Ours (with 4-bet pot tables, current) | GTO Wizard |
-|---|---|---|---|
-| UTG opens | 20.2% | 20.5% | 17.6% |
-| BTN opens | 39.7% | 40.7% | 42% |
-| SB raise / limp / fold | 36 / 28 / 36 | 39 / 25 / 36 | ~43 / ~2 / 54 |
-| BB vs BTN 2.5x: fold / call / 3-bet | 55 / 32 / 13 | 54 / 34 / 12 | ~60 / ~26 / ~14 |
-| BTN vs UTG: call / 3-bet | 3.6 / 8.4 | 6.6 / 7.6 | 8.2 / 7.5 (NL500) |
-| BTN vs CO: 3-bet / call | 11.5 / 4.4 | 10.6 / 5.8 | ~12 / ~5 (NL500) |
-| CO vs BTN 3-bet: fold / call / 4-bet | 48 / 40 / 13 (all-in) | 50 / 36 / 14 (mostly small) | 52 / 28 / 19 (mostly small, NL500) |
+| Spot | Old rake, NL50 | Flop rake x growth, NL50 | Same, NL500 | GTO Wizard / reference |
+|---|---|---|---|---|
+| UTG opens | 20.5% | 21.0% | 21.2% | 17.6% (NL50 and NL500) |
+| BTN opens | 40.7% | 41.0% | 40.3% | 42% (NL50) |
+| SB raise / limp / fold | 39 / 25 / 36 | 52 / 2 / 46 | 50 / 3 / 47 | 43 / 2 / 54 (gtopreflop, 5%/4bb); SB folds 54% (GW NL200) |
+| BB vs BTN 2.5x: fold / call / 3-bet | 54 / 34 / 12 | 61 / 26 / 13 | 58 / 28 / 14 | ~60 / ~26 / ~14 (NL50) |
+| BTN vs UTG: call / 3-bet | 6.6 / 7.6 | 2.3 / 9.0 | 3.2 / 8.4 | 8.2 / 7.5 (NL500) |
+| BTN vs CO: 3-bet / call | 10.6 / 5.8 | 12.0 / 2.2 | 11.2 / 3.1 | ~12 / ~5 (NL500) |
+| CO vs BTN 3-bet: fold / call / 4-bet | 50 / 36 / 14 | 57 / 27 / 16 | 51 / 32 / 17 | 52 / 28 / 19 (NL500) |
 
-- Per pot-kind realization tables (scripts/calibrate_kinds.py) were measured for limped, single-raised,
-  3-bet and 4-bet pots. Only the 4-bet tables are used: with all seven, BTN opened 26% and the BB
-  defended 61%; with the 3-bet and 4-bet tables, the 4-bet spot matched GW almost exactly but the SB
-  limped 53%. The full set is kept in data/eqr_kinds.candidate.json.
-- Known gap: the SB limps far more than GW (25% vs ~2%). Measuring realization on the solver's own
-  ranges makes SB look like it realizes ~96% out of position in limped and SB-vs-BB raised pots (the
-  BB's checking range is capped), which feeds back into more limping. Needs a fix that doesn't measure
-  on the current ranges alone.
+- Pots grow about 3x after the flop (limped 3.6x, single-raised 2.8-3.1x, 3-bet 3.2x, 4-bet 2.2x), so the
+  old model charged about a third of the real rake (BTN vs BB at NL50: 0.74bb measured, 0.28bb charged).
+  With the real rake the SB's limping drops from 25% to 2-3%, matching published solves: the "SB limps too
+  much" gap was the rake model, not realization. Rake-free games (all the app plays) are unaffected; there
+  the SB limps about 35%, which fits solver advice that unraked SBs flat/limp very wide (published rake-free
+  6-max numbers weren't found to check it exactly).
+- Rich vs lean postflop trees (scripts/tree_bias.py, SB vs BB single-raised, A72r): OOP's share 0.734 rich vs
+  0.724 lean, so the lean calibration tree doesn't flatter the out-of-position player.
+- Per pot-kind realization tables (scripts/calibrate_kinds.py): only the 4-bet tables are used; the full set
+  (data/eqr_kinds.candidate.json) made BTN open 26% and the BB defend 61% under the old rake model.
+- Open gaps: UTG/HJ open about 3 points too wide; BTN flats a UTG open far less than GW; the SB raises about
+  7 points too often.

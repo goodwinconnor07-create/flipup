@@ -26,114 +26,207 @@ export interface Style {
     aggro: number;
     /** 0 to 1: limps instead of raising or folding when nobody has raised. */
     limp: number;
+    /** Usual opening raise, in big blinds. */
+    open: number;
+    /** 0 to 1: raises people who limp in, with a wider range. */
+    iso: number;
+    /** Multiplies how wide it moves all in when its stack is short. */
+    shove: number;
+    /** Added to its chance of winning when it decides whether to call an all-in (looser above 0). */
+    callShove: number;
+    /** 0 to 1: how much it fears going broke when there are no rebuys. */
+    survival: number;
   };
   post: {
-    /** -1 to 1: bets value hands more (or less) often than GTO. */
+    /** 0 to 1: how much it thinks about what the other player could have (0: only looks at its own cards). */
+    sense: number;
+    /** Bet sizes it likes, as shares of the pot. */
+    sizes: number[];
+    /** 0 to 1: how much its bet size gives its hand away (big bets for big hands, small for so-so ones). */
+    tell: number;
+    /** Extra pull towards betting and raising with good hands, in pots (about -0.1 to 0.1). */
     value: number;
-    /** Multiplies how often it bets with nothing. */
+    /** Extra pull towards betting and raising with nothing, in pots. */
     bluff: number;
-    /** 0 to 1: calls when GTO folds. Negative folds more. */
+    /** Extra pull towards betting at all, in pots. */
+    bet: number;
+    /** Extra pull towards calling, in pots. Negative folds more. */
     sticky: number;
-    /** Multiplies how often it raises a bet. */
+    /** Extra pull towards raising, in pots. */
     raise: number;
-    /** -1 (always small) to 1 (always big). */
-    size: number;
-    /** 0 to 1: chance a big bet becomes an overbet on the turn or river. */
-    overbet: number;
-    /** 0 to 1: checks its best hands to raise later. */
+    /** 0 to 1: checks its best hands to let others bet (and raises them later). */
     trap: number;
-    /** 0 to 1: calls with draws whatever the price. */
+    /** 0 to 1: overrates its draws. */
     chase: number;
+    /** 0 to 1: overrates one pair. */
+    pairs: number;
     /** 0 to 1: gives up against big bets. */
     scared: number;
+    /** 0 to 1: how much it leans on the GTO tables (balance) over its own reading of the hand. */
+    gto: number;
+    /** How much its choices wobble, in pots: bigger is less predictable and makes more mistakes. */
+    wobble: number;
   };
   /** 0 to 1: how much it changes its play after watching yours. */
   adapt: number;
+  /** How it takes the ups and downs. */
+  mind: {
+    /** 0 to 1: how easily bad beats and big losses get to it. */
+    tilt: number;
+    /** 0 to 1: how much it wants chips back from whoever hurt it. */
+    grudge: number;
+  };
+  /** How long it takes to act. */
+  tempo: {
+    /** Multiplies its thinking time (below 1 is quick). */
+    speed: number;
+    /** Multiplies the extra time it takes on hard decisions. */
+    tank: number;
+    /** 0 to 1: sometimes acts instantly when the decision is easy. */
+    snap: number;
+    /** 0 to 1: sometimes takes ages with a monster, like it's a tough call. */
+    hollywood: number;
+  };
+  /** Chances it turns its cards over when it doesn't have to. */
+  show: {
+    /** After a bluff that worked. */
+    bluffs: number;
+    /** After winning with a strong hand that nobody called. */
+    strong: number;
+    /** After folding a good hand to a big bet. */
+    folds: number;
+  };
   talk: { tone: 'trash' | 'friendly'; chatty: number };
 }
 
-const base = { tight: 0, loose: 0, aggro: 0, limp: 0 };
-const post = { value: 0, bluff: 1, sticky: 0, raise: 1, size: 0, overbet: 0, trap: 0, chase: 0, scared: 0 };
+const base = { tight: 0, loose: 0, aggro: 0, limp: 0, open: 2.5, iso: 0.5, shove: 1, callShove: 0, survival: 0.3 };
+const post = {
+  sense: 0.7,
+  sizes: [0.33, 0.66, 1],
+  tell: 0,
+  value: 0,
+  bluff: 0,
+  bet: 0,
+  sticky: 0,
+  raise: 0,
+  trap: 0,
+  chase: 0,
+  pairs: 0,
+  scared: 0,
+  gto: 0.15,
+  wobble: 0.08,
+};
+const tempo = { speed: 1, tank: 1, snap: 0.1, hollywood: 0.05 };
 
 export const STYLES: Record<StyleId, Style> = {
   pro: {
     id: 'pro',
-    about: 'Plays close to the GTO charts and adjusts to what it sees.',
-    pre: { ...base },
-    post: { ...post, overbet: 0.1, trap: 0.1 },
-    adapt: 0.4,
+    about: 'A solid regular: plays close to GTO, reads ranges well and adjusts to what it sees. Hard to rattle.',
+    pre: { ...base, open: 2.3, iso: 0.5, survival: 0.3 },
+    post: { ...post, sense: 0.95, sizes: [0.33, 0.66, 1, 1.4], value: 0.02, trap: 0.12, gto: 0.3, wobble: 0.05 },
+    adapt: 0.5,
+    mind: { tilt: 0.1, grudge: 0.1 },
+    tempo: { ...tempo, tank: 1.1, hollywood: 0.1 },
+    show: { bluffs: 0.02, strong: 0.03, folds: 0.01 },
     talk: { tone: 'friendly', chatty: 0.35 },
   },
   shark: {
     id: 'shark',
-    about: 'GTO with a sharper edge: a little more aggressive, and the quickest to exploit you.',
-    pre: { ...base, aggro: 0.15 },
-    post: { ...post, value: 0.15, bluff: 1.15, raise: 1.2, overbet: 0.2, trap: 0.15 },
-    adapt: 0.65,
+    about: 'GTO with a sharper edge: a little more aggressive, and the quickest to work you out and go after you.',
+    pre: { ...base, aggro: 0.15, open: 2.3, iso: 0.7, shove: 1.1, survival: 0.2 },
+    post: { ...post, sense: 1, sizes: [0.33, 0.75, 1.25], value: 0.03, bluff: 0.02, raise: 0.02, trap: 0.15, gto: 0.2, wobble: 0.045 },
+    adapt: 0.85,
+    mind: { tilt: 0.15, grudge: 0.5 },
+    tempo: { ...tempo, speed: 0.9, snap: 0.2, hollywood: 0.15 },
+    show: { bluffs: 0.15, strong: 0.05, folds: 0 },
     talk: { tone: 'trash', chatty: 0.6 },
   },
   tag: {
     id: 'tag',
-    about: 'Tight and aggressive: few hands, played hard.',
-    pre: { ...base, tight: 0.72, aggro: 0.25 },
-    post: { ...post, value: 0.25, bluff: 0.9, sticky: -0.1, raise: 1.2, size: 0.2 },
-    adapt: 0.3,
+    about: 'Tight and aggressive: few hands, played hard. Bets its good hands big.',
+    pre: { ...base, tight: 0.72, aggro: 0.15, open: 3, iso: 0.6, shove: 0.95, callShove: -0.01, survival: 0.4 },
+    post: { ...post, sense: 0.75, sizes: [0.5, 0.75], tell: 0.3, value: 0.07, bluff: -0.01, bet: 0.03, sticky: -0.05, raise: 0.04, trap: 0.05, gto: 0.2, wobble: 0.06 },
+    adapt: 0.35,
+    mind: { tilt: 0.2, grudge: 0.2 },
+    tempo,
+    show: { bluffs: 0.02, strong: 0.1, folds: 0.03 },
     talk: { tone: 'friendly', chatty: 0.35 },
   },
   lag: {
     id: 'lag',
-    about: 'Loose and aggressive: lots of hands, lots of pressure.',
-    pre: { ...base, loose: 0.3, aggro: 0.35 },
-    post: { ...post, value: 0.2, bluff: 1.25, raise: 1.2, size: 0.3, overbet: 0.15 },
-    adapt: 0.3,
+    about: 'Loose and aggressive: lots of hands, lots of pressure, bluffs a fair bit.',
+    pre: { ...base, loose: 0.3, aggro: 0.35, open: 2.7, iso: 0.8, shove: 1.2, callShove: 0.02, survival: 0.2 },
+    post: { ...post, sense: 0.75, sizes: [0.5, 0.75, 1.2], tell: 0.1, value: 0.02, bluff: 0.06, bet: 0.05, raise: 0.06, gto: 0.15, wobble: 0.08 },
+    adapt: 0.4,
+    mind: { tilt: 0.35, grudge: 0.4 },
+    tempo: { ...tempo, speed: 0.85, snap: 0.2 },
+    show: { bluffs: 0.2, strong: 0.03, folds: 0.02 },
     talk: { tone: 'trash', chatty: 0.55 },
   },
   maniac: {
     id: 'maniac',
-    about: 'Raises everything and bluffs constantly. Hard to read, easy to trap.',
-    pre: { ...base, loose: 0.8, aggro: 0.75 },
-    post: { ...post, value: 0.35, bluff: 2.4, sticky: 0.25, raise: 2.2, size: 0.6, overbet: 0.35, chase: 0.3 },
-    adapt: 0.2,
+    about: 'Raises everything and bluffs constantly. Calls too much too. Hard to read, easy to trap.',
+    pre: { ...base, loose: 0.6, aggro: 0.4, open: 3.5, iso: 0.8, shove: 1.4, callShove: 0, survival: 0 },
+    post: { ...post, sense: 0.5, sizes: [0.75, 1, 1.5], tell: 0.1, value: 0.04, bluff: 0.07, bet: 0.1, sticky: -0.02, raise: 0.1, chase: 0.3, pairs: 0.15, gto: 0.05, wobble: 0.12 },
+    adapt: 0.15,
+    mind: { tilt: 0.6, grudge: 0.6 },
+    tempo: { speed: 0.6, tank: 0.5, snap: 0.4, hollywood: 0 },
+    show: { bluffs: 0.35, strong: 0.1, folds: 0.05 },
     talk: { tone: 'trash', chatty: 0.8 },
   },
   rock: {
     id: 'rock',
-    about: 'Only plays great hands. When it bets, believe it.',
-    pre: { ...base, tight: 0.87, aggro: -0.1 },
-    post: { ...post, value: 0.1, bluff: 0.25, sticky: -0.3, raise: 0.8, size: -0.1, scared: 0.3 },
-    adapt: 0.2,
+    about: 'Only plays great hands. When it bets big, believe it. Folds to pressure without the goods.',
+    pre: { ...base, tight: 0.87, aggro: -0.1, open: 3, iso: 0.2, shove: 0.6, callShove: -0.05, survival: 0.8 },
+    post: { ...post, sense: 0.55, sizes: [0.66, 0.9], tell: 0.6, value: 0.04, bluff: -0.08, sticky: -0.18, raise: -0.02, scared: 0.5, gto: 0.1, wobble: 0.06 },
+    adapt: 0.15,
+    mind: { tilt: 0.1, grudge: 0.2 },
+    tempo: { ...tempo, speed: 1.15, snap: 0.05 },
+    show: { bluffs: 0, strong: 0.25, folds: 0.15 },
     talk: { tone: 'friendly', chatty: 0.2 },
   },
   station: {
     id: 'station',
-    about: 'Calls far too much and rarely raises. Bluffing it is a bad idea.',
-    pre: { ...base, loose: 0.45, aggro: -0.6 },
-    post: { ...post, value: -0.25, bluff: 0.35, sticky: 0.7, raise: 0.35, size: -0.3, chase: 0.6 },
-    adapt: 0.2,
+    about: 'Calls far too much and rarely raises: only looks at its own cards. Bluffing it is a bad idea.',
+    pre: { ...base, loose: 0.45, aggro: -0.6, open: 2, iso: 0, shove: 0.7, callShove: 0.03, survival: 0.2 },
+    post: { ...post, sense: 0.25, sizes: [0.33, 0.5], tell: 0.2, value: -0.05, bluff: -0.1, bet: -0.12, sticky: 0.12, raise: -0.15, chase: 0.5, pairs: 0.4, gto: 0.05, wobble: 0.1 },
+    adapt: 0.05,
+    mind: { tilt: 0.3, grudge: 0.3 },
+    tempo: { ...tempo, speed: 1.1, snap: 0.3 },
+    show: { bluffs: 0, strong: 0.05, folds: 0.1 },
     talk: { tone: 'friendly', chatty: 0.45 },
   },
   gambler: {
     id: 'gambler',
-    about: 'Limps, chases every draw and loves a big pot.',
-    pre: { ...base, loose: 0.5, limp: 0.6, aggro: 0.05 },
-    post: { ...post, bluff: 1.25, sticky: 0.35, raise: 1.1, size: 0.25, overbet: 0.15, chase: 0.8 },
-    adapt: 0.2,
+    about: 'Limps, chases every draw and loves a big pot. Raises big when it finally has a hand.',
+    pre: { ...base, loose: 0.5, limp: 0.6, aggro: 0.05, open: 4, iso: 0.1, shove: 1.3, callShove: 0.04, survival: 0 },
+    post: { ...post, sense: 0.4, sizes: [0.5, 1, 1.5], tell: 0.3, bluff: 0.04, bet: 0.04, sticky: 0.06, raise: 0.03, chase: 0.6, pairs: 0.2, gto: 0.05, wobble: 0.11 },
+    adapt: 0.1,
+    mind: { tilt: 0.55, grudge: 0.4 },
+    tempo: { ...tempo, speed: 0.8, snap: 0.25 },
+    show: { bluffs: 0.25, strong: 0.1, folds: 0.05 },
     talk: { tone: 'friendly', chatty: 0.65 },
   },
   trapper: {
     id: 'trapper',
     about: 'Slow-plays its monsters and check-raises. Quiet until it pounces.',
-    pre: { ...base, tight: 0.66, aggro: -0.25 },
-    post: { ...post, value: -0.2, bluff: 0.8, raise: 1.6, size: 0.1, overbet: 0.15, trap: 0.6 },
+    pre: { ...base, tight: 0.66, aggro: -0.25, open: 2.5, iso: 0.2, shove: 0.9, survival: 0.4 },
+    post: { ...post, sense: 0.7, sizes: [0.33, 0.66, 1.3], tell: 0.2, value: -0.04, bluff: -0.02, raise: 0.06, trap: 0.6, gto: 0.15, wobble: 0.07 },
     adapt: 0.3,
+    mind: { tilt: 0.2, grudge: 0.3 },
+    tempo: { ...tempo, tank: 1.2, hollywood: 0.5 },
+    show: { bluffs: 0.02, strong: 0.2, folds: 0.02 },
     talk: { tone: 'trash', chatty: 0.45 },
   },
   nervous: {
     id: 'nervous',
-    about: 'Plays fair hands but folds to pressure, and bets small when it does bet.',
-    pre: { ...base, tight: 0.68, aggro: -0.2 },
-    post: { ...post, value: -0.1, bluff: 0.6, sticky: -0.25, raise: 0.6, size: -0.6, scared: 0.65 },
-    adapt: 0.25,
+    about: 'Plays fair hands but folds to pressure, bets small when it does bet, and gets rattled after losing.',
+    pre: { ...base, tight: 0.68, aggro: -0.2, open: 2, iso: 0.1, shove: 0.65, callShove: -0.06, survival: 0.9 },
+    post: { ...post, sense: 0.5, sizes: [0.25, 0.4, 0.5], tell: 0.5, value: -0.05, bluff: -0.05, bet: -0.06, sticky: -0.15, raise: -0.05, scared: 0.8, gto: 0.1, wobble: 0.08 },
+    adapt: 0.2,
+    mind: { tilt: 0.45, grudge: 0.1 },
+    tempo: { speed: 1.2, tank: 1.6, snap: 0.05, hollywood: 0 },
+    show: { bluffs: 0.01, strong: 0.05, folds: 0.2 },
     talk: { tone: 'friendly', chatty: 0.4 },
   },
 };

@@ -18,6 +18,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     pendingTalk: undefined,
     talkAt: undefined,
     streaks: undefined,
+    minds: undefined,
     logs: [],
     hand: hand && {
       ...hand,

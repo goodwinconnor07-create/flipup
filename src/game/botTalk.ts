@@ -47,7 +47,19 @@ export type TalkEvent =
   /** Nothing much happening; a new hand is dealt. */
   | 'idle'
   /** A person has sat on their turn for ages. */
-  | 'tank';
+  | 'tank'
+  /** Turned over a bluff that worked. */
+  | 'showBluff'
+  /** Turned over a big hand nobody paid off. */
+  | 'showStrong'
+  /** Turned over a good hand it folded. */
+  | 'showFold'
+  /** Won a big pot off the player it had a grudge with. */
+  | 'revenge'
+  /** On tilt, between hands. */
+  | 'tilted'
+  /** Someone showed the bluff it folded to. */
+  | 'gotBluffed';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -73,6 +85,12 @@ const TRASH: Lines = {
   bluffCaught: ['Worth it.', 'Still profitable.', 'Nice call.', 'Delete that.', 'Don’t tell anyone.'],
   idle: ['Hello, fish.', 'Lock in.', 'Chaos time.', 'No mercy.', 'Wake up.'],
   tank: ['Need a map?', 'Clock’s ticking.', 'Any day now.', 'Fold already.', 'It’s not chess.'],
+  showBluff: ['Had nothing 😂', 'Look what you folded to.', 'For the cameras.', 'Pure air.', 'Thanks for the fold.'],
+  showStrong: ['Had it all along.', 'You were right to fold.', 'Smart fold.', 'Just so you know.'],
+  showFold: ['Big laydown.', 'I folded that.', 'Respect it.', 'You owe me one.'],
+  revenge: ['Payback.', 'Told you.', 'Chips back.', 'Remember me?', 'We’re even.'],
+  tilted: ['I’m fine.', 'Totally calm.', 'Next hand’s mine.', 'Unreal deck.', 'Just deal.'],
+  gotBluffed: ['You had THAT?', 'Noted.', 'I’ll remember that.', 'Enjoy it while it lasts.', 'Cute.'],
 };
 
 const FRIENDLY: Lines = {
@@ -97,6 +115,12 @@ const FRIENDLY: Lines = {
   bluffCaught: ['Oops, caught!', 'Nice call!', 'Worth a shot.', 'I panicked 😭', 'Good read.'],
   idle: ['Poker time 🃏', 'Coffee break? ☕', 'Let’s dance.', 'Anyone home?', 'Stay sharp.'],
   tank: ['Take your time 😂', 'Still there?', 'Tough decision?', 'Hello?', 'Decisions, decisions.'],
+  showBluff: ['Oops, nothing!', 'Sorry, had to.', 'Shh 🤫', 'Got lucky there.', 'Don’t be mad!'],
+  showStrong: ['Had it, promise.', 'Good fold!', 'Nice fold.', 'Just showing.'],
+  showFold: ['Was this good?', 'Ugh, folded this.', 'Hope that was right.', 'Painful fold.'],
+  revenge: ['Got you back!', 'Even now 😄', 'My turn!', 'Ha, finally!'],
+  tilted: ['Deep breaths…', 'Not my night.', 'I’m okay. Mostly.', 'Need a break.', 'Can I win one?'],
+  gotBluffed: ['No way!', 'You had nothing?!', 'Sneaky!', 'Ugh, I believed you.', 'Well played…'],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -114,6 +138,9 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     yourBigBet: ['That’s your move?', 'Interesting raise.'],
     idle: ['Hello, fish.', 'Feeling dangerous.'],
     tank: ['He’s buffering…', 'Solver time.'],
+    showBluff: ['Read that.', 'Scared money.'],
+    revenge: ['Owned.', 'Back in my pocket.'],
+    tilted: ['Whatever.'],
   },
   lag: {
     allin: ['Chaos time.', 'No mercy.'],
@@ -125,6 +152,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tiltJab: ['Again, bro?', 'Keep donating.', 'Too emotional.'],
     bluffCaught: ['Worth it.', 'We move.'],
     tank: ['Windows update.', 'We have jobs.'],
+    showBluff: ['Cinema 🎬', 'Nothing. Again.'],
+    revenge: ['Run it back?'],
   },
   // The Troll: ridiculous, bluffs constantly, blames the deck.
   maniac: {
@@ -138,6 +167,9 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tiltJab: ['Skill issue.', 'Bankrupt soon?'],
     idle: ['We gamble.', 'I need action.', 'Big plans.', 'Trust issues.'],
     tank: ['NASA calculations.', 'Bro disconnected.'],
+    showBluff: ['7-2, baby.', 'Never had it.', '🫵😂'],
+    tilted: ['Rigged.', 'Scripted 🎬', 'I’m reporting.'],
+    revenge: ['Generational.'],
   },
   gambler: {
     allin: ['We gamble.', 'Why not.', 'Send it.'],
@@ -150,6 +182,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bluffCaught: ['Information gained.', 'Never again.'],
     idle: ['I need action.', 'Redemption arc.', 'Bored already.'],
     tank: ['Just push already.', '💤💤'],
+    showBluff: ['Hehehe.', 'Worth it.'],
+    tilted: ['One time.', 'Redemption arc.', 'I hate poker.'],
   },
   tag: {
     thinkEasy: ['Clean.', 'Standard.'],
@@ -160,6 +194,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tiltJab: ['Character building.', 'Hold that.'],
     idle: ['Stay sharp.', 'Lock in.'],
     tank: ['Need assistance?', 'It’s one hand.'],
+    showStrong: ['Standard.', 'Always have it.'],
+    showFold: ['Disciplined.'],
   },
   // The Silent Killer: rarely speaks, and it hurts when they do.
   pro: {
@@ -172,6 +208,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tiltJab: ['I’ve studied you.', 'I expected that.', 'Never change.'],
     idle: ['Respectfully…'],
     tank: ['Bro is thinking.'],
+    showStrong: ['Noted.'],
+    revenge: ['Noted forever.'],
   },
   rock: {
     foldBig: ['Fine.', 'Noted.'],
@@ -182,6 +220,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tiltJab: ['Same mistake.', 'You always do.'],
     idle: ['Quiet night.'],
     tank: ['…'],
+    showStrong: ['I always have it.', 'Told you.'],
+    showFold: ['Good fold. Probably.', 'Next time.'],
   },
   trapper: {
     thinkHard: ['Please call.', 'Come here.', 'I’m waiting.'],
@@ -192,6 +232,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tiltJab: ['I’ve studied you.', 'You’re transparent.'],
     idle: ['🤫🤫', 'Surely call.'],
     tank: ['Take your time 😉'],
+    showStrong: ['Trap sprung.', 'Sweet dreams.'],
+    revenge: ['Trap sprung.'],
   },
   // The Choker: panics under pressure, complains about everything.
   nervous: {
@@ -205,6 +247,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bluffCaught: ['I panicked 😭', 'Lag moment.', 'Delete that.'],
     idle: ['Nervous already.', 'Anyone home?'],
     tank: ['Hurry, I’m sweating.', 'Please don’t.'],
+    showFold: ['Was I right?!', 'I panicked 😭'],
+    tilted: ['Why me?', 'I’m sweating.', 'I’m sick.'],
   },
   station: {
     callLight: ['Show me.', 'I’ll pay.', 'Just looking.'],
@@ -216,6 +260,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bluffCaught: ['I meant that.', 'Fair enough.'],
     idle: ['Coffee break? ☕', 'Bored already.'],
     tank: ['Just call.', 'Bro is thinking.'],
+    showFold: ['First fold today.'],
+    tilted: ['Of course.', 'Naturally.'],
   },
 };
 
@@ -239,27 +285,33 @@ function pool(voice: string, event: TalkEvent): string[] {
 
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
-  thinkHard: 0.3,
-  thinkEasy: 0.06,
-  allin: 0.8,
-  raise: 0.25,
-  foldBig: 0.2,
-  callLight: 0.55,
-  yourBigBet: 0.5,
-  sweat: 0.9,
-  sweatWatch: 0.5,
+  thinkHard: 0.15,
+  thinkEasy: 0.04,
+  allin: 0.55,
+  raise: 0.08,
+  foldBig: 0.12,
+  callLight: 0.35,
+  yourBigBet: 0.25,
+  sweat: 0.6,
+  sweatWatch: 0.3,
   sweatWin: 1,
   sweatLose: 1,
   bluffWon: 0.6,
-  bigWin: 0.8,
+  bigWin: 0.45,
   win: 0.15,
-  badBeat: 1,
-  lostToYou: 0.8,
-  reply: 0.5,
+  badBeat: 0.8,
+  lostToYou: 0.5,
+  reply: 0.3,
   tiltJab: 0.35,
-  bluffCaught: 0.7,
-  idle: 0.06,
+  bluffCaught: 0.6,
+  idle: 0.04,
   tank: 0.8,
+  showBluff: 0.9,
+  showStrong: 0.7,
+  showFold: 0.7,
+  revenge: 0.8,
+  tilted: 0.6,
+  gotBluffed: 0.9,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */

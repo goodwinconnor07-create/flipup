@@ -52,6 +52,22 @@ export interface PlayerRead {
   foldsToBet: number;
   aggr: number;
   calls: number;
+  /** Went all in before the flop with a deep stack (8bb or more), first in. */
+  shoves?: number;
+  /** Hands seen at showdown after they bet or raised the turn or river... */
+  shownBets?: number;
+  /** ...and how many of those were bluffs. */
+  shownBluffs?: number;
+}
+
+/** How a bot feels right now. Never sent to phones. */
+export interface BotMind {
+  /** 0 calm to 1 steaming: after bad beats, getting bluffed and losing big pots. */
+  tilt: number;
+  /** -1 rattled to 1 on a heater. */
+  confidence: number;
+  /** Players who've hurt it lately, by id: it wants those chips back. */
+  grudges?: Record<string, number>;
 }
 
 export interface Seat {
@@ -213,6 +229,8 @@ export interface Game {
   streaks?: Record<string, number>;
   /** The last hand the bots took notes on. */
   readHand?: number;
+  /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
+  minds?: Record<string, BotMind>;
 }
 
 export type Action =

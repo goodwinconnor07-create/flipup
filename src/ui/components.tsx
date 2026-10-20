@@ -24,30 +24,9 @@ export function chips(n: number): string {
 // ── Players ─────────────────────────────────────────────────────────────────
 
 /** A player's picture: just their emoji, big, like a sticker. */
-// Apple's emoji everywhere: Apple devices draw them natively; everyone else gets Apple's images.
-const APPLE = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
-const EMOJI_CDN = 'https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.1.2/img/apple/64/';
-const codes = (emoji: string, keepFe0f: boolean) =>
-  [...emoji]
-    .map((ch) => ch.codePointAt(0)!.toString(16))
-    .filter((h) => keepFe0f || h !== 'fe0f')
-    .join('-');
-
-/** One emoji in Apple's design, at `size` pixels. Falls back to the device's own if the image can't load. */
-export function Emoji({ emoji, size }: { emoji: string; size: number }) {
-  const [step, setStep] = useState(0);
-  if (APPLE || step > 1) return <>{emoji}</>;
-  return (
-    <img
-      className="emoji-img"
-      src={`${EMOJI_CDN}${codes(emoji, step === 0)}.png`}
-      alt={emoji}
-      width={size}
-      height={size}
-      draggable={false}
-      onError={() => setStep(step + 1)}
-    />
-  );
+/** One emoji, in whatever design the device draws. */
+export function Emoji({ emoji }: { emoji: string; size?: number }) {
+  return <>{emoji}</>;
 }
 
 export function Avatar({ emoji, size = 48, className = '' }: { emoji: string; size?: number; className?: string }) {

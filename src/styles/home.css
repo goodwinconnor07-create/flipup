@@ -512,8 +512,7 @@ html.calm .home-pane {
 
 .casino-photo {
   position: absolute;
-  inset: -40px -40px auto -40px;
-  height: calc(54dvh + 40px);
+  inset: -40px;
   background: url('/home/casino.jpg') center / cover no-repeat;
   filter: blur(4px) saturate(1.15);
 }
@@ -680,7 +679,7 @@ html.calm :is(.bokeh, .drift-chip, .drift-card) {
   .home-sheet {
     display: block;
     margin-top: 0;
-    padding-top: max(150px, 44dvh);
+    padding-top: 12px;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
@@ -705,8 +704,8 @@ html.calm :is(.bokeh, .drift-chip, .drift-card) {
   .home-scroll {
     min-height: 100%;
     overflow: visible;
-    border-radius: 36px 36px 0 0;
-    background: rgba(250, 250, 253, 0.92);
+    border-radius: 32px 32px 0 0;
+    background: rgba(250, 250, 253, 0.8);
     -webkit-backdrop-filter: blur(32px) saturate(1.7);
     backdrop-filter: blur(32px) saturate(1.7);
     border: 1px solid var(--glass-rim);
@@ -732,4 +731,68 @@ html.calm :is(.bokeh, .drift-chip, .drift-card) {
 
 .quick-again b {
   color: var(--brand-ink);
+}
+
+/* Header on phones: the logo, the two switches and you, with room to breathe. */
+@media not all and (min-width: 960px) and (min-height: 600px) {
+  .screen.home .home-head {
+    padding: calc(var(--safe-top) + 20px) 20px 14px;
+  }
+}
+
+/* The daily streak: a flame and a count. Lit once you've played today. */
+.streak {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 6px 14px 6px 10px;
+  border-radius: var(--r-pill);
+  background: var(--chip);
+  color: var(--ink-3);
+}
+
+.streak b {
+  font-size: var(--fs-lead);
+  font-weight: 900;
+  color: var(--ink);
+}
+
+.streak small {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+}
+
+.streak-fire {
+  font-size: 24px;
+  line-height: 1;
+  filter: grayscale(1) opacity(0.55);
+}
+
+.streak.lit {
+  background: rgba(255, 149, 0, 0.16);
+}
+
+.streak.lit .streak-fire {
+  filter: none;
+  animation: flicker 1.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+@keyframes flicker {
+  50% {
+    transform: scale(1.12) rotate(-4deg);
+  }
+}
+
+html.calm .streak-fire,
+html.no-motion .streak-fire {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak.lit .streak-fire {
+    animation: none;
+  }
 }

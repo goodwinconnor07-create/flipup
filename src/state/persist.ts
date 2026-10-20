@@ -229,6 +229,37 @@ export function saveLastBots(last: LastBots): void {
   write('flipup.lastbots', last);
 }
 
+// ── Daily streak ────────────────────────────────────────────────────────────
+
+const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+function loadDays(): string[] {
+  const d = read<string[]>('flipup.days');
+  return Array.isArray(d) ? d.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)) : [];
+}
+
+/** Marks today as a day this phone played a hand. */
+export function markPlayedToday(): void {
+  const today = dayKey(new Date());
+  const days = loadDays();
+  if (days.includes(today)) return;
+  write('flipup.days', [...days, today].slice(-120));
+}
+
+/** Days in a row with a hand played, counting back from today (or from yesterday, so the streak survives until tonight). */
+export function loadStreak(): { days: number; today: boolean } {
+  const have = new Set(loadDays());
+  const d = new Date();
+  const today = have.has(dayKey(d));
+  if (!today) d.setDate(d.getDate() - 1);
+  let days = 0;
+  while (have.has(dayKey(d))) {
+    days++;
+    d.setDate(d.getDate() - 1);
+  }
+  return { days, today };
+}
+
 // ── GTO Coach ───────────────────────────────────────────────────────────────
 
 /** The coach introduces themself once; after that they get straight to it. */

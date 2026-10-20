@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { fetchTableInfo } from '../state/api';
-import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
+import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, toggleDark, toggleGlass, useApp } from '../state/store';
-import { Avatar, PlayingCard } from '../ui/components';
+import { Avatar } from '../ui/components';
 import { InsightsTab } from './HomeInsights';
 import { QuickGames } from './HomeQuick';
 import { TrainTab } from './HomeTrain';
@@ -57,6 +57,7 @@ export function Home() {
   const [stats] = useState(loadStats);
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
+  const [streak] = useState(loadStreak);
 
   // The last online table, if it's still open, is one tap away.
   const rejoin = async () => {
@@ -94,8 +95,6 @@ export function Home() {
         <CasinoBackdrop />
         <i className="glow glow-1" />
         <i className="glow glow-2" />
-        <PlayingCard card="As" size="lg" className="home-card home-card-1" />
-        <PlayingCard card="Kh" size="lg" className="home-card home-card-2" />
       </div>
       <div className="home-head">
         <h1 className="logo">
@@ -122,8 +121,13 @@ export function Home() {
       <div className="home-sheet">
         <div className="home-scroll">
           <div className="home-title">
-            <h2 className="h1">{named ? `Welcome back, ${profile.name}` : 'Welcome to FlipUp'}</h2>
-            <p>{statusLine(stats, active_)}</p>
+            <h2 className="h1">{tab === 'insights' ? 'Your game' : tab === 'train' ? 'Train' : named ? `Welcome back, ${profile.name}` : 'Welcome to FlipUp'}</h2>
+            <p>{tab === 'insights' ? 'How your hands and tables are going.' : tab === 'train' ? 'Quick drills with your GTO Coach.' : statusLine(stats, active_)}</p>
+            <div className={`streak${streak.today ? ' lit' : ''}`} aria-label={`${streak.days} day streak`}>
+              <span className="streak-fire" aria-hidden>🔥</span>
+              <b>{streak.days}</b>
+              <small>{streak.days === 0 ? 'Play a hand to start a streak' : streak.today ? (streak.days === 1 ? 'day: nice start' : 'day streak') : 'day streak: play today to keep it'}</small>
+            </div>
           </div>
           <div key={tab} className="home-pane">
             {tab === 'play' && (

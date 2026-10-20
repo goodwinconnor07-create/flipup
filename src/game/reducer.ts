@@ -5,7 +5,7 @@ import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { BOTS } from './botStyles';
 import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
-import { canDeal, cardsText, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
+import { canDeal, cardsText, dealNextStreet, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
 import { cryptoRng, newId } from './ids';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
@@ -442,6 +442,10 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (hand && !hand.result) {
     if (!due(hand.actAt)) return false;
+    if (hand.nextStreetAt != null) {
+      dealNextStreet(game, ctx);
+      return true;
+    }
     if (hand.runout) {
       runoutStep(game, ctx);
       // Sweating the next card: someone in the all-in, or someone watching.

@@ -165,6 +165,8 @@ export interface Hand {
   log: string[];
   /** Every move as data (public information). */
   actions?: HandAction[];
+  /** Betting on this street is done and the next card is coming at this time. */
+  nextStreetAt?: number | null;
   /** The board ran out with everyone all in (for the bots' sweating). */
   ranOut?: boolean;
   /** Each player's chips before the blinds. */

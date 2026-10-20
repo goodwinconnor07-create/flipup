@@ -23,6 +23,8 @@ export const TIMING = {
   resume: 2000,
   /** One player has all the chips: this long for the others to rebuy before the game ends. */
   rebuyWindow: 20000,
+  /** After the last bet of a street is matched, a beat before the next card so the move can be seen. */
+  streetPause: 1100,
   /** Without rebuys: how long the deciding hand stays on screen before the winner's page. */
   endPause: 7000,
 };
@@ -431,6 +433,18 @@ function endStreet(game: Game, ctx: ActionContext): void {
     return;
   }
 
+  // A beat before the next card, so the last move is seen first and nobody's cards land mid-thought.
+  hand.toAct = null;
+  hand.deadline = null;
+  hand.nextStreetAt = ctx.now + TIMING.streetPause;
+  hand.actAt = hand.nextStreetAt;
+  schedule(game);
+}
+
+/** The pause is over: deal the next street and start its betting. */
+export function dealNextStreet(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.nextStreetAt = null;
   dealStreet(hand);
   const button = indexOf(hand, hand.buttonId);
   // After the flop the first player still in, left of the button, acts first.

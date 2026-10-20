@@ -257,12 +257,13 @@ html[data-theme='dark'] .pcard.dim > * {
   /* Room above the picture for the speech bubble. */
   top: 24px;
   left: 0;
-  width: 25%;
+  /* The row is shared out between whoever's here, so fewer players get wider slots. */
+  width: calc(100% / max(var(--n, 4), 1));
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0;
-  transform: translateX(calc(100% * (var(--slot, 0) + (4 - var(--n, 4)) / 2)));
+  transform: translateX(calc(100% * var(--slot, 0)));
   transition:
     transform 0.55s cubic-bezier(0.3, 0.9, 0.25, 1),
     opacity 0.3s ease;

@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { recordNet, type HandRecord } from '../../game';
+import { toHandHistory } from '../../gto/api';
 import type { HandReport } from '../../gto/types';
 import { navigate } from '../../state/store';
 import { loadHistory } from '../../state/training';
 import { reviewAndSave, savedReport } from '../../train/reviews';
 import { DecisionCard, GradePill, MiniCards, streetName } from '../../train/widgets';
-import { BackBar, Spinner } from '../../ui/components';
+import { BackBar } from '../../ui/components';
+import { ReviewActivity } from './ReviewActivity';
 
 const STREETS = ['preflop', 'flop', 'turn', 'river'] as const;
 const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
@@ -30,20 +32,23 @@ function streetMoves(r: HandRecord, street: string): string[] {
 export function Lesson({ handKey }: { handKey: string }) {
   const [hand] = useState(() => loadHistory().find((h) => h.key === handKey) ?? null);
   const [report, setReport] = useState<HandReport | null>(() => savedReport(handKey));
-  const [progress, setProgress] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [done, setDone] = useState(0);
+  const history = useMemo(() => (hand ? [toHandHistory(hand.record)] : []), [hand]);
   const [error, setError] = useState<string | null>(null);
 
   const run = async () => {
     if (!hand) return;
     setError(null);
-    setProgress('Solving every street of this hand…');
+    setDone(0);
+    setReviewing(true);
     try {
-      const out = await reviewAndSave([hand]);
+      const out = await reviewAndSave([hand], (d) => setDone(d));
       setReport(out[hand.key] ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The review failed.');
     } finally {
-      setProgress(null);
+      setReviewing(false);
     }
   };
 
@@ -97,7 +102,7 @@ export function Lesson({ handKey }: { handKey: string }) {
           )}
         </section>
 
-        {progress && <Spinner label={progress} />}
+        {reviewing && history.length > 0 && <ReviewActivity hands={history} done={done} title={`Reviewing hand #${r.number}`} />}
         {error && (
           <>
             <p className="note">{error}</p>

@@ -5,7 +5,8 @@ import type { HandHistory, HandReport } from '../../gto/types';
 import { navigate } from '../../state/store';
 import { replay, STREETS, type BuilderAction, type BuilderSetup, type BuilderState } from '../../train/builder';
 import { CardPicker, DecisionCard, MiniCards, streetName } from '../../train/widgets';
-import { BackBar, CardSlot, Choice, PlayingCard, Spinner } from '../../ui/components';
+import { BackBar, CardSlot, Choice, PlayingCard } from '../../ui/components';
+import { ReviewActivity } from './ReviewActivity';
 
 // Seats run SB, BB, then the early positions round to the button (heads-up: button/SB, BB).
 const POSITIONS: Record<number, string[]> = {
@@ -42,7 +43,7 @@ export function Custom() {
   const [actions, setActions] = useState<BuilderAction[]>([]);
   const [target, setTarget] = useState<Target>({ kind: 'hole', id: 'p5', slot: 0 });
   const [report, setReport] = useState<HandReport | null>(null);
-  const [progress, setProgress] = useState<string | null>(null);
+  const [analysing, setAnalysing] = useState<HandHistory | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const smallBlind = num(sb, 1);
@@ -127,16 +128,15 @@ export function Custom() {
     setStep('result');
     setReport(null);
     setError(null);
-    setProgress('Solving…');
+    const hh = history();
+    setAnalysing(hh);
     try {
-      const r = await analyzeHand(history(), undefined, (j) =>
-        setProgress(j.total > 0 ? `Solving street ${Math.min(j.progress + 1, j.total)} of ${j.total}…` : 'Solving…'),
-      );
+      const r = await analyzeHand(hh);
       setReport(r);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The analysis failed.');
     } finally {
-      setProgress(null);
+      setAnalysing(null);
     }
   };
 
@@ -228,7 +228,7 @@ export function Custom() {
             <MiniCards cards={holes[heroId] ?? []} size="md" />
             {board.length > 0 && <MiniCards cards={board} />}
           </div>
-          {progress && <Spinner label={progress} />}
+          {analysing && <ReviewActivity hands={[analysing]} done={0} title="Analysing your hand" />}
           {error && (
             <>
               <p className="note">{error}</p>

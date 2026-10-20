@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { recordNet } from '../../game';
-import { listScenarios } from '../../gto/api';
+import { listScenarios, toHandHistory } from '../../gto/api';
 import type { Scenario } from '../../gto/types';
 import { back, navigate, replace, toast, type TrainSection } from '../../state/store';
 import { loadDrills, loadHistory, loadSummaries, type PlayedHand } from '../../state/training';
@@ -9,6 +9,7 @@ import { drillFor, scenarioTitle } from '../../train/scenarios';
 import { computeStats, type ScenarioScore } from '../../train/stats';
 import { Dots, MiniCards, pct } from '../../train/widgets';
 import { Spinner } from '../../ui/components';
+import { ReviewActivity } from './ReviewActivity';
 import { BackIcon, BookIcon, ChartIcon, ListIcon, MenuIcon, PencilIcon } from '../../ui/Icons';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -77,20 +78,23 @@ function when(at: number): string {
 function ReviewList() {
   const [hands] = useState(() => [...loadHistory()].reverse());
   const [summaries, setSummaries] = useState(loadSummaries);
-  const [busy, setBusy] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0);
   const unreviewed = hands.filter((h) => !summaries[h.key]).slice(0, 20);
+  const queue = useMemo(() => unreviewed.map((h) => toHandHistory(h.record)), [unreviewed.map((h) => h.key).join('|')]);
 
   const reviewRecent = async () => {
     if (busy || unreviewed.length === 0) return;
-    setBusy(`Reviewing 0 of ${unreviewed.length}…`);
+    setDone(0);
+    setBusy(true);
     try {
-      await reviewAndSave(unreviewed, (done, total) => setBusy(`Reviewing ${Math.min(done, total)} of ${total}…`));
+      await reviewAndSave(unreviewed, (d) => setDone(d));
       setSummaries(loadSummaries());
       toast('Reviews ready.', 'success');
     } catch (e) {
       toast(e instanceof Error ? e.message : 'The review failed.', 'error');
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -112,9 +116,13 @@ function ReviewList() {
         <b className="c-yellow">yellow</b> is close, <b className="c-red">red</b> is a real mistake.
       </p>
       {unreviewed.length > 0 && (
-        <button type="button" className="btn btn-dark" disabled={!!busy} onClick={() => void reviewRecent()}>
-          {busy ?? `Review my last ${unreviewed.length} hand${unreviewed.length === 1 ? '' : 's'}`}
-        </button>
+        busy ? (
+          <ReviewActivity hands={queue} done={done} title={`Reviewing ${queue.length} hand${queue.length === 1 ? '' : 's'}`} />
+        ) : (
+          <button type="button" className="btn btn-dark" onClick={() => void reviewRecent()}>
+            {`Review my last ${unreviewed.length} hand${unreviewed.length === 1 ? '' : 's'}`}
+          </button>
+        )
       )}
       <div className="t-list">
         {hands.map((h) => (

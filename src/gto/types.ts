@@ -182,6 +182,8 @@ export interface CustomSpot {
   equity?: number;
   needs_cards?: { street: string; count: number } | null;
   multiway?: boolean;
+  /** The flop's numbers come from a quick first pass and are still being refined. */
+  refining?: boolean;
   history?: { street: string; position: string; player: number; text: string }[];
   notes?: string[];
 }

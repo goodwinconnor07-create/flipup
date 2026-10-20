@@ -36,6 +36,10 @@ SOLVE = {  # max iterations, target exploitability (% of pot)
 }
 
 
+FLOP_FIRST_PASS = 15   # iterations before the first (provisional) flop answer
+REFINE_CHUNK = 10      # iterations per background step (queries wait at most one step)
+
+
 class NeedsSolve(Exception):
     """The answer needs a solve that isn't cached yet (minutes for a flop)."""
 
@@ -187,14 +191,46 @@ class Explorer:
                 store.move_to_end(key)
                 return store[key]
         if not solve:
-            raise NeedsSolve({"flop": "Solving the flop. This takes a minute or two.",
+            raise NeedsSolve({"flop": "Solving the flop: first numbers in about half a minute.",
                               "turn": "Solving the turn.", "river": "Solving the river."}[street])
         solver = build()
+        solver._lock = threading.Lock()
+        its, target = SOLVE[street]
+        if street == "flop":
+            # A quick first pass gives provisional numbers in seconds; the rest of the solve carries on in
+            # the background and the app re-asks until it's done.
+            solver.solve(FLOP_FIRST_PASS, target, FLOP_FIRST_PASS)
+            solver._refining = True
+            threading.Thread(target=self._refine, args=(solver, its, target), daemon=True).start()
+        else:
+            solver.solve(its, target, 25)
         with self.lock:
             store[key] = solver
             while len(store) > (1 if street == "flop" else 8):
                 store.popitem(last=False)
         return solver
+
+    @staticmethod
+    def _refine(solver, its, target):
+        try:
+            while True:
+                with solver._lock:
+                    done = solver.engine.iterations
+                    if done >= its:
+                        break
+                    st = solver.solve(min(its, done + REFINE_CHUNK), target, REFINE_CHUNK)
+                if st.exploitability_pct <= target:
+                    break
+        finally:
+            solver._refining = False
+
+    @staticmethod
+    def _node(solver, tokens, **kw):
+        lock = getattr(solver, "_lock", None)
+        if lock is None:
+            return solver.node(tokens, **kw)
+        with lock:
+            return solver.node(tokens, **kw)
 
     # -- main entry -------------------------------------------------------------
     def spot(self, req: dict, solve: bool = False) -> dict:
@@ -319,16 +355,16 @@ class Explorer:
                 sizing = explorer_sizing(street, oop_leads=prev_aggr != ip)
                 s = PostflopSolver(bstreet, pot, eff, ranges[oop], ranges[ip], sizing=sizing,
                                    compress=street == "flop", max_memory_mb=self.rv.settings.max_memory_mb)
-                its, target = SOLVE[street]
-                s.solve(its, target, 25)
                 return s
 
             solver = self._street_solver(k, street, build, solve)
+            if getattr(solver, "_refining", False):
+                out["refining"] = True
             steps = [int(x) for x in req.get(street, [])]
             tokens: list = []
             last_bettor = None
             for step in steps:
-                node = solver.node(tokens, with_equity=False, with_ev=False)
+                node = self._node(solver, tokens, with_equity=False, with_ev=False)
                 if node.type != "action":
                     raise ValueError(f"{street} action continues after the street ended")
                 a = node.actions[step]
@@ -339,7 +375,7 @@ class Explorer:
                                        "text": self._postflop_text(a, node.pot)})
                 tokens.append(step)
                 key = key + (step,)
-            node = solver.node(tokens)
+            node = self._node(solver, tokens)
             pot_now, stack_now = float(node.pot), node.info["stack"]
             out["pot_bb"] = round(pot_now, 2)
             for i in live:

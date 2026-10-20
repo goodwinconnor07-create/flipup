@@ -1,3 +1,4 @@
+import { REPLAY_ON } from '../train/replay';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   describeHand,
@@ -205,6 +206,7 @@ function usePodSlots(
   game: Game,
   others: Player[],
   windowed: boolean,
+  talking: Record<string, string> = {},
 ): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number } {
   const start = useRef(0);
   const slots = new Map<string, { slot: number; away: boolean }>();
@@ -217,7 +219,7 @@ function usePodSlots(
   const live = others.filter((p) => {
     if (!hand) return true;
     const seat = seatFor(hand, p.id);
-    return !!seat && !seat.folded;
+    return !!seat && (!seat.folded || !!talking[p.id]);
   });
   const n = Math.min(MAX_PODS, live.length);
   // The player to keep in view: whoever's turn it is, or the winner once the hand is over.
@@ -250,12 +252,13 @@ function Felt({ game }: { game: Game }) {
   const others = othersInOrder(game, me);
   const odds = useOdds(hand);
   const desktop = useDesktop();
+  const reactions = useReactions(game);
   // On a phone the row of four slides; on a computer everyone sits round the table.
-  const podSlots = usePodSlots(game, others, !desktop);
+  // Someone who folded stays in view while they're still saying something.
+  const podSlots = usePodSlots(game, others, !desktop, reactions);
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
   const timed = !!hand?.deadline || (!!hand?.result && !!game.nextHandAt);
   const now = useNow(timed ? 200 : 60_000);
-  const reactions = useReactions(game);
   useTableSounds(game, me?.id);
 
   // A buzz when it's your turn, and confetti when you win a pot.
@@ -580,7 +583,7 @@ function useReactions(game: Game): Record<string, string> {
             const { [id]: _gone, ...rest } = a;
             return rest;
           }),
-        3800,
+        4000,
       );
     }
   }, [reactions]);
@@ -588,11 +591,11 @@ function useReactions(game: Game): Record<string, string> {
 }
 
 /** A quick message bubble: white with a border, to tell it from an action. */
-function ReactBubble({ id }: { id: string }) {
+function ReactBubble({ id, stacked = false }: { id: string; stacked?: boolean }) {
   const text = reactionText(id);
   const emoji = !/[A-Za-z]/.test(text);
   return (
-    <span key={`${id}-${text}`} className={`bubble bubble-react pop${emoji ? ' bubble-emoji' : ''}`} role="status">
+    <span key={`${id}-${text}`} className={`bubble bubble-react pop${emoji ? ' bubble-emoji' : ''}${stacked ? ' stacked' : ''}`} role="status">
       {text}
     </span>
   );
@@ -648,7 +651,8 @@ function Pod({
         {turn && <span className="pod-ring" aria-hidden />}
         <Avatar emoji={player.emoji} size={50} />
         <PositionChips pos={positionOf(hand, player.id)} />
-        {reaction ? <ReactBubble id={reaction} /> : seat?.last && <Bubble last={seat.last} street={hand?.street} />}
+        {seat?.last && <Bubble last={seat.last} street={hand?.street} />}
+        {reaction && <ReactBubble id={reaction} stacked={!!seat?.last} />}
       </span>
       <span className="pod-name">{player.name}</span>
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
@@ -907,7 +911,7 @@ function ActionArea({
 function ReplayButton({ gameId, number }: { gameId: string; number: number }) {
   const key = handKey(gameId, number);
   const saved = useMemo(() => hasHand(key), [key]);
-  if (!saved) return null;
+  if (!saved || !REPLAY_ON) return null;
   return (
     <button type="button" className="btn btn-sm btn-outline" onClick={() => navigate({ name: 'replay', key })}>
       Replay this hand

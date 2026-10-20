@@ -237,15 +237,15 @@
 /* One row of up to four players. Each sits in a slot and slides between slots, so you can see where everyone goes. */
 .pods {
   position: relative;
-  height: 174px;
+  height: 196px;
   /* Players slid out of view wait off to the side; they mustn't make the page scroll sideways. */
   overflow-x: clip;
 }
 
 .pod {
   position: absolute;
-  /* Room above the picture for the speech bubble. */
-  top: 24px;
+  /* Room above the picture for two speech bubbles: a comment stacked on a move. */
+  top: 46px;
   left: 0;
   width: 25%;
   display: flex;
@@ -1380,4 +1380,30 @@ html[data-theme='dark'] .pot-pill {
   max-width: 88px;
   white-space: normal;
   text-align: center;
+}
+
+/* A comment and the move it went with show together: the comment sits on top and fades after four seconds. */
+.bubble-react.stacked {
+  bottom: calc(100% + 17px);
+  z-index: 4;
+  font-size: 11px;
+  max-width: 96px;
+}
+
+.bubble-react:not(.bubble-emoji) {
+  animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both, bubble-fade 4s linear forwards;
+}
+
+@keyframes bubble-fade {
+  0%,
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+html.calm .bubble-react:not(.bubble-emoji) {
+  animation: bubble-fade 4s linear forwards;
 }

@@ -1,3 +1,4 @@
+import { REPLAY_ON } from '../../train/replay';
 import { useEffect, useMemo, useState } from 'react';
 import { recordNet } from '../../game';
 import { listScenarios, toHandHistory } from '../../gto/api';
@@ -178,9 +179,11 @@ function HandRow({ hand, colours, working = false }: { hand: PlayedHand; colours
           {net}
         </b>
       </button>
-      <button type="button" className="btn btn-sm btn-dark t-replay" aria-label={`Replay hand ${r.number}`} onClick={() => navigate({ name: 'replay', key: hand.key })}>
-        Replay
-      </button>
+      {REPLAY_ON && (
+        <button type="button" className="btn btn-sm btn-dark t-replay" aria-label={`Replay hand ${r.number}`} onClick={() => navigate({ name: 'replay', key: hand.key })}>
+          Replay
+        </button>
+      )}
     </div>
   );
 }

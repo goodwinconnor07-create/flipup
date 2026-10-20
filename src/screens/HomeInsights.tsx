@@ -1,3 +1,4 @@
+import { REPLAY_ON } from '../train/replay';
 import { useMemo } from 'react';
 import { loadStats, type GameResult } from '../state/persist';
 import { computeStats } from '../train/stats';
@@ -46,7 +47,7 @@ const when = (at: number) => new Date(at).toLocaleDateString(undefined, { month:
 
 /** The last few hands you were dealt, each one a tap from its replay. */
 function RecentHands({ hands }: { hands: PlayedHand[] }) {
-  if (hands.length === 0) return null;
+  if (hands.length === 0 || !REPLAY_ON) return null;
   return (
     <div className="glass-card recent">
       <small className="eyebrow">Recent hands</small>

@@ -1,4 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+
+// Replay is switched off for now; these tests come back when it does.
+const REPLAY_ON = /REPLAY_ON = true/.test(readFileSync('src/train/replay.ts', 'utf8'));
 import { shot, watchErrors } from './helpers';
 
 // A saved hand with a coach report, so the replay and the GTO Coach can be checked without the solver service.
@@ -52,6 +56,7 @@ const report = {
 };
 
 test('replay a saved hand with the GTO Coach', async ({ page }) => {
+  test.skip(!REPLAY_ON, 'Replay is switched off for now (REPLAY_ON in src/train/replay.ts)');
   watchErrors(page);
   await page.addInitScript(
     ([rec, rep]) => {
@@ -104,6 +109,7 @@ test('replay a saved hand with the GTO Coach', async ({ page }) => {
 });
 
 test('a full ring of nine still fits on a phone', async ({ page }) => {
+  test.skip(!REPLAY_ON, 'Replay is switched off for now (REPLAY_ON in src/train/replay.ts)');
   watchErrors(page);
   const names = ['Connor', 'Ollie', 'Bot Bea', 'Longname Lou', 'Sam', 'Priya', 'Mo', 'Jess', 'Dave'];
   const nine = {

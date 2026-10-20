@@ -196,3 +196,6 @@ export function mistakeFrames(frames: Frame[], graded: Map<number, Decision>): n
     return d && (d.colour === 'red' || d.colour === 'yellow') ? [i] : [];
   });
 }
+
+/** Replay is switched off for now: every button that opens it checks this. */
+export const REPLAY_ON = false;

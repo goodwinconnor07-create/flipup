@@ -161,27 +161,42 @@ export function Home() {
                     <ChevronIcon width={18} height={18} />
                   </span>
                 </button>
-                <section className="group" aria-label="Start a game">
-                  <button type="button" className="group-row press" onClick={() => go('host')}>
-                    <span className="gr-icon" style={{ background: 'var(--blue)' }}>
+                <section className="modes" aria-label="Start a game">
+                  <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
+                    <span className="mode-icon">
                       <UsersIcon />
                     </span>
-                    <span className="gr-text">Host a table</span>
-                    <ChevronIcon className="gr-chev" width={16} height={16} />
+                    <ChevronIcon className="mode-chev" width={18} height={18} />
+                    <span className="mode-title">Host a table</span>
+                    <span className="mode-sub">Open a table and share a 5-letter code. Friends join on their own phones, and bots fill any empty seats.</span>
+                    <span className="mode-tags">
+                      <i>Up to 9 players</i>
+                      <i>Bots fill seats</i>
+                    </span>
                   </button>
-                  <button type="button" className="group-row press" onClick={() => go('join')}>
-                    <span className="gr-icon" style={{ background: 'var(--green)' }}>
+                  <button type="button" className="mode mode-green press" onClick={() => go('join')}>
+                    <span className="mode-icon">
                       <QrIcon />
                     </span>
-                    <span className="gr-text">Join with a code</span>
-                    <ChevronIcon className="gr-chev" width={16} height={16} />
+                    <ChevronIcon className="mode-chev" width={18} height={18} />
+                    <span className="mode-title">Join with a code</span>
+                    <span className="mode-sub">Got a code from a friend? Type it in or scan their QR code to take a seat.</span>
+                    <span className="mode-tags">
+                      <i>5 letters</i>
+                      <i>Scan a QR code</i>
+                    </span>
                   </button>
-                  <button type="button" className="group-row press" onClick={() => go('bots')}>
-                    <span className="gr-icon" style={{ background: 'var(--violet)' }}>
+                  <button type="button" className="mode mode-violet press" onClick={() => go('bots')}>
+                    <span className="mode-icon">
                       <CardsIcon />
                     </span>
-                    <span className="gr-text">Play the bots</span>
-                    <ChevronIcon className="gr-chev" width={16} height={16} />
+                    <ChevronIcon className="mode-chev" width={18} height={18} />
+                    <span className="mode-title">Play the bots</span>
+                    <span className="mode-sub">Practise on your own, on this phone. Pick how many bots, the blinds and your stack.</span>
+                    <span className="mode-tags">
+                      <i>1 to 8 bots</i>
+                      <i>No timer</i>
+                    </span>
                   </button>
                 </section>
                 <QuickGames showAgain={hero.kind !== 'again'} />

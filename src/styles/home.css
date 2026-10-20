@@ -1167,3 +1167,99 @@ html[data-theme='dark'] .glass-card {
 .screen.home .home-head .logo span {
   color: var(--card-red);
 }
+
+/* ── Ways to play: three tall colour cards, each with what it does and the small print ───────── */
+
+.modes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mode {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 18px 20px 20px;
+  border: 0;
+  border-radius: var(--r-xl);
+  color: #fff;
+  font: inherit;
+  text-align: left;
+}
+
+.mode-blue {
+  background: linear-gradient(150deg, #2f93ff 0%, #0062d6 100%);
+}
+
+.mode-green {
+  background: linear-gradient(150deg, #34c759 0%, #1f8a3d 100%);
+}
+
+.mode-violet {
+  background: linear-gradient(150deg, #8f6bff 0%, #5b3bd1 100%);
+}
+
+.mode-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 10px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mode-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.mode-chev {
+  position: absolute;
+  top: 22px;
+  right: 18px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.mode-title {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.mode-sub {
+  max-width: 34ch;
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.mode-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.mode-tags i {
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.2);
+  font-size: var(--fs-caption);
+  font-style: normal;
+  font-weight: 500;
+}
+
+@media (min-width: 960px) and (min-height: 600px) {
+  .modes {
+    flex-direction: row;
+  }
+
+  .mode {
+    flex: 1;
+  }
+}

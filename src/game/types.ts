@@ -81,7 +81,7 @@ export interface PotResult {
 
 export interface HandResult {
   pots: PotResult[];
-  /** Chips each player got back, by id (the uncalled part of a bet comes back too). */
+  /** Chips each player won from the pots, by id (the uncalled part of a bet is returned to the stack separately). */
   won: Record<string, number>;
   /** Hand names for everyone who showed: "Two pair, kings and fives". */
   names: Record<string, string>;
@@ -148,6 +148,8 @@ export interface Hand {
   street: Street;
   /** Whose turn it is. null between streets, during a run-out and once the hand is over. */
   toAct: string | null;
+  /** The big blind this hand was dealt with (the host can change the table's blinds mid-hand; that applies from the next hand). */
+  bigBlind?: number;
   /** The bet to match on this street. */
   currentBet: number;
   /** Size of the last full raise: the next raise has to be at least this much more. */

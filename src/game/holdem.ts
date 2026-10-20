@@ -209,6 +209,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     toAct: null,
     currentBet: game.settings.bigBlind,
     minRaise: game.settings.bigBlind,
+    bigBlind: game.settings.bigBlind,
     aggressorId: null,
     runout: false,
     actAt: null,
@@ -390,9 +391,10 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
 /** The biggest bet on a street, where nobody matched all of it, gets the unmatched part back. */
 function returnUncalled(game: Game): void {
   const hand = game.hand!;
-  const sorted = [...hand.seats].sort((a, b) => b.bet - a.bet);
-  const [top, second] = sorted;
-  const extra = top.bet - (second?.bet ?? 0);
+  // A folded player's bet is dead money: it stays in the pot even if it was the biggest (they left after betting).
+  const top = hand.seats.filter((s) => !s.folded).sort((a, b) => b.bet - a.bet)[0];
+  if (!top) return;
+  const extra = top.bet - Math.max(0, ...hand.seats.filter((s) => s !== top).map((s) => s.bet));
   if (extra <= 0) return;
   top.bet -= extra;
   top.total -= extra;
@@ -419,6 +421,23 @@ function dealStreet(hand: Hand): void {
   );
 }
 
+/** No more betting is possible: everyone still in turns their cards over and the board runs out. */
+function startRunout(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.nextStreetAt = null;
+  hand.toAct = null;
+  hand.deadline = null;
+  hand.runout = true;
+  hand.ranOut = true;
+  for (const s of hand.seats) {
+    if (s.folded) continue;
+    s.shown = true;
+    log(game, `${nameOf(game, s.playerId)} shows ${cardsText(s.cards)}`);
+  }
+  hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
+  schedule(game);
+}
+
 function endStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   returnUncalled(game);
@@ -436,21 +455,12 @@ function endStreet(game: Game, ctx: ActionContext): void {
     s.acted = false;
   }
   hand.currentBet = 0;
-  hand.minRaise = game.settings.bigBlind;
+  // The blinds the hand was dealt with, even if the host changed them since.
+  hand.minRaise = hand.bigBlind ?? game.settings.bigBlind;
   hand.aggressorId = null;
 
-  const live = hand.seats.filter(isLive);
-  if (live.length <= 1) {
-    // No more betting possible: everyone still in turns their cards over and the board runs out.
-    hand.runout = true;
-    hand.ranOut = true;
-    for (const s of hand.seats) {
-      if (s.folded) continue;
-      s.shown = true;
-      log(game, `${nameOf(game, s.playerId)} shows ${cardsText(s.cards)}`);
-    }
-    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
-    schedule(game);
+  if (hand.seats.filter(isLive).length <= 1) {
+    startRunout(game, ctx);
     return;
   }
 
@@ -466,6 +476,11 @@ function endStreet(game: Game, ctx: ActionContext): void {
 export function dealNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.nextStreetAt = null;
+  // Players who left during the pause can leave nobody to bet: run the board out instead.
+  if (hand.seats.filter(isLive).length <= 1) {
+    startRunout(game, ctx);
+    return;
+  }
   dealStreet(hand);
   const button = indexOf(hand, hand.buttonId);
   // After the flop the first player still in, left of the button, acts first.
@@ -592,6 +607,7 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   const pause = botsOnly(game) ? Math.round(usualPause * TIMING.fastAfter) : usualPause;
   for (const s of hand.seats) s.bet = 0;
   hand.runout = false;
+  hand.nextStreetAt = null;
   if (hand.board.length) log(game, `Board: ${cardsText(hand.board)}`);
   game.logs = [
     ...(game.logs ?? []),

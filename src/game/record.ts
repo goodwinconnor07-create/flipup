@@ -38,13 +38,15 @@ export function recordNet(r: HandRecord, playerId: string): number {
     const bets = (streets[a.street] ??= {});
     bets[a.playerId] = Math.max(bets[a.playerId] ?? 0, a.to);
   }
+  // A player who folded after betting keeps that bet in the pot, so nothing of it comes back.
+  const folded = r.actions.some((a) => a.playerId === playerId && a.move === 'fold');
   let put = 0;
   for (const bets of Object.values(streets)) {
     const mine = bets[playerId] ?? 0;
     // The biggest bet on a street that nobody matched goes back to its owner.
     const others = Object.entries(bets).filter(([id]) => id !== playerId).map(([, v]) => v);
     const second = others.length ? Math.max(...others) : 0;
-    put += mine > second ? second : mine;
+    put += mine > second && !folded ? second : mine;
   }
   const start = r.players.find((p) => p.id === playerId)?.stack ?? 0;
   return Math.round((r.won[playerId] ?? 0) - Math.min(put, start));

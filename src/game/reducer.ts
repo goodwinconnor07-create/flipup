@@ -45,7 +45,10 @@ export const STACK_CHOICES = [500, 1000, 2000, 5000, 10000];
 export const TIMER_CHOICES = [0, 20, 45, 90];
 
 export function cleanName(name: string): string {
-  return name.replace(/\s+/g, ' ').trim().slice(0, LIMITS.maxNameLength);
+  // Invisible and direction-changing characters go (same list as stripInvisible in validate.ts); emoji joiners stay.
+  return name
+    .replace(/[\u0000-\u0008\u000E-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, '')
+    .replace(/\s+/g, ' ').trim().slice(0, LIMITS.maxNameLength);
 }
 
 export function validSettings(s: Settings): boolean {

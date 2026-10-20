@@ -69,6 +69,22 @@ def load_calibration():
     return _tables["calibration"]
 
 
+def load_kind_calibration():
+    """Per pot-kind realization adjustments (scripts/calibrate_kinds.py), or None."""
+    import json
+    path = os.path.join(DATA_DIR, "eqr_kinds.json")
+    if "kinds" not in _tables:
+        _tables["kinds"] = json.load(open(path)) if os.path.exists(path) else None
+    return _tables["kinds"]
+
+
+def calibration_key():
+    """Identifies the realization model in use, for cache keys."""
+    cal, kinds = load_calibration(), load_kind_calibration()
+    base = cal.get("scenario") if cal else None
+    return [base, kinds["version"]] if kinds else base
+
+
 def default_open_sizes(names: list[str], stack: float) -> list[float]:
     """Common solver open sizes (raise-to, bb): 2.0-2.5bb, SB 3bb; smaller when shallow."""
     out = []
@@ -128,6 +144,15 @@ class PreflopSpot:
                 cfg.eqr_oop = [cfg.eqr_oop[0], cfg.eqr_oop[1], cfg.eqr_oop[2], cal["base_oop"]]
             cfg.class_eqr_ip = [float(cal["ip"][c]) for c in CLASSES]
             cfg.class_eqr_oop = [float(cal["oop"][c]) for c in CLASSES]
+            kinds = load_kind_calibration()
+            if kinds and cal.get("model") == "additive":
+                ip, oop, present = [], [], []
+                for k in range(7):
+                    entry = kinds["kinds"].get(str(k))
+                    present.append(1 if entry else 0)
+                    ip += [float(entry["ip"][c]) if entry else 0.0 for c in CLASSES]
+                    oop += [float(entry["oop"][c]) if entry else 0.0 for c in CLASSES]
+                cfg.kind_eqr_ip, cfg.kind_eqr_oop, cfg.kind_eqr_present = ip, oop, present
         for k, v in self.options.items():
             setattr(cfg, k, v)
         if tensor is None:

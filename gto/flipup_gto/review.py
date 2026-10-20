@@ -40,7 +40,8 @@ from .cards import NUM_COMBOS, card_str, cards_str, combo_index, hand_class
 from .concepts import (alpha, board_texture, hand_features, mdf, preflop_hand_description, required_equity,
                        river_bluff_share, spr)
 from .handhistory import STREETS, HandHistory
-from .preflop import CLASS_COMBOS, CLASS_INDEX, CLASSES, MODEL_VERSION, PreflopSpot, load_calibration, tables
+from .preflop import (CLASS_COMBOS, CLASS_INDEX, CLASSES, MODEL_VERSION, PreflopSpot, calibration_key,
+                      load_calibration, tables)
 from .ranges import Range
 from .solver import BetSizing, PostflopSolver, StreetSizing
 from . import coach
@@ -84,9 +85,8 @@ class PreflopCache:
         if key in self.mem:
             return self.mem[key]
         spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
-        cal = load_calibration()
         h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
-                                     cal.get("scenario") if cal else None]).encode()).hexdigest()[:16]
+                                     calibration_key()]).encode()).hexdigest()[:16]
         path = os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
         if os.path.exists(path):
             d = np.load(path)

@@ -98,6 +98,27 @@ PreflopSolver::PreflopSolver(const PreflopConfig& cfg) : cfg_(cfg), N_(cfg.num_p
         Woop_[b][h * C + o] = Pn_[h * C + o] * (1.0f - S[o * C + h]);
       }
   }
+  if (!cfg_.kind_eqr_present.empty()) {
+    const size_t need = static_cast<size_t>(kNumPotKinds) * C;
+    if (cfg_.kind_eqr_ip.size() != need || cfg_.kind_eqr_oop.size() != need ||
+        static_cast<int>(cfg_.kind_eqr_present.size()) != kNumPotKinds)
+      throw std::invalid_argument("kind_eqr_*: 7 x 169 adjustments and 7 present flags");
+    for (int k = 0; k < kNumPotKinds; ++k) {
+      if (!cfg_.kind_eqr_present[k]) continue;
+      const float* aip = cfg_.kind_eqr_ip.data() + k * C;
+      const float* aoop = cfg_.kind_eqr_oop.data() + k * C;
+      Kip_[k].resize(C * C);
+      Koop_[k].resize(C * C);
+      for (int h = 0; h < C; ++h)
+        for (int o = 0; o < C; ++o) {
+          // IP's share against OOP's class; OOP's share is one minus IP's share from IP's side.
+          float sip = static_cast<float>(cfg_.equity[h * C + o]) + aip[h] - aoop[o];
+          float sip_rev = static_cast<float>(cfg_.equity[o * C + h]) + aip[o] - aoop[h];
+          Kip_[k][h * C + o] = Pn_[h * C + o] * sip;
+          Koop_[k][h * C + o] = Pn_[h * C + o] * (1.0f - sip_rev);
+        }
+    }
+  }
 
   if (cfg_.max_players_flop >= 3) {
     const int R = cfg_.tensor_rank;
@@ -369,6 +390,14 @@ int PreflopSolver::make_terminal(const State& s) {
     t.type = with_chips <= 1 ? 3 : 2;
     double spr = min_stack / t.pot;
     t.spr_bucket = spr < 1.5 ? 0 : spr < 4 ? 1 : spr < 8 ? 2 : 3;
+    if (live.size() == 2 && t.type == 2) {
+      const int ip = postflop_rank(live[0]) > postflop_rank(live[1]) ? live[0] : live[1];
+      if (s.raises == 0) {
+        t.pot_kind = 0;
+      } else if (s.last_raiser == live[0] || s.last_raiser == live[1]) {
+        t.pot_kind = 1 + 2 * (std::min(s.raises, 3) - 1) + (s.last_raiser == ip ? 0 : 1);
+      }
+    }
     std::vector<int> order = live;
     std::sort(order.begin(), order.end(), [&](int a, int b) { return postflop_rank(a) < postflop_rank(b); });
     for (size_t i = 0; i < order.size() && i < 3; ++i) t.roles[i] = static_cast<int8_t>(order[i]);
@@ -460,7 +489,10 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
         W = &Weq_;
       } else {
         bool ip = postflop_rank(i) > postflop_rank(j);
-        W = ip ? &Wip_[n.spr_bucket] : &Woop_[n.spr_bucket];
+        if (n.pot_kind >= 0 && !Kip_[n.pot_kind].empty())
+          W = ip ? &Kip_[n.pot_kind] : &Koop_[n.pot_kind];
+        else
+          W = ip ? &Wip_[n.spr_bucket] : &Woop_[n.spr_bucket];
       }
       std::array<float, C> share;
       matvec(*W, reach[j], share.data());

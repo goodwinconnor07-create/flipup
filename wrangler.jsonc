@@ -7,6 +7,11 @@
   "main": "./worker/index.ts",
   "workers_dev": true,
   "preview_urls": false,
+  // The app's own domain. Wrangler adds the DNS records and the certificate on deploy.
+  "routes": [
+    { "pattern": "gtoduel.online", "custom_domain": true },
+    { "pattern": "www.gtoduel.online", "custom_domain": true },
+  ],
   "compatibility_date": "2026-10-01",
   "assets": {
     // Unknown paths (like /ABCDE join links) fall back to index.html.

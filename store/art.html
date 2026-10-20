@@ -1,0 +1,208 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<!-- App Store art, drawn by render.spec.ts: art.html?icon for the icon, art.html?card=N for a card. -->
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  html, body { background: #000; }
+  body {
+    font-family: -apple-system, 'SF Pro Display', 'Inter Display', Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- Cards: 1290×2796, the 6.9" iPhone size ---------- */
+  .card {
+    position: relative;
+    width: 1290px;
+    height: 2796px;
+    overflow: hidden;
+    color: #fff;
+    text-align: center;
+  }
+  .card.light { color: #000; }
+  .glow { position: absolute; border-radius: 50%; filter: blur(140px); opacity: 0.75; }
+  .head { position: relative; padding-top: 250px; }
+  .eyebrow {
+    font-size: 64px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+  .title {
+    font-size: 148px;
+    font-weight: 700;
+    line-height: 1.04;
+    letter-spacing: -3px;
+    padding: 0 90px;
+  }
+
+  .phone {
+    position: absolute;
+    left: 50%;
+    top: 830px;
+    width: 1010px;
+    height: 2100px;
+    margin-left: -505px;
+    padding: 24px;
+    border-radius: 168px;
+    background: linear-gradient(160deg, #3a3a3e, #121214 40%, #2a2a2e);
+    box-shadow:
+      inset 0 0 0 4px #5b5b60,
+      inset 0 0 0 9px #0b0b0c,
+      0 60px 140px rgba(0, 0, 0, 0.45);
+  }
+  .screen {
+    position: relative;
+    height: 100%;
+    border-radius: 146px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .dark-screen .screen { background: #000; }
+  .screen img { display: block; width: 100%; }
+  .island {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    width: 280px;
+    height: 82px;
+    margin-left: -140px;
+    border-radius: 41px;
+    background: #000;
+    z-index: 2;
+  }
+  .status {
+    height: 121px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 78px 0 98px;
+    font-family: -apple-system, 'SF Pro Text', Inter, sans-serif;
+    font-size: 38px;
+    font-weight: 600;
+    color: #000;
+  }
+  .dark-screen .status { color: #fff; }
+  .status svg { display: block; }
+  .status .right { display: flex; gap: 14px; align-items: center; }
+
+  /* ---------- Icon: 1024×1024, square (the App Store rounds it) ---------- */
+  #icon { width: 1024px; height: 1024px; display: block; }
+</style>
+</head>
+<body>
+<script>
+  const CARDS = [
+    {
+      shot: 'table-flop', eyebrow: "No-limit Hold'em", title: 'Poker night on your phones',
+      bg: 'linear-gradient(180deg, #0b3b22 0%, #0a2a19 55%, #04140b 100%)', accent: '#7ee2a0',
+      glows: [['#1f9d55', -200, 500, 900], ['#0f6b3a', 700, 1500, 900]],
+    },
+    {
+      shot: 'host-lobby', eyebrow: 'Five letters', title: 'Friends join with a code',
+      bg: 'linear-gradient(180deg, #0a3d91 0%, #0b2a6b 55%, #081638 100%)', accent: '#8cc4ff',
+      glows: [['#007aff', 500, 300, 1000], ['#5e5ce6', -300, 1700, 900]],
+    },
+    {
+      shot: 'allin-odds', eyebrow: 'All in', title: 'Watch it run out together',
+      bg: 'linear-gradient(180deg, #3a0a14 0%, #5c0f1f 45%, #2a0610 100%)', accent: '#ff9f8a',
+      glows: [['#ff3b30', -250, 300, 1000], ['#ff9500', 650, 1600, 900]],
+    },
+    {
+      shot: 'challenge', eyebrow: '40 bots', title: 'A duel with every bot',
+      bg: 'linear-gradient(180deg, #4a1d06 0%, #6b2c08 45%, #2d1203 100%)', accent: '#ffc46b',
+      glows: [['#ff9500', 450, 200, 1000], ['#ff2d55', -350, 1600, 900]],
+    },
+    {
+      shot: 'drill', eyebrow: 'GTO Coach', title: 'Learn the right play',
+      bg: 'linear-gradient(180deg, #2a1260 0%, #1d0d45 55%, #0d0624 100%)', accent: '#c7a8ff',
+      glows: [['#af52de', -250, 400, 1000], ['#5e5ce6', 650, 1500, 900]],
+    },
+    {
+      shot: 'insights', eyebrow: 'Insights', title: 'See where your chips go', light: true,
+      bg: 'linear-gradient(180deg, #ffffff 0%, #f2f2f7 100%)', accent: '#15803d',
+      glows: [],
+    },
+    {
+      shot: 'table-raise-dark', eyebrow: 'Dark mode', title: 'Made for late games', dark: true,
+      bg: 'linear-gradient(180deg, #0c0c10 0%, #000 100%)', accent: '#64d2ff',
+      glows: [['#0a84ff', 400, 250, 900], ['#1f9d55', -400, 1700, 800]],
+    },
+  ];
+
+  const signal = (c) => `<svg width="52" height="32" viewBox="0 0 52 32">${[0, 1, 2, 3]
+    .map((i) => `<rect x="${i * 14}" y="${24 - i * 7}" width="10" height="${8 + i * 7}" rx="2.5" fill="${c}"/>`)
+    .join('')}</svg>`;
+  const wifi = (c) => `<svg width="46" height="34" viewBox="0 0 46 34" fill="${c}">
+    <path d="M23 6c7 0 13.4 2.7 18.2 7.1l3.3-3.4C38.8 4.3 31.2 1 23 1S7.2 4.3 1.5 9.7l3.3 3.4C9.6 8.7 16 6 23 6z"/>
+    <path d="M23 15c4.6 0 8.8 1.8 11.9 4.7l3.4-3.4C34.3 12.4 28.9 10 23 10s-11.3 2.4-15.3 6.3l3.4 3.4C14.2 16.8 18.4 15 23 15z"/>
+    <path d="M23 24c2.1 0 4 .8 5.5 2.2L23 32l-5.5-5.8C19 24.8 20.9 24 23 24z"/></svg>`;
+  const battery = (c) => `<svg width="68" height="32" viewBox="0 0 68 32">
+    <rect x="1.5" y="1.5" width="58" height="29" rx="9" fill="none" stroke="${c}" stroke-opacity="0.4" stroke-width="3"/>
+    <rect x="6" y="6" width="49" height="20" rx="5" fill="${c}"/>
+    <path d="M63 11v10c2.5-1 4-3 4-5s-1.5-4-4-5z" fill="${c}" fill-opacity="0.45"/></svg>`;
+
+  function card(c) {
+    const ink = c.dark ? '#fff' : '#000';
+    const glows = c.glows
+      .map(([col, x, y, s]) => `<div class="glow" style="background:${col};left:${x}px;top:${y}px;width:${s}px;height:${s}px"></div>`)
+      .join('');
+    return `<div class="card ${c.light ? 'light' : ''}" style="background:${c.bg}">
+      ${glows}
+      <div class="head">
+        <div class="eyebrow" style="color:${c.accent}">${c.eyebrow}</div>
+        <div class="title">${c.title}</div>
+      </div>
+      <div class="phone ${c.dark ? 'dark-screen' : ''}">
+        <div class="screen">
+          <div class="island"></div>
+          <div class="status"><span>9:41</span><span class="right">${signal(ink)}${wifi(ink)}${battery(ink)}</span></div>
+          <img src="screens/${c.shot}.png" />
+        </div>
+      </div>
+    </div>`;
+  }
+
+  // Two cards, crossed like a duel: a black ace and a red one, on table felt.
+  function icon() {
+    const spade =
+      'M50 2C78 28 96 42 96 60c0 14-10 23-22 23-9 0-16-4-20-11 1 10 5 18 13 24H33c8-6 12-14 13-24-4 7-11 11-20 11C14 83 4 74 4 60 4 42 22 28 50 2z';
+    const heart = 'M50 92C20 70 4 54 4 33 4 18 15 7 29 7c10 0 17 5 21 13 4-8 11-13 21-13 14 0 25 11 25 26 0 21-16 37-46 59z';
+    const face = (letter, suit, colour, x, y, angle) => `
+      <g transform="translate(${x} ${y}) rotate(${angle})">
+        <rect x="-170" y="-240" width="340" height="480" rx="52" fill="url(#paper)" filter="url(#lift)"/>
+        <text x="-118" y="-78" font-family="-apple-system, 'SF Pro Display', 'Inter Display', Inter, sans-serif"
+          font-size="190" font-weight="700" fill="${colour}" letter-spacing="-6">${letter}</text>
+        <path d="${suit}" fill="${colour}" transform="translate(-100 46) scale(2.1)"/>
+      </g>`;
+    return `<svg id="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+      <defs>
+        <radialGradient id="felt" cx="50%" cy="38%" r="75%">
+          <stop offset="0" stop-color="#2fae63"/>
+          <stop offset="0.55" stop-color="#16793f"/>
+          <stop offset="1" stop-color="#0a4325"/>
+        </radialGradient>
+        <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff"/>
+          <stop offset="1" stop-color="#eef0f3"/>
+        </linearGradient>
+        <filter id="lift" x="-30%" y="-30%" width="160%" height="160%">
+          <feDropShadow dx="0" dy="22" stdDeviation="26" flood-color="#021a0d" flood-opacity="0.55"/>
+        </filter>
+      </defs>
+      <rect width="1024" height="1024" fill="url(#felt)"/>
+      <ellipse cx="512" cy="540" rx="430" ry="360" fill="none" stroke="#ffffff" stroke-opacity="0.12" stroke-width="10"/>
+      ${face('A', spade, '#16161d', 350, 540, -14)}
+      ${face('A', heart, '#e5322d', 676, 494, 13)}
+    </svg>`;
+  }
+
+  const q = new URLSearchParams(location.search);
+  document.body.innerHTML = q.has('icon') ? icon() : card(CARDS[Number(q.get('card') ?? 0)]);
+  window.CARD_COUNT = CARDS.length;
+  window.CARD_NAMES = CARDS.map((c) => c.shot);
+</script>
+</body>
+</html>

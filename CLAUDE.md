@@ -10,6 +10,7 @@ Poker night on your phones: no-limit Texas Hold'em for play chips. A host opens 
 - `npm run e2e`: Playwright, phone-sized Chromium, starts its own dev server on 5174. In the cloud sandbox Chromium is at `/opt/pw-browsers` and `@playwright/test` is pinned to 1.56.1 to match it. `SHOTS_DIR=/some/dir` saves a screenshot of each screen.
 - `npm run check`: typecheck + unit tests + build. Run it before committing.
 - `npm run deploy`: build and `wrangler deploy` (needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment; never commit them).
+- `npm run store`: App Store art. `store/capture.spec.ts` plays the real app at 430×932 @3x into `store/screens`, then `store/render.spec.ts` draws `store/art.html` (the icon and one card per screen, 1290×2796) into `store/out`.
 - After editing `wrangler.jsonc`, run `npm run cf-typegen` and commit `worker-configuration.d.ts`.
 
 ## Layout

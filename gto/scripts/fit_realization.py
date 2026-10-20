@@ -37,7 +37,8 @@ def design():
     e = X0[:, 1]
     suited, pair, conn, high = X0[:, 3], X0[:, 4], X0[:, 6], X0[:, 8]
     off = 1 - suited - pair
-    X = np.column_stack([e, suited, pair, conn, high, suited * e])
+    # Pairs get their own strength slope: small pairs realize through sets, big ones through value.
+    X = np.column_stack([e, suited, pair, conn, high, suited * e, pair * e, e * e])
     weakoff = off * np.clip(0.05 - e, 0, None)
     one, zero = np.ones((169, 1)), np.zeros((169, 1))
     A_ip = np.hstack([X, one, zero])
@@ -107,6 +108,22 @@ def error(rows, theta, interaction):
     return out
 
 
+GROUPS = {"pair": lambda c: len(c) == 2, "suited": lambda c: c.endswith("s"), "offsuit": lambda c: c.endswith("o")}
+
+
+def group_bias(rows, predict):
+    """Per spot and player: weighted mean (predicted - measured) of share - equity by hand type."""
+    out = {}
+    for r in rows:
+        preds = predict(r)
+        for p, (pred, tgt, w) in enumerate(preds):
+            for g, f in GROUPS.items():
+                idx = [i for i, c in enumerate(CLASSES) if f(c)]
+                ww = w[idx]
+                out[(r["name"], ("IP", "OOP")[p], g)] = float(np.sum(ww * (pred[idx] - tgt[idx])) / max(ww.sum(), 1e-12))
+    return out
+
+
 def current_error(rows):
     """Error of the calibration in use (additive, no interaction)."""
     eqm, pairs, _ = tables(with_tensor=False)
@@ -140,23 +157,37 @@ def main():
     for name in cur:
         print(f"  {name:8s} current {cur[name][0]:.4f}/{cur[name][1]:.4f} | refit additive {ea[name][0]:.4f}/{ea[name][1]:.4f}"
               f" | with interaction {ei[name][0]:.4f}/{ei[name][1]:.4f}")
+    eqm, pairs, _ = tables(with_tensor=False)
+    cal = load_calibration()
+    a_ip0 = np.array([cal["ip"][c] for c in CLASSES]); a_oop0 = np.array([cal["oop"][c] for c in CLASSES])
+
+    def pred_current(r):
+        W_ip = pairs * r["r_oop"][None, :]; W_ip /= np.maximum(W_ip.sum(1, keepdims=True), 1e-12)
+        W_oop = pairs * r["r_ip"][None, :]; W_oop /= np.maximum(W_oop.sum(1, keepdims=True), 1e-12)
+        return [(a_ip0 - W_ip @ a_oop0, r["share"][1] - r["eq"][1], r["w"][1]),
+                (a_oop0 - W_oop @ a_ip0, r["share"][0] - r["eq"][0], r["w"][0])]
+
+    def pred_fit(theta, inter):
+        return lambda r: [(M @ theta, t, w) for M, t, w in blocks(r, inter)]
+
+    gc, ga, gi = group_bias(test, pred_current), group_bias(test, pred_fit(th_a, False)), group_bias(test, pred_fit(th_i, True))
+    print("held-out bias by hand type (predicted - measured share; + = model too generous):")
+    for k in gc:
+        print(f"  {k[0]:8s} {k[1]:3s} {k[2]:7s} current {gc[k]:+.3f} | additive {ga[k]:+.3f} | interaction {gi[k]:+.3f}")
     if args.write:
-        th = solve(load(files, None), True)
+        # The interaction terms didn't beat the additive refit on held-out flops, so write the additive one.
+        th = solve(load(files, None), False)
         A_ip, A_oop, K, d = design()
-        na = A_ip.shape[1]
-        a_ip, a_oop = A_ip @ th[:na], A_oop @ th[:na]
-        k_ip, k_oop = K @ th[na:na + K.shape[1]], K @ th[na + K.shape[1]:]
+        a_ip, a_oop = A_ip @ th, A_oop @ th
         path = os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data", "eqr_calibration.json")
         old = json.load(open(path))
-        old.update({"model": "additive", "scenario": f"interaction fit, {', '.join(r['name'] for r in train)}",
+        for k in ("k_ip", "k_oop", "d"):
+            old.pop(k, None)
+        old.update({"model": "additive", "scenario": f"multi-spot fit: {', '.join(r['name'] for r in train)}",
                     "ip": {c: round(float(a_ip[i]), 4) for i, c in enumerate(CLASSES)},
-                    "oop": {c: round(float(a_oop[i]), 4) for i, c in enumerate(CLASSES)},
-                    "k_ip": {c: round(float(k_ip[i]), 4) for i, c in enumerate(CLASSES)},
-                    "k_oop": {c: round(float(k_oop[i]), 4) for i, c in enumerate(CLASSES)},
-                    "d": {c: round(float(d[i]), 4) for i, c in enumerate(CLASSES)}})
+                    "oop": {c: round(float(a_oop[i]), 4) for i, c in enumerate(CLASSES)}})
         json.dump(old, open(path, "w"), indent=1)
         print("wrote", path)
-
 
 if __name__ == "__main__":
     main()

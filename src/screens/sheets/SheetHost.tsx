@@ -48,6 +48,7 @@ import {
 import { StandingsList } from '../Final';
 import { SettingsFields } from '../Setup';
 import { InviteSheet } from './InviteSheet';
+import { JoinSheet } from './JoinSheet';
 import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
 
@@ -57,6 +58,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <MenuSheet />;
     case 'invite':
       return <InviteSheet />;
+    case 'join':
+      return <JoinSheet />;
     case 'settings':
       return <SettingsSheet />;
     case 'prefs':

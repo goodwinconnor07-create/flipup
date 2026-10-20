@@ -1,76 +1,51 @@
-import { useEffect, useRef, useState } from 'react';
-import { CODE_LENGTH, normalizeCode, type TableInfo } from '../game';
-import { fetchTableInfo } from '../state/api';
-import { joinTable, navigate, replace, useApp } from '../state/store';
+import { useEffect, useState } from 'react';
+import type { TableInfo } from '../game';
+import { joinTable, navigate, openSheet, replace, resetTo, useApp } from '../state/store';
 import { Avatar, BackBar, chips } from '../ui/components';
 import { haptic } from '../ui/effects';
+import { findTable } from './sheets/JoinSheet';
 
-/** Type (or arrive with) the 5-letter code. */
-export function Join({ initialCode }: { initialCode?: string }) {
-  const [code, setCode] = useState(normalizeCode(initialCode ?? ''));
-  const [busy, setBusy] = useState(false);
+/** Arriving from a join link: look the code up, then show the table. Typing a code happens in the join popup. */
+export function Join({ code }: { code: string }) {
   const [error, setError] = useState('');
-  const looked = useRef('');
 
-  const lookUp = async (value: string) => {
-    if (value.length !== CODE_LENGTH || looked.current === value) return;
-    looked.current = value;
-    setBusy(true);
-    setError('');
-    try {
-      const info = await fetchTableInfo(value);
-      if (!info) {
-        setError("There's no table with that code. Check it and try again.");
-        haptic('error');
-        return;
-      }
-      replace({ name: 'joinTable', info });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong. Try again.');
-      haptic('error');
-    } finally {
-      looked.current = '';
-      setBusy(false);
-    }
-  };
-
-  // Arriving from a join link: look the code up straight away.
   useEffect(() => {
-    if (code.length === CODE_LENGTH) void lookUp(code);
-  }, []);
+    let live = true;
+    void findTable(code).then((result) => {
+      if (!live) return;
+      if ('info' in result) replace({ name: 'joinTable', info: result.info });
+      else {
+        setError(result.error);
+        haptic('error');
+      }
+    });
+    return () => {
+      live = false;
+    };
+  }, [code]);
 
   return (
     <div className="screen">
       <BackBar title="Join a table" />
-      <div className="screen-body">
-        <h1 className="h1">Enter the code</h1>
-        <p className="muted" style={{ margin: 0 }}>
-          Get the 5-letter code from whoever's hosting, or scan their QR code.
-        </p>
-        <div className="code-input">
-          <input
-            value={code}
-            onChange={(e) => {
-              const next = normalizeCode(e.target.value);
-              setCode(next);
-              setError('');
-              if (next.length === CODE_LENGTH) void lookUp(next);
-            }}
-            autoCapitalize="characters"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            maxLength={10}
-            placeholder="CODE"
-            aria-label="Table code"
-            autoFocus={!initialCode}
-          />
-        </div>
-        {busy && <span className="spinner join-busy" aria-label="Looking for the table" />}
-        {error && (
-          <p className="bad shake" role="alert" style={{ margin: 0, textAlign: 'center' }}>
-            {error}
-          </p>
+      <div className="screen-body center">
+        {error ? (
+          <>
+            <p className="bad shake" role="alert" style={{ margin: 0 }}>
+              {error}
+            </p>
+            <button
+              type="button"
+              className="btn btn-blue"
+              onClick={() => {
+                resetTo();
+                openSheet({ name: 'join' });
+              }}
+            >
+              Enter a different code
+            </button>
+          </>
+        ) : (
+          <span className="spinner" aria-label="Looking for the table" />
         )}
       </div>
     </div>

@@ -81,7 +81,7 @@ export function Home() {
 
   // No name yet: ask for one first, then carry on.
   const go = (then: 'host' | 'bots' | 'join') => {
-    if (then === 'join') return navigate({ name: 'join' });
+    if (then === 'join') return openSheet({ name: 'join' });
     if (!named) return navigate({ name: 'profile', then });
     navigate({ name: 'setup', mode: then === 'host' ? 'online' : 'local' });
   };

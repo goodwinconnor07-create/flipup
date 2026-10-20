@@ -56,7 +56,7 @@ export type Route =
   /** Name and picture, then carry on to `then`. */
   | { name: 'profile'; then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo }
   | { name: 'setup'; mode: 'online' | 'local' }
-  | { name: 'join'; code?: string }
+  | { name: 'join'; code: string }
   | { name: 'joinTable'; info: TableInfo }
   | { name: 'table' }
   /** Training: reviews, the poker library, stats and custom hands. */
@@ -72,6 +72,8 @@ export type TrainSection = 'review' | 'library' | 'stats' | 'custom';
 export type Sheet =
   | { name: 'menu' }
   | { name: 'invite' }
+  /** Type the table code or scan its QR code. */
+  | { name: 'join' }
   | { name: 'settings' }
   /** This phone's look and sound: dark mode, Liquid Glass, sound, animations. */
   | { name: 'prefs' }

@@ -256,6 +256,9 @@
   transition:
     transform 0.55s cubic-bezier(0.3, 0.9, 0.25, 1),
     opacity 0.3s ease;
+  /* Its own layer from the start, so animated bits inside never change how Safari places the seat. */
+  will-change: transform;
+  backface-visibility: hidden;
   min-width: 0;
   padding: 0;
   border: 0;
@@ -309,9 +312,12 @@
   animation: pulse-ring 1.2s ease-in-out infinite;
 }
 
+/* Only transform and opacity animate here: animating the shadow (and its glow in dark mode) makes
+   Safari repaint the whole seat every frame, and the seat visibly jitters up and down. */
 @keyframes pulse-ring {
   50% {
-    box-shadow: 0 0 0 5px var(--gold-hi);
+    transform: scale(1.1);
+    opacity: 0.8;
   }
 }
 
@@ -1386,11 +1392,9 @@ html[data-theme='dark'] .pot-pill {
   60%,
   100% {
     opacity: 0.35;
-    transform: translateY(0);
   }
   30% {
     opacity: 1;
-    transform: translateY(-2px);
   }
 }
 

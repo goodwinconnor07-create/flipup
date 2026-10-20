@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { getDrill } from '../../gto/api';
 import type { Drill as DrillData } from '../../gto/types';
 import { recordDrill } from '../../state/training';
+import { CoachSays } from '../../train/Coach';
+import { drillLines } from '../../train/coach';
 import { scenarioTitle } from '../../train/scenarios';
 import { bb, MiniCards, pct, prettyAction, splitCards, StrategyGrid, streetName } from '../../train/widgets';
 import { BackBar, Spinner } from '../../ui/components';
@@ -121,6 +123,14 @@ export function Drill({ scenario }: { scenario: string }) {
                 </button>
               ))}
             </div>
+            {chosen && (
+              <CoachSays
+                key={picked}
+                quick
+                tone={chosen.colour}
+                lines={drillLines(chosen.colour, drill.answer.best_action, chosen.frequency, chosen.ev_loss_bb)}
+              />
+            )}
             {chosen && (
               <article className={`decision ${chosen.colour ?? ''}`}>
                 <div className="decision-band">

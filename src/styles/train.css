@@ -813,3 +813,618 @@
 .stat-grid .stat b {
   font-size: var(--fs-body);
 }
+
+/* ── GTO Coach ───────────────────────────────────────────────────────────── */
+
+.coach {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.coach-head span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.coach-head b {
+  font-size: var(--fs-body);
+  font-weight: 900;
+}
+
+.coach-head.compact b {
+  font-size: var(--fs-small);
+}
+
+.coach-head small {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.coach-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--violet-bg);
+  box-shadow:
+    0 0 0 2px var(--violet),
+    var(--shadow-sm);
+  line-height: 1;
+}
+
+.coach-avatar.busy {
+  animation: coach-bob 0.9s ease-in-out infinite;
+}
+
+.coach-bubble {
+  --tone: var(--violet);
+  --tone-bg: var(--violet-bg);
+  --tone-ink: var(--ink);
+  position: relative;
+  max-width: 100%;
+  margin-left: 12px;
+  padding: 12px 16px;
+  border-radius: var(--r-md) var(--r-md) var(--r-md) var(--r-xs);
+  background: var(--tone-bg);
+  color: var(--tone-ink);
+  font-size: var(--fs-body);
+  font-weight: 700;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.coach-bubble.green {
+  --tone: var(--green);
+  --tone-bg: var(--green-bg);
+  --tone-ink: var(--green-ink);
+}
+
+.coach-bubble.yellow {
+  --tone: var(--gold);
+  --tone-bg: var(--gold-bg);
+  --tone-ink: var(--gold-ink);
+}
+
+.coach-bubble.red {
+  --tone: var(--red);
+  --tone-bg: var(--red-bg);
+  --tone-ink: var(--red-ink);
+}
+
+.coach-bubble.wide {
+  align-self: stretch;
+}
+
+.coach-bubble.lesson {
+  box-shadow: inset 4px 0 0 var(--tone);
+}
+
+.coach-bubble .mix-legend {
+  color: inherit;
+}
+
+.coach-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--fs-caption);
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.coach-bubble.pop {
+  animation: coach-pop 0.28s ease-out both;
+  animation-delay: calc(0.45s + var(--i, 0) * 0.3s);
+}
+
+.coach.quick .coach-bubble.pop {
+  animation-delay: calc(var(--i, 0) * 0.16s);
+}
+
+.coach-bubble.typing {
+  display: flex;
+  gap: 4px;
+  padding: 14px 16px;
+  animation: coach-typing 0.45s ease-in both;
+}
+
+.coach-bubble.typing i,
+.coach-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--violet);
+  animation: coach-blink 1s ease-in-out infinite;
+}
+
+.coach-bubble.typing i:nth-child(2),
+.coach-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.coach-bubble.typing i:nth-child(3),
+.coach-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.coach-dots {
+  display: inline-flex;
+  gap: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.coach-bubble .you-tag {
+  font-weight: 900;
+}
+
+.mix span.you {
+  box-shadow: inset 0 0 0 3px var(--contrast);
+}
+
+.coach-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.coach-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-left: 12px;
+}
+
+.coach-actions .coach-bubble {
+  margin-left: 0;
+}
+
+.coach-numbers > summary {
+  margin-left: 12px;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--brand-ink);
+  cursor: pointer;
+}
+
+.coach-numbers[open] > summary {
+  margin-bottom: 8px;
+}
+
+.retry {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1 1 100%;
+  padding: 12px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+}
+
+.retry-spot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.coach-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chips-row {
+  display: flex;
+  gap: 8px;
+}
+
+.chip-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+
+.chip-btn.on {
+  background: var(--btn-dark);
+  color: var(--on-contrast);
+}
+
+.t-row-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.t-row-wrap .t-row {
+  flex: 1;
+  min-width: 0;
+}
+
+.t-replay {
+  align-self: center;
+}
+
+.hand-replay {
+  width: 100%;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+}
+
+.trend {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.trend-mid {
+  stroke: var(--line);
+  stroke-dasharray: 4 4;
+}
+
+.trend-line {
+  fill: none;
+  stroke: var(--violet);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.trend-dot.green {
+  fill: var(--green);
+}
+
+.trend-dot.yellow {
+  fill: var(--gold);
+}
+
+.trend-dot.red {
+  fill: var(--red);
+}
+
+@keyframes coach-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+}
+
+@keyframes coach-typing {
+  0%,
+  85% {
+    opacity: 1;
+    max-height: 48px;
+  }
+  100% {
+    opacity: 0;
+    max-height: 0;
+    padding-block: 0;
+    margin-block: -4px;
+  }
+}
+
+@keyframes coach-blink {
+  50% {
+    opacity: 0.3;
+  }
+}
+
+@keyframes coach-bob {
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+html.calm .coach *,
+html.calm .coach-avatar {
+  animation-delay: 0s !important;
+}
+
+/* ── Replay ──────────────────────────────────────────────────────────────── */
+
+.rp-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: calc(var(--safe-bottom) + 40px);
+}
+
+.rp-felt {
+  --felt: #1f7a4d;
+  position: relative;
+  flex: none;
+  height: min(92vw, 44dvh, 420px);
+  min-height: 260px;
+  border-radius: 999px;
+  background: radial-gradient(
+    ellipse at 50% 38%,
+    color-mix(in srgb, var(--felt) 86%, #fff) 0%,
+    var(--felt) 42%,
+    color-mix(in srgb, var(--felt) 58%, #000) 100%
+  );
+  box-shadow:
+    0 0 0 8px var(--card-back-1),
+    inset 0 3px 12px rgba(0, 0, 0, 0.45);
+  /* Watching, not playing: a little quieter than the live table. */
+  filter: saturate(0.85);
+  margin: 8px 8px 0;
+}
+
+.rp-badge {
+  padding: 2px 12px;
+  border-radius: var(--r-pill);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  font-size: var(--fs-micro);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.rp-middle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.rp-board {
+  display: flex;
+  gap: 4px;
+}
+
+.rp-pot {
+  color: #fff;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.rp-pot b {
+  font-weight: 900;
+}
+
+.rp-seat {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition:
+    opacity 0.25s,
+    filter 0.25s;
+}
+
+.rp-seat.folded {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.rp-cards {
+  display: flex;
+  min-height: 36px;
+  gap: 2px;
+}
+
+.rp-plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 96px;
+  padding: 4px 8px 4px 4px;
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.rp-plate span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.rp-plate b {
+  max-width: 56px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-caption);
+  font-weight: 900;
+}
+
+.rp-plate small {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.rp-seat.hero .rp-plate {
+  box-shadow: 0 0 0 2px var(--violet);
+}
+
+.rp-seat.acting .rp-plate {
+  box-shadow: 0 0 0 3px var(--gold);
+}
+
+.rp-seat.winner .rp-plate {
+  box-shadow: 0 0 0 3px var(--green-hi);
+}
+
+.rp-dealer {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--gold-hi);
+  color: var(--gold-ink-2);
+  font-size: var(--fs-nano);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.rp-tag {
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--contrast);
+  color: var(--on-contrast);
+  font-size: var(--fs-micro);
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
+  word-spacing: 3px;
+  animation: coach-pop 0.2s ease-out both;
+}
+
+.rp-tag.out {
+  background: var(--slate);
+}
+
+.rp-tag.win {
+  background: var(--green);
+  color: var(--on-color);
+}
+
+.rp-scrub {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 44px;
+}
+
+.rp-tick {
+  --tone: var(--ink-4);
+  position: relative;
+  flex: 1 1 0;
+  min-width: 6px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-xs);
+  background: var(--bg-3);
+  color: var(--ink-3);
+  font-size: var(--fs-nano);
+  font-weight: 900;
+}
+
+.rp-tick.past {
+  background: var(--ink-4);
+}
+
+.rp-tick.street,
+.rp-tick.result {
+  flex-grow: 1.8;
+}
+
+.rp-tick.mine {
+  height: 32px;
+  background: var(--tone);
+  opacity: 0.55;
+}
+
+.rp-tick.mine.green {
+  --tone: var(--green);
+}
+
+.rp-tick.mine.yellow {
+  --tone: var(--gold);
+}
+
+.rp-tick.mine.red {
+  --tone: var(--red);
+}
+
+.rp-tick.mine.past,
+.rp-tick.mine.on {
+  opacity: 1;
+}
+
+.rp-tick.on {
+  height: 40px;
+  background: var(--contrast);
+  color: var(--on-contrast);
+  opacity: 1;
+}
+
+.rp-tick.mine.on {
+  background: var(--tone);
+  box-shadow: 0 0 0 2px var(--contrast);
+}
+
+.rp-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rp-extras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rp-extras .chip-btn[disabled] {
+  opacity: 0.5;
+}
+
+.rp-controls .icon-btn {
+  width: 44px;
+  height: 44px;
+  font-size: var(--fs-small);
+}
+
+.rp-controls .icon-btn[disabled] {
+  opacity: 0.4;
+}
+
+.rp-play {
+  flex: 1;
+  min-width: 96px;
+}
+
+.rp-coach {
+  margin-top: 4px;
+}
+
+@media (min-width: 720px) {
+  .screen.replay {
+    max-width: 640px;
+  }
+}

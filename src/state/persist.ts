@@ -202,3 +202,14 @@ export function loadLastTable(): LastTable | null {
 export function saveLastTable(table: LastTable | null): void {
   write('flipup.last', table);
 }
+
+// ── GTO Coach ───────────────────────────────────────────────────────────────
+
+/** The coach introduces themself once; after that they get straight to it. */
+export function loadCoachMet(): boolean {
+  return read<boolean>('flipup.coach') === true;
+}
+
+export function saveCoachMet(): void {
+  write('flipup.coach', true);
+}

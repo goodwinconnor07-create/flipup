@@ -7,7 +7,9 @@ import { loadDrills, loadHistory, loadSummaries, type PlayedHand } from '../../s
 import { reviewAndSave } from '../../train/reviews';
 import { drillFor, scenarioTitle } from '../../train/scenarios';
 import { computeStats, type ScenarioScore } from '../../train/stats';
-import { Dots, MiniCards, pct } from '../../train/widgets';
+import { CoachSays } from '../../train/Coach';
+import { greeting, trendLine } from '../../train/coach';
+import { Dots, MiniCards, pct, Trend } from '../../train/widgets';
 import { Spinner } from '../../ui/components';
 import { BackIcon, BookIcon, ChartIcon, ListIcon, MenuIcon, PencilIcon } from '../../ui/Icons';
 
@@ -78,7 +80,11 @@ function ReviewList() {
   const [hands] = useState(() => [...loadHistory()].reverse());
   const [summaries, setSummaries] = useState(loadSummaries);
   const [busy, setBusy] = useState<string | null>(null);
+  const [only, setOnly] = useState<'all' | 'mistakes'>('all');
   const unreviewed = hands.filter((h) => !summaries[h.key]).slice(0, 20);
+  const working = new Set(busy ? unreviewed.map((h) => h.key) : []);
+  const withMistakes = (key: string) => summaries[key]?.decisions.some((d) => d.colour === 'red' || d.colour === 'yellow') ?? false;
+  const shown = only === 'mistakes' ? hands.filter((h) => withMistakes(h.key)) : hands;
 
   const reviewRecent = async () => {
     if (busy || unreviewed.length === 0) return;
@@ -88,6 +94,7 @@ function ReviewList() {
       setSummaries(loadSummaries());
       toast('Reviews ready.', 'success');
     } catch (e) {
+      setSummaries(loadSummaries());
       toast(e instanceof Error ? e.message : 'The review failed.', 'error');
     } finally {
       setBusy(null);
@@ -107,43 +114,66 @@ function ReviewList() {
   }
   return (
     <>
-      <p className="muted">
-        Pick a hand to go through it street by street. <b className="c-green">Green</b> is the GTO play (or a size close enough),{' '}
-        <b className="c-yellow">yellow</b> is close, <b className="c-red">red</b> is a real mistake.
-      </p>
+      <CoachSays
+        lines={[
+          unreviewed.length > 0
+            ? `I haven't looked at ${unreviewed.length === 1 ? 'one of your hands' : `${unreviewed.length} of your hands`} yet. Tap one to watch it back, or let me go through them.`
+            : 'Tap a hand to watch it back. I will stop at the moves worth a look.',
+        ]}
+        status={
+          <>
+            <b className="c-green">Green</b> is good, <b className="c-yellow">yellow</b> a close call, <b className="c-red">red</b> costly
+          </>
+        }
+      />
       {unreviewed.length > 0 && (
         <button type="button" className="btn btn-dark" disabled={!!busy} onClick={() => void reviewRecent()}>
           {busy ?? `Review my last ${unreviewed.length} hand${unreviewed.length === 1 ? '' : 's'}`}
         </button>
       )}
+      {hands.some((h) => withMistakes(h.key)) && (
+        <div className="chips-row" role="group" aria-label="Filter hands">
+          <button type="button" className={`chip-btn press${only === 'all' ? ' on' : ''}`} aria-pressed={only === 'all'} onClick={() => setOnly('all')}>
+            All hands
+          </button>
+          <button type="button" className={`chip-btn press${only === 'mistakes' ? ' on' : ''}`} aria-pressed={only === 'mistakes'} onClick={() => setOnly('mistakes')}>
+            With mistakes
+          </button>
+        </div>
+      )}
       <div className="t-list">
-        {hands.map((h) => (
-          <HandRow key={h.key} hand={h} colours={summaries[h.key]?.decisions.map((d) => d.colour)} />
+        {shown.map((h) => (
+          <HandRow key={h.key} hand={h} colours={summaries[h.key]?.decisions.map((d) => d.colour)} working={working.has(h.key)} />
         ))}
       </div>
     </>
   );
 }
 
-function HandRow({ hand, colours }: { hand: PlayedHand; colours?: ('green' | 'yellow' | 'red' | null)[] }) {
+function HandRow({ hand, colours, working = false }: { hand: PlayedHand; colours?: ('green' | 'yellow' | 'red' | null)[]; working?: boolean }) {
   const r = hand.record;
   const net = recordNet(r, hand.heroId);
   const mine = r.holes[hand.heroId] ?? [];
   return (
-    <button type="button" className="t-row press" onClick={() => navigate({ name: 'lesson', key: hand.key })}>
-      <MiniCards cards={mine} />
-      <span className="t-row-main">
-        <b>
-          Hand #{r.number} · {r.players.length} players
+    <div className="t-row-wrap">
+      <button type="button" className="t-row press" onClick={() => navigate({ name: 'lesson', key: hand.key })}>
+        <MiniCards cards={mine} />
+        <span className="t-row-main">
+          <b>
+            Hand #{r.number} · {r.players.length} players
+          </b>
+          <small>{when(r.at)}</small>
+          {colours ? <Dots colours={colours.filter((c) => c)} /> : <small>{working ? 'Coach is looking at it…' : 'Not reviewed yet'}</small>}
+        </span>
+        <b className={`num ${net > 0 ? 'good' : net < 0 ? 'bad' : ''}`}>
+          {net > 0 ? '+' : ''}
+          {net}
         </b>
-        <small>{when(r.at)}</small>
-        {colours ? <Dots colours={colours.filter((c) => c)} /> : <small>Not reviewed yet</small>}
-      </span>
-      <b className={`num ${net > 0 ? 'good' : net < 0 ? 'bad' : ''}`}>
-        {net > 0 ? '+' : ''}
-        {net}
-      </b>
-    </button>
+      </button>
+      <button type="button" className="btn btn-sm btn-dark t-replay" aria-label={`Replay hand ${r.number}`} onClick={() => navigate({ name: 'replay', key: hand.key })}>
+        Replay
+      </button>
+    </div>
   );
 }
 
@@ -239,6 +269,12 @@ function StatsView() {
   ];
   return (
     <>
+      <CoachSays
+        lines={[
+          trendLine(stats.trend) ??
+            greeting({ toReview: 0, decisions: stats.decisions, gtoPct: stats.gtoPct, weakest: stats.weaknesses[0] ?? null }),
+        ]}
+      />
       <section className="stat-hero">
         <small className="section-title">GTO score</small>
         <div className="big-num">{stats.decisions ? pct(stats.gtoPct) : '–'}</div>
@@ -255,6 +291,13 @@ function StatsView() {
           </div>
         )}
       </section>
+
+      {stats.trend.length >= 3 && (
+        <section>
+          <p className="section-title">Your last {stats.trend.length} hands</p>
+          <Trend points={stats.trend.map((t) => t.score)} />
+        </section>
+      )}
 
       {stats.weaknesses.length > 0 && (
         <section className="t-list">

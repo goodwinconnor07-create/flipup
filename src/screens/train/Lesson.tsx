@@ -4,8 +4,11 @@ import type { HandReport } from '../../gto/types';
 import { navigate } from '../../state/store';
 import { loadHistory } from '../../state/training';
 import { reviewAndSave, savedReport } from '../../train/reviews';
-import { DecisionCard, GradePill, MiniCards, streetName } from '../../train/widgets';
-import { BackBar, Spinner } from '../../ui/components';
+import { drillFor, scenarioTitle } from '../../train/scenarios';
+import { CoachBusy, CoachFeedback, CoachSays } from '../../train/Coach';
+import { handLesson, summaryLine } from '../../train/coach';
+import { GradePill, MiniCards, streetName } from '../../train/widgets';
+import { BackBar } from '../../ui/components';
 
 const STREETS = ['preflop', 'flop', 'turn', 'river'] as const;
 const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
@@ -72,7 +75,14 @@ export function Lesson({ handKey }: { handKey: string }) {
 
   return (
     <div className="screen train">
-      <BackBar title={`Hand #${r.number}`} />
+      <BackBar
+        title={`Hand #${r.number}`}
+        right={
+          <button type="button" className="chip-btn press" onClick={() => navigate({ name: 'replay', key: handKey })}>
+            Watch it back
+          </button>
+        }
+      />
       <div className="screen-body">
         <section className="lesson-head">
           <div className="slot-row">
@@ -89,23 +99,23 @@ export function Lesson({ handKey }: { handKey: string }) {
           </p>
           {colours && (
             <div className="slot-row">
-              <GradePill colour="green" label={`${colours.green} GTO`} />
+              <GradePill colour="green" label={`${colours.green} good`} />
               <GradePill colour="yellow" label={`${colours.yellow} close`} />
-              <GradePill colour="red" label={`${colours.red} off`} />
+              <GradePill colour="red" label={`${colours.red} costly`} />
               {report!.summary.total_ev_loss_bb > 0.01 && <span className="muted">{report!.summary.total_ev_loss_bb.toFixed(2)}bb given up</span>}
             </div>
           )}
         </section>
 
-        {progress && <Spinner label={progress} />}
+        {progress && <CoachBusy text={progress} />}
         {error && (
-          <>
-            <p className="note">{error}</p>
-            <button type="button" className="btn btn-dark" onClick={() => void run()}>
+          <CoachSays quick lines={[error]}>
+            <button type="button" className="btn btn-sm btn-dark" onClick={() => void run()}>
               Try again
             </button>
-          </>
+          </CoachSays>
         )}
+        {report && <LessonSummary report={report} onPractice={practise} />}
 
         {report &&
           STREETS.filter((s) => s === 'preflop' || r.board.length >= BOARD_AT[s]).map((s) => {
@@ -126,14 +136,12 @@ export function Lesson({ handKey }: { handKey: string }) {
                   </div>
                 )}
                 {ds.map((d, i) => (
-                  <DecisionCard key={i} d={d} onPractice={practise} />
+                  <CoachFeedback key={i} d={d} onPractice={practise} compact />
                 ))}
               </section>
             );
           })}
-        {report && report.decisions.length === 0 && (
-          <p className="muted">Nothing to grade here: you didn't have a decision the coach could check (for example, everyone folded to your big blind).</p>
-        )}
+
         {report?.notes.map((n, i) => (
           <p key={i} className="note">
             {n}
@@ -141,5 +149,20 @@ export function Lesson({ handKey }: { handKey: string }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/** The coach opens the review: how it went, and the one thing to take from it. */
+function LessonSummary({ report, onPractice }: { report: HandReport; onPractice: (scenario: string) => void }) {
+  const lesson = handLesson(report);
+  const drill = lesson.scenario ? drillFor(lesson.scenario) : null;
+  return (
+    <CoachSays lines={report.decisions.length === 0 ? [lesson.text] : [summaryLine(report), lesson.text]} status="Here's how it went">
+      {drill && (
+        <button type="button" className="btn btn-sm btn-dark" onClick={() => onPractice(drill)}>
+          Practise {scenarioTitle(drill).toLowerCase()}
+        </button>
+      )}
+    </CoachSays>
   );
 }

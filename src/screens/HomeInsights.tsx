@@ -1,7 +1,12 @@
 import { useMemo } from 'react';
 import { loadStats, type GameResult } from '../state/persist';
 import { computeStats } from '../train/stats';
-import { loadDrills, loadHistory, loadSummaries } from '../state/training';
+import { loadDrills, loadHistory, loadSummaries, type PlayedHand } from '../state/training';
+import { recordNet } from '../game';
+import { CoachSays } from '../train/Coach';
+import { trendLine } from '../train/coach';
+import { MiniCards, Trend } from '../train/widgets';
+import { navigate } from '../state/store';
 import { signed } from './Final';
 
 const tone = (n: number) => (n > 0 ? 'good' : n < 0 ? 'bad' : '');
@@ -38,10 +43,37 @@ function Line({ games }: { games: GameResult[] }) {
 
 const when = (at: number) => new Date(at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
+
+/** The last few hands you were dealt, each one a tap from its replay. */
+function RecentHands({ hands }: { hands: PlayedHand[] }) {
+  if (hands.length === 0) return null;
+  return (
+    <div className="glass-card recent">
+      <small className="eyebrow">Recent hands</small>
+      {hands.map((h) => {
+        const net = recordNet(h.record, h.heroId);
+        return (
+          <button key={h.key} type="button" className="recent-row hand-replay press" onClick={() => navigate({ name: 'replay', key: h.key })} aria-label={`Replay hand ${h.record.number}`}>
+            <MiniCards cards={h.record.holes[h.heroId] ?? []} />
+            <span>
+              <b>Hand #{h.record.number}</b>
+              <small>{when(h.record.at)} · replay</small>
+            </span>
+            <b className={`num ${tone(net)}`}>{signed(net)}</b>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function InsightsTab() {
   const stats = useMemo(loadStats, []);
-  const hands = useMemo(() => computeStats(loadHistory(), loadSummaries(), loadDrills()), []);
+  const history = useMemo(loadHistory, []);
+  const hands = useMemo(() => computeStats(history, loadSummaries(), loadDrills()), [history]);
+  const lastHands = useMemo(() => [...history].reverse().slice(0, 5), [history]);
 
+  if (stats.tables === 0 && lastHands.length > 0) return <RecentHands hands={lastHands} />;
   if (stats.tables === 0) {
     return (
       <div className="glass-card home-empty">
@@ -79,6 +111,13 @@ export function InsightsTab() {
           <b className="num">{hands.decisions > 0 ? `${Math.round(hands.gtoPct * 100)}%` : '–'}</b>
         </div>
       </div>
+      {hands.trend.length >= 4 && (
+        <div className="glass-card coach-card">
+          <CoachSays lines={[trendLine(hands.trend) ?? '']} />
+          <Trend points={hands.trend.map((t) => t.score)} />
+        </div>
+      )}
+      <RecentHands hands={lastHands} />
       {recent.length > 0 && (
         <div className="glass-card recent">
           <small className="eyebrow">Recent tables</small>

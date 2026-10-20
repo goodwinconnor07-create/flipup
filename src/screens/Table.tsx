@@ -17,7 +17,8 @@ import {
   type Player,
   type Seat,
 } from '../game';
-import { dispatch, openSheet, react, toast, useApp } from '../state/store';
+import { dispatch, navigate, openSheet, react, toast, useApp } from '../state/store';
+import { handKey, hasHand } from '../state/training';
 import { Avatar, CardSlot, chips, Count, PlayingCard, PositionChips, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
 import { ChatIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
@@ -897,7 +898,20 @@ function ActionArea({
         <span className="next-fill" aria-hidden />
         {ready ? 'Waiting for the others…' : 'Next hand'}
       </button>
+      <ReplayButton gameId={game.id} number={hand.number} />
     </div>
+  );
+}
+
+/** Watch the hand that just finished, if this phone was dealt in and saved it. */
+function ReplayButton({ gameId, number }: { gameId: string; number: number }) {
+  const key = handKey(gameId, number);
+  const saved = useMemo(() => hasHand(key), [key]);
+  if (!saved) return null;
+  return (
+    <button type="button" className="btn btn-sm btn-outline" onClick={() => navigate({ name: 'replay', key })}>
+      Replay this hand
+    </button>
   );
 }
 

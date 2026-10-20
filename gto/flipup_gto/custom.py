@@ -29,6 +29,7 @@ from .solver import BetSizing, PostflopSolver, StreetSizing
 
 STREETS = ["preflop", "flop", "turn", "river"]
 BOARD_AT = {"flop": 3, "turn": 4, "river": 5}
+TYPE_CODE = {"fold": 0, "check": 1, "call": 2, "raise": 3, "allin": 4}
 SOLVE = {  # max iterations, target exploitability (% of pot)
     "flop": (150, 1.0),
     "turn": (300, 0.5),
@@ -38,6 +39,7 @@ SOLVE = {  # max iterations, target exploitability (% of pot)
 
 FLOP_FIRST_PASS = 15   # iterations before the first (provisional) flop answer
 REFINE_CHUNK = 10      # iterations per background step (queries wait at most one step)
+FORCED_ITERATIONS = 150  # preflop re-solve after an off-script action
 
 
 class NeedsSolve(Exception):
@@ -174,6 +176,7 @@ class Explorer:
         self.lock = threading.Lock()
         self.flops: OrderedDict = OrderedDict()   # big trees: keep one
         self.later: OrderedDict = OrderedDict()   # turn / river trees: keep a few
+        self.forced: OrderedDict = OrderedDict()  # preflop re-solves for off-script lines
 
     # -- caches ---------------------------------------------------------------
     def _preflop(self, n: int, stack: float, solve: bool):
@@ -209,6 +212,47 @@ class Explorer:
             while len(store) > (1 if street == "flop" else 8):
                 store.popitem(last=False)
         return solver
+
+    def _forced_spot(self, n, bucket, line, reach_before, solve):
+        """Preflop re-solved with every action in `line` forced, then free play; ranges from that point.
+
+        The off-script action's player gets a typical population range for what they did (as in hand
+        reviews of off-tree lines); everyone else keeps the range GTO would have there.
+        """
+        key = (n, bucket, tuple((p, t, round(to, 2)) for p, t, to in line))
+        with self.lock:
+            if key in self.forced:
+                return self.forced[key]
+        if not solve:
+            raise NeedsSolve("Off the GTO line: re-solving preflop for it (a couple of minutes).")
+        from .preflop import PreflopSpot
+        from .review import population_range
+        ranges = [list(map(float, r)) for r in np.asarray(reach_before)]
+        p, t, to = line[-1]
+        raises = sum(1 for _, tt, _ in line[:-1] if tt in (3, 4))
+        kind = None
+        if t == 2:
+            kind = "limp" if raises == 0 else "cold_call"
+        elif t in (3, 4):
+            kind = {0: "iso_raise", 1: "three_bet"}.get(raises, "four_bet")
+        if kind:
+            ranges[p] = list(np.minimum(np.array(ranges[p]), population_range(kind)))
+        forced = [_engine.PreflopForced(pp, tt, too) for pp, tt, too in line]
+        # Keep the tree small: only the small blind may limp (forced limps are already in the line), and
+        # flops allow one more player than have put money in voluntarily so far (at least three).
+        voluntary = {pp for pp, tt, _ in line if tt in (2, 3, 4)}
+        limp = [1 if i == (0 if n == 2 else n - 2) else 0 for i in range(n)]
+        spot = PreflopSpot(num_players=n, stack=bucket,
+                           max_players_flop=min(n, max(3, len(voluntary) + 2)),
+                           options={"forced": forced, "initial_range": ranges, "can_limp": limp,
+                                    "multiway_blinds_only": False})
+        # Off-script lines rest on assumed ranges anyway, so a shorter solve is accurate enough.
+        spot.engine.solve(FORCED_ITERATIONS, 0.01, 50)
+        with self.lock:
+            self.forced[key] = spot
+            while len(self.forced) > 12:
+                self.forced.popitem(last=False)
+        return spot
 
     @staticmethod
     def _refine(solver, its, target):
@@ -257,18 +301,34 @@ class Explorer:
         spot = self._preflop(n, bucket, solve)
 
         # ---- preflop -------------------------------------------------------------
+        # Steps are option ids: the solved game's actions first, then extra legal actions GTO never
+        # takes (a limp/call, or all-in). Picking an extra re-solves preflop with the line so far
+        # forced, and later decisions come from that solve until someone leaves its tree again.
         path: list = []
+        line: list = []   # (player, type code, to) for every preflop action, for forced re-solves
         for step in req.get("preflop", []):
             info = spot.engine.query(path)
             if info["terminal"]:
                 raise ValueError("preflop action continues after the hand ended")
-            a = info["actions"][int(step)]
-            out["history"].append({"street": "preflop", "position": names[info["player"]],
-                                   "player": info["player"], "text": self._preflop_text(a)})
-            path.append(int(step))
+            opts = self._preflop_options(info, spot.stack)
+            if int(step) >= len(opts):
+                raise ValueError("unknown preflop option")
+            o = opts[int(step)]
+            p = info["player"]
+            out["history"].append({"street": "preflop", "position": names[p], "player": p, "text": o["label"]})
+            line.append((p, TYPE_CODE[o["kind"]], float(o["to_bb"])))
+            if o.get("off_tree"):
+                spot = self._forced_spot(n, bucket, line, info["reach"], solve)
+                path = [0] * len(line)
+                out["off_tree"] = True
+            else:
+                path.append(int(step))
+        if out.get("off_tree"):
+            out["notes"].append("Off the GTO line preflop: the numbers after it come from a re-solve with that "
+                                "line fixed and typical ranges for the off-script actions.")
         info = spot.engine.query(path)
         if not info["terminal"]:
-            return self._preflop_decision(out, spot, info, path, hero, hero_cards, names)
+            return self._preflop_decision(out, spot, info, path, hero, hero_cards, names, spot.stack)
         live = [i for i in range(n) if not info["folded"][i]]
         out["pot_bb"] = round(float(info["pot"]), 2)
         self._set_stacks(out, stacks, info["invested"], live)
@@ -286,7 +346,8 @@ class Explorer:
                     aggressor = ni["player"]
                 q.append(step)
             return self._multiway(out, req, live, info, stacks, board, names, hero, hero_cards, aggressor)
-        return self._heads_up(out, req, spot, path, info, live, stacks, board, names, hero, hero_combo, solve)
+        return self._heads_up(out, req, spot, path, info, live, stacks, board, names, hero, hero_combo, solve,
+                              line_key=tuple(line))
 
     # -- preflop ------------------------------------------------------------------
     @staticmethod
@@ -300,7 +361,26 @@ class Explorer:
             return f"All-in {_bb(a['to'])}"
         return f"Raise to {_bb(a['to'])}"
 
-    def _preflop_decision(self, out, spot, info, path, hero, hero_cards, names):
+    def _preflop_options(self, info, stack):
+        """The solved node's actions, then any other legal action GTO never takes (call/limp, all-in)."""
+        opts = [{"kind": a["type"], "label": self._preflop_text(a), "to_bb": round(float(a["to"]), 2)}
+                for a in info["actions"]]
+        kinds = [o["kind"] for o in opts]
+        invested = info["invested"]
+        p = info["player"]
+        cur = max(invested)
+        if cur > invested[p] + 1e-9 and "call" not in kinds:
+            limp = cur <= 1.0 + 1e-9
+            opts.append({"kind": "call", "label": f"{'Limp' if limp else 'Call'} {_bb(cur)}", "to_bb": round(cur, 2),
+                         "off_tree": True})
+        if "allin" not in kinds and stack > cur + 1e-9:
+            opts.append({"kind": "allin", "label": f"All-in {_bb(stack)}", "to_bb": round(float(stack), 2),
+                         "off_tree": True})
+        for i, o in enumerate(opts):
+            o["id"] = i
+        return opts
+
+    def _preflop_decision(self, out, spot, info, path, hero, hero_cards, names, stack):
         p = info["player"]
         strat = np.asarray(info["strategy"])
         evs = np.asarray(info["action_ev"])
@@ -311,10 +391,12 @@ class Explorer:
         mine = p == hero and hero_cards is not None
         cls = CLASS_INDEX[hand_class(combo_index(*hero_cards))] if mine else None
         options = []
-        for i, a in enumerate(info["actions"]):
-            options.append({"id": i, "label": self._preflop_text(a), "kind": a["type"],
-                            "to_bb": round(float(a["to"]), 2),
-                            "freq": round(float(strat[i][cls] if mine else range_freq[i]), 4),
+        for o in self._preflop_options(info, stack):
+            i = o["id"]
+            if o.get("off_tree"):
+                options.append({**o, "freq": 0.0, "range_freq": 0.0, "ev_bb": None})
+                continue
+            options.append({**o, "freq": round(float(strat[i][cls] if mine else range_freq[i]), 4),
                             "range_freq": round(float(range_freq[i]), 4),
                             "ev_bb": round(float(evs[i][cls]), 3) if mine else None})
         invested = info["invested"]
@@ -328,7 +410,8 @@ class Explorer:
         return out
 
     # -- heads-up postflop ------------------------------------------------------------
-    def _heads_up(self, out, req, spot, path, pinfo, live, stacks, board, names, hero, hero_combo, solve):
+    def _heads_up(self, out, req, spot, path, pinfo, live, stacks, board, names, hero, hero_combo, solve,
+                  line_key=()):
         n = len(names)
         oop, ip = sorted(live, key=lambda i: _postflop_rank(i, n))
         seat = {oop: 0, ip: 1}
@@ -345,7 +428,7 @@ class Explorer:
             if ni["actions"][step]["type"] in ("raise", "allin"):
                 aggressor = ni["player"]
             q.append(step)
-        key = (n, round(stacks[oop], 2), round(stacks[ip], 2), tuple(path), tuple(board[:3]))
+        key = (n, round(stacks[oop], 2), round(stacks[ip], 2), line_key, tuple(board[:3]))
         prev_aggr = aggressor
         for street in ("flop", "turn", "river"):
             bstreet = board[:BOARD_AT[street]]

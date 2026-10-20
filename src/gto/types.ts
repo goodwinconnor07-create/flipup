@@ -161,6 +161,8 @@ export interface CustomOption {
   freq: number | null;
   range_freq: number | null;
   ev_bb: number | null;
+  /** Legal but outside the solved preflop tree: picking it re-solves preflop for that line. */
+  off_tree?: boolean;
 }
 
 export interface CustomSpot {

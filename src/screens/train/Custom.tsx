@@ -414,6 +414,7 @@ function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPi
             <span className="option-label">
               {o.label}
               {o.ev_bb !== null && <small className="option-ev">EV {o.ev_bb >= 0 ? '+' : ''}{o.ev_bb.toFixed(2)}bb</small>}
+              {o.off_tree && <small className="option-ev">not in GTO strategy</small>}
             </span>
             {o.freq !== null && <b className="option-pct">{pct(o.freq)}</b>}
           </button>

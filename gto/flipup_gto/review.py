@@ -79,15 +79,27 @@ class PreflopCache:
         self.iterations = iterations
         self.mem: dict = {}
 
+    def _path(self, spot, key, num_players, stack):
+        h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
+                                     calibration_key()]).encode()).hexdigest()[:16]
+        return os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
+
+    def ready(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
+              rake_cap: float = 0.0) -> bool:
+        """True when this game is in memory or solved on disk (so get() won't take minutes)."""
+        key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
+        if key in self.mem:
+            return True
+        spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
+        return os.path.exists(self._path(spot, key, num_players, stack))
+
     def get(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
             rake_cap: float = 0.0) -> PreflopSpot:
         key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
         if key in self.mem:
             return self.mem[key]
         spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
-        h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
-                                     calibration_key()]).encode()).hexdigest()[:16]
-        path = os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
+        path = self._path(spot, key, num_players, stack)
         if os.path.exists(path):
             d = np.load(path)
             spot.engine.load_cumulative_strategy(d["cum"].astype(np.float32), int(d["iterations"]),

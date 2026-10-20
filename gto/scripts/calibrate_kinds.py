@@ -13,6 +13,9 @@ matches each heads-up flop (PreflopConfig.kind_eqr_*).
 
     python3 scripts/calibrate_kinds.py --out flipup_gto/data/eqr_kinds.json
 
+The preflop solver uses eqr_kinds.json when present. A run that hasn't been checked against benchmark
+frequencies yet is kept as eqr_kinds.candidate.json (ignored).
+
 Iterate: re-solve preflop (the cache key changes with the file), then run this again.
 """
 from __future__ import annotations

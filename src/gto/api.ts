@@ -2,7 +2,7 @@
 
 import { apiUrl } from '../state/platform';
 import type { HandRecord } from '../game';
-import type { Drill, HandHistory, HandReport, Job, Scenario } from './types';
+import type { CustomRequest, CustomSpot, Drill, HandHistory, HandReport, Job, Scenario } from './types';
 
 async function call<T>(path: string, init: RequestInit = {}, timeoutMs = 20000): Promise<T> {
   const controller = new AbortController();
@@ -54,6 +54,14 @@ export async function reviewHands(hands: HandHistory[], hero: string, onProgress
 export async function analyzeHand(hand: HandHistory, hero?: string, onProgress?: (j: Job<unknown>) => void) {
   const { job } = await post<{ job: string }>('/analyze', { hand, hero });
   return waitForJob<HandReport>(job, onProgress);
+}
+
+/** The custom hand so far. If a street needs solving first, waits for it (reporting the message). */
+export async function customSpot(req: CustomRequest, onSolving?: (message: string) => void, signal?: { cancelled: boolean }) {
+  const first = await post<CustomSpot>('/custom/spot', req);
+  if (first.status !== 'solving' || !first.job) return first;
+  onSolving?.(first.message ?? 'Solving…');
+  return waitForJob<CustomSpot>(first.job, undefined, signal);
 }
 
 export const listScenarios = () => call<Scenario[]>('/library');

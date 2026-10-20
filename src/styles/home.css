@@ -1154,3 +1154,16 @@ html[data-theme='dark'] .glass-card {
   justify-content: center;
   align-items: center;
 }
+
+/* The wordmark, top left. */
+.screen.home .home-head .logo {
+  margin: 0 auto 0 0;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.screen.home .home-head .logo span {
+  color: var(--card-red);
+}

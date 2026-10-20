@@ -113,6 +113,9 @@ export function Home() {
         <i className="glow glow-2" />
       </div>
       <div className="home-head">
+        <h1 className="logo">
+          GTO<span>Duel</span>
+        </h1>
         <div className={`streak-pill${streak.today ? ' lit' : ''}`} role="img" aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}`}>
           <span className="streak-fire" aria-hidden>🔥</span>
           <b>{streak.days}</b>

@@ -724,3 +724,12 @@ html.calm :is(.bokeh, .drift-chip, .drift-card) {
     backdrop-filter: none;
   }
 }
+
+/* "Play again" leads the row, a touch bolder than the fresh games. */
+.quick-again {
+  border-color: var(--brand-ink);
+}
+
+.quick-again b {
+  color: var(--brand-ink);
+}

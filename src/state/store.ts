@@ -38,6 +38,7 @@ import {
   saveCalm,
   saveDark,
   saveGlass,
+  saveLastBots,
   saveMuted,
   saveProfile,
   saveSession,
@@ -422,6 +423,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   const emoji = state.profile.emoji;
   if (mode === 'local') {
     const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, code: null, now: Date.now() });
+    saveLastBots({ bots: game.players.filter((p) => p.bot).map((p) => p.name), settings, at: Date.now() });
     closeConnection();
     setSession({ mode: 'local', code: null, game });
     resetTo({ name: 'table' });

@@ -6,6 +6,7 @@ import { BOTS, STYLES } from './botStyles';
 import { botLineText } from './botTalk';
 import { reactionText } from './reactions';
 import { redactForDevice } from './redact';
+import { options } from './selectors';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import { seededRng } from './cards';
 import { parseAction } from './validate';
@@ -64,7 +65,7 @@ describe('bots', () => {
     expect(parseAction({ type: 'react', id: 'b:shark:bigWin:0' })).toBeNull();
   });
 
-  it('pokes a person who sits on their turn, and keeps count of their lost hands', () => {
+  it('pokes a person who sits on their turn, and counts real losses (not folded blinds) as a streak', () => {
     const rng = seededRng(5);
     let now = 1000;
     let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 2, code: null, now });
@@ -76,7 +77,8 @@ describe('bots', () => {
     step({ type: 'start' }, 'h');
     let jabQueued = false;
     let streak = 0;
-    for (let i = 0; i < 600 && streak < 2; i++) {
+    let folded = 0;
+    for (let i = 0; i < 4000 && streak < 2; i++) {
       const me = g.players.find((p) => p.deviceId === 'h')!;
       const myTurn = g.hand && !g.hand.result && g.hand.toAct === me.id;
       if (myTurn && g.pendingTalk?.event === 'tank' && !jabQueued) {
@@ -86,7 +88,12 @@ describe('bots', () => {
         expect(g.pendingTalk).toBeUndefined();
         jabQueued = true;
       } else if (myTurn) {
-        step({ type: 'act', hand: g.hand!.number, seq: g.hand!.seq, move: 'fold' }, 'h');
+        // Fold the first few hands: giving up a blind must not start a streak. Then call everything.
+        const o = options(g, g.hand!, g.hand!.seats.find((x) => x.playerId === me.id)!);
+        const move = folded < 12 ? 'fold' : o.canCheck ? 'check' : 'call';
+        if (move === 'fold' && !streak) expect(g.streaks?.[me.id] ?? 0).toBe(0);
+        if (move === 'fold') folded++;
+        step({ type: 'act', hand: g.hand!.number, seq: g.hand!.seq, move }, 'h');
       } else {
         now = Math.max(now + 1, g.wakeAt ?? now + 1);
         step({ type: 'tick' }, 'server');

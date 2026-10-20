@@ -132,6 +132,7 @@ html[data-theme='dark'] .home-sheet {
 
 .home-title h2 {
   margin: 0;
+  font-family: var(--font-display);
   font-size: var(--fs-display-1);
   font-weight: 700;
   letter-spacing: -0.035em;
@@ -897,6 +898,7 @@ html.calm .streak-pill .streak-fire {
 
 .large-title {
   margin: 0;
+  font-family: var(--font-display);
   font-size: var(--fs-title);
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1158,6 +1160,7 @@ html[data-theme='dark'] .glass-card {
 /* The wordmark, top left. */
 .screen.home .home-head .logo {
   margin: 0 auto 0 0;
+  font-family: var(--font-display);
   font-size: 22px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -1226,6 +1229,7 @@ html[data-theme='dark'] .glass-card {
 }
 
 .mode-title {
+  font-family: var(--font-display);
   font-size: var(--fs-h2);
   font-weight: 600;
   letter-spacing: -0.01em;

@@ -63,6 +63,8 @@ describe('custom hand builder', () => {
 
 function playBots(): Game {
   let game = createTable({ hostDeviceId: 'dev', name: 'Me', emoji: '🙂', settings: { startingStack: 200, smallBlind: 1, bigBlind: 2, rebuys: true, turnSeconds: 0 }, bots: 3, code: null, now: 0 });
+  // Bots are seated at random; fix their styles so every run plays the same hands.
+  game.players.filter((p) => p.bot).forEach((p, i) => (p.style = ['pro', 'tag', 'station'][i]));
   let now = 1;
   let seed = 7;
   const rng = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);

@@ -1,4 +1,7 @@
 // Quick messages a player can send to the table. Only these ids are accepted, so nobody can type anything.
+// Bots also have their own fixed lines (botTalk.ts), which phones can't send.
+
+import { botLineText } from './botTalk';
 
 export interface Reaction {
   id: string;
@@ -21,4 +24,4 @@ export const REACTIONS: Reaction[] = [
 
 export const isReactionId = (v: unknown): v is string => typeof v === 'string' && REACTIONS.some((r) => r.id === v);
 
-export const reactionText = (id: string): string => REACTIONS.find((r) => r.id === id)?.text ?? '';
+export const reactionText = (id: string): string => REACTIONS.find((r) => r.id === id)?.text ?? botLineText(id);

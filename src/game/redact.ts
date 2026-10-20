@@ -11,6 +11,9 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   const mine = mineFor(game, deviceId);
   return {
     ...game,
+    // Bots' styles and their notes on players stay on the server.
+    players: game.players.map(({ style: _style, ...p }) => p),
+    reads: undefined,
     logs: [],
     hand: hand && {
       ...hand,

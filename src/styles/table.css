@@ -1372,3 +1372,12 @@ html[data-theme='dark'] .your-turn {
 html[data-theme='dark'] .pot-pill {
   box-shadow: 0 0 14px rgba(0, 0, 0, 0.25);
 }
+
+/* A bot's comment can be a few words: let it wrap onto two lines inside its seat. */
+.bubble-react:not(.bubble-emoji) {
+  width: max-content;
+  /* Narrower than a seat, so it never hangs off the edge of the row. */
+  max-width: 88px;
+  white-space: normal;
+  text-align: center;
+}

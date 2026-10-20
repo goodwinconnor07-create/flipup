@@ -284,6 +284,9 @@ describe('betting', () => {
       code: null,
       now: clock,
     });
+    // A fixed mix of styles (bots are seated at random), so every run plays the same hands.
+    const styles = ['pro', 'maniac', 'station', 'trapper', 'gambler'];
+    game.players.filter((p) => p.bot).forEach((p, i) => (p.style = styles[i]));
     game = must(game, { type: 'start' }, HOST);
     const total = chipsInPlay(game);
     const rng = seededRng(42);
@@ -293,13 +296,14 @@ describe('betting', () => {
       const hostId = game.players.find((p) => p.deviceId === HOST)!.id;
       let r;
       if (game.hand && !game.hand.result && game.hand.toAct === hostId) {
-        // The host just calls along.
+        // The host checks when it's free and calls small bets, so the bots fight out the big pots.
         const o = options(
           game,
           game.hand,
           game.hand.seats.find((x) => x.playerId === hostId)!,
         );
-        r = applyAction(game, { type: 'act', hand: game.hand.number, seq: game.hand.seq, move: o.canCheck ? 'check' : 'call' }, ctx(HOST));
+        const move = o.canCheck ? 'check' : o.toCall <= game.settings.bigBlind * 2 ? 'call' : 'fold';
+        r = applyAction(game, { type: 'act', hand: game.hand.number, seq: game.hand.seq, move }, ctx(HOST));
       } else {
         clock = (game.wakeAt ?? clock) + 1;
         r = applyAction(game, { type: 'tick' }, { deviceId: 'server', now: clock, rng });
@@ -567,6 +571,8 @@ describe('table', () => {
       code: null,
       now: clock,
     });
+    // Bots are seated at random; fix their styles so the hand plays out the same every run.
+    for (const p of game.players) if (p.bot) p.style = 'rock';
     game = must(game, { type: 'join', name: 'Friend', emoji: '🐸' }, 'device-friend');
     game = must(game, { type: 'start' }, HOST);
     const n = game.hand!.number;

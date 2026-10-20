@@ -39,6 +39,19 @@ export interface Player {
   timeouts: number;
   /** Asked to leave during a hand: folded on their turn and removed when it ends. */
   leaving: boolean;
+  /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
+  style?: string;
+}
+
+/** What the bots have seen a player do, from public moves only. */
+export interface PlayerRead {
+  hands: number;
+  vpip: number;
+  pfr: number;
+  betsFaced: number;
+  foldsToBet: number;
+  aggr: number;
+  calls: number;
 }
 
 export interface Seat {
@@ -184,6 +197,12 @@ export interface Game {
   hands?: number;
   /** When the blinds next go up (they change as the next hand is dealt). null = never. */
   blindsRaiseAt?: number | null;
+  /** What the bots have seen each player do. Never sent to phones. */
+  reads?: Record<string, PlayerRead>;
+  /** The hand a bot last spoke in, so they don't all chat at once. */
+  botChatHand?: number;
+  /** The last hand the bots took notes on. */
+  readHand?: number;
 }
 
 export type Action =

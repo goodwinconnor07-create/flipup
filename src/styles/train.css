@@ -872,8 +872,8 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-width: 64px;
-  padding: 8px 10px;
+  min-width: 52px;
+  padding: 8px 6px;
   border-radius: var(--r-md);
   background: var(--bg-2);
   font-size: var(--fs-small);
@@ -963,4 +963,21 @@
 
 .small-note {
   font-size: var(--fs-small);
+}
+
+.topbar-action {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 0 16px;
+}
+
+.option-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.option-ev {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--ink-3);
 }

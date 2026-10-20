@@ -109,8 +109,9 @@ class BetSizing:
         if street == 0:
             flop = (StreetSizing(rich, "60%") if lean == 0 else StreetSizing("33%, 75%", "60%") if lean == 1
                     else StreetSizing("50%", ""))
-            later = StreetSizing("75%", "a") if lean == 0 else StreetSizing("75%", "")
-            sizes = {"flop": flop, "turn": later, "river": later}
+            # River betting is checked down inside flop solves (re-solved exactly when the hand gets
+            # there): about half the time, with the flop strategy close to the full tree.
+            sizes = {"flop": flop, "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")}
             out = cls(oop=dict(sizes), ip=dict(sizes), max_raises=1)
         elif street == 1:
             turn = StreetSizing(rich, "60%") if lean == 0 else StreetSizing("66%", "a")

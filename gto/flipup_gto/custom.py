@@ -48,7 +48,9 @@ def explorer_sizing(street: str, oop_leads: bool) -> BetSizing:
     """GTO Wizard-style sizes on the street being solved, simpler later streets (re-solved when reached)."""
     rich = StreetSizing("33%, 75%, 125%", "60%")
     if street == "flop":
-        sizes = {"flop": rich, "turn": StreetSizing("75%", ""), "river": StreetSizing("75%", "")}
+        # River betting is checked down inside the flop solve (the river is solved properly when it's
+        # dealt): this halves the solve time while keeping the flop strategy close to the full tree.
+        sizes = {"flop": rich, "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")}
         out = BetSizing(oop=dict(sizes), ip=dict(sizes), max_raises=1)
     elif street == "turn":
         sizes = {"flop": StreetSizing(), "turn": rich, "river": StreetSizing("75%", "60%")}

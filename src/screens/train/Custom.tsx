@@ -178,6 +178,7 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
   const [picking, setPicking] = useState<string[]>([]);
   const req = useMemo(() => toRequest(setup, log), [setup, log]);
   const seq = useRef(0);
+  const stripRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const my = ++seq.current;
@@ -199,6 +200,12 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
       signal.cancelled = true;
     };
   }, [req]);
+
+  // Keep the player to act in view in the row of seats.
+  useEffect(() => {
+    if (spot?.to_act == null) return;
+    stripRef.current?.querySelector(`[data-seat="${spot.to_act}"]`)?.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' });
+  }, [spot?.to_act]);
 
   const names = POSITIONS[setup.players];
   const board = req.board;
@@ -240,7 +247,14 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
 
   return (
     <div className="screen train">
-      <BackBar title="Custom hand" right={<button type="button" className="btn btn-sm btn-outline" onClick={onEdit}>New hand</button>} />
+      <BackBar
+        title="Custom hand"
+        right={
+          <button type="button" className="btn btn-sm btn-outline topbar-action" onClick={onEdit}>
+            New
+          </button>
+        }
+      />
       <div className="screen-body">
         <section className="table-strip">
           <div className="slot-row" aria-label="Board">
@@ -250,7 +264,7 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
           </div>
           <div className="kv">
             <span>
-              Pot <b>{spot?.pot_bb !== undefined ? `${spot.pot_bb}bb` : '1.5bb'}</b>
+              Pot <b>{spot?.pot_bb !== undefined ? `${Math.round(spot.pot_bb * 10) / 10}bb` : '1.5bb'}</b>
             </span>
             <span>
               Blinds <b>{setup.sb}/{setup.bb}</b>
@@ -258,9 +272,9 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
           </div>
         </section>
 
-        <div className="seat-strip">
+        <div className="seat-strip" ref={stripRef}>
           {players.map((p, i) => (
-            <div key={i} className={`seat-chip${i === setup.hero ? ' me' : ''}${p.folded ? ' out' : ''}${spot?.to_act === i ? ' turn' : ''}`}>
+            <div key={i} data-seat={i} className={`seat-chip${i === setup.hero ? ' me' : ''}${p.folded ? ' out' : ''}${spot?.to_act === i ? ' turn' : ''}`}>
               <b>{p.position}</b>
               <small>{Math.round((p.behind_bb ?? p.stack_bb) * 10) / 10}bb</small>
               {i === setup.hero && (
@@ -348,6 +362,9 @@ function StreetLog({ street, items, hero }: { street: string; items: { position:
   );
 }
 
+const SUIT: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
+const prettyHand = (h?: string) => (h ? h.replace(/([2-9TJQKA])([shdc])/g, (_, r: string, su: string) => `${r === 'T' ? '10' : r}${SUIT[su]}`) : 'hand');
+
 /** Whose turn it is and every legal option, with how often GTO takes each one. */
 function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPick: (o: CustomOption) => void }) {
   const opts = spot.options ?? [];
@@ -369,7 +386,7 @@ function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPi
       {!spot.multiway && (
         <p className="muted">
           {spot.hand_specific
-            ? `How often GTO plays each option with your ${spot.hand ?? 'hand'}${spot.equity !== undefined ? ` (equity ${pct(spot.equity)})` : ''}:`
+            ? `How often GTO plays each option with your ${prettyHand(spot.hand)}${spot.equity !== undefined ? ` (equity ${pct(spot.equity)})` : ''}:`
             : mine
               ? 'How often GTO takes each option:'
               : `How often the ${spot.to_act_position}'s range takes each option:`}
@@ -379,16 +396,14 @@ function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPi
         {opts.map((o) => (
           <button key={o.id} type="button" className={`option-btn press${best?.id === o.id ? ' best' : ''}`} onClick={() => onPick(o)}>
             {o.freq !== null && <span className={`option-fill ${cls[o.label]}`} style={{ width: `${Math.max(0, Math.min(1, o.freq)) * 100}%` }} />}
-            <span className="option-label">{o.label}</span>
+            <span className="option-label">
+              {o.label}
+              {o.ev_bb !== null && <small className="option-ev">EV {o.ev_bb >= 0 ? '+' : ''}{o.ev_bb.toFixed(2)}bb</small>}
+            </span>
             {o.freq !== null && <b className="option-pct">{pct(o.freq)}</b>}
           </button>
         ))}
       </div>
-      {spot.hand_specific && opts.some((o) => o.ev_bb !== null) && (
-        <p className="muted small-note">
-          EV: {opts.map((o) => `${o.label} ${o.ev_bb! >= 0 ? '+' : ''}${o.ev_bb!.toFixed(2)}bb`).join(' · ')}
-        </p>
-      )}
       <p className="muted small-note">Tap any option to play it, GTO or not, and keep going.</p>
     </section>
   );

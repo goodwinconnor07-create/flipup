@@ -27,6 +27,7 @@ import { captureFinishedHand } from './training';
 import {
   loadDeviceId,
   loadCalm,
+  loadDark,
   loadMuted,
   loadProfile,
   loadSession,
@@ -34,6 +35,7 @@ import {
   loadTableLook,
   saveLastTable,
   saveCalm,
+  saveDark,
   saveMuted,
   saveProfile,
   saveSession,
@@ -56,6 +58,8 @@ export type Route =
   /** Training: reviews, the poker library, stats and custom hands. */
   | { name: 'train'; section?: TrainSection }
   | { name: 'lesson'; key: string }
+  /** Watch a saved hand back, with the coach. */
+  | { name: 'replay'; key: string }
   | { name: 'drill'; scenario: string }
   | { name: 'custom' };
 
@@ -103,6 +107,7 @@ export interface AppState {
   muted: boolean;
   /** Animations switched off. */
   calm: boolean;
+  dark: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -136,7 +141,9 @@ let state: AppState = {
   look: loadTableLook(),
   muted: loadMuted(),
   calm: loadCalm(),
+  dark: loadDark(),
 };
+applyTheme(state.dark);
 document.documentElement.classList.toggle('calm', state.calm);
 setMuted(loadMuted());
 
@@ -276,7 +283,8 @@ let localTimer: ReturnType<typeof setTimeout> | undefined;
 
 function setSession(session: Session | null): void {
   saveSession(session);
-  set({ session, game: viewOf(session, state.deviceId) });
+  // A pending online action can't outlive an online table (it would leave the buttons greyed out).
+  set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
   captureFinishedHand(state.game, state.deviceId);
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
@@ -359,6 +367,10 @@ function send(action: Action): boolean {
     return false;
   }
   set({ sending: id });
+  // If no answer comes back, don't leave the buttons greyed out.
+  setTimeout(() => {
+    if (state.sending === id) set({ sending: null });
+  }, 5000);
   return true;
 }
 
@@ -451,6 +463,20 @@ export function toggleMuted(): void {
   set({ muted });
 }
 
+/** Dark or light for the whole app: a data-theme on <html> that the stylesheet's colour tokens follow. */
+function applyTheme(dark: boolean): void {
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'))
+    meta.setAttribute('content', dark ? '#0e0f14' : '#ffffff');
+}
+
+export function toggleDark(): void {
+  const dark = !state.dark;
+  saveDark(dark);
+  applyTheme(dark);
+  set({ dark });
+}
+
 export function toggleCalm(): void {
   const calm = !state.calm;
   saveCalm(calm);
@@ -471,6 +497,7 @@ function recordFinished(): void {
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length }],
   });
 }
 

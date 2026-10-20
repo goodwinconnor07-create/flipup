@@ -35,6 +35,10 @@ export const BLIND_LEVELS: [number, number][] = [
   [100, 200],
 ];
 
+/** How often the blinds can go up, in minutes (0 = never). */
+/** Big blinds the host can stop the rise at (0 is no limit). */
+export const BLIND_CAP_CHOICES = [0, 100, 200, 500, 1000, 2000];
+
 export const STACK_CHOICES = [500, 1000, 2000, 5000, 10000];
 export const TIMER_CHOICES = [0, 20, 45, 90];
 
@@ -52,8 +56,10 @@ export function validSettings(s: Settings): boolean {
     int(s.bigBlind) &&
     s.smallBlind >= 1 &&
     s.bigBlind >= s.smallBlind &&
-    s.bigBlind <= s.startingStack / 2 &&
+    // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
+    (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
+    (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
     int(s.turnSeconds) &&
     s.turnSeconds >= 0 &&
     s.turnSeconds <= LIMITS.maxTurnSeconds
@@ -207,7 +213,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const next = { ...game.settings, ...action.settings };
       if (!validSettings(next)) return fail("Those settings don't work together.");
       const stackChanged = next.startingStack !== game.settings.startingStack;
+      const minutesChanged = (next.blindMinutes ?? 0) !== (game.settings.blindMinutes ?? 0);
       game.settings = next;
+      // Changing how often the blinds rise restarts their clock; turning it off stops it.
+      if (!next.blindMinutes) game.blindsRaiseAt = null;
+      else if (game.status === 'playing' && (minutesChanged || game.blindsRaiseAt == null))
+        game.blindsRaiseAt = ctx.now + next.blindMinutes * 60_000;
       // Before the first hand, everyone sits down with the new stack.
       if (game.status === 'lobby' && stackChanged) {
         for (const p of game.players) {

@@ -106,6 +106,37 @@ export function canRaise(hand: Hand, seat: Seat): boolean {
 
 // ── Starting a hand ─────────────────────────────────────────────────────────
 
+/**
+ * Rising blinds: when the clock has run out, both blinds double as the next hand is dealt (never mid-hand).
+ * They stop at the host's "stop increasing at" big blind, if one is set (the last rise is cut short to land on it).
+ * Returns true if they went up.
+ */
+function raiseBlindsIfDue(game: Game, now: number): boolean {
+  const minutes = game.settings.blindMinutes ?? 0;
+  if (!minutes) {
+    game.blindsRaiseAt = null;
+    return false;
+  }
+  // The clock starts with the first hand.
+  if (game.blindsRaiseAt == null) {
+    game.blindsRaiseAt = now + minutes * 60_000;
+    return false;
+  }
+  if (now < game.blindsRaiseAt) return false;
+  game.blindsRaiseAt = now + minutes * 60_000;
+  const { smallBlind, bigBlind, blindCap } = game.settings;
+  if (blindCap && bigBlind >= blindCap) return false;
+  let nextBig = bigBlind * 2;
+  let nextSmall = smallBlind * 2;
+  if (blindCap && nextBig > blindCap) {
+    nextBig = blindCap;
+    nextSmall = Math.max(1, Math.round(blindCap / 2));
+  }
+  game.settings.smallBlind = nextSmall;
+  game.settings.bigBlind = nextBig;
+  return true;
+}
+
 /** Deals a new hand, or leaves the table waiting if there aren't enough players. */
 export function startHand(game: Game, ctx: ActionContext): void {
   // Bots that ran out of chips leave now (not straight after the hand, so their cards can still be seen).
@@ -120,6 +151,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     return;
   }
   const players = dealable(game);
+  const raised = raiseBlindsIfDue(game, ctx.now);
 
   // The button moves one seat clockwise to the next player who's in. The first one is random,
   // like drawing for the button.
@@ -174,6 +206,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
   game.hand = hand;
   game.hands = (game.hands ?? 0) + 1;
   log(game, `-- Hand #${hand.number} (dealer: ${button.name}) --`);
+  if (raised) log(game, `Blinds go up to ${n0(game.settings.smallBlind)}/${n0(game.settings.bigBlind)}`);
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
 
   put(seats[sb], players[sb], game.settings.smallBlind);

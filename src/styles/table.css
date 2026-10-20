@@ -78,7 +78,7 @@
 
 /* Not part of the hand that matters: greyed back, like Offsuit does. */
 .pcard.dim {
-  background: var(--bg-3);
+  background: var(--card-dim-bg);
   opacity: 0.55;
 }
 
@@ -238,6 +238,8 @@
 .pods {
   position: relative;
   height: 174px;
+  /* Players slid out of view wait off to the side; they mustn't make the page scroll sideways. */
+  overflow-x: clip;
 }
 
 .pod {
@@ -836,7 +838,7 @@
   gap: 12px;
   margin: 0 -16px;
   padding: 12px 16px calc(var(--safe-bottom) + 16px);
-  background: linear-gradient(to top, var(--bg) 80%, rgba(255, 255, 255, 0));
+  background: linear-gradient(to top, var(--bg) 80%, transparent);
 }
 
 .my-cards {
@@ -944,32 +946,21 @@ html.calm .pod.won .pod-pic {
 }
 
 .bubble-grey {
-  background: #e9e9eb;
+  background: var(--bubble-grey);
   color: var(--ink);
 }
 
-/* The tail: a small curl at the bottom-left corner, like Messages. */
-.bubble::before,
-.bubble::after {
+/* The tail: a small curl at the bottom-left corner, like Messages. It's one shaped piece in the
+   bubble's own colour, so there's nothing painted over what's behind it. */
+.bubble::before {
   content: '';
   position: absolute;
   bottom: 0;
-}
-
-.bubble::before {
   left: -5px;
-  width: 11px;
-  height: 11px;
+  width: 14px;
+  height: 14px;
   background: inherit;
-  border-bottom-right-radius: 11px 10px;
-}
-
-.bubble::after {
-  left: -8px;
-  width: 8px;
-  height: 13px;
-  background: var(--bg);
-  border-bottom-right-radius: 7px;
+  clip-path: path('M10 0 C10 7 8 12 0 14 C6 15.5 11 14 14 12 L14 0 Z');
 }
 
 /* Yours sits on the top edge of your chips box, tail on the right. */
@@ -988,18 +979,11 @@ html.calm .pod.won .pod-pic {
   transform-origin: 100% 100%;
 }
 
+/* Tail on the right, mirrored. */
 .my-box > .bubble::before {
   left: auto;
   right: -5px;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 11px 10px;
-}
-
-.my-box > .bubble::after {
-  left: auto;
-  right: -8px;
-  border-bottom-right-radius: 0;
-  border-bottom-left-radius: 7px;
+  transform: scaleX(-1);
 }
 
 /* From an earlier street: still readable, a touch quieter than this street's moves. */
@@ -1011,23 +995,24 @@ html.calm .pod.won .pod-pic {
 
 .pos-chips {
   position: absolute;
-  right: -7px;
-  bottom: -3px;
+  right: -15px;
+  bottom: 8px;
   z-index: 2;
   display: flex;
   gap: 2px;
 }
 
 .pos-chip {
-  min-width: 20px;
-  height: 20px;
+  min-width: 17px;
+  height: 17px;
   padding: 0 4px;
-  border-radius: 10px;
+  border-radius: 9px;
   display: grid;
   place-items: center;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 900;
   line-height: 1;
+  white-space: nowrap;
   box-shadow:
     0 0 0 1.5px var(--surface),
     var(--shadow-sm);
@@ -1206,12 +1191,9 @@ html.calm .pod.won .pod-pic {
     0 2px 6px -2px rgba(18, 18, 40, 0.35);
 }
 
+/* The ring is on the bubble, so its tail has none: a white curl is enough. */
 .bubble-react::before {
   background: var(--surface);
-}
-
-.bubble-react::after {
-  background: var(--bg);
 }
 
 .bubble-emoji {
@@ -1329,4 +1311,64 @@ html.calm .table-timer.low .timer-run {
 /* On a phone the stage is just a wrapper: its children lay out as they always did. Desktop turns it into the table room. */
 .stage {
   display: contents;
+}
+
+/* ── Dark mode: a very faint glow on messages and the things that matter, so it feels lit ───────────── */
+
+html[data-theme='dark'] .bubble-blue {
+  box-shadow:
+    0 0 14px rgba(59, 155, 255, 0.4),
+    0 2px 6px -2px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme='dark'] .bubble-grey {
+  color: var(--ink);
+  box-shadow:
+    0 0 10px rgba(255, 255, 255, 0.07),
+    0 2px 6px -2px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme='dark'] .bubble-react {
+  box-shadow:
+    0 0 0 1.5px var(--blue),
+    0 0 14px rgba(59, 130, 246, 0.35);
+}
+
+html[data-theme='dark'] .win-banner {
+  box-shadow:
+    0 0 0 3px rgba(245, 158, 11, 0.7),
+    0 0 22px rgba(245, 158, 11, 0.3),
+    0 6px 16px -6px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme='dark'] .pod-ring {
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 14px rgba(245, 158, 11, 0.5);
+}
+
+html[data-theme='dark'] .hand-pill {
+  box-shadow:
+    0 0 0 1px var(--card-edge),
+    0 0 14px rgba(120, 160, 255, 0.16);
+}
+
+html[data-theme='dark'] .timer-run {
+  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6));
+}
+
+html[data-theme='dark'] .table-timer.mine .timer-run {
+  filter: drop-shadow(0 0 5px rgba(74, 163, 255, 0.75));
+}
+
+html[data-theme='dark'] .table-timer.low .timer-run {
+  filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.8));
+}
+
+html[data-theme='dark'] .your-turn {
+  text-shadow: 0 0 18px rgba(74, 163, 255, 0.35);
+}
+
+html[data-theme='dark'] .pot-pill {
+  box-shadow: 0 0 14px rgba(0, 0, 0, 0.25);
 }

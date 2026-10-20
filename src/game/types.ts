@@ -13,6 +13,10 @@ export interface Settings {
   bigBlind: number;
   /** Busted players can buy back in for another starting stack. */
   rebuys: boolean;
+  /** Minutes between blind increases. 0 (or missing) = the blinds never go up. */
+  blindMinutes?: number;
+  /** Rising blinds stop at this big blind (0 or missing: they keep doubling). */
+  blindCap?: number;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
 }
@@ -178,6 +182,8 @@ export interface Game {
   reactions?: Record<string, { id: string; n: number }>;
   /** Hands dealt at this table so far (a hand called off still counts). */
   hands?: number;
+  /** When the blinds next go up (they change as the next hand is dealt). null = never. */
+  blindsRaiseAt?: number | null;
 }
 
 export type Action =

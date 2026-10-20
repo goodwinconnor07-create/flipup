@@ -79,6 +79,8 @@
   --card-back-2: #0b0b12;
   --card-shadow: 0 1px 2px rgba(18, 18, 40, 0.08), 0 6px 16px -8px rgba(18, 18, 40, 0.28);
   --card-dim: 0.38;
+  --card-dim-bg: var(--bg-3);
+  --bubble-grey: #e9e9eb;
 
   /* ── States. -lo shades are for gradients under white text; -ink is text on a tinted -bg. */
   --green: #15803d;
@@ -133,6 +135,61 @@
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Dark mode: the same colours with deep blue-black surfaces. Switched on from the menu (data-theme on <html>).
+   Cards stay white, like real ones, and the felt stays the player's choice. */
+html[data-theme='dark'] {
+  color-scheme: dark;
+  --glass-fill: rgba(27, 28, 36, 0.58);
+  --glass-fill-strong: rgba(27, 28, 36, 0.82);
+  --glass-rim: rgba(255, 255, 255, 0.14);
+  --glass-edge: rgba(0, 0, 0, 0.3);
+  --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  --ink: #f4f4f8;
+  --ink-2: #d0d0da;
+  --ink-3: #a3a3b2;
+  --ink-4: #62626f;
+  --line: #2e2f3b;
+  --bg: #0e0f14;
+  --bg-2: #1b1c24;
+  --bg-3: #30313d;
+  --surface: #1b1c24;
+  --contrast: #f4f4f8;
+  --on-contrast: #0b0b12;
+  --btn-dark: #30313d;
+  --chip: rgba(255, 255, 255, 0.1);
+  --scrim: rgba(14, 15, 20, 0.86);
+  --focus: #60a5fa;
+  --brand-ink: #93c5fd;
+  --violet-bg: rgba(139, 92, 246, 0.18);
+
+  --green-bg: rgba(34, 197, 94, 0.14);
+  --green-line: rgba(34, 197, 94, 0.5);
+  --green-ink: #4ade80;
+  --blue-bg: rgba(59, 130, 246, 0.18);
+  --blue-ink: #93c5fd;
+  --red-bg: rgba(244, 63, 94, 0.15);
+  --red-bg-2: rgba(244, 63, 94, 0.25);
+  --red-ink: #fb7185;
+  --red-ink-2: #fda4af;
+  --gold-bg: rgba(245, 158, 11, 0.14);
+  --gold-bg-2: rgba(245, 158, 11, 0.22);
+  --gold-ink: #fcd34d;
+  --gold-ink-2: #fde68a;
+
+  --card-edge: rgba(255, 255, 255, 0.14);
+  --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px -8px rgba(0, 0, 0, 0.7);
+  --card-dim-bg: #7a7c8c;
+  --bubble-grey: #34353f;
+  --card-back-1: #3b4256;
+  --card-back-2: #161821;
+
+  --shadow-sm: 0 2px 8px -4px rgba(0, 0, 0, 0.6);
+  --shadow-soft: 0 8px 24px -16px rgba(0, 0, 0, 0.7);
+  --shadow: 0 12px 28px -14px rgba(0, 0, 0, 0.8);
+  --shadow-press: 0 4px 10px -6px rgba(0, 0, 0, 0.8);
+  --glass-shadow: 0 8px 24px -12px rgba(0, 0, 0, 0.6);
 }
 
 *,
@@ -217,7 +274,8 @@ input {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding-bottom: 16px;
+  /* Room to scroll past the last card, clear of the sticky footer and its fade. */
+  padding-bottom: 56px;
 }
 
 .screen-foot {
@@ -230,7 +288,7 @@ input {
   /* A taller fade so content scrolling underneath reads as "more below", not cut off. */
   padding: 36px 0 calc(var(--safe-bottom) + 16px);
   margin-top: -20px;
-  background: linear-gradient(to top, var(--bg) 70%, rgba(255, 255, 255, 0));
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
 }
 
 /* Over a colourful background the footer shouldn't paint a white box. */
@@ -710,7 +768,7 @@ input {
   overscroll-behavior: contain;
   background: var(--surface);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
-  padding: 12px 20px calc(var(--safe-bottom) + 20px);
+  padding: 12px 20px calc(var(--safe-bottom) + 36px);
   animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.05);
 }
 
@@ -1106,4 +1164,10 @@ html.calm *::after {
   .toast {
     background: var(--contrast);
   }
+}
+
+/* Nothing should ever make the page scroll sideways. */
+html,
+body {
+  overflow-x: clip;
 }

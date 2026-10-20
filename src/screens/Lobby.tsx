@@ -1,10 +1,10 @@
 import { MAX_SEATS, type Game } from '../game';
-import { joinLink, joinLinkLabel } from '../state/platform';
+import { joinLinkLabel } from '../state/platform';
 import { confirm, dispatch, openSheet, useApp } from '../state/store';
 import { Avatar, chips } from '../ui/components';
 import { colourWipe } from '../ui/effects';
-import { CopyIcon, PlusIcon, QrIcon, ShareIcon } from '../ui/Icons';
-import { CodeTiles, copy, shareInvite } from './sheets/InviteSheet';
+import { PlusIcon, QrIcon, ShareIcon } from '../ui/Icons';
+import { CodeTiles, shareInvite } from './sheets/InviteSheet';
 import { timerLabel } from './Setup';
 
 export function Lobby({ game }: { game: Game }) {
@@ -31,13 +31,11 @@ export function Lobby({ game }: { game: Game }) {
       <div className="screen-body">
         <div>
           <h1 className="h1">{host ? (online ? 'Invite your friends' : 'Your table') : "You're in!"}</h1>
-          <p className="muted" style={{ margin: '6px 0 0' }}>
-            {host
-              ? online
-                ? 'They join on their own phones with this code.'
-                : 'Add or remove bots, then deal.'
-              : `Waiting for ${hostName} to deal.`}
-          </p>
+          {!(host && online) && (
+            <p className="muted" style={{ margin: '6px 0 0' }}>
+              {host ? 'Add or remove bots, then deal.' : `Waiting for ${hostName} to deal.`}
+            </p>
+          )}
         </div>
 
         {online && game.code && host && (
@@ -46,54 +44,17 @@ export function Lobby({ game }: { game: Game }) {
             <button
               type="button"
               className="link-chip press"
-              aria-label={`Copy link ${joinLinkLabel(game.code)}`}
-              onClick={() => void copy(joinLink(game.code!))}
+              aria-label={`Share link ${joinLinkLabel(game.code)}`}
+              onClick={() => void shareInvite(game.code!)}
             >
               <span className="link-host">{joinLinkLabel(game.code)}</span>
-              <CopyIcon width={20} height={20} />
+              <ShareIcon width={20} height={20} />
             </button>
-            <div className="invite-actions">
-              <button type="button" className="btn btn-blue" onClick={() => void shareInvite(game.code!)}>
-                <ShareIcon width={24} height={24} /> Share invite
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost icon-only"
-                aria-label="Show QR code"
-                onClick={() => openSheet({ name: 'invite' })}
-              >
-                <QrIcon width={26} height={26} />
-              </button>
-            </div>
+            <button type="button" className="btn btn-ghost" onClick={() => openSheet({ name: 'invite' })}>
+              <QrIcon width={24} height={24} /> QR code
+            </button>
           </div>
         )}
-
-        <button
-          type="button"
-          className="info-chips press-row"
-          disabled={!host}
-          onClick={() => openSheet({ name: 'settings' })}
-          aria-label="Table settings"
-        >
-          <span className="info-chip">
-            Blinds{' '}
-            <b>
-              {chips(s.smallBlind)}/{chips(s.bigBlind)}
-            </b>
-          </span>
-          <span className="info-chip">
-            Stack <b>{chips(s.startingStack)}</b>
-          </span>
-          {online && (
-            <span className="info-chip">
-              Timer <b>{timerLabel(s.turnSeconds)}</b>
-            </span>
-          )}
-          <span className="info-chip">
-            Rebuys <b>{s.rebuys ? 'On' : 'Off'}</b>
-          </span>
-          {host && <span className="info-chip edit">Change</span>}
-        </button>
 
         <div className="section-row">
           <p className="section-title">
@@ -140,6 +101,38 @@ export function Lobby({ game }: { game: Game }) {
             </button>
           )}
         </div>
+
+        <button
+          type="button"
+          className="info-chips press-row"
+          disabled={!host}
+          onClick={() => openSheet({ name: 'settings' })}
+          aria-label="Table settings"
+        >
+          <span className="info-chip">
+            Blinds{' '}
+            <b>
+              {chips(s.smallBlind)}/{chips(s.bigBlind)}
+            </b>
+          </span>
+          <span className="info-chip">
+            Stack <b>{chips(s.startingStack)}</b>
+          </span>
+          {online && (
+            <span className="info-chip">
+              Timer <b>{timerLabel(s.turnSeconds)}</b>
+            </span>
+          )}
+          {!!s.blindMinutes && (
+            <span className="info-chip">
+              Blinds double every <b>{s.blindMinutes} min</b>
+            </span>
+          )}
+          <span className="info-chip">
+            Rebuys <b>{s.rebuys ? 'On' : 'Off'}</b>
+          </span>
+          {host && <span className="info-chip edit">Change</span>}
+        </button>
       </div>
       <div className="screen-foot">
         {host ? (

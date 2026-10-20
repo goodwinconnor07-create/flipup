@@ -63,7 +63,7 @@ test('the table uses the wide screen: everyone seated round it, a side panel, no
   await panel.getByRole('button', { name: 'Back' }).click();
 });
 
-test('the side panel log fills in as hands finish, and Home uses two columns', async ({ page }) => {
+test('the side panel log fills in as hands finish, and Home has a tab rail on the left', async ({ page }) => {
   watchErrors(page);
   await sitDown(page, 0);
   // Fold every hand we can; the log keeps the finished ones.
@@ -76,8 +76,11 @@ test('the side panel log fills in as hands finish, and Home uses two columns', a
 
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('button', { name: 'Home' }).click();
-  const home = await page.locator('.screen.home').evaluate((el) => getComputedStyle(el).display);
-  expect(home).toBe('grid');
+  await page.waitForTimeout(500); // let the screen finish sliding in
+  const rail = await page.locator('.tabbar').boundingBox();
+  const sheet = await page.locator('.home-sheet').boundingBox();
+  expect(rail!.x + rail!.width).toBeLessThan(sheet!.x);
+  expect(sheet!.y + sheet!.height).toBeLessThanOrEqual(900);
   await shot(page, '22-desktop-home');
 });
 

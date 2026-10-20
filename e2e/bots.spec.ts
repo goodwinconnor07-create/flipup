@@ -364,3 +364,132 @@ test('every player has a position: yours too', async ({ page }) => {
   expect(labels.sort()).toEqual(['BB', 'BTN', 'CO', 'SB']);
   await expect(page.locator('.my-box .pos-chip')).toHaveCount(1);
 });
+
+test('rising blinds: a setting, a countdown on the table', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('radiogroup', { name: 'Blinds stop increasing at' })).toHaveCount(0);
+  await page.getByRole('slider', { name: 'Blinds go up every' }).fill('5');
+  await expect(page.getByRole('radiogroup', { name: 'Blinds stop increasing at' }).getByRole('radio', { name: 'No limit' })).toBeVisible();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await expect(page.getByText('Blinds double every 5 min')).toBeVisible();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.locator('.table-title small')).toContainText(/blinds up in 4:\d\d|blinds up in 5:00/);
+  await shot(page, '18-blind-clock');
+});
+
+test('dark mode: a switch in the menu that changes the whole app and sticks', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  expect(await bg()).toBe('rgb(255, 255, 255)');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await page.getByText('Your turn').waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await shot(page, '19-menu-light');
+  await page.getByRole('button', { name: 'Dark mode off' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  expect(await bg()).toBe('rgb(14, 15, 20)');
+  await shot(page, '19-menu-dark');
+  await page.getByRole('button', { name: 'Close' }).click();
+  await page.waitForTimeout(500);
+  await shot(page, '19-table-dark');
+  // Nothing on the table is still white-on-white: the text colour has flipped too.
+  expect(await page.evaluate(() => getComputedStyle(document.body).color)).toBe('rgb(244, 244, 248)');
+  await page.reload();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+});
+
+test('home: three tabs, results from finished tables, training tiles', async ({ page }) => {
+  watchErrors(page);
+  await page.addInitScript(() => {
+    if (localStorage.getItem('flipup.stats')) return;
+    localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Connor', emoji: '😎' }));
+    const at = Date.now() - 3_600_000;
+    localStorage.setItem(
+      'flipup.stats',
+      JSON.stringify({ net: 200, tables: 2, hands: 40, counted: [], games: [{ at, net: 300, hands: 20, players: 4 }, { at, net: -100, hands: 20, players: 5 }] }),
+    );
+  });
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: 'Welcome back, Connor' })).toBeVisible();
+  await expect(page.getByText("You're up 200 chips this week.")).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Host a table' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Insights' }).click();
+  await expect(page.getByText('+200', { exact: true })).toBeVisible();
+  await expect(page.getByText('Recent tables')).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Insights' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Poker library/ }).click();
+  await expect(page.getByText('Poker library').first()).toBeVisible();
+});
+
+test('a table with players out of view never scrolls sideways', async ({ page }) => {
+  watchErrors(page);
+  await page.setViewportSize({ width: 460, height: 1000 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One more bot' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await page.getByText('Your turn').waitFor({ timeout: 30_000 });
+  await page.waitForTimeout(800);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await expect(page.getByRole('button', { name: 'Fold' })).toBeEnabled();
+});
+
+test('preflop drills work with the coach offline: dealt on the phone from the shipped solution', async ({ page }) => {
+  watchErrors(page);
+  await page.route('**/api/gto/**', (route) => route.abort());
+  await page.goto('/');
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Poker library/ }).click();
+  await page.getByRole('button', { name: /Opening the pot/ }).click();
+  await expect(page.getByText('What do you do?')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/You are/)).toBeVisible();
+  // Answer: the first option. GTO's answer and its reasons show.
+  await page.locator('.answer-btn').first().click();
+  await expect(page.getByText('GTO says')).toBeVisible();
+  await expect(page.getByText(/equity against a random hand/)).toBeVisible();
+});
+
+test('reviewing a hand shows what the coach is doing, with the time so far and the time left', async ({ page }) => {
+  watchErrors(page);
+  let polls = 0;
+  await page.route('**/api/gto/review/session', (route) => route.fulfill({ json: { job: 'j1' } }));
+  await page.route('**/api/gto/jobs/j1', (route) => {
+    polls++;
+    const report = { hand_id: 'x', players: {}, board: [], summary: { decisions: 0, graded: 0, total_ev_loss_bb: 0, grades: {} }, decisions: [], notes: [] };
+    return route.fulfill({ json: polls < 4 ? { status: 'running', progress: 0, total: 1, result: null } : { status: 'done', progress: 1, total: 1, result: { hands: [report] } } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await page.getByText('Your turn').waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Fold', exact: true }).click();
+  await page.getByRole('button', { name: 'Next hand' }).waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Home' }).click();
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Review hands/ }).click();
+  await page.getByRole('button', { name: /Hand #1/ }).click();
+  const activity = page.getByRole('status', { name: /Reviewing hand #1/ });
+  await expect(activity).toBeVisible();
+  await expect(activity.getByText('Reading the hand')).toBeVisible();
+  await expect(activity.getByText(/left/)).toBeVisible();
+  await expect(activity.getByText(/^\d+:\d\d$/)).toBeVisible();
+  await shot(page, '24-review-activity');
+  await expect(activity).toBeHidden({ timeout: 20_000 });
+});

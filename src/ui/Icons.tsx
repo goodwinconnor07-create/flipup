@@ -264,3 +264,22 @@ export const EyeIcon = (p: P) => (
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
+
+export const MoonIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />
+  </svg>
+);
+
+export const CardsIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <rect x="3.5" y="5" width="11" height="15" rx="2.5" transform="rotate(-9 9 12.5)" />
+    <path d="M14 6.2a2.5 2.5 0 0 1 3.1 1.6l2.6 9.4a2.5 2.5 0 0 1-1.7 3.1" />
+  </svg>
+);
+
+export const SparkIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" />
+  </svg>
+);

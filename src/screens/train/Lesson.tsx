@@ -1,11 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { recordNet, type HandRecord } from '../../game';
+import { toHandHistory } from '../../gto/api';
 import type { HandReport } from '../../gto/types';
 import { navigate } from '../../state/store';
 import { loadHistory } from '../../state/training';
-import { reviewHand, savedReport } from '../../train/reviews';
-import { DecisionCard, GradePill, MiniCards, streetName } from '../../train/widgets';
-import { BackBar, Spinner } from '../../ui/components';
+import { reviewAndSave, savedReport } from '../../train/reviews';
+import { drillFor, scenarioTitle } from '../../train/scenarios';
+import { CoachFeedback, CoachSays } from '../../train/Coach';
+import { handLesson, summaryLine } from '../../train/coach';
+import { GradePill, MiniCards, streetName } from '../../train/widgets';
+import { BackBar } from '../../ui/components';
+import { ReviewActivity } from './ReviewActivity';
 
 const STREETS = ['preflop', 'flop', 'turn', 'river'] as const;
 const BOARD_AT = { preflop: 0, flop: 3, turn: 4, river: 5 };
@@ -30,19 +35,23 @@ function streetMoves(r: HandRecord, street: string): string[] {
 export function Lesson({ handKey }: { handKey: string }) {
   const [hand] = useState(() => loadHistory().find((h) => h.key === handKey) ?? null);
   const [report, setReport] = useState<HandReport | null>(() => savedReport(handKey));
-  const [progress, setProgress] = useState<string | null>(null);
+  const [reviewing, setReviewing] = useState(false);
+  const [done, setDone] = useState(0);
+  const history = useMemo(() => (hand ? [toHandHistory(hand.record)] : []), [hand]);
   const [error, setError] = useState<string | null>(null);
 
   const run = async () => {
     if (!hand) return;
     setError(null);
-    setProgress('Solving every street of this hand. This takes a few minutes; you can leave this screen and come back.');
+    setDone(0);
+    setReviewing(true);
     try {
-      setReport(await reviewHand(hand));
+      const out = await reviewAndSave([hand], (d) => setDone(d));
+      setReport(out[hand.key] ?? null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The review failed.');
     } finally {
-      setProgress(null);
+      setReviewing(false);
     }
   };
 
@@ -71,7 +80,14 @@ export function Lesson({ handKey }: { handKey: string }) {
 
   return (
     <div className="screen train">
-      <BackBar title={`Hand #${r.number}`} />
+      <BackBar
+        title={`Hand #${r.number}`}
+        right={
+          <button type="button" className="chip-btn press" onClick={() => navigate({ name: 'replay', key: handKey })}>
+            Watch it back
+          </button>
+        }
+      />
       <div className="screen-body">
         <section className="lesson-head">
           <div className="slot-row">
@@ -88,23 +104,23 @@ export function Lesson({ handKey }: { handKey: string }) {
           </p>
           {colours && (
             <div className="slot-row">
-              <GradePill colour="green" label={`${colours.green} GTO`} />
+              <GradePill colour="green" label={`${colours.green} good`} />
               <GradePill colour="yellow" label={`${colours.yellow} close`} />
-              <GradePill colour="red" label={`${colours.red} off`} />
+              <GradePill colour="red" label={`${colours.red} costly`} />
               {report!.summary.total_ev_loss_bb > 0.01 && <span className="muted">{report!.summary.total_ev_loss_bb.toFixed(2)}bb given up</span>}
             </div>
           )}
         </section>
 
-        {progress && <Spinner label={progress} />}
+        {reviewing && history.length > 0 && <ReviewActivity hands={history} done={done} title={`Reviewing hand #${r.number}`} />}
         {error && (
-          <>
-            <p className="note">{error}</p>
-            <button type="button" className="btn btn-dark" onClick={() => void run()}>
+          <CoachSays quick lines={[error]}>
+            <button type="button" className="btn btn-sm btn-dark" onClick={() => void run()}>
               Try again
             </button>
-          </>
+          </CoachSays>
         )}
+        {report && <LessonSummary report={report} onPractice={practise} />}
 
         {report &&
           STREETS.filter((s) => s === 'preflop' || r.board.length >= BOARD_AT[s]).map((s) => {
@@ -125,14 +141,12 @@ export function Lesson({ handKey }: { handKey: string }) {
                   </div>
                 )}
                 {ds.map((d, i) => (
-                  <DecisionCard key={i} d={d} onPractice={practise} />
+                  <CoachFeedback key={i} d={d} onPractice={practise} compact />
                 ))}
               </section>
             );
           })}
-        {report && report.decisions.length === 0 && (
-          <p className="muted">Nothing to grade here: you didn't have a decision the coach could check (for example, everyone folded to your big blind).</p>
-        )}
+
         {report?.notes.map((n, i) => (
           <p key={i} className="note">
             {n}
@@ -140,5 +154,20 @@ export function Lesson({ handKey }: { handKey: string }) {
         ))}
       </div>
     </div>
+  );
+}
+
+/** The coach opens the review: how it went, and the one thing to take from it. */
+function LessonSummary({ report, onPractice }: { report: HandReport; onPractice: (scenario: string) => void }) {
+  const lesson = handLesson(report);
+  const drill = lesson.scenario ? drillFor(lesson.scenario) : null;
+  return (
+    <CoachSays lines={report.decisions.length === 0 ? [lesson.text] : [summaryLine(report), lesson.text]} status="Here's how it went">
+      {drill && (
+        <button type="button" className="btn btn-sm btn-dark" onClick={() => onPractice(drill)}>
+          Practise {scenarioTitle(drill).toLowerCase()}
+        </button>
+      )}
+    </CoachSays>
   );
 }

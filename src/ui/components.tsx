@@ -250,17 +250,25 @@ export function Choice<T extends string | number>({
   options,
   onChange,
   format = String,
+  columns,
 }: {
   label: string;
   value: T;
   options: T[];
   onChange: (value: T) => void;
   format?: (value: T) => string;
+  /** Wrap the options into this many columns instead of one row. */
+  columns?: number;
 }) {
   return (
     <div className="choice">
       <p className="section-title">{label}</p>
-      <div className="choice-row" role="radiogroup" aria-label={label}>
+      <div
+        className={`choice-row${columns ? ' wrap' : ''}`}
+        style={columns ? { ['--cols' as string]: columns } : undefined}
+        role="radiogroup"
+        aria-label={label}
+      >
         {options.map((o) => (
           <button
             key={String(o)}

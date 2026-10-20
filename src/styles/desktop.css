@@ -31,38 +31,6 @@
     max-width: 600px;
   }
 
-  /* Home: the cards and headline on the left, the buttons on the right. */
-  .screen.home {
-    max-width: 1020px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr;
-    column-gap: 56px;
-  }
-
-  .screen.home > .home-head {
-    grid-column: 1 / -1;
-  }
-
-  .screen.home > .home-body {
-    grid-column: 1;
-    grid-row: 2;
-    justify-content: center;
-  }
-
-  .screen.home > .screen-foot {
-    grid-column: 2;
-    grid-row: 2;
-    align-self: center;
-    position: static;
-    margin: 0;
-    padding: 0;
-    background: none;
-    box-shadow: none;
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-
   .sheet {
     zoom: calc(1.15 * var(--desk-zoom, 1));
     max-height: calc(88dvh / (1.15 * var(--desk-zoom, 1)));

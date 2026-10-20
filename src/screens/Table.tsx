@@ -17,7 +17,8 @@ import {
   type Player,
   type Seat,
 } from '../game';
-import { dispatch, openSheet, react, useApp } from '../state/store';
+import { dispatch, navigate, openSheet, react, toast, useApp } from '../state/store';
+import { handKey, hasHand } from '../state/training';
 import { Avatar, CardSlot, chips, Count, PlayingCard, PositionChips, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
 import { ChatIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
@@ -31,6 +32,16 @@ import { Lobby } from './Lobby';
 export function Table() {
   const desktop = useDesktop();
   const game = useApp((s) => s.game);
+  // Say so when the blinds go up.
+  const bigBlind = game?.settings.bigBlind;
+  const lastBlind = useRef(bigBlind);
+  useEffect(() => {
+    if (game && bigBlind !== undefined && lastBlind.current !== undefined && bigBlind > lastBlind.current && game.status === 'playing') {
+      toast(`Blinds are now ${chips(game.settings.smallBlind)}/${chips(bigBlind)}`, 'info');
+      playSound('chips');
+    }
+    lastBlind.current = bigBlind;
+  }, [bigBlind]);
   const conn = useApp((s) => s.conn);
   const online = useApp((s) => s.session?.mode === 'online');
 
@@ -69,6 +80,20 @@ export function Table() {
   );
 }
 
+/** " · blinds up in 4:32", counting down. When it hits zero the blinds go up as the next hand is dealt. */
+function BlindClock({ game }: { game: Game }) {
+  const now = useNow(1000);
+  if (game.blindsRaiseAt == null) return null;
+  const left = Math.max(0, Math.ceil((game.blindsRaiseAt - now) / 1000));
+  if (left === 0) return <> · blinds up next hand</>;
+  return (
+    <>
+      {' '}
+      · blinds up in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+    </>
+  );
+}
+
 function TableBar({ game }: { game: Game | null }) {
   const online = useApp((s) => s.session?.mode === 'online');
   return (
@@ -84,6 +109,7 @@ function TableBar({ game }: { game: Game | null }) {
             </b>
             <small className="muted">
               {game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
+              {game.status === 'playing' && !!game.settings.blindMinutes && <BlindClock game={game} />}
             </small>
           </>
         )}
@@ -872,7 +898,20 @@ function ActionArea({
         <span className="next-fill" aria-hidden />
         {ready ? 'Waiting for the others…' : 'Next hand'}
       </button>
+      <ReplayButton gameId={game.id} number={hand.number} />
     </div>
+  );
+}
+
+/** Watch the hand that just finished, if this phone was dealt in and saved it. */
+function ReplayButton({ gameId, number }: { gameId: string; number: number }) {
+  const key = handKey(gameId, number);
+  const saved = useMemo(() => hasHand(key), [key]);
+  if (!saved) return null;
+  return (
+    <button type="button" className="btn btn-sm btn-outline" onClick={() => navigate({ name: 'replay', key })}>
+      Replay this hand
+    </button>
   );
 }
 

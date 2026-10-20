@@ -78,6 +78,18 @@ def load_kind_calibration():
     return _tables["kinds"]
 
 
+def rake_growth(rate: float, cap: float) -> list[float]:
+    """Rake multipliers for flops (data/rake_growth.json): measured for this rate/cap, else uncapped growth."""
+    import json
+    if "rake" not in _tables:
+        path = os.path.join(DATA_DIR, "rake_growth.json")
+        _tables["rake"] = json.load(open(path)) if os.path.exists(path) else None
+    d = _tables["rake"]
+    if not d:
+        return [1.0] * 5
+    return d["structures"].get(f"{rate:g}/{cap:g}", d["uncapped"])
+
+
 def calibration_key():
     """Identifies the realization model in use, for cache keys."""
     cal, kinds = load_calibration(), load_kind_calibration()
@@ -126,6 +138,8 @@ class PreflopSpot:
         cfg.stacks = [float(s) for s in stacks]
         cfg.sb, cfg.bb, cfg.ante = self.sb, self.bb, self.ante
         cfg.rake_rate, cfg.rake_cap = self.rake_rate, self.rake_cap
+        if self.rake_rate > 0:
+            cfg.rake_growth = rake_growth(self.rake_rate, self.rake_cap)
         cfg.open_size = self.open_size or default_open_sizes(self.names, eff)
         limp = [0] * n
         if self.sb_can_limp and n >= 2:

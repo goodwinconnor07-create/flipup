@@ -1,0 +1,7 @@
+{
+ "about": "Rake paid after the flop as a multiple of rate * pot on the flop, from scripts/measure_rake.py (6-max 100bb ranges). Index: SPR bucket <1.5, 1.5-4, 4-8, 8+, then heads-up limped pots. 'uncapped' is the pot's expected growth; 'structures' are measured for a rate/cap pair.",
+ "uncapped": [2.0, 2.17, 3.17, 2.95, 3.6],
+ "structures": {
+  "0.05/4": [1.6, 1.7, 2.49, 2.85, 3.59]
+ }
+}

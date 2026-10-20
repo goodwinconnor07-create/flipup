@@ -82,8 +82,10 @@ class PreflopCache:
         self._lock = threading.Lock()  # one load/solve at a time (startup warm-up vs first request)
 
     def _path(self, spot, key, num_players, stack):
-        h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
-                                     calibration_key()]).encode()).hexdigest()[:16]
+        parts = [key, spot.engine.num_nodes, MODEL_VERSION, calibration_key()]
+        if spot.rake_rate > 0:
+            parts.append(list(spot.config.rake_growth))
+        h = hashlib.sha1(json.dumps(parts).encode()).hexdigest()[:16]
         return os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
 
     def loaded(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,

@@ -456,7 +456,8 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
   double rake = 0;
   if (n.type == 2 || n.type == 3) {
     const bool grows = n.type == 2;
-    rake = n.pot * cfg_.rake_rate * (grows ? cfg_.rake_growth[n.spr_bucket] : 1.0);
+    const int g = n.pot_kind == 0 ? 4 : n.spr_bucket;
+    rake = n.pot * cfg_.rake_rate * (grows ? cfg_.rake_growth[g] : 1.0);
     if (cfg_.rake_cap > 0) rake = std::min(rake, cfg_.rake_cap);
   }
   const double pot_eff = n.pot - rake;

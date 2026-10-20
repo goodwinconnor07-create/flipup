@@ -1273,3 +1273,15 @@ html.no-glass :is(.glass, .quick-btn) {
     background-image: none;
   }
 }
+
+/* The glass toast is always a dark tint, so its text is always white with a black outline: in dark
+   mode the normal toast text colour is near-black and vanished into it. */
+html:not(.no-glass) .toast:not(.error):not(.success) {
+  color: #fff;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 0 6px rgba(0, 0, 0, 0.6);
+}

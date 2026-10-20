@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { setName, shot, watchErrors } from './helpers';
 
-test('after a hand against bots the table offers a replay, with the coach', async ({ page }) => {
+test('replay is switched off for now: no replay button after a hand', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play the bots' }).click();
@@ -11,16 +11,9 @@ test('after a hand against bots the table offers a replay, with the coach', asyn
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
   // Fold as soon as it's our turn so the hand ends quickly.
-  await page.getByRole('button', { name: 'Fold' }).click({ timeout: 60_000 });
-  await page.getByRole('button', { name: 'Replay this hand' }).click({ timeout: 60_000 });
-  await expect(page.getByText('GTO Coach').first()).toBeVisible();
-  await expect(page.getByText('Replay · ', { exact: false })).toBeVisible();
-  await expect(page.locator('.rp-seat.hero')).toBeVisible();
-  // No buttons that act in the game: a replay is something you watch.
-  await expect(page.getByRole('button', { name: 'Call', exact: true })).toHaveCount(0);
-  await shot(page, 'replay-from-table');
-  await page.getByRole('button', { name: 'Back', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Next hand' })).toBeVisible();
+  await page.getByRole('button', { name: 'Fold', exact: true }).click({ timeout: 60_000 });
+  await expect(page.getByRole('button', { name: /Next hand|Rebuy/ }).first()).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByRole('button', { name: 'Replay this hand' })).toHaveCount(0);
 });
 
 test('the review list shows a replay button and a coach', async ({ page }) => {

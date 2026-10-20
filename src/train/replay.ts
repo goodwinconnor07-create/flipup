@@ -139,6 +139,10 @@ export function buildFrames(r: HandRecord, heroId: string): Frame[] {
   while (STREETS.indexOf(street) < 3 && BOARD_AT[STREETS[STREETS.indexOf(street) + 1]] <= r.board.length) moveTo(STREETS[STREETS.indexOf(street) + 1]);
 
   closeStreet();
+  // A bet nobody could match in full goes back to whoever made it, as it does at the table.
+  const byAmount = [...r.players].sort((x, y) => committed[y.id] - committed[x.id]);
+  if (byAmount.length > 1 && committed[byAmount[0].id] > committed[byAmount[1].id])
+    committed[byAmount[0].id] = committed[byAmount[1].id];
   const stacks = Object.fromEntries(r.players.map((p) => [p.id, start[p.id] - committed[p.id] + (r.won[p.id] ?? 0)]));
   const winners = r.players.filter((p) => (r.won[p.id] ?? 0) > 0);
   const gained = (id: string) => (r.won[id] ?? 0);
@@ -192,3 +196,6 @@ export function mistakeFrames(frames: Frame[], graded: Map<number, Decision>): n
     return d && (d.colour === 'red' || d.colour === 'yellow') ? [i] : [];
   });
 }
+
+/** Replay is switched off for now: every button that opens it checks this. */
+export const REPLAY_ON = false;

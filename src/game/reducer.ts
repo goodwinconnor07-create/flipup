@@ -1,10 +1,12 @@
 // Every change to a table goes through applyAction(). The server and the phone (for bots-only
 // tables) run exactly this code, so they always agree.
 
-import { BOTS, botMove } from './bots';
+import { decide, handBucket, updateReads } from './botPlay';
+import { BOTS } from './botStyles';
+import { botSays } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
-import { canDeal, cardsText, foldOutOfTurn, makeMove, MAX_SEATS, playerById, runoutStep, schedule, startHand, TIMING } from './holdem';
-import { newId } from './ids';
+import { canDeal, cardsText, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
+import { cryptoRng, newId } from './ids';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
@@ -120,10 +122,41 @@ export function createTable(opts: {
 function addBot(game: Game): void {
   const names = new Set(game.players.map((p) => p.name.toLowerCase()));
   const emojis = new Set(game.players.map((p) => p.emoji));
-  // A name and a picture nobody at the table has yet.
-  const pick = BOTS.find((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji)) ??
-    BOTS.find((b) => !names.has(b.name.toLowerCase())) ?? { name: `Bot ${game.players.length}`, emoji: '🤖' };
-  game.players.push(newPlayer(game, { ...pick, deviceId: null, bot: true }));
+  // A random bot whose name and picture nobody at the table has yet (so it isn't always the same order).
+  const free = BOTS.filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
+  const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
+  const pick = pool.length ? pool[Math.floor(cryptoRng() * pool.length)] : { name: `Bot ${game.players.length}`, emoji: '🤖', style: 'pro' };
+  game.players.push({ ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }), style: pick.style });
+}
+
+/** Once per hand, when it's over: the bots take note of what everyone did, and maybe one has a word to say. */
+function afterHand(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  const result = hand.result!;
+  game.readHand = hand.number;
+  updateReads(game, hand);
+  const bb = game.settings.bigBlind;
+  const pot = result.pots.reduce((a, p) => a + p.amount, 0);
+  if (pot < bb * 6) return;
+  const winners = Object.keys(result.won);
+  const bucketOf = (id: string) => {
+    const seat = hand.seats.find((s) => s.playerId === id);
+    return seat && seat.cards.length === 2 && hand.board.length >= 3 ? handBucket(seat.cards, hand.board) : null;
+  };
+  for (const id of winners) {
+    if (!playerById(game, id)?.bot) continue;
+    const b = bucketOf(id);
+    if (!result.showdown && (b === 'air' || b === 'weak') && botSays(game, id, 'bluffWon', ctx.rng)) return;
+    if (result.showdown && botSays(game, id, 'bigWin', ctx.rng)) return;
+  }
+  if (!result.showdown) return;
+  const personWon = winners.some((id) => !playerById(game, id)?.bot);
+  for (const s of hand.seats) {
+    if (s.folded || winners.includes(s.playerId) || !playerById(game, s.playerId)?.bot) continue;
+    const b = bucketOf(s.playerId);
+    if ((b === 'monster' || b === 'strong') && botSays(game, s.playerId, 'badBeat', ctx.rng)) return;
+    if (personWon && botSays(game, s.playerId, 'lostToYou', ctx.rng)) return;
+  }
 }
 
 /** Deal soon if the table was waiting for players and now has enough. */
@@ -144,6 +177,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
   const host = ctx.deviceId === game.hostDeviceId;
   const done = (changed = true): ActionResult => {
     if (!changed) return { ok: true, game: input, changed: false };
+    if (game.hand?.result && game.readHand !== game.hand.number) afterHand(game, ctx);
     game.version += 1;
     return { ok: true, game, changed: true };
   };
@@ -243,9 +277,17 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      const potBefore = potTotal(hand);
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) return fail(error);
       me.timeouts = 0;
+      // A big move from a person gets a reaction from one of the bots still in the hand.
+      const big = action.move === 'allin' || ((action.move === 'raise' || action.move === 'bet') && (action.to ?? 0) >= potBefore * 0.75);
+      if (big && !game.hand?.result) {
+        const bots = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
+        const who = bots[Math.floor(ctx.rng() * bots.length)];
+        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng);
+      }
       return done();
     }
 
@@ -367,9 +409,25 @@ function tick(game: Game, ctx: ActionContext): boolean {
     const player = playerById(game, hand.toAct);
     if (!seat || !player) return false;
     if (player.bot) {
-      const choice = botMove(game, hand, seat, ctx.rng);
+      const before = options(game, hand, seat);
+      // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.
+      const bigBet =
+        hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
+      const thought = decide(game, hand, seat, ctx.rng);
+      const choice = thought.move;
       if (makeMove(game, choice.move, choice.to, ctx))
         makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+      else if (!game.hand?.result) {
+        // Now and then, a word about what it just did.
+        const raisedBig = (choice.move === 'raise' || choice.move === 'bet') && (choice.to ?? 0) >= potTotal(hand) * 0.6;
+        const event =
+          choice.move === 'allin' ? 'allin'
+          : choice.move === 'fold' && bigBet ? 'foldBig'
+          : choice.move === 'call' && bigBet && (thought.bucket === 'mid' || thought.bucket === 'weak' || thought.bucket === 'air') ? 'callLight'
+          : raisedBig && hand.street !== 'preflop' ? 'raise'
+          : null;
+        if (event) botSays(game, player.id, event, ctx.rng);
+      }
       return true;
     }
     // Out of time: check if that's free, otherwise fold. Two in a row and they sit out.

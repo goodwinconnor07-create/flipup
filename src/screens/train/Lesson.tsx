@@ -1,3 +1,4 @@
+import { REPLAY_ON } from '../../train/replay';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { recordNet, type HandRecord } from '../../game';
 import { toHandHistory } from '../../gto/api';
@@ -83,9 +84,11 @@ export function Lesson({ handKey }: { handKey: string }) {
       <BackBar
         title={`Hand #${r.number}`}
         right={
-          <button type="button" className="chip-btn press" onClick={() => navigate({ name: 'replay', key: handKey })}>
-            Watch it back
-          </button>
+          REPLAY_ON ? (
+            <button type="button" className="chip-btn press" onClick={() => navigate({ name: 'replay', key: handKey })}>
+              Watch it back
+            </button>
+          ) : undefined
         }
       />
       <div className="screen-body">

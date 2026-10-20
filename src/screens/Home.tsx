@@ -7,6 +7,7 @@ import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar, Emoji } from '../ui/components';
 import { InsightsTab } from './HomeInsights';
 import { QuickGames, startBots } from './HomeQuick';
+import { BotsArt, HostArt } from './CardArt';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
 import { CardsIcon, ChartIcon, ChevronIcon, GearIcon, QrIcon, SparkIcon } from '../ui/Icons';
@@ -40,17 +41,6 @@ function statusLine(stats: ReturnType<typeof loadStats>, active: boolean): strin
     return `You're ${week > 0 ? 'up' : 'down'} ${signed(Math.abs(week)).replace(/^[+−]/, '')} chips this week.`;
   }
   return stats.tables > 0 ? 'Ready for another hand?' : 'Deal yourself in.';
-}
-
-/** Chips flung up from the players, for the cards' little scenes. */
-function TossChips() {
-  return (
-    <>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <i key={i} className={`toss-chip toss-${i}`} />
-      ))}
-    </>
-  );
 }
 
 export function Home() {
@@ -180,17 +170,8 @@ export function Home() {
                       <span className="mode-title">Host a table</span>
                       <span className="mode-sub">Share a code. Friends join on their phones.</span>
                     </span>
-                    <span className="mode-art" aria-hidden>
-                      <span className="art-face" style={{ left: '6%', top: '34%' }}>
-                        <Emoji emoji="😎" size={34} />
-                      </span>
-                      <span className="art-face" style={{ left: '40%', top: '8%' }}>
-                        <Emoji emoji="🤠" size={34} />
-                      </span>
-                      <span className="art-face" style={{ left: '70%', top: '40%' }}>
-                        <Emoji emoji="🦊" size={34} />
-                      </span>
-                      <TossChips />
+                    <span className="mode-art">
+                      <HostArt />
                     </span>
                   </button>
                   <button type="button" className="mode mode-violet press" onClick={() => go('bots')}>
@@ -198,15 +179,8 @@ export function Home() {
                       <span className="mode-title">Play the bots</span>
                       <span className="mode-sub">Practise on this phone, no timer.</span>
                     </span>
-                    <span className="mode-art mode-art-bots" aria-hidden>
-                      <span className="bot-line">
-                        {BOTS.slice(0, 6).map((b) => (
-                          <span key={b.name}>
-                            <Emoji emoji={b.emoji} size={30} />
-                          </span>
-                        ))}
-                      </span>
-                      <TossChips />
+                    <span className="mode-art">
+                      <BotsArt />
                     </span>
                   </button>
                   <button type="button" className="join-btn press" onClick={() => go('join')}>

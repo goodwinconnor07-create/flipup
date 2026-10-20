@@ -37,6 +37,9 @@ struct PreflopConfig {
   std::vector<double> stacks;  // starting stack per player (bb), before blinds/antes
   double sb = 0.5, bb = 1.0, ante = 0.0;
   double rake_rate = 0.0, rake_cap = 0.0;  // taken only from pots that see a flop
+  // Rake is a share of the final pot, which grows after the flop. A flop is raked as
+  // min(cap, rate * pot * rake_growth[spr bucket]) (buckets as eqr_ip below); all-ins as their pot.
+  std::array<double, 4> rake_growth = {1.0, 1.0, 1.0, 1.0};
 
   // Action abstraction.
   std::vector<double> open_size;    // raise-to (bb) per player when first in

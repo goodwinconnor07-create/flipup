@@ -133,6 +133,7 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("ante", &PreflopConfig::ante)
       .def_readwrite("rake_rate", &PreflopConfig::rake_rate)
       .def_readwrite("rake_cap", &PreflopConfig::rake_cap)
+      .def_readwrite("rake_growth", &PreflopConfig::rake_growth)
       .def_readwrite("open_size", &PreflopConfig::open_size)
       .def_readwrite("can_limp", &PreflopConfig::can_limp)
       .def_readwrite("iso_per_limper", &PreflopConfig::iso_per_limper)

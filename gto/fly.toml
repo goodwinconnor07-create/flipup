@@ -9,7 +9,7 @@ primary_region = "lhr"        # pick the region closest to your players (`fly pl
   dockerfile = "Dockerfile"
 
 [env]
-  FLIPUP_CORS = "*"           # the app calls through its own Worker, so this can stay open
+  FLIPUP_CORS = ""            # the app calls through its own Worker, so no browser needs direct access
 
 [http_service]
   internal_port = 8000

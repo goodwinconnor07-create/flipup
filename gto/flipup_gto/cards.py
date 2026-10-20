@@ -13,6 +13,8 @@ NUM_COMBOS = 1326
 
 
 def parse_card(s: str) -> int:
+    if not isinstance(s, str):
+        raise ValueError(f"bad card: {s!r}")
     s = s.strip()
     if len(s) != 2 or s[0].upper() not in RANKS or s[1].lower() not in SUITS:
         raise ValueError(f"bad card: {s!r}")
@@ -25,7 +27,11 @@ def card_str(c: int) -> str:
 
 def parse_cards(s: str | list) -> list[int]:
     if isinstance(s, (list, tuple)):
-        out = [c if isinstance(c, int) else parse_card(c) for c in s]
+        out = [c if isinstance(c, int) and not isinstance(c, bool) else parse_card(c) for c in s]
+        if any(not 0 <= c < 52 for c in out):
+            raise ValueError(f"bad card index in {s!r}")  # the engine indexes tables with these
+    elif not isinstance(s, str):
+        raise ValueError(f"bad card list: {s!r}")
     else:
         compact = "".join(ch for ch in s if not ch.isspace() and ch != ",")
         if len(compact) % 2:

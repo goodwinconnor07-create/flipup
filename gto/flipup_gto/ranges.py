@@ -57,6 +57,8 @@ class Range:
         self.w = np.zeros(NUM_COMBOS, dtype=np.float32) if weights is None else np.asarray(weights, np.float32).copy()
         if self.w.shape != (NUM_COMBOS,):
             raise ValueError("range needs 1326 weights")
+        if not np.all((self.w >= 0) & (self.w <= 1)):  # also rejects nan
+            raise ValueError("range weights must be between 0 and 1")
 
     # -- construction ------------------------------------------------------
     @classmethod
@@ -69,6 +71,8 @@ class Range:
             if ":" in raw:
                 raw, ws = raw.split(":", 1)
                 weight = float(ws)
+                if not 0.0 <= weight <= 1.0:  # also rejects nan
+                    raise ValueError(f"range weight must be between 0 and 1: {raw!r}")
             for item in _expand_token(raw):
                 if len(item) == 4 and item[1].lower() in "cdhs":
                     r.w[parse_combo(item)] = weight
@@ -144,7 +148,7 @@ class Range:
     def __mul__(self, other) -> "Range":
         if isinstance(other, Range):
             return Range(self.w * other.w)
-        return Range(self.w * float(other))
+        return Range(np.clip(self.w * float(other), 0, 1))
 
     def __repr__(self) -> str:
         return f"Range({self.combos():.1f} combos, {100 * self.fraction():.1f}%)"

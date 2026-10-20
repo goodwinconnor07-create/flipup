@@ -446,3 +446,18 @@ test('a table with players out of view never scrolls sideways', async ({ page })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.getByRole('button', { name: 'Fold' })).toBeEnabled();
 });
+
+test('preflop drills work with the coach offline: dealt on the phone from the shipped solution', async ({ page }) => {
+  watchErrors(page);
+  await page.route('**/api/gto/**', (route) => route.abort());
+  await page.goto('/');
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Poker library/ }).click();
+  await page.getByRole('button', { name: /Opening the pot/ }).click();
+  await expect(page.getByText('What do you do?')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/You are/)).toBeVisible();
+  // Answer: the first option. GTO's answer and its reasons show.
+  await page.locator('.answer-btn').first().click();
+  await expect(page.getByText('GTO says')).toBeVisible();
+  await expect(page.getByText(/equity against a random hand/)).toBeVisible();
+});

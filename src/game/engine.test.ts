@@ -631,6 +631,26 @@ describe('table', () => {
     expect(game.hand!.toAct).not.toBeNull();
   });
 
+  it('turns up the cards of anyone who is all in at the showdown, even a loser on the river', () => {
+    let game = table(2);
+    game = rig(game, { Host: 'Ah Ad', P1: '7c 2d' }, 'Ks 9d 4h 8s 3c');
+    // Check it down to the river.
+    game = act(game, 'call');
+    game = act(game, 'check');
+    for (let i = 0; i < 6 && game.hand!.street !== 'river'; i++) game = act(game, 'check');
+    expect(game.hand!.street).toBe('river');
+    // Whoever's first on the river goes all in with the worse hand or the better one; the other calls.
+    const bettor = game.hand!.toAct!;
+    game = act(game, 'allin');
+    game = act(game, 'call');
+    expect(game.hand!.result?.showdown).toBe(true);
+    const loser = game.hand!.seats.find((s) => !game.hand!.result!.won[s.playerId])!;
+    // The loser put everything in too, so their cards are face up, not mucked.
+    expect(loser.shown).toBe(true);
+    expect(game.hand!.seats.every((s) => s.shown)).toBe(true);
+    expect(bettor).toBeTruthy();
+  });
+
   it('doubles the blinds on the clock, as the next hand is dealt, and stops at the cap', () => {
     let game = table(2, { blindMinutes: 5, startingStack: 1000 });
     expect(game.hand!.number).toBe(1);

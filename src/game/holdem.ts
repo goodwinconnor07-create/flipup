@@ -511,7 +511,7 @@ function showdown(game: Game, ctx: ActionContext): void {
 
   // Showing down: the last bettor on the river shows first (or the first player left of the button).
   // After that, a hand is shown only if it beats or ties the best one so far, or wins something.
-  // The rest are mucked.
+  // A player who's all in always shows (as at a real table), even if they lost. The rest are mucked.
   const start = hand.aggressorId ? indexOf(hand, hand.aggressorId) : nextIndex(hand, button, (s) => !s.folded);
   const names: Record<string, string> = {};
   let bestShown = -1;
@@ -519,7 +519,7 @@ function showdown(game: Game, ctx: ActionContext): void {
     const seat = hand.seats[(start + i) % n];
     if (seat.folded) continue;
     const v = values.get(seat.playerId)!;
-    if (seat.shown || v.score >= bestShown || won[seat.playerId]) {
+    if (seat.shown || seat.allIn || v.score >= bestShown || won[seat.playerId]) {
       if (!seat.shown || hand.runout) log(game, `${nameOf(game, seat.playerId)} shows ${cardsText(seat.cards)} (${v.detail})`);
       seat.shown = true;
       names[seat.playerId] = v.detail;

@@ -37,7 +37,7 @@ When betting can't continue (everyone's all in, or all but one, and the bets are
 - Hands are ranked the standard way: royal flush, straight flush, four of a kind, full house, flush, straight, three of a kind, two pair, pair, high card. Best five of the seven cards. Aces can be low in A-2-3-4-5.
 - **Side pots** are built from how much each player put in. A player can only win the pots they put chips into.
 - **Ties split the pot.** Odd chips go to the winners closest to the left of the button.
-- **Showing.** The last player to bet or raise on the river shows first; if nobody bet, the first player left of the button. After that, a hand is shown only if it beats or ties the best hand shown so far, or wins a pot. Losing hands are mucked (hidden), like auto-muck on online sites.
+- **Showing.** The last player to bet or raise on the river shows first; if nobody bet, the first player left of the button. After that, a hand is shown only if it beats or ties the best hand shown so far, or wins a pot. Losing hands are mucked (hidden), like auto-muck on online sites. **A player who's all in always shows**, even on the river and even when they lose (product owner's call).
 - If everyone else folds, the last player wins without showing.
 
 ## Between hands

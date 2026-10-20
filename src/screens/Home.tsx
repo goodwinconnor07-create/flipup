@@ -127,14 +127,6 @@ export function Home() {
           <button type="button" className="capsule-btn press" aria-label="Settings" onClick={() => openSheet({ name: 'prefs' })}>
             <GearIcon width={22} height={22} />
           </button>
-          <button
-            type="button"
-            className="capsule-btn press"
-            aria-label={named ? `Your profile: ${profile.name}` : 'Set up your profile'}
-            onClick={() => navigate({ name: 'profile', then: 'done' })}
-          >
-            <Avatar emoji={profile.emoji} size={30} />
-          </button>
         </div>
       </div>
       <div className="home-sheet">
@@ -213,8 +205,13 @@ export function Home() {
             </button>
           ))}
         </div>
-        <button type="button" className="tab-round glass press" aria-label="Quick join" onClick={() => go('join')}>
-          <QrIcon width={26} height={26} />
+        <button
+          type="button"
+          className="tab-round glass press"
+          aria-label={named ? `Your profile: ${profile.name}` : 'Set up your profile'}
+          onClick={() => navigate({ name: 'profile', then: 'done' })}
+        >
+          <Avatar emoji={profile.emoji} size={36} />
         </button>
       </nav>
     </div>

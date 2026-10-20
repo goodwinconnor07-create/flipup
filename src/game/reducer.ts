@@ -151,15 +151,16 @@ function afterHand(game: Game, ctx: ActionContext): void {
   const spoke: string[] = [];
   const showdownLosers = result.showdown ? hand.seats.filter((s) => !s.folded && !winners.includes(s.playerId)).map((s) => s.playerId) : [];
   const personWon = winners.some((id) => !isBot(id));
-  // Who is on a cold streak: people who put chips in and lost, hands in a row.
+  // Who is on a cold streak: people who put in more than a big blind and lost, hands in a row.
+  // (Posting a blind and folding isn't a loss worth rubbing in.)
   const streaks = { ...game.streaks };
   for (const s of hand.seats) {
     if (isBot(s.playerId)) continue;
     if (winners.includes(s.playerId)) streaks[s.playerId] = 0;
-    else if (s.total > 0) streaks[s.playerId] = (streaks[s.playerId] ?? 0) + 1;
+    else if (s.total > bb) streaks[s.playerId] = (streaks[s.playerId] ?? 0) + 1;
   }
   game.streaks = streaks;
-  const tilted = hand.seats.some((s) => !isBot(s.playerId) && !winners.includes(s.playerId) && (streaks[s.playerId] ?? 0) >= 2);
+  const tilted = hand.seats.some((s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2);
 
   if (hand.ranOut) {
     for (const id of winners) if (isBot(id) && say(id, 'sweatWin')) spoke.push(id);

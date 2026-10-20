@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import parity from './botPlay.parity.json';
-import { boardTexture, category, handBucket } from './botPlay';
-import { simulate } from './botSim';
+import { boardTexture, category, decide, handBucket } from './botPlay';
+import { score, toInt } from './botEval';
+import { simulate, simulateTable } from './botSim';
+import { cardsShown, inTheMoment } from './botMind';
+import { STYLES as ALL_STYLES } from './botStyles';
+import { scoreHand } from './evaluate';
+import { fullDeck } from './cards';
 import { BOTS, STYLES } from './botStyles';
 import { botLineText } from './botTalk';
 import { reactionText } from './reactions';
@@ -42,12 +47,61 @@ describe('bots', () => {
     // A bot that has said what it's thinking knows its next move: that stays on the server too.
     g.botPlan = { playerId: 'x', seq: 3, move: 'raise', to: 60 };
     g.pendingTalk = { at: 5, playerId: 'x' };
+    g.minds = { x: { tilt: 0.6, confidence: -0.2, grudges: { h: 0.5 } } };
     expect(g.players.some((p) => p.style)).toBe(true);
     const seen = redactForDevice(g, 'h');
     expect(seen.players.every((p) => p.style === undefined)).toBe(true);
     expect(seen.reads).toBeUndefined();
     expect(seen.botPlan).toBeUndefined();
     expect(seen.pendingTalk).toBeUndefined();
+    expect(seen.minds).toBeUndefined();
+  });
+
+  it("decides from its own cards and public moves only: hiding everyone else's cards and the deck changes nothing", () => {
+    const rng = seededRng(21);
+    let now = 1000;
+    let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 4, code: null, now });
+    g.players.filter((p) => p.bot).forEach((p, i) => (p.style = ['pro', 'shark', 'station', 'maniac'][i]));
+    const step = (action: Parameters<typeof applyAction>[1], deviceId: string) => {
+      const r = applyAction(g, action, { deviceId, now, rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    };
+    step({ type: 'start' }, 'h');
+    let checked = 0;
+    for (let i = 0; i < 6000 && checked < 60; i++) {
+      const h = g.hand;
+      const me = g.players[0];
+      if (h && !h.result && !h.runout && h.toAct && h.toAct !== me.id && !g.botPlan) {
+        const seat = h.seats.find((s) => s.playerId === h.toAct)!;
+        const hidden = structuredClone(g);
+        hidden.hand!.deck = [];
+        for (const s of hidden.hand!.seats) if (s.playerId !== seat.playerId) s.cards = [];
+        const a = decide(g, h, seat, seededRng(i));
+        const b = decide(hidden, hidden.hand!, hidden.hand!.seats.find((s) => s.playerId === seat.playerId)!, seededRng(i));
+        expect(b).toEqual(a);
+        checked++;
+      }
+      if (h && !h.result && h.toAct === me.id) {
+        const o = options(g, h, h.seats.find((x) => x.playerId === me.id)!);
+        step({ type: 'act', hand: h.number, seq: h.seq, move: o.canCheck ? 'check' : o.toCall <= 40 ? 'call' : 'fold' }, 'h');
+      } else {
+        now = Math.max(now + 1, g.wakeAt ?? now + 1);
+        step({ type: 'tick' }, 'server');
+      }
+      for (const p of g.players) if (p.stack === 0 && (!g.hand || g.hand.result)) p.stack = 1000;
+    }
+    expect(checked).toBeGreaterThanOrEqual(60);
+  }, 60_000);
+
+  it('scores hands with its fast evaluator exactly like the table does', () => {
+    const rng = seededRng(4);
+    for (let i = 0; i < 3000; i++) {
+      const deck = fullDeck();
+      const n = 5 + (i % 3);
+      const cards = Array.from({ length: n }, () => deck.splice(Math.floor(rng() * deck.length), 1)[0]);
+      expect(score(cards.map(toInt)), cards.join(' ')).toBe(scoreHand(cards));
+    }
   });
 
   it("speaks only from its own fixed lines, which phones can't send", () => {
@@ -133,4 +187,47 @@ describe('bots', () => {
     expect(avg('station', 'foldToBet')).toBeLessThan(avg('nervous', 'foldToBet'));
     expect(avg('maniac', 'aggression')).toBeGreaterThan(avg('station', 'aggression') * 4);
   }, 120_000);
+
+  it('notices a bluff shown after the hand: the read counts it, and the bots that folded tilt and hold a grudge', () => {
+    const g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: DEFAULT_SETTINGS, bots: 2, code: null, now: 0 });
+    const [me, b1, b2] = g.players;
+    b1.style = 'pro';
+    b2.style = 'gambler';
+    const seat = (id: string, cards: string[], folded: boolean) => ({ playerId: id, cards, bet: 0, total: 20, folded, allIn: false, acted: true, shown: false, last: null });
+    const hand = {
+      number: 1, seq: 9, buttonId: me.id, sbId: b1.id, bbId: b2.id,
+      seats: [seat(me.id, ['7c', '2d'], false), seat(b1.id, ['Ah', 'Qh'], true), seat(b2.id, ['9s', '9d'], true)],
+      deck: [], board: ['Ks', 'Jh', '4c', '3d', '8s'], street: 'river' as const, toAct: null, currentBet: 0, minRaise: 10, aggressorId: me.id,
+      runout: false, actAt: null, deadline: null, log: [],
+      actions: [
+        { street: 'turn' as const, playerId: me.id, move: 'bet' as const, to: 40 },
+        { street: 'turn' as const, playerId: b1.id, move: 'fold' as const, to: 0 },
+        { street: 'turn' as const, playerId: b2.id, move: 'fold' as const, to: 0 },
+      ],
+      result: { pots: [{ amount: 100, eligible: [me.id], winners: [me.id] }], won: { [me.id]: 100 }, names: {}, showdown: false },
+    };
+    g.reads = { [me.id]: { hands: 10, vpip: 3, pfr: 2, betsFaced: 0, foldsToBet: 0, aggr: 2, calls: 0 } };
+    const fooled = cardsShown(g, hand, me.id);
+    expect(fooled.sort()).toEqual([b1.id, b2.id].sort());
+    expect(g.reads[me.id].shownBluffs).toBe(1);
+    expect(g.minds?.[b2.id].tilt).toBeGreaterThan(g.minds?.[b1.id].tilt ?? 1);
+    expect(g.minds?.[b1.id].grudges?.[me.id]).toBeGreaterThan(0);
+    // Tilt loosens a gambler up; the nervous kind tighten up instead.
+    const tilted = { tilt: 0.8, confidence: 0 };
+    expect(inTheMoment(ALL_STYLES.gambler, tilted, 0).pre.loose).toBeGreaterThan(ALL_STYLES.gambler.pre.loose);
+    expect(inTheMoment(ALL_STYLES.nervous, tilted, 0).post.scared).toBeGreaterThan(ALL_STYLES.nervous.post.scared);
+  });
+
+  it('acts like people: thinking time varies with the decision, and now and then a bot shows its cards', () => {
+    const r = simulateTable(['pro', 'maniac', 'lag', 'gambler', 'rock', 'shark'], 400, 6);
+    const bots = r.seats.filter((s) => s.thinkMs > 0);
+    expect(bots.length).toBeGreaterThan(3);
+    for (const s of bots) {
+      expect(s.thinkMs, s.style).toBeGreaterThan(900);
+      expect(s.thinkMs, s.style).toBeLessThan(4500);
+      expect(s.thinkSpread, s.style).toBeGreaterThan(0.25);
+    }
+    expect(r.seats.reduce((a, s) => a + s.shows, 0)).toBeGreaterThan(0);
+  }, 60_000);
 });
+

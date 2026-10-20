@@ -2,7 +2,10 @@
 // tables) run exactly this code, so they always agree.
 
 import { decide, handBucket, updateReads, type BotMove } from './botPlay';
-import { BOTS } from './botStyles';
+import { boardInfo, tierWith, toInt } from './botEval';
+import { cardsShown, mindOf, updateMinds } from './botMind';
+import { STRENGTH } from './botRange';
+import { BOTS, styleOf } from './botStyles';
 import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { botsOnly, canDeal, cardsText, dealNextStreet, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
@@ -146,6 +149,7 @@ function afterHand(game: Game, ctx: ActionContext): void {
   const result = hand.result!;
   game.readHand = hand.number;
   updateReads(game, hand);
+  updateMinds(game, hand);
   const bb = game.settings.bigBlind;
   const pot = result.pots.reduce((a, p) => a + p.amount, 0);
   const winners = Object.keys(result.won);
@@ -169,6 +173,10 @@ function afterHand(game: Game, ctx: ActionContext): void {
   game.streaks = streaks;
   const tilted = hand.seats.some((s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2);
 
+  // Now and then a bot turns its cards over when it didn't have to: a bluff that worked, a monster
+  // nobody paid off, or a good hand it laid down. Its own cards only, so nothing hidden leaks.
+  for (const id of showOffs(game, hand, ctx)) if (say(id, id in result.won ? (strongEnough(hand, id) ? 'showStrong' : 'showBluff') : 'showFold')) spoke.push(id);
+
   if (hand.ranOut) {
     for (const id of winners) if (isBot(id) && say(id, 'sweatWin')) spoke.push(id);
     for (const id of showdownLosers) if (isBot(id) && say(id, 'sweatLose')) spoke.push(id);
@@ -178,15 +186,24 @@ function afterHand(game: Game, ctx: ActionContext): void {
       const b = bucketOf(id);
       // Twice or more in a row and they pile on; a big showdown win is a smaller chance.
       const rubbedIn = tilted ? ctx.rng() < 0.7 : result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.25;
-      const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : rubbedIn ? 'tiltJab' : pot >= bb * 15 ? 'bigWin' : 'win';
+      if (spoke.includes(id)) continue;
+      // Beating the player it has a grudge with is sweeter.
+      const revenge = result.showdown && pot >= bb * 15 && showdownLosers.some((l) => (mindOf(game, id).grudges?.[l] ?? 0) > 0.3);
+      const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : revenge ? 'revenge' : rubbedIn ? 'tiltJab' : pot >= bb * 15 ? 'bigWin' : 'win';
       if (say(id, event)) spoke.push(id);
     }
     for (const id of showdownLosers) {
       if (!isBot(id)) continue;
       const b = bucketOf(id);
       const caught = b === 'air' || b === 'weak';
-      if (caught ? say(id, 'bluffCaught') : (b === 'monster' || b === 'strong') && pot >= bb * 10 ? say(id, 'badBeat') : personWon && say(id, 'lostToYou')) spoke.push(id);
+      const beat = (b === 'monster' || b === 'strong') && pot >= bb * 10;
+      if (caught ? say(id, 'bluffCaught') : beat ? say(id, 'badBeat') : personWon && say(id, 'lostToYou')) spoke.push(id);
     }
+  }
+  // A bot that's steaming says so.
+  for (const p of game.players) {
+    if (!p.bot || spoke.includes(p.id) || !hand.seats.some((s) => s.playerId === p.id)) continue;
+    if (mindOf(game, p.id).tilt > 0.5 && ctx.rng() < 0.35 && say(p.id, 'tilted')) spoke.push(p.id);
   }
   if (!spoke.length) return;
   // Someone answers now and then: a bot that didn't just speak, a beat later.
@@ -200,11 +217,66 @@ function afterHand(game: Game, ctx: ActionContext): void {
   schedule(game);
 }
 
+/** Did this player's hand end up strong (two pair or better made with a hole card)? */
+function strongEnough(hand: Game['hand'] & object, id: string): boolean {
+  const seat = hand.seats.find((s) => s.playerId === id);
+  if (!seat || seat.cards.length !== 2) return false;
+  if (hand.board.length < 3) return (STRENGTH.get(handClassOf(seat.cards)) ?? 0) > 0.93;
+  return tierWith(toInt(seat.cards[0]), toInt(seat.cards[1]), boardInfo(hand.board.map(toInt)), []) >= 5;
+}
+
+function handClassOf(cards: string[]): string {
+  const R = '23456789TJQKA';
+  const [a, b] = [...cards].sort((x, y) => R.indexOf(y[0]) - R.indexOf(x[0]));
+  return a[0] === b[0] ? a[0] + b[0] : a[0] + b[0] + (a[1] === b[1] ? 's' : 'o');
+}
+
+/** Bots that choose to show their cards after this hand (and turns them face up). */
+function showOffs(game: Game, hand: Game['hand'] & object, ctx: ActionContext): string[] {
+  const result = hand.result!;
+  if (result.showdown) return [];
+  const bb = game.settings.bigBlind;
+  const pot = result.pots.reduce((a, p) => a + p.amount, 0);
+  const acts = hand.actions ?? [];
+  const out: string[] = [];
+  for (const seat of hand.seats) {
+    const player = playerById(game, seat.playerId);
+    if (!player?.bot || seat.shown || seat.cards.length !== 2) continue;
+    const show = styleOf(player.style).show;
+    const won = seat.playerId in result.won;
+    const aggressive = acts.some((a) => a.playerId === seat.playerId && (a.move === 'bet' || a.move === 'raise' || a.move === 'allin'));
+    let chance = 0;
+    if (won && pot >= bb * 6) {
+      const tier = hand.board.length >= 3 ? tierWith(toInt(seat.cards[0]), toInt(seat.cards[1]), boardInfo(hand.board.map(toInt)), []) : -1;
+      const trash = tier >= 0 ? tier <= 1 : (STRENGTH.get(handClassOf(seat.cards)) ?? 1) < 0.3;
+      if (aggressive && trash) chance = show.bluffs;
+      else if (strongEnough(hand, seat.playerId)) chance = show.strong;
+    } else if (!won && seat.folded && hand.board.length >= 3) {
+      // Laid down a good hand after the flop to a real bet.
+      const fold = acts.find((a) => a.playerId === seat.playerId && a.move === 'fold' && !a.outOfTurn);
+      if (fold && fold.street !== 'preflop') {
+        const board = hand.board.slice(0, fold.street === 'flop' ? 3 : fold.street === 'turn' ? 4 : 5).map(toInt);
+        if (tierWith(toInt(seat.cards[0]), toInt(seat.cards[1]), boardInfo(board), []) >= 4 && pot >= bb * 10) chance = show.folds;
+      }
+    }
+    if (chance <= 0 || ctx.rng() >= chance) continue;
+    seat.shown = true;
+    const entry = game.logs?.find((l) => l.number === hand.number);
+    if (entry) {
+      entry.shown.push(player.id);
+      entry.lines.push(`${player.name} shows ${cardsText(seat.cards)}`);
+    }
+    out.push(player.id);
+  }
+  return out;
+}
+
 /** What a bot says while it thinks, given the move it's about to make. */
 function thinkingEvent(game: Game, hand: Game['hand'] & object, choice: BotMove, bucket: string | undefined, bigBet: boolean): TalkEvent | null {
   const raisedBig = (choice.move === 'raise' || choice.move === 'bet') && (choice.to ?? 0) >= potTotal(hand) * 0.6;
   if (choice.move === 'allin') return 'allin';
-  if (choice.move === 'fold' && bigBet) return 'foldBig';
+  // Folding to an ordinary raise before the flop isn't worth a word; a big one is.
+  if (choice.move === 'fold' && bigBet && (hand.street !== 'preflop' || hand.currentBet >= game.settings.bigBlind * 8)) return 'foldBig';
   if (choice.move === 'call' && bigBet) return bucket === 'mid' || bucket === 'weak' || bucket === 'air' ? 'callLight' : 'thinkHard';
   if (raisedBig && (hand.street !== 'preflop' || hand.currentBet > game.settings.bigBlind)) return 'raise';
   if (choice.move === 'check' || (choice.move === 'call' && !bigBet)) return 'thinkEasy';
@@ -392,6 +464,9 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         entry.shown.push(me.id);
         entry.lines.push(`${me.name} shows ${cardsText(seat.cards)}`);
       }
+      // Showing a bluff gets noticed, and one of the bots it worked on may say something.
+      const fooled = cardsShown(game, hand, me.id);
+      if (fooled.length) botSays(game, fooled[Math.floor(ctx.rng() * fooled.length)], 'gotBluffed', ctx.rng, ctx.now);
       return done();
     }
 
@@ -496,11 +571,16 @@ function tick(game: Game, ctx: ActionContext): boolean {
         hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
       const thought = decide(game, hand, seat, ctx.rng);
       const choice = thought.move;
+      const fast = botsOnly(game);
+      // It has already taken a moment to look; the rest of its thinking time depends on how hard
+      // this one is (a snap fold, a long tank over a big call).
+      let wait = fast ? 0 : Math.max(0, thought.thinkMs - TIMING.botMin);
       // Sometimes it says what it's thinking first, then moves a moment later.
       const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
-      if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) {
+      if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) wait = Math.max(wait, fast ? 400 : TIMING.botThink);
+      if (wait > 150) {
         game.botPlan = { playerId: player.id, seq: hand.seq, move: choice.move, to: choice.to };
-        hand.actAt = ctx.now + (botsOnly(game) ? 400 : TIMING.botThink);
+        hand.actAt = ctx.now + wait;
         schedule(game);
         return true;
       }

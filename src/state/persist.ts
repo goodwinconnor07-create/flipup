@@ -22,6 +22,8 @@ export interface Session {
   game: Game | null;
   /** Online: take a seat as soon as the table loads. */
   joining?: boolean;
+  /** Local: a bot challenge in progress (see challenges.ts). */
+  challenge?: import('./challenges').Running;
 }
 
 export function read<T>(key: string): T | null {
@@ -78,7 +80,7 @@ export function loadSession(): Session | null {
   if (!s || (s.mode !== 'local' && s.mode !== 'online')) return null;
   if (s.mode === 'local' && !s.game) return null;
   if (s.mode === 'online' && !s.code) return null;
-  return { mode: s.mode, code: s.code ?? null, game: s.game ?? null, joining: s.joining };
+  return { mode: s.mode, code: s.code ?? null, game: s.game ?? null, joining: s.joining, challenge: s.challenge };
 }
 
 export function saveSession(session: Session | null): void {

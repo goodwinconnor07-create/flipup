@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { BOTS } from '../game/botStyles';
 import { DEFAULT_SETTINGS, type Settings } from '../game';
 import { loadLastBots } from '../state/persist';
-import { dispatch, getState, navigate, openTable, useApp } from '../state/store';
+import { dispatch, getState, navigate, openSheet, openTable, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { sceneFor } from './botScenes';
+import { loadResults, weeklyPicks } from '../state/challenges';
 
 /** A bot's backdrop: its gradient, with a few props from its world. */
 function Scene({ emoji, size = 64 }: { emoji: string; size?: number }) {
@@ -44,7 +45,9 @@ export async function startBots(names: string[], settings: Settings, named: bool
 export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
   const named = useApp((s) => s.profile.name.trim().length > 0);
   const [bots] = useState(() => sample(8));
-  const [duels, table] = [bots.slice(0, 3), bots.slice(3, 8)];
+  const table = bots.slice(0, 5);
+  const [picks] = useState(() => weeklyPicks());
+  const [results] = useState(loadResults);
 
   // Your last game against the bots, if there was one: the same faces on the same terms.
   const [last] = useState(loadLastBots);
@@ -71,13 +74,18 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
             <small>{lastBots.length === 1 ? `vs ${lastBots[0].name}` : `Same ${lastBots.length} bots`}</small>
           </button>
         )}
-        {duels.map((b) => (
-          <button key={b.name} type="button" className="glass-card quick-card lift press" onClick={() => void play([b.name])}>
-            <Scene emoji={b.emoji} />
-            <b>{b.name}</b>
-            <small>Heads-up</small>
-          </button>
-        ))}
+        {picks.map((c) => {
+          const b = BOTS.find((x) => x.name === c.bot);
+          if (!b) return null;
+          const done = results[c.bot]?.stars ?? 0;
+          return (
+            <button key={c.bot} type="button" className="glass-card quick-card lift press" onClick={() => openSheet({ name: 'challenge', bot: c.bot })}>
+              <Scene emoji={b.emoji} />
+              <b>{b.name}</b>
+              <small>{done > 0 ? `✓ ${'★'.repeat(done)}` : c.title}</small>
+            </button>
+          );
+        })}
         <button type="button" className="glass-card quick-card lift press" onClick={() => void play(table.map((b) => b.name))}>
           <span className="quick-art quick-stack" style={{ ['--h' as string]: 150 }} aria-hidden>
             {table.map((b) => (

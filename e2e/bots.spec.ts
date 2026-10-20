@@ -495,3 +495,17 @@ test('reviewing a hand shows what the coach is doing, with the time so far and t
   await shot(page, '24-review-activity');
   await expect(activity).toBeHidden({ timeout: 20_000 });
 });
+
+test('a bot challenge: open it from the shelf, see the rules, play with its stacks and goal', async ({ page }) => {
+  watchErrors(page);
+  await page.addInitScript(() => localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Sam', emoji: '🦊' })));
+  await page.goto('/');
+  await page.locator('.quick-card').first().click();
+  const sheet = page.getByRole('dialog');
+  await expect(sheet.getByText('Goal')).toBeVisible();
+  await expect(sheet.getByText('Stacks')).toBeVisible();
+  await sheet.getByRole('button', { name: 'Play', exact: true }).click();
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator('.table-title small')).toContainText(/hand \d+/i);
+  await shot(page, '20-challenge');
+});

@@ -1,3 +1,4 @@
+import { challengeFor, progressText } from '../state/challenges';
 import { REPLAY_ON } from '../train/replay';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -97,6 +98,8 @@ function BlindClock({ game }: { game: Game }) {
 
 function TableBar({ game }: { game: Game | null }) {
   const online = useApp((s) => s.session?.mode === 'online');
+  const run = useApp((s) => s.session?.challenge);
+  const ch = run && !run.over ? challengeFor(run.bot) : undefined;
   return (
     <div className="topbar table-bar">
       <button type="button" className="icon-btn press" aria-label="Menu" onClick={() => openSheet({ name: 'menu' })}>
@@ -109,7 +112,13 @@ function TableBar({ game }: { game: Game | null }) {
               Blinds {chips(game.settings.smallBlind)}/{chips(game.settings.bigBlind)}
             </b>
             <small className="muted">
-              {game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
+              {ch && run
+                ? `${ch.title} · ${progressText(ch, run.progress)}`
+                : game.hand && game.status === 'playing'
+                  ? `Hand ${game.hand.number}`
+                  : online
+                    ? 'Online table'
+                    : 'You vs the bots'}
               {game.status === 'playing' && !!game.settings.blindMinutes && <BlindClock game={game} />}
             </small>
           </>

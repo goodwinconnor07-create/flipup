@@ -90,7 +90,8 @@ describe('bots', () => {
       } else if (myTurn) {
         // Fold the first few hands: giving up a blind must not start a streak. Then call everything.
         const o = options(g, g.hand!, g.hand!.seats.find((x) => x.playerId === me.id)!);
-        const move = folded < 12 ? 'fold' : o.canCheck ? 'check' : 'call';
+        // Small bets only, so a bad run can't empty the stack and end the table.
+        const move = folded < 12 ? 'fold' : o.canCheck ? 'check' : o.toCall <= 40 ? 'call' : 'fold';
         if (move === 'fold' && !streak) expect(g.streaks?.[me.id] ?? 0).toBe(0);
         if (move === 'fold') folded++;
         step({ type: 'act', hand: g.hand!.number, seq: g.hand!.seq, move }, 'h');

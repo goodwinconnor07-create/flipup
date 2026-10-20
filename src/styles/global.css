@@ -6,6 +6,10 @@
   --font:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif;
 
+  /* Large headings use SF Pro Display (Apple's cut for big sizes); other platforms get the same fallbacks. */
+  --font-display:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif;
+
   /* ── Type scale. */
   --fs-caption: 13px;
   --fs-small: 15px;
@@ -324,6 +328,7 @@ input {
 /* ── Type ────────────────────────────────────────────────────────────────── */
 
 .hero {
+  font-family: var(--font-display);
   font-size: var(--fs-display-3);
   font-weight: 700;
   letter-spacing: -0.03em;
@@ -332,6 +337,7 @@ input {
 }
 
 .h1 {
+  font-family: var(--font-display);
   font-size: var(--fs-display-1);
   font-weight: 700;
   letter-spacing: -0.025em;
@@ -340,6 +346,7 @@ input {
 }
 
 .h2 {
+  font-family: var(--font-display);
   font-size: var(--fs-h1);
   font-weight: 600;
   letter-spacing: -0.02em;

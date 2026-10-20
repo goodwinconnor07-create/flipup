@@ -51,14 +51,17 @@ def main():
     ap.add_argument("--flops", default=DEFAULT_FLOPS)
     ap.add_argument("--iterations", type=int, default=300)
     ap.add_argument("--target", type=float, default=0.3)
+    ap.add_argument("--rake", default="", help='"nl50" (5%%, 4bb cap) or "nl500" (5%%, 0.6bb) for raked ranges')
     args = ap.parse_args()
     from flipup_gto.review import PreflopCache
-    spot = PreflopCache(os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data", "cache")).get(6, 100)
+    rake = {"": (0.0, 0.0), "nl50": (0.05, 4.0), "nl500": (0.05, 0.6)}[args.rake]
+    cache = PreflopCache(os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data", "cache"))
+    spot = cache.get(6, 100, rake_rate=rake[0], rake_cap=rake[1])
     path, ip_idx, oop_idx = SPOTS[args.spot]
     info = spot.engine.query(spot.resolve(path))
     pot, stack = info["pot"], 100.0 - max(info["invested"])
     oop_r, ip_r = class_to_combos(info["reach"][oop_idx]), class_to_combos(info["reach"][ip_idx])
-    print(f"{args.spot} tree={args.tree}: pot {pot:.1f}bb, stack {stack:.1f}bb", flush=True)
+    print(f"{args.spot} tree={args.tree} rake={args.rake or 'none'}: pot {pot:.1f}bb, stack {stack:.1f}bb", flush=True)
     for f in args.flops.split(","):
         t0 = time.time()
         s = PostflopSolver(parse_cards(f), pot, stack, oop_r, ip_r, sizing=TREES[args.tree], compress=True)

@@ -195,3 +195,27 @@ with (data/rake_growth.json, measured by scripts/measure_rake.py).
   (data/eqr_kinds.candidate.json) made BTN open 26% and the BB defend 61% under the old rake model.
 - Open gaps: UTG/HJ open about 3 points too wide; BTN flats a UTG open far less than GW; the SB raises about
   7 points too often.
+
+## 12. Postflop benchmarks (BTN vs BB single-raised pot, 100bb, scripts/postflop_bench.py)
+
+Published references: GTO Wizard's BTN c-bets about 53% over all flops (General solutions, smallest bet
+33%); RangeConverter's aggregate BB response to a 1/3-pot c-bet is fold 34 / call 52 / raise 14; paired
+and high-card flops are c-bet at very high frequency, mostly small; overbets are common on A-K-x and
+middling connected boards (GTO Wizard: more than half of BTN's c-bets on T-9-5 are overbets).
+
+The flop tree used by Custom hand and reviews checks the river down and has one turn size. Comparing
+flop strategies (check / 33% / 75% / 125% when checked to) with a tree that has real turn and river
+betting:
+
+| Flop | One raise per street (old) | Two raises (current) | Full turn + river tree |
+|---|---|---|---|
+| Qh9h4c | 50 / 13 / 2 / 34 | 32 / 46 / 3 / 19 | 38 / 39 / 3 / 19 |
+| KhQd5s | 55 / 26 / 1 / 18 | 35 / 54 / 0 / 10 | (published: about 6 / 76 / 18 with 25% and 80% sizes) |
+| 7s7d2c | 48 / 13 / 34 / 5 | 20 / 51 / 18 / 11 | (published paired low flops: mostly small, high frequency) |
+
+- What mattered was letting a c-bet re-raise a check-raise. River betting with one size, or turn
+  and river all-ins, barely changed the flop strategy (Qh9h4c: 52/12/4/32 and 51/6/3/39).
+- With one raise per street, a check-raise could only be called or folded against, which made
+  betting look much worse. Flop trees now allow two raises (memory 0.8GB -> 1.1GB at 100bb).
+- The BB's response to a 33% c-bet averaged fold 32 / call 51 / raise 16 over ten flops, in line with
+  the published aggregate.

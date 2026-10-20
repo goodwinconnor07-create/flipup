@@ -196,7 +196,7 @@ class Explorer:
                 store.move_to_end(key)
                 return store[key]
         if not solve:
-            raise NeedsSolve({"flop": "Solving the flop: first numbers in about half a minute.",
+            raise NeedsSolve({"flop": "Solving the flop: first numbers in about a minute.",
                               "turn": "Solving the turn.", "river": "Solving the river."}[street])
         solver = build()
         solver._lock = threading.Lock()

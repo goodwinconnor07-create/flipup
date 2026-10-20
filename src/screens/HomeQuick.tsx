@@ -7,6 +7,9 @@ import { Avatar } from '../ui/components';
 
 type Bot = (typeof BOTS)[number];
 
+/** A steady soft colour per bot for its tile. */
+const hue = (name: string) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+
 function sample(n: number): Bot[] {
   const pool = [...BOTS];
   const out: Bot[] = [];
@@ -39,14 +42,16 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
 
   return (
     <section className="quick-games" aria-label="Quick games">
-      <small className="eyebrow">Quick games</small>
+      <h3 className="section-head">Quick games</h3>
       <div className="quick-row">
         {showAgain && last && lastBots.length > 0 && (
           <button type="button" className="glass-card quick-card quick-again lift press" onClick={() => void play(lastBots.map((b) => b.name), last.settings)}>
             {lastBots.length === 1 ? (
-              <Avatar emoji={lastBots[0].emoji} size={64} />
+              <span className="quick-art" style={{ ['--h' as string]: hue(lastBots[0].name) }}>
+                <Avatar emoji={lastBots[0].emoji} size={64} />
+              </span>
             ) : (
-              <span className="quick-stack" aria-hidden>
+              <span className="quick-art quick-stack" style={{ ['--h' as string]: 215 }} aria-hidden>
                 {lastBots.slice(0, 5).map((b) => (
                   <Avatar key={b.name} emoji={b.emoji} size={34} />
                 ))}
@@ -58,13 +63,15 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
         )}
         {duels.map((b) => (
           <button key={b.name} type="button" className="glass-card quick-card lift press" onClick={() => void play([b.name])}>
-            <Avatar emoji={b.emoji} size={64} />
+            <span className="quick-art" style={{ ['--h' as string]: hue(b.name) }}>
+              <Avatar emoji={b.emoji} size={64} />
+            </span>
             <b>{b.name}</b>
             <small>Heads-up</small>
           </button>
         ))}
         <button type="button" className="glass-card quick-card lift press" onClick={() => void play(table.map((b) => b.name))}>
-          <span className="quick-stack" aria-hidden>
+          <span className="quick-art quick-stack" style={{ ['--h' as string]: 150 }} aria-hidden>
             {table.map((b) => (
               <Avatar key={b.name} emoji={b.emoji} size={34} />
             ))}

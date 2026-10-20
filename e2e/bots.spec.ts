@@ -78,6 +78,7 @@ test('raise with the bet sizer, then fold the next hand', async ({ page }) => {
 
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('button', { name: 'Hand rankings' }).click();
   await expect(page.getByRole('dialog', { name: 'Hand rankings' })).toBeVisible();
   await expect(page.locator('.ranking')).toHaveCount(10);
@@ -212,7 +213,7 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
   }
 });
 
-test('ending a game adds to the Home totals', async ({ page }) => {
+test('ending a game adds to the Insights totals', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play the bots' }).click();
@@ -226,8 +227,8 @@ test('ending a game adds to the Home totals', async ({ page }) => {
   await page.getByRole('dialog', { name: 'End the game for everyone?' }).getByRole('button', { name: 'End game' }).click();
   await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByLabel('Your totals')).toBeVisible();
-  await expect(page.getByLabel('Your totals').getByText('Tables')).toBeVisible();
+  await page.getByRole('tab', { name: 'Insights' }).click();
+  await expect(page.getByText(/chips over 1 table/)).toBeVisible();
   await shot(page, '14-home-totals');
 });
 
@@ -396,13 +397,13 @@ test('dark mode: a switch in the menu that changes the whole app and sticks', as
   await shot(page, '19-menu-light');
   await page.getByRole('button', { name: 'Dark mode off' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-  expect(await bg()).toBe('rgb(14, 15, 20)');
+  expect(await bg()).toBe('rgb(0, 0, 0)');
   await shot(page, '19-menu-dark');
   await page.getByRole('button', { name: 'Close' }).click();
   await page.waitForTimeout(500);
   await shot(page, '19-table-dark');
   // Nothing on the table is still white-on-white: the text colour has flipped too.
-  expect(await page.evaluate(() => getComputedStyle(document.body).color)).toBe('rgb(244, 244, 248)');
+  expect(await page.evaluate(() => getComputedStyle(document.body).color)).toBe('rgb(255, 255, 255)');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
@@ -419,7 +420,8 @@ test('home: three tabs, results from finished tables, training tiles', async ({ 
     );
   });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Welcome back, Connor' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Play' })).toBeVisible();
+  await expect(page.getByText('Hi Connor.')).toBeVisible();
   await expect(page.getByText("You're up 200 chips this week.")).toBeVisible();
   await expect(page.getByRole('button', { name: 'Host a table' })).toBeVisible();
   await page.getByRole('tab', { name: 'Insights' }).click();

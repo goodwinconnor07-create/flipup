@@ -9,8 +9,7 @@ import { InsightsTab } from './HomeInsights';
 import { QuickGames, startBots } from './HomeQuick';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
-import { CasinoBackdrop } from './CasinoBackdrop';
-import { CardsIcon, ChartIcon, GearIcon, QrIcon, SparkIcon } from '../ui/Icons';
+import { CardsIcon, ChartIcon, ChevronIcon, GearIcon, QrIcon, SparkIcon, UsersIcon } from '../ui/Icons';
 import { signed } from './Final';
 
 function ago(at: number): string {
@@ -103,72 +102,85 @@ export function Home() {
             run: () => void playAgain(lastBots.bots, lastBots.settings),
             bots: lastBotFaces,
           }
-        : { kind: 'new', title: 'Play your first hand', sub: 'Take on the bots now, or host a table for friends.', cta: 'Play the bots', run: () => go('bots'), bots: [] };
+        : { kind: 'new', title: 'Play your first hand', sub: 'Take on the bots now, or host a table for friends.', cta: 'Start playing', run: () => go('bots'), bots: [] };
   const active_ = !!active;
   const index = TABS.findIndex((t) => t.id === tab);
 
   return (
     <div className="screen home">
       <div className="home-backdrop" aria-hidden>
-        <CasinoBackdrop />
         <i className="glow glow-1" />
         <i className="glow glow-2" />
       </div>
       <div className="home-head">
-        <h1 className="logo">
-          Flip<span>Up</span>
-        </h1>
         <div className={`streak-pill${streak.today ? ' lit' : ''}`} role="img" aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}`}>
           <span className="streak-fire" aria-hidden>🔥</span>
           <b>{streak.days}</b>
         </div>
-        <button type="button" className="quick-btn glass press" aria-label="Settings" onClick={() => openSheet({ name: 'prefs' })}>
-          <GearIcon width={22} height={22} />
-        </button>
-        <button
-          type="button"
-          className="quick-btn glass press"
-          aria-label={named ? `Your profile: ${profile.name}` : 'Set up your profile'}
-          onClick={() => navigate({ name: 'profile', then: 'done' })}
-        >
-          <Avatar emoji={profile.emoji} size={34} />
-        </button>
+        <div className="capsule glass">
+          <button type="button" className="capsule-btn press" aria-label="Settings" onClick={() => openSheet({ name: 'prefs' })}>
+            <GearIcon width={22} height={22} />
+          </button>
+          <button
+            type="button"
+            className="capsule-btn press"
+            aria-label={named ? `Your profile: ${profile.name}` : 'Set up your profile'}
+            onClick={() => navigate({ name: 'profile', then: 'done' })}
+          >
+            <Avatar emoji={profile.emoji} size={30} />
+          </button>
+        </div>
       </div>
       <div className="home-sheet">
         <div className="home-scroll">
           <div className="home-title">
-            <h2 className="h1">{tab === 'insights' ? 'Your game' : tab === 'train' ? 'Train' : named ? `Hi, ${profile.name}` : 'Welcome to FlipUp'}</h2>
-            <p>{tab === 'insights' ? 'How your hands and tables are going.' : tab === 'train' ? 'Quick drills with your GTO Coach.' : statusLine(stats, active_)}</p>
+            <h2 className="large-title">{tab === 'insights' ? 'Insights' : tab === 'train' ? 'Train' : 'Play'}</h2>
+            <p>{tab === 'insights' ? 'How your hands and tables are going.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
           </div>
           <div key={tab} className="home-pane">
             {tab === 'play' && (
               <>
-                <section className="hero" aria-label="Pick up where you left off">
-                  <small className="eyebrow">{hero.kind === 'new' ? 'Get started' : 'Pick up where you left off'}</small>
-                  {hero.kind === 'again' && (
-                    <span className="hero-faces" aria-hidden>
-                      {hero.bots.slice(0, 5).map((b) => (
-                        <Avatar key={b.name} emoji={b.emoji} size={40} />
-                      ))}
-                    </span>
-                  )}
-                  <h3 className="hero-title">{hero.title}</h3>
-                  <p className="hero-sub">{hero.sub}</p>
-                  <button type="button" className="btn btn-dark btn-xl" disabled={looking} onClick={(e) => colourWipe(e, hero.run)}>
+                <button type="button" className="hero press" disabled={looking} onClick={(e) => colourWipe(e, hero.run)} aria-label={`${hero.title}. ${hero.cta}`}>
+                  <span className="hero-top">
+                    <small className="hero-eyebrow">{hero.kind === 'new' ? 'Get started' : 'Pick up where you left off'}</small>
+                    {hero.kind === 'again' && (
+                      <span className="hero-faces" aria-hidden>
+                        {hero.bots.slice(0, 5).map((b) => (
+                          <Avatar key={b.name} emoji={b.emoji} size={36} />
+                        ))}
+                      </span>
+                    )}
+                    <span className="hero-title">{hero.title}</span>
+                    <span className="hero-sub">{hero.sub}</span>
+                  </span>
+                  <span className="hero-foot">
                     {hero.cta}
+                    <ChevronIcon width={18} height={18} />
+                  </span>
+                </button>
+                <section className="group" aria-label="Start a game">
+                  <button type="button" className="group-row press" onClick={() => go('host')}>
+                    <span className="gr-icon" style={{ background: 'var(--blue)' }}>
+                      <UsersIcon />
+                    </span>
+                    <span className="gr-text">Host a table</span>
+                    <ChevronIcon className="gr-chev" width={16} height={16} />
+                  </button>
+                  <button type="button" className="group-row press" onClick={() => go('join')}>
+                    <span className="gr-icon" style={{ background: 'var(--green)' }}>
+                      <QrIcon />
+                    </span>
+                    <span className="gr-text">Join with a code</span>
+                    <ChevronIcon className="gr-chev" width={16} height={16} />
+                  </button>
+                  <button type="button" className="group-row press" onClick={() => go('bots')}>
+                    <span className="gr-icon" style={{ background: 'var(--violet)' }}>
+                      <CardsIcon />
+                    </span>
+                    <span className="gr-text">Play the bots</span>
+                    <ChevronIcon className="gr-chev" width={16} height={16} />
                   </button>
                 </section>
-                <div className="home-links home-links-3">
-                  <button type="button" className="btn btn-outline" onClick={() => go('host')}>
-                    Host
-                  </button>
-                  <button type="button" className="btn btn-outline" onClick={() => go('join')}>
-                    Join
-                  </button>
-                  <button type="button" className="btn btn-outline" onClick={() => go('bots')}>
-                    Bots
-                  </button>
-                </div>
                 <QuickGames showAgain={hero.kind !== 'again'} />
               </>
             )}

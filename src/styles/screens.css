@@ -13,7 +13,7 @@
 .logo {
   margin: 0;
   font-size: var(--fs-display-1);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.04em;
 }
 
@@ -33,7 +33,7 @@
   border-radius: var(--r-pill);
   background: var(--bg-2);
   font-size: var(--fs-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .me-chip span:last-child {
@@ -128,12 +128,12 @@
 
 .home-row-text b {
   font-size: var(--fs-body);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .home-row-text small {
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: 600;
   opacity: 0.85;
 }
 
@@ -170,7 +170,7 @@
 
 .name-field {
   text-align: center;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .hero-edit-badge {
@@ -203,7 +203,7 @@
   margin: 0;
   color: var(--red-ink);
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: 600;
   text-align: center;
 }
 
@@ -284,7 +284,7 @@
 .section-title {
   margin: 12px 0 0;
   font-size: var(--fs-small);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -337,7 +337,7 @@
   border-radius: var(--r-sm);
   background: var(--bg-2);
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
 }
 
@@ -359,7 +359,7 @@
 
 .toggle-text small {
   font-size: var(--fs-small);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .bots-row {
@@ -369,7 +369,7 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--r-md);
-  background: var(--violet-bg);
+  background: var(--bg-2);
 }
 
 .bots-row > div:first-child {
@@ -380,7 +380,7 @@
 
 .bots-row small {
   font-size: var(--fs-small);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .mini-stepper {
@@ -393,7 +393,7 @@
   min-width: 28px;
   text-align: center;
   font-size: var(--fs-h2);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .mini-stepper .icon-btn {
@@ -422,7 +422,7 @@
   background: var(--bg-2);
   text-align: center;
   font-size: var(--fs-display-2);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.3em;
   text-transform: uppercase;
   padding-left: 0.3em;
@@ -449,7 +449,7 @@
   border-radius: var(--r-md);
   background: var(--bg-2);
   font-size: var(--fs-body);
-  font-weight: 600;
+  font-weight: 500;
   text-align: left;
 }
 
@@ -459,7 +459,7 @@
 
 .me-row-edit {
   color: var(--blue);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 /* ── Lobby ───────────────────────────────────────────────────────────────── */
@@ -477,7 +477,7 @@
   display: grid;
   place-items: center;
   font-size: var(--fs-h1);
-  font-weight: 900;
+  font-weight: 700;
   color: var(--on-color);
   animation: pop 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
@@ -505,7 +505,7 @@
   background: var(--surface);
   color: var(--blue-ink);
   font-size: var(--fs-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .link-host {
@@ -563,19 +563,19 @@
   background: var(--bg-2);
   color: var(--ink-3);
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .info-chip b {
   color: var(--ink);
-  font-weight: 900;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
 .info-chip.edit {
   background: none;
   color: var(--blue);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .press-row:disabled {
@@ -628,7 +628,7 @@ button.roster-item:active:not(:disabled) {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--fs-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .add-bot-circle {
@@ -648,7 +648,7 @@ button.roster-item:active:not(:disabled) {
 
 .tag {
   font-size: var(--fs-micro);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 2px 8px;
@@ -716,7 +716,7 @@ button.roster-item:active:not(:disabled) {
   color: var(--blue);
   font: inherit;
   font-size: var(--fs-body);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 /* ── Menu ────────────────────────────────────────────────────────────────── */
@@ -732,7 +732,7 @@ button.roster-item:active:not(:disabled) {
   border-bottom: 2px solid var(--line);
   background: none;
   font-size: var(--fs-lead);
-  font-weight: 800;
+  font-weight: 600;
   text-align: left;
 }
 
@@ -788,7 +788,7 @@ button.roster-item:active:not(:disabled) {
 .standing-rank {
   width: 20px;
   text-align: center;
-  font-weight: 900;
+  font-weight: 700;
   color: var(--ink-3);
 }
 
@@ -807,12 +807,12 @@ button.roster-item:active:not(:disabled) {
 
 .standing-name small {
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .standing-net {
   font-size: var(--fs-h3);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .final-hero {
@@ -861,7 +861,7 @@ button.roster-item:active:not(:disabled) {
 
 .ranking-head small {
   font-size: var(--fs-caption);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .ranking-cards {
@@ -903,32 +903,32 @@ html.calm .dots i {
 .log-title {
   margin: 0 0 6px;
   font-size: var(--fs-body);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .log-line {
   margin: 0;
   padding: 2px 0;
   font-size: var(--fs-small);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-2);
   line-height: 1.45;
 }
 
 .log-street {
   margin-top: 4px;
-  font-weight: 800;
+  font-weight: 600;
   color: var(--ink);
 }
 
 .log-win {
   color: var(--green-ink);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .log-mine {
   color: var(--blue-ink);
-  font-weight: 800;
+  font-weight: 600;
 }
 
 /* ── Final podium (from CardShot) ────────────────────────────────────────── */
@@ -980,12 +980,12 @@ html.calm .dots i {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: var(--fs-lead);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .podium-score {
   font-size: var(--fs-h3);
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
 }
 
@@ -998,7 +998,7 @@ html.calm .dots i {
   background: var(--bg-2);
   color: var(--ink-3);
   font-size: var(--fs-h2);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .podium-block {
@@ -1011,7 +1011,7 @@ html.calm .dots i {
   box-shadow: inset 0 0 0 1px var(--line);
   color: var(--ink-3);
   font-size: var(--fs-h1);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .podium-1 .podium-block {
@@ -1042,7 +1042,7 @@ html.calm .dots i {
 .menu-section {
   margin: 8px 0 8px;
   font-size: var(--fs-small);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -1067,7 +1067,7 @@ html.calm .dots i {
   border-radius: var(--r-md);
   background: var(--bg-2);
   font-size: var(--fs-body);
-  font-weight: 800;
+  font-weight: 600;
   text-align: left;
 }
 
@@ -1114,7 +1114,7 @@ html.calm .dots i {
 
 .stat small {
   font-size: var(--fs-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -1122,7 +1122,7 @@ html.calm .dots i {
 
 .stat b {
   font-size: var(--fs-h3);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 /* Blinds go up every: a slider with the value beside the title. */
@@ -1136,7 +1136,7 @@ html.calm .dots i {
   text-transform: none;
   letter-spacing: 0;
   font-size: var(--fs-body);
-  font-weight: 900;
+  font-weight: 700;
   color: var(--ink);
 }
 
@@ -1148,6 +1148,50 @@ html.calm .dots i {
   display: flex;
   justify-content: space-between;
   font-size: var(--fs-caption);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-3);
+}
+
+/* ── Apple-style controls ───────────────────────────────────────────────────── */
+
+/* Options sit on a grey track; the chosen one is a raised white (or lifted grey) segment. */
+.choice-row {
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-sm);
+  background: var(--bg-3);
+}
+
+.choice .choice-option,
+.choice-option {
+  min-height: 40px;
+  border-radius: 8px;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font-weight: 500;
+}
+
+.choice .choice-option.on,
+.choice-option.on {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  font-weight: 600;
+}
+
+html[data-theme='dark'] .choice .choice-option.on,
+html[data-theme='dark'] .choice-option.on {
+  background: #636366;
+}
+
+.choice .section-title,
+.section-title {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+html[data-theme='dark'] .btn-dark {
+  background: var(--ink);
+  color: #000;
 }

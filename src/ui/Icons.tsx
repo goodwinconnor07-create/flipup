@@ -189,6 +189,12 @@ export const ExitIcon = (p: P) => (
   </svg>
 );
 
+export const ChevronIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M9 5l7 7-7 7" />
+  </svg>
+);
+
 export const ArrowIcon = (p: P) => (
   <svg {...stroke(p)}>
     <path d="M5 12h14M13 6l6 6-6 6" />

@@ -1,4 +1,4 @@
-/* FlipUp: white background, big bold SF Pro, colourful buttons, instant feedback.
+/* FlipUp: Apple-style. System font, light weights, flat cells, glass on what floats.
    Every colour, size, radius and shadow comes from the tokens below. */
 
 :root {
@@ -10,14 +10,14 @@
   --fs-caption: 13px;
   --fs-small: 15px;
   --fs-body: 17px;
-  --fs-lead: 19px;
-  --fs-h3: 22px;
-  --fs-h2: 26px;
-  --fs-h1: 30px;
-  --fs-title: 36px;
+  --fs-lead: 17px;
+  --fs-h3: 20px;
+  --fs-h2: 22px;
+  --fs-h1: 28px;
+  --fs-title: 34px;
   --fs-stamp: 42px;
   /* Display sizes: big headings, card titles, scores, codes and counters. */
-  --fs-display-1: 40px;
+  --fs-display-1: 34px;
   --fs-display-2: 44px;
   --fs-display-3: 56px;
   --fs-display-4: 64px;
@@ -31,23 +31,23 @@
 
   /* ── Shape. Spacing is on a 4px grid. */
   --r-xs: 4px;
-  --r-sm: 12px;
-  --r-md: 18px;
-  --r-lg: 24px;
-  --r-xl: 30px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
   --r-pill: 999px;
   --radius: var(--r-lg);
   --radius-sm: var(--r-md);
 
   /* ── Neutrals */
-  --ink: #1a1230;
-  --ink-2: #3b3150;
-  --ink-3: #635a78;
-  --ink-4: #a3a3b2;
-  --line: #e9e9f1;
+  --ink: #000000;
+  --ink-2: #3c3c43;
+  --ink-3: #6c6c70;
+  --ink-4: #aeaeb2;
+  --line: #e5e5ea;
   --bg: #ffffff;
-  --bg-2: #f6f4f9;
-  --bg-3: #ece8f2;
+  --bg-2: #f2f2f7;
+  --bg-3: #e5e5ea;
   --surface: #ffffff;
   /* Black buttons and chips; they flip to light in dark mode. */
   --contrast: #0b0b12;
@@ -63,7 +63,7 @@
   --badge: #ff3b30;
 
   /* ── Brand: the ink-black of the logo, with a red "Up" (hearts and diamonds). */
-  --brand-ink: #1d4ed8;
+  --brand-ink: #007aff;
   --violet: #7c3aed;
   --violet-bg: #f4ecff;
 
@@ -91,18 +91,18 @@
   --green-line: #86efac;
   --green-bg: #e8f9ee;
   --green-ink: #166534;
-  --blue: #2563eb;
-  --blue-lo: #1d4ed8;
-  --blue-bg: #eaf1ff;
-  --blue-ink: #1d4ed8;
-  --red: #e11d48;
-  --red-lo: #be123c;
-  --red-hi: #f43f5e;
+  --blue: #007aff;
+  --blue-lo: #0062d6;
+  --blue-bg: #e5f0ff;
+  --blue-ink: #0062d6;
+  --red: #ff3b30;
+  --red-lo: #d70015;
+  --red-hi: #ff453a;
   --red-bg: #ffecf0;
   --red-bg-2: #fecaca;
   --red-ink: #b91c1c;
   --red-ink-2: #7f1d1d;
-  --gold: #f59e0b;
+  --gold: #ff9f0a;
   --gold-lo: #d97706;
   --gold-hi: #fde68a;
   --gold-line: #fcd34d;
@@ -119,10 +119,10 @@
   --bronze-ink: #fff7ed;
 
   /* ── Elevation: three soft levels. */
-  --shadow-sm: 0 2px 8px -4px rgba(18, 18, 40, 0.3);
-  --shadow-soft: 0 8px 24px -16px rgba(18, 18, 40, 0.35);
-  --shadow: 0 12px 28px -14px rgba(18, 18, 40, 0.45);
-  --shadow-press: 0 4px 10px -6px rgba(18, 18, 40, 0.45);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-soft: 0 4px 16px -8px rgba(0, 0, 0, 0.18);
+  --shadow: 0 6px 20px -10px rgba(0, 0, 0, 0.28);
+  --shadow-press: 0 2px 6px -3px rgba(0, 0, 0, 0.3);
 
   /* ── Liquid Glass: the floating layer (top bar, buttons, footer, sheets, toasts).
      A clear fill that blurs and brightens what's behind it, a bright rim and a top shine. */
@@ -148,22 +148,22 @@ html[data-theme='dark'] {
   --glass-rim: rgba(255, 255, 255, 0.14);
   --glass-edge: rgba(0, 0, 0, 0.3);
   --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
-  --ink: #f4f4f8;
-  --ink-2: #d0d0da;
-  --ink-3: #a3a3b2;
-  --ink-4: #62626f;
-  --line: #2e2f3b;
-  --bg: #0e0f14;
-  --bg-2: #1b1c24;
-  --bg-3: #30313d;
-  --surface: #1b1c24;
+  --ink: #ffffff;
+  --ink-2: #ebebf5;
+  --ink-3: #98989f;
+  --ink-4: #636366;
+  --line: #38383a;
+  --bg: #000000;
+  --bg-2: #1c1c1e;
+  --bg-3: #2c2c2e;
+  --surface: #1c1c1e;
   --contrast: #f4f4f8;
   --on-contrast: #0b0b12;
-  --btn-dark: #30313d;
+  --btn-dark: #2c2c2e;
   --chip: rgba(255, 255, 255, 0.1);
-  --scrim: rgba(14, 15, 20, 0.86);
-  --focus: #60a5fa;
-  --brand-ink: #93c5fd;
+  --scrim: rgba(0, 0, 0, 0.86);
+  --focus: #64d2ff;
+  --brand-ink: #0a84ff;
   --violet-bg: rgba(139, 92, 246, 0.18);
 
   --green-bg: rgba(34, 197, 94, 0.14);
@@ -206,8 +206,8 @@ body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--font);
-  font-weight: 700;
-  font-size: var(--fs-lead);
+  font-weight: 400;
+  font-size: var(--fs-body);
   line-height: 1.3;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
@@ -325,7 +325,7 @@ input {
 
 .hero {
   font-size: var(--fs-display-3);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 0.95;
   margin: 0;
@@ -333,7 +333,7 @@ input {
 
 .h1 {
   font-size: var(--fs-display-1);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.025em;
   line-height: 1.02;
   margin: 0;
@@ -341,7 +341,7 @@ input {
 
 .h2 {
   font-size: var(--fs-h1);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.08;
   margin: 0;
@@ -349,7 +349,7 @@ input {
 
 .h3 {
   font-size: var(--fs-h3);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: -0.01em;
   margin: 0;
 }
@@ -375,20 +375,18 @@ input {
   appearance: none;
   border: 0;
   width: 100%;
-  min-height: 64px;
-  padding: 0 24px;
+  min-height: 50px;
+  padding: 0 20px;
   border-radius: var(--r-md);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  font-size: var(--fs-h3);
-  font-weight: 800;
-  letter-spacing: 0.01em;
+  font-size: var(--fs-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
   text-decoration: none;
   color: var(--on-color);
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
-  box-shadow: var(--shadow);
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
@@ -401,9 +399,8 @@ input {
 }
 
 .btn:active {
-  transform: scale(0.96);
-  box-shadow: var(--shadow-press);
-  filter: brightness(1.06) saturate(1.1);
+  transform: scale(0.97);
+  filter: brightness(0.92);
 }
 
 .btn[disabled] {
@@ -416,14 +413,14 @@ input {
 }
 
 .btn-xl {
-  min-height: 78px;
-  font-size: var(--fs-h2);
-  border-radius: var(--r-lg);
+  min-height: 56px;
+  font-size: var(--fs-lead);
+  border-radius: var(--r-md);
 }
 
 .btn-sm {
-  min-height: 48px;
-  font-size: var(--fs-lead);
+  min-height: 40px;
+  font-size: var(--fs-small);
   border-radius: var(--r-sm);
   padding: 0 16px;
 }
@@ -433,15 +430,15 @@ input {
 }
 
 .btn-green {
-  background: linear-gradient(180deg, var(--green) 0%, var(--green-lo) 100%);
+  background: var(--green);
 }
 
 .btn-blue {
-  background: linear-gradient(180deg, var(--blue) 0%, var(--blue-lo) 100%);
+  background: var(--blue);
 }
 
 .btn-red {
-  background: linear-gradient(180deg, var(--red) 0%, var(--red-lo) 100%);
+  background: var(--red);
 }
 
 .btn-dark {
@@ -456,10 +453,10 @@ input {
 }
 
 .btn-outline {
-  background: var(--surface);
-  color: var(--ink);
+  background: var(--bg-2);
+  color: var(--brand-ink);
   text-shadow: none;
-  box-shadow: inset 0 0 0 3px var(--line);
+  box-shadow: none;
 }
 
 .btn-link {
@@ -467,8 +464,9 @@ input {
   color: var(--brand-ink);
   box-shadow: none;
   text-shadow: none;
-  min-height: 48px;
-  font-size: var(--fs-lead);
+  min-height: 44px;
+  font-weight: 400;
+  font-size: var(--fs-body);
 }
 
 /* Destructive text buttons are red. */
@@ -508,11 +506,11 @@ input {
 }
 
 .icon-btn {
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   flex: none;
   border: 0;
-  border-radius: var(--r-md);
+  border-radius: var(--r-pill);
   display: grid;
   place-items: center;
   background: var(--bg-2);
@@ -520,8 +518,8 @@ input {
 }
 
 .icon-btn svg {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
 }
 
 /* ── Top bar ─────────────────────────────────────────────────────────────── */
@@ -530,7 +528,7 @@ input {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 60px;
+  min-height: 52px;
   margin-bottom: 8px;
 }
 
@@ -551,7 +549,7 @@ input {
 
 .conn-pill {
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: 600;
   padding: 8px 12px;
   border-radius: var(--r-pill);
   background: var(--gold-bg);
@@ -588,7 +586,7 @@ input {
   padding: 8px 12px;
   border-radius: var(--r-pill);
   font-size: var(--fs-body);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: 0.03em;
   white-space: nowrap;
 }
@@ -600,7 +598,7 @@ input {
 
 .delta {
   font-variant-numeric: tabular-nums;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .good {
@@ -639,7 +637,7 @@ input {
   background: var(--bg-2);
   box-shadow: inset 0 0 0 3px transparent;
   font-size: var(--fs-h3);
-  font-weight: 800;
+  font-weight: 600;
   transition: box-shadow 0.15s ease;
 }
 
@@ -739,7 +737,7 @@ input {
   min-width: 132px;
   text-align: center;
   font-size: var(--fs-counter);
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -0.05em;
   font-variant-numeric: tabular-nums;
@@ -1066,7 +1064,7 @@ html.calm *::after {
 
 .look-preview-name {
   font-size: var(--fs-h3);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 /* ── Liquid Glass ────────────────────────────────────────────────────────────

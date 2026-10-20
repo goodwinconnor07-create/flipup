@@ -27,7 +27,7 @@ html[data-theme='dark'] .glass-card {
 .eyebrow {
   display: block;
   font-size: var(--fs-caption);
-  font-weight: 800;
+  font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-3);
@@ -133,7 +133,7 @@ html[data-theme='dark'] .home-sheet {
 .home-title h2 {
   margin: 0;
   font-size: var(--fs-display-1);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 1.04;
 }
@@ -141,7 +141,7 @@ html[data-theme='dark'] .home-sheet {
 .home-title p {
   margin: 6px 0 0;
   font-size: var(--fs-lead);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-3);
 }
 
@@ -212,7 +212,7 @@ html[data-theme='dark'] .tab-capsule {
   color: var(--ink-2);
   font: inherit;
   font-size: var(--fs-caption);
-  font-weight: 700;
+  font-weight: 600;
   transition: color 0.2s;
 }
 
@@ -234,13 +234,13 @@ html[data-theme='dark'] .tab-capsule {
 /* Cards inside the sheet. */
 .home-empty b {
   font-size: var(--fs-h3);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .home-empty p {
   margin: 6px 0 0;
   font-size: var(--fs-body);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-3);
 }
 
@@ -268,14 +268,14 @@ html[data-theme='dark'] .screen.home .bad {
 
 .insight-net {
   font-size: var(--fs-display-3);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.05;
 }
 
 .insight-sub {
   font-size: var(--fs-small);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--ink-3);
 }
 
@@ -329,7 +329,7 @@ html[data-theme='dark'] .spark.good .spark-line {
 
 .tile b {
   font-size: var(--fs-h2);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .recent {
@@ -354,7 +354,7 @@ html[data-theme='dark'] .spark.good .spark-line {
 
 .recent-row small {
   font-size: var(--fs-small);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-3);
 }
 
@@ -374,12 +374,12 @@ html[data-theme='dark'] .spark.good .spark-line {
 
 .train-hero-text b {
   font-size: var(--fs-h3);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .train-hero-text span {
   font-size: var(--fs-small);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-3);
 }
 
@@ -406,7 +406,7 @@ html[data-theme='dark'] .spark.good .spark-line {
 .ring-text {
   fill: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 html[data-theme='dark'] .ring-fill {
@@ -422,7 +422,7 @@ html[data-theme='dark'] .ring-fill {
 
 .train-tile small {
   font-size: var(--fs-small);
-  font-weight: 600;
+  font-weight: 500;
   color: var(--ink-3);
 }
 
@@ -444,7 +444,7 @@ html[data-theme='dark'] .ring-fill {
   color: var(--on-color);
   font-size: var(--fs-caption);
   font-style: normal;
-  font-weight: 900;
+  font-weight: 700;
 }
 
 @media (min-width: 960px) and (min-height: 600px) {
@@ -614,12 +614,12 @@ html.calm :is(.drift-chip, .drift-card) {
 
 .quick-card b {
   font-size: var(--fs-lead);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .quick-card small {
   color: var(--ink-3);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .quick-stack {
@@ -711,13 +711,13 @@ html.calm :is(.drift-chip, .drift-card) {
 
 .streak b {
   font-size: var(--fs-lead);
-  font-weight: 900;
+  font-weight: 700;
   color: var(--ink);
 }
 
 .streak small {
   font-size: var(--fs-caption);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .streak-fire {
@@ -776,7 +776,7 @@ html.no-motion .streak-fire {
 
 .streak-pill b {
   font-size: var(--fs-lead);
-  font-weight: 900;
+  font-weight: 700;
 }
 
 .streak-pill .streak-fire {
@@ -821,7 +821,7 @@ html.no-motion .streak-fire {
 .hero-title {
   margin: 0;
   font-size: var(--fs-h1);
-  font-weight: 900;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -829,7 +829,7 @@ html.no-motion .streak-fire {
   margin: 0 0 12px;
   color: var(--ink-3);
   font-size: var(--fs-body);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .home-links-3 {
@@ -846,4 +846,311 @@ html.no-motion .streak-fire {
 
 html.calm .streak-pill .streak-fire {
   animation: none;
+}
+
+/* ── Apple-style Home: a large title, a glass capsule, a banner with its own action bar, grouped rows ── */
+
+.screen.home .home-head {
+  justify-content: flex-end;
+  gap: 10px;
+  padding: calc(var(--safe-top) + 8px) 20px 0;
+}
+
+.screen.home .streak-pill {
+  min-height: 44px;
+  padding: 0 14px 0 10px;
+  background: var(--bg-2);
+}
+
+.screen.home .streak-pill b {
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.capsule {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  border: 1px solid var(--glass-edge);
+  background: var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+}
+
+.capsule-btn {
+  width: 44px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink);
+}
+
+.home-title {
+  padding-top: 6px;
+}
+
+.large-title {
+  margin: 0;
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.home-title p {
+  margin: 4px 0 0;
+  color: var(--ink-3);
+  font-size: var(--fs-small);
+  font-weight: 400;
+}
+
+/* The banner: a coloured top with the news, and a dark bar underneath that's the action. */
+.hero {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  text-align: left;
+  color: #fff;
+  background: #2b2b2e;
+  font: inherit;
+}
+
+.hero-top {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 20px 22px;
+  background:
+    radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.16), transparent 55%),
+    linear-gradient(160deg, #23805a 0%, #0f5a3c 100%);
+}
+
+.hero-eyebrow {
+  font-size: var(--fs-caption);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.hero-faces {
+  display: flex;
+  margin: 8px 0 4px;
+}
+
+.hero-faces > * {
+  margin-left: -8px;
+  box-shadow: 0 0 0 2px #1a6f4b;
+  border-radius: 50%;
+}
+
+.hero-faces > *:first-child {
+  margin-left: 0;
+}
+
+.hero-title {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.hero-sub {
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.hero-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  font-size: var(--fs-body);
+  font-weight: 500;
+  background: #2b2b2e;
+}
+
+.hero-foot svg {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Inset grouped list, like Settings. */
+.group {
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  overflow: hidden;
+}
+
+.group-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 54px;
+  padding: 0 16px;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.group-row + .group-row::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 60px;
+  right: 0;
+  height: 0.5px;
+  background: var(--line);
+}
+
+.gr-icon {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  color: #fff;
+}
+
+.gr-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.gr-text {
+  flex: 1;
+  font-size: var(--fs-body);
+}
+
+.gr-chev {
+  color: var(--ink-4);
+}
+
+.section-head {
+  margin: 4px 0 0;
+  font-size: var(--fs-h2);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Quick games: a shelf of tiles, a soft colour square and the name under it. */
+.quick-card {
+  flex: 0 0 128px;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  text-align: left;
+}
+
+.quick-card.lift:hover {
+  box-shadow: none;
+}
+
+.quick-art {
+  width: 128px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  border-radius: var(--r-lg);
+  background: hsl(var(--h, 210) 70% 92%);
+}
+
+html[data-theme='dark'] .quick-art {
+  background: hsl(var(--h, 210) 26% 24%);
+}
+
+.quick-art.quick-stack {
+  min-height: 0;
+}
+
+.quick-art.quick-stack > * {
+  box-shadow: 0 0 0 2px hsl(var(--h, 210) 70% 92%);
+}
+
+html[data-theme='dark'] .quick-art.quick-stack > * {
+  box-shadow: 0 0 0 2px hsl(var(--h, 210) 26% 24%);
+}
+
+.quick-card b {
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.quick-card small {
+  font-size: var(--fs-caption);
+  font-weight: 400;
+}
+
+.quick-again b {
+  color: var(--ink);
+}
+
+/* Cards are flat, like Apple's grouped cells: a soft fill, no outline, no blur. Glass stays on what floats. */
+html .glass-card,
+html:not(.no-glass) .glass-card,
+html:not(.no-glass) .home-row,
+html:not(.no-glass) .menu-tile {
+  background-color: var(--bg-2);
+  background-image: none;
+  border: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  border-radius: var(--r-lg);
+}
+
+html[data-theme='dark'] .glass-card {
+  background-color: var(--bg-2);
+}
+
+.eyebrow {
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+/* Computers: the same flat page, a centred column; no card around it. */
+@media (min-width: 960px) and (min-height: 600px) {
+  .home-sheet,
+  html[data-theme='dark'] .home-sheet,
+  html.no-glass .home-sheet {
+    margin: 8px 0 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .home-scroll {
+    padding: 16px 36px 36px;
+  }
+
+  .screen.home .home-head {
+    padding: 24px 36px 0;
+  }
+}
+
+.quick-art.quick-stack {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }

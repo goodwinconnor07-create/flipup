@@ -43,6 +43,9 @@ TREES = {
     # One size plus all-in on turn and river, no raises after the flop.
     "mid_a": BetSizing(oop={"flop": StreetSizing("", "60%"), "turn": StreetSizing("75%, a", ""), "river": StreetSizing("75%, a", "")},
                        ip={"flop": RICH, "turn": StreetSizing("75%, a", ""), "river": StreetSizing("75%, a", "")}, max_raises=1),
+    # The explorer with flop 3-bets allowed (a c-bet can re-raise a check-raise).
+    "explorer_r2": BetSizing(oop={"flop": StreetSizing("", "60%"), "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")},
+                             ip={"flop": RICH, "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")}, max_raises=2),
     "full": BetSizing(oop={"flop": StreetSizing("", "60%"), "turn": StreetSizing("66%", "a"), "river": StreetSizing("75%", "a")},
                       ip={"flop": RICH, "turn": StreetSizing("66%", "a"), "river": StreetSizing("75%", "a")}, max_raises=2),
 }

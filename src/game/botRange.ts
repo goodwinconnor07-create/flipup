@@ -348,10 +348,20 @@ export function imagine(hole: Card2, board: CardInt[], street: Street, opps: Opp
     return cum;
   });
   const fit = opps.map(() => new Float32Array(COMBOS.length).fill(-1));
-  const nowTier = opps.map(() => new Int8Array(COMBOS.length).fill(-1));
+  // Each combo's tier on each street's board, shared by every opponent (worked out when first needed).
+  const tierOn: Partial<Record<Street, Int8Array>> = {};
+  const tierAt = (st: Street, idx: number): number => {
+    const cache = (tierOn[st] ??= new Int8Array(COMBOS.length).fill(-1));
+    let t = cache[idx];
+    if (t < 0) {
+      const [a, b] = COMBOS[idx];
+      t = tierWith(a, b, boards[st]!, scratch);
+      cache[idx] = t;
+    }
+    return t;
+  };
   const boards: Partial<Record<Street, BoardInfo>> = {};
   if (street !== 'preflop') for (const st of ['flop', 'turn', 'river'] as const) if (board.length >= STREET_CARDS[st]) boards[st] = boardInfo(board.slice(0, STREET_CARDS[st]));
-  const nowBoard = street !== 'preflop' ? boardInfo(board) : null;
   const scratch: CardInt[] = [];
   const out: Imagined = { n: 0, opps: m, w: new Float64Array(n), win: new Float64Array(n), tiers: new Int8Array(n * m), cls: new Int16Array(n * m), quality: 1 };
   const used = new Uint8Array(52);
@@ -393,7 +403,7 @@ export function imagine(hole: Card2, board: CardInt[], street: Street, opps: Opp
         let f = fit[o][idx];
         if (f < 0) {
           f = 1;
-          for (const mv of opps[o].story.post) f *= moveLikelihood(mv, tierWith(a, b, boards[mv.street]!, scratch), opps[o].read);
+          for (const mv of opps[o].story.post) f *= moveLikelihood(mv, tierAt(mv.street, idx), opps[o].read);
           fit[o][idx] = f;
         }
         w *= f;
@@ -403,7 +413,7 @@ export function imagine(hole: Card2, board: CardInt[], street: Street, opps: Opp
   };
   // Several tries per deal, keeping one in proportion to how well it fits: far fewer wasted run-outs
   // when someone's story is narrow (a big raise on the turn), and the average stays fair.
-  const tries = uniform || street === 'preflop' ? 1 : 4;
+  const tries = uniform || street === 'preflop' ? 1 : 3;
   const candidate = new Int32Array(m);
   for (let s = 0; s < n; s++) {
     let sum = 0;
@@ -449,16 +459,7 @@ export function imagine(hole: Card2, board: CardInt[], street: Street, opps: Opp
     }
     if (result && ties) result = 1 / (ties + 1);
     // Each opponent's hand as they'd see it now (for how they'd react to a bet).
-    if (street !== 'preflop')
-      for (let o = 0; o < m; o++) {
-        let nt = nowTier[o][picked[o]];
-        if (nt < 0) {
-          const [a, b] = COMBOS[picked[o]];
-          nt = tierWith(a, b, nowBoard!, scratch);
-          nowTier[o][picked[o]] = nt;
-        }
-        out.tiers[out.n * m + o] = nt;
-      }
+    if (street !== 'preflop') for (let o = 0; o < m; o++) out.tiers[out.n * m + o] = tierAt(street, picked[o]);
     for (let o = 0; o < m; o++) out.cls[out.n * m + o] = COMBO_CLASS[picked[o]];
     out.w[out.n] = w;
     out.win[out.n] = result;

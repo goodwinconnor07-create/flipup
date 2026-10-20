@@ -651,6 +651,13 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   const betScale = Math.max(0.3, 1 + 4 * s.bet);
   const raiseScale = Math.max(0.2, Math.min(2, 1 + 6 * s.raise));
 
+  // No rebuys: going broke ends the night, so careful styles shy away from risking it all on a thin
+  // edge, and a big stack leans on players a call would knock out.
+  const tournament = !game.settings.rebuys;
+  const covered = tournament && theirBehind >= behind;
+  const bully = tournament && theirBehind < behind * 0.5 ? pot * 0.03 * (1 - style.pre.survival) : 0;
+  const risk = (put: number) => (covered && put >= behind * 0.7 ? pot * style.pre.survival * 0.12 : 0);
+
   const opts: Option[] = [];
   if (o.canCheck) {
     // Checking: see the next card (or the showdown) for free. Out of position the others may bet us off it.
@@ -677,6 +684,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
       // Pub players' sizes give their hands away: big with big hands, small with so-so ones.
       v += pot * s.tell * 0.15 * (f - 0.6) * (myTier >= 5 ? 1 : myTier <= 3 ? -1 : 0);
       if (multiway && bluffing) v -= pot * 0.05 * opps.length;
+      v += bully - risk(amount);
       opts.push({ move: raiseTo(seat.bet + amount), value: v, kind: f <= 0.5 ? 1 : 2 });
     }
   } else {
@@ -687,6 +695,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
     if (facingBig && myTier < 5) vCall -= pot * s.scared * 0.15;
     // Bots notice players who bet too much and look them up lighter (and give tight ones more credit).
     vCall += pot * Math.max(-0.08, Math.min(0.12, (read.aggression - PRIOR.aggression) * 0.04 + (read.bluffy - PRIOR.bluffy) * 0.2)) * adapt;
+    vCall -= risk(o.toCall);
     opts.push({ move: call(), value: vCall, kind: 1 });
     if (o.canRaise && !o.callIsAllIn) {
       const bigPot = pot + o.toCall;
@@ -705,6 +714,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
         let v = fold * pot + (1 - fold) * (eqCalled * (pot + put + (to - hand.currentBet)) * (put >= behind ? 1 : realise) - put);
         const best = Math.max(0, vCall);
         v = best + scaled(v - best, raiseScale);
+        v += bully - risk(put);
         v += pot * (s.raise + (bluffing ? s.bluff : 0) + (strong ? s.value : 0));
         if (myTier === 6 && s.trap > 0 && !river && hand.street === 'flop') v -= pot * s.trap * 0.1;
         opts.push({ move: raiseTo(to), value: v, kind: 2 });
@@ -748,7 +758,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   return {
     move: chosen.move,
     bucket,
-    bluff: bluffing && chosen.kind === 2,
+    bluff: bluffing && chosen.kind > 0,
     thinkMs: thinkTime(style, rng, { street: hand.street, probs, chosen: c, stakes: stakesOf(amount, stack), folding: chosen.move.move === 'fold', monster: myTier === 6, facing: o.toCall > 0 }),
   };
 }

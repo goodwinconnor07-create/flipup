@@ -30,6 +30,7 @@ const CARDS = [
 export function CasinoBackdrop() {
   return (
     <div className="casino" aria-hidden>
+      <i className="casino-photo" />
       {LIGHTS.map((l, i) => (
         <i key={i} className="bokeh" style={{ left: `${l.x}%`, top: `${l.y}%`, width: l.s, height: l.s, background: l.c, animationDelay: `${l.d}s` }} />
       ))}

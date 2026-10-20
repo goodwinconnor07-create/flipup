@@ -91,11 +91,11 @@ export function Home() {
   return (
     <div className="screen home">
       <div className="home-backdrop" aria-hidden>
+        <CasinoBackdrop />
         <i className="glow glow-1" />
         <i className="glow glow-2" />
         <PlayingCard card="As" size="lg" className="home-card home-card-1" />
         <PlayingCard card="Kh" size="lg" className="home-card home-card-2" />
-        <CasinoBackdrop />
       </div>
       <div className="home-head">
         <h1 className="logo">

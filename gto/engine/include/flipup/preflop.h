@@ -63,6 +63,12 @@ struct PreflopConfig {
   int eqr_model = 0;
   std::vector<float> class_eqr_ip;
   std::vector<float> class_eqr_oop;
+  // Per pot-kind additive adjustments for heads-up flops (kNumPotKinds * 169 each, kind-major).
+  // Kind 0 limped pot; 1/2 single-raised with the raiser IP/OOP; 3/4 3-bet pot; 5/6 4-bet+ pot.
+  // kind_eqr_present[k] != 0 means kind k is calibrated; others use class_eqr_* above.
+  std::vector<float> kind_eqr_ip;
+  std::vector<float> kind_eqr_oop;
+  std::vector<int> kind_eqr_present;
   std::array<double, 3> multiway_role = {0.9, 0.98, 1.12};  // 3-way: OOP-most, middle, IP-most
 
   // Starting ranges (169 weights) per player, default all 1. Used for custom
@@ -138,6 +144,7 @@ class PreflopSolver {
     std::array<double, 9> inv{};  // effective investments (uncalled chips returned at terminals)
     uint16_t folded = 0;
     int spr_bucket = 0;
+    int pot_kind = -1;  // heads-up flop: 0 limped, then (raises 1/2/3+) x (aggressor IP, OOP) -> 1..6
     std::array<int8_t, 3> roles{};  // 3-way: players ordered OOP-most .. IP-most
   };
 
@@ -170,6 +177,8 @@ class PreflopSolver {
   std::vector<float> Pn_;                 // compatible-combo probability weight
   std::vector<float> Weq_;                // Pn * equity
   std::array<std::vector<float>, 4> Wip_, Woop_;  // Pn * realized share, per SPR bucket
+  static constexpr int kNumPotKinds = 7;
+  std::array<std::vector<float>, kNumPotKinds> Kip_, Koop_;  // per pot kind (empty = not calibrated)
   std::vector<float> class_combos_;       // combos per class (4, 6 or 12)
   std::vector<float> TA_, TB_;            // 3-way factors pre-multiplied by Pn: [h][r][o]
 };

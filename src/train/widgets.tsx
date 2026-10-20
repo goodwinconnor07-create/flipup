@@ -120,7 +120,18 @@ export function StrategyGrid({ grid, mine }: { grid: Grid; mine?: string | null 
 const SUITS = ['s', 'h', 'd', 'c'] as const;
 
 /** All 52 cards; taken ones are greyed out. */
-export function CardPicker({ taken, onPick, selected }: { taken: Set<string>; onPick: (c: Card) => void; selected?: string | null }) {
+export function CardPicker({
+  taken,
+  onPick,
+  selected,
+  highlighted,
+}: {
+  taken: Set<string>;
+  onPick: (c: Card) => void;
+  selected?: string | null;
+  /** Cards already picked in this step: shown selected and tappable to unpick. */
+  highlighted?: Set<string>;
+}) {
   return (
     <div className="picker" role="grid" aria-label="Pick a card">
       {SUITS.flatMap((s) =>
@@ -130,8 +141,8 @@ export function CardPicker({ taken, onPick, selected }: { taken: Set<string>; on
             <button
               key={c}
               type="button"
-              className={`suit-${s}${selected === c ? ' on' : ''}`}
-              disabled={taken.has(c) && selected !== c}
+              className={`suit-${s}${selected === c || highlighted?.has(c) ? ' on' : ''}`}
+              disabled={taken.has(c) && selected !== c && !highlighted?.has(c)}
               onClick={() => onPick(c)}
               aria-label={c}
             >

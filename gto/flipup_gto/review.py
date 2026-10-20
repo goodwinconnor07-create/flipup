@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 import os
 from dataclasses import dataclass
 
@@ -40,7 +41,8 @@ from .cards import NUM_COMBOS, card_str, cards_str, combo_index, hand_class
 from .concepts import (alpha, board_texture, hand_features, mdf, preflop_hand_description, required_equity,
                        river_bluff_share, spr)
 from .handhistory import STREETS, HandHistory
-from .preflop import CLASS_COMBOS, CLASS_INDEX, CLASSES, MODEL_VERSION, PreflopSpot, load_calibration, tables
+from .preflop import (CLASS_COMBOS, CLASS_INDEX, CLASSES, MODEL_VERSION, PreflopSpot, calibration_key,
+                      load_calibration, tables)
 from .ranges import Range
 from .solver import BetSizing, PostflopSolver, StreetSizing
 from . import coach
@@ -77,17 +79,40 @@ class PreflopCache:
         self.cache_dir = cache_dir
         self.iterations = iterations
         self.mem: dict = {}
+        self._lock = threading.Lock()  # one load/solve at a time (startup warm-up vs first request)
+
+    def _path(self, spot, key, num_players, stack):
+        h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
+                                     calibration_key()]).encode()).hexdigest()[:16]
+        return os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
+
+    def loaded(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
+               rake_cap: float = 0.0) -> bool:
+        """True when this game is already in memory (get() returns at once)."""
+        return (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2)) in self.mem
+
+    def ready(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
+              rake_cap: float = 0.0) -> bool:
+        """True when this game is in memory or solved on disk (so get() won't take minutes)."""
+        key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
+        if key in self.mem:
+            return True
+        spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
+        return os.path.exists(self._path(spot, key, num_players, stack))
 
     def get(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
             rake_cap: float = 0.0) -> PreflopSpot:
         key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
         if key in self.mem:
             return self.mem[key]
+        with self._lock:
+            if key not in self.mem:
+                self.mem[key] = self._load_or_solve(key, num_players, stack, ante, rake_rate, rake_cap)
+        return self.mem[key]
+
+    def _load_or_solve(self, key, num_players, stack, ante, rake_rate, rake_cap) -> PreflopSpot:
         spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
-        cal = load_calibration()
-        h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
-                                     cal.get("scenario") if cal else None]).encode()).hexdigest()[:16]
-        path = os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
+        path = self._path(spot, key, num_players, stack)
         if os.path.exists(path):
             d = np.load(path)
             spot.engine.load_cumulative_strategy(d["cum"].astype(np.float32), int(d["iterations"]),
@@ -97,7 +122,6 @@ class PreflopCache:
             os.makedirs(self.cache_dir, exist_ok=True)
             np.savez_compressed(path, cum=spot.engine.cumulative_strategy().astype(np.float32),
                                 regret=spot.engine.regrets().astype(np.float32), iterations=spot.engine.iterations)
-        self.mem[key] = spot
         return spot
 
 
@@ -212,7 +236,7 @@ class ReviewSettings:
     river_iterations: int = 500
     target_pct: float = 0.5
     flop_target_pct: float = 1.0
-    max_memory_mb: float = 3000.0
+    max_memory_mb: float = 4000.0
     rake_rate: float = 0.0
     rake_cap: float = 0.0
 
@@ -765,9 +789,13 @@ class _HandContext:
             if any(p in self.folded for p in live):
                 return
 
-    def _review_sizing(self, street_i, lean, acts, oop, pot):
+    def _review_sizing(self, street_i, lean, acts, oop, pot, ip=None):
         """Bet-size tree for this street plus every size actually used, so the real line is in the tree."""
-        sizing = BetSizing.review(street_i, lean)
+        # As in GTO Wizard's trees, no lead sizes for OOP into the previous street's aggressor
+        # (a donk bet actually made is still added below). After a street checks through OOP may probe.
+        prev = self.preflop_aggressor if street_i == 0 else (
+            (self.bettors.get(["flop", "turn", "river"][street_i - 1]) or [None])[-1])
+        sizing = BetSizing.review(street_i, lean, oop_leads=ip is None or prev != ip)
         sizing.merge_threshold = 0.02
         wager = {a.player: 0.0 for a in acts}
         wager.setdefault(oop, 0.0)
@@ -806,7 +834,7 @@ class _HandContext:
         eff = min(self.stack[oop], self.stack[ip])
         solver = None
         for lean in (0, 1, 2):
-            sizing = self._review_sizing(street_i, lean, acts, oop, pot)
+            sizing = self._review_sizing(street_i, lean, acts, oop, pot, ip)
             try:
                 solver = PostflopSolver(board, pot, eff, ranges[oop], ranges[ip], sizing=sizing,
                                         compress=street_i == 0, max_memory_mb=st.max_memory_mb)

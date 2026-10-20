@@ -42,6 +42,7 @@ from .handhistory import HandHistory
 from .preflop import CLASSES
 from .ranges import Range
 from . import library
+from .custom import Explorer, NeedsSolve
 from .review import Reviewer, aggregate_session
 from .solver import BetSizing, PostflopSolver
 
@@ -50,6 +51,18 @@ app = FastAPI(title="FlipUp GTO", version="0.2")
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FLIPUP_CORS", "*").split(","),
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 reviewer = Reviewer()
+explorer = Explorer(reviewer)
+
+
+def _warm():
+    """Load the most used preflop solution in the background so the first request is quick."""
+    try:
+        reviewer.preflop.get(6, 100)
+    except Exception:  # noqa: BLE001 - a cold cache just means the first request waits
+        pass
+
+
+threading.Thread(target=_warm, daemon=True).start()
 _jobs: dict = {}
 _lock = threading.Lock()
 _pool = ThreadPoolExecutor(max_workers=1)  # solves are multithreaded already
@@ -166,6 +179,31 @@ def analyze(req: HandReq):
     except (KeyError, ValueError) as e:
         raise HTTPException(400, f"bad hand: {e}")
     return {"job": _start_job(lambda progress: reviewer.review(hh, req.hero, analyze=True), 1)}
+
+
+class CustomReq(BaseModel):
+    players: int
+    stacks_bb: list | None = None
+    hero: int
+    hero_cards: str | None = None
+    preflop: list = []
+    flop: list = []
+    turn: list = []
+    river: list = []
+    board: list = []
+
+
+@app.post("/custom/spot")
+def custom_spot(req: CustomReq):
+    """The custom hand so far: whose turn it is and GTO's options, or a job if a solve is needed."""
+    d = req.model_dump()
+    try:
+        return plain(explorer.spot(d))
+    except NeedsSolve as e:
+        jid = _start_job(lambda progress: explorer.spot(d, solve=True), 1)
+        return {"status": "solving", "job": jid, "message": e.message}
+    except (ValueError, KeyError, IndexError) as e:
+        raise HTTPException(400, str(e))
 
 
 @app.get("/library")

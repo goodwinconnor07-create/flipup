@@ -55,6 +55,14 @@ struct TreeConfig {
   bool compress = false;           // half-float regrets and strategy sums, scaled per node (half the memory)
   double max_memory_mb = 0;        // refuse to allocate trees larger than this (0 = no limit)
   int averaging = 0;               // 0: DCFR gamma=2; 1: gamma=3 restarting at powers of 4
+  // DCFR schedule: positive regrets *= t^a/(t^a+1), negative regrets *= neg (0 = CFR+ style reset),
+  // strategy sums *= ((t-1)/t)^gamma (averaging 0 only).
+  double dcfr_alpha = 1.5;
+  double dcfr_neg = 0.0;
+  double dcfr_gamma = 3.0;
+  // Predictive DCFR+ (Xu et al. 2024): regrets clipped at zero, and each strategy is computed from
+  // the regrets plus the last instantaneous regret as a prediction. Needs ~50% more memory.
+  bool predictive = false;
   std::array<std::vector<float>, 2> range;  // 1326 weights per player (0 = not in range)
 };
 
@@ -192,6 +200,8 @@ class Solver {
   void store_regret(const Node& n, const float* in);
   void load_cum(const Node& n, float* out) const;
   void store_cum(const Node& n, const float* in);
+  void load_pred(const Node& n, float* out) const;
+  void store_pred(const Node& n, const float* in);
   double rake(double pot) const;
   bool parallel_here(int depth) const;
 
@@ -224,6 +234,10 @@ class Solver {
   std::vector<_Float16> cum_h_;       // compressed strategy sums (value / node scale)
   std::vector<float> regret_scale_;   // per action node
   std::vector<float> cum_scale_;
+  std::vector<float> pred_;           // last instantaneous regrets (predictive mode)
+  std::vector<_Float16> pred_h_;
+  std::vector<float> pred_scale_;
+  float pred_pos_ = 0.0f;             // positive-regret discount for the current iteration
 
   std::unordered_map<CardMask, int> river_index_;
   std::vector<RiverBoard> river_boards_;

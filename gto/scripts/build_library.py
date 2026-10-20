@@ -216,13 +216,20 @@ def main():
     ap.add_argument("--boards", type=int, default=6)
     ap.add_argument("--groups", default="btn_bb,sb_bb,threebet_ip,threebet_oop")
     ap.add_argument("--iterations", type=int, default=150)
+    ap.add_argument("--skip-existing", action="store_true",
+                    help="skip board/group pairs whose flop spot is already saved (resume an interrupted build)")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     log = lambda m: print(m, flush=True)  # noqa: E731
     from flipup_gto.cards import parse_cards
     rv = Reviewer()
+    flop_spot = {"btn_bb": "cbet_ip", "sb_bb": "cbet_oop", "threebet_ip": "3bet_pot_ip", "threebet_oop": "3bet_pot_oop"}
     for b in BOARDS[:args.boards]:
         for g in args.groups.split(","):
+            done = os.path.join(OUT, f"{flop_spot.get(g, g)}_{b.replace(' ', '')}.json")
+            if args.skip_existing and os.path.exists(done):
+                log(f"  {g} {b}: already built, skipping")
+                continue
             try:
                 names = run_group(rv, g, parse_cards(b), log, args.iterations)
                 log(f"  saved {', '.join(names)}")

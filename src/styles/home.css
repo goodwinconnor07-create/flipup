@@ -673,3 +673,54 @@ html.calm :is(.bokeh, .drift-chip, .drift-card) {
 .quick-stack > *:first-child {
   margin-left: 0;
 }
+
+/* ── Phones: the sheet is part of the scroll, so scrolling down pushes it up over the photo ───── */
+
+@media not all and (min-width: 960px) and (min-height: 600px) {
+  .home-sheet {
+    display: block;
+    margin-top: 0;
+    padding-top: max(150px, 44dvh);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: none;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  html[data-theme='dark'] .home-sheet,
+  html.no-glass .home-sheet {
+    background: none;
+  }
+
+  .home-sheet::-webkit-scrollbar {
+    display: none;
+  }
+
+  .home-scroll {
+    min-height: 100%;
+    overflow: visible;
+    border-radius: 36px 36px 0 0;
+    background: rgba(250, 250, 253, 0.92);
+    -webkit-backdrop-filter: blur(32px) saturate(1.7);
+    backdrop-filter: blur(32px) saturate(1.7);
+    border: 1px solid var(--glass-rim);
+    border-bottom: 0;
+    box-shadow: var(--glass-shine), 0 -18px 50px -20px rgba(0, 0, 0, 0.45);
+  }
+
+  html[data-theme='dark'] .home-scroll {
+    background: var(--glass-fill-strong);
+  }
+
+  html.no-glass .home-scroll {
+    background: var(--surface);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

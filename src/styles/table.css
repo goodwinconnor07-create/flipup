@@ -82,6 +82,16 @@
   opacity: 0.55;
 }
 
+/* Dark mode: the felt showed straight through the faded card. Keep the card solid and fade only what's on it. */
+html[data-theme='dark'] .pcard.dim {
+  opacity: 1;
+  background: #565868;
+}
+
+html[data-theme='dark'] .pcard.dim > * {
+  opacity: 0.75;
+}
+
 .pcard-xl {
   --w: 100px;
 }

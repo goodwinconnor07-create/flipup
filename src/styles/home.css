@@ -1485,3 +1485,89 @@ html.calm .fly {
     animation: none;
   }
 }
+
+/* Quick game tiles: a scene per character, a few props round the edges and the face in front. */
+.quick-art {
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-art .prop {
+  position: absolute;
+  font-size: 22px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.2));
+}
+
+.prop-a {
+  top: 8px;
+  left: 10px;
+}
+
+.prop-b {
+  top: 12px;
+  right: 10px;
+  font-size: 20px;
+}
+
+.prop-c {
+  bottom: 8px;
+  left: 12px;
+  font-size: 24px;
+}
+
+.quick-art .avatar {
+  position: relative;
+  margin-left: 14px;
+  margin-top: 8px;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.28));
+}
+
+/* Text under a tile always fits: names and captions stay on one line, trimmed rather than cut. */
+.quick-card b,
+.quick-card small {
+  display: block;
+  max-width: 128px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.25;
+}
+
+.quick-row {
+  padding-bottom: 22px;
+}
+
+/* The tile is just the picture and its text: no card behind it, and nothing clipped. */
+html .quick-card,
+html:not(.no-glass) .quick-card {
+  background: none;
+  background-color: transparent;
+  overflow: visible;
+  height: auto;
+  padding: 0 0 4px;
+}
+
+.quick-art.quick-stack {
+  background: linear-gradient(180deg, #5fd09a, #1b7a52);
+}
+
+html[data-theme='dark'] .quick-art.quick-stack {
+  background: linear-gradient(180deg, #5fd09a, #1b7a52);
+}
+
+.quick-art.quick-stack > * {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+html[data-theme='dark'] .quick-art.quick-stack > * {
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.quick-art.quick-stack > * {
+  margin-left: -6px;
+}
+
+.quick-art.quick-stack > *:first-child {
+  margin-left: 0;
+}

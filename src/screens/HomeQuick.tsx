@@ -4,11 +4,23 @@ import { DEFAULT_SETTINGS, type Settings } from '../game';
 import { loadLastBots } from '../state/persist';
 import { dispatch, getState, navigate, openTable, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
+import { sceneFor } from './botScenes';
+
+/** A bot's backdrop: its gradient, with a few props from its world. */
+function Scene({ emoji, size = 64 }: { emoji: string; size?: number }) {
+  const s = sceneFor(emoji);
+  return (
+    <span className="quick-art" style={{ background: `linear-gradient(180deg, ${s.bg[0]}, ${s.bg[1]})` }}>
+      <span className="prop prop-a" aria-hidden>{s.props[0]}</span>
+      <span className="prop prop-b" aria-hidden>{s.props[1]}</span>
+      <span className="prop prop-c" aria-hidden>{s.props[2]}</span>
+      <Avatar emoji={emoji} size={size} />
+    </span>
+  );
+}
 
 type Bot = (typeof BOTS)[number];
 
-/** A steady soft colour per bot for its tile. */
-const hue = (name: string) => [...name].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
 
 function sample(n: number): Bot[] {
   const pool = [...BOTS];
@@ -47,13 +59,11 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
         {showAgain && last && lastBots.length > 0 && (
           <button type="button" className="glass-card quick-card quick-again lift press" onClick={() => void play(lastBots.map((b) => b.name), last.settings)}>
             {lastBots.length === 1 ? (
-              <span className="quick-art" style={{ ['--h' as string]: hue(lastBots[0].name) }}>
-                <Avatar emoji={lastBots[0].emoji} size={64} />
-              </span>
+              <Scene emoji={lastBots[0].emoji} />
             ) : (
               <span className="quick-art quick-stack" style={{ ['--h' as string]: 215 }} aria-hidden>
                 {lastBots.slice(0, 5).map((b) => (
-                  <Avatar key={b.name} emoji={b.emoji} size={34} />
+                  <Avatar key={b.name} emoji={b.emoji} size={28} />
                 ))}
               </span>
             )}
@@ -63,9 +73,7 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
         )}
         {duels.map((b) => (
           <button key={b.name} type="button" className="glass-card quick-card lift press" onClick={() => void play([b.name])}>
-            <span className="quick-art" style={{ ['--h' as string]: hue(b.name) }}>
-              <Avatar emoji={b.emoji} size={64} />
-            </span>
+            <Scene emoji={b.emoji} />
             <b>{b.name}</b>
             <small>Heads-up</small>
           </button>
@@ -73,7 +81,7 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
         <button type="button" className="glass-card quick-card lift press" onClick={() => void play(table.map((b) => b.name))}>
           <span className="quick-art quick-stack" style={{ ['--h' as string]: 150 }} aria-hidden>
             {table.map((b) => (
-              <Avatar key={b.name} emoji={b.emoji} size={34} />
+              <Avatar key={b.name} emoji={b.emoji} size={28} />
             ))}
           </span>
           <b>Full table</b>

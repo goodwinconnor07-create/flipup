@@ -1,11 +1,11 @@
 // Every change to a table goes through applyAction(). The server and the phone (for bots-only
 // tables) run exactly this code, so they always agree.
 
-import { decide, handBucket, updateReads } from './botPlay';
+import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { BOTS } from './botStyles';
-import { botSays } from './botTalk';
+import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
-import { canDeal, cardsText, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
+import { botsOnly, canDeal, cardsText, dealNextStreet, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
 import { cryptoRng, newId } from './ids';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
@@ -129,7 +129,11 @@ function addBot(game: Game): void {
   game.players.push({ ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }), style: pick.style });
 }
 
-/** Once per hand, when it's over: the bots take note of what everyone did, and maybe one has a word to say. */
+/**
+ * Once per hand, when it's over: the bots take note of what everyone did, and react. Winners and
+ * losers of an all-in sweat it out loud, big pots get a word, and sometimes another bot answers.
+ * When someone speaks, the next deal waits a little longer so it can be read.
+ */
 function afterHand(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   const result = hand.result!;
@@ -137,26 +141,67 @@ function afterHand(game: Game, ctx: ActionContext): void {
   updateReads(game, hand);
   const bb = game.settings.bigBlind;
   const pot = result.pots.reduce((a, p) => a + p.amount, 0);
-  if (pot < bb * 6) return;
   const winners = Object.keys(result.won);
+  const isBot = (id: string) => !!playerById(game, id)?.bot;
   const bucketOf = (id: string) => {
     const seat = hand.seats.find((s) => s.playerId === id);
     return seat && seat.cards.length === 2 && hand.board.length >= 3 ? handBucket(seat.cards, hand.board) : null;
   };
-  for (const id of winners) {
-    if (!playerById(game, id)?.bot) continue;
-    const b = bucketOf(id);
-    if (!result.showdown && (b === 'air' || b === 'weak') && botSays(game, id, 'bluffWon', ctx.rng)) return;
-    if (result.showdown && botSays(game, id, 'bigWin', ctx.rng)) return;
-  }
-  if (!result.showdown) return;
-  const personWon = winners.some((id) => !playerById(game, id)?.bot);
+  const say = (id: string, event: TalkEvent) => botSays(game, id, event, ctx.rng, ctx.now);
+  const spoke: string[] = [];
+  const showdownLosers = result.showdown ? hand.seats.filter((s) => !s.folded && !winners.includes(s.playerId)).map((s) => s.playerId) : [];
+  const personWon = winners.some((id) => !isBot(id));
+  // Who is on a cold streak: people who put in more than a big blind and lost, hands in a row.
+  // (Posting a blind and folding isn't a loss worth rubbing in.)
+  const streaks = { ...game.streaks };
   for (const s of hand.seats) {
-    if (s.folded || winners.includes(s.playerId) || !playerById(game, s.playerId)?.bot) continue;
-    const b = bucketOf(s.playerId);
-    if ((b === 'monster' || b === 'strong') && botSays(game, s.playerId, 'badBeat', ctx.rng)) return;
-    if (personWon && botSays(game, s.playerId, 'lostToYou', ctx.rng)) return;
+    if (isBot(s.playerId)) continue;
+    if (winners.includes(s.playerId)) streaks[s.playerId] = 0;
+    else if (s.total > bb) streaks[s.playerId] = (streaks[s.playerId] ?? 0) + 1;
   }
+  game.streaks = streaks;
+  const tilted = hand.seats.some((s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2);
+
+  if (hand.ranOut) {
+    for (const id of winners) if (isBot(id) && say(id, 'sweatWin')) spoke.push(id);
+    for (const id of showdownLosers) if (isBot(id) && say(id, 'sweatLose')) spoke.push(id);
+  } else {
+    for (const id of winners) {
+      if (!isBot(id)) continue;
+      const b = bucketOf(id);
+      // Twice or more in a row and they pile on; a big showdown win is a smaller chance.
+      const rubbedIn = tilted ? ctx.rng() < 0.7 : result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.25;
+      const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : rubbedIn ? 'tiltJab' : pot >= bb * 15 ? 'bigWin' : 'win';
+      if (say(id, event)) spoke.push(id);
+    }
+    for (const id of showdownLosers) {
+      if (!isBot(id)) continue;
+      const b = bucketOf(id);
+      const caught = b === 'air' || b === 'weak';
+      if (caught ? say(id, 'bluffCaught') : (b === 'monster' || b === 'strong') && pot >= bb * 10 ? say(id, 'badBeat') : personWon && say(id, 'lostToYou')) spoke.push(id);
+    }
+  }
+  if (!spoke.length) return;
+  // Someone answers now and then: a bot that didn't just speak, a beat later.
+  const others = game.players.filter((p) => p.bot && !spoke.includes(p.id) && !p.sittingOut);
+  if (others.length && ctx.rng() < 0.4) {
+    const who = others[Math.floor(ctx.rng() * others.length)];
+    game.pendingTalk = { at: ctx.now + 1400, playerId: who.id };
+  }
+  // A little longer before the next deal, so the table talk can be read.
+  if (game.nextHandAt !== null) game.nextHandAt += botsOnly(game) ? 1000 : TIMING.talkPause;
+  schedule(game);
+}
+
+/** What a bot says while it thinks, given the move it's about to make. */
+function thinkingEvent(game: Game, hand: Game['hand'] & object, choice: BotMove, bucket: string | undefined, bigBet: boolean): TalkEvent | null {
+  const raisedBig = (choice.move === 'raise' || choice.move === 'bet') && (choice.to ?? 0) >= potTotal(hand) * 0.6;
+  if (choice.move === 'allin') return 'allin';
+  if (choice.move === 'fold' && bigBet) return 'foldBig';
+  if (choice.move === 'call' && bigBet) return bucket === 'mid' || bucket === 'weak' || bucket === 'air' ? 'callLight' : 'thinkHard';
+  if (raisedBig && (hand.street !== 'preflop' || hand.currentBet > game.settings.bigBlind)) return 'raise';
+  if (choice.move === 'check' || (choice.move === 'call' && !bigBet)) return 'thinkEasy';
+  return null;
 }
 
 /** Deal soon if the table was waiting for players and now has enough. */
@@ -286,7 +331,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (big && !game.hand?.result) {
         const bots = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
         const who = bots[Math.floor(ctx.rng() * bots.length)];
-        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng);
+        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng, ctx.now);
       }
       return done();
     }
@@ -399,35 +444,61 @@ function tick(game: Game, ctx: ActionContext): boolean {
   // Timers can fire a hair early; that's close enough.
   const due = (at: number | null) => at !== null && ctx.now >= at - 20;
 
+  // A bot answering what was just said.
+  if (game.pendingTalk && due(game.pendingTalk.at)) {
+    const { playerId, event, forId, seq } = game.pendingTalk;
+    delete game.pendingTalk;
+    // A jab at a slow player only lands if they're still on the clock.
+    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now);
+    schedule(game);
+    return true;
+  }
+
   if (hand && !hand.result) {
     if (!due(hand.actAt)) return false;
+    if (hand.nextStreetAt != null) {
+      dealNextStreet(game, ctx);
+      return true;
+    }
     if (hand.runout) {
       runoutStep(game, ctx);
+      // Sweating the next card: someone in the all-in, or someone watching.
+      if (!game.hand?.result) {
+        const inIt = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
+        const watching = hand.seats.filter((s) => s.folded && playerById(game, s.playerId)?.bot);
+        const pickOne = <T,>(xs: T[]) => xs[Math.floor(ctx.rng() * xs.length)];
+        if (inIt.length && ctx.rng() < 0.75) botSays(game, pickOne(inIt).playerId, 'sweat', ctx.rng, ctx.now);
+        else if (watching.length) botSays(game, pickOne(watching).playerId, 'sweatWatch', ctx.rng, ctx.now);
+      }
       return true;
     }
     const seat = seatFor(hand, hand.toAct ?? undefined);
     const player = playerById(game, hand.toAct);
     if (!seat || !player) return false;
     if (player.bot) {
+      // Second half of a turn where the bot thought out loud first: make the move it settled on.
+      const plan = game.botPlan;
+      if (plan && plan.playerId === player.id && plan.seq === hand.seq) {
+        delete game.botPlan;
+        if (makeMove(game, plan.move, plan.to, ctx)) makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+        return true;
+      }
       const before = options(game, hand, seat);
       // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.
       const bigBet =
         hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
       const thought = decide(game, hand, seat, ctx.rng);
       const choice = thought.move;
+      // Sometimes it says what it's thinking first, then moves a moment later.
+      const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
+      if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) {
+        game.botPlan = { playerId: player.id, seq: hand.seq, move: choice.move, to: choice.to };
+        hand.actAt = ctx.now + (botsOnly(game) ? 400 : TIMING.botThink);
+        schedule(game);
+        return true;
+      }
       if (makeMove(game, choice.move, choice.to, ctx))
         makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
-      else if (!game.hand?.result) {
-        // Now and then, a word about what it just did.
-        const raisedBig = (choice.move === 'raise' || choice.move === 'bet') && (choice.to ?? 0) >= potTotal(hand) * 0.6;
-        const event =
-          choice.move === 'allin' ? 'allin'
-          : choice.move === 'fold' && bigBet ? 'foldBig'
-          : choice.move === 'call' && bigBet && (thought.bucket === 'mid' || thought.bucket === 'weak' || thought.bucket === 'air') ? 'callLight'
-          : raisedBig && hand.street !== 'preflop' ? 'raise'
-          : null;
-        if (event) botSays(game, player.id, event, ctx.rng);
-      }
       return true;
     }
     // Out of time: check if that's free, otherwise fold. Two in a row and they sit out.
@@ -439,5 +510,8 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (!due(game.nextHandAt)) return false;
   startHand(game, ctx);
+  // A word from a random bot between deals, now and then.
+  const chatty = game.players.filter((p) => p.bot && !p.sittingOut);
+  if (chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
   return true;
 }

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  TIMING,
   applyAction,
   buildPots,
   createTable,
@@ -148,9 +149,17 @@ const seat = (game: Game, name: string) => game.hand!.seats.find((s) => nameOf(g
 const stack = (game: Game, name: string) => game.players.find((p) => p.name === name)!.stack;
 
 /** The player whose turn it is makes a move. */
+/** Lets the short pause before a new street pass, as the table's clock would. */
+function afterPause(game: Game): Game {
+  const hand = game.hand;
+  if (!hand || hand.result || hand.nextStreetAt == null) return game;
+  clock = hand.nextStreetAt + 1;
+  return must(game, { type: 'tick' }, 'server');
+}
+
 function act(game: Game, move: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin', to?: number): Game {
   const hand = game.hand!;
-  return must(game, { type: 'act', hand: hand.number, seq: hand.seq, move, to }, deviceOf(game, hand.toAct!));
+  return afterPause(must(game, { type: 'act', hand: hand.number, seq: hand.seq, move, to }, deviceOf(game, hand.toAct!)));
 }
 
 function tryAct(game: Game, move: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin', to?: number) {
@@ -600,6 +609,46 @@ describe('table', () => {
     // A human who kept their cards hidden still has them hidden.
     const friend = game.players.find((p) => p.deviceId === 'device-friend')!.id;
     if (!game.hand!.seats.find((s) => s.playerId === friend)!.shown) expect(hiddenFrom(HOST, friend)).toBe(true);
+  });
+
+  it('waits a beat after the last bet of a street before the next card comes', () => {
+    let game = table(2);
+    // Heads up the button (small blind) acts first before the flop: call, then the big blind checks.
+    game = must(game, { type: 'act', hand: game.hand!.number, seq: game.hand!.seq, move: 'call' }, deviceOf(game, game.hand!.toAct!));
+    const before = clock;
+    game = must(game, { type: 'act', hand: game.hand!.number, seq: game.hand!.seq, move: 'check' }, deviceOf(game, game.hand!.toAct!));
+    // The street is over, but no card yet and nobody's on the clock.
+    expect(game.hand!.board).toHaveLength(0);
+    expect(game.hand!.toAct).toBeNull();
+    expect(game.wakeAt).toBe(before + TIMING.streetPause);
+    // Too early: nothing happens.
+    clock = before + TIMING.streetPause - 200;
+    expect(must(game, { type: 'tick' }, 'server').hand!.board).toHaveLength(0);
+    // After the beat: the flop, and someone to act.
+    clock = before + TIMING.streetPause + 1;
+    game = must(game, { type: 'tick' }, 'server');
+    expect(game.hand!.board).toHaveLength(3);
+    expect(game.hand!.toAct).not.toBeNull();
+  });
+
+  it('turns up the cards of anyone who is all in at the showdown, even a loser on the river', () => {
+    let game = table(2);
+    game = rig(game, { Host: 'Ah Ad', P1: '7c 2d' }, 'Ks 9d 4h 8s 3c');
+    // Check it down to the river.
+    game = act(game, 'call');
+    game = act(game, 'check');
+    for (let i = 0; i < 6 && game.hand!.street !== 'river'; i++) game = act(game, 'check');
+    expect(game.hand!.street).toBe('river');
+    // Whoever's first on the river goes all in with the worse hand or the better one; the other calls.
+    const bettor = game.hand!.toAct!;
+    game = act(game, 'allin');
+    game = act(game, 'call');
+    expect(game.hand!.result?.showdown).toBe(true);
+    const loser = game.hand!.seats.find((s) => !game.hand!.result!.won[s.playerId])!;
+    // The loser put everything in too, so their cards are face up, not mucked.
+    expect(loser.shown).toBe(true);
+    expect(game.hand!.seats.every((s) => s.shown)).toBe(true);
+    expect(bettor).toBeTruthy();
   });
 
   it('doubles the blinds on the clock, as the next hand is dealt, and stops at the cap', () => {

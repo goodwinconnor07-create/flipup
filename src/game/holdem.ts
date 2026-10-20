@@ -10,6 +10,12 @@ export const TIMING = {
   /** Bots wait a moment, like they're thinking. */
   botMin: 900,
   botMax: 2000,
+  /** A bot that thinks out loud moves this long after it speaks. */
+  botThink: 1300,
+  /** A person has had the clock this long: a bot may poke them. */
+  tankJab: 12000,
+  /** Extra time before the next deal when a bot has something to say about the hand. */
+  talkPause: 2000,
   /** Gap between cards on an all-in run-out, so the odds can be read. */
   runoutStep: 2200,
   /** Pause after a hand before the next one deals (unless everyone taps Next hand). */
@@ -19,6 +25,15 @@ export const TIMING = {
   resume: 2000,
   /** One player has all the chips: this long for the others to rebuy before the game ends. */
   rebuyWindow: 20000,
+  /** After the last bet of a street is matched, a beat before the next card so the move can be seen. */
+  streetPause: 1100,
+  /** Once every person is out of a hand, the bots finish it quickly: no one is watching their thinking. */
+  fastBotMin: 250,
+  fastBotMax: 550,
+  fastStreet: 350,
+  fastRunout: 600,
+  /** The pause before the next deal is this share of the usual when every person has folded. */
+  fastAfter: 0.45,
   /** Without rebuys: how long the deciding hand stays on screen before the winner's page. */
   endPause: 7000,
 };
@@ -339,6 +354,12 @@ function continueFrom(game: Game, idx: number, ctx: ActionContext): void {
   endStreet(game, ctx);
 }
 
+/** True when every person has folded and only bots are left playing the hand out. */
+export function botsOnly(game: Game): boolean {
+  const hand = game.hand;
+  return !!hand && hand.seats.every((s) => s.folded || !!playerById(game, s.playerId)?.bot);
+}
+
 function setTurn(game: Game, idx: number, ctx: ActionContext): void {
   const hand = game.hand!;
   const seat = hand.seats[idx];
@@ -352,10 +373,16 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
     return;
   }
   if (player.bot) {
-    hand.actAt = ctx.now + TIMING.botMin + Math.floor(ctx.rng() * (TIMING.botMax - TIMING.botMin));
+    const [lo, hi] = botsOnly(game) ? [TIMING.fastBotMin, TIMING.fastBotMax] : [TIMING.botMin, TIMING.botMax];
+    hand.actAt = ctx.now + lo + Math.floor(ctx.rng() * (hi - lo));
   } else if (game.settings.turnSeconds > 0) {
     hand.deadline = ctx.now + game.settings.turnSeconds * 1000;
     hand.actAt = hand.deadline;
+  }
+  // Someone slow to act gets a jab from a bot, if the clock isn't about to run out anyway.
+  if (!player.bot && !game.pendingTalk && (!hand.deadline || hand.deadline - ctx.now > TIMING.tankJab + 3000)) {
+    const bots = game.players.filter((p) => p.bot && !p.sittingOut && hand.seats.some((s) => s.playerId === p.id));
+    if (bots.length) game.pendingTalk = { at: ctx.now + TIMING.tankJab, playerId: bots[Math.floor(ctx.rng() * bots.length)].id, event: 'tank', forId: player.id, seq: hand.seq };
   }
   schedule(game);
 }
@@ -416,16 +443,29 @@ function endStreet(game: Game, ctx: ActionContext): void {
   if (live.length <= 1) {
     // No more betting possible: everyone still in turns their cards over and the board runs out.
     hand.runout = true;
+    hand.ranOut = true;
     for (const s of hand.seats) {
       if (s.folded) continue;
       s.shown = true;
       log(game, `${nameOf(game, s.playerId)} shows ${cardsText(s.cards)}`);
     }
-    hand.actAt = ctx.now + TIMING.runoutStep;
+    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
     schedule(game);
     return;
   }
 
+  // A beat before the next card, so the last move is seen first and nobody's cards land mid-thought.
+  hand.toAct = null;
+  hand.deadline = null;
+  hand.nextStreetAt = ctx.now + (botsOnly(game) ? TIMING.fastStreet : TIMING.streetPause);
+  hand.actAt = hand.nextStreetAt;
+  schedule(game);
+}
+
+/** The pause is over: deal the next street and start its betting. */
+export function dealNextStreet(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.nextStreetAt = null;
   dealStreet(hand);
   const button = indexOf(hand, hand.buttonId);
   // After the flop the first player still in, left of the button, acts first.
@@ -441,7 +481,7 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
     return;
   }
   dealStreet(hand);
-  hand.actAt = ctx.now + TIMING.runoutStep;
+  hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
   schedule(game);
 }
 
@@ -492,7 +532,7 @@ function showdown(game: Game, ctx: ActionContext): void {
 
   // Showing down: the last bettor on the river shows first (or the first player left of the button).
   // After that, a hand is shown only if it beats or ties the best one so far, or wins something.
-  // The rest are mucked.
+  // A player who's all in always shows (as at a real table), even if they lost. The rest are mucked.
   const start = hand.aggressorId ? indexOf(hand, hand.aggressorId) : nextIndex(hand, button, (s) => !s.folded);
   const names: Record<string, string> = {};
   let bestShown = -1;
@@ -500,7 +540,7 @@ function showdown(game: Game, ctx: ActionContext): void {
     const seat = hand.seats[(start + i) % n];
     if (seat.folded) continue;
     const v = values.get(seat.playerId)!;
-    if (seat.shown || v.score >= bestShown || won[seat.playerId]) {
+    if (seat.shown || seat.allIn || v.score >= bestShown || won[seat.playerId]) {
       if (!seat.shown || hand.runout) log(game, `${nameOf(game, seat.playerId)} shows ${cardsText(seat.cards)} (${v.detail})`);
       seat.shown = true;
       names[seat.playerId] = v.detail;
@@ -547,8 +587,9 @@ function winWithoutShowdown(game: Game, ctx: ActionContext): void {
   finishHand(game, ctx, TIMING.afterFold);
 }
 
-function finishHand(game: Game, ctx: ActionContext, pause: number): void {
+function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   const hand = game.hand!;
+  const pause = botsOnly(game) ? Math.round(usualPause * TIMING.fastAfter) : usualPause;
   for (const s of hand.seats) s.bet = 0;
   hand.runout = false;
   if (hand.board.length) log(game, `Board: ${cardsText(hand.board)}`);
@@ -582,4 +623,6 @@ export function schedule(game: Game): void {
   if (game.status !== 'playing') game.wakeAt = null;
   else if (hand && !hand.result) game.wakeAt = hand.actAt;
   else game.wakeAt = game.nextHandAt;
+  // A bot's reply that's due before anything else.
+  if (game.status === 'playing' && game.pendingTalk && (game.wakeAt === null || game.pendingTalk.at < game.wakeAt)) game.wakeAt = game.pendingTalk.at;
 }

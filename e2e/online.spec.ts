@@ -95,7 +95,7 @@ test('bots at an online table play on the server', async ({ page }) => {
   await page.getByRole('dialog', { name: 'Deal without friends?' }).getByRole('button', { name: 'Deal' }).click();
 
   // Play along: the bots' moves come from the server's clock, so the hand finishes without anyone else.
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 160; i++) {
     if (await page.getByRole('button', { name: 'Next hand' }).isVisible()) break;
     if (await myTurn(page)) await page.locator('.action-buttons .btn-green').click();
     await page.waitForTimeout(500);

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { fetchTableInfo } from '../state/api';
 import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
-import { navigate, openSheet, toast, useApp } from '../state/store';
+import { navigate, openSheet, toast, toggleDark, toggleGlass, useApp } from '../state/store';
 import { Avatar, PlayingCard } from '../ui/components';
 import { InsightsTab } from './HomeInsights';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
-import { ArrowIcon, CardsIcon, ChartIcon, QrIcon, SparkIcon } from '../ui/Icons';
+import { ArrowIcon, CardsIcon, ChartIcon, GlassIcon, MoonIcon, QrIcon, SparkIcon } from '../ui/Icons';
 import { signed } from './Final';
 
 function ago(at: number): string {
@@ -48,6 +48,8 @@ export function Home() {
   const game = useApp((s) => s.game);
   const session = useApp((s) => s.session);
   const profile = useApp((s) => s.profile);
+  const dark = useApp((s) => s.dark);
+  const glass = useApp((s) => s.glass);
   const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
   const named = profile.name.trim().length > 0;
   const [stats] = useState(loadStats);
@@ -96,6 +98,14 @@ export function Home() {
         <h1 className="logo">
           Flip<span>Up</span>
         </h1>
+        <div className="home-quick">
+          <button type="button" className="quick-btn glass press" aria-pressed={dark} aria-label="Dark mode" onClick={toggleDark}>
+            <MoonIcon width={22} height={22} />
+          </button>
+          <button type="button" className="quick-btn glass press" aria-pressed={glass} aria-label="Liquid Glass" onClick={toggleGlass}>
+            <GlassIcon width={22} height={22} />
+          </button>
+        </div>
         <button
           type="button"
           className="me-chip glass press"

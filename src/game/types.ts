@@ -165,6 +165,10 @@ export interface Hand {
   log: string[];
   /** Every move as data (public information). */
   actions?: HandAction[];
+  /** Betting on this street is done and the next card is coming at this time. */
+  nextStreetAt?: number | null;
+  /** The board ran out with everyone all in (for the bots' sweating). */
+  ranOut?: boolean;
   /** Each player's chips before the blinds. */
   startStacks?: Record<string, number>;
 }
@@ -199,8 +203,14 @@ export interface Game {
   blindsRaiseAt?: number | null;
   /** What the bots have seen each player do. Never sent to phones. */
   reads?: Record<string, PlayerRead>;
-  /** The hand a bot last spoke in, so they don't all chat at once. */
-  botChatHand?: number;
+  /** When each bot last spoke (table clock), so nobody chatters non-stop. Never sent to phones. */
+  talkAt?: Record<string, number>;
+  /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
+  botPlan?: { playerId: string; seq: number; move: Move; to?: number };
+  /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */
+  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. */ event?: 'reply' | 'tank'; forId?: string; seq?: number };
+  /** Hands in a row each person has lost chips without winning one. Bots use it to pick their moment. Never sent to phones. */
+  streaks?: Record<string, number>;
   /** The last hand the bots took notes on. */
   readHand?: number;
 }

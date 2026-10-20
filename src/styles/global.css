@@ -81,6 +81,8 @@
   --card-dim: 0.38;
   --card-dim-bg: var(--bg-3);
   --bubble-grey: #e9e9eb;
+  --bubble-blue: #0a7aff;
+  --bubble-blue-hi: #3b9bff;
 
   /* ── States. -lo shades are for gradients under white text; -ink is text on a tinted -bg. */
   --green: #15803d;
@@ -1170,4 +1172,118 @@ html.calm *::after {
 html,
 body {
   overflow-x: clip;
+}
+
+/* ── Liquid Glass, the full look ─────────────────────────────────────────────
+   The floating layer above, plus the panels, cards and bubbles: a see-through fill, a blur that
+   brightens what's behind, a bright rim and a soft sheen from the top-left. Settings can turn it
+   off (html.no-glass), and Reduce Transparency or no blur support does the same by itself. */
+
+:root {
+  --lg-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.16) 100%);
+  --lg-blur: blur(22px) saturate(180%) brightness(1.04);
+}
+
+html[data-theme='dark'] {
+  --lg-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.06) 100%);
+}
+
+html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .menu-tile, .home-row, .glass-card, .me-chip, .quick-btn, .icon-btn, .screen-foot) {
+  background-image: var(--lg-sheen);
+  -webkit-backdrop-filter: var(--lg-blur);
+  backdrop-filter: var(--lg-blur);
+}
+
+html:not(.no-glass) :is(.raise-panel, .desk-card, .menu-tile, .home-row, .glass-card) {
+  background-color: var(--glass-fill);
+  box-shadow: var(--glass-shine), 0 0 0 1px var(--glass-edge), var(--shadow-sm);
+}
+
+/* Bubbles and the pot pill get the rim and sheen only: a backdrop blur on something that animates
+   (pop-in, typing dots) makes Safari shimmer, and there's nothing worth blurring behind them. */
+html:not(.no-glass) :is(.bubble-grey, .pot-pill) {
+  box-shadow: var(--glass-shine), 0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+html:not(.no-glass) .pot-pill {
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 60%);
+}
+
+/* The round switches in Home's top row. Pressed (on) ones glow a little. */
+.home-quick {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.quick-btn {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid var(--glass-rim);
+  border-radius: var(--r-pill);
+  color: var(--ink-3);
+}
+
+.quick-btn[aria-pressed='true'] {
+  color: var(--brand-ink);
+}
+
+.home-head .me-chip {
+  max-width: 42%;
+}
+
+/* Off: solid fills and no blur anywhere. */
+html.no-glass {
+  --glass-fill: var(--surface);
+  --glass-fill-strong: var(--surface);
+  --glass-tint-dark: var(--contrast);
+  --glass-blur: none;
+  --lg-blur: none;
+}
+
+html.no-glass :is(.topbar, .icon-btn, .screen-foot, .sheet, .toast, .glass, .home-sheet, .tabbar, .quick-btn) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.no-glass .toast {
+  color: var(--on-contrast);
+}
+
+html.no-glass .home-sheet {
+  background: var(--surface);
+}
+
+html.no-glass :is(.glass, .quick-btn) {
+  background: var(--surface);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .menu-tile, .home-row, .glass-card, .me-chip, .quick-btn, .icon-btn, .screen-foot) {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-image: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .menu-tile, .home-row, .glass-card, .quick-btn) {
+    background-color: var(--surface);
+    background-image: none;
+  }
+}
+
+/* The glass toast is always a dark tint, so its text is always white with a black outline: in dark
+   mode the normal toast text colour is near-black and vanished into it. */
+html:not(.no-glass) .toast:not(.error):not(.success) {
+  color: #fff;
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 0 6px rgba(0, 0, 0, 0.6);
 }

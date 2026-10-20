@@ -596,7 +596,7 @@ describe('table', () => {
     if (!game.hand!.seats.find((s) => s.playerId === friend)!.shown) expect(hiddenFrom(HOST, friend)).toBe(true);
   });
 
-  it('raises the blinds on the clock, as the next hand is dealt, and not past half a stack', () => {
+  it('doubles the blinds on the clock, as the next hand is dealt, and stops at the cap', () => {
     let game = table(2, { blindMinutes: 5, startingStack: 1000 });
     expect(game.hand!.number).toBe(1);
     expect(game.blindsRaiseAt).toBe(clock + 5 * 60_000);
@@ -607,7 +607,7 @@ describe('table', () => {
     game = must(game, { type: 'tick' }, 'server');
     expect(game.hand!.number).toBe(2);
     expect(game.settings.bigBlind).toBe(10);
-    // Once the five minutes are up, the next hand is dealt at the next level.
+    // Once the five minutes are up, the next hand is dealt with both blinds doubled.
     game = act(game, 'fold');
     clock = game.blindsRaiseAt! + 1;
     game = must(game, { type: 'tick' }, 'server');
@@ -616,13 +616,20 @@ describe('table', () => {
     expect(game.hand!.log.some((l) => /Blinds go up to 10\/20/.test(l))).toBe(true);
     // The clock restarts for the next level.
     expect(game.blindsRaiseAt).toBe(clock + 5 * 60_000);
-    // The top is half a starting stack: 1000 chips can't go past a 500 big blind.
-    for (let i = 0; i < 20; i++) {
+    // They keep doubling, even past half a stack, until a cap is set.
+    const rise = () => {
       game = act(game, 'fold');
       clock = game.blindsRaiseAt! + 1;
       game = must(game, { type: 'tick' }, 'server');
-    }
-    expect(game.settings.bigBlind).toBeLessThanOrEqual(500);
+    };
+    for (let i = 0; i < 6; i++) rise();
+    expect(game.settings.bigBlind).toBe(20 * 2 ** 6);
+    // A cap stops the rise, and the last step lands on it.
+    game = must(game, { type: 'settings', settings: { ...game.settings, blindCap: 1500 } }, HOST);
+    rise();
+    expect(game.settings.bigBlind).toBe(1500);
+    rise();
+    expect(game.settings.bigBlind).toBe(1500);
     // Turning it off stops the clock.
     game = must(game, { type: 'settings', settings: { blindMinutes: 0 } }, HOST);
     expect(game.blindsRaiseAt).toBeNull();

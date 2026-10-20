@@ -106,26 +106,9 @@ export function canRaise(hand: Hand, seat: Seat): boolean {
 
 // ── Starting a hand ─────────────────────────────────────────────────────────
 
-/** The steps the blinds climb through when they go up. */
-export const BLIND_LADDER: [number, number][] = [
-  [1, 2],
-  [2, 4],
-  [5, 10],
-  [10, 20],
-  [15, 30],
-  [25, 50],
-  [50, 100],
-  [75, 150],
-  [100, 200],
-  [150, 300],
-  [200, 400],
-  [300, 600],
-  [500, 1000],
-];
-
 /**
- * Rising blinds: when the clock has run out, the blinds step up the ladder as the next hand is dealt
- * (never mid-hand). They stop at the top of the ladder, or when the big blind would be over half a starting stack.
+ * Rising blinds: when the clock has run out, both blinds double as the next hand is dealt (never mid-hand).
+ * They stop at the host's "stop increasing at" big blind, if one is set (the last rise is cut short to land on it).
  * Returns true if they went up.
  */
 function raiseBlindsIfDue(game: Game, now: number): boolean {
@@ -141,10 +124,16 @@ function raiseBlindsIfDue(game: Game, now: number): boolean {
   }
   if (now < game.blindsRaiseAt) return false;
   game.blindsRaiseAt = now + minutes * 60_000;
-  const { bigBlind, startingStack } = game.settings;
-  const next = BLIND_LADDER.find(([, bb]) => bb > bigBlind && bb <= startingStack / 2);
-  if (!next) return false;
-  [game.settings.smallBlind, game.settings.bigBlind] = next;
+  const { smallBlind, bigBlind, blindCap } = game.settings;
+  if (blindCap && bigBlind >= blindCap) return false;
+  let nextBig = bigBlind * 2;
+  let nextSmall = smallBlind * 2;
+  if (blindCap && nextBig > blindCap) {
+    nextBig = blindCap;
+    nextSmall = Math.max(1, Math.round(blindCap / 2));
+  }
+  game.settings.smallBlind = nextSmall;
+  game.settings.bigBlind = nextBig;
   return true;
 }
 

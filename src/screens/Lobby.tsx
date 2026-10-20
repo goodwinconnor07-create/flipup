@@ -125,7 +125,7 @@ export function Lobby({ game }: { game: Game }) {
           )}
           {!!s.blindMinutes && (
             <span className="info-chip">
-              Blinds up <b>{s.blindMinutes} min</b>
+              Blinds double every <b>{s.blindMinutes} min</b>
             </span>
           )}
           <span className="info-chip">

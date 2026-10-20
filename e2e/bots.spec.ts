@@ -371,9 +371,11 @@ test('rising blinds: a setting, a countdown on the table', async ({ page }) => {
   await page.getByRole('button', { name: 'Play the bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('radiogroup', { name: 'Blinds stop increasing at' })).toHaveCount(0);
   await page.getByRole('slider', { name: 'Blinds go up every' }).fill('5');
+  await expect(page.getByRole('radiogroup', { name: 'Blinds stop increasing at' }).getByRole('radio', { name: 'No limit' })).toBeVisible();
   await page.getByRole('button', { name: 'Sit down' }).click();
-  await expect(page.getByText('Blinds up 5 min')).toBeVisible();
+  await expect(page.getByText('Blinds double every 5 min')).toBeVisible();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
   await expect(page.locator('.table-title small')).toContainText(/blinds up in 4:\d\d|blinds up in 5:00/);
   await shot(page, '18-blind-clock');

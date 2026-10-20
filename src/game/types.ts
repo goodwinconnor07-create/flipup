@@ -15,6 +15,8 @@ export interface Settings {
   rebuys: boolean;
   /** Minutes between blind increases. 0 (or missing) = the blinds never go up. */
   blindMinutes?: number;
+  /** Rising blinds stop at this big blind (0 or missing: they keep doubling). */
+  blindCap?: number;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
 }

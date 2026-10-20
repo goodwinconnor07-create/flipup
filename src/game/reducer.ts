@@ -36,7 +36,8 @@ export const BLIND_LEVELS: [number, number][] = [
 ];
 
 /** How often the blinds can go up, in minutes (0 = never). */
-export const BLIND_MINUTE_CHOICES = [0, 5, 10, 15, 20, 30];
+/** Big blinds the host can stop the rise at (0 is no limit). */
+export const BLIND_CAP_CHOICES = [0, 100, 200, 500, 1000, 2000];
 
 export const STACK_CHOICES = [500, 1000, 2000, 5000, 10000];
 export const TIMER_CHOICES = [0, 20, 45, 90];
@@ -55,8 +56,9 @@ export function validSettings(s: Settings): boolean {
     int(s.bigBlind) &&
     s.smallBlind >= 1 &&
     s.bigBlind >= s.smallBlind &&
-    s.bigBlind <= s.startingStack / 2 &&
+    // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
+    (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
     int(s.turnSeconds) &&
     s.turnSeconds >= 0 &&

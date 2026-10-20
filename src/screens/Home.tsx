@@ -117,12 +117,17 @@ export function Home() {
         <h1 className="logo">
           GTO<span>Duel</span>
         </h1>
-        <div className={`streak-pill${streak.today ? ' lit' : ''}`} role="img" aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}`}>
+        <button
+          type="button"
+          className={`streak-pill press${streak.today ? ' lit' : ''}`}
+          aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}. Show details`}
+          onClick={() => openSheet({ name: 'streak' })}
+        >
           <span className="streak-fire" aria-hidden>
             <Emoji emoji="🔥" size={22} />
           </span>
           <b>{streak.days}</b>
-        </div>
+        </button>
         <div className="capsule glass">
           <button type="button" className="capsule-btn press" aria-label="Settings" onClick={() => openSheet({ name: 'prefs' })}>
             <GearIcon width={22} height={22} />

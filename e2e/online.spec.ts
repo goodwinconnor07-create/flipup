@@ -158,3 +158,19 @@ test('the join popup opens without the keyboard and shows a scan button', async 
   await expect(dialog.getByRole('textbox', { name: 'Table code' })).not.toBeFocused();
   await shot(page, '20-join-popup');
 });
+
+test('the streak button opens the streak details', async ({ page }) => {
+  const key = (back: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - back);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  await page.addInitScript((days) => localStorage.setItem('flipup.days', JSON.stringify(days)), [key(9), key(8), key(7), key(3), key(2), key(1), key(0)]);
+  await page.goto('/');
+  await page.getByRole('button', { name: /day streak/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Daily streak' });
+  await expect(dialog.getByText('days in a row')).toBeVisible();
+  await expect(dialog.getByText('Longest streak')).toBeVisible();
+  await expect(dialog.getByText('4 days', { exact: true })).toBeVisible();
+  await shot(page, '21-streak');
+});

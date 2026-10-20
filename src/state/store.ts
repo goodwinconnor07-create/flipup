@@ -73,6 +73,8 @@ export type TrainSection = 'review' | 'library' | 'stats' | 'custom';
 export type Sheet =
   | { name: 'menu' }
   | { name: 'invite' }
+  /** How the daily streak is going. */
+  | { name: 'streak' }
   /** Type the table code or scan its QR code. */
   | { name: 'join' }
   | { name: 'settings' }

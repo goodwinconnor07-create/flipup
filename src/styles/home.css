@@ -1272,6 +1272,7 @@ html[data-theme='dark'] .glass-card {
 
 .screen.home .home-head {
   padding-top: calc(var(--safe-top) + 16px);
+  padding-bottom: 12px;
 }
 
 .screen.home .home-head .logo {
@@ -1574,4 +1575,63 @@ html[data-theme='dark'] .quick-art.quick-stack > * {
 
 .quick-art.quick-stack > *:first-child {
   margin-left: 0;
+}
+
+/* The streak pill is a button; its sheet lists the details. */
+button.streak-pill {
+  border: 0;
+  font: inherit;
+  color: var(--ink);
+}
+
+.streak-hero {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.streak-hero b {
+  font-size: var(--fs-display-2);
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.streak-week {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+
+.streak-day {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
+.streak-day i {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  display: grid;
+  place-items: center;
+}
+
+.streak-day.played i {
+  background: var(--gold);
+}
+
+.streak-day.today b {
+  color: var(--ink);
+}
+
+.group.plain .group-row + .group-row::before {
+  left: 16px;
+}
+
+.group.plain .group-row b {
+  font-weight: 600;
 }

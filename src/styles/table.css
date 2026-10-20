@@ -951,8 +951,14 @@ html.calm .pod.won .pod-pic {
 }
 
 .bubble-blue {
-  background: linear-gradient(180deg, #3b9bff, #0a7aff);
+  background: linear-gradient(180deg, var(--bubble-blue-hi), var(--bubble-blue));
   color: var(--on-color);
+}
+
+/* The tail copies the bubble's background, which would restart the gradient inside its own small box
+   and show as a lighter patch where it overlaps the body. Give it the plain bottom colour instead. */
+.bubble-blue::before {
+  background: var(--bubble-blue);
 }
 
 .bubble-grey {

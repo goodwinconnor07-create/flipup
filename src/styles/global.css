@@ -81,6 +81,8 @@
   --card-dim: 0.38;
   --card-dim-bg: var(--bg-3);
   --bubble-grey: #e9e9eb;
+  --bubble-blue: #0a7aff;
+  --bubble-blue-hi: #3b9bff;
 
   /* ── States. -lo shades are for gradients under white text; -ink is text on a tinted -bg. */
   --green: #15803d;

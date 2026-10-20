@@ -44,7 +44,8 @@ KINDS = {
     5: ("4-bet pot, 4-bettor IP (BB vs BTN)", [F, F, F, "raise", F, "raise", "raise", "call"], 3, 5),
     6: ("4-bet pot, 4-bettor OOP (BTN vs CO)", [F, F, "raise", "raise", F, F, "raise", "call"], 3, 2),
 }
-FLOPS = ["As 7h 2d", "Ks 8d 3c", "Qh 9h 4c", "Jd 8c 7s", "Th 6s 2h", "8c 5d 3h", "7s 7d 2c", "Kh Qd 5s"]
+# Varied textures; the first --flops are used (A-high dry, K-high dry, two-tone, connected, low).
+FLOPS = ["As 7h 2d", "Ks 8d 3c", "Qh 9h 4c", "Jd 8c 7s", "8c 5d 3h", "Th 6s 2h", "7s 7d 2c", "Kh Qd 5s"]
 
 
 def top_range(frac):
@@ -79,8 +80,9 @@ def measure(info, reach, ip_idx, oop_idx, flops, iterations, target, log):
     pot = info["pot"]
     stack = 100.0 - max(info["invested"])
     oop_r, ip_r = class_to_combos(reach[oop_idx]), class_to_combos(reach[ip_idx])
-    street = {"flop": StreetSizing("33%, 75%", "60%"), "turn": StreetSizing("75%", "a"),
-              "river": StreetSizing("75%", "a")}
+    # Lean tree: what each class realizes at the flop root is robust to simplified bet sizes.
+    street = {"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", ""),
+              "river": StreetSizing("75%", "")}
     sizing = BetSizing(oop=dict(street), ip=dict(street), max_raises=1)
     acc = {p: {"ev": np.zeros(169), "eq": np.zeros(169), "w": np.zeros(169)} for p in (0, 1)}
     t0 = time.time()
@@ -110,9 +112,9 @@ def measure(info, reach, ip_idx, oop_idx, flops, iterations, target, log):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kinds", default="0,1,2,3,4,5,6")
-    ap.add_argument("--flops", type=int, default=len(FLOPS))
-    ap.add_argument("--iterations", type=int, default=150)
-    ap.add_argument("--target", type=float, default=1.0)
+    ap.add_argument("--flops", type=int, default=5)
+    ap.add_argument("--iterations", type=int, default=120)
+    ap.add_argument("--target", type=float, default=1.5)
     ap.add_argument("--out", default=os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data",
                                                    "eqr_kinds.json"))
     args = ap.parse_args()

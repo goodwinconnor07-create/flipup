@@ -75,8 +75,10 @@ class Explorer:
     # -- caches ---------------------------------------------------------------
     def _preflop(self, n: int, stack: float, solve: bool):
         cache = self.rv.preflop
-        if not solve and not cache.ready(n, stack):
-            raise NeedsSolve(f"Solving preflop for {n} players at {stack:g}bb (first time only, a few minutes).")
+        if not solve and not cache.loaded(n, stack):
+            if cache.ready(n, stack):
+                raise NeedsSolve("Loading the preflop solution…")
+            raise NeedsSolve(f"Solving preflop for {n} players at {stack:g}bb (first time only, several minutes).")
         return cache.get(n, stack)
 
     def _street_solver(self, key, street, build, solve: bool):

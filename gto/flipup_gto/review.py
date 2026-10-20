@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import threading
 import os
 from dataclasses import dataclass
 
@@ -78,11 +79,17 @@ class PreflopCache:
         self.cache_dir = cache_dir
         self.iterations = iterations
         self.mem: dict = {}
+        self._lock = threading.Lock()  # one load/solve at a time (startup warm-up vs first request)
 
     def _path(self, spot, key, num_players, stack):
         h = hashlib.sha1(json.dumps([key, spot.engine.num_nodes, MODEL_VERSION,
                                      calibration_key()]).encode()).hexdigest()[:16]
         return os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
+
+    def loaded(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
+               rake_cap: float = 0.0) -> bool:
+        """True when this game is already in memory (get() returns at once)."""
+        return (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2)) in self.mem
 
     def ready(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
               rake_cap: float = 0.0) -> bool:
@@ -98,6 +105,12 @@ class PreflopCache:
         key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
         if key in self.mem:
             return self.mem[key]
+        with self._lock:
+            if key not in self.mem:
+                self.mem[key] = self._load_or_solve(key, num_players, stack, ante, rake_rate, rake_cap)
+        return self.mem[key]
+
+    def _load_or_solve(self, key, num_players, stack, ante, rake_rate, rake_cap) -> PreflopSpot:
         spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
         path = self._path(spot, key, num_players, stack)
         if os.path.exists(path):
@@ -109,7 +122,6 @@ class PreflopCache:
             os.makedirs(self.cache_dir, exist_ok=True)
             np.savez_compressed(path, cum=spot.engine.cumulative_strategy().astype(np.float32),
                                 regret=spot.engine.regrets().astype(np.float32), iterations=spot.engine.iterations)
-        self.mem[key] = spot
         return spot
 
 

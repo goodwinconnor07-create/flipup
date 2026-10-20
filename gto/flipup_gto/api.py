@@ -52,6 +52,17 @@ app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FLIPUP_CORS", "
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 reviewer = Reviewer()
 explorer = Explorer(reviewer)
+
+
+def _warm():
+    """Load the most used preflop solution in the background so the first request is quick."""
+    try:
+        reviewer.preflop.get(6, 100)
+    except Exception:  # noqa: BLE001 - a cold cache just means the first request waits
+        pass
+
+
+threading.Thread(target=_warm, daemon=True).start()
 _jobs: dict = {}
 _lock = threading.Lock()
 _pool = ThreadPoolExecutor(max_workers=1)  # solves are multithreaded already

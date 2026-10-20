@@ -25,10 +25,10 @@ TREES = {
                             "river": StreetSizing("75%", "")},
                        ip={"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", ""),
                            "river": StreetSizing("75%", "")}, max_raises=1)),
-    "rich": (BetSizing(oop={"flop": StreetSizing("33%, 75%, 125%", "60%, a"), "turn": StreetSizing("50%, 100%, a", "60%, a"),
-                            "river": StreetSizing("33%, 75%, 125%, a", "60%, a")},
-                       ip={"flop": StreetSizing("33%, 75%, 125%", "60%, a"), "turn": StreetSizing("50%, 100%, a", "60%, a"),
-                           "river": StreetSizing("33%, 75%, 125%, a", "60%, a")}, max_raises=3)),
+    "rich": (BetSizing(oop={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("50%, 100%", "a"),
+                            "river": StreetSizing("33%, 75%, a", "a")},
+                       ip={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("50%, 100%", "a"),
+                           "river": StreetSizing("33%, 75%, a", "a")}, max_raises=2)),
 }
 
 
@@ -50,15 +50,13 @@ def main():
     oop_r, ip_r = class_to_combos(reach[oop_idx]), class_to_combos(reach[ip_idx])
     log(f"kind {args.kind} {name}: pot {pot:.1f}, stack {stack:.1f}")
     for f in FLOPS[: args.flops]:
-        row = []
         for t in args.trees.split(","):
             t0 = time.time()
             s = PostflopSolver(parse_cards(f), pot, stack, oop_r, ip_r, sizing=TREES[t], compress=True)
             st = s.solve(args.iterations, args.target, 25)
             root = s.node([])
-            row.append(f"{t}: OOP share {root.range_ev(0) / pot:.3f} (eq {root.range_equity(0):.3f}) "
+            log(f"  {f} {t}: OOP share {root.range_ev(0) / pot:.3f} (eq {root.range_equity(0):.3f}) "
                        f"expl {st.exploitability_pct:.2f}% {time.time() - t0:.0f}s")
-        log(f"  {f}: " + " | ".join(row))
 
 
 if __name__ == "__main__":

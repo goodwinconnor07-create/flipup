@@ -6,3 +6,4 @@ build/
 gmon.out
 flipup_gto/data/preflop_tensor3.npz
 flipup_gto/data/cache/
+research/realization/   # raw per-flop data from scripts/realization_dataset.py (regenerate; large)

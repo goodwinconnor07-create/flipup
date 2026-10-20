@@ -7,6 +7,7 @@ import {
   cleanName,
   createTable,
   cryptoRng,
+  DEFAULT_SETTINGS,
   isCode,
   newId,
   normalizeCode,
@@ -19,6 +20,7 @@ import {
   type Settings,
   type TableInfo,
 } from '../game';
+import type { StyleId } from '../game/botStyles';
 import { haptic, reducedMotion } from '../ui/effects';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
@@ -354,6 +356,21 @@ export function startChallenge(bot: string): void {
   closeSheet();
   closeConnection();
   setSession({ mode: 'local', code: null, game, challenge: newRunning(bot, settings.startingStack) });
+  resetTo({ name: 'table' });
+  dispatch({ type: 'start' });
+}
+
+/** A heads-up game against one bot, loaded with another style's way of playing. */
+export function startPlaystyle(bot: string, style: StyleId): void {
+  if (state.busy) return;
+  const name = cleanName(state.profile.name);
+  if (!name) return navigate({ name: 'profile', then: 'bots' });
+  const settings: Settings = { ...DEFAULT_SETTINGS, turnSeconds: 0 };
+  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: [bot], code: null, now: Date.now() });
+  const them = game.players.find((p) => p.bot);
+  if (them) them.style = style;
+  closeConnection();
+  setSession({ mode: 'local', code: null, game });
   resetTo({ name: 'table' });
   dispatch({ type: 'start' });
 }

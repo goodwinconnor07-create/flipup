@@ -6,7 +6,7 @@ test.use({ viewport: { width: 1440, height: 900 }, isMobile: false, hasTouch: fa
 
 async function sitDown(page: import('@playwright/test').Page, extraBots: number) {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < extraBots; i++) await page.getByRole('button', { name: 'One more bot' }).click();

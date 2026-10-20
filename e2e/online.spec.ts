@@ -29,7 +29,7 @@ test('two phones: join with a code, play a hand, see odds only once both hands a
   watchErrors(friend);
 
   await host.goto('/');
-  await host.getByRole('button', { name: 'Host a table' }).click();
+  await host.getByRole('button', { name: 'Play with Friends' }).click();
   await setName(host, 'Kavi', '🤠');
   await host.getByRole('button', { name: 'Next' }).click();
   await host.getByRole('button', { name: 'Open the table' }).click();
@@ -83,7 +83,7 @@ test('a wrong code says so', async ({ page }) => {
 test('bots at an online table play on the server', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Host a table' }).click();
+  await page.getByRole('button', { name: 'Play with Friends' }).click();
   await setName(page, 'Kavi');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'One more bot' }).click();
@@ -111,7 +111,7 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
   const host = await hostCtx.newPage();
   const friend = await friendCtx.newPage();
   await host.goto('/');
-  await host.getByRole('button', { name: 'Host a table' }).click();
+  await host.getByRole('button', { name: 'Play with Friends' }).click();
   await setName(host, 'Kavi');
   await host.getByRole('button', { name: 'Next' }).click();
   await host.getByRole('switch', { name: /Rebuys/ }).click(); // off: no rebuy window to wait out

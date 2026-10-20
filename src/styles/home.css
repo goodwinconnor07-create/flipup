@@ -1635,3 +1635,57 @@ button.streak-pill {
 .group.plain .group-row b {
   font-weight: 600;
 }
+
+/* A small text bubble coming from one of the friends on the Play with Friends card. */
+.card-art .art-bubble {
+  position: absolute;
+  z-index: 3;
+  left: 6%;
+  top: 4%;
+  padding: 4px 8px;
+  border-radius: var(--r-md);
+  background: var(--card-face);
+  color: var(--card-black);
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+  box-shadow: var(--card-shadow);
+  transform-origin: 20% 100%;
+  animation: bubble-pop 3.2s ease-in-out infinite;
+}
+
+.card-art .art-bubble::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  bottom: -4px;
+  width: 8px;
+  height: 8px;
+  background: inherit;
+  transform: rotate(45deg);
+}
+
+@keyframes bubble-pop {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-2px) scale(1.04);
+  }
+}
+
+html.calm .card-art .art-bubble {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-art .art-bubble {
+    animation: none;
+  }
+}
+
+.rejoin-card {
+  margin-top: 12px;
+}

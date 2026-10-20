@@ -90,7 +90,7 @@ function Face({ emoji, x, y, size }: { emoji: string; x: number; y: number; size
   );
 }
 
-/** Three friends round a little table, flicking chips into the pot. */
+/** Three friends (faces no bot uses) round a little table, flicking chips into the pot. */
 export function HostArt() {
   const id = 'host';
   return (
@@ -101,9 +101,10 @@ export function HostArt() {
         <Flying id={id} c="red" x={146} y={22} r={8} n={1} />
         <Flying id={id} c="black" x={110} y={12} r={7} n={2} />
       </svg>
-      <Face emoji="😎" x={50} y={66} size={40} />
-      <Face emoji="🤠" x={108} y={52} size={40} />
-      <Face emoji="🦊" x={166} y={66} size={40} />
+      <Face emoji="🎃" x={50} y={66} size={40} />
+      <Face emoji="🤑" x={108} y={52} size={40} />
+      <Face emoji="😸" x={166} y={66} size={40} />
+      <span className="art-bubble">Free to Play!</span>
       <svg viewBox="0 0 200 120" preserveAspectRatio="xMaxYMid meet" className="card-art-front">
         <Defs id={`${id}f`} />
         <ellipse cx="112" cy="108" rx="92" ry="14" fill={`url(#${id}f-shadow)`} />

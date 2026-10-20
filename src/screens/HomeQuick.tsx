@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BOTS } from '../game/botStyles';
 import { DEFAULT_SETTINGS, type Settings } from '../game';
 import { loadLastBots } from '../state/persist';
-import { dispatch, navigate, openTable, useApp } from '../state/store';
+import { dispatch, getState, navigate, openTable, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 
 type Bot = (typeof BOTS)[number];
@@ -17,10 +17,17 @@ function sample(n: number): Bot[] {
   return out;
 }
 
+/** Sits down against the named bots and deals (or asks for a name first). */
+export async function startBots(names: string[], settings: Settings, named: boolean): Promise<void> {
+  if (getState().busy) return;
+  if (!named) return navigate({ name: 'profile', then: 'bots' });
+  await openTable('local', { ...settings, turnSeconds: 0 }, names.length, names);
+  dispatch({ type: 'start' });
+}
+
 /** A row of one-tap bot games you can swipe through: faces and names, never how they play. */
-export function QuickGames() {
+export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
   const named = useApp((s) => s.profile.name.trim().length > 0);
-  const busy = useApp((s) => s.busy);
   const [bots] = useState(() => sample(8));
   const [duels, table] = [bots.slice(0, 3), bots.slice(3, 8)];
 
@@ -28,18 +35,13 @@ export function QuickGames() {
   const [last] = useState(loadLastBots);
   const lastBots = last ? last.bots.map((n) => BOTS.find((b) => b.name === n)).filter((b): b is Bot => !!b) : [];
 
-  const play = async (names: string[], settings: Settings = DEFAULT_SETTINGS) => {
-    if (busy) return;
-    if (!named) return navigate({ name: 'profile', then: 'bots' });
-    await openTable('local', { ...settings, turnSeconds: 0 }, names.length, names);
-    dispatch({ type: 'start' });
-  };
+  const play = (names: string[], settings: Settings = DEFAULT_SETTINGS) => startBots(names, settings, named);
 
   return (
     <section className="quick-games" aria-label="Quick games">
       <small className="eyebrow">Quick games</small>
       <div className="quick-row">
-        {last && lastBots.length > 0 && (
+        {showAgain && last && lastBots.length > 0 && (
           <button type="button" className="glass-card quick-card quick-again lift press" onClick={() => void play(lastBots.map((b) => b.name), last.settings)}>
             {lastBots.length === 1 ? (
               <Avatar emoji={lastBots[0].emoji} size={64} />

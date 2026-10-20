@@ -1,14 +1,16 @@
 import { useState } from 'react';
 import { fetchTableInfo } from '../state/api';
-import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
-import { navigate, openSheet, toast, toggleDark, toggleGlass, useApp } from '../state/store';
+import { BOTS } from '../game/botStyles';
+import type { Settings } from '../game';
+import { loadLastBots, loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
+import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { InsightsTab } from './HomeInsights';
-import { QuickGames } from './HomeQuick';
+import { QuickGames, startBots } from './HomeQuick';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
 import { CasinoBackdrop } from './CasinoBackdrop';
-import { ArrowIcon, CardsIcon, ChartIcon, GlassIcon, MoonIcon, QrIcon, SparkIcon } from '../ui/Icons';
+import { CardsIcon, ChartIcon, GearIcon, QrIcon, SparkIcon } from '../ui/Icons';
 import { signed } from './Final';
 
 function ago(at: number): string {
@@ -50,8 +52,6 @@ export function Home() {
   const game = useApp((s) => s.game);
   const session = useApp((s) => s.session);
   const profile = useApp((s) => s.profile);
-  const dark = useApp((s) => s.dark);
-  const glass = useApp((s) => s.glass);
   const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
   const named = profile.name.trim().length > 0;
   const [stats] = useState(loadStats);
@@ -86,6 +86,24 @@ export function Home() {
     navigate({ name: 'setup', mode: then === 'host' ? 'online' : 'local' });
   };
 
+  const playAgain = (names: string[], settings: Settings) => startBots(names, settings, named);
+  const lastBots = loadLastBots();
+  const lastBotFaces = lastBots ? lastBots.bots.map((n) => BOTS.find((b) => b.name === n)).filter((b): b is (typeof BOTS)[number] => !!b) : [];
+  // One clear next step: your open table, the online table you left, your last bots game, or a fresh start.
+  const hero: { kind: 'table' | 'rejoin' | 'again' | 'new'; title: string; sub: string; cta: string; run: () => void; bots: typeof lastBotFaces } = active
+    ? { kind: 'table', title: 'Your table is waiting', sub: session.mode === 'online' ? `Code ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), bots: [] }
+    : last
+      ? { kind: 'rejoin', title: `Table ${last.code}`, sub: `Last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), bots: [] }
+      : lastBots && lastBotFaces.length
+        ? {
+            kind: 'again',
+            title: lastBotFaces.length === 1 ? `Play ${lastBotFaces[0].name} again` : `Same ${lastBotFaces.length} bots again`,
+            sub: `Last played ${ago(lastBots.at)}`,
+            cta: 'Play again',
+            run: () => void playAgain(lastBots.bots, lastBots.settings),
+            bots: lastBotFaces,
+          }
+        : { kind: 'new', title: 'Play your first hand', sub: 'Take on the bots now, or host a table for friends.', cta: 'Play the bots', run: () => go('bots'), bots: [] };
   const active_ = !!active;
   const index = TABS.findIndex((t) => t.id === tab);
 
@@ -100,87 +118,58 @@ export function Home() {
         <h1 className="logo">
           Flip<span>Up</span>
         </h1>
-        <div className="home-quick">
-          <button type="button" className="quick-btn glass press" aria-pressed={dark} aria-label="Dark mode" onClick={toggleDark}>
-            <MoonIcon width={22} height={22} />
-          </button>
-          <button type="button" className="quick-btn glass press" aria-pressed={glass} aria-label="Liquid Glass" onClick={toggleGlass}>
-            <GlassIcon width={22} height={22} />
-          </button>
+        <div className={`streak-pill${streak.today ? ' lit' : ''}`} role="img" aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}`}>
+          <span className="streak-fire" aria-hidden>🔥</span>
+          <b>{streak.days}</b>
         </div>
+        <button type="button" className="quick-btn glass press" aria-label="Settings" onClick={() => openSheet({ name: 'prefs' })}>
+          <GearIcon width={22} height={22} />
+        </button>
         <button
           type="button"
-          className="me-chip glass press"
+          className="quick-btn glass press"
           aria-label={named ? `Your profile: ${profile.name}` : 'Set up your profile'}
           onClick={() => navigate({ name: 'profile', then: 'done' })}
         >
-          <Avatar emoji={profile.emoji} size={32} />
-          <span>{named ? profile.name : 'You'}</span>
+          <Avatar emoji={profile.emoji} size={34} />
         </button>
       </div>
       <div className="home-sheet">
         <div className="home-scroll">
           <div className="home-title">
-            <h2 className="h1">{tab === 'insights' ? 'Your game' : tab === 'train' ? 'Train' : named ? `Welcome back, ${profile.name}` : 'Welcome to FlipUp'}</h2>
+            <h2 className="h1">{tab === 'insights' ? 'Your game' : tab === 'train' ? 'Train' : named ? `Hi, ${profile.name}` : 'Welcome to FlipUp'}</h2>
             <p>{tab === 'insights' ? 'How your hands and tables are going.' : tab === 'train' ? 'Quick drills with your GTO Coach.' : statusLine(stats, active_)}</p>
-            <div className={`streak${streak.today ? ' lit' : ''}`} aria-label={`${streak.days} day streak`}>
-              <span className="streak-fire" aria-hidden>🔥</span>
-              <b>{streak.days}</b>
-              <small>{streak.days === 0 ? 'Play a hand to start a streak' : streak.today ? (streak.days === 1 ? 'day: nice start' : 'day streak') : 'day streak: play today to keep it'}</small>
-            </div>
           </div>
           <div key={tab} className="home-pane">
             {tab === 'play' && (
               <>
-                {last && (
-                  <button type="button" className="home-row home-rejoin press" disabled={looking} onClick={() => void rejoin()}>
-                    <ArrowIcon width={22} height={22} />
-                    <span className="home-row-text">
-                      <b>{looking ? 'Looking for the table…' : `Rejoin table ${last.code}`}</b>
-                      <small>Last played {ago(last.at)}</small>
+                <section className="hero" aria-label="Pick up where you left off">
+                  <small className="eyebrow">{hero.kind === 'new' ? 'Get started' : 'Pick up where you left off'}</small>
+                  {hero.kind === 'again' && (
+                    <span className="hero-faces" aria-hidden>
+                      {hero.bots.slice(0, 5).map((b) => (
+                        <Avatar key={b.name} emoji={b.emoji} size={40} />
+                      ))}
                     </span>
+                  )}
+                  <h3 className="hero-title">{hero.title}</h3>
+                  <p className="hero-sub">{hero.sub}</p>
+                  <button type="button" className="btn btn-dark btn-xl" disabled={looking} onClick={(e) => colourWipe(e, hero.run)}>
+                    {hero.cta}
                   </button>
-                )}
-                {active && (
-                  <button type="button" className="home-row press" onClick={() => navigate({ name: 'table' })}>
-                    <ArrowIcon width={22} height={22} />
-                    <span className="home-row-text">
-                      <b>Back to your table</b>
-                      <small>{session.mode === 'online' ? `Code ${session.code}` : 'You vs the bots'}</small>
-                    </span>
+                </section>
+                <div className="home-links home-links-3">
+                  <button type="button" className="btn btn-outline" onClick={() => go('host')}>
+                    Host
                   </button>
-                )}
-                <QuickGames />
-                <button type="button" className="btn btn-dark btn-xl" onClick={(e) => colourWipe(e, () => go('host'))}>
-                  Host a table
-                </button>
-                <div className="home-links">
                   <button type="button" className="btn btn-outline" onClick={() => go('join')}>
-                    Join with a code
+                    Join
                   </button>
                   <button type="button" className="btn btn-outline" onClick={() => go('bots')}>
-                    Play the bots
+                    Bots
                   </button>
                 </div>
-                <button type="button" className="btn btn-link" onClick={() => openSheet({ name: 'rankings' })}>
-                  Hand rankings
-                </button>
-                {stats.tables > 0 && (
-                  <div className="home-stats" aria-label="Your totals">
-                    <div className="stat">
-                      <small>Lifetime</small>
-                      <b className={`num ${stats.net > 0 ? 'good' : stats.net < 0 ? 'bad' : ''}`}>{signed(stats.net)}</b>
-                    </div>
-                    <div className="stat">
-                      <small>Tables</small>
-                      <b className="num">{stats.tables}</b>
-                    </div>
-                    <div className="stat">
-                      <small>Hands</small>
-                      <b className="num">{stats.hands}</b>
-                    </div>
-                  </div>
-                )}
+                <QuickGames showAgain={hero.kind !== 'again'} />
               </>
             )}
             {tab === 'insights' && <InsightsTab />}

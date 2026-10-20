@@ -72,6 +72,8 @@ export type Sheet =
   | { name: 'menu' }
   | { name: 'invite' }
   | { name: 'settings' }
+  /** This phone's look and sound: dark mode, Liquid Glass, sound, animations. */
+  | { name: 'prefs' }
   | { name: 'standings' }
   | { name: 'rankings' }
   | { name: 'log' }

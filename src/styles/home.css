@@ -752,3 +752,98 @@ html.no-motion .streak-fire {
     animation: none;
   }
 }
+
+/* ── The Play screen: what you were doing, one big next step, then the rest ─────────────────── */
+
+.screen.home .home-head {
+  gap: 10px;
+}
+
+.screen.home .home-head .logo {
+  margin-right: auto;
+}
+
+/* The streak sits top right, where you see it first. Grey until you've played today. */
+.streak-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 48px;
+  padding: 0 14px 0 10px;
+  border-radius: var(--r-pill);
+  background: var(--chip);
+}
+
+.streak-pill b {
+  font-size: var(--fs-lead);
+  font-weight: 900;
+}
+
+.streak-pill .streak-fire {
+  font-size: 22px;
+}
+
+.streak-pill.lit {
+  background: rgba(255, 149, 0, 0.18);
+}
+
+.streak-pill.lit .streak-fire {
+  filter: none;
+  animation: flicker 1.6s ease-in-out infinite;
+  transform-origin: 50% 90%;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 22px 20px 20px;
+  border-radius: var(--r-xl);
+  background: var(--bg-2);
+  box-shadow: var(--glass-shine), 0 0 0 1px var(--glass-edge);
+}
+
+.hero-faces {
+  display: flex;
+  margin: 6px 0 2px;
+}
+
+.hero-faces > * {
+  margin-left: -10px;
+  box-shadow: 0 0 0 2px var(--bg-2);
+  border-radius: 50%;
+}
+
+.hero-faces > *:first-child {
+  margin-left: 0;
+}
+
+.hero-title {
+  margin: 0;
+  font-size: var(--fs-h1);
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  margin: 0 0 12px;
+  color: var(--ink-3);
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.home-links-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-pill.lit .streak-fire {
+    animation: none;
+  }
+}
+
+html.calm .streak-pill .streak-fire {
+  animation: none;
+}

@@ -159,13 +159,15 @@ function afterHand(game: Game, ctx: ActionContext): void {
     for (const id of winners) {
       if (!isBot(id)) continue;
       const b = bucketOf(id);
-      const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : pot >= bb * 15 ? 'bigWin' : 'win';
+      const rubbedIn = result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.4;
+      const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : rubbedIn ? 'tiltJab' : pot >= bb * 15 ? 'bigWin' : 'win';
       if (say(id, event)) spoke.push(id);
     }
     for (const id of showdownLosers) {
       if (!isBot(id)) continue;
       const b = bucketOf(id);
-      if ((b === 'monster' || b === 'strong') && pot >= bb * 10 ? say(id, 'badBeat') : personWon && say(id, 'lostToYou')) spoke.push(id);
+      const caught = b === 'air' || b === 'weak';
+      if (caught ? say(id, 'bluffCaught') : (b === 'monster' || b === 'strong') && pot >= bb * 10 ? say(id, 'badBeat') : personWon && say(id, 'lostToYou')) spoke.push(id);
     }
   }
   if (!spoke.length) return;
@@ -496,5 +498,8 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (!due(game.nextHandAt)) return false;
   startHand(game, ctx);
+  // A word from a random bot between deals, now and then.
+  const chatty = game.players.filter((p) => p.bot && !p.sittingOut);
+  if (chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
   return true;
 }

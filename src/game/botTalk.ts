@@ -2,7 +2,7 @@
 // fixed here (ids start "b:"), and phones can't send them: only bots say these. Lines are short so
 // they fit on one line in a seat's bubble.
 
-import { styleOf } from './botStyles';
+import { styleOf, type StyleId } from './botStyles';
 import type { Game } from './types';
 
 export type TalkEvent =
@@ -39,7 +39,13 @@ export type TalkEvent =
   /** A person won a pot from the bot. */
   | 'lostToYou'
   /** Another bot answering what was just said. */
-  | 'reply';
+  | 'reply'
+  /** Won a big pot off a person at showdown: the moment to rub it in. */
+  | 'tiltJab'
+  /** Bluffed, got called and lost. */
+  | 'bluffCaught'
+  /** Nothing much happening; a new hand is dealt. */
+  | 'idle';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -61,6 +67,9 @@ const TRASH: Lines = {
   badBeat: ['Unbelievable.', 'That river…', 'Every time.', 'You kidding?'],
   lostToYou: ['Lucky.', 'Enjoy it.', 'Ok. This time.', 'You got there.'],
   reply: ['Lucky.', 'Sure you did.', 'Skill, obviously.', 'Cry about it.', 'Pfft.', 'Whatever.'],
+  tiltJab: ['Rent free 🧠', 'Stay tilted.', 'Keep donating.', 'Again, bro?', 'You’re predictable.'],
+  bluffCaught: ['Worth it.', 'Still profitable.', 'Nice call.', 'Delete that.', 'Don’t tell anyone.'],
+  idle: ['Hello, fish.', 'Lock in.', 'Chaos time.', 'No mercy.', 'Wake up.'],
 };
 
 const FRIENDLY: Lines = {
@@ -81,16 +90,137 @@ const FRIENDLY: Lines = {
   badBeat: ['Ouch.', 'So close!', 'Oof, the river.', 'That hurt.'],
   lostToYou: ['Nice hand!', 'Well played.', 'You got me.', 'Good call.'],
   reply: ['Nice one!', 'Haha!', 'Ouch.', 'Fair enough.', 'Well played!', 'Wow.'],
+  tiltJab: ['Sorry!', 'Deep breaths.', 'You’ll recover.', 'Need a hug?', 'Tough break.'],
+  bluffCaught: ['Oops, caught!', 'Nice call!', 'Worth a shot.', 'I panicked 😭', 'Good read.'],
+  idle: ['Poker time 🃏', 'Coffee break? ☕', 'Let’s dance.', 'Anyone home?', 'Stay sharp.'],
 };
 
-const id = (tone: string, event: string, i: number) => `b:${tone}:${event}:${i}`;
+// Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
+// and a table of ten styles sounds like ten people. Pools only ever grow at the end: ids are indexes.
+const VOICES: Record<StyleId, Partial<Lines>> = {
+  // The Menace: cocky, loves rubbing it in.
+  shark: {
+    thinkEasy: ['Light work.', 'Calculated.'],
+    raise: ['Pay me.', 'Sit down.'],
+    bluffWon: ['Folded 😂', 'Scared money.', 'Nice fold.'],
+    bigWin: ['Free money 💸', 'Delicious pot.', 'Mine now.'],
+    win: ['Thanks mate.', 'Owned.'],
+    lostToYou: ['Lucky bastard.', 'Read you.'],
+    tiltJab: ['I’ve studied you.', 'You’re transparent.', 'Free read.', 'Classic you.'],
+    yourBigBet: ['That’s your move?', 'Interesting raise.'],
+    idle: ['Hello, fish.', 'Feeling dangerous.'],
+  },
+  lag: {
+    allin: ['Chaos time.', 'No mercy.'],
+    raise: ['Get cooked.', 'Big plans.'],
+    bluffWon: ['That worked?!', 'Cinema 🎬', 'Absolutely robbed.'],
+    bigWin: ['Printing 💸', 'Cha-ching.', 'Payday.'],
+    win: ['Cry more.', 'Another victim.'],
+    badBeat: ['Rigged.', 'Disgusting.'],
+    tiltJab: ['Again, bro?', 'Keep donating.', 'Too emotional.'],
+    bluffCaught: ['Worth it.', 'We move.'],
+  },
+  // The Troll: ridiculous, bluffs constantly, blames the deck.
+  maniac: {
+    allin: ['Trust me.', 'Chaos time.', 'Call the FBI.'],
+    raise: ['Believe me?', 'Trust me.'],
+    sweatLose: ['Scripted 🎬', 'Rigged.', 'That’s illegal.'],
+    bluffWon: ['Never had it.', 'So obvious.', '🫵😂'],
+    bigWin: ['Retirement fund.', 'Generational wealth.', 'I’m eating.'],
+    badBeat: ['PokerPrime moment.', 'Unreal runout.', 'I’m reporting.'],
+    bluffCaught: ['I’m innocent.', 'Fake it.', 'I meant that.', 'Lag moment.'],
+    tiltJab: ['Skill issue.', 'Bankrupt soon?'],
+    idle: ['We gamble.', 'I need action.', 'Big plans.', 'Trust issues.'],
+  },
+  gambler: {
+    allin: ['We gamble.', 'Why not.', 'Send it.'],
+    sweat: ['Please raise.', 'One time.', 'Prayer answered 🙏'],
+    sweatWin: ['I’M ALIVE.', 'We are so back.'],
+    sweatLose: ['Variance, mate.', 'Of course.', 'This game.'],
+    bluffWon: ['Hehehe.', 'Gotcha.'],
+    bigWin: ['The drought ends.', 'About time.', 'Christmas came.'],
+    badBeat: ['Again?!', 'I’m done.', 'I hate poker.'],
+    bluffCaught: ['Information gained.', 'Never again.'],
+    idle: ['I need action.', 'Redemption arc.', 'Bored already.'],
+  },
+  tag: {
+    thinkEasy: ['Clean.', 'Standard.'],
+    bluffWon: ['Respectfully, no.', 'Good boy.'],
+    bigWin: ['Beautiful.', 'Thank you.', 'Easy game.'],
+    lostToYou: ['Well played.', 'Fair play.', 'Not bad.'],
+    badBeat: ['Brutal.', 'Unlucky.'],
+    tiltJab: ['Character building.', 'Hold that.'],
+    idle: ['Stay sharp.', 'Lock in.'],
+  },
+  // The Silent Killer: rarely speaks, and it hurts when they do.
+  pro: {
+    thinkEasy: ['Noted.', 'Calculated.'],
+    yourBigBet: ['I know you.', 'Noted.', 'I’m watching.'],
+    bluffWon: ['Read you.', 'Mental warfare.'],
+    bigWin: ['Goodnight 😴', 'Told you.', 'Too clean.'],
+    win: ['Noted.'],
+    lostToYou: ['Revenge loading…', 'I’ll remember.', 'Noted forever.'],
+    tiltJab: ['I’ve studied you.', 'I expected that.', 'Never change.'],
+    idle: ['Respectfully…'],
+  },
+  rock: {
+    foldBig: ['Fine.', 'Noted.'],
+    yourBigBet: ['Hmm.', 'Very interesting.', 'I smell fear.'],
+    bigWin: ['Goodnight 😴', 'Hold that.', 'Never worried.'],
+    badBeat: ['Hm.', 'Noted.'],
+    lostToYou: ['Run it back.', 'Enjoy that.'],
+    tiltJab: ['Same mistake.', 'You always do.'],
+    idle: ['Quiet night.'],
+  },
+  trapper: {
+    thinkHard: ['Please call.', 'Come here.', 'I’m waiting.'],
+    thinkEasy: ['Trap sprung.', 'Easy decision.', 'Got something.'],
+    raise: ['Feeling lucky?', 'I dare you.', 'Don’t fold.'],
+    yourBigBet: ['Oh, buddy.', 'All yours 😉', 'This is fun.'],
+    bigWin: ['Sweet dreams.', 'Trap sprung.', 'Goodnight 😴'],
+    tiltJab: ['I’ve studied you.', 'You’re transparent.'],
+    idle: ['🤫🤫', 'Surely call.'],
+  },
+  // The Choker: panics under pressure, complains about everything.
+  nervous: {
+    thinkHard: ['Oh no, oh no.', 'I’m sweating.', 'Why me?'],
+    allin: ['I’m sick.', 'Please hold.', 'I panicked 😭'],
+    foldBig: ['Too scary.', 'I’m out, sorry.'],
+    sweat: ['I can’t look.', 'No way.', 'Deep breaths.'],
+    sweatLose: ['I’m sick.', 'No shot.', 'Excuse me?!', 'I’m reporting.'],
+    badBeat: ['WHAT?!', 'Disgusting river.', 'That’s personal.', 'Uncalled for.'],
+    lostToYou: ['You win.', 'I folded.', 'Don’t celebrate.'],
+    bluffCaught: ['I panicked 😭', 'Lag moment.', 'Delete that.'],
+    idle: ['Nervous already.', 'Anyone home?'],
+  },
+  station: {
+    callLight: ['Show me.', 'I’ll pay.', 'Just looking.'],
+    thinkHard: ['I’m calling anyway.', 'Hmm.'],
+    sweatLose: ['Rigged.', 'Of course.', 'Naturally.'],
+    badBeat: ['No way.', 'You’re joking.', 'Again?!'],
+    lostToYou: ['Whatever.', 'You got me.', 'Fair enough.'],
+    bigWin: ['I knew.', 'Told you.', 'Never worried.'],
+    bluffCaught: ['I meant that.', 'Fair enough.'],
+    idle: ['Coffee break? ☕', 'Bored already.'],
+  },
+};
+
+const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
 
 /** The text for a bot line id, or '' if it isn't one. */
 export function botLineText(lineId: string): string {
   const [b, tone, event, i] = lineId.split(':');
   if (b !== 'b') return '';
-  const lines = (tone === 'trash' ? TRASH : tone === 'friendly' ? FRIENDLY : null)?.[event as TalkEvent];
-  return lines?.[Number(i)] ?? '';
+  return pool(tone, event as TalkEvent)[Number(i)] ?? '';
+}
+
+/** Every line a voice can say for an event: its tone's pool, then the style's own lines. Old ids name just the tone. */
+function pool(voice: string, event: TalkEvent): string[] {
+  if (voice === 'trash') return TRASH[event] ?? [];
+  if (voice === 'friendly') return FRIENDLY[event] ?? [];
+  const style = voice in VOICES ? styleOf(voice as StyleId) : null;
+  if (!style) return [];
+  return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
 }
 
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */
@@ -112,6 +242,9 @@ const CHANCE: Record<TalkEvent, number> = {
   badBeat: 1,
   lostToYou: 0.8,
   reply: 0.5,
+  tiltJab: 0.35,
+  bluffCaught: 0.7,
+  idle: 0.06,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
@@ -125,9 +258,9 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   if (now - last < COOLDOWN) return false;
   const style = styleOf(player.style);
   if (rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return false;
-  const lines = (style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event];
+  const lines = pool(style.id, event);
   const i = Math.floor(rng() * lines.length);
-  game.reactions = { ...game.reactions, [playerId]: { id: id(style.talk.tone, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1 } };
+  game.reactions = { ...game.reactions, [playerId]: { id: id(style.id, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1 } };
   game.talkAt = { ...game.talkAt, [playerId]: now };
   return true;
 }

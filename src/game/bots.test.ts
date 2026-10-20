@@ -54,6 +54,15 @@ describe('bots', () => {
     expect(parseAction({ type: 'react', id: 'b:trash:allin:0' })).toBeNull();
   });
 
+  it('gives each style its own voice, and old line ids still read', () => {
+    expect(botLineText('b:shark:bigWin:0')).toBeTruthy();
+    expect(botLineText('b:shark:tiltJab:8')).toBeTruthy();
+    expect(botLineText('b:maniac:idle:0')).toBeTruthy();
+    expect(botLineText('b:trash:bigWin:0')).toBe('Ship it!');
+    expect(botLineText('b:nope:bigWin:0')).toBe('');
+    expect(parseAction({ type: 'react', id: 'b:shark:bigWin:0' })).toBeNull();
+  });
+
   it('talks like a real table: most hands get a word, the chatty styles more than the quiet ones', () => {
     const report = simulate(['pro', 'maniac', 'rock', 'gambler'], 150, 9);
     const said = (style: string) => report.find((r) => r.style === style)!.comments;

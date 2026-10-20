@@ -4,7 +4,7 @@ import { BOTS } from '../game/botStyles';
 import type { Settings } from '../game';
 import { loadLastBots, loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
-import { Avatar } from '../ui/components';
+import { Avatar, Emoji } from '../ui/components';
 import { InsightsTab } from './HomeInsights';
 import { QuickGames, startBots } from './HomeQuick';
 import { TrainTab } from './HomeTrain';
@@ -128,7 +128,9 @@ export function Home() {
           GTO<span>Duel</span>
         </h1>
         <div className={`streak-pill${streak.today ? ' lit' : ''}`} role="img" aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}`}>
-          <span className="streak-fire" aria-hidden>🔥</span>
+          <span className="streak-fire" aria-hidden>
+            <Emoji emoji="🔥" size={22} />
+          </span>
           <b>{streak.days}</b>
         </div>
         <div className="capsule glass">
@@ -179,9 +181,15 @@ export function Home() {
                       <span className="mode-sub">Share a code. Friends join on their phones.</span>
                     </span>
                     <span className="mode-art" aria-hidden>
-                      <span className="art-face" style={{ left: '6%', top: '34%' }}>😎</span>
-                      <span className="art-face" style={{ left: '40%', top: '8%' }}>🤠</span>
-                      <span className="art-face" style={{ left: '70%', top: '40%' }}>🦊</span>
+                      <span className="art-face" style={{ left: '6%', top: '34%' }}>
+                        <Emoji emoji="😎" size={34} />
+                      </span>
+                      <span className="art-face" style={{ left: '40%', top: '8%' }}>
+                        <Emoji emoji="🤠" size={34} />
+                      </span>
+                      <span className="art-face" style={{ left: '70%', top: '40%' }}>
+                        <Emoji emoji="🦊" size={34} />
+                      </span>
                       <TossChips />
                     </span>
                   </button>
@@ -193,7 +201,9 @@ export function Home() {
                     <span className="mode-art mode-art-bots" aria-hidden>
                       <span className="bot-line">
                         {BOTS.slice(0, 6).map((b) => (
-                          <span key={b.name}>{b.emoji}</span>
+                          <span key={b.name}>
+                            <Emoji emoji={b.emoji} size={30} />
+                          </span>
                         ))}
                       </span>
                       <TossChips />

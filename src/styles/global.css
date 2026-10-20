@@ -1285,3 +1285,12 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
     1px 1px 0 #000,
     0 0 6px rgba(0, 0, 0, 0.6);
 }
+
+/* Apple emoji images sit where the emoji text would. */
+.emoji-img {
+  display: inline-block;
+  vertical-align: middle;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-select: none;
+}

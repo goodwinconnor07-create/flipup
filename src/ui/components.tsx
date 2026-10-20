@@ -24,10 +24,36 @@ export function chips(n: number): string {
 // ── Players ─────────────────────────────────────────────────────────────────
 
 /** A player's picture: just their emoji, big, like a sticker. */
+// Apple's emoji everywhere: Apple devices draw them natively; everyone else gets Apple's images.
+const APPLE = typeof navigator !== 'undefined' && /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+const EMOJI_CDN = 'https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.1.2/img/apple/64/';
+const codes = (emoji: string, keepFe0f: boolean) =>
+  [...emoji]
+    .map((ch) => ch.codePointAt(0)!.toString(16))
+    .filter((h) => keepFe0f || h !== 'fe0f')
+    .join('-');
+
+/** One emoji in Apple's design, at `size` pixels. Falls back to the device's own if the image can't load. */
+export function Emoji({ emoji, size }: { emoji: string; size: number }) {
+  const [step, setStep] = useState(0);
+  if (APPLE || step > 1) return <>{emoji}</>;
+  return (
+    <img
+      className="emoji-img"
+      src={`${EMOJI_CDN}${codes(emoji, step === 0)}.png`}
+      alt={emoji}
+      width={size}
+      height={size}
+      draggable={false}
+      onError={() => setStep(step + 1)}
+    />
+  );
+}
+
 export function Avatar({ emoji, size = 48, className = '' }: { emoji: string; size?: number; className?: string }) {
   return (
     <span className={`avatar ${className}`} style={{ width: size, height: size, fontSize: size * 0.82 }} aria-hidden>
-      {emoji}
+      <Emoji emoji={emoji} size={Math.round(size * 0.82)} />
     </span>
   );
 }
@@ -106,13 +132,13 @@ export function EmojiPicker({ value, onChange }: { value: string; onChange: (emo
               onChange(e);
             }}
           >
-            {e}
+            <Emoji emoji={e} size={30} />
           </button>
         ))}
       </div>
       <label className="emoji-custom">
         <span className={`emoji-custom-pic${custom ? ' on' : ''}`} aria-hidden>
-          {custom ? value : '＋'}
+          {custom ? <Emoji emoji={value} size={30} /> : '＋'}
         </span>
         <input
           className="field"

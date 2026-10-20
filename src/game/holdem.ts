@@ -10,6 +10,10 @@ export const TIMING = {
   /** Bots wait a moment, like they're thinking. */
   botMin: 900,
   botMax: 2000,
+  /** A bot that thinks out loud moves this long after it speaks. */
+  botThink: 1300,
+  /** Extra time before the next deal when a bot has something to say about the hand. */
+  talkPause: 2000,
   /** Gap between cards on an all-in run-out, so the odds can be read. */
   runoutStep: 2200,
   /** Pause after a hand before the next one deals (unless everyone taps Next hand). */
@@ -416,6 +420,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
   if (live.length <= 1) {
     // No more betting possible: everyone still in turns their cards over and the board runs out.
     hand.runout = true;
+    hand.ranOut = true;
     for (const s of hand.seats) {
       if (s.folded) continue;
       s.shown = true;
@@ -582,4 +587,6 @@ export function schedule(game: Game): void {
   if (game.status !== 'playing') game.wakeAt = null;
   else if (hand && !hand.result) game.wakeAt = hand.actAt;
   else game.wakeAt = game.nextHandAt;
+  // A bot's reply that's due before anything else.
+  if (game.status === 'playing' && game.pendingTalk && (game.wakeAt === null || game.pendingTalk.at < game.wakeAt)) game.wakeAt = game.pendingTalk.at;
 }

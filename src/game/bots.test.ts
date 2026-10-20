@@ -37,10 +37,15 @@ describe('bots', () => {
   it("keeps each bot's style and the bots' notes off every phone", () => {
     const g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: DEFAULT_SETTINGS, bots: 3, code: null, now: 0 });
     g.reads = { x: { hands: 1, vpip: 1, pfr: 0, betsFaced: 0, foldsToBet: 0, aggr: 0, calls: 0 } };
+    // A bot that has said what it's thinking knows its next move: that stays on the server too.
+    g.botPlan = { playerId: 'x', seq: 3, move: 'raise', to: 60 };
+    g.pendingTalk = { at: 5, playerId: 'x' };
     expect(g.players.some((p) => p.style)).toBe(true);
     const seen = redactForDevice(g, 'h');
     expect(seen.players.every((p) => p.style === undefined)).toBe(true);
     expect(seen.reads).toBeUndefined();
+    expect(seen.botPlan).toBeUndefined();
+    expect(seen.pendingTalk).toBeUndefined();
   });
 
   it("speaks only from its own fixed lines, which phones can't send", () => {
@@ -48,6 +53,13 @@ describe('bots', () => {
     expect(reactionText('b:friendly:bigWin:1')).toBeTruthy();
     expect(parseAction({ type: 'react', id: 'b:trash:allin:0' })).toBeNull();
   });
+
+  it('talks like a real table: most hands get a word, the chatty styles more than the quiet ones', () => {
+    const report = simulate(['pro', 'maniac', 'rock', 'gambler'], 150, 9);
+    const said = (style: string) => report.find((r) => r.style === style)!.comments;
+    expect(report.reduce((a, r) => a + r.comments, 0)).toBeGreaterThan(75);
+    expect(said('maniac')).toBeGreaterThan(said('rock'));
+  }, 60_000);
 
   it('plays each style the way it should', () => {
     const report = [

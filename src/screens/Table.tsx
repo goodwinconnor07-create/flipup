@@ -559,11 +559,32 @@ function WinBanner({ game }: { game: Game }) {
   );
 }
 
-/** Each player's latest quick message, shown for a few seconds after it arrives. */
+/**
+ * Each player's latest message (a quick message, or a bot's table talk), shown for a few seconds
+ * after it arrives, or until that player's next move takes over their bubble.
+ */
 function useReactions(game: Game): Record<string, string> {
   const seen = useRef<Record<string, number> | null>(null);
   const [active, setActive] = useState<Record<string, string>>({});
   const reactions = game.reactions;
+  // A new move replaces whatever that player was saying.
+  const moves = (game.hand?.seats ?? []).map((s) => `${s.playerId}:${game.hand!.number}:${s.last ? `${s.last.move}-${s.last.amount ?? ''}-${s.last.street ?? ''}` : ''}`).join('|');
+  const lastMoves = useRef<Record<string, string>>({});
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    for (const part of moves ? moves.split('|') : []) {
+      const [id, ...rest] = part.split(':');
+      next[id] = rest.join(':');
+    }
+    const changed = Object.keys(next).filter((id) => lastMoves.current[id] !== undefined && lastMoves.current[id] !== next[id] && next[id].split(':')[1]);
+    lastMoves.current = next;
+    if (changed.length)
+      setActive((a) => {
+        const out = { ...a };
+        for (const id of changed) delete out[id];
+        return out;
+      });
+  }, [moves]);
   useEffect(() => {
     const now = reactions ?? {};
     if (seen.current === null) {
@@ -574,12 +595,14 @@ function useReactions(game: Game): Record<string, string> {
     for (const [id, r] of Object.entries(now)) {
       if (seen.current[id] === r.n) continue;
       seen.current[id] = r.n;
-      setActive((a) => ({ ...a, [id]: r.id }));
-      playSound('pop');
+      const value = `${r.id}|${r.n}`;
+      setActive((a) => ({ ...a, [id]: value }));
+      // People's quick messages pop; bots' table talk is quiet, there's a lot of it.
+      if (!r.id.startsWith('b:')) playSound('pop');
       setTimeout(
         () =>
           setActive((a) => {
-            if (a[id] !== r.id) return a;
+            if (a[id] !== value) return a;
             const { [id]: _gone, ...rest } = a;
             return rest;
           }),
@@ -590,12 +613,13 @@ function useReactions(game: Game): Record<string, string> {
   return active;
 }
 
-/** A quick message bubble: white with a border, to tell it from an action. */
-function ReactBubble({ id, stacked = false }: { id: string; stacked?: boolean }) {
+/** Something said at the table, in the same bubble style as a move. */
+function ReactBubble({ id: value }: { id: string }) {
+  const [id, n] = value.split('|');
   const text = reactionText(id);
   const emoji = !/[A-Za-z]/.test(text);
   return (
-    <span key={`${id}-${text}`} className={`bubble bubble-react pop${emoji ? ' bubble-emoji' : ''}${stacked ? ' stacked' : ''}`} role="status">
+    <span key={`${id}-${n}`} className={`bubble bubble-grey bubble-react pop${emoji ? ' bubble-emoji' : ''}`} role="status">
       {text}
     </span>
   );
@@ -636,11 +660,16 @@ function Pod({
   const out = !seat || seat.folded;
   const won = hand?.result?.won[player.id] ?? 0;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
+  // A bot on the clock shows typing dots until it speaks or moves.
+  const thinking = turn && player.bot && !hand?.runout;
+  // The seats at each end of the row keep their bubble from hanging off the screen.
+  const desk = useDesktop();
+  const edge = n > 1 && !self && !desk ? (slot === 0 ? ' edge-l' : slot === n - 1 ? ' edge-r' : '') : '';
 
   return (
     <button
       type="button"
-      className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}${self ? ' self' : ''}`}
+      className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}${self ? ' self' : ''}${edge}`}
       style={{ ['--slot' as string]: slot, ['--n' as string]: n, ['--ax' as string]: `${ring.x}%`, ['--ay' as string]: `${ring.y}%` }}
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
@@ -651,8 +680,17 @@ function Pod({
         {turn && <span className="pod-ring" aria-hidden />}
         <Avatar emoji={player.emoji} size={50} />
         <PositionChips pos={positionOf(hand, player.id)} />
-        {seat?.last && <Bubble last={seat.last} street={hand?.street} />}
-        {reaction && <ReactBubble id={reaction} stacked={!!seat?.last} />}
+        {reaction ? (
+          <ReactBubble id={reaction} />
+        ) : thinking ? (
+          <span className="bubble bubble-grey bubble-typing pop" aria-label={`${player.name} is thinking`}>
+            <i />
+            <i />
+            <i />
+          </span>
+        ) : (
+          seat?.last && <Bubble last={seat.last} street={hand?.street} />
+        )}
       </span>
       <span className="pod-name">{player.name}</span>
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>

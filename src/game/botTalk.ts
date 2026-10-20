@@ -1,53 +1,86 @@
-// What bots say at the table, now and then, through the same speech bubbles as quick messages.
-// Every line is fixed here (ids start "b:"), and phones can't send them: only bots say these.
+// What bots say at the table, through the same bubbles as moves and quick messages. Every line is
+// fixed here (ids start "b:"), and phones can't send them: only bots say these. Lines are short so
+// they fit on one line in a seat's bubble.
 
 import { styleOf } from './botStyles';
 import type { Game } from './types';
 
 export type TalkEvent =
-  /** The bot moved all in. */
+  /** Thinking out loud before a hard decision. */
+  | 'thinkHard'
+  /** Thinking out loud before an easy one. */
+  | 'thinkEasy'
+  /** About to move all in. */
   | 'allin'
-  /** The bot raised big or re-raised. */
+  /** About to bet or raise big. */
   | 'raise'
-  /** The bot folded to a big bet. */
+  /** About to fold to a big bet. */
   | 'foldBig'
-  /** The bot called a big bet with a so-so hand. */
+  /** About to call a big bet with a so-so hand. */
   | 'callLight'
-  /** The bot won a pot without a showdown after betting with nothing. */
-  | 'bluffWon'
-  /** The bot won a big pot at showdown. */
-  | 'bigWin'
-  /** The bot lost a big pot with a strong hand. */
-  | 'badBeat'
-  /** Someone else (a person) won a big pot from the bot. */
-  | 'lostToYou'
   /** A person just bet big or went all in. */
-  | 'yourBigBet';
+  | 'yourBigBet'
+  /** All in, waiting for the next card. */
+  | 'sweat'
+  /** Watching someone else's all-in. */
+  | 'sweatWatch'
+  /** Won the all-in. */
+  | 'sweatWin'
+  /** Lost the all-in. */
+  | 'sweatLose'
+  /** Won a pot after betting with nothing. */
+  | 'bluffWon'
+  /** Won a big pot at showdown. */
+  | 'bigWin'
+  /** Won a small pot. */
+  | 'win'
+  /** Lost a big pot with a strong hand. */
+  | 'badBeat'
+  /** A person won a pot from the bot. */
+  | 'lostToYou'
+  /** Another bot answering what was just said. */
+  | 'reply';
 
 type Lines = Record<TalkEvent, string[]>;
 
 const TRASH: Lines = {
-  allin: ['All of it. Your move.', 'Let’s gamble.', 'You won’t call.', 'Shove o’clock.'],
-  raise: ['Too easy.', 'Raise. Obviously.', 'You sure about that?', 'Pressure’s on.'],
-  foldBig: ['Fine. Take it.', 'Enjoy that one.', 'I’ll get you later.', 'Saving it for a real pot.'],
-  callLight: ['I don’t believe you.', 'Show me.', 'You’re bluffing. Probably.', 'Call. Prove it.'],
-  bluffWon: ['Wouldn’t you like to know.', 'Never in doubt.', 'Read me like a book, huh?', 'Folding’s a skill too.'],
-  bigWin: ['Ship it!', 'Thanks for the chips.', 'Was there ever any doubt?', 'Stack’s looking healthy.'],
-  badBeat: ['Unbelievable.', 'Of course it came.', 'That river…', 'Every time.'],
-  lostToYou: ['Lucky.', 'Enjoy it while it lasts.', 'Ok, nice hand. This time.', 'You got there.'],
-  yourBigBet: ['Oh, you’re serious?', 'Smells like a bluff.', 'Bold. Very bold.', 'Is that all you’ve got?'],
+  thinkHard: ['Hmm…', 'What do we have…', 'Let me think.', 'Sneaky…', 'You sure?'],
+  thinkEasy: ['Easy.', 'Too easy.', 'Obviously.', 'Snap.', 'Next.'],
+  allin: ['Let’s gamble.', 'All of it.', 'Your move.', 'Shove time.', 'Let’s dance.'],
+  raise: ['Pressure.', 'Let’s go.', 'Pay up.', 'Raise. Duh.', 'Try me.'],
+  foldBig: ['Fine. Take it.', 'Enjoy it.', 'Next time.', 'Not worth it.', 'Saving chips.'],
+  callLight: ['Don’t buy it.', 'Show me.', 'Prove it.', 'Bluffing again?', 'Nope. Call.'],
+  yourBigBet: ['Oh, serious?', 'Smells fishy.', 'Bold.', 'Is that it?', 'Scary. Not.'],
+  sweat: ['C’mon, c’mon!', 'Hold!', 'Brick! Brick!', 'Don’t you dare.', 'Gimme one!'],
+  sweatWatch: ['Here we go!', 'Sweat it.', 'Popcorn time.', 'Who’s got it?', 'Big flip!'],
+  sweatWin: ['LET’S GO!', 'Never in doubt.', 'Ship it!', 'Yes!', 'Too good.'],
+  sweatLose: ['Damn!', 'Unreal.', 'Every time!', 'Of course.', 'Rigged.'],
+  bluffWon: ['Read me, huh?', 'Never in doubt.', 'Too easy.', 'Wanna know?'],
+  bigWin: ['Ship it!', 'Thanks for that.', 'Stack’s happy.', 'All day.'],
+  win: ['Mine.', 'I’ll take that.', 'Thank you.', 'Easy money.'],
+  badBeat: ['Unbelievable.', 'That river…', 'Every time.', 'You kidding?'],
+  lostToYou: ['Lucky.', 'Enjoy it.', 'Ok. This time.', 'You got there.'],
+  reply: ['Lucky.', 'Sure you did.', 'Skill, obviously.', 'Cry about it.', 'Pfft.', 'Whatever.'],
 };
 
 const FRIENDLY: Lines = {
-  allin: ['Here goes nothing!', 'All in, wish me luck.', 'Feeling brave.', 'Let’s see a flop!'],
-  raise: ['I like this one.', 'Let’s make it interesting.', 'Raise!', 'Got to try.'],
-  foldBig: ['Too rich for me.', 'I’ll let that go.', 'You can have it.', 'Not this time.'],
-  callLight: ['I had to see it.', 'Curious…', 'Couldn’t fold that.', 'Keep me honest.'],
+  thinkHard: ['Hmm…', 'Tough one…', 'Ugh, really?', 'Let me think…', 'Oh no…'],
+  thinkEasy: ['Okay!', 'Sure.', 'Alright.', 'Let’s see…', 'Fine by me.'],
+  allin: ['Here goes!', 'Wish me luck!', 'Feeling brave.', 'All in!', 'Yolo!'],
+  raise: ['I like this.', 'Let’s play!', 'Raise!', 'Gotta try.', 'Feeling good.'],
+  foldBig: ['Too rich for me.', 'You have it.', 'Not this time.', 'I’m out.', 'Nope!'],
+  callLight: ['Had to see it.', 'Curious…', 'Can’t fold this.', 'Keep me honest.', 'One look.'],
+  yourBigBet: ['Whoa!', 'Big bet!', 'Tough one.', 'Okay, okay…', 'Yikes.'],
+  sweat: ['Come on!', 'Please, please…', 'Fingers crossed!', 'Hold on!', 'Oh boy…'],
+  sweatWatch: ['Ooh, flip!', 'Here we go!', 'Exciting!', 'Good luck both!', 'Eek!'],
+  sweatWin: ['Woohoo!', 'YES!', 'Phew!', 'It held!', 'Lucky me!'],
+  sweatLose: ['Noooo!', 'Damn!', 'Oof.', 'So close!', 'Ouch.'],
   bluffWon: ['Phew.', 'I’ll take it!', 'Don’t ask.', 'Sneaky, I know.'],
-  bigWin: ['Woohoo!', 'That felt good.', 'Finally!', 'Nice pot!'],
-  badBeat: ['Ouch.', 'So close!', 'Oof, the river.', 'That one hurt.'],
+  bigWin: ['Woohoo!', 'Nice pot!', 'Finally!', 'Felt good.'],
+  win: ['Thanks!', 'Ooh, mine.', 'Nice.', 'Little one.'],
+  badBeat: ['Ouch.', 'So close!', 'Oof, the river.', 'That hurt.'],
   lostToYou: ['Nice hand!', 'Well played.', 'You got me.', 'Good call.'],
-  yourBigBet: ['Whoa, big bet!', 'Hmm, tough one.', 'You’re making this hard.', 'Okay, okay…'],
+  reply: ['Nice one!', 'Haha!', 'Ouch.', 'Fair enough.', 'Well played!', 'Wow.'],
 };
 
 const id = (tone: string, event: string, i: number) => `b:${tone}:${event}:${i}`;
@@ -60,33 +93,41 @@ export function botLineText(lineId: string): string {
   return lines?.[Number(i)] ?? '';
 }
 
-/** How often each kind of moment gets a comment, before the bot's own chattiness. */
+/** How likely each kind of moment gets a word, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
-  allin: 0.45,
-  raise: 0.2,
-  foldBig: 0.2,
-  callLight: 0.25,
-  bluffWon: 0.45,
-  bigWin: 0.4,
-  badBeat: 0.6,
-  lostToYou: 0.6,
-  yourBigBet: 0.45,
+  thinkHard: 0.45,
+  thinkEasy: 0.15,
+  allin: 0.8,
+  raise: 0.45,
+  foldBig: 0.45,
+  callLight: 0.55,
+  yourBigBet: 0.8,
+  sweat: 0.9,
+  sweatWatch: 0.5,
+  sweatWin: 1,
+  sweatLose: 1,
+  bluffWon: 0.6,
+  bigWin: 0.8,
+  win: 0.25,
+  badBeat: 1,
+  lostToYou: 0.8,
+  reply: 0.5,
 };
 
-/**
- * Maybe has a bot say something. At most one bot speaks per hand, so the table never fills with chatter.
- * Returns true if it spoke.
- */
-export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number): boolean {
+/** A bot never speaks again within this long, so one seat can't chatter non-stop. */
+const COOLDOWN = 2500;
+
+/** Maybe has a bot say something. Returns true if it spoke. `now` is the table clock, for the cooldown. */
+export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number): boolean {
   const player = game.players.find((p) => p.id === playerId);
-  const hand = game.hand;
-  if (!player?.bot || !hand) return false;
-  if (game.botChatHand === hand.number) return false;
+  if (!player?.bot) return false;
+  const last = game.talkAt?.[playerId] ?? -Infinity;
+  if (now - last < COOLDOWN) return false;
   const style = styleOf(player.style);
-  if (rng() > CHANCE[event] * style.talk.chatty * 2) return false;
+  if (rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return false;
   const lines = (style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event];
   const i = Math.floor(rng() * lines.length);
   game.reactions = { ...game.reactions, [playerId]: { id: id(style.talk.tone, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1 } };
-  game.botChatHand = hand.number;
+  game.talkAt = { ...game.talkAt, [playerId]: now };
   return true;
 }

@@ -237,15 +237,15 @@
 /* One row of up to four players. Each sits in a slot and slides between slots, so you can see where everyone goes. */
 .pods {
   position: relative;
-  height: 196px;
+  height: 174px;
   /* Players slid out of view wait off to the side; they mustn't make the page scroll sideways. */
   overflow-x: clip;
 }
 
 .pod {
   position: absolute;
-  /* Room above the picture for two speech bubbles: a comment stacked on a move. */
-  top: 46px;
+  /* Room above the picture for the speech bubble. */
+  top: 24px;
   left: 0;
   width: 25%;
   display: flex;
@@ -1183,19 +1183,6 @@ html.calm .pod.won .pod-pic {
   opacity: 0.5;
 }
 
-.bubble-react {
-  background: var(--surface);
-  color: var(--ink);
-  box-shadow:
-    0 0 0 1.5px var(--blue),
-    0 2px 6px -2px rgba(18, 18, 40, 0.35);
-}
-
-/* The ring is on the bubble, so its tail has none: a white curl is enough. */
-.bubble-react::before {
-  background: var(--surface);
-}
-
 .bubble-emoji {
   padding: 1px 8px;
   font-size: 22px;
@@ -1328,12 +1315,6 @@ html[data-theme='dark'] .bubble-grey {
     0 2px 6px -2px rgba(0, 0, 0, 0.6);
 }
 
-html[data-theme='dark'] .bubble-react {
-  box-shadow:
-    0 0 0 1.5px var(--blue),
-    0 0 14px rgba(59, 130, 246, 0.35);
-}
-
 html[data-theme='dark'] .win-banner {
   box-shadow:
     0 0 0 3px rgba(245, 158, 11, 0.7),
@@ -1373,37 +1354,59 @@ html[data-theme='dark'] .pot-pill {
   box-shadow: 0 0 14px rgba(0, 0, 0, 0.25);
 }
 
-/* A bot's comment can be a few words: let it wrap onto two lines inside its seat. */
-.bubble-react:not(.bubble-emoji) {
-  width: max-content;
-  /* Narrower than a seat, so it never hangs off the edge of the row. */
-  max-width: 88px;
-  white-space: normal;
-  text-align: center;
+
+/* Each seat has one bubble that keeps changing: typing dots while a bot thinks, sometimes what it's
+   thinking, then its move; table talk shows in the same style and gives way to the next move. */
+.bubble-typing {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  height: 22px;
+  padding: 0 10px;
 }
 
-/* A comment and the move it went with show together: the comment sits on top and fades after four seconds. */
-.bubble-react.stacked {
-  bottom: calc(100% + 17px);
-  z-index: 4;
-  font-size: 11px;
-  max-width: 96px;
+.bubble-typing i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--ink-3);
+  animation: typing 1.1s ease-in-out infinite;
 }
 
-.bubble-react:not(.bubble-emoji) {
-  animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both, bubble-fade 4s linear forwards;
+.bubble-typing i:nth-child(2) {
+  animation-delay: 0.15s;
 }
 
-@keyframes bubble-fade {
+.bubble-typing i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes typing {
   0%,
-  80% {
-    opacity: 1;
-  }
+  60%,
   100% {
-    opacity: 0;
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  30% {
+    opacity: 1;
+    transform: translateY(-2px);
   }
 }
 
-html.calm .bubble-react:not(.bubble-emoji) {
-  animation: bubble-fade 4s linear forwards;
+html.calm .bubble-typing i {
+  animation: none;
+  opacity: 0.6;
+}
+
+/* Seats at the ends of the row keep their bubble inside the row. */
+.pod.edge-l .pod-pic > .bubble {
+  left: -6px;
+  translate: 0 0;
+}
+
+.pod.edge-r .pod-pic > .bubble {
+  left: auto;
+  right: -6px;
+  translate: 0 0;
 }

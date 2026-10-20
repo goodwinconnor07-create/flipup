@@ -111,8 +111,9 @@ class BetSizing:
                     else StreetSizing("50%", ""))
             # River betting is checked down inside flop solves (re-solved exactly when the hand gets
             # there): about half the time, with the flop strategy close to the full tree.
+            # Two raises so a bet can re-raise a check-raise (one made c-betting look much worse).
             sizes = {"flop": flop, "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")}
-            out = cls(oop=dict(sizes), ip=dict(sizes), max_raises=1)
+            out = cls(oop=dict(sizes), ip=dict(sizes), max_raises=2 if lean == 0 else 1)
         elif street == 1:
             turn = StreetSizing(rich, "60%") if lean == 0 else StreetSizing("66%", "a")
             sizes = {"flop": StreetSizing(), "turn": turn, "river": StreetSizing("75%", "60%")}

@@ -56,8 +56,10 @@ def explorer_sizing(street: str, oop_leads: bool) -> BetSizing:
     if street == "flop":
         # River betting is checked down inside the flop solve (the river is solved properly when it's
         # dealt): this halves the solve time while keeping the flop strategy close to the full tree.
+        # Two raises, so a c-bet can re-raise a check-raise: with only one, betting looked far worse
+        # than in the full game (K-Q-5 rainbow: 45% c-bet vs 65%; scripts/postflop_bench.py).
         sizes = {"flop": rich, "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")}
-        out = BetSizing(oop=dict(sizes), ip=dict(sizes), max_raises=1)
+        out = BetSizing(oop=dict(sizes), ip=dict(sizes), max_raises=2)
     elif street == "turn":
         sizes = {"flop": StreetSizing(), "turn": rich, "river": StreetSizing("75%", "60%")}
         out = BetSizing(oop=dict(sizes), ip=dict(sizes), max_raises=2)

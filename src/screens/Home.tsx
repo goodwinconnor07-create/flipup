@@ -90,10 +90,10 @@ export function Home() {
   const lastBots = loadLastBots();
   const lastBotFaces = lastBots ? lastBots.bots.map((n) => BOTS.find((b) => b.name === n)).filter((b): b is (typeof BOTS)[number] => !!b) : [];
   // One clear next step: your open table, the online table you left, your last bots game, or a fresh start.
-  const hero: { kind: 'table' | 'rejoin' | 'again' | 'new'; title: string; sub: string; cta: string; run: () => void; bots: typeof lastBotFaces } = active
-    ? { kind: 'table', title: 'Your table is waiting', sub: session.mode === 'online' ? `Code ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), bots: [] }
+  const hero: { kind: 'table' | 'rejoin' | 'again' | 'new'; title: string; sub: string; cta: string; run: () => void; faces: string[] } = active
+    ? { kind: 'table', title: 'Your table is waiting', sub: session.mode === 'online' ? `Code ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [] }
     : last
-      ? { kind: 'rejoin', title: `Table ${last.code}`, sub: `Last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), bots: [] }
+      ? { kind: 'rejoin', title: `Table ${last.code}`, sub: `Last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [] }
       : lastBots && lastBotFaces.length
         ? {
             kind: 'again',
@@ -101,9 +101,9 @@ export function Home() {
             sub: `Last played ${ago(lastBots.at)}`,
             cta: 'Play again',
             run: () => void playAgain(lastBots.bots, lastBots.settings),
-            bots: lastBotFaces,
+            faces: [profile.emoji, ...lastBotFaces.map((b) => b.emoji)],
           }
-        : { kind: 'new', title: 'Play your first hand', sub: 'Take on the bots now, or host a table for friends.', cta: 'Start playing', run: () => go('bots'), bots: [] };
+        : { kind: 'new', title: 'Play your first hand', sub: 'Take on the bots now, or host a table for friends.', cta: 'Start playing', run: () => go('bots'), faces: [] };
   const active_ = !!active;
   const index = TABS.findIndex((t) => t.id === tab);
 
@@ -141,10 +141,10 @@ export function Home() {
                 <button type="button" className="hero press" disabled={looking} onClick={(e) => colourWipe(e, hero.run)} aria-label={`${hero.title}. ${hero.cta}`}>
                   <span className="hero-top">
                     <small className="hero-eyebrow">{hero.kind === 'new' ? 'Get started' : 'Pick up where you left off'}</small>
-                    {hero.kind === 'again' && (
+                    {hero.faces.length > 0 && (
                       <span className="hero-faces" aria-hidden>
-                        {hero.bots.slice(0, 5).map((b) => (
-                          <Avatar key={b.name} emoji={b.emoji} size={36} />
+                        {hero.faces.slice(0, 6).map((emoji, i) => (
+                          <Avatar key={i} emoji={emoji} size={36} />
                         ))}
                       </span>
                     )}

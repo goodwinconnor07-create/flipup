@@ -35,6 +35,7 @@ import {
   loadSession,
   loadStats,
   loadTableLook,
+  loadLastTable,
   saveLastTable,
   saveCalm,
   saveDark,
@@ -378,6 +379,15 @@ function closeConnection(): void {
   set({ conn: 'none' });
 }
 
+/** Keeps who's at an online table with the "rejoin" card on Home. */
+function rememberFaces(code: string | null, game: Game): void {
+  const last = loadLastTable();
+  if (!code || !last || last.code !== code) return;
+  const faces = game.players.map((p) => p.emoji);
+  if (last.faces?.join('') === faces.join('')) return;
+  saveLastTable({ ...last, faces });
+}
+
 function onServerMessage(msg: ServerMessage): void {
   const s = state.session;
   if (!s || s.mode !== 'online') return;
@@ -385,6 +395,7 @@ function onServerMessage(msg: ServerMessage): void {
     if (msg.ack && msg.ack === state.sending) set({ sending: null });
     const mine = msg.game.players.some((p) => p.deviceId === state.deviceId);
     setSession({ ...s, game: msg.game, joining: s.joining && !mine });
+    rememberFaces(s.code, msg.game);
     // Arrived from the join screen: take a seat.
     if (s.joining && !mine && msg.game.status !== 'ended') sendJoin();
   } else if (msg.t === 'log') {

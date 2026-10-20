@@ -203,11 +203,13 @@ export function saveStats(stats: Stats): void {
 export interface LastTable {
   code: string;
   at: number;
+  /** Everyone's emoji at the table, for the Home card. */
+  faces?: string[];
 }
 
 export function loadLastTable(): LastTable | null {
   const t = read<LastTable>('flipup.last');
-  return t && typeof t.code === 'string' && /^[A-Z]{5}$/.test(t.code) && typeof t.at === 'number' ? t : null;
+  return t && typeof t.code === 'string' && /^[A-Z]{5}$/.test(t.code) && typeof t.at === 'number' ? { ...t, faces: Array.isArray(t.faces) ? t.faces.filter((f) => typeof f === 'string') : [] } : null;
 }
 
 export function saveLastTable(table: LastTable | null): void {

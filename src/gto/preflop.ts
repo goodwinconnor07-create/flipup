@@ -42,13 +42,28 @@ export interface PFile {
 
 let loading: Promise<PFile> | null = null;
 
+/** The parts the drills read, so a wrong file (a web page served in its place, say) is refused up front. */
+function looksLikeFile(f: unknown): f is PFile {
+  const x = f as Partial<PFile> | null;
+  if (!x || !Array.isArray(x.classes) || !Array.isArray(x.names) || !Array.isArray(x.er) || !x.nodes || typeof x.nodes !== 'object') return false;
+  const root = x.nodes[''];
+  return !!root && Array.isArray(root.actions) && Array.isArray(root.reach) && root.reach.length === x.classes.length && Array.isArray(root.strat) && Array.isArray(root.ev);
+}
+
 /** Fetches the solved game once. Rejects if the file isn't there, so callers can fall back to the service. */
 export function loadPreflop(): Promise<PFile> {
   if (!loading) {
-    loading = fetch(FILE).then((res) => {
-      if (!res.ok) throw new Error('No local preflop data.');
-      return res.json() as Promise<PFile>;
-    });
+    // A stalled download must not hold a drill up for ever: give up and let the caller ask the service.
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10_000);
+    loading = fetch(FILE, { signal: controller.signal })
+      .then(async (res) => {
+        if (!res.ok) throw new Error('No local preflop data.');
+        const file: unknown = await res.json();
+        if (!looksLikeFile(file)) throw new Error('The local preflop data is not in the expected shape.');
+        return file;
+      })
+      .finally(() => clearTimeout(timer));
     loading.catch(() => {
       loading = null;
     });

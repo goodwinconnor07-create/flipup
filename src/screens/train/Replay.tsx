@@ -122,6 +122,8 @@ export function Replay({ handKey }: { handKey: string }) {
       if (e.key === 'ArrowRight') keys.current.step(1);
       else if (e.key === 'ArrowLeft') keys.current.step(-1);
       else if (e.key === ' ') {
+        // On a button, Space already presses it.
+        if (e.target instanceof HTMLButtonElement) return;
         e.preventDefault();
         keys.current.setPlaying((p) => !p);
       }

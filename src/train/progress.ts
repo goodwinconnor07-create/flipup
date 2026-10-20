@@ -42,7 +42,10 @@ const KEY = 'flipup.reviewtimes';
 
 function loadTimings(): Timings {
   const t = read<Timings>(KEY);
-  return { byStreets: t?.byStreets ?? {}, seen: Array.isArray(t?.seen) ? t!.seen : [] };
+  const byStreets: Timings['byStreets'] = {};
+  if (t?.byStreets && typeof t.byStreets === 'object')
+    for (const [k, v] of Object.entries(t.byStreets)) if (v && Number.isFinite(v.avg) && v.avg > 0 && Number.isFinite(v.n)) byStreets[k] = { avg: v.avg, n: v.n };
+  return { byStreets, seen: Array.isArray(t?.seen) ? t.seen.filter((x) => typeof x === 'string').slice(-40) : [] };
 }
 
 function postflopStreets(hand: HandHistory): number {
@@ -101,6 +104,7 @@ export const planSeconds = (steps: Step[]) => steps.reduce((a, s) => a + s.secon
 
 /** Remembers how long a hand took, once its table size had been solved before (so a cold start doesn't skew the average). */
 export function recordTiming(hand: HandHistory, seconds: number): void {
+  if (!Number.isFinite(seconds) || seconds <= 0) return;
   const t = loadTimings();
   const key = configKey(hand);
   if (t.seen.includes(key)) {
@@ -119,7 +123,7 @@ export function formatClock(s: number): string {
 }
 
 export function formatLeft(s: number): string {
-  if (s < 8) return 'a few seconds';
+  if (!Number.isFinite(s) || s < 8) return 'a few seconds';
   if (s < 50) return `about ${Math.round(s / 5) * 5} seconds`;
   const m = Math.round(s / 60);
   return `about ${Math.max(1, m)} minute${m <= 1 ? '' : 's'}`;
@@ -132,7 +136,7 @@ export function formatLeft(s: number): string {
 export function useReviewClock(done: number, total: number) {
   const startedAt = useRef(Date.now());
   const handStartedAt = useRef(Date.now());
-  const finished = Math.min(total, Math.floor(done));
+  const finished = Math.max(0, Math.min(total, Math.floor(Number.isFinite(done) ? done : 0)));
   const lastFinished = useRef(0);
   const [, tick] = useState(0);
   useEffect(() => {

@@ -49,6 +49,7 @@ export function Lesson({ handKey }: { handKey: string }) {
     try {
       const out = await reviewAndSave([hand], (d) => setDone(d));
       setReport(out[hand.key] ?? null);
+      if (!out[hand.key]) setError("I couldn't grade this hand. Try again in a moment.");
     } catch (e) {
       setError(e instanceof Error ? e.message : 'The review failed.');
     } finally {

@@ -33,6 +33,7 @@ export function prettyAction(label: string): string {
 
 const trim = (s: string) => String(Number(Number(s).toFixed(2)));
 
-export const pct = (x: number | null | undefined, digits = 0) => (x == null ? '–' : `${(100 * x).toFixed(digits)}%`);
-export const bb = (x: number | null | undefined) => (x == null ? '–' : `${Number(x.toFixed(2))}bb`);
+const ok = (x: number | null | undefined): x is number => x != null && Number.isFinite(x);
+export const pct = (x: number | null | undefined, digits = 0) => (ok(x) ? `${(100 * x).toFixed(digits)}%` : '–');
+export const bb = (x: number | null | undefined) => (ok(x) ? `${Number(x.toFixed(2))}bb` : '–');
 

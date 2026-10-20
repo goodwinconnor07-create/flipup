@@ -33,8 +33,8 @@ export const DRILL_FOR: Record<string, string | null> = {
 };
 
 export function drillFor(scenario: string): string | null {
-  if (scenario in DRILL_FOR) return DRILL_FOR[scenario];
-  return scenario in SCENARIO_TITLES ? scenario : null;
+  if (Object.hasOwn(DRILL_FOR, scenario)) return DRILL_FOR[scenario];
+  return Object.hasOwn(SCENARIO_TITLES, scenario) ? scenario : null;
 }
 
-export const scenarioTitle = (id: string) => SCENARIO_TITLES[id] ?? id;
+export const scenarioTitle = (id: string) => (Object.hasOwn(SCENARIO_TITLES, id) ? SCENARIO_TITLES[id] : id);

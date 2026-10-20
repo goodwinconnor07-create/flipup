@@ -1154,7 +1154,7 @@
 }
 
 .chip-btn {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 16px;
   border: 0;
   border-radius: var(--r-pill);
@@ -1571,6 +1571,11 @@ html.calm .coach-avatar {
   padding: 4px 12px;
   border-radius: var(--r-md);
   background: var(--bg-2);
+}
+
+.stack-row b {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .stack-row.me {

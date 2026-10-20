@@ -109,7 +109,7 @@ export function computeStats(
   for (const { record: r, heroId: hero } of history) {
     const net = recordNet(r, hero);
     netChips += net;
-    netBb += net / r.bigBlind;
+    netBb += r.bigBlind > 0 ? net / r.bigBlind : 0;
     if (net > 0) wins += 1;
     else if (net < 0) losses += 1;
     const f = preflopFacts(r, hero);
@@ -193,7 +193,8 @@ export function computeStats(
   const scenarios = Object.values(by).map((s) => ({ ...s, score: ratio(s.green + 0.5 * s.yellow, s.samples) }));
   const ranked = scenarios.filter((s) => s.samples >= 3);
   const weaknesses = [...ranked].sort((a, b) => a.score - b.score || b.evLoss - a.evLoss).filter((s) => s.score < 0.8).slice(0, 3);
-  const strengths = [...ranked].sort((a, b) => b.score - a.score).filter((s) => s.score >= 0.7).slice(0, 3);
+  // Strengths start where weaknesses end, so a spot is never both.
+  const strengths = [...ranked].sort((a, b) => b.score - a.score).filter((s) => s.score >= 0.8).slice(0, 3);
 
   const trend: TrendPoint[] = history
     .flatMap((h) => {

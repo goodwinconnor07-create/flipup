@@ -88,12 +88,14 @@ export function Home() {
 
   const playAgain = (names: string[], settings: Settings) => startBots(names, settings, named);
   const lastBots = loadLastBots();
+  // Whichever you did most recently gets the banner: a stale online table shouldn't hide the bots game you've played since.
+  const rejoinable = last && (!lastBots || last.at >= lastBots.at) ? last : null;
   const lastBotFaces = lastBots ? lastBots.bots.map((n) => BOTS.find((b) => b.name === n)).filter((b): b is (typeof BOTS)[number] => !!b) : [];
   // One clear next step: your open table, the online table you left, your last bots game, or a fresh start.
   const hero: { kind: 'table' | 'rejoin' | 'again' | 'new'; title: string; sub: string; cta: string; run: () => void; bots: typeof lastBotFaces } = active
     ? { kind: 'table', title: 'Your table is waiting', sub: session.mode === 'online' ? `Code ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), bots: [] }
-    : last
-      ? { kind: 'rejoin', title: `Table ${last.code}`, sub: `Last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), bots: [] }
+    : rejoinable
+      ? { kind: 'rejoin', title: `Table ${rejoinable.code}`, sub: `Last played ${ago(rejoinable.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), bots: [] }
       : lastBots && lastBotFaces.length
         ? {
             kind: 'again',
@@ -115,7 +117,7 @@ export function Home() {
       </div>
       <div className="home-head">
         <h1 className="logo">
-          GTO<span>Duel</span>
+          Flip<span>Up</span>
         </h1>
         <div className={`streak-pill${streak.today ? ' lit' : ''}`} role="img" aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}`}>
           <span className="streak-fire" aria-hidden>
@@ -189,7 +191,7 @@ export function Home() {
         </div>
       </div>
       <nav className="home-tabs" aria-label="Home">
-        <div className="tabbar glass" style={{ ['--i' as string]: index }}>
+        <div className="tabbar glass" role="tablist" aria-label="Home sections" style={{ ['--i' as string]: index }}>
           <i className="tab-capsule" aria-hidden />
           {TABS.map(({ id, label, Icon }) => (
             <button

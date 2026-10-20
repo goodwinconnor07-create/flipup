@@ -75,6 +75,11 @@ export class Connection {
     }
     this.ws = ws;
     ws.onopen = () => {
+      // A socket that was replaced or closed while it was still connecting must not report in.
+      if (this.ws !== ws) {
+        ws.close();
+        return;
+      }
       this.failures = 0;
       this.lastHeard = Date.now();
       this.h.onStatus('open');
@@ -82,9 +87,13 @@ export class Connection {
       this.startHeartbeat();
     };
     ws.onmessage = (event) => {
+      // A closing socket can still deliver a last message. It must not reach whatever table the app has moved on to.
+      if (this.ws !== ws) return;
       this.lastHeard = Date.now();
       try {
-        this.h.onMessage(JSON.parse(String(event.data)) as ServerMessage);
+        const msg: unknown = JSON.parse(String(event.data));
+        if (typeof msg !== 'object' || msg === null || typeof (msg as { t?: unknown }).t !== 'string') return;
+        this.h.onMessage(msg as ServerMessage);
       } catch {
         // Ignore anything that isn't JSON.
       }
@@ -125,8 +134,9 @@ export class Connection {
     clearInterval(this.beatTimer);
     this.beatTimer = setInterval(() => {
       if (Date.now() - this.lastHeard > STALE_MS) {
-        // Nothing heard for too long: the link is dead even if the socket says it's open.
-        this.ws?.close();
+        // Nothing heard for too long: the link is dead even if the socket says it's open. Closing a dead
+        // socket can take minutes to report back, so let go of it now and reconnect.
+        this.dropNow();
         return;
       }
       if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(PING);

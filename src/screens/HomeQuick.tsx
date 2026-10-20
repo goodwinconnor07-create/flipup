@@ -79,7 +79,7 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
           if (!b) return null;
           const done = results[c.bot]?.stars ?? 0;
           return (
-            <button key={c.bot} type="button" className="glass-card quick-card lift press" onClick={() => openSheet({ name: 'challenge', bot: c.bot })}>
+            <button key={c.bot} type="button" className="glass-card quick-card lift press" aria-label={`${b.name}: ${c.title}${done > 0 ? `, ${done} of 3 stars` : ''}`} onClick={() => openSheet({ name: 'challenge', bot: c.bot })}>
               <Scene emoji={b.emoji} />
               <b>{b.name}</b>
               <small>{done > 0 ? `✓ ${'★'.repeat(done)}` : c.title}</small>

@@ -101,7 +101,7 @@ export function summaryLine(report: HandReport): string {
   if (c.red === 0 && c.yellow === 0) return n === 1 ? 'You made one decision and it was a good one.' : `You made ${n} decisions and all of them were good.`;
   const bad = c.red + c.yellow;
   const lost = report.summary.total_ev_loss_bb;
-  return `${n} decisions, ${bad === 1 ? 'one' : bad} worth a second look${lost > 0.05 ? `. It cost about ${bb(lost)} in all.` : '.'}`;
+  return `${n} ${n === 1 ? 'decision' : 'decisions'}, ${bad === 1 ? 'one' : bad} worth a second look${lost > 0.05 ? `. It cost about ${bb(lost)} in all.` : '.'}`;
 }
 
 // ── Coaching on drills ─────────────────────────────────────────────────────

@@ -74,7 +74,7 @@ export function InsightsTab() {
   const hands = useMemo(() => computeStats(history, loadSummaries(), loadDrills()), [history]);
   const lastHands = useMemo(() => [...history].reverse().slice(0, 5), [history]);
 
-  if (stats.tables === 0 && lastHands.length > 0) return <RecentHands hands={lastHands} />;
+  if (stats.tables === 0 && REPLAY_ON && lastHands.length > 0) return <RecentHands hands={lastHands} />;
   if (stats.tables === 0) {
     return (
       <div className="glass-card home-empty">
@@ -105,7 +105,7 @@ export function InsightsTab() {
         </div>
         <div className="glass-card tile">
           <small className="eyebrow">Win rate</small>
-          <b className="num">{hands.hands > 0 ? `${Math.round((hands.wins / hands.hands) * 100)}%` : '–'}</b>
+          <b className="num">{hands.wins + hands.losses > 0 ? `${Math.round((hands.wins / (hands.wins + hands.losses)) * 100)}%` : '–'}</b>
         </div>
         <div className="glass-card tile">
           <small className="eyebrow">GTO match</small>

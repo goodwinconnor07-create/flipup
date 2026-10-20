@@ -65,7 +65,7 @@ const ROWS: [string, Make, string, string][] = [
   ['Remi', comeback, 'Under the bridge', 'Start small, take the lot.'],
   ['Emma', comeback, 'Cornered', 'A third of the chips. Win it back.'],
   ['Anna', survive(), 'Slow and steady', 'Blinds climb. Just keep your seat.'],
-  ['Max', short(20, 20, [18, 9]), 'High noon', 'Twenty big blinds, big blinds. No hiding.'],
+  ['Max', short(20, 20, [18, 9]), 'High noon', 'Twenty big blinds each. No hiding.'],
   ['Zoe', deep(), 'Deep end', 'Lots of chips and plenty of room to play.'],
   ['Theo', pots(6, 12, 10, 8), 'Pride', 'Take the pots, take the crown.'],
   ['Ivy', double(), 'Rainbow', 'Double your stack before the clouds roll in.'],
@@ -234,8 +234,16 @@ export function countHand(run: Running, c: Challenge, game: Game, deviceId: stri
 export type Results = Record<string, { stars: number; at: number }>;
 
 export function loadResults(): Results {
-  const r = read<Results>('flipup.challenges');
-  return r && typeof r === 'object' ? r : {};
+  const r = read<unknown>('flipup.challenges');
+  const out: Results = {};
+  if (!r || typeof r !== 'object' || Array.isArray(r)) return out;
+  // Only bots that have a challenge, with stars from 1 to 3 (damaged storage can't show a fourth star).
+  for (const c of CHALLENGES) {
+    const v = (r as Record<string, unknown>)[c.bot] as { stars?: unknown; at?: unknown } | undefined;
+    if (v && typeof v.stars === 'number' && Number.isInteger(v.stars) && v.stars >= 1 && v.stars <= 3)
+      out[c.bot] = { stars: v.stars, at: typeof v.at === 'number' && Number.isFinite(v.at) ? v.at : 0 };
+  }
+  return out;
 }
 
 /** Keeps the best stars per bot. */

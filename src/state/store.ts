@@ -12,6 +12,7 @@ import {
   normalizeCode,
   redactForDevice,
   redactLogs,
+  validSettings,
   type HandLog,
   type Action,
   type Game,
@@ -214,6 +215,13 @@ function onPopState(): void {
 
 export function navigate(route: Route): void {
   clearTimeout(sheetTimer);
+  // A double tap must not stack the same screen twice (Back would then seem to do nothing).
+  const top = state.stack[state.stack.length - 1];
+  if (top && JSON.stringify(top) === JSON.stringify(route)) {
+    set({ sheet: null, sheetLeaving: false });
+    syncHistory();
+    return;
+  }
   set({ stack: [...state.stack, route], sheet: null, sheetLeaving: false });
   syncHistory();
 }
@@ -226,6 +234,7 @@ export function resetTo(...routes: Route[]): void {
 
 /** Swaps the current screen for another, so Back skips it. */
 export function replace(route: Route): void {
+  clearTimeout(sheetTimer);
   set({ stack: [...state.stack.slice(0, -1), route], sheet: null, sheetLeaving: false });
   syncHistory();
 }
@@ -320,7 +329,11 @@ function trackChallenge(): void {
   if (run.over) {
     if (run.over.won) saveResult(run.bot, run.over.stars);
     const over = run.over;
-    setTimeout(() => openSheet({ name: 'challengeResult', bot: run.bot, won: over.won, stars: over.stars, hands: run.progress.hands }), 1800);
+    setTimeout(() => {
+      // Only if they're still at that table (they may have left in the meantime).
+      if (state.session?.mode === 'local' && state.session.challenge?.bot === run.bot)
+        openSheet({ name: 'challengeResult', bot: run.bot, won: over.won, stars: over.stars, hands: run.progress.hands });
+    }, 1800);
   }
 }
 
@@ -347,6 +360,7 @@ export function startChallenge(bot: string): void {
     them.bought = them.stack;
   }
   closeSheet();
+  recordFinished();
   closeConnection();
   setSession({ mode: 'local', code: null, game, challenge: newRunning(bot, settings.startingStack) });
   resetTo({ name: 'table' });
@@ -354,7 +368,7 @@ export function startChallenge(bot: string): void {
 }
 
 /** Bots-only tables keep their own clock on this phone: bots act, cards run out, hands deal. */
-function scheduleLocal(): void {
+function scheduleLocal(minDelay = 0): void {
   clearTimeout(localTimer);
   const wakeAt = state.session?.mode === 'local' ? state.session.game?.wakeAt : null;
   if (wakeAt == null) return;
@@ -364,16 +378,25 @@ function scheduleLocal(): void {
       if (s?.mode !== 'local' || !s.game) return;
       const r = applyAction(s.game, { type: 'tick' }, { deviceId: 'clock', now: Date.now(), rng: cryptoRng });
       if (r.ok && r.changed) setSession({ ...s, game: r.game });
-      else scheduleLocal();
+      // Nothing was due after all: look again shortly, rather than spinning on a time that has passed.
+      else scheduleLocal(250);
     },
-    Math.max(0, wakeAt - Date.now()),
+    Math.max(minDelay, wakeAt - Date.now()),
   );
 }
 
-function closeConnection(): void {
-  conn?.close();
+/** Counts connections, so a late message from one that was closed can't touch the table we're at now. */
+let connSeq = 0;
+
+/** Drops the link to the server. `delay` leaves it open a moment longer (for a last message to go out). */
+function closeConnection(delay = 0): void {
+  const old = conn;
   conn = null;
-  set({ conn: 'none' });
+  connSeq += 1;
+  if (delay > 0) setTimeout(() => old?.close(), delay);
+  else old?.close();
+  // Nothing from the old table should linger on screen.
+  set({ conn: 'none', logs: null });
 }
 
 function onServerMessage(msg: ServerMessage): void {
@@ -405,15 +428,22 @@ function sendJoin(): void {
 function connect(code: string): void {
   closeConnection();
   joinSent = false;
+  const mine = connSeq;
   set({ conn: 'connecting' });
   conn = new Connection(code, state.deviceId, {
-    onMessage: onServerMessage,
-    onStatus: (status) => set({ conn: status }),
+    onMessage: (msg) => {
+      if (mine === connSeq) onServerMessage(msg);
+    },
+    onStatus: (status) => {
+      if (mine === connSeq) set({ conn: status });
+    },
     onOpen: () => {
+      if (mine !== connSeq) return;
       joinSent = false;
       set({ sending: null });
     },
     onGone: (message) => {
+      if (mine !== connSeq) return;
       saveLastTable(null);
       closeConnection();
       setSession(null);
@@ -474,10 +504,13 @@ export function refreshLogs(): void {
 /** Opens a new table: online with a join code, or bots-only on this phone. */
 export async function openTable(mode: 'online' | 'local', settings: Settings, bots: number, botNames?: string[]): Promise<void> {
   if (state.busy) return;
-  saveSettings(settings);
   const name = cleanName(state.profile.name);
   const emoji = state.profile.emoji;
+  if (!name) return navigate({ name: 'profile', then: mode === 'local' ? 'bots' : 'host' });
+  if (!validSettings(settings)) return toast("Those settings don't work together.", 'error');
+  saveSettings(settings);
   if (mode === 'local') {
+    recordFinished();
     const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, code: null, now: Date.now() });
     saveLastBots({ bots: game.players.filter((p) => p.bot).map((p) => p.name), settings, at: Date.now() });
     closeConnection();
@@ -488,6 +521,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   set({ busy: 'Opening your table…' });
   try {
     const code = await createOnlineTable({ deviceId: state.deviceId, name, emoji, settings, bots });
+    recordFinished();
     setSession({ mode: 'online', code, game: null });
     saveLastTable({ code, at: Date.now() });
     connect(code);
@@ -506,6 +540,7 @@ export function joinTable(code: string): void {
     resetTo({ name: 'table' });
     return;
   }
+  recordFinished();
   setSession({ mode: 'online', code, game: null, joining: true });
   saveLastTable({ code, at: Date.now() });
   connect(code);
@@ -584,7 +619,7 @@ export function leaveTable(): void {
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
   if (s?.mode === 'online' && me && state.game?.status !== 'ended') send({ type: 'remove', playerId: me.id });
   // Give the message a moment to go before the socket closes.
-  setTimeout(closeConnection, 300);
+  closeConnection(300);
   setSession(null);
   resetTo();
 }

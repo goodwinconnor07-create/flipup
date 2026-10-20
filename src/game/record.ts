@@ -31,14 +31,21 @@ export function handRecord(game: Game, hand: Hand, now: number): HandRecord | nu
 /** Chips a player won or lost in a recorded hand. */
 export function recordNet(r: HandRecord, playerId: string): number {
   // `to` is a street total, so a street's contribution is the largest `to` on it.
-  const street: Partial<Record<string, number>> = {};
+  const streets: Record<string, Record<string, number>> = { preflop: {} };
+  for (const p of r.players) streets.preflop[p.id] = blindFor(r, p.id);
   for (const a of r.actions) {
-    if (a.playerId !== playerId || a.move === 'fold' || a.move === 'check') continue;
-    street[a.street] = Math.max(street[a.street] ?? 0, a.to);
+    if (a.move === 'fold' || a.move === 'check') continue;
+    const bets = (streets[a.street] ??= {});
+    bets[a.playerId] = Math.max(bets[a.playerId] ?? 0, a.to);
   }
-  let put = Object.values(street).reduce<number>((t, v) => t + (v ?? 0), 0);
-  // A blind posted with no later preflop bet (folded or checked) still went in.
-  if (street.preflop === undefined) put += blindFor(r, playerId);
+  let put = 0;
+  for (const bets of Object.values(streets)) {
+    const mine = bets[playerId] ?? 0;
+    // The biggest bet on a street that nobody matched goes back to its owner.
+    const others = Object.entries(bets).filter(([id]) => id !== playerId).map(([, v]) => v);
+    const second = others.length ? Math.max(...others) : 0;
+    put += mine > second ? second : mine;
+  }
   const start = r.players.find((p) => p.id === playerId)?.stack ?? 0;
   return Math.round((r.won[playerId] ?? 0) - Math.min(put, start));
 }

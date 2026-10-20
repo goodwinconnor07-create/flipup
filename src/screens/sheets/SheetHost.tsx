@@ -271,9 +271,9 @@ function Tile({ label, Icon, color, onClick }: Item) {
 
 function Stars({ n, of = 3 }: { n: number; of?: number }) {
   return (
-    <span className="stars" aria-label={`${n} of ${of} stars`}>
+    <span className="stars" role="img" aria-label={`${n} of ${of} stars`}>
       {Array.from({ length: of }, (_, i) => (
-        <span key={i} className={i < n ? 'on' : ''}>
+        <span key={i} className={i < n ? 'on' : ''} aria-hidden>
           ★
         </span>
       ))}
@@ -292,9 +292,9 @@ function ChallengeSheet({ bot }: { bot: string }) {
   return (
     <Sheet title={c.title}>
       <div className="ch-hero" style={{ background: `linear-gradient(180deg, ${s.bg[0]}, ${s.bg[1]})` }}>
-        <span className="prop prop-a">{s.props[0]}</span>
-        <span className="prop prop-b">{s.props[1]}</span>
-        <span className="prop prop-c">{s.props[2]}</span>
+        <span className="prop prop-a" aria-hidden>{s.props[0]}</span>
+        <span className="prop prop-b" aria-hidden>{s.props[1]}</span>
+        <span className="prop prop-c" aria-hidden>{s.props[2]}</span>
         <Avatar emoji={b.emoji} size={72} />
         <b>{b.name}</b>
         {best > 0 && <Stars n={best} />}
@@ -388,6 +388,8 @@ function MenuSheet() {
   const calm = useApp((s) => s.calm);
   const dark = useApp((s) => s.dark);
   const glass = useApp((s) => s.glass);
+  // A challenge is a fixed heads-up game: no extra bots, no new stacks or blinds while it's on.
+  const inChallenge = useApp((s) => s.session?.mode === 'local' && !!s.session.challenge && !s.session.challenge.over);
   const host = game?.hostDeviceId === deviceId;
   const me = game ? myPlayer(game, deviceId) : undefined;
   const playing = game?.status === 'playing';
@@ -403,9 +405,9 @@ function MenuSheet() {
   if (started) table.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
   if (online && game?.code && !ended)
     table.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });
-  if (host && !ended)
+  if (host && !ended && !inChallenge)
     table.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
-  if (host && playing && game.players.length < 9)
+  if (host && playing && !inChallenge && game.players.length < 9)
     table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--violet)', onClick: quick(() => dispatch({ type: 'addBot' })) });
 
   const you: Item[] = [

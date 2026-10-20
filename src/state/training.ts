@@ -40,13 +40,37 @@ export interface DrillScore {
 
 export const handKey = (tableId: string, number: number) => `${tableId}#${number}`;
 
+const isObject = (x: unknown): x is Record<string, unknown> => !!x && typeof x === 'object' && !Array.isArray(x);
+const finite = (x: unknown): x is number => typeof x === 'number' && Number.isFinite(x);
+
+/** A saved hand with every part the stats and replay read. Anything less (damaged storage) is skipped, not crashed on. */
+function isPlayedHand(x: unknown): x is PlayedHand {
+  if (!isObject(x) || typeof x.key !== 'string' || typeof x.heroId !== 'string' || !isObject(x.record)) return false;
+  const r = x.record;
+  return (
+    Array.isArray(r.players) &&
+    r.players.every((p) => isObject(p) && typeof p.id === 'string' && finite(p.stack) && finite(p.seat)) &&
+    Array.isArray(r.actions) &&
+    r.actions.every((a) => isObject(a) && typeof a.playerId === 'string' && typeof a.move === 'string' && typeof a.street === 'string' && finite(a.to)) &&
+    Array.isArray(r.board) &&
+    isObject(r.holes) &&
+    isObject(r.won) &&
+    finite(r.bigBlind) &&
+    r.bigBlind > 0 &&
+    finite(r.smallBlind) &&
+    typeof r.buttonId === 'string' &&
+    finite(r.at)
+  );
+}
+
 export function loadHistory(): PlayedHand[] {
   const h = read<PlayedHand[]>(KEYS.history);
-  return Array.isArray(h) ? h.filter((x) => x && x.record && typeof x.heroId === 'string') : [];
+  return Array.isArray(h) ? h.filter(isPlayedHand).slice(-MAX_HANDS) : [];
 }
 
 function saveHistory(hands: PlayedHand[]): void {
-  write(KEYS.history, hands.slice(-MAX_HANDS));
+  // If the phone is short of room, keep fewer of the oldest hands rather than losing the new one.
+  for (let keep = MAX_HANDS; keep >= 1; keep = Math.floor(keep / 2)) if (write(KEYS.history, hands.slice(-keep))) return;
 }
 
 export function addHand(hand: PlayedHand): boolean {
@@ -80,32 +104,57 @@ export function captureFinishedHand(game: Game | null, deviceId: string): void {
 
 // ── Reviews ─────────────────────────────────────────────────────────────────
 
+const COLOURS = ['green', 'yellow', 'red'];
+
 export function loadSummaries(): Record<string, ReviewSummary> {
   const r = read<Record<string, ReviewSummary>>(KEYS.reviews);
-  return r && typeof r === 'object' ? r : {};
+  if (!isObject(r)) return {};
+  const out: Record<string, ReviewSummary> = {};
+  for (const [key, s] of Object.entries(r)) {
+    if (!isObject(s) || s.key !== key || !finite(s.at) || !Array.isArray(s.decisions)) continue;
+    const decisions = s.decisions
+      .filter((d): d is ReviewSummary['decisions'][number] => isObject(d) && typeof d.street === 'string' && (d.colour === null || COLOURS.includes(d.colour as string)))
+      .map((d) => ({ street: d.street, colour: d.colour, evLoss: finite(d.evLoss) ? d.evLoss : null, scenario: typeof d.scenario === 'string' ? d.scenario : null }));
+    out[key] = { key, at: s.at, decisions };
+  }
+  return out;
 }
 
 /** Full review reports for the most recent reviewed hands (they're big, so only a few are kept). */
 export function loadReport<T>(key: string): T | null {
-  const all = read<Record<string, { at: number; report: T }>>(KEYS.reports) ?? {};
-  return all[key]?.report ?? null;
+  const all = read<Record<string, { at: number; report: T }>>(KEYS.reports);
+  return isObject(all) && Object.hasOwn(all, key) ? (all[key]?.report ?? null) : null;
 }
 
 export function saveReview<T>(summary: ReviewSummary, report: T): void {
-  write(KEYS.reviews, { ...loadSummaries(), [summary.key]: summary });
-  const all = read<Record<string, { at: number; report: T }>>(KEYS.reports) ?? {};
+  // Summaries are small but would otherwise pile up for ever; keep as many as there are saved hands.
+  const summaries = Object.values({ ...loadSummaries(), [summary.key]: summary })
+    .sort((a, b) => b.at - a.at)
+    .slice(0, MAX_HANDS);
+  write(KEYS.reviews, Object.fromEntries(summaries.map((s) => [s.key, s])));
+  const stored = read<Record<string, { at: number; report: T }>>(KEYS.reports);
+  const all = isObject(stored) ? { ...stored } : {};
   all[summary.key] = { at: summary.at, report };
-  const keep = Object.entries(all)
+  const ranked = Object.entries(all)
+    .filter(([, v]) => isObject(v) && finite(v.at))
     .sort((a, b) => b[1].at - a[1].at)
     .slice(0, MAX_REPORTS);
-  write(KEYS.reports, Object.fromEntries(keep));
+  // Reports are big. If the phone is short of room, keep fewer of the older ones.
+  for (let n = ranked.length; n >= 1; n = n > 1 ? Math.floor(n / 2) : 0) if (write(KEYS.reports, Object.fromEntries(ranked.slice(0, n)))) return;
 }
 
 // ── Drills ──────────────────────────────────────────────────────────────────
 
 export function loadDrills(): Record<string, DrillScore> {
   const d = read<Record<string, DrillScore>>(KEYS.drills);
-  return d && typeof d === 'object' ? d : {};
+  if (!isObject(d)) return {};
+  const n = (x: unknown) => (finite(x) && x > 0 ? x : 0);
+  const out: Record<string, DrillScore> = {};
+  for (const [id, s] of Object.entries(d)) {
+    if (!isObject(s)) continue;
+    out[id] = { attempts: n(s.attempts), green: n(s.green), yellow: n(s.yellow), red: n(s.red), evLoss: n(s.evLoss) };
+  }
+  return out;
 }
 
 export function recordDrill(scenario: string, colour: Colour, evLoss: number): void {
@@ -113,6 +162,7 @@ export function recordDrill(scenario: string, colour: Colour, evLoss: number): v
   const s = all[scenario] ?? { attempts: 0, green: 0, yellow: 0, red: 0, evLoss: 0 };
   s.attempts += 1;
   s[colour] += 1;
-  s.evLoss += Math.max(0, evLoss);
+  // A missing or odd number from the coach must not poison the running total.
+  s.evLoss += finite(evLoss) ? Math.max(0, evLoss) : 0;
   write(KEYS.drills, { ...all, [scenario]: s });
 }

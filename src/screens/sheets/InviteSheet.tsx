@@ -31,7 +31,7 @@ export async function shareInvite(code: string) {
 /** The join code as big colourful letter tiles. */
 export function CodeTiles({ code }: { code: string }) {
   return (
-    <div className="code-tiles" aria-label={`Table code ${code.split('').join(' ')}`}>
+    <div className="code-tiles" role="img" aria-label={`Table code ${code.split('').join(' ')}`}>
       {code.split('').map((ch, i) => (
         <span key={i} style={{ background: TILE_COLORS[i % TILE_COLORS.length], animationDelay: `${i * 60}ms` }}>
           {ch}

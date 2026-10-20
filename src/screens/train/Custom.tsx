@@ -33,6 +33,21 @@ const num = (s: string) => {
   return Number.isFinite(v) && v > 0 ? v : null;
 };
 
+/** Deepest stack the solver is asked about, in big blinds. */
+const MAX_STACK_BB = 1000;
+
+/** What's wrong with the table setup, in plain words (null when it's fine). */
+function setupProblem(sb: string, bb: string, stacks: string[]): string | null {
+  const s = num(sb);
+  const b = num(bb);
+  if (s === null || b === null) return 'Blinds need to be numbers above zero.';
+  if (s > b) return "The small blind can't be bigger than the big blind.";
+  if (stacks.some((x) => num(x) === null)) return 'Every stack needs a number above zero.';
+  if (stacks.some((x) => num(x)! < b)) return 'Each stack needs at least one big blind.';
+  if (stacks.some((x) => num(x)! > b * MAX_STACK_BB)) return `Stacks can be up to ${MAX_STACK_BB} big blinds.`;
+  return null;
+}
+
 function toRequest(setup: Setup, log: Entry[]): CustomRequest {
   const req: CustomRequest = {
     players: setup.players,
@@ -83,7 +98,8 @@ function SetupView({ onStart }: { onStart: (s: Setup) => void }) {
     else setCards([cards[0], c]);
   };
 
-  const ok = num(sb) !== null && num(bb) !== null && stacks.slice(0, players).every((s) => num(s) !== null);
+  const problem = setupProblem(sb, bb, stacks.slice(0, players));
+  const ok = problem === null;
   const start = () => {
     if (!ok) return;
     onStart({
@@ -160,6 +176,7 @@ function SetupView({ onStart }: { onStart: (s: Setup) => void }) {
         </div>
       </div>
       <div className="screen-foot">
+        {problem && <p className="note" role="alert">{problem}</p>}
         <button type="button" className="btn btn-dark btn-xl" disabled={!ok || cards.length !== 2} onClick={start}>
           {cards.length === 2 ? 'Start the hand' : 'Pick your two cards'}
         </button>
@@ -173,6 +190,8 @@ function SetupView({ onStart }: { onStart: (s: Setup) => void }) {
 function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
   const [log, setLog] = useState<Entry[]>([]);
   const [spot, setSpot] = useState<CustomSpot | null>(null);
+  // The request the current spot answers. Until it catches up with the log, the old options are out of date.
+  const [spotFor, setSpotFor] = useState<CustomRequest | null>(null);
   const [solving, setSolving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState<string[]>([]);
@@ -189,6 +208,7 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
       .then((s) => {
         if (my !== seq.current) return;
         setSpot(s);
+        setSpotFor(req);
         setSolving(null);
       })
       .catch((e: unknown) => {
@@ -209,12 +229,13 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
 
   const names = POSITIONS[setup.players];
   const board = req.board;
-  const needs = spot?.needs_cards ?? null;
+  const live = spotFor === req ? spot : null;
+  const needs = live?.needs_cards ?? null;
   const taken = new Set([...setup.cards, ...board, ...picking]);
 
   const act = (o: CustomOption) => {
-    if (!spot?.street || spot.street === 'done' || spot.street === 'runout') return;
-    setLog([...log, { kind: 'act', street: spot.street, id: o.id }]);
+    if (!live?.street || live.street === 'done' || live.street === 'runout') return;
+    setLog([...log, { kind: 'act', street: live.street, id: o.id }]);
   };
 
   const pickCard = (c: string) => {
@@ -264,7 +285,7 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
           </div>
           <div className="kv">
             <span>
-              Pot <b>{spot?.pot_bb !== undefined ? `${Math.round(spot.pot_bb * 10) / 10}bb` : '1.5bb'}</b>
+              Pot <b>{spot?.pot_bb !== undefined ? `${Math.round(spot.pot_bb * 10) / 10}bb` : `${Math.round(((setup.sb + setup.bb) / setup.bb) * 10) / 10}bb`}</b>
             </span>
             <span>
               Blinds <b>{setup.sb}/{setup.bb}</b>
@@ -305,9 +326,9 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
           </div>
         )}
 
-        {!error && (solving || !spot) && <Spinner label={solving ?? 'Loading…'} />}
+        {!error && (solving || !live) && <Spinner label={solving ?? 'Loading…'} />}
 
-        {!error && !solving && spot && needs && (
+        {!error && !solving && live && needs && (
           <div className="t-list">
             <p className="h3">
               {needs.street === 'runout'
@@ -316,18 +337,18 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
                   ? 'Pick the flop'
                   : `Pick the ${needs.street}`}
             </p>
-            {spot.message && <p className="muted">{spot.message}</p>}
+            {live.message && <p className="muted">{live.message}</p>}
             <CardPicker taken={taken} selected={null} onPick={pickCard} highlighted={new Set(picking)} />
           </div>
         )}
 
-        {!error && !solving && spot && !needs && spot.street !== 'done' && spot.options && spot.options.length > 0 && (
-          <Decision spot={spot} hero={setup.hero} onPick={act} />
+        {!error && !solving && live && !needs && live.street !== 'done' && live.options && live.options.length > 0 && (
+          <Decision spot={live} hero={setup.hero} onPick={act} />
         )}
 
-        {!error && !solving && spot?.street === 'done' && (
+        {!error && !solving && live?.street === 'done' && (
           <div className="t-list">
-            <p className="h3">{spot.message ?? 'Hand over.'}</p>
+            <p className="h3">{live.message ?? 'Hand over.'}</p>
             <button type="button" className="btn btn-dark" onClick={onEdit}>
               New hand
             </button>

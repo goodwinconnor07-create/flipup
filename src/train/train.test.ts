@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { applyAction, createTable, handRecord, recordNet, type Game } from '../game';
 import { computeStats } from './stats';
 import { buildFrames, matchDecisions, mistakeFrames } from './replay';
-import { handLesson, lessonLine, trendLine, verdictLines } from './coach';
+import { handLesson, lessonLine, summaryLine, trendLine, verdictLines } from './coach';
+import { bb, pct } from './format';
+import { drillFor, scenarioTitle } from './scenarios';
 import type { Decision, HandReport } from '../gto/types';
 import type { PlayedHand } from '../state/training';
 
@@ -145,5 +147,39 @@ describe('GTO coach', () => {
     expect(trendLine(t([0.5, 0.5]))).toBeNull();
     expect(trendLine(t([0.4, 0.4, 0.8, 0.8]))).toMatch(/improving/);
     expect(trendLine(t([0.8, 0.8, 0.4, 0.4]))).toMatch(/dip/);
+  });
+});
+
+describe('stats and coach wording', () => {
+  it('never lists a spot as both a strength and a weakness', () => {
+    const drills = Object.fromEntries(
+      ['rfi', 'vs_3bet', 'vs_4bet', 'cbet_ip'].map((id, i) => [id, { attempts: 20, green: 12 + i * 2, yellow: 4, red: 4 - i, evLoss: 1 }]),
+    );
+    const s = computeStats([], {}, drills);
+    const weak = new Set(s.weaknesses.map((w) => w.id));
+    for (const st of s.strengths) expect(weak.has(st.id)).toBe(false);
+    expect(s.hands).toBe(0);
+    expect(s.bbPer100).toBe(0);
+    expect(Number.isNaN(s.gtoPct)).toBe(false);
+  });
+
+  it('says "1 decision", not "1 decisions"', () => {
+    const report = (graded: number, red: number, yellow: number) =>
+      ({ summary: { decisions: graded, graded, colours: { green: graded - red - yellow, yellow, red }, total_ev_loss_bb: 1 } }) as HandReport;
+    expect(summaryLine(report(1, 1, 0))).toMatch(/^1 decision,/);
+    expect(summaryLine(report(3, 1, 1))).toMatch(/^3 decisions, 2 worth/);
+  });
+
+  it('does not take inherited object keys for scenarios', () => {
+    expect(scenarioTitle('constructor')).toBe('constructor');
+    expect(drillFor('toString')).toBeNull();
+    expect(drillFor('check_raise')).toBe('vs_cbet_oop');
+    expect(drillFor('rfi')).toBe('rfi');
+  });
+
+  it('prints a dash for numbers that are missing or not numbers', () => {
+    expect(pct(Number.NaN)).toBe('–');
+    expect(bb(Infinity)).toBe('–');
+    expect(pct(0.256)).toBe('26%');
   });
 });

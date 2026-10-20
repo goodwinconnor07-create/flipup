@@ -25,11 +25,13 @@ export async function reviewAndSave(hands: PlayedHand[], onProgress?: (done: num
     const res = await reviewHands(
       group.map((h) => toHandHistory(h.record)),
       hero,
-      (j: Job<unknown>) => onProgress?.(done + j.progress, hands.length),
+      (j: Job<unknown>) => onProgress?.(done + (Number.isFinite(j.progress) ? j.progress : 0), hands.length),
     );
+    const reports = Array.isArray(res?.hands) ? res.hands : [];
     group.forEach((h, i) => {
-      const report = res.hands.find((r) => r.hand_id === h.key) ?? res.hands[i];
-      if (!report) return;
+      // Match by id. Only if the service sent every hand back in order is the position good enough.
+      const report = reports.find((r) => r?.hand_id === h.key) ?? (reports.length === group.length ? reports[i] : undefined);
+      if (!report || !Array.isArray(report.decisions)) return;
       saveReview(summarise(h.key, report), report);
       out[h.key] = report;
     });

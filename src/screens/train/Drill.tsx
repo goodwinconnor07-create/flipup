@@ -136,10 +136,10 @@ export function Drill({ scenario }: { scenario: string }) {
                 <div className="decision-band">
                   <b>
                     {chosen.colour === 'green'
-                      ? 'Correct'
+                      ? 'Good'
                       : chosen.colour === 'yellow'
-                        ? 'Close'
-                        : `GTO prefers ${prettyAction(drill.answer.best_action).toLowerCase()}`}
+                        ? 'Close call'
+                        : `${chosen.colour === 'red' ? 'Costly: ' : ''}GTO prefers ${prettyAction(drill.answer.best_action).toLowerCase()}`}
                   </b>
                   {chosen.ev_loss_bb > 0.005 && <small>−{bb(chosen.ev_loss_bb)}</small>}
                 </div>

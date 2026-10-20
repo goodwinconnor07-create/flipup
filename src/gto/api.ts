@@ -30,19 +30,41 @@ async function call<T>(path: string, init: RequestInit = {}, timeoutMs = 20000):
     }
     throw new Error(msg);
   }
-  return (await res.json()) as T;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    throw new Error('The GTO coach sent something unexpected. Try again.');
+  }
 }
 
 const post = <T>(path: string, body: unknown) => call<T>(path, { method: 'POST', body: JSON.stringify(body) });
 
+/** A first solve at a big table can take minutes; anything past this is stuck. */
+const JOB_LIMIT_MS = 20 * 60_000;
+
 /** Polls a background job until it's done, reporting progress. */
 export async function waitForJob<T>(id: string, onProgress?: (j: Job<T>) => void, signal?: { cancelled: boolean }): Promise<T> {
+  const startedAt = Date.now();
+  let failures = 0;
   for (let i = 0; ; i++) {
     if (signal?.cancelled) throw new Error('Cancelled.');
-    const job = await call<Job<T>>(`/jobs/${id}`);
+    if (Date.now() - startedAt > JOB_LIMIT_MS) throw new Error('The GTO coach is taking too long. Try again later.');
+    let job: Job<T>;
+    try {
+      job = await call<Job<T>>(`/jobs/${id}`);
+      failures = 0;
+    } catch (e) {
+      // One dropped poll (a tunnel, a lock screen) shouldn't throw away a solve that's still running.
+      if (++failures >= 3) throw e;
+      await new Promise((r) => setTimeout(r, 2000));
+      continue;
+    }
     onProgress?.(job);
-    if (job.status === 'done' && job.result) return job.result;
     if (job.status === 'error') throw new Error(job.error || 'The review failed.');
+    if (job.status === 'done') {
+      if (job.result) return job.result;
+      throw new Error('The GTO coach finished without an answer. Try again.');
+    }
     await new Promise((r) => setTimeout(r, Math.min(4000, 1000 + i * 250)));
   }
 }
@@ -66,7 +88,7 @@ export async function customSpot(req: CustomRequest, onSolving?: (message: strin
 }
 
 /** The practice list. Without a connection the preflop drills still work, so those are listed. */
-export const listScenarios = () => call<Scenario[]>('/library').catch(() => PREFLOP_SCENARIOS);
+export const listScenarios = () => call<Scenario[]>('/library').then((list) => (Array.isArray(list) ? list : PREFLOP_SCENARIOS)).catch(() => PREFLOP_SCENARIOS);
 
 /** A practice hand. Preflop ones are dealt on the phone from the shipped solution; the rest come from the service. */
 export async function getDrill(scenario: string, seed?: number): Promise<Drill> {
@@ -77,7 +99,7 @@ export async function getDrill(scenario: string, seed?: number): Promise<Drill> 
       // No local data, or no spot found: ask the service instead.
     }
   }
-  return call<Drill>(`/library/${encodeURIComponent(scenario)}/drill${seed === undefined ? '' : `?seed=${seed}`}`);
+  return call<Drill>(`/library/${encodeURIComponent(scenario)}/drill${seed === undefined || !Number.isFinite(seed) ? '' : `?seed=${Math.trunc(seed)}`}`);
 }
 
 /** A recorded hand in the service's format, with only the hole cards this phone could see. */

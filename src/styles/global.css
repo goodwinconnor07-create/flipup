@@ -419,7 +419,7 @@ input {
 }
 
 .btn-sm {
-  min-height: 40px;
+  min-height: 44px;
   font-size: var(--fs-small);
   border-radius: var(--r-sm);
   padding: 0 16px;

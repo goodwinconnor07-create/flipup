@@ -2,6 +2,7 @@
 
 import { apiUrl } from '../state/platform';
 import type { HandRecord } from '../game';
+import { isPreflopScenario, localPreflopDrill, PREFLOP_SCENARIOS } from './preflop';
 import type { Drill, HandHistory, HandReport, Job, Scenario } from './types';
 
 async function call<T>(path: string, init: RequestInit = {}, timeoutMs = 20000): Promise<T> {
@@ -56,10 +57,20 @@ export async function analyzeHand(hand: HandHistory, hero?: string, onProgress?:
   return waitForJob<HandReport>(job, onProgress);
 }
 
-export const listScenarios = () => call<Scenario[]>('/library');
+/** The practice list. Without a connection the preflop drills still work, so those are listed. */
+export const listScenarios = () => call<Scenario[]>('/library').catch(() => PREFLOP_SCENARIOS);
 
-export const getDrill = (scenario: string, seed?: number) =>
-  call<Drill>(`/library/${encodeURIComponent(scenario)}/drill${seed === undefined ? '' : `?seed=${seed}`}`);
+/** A practice hand. Preflop ones are dealt on the phone from the shipped solution; the rest come from the service. */
+export async function getDrill(scenario: string, seed?: number): Promise<Drill> {
+  if (isPreflopScenario(scenario)) {
+    try {
+      return await localPreflopDrill(scenario, seed);
+    } catch {
+      // No local data, or no spot found: ask the service instead.
+    }
+  }
+  return call<Drill>(`/library/${encodeURIComponent(scenario)}/drill${seed === undefined ? '' : `?seed=${seed}`}`);
+}
 
 /** A recorded hand in the service's format, with only the hole cards this phone could see. */
 export function toHandHistory(r: HandRecord): HandHistory {

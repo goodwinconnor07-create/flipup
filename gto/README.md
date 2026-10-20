@@ -68,3 +68,15 @@ called a mistake. Multiway postflop spots get a clearly labelled heuristic revie
 - Postflop solver vs b-inary/postflop-solver (run locally as an independent reference, not
   included): root EVs agree within 0.01% of the pot on river, turn and flop spots.
 - Preflop solver: heads-up push/fold at 10bb gives 58.2% shoves / 37.3% calls (the known Nash result).
+
+## Preflop data for the app
+
+`scripts/export_preflop.py` solves (or loads a saved solution of) one preflop game and writes the lines GTO
+really plays as a compact JSON file. The app ships `public/gto/preflop-6p-100bb.json` and deals the six
+preflop drills from it with no server (`src/gto/preflop.ts`):
+
+```sh
+python3 scripts/export_preflop.py --players 6 --stack 100 --out ../public/gto/preflop-6p-100bb.json
+```
+
+The 6-handed solve takes about six minutes on four cores.

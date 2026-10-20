@@ -446,3 +446,50 @@ test('a table with players out of view never scrolls sideways', async ({ page })
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.getByRole('button', { name: 'Fold' })).toBeEnabled();
 });
+
+test('preflop drills work with the coach offline: dealt on the phone from the shipped solution', async ({ page }) => {
+  watchErrors(page);
+  await page.route('**/api/gto/**', (route) => route.abort());
+  await page.goto('/');
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Poker library/ }).click();
+  await page.getByRole('button', { name: /Opening the pot/ }).click();
+  await expect(page.getByText('What do you do?')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText(/You are/)).toBeVisible();
+  // Answer: the first option. GTO's answer and its reasons show.
+  await page.locator('.answer-btn').first().click();
+  await expect(page.getByText('GTO says')).toBeVisible();
+  await expect(page.getByText(/equity against a random hand/)).toBeVisible();
+});
+
+test('reviewing a hand shows what the coach is doing, with the time so far and the time left', async ({ page }) => {
+  watchErrors(page);
+  let polls = 0;
+  await page.route('**/api/gto/review/session', (route) => route.fulfill({ json: { job: 'j1' } }));
+  await page.route('**/api/gto/jobs/j1', (route) => {
+    polls++;
+    const report = { hand_id: 'x', players: {}, board: [], summary: { decisions: 0, graded: 0, total_ev_loss_bb: 0, grades: {} }, decisions: [], notes: [] };
+    return route.fulfill({ json: polls < 4 ? { status: 'running', progress: 0, total: 1, result: null } : { status: 'done', progress: 1, total: 1, result: { hands: [report] } } });
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await page.getByText('Your turn').waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Fold', exact: true }).click();
+  await page.getByRole('button', { name: 'Next hand' }).waitFor({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Home' }).click();
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Review hands/ }).click();
+  await page.getByRole('button', { name: /Hand #1/ }).click();
+  const activity = page.getByRole('status', { name: /Reviewing hand #1/ });
+  await expect(activity).toBeVisible();
+  await expect(activity.getByText('Reading the hand')).toBeVisible();
+  await expect(activity.getByText(/left/)).toBeVisible();
+  await expect(activity.getByText(/^\d+:\d\d$/)).toBeVisible();
+  await shot(page, '24-review-activity');
+  await expect(activity).toBeHidden({ timeout: 20_000 });
+});

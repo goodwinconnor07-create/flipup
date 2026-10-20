@@ -121,8 +121,8 @@ export function InsightsTab() {
       {recent.length > 0 && (
         <div className="glass-card recent">
           <small className="eyebrow">Recent tables</small>
-          {recent.map((g) => (
-            <div key={g.at} className="recent-row">
+          {recent.map((g, i) => (
+            <div key={`${g.at}-${i}`} className="recent-row">
               <span>
                 <b>{when(g.at)}</b>
                 <small>

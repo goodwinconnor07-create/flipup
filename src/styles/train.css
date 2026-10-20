@@ -814,6 +814,127 @@
   font-size: var(--fs-body);
 }
 
+/* ── Review activity: what the coach is doing, with time so far and time left ── */
+
+.activity {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+}
+
+.activity-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.activity-head .spinner {
+  width: 22px;
+  height: 22px;
+  border-width: 3px;
+  flex: none;
+  color: var(--blue);
+}
+
+.activity-head b {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--fs-body);
+  font-weight: 900;
+}
+
+.activity-clock {
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--ink-3);
+}
+
+.activity-bar {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  overflow: hidden;
+}
+
+.activity-bar span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--blue);
+  transition: width 0.5s ease-out;
+}
+
+.activity-eta {
+  margin: 0;
+  font-size: var(--fs-small);
+  font-weight: 800;
+  color: var(--ink-2);
+}
+
+.activity-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  display: flex;
+  gap: 10px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.step-mark {
+  flex: none;
+  width: 16px;
+  text-align: center;
+  font-weight: 900;
+}
+
+.step.done {
+  color: var(--ink-3);
+}
+
+.step.done .step-mark {
+  color: var(--green);
+}
+
+.step.now {
+  color: var(--ink);
+}
+
+.step.now .step-mark {
+  color: var(--blue);
+}
+
+.step.next {
+  opacity: 0.55;
+}
+
+.step-text small {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.activity-more,
+.activity-note {
+  margin: 0;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+
 /* ── GTO Coach ───────────────────────────────────────────────────────────── */
 
 .coach {

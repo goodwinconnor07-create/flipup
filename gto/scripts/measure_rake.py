@@ -4,7 +4,7 @@ Rake is a share of the final pot, but the preflop solver only sees the pot on th
 flops for each pot kind with rake on and off and records E[rake] / pot on the flop, for uncapped
 rake (the pot's expected growth) and for a given capped structure.
 
-    python3 scripts/measure_rake.py --flops 4
+    python3 scripts/measure_rake.py
 """
 from __future__ import annotations
 
@@ -24,9 +24,10 @@ from flipup_gto.solver import BetSizing, PostflopSolver, StreetSizing  # noqa: E
 
 
 def rake_paid(flop, pot, stack, oop_r, ip_r, rate, cap, iterations):
-    street = {"flop": StreetSizing("33%, 75%", "60%, a"), "turn": StreetSizing("66%, a", "a"),
-              "river": StreetSizing("66%, a", "a")}
-    sizing = BetSizing(oop=dict(street), ip=dict(street), max_raises=2)
+    # Lean tree plus all-ins: how big pots get barely depends on the exact sizes.
+    street = {"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", "a"),
+              "river": StreetSizing("75%", "a")}
+    sizing = BetSizing(oop=dict(street), ip=dict(street), max_raises=1)
     s = PostflopSolver(flop, pot, stack, oop_r, ip_r, sizing=sizing, rake_rate=rate, rake_cap=cap, compress=True)
     s.solve(iterations, 0.5, 25)
     root = s.node([])
@@ -35,8 +36,8 @@ def rake_paid(flop, pot, stack, oop_r, ip_r, rate, cap, iterations):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--flops", type=int, default=4)
-    ap.add_argument("--iterations", type=int, default=150)
+    ap.add_argument("--flops", type=int, default=2)
+    ap.add_argument("--iterations", type=int, default=100)
     ap.add_argument("--rate", type=float, default=0.05)
     ap.add_argument("--cap", type=float, default=4.0)
     ap.add_argument("--kinds", default="0,1,2,4,6")

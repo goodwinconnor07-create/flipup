@@ -151,6 +151,15 @@ function afterHand(game: Game, ctx: ActionContext): void {
   const spoke: string[] = [];
   const showdownLosers = result.showdown ? hand.seats.filter((s) => !s.folded && !winners.includes(s.playerId)).map((s) => s.playerId) : [];
   const personWon = winners.some((id) => !isBot(id));
+  // Who is on a cold streak: people who put chips in and lost, hands in a row.
+  const streaks = { ...game.streaks };
+  for (const s of hand.seats) {
+    if (isBot(s.playerId)) continue;
+    if (winners.includes(s.playerId)) streaks[s.playerId] = 0;
+    else if (s.total > 0) streaks[s.playerId] = (streaks[s.playerId] ?? 0) + 1;
+  }
+  game.streaks = streaks;
+  const tilted = hand.seats.some((s) => !isBot(s.playerId) && !winners.includes(s.playerId) && (streaks[s.playerId] ?? 0) >= 2);
 
   if (hand.ranOut) {
     for (const id of winners) if (isBot(id) && say(id, 'sweatWin')) spoke.push(id);
@@ -159,7 +168,8 @@ function afterHand(game: Game, ctx: ActionContext): void {
     for (const id of winners) {
       if (!isBot(id)) continue;
       const b = bucketOf(id);
-      const rubbedIn = result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.4;
+      // Twice or more in a row and they pile on; a big showdown win is a smaller chance.
+      const rubbedIn = tilted ? ctx.rng() < 0.7 : result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.25;
       const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : rubbedIn ? 'tiltJab' : pot >= bb * 15 ? 'bigWin' : 'win';
       if (say(id, event)) spoke.push(id);
     }
@@ -435,9 +445,10 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   // A bot answering what was just said.
   if (game.pendingTalk && due(game.pendingTalk.at)) {
-    const { playerId } = game.pendingTalk;
+    const { playerId, event, forId, seq } = game.pendingTalk;
     delete game.pendingTalk;
-    botSays(game, playerId, 'reply', ctx.rng, ctx.now);
+    // A jab at a slow player only lands if they're still on the clock.
+    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now);
     schedule(game);
     return true;
   }

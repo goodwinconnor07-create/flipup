@@ -45,7 +45,9 @@ export type TalkEvent =
   /** Bluffed, got called and lost. */
   | 'bluffCaught'
   /** Nothing much happening; a new hand is dealt. */
-  | 'idle';
+  | 'idle'
+  /** A person has sat on their turn for ages. */
+  | 'tank';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -70,6 +72,7 @@ const TRASH: Lines = {
   tiltJab: ['Rent free 🧠', 'Stay tilted.', 'Keep donating.', 'Again, bro?', 'You’re predictable.'],
   bluffCaught: ['Worth it.', 'Still profitable.', 'Nice call.', 'Delete that.', 'Don’t tell anyone.'],
   idle: ['Hello, fish.', 'Lock in.', 'Chaos time.', 'No mercy.', 'Wake up.'],
+  tank: ['Need a map?', 'Clock’s ticking.', 'Any day now.', 'Fold already.', 'It’s not chess.'],
 };
 
 const FRIENDLY: Lines = {
@@ -93,6 +96,7 @@ const FRIENDLY: Lines = {
   tiltJab: ['Sorry!', 'Deep breaths.', 'You’ll recover.', 'Need a hug?', 'Tough break.'],
   bluffCaught: ['Oops, caught!', 'Nice call!', 'Worth a shot.', 'I panicked 😭', 'Good read.'],
   idle: ['Poker time 🃏', 'Coffee break? ☕', 'Let’s dance.', 'Anyone home?', 'Stay sharp.'],
+  tank: ['Take your time 😂', 'Still there?', 'Tough decision?', 'Hello?', 'Decisions, decisions.'],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -109,6 +113,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tiltJab: ['I’ve studied you.', 'You’re transparent.', 'Free read.', 'Classic you.'],
     yourBigBet: ['That’s your move?', 'Interesting raise.'],
     idle: ['Hello, fish.', 'Feeling dangerous.'],
+    tank: ['He’s buffering…', 'Solver time.'],
   },
   lag: {
     allin: ['Chaos time.', 'No mercy.'],
@@ -119,6 +124,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     badBeat: ['Rigged.', 'Disgusting.'],
     tiltJab: ['Again, bro?', 'Keep donating.', 'Too emotional.'],
     bluffCaught: ['Worth it.', 'We move.'],
+    tank: ['Windows update.', 'We have jobs.'],
   },
   // The Troll: ridiculous, bluffs constantly, blames the deck.
   maniac: {
@@ -131,6 +137,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bluffCaught: ['I’m innocent.', 'Fake it.', 'I meant that.', 'Lag moment.'],
     tiltJab: ['Skill issue.', 'Bankrupt soon?'],
     idle: ['We gamble.', 'I need action.', 'Big plans.', 'Trust issues.'],
+    tank: ['NASA calculations.', 'Bro disconnected.'],
   },
   gambler: {
     allin: ['We gamble.', 'Why not.', 'Send it.'],
@@ -142,6 +149,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     badBeat: ['Again?!', 'I’m done.', 'I hate poker.'],
     bluffCaught: ['Information gained.', 'Never again.'],
     idle: ['I need action.', 'Redemption arc.', 'Bored already.'],
+    tank: ['Just push already.', '💤💤'],
   },
   tag: {
     thinkEasy: ['Clean.', 'Standard.'],
@@ -151,6 +159,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     badBeat: ['Brutal.', 'Unlucky.'],
     tiltJab: ['Character building.', 'Hold that.'],
     idle: ['Stay sharp.', 'Lock in.'],
+    tank: ['Need assistance?', 'It’s one hand.'],
   },
   // The Silent Killer: rarely speaks, and it hurts when they do.
   pro: {
@@ -162,6 +171,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     lostToYou: ['Revenge loading…', 'I’ll remember.', 'Noted forever.'],
     tiltJab: ['I’ve studied you.', 'I expected that.', 'Never change.'],
     idle: ['Respectfully…'],
+    tank: ['Bro is thinking.'],
   },
   rock: {
     foldBig: ['Fine.', 'Noted.'],
@@ -171,6 +181,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     lostToYou: ['Run it back.', 'Enjoy that.'],
     tiltJab: ['Same mistake.', 'You always do.'],
     idle: ['Quiet night.'],
+    tank: ['…'],
   },
   trapper: {
     thinkHard: ['Please call.', 'Come here.', 'I’m waiting.'],
@@ -180,6 +191,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bigWin: ['Sweet dreams.', 'Trap sprung.', 'Goodnight 😴'],
     tiltJab: ['I’ve studied you.', 'You’re transparent.'],
     idle: ['🤫🤫', 'Surely call.'],
+    tank: ['Take your time 😉'],
   },
   // The Choker: panics under pressure, complains about everything.
   nervous: {
@@ -192,6 +204,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     lostToYou: ['You win.', 'I folded.', 'Don’t celebrate.'],
     bluffCaught: ['I panicked 😭', 'Lag moment.', 'Delete that.'],
     idle: ['Nervous already.', 'Anyone home?'],
+    tank: ['Hurry, I’m sweating.', 'Please don’t.'],
   },
   station: {
     callLight: ['Show me.', 'I’ll pay.', 'Just looking.'],
@@ -202,6 +215,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bigWin: ['I knew.', 'Told you.', 'Never worried.'],
     bluffCaught: ['I meant that.', 'Fair enough.'],
     idle: ['Coffee break? ☕', 'Bored already.'],
+    tank: ['Just call.', 'Bro is thinking.'],
   },
 };
 
@@ -245,6 +259,7 @@ const CHANCE: Record<TalkEvent, number> = {
   tiltJab: 0.35,
   bluffCaught: 0.7,
   idle: 0.06,
+  tank: 0.8,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */

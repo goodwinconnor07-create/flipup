@@ -12,6 +12,8 @@ export const TIMING = {
   botMax: 2000,
   /** A bot that thinks out loud moves this long after it speaks. */
   botThink: 1300,
+  /** A person has had the clock this long: a bot may poke them. */
+  tankJab: 12000,
   /** Extra time before the next deal when a bot has something to say about the hand. */
   talkPause: 2000,
   /** Gap between cards on an all-in run-out, so the odds can be read. */
@@ -362,6 +364,11 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
   } else if (game.settings.turnSeconds > 0) {
     hand.deadline = ctx.now + game.settings.turnSeconds * 1000;
     hand.actAt = hand.deadline;
+  }
+  // Someone slow to act gets a jab from a bot, if the clock isn't about to run out anyway.
+  if (!player.bot && !game.pendingTalk && (!hand.deadline || hand.deadline - ctx.now > TIMING.tankJab + 3000)) {
+    const bots = game.players.filter((p) => p.bot && !p.sittingOut && hand.seats.some((s) => s.playerId === p.id));
+    if (bots.length) game.pendingTalk = { at: ctx.now + TIMING.tankJab, playerId: bots[Math.floor(ctx.rng() * bots.length)].id, event: 'tank', forId: player.id, seq: hand.seq };
   }
   schedule(game);
 }

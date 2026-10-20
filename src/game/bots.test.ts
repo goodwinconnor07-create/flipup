@@ -6,7 +6,8 @@ import { BOTS, STYLES } from './botStyles';
 import { botLineText } from './botTalk';
 import { reactionText } from './reactions';
 import { redactForDevice } from './redact';
-import { createTable, DEFAULT_SETTINGS } from './reducer';
+import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
+import { seededRng } from './cards';
 import { parseAction } from './validate';
 
 describe('bots', () => {
@@ -61,6 +62,40 @@ describe('bots', () => {
     expect(botLineText('b:trash:bigWin:0')).toBe('Ship it!');
     expect(botLineText('b:nope:bigWin:0')).toBe('');
     expect(parseAction({ type: 'react', id: 'b:shark:bigWin:0' })).toBeNull();
+  });
+
+  it('pokes a person who sits on their turn, and keeps count of their lost hands', () => {
+    const rng = seededRng(5);
+    let now = 1000;
+    let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 2, code: null, now });
+    const step = (action: Parameters<typeof applyAction>[1], deviceId: string) => {
+      const r = applyAction(g, action, { deviceId, now, rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    };
+    step({ type: 'start' }, 'h');
+    let jabQueued = false;
+    let streak = 0;
+    for (let i = 0; i < 600 && streak < 2; i++) {
+      const me = g.players.find((p) => p.deviceId === 'h')!;
+      const myTurn = g.hand && !g.hand.result && g.hand.toAct === me.id;
+      if (myTurn && g.pendingTalk?.event === 'tank' && !jabQueued) {
+        expect(g.pendingTalk.forId).toBe(me.id);
+        now = g.pendingTalk.at + 1;
+        step({ type: 'tick' }, 'server');
+        expect(g.pendingTalk).toBeUndefined();
+        jabQueued = true;
+      } else if (myTurn) {
+        step({ type: 'act', hand: g.hand!.number, seq: g.hand!.seq, move: 'fold' }, 'h');
+      } else {
+        now = Math.max(now + 1, g.wakeAt ?? now + 1);
+        step({ type: 'tick' }, 'server');
+      }
+      streak = g.streaks?.[me.id] ?? 0;
+    }
+    expect(jabQueued).toBe(true);
+    expect(streak).toBeGreaterThanOrEqual(2);
+    expect(redactForDevice(g, 'h').streaks).toBeUndefined();
   });
 
   it('talks like a real table: most hands get a word, the chatty styles more than the quiet ones', () => {

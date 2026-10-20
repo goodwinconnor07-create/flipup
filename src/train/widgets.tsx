@@ -9,51 +9,18 @@ import { drillFor, scenarioTitle } from './scenarios';
 
 // ── Actions ─────────────────────────────────────────────────────────────────
 
-/** Solver labels look like "fold", "call", "bet 75% (6.00)", "raise to 22.50", "raise all-in (100.00)". */
-export function actionKind(label: string): 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin' {
-  const l = label.toLowerCase();
-  if (l.includes('all-in') || l.startsWith('allin')) return 'allin';
-  const head = l.split(' ')[0];
-  if (head === 'fold' || head === 'check' || head === 'call' || head === 'bet' || head === 'raise') return head;
-  return 'bet';
-}
-
-/** CSS class for each label in a list: bets and raises get darker the bigger they are. */
-export function actionClasses(labels: string[]): Record<string, string> {
-  const aggressive = labels.filter((l) => ['bet', 'raise'].includes(actionKind(l)));
-  const out: Record<string, string> = {};
-  for (const l of labels) {
-    const k = actionKind(l);
-    if (k === 'bet' || k === 'raise') {
-      const i = aggressive.indexOf(l);
-      const step = aggressive.length <= 1 ? 2 : 1 + Math.round((2 * i) / (aggressive.length - 1));
-      out[l] = `act-bet-${step}`;
-    } else out[l] = `act-${k}`;
-  }
-  return out;
-}
-
-/** "bet 75% (6.00)" → "Bet 75%", "raise to 22.50" → "Raise to 22.5". */
-export function prettyAction(label: string): string {
-  const l = label.replace(/\s*\(([\d.]+)\)$/, (_, amt: string) => (/%/.test(label) ? '' : ` ${trim(amt)}`));
-  const t = l.replace(/to ([\d.]+)/, (_, a: string) => `to ${trim(a)}`);
-  return t.charAt(0).toUpperCase() + t.slice(1);
-}
-
-const trim = (s: string) => String(Number(Number(s).toFixed(2)));
-
-export const pct = (x: number | null | undefined, digits = 0) => (x == null ? '–' : `${(100 * x).toFixed(digits)}%`);
-export const bb = (x: number | null | undefined) => (x == null ? '–' : `${Number(x.toFixed(2))}bb`);
+export { actionClasses, actionKind, bb, pct, prettyAction } from './format';
+import { actionClasses, bb, pct, prettyAction } from './format';
 
 /** A stacked bar of action frequencies. */
-export function MixBar({ mix, legend = true }: { mix: Record<string, number>; legend?: boolean }) {
+export function MixBar({ mix, legend = true, mark }: { mix: Record<string, number>; legend?: boolean; mark?: string | null }) {
   const labels = Object.keys(mix).filter((k) => k !== 'weight');
   const cls = actionClasses(labels);
   const total = labels.reduce((s, l) => s + Math.max(0, mix[l]), 0) || 1;
   return (
     <div>
       <div className="mix" role="img" aria-label={labels.map((l) => `${prettyAction(l)} ${pct(mix[l] / total)}`).join(', ')}>
-        {labels.map((l) => (mix[l] > 0 ? <span key={l} className={cls[l]} style={{ width: `${(100 * mix[l]) / total}%` }} /> : null))}
+        {labels.map((l) => (mix[l] > 0 ? <span key={l} className={`${cls[l]}${l === mark ? ' you' : ''}`} style={{ width: `${(100 * mix[l]) / total}%` }} /> : null))}
       </div>
       {legend && (
         <div className="mix-legend">
@@ -63,6 +30,7 @@ export function MixBar({ mix, legend = true }: { mix: Record<string, number>; le
               <span key={l}>
                 <i className={cls[l]} />
                 {prettyAction(l)} {pct(mix[l] / total)}
+                {l === mark && <b className="you-tag"> · you</b>}
               </span>
             ))}
         </div>
@@ -195,7 +163,7 @@ export function splitCards(s: string | undefined | null): string[] {
 
 // ── Grades ──────────────────────────────────────────────────────────────────
 
-const COLOUR_WORD: Record<Colour, string> = { green: 'GTO', yellow: 'Close', red: 'Off' };
+const COLOUR_WORD: Record<Colour, string> = { green: 'Good', yellow: 'Close call', red: 'Costly' };
 
 export function GradePill({ colour, label }: { colour: Colour | null | undefined; label?: string }) {
   if (!colour) return <span className="grade-pill">{label ?? 'Not graded'}</span>;
@@ -430,5 +398,23 @@ export function PracticeQuiz({ hands, labels, pot }: { hands: PracticeHand[]; la
         </button>
       )}
     </div>
+  );
+}
+
+/** Your score hand by hand (0 to 100%), newest on the right. */
+export function Trend({ points }: { points: number[] }) {
+  const W = 300;
+  const H = 72;
+  const x = (i: number) => (i / Math.max(1, points.length - 1)) * W;
+  const y = (v: number) => H - 6 - v * (H - 12);
+  const d = points.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  return (
+    <svg className="trend" viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Score by hand, from ${pct(points[0])} to ${pct(points[points.length - 1])}`}>
+      <line x1="0" x2={W} y1={y(0.5)} y2={y(0.5)} className="trend-mid" />
+      <path d={d} className="trend-line" vectorEffect="non-scaling-stroke" />
+      {points.map((v, i) => (
+        <circle key={i} cx={x(i)} cy={y(v)} r={i === points.length - 1 ? 4 : 2.5} className={`trend-dot${v >= 0.75 ? ' green' : v >= 0.5 ? ' yellow' : ' red'}`} />
+      ))}
+    </svg>
   );
 }

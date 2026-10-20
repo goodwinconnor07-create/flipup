@@ -2,6 +2,7 @@
 
 import { blindFor, recordNet, type HandRecord } from '../game';
 import type { DrillScore, PlayedHand, ReviewSummary } from '../state/training';
+import type { TrendPoint } from './coach';
 import { scenarioTitle } from './scenarios';
 
 export interface ScenarioScore {
@@ -45,6 +46,8 @@ export interface Stats {
   redPct: number;
   evLossPer100: number;
   byStreet: Record<string, { decisions: number; gtoPct: number }>;
+  /** How each of your last reviewed hands scored, oldest first. */
+  trend: TrendPoint[];
   scenarios: ScenarioScore[];
   strengths: ScenarioScore[];
   weaknesses: ScenarioScore[];
@@ -192,6 +195,15 @@ export function computeStats(
   const weaknesses = [...ranked].sort((a, b) => a.score - b.score || b.evLoss - a.evLoss).filter((s) => s.score < 0.8).slice(0, 3);
   const strengths = [...ranked].sort((a, b) => b.score - a.score).filter((s) => s.score >= 0.7).slice(0, 3);
 
+  const trend: TrendPoint[] = history
+    .flatMap((h) => {
+      const ds = (reviews[h.key]?.decisions ?? []).filter((d) => d.colour);
+      if (ds.length === 0) return [];
+      const good = ds.reduce((t, d) => t + (d.colour === 'green' ? 1 : d.colour === 'yellow' ? 0.5 : 0), 0);
+      return [{ key: h.key, at: h.record.at, score: good / ds.length }];
+    })
+    .slice(-20);
+
   const hands = history.length;
   return {
     hands,
@@ -215,6 +227,7 @@ export function computeStats(
     redPct: ratio(red, decisions),
     evLossPer100: reviewed ? (100 * evLoss) / reviewed : 0,
     byStreet: Object.fromEntries(Object.entries(streets).map(([k, v]) => [k, { decisions: v.decisions, gtoPct: ratio(v.green, v.decisions) }])),
+    trend,
     scenarios: scenarios.sort((a, b) => b.samples - a.samples),
     strengths,
     weaknesses,

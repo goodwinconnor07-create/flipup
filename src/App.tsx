@@ -8,6 +8,7 @@ import { Table } from './screens/Table';
 import { SheetHost } from './screens/sheets/SheetHost';
 import { Train } from './screens/train/Train';
 import { Lesson } from './screens/train/Lesson';
+import { Replay } from './screens/train/Replay';
 import { Drill } from './screens/train/Drill';
 import { Custom } from './screens/train/Custom';
 
@@ -42,6 +43,9 @@ export function App() {
       break;
     case 'lesson':
       screen = <Lesson handKey={route.key} />;
+      break;
+    case 'replay':
+      screen = <Replay key={route.key} handKey={route.key} />;
       break;
     case 'drill':
       screen = <Drill key={route.scenario} scenario={route.scenario} />;

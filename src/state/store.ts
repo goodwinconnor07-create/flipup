@@ -58,6 +58,8 @@ export type Route =
   /** Training: reviews, the poker library, stats and custom hands. */
   | { name: 'train'; section?: TrainSection }
   | { name: 'lesson'; key: string }
+  /** Watch a saved hand back, with the coach. */
+  | { name: 'replay'; key: string }
   | { name: 'drill'; scenario: string }
   | { name: 'custom' };
 

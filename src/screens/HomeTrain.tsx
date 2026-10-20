@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { navigate, type TrainSection } from '../state/store';
 import { loadDrills, loadHistory, loadSummaries } from '../state/training';
+import { CoachSays } from '../train/Coach';
+import { greeting } from '../train/coach';
 import { computeStats } from '../train/stats';
 import { BookIcon, ChartIcon, ListIcon, PencilIcon } from '../ui/Icons';
 
@@ -47,6 +49,11 @@ export function TrainTab() {
 
   return (
     <>
+      <div className="glass-card coach-card">
+        <CoachSays
+          lines={[greeting({ toReview, decisions: stats.decisions, gtoPct: stats.gtoPct, weakest: stats.weaknesses[0] ?? null })]}
+        />
+      </div>
       <button type="button" className="glass-card train-hero press" onClick={() => go(toReview > 0 ? 'review' : 'library')}>
         <Ring value={stats.decisions > 0 ? stats.gtoPct : null} />
         <span className="train-hero-text">

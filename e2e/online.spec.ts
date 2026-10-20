@@ -76,7 +76,7 @@ test('two phones: join with a code, play a hand, see odds only once both hands a
 test('a wrong code says so', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Join with a code' }).click();
-  await page.getByRole('textbox', { name: 'Table code' }).fill('BCDFG');
+  await page.getByRole('dialog', { name: 'Join a table' }).getByRole('textbox', { name: 'Table code' }).fill('BCDFG');
   await expect(page.getByText("There's no table with that code")).toBeVisible();
 });
 
@@ -148,4 +148,29 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
   await shot(host, '16-podium');
   await hostCtx.close();
   await friendCtx.close();
+});
+
+test('the join popup opens without the keyboard and shows a scan button', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Join with a code' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Join a table' });
+  await expect(dialog.getByRole('button', { name: 'Scan a QR code' })).toBeVisible();
+  await expect(dialog.getByRole('textbox', { name: 'Table code' })).not.toBeFocused();
+  await shot(page, '20-join-popup');
+});
+
+test('the streak button opens the streak details', async ({ page }) => {
+  const key = (back: number) => {
+    const d = new Date();
+    d.setDate(d.getDate() - back);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+  await page.addInitScript((days) => localStorage.setItem('flipup.days', JSON.stringify(days)), [key(9), key(8), key(7), key(3), key(2), key(1), key(0)]);
+  await page.goto('/');
+  await page.getByRole('button', { name: /day streak/ }).click();
+  const dialog = page.getByRole('dialog', { name: 'Daily streak' });
+  await expect(dialog.getByText('days in a row')).toBeVisible();
+  await expect(dialog.getByText('Longest streak')).toBeVisible();
+  await expect(dialog.getByText('4 days', { exact: true })).toBeVisible();
+  await shot(page, '21-streak');
 });

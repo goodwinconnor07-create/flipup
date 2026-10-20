@@ -35,6 +35,7 @@ import {
   loadSession,
   loadStats,
   loadTableLook,
+  loadLastTable,
   saveLastTable,
   saveCalm,
   saveDark,
@@ -56,7 +57,7 @@ export type Route =
   /** Name and picture, then carry on to `then`. */
   | { name: 'profile'; then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo }
   | { name: 'setup'; mode: 'online' | 'local' }
-  | { name: 'join'; code?: string }
+  | { name: 'join'; code: string }
   | { name: 'joinTable'; info: TableInfo }
   | { name: 'table' }
   /** Training: reviews, the poker library, stats and custom hands. */
@@ -72,6 +73,10 @@ export type TrainSection = 'review' | 'library' | 'stats' | 'custom';
 export type Sheet =
   | { name: 'menu' }
   | { name: 'invite' }
+  /** How the daily streak is going. */
+  | { name: 'streak' }
+  /** Type the table code or scan its QR code. */
+  | { name: 'join' }
   | { name: 'settings' }
   /** This phone's look and sound: dark mode, Liquid Glass, sound, animations. */
   | { name: 'prefs' }
@@ -376,6 +381,15 @@ function closeConnection(): void {
   set({ conn: 'none' });
 }
 
+/** Keeps who's at an online table with the "rejoin" card on Home. */
+function rememberFaces(code: string | null, game: Game): void {
+  const last = loadLastTable();
+  if (!code || !last || last.code !== code) return;
+  const faces = game.players.map((p) => p.emoji);
+  if (last.faces?.join('') === faces.join('')) return;
+  saveLastTable({ ...last, faces });
+}
+
 function onServerMessage(msg: ServerMessage): void {
   const s = state.session;
   if (!s || s.mode !== 'online') return;
@@ -383,6 +397,7 @@ function onServerMessage(msg: ServerMessage): void {
     if (msg.ack && msg.ack === state.sending) set({ sending: null });
     const mine = msg.game.players.some((p) => p.deviceId === state.deviceId);
     setSession({ ...s, game: msg.game, joining: s.joining && !mine });
+    rememberFaces(s.code, msg.game);
     // Arrived from the join screen: take a seat.
     if (s.joining && !mine && msg.game.status !== 'ended') sendJoin();
   } else if (msg.t === 'log') {

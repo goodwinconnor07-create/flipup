@@ -30,7 +30,7 @@ export function App() {
       screen = <Setup mode={route.mode} />;
       break;
     case 'join':
-      screen = <Join initialCode={route.code} />;
+      screen = <Join code={route.code} />;
       break;
     case 'joinTable':
       screen = <JoinTable info={route.info} />;

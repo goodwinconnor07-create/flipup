@@ -982,6 +982,8 @@
     0 0 0 2px var(--violet),
     var(--shadow-sm);
   line-height: 1;
+  /* The emoji's own space sits high in the circle; a little top padding settles it in the middle. */
+  padding-top: 0.14em;
 }
 
 .coach-avatar.busy {

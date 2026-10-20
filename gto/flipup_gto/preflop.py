@@ -26,7 +26,7 @@ _tables: dict = {}
 
 TENSOR_RANK = 4
 # Bump when the preflop model changes (tree sizing, realization model) so cached solutions are rebuilt.
-MODEL_VERSION = 5
+MODEL_VERSION = 6
 
 
 def tables(with_tensor: bool = True):
@@ -147,6 +147,9 @@ class PreflopSpot:
         cfg.can_limp = limp
         cfg.max_players_flop = self.max_players_flop
         cfg.iso_per_limper = 1.5  # isolate limpers bigger: ~4bb over one limper, +1.5bb per extra
+        # Playability in multiway pots on the same scale as heads-up (brought BTN's flats vs UTG and CO
+        # close to GTO Wizard's; a weight of 2 changed nothing).
+        cfg.multiway_class_weight = 1.0
         if eff <= 30:
             cfg.allin_threshold = 0.35
         cal = load_calibration() if self.use_calibration else None

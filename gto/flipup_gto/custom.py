@@ -67,6 +67,103 @@ def _bb(x: float) -> str:
     return f"{x:.1f}".rstrip("0").rstrip(".") + "bb"
 
 
+def _field_equity(actor_range, opp_ranges, board) -> np.ndarray:
+    """Each actor combo's rough equity against all opponents: the product of heads-up equities."""
+    e = np.ones(1326, dtype=np.float64)
+    for r in opp_ranges:
+        if float(np.sum(r)) <= 0:
+            continue
+        e *= np.asarray(_engine.range_equities(list(map(float, actor_range)), list(map(float, r)), board, 4000), dtype=np.float64)
+    return e
+
+
+def _narrow(rng, opp_ranges, board, keep, protect=None):
+    """Keep roughly the strongest `keep` share of a range (by equity against the field)."""
+    w = np.asarray(rng, dtype=np.float64)
+    tot = w.sum()
+    if tot <= 0:
+        return rng
+    e = _field_equity(rng, opp_ranges, board)
+    order = np.argsort(-e)
+    out = np.zeros_like(w)
+    acc = 0.0
+    for c in order:
+        if w[c] <= 0:
+            continue
+        if acc >= keep * tot:
+            break
+        out[c] = w[c]
+        acc += w[c]
+    if protect is not None:
+        out[protect] = max(out[protect], w[protect], 1e-3)
+    return out.astype(np.float32)
+
+
+def _sigmoid(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def _multiway_freqs(opts, actor_range, opp_ranges, board, pot, to_call, behind, hero_combo=None,
+                    check_to_raiser=False, initiative=False):
+    """Approximate multiway frequencies for each option, from equity against the field and the price.
+
+    Follows how multiway GTO play differs from heads-up: value bets need more equity the more players
+    there are, bluffs are rare, and calls follow pot odds with a realization discount.
+    """
+    n_opp = max(1, len(opp_ranges))
+    e = _field_equity(actor_range, opp_ranges, board)
+    w = np.asarray(actor_range, dtype=np.float64)
+    if hero_combo is not None:
+        w = w.copy()
+        w[hero_combo] = max(w[hero_combo], 1e-3)
+    kinds = [o["kind"] for o in opts]
+    probs = np.zeros((len(opts), 1326))
+    if to_call > 1e-9:
+        need = to_call / (pot + to_call)
+        cont = _sigmoid((0.9 * e - need) / 0.05)
+        value = np.clip((e - 0.7) / 0.15, 0, 1) * 0.6
+        rz = kinds.index("raise") if "raise" in kinds else (kinds.index("allin") if "allin" in kinds else None)
+        for i, k in enumerate(kinds):
+            if k == "fold":
+                probs[i] = 1 - cont
+            elif k == "call":
+                probs[i] = cont * (1 - value) if rz is not None else cont
+        if rz is not None:
+            probs[rz] = cont * value
+    else:
+        # The last aggressor keeps betting a bit wider (range advantage) and bluffs a little more.
+        thr = 0.5 + 0.07 * n_opp - (0.07 if initiative else 0.0)
+        bet = _sigmoid((e - thr) / 0.06)
+        bluff = np.where((e > 0.18) & (e < 0.38), (0.25 if initiative else 0.12) / n_opp, 0.0)
+        bet = np.clip(bet + bluff, 0, 1)
+        if check_to_raiser:
+            # Leading into the aggressor is rare: mostly the very strongest hands, sometimes.
+            bet = bet * np.clip((e - 0.6) / 0.3, 0.05, 0.5)
+        sizes = [i for i, k in enumerate(kinds) if k == "bet"]
+        allin = kinds.index("allin") if "allin" in kinds else None
+        short = behind <= 1.5 * pot
+        for i, k in enumerate(kinds):
+            if k == "check":
+                probs[i] = 1 - bet
+        if sizes:
+            strong = np.clip((e - 0.75) / 0.15, 0, 1)
+            small, big = sizes[0], sizes[min(1, len(sizes) - 1)]
+            probs[small] += bet * (1 - strong)
+            probs[big] += bet * strong
+            if short and allin is not None:
+                probs[allin] += probs[big] * 0.5
+                probs[big] *= 0.5
+        elif allin is not None:
+            probs[allin] = bet
+    total = probs.sum(axis=0)
+    probs = probs / np.where(total > 0, total, 1)
+    mass = w.sum()
+    for i, o in enumerate(opts):
+        rf = float((probs[i] * w).sum() / mass) if mass > 0 else None
+        o["range_freq"] = round(rf, 4) if rf is not None else None
+        o["freq"] = round(float(probs[i][hero_combo]), 4) if hero_combo is not None else o["range_freq"]
+
+
 class Explorer:
     def __init__(self, reviewer):
         self.rv = reviewer
@@ -146,7 +243,13 @@ class Explorer:
         if len(board) < 3:
             return self._needs_cards(out, "flop", 3 - len(board))
         if len(live) > 2:
-            return self._multiway(out, req, live, info, stacks, board, names, hero, hero_cards)
+            aggressor, q = None, []
+            for step in path:
+                ni = spot.engine.query(q)
+                if ni["actions"][step]["type"] in ("raise", "allin"):
+                    aggressor = ni["player"]
+                q.append(step)
+            return self._multiway(out, req, live, info, stacks, board, names, hero, hero_cards, aggressor)
         return self._heads_up(out, req, spot, path, info, live, stacks, board, names, hero, hero_combo, solve)
 
     # -- preflop ------------------------------------------------------------------
@@ -301,15 +404,20 @@ class Explorer:
         return out
 
     # -- multiway postflop (no solver) ---------------------------------------------------
-    def _multiway(self, out, req, live, pinfo, stacks, board, names, hero, hero_cards):
+    def _multiway(self, out, req, live, pinfo, stacks, board, names, hero, hero_cards, aggressor=None):
         n = len(names)
         order = sorted(live, key=lambda i: _postflop_rank(i, n))
         behind = {i: stacks[i] - pinfo["invested"][i] for i in live}
         pot = float(pinfo["pot"])
         folded: set = set()
-        out["notes"].append("GTO percentages are heads-up only for now; with three or more players after the "
-                            "flop the options follow the betting rules without percentages.")
+        # Each player's range: their preflop range, narrowed as they bet, raise or call after the flop.
+        ranges = {i: class_reach_to_combos(pinfo["reach"][i]).astype(np.float32) for i in live}
+        hero_combo = combo_index(*hero_cards) if hero_cards and len(hero_cards) == 2 else None
+        out["notes"].append("Three or more players after the flop: the percentages are approximate, from each "
+                            "hand's equity against everyone's likely ranges and the price, not a full solve.")
         for street in ("flop", "turn", "river"):
+            sboard = board[:BOARD_AT[street]]
+            street_bettor = None
             bets = {i: 0.0 for i in order}
             acted: set = set()
             raises = 0
@@ -332,8 +440,18 @@ class Explorer:
                 ptr = (k % len(order)) + 1
                 opts = self._rule_options(pot, cur, bets[actor], behind[actor], raises)
                 if si >= len(steps):
+                    opps = [i for i in order if i != actor and i not in folded]
+                    mine = actor == hero and hero_combo is not None
+                    # Without the initiative you mostly check to the last aggressor if they're still to act.
+                    yields = (aggressor is not None and aggressor != actor and aggressor not in folded
+                              and aggressor not in acted)
+                    _multiway_freqs(opts, ranges[actor], [ranges[i] for i in opps], sboard, pot, cur - bets[actor],
+                                    behind[actor], hero_combo if mine else None, check_to_raiser=yields,
+                                    initiative=aggressor == actor)
+                    if mine:
+                        out["hand"] = combo_str(hero_combo)
                     out.update({"street": street, "to_act": actor, "to_act_position": names[actor],
-                                "options": opts, "hand_specific": False, "pot_bb": round(pot, 2),
+                                "options": opts, "hand_specific": mine, "pot_bb": round(pot, 2),
                                 "to_call_bb": round(cur - bets[actor], 2), "status": "ready", "multiway": True})
                     for i in live:
                         out["players"][i]["behind_bb"] = round(behind[i], 2)
@@ -342,6 +460,10 @@ class Explorer:
                 o = opts[steps[si]]
                 si += 1
                 out["history"].append({"street": street, "position": names[actor], "player": actor, "text": o["label"]})
+                if o["kind"] in ("bet", "raise", "allin", "call"):
+                    opps = [i for i in order if i != actor and i not in folded]
+                    ranges[actor] = _narrow(ranges[actor], [ranges[i] for i in opps], sboard,
+                                            0.45 if o["kind"] != "call" else 0.75, hero_combo if actor == hero else None)
                 if o["kind"] == "fold":
                     folded.add(actor)
                 elif o["kind"] != "check":
@@ -349,12 +471,14 @@ class Explorer:
                     if o["to_bb"] > cur + 1e-9:
                         raises += 1
                         acted = set()
+                        street_bettor = actor
                     behind[actor] -= add
                     bets[actor] += add
                     pot += add
                 acted.add(actor)
             if si < len(steps):
                 raise ValueError(f"{street} action continues after the street ended")
+            aggressor = street_bettor
             if sum(1 for i in order if i not in folded and behind[i] > 1e-9) < 2:
                 out["pot_bb"] = round(pot, 2)
                 return self._needs_runout(out, board, 5, "All in: deal the rest of the board.")

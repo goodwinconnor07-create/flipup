@@ -365,6 +365,17 @@ function StreetLog({ street, items, hero }: { street: string; items: { position:
 const SUIT: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
 const prettyHand = (h?: string) => (h ? h.replace(/([2-9TJQKA])([shdc])/g, (_, r: string, su: string) => `${r === 'T' ? '10' : r}${SUIT[su]}`) : 'hand');
 
+/** "How often GTO plays each option with your A♥K♦ (equity 62%):" and the like. */
+function decisionLine(spot: CustomSpot, mine: boolean): string {
+  const what = spot.hand_specific
+    ? `how often to play each option with your ${prettyHand(spot.hand)}${spot.equity !== undefined ? ` (equity ${pct(spot.equity)})` : ''}:`
+    : mine
+      ? 'how often to take each option:'
+      : `how often the ${spot.to_act_position}'s range takes each option:`;
+  if (spot.multiway) return `Approximate, 3+ players: ${what}`;
+  return `GTO: ${what}`;
+}
+
 /** Whose turn it is and every legal option, with how often GTO takes each one. */
 function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPick: (o: CustomOption) => void }) {
   const opts = spot.options ?? [];
@@ -383,15 +394,7 @@ function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPi
           {spot.to_call_bb ? ` · ${spot.to_call_bb}bb to call` : ''}
         </span>
       </div>
-      {!spot.multiway && (
-        <p className="muted">
-          {spot.hand_specific
-            ? `How often GTO plays each option with your ${prettyHand(spot.hand)}${spot.equity !== undefined ? ` (equity ${pct(spot.equity)})` : ''}:`
-            : mine
-              ? 'How often GTO takes each option:'
-              : `How often the ${spot.to_act_position}'s range takes each option:`}
-        </p>
-      )}
+      <p className="muted">{decisionLine(spot, mine)}</p>
       <div className="option-list">
         {opts.map((o) => (
           <button key={o.id} type="button" className={`option-btn press${best?.id === o.id ? ' best' : ''}`} onClick={() => onPick(o)}>

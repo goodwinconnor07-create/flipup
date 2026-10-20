@@ -74,6 +74,10 @@ struct PreflopConfig {
   std::vector<float> kind_eqr_oop;
   std::vector<int> kind_eqr_present;
   std::array<double, 3> multiway_role = {0.9, 0.98, 1.12};  // 3-way: OOP-most, middle, IP-most
+  // Multiway flops: each player's share gets weight * (adj[own class] - mean adj of the opponents'
+  // classes), with the IP-most player using class_eqr_ip and the rest class_eqr_oop (additive model
+  // only). Zero-sum across players. 0 = raw multiway equity.
+  double multiway_class_weight = 0.0;
 
   // Starting ranges (169 weights) per player, default all 1. Used for custom
   // spots (e.g. a limper's range in hand review).

@@ -125,6 +125,15 @@ export function saveTableLook(look: TableLook): void {
   write('flipup.table', look);
 }
 
+/** Liquid Glass is on unless the player turned it off. */
+export function loadGlass(): boolean {
+  return read<boolean>('flipup.glass') !== false;
+}
+
+export function saveGlass(glass: boolean): void {
+  write('flipup.glass', glass);
+}
+
 export function loadDark(): boolean {
   return read<boolean>('flipup.dark') === true;
 }

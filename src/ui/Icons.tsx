@@ -271,6 +271,13 @@ export const MoonIcon = (p: P) => (
   </svg>
 );
 
+export const GlassIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M12 3.5S5.5 10.2 5.5 14.5a6.5 6.5 0 0 0 13 0C18.5 10.2 12 3.5 12 3.5z" />
+    <path d="M9 14.5a3 3 0 0 0 2.2 2.9" />
+  </svg>
+);
+
 export const CardsIcon = (p: P) => (
   <svg {...stroke(p)}>
     <rect x="3.5" y="5" width="11" height="15" rx="2.5" transform="rotate(-9 9 12.5)" />

@@ -28,6 +28,7 @@ import {
   loadDeviceId,
   loadCalm,
   loadDark,
+  loadGlass,
   loadMuted,
   loadProfile,
   loadSession,
@@ -36,6 +37,7 @@ import {
   saveLastTable,
   saveCalm,
   saveDark,
+  saveGlass,
   saveMuted,
   saveProfile,
   saveSession,
@@ -108,6 +110,8 @@ export interface AppState {
   /** Animations switched off. */
   calm: boolean;
   dark: boolean;
+  /** Liquid Glass look: frosted, see-through panels. Off gives solid ones. */
+  glass: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -142,8 +146,10 @@ let state: AppState = {
   muted: loadMuted(),
   calm: loadCalm(),
   dark: loadDark(),
+  glass: loadGlass(),
 };
 applyTheme(state.dark);
+document.documentElement.classList.toggle('no-glass', !state.glass);
 document.documentElement.classList.toggle('calm', state.calm);
 setMuted(loadMuted());
 
@@ -475,6 +481,13 @@ export function toggleDark(): void {
   saveDark(dark);
   applyTheme(dark);
   set({ dark });
+}
+
+export function toggleGlass(): void {
+  const glass = !state.glass;
+  saveGlass(glass);
+  document.documentElement.classList.toggle('no-glass', !glass);
+  set({ glass });
 }
 
 export function toggleCalm(): void {

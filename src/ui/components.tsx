@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type CSSProperties, type ReactNode } from 'react';
 import {
   cardName,
   EMOJIS,
@@ -153,7 +153,9 @@ export function PlayingCard({
   flip = false,
   delay = 0,
   className = '',
+  style,
 }: {
+  style?: CSSProperties;
   card?: Card;
   size?: CardSize;
   dim?: boolean;
@@ -166,14 +168,14 @@ export function PlayingCard({
   className?: string;
 }) {
   if (showBack || !card) {
-    return <span className={`pcard pcard-${size} pcard-back ${className}`} aria-label="Face-down card" role="img" />;
+    return <span className={`pcard pcard-${size} pcard-back ${className}`} style={style} aria-label="Face-down card" role="img" />;
   }
   // A four-colour deck: spades black, hearts red, diamonds blue, clubs green.
   const suit = suitOf(card);
   return (
     <span
       className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${glow ? ' glow' : ''}${flip ? ' flip-in' : ''} ${className}`}
-      style={flip ? { animationDelay: `${delay}ms` } : undefined}
+      style={flip ? { ...style, animationDelay: `${delay}ms` } : style}
       role="img"
       aria-label={cardName(card)}
     >

@@ -415,13 +415,13 @@ export function refreshLogs(): void {
 }
 
 /** Opens a new table: online with a join code, or bots-only on this phone. */
-export async function openTable(mode: 'online' | 'local', settings: Settings, bots: number): Promise<void> {
+export async function openTable(mode: 'online' | 'local', settings: Settings, bots: number, botNames?: string[]): Promise<void> {
   if (state.busy) return;
   saveSettings(settings);
   const name = cleanName(state.profile.name);
   const emoji = state.profile.emoji;
   if (mode === 'local') {
-    const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, code: null, now: Date.now() });
+    const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, code: null, now: Date.now() });
     closeConnection();
     setSession({ mode: 'local', code: null, game });
     resetTo({ name: 'table' });

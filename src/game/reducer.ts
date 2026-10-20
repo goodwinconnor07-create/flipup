@@ -94,6 +94,8 @@ export function createTable(opts: {
   emoji: string;
   settings: Settings;
   bots: number;
+  /** Bots to seat by name first (Home's quick games); the rest are random. */
+  botNames?: string[];
   code: string | null;
   now: number;
 }): Game {
@@ -115,7 +117,12 @@ export function createTable(opts: {
     reactions: {},
   };
   game.players.push(newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }));
-  for (let i = 0; i < opts.bots && game.players.length < MAX_SEATS; i++) addBot(game);
+  for (const name of opts.botNames ?? []) {
+    const pick = BOTS.find((b) => b.name === name);
+    if (pick && game.players.length < MAX_SEATS && !game.players.some((p) => p.name === pick.name))
+      game.players.push({ ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }), style: pick.style });
+  }
+  while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game);
   return game;
 }
 

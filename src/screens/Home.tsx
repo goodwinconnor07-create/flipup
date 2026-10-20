@@ -4,8 +4,10 @@ import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, toggleDark, toggleGlass, useApp } from '../state/store';
 import { Avatar, PlayingCard } from '../ui/components';
 import { InsightsTab } from './HomeInsights';
+import { QuickGames } from './HomeQuick';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
+import { CasinoBackdrop } from './CasinoBackdrop';
 import { ArrowIcon, CardsIcon, ChartIcon, GlassIcon, MoonIcon, QrIcon, SparkIcon } from '../ui/Icons';
 import { signed } from './Final';
 
@@ -93,6 +95,7 @@ export function Home() {
         <i className="glow glow-2" />
         <PlayingCard card="As" size="lg" className="home-card home-card-1" />
         <PlayingCard card="Kh" size="lg" className="home-card home-card-2" />
+        <CasinoBackdrop />
       </div>
       <div className="home-head">
         <h1 className="logo">
@@ -143,6 +146,7 @@ export function Home() {
                     </span>
                   </button>
                 )}
+                <QuickGames />
                 <button type="button" className="btn btn-dark btn-xl" onClick={(e) => colourWipe(e, () => go('host'))}>
                   Host a table
                 </button>

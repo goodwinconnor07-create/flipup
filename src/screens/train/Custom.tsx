@@ -176,6 +176,8 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
   const [solving, setSolving] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [picking, setPicking] = useState<string[]>([]);
+  // Bumped to re-ask while a flop is still refining in the background.
+  const [poll, setPoll] = useState(0);
   const req = useMemo(() => toRequest(setup, log), [setup, log]);
   const seq = useRef(0);
   const stripRef = useRef<HTMLDivElement>(null);
@@ -199,7 +201,14 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
     return () => {
       signal.cancelled = true;
     };
-  }, [req]);
+  }, [req, poll]);
+
+  // A flop's first numbers come after a quick pass; keep refreshing until the solve has finished.
+  useEffect(() => {
+    if (!spot?.refining) return;
+    const t = setTimeout(() => setPoll((p) => p + 1), 6000);
+    return () => clearTimeout(t);
+  }, [spot]);
 
   // Keep the player to act in view in the row of seats.
   useEffect(() => {
@@ -322,7 +331,10 @@ function HandView({ setup, onEdit }: { setup: Setup; onEdit: () => void }) {
         )}
 
         {!error && !solving && spot && !needs && spot.street !== 'done' && spot.options && spot.options.length > 0 && (
-          <Decision spot={spot} hero={setup.hero} onPick={act} />
+          <>
+            {spot.refining && <p className="note">Refining: these first numbers can still shift a little.</p>}
+            <Decision spot={spot} hero={setup.hero} onPick={act} />
+          </>
         )}
 
         {!error && !solving && spot?.street === 'done' && (
@@ -402,6 +414,7 @@ function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPi
             <span className="option-label">
               {o.label}
               {o.ev_bb !== null && <small className="option-ev">EV {o.ev_bb >= 0 ? '+' : ''}{o.ev_bb.toFixed(2)}bb</small>}
+              {o.off_tree && <small className="option-ev">not in GTO strategy</small>}
             </span>
             {o.freq !== null && <b className="option-pct">{pct(o.freq)}</b>}
           </button>

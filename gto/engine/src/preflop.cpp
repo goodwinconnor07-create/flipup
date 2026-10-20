@@ -455,7 +455,9 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
 
   double rake = 0;
   if (n.type == 2 || n.type == 3) {
-    rake = n.pot * cfg_.rake_rate;
+    const bool grows = n.type == 2;
+    const int g = n.pot_kind == 0 ? 4 : n.spr_bucket;
+    rake = n.pot * cfg_.rake_rate * (grows ? cfg_.rake_growth[g] : 1.0);
     if (cfg_.rake_cap > 0) rake = std::min(rake, cfg_.rake_cap);
   }
   const double pot_eff = n.pot - rake;
@@ -528,6 +530,27 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
       for (int r = 0; r < 3; ++r)
         if (n.roles[r] == i) adj *= cfg_.multiway_role[r] / mean;
     }
+    // Playability: hands that do well multiway (suited, connected, pairs) gain at the expense of the rest.
+    const bool use_class = n.type == 2 && cfg_.eqr_model == 1 && cfg_.multiway_class_weight != 0.0;
+    std::vector<int> opps;
+    std::vector<std::array<float, C>> oppA;
+    const float* own_adj = nullptr;
+    if (use_class) {
+      int ip_most = live[0];
+      for (int q : live)
+        if (postflop_rank(q) > postflop_rank(ip_most)) ip_most = q;
+      auto adj_of = [&](int q) { return q == ip_most ? cfg_.class_eqr_ip.data() : cfg_.class_eqr_oop.data(); };
+      own_adj = adj_of(i);
+      for (int q : live) {
+        if (q == i) continue;
+        opps.push_back(q);
+        std::vector<float> ra(C);
+        const float* aq = adj_of(q);
+        for (int o = 0; o < C; ++o) ra[o] = reach[q][o] * aq[o];
+        oppA.emplace_back();
+        matvec(Pn_, ra, oppA.back().data());
+      }
+    }
     const int R = cfg_.tensor_rank;
     const auto& rj = reach[j];
     const auto& rk = reach[k];
@@ -545,7 +568,20 @@ void PreflopSolver::terminal_values(const Node& n, const Vecs& reach, const Vecs
       }
       float others = m[j][h] * m[k][h];
       for (int q : extra) others *= m[q][h];
-      out[h] = fold_prod[h] * static_cast<float>(pot_eff * adj * acc * extra_factor[h] - n.inv[i] * others);
+      double playability = 0;
+      if (use_class) {
+        // a_i[h] * P(all opponents) - mean over opponents q of E[a_q] * P(the other opponents).
+        double opp = 0;
+        for (size_t t = 0; t < opps.size(); ++t) {
+          double rest = 1;
+          for (size_t u = 0; u < opps.size(); ++u)
+            if (u != t) rest *= m[opps[u]][h];
+          opp += oppA[t][h] * rest;
+        }
+        playability = cfg_.multiway_class_weight * (own_adj[h] * others - opp / opps.size());
+      }
+      out[h] = fold_prod[h] * static_cast<float>(pot_eff * (adj * acc * extra_factor[h] + playability) -
+                                                 n.inv[i] * others);
     }
   }
 }

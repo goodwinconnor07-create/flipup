@@ -26,7 +26,7 @@ _tables: dict = {}
 
 TENSOR_RANK = 4
 # Bump when the preflop model changes (tree sizing, realization model) so cached solutions are rebuilt.
-MODEL_VERSION = 5
+MODEL_VERSION = 6
 
 
 def tables(with_tensor: bool = True):
@@ -78,6 +78,18 @@ def load_kind_calibration():
     return _tables["kinds"]
 
 
+def rake_growth(rate: float, cap: float) -> list[float]:
+    """Rake multipliers for flops (data/rake_growth.json): measured for this rate/cap, else uncapped growth."""
+    import json
+    if "rake" not in _tables:
+        path = os.path.join(DATA_DIR, "rake_growth.json")
+        _tables["rake"] = json.load(open(path)) if os.path.exists(path) else None
+    d = _tables["rake"]
+    if not d:
+        return [1.0] * 5
+    return d["structures"].get(f"{rate:g}/{cap:g}", d["uncapped"])
+
+
 def calibration_key():
     """Identifies the realization model in use, for cache keys."""
     cal, kinds = load_calibration(), load_kind_calibration()
@@ -126,6 +138,8 @@ class PreflopSpot:
         cfg.stacks = [float(s) for s in stacks]
         cfg.sb, cfg.bb, cfg.ante = self.sb, self.bb, self.ante
         cfg.rake_rate, cfg.rake_cap = self.rake_rate, self.rake_cap
+        if self.rake_rate > 0:
+            cfg.rake_growth = rake_growth(self.rake_rate, self.rake_cap)
         cfg.open_size = self.open_size or default_open_sizes(self.names, eff)
         limp = [0] * n
         if self.sb_can_limp and n >= 2:
@@ -133,6 +147,9 @@ class PreflopSpot:
         cfg.can_limp = limp
         cfg.max_players_flop = self.max_players_flop
         cfg.iso_per_limper = 1.5  # isolate limpers bigger: ~4bb over one limper, +1.5bb per extra
+        # Playability in multiway pots on the same scale as heads-up (brought BTN's flats vs UTG and CO
+        # close to GTO Wizard's; a weight of 2 changed nothing).
+        cfg.multiway_class_weight = 1.0
         if eff <= 30:
             cfg.allin_threshold = 0.35
         cal = load_calibration() if self.use_calibration else None

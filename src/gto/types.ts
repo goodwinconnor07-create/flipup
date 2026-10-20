@@ -161,6 +161,8 @@ export interface CustomOption {
   freq: number | null;
   range_freq: number | null;
   ev_bb: number | null;
+  /** Legal but outside the solved preflop tree: picking it re-solves preflop for that line. */
+  off_tree?: boolean;
 }
 
 export interface CustomSpot {
@@ -182,6 +184,8 @@ export interface CustomSpot {
   equity?: number;
   needs_cards?: { street: string; count: number } | null;
   multiway?: boolean;
+  /** The flop's numbers come from a quick first pass and are still being refined. */
+  refining?: boolean;
   history?: { street: string; position: string; player: number; text: string }[];
   notes?: string[];
 }

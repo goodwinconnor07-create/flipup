@@ -598,6 +598,8 @@ html[data-theme='dark'] .pcard.dim > * {
 }
 
 .win-text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-size: var(--fs-small);
   font-weight: 700;
   white-space: nowrap;
@@ -1167,6 +1169,21 @@ html.calm .pod.won .pod-pic {
   height: 18px;
 }
 
+/* The buttons are small to the eye; the tap area is still 44px. */
+.react-btn::after,
+.show-small::after {
+  content: '';
+  position: absolute;
+}
+
+.react-btn::after {
+  inset: -5px;
+}
+
+.show-small::after {
+  inset: -11px -4px;
+}
+
 .react-scrim {
   position: fixed;
   inset: 0;
@@ -1191,7 +1208,7 @@ html.calm .pod.won .pod-pic {
 }
 
 .react-item {
-  min-height: 40px;
+  min-height: 44px;
   padding: 0 14px;
   border: 0;
   border-radius: var(--r-pill);
@@ -1306,6 +1323,7 @@ html.calm .table-timer.low .timer-run {
 }
 
 .show-small {
+  position: relative;
   height: 22px;
   padding: 0 10px;
   border: 0;

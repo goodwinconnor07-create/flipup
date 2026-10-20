@@ -104,7 +104,6 @@ const FRIENDLY: Lines = {
 const VOICES: Record<StyleId, Partial<Lines>> = {
   // The Menace: cocky, loves rubbing it in.
   shark: {
-    thinkEasy: ['Light work.', 'Calculated.'],
     raise: ['Pay me.', 'Sit down.'],
     bluffWon: ['Folded 😂', 'Scared money.', 'Nice fold.'],
     bigWin: ['Free money 💸', 'Delicious pot.', 'Mine now.'],
@@ -112,7 +111,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     lostToYou: ['Lucky bastard.', 'Read you.'],
     tiltJab: ['I’ve studied you.', 'You’re transparent.', 'Free read.', 'Classic you.'],
     yourBigBet: ['That’s your move?', 'Interesting raise.'],
-    idle: ['Hello, fish.', 'Feeling dangerous.'],
+    idle: ['Feeling dangerous.'],
     tank: ['He’s buffering…', 'Solver time.'],
   },
   lag: {
@@ -122,15 +121,15 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bigWin: ['Printing 💸', 'Cha-ching.', 'Payday.'],
     win: ['Cry more.', 'Another victim.'],
     badBeat: ['Rigged.', 'Disgusting.'],
-    tiltJab: ['Again, bro?', 'Keep donating.', 'Too emotional.'],
-    bluffCaught: ['Worth it.', 'We move.'],
+    tiltJab: ['Too emotional.'],
+    bluffCaught: ['We move.'],
     tank: ['Windows update.', 'We have jobs.'],
   },
   // The Troll: ridiculous, bluffs constantly, blames the deck.
   maniac: {
     allin: ['Trust me.', 'Chaos time.', 'Call the FBI.'],
     raise: ['Believe me?', 'Trust me.'],
-    sweatLose: ['Scripted 🎬', 'Rigged.', 'That’s illegal.'],
+    sweatLose: ['Scripted 🎬', 'That’s illegal.'],
     bluffWon: ['Never had it.', 'So obvious.', '🫵😂'],
     bigWin: ['Retirement fund.', 'Generational wealth.', 'I’m eating.'],
     badBeat: ['PokerPrime moment.', 'Unreal runout.', 'I’m reporting.'],
@@ -155,10 +154,10 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     thinkEasy: ['Clean.', 'Standard.'],
     bluffWon: ['Respectfully, no.', 'Good boy.'],
     bigWin: ['Beautiful.', 'Thank you.', 'Easy game.'],
-    lostToYou: ['Well played.', 'Fair play.', 'Not bad.'],
+    lostToYou: ['Fair play.', 'Not bad.'],
     badBeat: ['Brutal.', 'Unlucky.'],
     tiltJab: ['Character building.', 'Hold that.'],
-    idle: ['Stay sharp.', 'Lock in.'],
+    idle: ['Lock in.'],
     tank: ['Need assistance?', 'It’s one hand.'],
   },
   // The Silent Killer: rarely speaks, and it hurts when they do.
@@ -185,7 +184,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
   },
   trapper: {
     thinkHard: ['Please call.', 'Come here.', 'I’m waiting.'],
-    thinkEasy: ['Trap sprung.', 'Easy decision.', 'Got something.'],
+    thinkEasy: ['Easy decision.', 'Simple.', 'Okay.'],
     raise: ['Feeling lucky?', 'I dare you.', 'Don’t fold.'],
     yourBigBet: ['Oh, buddy.', 'All yours 😉', 'This is fun.'],
     bigWin: ['Sweet dreams.', 'Trap sprung.', 'Goodnight 😴'],
@@ -202,19 +201,19 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     sweatLose: ['I’m sick.', 'No shot.', 'Excuse me?!', 'I’m reporting.'],
     badBeat: ['WHAT?!', 'Disgusting river.', 'That’s personal.', 'Uncalled for.'],
     lostToYou: ['You win.', 'I folded.', 'Don’t celebrate.'],
-    bluffCaught: ['I panicked 😭', 'Lag moment.', 'Delete that.'],
-    idle: ['Nervous already.', 'Anyone home?'],
+    bluffCaught: ['Lag moment.', 'Delete that.'],
+    idle: ['Nervous already.'],
     tank: ['Hurry, I’m sweating.', 'Please don’t.'],
   },
   station: {
     callLight: ['Show me.', 'I’ll pay.', 'Just looking.'],
-    thinkHard: ['I’m calling anyway.', 'Hmm.'],
+    thinkHard: ['Hmm.', 'Let me see.'],
     sweatLose: ['Rigged.', 'Of course.', 'Naturally.'],
     badBeat: ['No way.', 'You’re joking.', 'Again?!'],
-    lostToYou: ['Whatever.', 'You got me.', 'Fair enough.'],
+    lostToYou: ['Whatever.', 'Fair enough.'],
     bigWin: ['I knew.', 'Told you.', 'Never worried.'],
     bluffCaught: ['I meant that.', 'Fair enough.'],
-    idle: ['Coffee break? ☕', 'Bored already.'],
+    idle: ['Bored already.'],
     tank: ['Just call.', 'Bro is thinking.'],
   },
 };
@@ -230,11 +229,14 @@ export function botLineText(lineId: string): string {
 
 /** Every line a voice can say for an event: its tone's pool, then the style's own lines. Old ids name just the tone. */
 function pool(voice: string, event: TalkEvent): string[] {
-  if (voice === 'trash') return TRASH[event] ?? [];
-  if (voice === 'friendly') return FRIENDLY[event] ?? [];
-  const style = voice in VOICES ? styleOf(voice as StyleId) : null;
-  if (!style) return [];
-  return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
+  // Ids come off the wire as plain text, so only names we own count ('toString' and friends are not voices or events).
+  const own = <T extends object>(table: T, key: string): T[keyof T] | undefined => (Object.hasOwn(table, key) ? table[key as keyof T] : undefined);
+  if (voice === 'trash') return own(TRASH, event) ?? [];
+  if (voice === 'friendly') return own(FRIENDLY, event) ?? [];
+  const voices = own(VOICES, voice);
+  if (!voices) return [];
+  const style = styleOf(voice as StyleId);
+  return [...(own(style.talk.tone === 'trash' ? TRASH : FRIENDLY, event) ?? []), ...(own(voices, event) ?? [])];
 }
 
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */

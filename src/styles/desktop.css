@@ -431,7 +431,8 @@
   }
 
   .raise-panel {
-    zoom: calc(1.2 * var(--desk-zoom, 1));
+    /* Already inside the table's zoomed screen, so only the extra 1.2 here (zoom multiplies). */
+    zoom: 1.2;
     max-width: 560px;
     border-radius: var(--r-xl);
     padding-bottom: 16px;

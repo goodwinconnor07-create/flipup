@@ -12,7 +12,7 @@ import trained from './botPostflop.json';
 import { styleOf, type Style } from './botStyles';
 import { potTotal } from './holdem';
 import { options } from './selectors';
-import type { Game, Hand, Move, PlayerRead, Seat } from './types';
+import type { Game, Hand, HandAction, Move, PlayerRead, Seat, Street } from './types';
 
 export interface BotMove {
   move: Move;
@@ -149,7 +149,37 @@ export function handClass(hole: Card[]): string {
 
 // ── Reading the table ───────────────────────────────────────────────────────
 
-const AGGRESSIVE: Move[] = ['bet', 'raise', 'allin'];
+/**
+ * Which of these moves raised the bet on their street. An all in only counts when it goes past the bet
+ * (the table logs a call that puts someone all in as 'allin' too, and that is a call).
+ */
+function raiseFlags(acts: HandAction[], bb: number): boolean[] {
+  const level: Partial<Record<Street, number>> = {};
+  return acts.map((a) => {
+    const cur = level[a.street] ?? (a.street === 'preflop' ? bb : 0);
+    const raised = a.move === 'bet' || a.move === 'raise' || (a.move === 'allin' && a.to > cur);
+    if (raised) level[a.street] = a.to;
+    return raised;
+  });
+}
+
+/** Calls (including a call that puts someone all in) among these moves. */
+const isCall = (a: HandAction, raised: boolean) => !raised && (a.move === 'call' || a.move === 'allin');
+
+/** Who has raised before the flop so far, and how many limped or called. */
+function preflopHistory(game: Game, hand: Hand) {
+  const pre = (hand.actions ?? []).filter((a) => a.street === 'preflop');
+  const flags = raiseFlags(pre, game.settings.bigBlind);
+  const first = flags.indexOf(true);
+  const calls = pre.filter((a, i) => isCall(a, flags[i]));
+  return {
+    raisers: pre.filter((_, i) => flags[i]),
+    /** Just called the big blind, with nobody having raised. */
+    limpers: first === -1 ? calls.length : 0,
+    /** Called a raise. */
+    callers: first === -1 ? 0 : pre.filter((a, i) => i > first && isCall(a, flags[i])).length,
+  };
+}
 
 /** Seats in the order they act before the flop: 0 first, the big blind last (heads up the button is 0). */
 function preflopOrder(hand: Hand): string[] {
@@ -274,9 +304,7 @@ function preflopGto(game: Game, hand: Hand, seat: Seat): { call: number; raise: 
   const chart = chartFor(n, effectiveBb(game, hand, seat));
   const at = (id: string) => chartSeat(order.indexOf(id), n);
   const cls = handClass(seat.cards);
-  const pre = (hand.actions ?? []).filter((a) => a.street === 'preflop');
-  const raisers = pre.filter((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > game.settings.bigBlind));
-  const limpers = pre.filter((a) => a.move === 'call' && raisers.length === 0).length;
+  const { raisers, limpers, callers } = preflopHistory(game, hand);
   const mySeat = chartSeat(me, n);
   const get = (key: string) => spotFreq(chart, key, cls);
   let f: { call: number; raise: number } | null = null;
@@ -292,7 +320,6 @@ function preflopGto(game: Game, hand: Hand, seat: Seat): { call: number; raise: 
     spot = 'open';
     f = get(`open.${at(raisers[0].playerId)}.${mySeat}`);
     // Callers in between: call a little more, 3-bet a little less.
-    const callers = pre.filter((a) => a.move === 'call' && pre.indexOf(a) > pre.indexOf(raisers[0])).length;
     if (f && callers) f = { call: Math.min(1, f.call * 1.1), raise: f.raise * 0.75 };
   } else if (raisers.length === 2) {
     spot = '3bet';
@@ -539,8 +566,7 @@ export function decide(game: Game, hand: Hand, seat: Seat, rng: Rng): BotThought
     if (choice === 0) return { move: check() };
     if (choice === 1) return { move: call() };
     // Raise sizes: opens 2.3 to 3bb (plus one per limper), 3-bets about 3x (4x out of position), 4-bets 2.3x.
-    const pre = (hand.actions ?? []).filter((a) => a.street === 'preflop');
-    const limpers = pre.filter((a) => a.move === 'call').length;
+    const { limpers } = preflopHistory(game, hand);
     const ip = inPosition(hand, seat.playerId);
     const bigger = 1 + Math.max(0, style.pre.aggro) * 0.25 + (style.id === 'maniac' && rng() < 0.15 ? 1 : 0);
     let target: number;
@@ -559,12 +585,14 @@ export function decide(game: Game, hand: Hand, seat: Seat, rng: Rng): BotThought
   const live = hand.seats.filter((s) => !s.folded);
   const multiway = live.length > 2;
   const acts = hand.actions ?? [];
+  const raised = raiseFlags(acts, bb);
   const streets = ['preflop', 'flop', 'turn', 'river'] as const;
   const prev = streets[streets.indexOf(hand.street as (typeof streets)[number]) - 1];
-  const lastAgg = [...acts].reverse().find((a) => a.street === prev && AGGRESSIVE.includes(a.move));
+  let lastAgg: HandAction | undefined;
+  for (let i = acts.length - 1; i >= 0 && !lastAgg; i--) if (acts[i].street === prev && raised[i]) lastAgg = acts[i];
   const role: 'agg' | 'def' = lastAgg?.playerId === seat.playerId ? 'agg' : 'def';
   const pos = inPosition(hand, seat.playerId) ? 'ip' : 'oop';
-  const iBetHere = acts.some((a) => a.street === hand.street && a.playerId === seat.playerId && AGGRESSIVE.includes(a.move));
+  const iBetHere = acts.some((a, i) => a.street === hand.street && a.playerId === seat.playerId && raised[i]);
   let sit: Situation = 'open';
   if (o.toCall > 0) {
     if (iBetHere) sit = 'raised';
@@ -606,29 +634,31 @@ export function decide(game: Game, hand: Hand, seat: Seat, rng: Rng): BotThought
 export function updateReads(game: Game, hand: Hand): void {
   const reads = (game.reads ??= {});
   const acts = hand.actions ?? [];
+  const raised = raiseFlags(acts, game.settings.bigBlind);
   for (const s of hand.seats) {
     const r = (reads[s.playerId] ??= { hands: 0, vpip: 0, pfr: 0, betsFaced: 0, foldsToBet: 0, aggr: 0, calls: 0 });
     r.hands++;
-    const pre = acts.filter((a) => a.street === 'preflop' && a.playerId === s.playerId);
-    if (pre.some((a) => a.move === 'call' || AGGRESSIVE.includes(a.move))) r.vpip++;
-    if (pre.some((a) => AGGRESSIVE.includes(a.move))) r.pfr++;
+    const mine = acts.map((a, i) => ({ a, up: raised[i] })).filter((x) => x.a.street === 'preflop' && x.a.playerId === s.playerId);
+    if (mine.some((x) => x.up || isCall(x.a, x.up))) r.vpip++;
+    if (mine.some((x) => x.up)) r.pfr++;
   }
   for (const street of ['flop', 'turn', 'river'] as const) {
     let bet = false;
-    for (const a of acts.filter((x) => x.street === street && !x.outOfTurn)) {
+    acts.forEach((a, i) => {
+      if (a.street !== street || a.outOfTurn) return;
       const r = reads[a.playerId];
-      if (!r) continue;
-      if (AGGRESSIVE.includes(a.move)) {
+      if (!r) return;
+      if (raised[i]) {
         r.aggr++;
         if (bet) r.betsFaced++;
         bet = true;
-      } else if (a.move === 'call') {
+      } else if (isCall(a, false)) {
         r.calls++;
         r.betsFaced++;
       } else if (a.move === 'fold' && bet) {
         r.foldsToBet++;
         r.betsFaced++;
       }
-    }
+    });
   }
 }

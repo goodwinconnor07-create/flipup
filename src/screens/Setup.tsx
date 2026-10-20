@@ -38,7 +38,11 @@ export function SettingsFields({
           // Keep the blinds sensible for the new stack (at least 10 big blinds deep).
           const fits = levelsFor(startingStack);
           const keep = fits.some(([sb, bb]) => sb === settings.smallBlind && bb === settings.bigBlind);
-          const [smallBlind, bigBlind] = keep ? [settings.smallBlind, settings.bigBlind] : fits[fits.length - 1];
+          // Otherwise the level closest to 100 big blinds deep (not the biggest blinds, which leave the shortest stacks).
+          const deep = (bb: number) => Math.abs(startingStack / bb - 100);
+          const [smallBlind, bigBlind] = keep
+            ? [settings.smallBlind, settings.bigBlind]
+            : fits.reduce((best, l) => (deep(l[1]) < deep(best[1]) ? l : best));
           onChange({ ...settings, startingStack, smallBlind, bigBlind });
         }}
       />

@@ -200,17 +200,21 @@ export function colourWipe(event: { currentTarget: Element; clientX: number; cli
   const swap = () => {
     if (done) return;
     done = true;
-    then();
-    // Let the new page paint under the colour before fading, so the two don't compete.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        tintBrowser(null);
-        void wipe
-          .animate([{ opacity: 1 }, { opacity: 0 }], { duration: WIPE_FADE_MS, easing: 'ease-out', fill: 'forwards' })
-          .finished.catch(() => undefined)
-          .finally(() => wipe.remove());
-      }),
-    );
+    try {
+      then();
+    } finally {
+      // Even if the next page throws, the colour must fade and go (or it would sit over the screen).
+      // Let the new page paint under it before fading, so the two don't compete.
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          tintBrowser(null);
+          void wipe
+            .animate([{ opacity: 1 }, { opacity: 0 }], { duration: WIPE_FADE_MS, easing: 'ease-out', fill: 'forwards' })
+            .finished.catch(() => undefined)
+            .finally(() => wipe.remove());
+        }),
+      );
+    }
   };
   grow.finished.then(swap, swap);
   // Safety net in case the animation never reports back.

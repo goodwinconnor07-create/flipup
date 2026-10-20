@@ -70,7 +70,7 @@ export function Final({ game }: { game: Game }) {
     <>
       <div className="screen-body final-body" onClick={step < 3 ? () => setStep(3) : undefined}>
         <h1 className="h1 center" aria-live="polite">
-          {step >= 3 ? headline : step === 2 ? 'In 2nd…' : 'And in 3rd…'}
+          {step >= 3 ? headline : step === 2 ? 'In 2nd…' : rows.length < 3 ? 'And in 2nd…' : 'And in 3rd…'}
         </h1>
         {step >= 3 && top && (
           <p className="h3 muted center" style={{ margin: '-8px 0 0' }}>

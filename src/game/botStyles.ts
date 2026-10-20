@@ -182,4 +182,4 @@ export const BOTS: { name: string; emoji: string; style: StyleId }[] = [
   { name: 'Tex', emoji: '🌪️', style: 'maniac' },
 ];
 
-export const styleOf = (id: string | undefined): Style => STYLES[(id as StyleId) ?? 'pro'] ?? STYLES.pro;
+export const styleOf = (id: string | undefined): Style => (id !== undefined && Object.hasOwn(STYLES, id) ? STYLES[id as StyleId] : STYLES.pro);

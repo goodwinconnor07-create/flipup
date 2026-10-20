@@ -11,6 +11,16 @@ export function Join({ initialCode }: { initialCode?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const looked = useRef('');
+  // The code in the box right now, and whether this screen is still up: a slow answer for a code
+  // that was since changed (or after Back) mustn't carry the player off to that table.
+  const latest = useRef(code);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   const lookUp = async (value: string) => {
     if (value.length !== CODE_LENGTH || looked.current === value) return;
@@ -19,6 +29,7 @@ export function Join({ initialCode }: { initialCode?: string }) {
     setError('');
     try {
       const info = await fetchTableInfo(value);
+      if (!alive.current || latest.current !== value) return;
       if (!info) {
         setError("There's no table with that code. Check it and try again.");
         haptic('error');
@@ -26,11 +37,12 @@ export function Join({ initialCode }: { initialCode?: string }) {
       }
       replace({ name: 'joinTable', info });
     } catch (e) {
+      if (!alive.current || latest.current !== value) return;
       setError(e instanceof Error ? e.message : 'Something went wrong. Try again.');
       haptic('error');
     } finally {
-      looked.current = '';
-      setBusy(false);
+      if (looked.current === value) looked.current = '';
+      if (alive.current && latest.current === value) setBusy(false);
     }
   };
 
@@ -52,7 +64,9 @@ export function Join({ initialCode }: { initialCode?: string }) {
             value={code}
             onChange={(e) => {
               const next = normalizeCode(e.target.value);
+              latest.current = next;
               setCode(next);
+              setBusy(false);
               setError('');
               if (next.length === CODE_LENGTH) void lookUp(next);
             }}

@@ -295,7 +295,8 @@ function Felt({ game }: { game: Game }) {
   const streetKey = hand ? `${hand.number}-${hand.street}` : '';
   useEffect(() => setPre(null), [streetKey]);
   useEffect(() => {
-    if (!pre || !myTurn || !hand || !mySeat) return;
+    // Not while another move is still on its way to the server (you may have tapped a button yourself).
+    if (!pre || !myTurn || sending || !hand || !mySeat) return;
     const o = options(game, hand, mySeat);
     const move = o.canCheck ? 'check' : pre === 'callany' ? 'call' : 'fold';
     const t = setTimeout(() => {
@@ -303,7 +304,7 @@ function Felt({ game }: { game: Game }) {
       dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move });
     }, 400);
     return () => clearTimeout(t);
-  }, [pre, myTurn, hand?.number, hand?.seq]);
+  }, [pre, myTurn, !!sending, hand?.number, hand?.seq]);
 
   // Which cards make the hand that matters: yours while you're in, the winner's at a showdown.
   const highlight = useMemo(() => {
@@ -721,6 +722,13 @@ function Pod({
 function ReactMenu() {
   const [open, setOpen] = useState(false);
   const [cooling, setCooling] = useState(false);
+  // Escape closes the panel.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [open]);
   const send = (id: string) => {
     if (cooling) return;
     haptic('light');
@@ -1050,6 +1058,13 @@ function RaisePanel({
   const step = Math.max(1, Math.min(bb, Math.floor((o.maxTo - o.minTo) / 50) || 1));
 
   const nudge = (dir: 1 | -1) => setTo((t) => clamp(t + dir * step));
+
+  // Escape goes back to the buttons.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onCancel();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  });
 
   // A panel pinned to the bottom of the screen, over your cards, so every option is in view without scrolling.
   return (

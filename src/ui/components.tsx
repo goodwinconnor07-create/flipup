@@ -300,8 +300,20 @@ export function Sheet({ title, children, onClose = closeSheet }: { title?: React
   const ref = useRef<HTMLDivElement>(null);
   const leaving = useApp((s) => s.sheetLeaving);
   const drag = useRef<{ startY: number; dy: number } | null>(null);
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
+    // Focus moves into the sheet and goes back to what opened it; Escape closes it.
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     ref.current?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') closeRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
   }, []);
 
   // Swipe down on the grip or title to close. Past 90px it closes; otherwise it springs back.

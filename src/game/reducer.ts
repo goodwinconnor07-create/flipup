@@ -137,7 +137,7 @@ function afterHand(game: Game, ctx: ActionContext): void {
   updateReads(game, hand);
   const bb = game.settings.bigBlind;
   const pot = result.pots.reduce((a, p) => a + p.amount, 0);
-  if (pot < bb * 20) return;
+  if (pot < bb * 6) return;
   const winners = Object.keys(result.won);
   const bucketOf = (id: string) => {
     const seat = hand.seats.find((s) => s.playerId === id);
@@ -277,9 +277,17 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      const potBefore = potTotal(hand);
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) return fail(error);
       me.timeouts = 0;
+      // A big move from a person gets a reaction from one of the bots still in the hand.
+      const big = action.move === 'allin' || ((action.move === 'raise' || action.move === 'bet') && (action.to ?? 0) >= potBefore * 0.75);
+      if (big && !game.hand?.result) {
+        const bots = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
+        const who = bots[Math.floor(ctx.rng() * bots.length)];
+        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng);
+      }
       return done();
     }
 

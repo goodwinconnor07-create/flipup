@@ -20,7 +20,9 @@ export type TalkEvent =
   /** The bot lost a big pot with a strong hand. */
   | 'badBeat'
   /** Someone else (a person) won a big pot from the bot. */
-  | 'lostToYou';
+  | 'lostToYou'
+  /** A person just bet big or went all in. */
+  | 'yourBigBet';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -33,6 +35,7 @@ const TRASH: Lines = {
   bigWin: ['Ship it!', 'Thanks for the chips.', 'Was there ever any doubt?', 'Stack’s looking healthy.'],
   badBeat: ['Unbelievable.', 'Of course it came.', 'That river…', 'Every time.'],
   lostToYou: ['Lucky.', 'Enjoy it while it lasts.', 'Ok, nice hand. This time.', 'You got there.'],
+  yourBigBet: ['Oh, you’re serious?', 'Smells like a bluff.', 'Bold. Very bold.', 'Is that all you’ve got?'],
 };
 
 const FRIENDLY: Lines = {
@@ -44,6 +47,7 @@ const FRIENDLY: Lines = {
   bigWin: ['Woohoo!', 'That felt good.', 'Finally!', 'Nice pot!'],
   badBeat: ['Ouch.', 'So close!', 'Oof, the river.', 'That one hurt.'],
   lostToYou: ['Nice hand!', 'Well played.', 'You got me.', 'Good call.'],
+  yourBigBet: ['Whoa, big bet!', 'Hmm, tough one.', 'You’re making this hard.', 'Okay, okay…'],
 };
 
 const id = (tone: string, event: string, i: number) => `b:${tone}:${event}:${i}`;
@@ -58,14 +62,15 @@ export function botLineText(lineId: string): string {
 
 /** How often each kind of moment gets a comment, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
-  allin: 0.35,
-  raise: 0.08,
-  foldBig: 0.12,
-  callLight: 0.15,
-  bluffWon: 0.4,
-  bigWin: 0.45,
+  allin: 0.45,
+  raise: 0.2,
+  foldBig: 0.2,
+  callLight: 0.25,
+  bluffWon: 0.45,
+  bigWin: 0.4,
   badBeat: 0.6,
-  lostToYou: 0.5,
+  lostToYou: 0.6,
+  yourBigBet: 0.45,
 };
 
 /**
@@ -78,7 +83,7 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   if (!player?.bot || !hand) return false;
   if (game.botChatHand === hand.number) return false;
   const style = styleOf(player.style);
-  if (rng() > CHANCE[event] * style.talk.chatty * 0.7) return false;
+  if (rng() > CHANCE[event] * style.talk.chatty * 2) return false;
   const lines = (style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event];
   const i = Math.floor(rng() * lines.length);
   game.reactions = { ...game.reactions, [playerId]: { id: id(style.talk.tone, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1 } };

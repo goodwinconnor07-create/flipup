@@ -9,7 +9,7 @@ import { InsightsTab } from './HomeInsights';
 import { QuickGames, startBots } from './HomeQuick';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
-import { CardsIcon, ChartIcon, ChevronIcon, GearIcon, QrIcon, SparkIcon, UsersIcon } from '../ui/Icons';
+import { CardsIcon, ChartIcon, ChevronIcon, GearIcon, QrIcon, SparkIcon } from '../ui/Icons';
 import { signed } from './Final';
 
 function ago(at: number): string {
@@ -40,6 +40,17 @@ function statusLine(stats: ReturnType<typeof loadStats>, active: boolean): strin
     return `You're ${week > 0 ? 'up' : 'down'} ${signed(Math.abs(week)).replace(/^[+−]/, '')} chips this week.`;
   }
   return stats.tables > 0 ? 'Ready for another hand?' : 'Deal yourself in.';
+}
+
+/** Chips flung up from the players, for the cards' little scenes. */
+function TossChips() {
+  return (
+    <>
+      {[0, 1, 2, 3, 4].map((i) => (
+        <i key={i} className={`toss-chip toss-${i}`} />
+      ))}
+    </>
+  );
 }
 
 export function Home() {
@@ -163,40 +174,34 @@ export function Home() {
                 </button>
                 <section className="modes" aria-label="Start a game">
                   <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
-                    <span className="mode-icon">
-                      <UsersIcon />
+                    <span className="mode-text">
+                      <span className="mode-title">Host a table</span>
+                      <span className="mode-sub">Share a code. Friends join on their phones.</span>
                     </span>
-                    <ChevronIcon className="mode-chev" width={18} height={18} />
-                    <span className="mode-title">Host a table</span>
-                    <span className="mode-sub">Open a table and share a 5-letter code. Friends join on their own phones, and bots fill any empty seats.</span>
-                    <span className="mode-tags">
-                      <i>Up to 9 players</i>
-                      <i>Bots fill seats</i>
-                    </span>
-                  </button>
-                  <button type="button" className="mode mode-green press" onClick={() => go('join')}>
-                    <span className="mode-icon">
-                      <QrIcon />
-                    </span>
-                    <ChevronIcon className="mode-chev" width={18} height={18} />
-                    <span className="mode-title">Join with a code</span>
-                    <span className="mode-sub">Got a code from a friend? Type it in or scan their QR code to take a seat.</span>
-                    <span className="mode-tags">
-                      <i>5 letters</i>
-                      <i>Scan a QR code</i>
+                    <span className="mode-art" aria-hidden>
+                      <span className="art-face" style={{ left: '6%', top: '34%' }}>😎</span>
+                      <span className="art-face" style={{ left: '40%', top: '8%' }}>🤠</span>
+                      <span className="art-face" style={{ left: '70%', top: '40%' }}>🦊</span>
+                      <TossChips />
                     </span>
                   </button>
                   <button type="button" className="mode mode-violet press" onClick={() => go('bots')}>
-                    <span className="mode-icon">
-                      <CardsIcon />
+                    <span className="mode-text">
+                      <span className="mode-title">Play the bots</span>
+                      <span className="mode-sub">Practise on this phone, no timer.</span>
                     </span>
-                    <ChevronIcon className="mode-chev" width={18} height={18} />
-                    <span className="mode-title">Play the bots</span>
-                    <span className="mode-sub">Practise on your own, on this phone. Pick how many bots, the blinds and your stack.</span>
-                    <span className="mode-tags">
-                      <i>1 to 8 bots</i>
-                      <i>No timer</i>
+                    <span className="mode-art mode-art-bots" aria-hidden>
+                      <span className="bot-line">
+                        {BOTS.slice(0, 6).map((b) => (
+                          <span key={b.name}>{b.emoji}</span>
+                        ))}
+                      </span>
+                      <TossChips />
                     </span>
+                  </button>
+                  <button type="button" className="join-btn press" onClick={() => go('join')}>
+                    <QrIcon width={22} height={22} />
+                    Join with a code
                   </button>
                 </section>
                 <QuickGames showAgain={hero.kind !== 'again'} />

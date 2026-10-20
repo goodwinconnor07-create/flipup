@@ -35,7 +35,8 @@ SPOTS = {
     "sb_bb": ([F, F, F, F, "raise", "call"], 5, 4),   # BB is IP against the SB's raise
     "btn_utg": (["raise", F, F, "call", F, F], 3, 0),  # BTN flats UTG
 }
-# Lean tree: realization at the flop root barely depends on the exact sizes (scripts/tree_bias.py).
+# Lean tree with two raises: sizes barely matter (scripts/tree_bias.py), but with one raise a bet
+# could not re-raise a check-raise, which undervalued betting and so the preflop raiser.
 STREET = {"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", ""), "river": StreetSizing("75%", "")}
 OUT = os.path.join(os.path.dirname(__file__), "..", "research", "realization")
 
@@ -72,7 +73,7 @@ def main():
             r_ip = np.asarray(info["reach"][ip_idx], float)
             t0 = time.time()
             s = PostflopSolver(list(f), pot, stack, class_to_combos(r_oop), class_to_combos(r_ip),
-                               sizing=BetSizing(oop=dict(STREET), ip=dict(STREET), max_raises=1), compress=True)
+                               sizing=BetSizing(oop=dict(STREET), ip=dict(STREET), max_raises=2), compress=True)
             s.solve(args.iterations, 0.5, 25)
             root = s.node([])
             ev, eq, w = np.zeros((2, 169)), np.zeros((2, 169)), np.zeros((2, 169))

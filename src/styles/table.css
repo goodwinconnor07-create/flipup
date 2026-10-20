@@ -322,6 +322,10 @@
 }
 
 .pod-name {
+  /* Above the turn ring, which swells over it, so the name always reads. */
+  position: relative;
+  z-index: 3;
+  text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg);
   line-height: 1.15;
   max-width: 100%;
   overflow: hidden;

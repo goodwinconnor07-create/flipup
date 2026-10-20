@@ -37,6 +37,12 @@ TREES = {
     # River betting kept with one size; one turn size; one raise per street.
     "mid": BetSizing(oop={"flop": StreetSizing("", "60%"), "turn": StreetSizing("75%", ""), "river": StreetSizing("75%", "")},
                      ip={"flop": RICH, "turn": StreetSizing("75%", ""), "river": StreetSizing("75%", "")}, max_raises=1),
+    # The explorer plus a turn all-in (still no river betting).
+    "explorer_a": BetSizing(oop={"flop": StreetSizing("", "60%"), "turn": StreetSizing("75%, a", ""), "river": StreetSizing("", "")},
+                            ip={"flop": RICH, "turn": StreetSizing("75%, a", ""), "river": StreetSizing("", "")}, max_raises=1),
+    # One size plus all-in on turn and river, no raises after the flop.
+    "mid_a": BetSizing(oop={"flop": StreetSizing("", "60%"), "turn": StreetSizing("75%, a", ""), "river": StreetSizing("75%, a", "")},
+                       ip={"flop": RICH, "turn": StreetSizing("75%, a", ""), "river": StreetSizing("75%, a", "")}, max_raises=1),
     "full": BetSizing(oop={"flop": StreetSizing("", "60%"), "turn": StreetSizing("66%", "a"), "river": StreetSizing("75%", "a")},
                       ip={"flop": RICH, "turn": StreetSizing("66%", "a"), "river": StreetSizing("75%", "a")}, max_raises=2),
 }

@@ -137,3 +137,51 @@ export interface HandHistory {
   actions: { street: string; player: string; move: string; to: number; out_of_turn?: boolean }[];
   board: string[];
 }
+
+// ── Custom hands (POST /custom/spot) ────────────────────────────────────────
+
+export interface CustomRequest {
+  players: number;
+  stacks_bb: number[];
+  hero: number;
+  hero_cards: string | null;
+  preflop: number[];
+  flop: number[];
+  turn: number[];
+  river: number[];
+  board: string[];
+}
+
+export interface CustomOption {
+  id: number;
+  label: string;
+  kind: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
+  to_bb?: number;
+  /** How often GTO takes it: with your exact hand on your turn, otherwise with the actor's whole range. */
+  freq: number | null;
+  range_freq: number | null;
+  ev_bb: number | null;
+}
+
+export interface CustomSpot {
+  status: 'ready' | 'solving';
+  job?: string;
+  message?: string;
+  street?: 'preflop' | 'flop' | 'turn' | 'river' | 'runout' | 'done';
+  positions?: string[];
+  players?: { position: string; stack_bb: number; behind_bb?: number; invested_bb?: number; folded?: boolean }[];
+  hero?: number;
+  board?: string[];
+  pot_bb?: number;
+  to_act?: number | null;
+  to_act_position?: string;
+  to_call_bb?: number;
+  options?: CustomOption[];
+  hand_specific?: boolean;
+  hand?: string;
+  equity?: number;
+  needs_cards?: { street: string; count: number } | null;
+  multiway?: boolean;
+  history?: { street: string; position: string; player: number; text: string }[];
+  notes?: string[];
+}

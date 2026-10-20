@@ -1,6 +1,7 @@
 """Exports a solved preflop game as one compact JSON file the app can read with no server.
 
-    python3 scripts/export_preflop.py --players 6 --stack 100 --out ../public/gto/preflop-6p-100bb.json
+    python3 scripts/export_preflop.py --players 6 --stack 100 --out ../public/gto/preflop-6p-100bb.json \\
+        --reference ../src/gto/preflop.reference.json
 
 The solution is solved here (a few minutes for 6-handed) unless --cache points at an .npz saved by
 PreflopCache or by this script's --save. Only lines GTO really plays are kept: raises and limps
@@ -97,6 +98,28 @@ def export(spot: PreflopSpot) -> dict:
             "er": [int(round(float(x) * 1000)) for x in er], "nodes": nodes}
 
 
+# Spots and hands the app's unit test checks the exported file against (src/gto/preflop.reference.json):
+# first to act, CO open, SB facing a BTN open, BB facing an SB open, HJ facing a UTG open.
+REFERENCE_PATHS = [[], [0, 0], [0, 0, 0, 1], [0, 0, 0, 0, 1], [1]]
+REFERENCE_CLASSES = ["AA", "AKs", "72o", "T9s", "55"]
+
+
+def reference(spot: PreflopSpot) -> list:
+    from flipup_gto.preflop import CLASS_INDEX
+    out = []
+    for path in REFERENCE_PATHS:
+        node = spot.node(path)
+        if node.terminal:
+            continue
+        for cls in REFERENCE_CLASSES:
+            c = CLASS_INDEX[cls]
+            out.append({"path": path, "cls": cls, "labels": node.labels,
+                        "reach": float(node.info["reach"][node.player][c]),
+                        "strat": [float(node.info["strategy"][i][c]) for i in range(len(node.labels))],
+                        "ev": [float(node.info["action_ev"][i][c]) for i in range(len(node.labels))]})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--players", type=int, default=6)
@@ -104,6 +127,7 @@ def main():
     ap.add_argument("--out", required=True)
     ap.add_argument("--cache")
     ap.add_argument("--save")
+    ap.add_argument("--reference", help="also write the unit-test reference numbers here")
     args = ap.parse_args()
     spot = PreflopSpot(num_players=args.players, stack=args.stack)
     load_or_solve(spot, args.cache, args.save)
@@ -112,6 +136,10 @@ def main():
     with open(args.out, "w") as f:
         json.dump(data, f, separators=(",", ":"))
     print(f"{len(data['nodes'])} nodes, {os.path.getsize(args.out) / 1024:.0f} KB -> {args.out}")
+    if args.reference:
+        with open(args.reference, "w") as f:
+            json.dump(reference(spot), f)
+        print(f"reference -> {args.reference}")
 
 
 if __name__ == "__main__":

@@ -49,9 +49,10 @@ def test_review_heads_up_shove(tmp_path):
     rv = Reviewer(ReviewSettings(preflop_iterations=300), cache_dir=str(tmp_path))
     r = rv.review(load("hu_shove.json"))
     by_player = {d["player"]: d for d in r["decisions"]}
-    assert by_player["a"]["grade"] in ("best", "correct")          # K7o shoves 12bb
+    # K7o at 12bb: with limps in the tree GTO mostly limps; the shove is close behind.
+    assert by_player["a"]["ev_loss_bb"] < 0.1 and by_player["a"]["grade"] != "blunder"
     assert by_player["b"]["best_action"] == "call"                 # Q8s calls the jam
-    assert by_player["b"]["grade"] in ("inaccuracy", "mistake", "blunder")
+    assert by_player["b"]["ev_loss_bb"] > 0                         # folding gives up a little
     s = aggregate_session([r])
     assert s["hands"] == 1 and s["total_ev_loss_bb"] > 0
 

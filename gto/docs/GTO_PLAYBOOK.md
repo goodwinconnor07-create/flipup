@@ -166,3 +166,26 @@ recreational players:
      real cause.
 - Drills and reviews treat preflop lines GTO plays with less than 1–2% of its range as off-tree:
   strategies behind them were never trained against a real range.
+
+## 11. Benchmarks against GTO Wizard (6-max, 100bb, NL50 rake 5% capped at 4bb, GW open sizes)
+
+Published GW figures are quoted from their blog text (charts are images); "~" figures are approximate.
+
+| Spot | Ours (one realization model) | Ours (with 4-bet pot tables, current) | GTO Wizard |
+|---|---|---|---|
+| UTG opens | 20.2% | 20.5% | 17.6% |
+| BTN opens | 39.7% | 40.7% | 42% |
+| SB raise / limp / fold | 36 / 28 / 36 | 39 / 25 / 36 | ~43 / ~2 / 54 |
+| BB vs BTN 2.5x: fold / call / 3-bet | 55 / 32 / 13 | 54 / 34 / 12 | ~60 / ~26 / ~14 |
+| BTN vs UTG: call / 3-bet | 3.6 / 8.4 | 6.6 / 7.6 | 8.2 / 7.5 (NL500) |
+| BTN vs CO: 3-bet / call | 11.5 / 4.4 | 10.6 / 5.8 | ~12 / ~5 (NL500) |
+| CO vs BTN 3-bet: fold / call / 4-bet | 48 / 40 / 13 (all-in) | 50 / 36 / 14 (mostly small) | 52 / 28 / 19 (mostly small, NL500) |
+
+- Per pot-kind realization tables (scripts/calibrate_kinds.py) were measured for limped, single-raised,
+  3-bet and 4-bet pots. Only the 4-bet tables are used: with all seven, BTN opened 26% and the BB
+  defended 61%; with the 3-bet and 4-bet tables, the 4-bet spot matched GW almost exactly but the SB
+  limped 53%. The full set is kept in data/eqr_kinds.candidate.json.
+- Known gap: the SB limps far more than GW (25% vs ~2%). Measuring realization on the solver's own
+  ranges makes SB look like it realizes ~96% out of position in limped and SB-vs-BB raised pots (the
+  BB's checking range is capped), which feeds back into more limping. Needs a fix that doesn't measure
+  on the current ranges alone.

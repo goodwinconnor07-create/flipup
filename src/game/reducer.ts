@@ -5,7 +5,7 @@ import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { BOTS } from './botStyles';
 import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
-import { canDeal, cardsText, dealNextStreet, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
+import { botsOnly, canDeal, cardsText, dealNextStreet, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
 import { cryptoRng, newId } from './ids';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
@@ -189,7 +189,7 @@ function afterHand(game: Game, ctx: ActionContext): void {
     game.pendingTalk = { at: ctx.now + 1400, playerId: who.id };
   }
   // A little longer before the next deal, so the table talk can be read.
-  if (game.nextHandAt !== null) game.nextHandAt += TIMING.talkPause;
+  if (game.nextHandAt !== null) game.nextHandAt += botsOnly(game) ? 1000 : TIMING.talkPause;
   schedule(game);
 }
 
@@ -493,7 +493,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
       const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
       if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) {
         game.botPlan = { playerId: player.id, seq: hand.seq, move: choice.move, to: choice.to };
-        hand.actAt = ctx.now + TIMING.botThink;
+        hand.actAt = ctx.now + (botsOnly(game) ? 400 : TIMING.botThink);
         schedule(game);
         return true;
       }

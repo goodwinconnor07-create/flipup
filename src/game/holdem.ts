@@ -27,6 +27,13 @@ export const TIMING = {
   rebuyWindow: 20000,
   /** After the last bet of a street is matched, a beat before the next card so the move can be seen. */
   streetPause: 1100,
+  /** Once every person is out of a hand, the bots finish it quickly: no one is watching their thinking. */
+  fastBotMin: 250,
+  fastBotMax: 550,
+  fastStreet: 350,
+  fastRunout: 600,
+  /** The pause before the next deal is this share of the usual when every person has folded. */
+  fastAfter: 0.45,
   /** Without rebuys: how long the deciding hand stays on screen before the winner's page. */
   endPause: 7000,
 };
@@ -347,6 +354,12 @@ function continueFrom(game: Game, idx: number, ctx: ActionContext): void {
   endStreet(game, ctx);
 }
 
+/** True when every person has folded and only bots are left playing the hand out. */
+export function botsOnly(game: Game): boolean {
+  const hand = game.hand;
+  return !!hand && hand.seats.every((s) => s.folded || !!playerById(game, s.playerId)?.bot);
+}
+
 function setTurn(game: Game, idx: number, ctx: ActionContext): void {
   const hand = game.hand!;
   const seat = hand.seats[idx];
@@ -360,7 +373,8 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
     return;
   }
   if (player.bot) {
-    hand.actAt = ctx.now + TIMING.botMin + Math.floor(ctx.rng() * (TIMING.botMax - TIMING.botMin));
+    const [lo, hi] = botsOnly(game) ? [TIMING.fastBotMin, TIMING.fastBotMax] : [TIMING.botMin, TIMING.botMax];
+    hand.actAt = ctx.now + lo + Math.floor(ctx.rng() * (hi - lo));
   } else if (game.settings.turnSeconds > 0) {
     hand.deadline = ctx.now + game.settings.turnSeconds * 1000;
     hand.actAt = hand.deadline;
@@ -435,7 +449,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
       s.shown = true;
       log(game, `${nameOf(game, s.playerId)} shows ${cardsText(s.cards)}`);
     }
-    hand.actAt = ctx.now + TIMING.runoutStep;
+    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
     schedule(game);
     return;
   }
@@ -443,7 +457,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
   // A beat before the next card, so the last move is seen first and nobody's cards land mid-thought.
   hand.toAct = null;
   hand.deadline = null;
-  hand.nextStreetAt = ctx.now + TIMING.streetPause;
+  hand.nextStreetAt = ctx.now + (botsOnly(game) ? TIMING.fastStreet : TIMING.streetPause);
   hand.actAt = hand.nextStreetAt;
   schedule(game);
 }
@@ -467,7 +481,7 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
     return;
   }
   dealStreet(hand);
-  hand.actAt = ctx.now + TIMING.runoutStep;
+  hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
   schedule(game);
 }
 
@@ -573,8 +587,9 @@ function winWithoutShowdown(game: Game, ctx: ActionContext): void {
   finishHand(game, ctx, TIMING.afterFold);
 }
 
-function finishHand(game: Game, ctx: ActionContext, pause: number): void {
+function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   const hand = game.hand!;
+  const pause = botsOnly(game) ? Math.round(usualPause * TIMING.fastAfter) : usualPause;
   for (const s of hand.seats) s.bet = 0;
   hand.runout = false;
   if (hand.board.length) log(game, `Board: ${cardsText(hand.board)}`);

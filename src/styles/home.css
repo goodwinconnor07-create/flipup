@@ -45,7 +45,7 @@ html[data-theme='dark'] .glass-card {
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background: radial-gradient(120% 70% at 50% 0%, #17795a 0%, #0b4a35 45%, #052a1d 100%);
+  background: #14110d;
 }
 
 .home-backdrop .glow {
@@ -107,7 +107,7 @@ html[data-theme='dark'] .glass-card {
   flex: 1;
   min-height: 0;
   display: flex;
-  margin-top: max(150px, 24dvh);
+  margin-top: max(150px, 44dvh);
   border-radius: 36px 36px 0 0;
   overflow: hidden;
   background: rgba(250, 250, 253, 0.92);
@@ -512,11 +512,15 @@ html.calm .home-pane {
 
 .casino-photo {
   position: absolute;
-  inset: -40px;
-  background:
-    linear-gradient(180deg, rgba(5, 42, 29, 0.05), rgba(5, 42, 29, 0.35)),
-    url('/home/casino.jpg') center / cover no-repeat;
-  filter: blur(4px) saturate(1.2);
+  inset: -40px -40px auto -40px;
+  height: calc(54dvh + 40px);
+  background: url('/home/casino.jpg') center / cover no-repeat;
+  filter: blur(4px) saturate(1.15);
+}
+
+/* The green glows and the felt's colour would tint the photo, so they step back on Home. */
+.home-backdrop .glow {
+  opacity: 0;
 }
 
 .bokeh {

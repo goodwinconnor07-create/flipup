@@ -3,16 +3,25 @@
 
 import type { Game, HandLog } from './types';
 
+/**
+ * A device id is the only key to a seat (and to the host's powers), so it must never be sent to
+ * anyone else. Other phones see a stand-in that isn't a valid device id (isDeviceId refuses the
+ * colon), so it can't be played back to the server, yet still tells seats and the host apart.
+ */
+const standIn = (playerId: string) => `seat:${playerId}`;
+
 const mineFor = (game: Game, deviceId: string) => new Set(game.players.filter((p) => p.deviceId === deviceId).map((p) => p.id));
 
 /** The table as one phone may see it. The hand log is left out (it's sent on request, see redactLogs). */
 export function redactForDevice(game: Game, deviceId: string): Game {
   const hand = game.hand;
   const mine = mineFor(game, deviceId);
+  const host = game.players.find((p) => p.deviceId === game.hostDeviceId);
   return {
     ...game,
-    // Bots' styles and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, ...p }) => p),
+    hostDeviceId: game.hostDeviceId === deviceId ? deviceId : standIn(host?.id ?? 'host'),
+    // Bots' styles and their notes on players stay on the server, and so do other phones' device ids.
+    players: game.players.map(({ style: _style, ...p }) => (p.deviceId !== null && p.deviceId !== deviceId ? { ...p, deviceId: standIn(p.id) } : p)),
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,

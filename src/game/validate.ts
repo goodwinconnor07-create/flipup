@@ -10,6 +10,14 @@ const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInt
 const isText = (v: unknown, max: number): v is string => typeof v === 'string' && v.length <= max;
 const isId = (v: unknown): v is string => typeof v === 'string' && /^[a-z0-9]{1,24}$/.test(v);
 
+/**
+ * Drops control characters (but not tabs and line breaks, which cleanName turns into spaces) and the invisible or direction-flipping ones (zero-width spaces, right-to-left
+ * overrides), which could hide a name or make it read as someone else's. Joiners (for emoji like 🧑‍💻) stay.
+ */
+export function stripInvisible(text: string): string {
+  return text.replace(/[\u0000-\u0008\u000E-\u001F\u007F-\u009F\u00AD\u061C\u180E\u200B\u200E\u200F\u202A-\u202E\u2060-\u2064\u2066-\u2069\uFEFF]/g, '');
+}
+
 /** A settings change with only known keys and sensible values, or null. */
 export function parseSettings(raw: unknown, partial: boolean): Partial<Settings> | null {
   if (typeof raw !== 'object' || raw === null) return null;
@@ -36,7 +44,7 @@ export function parseAction(raw: unknown): Action | null {
     case 'join':
     case 'setLook':
       if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
-      return { type: a.type, name: a.name, emoji: a.emoji };
+      return { type: a.type, name: stripInvisible(a.name), emoji: a.emoji };
     case 'addBot':
     case 'start':
     case 'rebuy':

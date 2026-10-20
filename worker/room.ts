@@ -15,11 +15,26 @@ import {
   type TableInfo,
 } from '../src/game';
 
+/** Notes kept per player (quick messages, bot reads...) are dropped once that player has left, so joining and leaving over and over can't bloat the table. */
+function forgetLeavers(game: Game): void {
+  const here = new Set(game.players.map((p) => p.id));
+  for (const key of ['reactions', 'reads', 'talkAt', 'streaks'] as const) {
+    const notes = game[key] as Record<string, unknown> | undefined;
+    if (!notes) continue;
+    for (const id of Object.keys(notes)) if (!here.has(id)) delete notes[id];
+  }
+}
+
 /** Tables are deleted this long after the last change. */
 const KEEP_FOR_MS = 3 * 24 * 60 * 60 * 1000;
 const MAX_MESSAGE_CHARS = 4 * 1024;
 /** Per connection: at most this many actions in each window. */
 const RATE_LIMIT = { count: 30, windowMs: 10_000 };
+/** Open sockets: a few per phone (a reconnect can overlap its dead predecessor) and a cap for the whole table. */
+const MAX_SOCKETS_PER_DEVICE = 8;
+const MAX_SOCKETS = 64;
+/** If a due tick changes nothing, wait this long before the alarm tries again, so a stuck table can't spin. */
+const STUCK_RETRY_MS = 5_000;
 
 interface SocketMeta {
   deviceId: string;
@@ -69,6 +84,16 @@ export class TableRoom extends DurableObject<Env> {
     if (!isDeviceId(deviceId)) return new Response('Missing device id', { status: 400 });
     const game = await this.load();
     if (!game) return new Response('Table not found', { status: 404 });
+    if (this.ctx.getWebSockets().length >= MAX_SOCKETS) return new Response('This table is busy', { status: 503 });
+    // A phone that keeps reconnecting leaves old sockets behind until they time out: drop the oldest.
+    const mine = this.ctx.getWebSockets(deviceId);
+    for (const old of mine.slice(0, Math.max(0, mine.length - MAX_SOCKETS_PER_DEVICE + 1))) {
+      try {
+        old.close(1008, 'Replaced');
+      } catch {
+        // Already closed.
+      }
+    }
 
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server, [deviceId]);
@@ -87,9 +112,19 @@ export class TableRoom extends DurableObject<Env> {
     }
     if (typeof msg !== 'object' || msg === null) return;
     const { t, id: rawId, a } = msg as { t?: unknown; id?: unknown; a?: unknown };
-    const { deviceId } = ws.deserializeAttachment() as SocketMeta;
+    const meta = ws.deserializeAttachment() as SocketMeta | null;
+    if (!meta || !isDeviceId(meta.deviceId)) {
+      ws.close(1008, 'Unknown device');
+      return;
+    }
+    const { deviceId } = meta;
 
     if (t === 'ping') return this.send(ws, { t: 'pong' });
+    // Every request costs work (a sync or a log re-reads and redacts the whole table), not just actions.
+    if (this.overLimit(ws)) {
+      const id = typeof rawId === 'string' && rawId.length <= 40 ? rawId : undefined;
+      return t === 'act' ? this.send(ws, { t: 'reject', id, error: 'Easy there. Try again in a moment.' }) : undefined;
+    }
 
     const game = await this.load();
     if (!game) {
@@ -101,11 +136,15 @@ export class TableRoom extends DurableObject<Env> {
     if (t !== 'act') return;
 
     const id = typeof rawId === 'string' && rawId.length <= 40 ? rawId : undefined;
-    if (this.overLimit(ws)) return this.send(ws, { t: 'reject', id, error: 'Easy there. Try again in a moment.' });
-
     const action = parseAction(a);
     if (!action) return this.send(ws, { t: 'reject', id, error: "The server didn't understand that." });
-    await this.apply(action, deviceId, ws, id);
+    try {
+      await this.apply(action, deviceId, ws, id);
+    } catch (err) {
+      // The reducer works on a copy, so a crash here leaves the table as it was.
+      console.error('action failed', err);
+      this.send(ws, { t: 'reject', id, error: 'Something went wrong on the server. Try again.' });
+    }
   }
 
   /** Applies an action, saves, and sends everyone their view of the result. */
@@ -121,7 +160,9 @@ export class TableRoom extends DurableObject<Env> {
       if (from) this.send(from, { t: 'state', game: redactForDevice(game, deviceId), ack: id });
       return;
     }
-    await this.save(result.game);
+    // Only a phone's own move counts as the table being in use: the clock alone must not keep a table alive forever.
+    forgetLeavers(result.game);
+    await this.save(result.game, from !== undefined);
     for (const socket of this.ctx.getWebSockets()) {
       const meta = socket.deserializeAttachment() as SocketMeta | null;
       if (!meta) continue;
@@ -146,8 +187,19 @@ export class TableRoom extends DurableObject<Env> {
       this.game = null;
       return;
     }
-    if (game.wakeAt !== null && Date.now() >= game.wakeAt - 20) await this.apply({ type: 'tick' }, 'server');
-    await this.scheduleAlarm();
+    const before = game.version;
+    if (game.wakeAt !== null && Date.now() >= game.wakeAt - 20) {
+      try {
+        await this.apply({ type: 'tick' }, 'server');
+      } catch (err) {
+        // Don't let a crash end the alarm chain (the runtime gives up after a few retries and the table would freeze).
+        console.error('tick failed', err);
+      }
+    }
+    // A due tick that changed nothing would re-arm the alarm for "now" and spin: back off instead.
+    const now = Date.now();
+    const stuck = this.game?.version === before && this.game.wakeAt !== null && this.game.wakeAt - 20 <= now;
+    await this.scheduleAlarm(stuck ? now + STUCK_RETRY_MS : 0);
   }
 
   async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
@@ -171,19 +223,22 @@ export class TableRoom extends DurableObject<Env> {
     return this.game;
   }
 
-  private async save(game: Game): Promise<void> {
+  /** `touch` pushes back the day the table is deleted. */
+  private async save(game: Game, touch = true): Promise<void> {
+    // Keep the copy in memory only once it's safely stored, so a failed write can't leave the two disagreeing.
+    if (touch) await this.ctx.storage.put({ game, expireAt: Date.now() + KEEP_FOR_MS });
+    else await this.ctx.storage.put({ game });
     this.game = game;
-    await this.ctx.storage.put({ game, expireAt: Date.now() + KEEP_FOR_MS });
     await this.scheduleAlarm();
   }
 
-  /** One alarm covers both jobs: the next timed game event, or clean-up. */
-  private async scheduleAlarm(): Promise<void> {
+  /** One alarm covers both jobs: the next timed game event, or clean-up. Never earlier than `notBefore`. */
+  private async scheduleAlarm(notBefore = 0): Promise<void> {
     const game = this.game;
     if (!game) return;
     const expireAt = (await this.ctx.storage.get<number>('expireAt')) ?? Date.now() + KEEP_FOR_MS;
     const at = game.wakeAt !== null ? Math.min(game.wakeAt, expireAt) : expireAt;
-    await this.ctx.storage.setAlarm(Math.max(at, Date.now() + 10));
+    await this.ctx.storage.setAlarm(Math.max(at, notBefore, Date.now() + 10));
   }
 
   private send(ws: WebSocket, msg: ServerMessage): void {

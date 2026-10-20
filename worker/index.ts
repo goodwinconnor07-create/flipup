@@ -5,6 +5,7 @@ import {
   isEmoji,
   isNameBlocked,
   cleanName,
+  stripInvisible,
   newCode,
   parseSettings,
   DEFAULT_SETTINGS,
@@ -16,19 +17,44 @@ import {
 export { TableRoom } from './room';
 
 const MAX_BODY_CHARS = 16 * 1024;
+/** Hand histories for a session review are the biggest thing the app sends the coach. */
+const MAX_GTO_BODY_CHARS = 512 * 1024;
+const GTO_TIMEOUT_MS = 25_000;
+
+const HEADERS = { 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' };
 
 function json(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+    headers: { 'content-type': 'application/json; charset=utf-8', ...HEADERS },
   });
 }
 
-async function readJson(request: Request): Promise<unknown> {
+/** The request body as text, or null if it's bigger than `max` (checked as it streams in, not just from the header). */
+async function readText(request: Request, max: number): Promise<string | null> {
   const length = Number(request.headers.get('content-length') ?? 0);
-  if (length > MAX_BODY_CHARS) return null;
-  const text = await request.text();
-  if (text.length > MAX_BODY_CHARS) return null;
+  if (!(length <= max)) return null;
+  if (!request.body) return '';
+  const reader = request.body.getReader();
+  const decoder = new TextDecoder();
+  let text = '';
+  let bytes = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    bytes += value.byteLength;
+    if (bytes > max) {
+      await reader.cancel();
+      return null;
+    }
+    text += decoder.decode(value, { stream: true });
+  }
+  return text + decoder.decode();
+}
+
+async function readJson(request: Request): Promise<unknown> {
+  const text = await readText(request, MAX_BODY_CHARS);
+  if (text === null) return null;
   try {
     return JSON.parse(text);
   } catch {
@@ -40,7 +66,7 @@ async function readJson(request: Request): Promise<unknown> {
 async function createTableRoute(request: Request, env: Env): Promise<Response> {
   const body = (await readJson(request)) as Record<string, unknown> | null;
   if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
-  const name = typeof body.name === 'string' ? cleanName(body.name) : '';
+  const name = typeof body.name === 'string' && body.name.length <= 64 ? cleanName(stripInvisible(body.name)) : '';
   if (!name) return json({ error: 'Add your name first.' }, 400);
   if (isNameBlocked(name)) return json({ error: 'Pick a different name.' }, 400);
   if (!isEmoji(body.emoji)) return json({ error: 'Pick an emoji.' }, 400);
@@ -66,15 +92,27 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   return json({ error: "Couldn't find a free code. Try again." }, 503);
 }
 
+/** The only coach calls the app makes. Everything else the service offers (docs, heavy solvers) stays closed to the public. */
+const GTO_ROUTES: { method: string; path: RegExp }[] = [
+  { method: 'POST', path: /^\/(review\/session|analyze|custom\/spot)$/ },
+  { method: 'GET', path: /^\/(library|library\/[A-Za-z0-9_-]{1,64}\/drill|jobs\/[A-Za-z0-9_-]{1,64})$/ },
+];
+
 /** /api/gto/*: passed through to the GTO coach service, so the app talks to one origin. */
 async function gtoProxy(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
   const base = (env.GTO_URL ?? '').replace(/\/$/, '');
   if (!base) return json({ error: "The GTO coach isn't connected yet." }, 503);
-  const init: RequestInit = { method: request.method, headers: { 'content-type': 'application/json' } };
-  if (request.method === 'POST') init.body = await request.text();
+  const path = pathname.slice('/api/gto'.length);
+  if (!GTO_ROUTES.some((r) => r.method === request.method && r.path.test(path))) return json({ error: 'Not found.' }, 404);
+  const init: RequestInit = { method: request.method, headers: { 'content-type': 'application/json' }, signal: AbortSignal.timeout(GTO_TIMEOUT_MS) };
+  if (request.method === 'POST') {
+    const body = await readText(request, MAX_GTO_BODY_CHARS);
+    if (body === null) return json({ error: 'That request is too big.' }, 413);
+    init.body = body;
+  }
   try {
-    const res = await fetch(`${base}${pathname.slice('/api/gto'.length)}${search}`, init);
-    return new Response(res.body, { status: res.status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
+    const res = await fetch(`${base}${path}${search}`, init);
+    return new Response(res.body, { status: res.status, headers: { 'content-type': 'application/json; charset=utf-8', ...HEADERS } });
   } catch {
     return json({ error: "Couldn't reach the GTO coach." }, 502);
   }

@@ -134,7 +134,19 @@ function table(players: number, settings: Partial<Settings> = {}, seed = 1): Gam
     now: clock,
   });
   for (let i = 1; i < players; i++) game = must(game, { type: 'join', name: `P${i}`, emoji: '🐸' }, `device-${i}`);
-  return must(game, { type: 'start' }, HOST, seededRng(seed));
+  return begin(game, seed);
+}
+
+/** Starts the game and waits out the few seconds before the first cards (and the bot's hello). */
+function begin(game: Game, seed = 7): Game {
+  let g = must(game, { type: 'start' }, HOST, seededRng(seed));
+  expect(g.hand).toBeNull();
+  expect(g.nextHandAt).toBe(clock + TIMING.startDelay);
+  for (let i = 0; i < 5 && !g.hand; i++) {
+    clock = g.wakeAt ?? clock + 1;
+    g = must(g, { type: 'tick' }, 'server', seededRng(seed));
+  }
+  return g;
 }
 
 function must(game: Game, action: Action, deviceId: string, rng = seededRng(7)): Game {
@@ -296,7 +308,7 @@ describe('betting', () => {
     // A fixed mix of styles (bots are seated at random), so every run plays the same hands.
     const styles = ['pro', 'maniac', 'station', 'trapper', 'gambler'];
     game.players.filter((p) => p.bot).forEach((p, i) => (p.style = styles[i]));
-    game = must(game, { type: 'start' }, HOST);
+    game = begin(game);
     const total = chipsInPlay(game);
     const rng = seededRng(42);
     let hands = 0;
@@ -583,7 +595,7 @@ describe('table', () => {
     // Bots are seated at random; fix their styles so the hand plays out the same every run.
     for (const p of game.players) if (p.bot) p.style = 'rock';
     game = must(game, { type: 'join', name: 'Friend', emoji: '🐸' }, 'device-friend');
-    game = must(game, { type: 'start' }, HOST);
+    game = begin(game);
     const n = game.hand!.number;
     // Not while the hand is still being played.
     expect(applyAction(game, { type: 'revealBots', hand: n }, ctx(HOST)).ok).toBe(false);

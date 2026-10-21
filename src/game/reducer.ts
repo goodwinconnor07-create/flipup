@@ -409,7 +409,16 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status !== 'lobby') return done(false);
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
-      startHand(game, ctx);
+      // A few seconds to take the table in, with a word from a bot, before the first cards come.
+      game.nextHandAt = ctx.now + TIMING.startDelay;
+      const bots = game.players.filter((p) => p.bot);
+      const people = game.players.filter((p) => !p.bot);
+      if (bots.length) {
+        const headsUp = game.players.length === 2 && people.length === 1;
+        const who = headsUp ? bots[0] : bots[Math.floor(ctx.rng() * bots.length)];
+        game.pendingTalk = { at: ctx.now + TIMING.greeting, playerId: who.id, event: headsUp ? 'hello' : 'welcome', forId: headsUp ? people[0].id : undefined };
+      }
+      schedule(game);
       return done();
     }
 
@@ -547,6 +556,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
   if (game.pendingTalk && due(game.pendingTalk.at)) {
     const { playerId, event, forId, seq } = game.pendingTalk;
     delete game.pendingTalk;
+    if (event === 'hello' || event === 'welcome') {
+      botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
+      schedule(game);
+      return true;
+    }
     // A jab at a slow player only lands if they're still on the clock.
     if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now);
     schedule(game);

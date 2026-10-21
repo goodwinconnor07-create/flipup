@@ -252,6 +252,44 @@ function usePodSlots(
   return { slots, n, hidden: others.length - n };
 }
 
+/** "+3": the players not in the row right now. Tap it for who they are and how many chips each has. */
+function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
+  const [open, setOpen] = useState(false);
+  const hand = game.hand;
+  return (
+    <>
+      {open && <button type="button" className="hidden-scrim" aria-label="Close" onClick={() => setOpen(false)} />}
+      <span className="hidden-wrap">
+        {open && (
+          <div className="hidden-pop pop" role="dialog" aria-label="Other players">
+            {players.map((p) => {
+              const seat = seatFor(hand, p.id);
+              const note = p.stack === 0 && !seat ? 'Out' : seat?.folded ? 'Folded' : p.sittingOut ? 'Away' : null;
+              return (
+                <div key={p.id} className="hidden-row">
+                  <Avatar emoji={p.emoji} size={24} />
+                  <span className="hidden-name">{p.name}</span>
+                  {note && <small className="muted">{note}</small>}
+                  <b className="num">{chips(p.stack)}</b>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        <button
+          type="button"
+          className="pods-more press"
+          aria-label={`${players.length} more players not shown`}
+          aria-expanded={open}
+          onClick={() => setOpen((o) => !o)}
+        >
+          +{players.length}
+        </button>
+      </span>
+    </>
+  );
+}
+
 function Felt({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);
   const sending = useApp((s) => s.sending);
@@ -267,7 +305,7 @@ function Felt({ game }: { game: Game }) {
   // Someone who folded stays in view while they're still saying something.
   const podSlots = usePodSlots(game, others, !desktop, reactions);
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
-  const timed = !!hand?.deadline || (!!hand?.result && !!game.nextHandAt);
+  const timed = !!hand?.deadline || ((!hand || !!hand.result) && !!game.nextHandAt);
   const now = useNow(timed ? 200 : 60_000);
   useTableSounds(game, me?.id);
 
@@ -393,11 +431,7 @@ function Felt({ game }: { game: Game }) {
                 self
               />
             )}
-            {podSlots.hidden > 0 && (
-              <span className="pods-more" aria-label={`${podSlots.hidden} more players not shown`}>
-                +{podSlots.hidden}
-              </span>
-            )}
+            {podSlots.hidden > 0 && <HiddenPlayers game={game} players={others.filter((p) => podSlots.slots.get(p.id)?.away)} />}
           </div>
         )}
 
@@ -669,7 +703,7 @@ function useReactions(game: Game): Record<string, string> {
     for (const [id, r] of Object.entries(now)) {
       if (seen.current[id] === r.n) continue;
       seen.current[id] = r.n;
-      const value = `${r.id}|${r.n}`;
+      const value = `${r.id}|${r.n}|${r.to ?? ''}`;
       if (r.id.startsWith('b:')) {
         const event = talkEvent(value);
         // One line per bot waiting at a time: the newest.
@@ -721,9 +755,9 @@ const POST_OUTCOME = new Set(['sweatWin', 'sweatLose', 'watched', 'badBeat', 'bi
 const talkEvent = (value: string) => (value.startsWith('b:') ? value.split(':')[2] : '');
 
 /** Something said at the table, in the same bubble style as a move. */
-function ReactBubble({ id: value }: { id: string }) {
-  const [id, n] = value.split('|');
-  const text = reactionText(id);
+function ReactBubble({ id: value, game }: { id: string; game: Game }) {
+  const [id, n, to] = value.split('|');
+  const text = reactionText(id, game.players.find((p) => p.id === to)?.name);
   const emoji = !/[A-Za-z]/.test(text);
   return (
     <span key={`${id}-${n}`} className={`bubble bubble-grey bubble-react pop${emoji ? ' bubble-emoji' : ''}`} role="status">
@@ -764,7 +798,8 @@ function Pod({
   const deviceId = useApp((s) => s.deviceId);
   const host = game.hostDeviceId === deviceId;
   const turn = !!hand && !hand.result && hand.toAct === player.id;
-  const out = !seat || seat.folded;
+  // Before the first hand is dealt nobody is out: they're just waiting for the cards.
+  const out = !!hand && (!seat || seat.folded);
   const won = hand?.result?.won[player.id] ?? 0;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   // A bot on the clock shows typing dots until it speaks or moves.
@@ -788,7 +823,7 @@ function Pod({
         <Avatar emoji={player.emoji} size={50} />
         <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (
-          <ReactBubble id={reaction} />
+          <ReactBubble id={reaction} game={game} />
         ) : thinking ? (
           <span className="bubble bubble-grey bubble-typing pop" aria-label={`${player.name} is thinking`}>
             <i />
@@ -872,7 +907,7 @@ function MyBox({
   const desktop = useDesktop();
   // On a computer my seat is on the table (bottom), so the bubble and position are shown there.
   const bubble = desktop ? null : reaction ? (
-    <ReactBubble id={reaction} />
+    <ReactBubble id={reaction} game={game} />
   ) : seat?.last ? (
     <Bubble last={seat.last} street={hand?.street} />
   ) : null;
@@ -1020,6 +1055,15 @@ function ActionArea({
         <button type="button" className="btn btn-green" onClick={() => dispatch({ type: 'sitOut', out: false })}>
           I'm back. Deal me in
         </button>
+      </div>
+    );
+  }
+  // A new game: a few seconds to take in the table before the first cards.
+  if (!hand && game.status === 'playing' && game.nextHandAt !== null) {
+    const secs = Math.max(1, Math.ceil((game.nextHandAt - now) / 1000));
+    return (
+      <div className="stack">
+        <p className="table-note">Dealing in {secs}…</p>
       </div>
     );
   }

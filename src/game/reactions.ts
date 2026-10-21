@@ -24,4 +24,5 @@ export const REACTIONS: Reaction[] = [
 
 export const isReactionId = (v: unknown): v is string => typeof v === 'string' && REACTIONS.some((r) => r.id === v);
 
-export const reactionText = (id: string): string => REACTIONS.find((r) => r.id === id)?.text ?? botLineText(id);
+/** `you` is who a bot is talking to, for lines that name them ({you}). */
+export const reactionText = (id: string, you = 'you'): string => REACTIONS.find((r) => r.id === id)?.text ?? botLineText(id).replaceAll('{you}', you);

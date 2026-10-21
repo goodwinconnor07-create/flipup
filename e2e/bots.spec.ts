@@ -133,6 +133,53 @@ test('bot table talk never overlaps: lines wrap inside the seat row and come one
   console.log('bot lines seen:', seen);
 });
 
+test('a new game waits three seconds with a countdown, and the bot says hello by name heads-up', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'One less bot' }).click();
+  await page.getByRole('button', { name: 'One less bot' }).click();
+  await page.getByRole('button', { name: 'One less bot' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  const started = Date.now();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.getByText(/Dealing in \d/)).toBeVisible();
+  // The greeting names us.
+  await expect(page.locator('.pod .bubble-react')).toContainText('Sam', { timeout: 2500 });
+  await shot(page, '15-hello');
+  // No cards for about three seconds.
+  await expect(page.getByText('Your turn')).toBeHidden();
+  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2, { timeout: 8000 });
+  expect(Date.now() - started).toBeGreaterThanOrEqual(2800);
+});
+
+test('the +N badge lists the players out of the row with their chips', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One more bot' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  const badge = page.getByRole('button', { name: /more players not shown/ });
+  await expect(badge).toBeVisible({ timeout: 15_000 });
+  await badge.click();
+  const list = page.getByRole('dialog', { name: 'Other players' });
+  await expect(list).toBeVisible();
+  const rows = list.locator('.hidden-row');
+  expect(await rows.count()).toBeGreaterThanOrEqual(1);
+  // Each row has a name and a chip count.
+  await expect(rows.first().locator('.hidden-name')).not.toBeEmpty();
+  await expect(rows.first().locator('.num')).toHaveText(/\d/);
+  await shot(page, '16-hidden-players');
+  // Tapping away closes it.
+  await page.getByRole('button', { name: 'Close', exact: true }).click();
+  await expect(list).toBeHidden();
+});
+
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings' }).click();

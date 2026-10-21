@@ -61,7 +61,11 @@ export type TalkEvent =
   /** Someone showed the bluff it folded to. */
   | 'gotBluffed'
   /** Watched a big pot it wasn't in (or had folded out of) end. */
-  | 'watched';
+  | 'watched'
+  /** A new heads-up game is about to start: a word to the one person across the table, by name ({you}). */
+  | 'hello'
+  /** A new game with several players is about to start: a word to the table. */
+  | 'welcome';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -94,6 +98,8 @@ const TRASH: Lines = {
   tilted: ['I’m fine.', 'Totally calm.', 'Next hand’s mine.', 'Unreal deck.', 'Just deal.'],
   gotBluffed: ['You had THAT?', 'Noted.', 'I’ll remember that.', 'Enjoy it while it lasts.', 'Cute.'],
   watched: ['Well, well.', 'Brutal.', 'There it is.', 'Wow, okay.', 'Next.'],
+  hello: ['Hey {you}. Ready to lose?', 'Sit down, {you}.', '{you}. Let’s see what you’ve got.', 'Nice to meet you, {you}. Nice chips.', 'Evening, {you}.'],
+  welcome: ['Welcome to the table.', 'Fresh chips. Lovely.', 'Hope you all brought chips.', 'Take a seat, fish.', 'Let’s play.'],
 };
 
 const FRIENDLY: Lines = {
@@ -125,6 +131,8 @@ const FRIENDLY: Lines = {
   tilted: ['Deep breaths…', 'Not my night.', 'I’m okay. Mostly.', 'Need a break.', 'Can I win one?'],
   gotBluffed: ['No way!', 'You had nothing?!', 'Sneaky!', 'Ugh, I believed you.', 'Well played…'],
   watched: ['Wow!', 'What a hand!', 'Wild one.', 'Oof, nice.', 'Phew, glad that’s over.'],
+  hello: ['Hi {you}! Good luck!', 'Hey {you}, let’s have fun!', 'Welcome, {you}! Ready?', 'Good to see you, {you}!', 'Hi {you}! Be gentle 😅'],
+  welcome: ['Welcome to the table!', 'Hi everyone!', 'Good luck, all!', 'Glad you’re here!', 'Let’s have a good one!'],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -132,6 +140,8 @@ const FRIENDLY: Lines = {
 const VOICES: Record<StyleId, Partial<Lines>> = {
   // The Menace: cocky, loves rubbing it in.
   shark: {
+    hello: ['Hello, {you}. I’ve read you already.', '{you}. Nice stack. Mine soon.'],
+    welcome: ['Welcome. Sit. Lose.'],
     thinkEasy: ['Light work.', 'Calculated.'],
     raise: ['Pay me.', 'Sit down.'],
     bluffWon: ['Folded 😂', 'Scared money.', 'Nice fold.'],
@@ -147,6 +157,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tilted: ['Whatever.'],
   },
   lag: {
+    hello: ['{you}! Buckle up.', 'Hey {you}. No brakes tonight.'],
+    welcome: ['Welcome! Hold on to your chips.'],
     allin: ['Chaos time.', 'No mercy.'],
     raise: ['Get cooked.', 'Big plans.'],
     bluffWon: ['That worked?!', 'Cinema 🎬', 'Absolutely robbed.'],
@@ -161,6 +173,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
   },
   // The Troll: ridiculous, bluffs constantly, blames the deck.
   maniac: {
+    hello: ['{you}!! LET’S GO!', 'Hi {you}. I’m all in already.'],
+    welcome: ['WELCOME! Chaos time!'],
     allin: ['Trust me.', 'Chaos time.', 'Call the FBI.'],
     raise: ['Believe me?', 'Trust me.'],
     sweatLose: ['Scripted 🎬', 'Rigged.', 'That’s illegal.'],
@@ -176,6 +190,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     revenge: ['Generational.'],
   },
   gambler: {
+    hello: ['{you}! Feeling lucky?', 'Hey {you}. I’ve got a good feeling.'],
+    welcome: ['Welcome! Who’s feeling lucky?'],
     allin: ['We gamble.', 'Why not.', 'Send it.'],
     sweat: ['Please raise.', 'One time.', 'Prayer answered 🙏'],
     sweatWin: ['I’M ALIVE.', 'We are so back.'],
@@ -190,6 +206,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tilted: ['One time.', 'Redemption arc.', 'I hate poker.'],
   },
   tag: {
+    hello: ['Hello, {you}. Good luck.', '{you}. Let’s play it straight.'],
+    welcome: ['Welcome. Let’s play tight.'],
     thinkEasy: ['Clean.', 'Standard.'],
     bluffWon: ['Respectfully, no.', 'Good boy.'],
     bigWin: ['Beautiful.', 'Thank you.', 'Easy game.'],
@@ -203,6 +221,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
   },
   // The Silent Killer: rarely speaks, and it hurts when they do.
   pro: {
+    hello: ['Hello, {you}. Good game.', '{you}. Let’s get to it.'],
+    welcome: ['Welcome, everyone. Good luck.'],
     thinkEasy: ['Noted.', 'Calculated.'],
     yourBigBet: ['I know you.', 'Noted.', 'I’m watching.'],
     bluffWon: ['Read you.', 'Mental warfare.'],
@@ -216,6 +236,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     revenge: ['Noted forever.'],
   },
   rock: {
+    hello: ['…{you}.', 'Hello, {you}. I’ll wait.'],
+    welcome: ['Hello. Deal.'],
     foldBig: ['Fine.', 'Noted.'],
     yourBigBet: ['Hmm.', 'Very interesting.', 'I smell fear.'],
     bigWin: ['Goodnight 😴', 'Hold that.', 'Never worried.'],
@@ -228,6 +250,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     showFold: ['Good fold. Probably.', 'Next time.'],
   },
   trapper: {
+    hello: ['Come in, {you}. Sit down.', 'Hi {you}. Nothing to see here.'],
+    welcome: ['Welcome. Don’t mind me.'],
     thinkHard: ['Please call.', 'Come here.', 'I’m waiting.'],
     thinkEasy: ['Trap sprung.', 'Easy decision.', 'Got something.'],
     raise: ['Feeling lucky?', 'I dare you.', 'Don’t fold.'],
@@ -241,6 +265,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
   },
   // The Choker: panics under pressure, complains about everything.
   nervous: {
+    hello: ['Oh, hi {you}… be nice?', '{you}! I’m so nervous.'],
+    welcome: ['Hi everyone… I’m nervous.'],
     thinkHard: ['Oh no, oh no.', 'I’m sweating.', 'Why me?'],
     allin: ['I’m sick.', 'Please hold.', 'I panicked 😭'],
     foldBig: ['Too scary.', 'I’m out, sorry.'],
@@ -255,6 +281,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     tilted: ['Why me?', 'I’m sweating.', 'I’m sick.'],
   },
   station: {
+    hello: ['Hey {you}. I’ll call.', '{you}. Don’t bluff, I’ll call.'],
+    welcome: ['Welcome. I’ll call anything.'],
     callLight: ['Show me.', 'I’ll pay.', 'Just looking.'],
     thinkHard: ['I’m calling anyway.', 'Hmm.'],
     sweatLose: ['Rigged.', 'Of course.', 'Naturally.'],
@@ -317,6 +345,8 @@ const CHANCE: Record<TalkEvent, number> = {
   tilted: 0.6,
   gotBluffed: 0.9,
   watched: 1,
+  hello: 1,
+  welcome: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
@@ -327,7 +357,7 @@ const COOLDOWN = 2500;
  * `owed` is for a reaction the table is waiting for (a bot that cried "c'mon!" and then saw the pot
  * go): it speaks whatever the dice and the cooldown say, so it never goes quiet at the moment it should react.
  */
-export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false): boolean {
+export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false, to?: string): boolean {
   const player = game.players.find((p) => p.id === playerId);
   if (!player?.bot) return false;
   const last = game.talkAt?.[playerId] ?? -Infinity;
@@ -337,7 +367,7 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   const lines = pool(style.id, event);
   if (!lines.length) return false;
   const i = Math.floor(rng() * lines.length);
-  game.reactions = { ...game.reactions, [playerId]: { id: id(style.id, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1 } };
+  game.reactions = { ...game.reactions, [playerId]: { id: id(style.id, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(to ? { to } : {}) } };
   game.talkAt = { ...game.talkAt, [playerId]: now };
   return true;
 }

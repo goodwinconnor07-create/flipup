@@ -219,6 +219,44 @@ describe('bots', () => {
     expect(kept).toBeGreaterThanOrEqual(5);
   }, 60_000);
 
+  it('a new game waits three seconds, and a bot greets first: by name heads-up, the table otherwise', () => {
+    for (const bots of [1, 3]) {
+      let now = 5000;
+      const rng = seededRng(5);
+      let g = createTable({ hostDeviceId: 'h', name: 'Sam', emoji: '🙂', settings: DEFAULT_SETTINGS, bots, code: null, now });
+      const r = applyAction(g, { type: 'start' }, { deviceId: 'h', now, rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+      // No cards yet; they come three seconds later.
+      expect(g.hand).toBeNull();
+      expect(g.nextHandAt).toBe(now + 3000);
+      const me = g.players[0];
+      expect(g.pendingTalk?.event).toBe(bots === 1 ? 'hello' : 'welcome');
+      expect(g.pendingTalk?.forId).toBe(bots === 1 ? me.id : undefined);
+      // The greeting comes first, well inside the wait.
+      now = g.wakeAt!;
+      expect(now).toBeLessThan(5000 + 3000);
+      const t = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
+      if (!t.ok) throw new Error(t.error);
+      g = t.game;
+      const said = Object.entries(g.reactions ?? {});
+      expect(said).toHaveLength(1);
+      const [speaker, line] = said[0];
+      expect(g.players.find((p) => p.id === speaker)?.bot).toBe(true);
+      expect(line.to).toBe(bots === 1 ? me.id : undefined);
+      const text = reactionText(line.id, 'Sam');
+      expect(text).toBeTruthy();
+      expect(text.includes('{you}')).toBe(false);
+      if (bots === 1) expect(text).toContain('Sam');
+      expect(g.hand).toBeNull();
+      // Then the cards.
+      now = g.wakeAt!;
+      const d = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
+      if (!d.ok) throw new Error(d.error);
+      expect(d.game.hand).not.toBeNull();
+    }
+  });
+
   it('plays each style the way it should', () => {
     const report = [
       ...simulate(['pro', 'rock', 'maniac', 'station', 'tag', 'lag'], 250, 3),

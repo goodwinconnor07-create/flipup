@@ -21,6 +21,10 @@ export const TIMING = {
   /** Pause after a hand before the next one deals (unless everyone taps Next hand). */
   afterFold: 5000,
   afterShowdown: 9000,
+  /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
+  startDelay: 3000,
+  /** ...and a bot says hello this long into it. */
+  greeting: 700,
   /** Someone joined or came back: give the table a beat before dealing. */
   resume: 2000,
   /** One player has all the chips: this long for the others to rebuy before the game ends. */

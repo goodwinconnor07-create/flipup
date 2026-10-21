@@ -241,5 +241,8 @@ calibration is still the BTN-vs-BB one. NL50 benchmark (GTO Wizard settings):
   and dominated offsuit hands less, but per-class data is noisy on 28-32 flops (sets).
 - r2 with hand-vs-hand interaction terms (class_k_* / class_d): UTG 20.5, BB vs UTG fold 71.4, SB 46/1/53,
   BB vs BTN 61/25/14. Same as r2, so the gap vs UTG isn't the model's form: postflop solves with these ranges
-  say the BB realizes too little against UTG to defend 38%. Next: check that measurement (richer trees,
-  more iterations, the BB's flop options) before trusting either side.
+  say the BB realizes too little against UTG to defend 38%.
+- That measurement holds up: BB vs UTG (live ranges), lean two-raise tree at 250 iterations vs a rich tree
+  (33/75/125% flop, turn and river all-ins): BB share 0.392 vs 0.395 (As7h2d), 0.271 vs 0.266 (Ks8d3c),
+  0.301 vs 0.302 (Qh9h4c). So the remaining BB-vs-UTG gap comes from elsewhere: candidates are the rake
+  model for small single-raised pots, the 3-bet/4-bet tree, or GTO Wizard's UTG range differing from ours.

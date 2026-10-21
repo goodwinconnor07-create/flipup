@@ -167,6 +167,58 @@ describe('bots', () => {
     expect(said('maniac')).toBeGreaterThan(said('rock'));
   }, 60_000);
 
+  it('a bot that sweated or shoved out loud reacts when the hand ends, even if it just spoke', () => {
+    const rng = seededRng(77);
+    let now = 1000;
+    let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 3, code: null, now });
+    g.players.filter((p) => p.bot).forEach((p, i) => (p.style = ['nervous', 'maniac', 'gambler'][i]));
+    const step = (action: Parameters<typeof applyAction>[1], deviceId: string) => {
+      const r = applyAction(g, action, { deviceId, now, rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    };
+    step({ type: 'start' }, 'h');
+    const eventOf = (id: string) => id.split(':')[2];
+    // Who spoke before the outcome this hand, and what their line count was then.
+    let pre: Record<string, number> = {};
+    let handNo = 0;
+    let owed = 0;
+    let kept = 0;
+    const before = new Map<string, number>();
+    for (let i = 0; i < 9000 && owed < 12; i++) {
+      const h = g.hand;
+      if (h && h.number !== handNo) {
+        handNo = h.number;
+        pre = {};
+      }
+      const me = g.players[0];
+      if (h && !h.result && h.toAct === me.id) step({ type: 'act', hand: h.number, seq: h.seq, move: 'allin' }, 'h');
+      else {
+        now = Math.max(now + 1, g.wakeAt ?? now + 1);
+        step({ type: 'tick' }, 'server');
+      }
+      for (const [id, r] of Object.entries(g.reactions ?? {})) {
+        if (before.get(id) === r.n) continue;
+        before.set(id, r.n);
+        if (g.hand && !g.hand.result && ['sweat', 'sweatWatch', 'allin'].includes(eventOf(r.id))) pre[id] = r.n;
+      }
+      if (g.hand?.result && Object.keys(pre).length) {
+        // The step that ended the hand also had the bots react: every one that spoke before has spoken since.
+        for (const [id, n] of Object.entries(pre)) {
+          const line = g.reactions![id];
+          expect(line.n, `${id} went quiet after "${line.id}"`).toBeGreaterThan(n);
+          expect(['sweat', 'sweatWatch', 'allin']).not.toContain(eventOf(line.id));
+          kept++;
+        }
+        owed++;
+        pre = {};
+      }
+      for (const p of g.players) if (p.stack === 0 && (!g.hand || g.hand.result)) p.stack = 1000;
+    }
+    expect(owed).toBeGreaterThanOrEqual(5);
+    expect(kept).toBeGreaterThanOrEqual(5);
+  }, 60_000);
+
   it('plays each style the way it should', () => {
     const report = [
       ...simulate(['pro', 'rock', 'maniac', 'station', 'tag', 'lag'], 250, 3),

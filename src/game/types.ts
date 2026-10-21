@@ -227,6 +227,8 @@ export interface Game {
   pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. */ event?: 'reply' | 'tank'; forId?: string; seq?: number };
   /** Hands in a row each person has lost chips without winning one. Bots use it to pick their moment. Never sent to phones. */
   streaks?: Record<string, number>;
+  /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */
+  sweating?: string[];
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */

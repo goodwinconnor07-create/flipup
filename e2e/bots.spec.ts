@@ -100,6 +100,39 @@ test('opening the bet sizer does not move or resize the table', async ({ page })
   expect(await size()).toEqual(before);
 });
 
+test('bot table talk never overlaps: lines wrap inside the seat row and come one at a time', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  let seen = 0;
+  for (let i = 0; i < 160; i++) {
+    if (await page.getByText('Your turn').isVisible()) await page.locator('.action-buttons .btn-green').click();
+    const boxes = await page.locator('.pod .bubble-react').evaluateAll((els) =>
+      els.map((e) => {
+        const r = e.getBoundingClientRect();
+        return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: innerWidth };
+      }),
+    );
+    seen += boxes.length;
+    for (const a of boxes) {
+      expect(a.l).toBeGreaterThanOrEqual(-1);
+      expect(a.r).toBeLessThanOrEqual(a.w + 1);
+    }
+    for (let x = 0; x < boxes.length; x++)
+      for (let y = x + 1; y < boxes.length; y++) {
+        const [p, q] = [boxes[x], boxes[y]];
+        const overlap = p.l < q.r && q.l < p.r && p.t < q.b && q.t < p.b;
+        expect(overlap, 'two bot lines on screen at once').toBe(false);
+      }
+    await page.waitForTimeout(150);
+  }
+  console.log('bot lines seen:', seen);
+});
+
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings' }).click();

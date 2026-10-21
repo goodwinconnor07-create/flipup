@@ -59,7 +59,9 @@ export type TalkEvent =
   /** On tilt, between hands. */
   | 'tilted'
   /** Someone showed the bluff it folded to. */
-  | 'gotBluffed';
+  | 'gotBluffed'
+  /** Watched a big pot it wasn't in (or had folded out of) end. */
+  | 'watched';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -91,6 +93,7 @@ const TRASH: Lines = {
   revenge: ['Payback.', 'Told you.', 'Chips back.', 'Remember me?', 'We’re even.'],
   tilted: ['I’m fine.', 'Totally calm.', 'Next hand’s mine.', 'Unreal deck.', 'Just deal.'],
   gotBluffed: ['You had THAT?', 'Noted.', 'I’ll remember that.', 'Enjoy it while it lasts.', 'Cute.'],
+  watched: ['Well, well.', 'Brutal.', 'There it is.', 'Wow, okay.', 'Next.'],
 };
 
 const FRIENDLY: Lines = {
@@ -121,6 +124,7 @@ const FRIENDLY: Lines = {
   revenge: ['Got you back!', 'Even now 😄', 'My turn!', 'Ha, finally!'],
   tilted: ['Deep breaths…', 'Not my night.', 'I’m okay. Mostly.', 'Need a break.', 'Can I win one?'],
   gotBluffed: ['No way!', 'You had nothing?!', 'Sneaky!', 'Ugh, I believed you.', 'Well played…'],
+  watched: ['Wow!', 'What a hand!', 'Wild one.', 'Oof, nice.', 'Phew, glad that’s over.'],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -312,20 +316,26 @@ const CHANCE: Record<TalkEvent, number> = {
   revenge: 0.8,
   tilted: 0.6,
   gotBluffed: 0.9,
+  watched: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
 const COOLDOWN = 2500;
 
-/** Maybe has a bot say something. Returns true if it spoke. `now` is the table clock, for the cooldown. */
-export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number): boolean {
+/**
+ * Maybe has a bot say something. Returns true if it spoke. `now` is the table clock, for the cooldown.
+ * `owed` is for a reaction the table is waiting for (a bot that cried "c'mon!" and then saw the pot
+ * go): it speaks whatever the dice and the cooldown say, so it never goes quiet at the moment it should react.
+ */
+export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false): boolean {
   const player = game.players.find((p) => p.id === playerId);
   if (!player?.bot) return false;
   const last = game.talkAt?.[playerId] ?? -Infinity;
-  if (now - last < COOLDOWN) return false;
+  if (!owed && now - last < COOLDOWN) return false;
   const style = styleOf(player.style);
-  if (rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return false;
+  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return false;
   const lines = pool(style.id, event);
+  if (!lines.length) return false;
   const i = Math.floor(rng() * lines.length);
   game.reactions = { ...game.reactions, [playerId]: { id: id(style.id, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1 } };
   game.talkAt = { ...game.talkAt, [playerId]: now };

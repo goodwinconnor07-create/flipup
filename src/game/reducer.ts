@@ -158,7 +158,7 @@ function afterHand(game: Game, ctx: ActionContext): void {
     const seat = hand.seats.find((s) => s.playerId === id);
     return seat && seat.cards.length === 2 && hand.board.length >= 3 ? handBucket(seat.cards, hand.board) : null;
   };
-  const say = (id: string, event: TalkEvent) => botSays(game, id, event, ctx.rng, ctx.now);
+  const say = (id: string, event: TalkEvent, owed = false) => botSays(game, id, event, ctx.rng, ctx.now, owed);
   const spoke: string[] = [];
   const showdownLosers = result.showdown ? hand.seats.filter((s) => !s.folded && !winners.includes(s.playerId)).map((s) => s.playerId) : [];
   const personWon = winners.some((id) => !isBot(id));
@@ -178,8 +178,8 @@ function afterHand(game: Game, ctx: ActionContext): void {
   for (const id of showOffs(game, hand, ctx)) if (say(id, id in result.won ? (strongEnough(hand, id) ? 'showStrong' : 'showBluff') : 'showFold')) spoke.push(id);
 
   if (hand.ranOut) {
-    for (const id of winners) if (isBot(id) && say(id, 'sweatWin')) spoke.push(id);
-    for (const id of showdownLosers) if (isBot(id) && say(id, 'sweatLose')) spoke.push(id);
+    for (const id of winners) if (isBot(id) && say(id, 'sweatWin', true)) spoke.push(id);
+    for (const id of showdownLosers) if (isBot(id) && say(id, 'sweatLose', true)) spoke.push(id);
   } else {
     for (const id of winners) {
       if (!isBot(id)) continue;
@@ -205,6 +205,18 @@ function afterHand(game: Game, ctx: ActionContext): void {
     if (!p.bot || spoke.includes(p.id) || !hand.seats.some((s) => s.playerId === p.id)) continue;
     if (mindOf(game, p.id).tilt > 0.5 && ctx.rng() < 0.35 && say(p.id, 'tilted')) spoke.push(p.id);
   }
+  // A bot that spoke before the outcome ("c'mon!", "all in") reacts to it now: that's what makes the
+  // earlier line feel like a person watching, not a sound effect. Winners cheer, losers groan, the rest remark.
+  for (const id of game.sweating ?? []) {
+    if (spoke.includes(id) || !isBot(id)) continue;
+    const event: TalkEvent = winners.includes(id)
+      ? hand.ranOut ? 'sweatWin' : pot >= bb * 15 ? 'bigWin' : 'win'
+      : showdownLosers.includes(id)
+        ? hand.ranOut ? 'sweatLose' : 'lostToYou'
+        : 'watched';
+    if (say(id, event, true)) spoke.push(id);
+  }
+  game.sweating = undefined;
   if (!spoke.length) return;
   // Someone answers now and then: a bot that didn't just speak, a beat later.
   const others = game.players.filter((p) => p.bot && !spoke.includes(p.id) && !p.sittingOut);
@@ -269,6 +281,11 @@ function showOffs(game: Game, hand: Game['hand'] & object, ctx: ActionContext): 
     out.push(player.id);
   }
   return out;
+}
+
+/** This bot spoke before the hand's outcome was known, so it owes a reaction when the hand ends. */
+function owe(game: Game, id: string): void {
+  if (!game.sweating?.includes(id)) game.sweating = [...(game.sweating ?? []), id];
 }
 
 /** What a bot says while it thinks, given the move it's about to make. */
@@ -549,8 +566,13 @@ function tick(game: Game, ctx: ActionContext): boolean {
         const inIt = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
         const watching = hand.seats.filter((s) => s.folded && playerById(game, s.playerId)?.bot);
         const pickOne = <T,>(xs: T[]) => xs[Math.floor(ctx.rng() * xs.length)];
-        if (inIt.length && ctx.rng() < 0.75) botSays(game, pickOne(inIt).playerId, 'sweat', ctx.rng, ctx.now);
-        else if (watching.length) botSays(game, pickOne(watching).playerId, 'sweatWatch', ctx.rng, ctx.now);
+        if (inIt.length && ctx.rng() < 0.75) {
+          const id = pickOne(inIt).playerId;
+          if (botSays(game, id, 'sweat', ctx.rng, ctx.now)) owe(game, id);
+        } else if (watching.length) {
+          const id = pickOne(watching).playerId;
+          if (botSays(game, id, 'sweatWatch', ctx.rng, ctx.now)) owe(game, id);
+        }
       }
       return true;
     }
@@ -577,7 +599,10 @@ function tick(game: Game, ctx: ActionContext): boolean {
       let wait = fast ? 0 : Math.max(0, thought.thinkMs - TIMING.botMin);
       // Sometimes it says what it's thinking first, then moves a moment later.
       const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
-      if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) wait = Math.max(wait, fast ? 400 : TIMING.botThink);
+      if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) {
+        wait = Math.max(wait, fast ? 400 : TIMING.botThink);
+        if (event === 'allin') owe(game, player.id);
+      }
       if (wait > 150) {
         game.botPlan = { playerId: player.id, seq: hand.seq, move: choice.move, to: choice.to };
         hand.actAt = ctx.now + wait;

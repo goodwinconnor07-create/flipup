@@ -158,6 +158,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
   // People stay, and can buy back in if the table allows it.
   game.players = game.players.filter((p) => !p.leaving && !(p.bot && p.stack === 0));
   game.ready = [];
+  game.sweating = undefined;
   game.nextHandAt = null;
   if (!canDeal(game)) {
     // Nobody rebought in time: the last player with chips wins.

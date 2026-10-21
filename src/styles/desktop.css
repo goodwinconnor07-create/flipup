@@ -422,6 +422,7 @@
 
   .bubble-react {
     font-size: 15px;
+    max-width: 240px;
   }
 
   /* The bet sizer: a centred panel, not a strip along the bottom. */

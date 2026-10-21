@@ -1,0 +1,31 @@
+# Checks and deploys the app and Worker to Cloudflare whenever they change on the main branch.
+# Needs the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID repository secrets.
+name: Deploy site
+
+on:
+  push:
+    branches: [claude/jolly-turing-82g5vu]
+    paths-ignore: ["gto/**", "**/*.md", ".github/workflows/deploy-coach.yml"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-site
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Typecheck, unit tests and build
+        run: npm run check
+      - name: Deploy to Cloudflare
+        run: npm run deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

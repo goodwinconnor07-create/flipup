@@ -900,8 +900,26 @@ html.calm .dots i {
   border-bottom: 0;
 }
 
-.log-title {
+.log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin: 0 0 6px;
+}
+
+.log-share {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--bg-2);
+  color: var(--blue-ink);
+}
+
+.log-title {
+  margin: 0;
   font-size: var(--fs-body);
   font-weight: 700;
 }

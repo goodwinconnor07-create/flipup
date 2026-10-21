@@ -12,6 +12,7 @@ export * from './validate';
 export * from './protocol';
 export * from './redact';
 export * from './record';
+export * from './handText';
 export * from './reactions';
 export * from './ids';
 export * from './names';

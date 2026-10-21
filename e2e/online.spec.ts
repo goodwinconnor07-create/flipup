@@ -97,7 +97,12 @@ test('bots at an online table play on the server', async ({ page }) => {
   // Play along: the bots' moves come from the server's clock, so the hand finishes without anyone else.
   for (let i = 0; i < 160; i++) {
     if (await page.getByRole('button', { name: 'Next hand' }).isVisible()) break;
-    if (await myTurn(page)) await page.locator('.action-buttons .btn-green').click();
+    // Check when it's free, fold otherwise: never risk the stack, so a bot's shove can't end the game on hand 1.
+    if (await myTurn(page)) {
+      const check = page.getByRole('button', { name: 'Check', exact: true });
+      if (await check.isVisible()) await check.click();
+      else await page.locator('.action-buttons .btn-fold').click();
+    }
     await page.waitForTimeout(500);
   }
   await expect(page.locator('.win-banner').first()).toBeVisible();

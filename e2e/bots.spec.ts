@@ -230,6 +230,34 @@ test('the screen is kept awake while you are at a table', async ({ page }) => {
   expect(l.released).toBeLessThan(l.asked);
 });
 
+test('a finished hand can be shared from the hand log as plain text', async ({ page }) => {
+  watchErrors(page);
+  // A stand-in share sheet that keeps what it was given.
+  await page.addInitScript(() => {
+    (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share = async (d) => {
+      (window as unknown as { __shared: ShareData }).__shared = d;
+    };
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
+  await page.locator('.action-buttons .btn-fold').click();
+  await expect(page.getByRole('button', { name: 'Show my cards' })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Hand log' }).click();
+  await page.getByRole('button', { name: 'Share hand #1' }).click();
+  const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData }).__shared);
+  expect(shared.text).toContain('FlipUp · Hand #1');
+  expect(shared.text).toContain('Your hand:');
+  expect(shared.text).toMatch(/[♠♥♦♣]/);
+  expect(shared.text).toContain('Sam folds');
+  expect(shared.text).not.toMatch(/\[[2-9TJQKA][shdc]\]/);
+});
+
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings' }).click();

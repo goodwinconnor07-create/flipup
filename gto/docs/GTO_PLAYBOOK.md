@@ -246,3 +246,5 @@ calibration is still the BTN-vs-BB one. NL50 benchmark (GTO Wizard settings):
   (33/75/125% flop, turn and river all-ins): BB share 0.392 vs 0.395 (As7h2d), 0.271 vs 0.266 (Ks8d3c),
   0.301 vs 0.302 (Qh9h4c). So the remaining BB-vs-UTG gap comes from elsewhere: candidates are the rake
   model for small single-raised pots, the 3-bet/4-bet tree, or GTO Wizard's UTG range differing from ours.
+- Not rake: r2 at NL500 still has the BB folding 70.4% vs UTG (GTO Wizard 59%); BB vs BTN 57/28/15, SB
+  46/0/54, CO vs BTN 3-bet 54/30/16.

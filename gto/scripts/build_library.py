@@ -40,7 +40,9 @@ def sizing(flop="33%, 75%", turn="50%, 100%", river="33%, 75%, 125%", lean_later
     later_turn = StreetSizing("75%", "a") if lean_later else StreetSizing(turn, "60%")
     s = {"flop": StreetSizing(flop, "60%"), "turn": StreetSizing(turn, "60%") if not lean_later else later_turn,
          "river": StreetSizing("75%", "a") if lean_later else StreetSizing(river, "60%")}
-    return BetSizing(oop=dict(s), ip=dict(s), max_raises=1)
+    # Two raises, so a bet can re-raise a check-raise (with one, betting looked far worse than in the
+    # full game; see docs/GTO_PLAYBOOK.md section 12).
+    return BetSizing(oop=dict(s), ip=dict(s), max_raises=2)
 
 
 def save_spot(scenario, node, board, hero, villain, history, stack, pot, extra=None):

@@ -219,3 +219,24 @@ betting:
   betting look much worse. Flop trees now allow two raises (memory 0.8GB -> 1.1GB at 100bb).
 - The BB's response to a 33% c-bet averaged fold 32 / call 51 / raise 16 over ten flops, in line with
   the published aggregate.
+
+## 13. Multi-spot realization refits (scripts/realization_dataset.py, fit_realization.py)
+
+Per-class flop realization measured for UTG/CO/BTN/SB vs BB single-raised pots from postflop solves,
+then refit (same additive hand-feature model). Candidates are in research/candidates; the live
+calibration is still the BTN-vs-BB one. NL50 benchmark (GTO Wizard settings):
+
+| Spot | Live | r1 (32 flops, one raise) | r2 (28 flops, two raises) | GTO Wizard |
+|---|---|---|---|---|
+| UTG opens | 21.0 | 19.4 | 21.0 | 17.6 |
+| BB vs UTG fold | 66.5 | 64.3 | 71.9 | 62 |
+| SB raise / limp / fold | 52 / 2 / 46 | 40 / 4 / 56 | 47 / 1 / 52 | 43 / 2 / 54 |
+| BB vs BTN fold / call / 3-bet | 61 / 26 / 13 | 53 / 33 / 13 | 61 / 25 / 14 | 60 / 26 / 14 |
+| BTN opens | 41.0 | 39.4 | 42.7 | 42 |
+
+- With one raise per street the measurement flattered the out-of-position caller (BB over-defends vs
+  BTN in r1). With two raises (r2) BB vs BTN and the SB match GTO Wizard closely, but the BB folds
+  far too much against UTG, so r2 isn't live either.
+- Measured against the old model, pairs realize 0.05-0.10 of the pot more than modelled in every spot
+  and dominated offsuit hands less, but per-class data is noisy on 28-32 flops (sets).
+- Next: hand-vs-hand interaction terms (engine support is in, class_k_* / class_d), or more flops.

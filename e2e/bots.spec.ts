@@ -76,6 +76,30 @@ test('raise with the bet sizer, then fold the next hand', async ({ page }) => {
   await expect(page.locator('.my-box-note')).toContainText(String(amount));
 });
 
+test('opening the bet sizer does not move or resize the table', async ({ page }) => {
+  watchErrors(page);
+  // A short screen, where the table is as tall as it can be.
+  await page.setViewportSize({ width: 390, height: 664 });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
+  await page.waitForTimeout(800);
+  const size = () => page.evaluate(() => [document.documentElement.scrollHeight, document.querySelector('.table-oval')!.getBoundingClientRect().height]);
+  const before = await size();
+  await page.locator('.action-buttons .btn-blue').click();
+  await expect(page.locator('.raise-panel')).toBeVisible();
+  for (let i = 0; i < 8; i++) {
+    expect(await size()).toEqual(before);
+    await page.waitForTimeout(40);
+  }
+  await page.getByRole('button', { name: 'Back' }).click();
+  expect(await size()).toEqual(before);
+});
+
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings' }).click();

@@ -992,23 +992,24 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
     setRaising(false);
     dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move, ...(to !== undefined ? { to } : {}) });
   };
-  if (raising)
-    return (
-      <RaisePanel
-        game={game}
-        hand={hand}
-        seat={seat}
-        onCancel={() => setRaising(false)}
-        onFold={() => act('fold')}
-        onCall={() => act(o.canCheck ? 'check' : 'call')}
-        onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
-      />
-    );
-
+  // While the sizer is open the real row stays in place, unseen, so the table doesn't change size under it.
   return (
     <div className="stack">
-      <p className="table-note your-turn">Your turn</p>
-      <div className="action-buttons">
+      {raising && (
+        <RaisePanel
+          game={game}
+          hand={hand}
+          seat={seat}
+          onCancel={() => setRaising(false)}
+          onFold={() => act('fold')}
+          onCall={() => act(o.canCheck ? 'check' : 'call')}
+          onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
+        />
+      )}
+      <p className={`table-note your-turn${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
+        Your turn
+      </p>
+      <div className={`action-buttons${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
         <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
           Fold
         </button>
@@ -1070,8 +1071,9 @@ function RaisePanel({
 
   // A panel pinned to the bottom of the screen, over your cards, so every option is in view without scrolling.
   return (
-    <div className="raise-layer" onClick={onCancel}>
-      <div className="raise-panel" role="dialog" aria-label={`${o.word} amount`} onClick={(e) => e.stopPropagation()}>
+    <div className="raise-layer">
+      <div className="raise-scrim" onClick={onCancel} />
+      <div className="raise-panel" role="dialog" aria-label={`${o.word} amount`}>
         <div className="raise-head">
           <span className="muted">{o.word} to</span>
           <b className="raise-amount num">{chips(to)}</b>

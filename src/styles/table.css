@@ -744,11 +744,19 @@ html[data-theme='dark'] .pcard.dim > * {
   display: flex;
   align-items: flex-end;
   justify-content: center;
+}
+
+/* The dim layer fades on its own. The glass panel is a sibling, not inside it: blur can't see through
+   a parent that's fading, so the panel would show clear until the fade finished and then pop to blurred. */
+.raise-scrim {
+  position: absolute;
+  inset: 0;
   background: rgba(11, 11, 18, 0.18);
   animation: fade-in 0.15s ease-out;
 }
 
 .raise-panel {
+  position: relative;
   width: 100%;
   max-width: 520px;
   display: flex;
@@ -758,7 +766,20 @@ html[data-theme='dark'] .pcard.dim > * {
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   background: var(--surface);
   box-shadow: 0 -8px 32px -12px rgba(18, 18, 40, 0.35);
-  animation: sheet-up 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+  /* No overshoot: it would lift the panel off the bottom edge for a moment. */
+  animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+  will-change: transform;
+}
+
+/* Nothing inside the panel blurs on its own: stacked blurs are slow and shimmer while it slides in. */
+html:not(.no-glass) .raise-panel .icon-btn {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* The real action row stays in the page, unseen, while the sizer is open, so the table keeps its size. */
+.ghost {
+  visibility: hidden;
 }
 
 .raise-head {

@@ -77,6 +77,18 @@ function freeSeat(game: Game): number {
   return -1;
 }
 
+/** `name`, or "name 2", "name 3"… if someone else at the table already has it (case doesn't count). */
+function uniqueName(game: Game, name: string, exceptId?: string): string {
+  const taken = new Set(game.players.filter((p) => p.id !== exceptId).map((p) => p.name.toLowerCase()));
+  if (!taken.has(name.toLowerCase())) return name;
+  for (let n = 2; n < 100; n++) {
+    const tail = ` ${n}`;
+    const candidate = name.slice(0, LIMITS.maxNameLength - tail.length).trimEnd() + tail;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return name;
+}
+
 function newPlayer(game: Game, fields: Pick<Player, 'name' | 'emoji' | 'deviceId' | 'bot'>): Player {
   return {
     id: newId(10),
@@ -229,6 +241,39 @@ function afterHand(game: Game, ctx: ActionContext): void {
   schedule(game);
 }
 
+/**
+ * Play again: the finished game becomes a new lobby, set up as the last one was. The host is seated, and
+ * so is anyone who tapped Play again; nobody else is put in. Bots come back with fresh chips.
+ */
+function openAgain(game: Game, ctx: ActionContext): void {
+  const first = game.first;
+  if (first) game.settings = { ...first.settings };
+  const wanted = new Set([...(game.again ?? [])]);
+  game.players = game.players.filter((p) => p.bot || p.deviceId === game.hostDeviceId || wanted.has(p.id));
+  for (const p of game.players) {
+    p.stack = game.settings.startingStack;
+    p.bought = game.settings.startingStack;
+    p.sittingOut = false;
+    p.timeouts = 0;
+    p.leaving = false;
+  }
+  // Bots that busted out of the last game left the table: bring the count back.
+  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS) addBot(game);
+  game.id = newId(16);
+  game.createdAt = ctx.now;
+  game.status = 'lobby';
+  game.hand = null;
+  game.buttonSeat = null;
+  game.nextHandAt = null;
+  game.ready = [];
+  game.logs = [];
+  game.reactions = {};
+  game.hands = 0;
+  game.blindsRaiseAt = null;
+  for (const k of ['again', 'first', 'pendingTalk', 'botPlan', 'sweating', 'talkAt', 'reads', 'streaks', 'minds', 'readHand'] as const) delete game[k];
+  schedule(game);
+}
+
 /** Did this player's hand end up strong (two pair or better made with a hole card)? */
 function strongEnough(hand: Game['hand'] & object, id: string): boolean {
   const seat = hand.seats.find((s) => s.playerId === id);
@@ -323,7 +368,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     return { ok: true, game, changed: true };
   };
 
-  if (game.status === 'ended' && action.type !== 'setLook') return fail('This table has finished.');
+  if (game.status === 'ended' && action.type !== 'setLook' && action.type !== 'playAgain') return fail('This table has finished.');
 
   switch (action.type) {
     case 'join': {
@@ -332,13 +377,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (isNameBlocked(name)) return fail(NAME_BLOCKED);
       const emoji = isEmoji(action.emoji) ? action.emoji : DEFAULT_EMOJI;
       if (me) {
-        if (me.name === name && me.emoji === emoji) return done(false);
-        me.name = name;
+        const mine = uniqueName(game, name, me.id);
+        if (me.name === mine && me.emoji === emoji) return done(false);
+        me.name = mine;
         me.emoji = emoji;
         return done();
       }
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      game.players.push(newPlayer(game, { name, emoji, deviceId: ctx.deviceId, bot: false }));
+      game.players.push(newPlayer(game, { name: uniqueName(game, name), emoji, deviceId: ctx.deviceId, bot: false }));
       wakeIfWaiting(game, ctx);
       return done();
     }
@@ -349,7 +395,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!name) return fail('Add your name first.');
       if (isNameBlocked(name)) return fail(NAME_BLOCKED);
       if (!isEmoji(action.emoji)) return fail('Pick an emoji.');
-      me.name = name;
+      me.name = uniqueName(game, name, me.id);
       me.emoji = action.emoji;
       return done();
     }
@@ -409,6 +455,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status !== 'lobby') return done(false);
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
+      game.first = { settings: { ...game.settings }, bots: game.players.filter((p) => p.bot).length };
       // A few seconds to take the table in, with a word from a bot, before the first cards come.
       game.nextHandAt = ctx.now + TIMING.startDelay;
       const bots = game.players.filter((p) => p.bot);
@@ -519,6 +566,20 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         game.nextHandAt = Math.min(game.nextHandAt ?? Infinity, ctx.now + TIMING.resume);
       wakeIfWaiting(game, ctx);
       schedule(game);
+      return done();
+    }
+
+    case 'playAgain': {
+      if (!me) return fail("You're not at this table.");
+      if (game.status !== 'ended') return done(false);
+      if (host && !action.off) {
+        openAgain(game, ctx);
+        return done();
+      }
+      const wants = new Set(game.again ?? []);
+      if (action.off) wants.delete(me.id);
+      else wants.add(me.id);
+      game.again = [...wants];
       return done();
     }
 

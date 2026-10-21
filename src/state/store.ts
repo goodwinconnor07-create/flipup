@@ -624,8 +624,14 @@ export function leaveTable(): void {
 /** Forget a finished table and go home. */
 export function closeTable(): void {
   recordFinished();
+  const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
+  const asked = !!me && !!state.game?.again?.includes(me.id);
   if (state.session?.mode === 'online') saveLastTable(null);
-  closeConnection();
+  if (state.session?.mode === 'online' && asked) {
+    // Leaving after asking to play again: take the request back, so no one's seated who isn't there.
+    send({ type: 'playAgain', off: true });
+    setTimeout(closeConnection, 300);
+  } else closeConnection();
   setSession(null);
   resetTo();
 }

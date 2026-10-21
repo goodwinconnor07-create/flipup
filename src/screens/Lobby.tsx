@@ -1,6 +1,6 @@
 import { MAX_SEATS, type Game } from '../game';
 import { joinLinkLabel } from '../state/platform';
-import { confirm, dispatch, openSheet, useApp } from '../state/store';
+import { closeTable, confirm, dispatch, openSheet, useApp } from '../state/store';
 import { Avatar, chips } from '../ui/components';
 import { colourWipe } from '../ui/effects';
 import { PlusIcon, QrIcon, ShareIcon } from '../ui/Icons';
@@ -14,6 +14,42 @@ export function Lobby({ game }: { game: Game }) {
   const hostName = game.players.find((p) => p.deviceId === game.hostDeviceId)?.name ?? 'the host';
   const humans = game.players.filter((p) => !p.bot).length;
   const s = game.settings;
+  const profile = useApp((st) => st.profile);
+  const joining = useApp((st) => !!(st.session?.mode === 'online' && st.session.joining));
+  const seated = joining || game.players.some((p) => p.deviceId === deviceId);
+
+  // The host opened a new game and this phone wasn't put in it: ask first.
+  if (!seated)
+    return (
+      <>
+        <div className="screen-body">
+          <div>
+            <h1 className="h1">A new game is open</h1>
+            <p className="muted" style={{ margin: '6px 0 0' }}>
+              {hostName} is setting up another one. Sit down to play.
+            </p>
+          </div>
+          <div className="roster">
+            {game.players.map((p) => (
+              <div key={p.id} className="roster-item">
+                <span className="roster-pic">
+                  <Avatar emoji={p.emoji} size={64} />
+                </span>
+                <span className="roster-name">{p.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="screen-foot">
+          <button type="button" className="btn btn-xl btn-blue" onClick={() => dispatch({ type: 'join', name: profile.name, emoji: profile.emoji })}>
+            Sit down
+          </button>
+          <button type="button" className="btn btn-link" onClick={closeTable}>
+            Done
+          </button>
+        </div>
+      </>
+    );
 
   const deal = (e: React.MouseEvent<HTMLButtonElement>) => {
     const start = () => dispatch({ type: 'start' });

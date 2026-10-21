@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { net, standings, type Game } from '../game';
-import { closeTable, openLog, useApp } from '../state/store';
+import { closeTable, dispatch, openLog, useApp } from '../state/store';
 import { Avatar, chips } from '../ui/components';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 import { playSound } from '../ui/sound';
@@ -38,6 +38,12 @@ export function Final({ game }: { game: Game }) {
   const rows = standings(game);
   const top = rows[0];
   const iWon = top?.deviceId === deviceId;
+  const me = game.players.find((p) => p.deviceId === deviceId);
+  const host = game.hostDeviceId === deviceId;
+  const hostName = game.players.find((p) => p.deviceId === game.hostDeviceId)?.name ?? 'the host';
+  const challenge = useApp((s) => !!s.session?.challenge);
+  const asked = !!me && !!game.again?.includes(me.id);
+  const waiting = (game.again ?? []).filter((id) => game.players.some((p) => p.id === id)).length;
   const podium = rows.length >= 2;
   const first = rows.length >= 3 ? 0 : 1;
   const [step, setStep] = useState(() => (!podium || reducedMotion() ? 3 : first));
@@ -108,7 +114,24 @@ export function Final({ game }: { game: Game }) {
         )}
       </div>
       <div className="screen-foot">
-        <button type="button" className="btn btn-xl btn-dark" onClick={closeTable}>
+        {me && !challenge && step >= 3 && (
+          <>
+            {host ? (
+              <button type="button" className="btn btn-xl btn-blue" onClick={() => dispatch({ type: 'playAgain' })}>
+                Play again{waiting > 0 ? ` · ${waiting} waiting` : ''}
+              </button>
+            ) : asked ? (
+              <button type="button" className="btn btn-xl btn-ghost" onClick={() => dispatch({ type: 'playAgain', off: true })}>
+                Waiting for {hostName} to start… (tap to cancel)
+              </button>
+            ) : (
+              <button type="button" className="btn btn-xl btn-blue" onClick={() => dispatch({ type: 'playAgain' })}>
+                Play again
+              </button>
+            )}
+          </>
+        )}
+        <button type="button" className={`btn btn-xl ${me && !challenge && step >= 3 ? 'btn-ghost' : 'btn-dark'}`} onClick={closeTable}>
           Done
         </button>
         <button type="button" className="btn btn-link" onClick={openLog}>

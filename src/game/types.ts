@@ -229,6 +229,10 @@ export interface Game {
   streaks?: Record<string, number>;
   /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */
   sweating?: string[];
+  /** Players on the finished game's screen who tapped Play again. When the host does, they're seated in the new game; nobody else is. */
+  again?: string[];
+  /** How the game was dealt (blinds rise during a game), so Play again can set up the same one. */
+  first?: { settings: Settings; bots: number };
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
@@ -255,6 +259,8 @@ export type Action =
   | { type: 'sitOut'; out: boolean }
   | { type: 'rebuy' }
   | { type: 'end' }
+  /** After a game ends: the host opens a new one; anyone else says they want in (`off` takes that back). */
+  | { type: 'playAgain'; off?: boolean }
   /** Internal: time has moved on (bots, timers, run-outs). Never accepted from a phone. */
   | { type: 'tick' };
 

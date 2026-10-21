@@ -200,6 +200,36 @@ test('the name box stops at 10 characters', async ({ page }) => {
   await expect(input).toHaveValue('ABCDEFGHIJ');
 });
 
+test('the screen is kept awake while you are at a table', async ({ page }) => {
+  watchErrors(page);
+  // A stand-in for the browser's wake lock that counts what the app asks for and lets go of.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __locks: { asked: number; released: number } };
+    w.__locks = { asked: 0, released: 0 };
+    Object.defineProperty(navigator, 'wakeLock', {
+      value: {
+        request: async () => {
+          w.__locks.asked++;
+          return { release: async () => void w.__locks.released++ };
+        },
+      },
+    });
+  });
+  await page.goto('/');
+  const locks = () => page.evaluate(() => (window as unknown as { __locks: { asked: number; released: number } }).__locks);
+  expect((await locks()).asked).toBe(0);
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await expect.poll(async () => (await locks()).asked).toBeGreaterThanOrEqual(1);
+  // Still held while playing.
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
+  const l = await locks();
+  expect(l.released).toBeLessThan(l.asked);
+});
+
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings' }).click();

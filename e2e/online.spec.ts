@@ -146,6 +146,16 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
   await expect(friend.getByText(/wins?!$/)).toBeVisible();
   await expect(host.locator('.podium-step')).toHaveCount(2);
   await shot(host, '16-podium');
+
+  // Play again: the friend asks first, but nobody is seated until the host opens the new game.
+  await friend.getByRole('button', { name: 'Play again', exact: true }).click();
+  await expect(friend.getByRole('button', { name: /Waiting for Kavi/ })).toBeVisible();
+  await expect(host.getByRole('button', { name: /Play again · 1 waiting/ })).toBeVisible();
+  await host.getByRole('button', { name: /Play again/ }).click();
+  await expect(host.getByRole('button', { name: 'Deal', exact: true })).toBeVisible();
+  await expect(host.locator('.roster-item', { hasText: 'Oliver' })).toBeVisible();
+  await expect(friend.getByText("You're in!")).toBeVisible();
+  await shot(friend, '17-play-again');
   await hostCtx.close();
   await friendCtx.close();
 });

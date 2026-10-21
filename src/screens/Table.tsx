@@ -30,6 +30,7 @@ import { Final } from './Final';
 import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
 import { Lobby } from './Lobby';
+import { useWakeLock } from '../ui/useWakeLock';
 
 export function Table() {
   const desktop = useDesktop();
@@ -46,6 +47,8 @@ export function Table() {
   }, [bigBlind]);
   const conn = useApp((s) => s.conn);
   const online = useApp((s) => s.session?.mode === 'online');
+  // The screen stays on while you're at a table that's still going.
+  useWakeLock(!!game && game.status !== 'ended');
 
   if (!game) {
     return (

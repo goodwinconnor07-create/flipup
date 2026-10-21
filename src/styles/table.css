@@ -662,7 +662,7 @@ html[data-theme='dark'] .pcard.dim > * {
   color: var(--ink);
   font-size: var(--fs-lead);
   font-weight: 700;
-  min-height: 32px;
+  min-height: 44px;
 }
 
 .turn-clock {
@@ -1120,29 +1120,18 @@ html.calm .pod.won .pod-pic {
 
 /* ── Before your turn ────────────────────────────────────────────────────── */
 
-.pre-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.pre-btn {
-  min-height: 44px;
-  border: 0;
-  border-radius: var(--r-sm);
+.action-buttons .pre-btn {
   background: var(--bg-2);
   color: var(--ink-2);
-  font-size: var(--fs-small);
-  font-weight: 600;
+  padding: 0 4px;
+  font-size: var(--fs-body);
+  line-height: 1.15;
+  text-align: center;
 }
 
-.pre-btn.on {
+.action-buttons .pre-btn.on {
   background: var(--blue);
   color: var(--on-color);
-}
-
-.pre-btn.on::before {
-  content: '✓ ';
 }
 
 /* ── Quick messages ──────────────────────────────────────────────────────── */

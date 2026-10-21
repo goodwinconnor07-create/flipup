@@ -145,6 +145,7 @@ def current_error(rows):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true", help="write the fit (all flops) to data/eqr_calibration.json")
+    ap.add_argument("--interaction", action="store_true", help="with --write: include the hand-vs-hand terms")
     args = ap.parse_args()
     files = sorted(glob.glob(os.path.join(DATA, "*.npz")))
     train, test = load(files, 0), load(files, 1)
@@ -175,17 +176,24 @@ def main():
     for k in gc:
         print(f"  {k[0]:8s} {k[1]:3s} {k[2]:7s} current {gc[k]:+.3f} | additive {ga[k]:+.3f} | interaction {gi[k]:+.3f}")
     if args.write:
-        # The interaction terms didn't beat the additive refit on held-out flops, so write the additive one.
-        th = solve(load(files, None), False)
+        th = solve(load(files, None), args.interaction)
         A_ip, A_oop, K, d = design()
-        a_ip, a_oop = A_ip @ th, A_oop @ th
+        na, nk = A_ip.shape[1], K.shape[1]
+        a_ip, a_oop = A_ip @ th[:na], A_oop @ th[:na]
         path = os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data", "eqr_calibration.json")
         old = json.load(open(path))
         for k in ("k_ip", "k_oop", "d"):
             old.pop(k, None)
-        old.update({"model": "additive", "scenario": f"multi-spot fit: {', '.join(r['name'] for r in train)}",
+        old.update({"model": "additive",
+                    "scenario": f"multi-spot fit{' + interaction' if args.interaction else ''}: "
+                                f"{', '.join(r['name'] for r in train)}",
                     "ip": {c: round(float(a_ip[i]), 4) for i, c in enumerate(CLASSES)},
                     "oop": {c: round(float(a_oop[i]), 4) for i, c in enumerate(CLASSES)}})
+        if args.interaction:
+            k_ip, k_oop = K @ th[na:na + nk], K @ th[na + nk:]
+            old.update({"k_ip": {c: round(float(k_ip[i]), 4) for i, c in enumerate(CLASSES)},
+                        "k_oop": {c: round(float(k_oop[i]), 4) for i, c in enumerate(CLASSES)},
+                        "d": {c: round(float(d[i]), 4) for i, c in enumerate(CLASSES)}})
         json.dump(old, open(path, "w"), indent=1)
         print("wrote", path)
 

@@ -17,6 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 
 from calibrate_eqr import class_to_combos  # noqa: E402
 from calibrate_kinds import FLOPS, KINDS, ranges_for  # noqa: E402
+from realization_dataset import SPOTS  # noqa: E402
 from flipup_gto.cards import parse_cards  # noqa: E402
 from flipup_gto.solver import BetSizing, PostflopSolver, StreetSizing  # noqa: E402
 
@@ -26,6 +27,11 @@ TREES = {
                        ip={"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", ""),
                            "river": StreetSizing("75%", "")}, max_raises=1)),
     # About 4x the lean tree's memory (5.3GB at 100bb in a 6bb pot): GTO Wizard's flop sizes, two raises.
+    # What realization_dataset.py measures with.
+    "lean2": (BetSizing(oop={"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", ""),
+                             "river": StreetSizing("75%", "")},
+                        ip={"flop": StreetSizing("50%", "60%"), "turn": StreetSizing("75%", ""),
+                            "river": StreetSizing("75%", "")}, max_raises=2)),
     "rich": (BetSizing(oop={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("66%", "a"),
                             "river": StreetSizing("75%", "a")},
                        ip={"flop": StreetSizing("33%, 75%, 125%", "60%"), "turn": StreetSizing("66%", "a"),
@@ -36,6 +42,7 @@ TREES = {
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--kind", type=int, default=2)
+    ap.add_argument("--spot", default="", help="a realization_dataset.py spot (e.g. utg_bb) instead of --kind")
     ap.add_argument("--flops", type=int, default=4)
     ap.add_argument("--iterations", type=int, default=200)
     ap.add_argument("--target", type=float, default=0.5)
@@ -45,11 +52,15 @@ def main():
     from flipup_gto.review import PreflopCache
     cache = PreflopCache(os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data", "cache"))
     spot = cache.get(6, 100)
-    name, path, ip_idx, oop_idx = KINDS[args.kind]
+    if args.spot:
+        path, ip_idx, oop_idx = SPOTS[args.spot]
+        name = args.spot
+    else:
+        name, path, ip_idx, oop_idx = KINDS[args.kind]
     info, reach = ranges_for(spot, path, ip_idx, oop_idx, log)
     pot, stack = info["pot"], 100.0 - max(info["invested"])
     oop_r, ip_r = class_to_combos(reach[oop_idx]), class_to_combos(reach[ip_idx])
-    log(f"kind {args.kind} {name}: pot {pot:.1f}, stack {stack:.1f}")
+    log(f"{name}: pot {pot:.1f}, stack {stack:.1f}")
     for f in FLOPS[: args.flops]:
         for t in args.trees.split(","):
             t0 = time.time()

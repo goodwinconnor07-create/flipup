@@ -71,6 +71,58 @@ def explorer_sizing(street: str, oop_leads: bool) -> BetSizing:
     return out
 
 
+def complete_sizing(street: str) -> BetSizing:
+    """Every standard option on `street` for both players: leads, 33/75/125% pot, all-in, raises."""
+    full = StreetSizing("33%, 75%, 125%, a", "60%, a")
+    if street == "flop":
+        sizes = {"flop": full, "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")}
+    elif street == "turn":
+        sizes = {"flop": StreetSizing(), "turn": full, "river": StreetSizing("75%", "60%")}
+    else:
+        sizes = {"flop": StreetSizing(), "turn": StreetSizing(), "river": full}
+    return BetSizing(oop=dict(sizes), ip=dict(sizes), max_raises=3)
+
+
+# Option ids on heads-up postflop streets: below FULL_ID, an action of the usual (GTO-trimmed) tree;
+# from FULL_ID, an action of the street's complete tree (index + FULL_ID); from EXTRA_ID, a standard
+# option the usual tree leaves out (EXTRA_ID + its place in _standard_options). Any id from FULL_ID up
+# switches the whole street to the complete tree, solved with every option in it.
+FULL_ID = 100
+EXTRA_ID = 200
+
+
+def _standard_options(pot: float, contrib, stack, player: int) -> list:
+    """(type, all_in, street wager after) for every standard option at a heads-up node."""
+    mine, theirs = float(contrib[player]), float(contrib[1 - player])
+    allin_to = mine + float(stack[player])
+    out = []
+    if theirs > mine + 1e-9:
+        out += [("fold", False, mine), ("call", False, min(theirs, allin_to))]
+        if allin_to > theirs + 1e-9:
+            raise_to = theirs + 0.6 * (pot + theirs - mine) + (theirs - mine)
+            if raise_to < allin_to * 0.97:
+                out.append(("raise", False, raise_to))
+            out.append(("raise", True, allin_to))
+    else:
+        out.append(("check", False, mine))
+        for f in (0.33, 0.75, 1.25):
+            to = mine + f * pot
+            if to < allin_to * 0.97:
+                out.append(("bet", False, to))
+        if float(stack[player]) > 1e-9:
+            out.append(("bet", True, allin_to))
+    return out
+
+
+def _match(actions: list, kind: str, all_in: bool, amount: float):
+    """Index of the action of this kind closest in size (any all-in matches any all-in), or None."""
+    cands = [i for i, a in enumerate(actions)
+             if (a["all_in"] and all_in) or (a["type"] == kind and bool(a["all_in"]) == all_in)]
+    if not cands:
+        return None
+    return min(cands, key=lambda i: abs(float(actions[i]["amount"]) - amount))
+
+
 def _bb(x: float) -> str:
     return f"{x:.1f}".rstrip("0").rstrip(".") + "bb"
 
@@ -176,7 +228,7 @@ class Explorer:
     def __init__(self, reviewer):
         self.rv = reviewer
         self.lock = threading.Lock()
-        self.flops: OrderedDict = OrderedDict()   # big trees: keep one
+        self.flops: OrderedDict = OrderedDict()   # big trees: keep two
         self.later: OrderedDict = OrderedDict()   # turn / river trees: keep a few
         self.forced: OrderedDict = OrderedDict()  # preflop re-solves for off-script lines
 
@@ -189,15 +241,15 @@ class Explorer:
             raise NeedsSolve(f"Solving preflop for {n} players at {stack:g}bb (first time only, several minutes).")
         return cache.get(n, stack)
 
-    def _street_solver(self, key, street, build, solve: bool):
+    def _street_solver(self, key, street, build, solve: bool, message: str | None = None):
         store = self.flops if street == "flop" else self.later
         with self.lock:
             if key in store:
                 store.move_to_end(key)
                 return store[key]
         if not solve:
-            raise NeedsSolve({"flop": "Solving the flop: first numbers in about a minute.",
-                              "turn": "Solving the turn.", "river": "Solving the river."}[street])
+            raise NeedsSolve(message or {"flop": "Solving the flop: first numbers in about a minute.",
+                                         "turn": "Solving the turn.", "river": "Solving the river."}[street])
         solver = build()
         solver._lock = threading.Lock()
         its, target = SOLVE[street]
@@ -211,7 +263,8 @@ class Explorer:
             solver.solve(its, target, 25)
         with self.lock:
             store[key] = solver
-            while len(store) > (1 if street == "flop" else 8):
+            # Two flop trees: the usual one and, after an option it leaves out, the complete one.
+            while len(store) > (2 if street == "flop" else 8):
                 _, dropped = store.popitem(last=False)
                 dropped._stop = True  # its background refine stops instead of taking CPU from this one
         return solver
@@ -444,30 +497,55 @@ class Explorer:
                 return s
 
             solver = self._street_solver(k, street, build, solve)
-            if getattr(solver, "_refining", False):
-                out["refining"] = True
             steps = [int(x) for x in req.get(street, [])]
+            complete = any(x >= FULL_ID for x in steps)
+            active = solver
+            if complete:
+                def build_full(street=street, bstreet=bstreet, ranges=ranges, pot=pot, eff=eff):
+                    return PostflopSolver(bstreet, pot, eff, ranges[oop], ranges[ip], sizing=complete_sizing(street),
+                                          compress=street == "flop", max_memory_mb=self.rv.settings.max_memory_mb)
+                wait = " (a couple of minutes)." if street == "flop" else "."
+                active = self._street_solver(k + ("full",), street, build_full, solve,
+                                             "Off the GTO line: re-solving this street with every option in it" + wait)
+            if getattr(active, "_refining", False):
+                out["refining"] = True
             tokens: list = []
+            basic: list = []  # the line so far in the usual tree (only usual-tree ids come before an off-tree one)
             last_bettor = None
             for step in steps:
-                node = self._node(solver, tokens, with_equity=False, with_ev=False)
+                node = self._node(active, tokens, with_equity=False, with_ev=False)
                 if node.type != "action":
                     raise ValueError(f"{street} action continues after the street ended")
-                a = node.actions[step]
+                if not complete:
+                    idx = step
+                elif step >= EXTRA_ID:
+                    std = _standard_options(node.pot, node.info["contrib"], node.info["stack"], node.player)
+                    if step - EXTRA_ID >= len(std):
+                        raise ValueError("that option isn't available here")
+                    idx = _match(node.actions, *std[step - EXTRA_ID])
+                elif step >= FULL_ID:
+                    idx = step - FULL_ID
+                else:
+                    b = self._node(solver, basic, with_equity=False, with_ev=False).actions[step]
+                    idx = _match(node.actions, b["type"], bool(b["all_in"]), float(b["amount"]))
+                    basic.append(step)
+                if idx is None or not 0 <= idx < len(node.actions):
+                    raise ValueError("that option isn't available here")
+                a = node.actions[idx]
                 actor = oop if node.player == 0 else ip
                 if a["type"] in ("bet", "raise"):
                     last_bettor = actor
                 out["history"].append({"street": street, "position": names[actor], "player": actor,
                                        "text": self._postflop_text(a, node.pot)})
-                tokens.append(step)
+                tokens.append(idx)
                 key = key + (step,)
-            node = self._node(solver, tokens)
+            node = self._node(active, tokens)
             pot_now, stack_now = float(node.pot), node.info["stack"]
             out["pot_bb"] = round(pot_now, 2)
             for i in live:
                 out["players"][i]["behind_bb"] = round(float(stack_now[seat[i]]), 2)
             if node.type == "action":
-                return self._postflop_decision(out, node, street, oop, ip, hero, hero_combo, names)
+                return self._postflop_decision(out, node, street, oop, ip, hero, hero_combo, names, complete)
             if node.type == "fold":
                 folder = out["history"][-1]["player"]
                 winner = ip if folder == oop else oop
@@ -502,7 +580,7 @@ class Explorer:
             return f"Bet {100 * a['added'] / pot:.0f}% ({_bb(a['amount'])})"
         return f"Raise to {_bb(a['amount'])}"
 
-    def _postflop_decision(self, out, node, street, oop, ip, hero, hero_combo, names):
+    def _postflop_decision(self, out, node, street, oop, ip, hero, hero_combo, names, complete=False):
         actor = oop if node.player == 0 else ip
         mine = actor == hero and hero_combo is not None
         rs = node.range_strategy()
@@ -510,11 +588,27 @@ class Explorer:
         options = []
         for i, a in enumerate(node.actions):
             lab = node.labels[i]
-            options.append({"id": i, "label": self._postflop_text(a, node.pot), "kind": a["type"],
-                            "to_bb": round(float(a["amount"]), 2),
+            options.append({"id": i + (FULL_ID if complete else 0), "label": self._postflop_text(a, node.pot),
+                            "kind": "allin" if a["all_in"] else a["type"], "to_bb": round(float(a["amount"]), 2),
                             "freq": round(float(h["strategy"][lab] if mine else rs[lab]), 4),
                             "range_freq": round(float(rs[lab]), 4),
                             "ev_bb": round(float(h["action_ev"][lab]), 3) if mine else None})
+        if not complete:
+            # Every other standard option stays playable. GTO never takes it here (the solved tree leaves
+            # it out); choosing it re-solves the street with every option in it.
+            contrib = node.info["contrib"]
+            for j, (kind, all_in, amount) in enumerate(_standard_options(node.pot, contrib, node.info["stack"],
+                                                                         node.player)):
+                m = _match(node.actions, kind, all_in, amount)
+                if m is not None and (kind in ("fold", "check", "call") or all_in
+                                      or abs(float(node.actions[m]["amount"]) - amount) <= 0.15 * amount):
+                    continue
+                fake = {"type": kind, "all_in": all_in, "amount": amount, "added": amount - contrib[node.player]}
+                options.append({"id": EXTRA_ID + j, "label": self._postflop_text(fake, node.pot),
+                                "kind": "allin" if all_in else kind, "to_bb": round(float(amount), 2),
+                                "freq": 0.0, "range_freq": 0.0, "ev_bb": None, "off_tree": True})
+            order = {"fold": 0, "check": 0, "call": 1, "bet": 2, "raise": 2, "allin": 3}
+            options.sort(key=lambda o: (order[o["kind"]], o["to_bb"]))
         contrib = node.info["contrib"]
         out.update({"street": street, "to_act": actor, "to_act_position": names[actor], "options": options,
                     "hand_specific": mine, "to_call_bb": round(abs(contrib[0] - contrib[1]), 2), "status": "ready"})
@@ -624,9 +718,9 @@ class Explorer:
             opts.append({"kind": "fold", "label": "Fold"})
             call = min(cur, allin_to)
             opts.append({"kind": "call", "label": f"Call {_bb(call - mine)}", "to_bb": round(call, 2)})
-            if allin_to > cur + 1e-9 and raises < 3:
+            if allin_to > cur + 1e-9:
                 raise_to = cur + (pot + (cur - mine)) * 0.6 + (cur - mine)
-                if raise_to < allin_to * 0.9:
+                if raises < 3 and raise_to < allin_to * 0.9:
                     opts.append({"kind": "raise", "label": f"Raise to {_bb(raise_to)}", "to_bb": round(raise_to, 2)})
                 opts.append({"kind": "allin", "label": f"All-in {_bb(allin_to)}", "to_bb": round(allin_to, 2)})
         else:

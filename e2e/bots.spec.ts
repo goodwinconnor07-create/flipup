@@ -180,6 +180,26 @@ test('the +N badge lists the players out of the row with their chips', async ({ 
   await expect(list).toBeHidden();
 });
 
+test('names are at most 10 characters, even one saved before the limit', async ({ page }) => {
+  watchErrors(page);
+  await page.addInitScript(() => localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Alexandrina Longname', emoji: '🙂' })));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  // The saved name was cut to ten characters.
+  await expect(page.getByText('Alexandrin', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Alexandrina/)).toHaveCount(0);
+});
+
+test('the name box stops at 10 characters', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  const input = page.getByRole('textbox', { name: 'Your name' });
+  await input.fill('ABCDEFGHIJKLMNOP');
+  await expect(input).toHaveValue('ABCDEFGHIJ');
+});
+
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings' }).click();

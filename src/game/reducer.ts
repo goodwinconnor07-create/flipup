@@ -16,7 +16,7 @@ import { options, seatFor } from './selectors';
 import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
 
 export const LIMITS = {
-  maxNameLength: 16,
+  maxNameLength: 10,
   minStack: 100,
   maxStack: 1_000_000,
   maxTurnSeconds: 300,

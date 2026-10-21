@@ -1,6 +1,6 @@
 // Everything the app keeps on the phone between visits.
 
-import { DEFAULT_EMOJI, DEFAULT_SETTINGS, isDeviceId, isEmoji, newId, type Game, type Settings } from '../game';
+import { cleanName, DEFAULT_EMOJI, DEFAULT_SETTINGS, isDeviceId, isEmoji, newId, type Game, type Settings } from '../game';
 
 const KEYS = {
   device: 'flipup.device',
@@ -56,7 +56,8 @@ export function loadDeviceId(): string {
 export function loadProfile(): Profile {
   const p = read<Profile>(KEYS.profile);
   return {
-    name: typeof p?.name === 'string' ? p.name : '',
+    // A name saved before the limit was 10 characters is cut to fit.
+    name: typeof p?.name === 'string' ? cleanName(p.name) : '',
     emoji: isEmoji(p?.emoji) ? p.emoji : DEFAULT_EMOJI,
   };
 }

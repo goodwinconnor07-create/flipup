@@ -239,4 +239,7 @@ calibration is still the BTN-vs-BB one. NL50 benchmark (GTO Wizard settings):
   far too much against UTG, so r2 isn't live either.
 - Measured against the old model, pairs realize 0.05-0.10 of the pot more than modelled in every spot
   and dominated offsuit hands less, but per-class data is noisy on 28-32 flops (sets).
-- Next: hand-vs-hand interaction terms (engine support is in, class_k_* / class_d), or more flops.
+- r2 with hand-vs-hand interaction terms (class_k_* / class_d): UTG 20.5, BB vs UTG fold 71.4, SB 46/1/53,
+  BB vs BTN 61/25/14. Same as r2, so the gap vs UTG isn't the model's form: postflop solves with these ranges
+  say the BB realizes too little against UTG to defend 38%. Next: check that measurement (richer trees,
+  more iterations, the BB's flop options) before trusting either side.

@@ -104,7 +104,6 @@ export function HostArt() {
       <Face emoji="🎃" x={50} y={66} size={40} />
       <Face emoji="🤑" x={108} y={52} size={40} />
       <Face emoji="😸" x={166} y={66} size={40} />
-      <span className="art-bubble">Free to Play!</span>
       <svg viewBox="0 0 200 120" preserveAspectRatio="xMaxYMid meet" className="card-art-front">
         <Defs id={`${id}f`} />
         <ellipse cx="112" cy="108" rx="92" ry="14" fill={`url(#${id}f-shadow)`} />

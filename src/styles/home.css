@@ -1636,58 +1636,6 @@ button.streak-pill {
   font-weight: 600;
 }
 
-/* A small text bubble coming from one of the friends on the Play with Friends card. It copies the
-   grey in-game message bubble in table.css: same size, colour, corners and curled tail. */
-.card-art .art-bubble {
-  position: absolute;
-  z-index: 3;
-  left: 6%;
-  top: 4%;
-  padding: 4px 9px;
-  border-radius: 15px;
-  background: var(--bubble-grey);
-  color: var(--ink);
-  font-size: 12px;
-  font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  box-shadow: 0 2px 6px -2px rgba(18, 18, 40, 0.35);
-  transform-origin: 20% 100%;
-  animation: bubble-pop 3.2s ease-in-out infinite;
-}
-
-.card-art .art-bubble::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: -5px;
-  width: 14px;
-  height: 14px;
-  background: inherit;
-  clip-path: path('M10 0 C10 7 8 12 0 14 C6 15.5 11 14 14 12 L14 0 Z');
-}
-
-@keyframes bubble-pop {
-  0%,
-  100% {
-    transform: translateY(0) scale(1);
-  }
-  50% {
-    transform: translateY(-2px) scale(1.04);
-  }
-}
-
-html.calm .card-art .art-bubble {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card-art .art-bubble {
-    animation: none;
-  }
-}
-
 .rejoin-card {
   margin-top: 12px;
 }

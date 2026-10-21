@@ -23,7 +23,7 @@ import { dispatch, navigate, openSheet, react, toast, useApp } from '../state/st
 import { handKey, hasHand } from '../state/training';
 import { Avatar, CardSlot, chips, Count, PlayingCard, PositionChips, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
-import { ChatIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { ChatIcon, CloseIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 import { playSound } from '../ui/sound';
 import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
@@ -999,6 +999,8 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
         hand={hand}
         seat={seat}
         onCancel={() => setRaising(false)}
+        onFold={() => act('fold')}
+        onCall={() => act(o.canCheck ? 'check' : 'call')}
         onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
       />
     );
@@ -1034,12 +1036,16 @@ function RaisePanel({
   hand,
   seat,
   onCancel,
+  onFold,
+  onCall,
   onRaise,
 }: {
   game: Game;
   hand: Hand;
   seat: Seat;
   onCancel: () => void;
+  onFold: () => void;
+  onCall: () => void;
   onRaise: (to: number) => void;
 }) {
   const o = options(game, hand, seat);
@@ -1070,6 +1076,9 @@ function RaisePanel({
           <span className="muted">{o.word} to</span>
           <b className="raise-amount num">{chips(to)}</b>
           <span className="muted raise-of">of {chips(o.maxTo)}</span>
+          <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
+            <CloseIcon />
+          </button>
         </div>
         <div className="raise-presets">
           {presets.map((p) => (
@@ -1108,12 +1117,17 @@ function RaisePanel({
             <PlusIcon />
           </button>
         </div>
-        <div className="action-buttons two">
-          <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            Back
+        {/* The same three slots as the action row, so Fold and Call stay in reach while you size. */}
+        <div className="action-buttons raise-actions">
+          <button type="button" className="btn btn-fold" onClick={onFold}>
+            Fold
+          </button>
+          <button type="button" className="btn btn-green" onClick={onCall}>
+            {o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'}
+            {!o.canCheck && !o.callIsAllIn && <span className="num">{chips(o.toCall)}</span>}
           </button>
           <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
-            {to >= o.maxTo ? 'All in' : `${o.word} ${chips(to)}`}
+            {to >= o.maxTo ? 'All in' : o.word}
           </button>
         </div>
       </div>

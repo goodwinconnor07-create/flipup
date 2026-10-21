@@ -161,6 +161,10 @@ class PreflopSpot:
                 cfg.eqr_oop = [cfg.eqr_oop[0], cfg.eqr_oop[1], cfg.eqr_oop[2], cal["base_oop"]]
             cfg.class_eqr_ip = [float(cal["ip"][c]) for c in CLASSES]
             cfg.class_eqr_oop = [float(cal["oop"][c]) for c in CLASSES]
+            if cal.get("model") == "additive" and "d" in cal:
+                cfg.class_k_ip = [float(cal["k_ip"][c]) for c in CLASSES]
+                cfg.class_k_oop = [float(cal["k_oop"][c]) for c in CLASSES]
+                cfg.class_d = [float(cal["d"][c]) for c in CLASSES]
             kinds = load_kind_calibration()
             if kinds and cal.get("model") == "additive":
                 ip, oop, present = [], [], []

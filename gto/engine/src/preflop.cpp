@@ -72,6 +72,9 @@ PreflopSolver::PreflopSolver(const PreflopConfig& cfg) : cfg_(cfg), N_(cfg.num_p
       Pn_[h * C + o] = pn;
       Weq_[h * C + o] = pn * cfg_.equity[h * C + o];
     }
+  const bool interact = !cfg_.class_d.empty();
+  if (interact && (cfg_.class_d.size() != C || cfg_.class_k_ip.size() != C || cfg_.class_k_oop.size() != C))
+    throw std::invalid_argument("class_k_ip, class_k_oop and class_d: 169 each");
   for (int b = 0; b < 4; ++b) {
     std::vector<float> S(C * C);
     for (int h = 0; h < C; ++h)
@@ -82,7 +85,10 @@ PreflopSolver::PreflopSolver(const PreflopConfig& cfg) : cfg_(cfg), N_(cfg.num_p
         if (cfg_.eqr_model == 1) {
           // Additive: IP share = equity + (adj_ip[h] - adj_oop[o]). Shares may leave [0, 1]:
           // strong hands win more than the pot on later streets, weak ones less than their equity.
-          S[h * C + o] = static_cast<float>(e + fade[b] * (cfg_.class_eqr_ip[h] - cfg_.class_eqr_oop[o]));
+          double adj = cfg_.class_eqr_ip[h] - cfg_.class_eqr_oop[o];
+          if (interact)
+            adj += cfg_.class_k_ip[h] * cfg_.class_d[o] - cfg_.class_k_oop[o] * cfg_.class_d[h];
+          S[h * C + o] = static_cast<float>(e + fade[b] * adj);
           continue;
         }
         double rip = cfg_.eqr_ip[b] * (1.0 + (cfg_.class_eqr_ip[h] - 1.0) * fade[b]);

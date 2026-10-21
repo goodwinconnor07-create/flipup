@@ -1635,3 +1635,7 @@ button.streak-pill {
 .group.plain .group-row b {
   font-weight: 600;
 }
+
+.rejoin-card {
+  margin-top: 12px;
+}

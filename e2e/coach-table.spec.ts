@@ -4,7 +4,7 @@ import { setName, shot, watchErrors } from './helpers';
 test('replay is switched off for now: no replay button after a hand', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'One more bot' }).click();

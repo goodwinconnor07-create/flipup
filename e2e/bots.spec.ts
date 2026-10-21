@@ -5,7 +5,7 @@ test('play hands against the bots on one phone', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await shot(page, '01-home');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Kavi', '🦊');
   await shot(page, '02-name');
   await page.getByRole('button', { name: 'Next' }).click();
@@ -54,7 +54,7 @@ test('play hands against the bots on one phone', async ({ page }) => {
 test('raise with the bet sizer, then fold the next hand', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'One less bot' }).click();
@@ -90,7 +90,7 @@ test('the raise panel fits on a short screen, and the hand log records the hand'
   // About what's left of an iPhone screen with Safari's bars showing.
   await page.setViewportSize({ width: 390, height: 664 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
@@ -130,7 +130,7 @@ test('the raise panel fits on a short screen, and the hand log records the hand'
 test('quick messages, table theme, sound toggle and the pre-action buttons', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One less bot' }).click();
@@ -216,7 +216,7 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
 test('ending a game adds to the Insights totals', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
@@ -235,7 +235,7 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
 test('with more than four others the row slides, keeps whoever is acting in view, and drops folded players', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One more bot' }).click();
@@ -268,7 +268,7 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
   test.setTimeout(300_000);
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One less bot' }).click();
@@ -321,7 +321,7 @@ test('the recorded sound effects load and decode', async ({ page }) => {
 test("after a hand the host can reveal the bots' hands, next to Show cards", async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
@@ -353,7 +353,7 @@ test("after a hand the host can reveal the bots' hands, next to Show cards", asy
 test('every player has a position: yours too', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'One less bot' }).click();
@@ -369,7 +369,7 @@ test('every player has a position: yours too', async ({ page }) => {
 test('rising blinds: a setting, a countdown on the table', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByRole('radiogroup', { name: 'Blinds stop increasing at' })).toHaveCount(0);
@@ -387,7 +387,7 @@ test('dark mode: a switch in the menu that changes the whole app and sticks', as
   await page.goto('/');
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
   expect(await bg()).toBe('rgb(255, 255, 255)');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
@@ -423,7 +423,7 @@ test('home: three tabs, results from finished tables, training tiles', async ({ 
   await expect(page.getByRole('heading', { name: 'Play' })).toBeVisible();
   await expect(page.getByText('Hi Connor.')).toBeVisible();
   await expect(page.getByText("You're up 200 chips this week.")).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Host a table' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
   await page.getByRole('tab', { name: 'Insights' }).click();
   await expect(page.getByText('+200', { exact: true })).toBeVisible();
   await expect(page.getByText('Recent tables')).toBeVisible();
@@ -437,7 +437,7 @@ test('a table with players out of view never scrolls sideways', async ({ page })
   watchErrors(page);
   await page.setViewportSize({ width: 460, height: 1000 });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One more bot' }).click();
@@ -474,7 +474,7 @@ test('reviewing a hand shows what the coach is doing, with the time so far and t
     return route.fulfill({ json: polls < 4 ? { status: 'running', progress: 0, total: 1, result: null } : { status: 'done', progress: 1, total: 1, result: { hands: [report] } } });
   });
   await page.goto('/');
-  await page.getByRole('button', { name: 'Play the bots' }).click();
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
@@ -496,16 +496,11 @@ test('reviewing a hand shows what the coach is doing, with the time so far and t
   await expect(activity).toBeHidden({ timeout: 20_000 });
 });
 
-test('a bot challenge: open it from the shelf, see the rules, play with its stacks and goal', async ({ page }) => {
+test('a playstyle tile: one tap starts a heads-up game against a random bot', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Sam', emoji: '🦊' })));
   await page.goto('/');
-  await page.locator('.quick-card').first().click();
-  const sheet = page.getByRole('dialog');
-  await expect(sheet.getByText('Goal')).toBeVisible();
-  await expect(sheet.getByText('Stacks')).toBeVisible();
-  await sheet.getByRole('button', { name: 'Play', exact: true }).click();
+  await page.locator('.quick-card', { hasText: 'Playstyle' }).first().click();
   await expect(page.getByText('Your turn')).toBeVisible({ timeout: 30_000 });
-  await expect(page.locator('.table-title small')).toContainText(/hand \d+/i);
-  await shot(page, '20-challenge');
+  await shot(page, '20-playstyle');
 });

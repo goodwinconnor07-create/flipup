@@ -30,17 +30,31 @@ export function handRecord(game: Game, hand: Hand, now: number): HandRecord | nu
 
 /** Chips a player won or lost in a recorded hand. */
 export function recordNet(r: HandRecord, playerId: string): number {
-  // `to` is a street total, so a street's contribution is the largest `to` on it.
-  const street: Partial<Record<string, number>> = {};
-  for (const a of r.actions) {
-    if (a.playerId !== playerId || a.move === 'fold' || a.move === 'check') continue;
-    street[a.street] = Math.max(street[a.street] ?? 0, a.to);
-  }
-  let put = Object.values(street).reduce<number>((t, v) => t + (v ?? 0), 0);
-  // A blind posted with no later preflop bet (folded or checked) still went in.
-  if (street.preflop === undefined) put += blindFor(r, playerId);
   const start = r.players.find((p) => p.id === playerId)?.stack ?? 0;
-  return Math.round((r.won[playerId] ?? 0) - Math.min(put, start));
+  return Math.round((r.won[playerId] ?? 0) - Math.min(putIn(r, playerId), start));
+}
+
+/** What everyone put in on one street (`to` is a street total, so the largest `to`), blinds included. */
+function streetPuts(r: HandRecord, street: string): Map<string, number> {
+  const put = new Map<string, number>();
+  if (street === 'preflop') for (const p of r.players) if (blindFor(r, p.id)) put.set(p.id, blindFor(r, p.id));
+  for (const a of r.actions) {
+    if (a.street !== street || a.move === 'fold' || a.move === 'check') continue;
+    put.set(a.playerId, Math.max(put.get(a.playerId) ?? 0, a.to));
+  }
+  return put;
+}
+
+/** Chips a player really put in: on each street, the part of the biggest bet nobody matched came back. */
+function putIn(r: HandRecord, playerId: string): number {
+  let total = 0;
+  for (const street of ['preflop', 'flop', 'turn', 'river']) {
+    const puts = streetPuts(r, street);
+    const mine = puts.get(playerId) ?? 0;
+    const others = Math.max(0, ...[...puts].filter(([id]) => id !== playerId).map(([, v]) => v));
+    total += Math.min(mine, others);
+  }
+  return total;
 }
 
 /** The blind a player posted (0 for everyone else). */

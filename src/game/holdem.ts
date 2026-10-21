@@ -7,9 +7,9 @@ import { describeHand } from './evaluate';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
 
 export const TIMING = {
-  /** Bots wait a moment, like they're thinking. */
-  botMin: 900,
-  botMax: 2000,
+  /** Bots take a moment to look at the spot before deciding (then think for as long as the spot needs, see botPlay.ts). */
+  botMin: 500,
+  botMax: 800,
   /** A bot that thinks out loud moves this long after it speaks. */
   botThink: 1300,
   /** A person has had the clock this long: a bot may poke them. */

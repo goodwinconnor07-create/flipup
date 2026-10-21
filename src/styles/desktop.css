@@ -407,9 +407,8 @@
     border-radius: var(--r-lg);
   }
 
-  .pre-btn {
-    min-height: 58px;
-    font-size: 18px;
+  .action-buttons .pre-btn {
+    font-size: 22px;
   }
 
   .show-row {

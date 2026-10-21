@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { fetchTableInfo } from '../state/api';
-import { BOTS } from '../game/botStyles';
-import type { Settings } from '../game';
-import { loadLastBots, loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
+import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar, Emoji } from '../ui/components';
 import { InsightsTab } from './HomeInsights';
-import { QuickGames, startBots } from './HomeQuick';
+import { QuickGames } from './HomeQuick';
 import { BotsArt, HostArt } from './CardArt';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
@@ -86,24 +84,12 @@ export function Home() {
     navigate({ name: 'setup', mode: then === 'host' ? 'online' : 'local' });
   };
 
-  const playAgain = (names: string[], settings: Settings) => startBots(names, settings, named);
-  const lastBots = loadLastBots();
-  const lastBotFaces = lastBots ? lastBots.bots.map((n) => BOTS.find((b) => b.name === n)).filter((b): b is (typeof BOTS)[number] => !!b) : [];
-  // One clear next step: your open table, the online table you left, your last bots game, or a fresh start.
-  const hero: { kind: 'table' | 'rejoin' | 'again' | 'new'; title: string; sub: string; cta: string; run: () => void; faces: string[] } = active
-    ? { kind: 'table', title: 'Your table is waiting', sub: session.mode === 'online' ? `Code ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [] }
+  // The rejoin card only shows when there's somewhere to go back to: your open table or the online table you left.
+  const rejoinCard: { title: string; sub: string; cta: string; run: () => void; faces: string[] } | null = active
+    ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [] }
     : last
-      ? { kind: 'rejoin', title: `Table ${last.code}`, sub: `Last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [] }
-      : lastBots && lastBotFaces.length
-        ? {
-            kind: 'again',
-            title: lastBotFaces.length === 1 ? `Play ${lastBotFaces[0].name} again` : `Same ${lastBotFaces.length} bots again`,
-            sub: `Last played ${ago(lastBots.at)}`,
-            cta: 'Play again',
-            run: () => void playAgain(lastBots.bots, lastBots.settings),
-            faces: [profile.emoji, ...lastBotFaces.map((b) => b.emoji)],
-          }
-        : { kind: 'new', title: 'Play your first hand', sub: 'Take on the bots now, or host a table for friends.', cta: 'Start playing', run: () => go('bots'), faces: [] };
+      ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [] }
+      : null;
   const active_ = !!active;
   const index = TABS.findIndex((t) => t.id === tab);
 
@@ -143,28 +129,10 @@ export function Home() {
           <div key={tab} className="home-pane">
             {tab === 'play' && (
               <>
-                <button type="button" className="hero press" disabled={looking} onClick={(e) => colourWipe(e, hero.run)} aria-label={`${hero.title}. ${hero.cta}`}>
-                  <span className="hero-top">
-                    <small className="hero-eyebrow">{hero.kind === 'new' ? 'Get started' : 'Pick up where you left off'}</small>
-                    {hero.faces.length > 0 && (
-                      <span className="hero-faces" aria-hidden>
-                        {hero.faces.slice(0, 6).map((emoji, i) => (
-                          <Avatar key={i} emoji={emoji} size={36} />
-                        ))}
-                      </span>
-                    )}
-                    <span className="hero-title">{hero.title}</span>
-                    <span className="hero-sub">{hero.sub}</span>
-                  </span>
-                  <span className="hero-foot">
-                    {hero.cta}
-                    <ChevronIcon width={18} height={18} />
-                  </span>
-                </button>
                 <section className="modes" aria-label="Start a game">
                   <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
                     <span className="mode-text">
-                      <span className="mode-title">Host a table</span>
+                      <span className="mode-title">Play with Friends</span>
                       <span className="mode-sub">Share a code. Friends join on their phones.</span>
                     </span>
                     <span className="mode-art">
@@ -173,7 +141,7 @@ export function Home() {
                   </button>
                   <button type="button" className="mode mode-violet press" onClick={() => go('bots')}>
                     <span className="mode-text">
-                      <span className="mode-title">Play the bots</span>
+                      <span className="mode-title">Play with Bots</span>
                       <span className="mode-sub">Practise on this phone, no timer.</span>
                     </span>
                     <span className="mode-art">
@@ -185,7 +153,26 @@ export function Home() {
                     Join with a code
                   </button>
                 </section>
-                <QuickGames showAgain={hero.kind !== 'again'} />
+                {rejoinCard && (
+                  <button type="button" className="hero rejoin-card press" disabled={looking} onClick={(e) => colourWipe(e, rejoinCard.run)} aria-label={`${rejoinCard.title}. ${rejoinCard.sub}`}>
+                    <span className="hero-top">
+                      {rejoinCard.faces.length > 0 && (
+                        <span className="hero-faces" aria-hidden>
+                          {rejoinCard.faces.slice(0, 6).map((emoji, i) => (
+                            <Avatar key={i} emoji={emoji} size={36} />
+                          ))}
+                        </span>
+                      )}
+                      <span className="hero-title">{rejoinCard.title}</span>
+                      <span className="hero-sub">{rejoinCard.sub}</span>
+                    </span>
+                    <span className="hero-foot">
+                      {rejoinCard.cta}
+                      <ChevronIcon width={18} height={18} />
+                    </span>
+                  </button>
+                )}
+                <QuickGames />
               </>
             )}
             {tab === 'insights' && <InsightsTab />}

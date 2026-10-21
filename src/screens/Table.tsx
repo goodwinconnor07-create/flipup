@@ -23,7 +23,7 @@ import { dispatch, navigate, openSheet, react, toast, useApp } from '../state/st
 import { handKey, hasHand } from '../state/training';
 import { Avatar, CardSlot, chips, Count, PlayingCard, PositionChips, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
-import { ChatIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { ChatIcon, CloseIcon, MenuIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 import { playSound } from '../ui/sound';
 import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
@@ -201,7 +201,8 @@ function useOdds(hand: Hand | null): Map<string, { win: number; tie: number }> |
 
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
-type PreAction = 'checkfold' | 'callany' | null;
+/** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
+type PreAction = { kind: 'checkfold' | 'callany' | 'current'; bet: number } | null;
 
 const MAX_PODS = 4;
 
@@ -289,21 +290,27 @@ function Felt({ game }: { game: Game }) {
     if (secsLeft !== null && secsLeft > 0 && secsLeft <= 5) playSound('tick');
   }, [secsLeft]);
 
-  // Pre-actions: tap Check/Fold or Call any before your turn and it plays itself when it comes round.
-  // They're cleared on each new street, because the situation has changed.
+  // Pre-actions: tap Check/Fold, Call current or Call any before your turn and it plays itself when it comes round.
+  // They're cleared on each new street, because the situation has changed. Call current is also cleared the
+  // moment someone raises, so it never calls more than you saw.
   const [pre, setPre] = useState<PreAction>(null);
   const streetKey = hand ? `${hand.number}-${hand.street}` : '';
   useEffect(() => setPre(null), [streetKey]);
   useEffect(() => {
-    if (!pre || !myTurn || !hand || !mySeat) return;
+    if (!pre || !hand || !mySeat) return;
+    if (pre.kind === 'current' && hand.currentBet !== pre.bet) {
+      setPre(null);
+      return;
+    }
+    if (!myTurn) return;
     const o = options(game, hand, mySeat);
-    const move = o.canCheck ? 'check' : pre === 'callany' ? 'call' : 'fold';
+    const move = o.canCheck ? 'check' : pre.kind === 'checkfold' ? 'fold' : 'call';
     const t = setTimeout(() => {
       setPre(null);
       dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move });
     }, 400);
     return () => clearTimeout(t);
-  }, [pre, myTurn, hand?.number, hand?.seq]);
+  }, [pre, myTurn, hand?.number, hand?.seq, hand?.currentBet]);
 
   // Which cards make the hand that matters: yours while you're in, the winner's at a showdown.
   const highlight = useMemo(() => {
@@ -839,7 +846,22 @@ function ActionArea({
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <p className="table-note">Running it out…</p>;
     // Still in the hand with chips behind: you can set what to do before your turn comes round.
+    // The three buttons sit where Fold, Check and Raise will be, so your thumb stays put.
     const canPre = !!seat && !seat.folded && !seat.allIn && !me.sittingOut;
+    const o = canPre && seat ? options(game, hand, seat) : null;
+    const set = (kind: 'checkfold' | 'callany' | 'current') =>
+      setPre(pre?.kind === kind ? null : { kind, bet: hand.currentBet });
+    const preBtn = (kind: 'checkfold' | 'callany' | 'current', label: string, aria?: string) => (
+      <button
+        type="button"
+        aria-pressed={pre?.kind === kind}
+        aria-label={aria}
+        className={`btn pre-btn press${pre?.kind === kind ? ' on' : ''}`}
+        onClick={() => set(kind)}
+      >
+        {label}
+      </button>
+    );
     return (
       <div className="stack">
         <p className="table-note">
@@ -857,24 +879,13 @@ function ActionArea({
           )}
           {me.sittingOut && <SitBack />}
         </p>
-        {canPre && (
-          <div className="pre-actions" role="group" aria-label="Before your turn">
-            <button
-              type="button"
-              aria-pressed={pre === 'checkfold'}
-              className={`pre-btn press${pre === 'checkfold' ? ' on' : ''}`}
-              onClick={() => setPre(pre === 'checkfold' ? null : 'checkfold')}
-            >
-              Check / Fold
-            </button>
-            <button
-              type="button"
-              aria-pressed={pre === 'callany'}
-              className={`pre-btn press${pre === 'callany' ? ' on' : ''}`}
-              onClick={() => setPre(pre === 'callany' ? null : 'callany')}
-            >
-              Call any
-            </button>
+        {o && (
+          <div className="action-buttons pre" role="group" aria-label="Before your turn">
+            {preBtn('checkfold', 'Check / Fold')}
+            {o.canCheck
+              ? preBtn('current', 'Check', 'Check, unless someone bets')
+              : preBtn('current', `Call ${chips(o.toCall)}`, `Call ${chips(o.toCall)}, unless someone raises`)}
+            {preBtn('callany', 'Call any')}
           </div>
         )}
       </div>
@@ -988,6 +999,8 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
         hand={hand}
         seat={seat}
         onCancel={() => setRaising(false)}
+        onFold={() => act('fold')}
+        onCall={() => act(o.canCheck ? 'check' : 'call')}
         onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
       />
     );
@@ -1023,12 +1036,16 @@ function RaisePanel({
   hand,
   seat,
   onCancel,
+  onFold,
+  onCall,
   onRaise,
 }: {
   game: Game;
   hand: Hand;
   seat: Seat;
   onCancel: () => void;
+  onFold: () => void;
+  onCall: () => void;
   onRaise: (to: number) => void;
 }) {
   const o = options(game, hand, seat);
@@ -1059,6 +1076,9 @@ function RaisePanel({
           <span className="muted">{o.word} to</span>
           <b className="raise-amount num">{chips(to)}</b>
           <span className="muted raise-of">of {chips(o.maxTo)}</span>
+          <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
+            <CloseIcon />
+          </button>
         </div>
         <div className="raise-presets">
           {presets.map((p) => (
@@ -1097,12 +1117,17 @@ function RaisePanel({
             <PlusIcon />
           </button>
         </div>
-        <div className="action-buttons two">
-          <button type="button" className="btn btn-ghost" onClick={onCancel}>
-            Back
+        {/* The same three slots as the action row, so Fold and Call stay in reach while you size. */}
+        <div className="action-buttons raise-actions">
+          <button type="button" className="btn btn-fold" onClick={onFold}>
+            Fold
+          </button>
+          <button type="button" className="btn btn-green" onClick={onCall}>
+            {o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'}
+            {!o.canCheck && !o.callIsAllIn && <span className="num">{chips(o.toCall)}</span>}
           </button>
           <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
-            {to >= o.maxTo ? 'All in' : `${o.word} ${chips(to)}`}
+            {to >= o.maxTo ? 'All in' : o.word}
           </button>
         </div>
       </div>

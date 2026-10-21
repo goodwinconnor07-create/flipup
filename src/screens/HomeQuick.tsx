@@ -1,11 +1,10 @@
 import { useState } from 'react';
-import { BOTS } from '../game/botStyles';
+import { BOTS, STYLES, type StyleId } from '../game/botStyles';
 import { DEFAULT_SETTINGS, type Settings } from '../game';
 import { loadLastBots } from '../state/persist';
-import { dispatch, getState, navigate, openSheet, openTable, useApp } from '../state/store';
+import { dispatch, getState, navigate, openTable, startPlaystyle, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { sceneFor } from './botScenes';
-import { loadResults, weeklyPicks } from '../state/challenges';
 
 /** A bot's backdrop: its gradient, with a few props from its world. */
 function Scene({ emoji, size = 64 }: { emoji: string; size?: number }) {
@@ -33,6 +32,14 @@ function sample(n: number): Bot[] {
   return out;
 }
 
+/** Six of the ten styles, each on a random bot's face (any bot can be loaded with any style). */
+function playstyles(): { bot: Bot; style: StyleId }[] {
+  const ids = Object.keys(STYLES) as StyleId[];
+  const styles: StyleId[] = [];
+  while (styles.length < 6) styles.push(...ids.splice(Math.floor(Math.random() * ids.length), 1));
+  return sample(6).map((bot, i) => ({ bot, style: styles[i] }));
+}
+
 /** Sits down against the named bots and deals (or asks for a name first). */
 export async function startBots(names: string[], settings: Settings, named: boolean): Promise<void> {
   if (getState().busy) return;
@@ -46,8 +53,7 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
   const named = useApp((s) => s.profile.name.trim().length > 0);
   const [bots] = useState(() => sample(8));
   const table = bots.slice(0, 5);
-  const [picks] = useState(() => weeklyPicks());
-  const [results] = useState(loadResults);
+  const [picks] = useState(playstyles);
 
   // Your last game against the bots, if there was one: the same faces on the same terms.
   const [last] = useState(loadLastBots);
@@ -74,18 +80,13 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
             <small>{lastBots.length === 1 ? `vs ${lastBots[0].name}` : `Same ${lastBots.length} bots`}</small>
           </button>
         )}
-        {picks.map((c) => {
-          const b = BOTS.find((x) => x.name === c.bot);
-          if (!b) return null;
-          const done = results[c.bot]?.stars ?? 0;
-          return (
-            <button key={c.bot} type="button" className="glass-card quick-card lift press" onClick={() => openSheet({ name: 'challenge', bot: c.bot })}>
-              <Scene emoji={b.emoji} />
-              <b>{b.name}</b>
-              <small>{done > 0 ? `✓ ${'★'.repeat(done)}` : c.title}</small>
-            </button>
-          );
-        })}
+        {picks.map(({ bot, style }) => (
+          <button key={bot.name} type="button" className="glass-card quick-card lift press" onClick={() => (named ? startPlaystyle(bot.name, style) : navigate({ name: 'profile', then: 'bots' }))}>
+            <Scene emoji={bot.emoji} />
+            <b>Playstyle</b>
+            <small>Heads-up vs {bot.name}</small>
+          </button>
+        ))}
         <button type="button" className="glass-card quick-card lift press" onClick={() => void play(table.map((b) => b.name))}>
           <span className="quick-art quick-stack" style={{ ['--h' as string]: 150 }} aria-hidden>
             {table.map((b) => (

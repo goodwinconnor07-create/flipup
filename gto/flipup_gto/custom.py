@@ -38,7 +38,8 @@ SOLVE = {  # max iterations, target exploitability (% of pot)
 
 
 FLOP_FIRST_PASS = 15   # iterations before the first (provisional) flop answer
-REFINE_CHUNK = 5       # iterations per background step (queries wait at most one step)
+REFINE_CHUNK = 2       # iterations per background step: a query waits at most one step (a few seconds)
+REFINE_CHECK = 10      # check convergence every this many iterations (the check costs about one iteration)
 FORCED_ITERATIONS = 150  # preflop re-solve after an off-script action
 
 
@@ -318,9 +319,12 @@ class Explorer:
                     done = solver.engine.iterations
                     if done >= its:
                         break
-                    st = solver.solve(min(its, done + REFINE_CHUNK), target, REFINE_CHUNK)
-                if st.exploitability_pct <= target:
-                    break
+                    solver.engine.iterate(min(REFINE_CHUNK, its - done))
+                    done = solver.engine.iterations
+                if done % REFINE_CHECK < REFINE_CHUNK:
+                    with solver._lock:
+                        if solver.exploitability_pct() <= target:
+                            break
         finally:
             solver._refining = False
 

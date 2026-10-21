@@ -192,6 +192,40 @@ html[data-theme='dark'] .pcard.dim > * {
   padding-bottom: 0;
 }
 
+/* A slimmer header on a phone, in the page colour, so the table gets the room. Nothing scrolls under it
+   for long, so it doesn't need to be glass. */
+@media not all and (min-width: 960px) and (min-height: 600px) {
+  .screen > .topbar.table-bar:first-child {
+    min-height: 0;
+    gap: 8px;
+    margin: 0 -16px 4px;
+    padding: calc(var(--safe-top) + 4px) 16px 4px;
+    background: var(--bg);
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .table-bar .icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .table-bar .icon-btn svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .table-bar .code-chip {
+    min-width: 44px;
+    height: 36px;
+  }
+
+  .table-bar:not(:has(.code-chip))::after {
+    width: 36px;
+  }
+}
+
 .table-bar .table-title {
   display: flex;
   flex-direction: column;

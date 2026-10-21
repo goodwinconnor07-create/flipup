@@ -67,6 +67,11 @@ struct PreflopConfig {
   int eqr_model = 0;
   std::vector<float> class_eqr_ip;
   std::vector<float> class_eqr_oop;
+  // Additive model only: how well a class realizes can depend on the opponent's class. IP share for
+  // (h, o) gets + class_k_ip[h] * class_d[o] - class_k_oop[o] * class_d[h]. Empty = none.
+  std::vector<float> class_k_ip;
+  std::vector<float> class_k_oop;
+  std::vector<float> class_d;
   // Per pot-kind additive adjustments for heads-up flops (kNumPotKinds * 169 each, kind-major).
   // Kind 0 limped pot; 1/2 single-raised with the raiser IP/OOP; 3/4 3-bet pot; 5/6 4-bet+ pot.
   // kind_eqr_present[k] != 0 means kind k is calibrated; others use class_eqr_* above.

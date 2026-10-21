@@ -56,6 +56,9 @@ export interface PlayerRead {
   calls: number;
   /** Went all in before the flop with a deep stack (8bb or more), first in. */
   shoves?: number;
+  /** After the flop: times they could bet (nobody had yet), and times they did. A player who bets nearly every time is betting hands a value-only player wouldn't. */
+  betOpps?: number;
+  bets?: number;
   /** Hands seen at showdown after they bet or raised the turn or river... */
   shownBets?: number;
   /** ...and how many of those were bluffs. */

@@ -18,14 +18,16 @@ import type { Action, Game, Hand, Move, Seat } from './types';
  * - shoveBot: all in every hand.
  * - foldBot: folds to any bet, raises only its best hands.
  * - abc: a decent, straightforward player (top 20% of hands, bets good hands, folds bad ones).
+ * - bluffBot: a constant bluffer. Raises most hands before the flop and bets about two thirds of the pot
+ *   every street whatever it holds. Gives up only to a raise, unless it has a real hand.
  */
-export type Script = 'callBot' | 'raiseBot' | 'shoveBot' | 'foldBot' | 'abc';
+export type Script = 'callBot' | 'raiseBot' | 'shoveBot' | 'foldBot' | 'abc' | 'bluffBot';
 /** A style played by the bots' brain, a script, or `name:style`: a style played by another brain (see `brains`). */
 export type Agent = StyleId | Script | `${string}:${StyleId}`;
 /** Another way of deciding, for comparing brains (the lab plays the bots from before the update this way). */
 export type Brain = (game: Game, hand: Hand, seat: Seat, rng: () => number) => { move: Move; to?: number };
 
-const SCRIPTS: Script[] = ['callBot', 'raiseBot', 'shoveBot', 'foldBot', 'abc'];
+const SCRIPTS: Script[] = ['callBot', 'raiseBot', 'shoveBot', 'foldBot', 'abc', 'bluffBot'];
 const isScript = (a: string): a is Script => (SCRIPTS as string[]).includes(a);
 /** Seats the sim plays itself, as people: scripts and other brains. */
 const isOutside = (a: string) => isScript(a) || a.includes(':');
@@ -167,6 +169,20 @@ function scriptMove(script: Script, game: Game, hand: Hand, seat: Seat, rng: () 
       const s = strength();
       if (s > (hand.street === 'preflop' ? 0.85 : 0.8)) return raise(hand.currentBet * 3 + pot * 0.5);
       return o.canCheck ? { move: 'check' } : { move: 'fold' };
+    }
+    case 'bluffBot': {
+      const bb = game.settings.bigBlind;
+      if (hand.street === 'preflop') {
+        // Raises about seven hands in ten, calls a raise with a few more, otherwise gives up.
+        const s = preflopStrength(seat.cards);
+        if (o.toCall > bb * 6) return s > 0.7 ? callOrCheck() : { move: 'fold' };
+        if (hand.currentBet <= bb) return rng() < 0.7 ? raise(bb * 3) : callOrCheck();
+        return s > 0.35 ? callOrCheck() : { move: 'fold' };
+      }
+      // After the flop: bet two thirds of the pot every time it's checked to, whatever the cards.
+      if (o.canCheck) return raise(pot * 0.66);
+      // Facing a bet or raise: call with a pair or better, give up otherwise.
+      return strength() > 0.62 ? callOrCheck() : { move: 'fold' };
     }
     case 'abc': {
       const s = strength();

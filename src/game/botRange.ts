@@ -71,11 +71,13 @@ export interface Read {
   shove: number;
   /** Of the hands they've shown after betting the turn or river, the share that were bluffs. */
   bluffy: number;
+  /** How often they bet after the flop when nobody has bet yet. Shows without any showdowns. */
+  betFreq: number;
   /** 0 (never seen them) to 1 (seen plenty). */
   known: number;
 }
 
-export const PRIOR = { hands: 8, vpip: 0.3, pfr: 0.16, foldToBet: 0.45, aggression: 1.4, shove: 0.01, bluffy: 0.25 };
+export const PRIOR = { hands: 8, vpip: 0.3, pfr: 0.16, foldToBet: 0.45, aggression: 1.4, shove: 0.01, bluffy: 0.25, betFreq: 0.42 };
 
 /** What a bot has seen of a player, eased towards an average pub player until there are enough hands. */
 export function readOf(r: PlayerRead | undefined): Read {
@@ -88,6 +90,7 @@ export function readOf(r: PlayerRead | undefined): Read {
     aggression: ((r?.aggr ?? 0) + PRIOR.aggression * 4) / ((r?.calls ?? 0) + 4),
     shove: mix(r?.shoves ?? 0, h, PRIOR.shove, 12),
     bluffy: mix(r?.shownBluffs ?? 0, r?.shownBets ?? 0, PRIOR.bluffy, 5),
+    betFreq: mix(r?.bets ?? 0, r?.betOpps ?? 0, PRIOR.betFreq, 6),
     known: h / (h + 20),
   };
 }
@@ -254,11 +257,20 @@ const RAISE = [0.05, 0.03, 0.22, 0.04, 0.1, 0.45, 0.8];
 /** Most people bluff less as the hand goes on: a big river bet is usually a real hand. */
 const LATE: Record<Street, number> = { preflop: 1, flop: 1, turn: 0.85, river: 0.65 };
 
+/**
+ * How much more (or less) than usual their bets and raises are made with nothing. Only what they've
+ * shown down counts here: betting a lot isn't the same as bluffing a lot (a nit bets every time it
+ * has it). How often they bet is used elsewhere, to decide how light to call (see `BET_CALL`).
+ */
+export function bluffWeight(read: Read): number {
+  const shown = Math.max(0.3, 1 + (read.bluffy - PRIOR.bluffy) * 2.5);
+  const lean = 0.6 + 0.4 * Math.max(0.5, Math.min(2, read.aggression / PRIOR.aggression));
+  return lean * shown;
+}
+
 /** How likely a hand of tier `t` is to have made this move, for a player with this read. */
 function moveLikelihood(m: PostMove, t: number, read: Read): number {
-  // Betting a lot isn't the same as bluffing a lot (a nit bets every time it has it): what they've
-  // shown down counts for more than how often they bet.
-  const bluffs = (0.6 + 0.4 * Math.max(0.5, Math.min(2, read.aggression / PRIOR.aggression))) * Math.max(0.3, 1 + (read.bluffy - PRIOR.bluffy) * 2.5);
+  const bluffs = bluffWeight(read);
   const sticky = Math.max(0.4, Math.min(2.2, (1 - read.foldToBet) / (1 - PRIOR.foldToBet)));
   switch (m.kind) {
     case 'check':
@@ -296,7 +308,7 @@ export function continueChance(t: number, frac: number, river: boolean, read: Re
 
 /** How likely a hand of tier `t` is to raise a bet (so a bettor with a weak hand loses its bet). */
 function raiseChance(t: number, river: boolean, read: Read): number {
-  const bluffs = (0.6 + 0.4 * Math.max(0.5, Math.min(2, read.aggression / PRIOR.aggression))) * Math.max(0.3, 1 + (read.bluffy - PRIOR.bluffy) * 2.5);
+  const bluffs = bluffWeight(read);
   return [0.03 * bluffs, 0.03 * bluffs, river ? 0.02 : 0.12 * bluffs, 0.03, 0.06, 0.2, 0.35][t];
 }
 

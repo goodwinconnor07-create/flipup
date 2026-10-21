@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import parity from './botPlay.parity.json';
-import { boardTexture, category, decide, handBucket } from './botPlay';
+import { boardTexture, category, decide, handBucket, updateReads } from './botPlay';
+import { readOf } from './botRange';
 import { score, toInt } from './botEval';
 import { simulate, simulateTable } from './botSim';
 import { cardsShown, inTheMoment } from './botMind';
@@ -256,6 +257,60 @@ describe('bots', () => {
       expect(d.game.hand).not.toBeNull();
     }
   });
+
+  it('stands up to a constant bluffer: folds to its bets less than it folds to an honest player', () => {
+    const fold = (other: 'bluffBot' | 'abc') => {
+      const rs = [3, 4, 5].map((seed) => simulate(['pro', other], 700, seed * 11)[0].foldToBet);
+      return rs.reduce((a, b) => a + b, 0) / rs.length;
+    };
+    const vsBluffer = fold('bluffBot');
+    const vsHonest = fold('abc');
+    // Seeing someone bet nearly every street makes it call lighter, though it's not a switch (a constant
+    // bluffer still has a real hand part of the time, and calling much more costs chips against it).
+    expect(vsBluffer).toBeLessThan(vsHonest - 0.06);
+    expect(vsBluffer).toBeGreaterThan(0.1);
+  }, 120_000);
+
+  it('learns how often a player bets, with no showdowns needed', () => {
+    const g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: DEFAULT_SETTINGS, bots: 1, code: null, now: 0 });
+    const [me, bot] = g.players;
+    const seat = (id: string) => ({ playerId: id, cards: [], bet: 0, total: 20, folded: false, allIn: false, acted: true, shown: false, last: null });
+    // Three flops in a row: I bet each time it's checked to, the bot checks and folds.
+    for (let n = 1; n <= 3; n++) {
+      const hand = {
+        number: n, seq: 9, buttonId: me.id, sbId: bot.id, bbId: me.id, seats: [seat(me.id), seat(bot.id)], deck: [], board: [], street: 'flop' as const,
+        toAct: null, currentBet: 0, minRaise: 10, aggressorId: me.id, runout: false, actAt: null, deadline: null, log: [],
+        actions: [
+          { street: 'flop' as const, playerId: bot.id, move: 'check' as const, to: 0 },
+          { street: 'flop' as const, playerId: me.id, move: 'bet' as const, to: 20 },
+          { street: 'flop' as const, playerId: bot.id, move: 'fold' as const, to: 0 },
+        ],
+        result: { pots: [{ amount: 40, eligible: [me.id], winners: [me.id] }], won: { [me.id]: 40 }, names: {}, showdown: false },
+      };
+      updateReads(g, hand);
+    }
+    expect(g.reads![me.id].bets).toBe(3);
+    expect(g.reads![me.id].betOpps).toBe(3);
+    expect(g.reads![bot.id].bets ?? 0).toBe(0);
+    expect(g.reads![bot.id].betOpps).toBe(3);
+    // Eased towards the usual rate, so three bets in three chances is a lean, not a verdict.
+    const read = readOf(g.reads![me.id]);
+    expect(read.betFreq).toBeGreaterThan(0.6);
+    expect(read.betFreq).toBeLessThan(0.8);
+    expect(readOf(g.reads![bot.id]).betFreq).toBeLessThan(0.3);
+  });
+
+  it('punishes a player who folds to every bet, and the nervous bot folds to pressure', () => {
+    const folder = [21, 22].map((seed) => simulate(['pro', 'foldBot'], 1500, seed)[0].bbPer100);
+    expect(folder.reduce((a, b) => a + b, 0) / folder.length).toBeGreaterThan(15);
+    // The nervous one folds to pressure more than the solid regulars do. (Whether it's winning is a
+    // question for many tables at once: the bot lab measures that, one table is too noisy.)
+    const mixed = simulate(['nervous', 'pro', 'rock', 'maniac', 'station', 'tag'], 1500, 31);
+    const nervous = mixed.find((r) => r.style === 'nervous')!;
+    const pro = mixed.find((r) => r.style === 'pro')!;
+    expect(nervous.foldToBet).toBeGreaterThan(pro.foldToBet + 0.04);
+    expect(nervous.foldToBet).toBeGreaterThan(0.5);
+  }, 120_000);
 
   it('plays each style the way it should', () => {
     const report = [

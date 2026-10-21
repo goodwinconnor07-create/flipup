@@ -62,6 +62,30 @@ Ten hidden styles, four bots each. Besides the preflop settings, a style says:
 | `tempo` | How long it takes, how long it tanks on hard spots, how often it snaps, whether it Hollywoods with a monster. |
 | `show` | How often it shows a bluff, a strong hand nobody called, or a good fold. |
 
+## Reading a player who bets or folds a lot
+
+Bots keep a note on every player (`game.reads`, only from public moves). Two of the things they
+notice matter most to how a table feels:
+
+- **Someone who bets nearly every street.** The bots count how often a player bets when nobody has
+  bet yet (`betFreq`). A player who does it nearly every time is called lighter: the bot's calling
+  value gets a bonus (`BET_CALL` in `botPlay.ts`) that grows with how far above the usual rate they
+  are. It's a nudge and not a switch. Against a constant bluffer (`bluffBot` in the lab) the strong
+  styles fold about 20–29% of the time, against about 35–46% for an honest player, and still beat it
+  (-33 bb/100 for the bluffer on average). Trying a stronger version (also widening the hands the bot
+  imagines a bettor has) made them fold less but lose chips to the bluffer, so it was dropped: a
+  constant bluffer still has a real hand part of the time. Only hands shown at showdown change how
+  much of a bettor's range is imagined to be bluffs.
+- **Someone who folds too much.** The bots raise more hands before the flop against a player who
+  folds a lot, and bet more after it (`EXPLOIT` in `botPlay.ts`: `steal`, `fold`, `stealCap`). With
+  the settings used now the strong styles win about +34 bb/100 from a player who folds to every
+  bet, up from about +22 before.
+
+The nervous bot is meant to be the soft one: it folds to pressure more than anyone (60% of bets),
+bets small, and doesn't adjust to being bluffed (`adapt` 0). It used to win the table (+127 bb/100)
+because it played tight and folded at the right times; it now loses a little (-44 bb/100) and an
+honest player beats it. A bot that gets rattled gets more scared on tilt, never less.
+
 ## Moods (`src/game/botMind.ts`)
 
 Bad beats, losing a lead on the river, big losses and finding out it was bluffed put a bot on tilt.
@@ -97,7 +121,7 @@ same lab run on the bots before this update and after it:
 
 | | Before | After |
 |---|---|---|
-| Fun score | 81 / 100 | 96 / 100 |
+| Fun score | 81 / 100 | 97 / 100 |
 | New style heads-up against the same old style | – | wins in all ten (pro +69, shark +129, LAG +165, TAG +27 bb/100) |
 | A decent honest player against the pro / shark | wins +15 / +16 bb/100 | loses 76 / 77 bb/100 |
 | A decent honest player against the soft styles (station, gambler, maniac, nervous) | wins | still wins (they're there to be beaten) |
@@ -106,7 +130,7 @@ same lab run on the bots before this update and after it:
 | How much thinking time varies (spread) | 0.29 | 0.45 |
 | Table talk per hand (six-handed) | 1.30 | 0.94 |
 
-Full output of the run after the update:
+Full output of the latest run:
 
 #### Bot lab: 1500 hands a table
 
@@ -114,75 +138,86 @@ Full output of the run after the update:
 
 | Style | VPIP | PFR | 3-bet | AF | Fold to bet | Saw flop | WTSD | W$SD | C-bet | Bluff share | bb/100 | Think ms | Think spread | Variety | Talk/100 | Shows |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| pro | 26% | 18% | 8% | 1.7 | 47% | 18% | 32% | 61% | 56% | 26% | -6.6 | 1486 | 0.47 | 0.57 | 2.6 | 0 |
-| shark | 28% | 20% | 11% | 2.1 | 44% | 20% | 32% | 59% | 56% | 28% | 135.2 | 1347 | 0.46 | 0.58 | 8.4 | 8 |
-| tag | 22% | 16% | 10% | 2.4 | 44% | 16% | 37% | 56% | 59% | 21% | 62.3 | 1419 | 0.42 | 0.57 | 8.7 | 13 |
-| lag | 33% | 24% | 15% | 3.0 | 38% | 23% | 41% | 55% | 70% | 34% | 63.2 | 1347 | 0.41 | 0.62 | 16.3 | 23 |
-| maniac | 50% | 34% | 25% | 3.6 | 33% | 38% | 46% | 45% | 72% | 41% | -115.2 | 1146 | 0.36 | 0.64 | 40.8 | 166 |
-| rock | 14% | 10% | 7% | 2.2 | 52% | 11% | 32% | 64% | 49% | 12% | 67.2 | 1529 | 0.38 | 0.48 | 5.8 | 23 |
-| station | 38% | 11% | 6% | 0.4 | 17% | 29% | 62% | 46% | 44% | 23% | -194.1 | 1926 | 0.45 | 0.44 | 20.6 | 7 |
-| gambler | 43% | 15% | 10% | 1.3 | 26% | 31% | 46% | 43% | 72% | 39% | -292.8 | 1709 | 0.44 | 0.58 | 18.0 | 24 |
-| trapper | 22% | 13% | 6% | 1.7 | 37% | 16% | 38% | 60% | 64% | 23% | 115.6 | 1549 | 0.50 | 0.62 | 10.4 | 11 |
-| nervous | 22% | 14% | 8% | 2.4 | 54% | 16% | 29% | 65% | 57% | 19% | 127.1 | 1804 | 0.46 | 0.57 | 8.1 | 9 |
+| pro | 27% | 18% | 8% | 1.9 | 45% | 19% | 30% | 61% | 56% | 25% | 87.7 | 1505 | 0.44 | 0.58 | 3.0 | 2 |
+| shark | 29% | 20% | 11% | 1.5 | 44% | 21% | 31% | 60% | 48% | 26% | 112.5 | 1364 | 0.46 | 0.57 | 8.9 | 12 |
+| tag | 21% | 15% | 9% | 2.3 | 41% | 15% | 37% | 60% | 55% | 23% | 134.1 | 1423 | 0.42 | 0.58 | 9.7 | 11 |
+| lag | 35% | 24% | 14% | 2.7 | 38% | 24% | 41% | 54% | 65% | 33% | 27.7 | 1378 | 0.41 | 0.61 | 17.9 | 18 |
+| maniac | 50% | 34% | 24% | 3.8 | 34% | 38% | 45% | 46% | 73% | 38% | -148.2 | 1141 | 0.35 | 0.64 | 41.2 | 146 |
+| rock | 14% | 10% | 7% | 1.8 | 53% | 10% | 28% | 57% | 51% | 10% | 12.9 | 1554 | 0.39 | 0.47 | 6.6 | 25 |
+| station | 37% | 11% | 5% | 0.5 | 18% | 28% | 60% | 44% | 44% | 21% | -185.0 | 1928 | 0.45 | 0.43 | 21.4 | 8 |
+| gambler | 44% | 15% | 10% | 1.3 | 26% | 32% | 44% | 43% | 75% | 36% | -35.2 | 1620 | 0.38 | 0.58 | 17.9 | 32 |
+| trapper | 24% | 14% | 7% | 1.4 | 37% | 17% | 37% | 57% | 66% | 22% | 52.5 | 1583 | 0.53 | 0.59 | 13.3 | 17 |
+| nervous | 26% | 14% | 6% | 2.4 | 60% | 19% | 30% | 63% | 58% | 35% | -44.1 | 2005 | 0.53 | 0.63 | 10.6 | 20 |
 
 #### Tables
 
 | Tables | Flops | Showdowns | Avg pot (bb) | Big pots/100 | All-ins/100 | Bluffs shown | Talk/hand |
 |---|---|---|---|---|---|---|---|
-| 100bb | 61% | 29% | 71.2 | 29.6 | 12.1 | 10% | 0.94 |
-| 25bb | 61% | 34% | 36.0 | 26.2 | 20.0 | 9% | 1.04 |
-| 12bb | 56% | 38% | 26.7 | 16.2 | 33.0 | 6% | 1.32 |
+| 100bb | 63% | 29% | 67.9 | 29.5 | 11.2 | 10% | 1.01 |
+| 25bb | 62% | 40% | 33.5 | 26.4 | 27.1 | 7% | 1.40 |
+| 12bb | 56% | 34% | 27.8 | 17.1 | 27.1 | 6% | 1.46 |
 
 #### New bots against the old ones, heads-up (bb/100 for the new style)
 
 | Style | New vs old |
 |---|---|
-| pro | 69.4 |
-| shark | 128.8 |
-| tag | 26.7 |
-| lag | 165.3 |
-| maniac | 175.4 |
-| rock | 1.3 |
-| station | 23.9 |
-| gambler | 70.5 |
-| trapper | 31.9 |
-| nervous | 17.3 |
+| pro | 81.4 |
+| shark | 41.4 |
+| tag | 25.6 |
+| lag | 28.2 |
+| maniac | 179.9 |
+| rock | 46.0 |
+| station | 3.4 |
+| gambler | 123.7 |
+| trapper | 12.9 |
+| nervous | 15.4 |
 
 #### Simple strategies heads-up against the strong styles (bb/100 for the script)
 
 | Script | pro | shark | tag | lag | trapper | Worst |
 |---|---|---|---|---|---|---|
-| callBot | -558.9 | -506.4 | -295.8 | -605.9 | -367.0 | -295.8 |
-| raiseBot | -1121.1 | -1044.2 | -868.2 | -1285.6 | -1013.0 | -868.2 |
+| callBot | -539.8 | -494.8 | -269.8 | -660.3 | -336.4 | -269.8 |
+| raiseBot | -1166.8 | -1318.7 | -805.7 | -1342.3 | -1090.8 | -805.7 |
 | shoveBot | -337.5 | -2216.5 | -700.3 | -609.2 | -1725.4 | -337.5 |
-| foldBot | -10.1 | -11.8 | -29.4 | -29.1 | -27.0 | -10.1 |
+| foldBot | -31.2 | -25.4 | -41.4 | -9.7 | -33.0 | -9.7 |
+| bluffBot | -73.9 | 22.7 | -24.3 | -26.9 | -60.3 | 22.7 |
 
 #### Heads-up: a decent honest player (abc) against each style (bb/100 for abc)
 
 | Style | abc bb/100 |
 |---|---|
-| pro | -75.5 |
-| shark | -76.5 |
-| tag | -56.2 |
-| lag | -47.0 |
-| maniac | 55.0 |
-| rock | -21.1 |
-| station | 102.4 |
-| gambler | 10.9 |
-| trapper | -33.2 |
-| nervous | -35.9 |
+| pro | -90.3 |
+| shark | -40.0 |
+| tag | -38.1 |
+| lag | -92.0 |
+| maniac | 23.5 |
+| rock | -11.6 |
+| station | 14.0 |
+| gambler | 53.0 |
+| trapper | -37.7 |
+| nervous | 6.7 |
 
-#### Fun score: 96 / 100
+#### Reading the table: a player who folds too much, and one who bets every street
+
+| Style | Wins from a player who folds to every bet (bb/100) | Fold to bet against the constant bluffer | Against an honest player |
+|---|---|---|---|
+| pro | 34.7 | 29% | 46% |
+| shark | 18.4 | 29% | 41% |
+| tag | 41.3 | 28% | 46% |
+| lag | 29.9 | 19% | 46% |
+| trapper | 47.1 | 20% | 35% |
+
+#### Fun score: 97 / 100
 
 | Part | Score |
 |---|---|
 | Flops seen (45–65%) | 100 |
 | Showdowns (22–32%) | 100 |
 | Big pots (10–25 per 100) | 62 |
-| All-ins (4–12 per 100) | 99 |
+| All-ins (4–12 per 100) | 100 |
 | Bluffs shown (6–20% of showdowns) | 100 |
 | Table talk (0.5–1.1 a hand) | 100 |
-| Styles: VPIP spread ≥ 40 pts | 85 |
+| Styles: VPIP spread ≥ 40 pts | 87 |
 | Styles: aggression spread ≥ 2.5 | 100 |
 | Styles: fold-to-bet spread ≥ 30 pts | 100 |
 | Styles: rock < tag < pro < lag < maniac (VPIP) | 100 |
@@ -196,9 +231,11 @@ Full output of the run after the update:
 | Call-everything loses to all strong styles (≤ -40) | 100 |
 | Raise-everything loses to all strong styles (≤ -40) | 100 |
 | Shove-everything loses to all strong styles (≤ -40) | 100 |
-| Fold-to-bets loses to all strong styles (≤ -15) | 80 |
+| Fold-to-bets loses to all strong styles (≤ -15) | 79 |
+| A constant bluffer loses to the strong styles (avg ≤ -10) | 100 |
+| The nervous bot is soft: it doesn't win at mixed tables (≤ +30 bb/100) | 100 |
 | Strong styles beat an honest player (avg ≥ +20) | 100 |
 | An honest player beats the soft styles (avg ≥ +15) | 100 |
-| Soft styles lose, but not absurdly (≥ -250 bb/100) | 83 |
+| Soft styles lose, but not absurdly (≥ -250 bb/100) | 100 |
 
-_Ran in 353s._
+_Ran in 544s._

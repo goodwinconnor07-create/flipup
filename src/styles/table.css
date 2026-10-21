@@ -437,6 +437,15 @@ html[data-theme='dark'] .pcard.dim > * {
   color: var(--blue-ink);
 }
 
+.pod-tag.offline {
+  background: var(--gold-bg);
+  color: var(--gold-ink);
+}
+
+.pod.offline .avatar {
+  opacity: 0.55;
+}
+
 .pod-tag.win {
   background: var(--green);
   color: var(--on-color);

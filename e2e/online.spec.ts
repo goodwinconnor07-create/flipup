@@ -73,6 +73,35 @@ test('two phones: join with a code, play a hand, see odds only once both hands a
   await friendCtx.close();
 });
 
+test('a friend whose phone drops is marked offline for everyone else', async ({ browser }) => {
+  const hostCtx = await browser.newContext();
+  const friendCtx = await browser.newContext();
+  const host = await hostCtx.newPage();
+  const friend = await friendCtx.newPage();
+  watchErrors(host);
+  await host.goto('/');
+  await host.getByRole('button', { name: 'Play with Friends' }).click();
+  await setName(host, 'Kavi');
+  await host.getByRole('button', { name: 'Next' }).click();
+  await host.getByRole('button', { name: 'Open the table' }).click();
+  const code = await tableCode(host);
+  await friend.goto(`/${code}`);
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await setName(friend, 'Oliver');
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await expect(host.locator('.roster-item', { hasText: 'Oliver' })).toBeVisible();
+  await host.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(host.locator('.pod', { hasText: 'Oliver' })).toBeVisible({ timeout: 15_000 });
+  await expect(host.locator('.pod.offline')).toHaveCount(0);
+  // The friend's phone goes away.
+  await friend.close();
+  await expect(host.locator('.pod.offline', { hasText: 'Oliver' })).toBeVisible({ timeout: 15_000 });
+  await expect(host.locator('.pod.offline .pod-tag.offline')).toHaveText('Offline');
+  await shot(host, '18-offline');
+  await hostCtx.close();
+  await friendCtx.close();
+});
+
 test('a wrong code says so', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Join with a code' }).click();

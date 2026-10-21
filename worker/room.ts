@@ -74,6 +74,7 @@ export class TableRoom extends DurableObject<Env> {
     this.ctx.acceptWebSocket(server, [deviceId]);
     server.serializeAttachment({ deviceId } satisfies SocketMeta);
     this.send(server, { t: 'state', game: redactForDevice(game, deviceId) });
+    await this.syncPresence();
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -156,6 +157,7 @@ export class TableRoom extends DurableObject<Env> {
     } catch {
       // Already closed.
     }
+    await this.syncPresence(ws);
   }
 
   async webSocketError(ws: WebSocket): Promise<void> {
@@ -164,6 +166,18 @@ export class TableRoom extends DurableObject<Env> {
     } catch {
       // Already closed.
     }
+    await this.syncPresence(ws);
+  }
+
+  /** Tells the game which phones are connected, so a dropped player is shown as offline and their clock shortens. */
+  private async syncPresence(closing?: WebSocket): Promise<void> {
+    const online = new Set<string>();
+    for (const socket of this.ctx.getWebSockets()) {
+      if (socket === closing) continue;
+      const meta = socket.deserializeAttachment() as SocketMeta | null;
+      if (meta) online.add(meta.deviceId);
+    }
+    await this.apply({ type: 'presence', online: [...online] }, 'server');
   }
 
   private async load(): Promise<Game | null> {

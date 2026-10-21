@@ -21,6 +21,8 @@ export const TIMING = {
   /** Pause after a hand before the next one deals (unless everyone taps Next hand). */
   afterFold: 5000,
   afterShowdown: 9000,
+  /** The clock for someone whose phone has lost the table, when the table has a clock at all. */
+  offlineClock: 15000,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
   startDelay: 3000,
   /** ...and a bot says hello this long into it. */
@@ -381,7 +383,8 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
     const [lo, hi] = botsOnly(game) ? [TIMING.fastBotMin, TIMING.fastBotMax] : [TIMING.botMin, TIMING.botMax];
     hand.actAt = ctx.now + lo + Math.floor(ctx.rng() * (hi - lo));
   } else if (game.settings.turnSeconds > 0) {
-    hand.deadline = ctx.now + game.settings.turnSeconds * 1000;
+    const clock = game.settings.turnSeconds * 1000;
+    hand.deadline = ctx.now + (player.offline ? Math.min(clock, TIMING.offlineClock) : clock);
     hand.actAt = hand.deadline;
   }
   // Someone slow to act gets a jab from a bot, if the clock isn't about to run out anyway.

@@ -59,7 +59,7 @@ export function ActionArea({
         <p className="table-note">
           {who ? (
             <>
-              <b>{who.name}</b> {who.bot ? 'is thinking' : 'to act'}
+              <b>{who.name}</b> {who.bot ? 'is thinking' : who.offline ? 'is offline' : 'to act'}
               <span className="dots" aria-hidden>
                 <i />
                 <i />

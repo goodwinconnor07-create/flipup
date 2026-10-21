@@ -256,6 +256,7 @@ function openAgain(game: Game, ctx: ActionContext): void {
     p.sittingOut = false;
     p.timeouts = 0;
     p.leaving = false;
+    p.offline = undefined;
   }
   // Bots that busted out of the last game left the table: bring the count back.
   while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS) addBot(game);
@@ -565,6 +566,28 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status === 'playing' && game.hand?.result && canDeal(game))
         game.nextHandAt = Math.min(game.nextHandAt ?? Infinity, ctx.now + TIMING.resume);
       wakeIfWaiting(game, ctx);
+      schedule(game);
+      return done();
+    }
+
+    case 'presence': {
+      const online = new Set(action.online);
+      let changed = false;
+      for (const p of game.players) {
+        if (p.bot || !p.deviceId) continue;
+        const off = !online.has(p.deviceId);
+        if (!!p.offline === off) continue;
+        p.offline = off || undefined;
+        changed = true;
+        // On the clock when they dropped: the clock shortens. Back in time: they keep at least the short clock.
+        const hand = game.hand;
+        if (!hand || hand.result || hand.toAct !== p.id || game.settings.turnSeconds <= 0) continue;
+        const short = ctx.now + TIMING.offlineClock;
+        if (off && (hand.deadline === null || hand.deadline > short)) hand.deadline = short;
+        else if (!off && hand.deadline !== null) hand.deadline = Math.max(hand.deadline, short);
+        hand.actAt = hand.deadline;
+      }
+      if (!changed) return done(false);
       schedule(game);
       return done();
     }

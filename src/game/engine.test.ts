@@ -849,3 +849,60 @@ describe('play again', () => {
     expect(g.players.filter((p) => p.bot)).toHaveLength(2);
   });
 });
+
+describe('a phone that drops off the table', () => {
+  const online = (game: Game, ...devices: string[]) => must(game, { type: 'presence', online: devices }, 'server');
+  const playerOf = (game: Game, device: string) => game.players.find((p) => p.deviceId === device)!;
+
+  it('shows them as offline, puts them back when they return, and ignores a repeat', () => {
+    let g = table(2, { turnSeconds: 45 });
+    g = online(g, HOST);
+    expect(playerOf(g, 'device-1').offline).toBe(true);
+    expect(playerOf(g, HOST).offline).toBeUndefined();
+    const again = applyAction(g, { type: 'presence', online: [HOST] }, ctx('server'));
+    expect(again.ok && again.changed).toBe(false);
+    g = online(g, HOST, 'device-1');
+    expect(playerOf(g, 'device-1').offline).toBeUndefined();
+  });
+
+  it("cuts the clock to 15 seconds when it's their turn, and keeps that short clock if they come back", () => {
+    let g = table(2, { turnSeconds: 45 });
+    const turn = playerOf(g, g.hand!.toAct === playerOf(g, HOST).id ? HOST : 'device-1');
+    const device = turn.deviceId!;
+    const other = device === HOST ? 'device-1' : HOST;
+    expect(g.hand!.deadline).toBe(clock + 45_000);
+    g = online(g, other);
+    expect(g.hand!.deadline).toBe(clock + TIMING.offlineClock);
+    expect(g.hand!.actAt).toBe(g.hand!.deadline);
+    expect(g.wakeAt).toBe(g.hand!.deadline);
+    // Back with time to spare: still the short clock, not a fresh 45 seconds.
+    g = online(g, device, other);
+    expect(g.hand!.deadline).toBe(clock + TIMING.offlineClock);
+    // When the clock runs out, they're checked or folded like anyone else.
+    g = online(g, other);
+    clock = g.hand!.deadline!;
+    g = must(g, { type: 'tick' }, 'server');
+    expect(playerOf(g, device).timeouts).toBe(1);
+  });
+
+  it('gives an offline player the short clock when the turn reaches them', () => {
+    let g = table(2, { turnSeconds: 45 });
+    const first = g.hand!.toAct!;
+    const firstDevice = g.players.find((p) => p.id === first)!.deviceId!;
+    const second = firstDevice === HOST ? 'device-1' : HOST;
+    g = online(g, firstDevice); // the one who isn't on the clock drops
+    const seat = g.hand!.seats.find((s) => s.playerId === first)!;
+    const o = options(g, g.hand!, seat);
+    g = must(g, { type: 'act', hand: g.hand!.number, seq: g.hand!.seq, move: o.canCheck ? 'check' : 'call' }, firstDevice);
+    expect(g.hand!.toAct).toBe(g.players.find((p) => p.deviceId === second)!.id);
+    expect(g.hand!.deadline).toBe(clock + TIMING.offlineClock);
+  });
+
+  it('leaves a table without a clock alone, and never takes a presence report from a phone', () => {
+    let g = table(2, { turnSeconds: 0 });
+    g = online(g, HOST);
+    expect(playerOf(g, 'device-1').offline).toBe(true);
+    expect(g.hand!.deadline).toBeNull();
+    expect(parseAction({ type: 'presence', online: [] })).toBeNull();
+  });
+});

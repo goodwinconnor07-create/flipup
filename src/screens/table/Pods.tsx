@@ -75,7 +75,7 @@ export function HiddenPlayers({ game, players }: { game: Game; players: Player[]
           <div className="hidden-pop pop" role="dialog" aria-label="Other players">
             {players.map((p) => {
               const seat = seatFor(hand, p.id);
-              const note = p.stack === 0 && !seat ? 'Out' : seat?.folded ? 'Folded' : p.sittingOut ? 'Away' : null;
+              const note = p.stack === 0 && !seat ? 'Out' : seat?.folded ? 'Folded' : p.sittingOut ? 'Away' : p.offline ? 'Offline' : null;
               return (
                 <div key={p.id} className="hidden-row">
                   <Avatar emoji={p.emoji} size={24} />
@@ -146,11 +146,11 @@ export function Pod({
   return (
     <button
       type="button"
-      className={`pod${out ? ' out' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}${self ? ' self' : ''}${edge}`}
+      className={`pod${out ? ' out' : ''}${player.offline ? ' offline' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}${self ? ' self' : ''}${edge}`}
       style={{ ['--slot' as string]: slot, ['--n' as string]: n, ['--ax' as string]: `${ring.x}%`, ['--ay' as string]: `${ring.y}%` }}
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
-      aria-label={`${player.name}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}`}
+      aria-label={`${player.name}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
       onClick={() => host && !self && openSheet({ name: 'player', playerId: player.id })}
     >
       <span className="pod-pic">
@@ -179,7 +179,13 @@ export function Pod({
               : [0, 1].map((i) => <PlayingCard key={i} back size="sm" />)}
           </span>
         )}
-        {won > 0 ? <span className="pod-tag win">+{chips(won)}</span> : odds ? <span className="pod-tag odds">{pct(odds.win)}</span> : null}
+        {won > 0 ? (
+          <span className="pod-tag win">+{chips(won)}</span>
+        ) : odds ? (
+          <span className="pod-tag odds">{pct(odds.win)}</span>
+        ) : player.offline ? (
+          <span className="pod-tag offline">Offline</span>
+        ) : null}
       </span>
     </button>
   );

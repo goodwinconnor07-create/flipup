@@ -39,6 +39,8 @@ export interface Player {
   timeouts: number;
   /** Asked to leave during a hand: folded on their turn and removed when it ends. */
   leaving: boolean;
+  /** Their phone has lost the connection to the table (set by the server). Their clock is short until they're back. */
+  offline?: boolean;
   /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
   style?: string;
 }
@@ -262,7 +264,9 @@ export type Action =
   /** After a game ends: the host opens a new one; anyone else says they want in (`off` takes that back). */
   | { type: 'playAgain'; off?: boolean }
   /** Internal: time has moved on (bots, timers, run-outs). Never accepted from a phone. */
-  | { type: 'tick' };
+  | { type: 'tick' }
+  /** Internal: which phones are connected right now (device ids), from the server. Never accepted from a phone. */
+  | { type: 'presence'; online: string[] };
 
 export interface ActionContext {
   deviceId: string;

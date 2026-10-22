@@ -198,8 +198,9 @@ with (data/rake_growth.json, measured by scripts/measure_rake.py).
 
 ## 12. Postflop benchmarks (BTN vs BB single-raised pot, 100bb, scripts/postflop_bench.py)
 
-Published references: GTO Wizard's BTN c-bets about 53% over all flops (General solutions, smallest bet
-33%); RangeConverter's aggregate BB response to a 1/3-pot c-bet is fold 34 / call 52 / raise 14; paired
+Published references: GTO Wizard's BTN c-bets about 75% over all flops when checked to, about 54% of
+the time with the small size and a little over 10% large or overbet (PokerStrategy's reading of GTO
+Wizard reports; an earlier note here said 53%, which was the small-bet share); RangeConverter's aggregate BB response to a 1/3-pot c-bet is fold 34 / call 52 / raise 14; paired
 and high-card flops are c-bet at very high frequency, mostly small; overbets are common on A-K-x and
 middling connected boards (GTO Wizard: more than half of BTN's c-bets on T-9-5 are overbets).
 
@@ -248,3 +249,24 @@ calibration is still the BTN-vs-BB one. NL50 benchmark (GTO Wizard settings):
   model for small single-raised pots, the 3-bet/4-bet tree, or GTO Wizard's UTG range differing from ours.
 - Not rake: r2 at NL500 still has the BB folding 70.4% vs UTG (GTO Wizard 59%); BB vs BTN 57/28/15, SB
   46/0/54, CO vs BTN 3-bet 54/30/16.
+
+## 14. Library-wide flop strategies (scripts/flop_library.py, about 240 random flops per spot)
+
+Weighted by how often each flop comes up and by the range reaching the decision (6-max, 100bb, the
+explorer tree Custom hand uses). The flops are a fair random sample (the shuffled order).
+
+| Spot | First to act | In position when checked to | Facing 33% | Facing 75% |
+|---|---|---|---|---|
+| BTN vs BB | BB checks 100 | check 27 / 33% 54 / 75% 6 / 125% 13 | fold 31 / call 54 / raise 15 | 48 / 44 / 8 |
+| CO vs BB | BB checks 100 | 26 / 55 / 8 / 11 | 33 / 53 / 15 | 49 / 43 / 8 |
+| UTG vs BB | BB checks 100 | 27 / 54 / 7 / 12 | 34 / 51 / 14 | 50 / 42 / 8 |
+| SB vs BB | SB: 57 / 24 / 8 / 11 | BB: 53 / 20 / 1 / 26 | 17 / 67 / 17 | 38 / 44 / 18 |
+| BB 3-bets BTN | BB: 25 / 30 / 43 / 2 | BTN: 57 / 37 / 5 / 1 | 31 / 51 / 18 | 47 / 44 / 10 |
+| SB limps, BB checks | SB: 49 / 34 (50%) / 10 / 7 | BB: 49 / 9 / 25 / 17 | 28 / 58 / 14 | 39 / 51 / 10 |
+
+- BTN vs BB matches the published aggregate: c-bet 73% (published about 75%), small 54% (54%), large
+  19% (a little over 10%). BB vs a 33% c-bet 31 / 54 / 15 (RangeConverter 34 / 52 / 14; GTO Wizard's
+  average check-raise vs a small bet 17.5%).
+- SB vs BB at 40bb is published as a 58% c-bet; ours is 43% at 100bb, where a lower frequency is expected.
+- The 3-bettor's big 75% c-bet share (43%) looks high next to the usual "small, often" advice for
+  3-bet pots; being checked against a tree with river betting (below).

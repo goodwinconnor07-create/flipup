@@ -149,7 +149,7 @@ function Felt({ game }: { game: Game }) {
   const others = othersInOrder(game, me);
   const odds = useOdds(hand);
   const desktop = useDesktop();
-  const reactions = useReactions(game);
+  const { say: reactions, quiet } = useReactions(game);
   // On a phone the row of four slides; on a computer everyone sits round the table.
   // Someone who folded stays in view while they're still saying something.
   const podSlots = usePodSlots(game, others, !desktop, reactions);
@@ -164,7 +164,9 @@ function Felt({ game }: { game: Game }) {
     if (turnKey) haptic('medium');
   }, [turnKey]);
   const won = hand?.result && me ? (hand.result.won[me.id] ?? 0) : 0;
-  const winKey = won > 0 ? hand!.number : 0;
+  // Getting your own blind back when everyone folds isn't worth a party; a real win is.
+  const gained = won - (mySeat?.total ?? 0);
+  const winKey = won > 0 && (hand?.result?.showdown ? gained > 0 : gained >= game.settings.bigBlind) ? hand!.number : 0;
   useEffect(() => {
     if (!winKey) return;
     haptic('success');
@@ -254,6 +256,7 @@ function Felt({ game }: { game: Game }) {
                   seat={seatFor(hand, p.id)}
                   odds={odds?.get(p.id)}
                   reaction={reactions[p.id]}
+                  quiet={quiet[p.id]}
                   dimCard={dim}
                   glowCard={glow}
                   slot={at.slot}
@@ -271,6 +274,7 @@ function Felt({ game }: { game: Game }) {
                 seat={mySeat}
                 odds={odds?.get(me.id)}
                 reaction={reactions[me.id]}
+                quiet={quiet[me.id]}
                 dimCard={dim}
                 glowCard={glow}
                 slot={0}
@@ -376,7 +380,7 @@ function Felt({ game }: { game: Game }) {
             </span>
           )}
         </div>
-        <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} />
+        <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} />
       </div>
     </div>
   );

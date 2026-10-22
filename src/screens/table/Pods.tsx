@@ -4,7 +4,7 @@ import { openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
 import { loadBigBlinds, saveBigBlinds } from '../../state/persist';
-import { Bubble, ReactBubble, ReactMenu } from './Bubbles';
+import { Bubble, moveSig, ReactBubble, ReactMenu } from './Bubbles';
 
 /** Everyone else, in seat order starting on this phone's left, so play moves left to right. */
 export function othersInOrder(game: Game, me: Player | undefined): Player[] {
@@ -111,6 +111,7 @@ export function Pod({
   seat,
   odds,
   reaction,
+  quiet,
   dimCard,
   glowCard,
   slot,
@@ -124,6 +125,8 @@ export function Pod({
   seat: Seat | undefined;
   odds?: { win: number; tie: number };
   reaction?: string;
+  /** The move whose bubble has been spoken over: it stays hidden. */
+  quiet?: string;
   dimCard: (c: Card) => boolean;
   glowCard: (c: Card) => boolean;
   slot: number;
@@ -170,7 +173,7 @@ export function Pod({
             <i />
           </span>
         ) : (
-          seat?.last && <Bubble last={seat.last} street={hand?.street} />
+          seat?.last && quiet !== moveSig(hand!.number, seat.last) && <Bubble last={seat.last} street={hand?.street} />
         )}
       </span>
       <span className="pod-name">{player.name}</span>
@@ -201,12 +204,14 @@ export function MyBox({
   seat,
   odds,
   reaction,
+  quiet,
 }: {
   game: Game;
   me?: Player;
   seat?: Seat;
   odds?: { win: number; tie: number };
   reaction?: string;
+  quiet?: string;
 }) {
   const hand = game.hand;
   const desktop = useDesktop();
@@ -214,7 +219,7 @@ export function MyBox({
   // On a computer my seat is on the table (bottom), so the bubble and position are shown there.
   const bubble = desktop ? null : reaction ? (
     <ReactBubble id={reaction} game={game} />
-  ) : seat?.last ? (
+  ) : seat?.last && quiet !== moveSig(hand!.number, seat.last) ? (
     <Bubble last={seat.last} street={hand?.street} />
   ) : null;
   const pos = me && !desktop && <PositionChips pos={positionOf(hand, me.id)} />;

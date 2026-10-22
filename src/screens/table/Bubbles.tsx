@@ -49,9 +49,22 @@ export function Bubble({ last, street }: { last: NonNullable<Seat['last']>; stre
  * Each player's latest message (a quick message, or a bot's table talk), shown for a few seconds
  * after it arrives, or until that player's next move takes over their bubble.
  */
-export function useReactions(game: Game): Record<string, string> {
+export function useReactions(game: Game): { say: Record<string, string>; quiet: Record<string, string> } {
   const seen = useRef<Record<string, number> | null>(null);
   const [active, setActive] = useState<Record<string, string>>({});
+  // When a line runs its course, the move it covered stays hidden: otherwise the bubble goes back to
+  // "Bet 175" and it looks like the player bet again. A new move shows as normal.
+  const [quiet, setQuiet] = useState<Record<string, string>>({});
+  const activeRef = useRef(active);
+  activeRef.current = active;
+  const gameRef = useRef(game);
+  gameRef.current = game;
+  const retire = (id: string, value: string) => {
+    if (activeRef.current[id] !== value) return;
+    const g = gameRef.current;
+    const seat = g.hand?.seats.find((s) => s.playerId === id);
+    if (g.hand && seat?.last) setQuiet((q) => ({ ...q, [id]: moveSig(g.hand!.number, seat.last) }));
+  };
   const reactions = game.reactions;
   // A new move replaces whatever that player was saying.
   const moves = (game.hand?.seats ?? [])
@@ -115,6 +128,7 @@ export function useReactions(game: Game): Record<string, string> {
     queue.current = queue.current.filter((q) =>
       PRE_OUTCOME.has(q.event) ? q.moment === momentRef.current : q.moment.split('-')[0] === momentRef.current.split('-')[0],
     );
+    queue.current = queue.current.filter((q) => !BEFORE_MOVE.has(q.event) || (lastMoves.current[q.id] ?? '') === q.sig);
     const next = queue.current[0];
     if (!next) return;
     const wait = Math.max(next.notBefore, busyUntil.current) - Date.now();
@@ -126,15 +140,14 @@ export function useReactions(game: Game): Record<string, string> {
     const hold = Math.min(3600, 1800 + next.text.length * 55);
     busyUntil.current = Date.now() + hold;
     setActive((a) => ({ ...a, [next.id]: next.value }));
-    later(
-      () =>
-        setActive((a) => {
-          if (a[next.id] !== next.value) return a;
-          const { [next.id]: _gone, ...rest } = a;
-          return rest;
-        }),
-      hold,
-    );
+    later(() => {
+      retire(next.id, next.value);
+      setActive((a) => {
+        if (a[next.id] !== next.value) return a;
+        const { [next.id]: _gone, ...rest } = a;
+        return rest;
+      });
+    }, hold);
     if (queue.current.length) pumpTimer.current = setTimeout(pump, hold);
   };
 
@@ -159,6 +172,7 @@ export function useReactions(game: Game): Record<string, string> {
           event,
           text: reactionText(r.id),
           moment: momentRef.current,
+          sig: lastMoves.current[id] ?? '',
           notBefore: Date.now() + (POST_OUTCOME.has(event) ? 500 + Math.random() * 500 : 0),
         });
         // A long queue means the table has moved on: keep the latest few.
@@ -169,19 +183,21 @@ export function useReactions(game: Game): Record<string, string> {
       // People's quick messages come straight out, with a pop.
       setActive((a) => ({ ...a, [id]: value }));
       playSound('pop');
-      later(
-        () =>
-          setActive((a) => {
-            if (a[id] !== value) return a;
-            const { [id]: _gone, ...rest } = a;
-            return rest;
-          }),
-        4000,
-      );
+      later(() => {
+        retire(id, value);
+        setActive((a) => {
+          if (a[id] !== value) return a;
+          const { [id]: _gone, ...rest } = a;
+          return rest;
+        });
+      }, 4000);
     }
   }, [reactions]);
-  return active;
+  return { say: active, quiet };
 }
+
+/** Which move a seat's bubble is showing, so it can be told apart from the next one. */
+export const moveSig = (hand: number, last: NonNullable<Seat['last']> | null) => (last ? `${hand}:${last.move}-${last.amount ?? ''}-${last.street ?? ''}` : '');
 
 interface QueuedLine {
   id: string;
@@ -190,7 +206,12 @@ interface QueuedLine {
   text: string;
   moment: string;
   notBefore: number;
+  /** The speaker's last move when this was queued. */
+  sig: string;
 }
+
+/** Thinking-out-loud lines belong before the move they're about: once it's made, they're stale. */
+const BEFORE_MOVE = new Set(['thinkHard', 'thinkEasy', 'raise', 'foldBig', 'callLight', 'yourBigBet', 'allin', 'tank']);
 
 /** Bot lines said before a hand's outcome is known. They're dropped when the next card lands or the pot goes. */
 const PRE_OUTCOME = new Set(['allin', 'sweat', 'sweatWatch']);

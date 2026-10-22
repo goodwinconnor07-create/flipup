@@ -224,7 +224,7 @@ function afterHand(game: Game, ctx: ActionContext): void {
     const event: TalkEvent = winners.includes(id)
       ? hand.ranOut ? 'sweatWin' : pot >= bb * 15 ? 'bigWin' : 'win'
       : showdownLosers.includes(id)
-        ? hand.ranOut ? 'sweatLose' : 'lostToYou'
+        ? hand.ranOut || !personWon ? 'sweatLose' : 'lostToYou'
         : 'watched';
     if (say(id, event, true)) spoke.push(id);
   }

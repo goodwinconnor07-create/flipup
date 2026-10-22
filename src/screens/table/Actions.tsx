@@ -66,6 +66,8 @@ export function ActionArea({
                 <i />
               </span>
             </>
+          ) : hand.nextStreetAt != null ? (
+            `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…`
           ) : (
             '…'
           )}
@@ -147,7 +149,7 @@ export function ActionArea({
   }
 
   const ready = game.ready.includes(me.id);
-  const total = hand.result.showdown ? 9000 : 5000;
+  const total = waitFor(hand.number, game.nextHandAt - now);
   const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
   return (
     <div className="stack">
@@ -176,6 +178,13 @@ function ReplayButton({ gameId, number }: { gameId: string; number: number }) {
       Replay this hand
     </button>
   );
+}
+
+/** How long this pause was when it began, so the bar drains from full whatever extra time was added. */
+let pause = { hand: -1, ms: 0 };
+function waitFor(hand: number, remaining: number): number {
+  if (pause.hand !== hand || remaining > pause.ms) pause = { hand, ms: Math.max(remaining, 1) };
+  return pause.ms;
 }
 
 function SitBack() {
@@ -259,13 +268,14 @@ function RaisePanel({
   // Pot-sized raise: call first, then raise by the size of the pot after the call.
   const potRaise = (fraction: number) => hand.currentBet + Math.round((potNow + o.toCall) * fraction);
   const clamp = (n: number) => Math.max(o.minTo, Math.min(o.maxTo, n));
+  // Two sizes that come to the same amount (a small pot next to the minimum) show once.
   const presets = [
     { label: 'Min', to: o.minTo },
     { label: '½ pot', to: clamp(potRaise(0.5)) },
     { label: '¾ pot', to: clamp(potRaise(0.75)) },
     { label: 'Pot', to: clamp(potRaise(1)) },
     { label: 'All in', to: o.maxTo },
-  ];
+  ].filter((p, i, all) => all.findIndex((q) => q.to === p.to) === i);
   const step = Math.max(1, Math.min(bb, Math.floor((o.maxTo - o.minTo) / 50) || 1));
 
   const nudge = (dir: 1 | -1) => setTo((t) => clamp(t + dir * step));

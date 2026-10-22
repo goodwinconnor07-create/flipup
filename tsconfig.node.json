@@ -14,5 +14,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true
   },
-  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e", "scripts"]
+  "include": ["vite.config.ts", "vitest.config.ts", "playwright.config.ts", "e2e", "scripts", "bot-lab"],
+  "exclude": ["bot-lab/engines"]
 }

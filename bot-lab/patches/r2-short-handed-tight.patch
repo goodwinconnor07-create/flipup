@@ -1,0 +1,40 @@
+--- bot-lab/engines/baseline/game/botPlay.ts	2026-10-22 07:36:19.000000000 +0000
++++ bot-lab/engines/r2/game/botPlay.ts	2026-10-22 11:23:38.435591663 +0000
+@@ -232,6 +232,8 @@
+   limpers: number;
+   /** The last raise in big blinds. */
+   raiseBb: number;
++  /** Players dealt into the hand. */
++  players: number;
+ }
+ 
+ /** Call and raise chances for the bot's hand before the flop, straight from GTO. */
+@@ -277,19 +279,24 @@
+     if (raisers.length === 0) f = { call: 0, raise: st > 0.6 ? 0.8 : 0 };
+   }
+   const last = raisers[raisers.length - 1];
+-  return { ...f, spot, raiser: last?.playerId ?? null, limpers, raiseBb: last ? last.to / bb : 1 };
++  return { ...f, spot, raiser: last?.playerId ?? null, limpers, raiseBb: last ? last.to / bb : 1, players: n };
+ }
+ 
++/** How far a tight style's cutoff comes down heads-up (it scales to nothing at six players or more). */
++const SHORT_TIGHT = 0.35;
++
+ /** Bends the GTO chart by the bot's style and what it has seen of the raiser (or the table). */
+ function styledPreflop(style: Style, cls: string, g: PreSpot, read: Read, canLimp: boolean) {
+   const st = STRENGTH.get(cls) ?? 0;
+   let call = g.call;
+   let raise = g.raise;
+   const p = style.pre;
+-  // Tight: drop the weaker part of the range.
+-  if (p.tight > 0 && st < p.tight) {
++  // Tight: drop the weaker part of the range. The line is a share of all hands, so it comes down as the table
++  // shrinks (a hand that's marginal with eight others behind is a fair one heads-up).
++  const tight = p.tight * (1 - SHORT_TIGHT * Math.max(0, 6 - g.players) / 4);
++  if (p.tight > 0 && st < tight) {
+     // A soft edge, so hands just under the line still get played now and then.
+-    const k = Math.max(0, 1 - (p.tight - st) / 0.08);
++    const k = Math.max(0, 1 - (tight - st) / 0.08);
+     call *= k;
+     raise *= k;
+   }

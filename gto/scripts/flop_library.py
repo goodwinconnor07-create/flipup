@@ -126,6 +126,7 @@ def main():
     ap.add_argument("--of", type=int, default=1)
     ap.add_argument("--out", default="/data/flops")
     ap.add_argument("--limit", type=int, default=0, help="stop after this many flops (testing)")
+    ap.add_argument("--max-hours", type=float, default=0, help="stop after this long (a spending cap)")
     args = ap.parse_args()
     log = lambda m: print(m, flush=True)  # noqa: E731
     cache_dir = os.environ.get("PREFLOP_CACHE", os.path.join(args.out, "preflop"))
@@ -141,6 +142,9 @@ def main():
         os.makedirs(os.path.join(args.out, name), exist_ok=True)
     done = 0
     for k, (cards, weight) in enumerate(flops):
+        if args.max_hours and time.time() - t0 > args.max_hours * 3600:
+            log(f"stopping: --max-hours {args.max_hours} reached")
+            break
         for name in names:
             out_dir = os.path.join(args.out, name)
             if os.path.exists(os.path.join(out_dir, f"{flop_name(cards)}.npz")):

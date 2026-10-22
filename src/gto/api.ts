@@ -5,21 +5,26 @@ import type { HandRecord } from '../game';
 import { isPreflopScenario, localPreflopDrill, PREFLOP_SCENARIOS } from './preflop';
 import type { CustomRequest, CustomSpot, Drill, HandHistory, HandReport, Job, Scenario } from './types';
 
-async function call<T>(path: string, init: RequestInit = {}, timeoutMs = 20000): Promise<T> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
-  let res: Response;
-  try {
-    res = await fetch(apiUrl(`/api/gto${path}`), {
-      ...init,
-      headers: { 'content-type': 'application/json' },
-      signal: controller.signal,
-    });
-  } catch {
-    throw new Error("Couldn't reach the GTO coach. Check your connection.");
-  } finally {
-    clearTimeout(timer);
+// The coach can take a while to answer while it's solving, or waking up after a quiet spell, so
+// wait generously and try a dropped request once more before giving up.
+async function call<T>(path: string, init: RequestInit = {}, timeoutMs = 60000): Promise<T> {
+  let res: Response | undefined;
+  for (let attempt = 0; attempt < 2 && !res; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      res = await fetch(apiUrl(`/api/gto${path}`), {
+        ...init,
+        headers: { 'content-type': 'application/json' },
+        signal: controller.signal,
+      });
+    } catch {
+      if (attempt === 1) throw new Error("Couldn't reach the GTO coach. Check your connection.");
+    } finally {
+      clearTimeout(timer);
+    }
   }
+  if (!res) throw new Error("Couldn't reach the GTO coach. Check your connection.");
   if (!res.ok) {
     let msg = 'The GTO coach had a problem. Try again.';
     try {

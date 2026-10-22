@@ -16,13 +16,16 @@ whole range takes each action.
 """
 from __future__ import annotations
 
+import os
 import threading
+import time
 from collections import OrderedDict
 
 import numpy as np
 
 from . import _engine
 from .cards import combo_index, combo_str, hand_class, parse_cards
+from .flop_library import SPOTS as LIBRARY_SPOTS, FlopLibrary
 from .preflop import CLASS_INDEX
 from .review import STACK_BUCKETS, _postflop_rank, class_reach_to_combos, nearest_bucket
 from .solver import BetSizing, PostflopSolver, StreetSizing
@@ -38,7 +41,8 @@ SOLVE = {  # max iterations, target exploitability (% of pot)
 
 
 FLOP_FIRST_PASS = 15   # iterations before the first (provisional) flop answer
-REFINE_CHUNK = 5       # iterations per background step (queries wait at most one step)
+REFINE_CHUNK = 2       # iterations per background step: a query waits at most one step (a few seconds)
+REFINE_CHECK = 10      # check convergence every this many iterations (the check costs about one iteration)
 FORCED_ITERATIONS = 150  # preflop re-solve after an off-script action
 
 
@@ -231,6 +235,12 @@ class Explorer:
         self.flops: OrderedDict = OrderedDict()   # big trees: keep two
         self.later: OrderedDict = OrderedDict()   # turn / river trees: keep a few
         self.forced: OrderedDict = OrderedDict()  # preflop re-solves for off-script lines
+        # Pre-solved flops (scripts/flop_library.py), kept on the cache volume.
+        self.library = FlopLibrary(os.path.join(os.path.dirname(__file__), "data", "cache", "flops"))
+        self._library_paths = None
+        # Solves someone is waiting for. Background refining pauses while any run, so it never slows them.
+        self._waiting = 0
+        self._latest = None  # the newest flop tree: older trees only refine once it's finished
 
     # -- caches ---------------------------------------------------------------
     def _preflop(self, n: int, stack: float, solve: bool):
@@ -258,6 +268,7 @@ class Explorer:
             # the background and the app re-asks until it's done.
             solver.solve(FLOP_FIRST_PASS, target, FLOP_FIRST_PASS)
             solver._refining = True
+            self._latest = solver
             threading.Thread(target=self._refine, args=(solver, its, target), daemon=True).start()
         else:
             solver.solve(its, target, 25)
@@ -310,17 +321,28 @@ class Explorer:
                 self.forced.popitem(last=False)
         return spot
 
-    @staticmethod
-    def _refine(solver, its, target):
+    def _yield(self, solver) -> bool:
+        """True while this background refine should wait: an answer someone is waiting for is being
+        solved, or a newer flop tree is still refining."""
+        latest = self._latest
+        return self._waiting > 0 or (latest is not solver and latest is not None and getattr(latest, "_refining", False))
+
+    def _refine(self, solver, its, target):
         try:
             while not getattr(solver, "_stop", False):
+                if self._yield(solver):
+                    time.sleep(0.05)
+                    continue
                 with solver._lock:
                     done = solver.engine.iterations
                     if done >= its:
                         break
-                    st = solver.solve(min(its, done + REFINE_CHUNK), target, REFINE_CHUNK)
-                if st.exploitability_pct <= target:
-                    break
+                    solver.engine.iterate(min(REFINE_CHUNK, its - done))
+                    done = solver.engine.iterations
+                if done % REFINE_CHECK < REFINE_CHUNK:
+                    with solver._lock:
+                        if solver.exploitability_pct() <= target:
+                            break
         finally:
             solver._refining = False
 
@@ -334,6 +356,17 @@ class Explorer:
 
     # -- main entry -------------------------------------------------------------
     def spot(self, req: dict, solve: bool = False) -> dict:
+        if not solve:
+            return self._spot(req, False)
+        with self.lock:
+            self._waiting += 1
+        try:
+            return self._spot(req, True)
+        finally:
+            with self.lock:
+                self._waiting -= 1
+
+    def _spot(self, req: dict, solve: bool) -> dict:
         n = int(req["players"])
         if not 2 <= n <= 9:
             raise ValueError("2 to 9 players")
@@ -489,6 +522,24 @@ class Explorer:
         for street in ("flop", "turn", "river"):
             bstreet = board[:BOARD_AT[street]]
             k = key + (street,)
+            if street == "flop":
+                # A pre-solved flop answers at once; the live solver takes over past what it stores.
+                lib = self._library_entry(n, stacks, spot, path, bool(out.get("off_tree")), board)
+                steps = [int(x) for x in req.get("flop", [])]
+                res = None
+                if lib is not None and not any(x >= FULL_ID for x in steps):
+                    res = self._from_library(out, lib, steps, oop, ip, seat, live, hero, hero_combo, names,
+                                             pot, eff, ranges, board)
+                if res is not None and "done" in res:
+                    return res["done"]
+                if res is not None:
+                    ranges, pot, eff, prev_aggr = res["ranges"], res["pot"], res["eff"], res["last_bettor"]
+                    if hero in live and hero_combo is not None:
+                        ranges[hero][hero_combo] = max(ranges[hero][hero_combo], 1e-3)
+                    if len(board) < BOARD_AT["turn"]:
+                        return self._needs_cards(out, "turn", 1)
+                    key = key + tuple(steps) + (board[BOARD_AT["turn"] - 1],)
+                    continue
 
             def build(street=street, bstreet=bstreet, ranges=ranges, pot=pot, eff=eff, prev_aggr=prev_aggr):
                 sizing = explorer_sizing(street, oop_leads=prev_aggr != ip)
@@ -566,6 +617,112 @@ class Explorer:
             prev_aggr = last_bettor
             key = key + (board[BOARD_AT[nxt] - 1],)
         return self._finish(out, "Showdown.")
+
+    def _library_entry(self, n, stacks, spot, path, off_tree, board):
+        """The pre-solved flop for this hand, when the preflop line is one the library covers."""
+        if n != 6 or off_tree or len(board) < 3 or any(abs(s - 100.0) > 1e-6 for s in stacks):
+            return None
+        if self._library_paths is None:
+            paths = {}
+            for name, (labels, *_rest) in LIBRARY_SPOTS.items():
+                try:
+                    paths[tuple(spot.resolve(labels))] = name
+                except ValueError:
+                    continue
+            self._library_paths = paths
+        name = self._library_paths.get(tuple(path))
+        if name is None or not self.library.available(name):
+            return None
+        return self.library.get(name, board[:3])
+
+    def _from_library(self, out, lib, steps, oop, ip, seat, live, hero, hero_combo, names, pot, eff, ranges,
+                      board):
+        """Play the flop line from a stored solution. Returns {"done": response} when it answers,
+        {"ranges", "pot", "eff", "last_bettor"} when the flop's betting ended (go on to the turn), or
+        None when the line goes past what's stored (the live solver takes over)."""
+        tokens, contrib, last_bettor, history = [], [0.0, 0.0], None, []
+        last_types = []
+        for step in steps:
+            nd = lib.node(tokens)
+            if nd is None:
+                return None
+            if not 0 <= step < len(nd["actions"]):
+                raise ValueError("that option isn't available here")
+            a = dict(nd["actions"][step])
+            p = nd["player"]
+            actor = oop if p == 0 else ip
+            a["added"] = a["amount"] - contrib[p]
+            if a["type"] in ("bet", "raise"):
+                last_bettor = actor
+            if a["type"] in ("bet", "raise", "call"):
+                contrib[p] = a["amount"]
+            history.append({"street": "flop", "position": names[actor], "player": actor,
+                            "text": self._postflop_text(a, nd["pot"])})
+            tokens.append(step)
+            last_types.append(a["type"])
+            if a["type"] == "fold":
+                out["history"] += history
+                out["players"][actor]["folded"] = True
+                winner = ip if actor == oop else oop
+                return {"done": self._finish(out, f"{names[winner]} wins the pot.")}
+        nd = lib.node(tokens)
+        pot_now = pot + contrib[0] + contrib[1]
+        behind = [eff - contrib[0], eff - contrib[1]]
+        if nd is not None:
+            out["history"] += history
+            out["pot_bb"] = round(nd["pot"], 2)
+            for i in live:
+                out["players"][i]["behind_bb"] = round(float(behind[seat[i]]), 2)
+            return {"done": self._library_decision(out, lib, nd, oop, ip, hero, hero_combo, names, contrib, behind)}
+        ended = last_types and (last_types[-1] == "call" or last_types[-2:] == ["check", "check"])
+        if not ended:
+            return None  # deeper than the stored decisions
+        new_ranges = lib.ranges_after(tokens, {0: ranges[oop], 1: ranges[ip]})
+        if new_ranges is None:
+            return None
+        out["history"] += history
+        out["pot_bb"] = round(pot_now, 2)
+        for i in live:
+            out["players"][i]["behind_bb"] = round(float(behind[seat[i]]), 2)
+        if min(behind) <= 1e-9:
+            return {"done": self._needs_runout(out, board, 5, "All in: deal the rest of the board.")}
+        return {"ranges": {oop: new_ranges[0], ip: new_ranges[1]}, "pot": pot_now, "eff": float(min(behind)),
+                "last_bettor": last_bettor}
+
+    def _library_decision(self, out, lib, nd, oop, ip, hero, hero_combo, names, contrib, behind):
+        p = nd["player"]
+        actor = oop if p == 0 else ip
+        mine = actor == hero and hero_combo is not None
+        reach = nd["reach"]
+        tot = float(reach.sum())
+        row = lib.combo_row(p, hero_combo) if mine else -1
+        mine = mine and row >= 0
+        options = []
+        for i, a in enumerate(nd["actions"]):
+            a = {**a, "added": a["amount"] - contrib[p]}
+            rf = float((nd["strategy"][i] * reach).sum() / tot) if tot > 0 else 0.0
+            options.append({"id": i, "label": self._postflop_text(a, nd["pot"]),
+                            "kind": "allin" if a["all_in"] else a["type"], "to_bb": round(float(a["amount"]), 2),
+                            "freq": round(float(nd["strategy"][i][row]) if mine else rf, 4),
+                            "range_freq": round(rf, 4),
+                            "ev_bb": round(float(nd["ev"][i][row]), 3) if mine else None})
+        for j, (kind, all_in, amount) in enumerate(_standard_options(nd["pot"], contrib, behind, p)):
+            m = _match(nd["actions"], kind, all_in, amount)
+            if m is not None and (kind in ("fold", "check", "call") or all_in
+                                  or abs(float(nd["actions"][m]["amount"]) - amount) <= 0.15 * amount):
+                continue
+            fake = {"type": kind, "all_in": all_in, "amount": amount, "added": amount - contrib[p]}
+            options.append({"id": EXTRA_ID + j, "label": self._postflop_text(fake, nd["pot"]),
+                            "kind": "allin" if all_in else kind, "to_bb": round(float(amount), 2),
+                            "freq": 0.0, "range_freq": 0.0, "ev_bb": None, "off_tree": True})
+        order = {"fold": 0, "check": 0, "call": 1, "bet": 2, "raise": 2, "allin": 3}
+        options.sort(key=lambda o: (order[o["kind"]], o["to_bb"]))
+        out.update({"street": "flop", "to_act": actor, "to_act_position": names[actor], "options": options,
+                    "hand_specific": mine, "to_call_bb": round(abs(contrib[0] - contrib[1]), 2), "status": "ready",
+                    "presolved": True})
+        if mine:
+            out["hand"] = combo_str(hero_combo)
+        return out
 
     @staticmethod
     def _postflop_text(a: dict, pot: float) -> str:

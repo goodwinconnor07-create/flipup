@@ -62,6 +62,41 @@ def load(spot_files, part):
     return rows
 
 
+def load_flop_library(root, part):
+    """Rows like load() from scripts/flop_library.py output (root/<spot>/<flop>.npz), flops weighted
+    by how often they're dealt. Ranges come from the cached preflop solution the library used."""
+    from flop_library import SPOTS, canonical_flops, flop_name
+    from flipup_gto.review import PreflopCache
+    weight = {flop_name(c): w for c, w in canonical_flops()}
+    spot = PreflopCache(os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data", "cache")).get(6, 100)
+    rows = []
+    for name in sorted(os.listdir(root)):
+        files = sorted(glob.glob(os.path.join(root, name, "*.npz")))
+        if name not in SPOTS or not files:
+            continue
+        # Only the unbroken start of the shuffled flop order: a fair sample of boards. (Extra flops,
+        # e.g. the low ones the first runs solved in card order, would skew it.)
+        have = {os.path.basename(f)[:-4] for f in files}
+        prefix = []
+        for c, _ in canonical_flops():
+            if flop_name(c) not in have:
+                break
+            prefix.append(os.path.join(root, name, f"{flop_name(c)}.npz"))
+        files = prefix
+        sel = [f for i, f in enumerate(files) if part is None or i % 2 == part]
+        acc = np.zeros((2, 3, 169))
+        for f in sel:
+            acc += weight[os.path.basename(f)[:-4]] * np.load(f)["realization"]
+        ev, eq, w = acc[:, 0], acc[:, 1], acc[:, 2]
+        path, ip, oop, _ = SPOTS[name]
+        info = spot.engine.query(spot.resolve(path))
+        rows.append({"name": f"{name} ({len(sel)} flops)", "r_oop": np.asarray(info["reach"][oop], float),
+                     "r_ip": np.asarray(info["reach"][ip], float),
+                     "share": np.where(w > 0, ev / np.maximum(w, 1e-12), 0),
+                     "eq": np.where(w > 0, eq / np.maximum(w, 1e-12), 0), "w": w})
+    return rows
+
+
 def blocks(row, interaction):
     """Linear system rows for one spot: (M, t, weight) for IP classes then OOP classes."""
     eqm, pairs, _ = tables(with_tensor=False)
@@ -145,9 +180,15 @@ def current_error(rows):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--write", action="store_true", help="write the fit (all flops) to data/eqr_calibration.json")
+    ap.add_argument("--interaction", action="store_true", help="with --write: include the hand-vs-hand terms")
+    ap.add_argument("--flops", default="", help="fit from scripts/flop_library.py output in this folder")
     args = ap.parse_args()
     files = sorted(glob.glob(os.path.join(DATA, "*.npz")))
-    train, test = load(files, 0), load(files, 1)
+    if args.flops:
+        load_rows = lambda part: load_flop_library(args.flops, part)  # noqa: E731
+    else:
+        load_rows = lambda part: load(files, part)  # noqa: E731
+    train, test = load_rows(0), load_rows(1)
     print("spots:", [(r["name"]) for r in train])
     cur = current_error(test)
     th_a = solve(train, False)
@@ -175,17 +216,24 @@ def main():
     for k in gc:
         print(f"  {k[0]:8s} {k[1]:3s} {k[2]:7s} current {gc[k]:+.3f} | additive {ga[k]:+.3f} | interaction {gi[k]:+.3f}")
     if args.write:
-        # The interaction terms didn't beat the additive refit on held-out flops, so write the additive one.
-        th = solve(load(files, None), False)
+        th = solve(load_rows(None), args.interaction)
         A_ip, A_oop, K, d = design()
-        a_ip, a_oop = A_ip @ th, A_oop @ th
+        na, nk = A_ip.shape[1], K.shape[1]
+        a_ip, a_oop = A_ip @ th[:na], A_oop @ th[:na]
         path = os.path.join(os.path.dirname(__file__), "..", "flipup_gto", "data", "eqr_calibration.json")
         old = json.load(open(path))
         for k in ("k_ip", "k_oop", "d"):
             old.pop(k, None)
-        old.update({"model": "additive", "scenario": f"multi-spot fit: {', '.join(r['name'] for r in train)}",
+        old.update({"model": "additive",
+                    "scenario": f"multi-spot fit{' + interaction' if args.interaction else ''}: "
+                                f"{', '.join(r['name'] for r in train)}",
                     "ip": {c: round(float(a_ip[i]), 4) for i, c in enumerate(CLASSES)},
                     "oop": {c: round(float(a_oop[i]), 4) for i, c in enumerate(CLASSES)}})
+        if args.interaction:
+            k_ip, k_oop = K @ th[na:na + nk], K @ th[na + nk:]
+            old.update({"k_ip": {c: round(float(k_ip[i]), 4) for i, c in enumerate(CLASSES)},
+                        "k_oop": {c: round(float(k_oop[i]), 4) for i, c in enumerate(CLASSES)},
+                        "d": {c: round(float(d[i]), 4) for i, c in enumerate(CLASSES)}})
         json.dump(old, open(path, "w"), indent=1)
         print("wrote", path)
 

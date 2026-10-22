@@ -40,7 +40,14 @@ def sizing(flop="33%, 75%", turn="50%, 100%", river="33%, 75%, 125%", lean_later
     later_turn = StreetSizing("75%", "a") if lean_later else StreetSizing(turn, "60%")
     s = {"flop": StreetSizing(flop, "60%"), "turn": StreetSizing(turn, "60%") if not lean_later else later_turn,
          "river": StreetSizing("75%", "a") if lean_later else StreetSizing(river, "60%")}
-    return BetSizing(oop=dict(s), ip=dict(s), max_raises=1)
+    # Two raises, so a bet can re-raise a check-raise (with one, betting looked far worse than in the
+    # full game; see docs/GTO_PLAYBOOK.md section 12).
+    return BetSizing(oop=dict(s), ip=dict(s), max_raises=2)
+
+
+# Saved in every spot. --skip-existing only skips spots built with this tree, so after a tree change
+# an interrupted rebuild resumes instead of keeping old spots.
+TREE_VERSION = "two-raises"
 
 
 def save_spot(scenario, node, board, hero, villain, history, stack, pot, extra=None):
@@ -64,7 +71,8 @@ def save_spot(scenario, node, board, hero, villain, history, stack, pot, extra=N
             "pot_bb": round(node.pot, 2), "stack_bb": round(stack, 2), "to_call_bb": to_call,
             "actions": node.labels, "action_data": node.actions,
             "range_strategy": {k: round(v, 4) for k, v in node.range_strategy().items()},
-            "by_category": range_by_category(node, board), "grid": coach.grid_from_node(node), "hands": hands}
+            "by_category": range_by_category(node, board), "grid": coach.grid_from_node(node), "hands": hands,
+            "tree": TREE_VERSION}
     if extra:
         spot.update(extra)
     name = f"{scenario}_{''.join(card_str(c) for c in board)}.json"
@@ -217,7 +225,7 @@ def main():
     ap.add_argument("--groups", default="btn_bb,sb_bb,threebet_ip,threebet_oop")
     ap.add_argument("--iterations", type=int, default=150)
     ap.add_argument("--skip-existing", action="store_true",
-                    help="skip board/group pairs whose flop spot is already saved (resume an interrupted build)")
+                    help="skip board/group pairs whose flop spot is already saved with the current tree (resume)")
     args = ap.parse_args()
     os.makedirs(OUT, exist_ok=True)
     log = lambda m: print(m, flush=True)  # noqa: E731
@@ -227,7 +235,7 @@ def main():
     for b in BOARDS[:args.boards]:
         for g in args.groups.split(","):
             done = os.path.join(OUT, f"{flop_spot.get(g, g)}_{b.replace(' ', '')}.json")
-            if args.skip_existing and os.path.exists(done):
+            if args.skip_existing and os.path.exists(done) and json.load(open(done)).get("tree") == TREE_VERSION:
                 log(f"  {g} {b}: already built, skipping")
                 continue
             try:

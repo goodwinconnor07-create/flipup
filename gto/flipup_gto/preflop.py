@@ -9,6 +9,7 @@
 from __future__ import annotations
 
 import os
+import threading
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -22,6 +23,7 @@ CLASS_INDEX = {c: i for i, c in enumerate(CLASSES)}
 CLASS_COMBOS = np.array([6 if len(c) == 2 else (4 if c[2] == "s" else 12) for c in CLASSES], dtype=np.float64)
 
 _tables: dict = {}
+_tables_lock = threading.RLock()  # the equity tables are built once, even with concurrent first callers
 
 
 TENSOR_RANK = 4
@@ -30,6 +32,11 @@ MODEL_VERSION = 6
 
 
 def tables(with_tensor: bool = True):
+    with _tables_lock:
+        return _tables_unlocked(with_tensor)
+
+
+def _tables_unlocked(with_tensor: bool):
     """(equity 169x169, pairs 169x169, (A, B) low-rank 3-way factors or None), cached on disk.
 
     The 3-way equity tensor T[h][o1][o2] is stored as T[h] ~= sum_r A[h,r,:] (x) B[h,r,:].

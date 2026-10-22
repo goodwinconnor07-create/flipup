@@ -268,8 +268,21 @@ explorer tree Custom hand uses). The flops are a fair random sample (the shuffle
   19% (a little over 10%). BB vs a 33% c-bet 31 / 54 / 15 (RangeConverter 34 / 52 / 14; GTO Wizard's
   average check-raise vs a small bet 17.5%).
 - SB vs BB at 40bb is published as a 58% c-bet; ours is 43% at 100bb, where a lower frequency is expected.
-- The 3-bettor's big 75% c-bet share (43%) looks high next to the usual "small, often" advice for
-  3-bet pots; being checked against a tree with river betting (below).
+- The 3-bettor's big 75% c-bet share (43%) was a tree artefact: with shallow stacks, checking the river
+  down makes small c-bets look much worse. BB 3-bet vs BTN call (pot 20.5bb, 90bb behind), flop c-bet
+  check / 33% / 75%:
+
+| Flop | Live tree (river checked down) | + turn & river all-ins | + river 75% & all-in | Full tree |
+|---|---|---|---|---|
+| Ks8d3c | 1 / 29 / 70 | 1 / 65 / 34 | 1 / 73 / 27 | 2 / 81 / 16 |
+| 9h8h6c | 29 / 25 / 45 | 30 / 31 / 39 | 29 / 32 / 39 | 33 / 34 / 30 |
+| 7s7d2c | 0 / 7 / 90 | 0 / 29 / 68 | 0 / 20 / 78 | 0 / 34 / 65 |
+| QhJd4c | 48 / 14 / 37 | 45 / 28 / 26 | 42 / 32 / 25 | 45 / 37 / 18 |
+| As7h2d | 12 / 65 / 23 | 1 / 88 / 11 | 2 / 87 / 11 | 7 / 86 / 6 |
+
+  Small-bet share off by 26 points on average with the live tree, 7 with turn and river all-ins (about
+  1.3x the solve time), 6 with a river bet size too (about 2x). Flop trees now keep turn and river all-ins
+  when the flop SPR is below 6; the 3-bet pot library is being re-solved with it.
 
 ## 15. Value networks (DeepStack-style depth-limited solving)
 

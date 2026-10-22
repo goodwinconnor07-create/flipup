@@ -26,8 +26,16 @@ npm run e2e        # phone-sized browser tests, including two phones playing onl
 
 ## Deploying
 
+Nothing to run by hand. Whatever lands on `main` goes live:
+
+- **The website and online tables** (Cloudflare Worker `flipup`): Cloudflare's GitHub connection builds and deploys on every push to `main`. In the Cloudflare dashboard (Workers & Pages → flipup → Settings → Builds) the production branch is `main`, the build command is `npm run check` (so a failing check stops the deploy) and the deploy command is `npx wrangler deploy`.
+- **The GTO coach** (Fly app `flipup-gto`): `.github/workflows/deploy-coach.yml` deploys it when `gto/` changes on `main`. Needs the `FLY_API_TOKEN` repository secret.
+- **Checks**: `.github/workflows/ci.yml` runs `npm run check` on every push and pull request.
+
+To deploy the website from your own machine instead (rarely needed):
+
 ```sh
 CLOUDFLARE_API_TOKEN=… CLOUDFLARE_ACCOUNT_ID=… npm run deploy
 ```
 
-This builds the app and deploys the `flipup` Worker with its Durable Object.
+The build has to run before `wrangler deploy`, because the Vite plugin writes the deploy config into `dist/`. `npm run deploy` does both.

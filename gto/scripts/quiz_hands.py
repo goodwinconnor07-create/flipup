@@ -35,7 +35,7 @@ PAIRS = [((3, 5), 6), ((5, 3), 6), ((2, 5), 4), ((5, 2), 4), ((0, 5), 3), ((5, 0
          ((5, 1), 2), ((4, 5), 4), ((5, 4), 4), ((3, 4), 2), ((4, 3), 2), ((2, 3), 2), ((3, 2), 2)]
 STREETS = ["preflop", "flop", "turn", "river"]
 # Share of hands kept by the last street reached: full hands are the point, shorter ones add variety.
-KEEP = {"preflop": 0.05, "flop": 0.2, "turn": 0.5, "river": 1.0}
+KEEP = {"preflop": 0.05, "flop": 0.6, "turn": 0.9, "river": 1.0}
 
 
 def solved(ex: Explorer, req: dict) -> dict:

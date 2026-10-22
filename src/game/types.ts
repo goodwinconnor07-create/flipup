@@ -194,6 +194,28 @@ export interface Hand {
   startStacks?: Record<string, number>;
 }
 
+/** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
+export interface ScriptMove {
+  by: 'you' | 'bot';
+  move: Move;
+  to?: number;
+}
+
+/**
+ * A Scroll card: a single hand dealt to order. Your cards and the board are fixed, the button is placed, and the
+ * `script` moves are played before the first real decision. Such a table deals one hand only, and the bots stay quiet.
+ * Never sent to phones.
+ */
+export interface CardScene {
+  /** Where you sit, counted clockwise from the button: 0 is the button, 1 the small blind, 2 the big blind, then under the gun. Heads up, 0 is the button (and small blind) and 1 the big blind. */
+  at: number;
+  /** Your two hole cards. */
+  hero: Card[];
+  /** The board, up to five cards, in the order they come. Anything missing is dealt at random. */
+  board: Card[];
+  script: ScriptMove[];
+}
+
 export interface Game {
   id: string;
   /** Join code for online tables. null for bots-only tables on one phone. */
@@ -242,6 +264,8 @@ export interface Game {
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
   minds?: Record<string, BotMind>;
+  /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
+  card?: CardScene;
 }
 
 export type Action =

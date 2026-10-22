@@ -360,6 +360,8 @@ const COOLDOWN = 2500;
 export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false, to?: string): boolean {
   const player = game.players.find((p) => p.id === playerId);
   if (!player?.bot) return false;
+  // Scroll cards are quiet, so nothing muddies the lesson.
+  if (game.card) return false;
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return false;
   const style = styleOf(player.style);

@@ -163,7 +163,7 @@ export function handClass(hole: Card[]): string {
 const AGGRESSIVE: Move[] = ['bet', 'raise', 'allin'];
 
 /** Last to act after the flop among the players still in. */
-function inPosition(hand: Hand, playerId: string): boolean {
+export function inPosition(hand: Hand, playerId: string): boolean {
   const n = hand.seats.length;
   const button = hand.seats.findIndex((s) => s.playerId === hand.buttonId);
   let last: string | null = null;
@@ -177,7 +177,7 @@ function inPosition(hand: Hand, playerId: string): boolean {
 const chipsOf = (game: Game, id: string) => game.players.find((p) => p.id === id)?.stack ?? 0;
 
 /** Effective stack in big blinds: the bot's chips against the biggest opponent still in. */
-function effectiveBb(game: Game, hand: Hand, seat: Seat): number {
+export function effectiveBb(game: Game, hand: Hand, seat: Seat): number {
   const bb = game.settings.bigBlind;
   const mine = chipsOf(game, seat.playerId) + seat.total;
   const theirs = Math.max(0, ...hand.seats.filter((s) => s !== seat && !s.folded).map((s) => chipsOf(game, s.playerId) + s.total));
@@ -223,7 +223,7 @@ function spotFreq(chart: { spots: Record<string, string> }, key: string, cls: st
   return { call: DIGITS.indexOf(s[i * 2]) / 35, raise: DIGITS.indexOf(s[i * 2 + 1]) / 35 };
 }
 
-interface PreSpot {
+export interface PreSpot {
   call: number;
   raise: number;
   spot: 'rfi' | 'limp' | 'open' | '3bet' | '4bet' | '5bet';
@@ -235,14 +235,13 @@ interface PreSpot {
 }
 
 /** Call and raise chances for the bot's hand before the flop, straight from GTO. */
-function preflopGto(game: Game, hand: Hand, seat: Seat): PreSpot {
+export function preflopGto(game: Game, hand: Hand, seat: Seat, cls: string = handClass(seat.cards)): PreSpot {
   const bb = game.settings.bigBlind;
   const order = preflopOrder(hand);
   const n = order.length;
   const me = order.indexOf(seat.playerId);
   const chart = chartFor(n, effectiveBb(game, hand, seat));
   const at = (id: string) => chartSeat(order.indexOf(id), n);
-  const cls = handClass(seat.cards);
   const pre = (hand.actions ?? []).filter((a) => a.street === 'preflop');
   const raisers = pre.filter((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > bb));
   const limpers = pre.filter((a) => a.move === 'call' && raisers.length === 0).length;

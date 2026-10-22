@@ -2,6 +2,7 @@
 // how you did on practice drills. Stats and weaknesses are worked out from these.
 
 import { handRecord, type Game, type HandRecord } from '../game';
+import { loadScrollHands } from '../scroll/save';
 import { markPlayedToday, read, write } from './persist';
 
 const KEYS = {
@@ -57,6 +58,14 @@ export function addHand(hand: PlayedHand): boolean {
 }
 
 export const hasHand = (key: string) => loadHistory().some((h) => h.key === key);
+
+/** A hand to review: one from your games, or one from Scroll that was played to the end. */
+export function findPlayed(key: string): PlayedHand | null {
+  const own = loadHistory().find((h) => h.key === key);
+  if (own) return own;
+  const card = loadScrollHands().find((h) => h.key === key);
+  return card?.record ? { key: card.key, heroId: card.heroId, record: card.record } : null;
+}
 
 let captured = new Set<string>();
 

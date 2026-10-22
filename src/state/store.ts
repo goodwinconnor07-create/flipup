@@ -13,6 +13,8 @@ import {
   normalizeCode,
   redactForDevice,
   redactLogs,
+  handRecord,
+  seededRng,
   type HandLog,
   type Action,
   type Game,
@@ -21,12 +23,21 @@ import {
   type TableInfo,
 } from '../game';
 import type { StyleId } from '../game/botStyles';
-import { haptic, reducedMotion } from '../ui/effects';
+import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
-import { captureFinishedHand } from './training';
-import { challengeFor, countHand, newRunning, saveResult } from './challenges';
+import { captureFinishedHand, handKey } from './training';
+import { handBucket, handClass } from '../game/botPlay';
+import { STRENGTH } from '../game/botRange';
+import { judgeMove, readFromHabits } from '../game/judge';
+import { cardTable, dealCard, fitBots } from '../scroll/deal';
+import { pickCard } from '../scroll/feed';
+import { finish, newRun, toDecision } from '../scroll/play';
+import { addScrollHand, levelOf, loadScroll, saveScroll, type ScrollSave } from '../scroll/save';
+import { STYLE_NOTES } from '../scroll/styleNotes';
+import { TEMPLATE_BY_ID } from '../scroll/templates';
+import type { CardRef } from '../scroll/types';
 import {
   loadDeviceId,
   loadCalm,
@@ -36,6 +47,7 @@ import {
   loadProfile,
   loadSession,
   loadStats,
+  markPlayedToday,
   loadTableLook,
   loadLastTable,
   saveLastTable,
@@ -68,9 +80,11 @@ export type Route =
   /** Watch a saved hand back, with the coach. */
   | { name: 'replay'; key: string }
   | { name: 'drill'; scenario: string }
-  | { name: 'custom' };
+  | { name: 'custom' }
+  /** The Scroll feed of short poker cards. */
+  | { name: 'scroll' };
 
-export type TrainSection = 'review' | 'library' | 'stats' | 'custom';
+export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 
 export type Sheet =
   | { name: 'menu' }
@@ -82,10 +96,6 @@ export type Sheet =
   | { name: 'settings' }
   /** This phone's look and sound: dark mode, Liquid Glass, sound, animations. */
   | { name: 'prefs' }
-  /** A bot's challenge: the rules, the goal and a Play button. */
-  | { name: 'challenge'; bot: string }
-  /** How a challenge ended. */
-  | { name: 'challengeResult'; bot: string; won: boolean; stars: number; hands: number }
   | { name: 'standings' }
   | { name: 'rankings' }
   | { name: 'log' }
@@ -127,6 +137,8 @@ export interface AppState {
   dark: boolean;
   /** Liquid Glass look: frosted, see-through panels. Off gives solid ones. */
   glass: boolean;
+  /** Your Scroll level, stars and combo, and the card you're on. */
+  scroll: ScrollSave;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -162,6 +174,7 @@ let state: AppState = {
   calm: loadCalm(),
   dark: loadDark(),
   glass: loadGlass(),
+  scroll: loadScroll(),
 };
 applyTheme(state.dark);
 document.documentElement.classList.toggle('no-glass', !state.glass);
@@ -306,58 +319,11 @@ function setSession(session: Session | null): void {
   saveSession(session);
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
-  captureFinishedHand(state.game, state.deviceId);
-  trackChallenge();
+  // A Scroll card is graded on its own; it isn't one of the hands the coach reviews.
+  if (!session?.scroll) captureFinishedHand(state.game, state.deviceId);
+  else trackScroll();
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
-}
-
-/** Counts a finished hand towards the running bot challenge, and shows the result when it's decided. */
-function trackChallenge(): void {
-  const s = state.session;
-  if (s?.mode !== 'local' || !s.challenge || s.challenge.over || !state.game) return;
-  const c = challengeFor(s.challenge.bot);
-  if (!c) return;
-  const run = structuredClone(s.challenge);
-  countHand(run, c, state.game, state.deviceId);
-  if (run.progress.last === s.challenge.progress.last) return;
-  const next = { ...s, challenge: run };
-  saveSession(next);
-  set({ session: next });
-  if (run.over) {
-    if (run.over.won) saveResult(run.bot, run.over.stars);
-    const over = run.over;
-    setTimeout(() => openSheet({ name: 'challengeResult', bot: run.bot, won: over.won, stars: over.stars, hands: run.progress.hands }), 1800);
-  }
-}
-
-/** Sits down against one bot with a challenge's stacks and blinds, and deals. */
-export function startChallenge(bot: string): void {
-  if (state.busy) return;
-  const c = challengeFor(bot);
-  if (!c) return;
-  const name = cleanName(state.profile.name);
-  if (!name) return navigate({ name: 'profile', then: 'bots' });
-  const settings: Settings = {
-    startingStack: c.you * c.bigBlind,
-    smallBlind: c.bigBlind / 2,
-    bigBlind: c.bigBlind,
-    rebuys: false,
-    turnSeconds: 0,
-    blindMinutes: c.blindMinutes,
-    blindCap: c.blindCap,
-  };
-  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: [bot], code: null, now: Date.now() });
-  const them = game.players.find((p) => p.bot);
-  if (them) {
-    them.stack = c.them * c.bigBlind;
-    them.bought = them.stack;
-  }
-  closeSheet();
-  closeConnection();
-  setSession({ mode: 'local', code: null, game, challenge: newRunning(bot, settings.startingStack) });
-  resetTo({ name: 'table' });
-  dispatch({ type: 'start' });
 }
 
 /** A heads-up game against one bot, loaded with another style's way of playing. */
@@ -373,6 +339,168 @@ export function startPlaystyle(bot: string, style: StyleId): void {
   setSession({ mode: 'local', code: null, game });
   resetTo({ name: 'table' });
   dispatch({ type: 'start' });
+}
+
+// ── Scroll ──────────────────────────────────────────────────────────────────
+// A feed of short poker cards. Each card is a bots-only table with one hand dealt to order (see CardScene), so it
+// runs on this phone like any other bots table. The session's `scroll` holds the card in play and your graded moves.
+
+function setScroll(patch: Partial<ScrollSave>): void {
+  const scroll = { ...state.scroll, ...patch };
+  saveScroll(scroll);
+  set({ scroll });
+}
+
+/** Sits down at the table for a card, in the lobby: the intro popup shows over it until Start. */
+function setUpCard(ref: CardRef): void {
+  const { game } = cardTable(ref, { deviceId: state.deviceId, name: state.profile.name, emoji: state.profile.emoji });
+  closeConnection();
+  setSession({ mode: 'local', code: null, game, scroll: newRun(ref) });
+}
+
+/** Makes sure there's a card on the table: the one you were on, or a new pick. */
+export function ensureCard(): void {
+  if (state.session?.scroll) return;
+  let ref = state.scroll.current;
+  if (!ref) {
+    ref = state.scroll.upcoming ?? pickCard(state.scroll, Math.random);
+    setScroll({ current: ref, upcoming: null, seed: state.scroll.seed + 1 });
+  }
+  setUpCard(ref);
+}
+
+/** Opens the feed from Home. A table you're sitting at is left first (you're asked). */
+export function openScroll(): void {
+  const s = state.session;
+  const busy = !!s && !s.scroll && (s.mode === 'online' || (!!s.game && s.game.status !== 'ended'));
+  const go = () => {
+    ensureCard();
+    navigate({ name: 'scroll' });
+  };
+  if (busy) {
+    confirm({
+      title: 'Leave your table?',
+      body: s?.mode === 'online' ? 'Scroll uses this phone for a card at a time. You would leave the online table first.' : 'Scroll uses this phone for a card at a time, so your bots table closes first.',
+      confirm: 'Leave and scroll',
+      danger: true,
+      onConfirm: () => {
+        closeSheet();
+        leaveTable();
+        go();
+      },
+    });
+    return;
+  }
+  go();
+}
+
+/** Back to Home. The card you're on stays where it is. */
+export function exitScroll(): void {
+  resetTo();
+}
+
+/** Start was tapped: the cards come out. */
+export function startCard(): void {
+  const s = state.session;
+  if (!s?.scroll || s.scroll.started || !s.game) return;
+  const dealt = dealCard(s.scroll.ref);
+  const r = applyAction(s.game, { type: 'start' }, { deviceId: state.deviceId, now: Date.now(), rng: cryptoRng });
+  if (!r.ok) return void toast(r.error, 'error');
+  // Give the bot a hand that fits the way it has played so far, then let the clock run.
+  const game = fitBots(r.game, dealt, seededRng(s.scroll.ref.seed ^ 0x5bd1e995));
+  haptic('light');
+  setSession({ ...s, game, scroll: { ...s.scroll, started: true } });
+}
+
+/** Moves on to the next card, picked when the last one finished. */
+export function nextCard(): void {
+  const save = state.scroll;
+  const ref = save.upcoming ?? pickCard(save, Math.random);
+  setScroll({ current: ref, upcoming: null, seed: save.seed + 1 });
+  setUpCard(ref);
+}
+
+/** Grades the move you're about to make, with the bots' own eyes, and keeps the verdict with the card. */
+function gradeMove(s: Session, action: Extract<Action, { type: 'act' }>): Session {
+  const run = s.scroll;
+  const game = s.game;
+  const hand = game?.hand;
+  const me = game?.players.find((p) => p.deviceId === state.deviceId);
+  const seat = hand?.seats.find((x) => x.playerId === me?.id);
+  if (!run || !game || !hand || !me || !seat || hand.toAct !== me.id) return s;
+  // What the grader assumes about each bot: how its style plays.
+  const dealt = dealCard(run.ref);
+  const reads = { ...game.reads };
+  for (const p of game.players) {
+    const style = p.bot ? dealt.bots.find((b) => b.name === p.name)?.style : undefined;
+    if (style) reads[p.id] = readFromHabits(STYLE_NOTES[style].habits);
+  }
+  const j = judgeMove({ ...game, reads }, hand, seat, action.move, action.to, seededRng(run.ref.seed + hand.seq));
+  const decision = toDecision(j, seat.cards, hand.board, action.move === 'allin' ? undefined : action.to, game.settings.bigBlind);
+  return { ...s, scroll: { ...run, decisions: [...run.decisions, decision] } };
+}
+
+/** A card is over: a hand that has a result, or a quick card once you've made your move. */
+function trackScroll(): void {
+  const s = state.session;
+  const run = s?.scroll;
+  if (!s || s.mode !== 'local' || !run || run.over || !run.started || !state.game?.hand) return;
+  const t = TEMPLATE_BY_ID.get(run.ref.id);
+  if (!t) return;
+  const quickDone = t.quick && run.decisions.length > 0;
+  if (!state.game.hand.result && !quickDone) return;
+  finishCard(t.quick ?? false);
+}
+
+function finishCard(quick: boolean): void {
+  const s = state.session;
+  const view = state.game;
+  const run = s?.scroll;
+  const hand = view?.hand;
+  const me = view?.players.find((p) => p.deviceId === state.deviceId);
+  const seat = hand?.seats.find((x) => x.playerId === me?.id);
+  const t = run ? TEMPLATE_BY_ID.get(run.ref.id) : undefined;
+  if (!s || !view || !run || !hand || !me || !seat || !t) return;
+  const bigBlind = view.settings.bigBlind;
+  const net = (me.stack - (hand.startStacks?.[me.id] ?? me.stack)) / bigBlind;
+  const weak = hand.board.length >= 3 ? ['air', 'weak'].includes(handBucket(seat.cards, hand.board)) : (STRENGTH.get(handClass(seat.cards)) ?? 1) < 0.4;
+  const outcome = finish(t, run.decisions, { net, showdown: !!hand.result?.showdown, weak });
+
+  // Stars, the combo and what comes next.
+  const save = state.scroll;
+  const before = levelOf(save.stars);
+  const combo = outcome.passed ? save.combo + 1 : 0;
+  const stars = save.stars + outcome.stars;
+  const recent = [...save.recent, { id: t.id, seed: run.ref.seed, theme: t.theme, passed: outcome.passed, stars: outcome.stars, at: Date.now() }].slice(-80);
+  const done: ScrollSave = {
+    ...save,
+    stars,
+    cards: save.cards + 1,
+    passed: save.passed + (outcome.passed ? 1 : 0),
+    combo,
+    bestCombo: Math.max(save.bestCombo, combo),
+    best: { ...save.best, [t.id]: Math.max(save.best[t.id] ?? 0, outcome.stars) },
+    recent,
+    // This one is done: if the table is lost before Next, the next card is the one that comes after it.
+    current: null,
+  };
+  done.upcoming = pickCard({ ...done, seed: save.seed + 1 }, Math.random);
+  setScroll(done);
+  markPlayedToday();
+  if (levelOf(stars).level > before.level) setTimeout(() => toast(`Level ${levelOf(stars).level}: ${levelOf(stars).name}`, 'success'), 1200);
+
+  // Keep the hand for the Scroll hands list. A quick card stops at your move, so it has no finished hand.
+  const record = !quick ? handRecord(view, hand, Date.now()) : null;
+  addScrollHand({ key: handKey(view.id, hand.number), ref: run.ref, theme: t.theme, title: t.title, at: Date.now(), outcome, decisions: run.decisions, heroId: me.id, record });
+
+  // A quick card is frozen where it is. A full one is over, so the bots turn their cards over.
+  const frozen = quick && s.game ? { ...s.game, wakeAt: null } : s.game;
+  setSession({ ...s, game: frozen, scroll: { ...run, over: outcome } });
+  if (!quick) dispatch({ type: 'revealBots', hand: hand.number });
+  if (outcome.passed) {
+    haptic('success');
+    confetti(CONFETTI.win, { x: innerWidth / 2, y: innerHeight * 0.4 });
+  } else haptic('error');
 }
 
 /** Bots-only tables keep their own clock on this phone: bots act, cards run out, hands deal. */
@@ -481,7 +609,9 @@ export function dispatch(action: Action): boolean {
     haptic('error');
     return false;
   }
-  if (r.changed) setSession({ ...s, game: r.game });
+  // On a Scroll card the move is graded first, while the table is still as it was when you chose.
+  const graded = action.type === 'act' && s.scroll && !s.scroll.over ? gradeMove(s, action) : s;
+  if (r.changed) setSession({ ...graded, game: r.game });
   return true;
 }
 
@@ -652,6 +782,8 @@ export function boot(): void {
   if (s?.mode === 'local') scheduleLocal();
   if (isCode(linked) && !(s?.mode === 'online' && s.code === linked)) {
     resetTo({ name: 'join', code: linked });
+  } else if (s?.scroll) {
+    resetTo({ name: 'scroll' });
   } else if (s && (s.game || s.mode === 'online')) {
     resetTo({ name: 'table' });
   }

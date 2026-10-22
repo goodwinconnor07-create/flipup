@@ -7,7 +7,6 @@ import {
   dispatch,
   getState,
   leaveTable,
-  startChallenge,
   navigate,
   openLog,
   openSheet,
@@ -21,9 +20,6 @@ import {
   useApp,
   type Sheet as SheetSpec,
 } from '../../state/store';
-import { BOTS } from '../../game/botStyles';
-import { challengeFor, goalText, loadResults, starsText } from '../../state/challenges';
-import { sceneFor } from '../botScenes';
 import { Avatar, Choice, chips, EmojiPicker, PlayingCard, Sheet } from '../../ui/components';
 import { FELTS, RAILS } from '../../state/persist';
 import {
@@ -67,10 +63,6 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <SettingsSheet />;
     case 'prefs':
       return <PrefsSheet />;
-    case 'challenge':
-      return <ChallengeSheet bot={sheet.bot} />;
-    case 'challengeResult':
-      return <ChallengeResultSheet sheet={sheet} />;
     case 'standings':
       return <StandingsSheet />;
     case 'rankings':
@@ -272,92 +264,6 @@ function Tile({ label, Icon, color, onClick }: Item) {
       </span>
       {label}
     </button>
-  );
-}
-
-function Stars({ n, of = 3 }: { n: number; of?: number }) {
-  return (
-    <span className="stars" aria-label={`${n} of ${of} stars`}>
-      {Array.from({ length: of }, (_, i) => (
-        <span key={i} className={i < n ? 'on' : ''}>
-          ★
-        </span>
-      ))}
-    </span>
-  );
-}
-
-/** One bot's challenge: who, the rules, the goal and how stars are earned. */
-function ChallengeSheet({ bot }: { bot: string }) {
-  const c = challengeFor(bot);
-  const b = BOTS.find((x) => x.name === bot);
-  if (!c || !b) return null;
-  const best = loadResults()[bot]?.stars ?? 0;
-  const s = sceneFor(b.emoji);
-  const bb = c.bigBlind;
-  return (
-    <Sheet title={c.title}>
-      <div className="ch-hero" style={{ background: `linear-gradient(180deg, ${s.bg[0]}, ${s.bg[1]})` }}>
-        <span className="prop prop-a">{s.props[0]}</span>
-        <span className="prop prop-b">{s.props[1]}</span>
-        <span className="prop prop-c">{s.props[2]}</span>
-        <Avatar emoji={b.emoji} size={72} />
-        <b>{b.name}</b>
-        {best > 0 && <Stars n={best} />}
-      </div>
-      <p className="ch-blurb">{c.blurb}</p>
-      <div className="group">
-        <div className="ch-row">
-          <span>Goal</span>
-          <b>{goalText(c.goal)}</b>
-        </div>
-        <div className="ch-row">
-          <span>Stacks</span>
-          <b>
-            You {c.you} big blinds · {b.name} {c.them}
-          </b>
-        </div>
-        <div className="ch-row">
-          <span>Blinds</span>
-          <b>
-            {bb / 2}/{bb}
-            {c.blindMinutes ? `, up every ${c.blindMinutes} min` : ''}
-          </b>
-        </div>
-        <div className="ch-row">
-          <span>Stars</span>
-          <b>{starsText(c)}</b>
-        </div>
-      </div>
-      <button type="button" className="btn btn-dark btn-xl" onClick={() => startChallenge(bot)}>
-        {best > 0 ? 'Play again' : 'Play'}
-      </button>
-    </Sheet>
-  );
-}
-
-function ChallengeResultSheet({ sheet }: { sheet: Extract<SheetSpec, { name: 'challengeResult' }> }) {
-  const c = challengeFor(sheet.bot);
-  return (
-    <Sheet title={sheet.won ? 'Challenge complete' : 'Not this time'}>
-      <div className="ch-result">
-        {sheet.won ? <Stars n={sheet.stars} /> : null}
-        <p>
-          {sheet.won
-            ? `${c?.title ?? 'Challenge'} done in ${sheet.hands} ${sheet.hands === 1 ? 'hand' : 'hands'}.`
-            : `${c?.title ?? 'Challenge'}: it got away from you after ${sheet.hands} ${sheet.hands === 1 ? 'hand' : 'hands'}. Try again whenever you like.`}
-        </p>
-      </div>
-      <button type="button" className="btn btn-dark btn-xl" onClick={() => startChallenge(sheet.bot)}>
-        {sheet.won ? 'Play again' : 'Retry'}
-      </button>
-      <button type="button" className="btn btn-outline" onClick={closeSheet}>
-        Keep playing
-      </button>
-      <button type="button" className="btn btn-link" onClick={() => { closeSheet(); leaveTable(); }}>
-        Back to Home
-      </button>
-    </Sheet>
   );
 }
 

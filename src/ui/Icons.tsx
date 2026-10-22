@@ -296,3 +296,11 @@ export const SparkIcon = (p: P) => (
     <path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" />
   </svg>
 );
+
+export const ScrollIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <rect x="5" y="7.5" width="14" height="9" rx="2.8" />
+    <path d="m9.2 4.6 2.8-2.3 2.8 2.3" />
+    <path d="m9.2 19.4 2.8 2.3 2.8-2.3" />
+  </svg>
+);

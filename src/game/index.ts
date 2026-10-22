@@ -7,6 +7,7 @@ export * from './types';
 export * from './holdem';
 export * from './selectors';
 export * from './bots';
+export * from './judge';
 export * from './reducer';
 export * from './validate';
 export * from './protocol';

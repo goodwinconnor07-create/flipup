@@ -3,12 +3,12 @@ import { fetchTableInfo } from '../state/api';
 import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar, Emoji } from '../ui/components';
-import { InsightsTab } from './HomeInsights';
+import { ScrollTab } from './HomeScroll';
 import { QuickGames } from './HomeQuick';
 import { BotsArt, HostArt } from './CardArt';
 import { TrainTab } from './HomeTrain';
 import { colourWipe } from '../ui/effects';
-import { CardsIcon, ChartIcon, ChevronIcon, GearIcon, QrIcon, SparkIcon } from '../ui/Icons';
+import { CardsIcon, ChevronIcon, GearIcon, QrIcon, ScrollIcon, SparkIcon } from '../ui/Icons';
 import { signed } from './Final';
 
 function ago(at: number): string {
@@ -19,10 +19,10 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'insights' | 'train';
+type Tab = 'play' | 'scroll' | 'train';
 const TABS: { id: Tab; label: string; Icon: typeof CardsIcon }[] = [
   { id: 'play', label: 'Play', Icon: CardsIcon },
-  { id: 'insights', label: 'Insights', Icon: ChartIcon },
+  { id: 'scroll', label: 'Scroll', Icon: ScrollIcon },
   { id: 'train', label: 'Train', Icon: SparkIcon },
 ];
 
@@ -50,7 +50,7 @@ export function Home() {
   const game = useApp((s) => s.game);
   const session = useApp((s) => s.session);
   const profile = useApp((s) => s.profile);
-  const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
+  const active = session && !session.scroll && (session.mode === 'online' || (game && game.status !== 'ended'));
   const named = profile.name.trim().length > 0;
   const [stats] = useState(loadStats);
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
@@ -123,8 +123,8 @@ export function Home() {
       <div className="home-sheet">
         <div className="home-scroll">
           <div className="home-title">
-            <h2 className="large-title">{tab === 'insights' ? 'Insights' : tab === 'train' ? 'Train' : 'Play'}</h2>
-            <p>{tab === 'insights' ? 'How your hands and tables are going.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
+            <h2 className="large-title">{tab === 'scroll' ? 'Scroll' : tab === 'train' ? 'Train' : 'Play'}</h2>
+            <p>{tab === 'scroll' ? 'Short poker spots, graded as you go.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
           </div>
           <div key={tab} className="home-pane">
             {tab === 'play' && (
@@ -175,7 +175,7 @@ export function Home() {
                 <QuickGames />
               </>
             )}
-            {tab === 'insights' && <InsightsTab />}
+            {tab === 'scroll' && <ScrollTab />}
             {tab === 'train' && <TrainTab />}
           </div>
         </div>

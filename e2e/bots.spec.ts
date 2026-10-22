@@ -409,7 +409,9 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await page.getByRole('dialog', { name: 'End the game for everyone?' }).getByRole('button', { name: 'End game' }).click();
   await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Done' }).click();
-  await page.getByRole('tab', { name: 'Insights' }).click();
+  // Insights lives under Train.
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText(/chips over 1 table/)).toBeVisible();
   await shot(page, '14-home-totals');
 });
@@ -590,7 +592,7 @@ test('dark mode: a switch in the menu that changes the whole app and sticks', as
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('home: three tabs, results from finished tables, training tiles', async ({ page }) => {
+test('home: three tabs, results from finished tables in Train, training tiles', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => {
     if (localStorage.getItem('flipup.stats')) return;
@@ -606,11 +608,14 @@ test('home: three tabs, results from finished tables, training tiles', async ({ 
   await expect(page.getByText('Hi Connor.')).toBeVisible();
   await expect(page.getByText("You're up 200 chips this week.")).toBeVisible();
   await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Insights' }).click();
+  await page.getByRole('tab', { name: 'Scroll' }).click();
+  await expect(page.getByRole('heading', { name: 'Scroll' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Scroll' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText('+200', { exact: true })).toBeVisible();
   await expect(page.getByText('Recent tables')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Insights' })).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: 'Back' }).click();
   await page.getByRole('button', { name: /Poker library/ }).click();
   await expect(page.getByText('Poker library').first()).toBeVisible();
 });

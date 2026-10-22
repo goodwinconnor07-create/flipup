@@ -1,4 +1,3 @@
-import { challengeFor, progressText } from '../state/challenges';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { describeHand, equity, myPlayer, options, pot, seatFor, type Card, type Equity, type Game, type Hand } from '../game';
 import { dispatch, openSheet, toast, useApp } from '../state/store';
@@ -85,8 +84,6 @@ function BlindClock({ game }: { game: Game }) {
 
 function TableBar({ game }: { game: Game | null }) {
   const online = useApp((s) => s.session?.mode === 'online');
-  const run = useApp((s) => s.session?.challenge);
-  const ch = run && !run.over ? challengeFor(run.bot) : undefined;
   return (
     <div className="topbar table-bar">
       <button type="button" className="icon-btn press" aria-label="Menu" onClick={() => openSheet({ name: 'menu' })}>
@@ -99,13 +96,7 @@ function TableBar({ game }: { game: Game | null }) {
               Blinds {chips(game.settings.smallBlind)}/{chips(game.settings.bigBlind)}
             </b>
             <small className="muted">
-              {ch && run
-                ? `${ch.title} · ${progressText(ch, run.progress)}`
-                : game.hand && game.status === 'playing'
-                  ? `Hand ${game.hand.number}`
-                  : online
-                    ? 'Online table'
-                    : 'You vs the bots'}
+              {game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
               {game.status === 'playing' && !!game.settings.blindMinutes && <BlindClock game={game} />}
             </small>
           </>
@@ -139,7 +130,8 @@ function useOdds(hand: Hand | null): Map<string, { win: number; tie: number }> |
   }, [key]);
 }
 
-function Felt({ game }: { game: Game }) {
+/** The table itself: the other players, the board, the actions and your cards. `bare` is how a Scroll card uses it: no show-cards buttons or between-hands bar, and no confetti of its own. */
+export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const deviceId = useApp((s) => s.deviceId);
   const sending = useApp((s) => s.sending);
   const look = useApp((s) => s.look);
@@ -168,7 +160,7 @@ function Felt({ game }: { game: Game }) {
   const gained = won - (mySeat?.total ?? 0);
   const winKey = won > 0 && (hand?.result?.showdown ? gained > 0 : gained >= game.settings.bigBlind) ? hand!.number : 0;
   useEffect(() => {
-    if (!winKey) return;
+    if (!winKey || bare) return;
     haptic('success');
     confetti(CONFETTI.win, { x: innerWidth / 2, y: innerHeight * 0.75 });
   }, [winKey]);
@@ -224,9 +216,10 @@ function Felt({ game }: { game: Game }) {
   // The pot counts down to nothing as it's pushed to the winner.
   const potNow = hand && !hand.result ? pot(hand) : 0;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
-  const canShow = !!hand?.result && !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
+  const canShow = !bare && !!hand?.result && !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
   // The host can turn every bot's cards over once the hand is done.
   const canReveal =
+    !bare &&
     !!hand?.result &&
     game.hostDeviceId === deviceId &&
     hand.seats.some((s) => !s.shown && game.players.find((p) => p.id === s.playerId)?.bot);
@@ -331,7 +324,7 @@ function Felt({ game }: { game: Game }) {
       </div>
 
       <div className="action-area">
-        <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />
+        {bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />}
       </div>
 
       <div className={`me-area${canShow || canReveal ? ' has-show' : ''}`}>

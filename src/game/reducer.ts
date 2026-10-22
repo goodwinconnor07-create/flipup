@@ -457,6 +457,11 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
       game.first = { settings: { ...game.settings }, bots: game.players.filter((p) => p.bot).length };
+      // A Scroll card deals straight away: the intro popup has already given the table its moment.
+      if (game.card) {
+        startHand(game, ctx);
+        return done();
+      }
       // A few seconds to take the table in, with a word from a bot, before the first cards come.
       game.nextHandAt = ctx.now + TIMING.startDelay;
       const bots = game.players.filter((p) => p.bot);

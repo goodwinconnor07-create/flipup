@@ -41,7 +41,6 @@ export function Final({ game }: { game: Game }) {
   const me = game.players.find((p) => p.deviceId === deviceId);
   const host = game.hostDeviceId === deviceId;
   const hostName = game.players.find((p) => p.deviceId === game.hostDeviceId)?.name ?? 'the host';
-  const challenge = useApp((s) => !!s.session?.challenge);
   const asked = !!me && !!game.again?.includes(me.id);
   const waiting = (game.again ?? []).filter((id) => game.players.some((p) => p.id === id)).length;
   const podium = rows.length >= 2;
@@ -114,7 +113,7 @@ export function Final({ game }: { game: Game }) {
         )}
       </div>
       <div className="screen-foot">
-        {me && !challenge && step >= 3 && (
+        {me && step >= 3 && (
           <>
             {host ? (
               <button type="button" className="btn btn-xl btn-blue" onClick={() => dispatch({ type: 'playAgain' })}>
@@ -131,7 +130,7 @@ export function Final({ game }: { game: Game }) {
             )}
           </>
         )}
-        <button type="button" className={`btn btn-xl ${me && !challenge && step >= 3 ? 'btn-ghost' : 'btn-dark'}`} onClick={closeTable}>
+        <button type="button" className={`btn btn-xl ${me && step >= 3 ? 'btn-ghost' : 'btn-dark'}`} onClick={closeTable}>
           Done
         </button>
         <button type="button" className="btn btn-link" onClick={openLog}>

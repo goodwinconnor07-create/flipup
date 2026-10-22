@@ -556,6 +556,37 @@ export function jamOutcome(im: Imagined, opps: Opponent[], prices: number[]): { 
   return { fold: sw > 0 ? sFold / sw : 0, eqCalled: sCont > 0 ? sWin / sCont : 0.5 };
 }
 
+/**
+ * Deals one opponent a hand that fits their story: the starting hands their play before the flop could have been,
+ * weighted by how well each fits every move they made after it. `dead` holds cards that can't be theirs (yours, the
+ * whole board, anything else already dealt). Used to give a Scroll card's bot a hand that matches the line it played.
+ */
+export function sampleHand(opp: Opponent, range: Float64Array, board: CardInt[], dead: ReadonlySet<number>, rng: () => number): Card2 | null {
+  const boards: Partial<Record<Street, BoardInfo>> = {};
+  for (const st of ['flop', 'turn', 'river'] as const) if (board.length >= STREET_CARDS[st]) boards[st] = boardInfo(board.slice(0, STREET_CARDS[st]));
+  const scratch: CardInt[] = [];
+  const w = new Float64Array(COMBOS.length);
+  let total = 0;
+  for (let i = 0; i < COMBOS.length; i++) {
+    const [a, b] = COMBOS[i];
+    if (dead.has(a) || dead.has(b)) continue;
+    let x = range[COMBO_CLASS[i]];
+    for (const mv of opp.story.post) {
+      const info = boards[mv.street];
+      if (info) x *= moveLikelihood(mv, tierWith(a, b, info, scratch), opp.read);
+    }
+    w[i] = x;
+    total += x;
+  }
+  if (total <= 0) return null;
+  let pick = rng() * total;
+  for (let i = 0; i < COMBOS.length; i++) {
+    pick -= w[i];
+    if (pick < 0 && w[i] > 0) return [COMBOS[i][0], COMBOS[i][1]];
+  }
+  return null;
+}
+
 export const intsOf = (cards: string[]) => cards.map(toInt);
 export const boardCards = (hand: Hand) => hand.board.slice(0, STREET_CARDS[hand.street]).map(toInt);
 

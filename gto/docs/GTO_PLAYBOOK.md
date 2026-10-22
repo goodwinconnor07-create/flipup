@@ -299,16 +299,21 @@ game without storing it.
 | 200 | 0.113 |
 | 32,000 | 0.030 |
 | 71,000 | 0.023 |
+| 432,000 | 0.020 |
 | (ignore the ranges) | 0.25 |
 
 Turn solves (BTN vs BB ranges, pot 12bb, 94bb behind; turn and river 33/75/125%) with river leaves
 against the full solve, BB's turn strategy (check / 33%) and BB's average hand value:
 
-| Turn board | Full | River network (71k) | Time |
-|---|---|---|---|
-| Qh9h4c2s | 91 / 9, 0.382 | 87 / 11, 0.378 | 21s -> 5.5s |
-| Ks8d3c7h | 91 / 9, 0.397 | 88 / 8, 0.387 | 21s -> 8.5s |
-| 8h7h5c2d | 74 / 24, 0.430 | 69 / 27, 0.432 | 22s -> 5.8s |
+| Turn board | Full | River network (71k) | River network (432k) | Time |
+|---|---|---|---|---|
+| Qh9h4c2s | 91 / 9, 0.382 | 87 / 11, 0.378 | 91 / 7, 0.379 | 21s -> 5.5s |
+| Ks8d3c7h | 91 / 9, 0.397 | 88 / 8, 0.387 | 91 / 4, 0.387 | 21s -> 8.6s |
+| 8h7h5c2d | 74 / 24, 0.430 | 69 / 27, 0.432 | 70 / 26, 0.434 | 22s -> 5.7s |
+
+The first turn network (5,730 spots, error 0.049) makes flop solves take about 1s instead of 60-100s but
+isn't accurate yet: BB check-raises a 33% c-bet 5-6% (live tree 15%, published 14%), and on Qh9h4c BTN
+checks 61% (live 32%). More turn data is being generated.
 
 Memory drops from 202MB to 1MB. The turn network (hands bucketed by mean river strength x its
 spread, 16 x 4) is trained from full turn solves the same way; with it a flop solve can stop at the

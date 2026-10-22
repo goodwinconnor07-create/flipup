@@ -74,6 +74,15 @@ def load_flop_library(root, part):
         files = sorted(glob.glob(os.path.join(root, name, "*.npz")))
         if name not in SPOTS or not files:
             continue
+        # Only the unbroken start of the shuffled flop order: a fair sample of boards. (Extra flops,
+        # e.g. the low ones the first runs solved in card order, would skew it.)
+        have = {os.path.basename(f)[:-4] for f in files}
+        prefix = []
+        for c, _ in canonical_flops():
+            if flop_name(c) not in have:
+                break
+            prefix.append(os.path.join(root, name, f"{flop_name(c)}.npz"))
+        files = prefix
         sel = [f for i, f in enumerate(files) if part is None or i % 2 == part]
         acc = np.zeros((2, 3, 169))
         for f in sel:

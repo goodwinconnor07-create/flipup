@@ -1286,10 +1286,11 @@ html.calm .pod.won .pod-pic {
 }
 
 /* A long line wraps to a second line instead of running past the seat into its neighbours. The width
-   limit is a seat's share of the row, plus a little, so bubbles side by side stay clear of each other. */
+   limit is a seat's share of the row, plus some. There's only room above a seat for two lines, so it
+   has to be wide enough that the longest table talk never needs a third. */
 .bubble-react {
   width: max-content;
-  max-width: 104px;
+  max-width: 150px;
   white-space: normal;
   text-align: center;
   text-wrap: balance;
@@ -1305,7 +1306,7 @@ html.calm .pod.won .pod-pic {
 
 @supports (width: 1cqw) {
   .pod .bubble-react {
-    max-width: calc(100cqw / max(var(--n, 4), 1) + 8px);
+    max-width: calc(100cqw / max(var(--n, 4), 1) + 56px);
   }
 }
 

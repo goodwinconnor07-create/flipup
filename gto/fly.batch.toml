@@ -1,0 +1,7 @@
+# Fly.io app for one-off batch solving (scripts/flop_library.py). No web service: machines are started
+# by hand with `fly machine run` and stopped (or destroyed) when their shard is done.
+app = "flipup-gto-batch"
+primary_region = "lhr"
+
+[build]
+  dockerfile = "Dockerfile"

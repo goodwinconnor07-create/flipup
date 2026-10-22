@@ -232,6 +232,8 @@ export interface PreSpot {
   limpers: number;
   /** The last raise in big blinds. */
   raiseBb: number;
+  /** Players dealt into the hand. */
+  players: number;
 }
 
 /** Call and raise chances for the bot's hand before the flop, straight from GTO. */
@@ -277,7 +279,15 @@ export function preflopGto(game: Game, hand: Hand, seat: Seat, cls: string = han
     if (raisers.length === 0) f = { call: 0, raise: st > 0.6 ? 0.8 : 0 };
   }
   const last = raisers[raisers.length - 1];
-  return { ...f, spot, raiser: last?.playerId ?? null, limpers, raiseBb: last ? last.to / bb : 1 };
+  return { ...f, spot, raiser: last?.playerId ?? null, limpers, raiseBb: last ? last.to / bb : 1, players: n };
+}
+
+/** How far a tight style's cutoff comes down heads-up, by the same amount for every tight style so they keep their order (nothing at six players or more). */
+const SHORT_TIGHT = 0.14;
+
+/** A tight style's cutoff (a share of all hands) for the number of players dealt in. */
+export function tightLine(tight: number, players: number): number {
+  return tight > 0 ? tight - (SHORT_TIGHT * Math.max(0, 6 - players)) / 4 : 0;
 }
 
 /** Bends the GTO chart by the bot's style and what it has seen of the raiser (or the table). */
@@ -286,10 +296,12 @@ function styledPreflop(style: Style, cls: string, g: PreSpot, read: Read, canLim
   let call = g.call;
   let raise = g.raise;
   const p = style.pre;
-  // Tight: drop the weaker part of the range.
-  if (p.tight > 0 && st < p.tight) {
+  // Tight: drop the weaker part of the range. The line is a share of all hands, so it comes down as the table
+  // shrinks (a hand that's marginal with eight others behind is a fair one heads-up).
+  const tight = tightLine(p.tight, g.players);
+  if (p.tight > 0 && st < tight) {
     // A soft edge, so hands just under the line still get played now and then.
-    const k = Math.max(0, 1 - (p.tight - st) / 0.08);
+    const k = Math.max(0, 1 - (tight - st) / 0.08);
     call *= k;
     raise *= k;
   }
@@ -750,6 +762,9 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   }
   // Nobody folds the near-nuts.
   if (!o.canCheck && eqRange > 0.92) probs[0] = 0;
+  // Nor a hand that's far ahead of the price: when the call costs a small part of the pot and its chance of winning
+  // is several times what the call needs, folding is a blunder, whatever the style (choice noise and nerves included).
+  if (!o.canCheck && eqRange > 0.5 && eqRange > 3 * (o.toCall / (pot + o.toCall))) probs[0] = 0;
   const c = pick(rng, probs);
   const chosen = opts[c];
   tracer?.({ street: hand.street, style: style.id, cards: seat.cards.join(''), board: hand.board.join(''), myTier, eqRange, eqNaive, eq, pot, toCall: o.toCall, behind, quality: im.quality, opts: opts.map((x, i) => `${x.move.move}${x.move.to ?? ''}:${(x.value / pot).toFixed(2)}:${probs[i].toFixed(2)}`).join(' '), chose: `${chosen.move.move}${chosen.move.to ?? ''}` });

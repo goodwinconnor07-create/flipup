@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import parity from './botPlay.parity.json';
-import { boardTexture, category, decide, handBucket, updateReads } from './botPlay';
+import { boardTexture, category, decide, handBucket, tightLine, updateReads } from './botPlay';
 import { readOf } from './botRange';
 import { score, toInt } from './botEval';
 import { simulate, simulateTable } from './botSim';
@@ -376,3 +376,86 @@ describe('bots', () => {
   }, 60_000);
 });
 
+
+describe('bot blunders and table size', () => {
+  /** A river spot built on a real hand: the bot holds a full house and has been raised all in for 30 more into a pot of about 1,500. */
+  function riverSpot(botName: string) {
+    let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 1, botNames: [botName], code: null, now: 0 });
+    const rng = seededRng(3);
+    let now = 0;
+    const go = (action: Parameters<typeof applyAction>[1], deviceId: string) => {
+      const r = applyAction(g, action, { deviceId, now, rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    };
+    go({ type: 'start' }, 'h');
+    for (let i = 0; i < 20 && !g.hand; i++) {
+      now = Math.max(now + 1, g.wakeAt ?? now + 1000);
+      go({ type: 'tick' }, 'server');
+    }
+    const hand = g.hand!;
+    const me = g.players[0];
+    const bot = g.players[1];
+    const mine = hand.seats.find((s) => s.playerId === bot.id)!;
+    const theirs = hand.seats.find((s) => s.playerId === me.id)!;
+    hand.street = 'river';
+    hand.board = ['9s', '7s', '7d', '5d', 'Td'];
+    hand.deck = [];
+    mine.cards = ['9h', '9c'];
+    theirs.cards = ['Ad', 'Qd'];
+    mine.bet = 650;
+    mine.total = 725;
+    theirs.bet = 680;
+    theirs.total = 755;
+    theirs.allIn = true;
+    me.stack = 0;
+    bot.stack = 275;
+    hand.currentBet = 680;
+    hand.minRaise = 650;
+    hand.toAct = bot.id;
+    hand.aggressorId = me.id;
+    hand.actions = [
+      { street: 'preflop', playerId: bot.id, move: 'raise', to: 30 },
+      { street: 'preflop', playerId: me.id, move: 'call', to: 30 },
+      { street: 'flop', playerId: me.id, move: 'check', to: 0 },
+      { street: 'flop', playerId: bot.id, move: 'bet', to: 100 },
+      { street: 'flop', playerId: me.id, move: 'call', to: 100 },
+      { street: 'turn', playerId: me.id, move: 'check', to: 0 },
+      { street: 'turn', playerId: bot.id, move: 'bet', to: 125 },
+      { street: 'turn', playerId: me.id, move: 'call', to: 125 },
+      { street: 'river', playerId: bot.id, move: 'bet', to: 650 },
+      { street: 'river', playerId: me.id, move: 'allin', to: 680 },
+    ];
+    return { g, hand, mine };
+  }
+
+  it('never folds a full house for 30 chips into a pot of 1,500, whoever is holding it', () => {
+    // 'Ivy' is a nervous bot: its choice noise used to throw hands like this away in about one spot in seven.
+    for (const name of ['Ivy', 'Max', 'Luna', 'Kai']) {
+      const { g, hand, mine } = riverSpot(name);
+      for (let i = 0; i < 150; i++) expect(decide(g, hand, mine, seededRng(i)).move.move, `${name} seed ${i}`).not.toBe('fold');
+    }
+  });
+
+  it('still lets a nervous bot fold a so-so hand to a big bet (the floor is for clear blunders only)', () => {
+    const { g, hand, mine } = riverSpot('Ivy');
+    mine.cards = ['Kd', '2c'];
+    hand.board = ['9s', '7s', '3d', '5d', 'Td'];
+    let folds = 0;
+    for (let i = 0; i < 150; i++) if (decide(g, hand, mine, seededRng(i)).move.move === 'fold') folds++;
+    expect(folds).toBeGreaterThan(60);
+  });
+
+  it('brings a tight style\'s cutoff down as the table shrinks, the same amount for each, so their order stays', () => {
+    const tight = ['rock', 'tag', 'trapper', 'nervous'].map((s) => STYLES[s as keyof typeof STYLES].pre.tight);
+    expect(tight.every((t, i) => i === 0 || t < tight[i - 1])).toBe(true);
+    for (const players of [6, 7, 9]) for (const t of tight) expect(tightLine(t, players)).toBe(t);
+    for (const players of [2, 3, 4, 5]) {
+      const lines = tight.map((t) => tightLine(t, players));
+      lines.forEach((l, i) => expect(l).toBeLessThan(tight[i]));
+      expect(lines.every((l, i) => i === 0 || l < lines[i - 1])).toBe(true);
+    }
+    expect(tightLine(0, 2)).toBe(0);
+    expect(tightLine(STYLES.rock.pre.tight, 2)).toBeGreaterThan(STYLES.tag.pre.tight - 0.14);
+  });
+});

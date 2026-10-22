@@ -35,6 +35,7 @@ const char* node_type_name(NodeType t) {
     case NodeType::FOLD: return "fold";
     case NodeType::SHOWDOWN: return "showdown";
     case NodeType::ALLIN: return "allin";
+    case NodeType::LEAF: return "leaf";
   }
   return "?";
 }
@@ -293,6 +294,11 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("rake_cap", &TreeConfig::rake_cap)
       .def_readwrite("compress", &TreeConfig::compress)
       .def_readwrite("max_memory_mb", &TreeConfig::max_memory_mb)
+      .def_readwrite("leaf_street", &TreeConfig::leaf_street)
+      .def_readwrite("leaf_k", &TreeConfig::leaf_k)
+      .def_readwrite("leaf_w", &TreeConfig::leaf_w)
+      .def_readwrite("leaf_b", &TreeConfig::leaf_b)
+      .def_readwrite("leaf_alpha", &TreeConfig::leaf_alpha)
       .def_readwrite("averaging", &TreeConfig::averaging)
       .def("set_sizes",
            [](TreeConfig& c, int player, int street, const StreetSizes& s) {

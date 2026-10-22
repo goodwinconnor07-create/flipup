@@ -64,9 +64,19 @@ struct TreeConfig {
   // the regrets plus the last instantaneous regret as a prediction. Needs ~50% more memory.
   bool predictive = false;
   std::array<std::vector<float>, 2> range;  // 1326 weights per player (0 = not in range)
+  // Depth-limited solving (DeepStack-style): when leaf_street is 2 and the root is the turn, the river
+  // is not dealt; each point where it would be is a LEAF valued by a small network. The network maps
+  // both players' range mass over leaf_k river-strength buckets plus log(1 + SPR) to each player's
+  // value per bucket (fraction of the pot). Layers: weights [out][in] row-major, biases, and one
+  // PReLU slope per hidden layer.
+  int leaf_street = -1;
+  int leaf_k = 0;
+  std::vector<std::vector<float>> leaf_w;
+  std::vector<std::vector<float>> leaf_b;
+  std::vector<float> leaf_alpha;
 };
 
-enum class NodeType : uint8_t { ACTION, CHANCE, FOLD, SHOWDOWN, ALLIN };
+enum class NodeType : uint8_t { ACTION, CHANCE, FOLD, SHOWDOWN, ALLIN, LEAF };
 
 struct Action {
   enum Type : uint8_t { FOLD, CHECK, CALL, BET, RAISE };
@@ -186,7 +196,11 @@ class Solver {
   // CFR.
   void cfr(int node_id, int p, const float* opp_reach, const float* own_reach, float* out,
            const Discount& d, int depth);
-  void evaluate(int node_id, int p, const float* opp_reach, float* out, EvalMode mode, int depth);
+  void evaluate(int node_id, int p, const float* opp_reach, const float* own_reach, float* out, EvalMode mode,
+                int depth);
+  void leaf_value(const Node& n, int p, const float* opp_reach, const float* own_reach, float* out) const;
+  void leaf_net(const float* in, float* out) const;
+  void init_leaf();
   void terminal_value(const Node& n, int p, const float* opp_reach, float* out) const;
   void showdown_diff(int p, const float* opp_reach, const RiverBoard& rb, float* diff, float* S = nullptr) const;
   void allin_diff(int p, const float* opp_reach, CardMask board, float* diff) const;
@@ -243,6 +257,8 @@ class Solver {
   std::vector<RiverBoard> river_boards_;
 
   int iteration_ = 0;
+  // Leaf support: river-strength percentile of each hand per river card ([player][card][hand], -1 = blocked).
+  std::array<std::vector<std::vector<float>>, 2> leaf_rank_;
   double pair_mass_ = 0;  // sum over non-conflicting hand pairs of w0 * w1
   std::atomic<bool> stop_flag_{false};
 };

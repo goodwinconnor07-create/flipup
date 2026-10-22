@@ -151,7 +151,7 @@ class PostflopSolver:
     def __init__(self, board, pot: float, stack: float, oop_range, ip_range,
                  sizing: BetSizing | None = None, rake_rate: float = 0.0, rake_cap: float = 0.0,
                  min_bet: float = 1.0, threads: int | None = None, compress: bool = False,
-                 max_memory_mb: float = 0.0):
+                 max_memory_mb: float = 0.0, leaf: dict | None = None):
         if threads:
             os.environ["OMP_NUM_THREADS"] = str(threads)
         self.board = parse_cards(board)
@@ -171,6 +171,13 @@ class PostflopSolver:
         cfg.rake_cap = rake_cap
         cfg.compress = compress
         cfg.max_memory_mb = max_memory_mb
+        if leaf is not None:
+            # Depth-limited: the river is valued by a network (flipup_gto.valuenet.load) instead of dealt.
+            cfg.leaf_street = 2
+            cfg.leaf_k = leaf["k"]
+            cfg.leaf_w = [w.ravel().tolist() for w in leaf["w"]]
+            cfg.leaf_b = [b.tolist() for b in leaf["b"]]
+            cfg.leaf_alpha = list(leaf["alpha"])
         for p in range(2):
             for st in range(3):
                 ss = self.sizing.get(p, st)

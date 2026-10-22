@@ -107,7 +107,8 @@ Solver::Solver(const TreeConfig& config) : cfg_(config) {
     if (cfg_.predictive) pred_.assign(offset, 0.0f);
   }
 
-  init_river_boards();
+  init_river_boards();  // all-in runouts on the turn still need them
+  if (cfg_.leaf_street >= 0) init_leaf();
 
   std::vector<float> S(hands_[0].size());
   nonconflict_mass(0, init_weight_[1].data(), S.data());
@@ -407,6 +408,22 @@ int Solver::make_terminal_or_next(const BuildState& s, uint8_t dealt_suits) {
     int id = static_cast<int>(nodes_.size());
     Node t{};
     t.type = (s.street == 2) ? NodeType::SHOWDOWN : NodeType::ALLIN;
+    t.player = -1;
+    t.street = static_cast<int8_t>(s.street);
+    t.pot = s.pot;
+    t.contrib[0] = s.contrib[0];
+    t.contrib[1] = s.contrib[1];
+    t.stack[0] = s.stack[0];
+    t.stack[1] = s.stack[1];
+    t.board = s.board;
+    nodes_.push_back(t);
+    return id;
+  }
+
+  if (cfg_.leaf_street == s.street + 1) {
+    int id = static_cast<int>(nodes_.size());
+    Node t{};
+    t.type = NodeType::LEAF;
     t.player = -1;
     t.street = static_cast<int8_t>(s.street);
     t.pot = s.pot;
@@ -814,6 +831,138 @@ void Solver::terminal_value(const Node& n, int p, const float* opp_reach, float*
 }
 
 // ---------------------------------------------------------------------------
+// Depth-limited leaves (value network)
+// ---------------------------------------------------------------------------
+
+void Solver::init_leaf() {
+  if (cfg_.leaf_street != 2 || root_board_.size() != 4)
+    throw std::invalid_argument("leaves are supported at the river of a turn solve");
+  if (cfg_.leaf_k <= 0 || cfg_.leaf_w.empty() || cfg_.leaf_w.size() != cfg_.leaf_b.size() ||
+      cfg_.leaf_alpha.size() + 1 != cfg_.leaf_w.size())
+    throw std::invalid_argument("leaf network missing or malformed");
+  // Percentile of every live combo's river strength (ties share their mid-rank), per river card.
+  for (int p = 0; p < 2; ++p) leaf_rank_[p].assign(NUM_CARDS, {});
+  std::vector<int> cards;
+  for (int c = 0; c < NUM_CARDS; ++c)
+    if (!(root_mask_ & card_bit(c))) cards.push_back(c);
+#pragma omp parallel for schedule(dynamic, 2)
+  for (size_t i = 0; i < cards.size(); ++i) {
+    const int c = cards[i];
+    const CardMask b = root_mask_ | card_bit(c);
+    std::vector<std::pair<uint32_t, int>> all;
+    all.reserve(NUM_COMBOS);
+    for (int combo = 0; combo < NUM_COMBOS; ++combo) {
+      CardMask hm = combo_mask(combo);
+      if (hm & b) continue;
+      all.push_back({evaluate_mask(b | hm), combo});
+    }
+    std::sort(all.begin(), all.end());
+    std::vector<float> pct(NUM_COMBOS, -1.0f);
+    const double total = static_cast<double>(all.size());
+    for (size_t a = 0; a < all.size();) {
+      size_t z = a;
+      while (z + 1 < all.size() && all[z + 1].first == all[a].first) ++z;
+      const float r = static_cast<float>(((a + z) / 2.0 + 0.5) / total);
+      for (size_t t = a; t <= z; ++t) pct[all[t].second] = r;
+      a = z + 1;
+    }
+    for (int p = 0; p < 2; ++p) {
+      auto& v = leaf_rank_[p][c];
+      v.resize(hands_[p].size());
+      for (size_t h = 0; h < hands_[p].size(); ++h) v[h] = pct[hands_[p][h].combo];
+    }
+  }
+}
+
+void Solver::leaf_net(const float* in, float* out) const {
+  thread_local std::vector<float> a, b;
+  const size_t nl = cfg_.leaf_w.size();
+  size_t dim = 2 * static_cast<size_t>(cfg_.leaf_k) + 1;
+  a.assign(in, in + dim);
+  for (size_t l = 0; l < nl; ++l) {
+    const auto& W = cfg_.leaf_w[l];
+    const auto& B = cfg_.leaf_b[l];
+    const size_t od = B.size();
+    b.assign(od, 0.0f);
+    for (size_t j = 0; j < od; ++j) {
+      const float* row = W.data() + j * dim;
+      const float* av = a.data();
+      float s = 0.0f;
+#pragma omp simd reduction(+ : s)
+      for (size_t i = 0; i < dim; ++i) s += row[i] * av[i];
+      s += B[j];
+      if (l + 1 < nl && s < 0) s *= cfg_.leaf_alpha[l];
+      b[j] = s;
+    }
+    a.swap(b);
+    dim = od;
+  }
+  std::copy(a.begin(), a.end(), out);
+}
+
+void Solver::leaf_value(const Node& n, int p, const float* opp_reach, const float* own_reach, float* out) const {
+  const int o = 1 - p;
+  const int K = cfg_.leaf_k;
+  const size_t np = hands_[p].size();
+  const size_t no = hands_[o].size();
+  std::fill(out, out + np, 0.0f);
+  const float w = 1.0f / static_cast<float>(NUM_CARDS - __builtin_popcountll(n.board) - 4);
+  const double P = n.pot;
+  const float spr = static_cast<float>(std::min(n.stack[0], n.stack[1]) / P);
+  const float cf = static_cast<float>(n.contrib[p]);
+  thread_local std::vector<float> opp, S, x, v;
+  opp.resize(no);
+  S.resize(np);
+  x.resize(2 * K + 1);
+  v.resize(2 * K);
+  for (int c = 0; c < NUM_CARDS; ++c) {
+    if (n.board & card_bit(c)) continue;
+    const auto& rp = leaf_rank_[p][c];
+    const auto& ro = leaf_rank_[o][c];
+    std::fill(x.begin(), x.end(), 0.0f);
+    float* mp = x.data() + p * K;
+    float* mo = x.data() + o * K;
+    double sp = 0, so = 0;
+    for (size_t h = 0; h < np; ++h) {
+      if (rp[h] < 0) continue;
+      mp[std::min(static_cast<int>(rp[h] * K), K - 1)] += own_reach[h];
+      sp += own_reach[h];
+    }
+    for (size_t i = 0; i < no; ++i) {
+      opp[i] = ro[i] < 0 ? 0.0f : opp_reach[i] * w;
+      if (ro[i] < 0) continue;
+      mo[std::min(static_cast<int>(ro[i] * K), K - 1)] += opp_reach[i];
+      so += opp_reach[i];
+    }
+    if (so <= 0) continue;
+    for (int k = 0; k < K; ++k) mo[k] = static_cast<float>(mo[k] / so);
+    if (sp > 0) {
+      for (int k = 0; k < K; ++k) mp[k] = static_cast<float>(mp[k] / sp);
+    } else {
+      for (int k = 0; k < K; ++k) mp[k] = 1.0f / K;  // no own range here: values for a neutral range
+    }
+    x[2 * K] = std::log1p(spr);
+    leaf_net(x.data(), v.data());
+    // Zero-sum correction: range-weighted values of both players add up to the pot.
+    double tot = 0;
+    for (int k = 0; k < 2 * K; ++k) tot += static_cast<double>(x[k]) * v[k];
+    const float err = static_cast<float>((tot - 1.0) / 2.0);
+    const float* vp = v.data() + p * K;
+    nonconflict_mass(p, opp.data(), S.data());
+    for (size_t h = 0; h < np; ++h) {
+      if (rp[h] < 0) continue;
+      float pos = rp[h] * K - 0.5f;
+      int lo = static_cast<int>(std::floor(pos));
+      float f = pos - lo;
+      if (lo < 0) { lo = 0; f = 0; }
+      if (lo >= K - 1) { lo = K - 1; f = 0; }
+      const float val = (lo + 1 < K ? vp[lo] * (1 - f) + vp[lo + 1] * f : vp[lo]) - err;
+      out[h] += (val * static_cast<float>(P) - cf) * S[h];
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // CFR traversal
 // ---------------------------------------------------------------------------
 
@@ -901,6 +1050,10 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
 
   if (n.type == NodeType::FOLD || n.type == NodeType::SHOWDOWN || n.type == NodeType::ALLIN) {
     terminal_value(n, p, opp_reach, out);
+    return;
+  }
+  if (n.type == NodeType::LEAF) {
+    leaf_value(n, p, opp_reach, own_reach, out);
     return;
   }
 
@@ -1024,7 +1177,8 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
   }
 }
 
-void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, EvalMode mode, int depth) {
+void Solver::evaluate(int node_id, int p, const float* opp_reach, const float* own_reach, float* out,
+                      EvalMode mode, int depth) {
   const Node& n = nodes_[node_id];
   const int o = 1 - p;
   const size_t np = hands_[p].size();
@@ -1032,6 +1186,10 @@ void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, Ev
 
   if (n.type == NodeType::FOLD || n.type == NodeType::SHOWDOWN || n.type == NodeType::ALLIN) {
     terminal_value(n, p, opp_reach, out);
+    return;
+  }
+  if (n.type == NodeType::LEAF) {
+    leaf_value(n, p, opp_reach, own_reach, out);
     return;
   }
   float opp_total = 0;
@@ -1047,9 +1205,11 @@ void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, Ev
     Scratch results(static_cast<size_t>(K) * np);
     auto run_child = [&](int k) {
       int card = chance_cards_[n.child_begin + k];
-      Scratch child_opp(no);
+      Scratch child_opp(no), child_own(np);
       deal_reach(opp_reach, child_opp.get(), no, w, hands_with_card_[o][card]);
-      evaluate(children_[n.child_begin + k], p, child_opp.get(), results.get() + k * np, mode, depth + 1);
+      deal_reach(own_reach, child_own.get(), np, 1.0f, hands_with_card_[p][card]);
+      evaluate(children_[n.child_begin + k], p, child_opp.get(), child_own.get(), results.get() + k * np, mode,
+               depth + 1);
     };
     if (parallel_here(depth)) {
 #pragma omp taskloop grainsize(1)
@@ -1069,12 +1229,15 @@ void Solver::evaluate(int node_id, int p, const float* opp_reach, float* out, Ev
   Scratch results(static_cast<size_t>(na) * np);
   auto run_child = [&](int a) {
     if (q == p) {
-      evaluate(children_[n.child_begin + a], p, opp_reach, results.get() + a * np, mode, depth + 1);
+      Scratch child_own(np);
+      const float* sa = sigma.get() + a * np;
+      for (size_t h = 0; h < np; ++h) child_own[h] = own_reach[h] * sa[h];
+      evaluate(children_[n.child_begin + a], p, opp_reach, child_own.get(), results.get() + a * np, mode, depth + 1);
     } else {
       Scratch child_opp(no);
       const float* sa = sigma.get() + a * no;
       for (size_t i = 0; i < no; ++i) child_opp[i] = opp_reach[i] * sa[i];
-      evaluate(children_[n.child_begin + a], p, child_opp.get(), results.get() + a * np, mode, depth + 1);
+      evaluate(children_[n.child_begin + a], p, child_opp.get(), own_reach, results.get() + a * np, mode, depth + 1);
     }
   };
   if (parallel_here(depth) && na > 1) {
@@ -1142,7 +1305,7 @@ std::array<double, 2> Solver::root_ev() {
     std::vector<float> out(hands_[p].size());
 #pragma omp parallel
 #pragma omp single
-    evaluate(0, p, init_weight_[1 - p].data(), out.data(), EvalMode::AVERAGE, 0);
+    evaluate(0, p, init_weight_[1 - p].data(), init_weight_[p].data(), out.data(), EvalMode::AVERAGE, 0);
     double s = 0;
     for (size_t h = 0; h < out.size(); ++h) s += static_cast<double>(init_weight_[p][h]) * out[h];
     ev[p] = s / pair_mass_;
@@ -1157,7 +1320,7 @@ double Solver::exploitability() {
     std::vector<float> out(hands_[p].size());
 #pragma omp parallel
 #pragma omp single
-    evaluate(0, p, init_weight_[1 - p].data(), out.data(), EvalMode::BEST_RESPONSE, 0);
+    evaluate(0, p, init_weight_[1 - p].data(), init_weight_[p].data(), out.data(), EvalMode::BEST_RESPONSE, 0);
     double s = 0;
     for (size_t h = 0; h < out.size(); ++h) s += static_cast<double>(init_weight_[p][h]) * out[h];
     gap += s / pair_mass_ - ev[p];
@@ -1316,10 +1479,11 @@ NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity, b
     std::vector<float> aev(static_cast<size_t>(na) * nq);
     for (int a = 0; a < na; ++a) {
       info.actions.push_back(actions_[n.child_begin + a]);
-      std::vector<float> cfv(nq);
+      std::vector<float> cfv(nq), own(nq);
+      for (size_t h = 0; h < nq; ++h) own[h] = reach[q][h] * sigma[a * nq + h];
 #pragma omp parallel
 #pragma omp single
-      evaluate(children_[n.child_begin + a], q, reach[1 - q].data(), cfv.data(), EvalMode::AVERAGE, 0);
+      evaluate(children_[n.child_begin + a], q, reach[1 - q].data(), own.data(), cfv.data(), EvalMode::AVERAGE, 0);
       normalize_ev(q, cfv);
       std::copy(cfv.begin(), cfv.end(), aev.begin() + a * nq);
     }
@@ -1338,14 +1502,14 @@ NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity, b
     ev_tree[o].resize(hands_[o].size());
 #pragma omp parallel
 #pragma omp single
-    evaluate(node_id, o, reach[q].data(), ev_tree[o].data(), EvalMode::AVERAGE, 0);
+    evaluate(node_id, o, reach[q].data(), reach[o].data(), ev_tree[o].data(), EvalMode::AVERAGE, 0);
     normalize_ev(o, ev_tree[o]);
   } else {
     for (int p = 0; p < 2; ++p) {
       ev_tree[p].resize(hands_[p].size());
 #pragma omp parallel
 #pragma omp single
-      evaluate(node_id, p, reach[1 - p].data(), ev_tree[p].data(), EvalMode::AVERAGE, 0);
+      evaluate(node_id, p, reach[1 - p].data(), reach[p].data(), ev_tree[p].data(), EvalMode::AVERAGE, 0);
       normalize_ev(p, ev_tree[p]);
     }
   }

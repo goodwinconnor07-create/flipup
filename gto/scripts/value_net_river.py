@@ -61,7 +61,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=100)
     ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out", required=True, help="path prefix: chunks are written as <out>_000.npz, <out>_001.npz, ...")
+    ap.add_argument("--chunk", type=int, default=1000, help="samples per chunk file")
     ap.add_argument("--iterations", type=int, default=400)
     ap.add_argument("--target", type=float, default=0.2)
     args = ap.parse_args()
@@ -75,8 +76,12 @@ def main():
         X.append(x); Y.append(y); E.append(ev.astype(np.float16)); B.append(board); M.append([pot, spr, st.exploitability_pct])
         if (i + 1) % 25 == 0 or i + 1 == args.n:
             print(f"{i + 1}/{args.n} {time.time() - t0:.0f}s (last {st.exploitability_pct:.2f}% in {st.iteration} its)", flush=True)
-            np.savez_compressed(args.out, x=np.asarray(X), y=np.asarray(Y), combo_ev=np.asarray(E),
+        if len(X) == args.chunk or i + 1 == args.n:
+            out = f"{args.out}_{i // args.chunk:03d}.npz"
+            np.savez_compressed(out + ".tmp.npz", x=np.asarray(X), y=np.asarray(Y), combo_ev=np.asarray(E),
                                 board=np.asarray(B, dtype=np.int8), meta=np.asarray(M, dtype=np.float32))
+            os.replace(out + ".tmp.npz", out)  # a stopped run never leaves a half-written chunk
+            X, Y, E, B, M = [], [], [], [], []
 
 
 if __name__ == "__main__":

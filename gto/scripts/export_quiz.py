@@ -3,7 +3,8 @@
 Writes <out>/index.json ({"count", "shards": [file names]}) and <out>/hands-NNN.json (a list of
 hands). Each hand has all six seats, with the other four players' preflop folds put back in table
 order, so the app can replay it like any recorded hand. Only options in the solved tree are kept (each
-has GTO's frequency for the hand and its EV); `line` is the option the hand carries on with.
+has GTO's frequency for the hand and its EV); `line` is the option the hand carries on with. Moves
+with only one option in the tree play out on their own, and hands over before the flop are left out.
 
     python3 scripts/export_quiz.py quiz/*.jsonl --out ../public/gto/quiz
 """
@@ -49,8 +50,10 @@ def pack(h: dict) -> dict | None:
     for d in h["decisions"]:
         opts = [o for o in d["options"] if o.get("ev_bb") is not None]
         step = h["steps"][d["step"]]
+        if len(opts) < 2:
+            continue  # only one move in the solved tree (a check where it never leads): not a question
         line = next((k for k, o in enumerate(opts) if o["kind"] == step["kind"] and abs(o["to_bb"] - step["to_bb"]) < 0.01), None)
-        if line is None or len(opts) < 2:
+        if line is None:
             return None
         decisions.append({
             "at": orig[d["step"]], "pot": d["pot_bb"], "toCall": d["to_call_bb"],
@@ -58,6 +61,8 @@ def pack(h: dict) -> dict | None:
                          "ev": round(o["ev_bb"], 2)} for o in opts],
             "line": line,
         })
+    if not decisions or not h["board"]:
+        return None  # nothing to answer, or over before the flop
     return {
         "id": h["id"], "hero": hero, "villain": opp, "cards": h["hero"]["cards"], "villainCards": h["villain"]["cards"],
         "board": h["board"], "steps": [[s["street"][0], s["seat"], s["kind"], s["to_bb"]] for s in steps],

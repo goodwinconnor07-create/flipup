@@ -32,9 +32,74 @@ def sample(rng):
     ranks = vn.percentile(m)
     r0, r1 = vn.random_range(ranks, rng), vn.random_range(ranks, rng)
     pot = float(np.exp(rng.uniform(np.log(4), np.log(120))))
-    spr = float(np.exp(rng.uniform(np.log(0.1), np.log(12))))
+    spr = float(np.exp(rng.uniform(np.log(0.1), np.log(25))))
     spr = min(spr, 250.0 / pot)
     return board, vn.turn_buckets(m, s, vn.TURN_S_EDGES), r0, r1, pot, spr
+
+
+class LibraryRanges:
+    """Turn spots with the ranges real play brings there: a pre-solved flop (scripts/flop_library.py), a
+    flop line sampled from both players' strategies (checks, bets, raises, calls), both ranges after it,
+    and a random turn card. Random strength-sorted ranges never look like the polarized ranges after a
+    raise, so a network trained only on them undervalues raising."""
+
+    def __init__(self, root: str):
+        from flipup_gto.flop_library import SPOTS, Entry
+        from flipup_gto.review import PreflopCache, class_reach_to_combos
+        self.root, self.Entry = root, Entry
+        self.spots = [n for n in SPOTS if os.path.isdir(os.path.join(root, n))]
+        self.files = {n: sorted(os.listdir(os.path.join(root, n))) for n in self.spots}
+        spot = PreflopCache(os.environ.get("PREFLOP_CACHE", os.path.join(root, "preflop"))).get(6, 100)
+        self.init = {}
+        for n in self.spots:
+            path, ip, oop, _ = SPOTS[n]
+            info = spot.engine.query(spot.resolve(path))
+            self.init[n] = ({0: class_reach_to_combos(info["reach"][oop]), 1: class_reach_to_combos(info["reach"][ip])},
+                            float(info["pot"]), 100.0 - max(info["invested"]))
+
+    def sample(self, rng):
+        from flipup_gto.cards import parse_cards
+        for _ in range(50):
+            name = self.spots[rng.integers(len(self.spots))]
+            fname = self.files[name][rng.integers(len(self.files[name]))]
+            flop = parse_cards(fname[:-4])
+            entry = self.Entry(np.load(os.path.join(self.root, name, fname)), (0, 1, 2, 3))
+            init, pot, stack = self.init[name]
+            tokens, wager = [], [0.0, 0.0]
+            closed = False
+            while not closed:
+                node = entry.node(tokens)
+                if node is None:
+                    break
+                w = node["reach"].astype(np.float64)
+                freq = (node["strategy"] * w).sum(1) / max(w.sum(), 1e-12)
+                # Flattened (square root) so bets and raises, rare at GTO's own frequencies, show up often.
+                q = np.sqrt(np.maximum(freq, 0))
+                a = int(rng.choice(len(q), p=q / q.sum()))
+                act = node["actions"][a]
+                p = node["player"]
+                if act["type"] == "fold":
+                    break
+                if act["type"] in ("bet", "raise"):
+                    wager[p] = act["amount"]
+                elif act["type"] == "call":
+                    wager[p] = max(wager)
+                    closed = True
+                elif act["type"] == "check" and len(tokens) == 1:
+                    closed = True  # check-check
+                tokens.append(a)
+            if not closed or max(wager) >= stack - 1e-6:
+                continue
+            ranges = entry.ranges_after(tokens, init)
+            if ranges is None:
+                continue
+            turn = int(rng.choice([c for c in range(52) if c not in flop]))
+            board = flop + [turn]
+            m, s = vn.turn_stats(board)
+            new_pot = pot + 2 * max(wager)
+            return (board, vn.turn_buckets(m, s, vn.TURN_S_EDGES), np.asarray(ranges[0], dtype=np.float32),
+                    np.asarray(ranges[1], dtype=np.float32), new_pot, (stack - max(wager)) / new_pot)
+        return sample(rng)
 
 
 def masses(rng_w, buckets):
@@ -51,13 +116,15 @@ def main():
     ap.add_argument("--chunk", type=int, default=100, help="samples per chunk file")
     ap.add_argument("--iterations", type=int, default=300)
     ap.add_argument("--target", type=float, default=0.3)
+    ap.add_argument("--library", default="", help="flop library dir: half the spots get ranges from real flop lines")
     args = ap.parse_args()
     rng = np.random.default_rng(args.seed)
+    lib = LibraryRanges(args.library) if args.library else None
     X, Y, E, B, M = [], [], [], [], []
     t0 = time.time()
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
     for i in range(args.n):
-        board, buckets, r0, r1, pot, spr = sample(rng)
+        board, buckets, r0, r1, pot, spr = lib.sample(rng) if lib and rng.random() < 0.5 else sample(rng)
         s = PostflopSolver(board, pot, spr * pot, r0, r1, sizing=SIZING, compress=True)
         st = s.solve(args.iterations, args.target, 50)
         info = s.engine.query([], False, True)

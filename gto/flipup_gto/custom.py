@@ -54,7 +54,10 @@ class NeedsSolve(Exception):
         self.message = message
 
 
-def explorer_sizing(street: str, oop_leads: bool) -> BetSizing:
+LOW_SPR = 6.0  # flop stack-to-pot ratio below which the flop tree keeps turn and river all-ins
+
+
+def explorer_sizing(street: str, oop_leads: bool, spr: float | None = None) -> BetSizing:
     """GTO Wizard-style sizes on the street being solved, simpler later streets (re-solved when reached)."""
     rich = StreetSizing("33%, 75%, 125%", "60%")
     if street == "flop":
@@ -63,6 +66,12 @@ def explorer_sizing(street: str, oop_leads: bool) -> BetSizing:
         # Two raises, so a c-bet can re-raise a check-raise: with only one, betting looked far worse
         # than in the full game (K-Q-5 rainbow: 45% c-bet vs 65%; scripts/postflop_bench.py).
         sizes = {"flop": rich, "turn": StreetSizing("75%", ""), "river": StreetSizing("", "")}
+        if spr is not None and spr < LOW_SPR:
+            # With shallow stacks (3-bet pots) money left unbet on the river matters: without a way to get
+            # it in, small c-bets look much worse than in the full game (K-8-3 in a 3-bet pot: 29% small
+            # bets vs 81%). Turn and river all-ins fix most of it (65%) for about 30% more solve time.
+            sizes["turn"] = StreetSizing("75%, a", "")
+            sizes["river"] = StreetSizing("a", "")
         out = BetSizing(oop=dict(sizes), ip=dict(sizes), max_raises=2)
     elif street == "turn":
         sizes = {"flop": StreetSizing(), "turn": rich, "river": StreetSizing("75%", "60%")}
@@ -542,7 +551,7 @@ class Explorer:
                     continue
 
             def build(street=street, bstreet=bstreet, ranges=ranges, pot=pot, eff=eff, prev_aggr=prev_aggr):
-                sizing = explorer_sizing(street, oop_leads=prev_aggr != ip)
+                sizing = explorer_sizing(street, oop_leads=prev_aggr != ip, spr=eff / pot)
                 s = PostflopSolver(bstreet, pot, eff, ranges[oop], ranges[ip], sizing=sizing,
                                    compress=street == "flop", max_memory_mb=self.rv.settings.max_memory_mb)
                 return s

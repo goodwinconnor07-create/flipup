@@ -8,7 +8,7 @@ running), and two things are saved per (matchup, flop):
   * each hand class's EV share, equity and weight at the flop root for both players, which is what
     the preflop solver's realization model is fitted from (realization_dataset.py, at full scale).
 
-Flops are the 1,755 suit-isomorphic classes, ordered so the most frequent come first. Work is split
+Flops are the 1,755 suit-isomorphic classes in a fixed shuffled order (any prefix is a fair sample). Work is split
 with --shard i --of n, and a finished flop is never redone, so a stopped worker resumes.
 
     python3 scripts/flop_library.py --spots btn_bb,co_bb --shard 0 --of 4 --out /data/flops
@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import itertools
+import random
 import json
 import os
 import sys
@@ -39,13 +40,16 @@ ITERATIONS, TARGET = 200, 0.5
 
 
 def canonical_flops():
-    """[(cards, weight)] for the 1,755 suit-isomorphic flops, most frequent first."""
+    """[(cards, weight)] for the 1,755 suit-isomorphic flops in a fixed shuffled order, so any prefix
+    (a stopped run, one shard) is a fair sample of boards rather than all the low ones."""
     seen: dict[tuple, int] = {}
     perms = list(itertools.permutations(range(4)))
     for flop in itertools.combinations(range(52), 3):
         key = min(tuple(sorted((c // 4) * 4 + p[c % 4] for c in flop)) for p in perms)
         seen[key] = seen.get(key, 0) + 1
-    return sorted(seen.items(), key=lambda kv: (-kv[1], kv[0]))
+    flops = sorted(seen.items())
+    random.Random(1755).shuffle(flops)
+    return flops
 
 
 def flop_name(cards) -> str:

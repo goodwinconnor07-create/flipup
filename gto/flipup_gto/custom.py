@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import os
 import threading
+import time
 from collections import OrderedDict
 
 import numpy as np
@@ -237,6 +238,9 @@ class Explorer:
         # Pre-solved flops (scripts/flop_library.py), kept on the cache volume.
         self.library = FlopLibrary(os.path.join(os.path.dirname(__file__), "data", "cache", "flops"))
         self._library_paths = None
+        # Solves someone is waiting for. Background refining pauses while any run, so it never slows them.
+        self._waiting = 0
+        self._latest = None  # the newest flop tree: older trees only refine once it's finished
 
     # -- caches ---------------------------------------------------------------
     def _preflop(self, n: int, stack: float, solve: bool):
@@ -264,6 +268,7 @@ class Explorer:
             # the background and the app re-asks until it's done.
             solver.solve(FLOP_FIRST_PASS, target, FLOP_FIRST_PASS)
             solver._refining = True
+            self._latest = solver
             threading.Thread(target=self._refine, args=(solver, its, target), daemon=True).start()
         else:
             solver.solve(its, target, 25)
@@ -316,10 +321,18 @@ class Explorer:
                 self.forced.popitem(last=False)
         return spot
 
-    @staticmethod
-    def _refine(solver, its, target):
+    def _yield(self, solver) -> bool:
+        """True while this background refine should wait: an answer someone is waiting for is being
+        solved, or a newer flop tree is still refining."""
+        latest = self._latest
+        return self._waiting > 0 or (latest is not solver and latest is not None and getattr(latest, "_refining", False))
+
+    def _refine(self, solver, its, target):
         try:
             while not getattr(solver, "_stop", False):
+                if self._yield(solver):
+                    time.sleep(0.05)
+                    continue
                 with solver._lock:
                     done = solver.engine.iterations
                     if done >= its:
@@ -343,6 +356,17 @@ class Explorer:
 
     # -- main entry -------------------------------------------------------------
     def spot(self, req: dict, solve: bool = False) -> dict:
+        if not solve:
+            return self._spot(req, False)
+        with self.lock:
+            self._waiting += 1
+        try:
+            return self._spot(req, True)
+        finally:
+            with self.lock:
+                self._waiting -= 1
+
+    def _spot(self, req: dict, solve: bool) -> dict:
         n = int(req["players"])
         if not 2 <= n <= 9:
             raise ValueError("2 to 9 players")

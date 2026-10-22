@@ -80,6 +80,7 @@ class PreflopCache:
         self.iterations = iterations
         self.mem: dict = {}
         self._lock = threading.Lock()  # one load/solve at a time (startup warm-up vs first request)
+        self._loading: set = set()  # keys being loaded or solved right now
 
     def _path(self, spot, key, num_players, stack):
         parts = [key, spot.engine.num_nodes, MODEL_VERSION, calibration_key()]
@@ -99,6 +100,8 @@ class PreflopCache:
         key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
         if key in self.mem:
             return True
+        if key in self._loading:
+            return True  # a load is under way (e.g. the startup warm-up): don't build a second solver
         spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
         return os.path.exists(self._path(spot, key, num_players, stack))
 
@@ -107,9 +110,13 @@ class PreflopCache:
         key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
         if key in self.mem:
             return self.mem[key]
-        with self._lock:
-            if key not in self.mem:
-                self.mem[key] = self._load_or_solve(key, num_players, stack, ante, rake_rate, rake_cap)
+        self._loading.add(key)
+        try:
+            with self._lock:
+                if key not in self.mem:
+                    self.mem[key] = self._load_or_solve(key, num_players, stack, ante, rake_rate, rake_cap)
+        finally:
+            self._loading.discard(key)
         return self.mem[key]
 
     def _load_or_solve(self, key, num_players, stack, ante, rake_rate, rake_cap) -> PreflopSpot:

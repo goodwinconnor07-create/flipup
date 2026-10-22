@@ -19,6 +19,9 @@ RUN cmake -S engine -B build -DFLIPUP_NATIVE=OFF -DFLIPUP_AVX2=${FLIPUP_AVX2} \
         -DPython3_EXECUTABLE=$(which python3) \
     && cmake --build build -j --target _engine \
     && rm -rf build
+# Bake the 3-way equity table into the image: computing it takes about 40s, which every cold
+# start used to pay (and the app gave up on the first request meanwhile).
+RUN python3 -c "from flipup_gto.preflop import tables; tables(with_tensor=True)"
 
 # Solved preflop games are cached here; mount a volume to keep them across restarts.
 VOLUME /app/flipup_gto/data/cache

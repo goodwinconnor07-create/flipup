@@ -11,8 +11,13 @@ from __future__ import annotations
 import argparse
 import glob
 
+import os
+import sys
+
 import numpy as np
 import torch
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 import torch.nn as nn
 
 
@@ -50,26 +55,31 @@ def main():
     ap.add_argument("--epochs", type=int, default=300)
     ap.add_argument("--hidden", type=int, default=256)
     ap.add_argument("--holdout", type=float, default=0.1)
+    ap.add_argument("--street", default="river", choices=["river", "turn"])
     args = ap.parse_args()
     paths = sorted({q for p in args.data for q in glob.glob(p)})
     X, Y = load(paths)
     k = Y.shape[2]
     n = len(X); rng = np.random.default_rng(0); idx = rng.permutation(n)
     nv = max(1, int(n * args.holdout)); va, tr = idx[:nv], idx[nv:]
-    Xt, Yt = torch.tensor(X[tr]), torch.tensor(Y[tr]); Xv, Yv = torch.tensor(X[va]), torch.tensor(Y[va])
+    # Buckets with no hands in a sample (turn data) are NaN: left out of the loss and the scores.
+    Mk = ~np.isnan(Y)
+    Y = np.nan_to_num(Y)
+    Xt, Yt, Mt = torch.tensor(X[tr]), torch.tensor(Y[tr]), torch.tensor(Mk[tr])
+    Xv, Yv, Mv = torch.tensor(X[va]), torch.tensor(Y[va]), torch.tensor(Mk[va])
     print(f"{n} samples from {len(paths)} files; train {len(tr)}, held out {nv}", flush=True)
     net = Net(k, args.hidden)
     opt = torch.optim.Adam(net.parameters(), lr=1e-3)
     sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, args.epochs)
-    loss_fn = nn.HuberLoss(delta=0.5)
+    loss_fn = nn.HuberLoss(delta=0.5, reduction="none")
     best = (1e9, None)
 
     def held_out():
         net.eval()
         with torch.no_grad():
             pv = net(Xv)
-            m = torch.stack([Xv[:, :k], Xv[:, k:2 * k]], 1)
-            mae_all = (pv - Yv).abs().mean().item()
+            m = torch.stack([Xv[:, :k], Xv[:, k:2 * k]], 1) * Mv
+            mae_all = ((pv - Yv).abs() * Mv).sum().item() / Mv.sum().item()
             mae_w = ((pv - Yv).abs() * m).sum().item() / m.sum().item()  # weighted by range mass
         net.train()
         return mae_all, mae_w
@@ -79,7 +89,7 @@ def main():
         for i in range(0, len(Xt), 256):
             b = perm[i:i + 256]
             opt.zero_grad()
-            loss = loss_fn(net(Xt[b]), Yt[b])
+            loss = (loss_fn(net(Xt[b]), Yt[b]) * Mt[b]).sum() / Mt[b].sum()
             loss.backward()
             opt.step()
         sched.step()
@@ -89,10 +99,15 @@ def main():
             if mae_w < best[0]:
                 best = (mae_w, {k_: v.detach().numpy().copy() for k_, v in net.state_dict().items()})
     # Baseline: a hand's value = the average bucket value over the training set (ignores the ranges).
-    base = np.abs(Y[va] - Y[tr].mean(0)).mean()
+    mean_tr = (Y[tr] * Mk[tr]).sum(0) / np.maximum(Mk[tr].sum(0), 1)
+    base = (np.abs(Y[va] - mean_tr) * Mk[va]).sum() / Mk[va].sum()
     print(f"baseline (ignore ranges): {base:.4f} pot; best network {best[0]:.4f} (range-weighted)")
     arrays = {f"w{i}": v for i, v in enumerate(best[1].values())}
-    np.savez(args.out, k=k, names=np.asarray(list(best[1].keys())), **arrays)
+    extra = {}
+    if args.street == "turn":
+        from flipup_gto.valuenet import TURN_S_EDGES
+        extra["s_edges"] = np.asarray(TURN_S_EDGES, dtype=np.float32)
+    np.savez(args.out, k=k, names=np.asarray(list(best[1].keys())), **arrays, **extra)
     print("saved", args.out)
 
 

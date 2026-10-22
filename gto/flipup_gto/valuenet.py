@@ -107,7 +107,10 @@ def load(path: str) -> dict:
     w = [arrays[f"body.{i}.weight"].astype(np.float32) for i in layers]
     b = [arrays[f"body.{i}.bias"].astype(np.float32) for i in layers]
     alpha = [float(arrays[f"body.{i + 1}.weight"].ravel()[0]) for i in layers[:-1]]
-    return {"k": int(d["k"]), "w": w, "b": b, "alpha": alpha}
+    out = {"k": int(d["k"]), "w": w, "b": b, "alpha": alpha}
+    if "s_edges" in d:
+        out["s_edges"] = [float(e) for e in d["s_edges"]]
+    return out
 
 
 def predict(net: dict, x: np.ndarray) -> np.ndarray:
@@ -121,3 +124,71 @@ def predict(net: dict, x: np.ndarray) -> np.ndarray:
     v = a.reshape(2, k)
     err = (float((x[:2 * k] * a).sum()) - 1.0) / 2.0
     return v - err
+
+
+# -- turn (stage 3): buckets by expected river strength and how much it swings ---------------------
+TURN_M, TURN_S = 16, 4   # strength bins x swing bins = K buckets
+TURN_S_EDGES = (0.10, 0.145, 0.18)  # spread quartiles over random turn boards
+
+
+def turn_stats(board4) -> tuple[np.ndarray, np.ndarray]:
+    """Per combo on a 4-card board: mean and spread over river cards of its river-strength percentile
+    (NaN when blocked). The mean is how strong it is on average; the spread separates draws from made
+    hands of the same average."""
+    rows = []
+    for r in range(52):
+        if r in board4:
+            continue
+        rk = strength_ranks(list(board4) + [r])
+        a, b = np.asarray([combo_cards(c) for c in range(NUM_COMBOS)]).T
+        rk = np.where((a == r) | (b == r), np.nan, rk)
+        rows.append(rk)
+    rows = np.asarray(rows)
+    import warnings
+    with warnings.catch_warnings(), np.errstate(all="ignore"):
+        warnings.simplefilter("ignore", RuntimeWarning)
+        m = np.nanmean(rows, 0)
+        s = np.nanstd(rows, 0)
+    blocked = np.isnan(strength_ranks_turn_mask(board4))
+    m[blocked] = np.nan
+    s[blocked] = np.nan
+    return m, s
+
+
+def strength_ranks_turn_mask(board4) -> np.ndarray:
+    out = np.zeros(NUM_COMBOS)
+    for c in range(NUM_COMBOS):
+        a, b = combo_cards(c)
+        if a in board4 or b in board4:
+            out[c] = np.nan
+    return out
+
+
+def percentile(x: np.ndarray) -> np.ndarray:
+    """Mid-rank percentile of each finite value among the finite values."""
+    out = np.full(len(x), np.nan)
+    ok = np.where(~np.isnan(x))[0]
+    v = x[ok]
+    order = np.argsort(v, kind="stable")
+    sv = v[order]
+    ranks = np.empty(len(v))
+    i = 0
+    while i < len(v):
+        j = i
+        while j + 1 < len(v) and sv[j + 1] == sv[i]:
+            j += 1
+        ranks[order[i:j + 1]] = (i + j) / 2
+        i = j + 1
+    out[ok] = (ranks + 0.5) / len(v)
+    return out
+
+
+def turn_buckets(m: np.ndarray, s: np.ndarray, s_edges) -> np.ndarray:
+    """Bucket per combo: strength-percentile bin x spread bin (fixed spread edges from the data)."""
+    out = np.full(len(m), -1, dtype=np.int64)
+    pm = percentile(m)
+    ok = ~np.isnan(pm)
+    mb = np.minimum((pm[ok] * TURN_M).astype(np.int64), TURN_M - 1)
+    sb = np.searchsorted(np.asarray(s_edges), s[ok])
+    out[ok] = mb * TURN_S + sb
+    return out

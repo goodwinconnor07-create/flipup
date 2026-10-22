@@ -834,42 +834,105 @@ void Solver::terminal_value(const Node& n, int p, const float* opp_reach, float*
 // Depth-limited leaves (value network)
 // ---------------------------------------------------------------------------
 
+namespace {
+// Mid-rank percentile ((rank + 0.5) / n, ties share their mid-rank) of `vals`, written to out[ids[i]].
+template <typename T>
+void percentiles(const std::vector<std::pair<T, int>>& sorted_vals, std::vector<float>& out) {
+  const double total = static_cast<double>(sorted_vals.size());
+  for (size_t a = 0; a < sorted_vals.size();) {
+    size_t z = a;
+    while (z + 1 < sorted_vals.size() && sorted_vals[z + 1].first == sorted_vals[a].first) ++z;
+    const float r = static_cast<float>(((a + z) / 2.0 + 0.5) / total);
+    for (size_t t = a; t <= z; ++t) out[sorted_vals[t].second] = r;
+    a = z + 1;
+  }
+}
+
+// River-strength percentile of every combo on a 5-card board (-1 when it uses a board card).
+std::vector<float> river_percentiles(CardMask b) {
+  std::vector<std::pair<uint32_t, int>> all;
+  all.reserve(NUM_COMBOS);
+  for (int combo = 0; combo < NUM_COMBOS; ++combo) {
+    CardMask hm = combo_mask(combo);
+    if (hm & b) continue;
+    all.push_back({evaluate_mask(b | hm), combo});
+  }
+  std::sort(all.begin(), all.end());
+  std::vector<float> pct(NUM_COMBOS, -1.0f);
+  percentiles(all, pct);
+  return pct;
+}
+}  // namespace
+
 void Solver::init_leaf() {
-  if (cfg_.leaf_street != 2 || root_board_.size() != 4)
-    throw std::invalid_argument("leaves are supported at the river of a turn solve");
+  const bool river = cfg_.leaf_street == 2 && root_board_.size() == 4;
+  const bool turn = cfg_.leaf_street == 1 && root_board_.size() == 3;
+  if (!river && !turn) throw std::invalid_argument("leaves: river leaves need a turn root, turn leaves a flop root");
   if (cfg_.leaf_k <= 0 || cfg_.leaf_w.empty() || cfg_.leaf_w.size() != cfg_.leaf_b.size() ||
       cfg_.leaf_alpha.size() + 1 != cfg_.leaf_w.size())
     throw std::invalid_argument("leaf network missing or malformed");
-  // Percentile of every live combo's river strength (ties share their mid-rank), per river card.
-  for (int p = 0; p < 2; ++p) leaf_rank_[p].assign(NUM_CARDS, {});
+  const int K = cfg_.leaf_k;
+  const int ns = static_cast<int>(cfg_.leaf_s_edges.size()) + 1;
+  if (turn && K % ns != 0) throw std::invalid_argument("leaf_k must be a multiple of the spread bins");
+  for (int p = 0; p < 2; ++p) {
+    leaf_rank_[p].assign(NUM_CARDS, {});
+    leaf_bucket_[p].assign(NUM_CARDS, {});
+  }
   std::vector<int> cards;
   for (int c = 0; c < NUM_CARDS; ++c)
     if (!(root_mask_ & card_bit(c))) cards.push_back(c);
-#pragma omp parallel for schedule(dynamic, 2)
+#pragma omp parallel for schedule(dynamic, 1)
   for (size_t i = 0; i < cards.size(); ++i) {
     const int c = cards[i];
     const CardMask b = root_mask_ | card_bit(c);
-    std::vector<std::pair<uint32_t, int>> all;
-    all.reserve(NUM_COMBOS);
-    for (int combo = 0; combo < NUM_COMBOS; ++combo) {
-      CardMask hm = combo_mask(combo);
-      if (hm & b) continue;
-      all.push_back({evaluate_mask(b | hm), combo});
-    }
-    std::sort(all.begin(), all.end());
-    std::vector<float> pct(NUM_COMBOS, -1.0f);
-    const double total = static_cast<double>(all.size());
-    for (size_t a = 0; a < all.size();) {
-      size_t z = a;
-      while (z + 1 < all.size() && all[z + 1].first == all[a].first) ++z;
-      const float r = static_cast<float>(((a + z) / 2.0 + 0.5) / total);
-      for (size_t t = a; t <= z; ++t) pct[all[t].second] = r;
-      a = z + 1;
+    std::vector<float> pos(NUM_COMBOS, -1.0f);
+    std::vector<int16_t> bucket(NUM_COMBOS, -1);
+    if (river) {
+      pos = river_percentiles(b);
+      for (int combo = 0; combo < NUM_COMBOS; ++combo)
+        if (pos[combo] >= 0) bucket[combo] = static_cast<int16_t>(std::min(static_cast<int>(pos[combo] * K), K - 1));
+    } else {
+      // Mean and spread of the river percentile over every river card (as flipup_gto.valuenet.turn_stats).
+      std::vector<double> sum(NUM_COMBOS, 0.0), sq(NUM_COMBOS, 0.0);
+      std::vector<int> cnt(NUM_COMBOS, 0);
+      for (int r = 0; r < NUM_CARDS; ++r) {
+        if (b & card_bit(r)) continue;
+        std::vector<float> pct = river_percentiles(b | card_bit(r));
+        for (int combo = 0; combo < NUM_COMBOS; ++combo) {
+          if (pct[combo] < 0) continue;
+          sum[combo] += pct[combo];
+          sq[combo] += static_cast<double>(pct[combo]) * pct[combo];
+          ++cnt[combo];
+        }
+      }
+      std::vector<std::pair<double, int>> means;
+      std::vector<float> spread(NUM_COMBOS, 0.0f);
+      for (int combo = 0; combo < NUM_COMBOS; ++combo) {
+        if ((combo_mask(combo) & b) || cnt[combo] == 0) continue;
+        const double m = sum[combo] / cnt[combo];
+        spread[combo] = static_cast<float>(std::sqrt(std::max(0.0, sq[combo] / cnt[combo] - m * m)));
+        means.push_back({m, combo});
+      }
+      std::sort(means.begin(), means.end());
+      percentiles(means, pos);
+      const int nm = K / ns;
+      for (int combo = 0; combo < NUM_COMBOS; ++combo) {
+        if (pos[combo] < 0) continue;
+        int mb = std::min(static_cast<int>(pos[combo] * nm), nm - 1);
+        int sb = 0;
+        while (sb < ns - 1 && cfg_.leaf_s_edges[sb] < spread[combo]) ++sb;
+        bucket[combo] = static_cast<int16_t>(mb * ns + sb);
+      }
     }
     for (int p = 0; p < 2; ++p) {
-      auto& v = leaf_rank_[p][c];
-      v.resize(hands_[p].size());
-      for (size_t h = 0; h < hands_[p].size(); ++h) v[h] = pct[hands_[p][h].combo];
+      auto& rv = leaf_rank_[p][c];
+      auto& bv = leaf_bucket_[p][c];
+      rv.resize(hands_[p].size());
+      bv.resize(hands_[p].size());
+      for (size_t h = 0; h < hands_[p].size(); ++h) {
+        rv[h] = pos[hands_[p][h].combo];
+        bv[h] = bucket[hands_[p][h].combo];
+      }
     }
   }
 }
@@ -918,20 +981,21 @@ void Solver::leaf_value(const Node& n, int p, const float* opp_reach, const floa
   for (int c = 0; c < NUM_CARDS; ++c) {
     if (n.board & card_bit(c)) continue;
     const auto& rp = leaf_rank_[p][c];
-    const auto& ro = leaf_rank_[o][c];
+    const auto& bp = leaf_bucket_[p][c];
+    const auto& bo = leaf_bucket_[o][c];
     std::fill(x.begin(), x.end(), 0.0f);
     float* mp = x.data() + p * K;
     float* mo = x.data() + o * K;
     double sp = 0, so = 0;
     for (size_t h = 0; h < np; ++h) {
-      if (rp[h] < 0) continue;
-      mp[std::min(static_cast<int>(rp[h] * K), K - 1)] += own_reach[h];
+      if (bp[h] < 0) continue;
+      mp[bp[h]] += own_reach[h];
       sp += own_reach[h];
     }
     for (size_t i = 0; i < no; ++i) {
-      opp[i] = ro[i] < 0 ? 0.0f : opp_reach[i] * w;
-      if (ro[i] < 0) continue;
-      mo[std::min(static_cast<int>(ro[i] * K), K - 1)] += opp_reach[i];
+      opp[i] = bo[i] < 0 ? 0.0f : opp_reach[i] * w;
+      if (bo[i] < 0) continue;
+      mo[bo[i]] += opp_reach[i];
       so += opp_reach[i];
     }
     if (so <= 0) continue;
@@ -949,8 +1013,13 @@ void Solver::leaf_value(const Node& n, int p, const float* opp_reach, const floa
     const float err = static_cast<float>((tot - 1.0) / 2.0);
     const float* vp = v.data() + p * K;
     nonconflict_mass(p, opp.data(), S.data());
+    const bool interpolate = cfg_.leaf_street == 2;
     for (size_t h = 0; h < np; ++h) {
-      if (rp[h] < 0) continue;
+      if (bp[h] < 0) continue;
+      if (!interpolate) {
+        out[h] += ((vp[bp[h]] - err) * static_cast<float>(P) - cf) * S[h];
+        continue;
+      }
       float pos = rp[h] * K - 0.5f;
       int lo = static_cast<int>(std::floor(pos));
       float f = pos - lo;

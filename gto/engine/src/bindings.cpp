@@ -299,6 +299,7 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("leaf_w", &TreeConfig::leaf_w)
       .def_readwrite("leaf_b", &TreeConfig::leaf_b)
       .def_readwrite("leaf_alpha", &TreeConfig::leaf_alpha)
+      .def_readwrite("leaf_s_edges", &TreeConfig::leaf_s_edges)
       .def_readwrite("averaging", &TreeConfig::averaging)
       .def("set_sizes",
            [](TreeConfig& c, int player, int street, const StreetSizes& s) {

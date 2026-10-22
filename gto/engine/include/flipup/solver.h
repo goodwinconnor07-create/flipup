@@ -74,6 +74,9 @@ struct TreeConfig {
   std::vector<std::vector<float>> leaf_w;
   std::vector<std::vector<float>> leaf_b;
   std::vector<float> leaf_alpha;
+  // Turn leaves (leaf_street 1, flop root): hands are bucketed by their mean river-strength percentile
+  // (leaf_k / leaf_s_edges.size()+1 bins) and its spread over river cards (bins split at these edges).
+  std::vector<float> leaf_s_edges;
 };
 
 enum class NodeType : uint8_t { ACTION, CHANCE, FOLD, SHOWDOWN, ALLIN, LEAF };
@@ -259,6 +262,7 @@ class Solver {
   int iteration_ = 0;
   // Leaf support: river-strength percentile of each hand per river card ([player][card][hand], -1 = blocked).
   std::array<std::vector<std::vector<float>>, 2> leaf_rank_;
+  std::array<std::vector<std::vector<int16_t>>, 2> leaf_bucket_;  // [player][card][hand], -1 = blocked
   double pair_mass_ = 0;  // sum over non-conflicting hand pairs of w0 * w1
   std::atomic<bool> stop_flag_{false};
 };

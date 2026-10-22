@@ -172,8 +172,10 @@ class PostflopSolver:
         cfg.compress = compress
         cfg.max_memory_mb = max_memory_mb
         if leaf is not None:
-            # Depth-limited: the river is valued by a network (flipup_gto.valuenet.load) instead of dealt.
-            cfg.leaf_street = 2
+            # Depth-limited: the next street is valued by a network (flipup_gto.valuenet.load) instead of
+            # dealt: the river in a turn solve, the turn in a flop solve.
+            cfg.leaf_street = 2 if len(self.board) == 4 else 1
+            cfg.leaf_s_edges = list(leaf.get("s_edges", ()))
             cfg.leaf_k = leaf["k"]
             cfg.leaf_w = [w.ravel().tolist() for w in leaf["w"]]
             cfg.leaf_b = [b.tolist() for b in leaf["b"]]

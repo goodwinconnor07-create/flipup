@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { describeHand, equity, myPlayer, options, pot, seatFor, type Card, type Equity, type Game, type Hand } from '../game';
+import { cardName, describeHand, equity, myPlayer, options, pot, seatFor, type Card, type Equity, type Game, type Hand } from '../game';
 import { dispatch, openSheet, toast, useApp } from '../state/store';
 import { Avatar, CardSlot, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
@@ -46,6 +46,10 @@ export function Table() {
   return (
     <div className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}`}>
       <TableBar game={game} />
+      <div className="rotate-hint" role="alert">
+        <b>Turn your phone upright</b>
+        <span>The table is built for portrait.</span>
+      </div>
       {online && conn === 'offline' && (
         <div className="conn-pill" role="status">
           <i /> Reconnecting…
@@ -165,6 +169,24 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
     confetti(CONFETTI.win, { x: innerWidth / 2, y: innerHeight * 0.75 });
   }, [winKey]);
 
+  // The tab says so when it's your turn and you're looking at something else.
+  useEffect(() => {
+    const base = 'GTODuel';
+    const update = () => {
+      document.title = myTurn && document.hidden ? `Your turn · ${base}` : base;
+    };
+    update();
+    document.addEventListener('visibilitychange', update);
+    return () => {
+      document.removeEventListener('visibilitychange', update);
+      document.title = base;
+    };
+  }, [myTurn]);
+
+  // For a screen reader: what just happened, and when it's your turn, said once each.
+  const lastLine = hand?.log[hand.log.length - 1]?.replace(/\[([2-9TJQKA][shdc])\]/g, (_m, c: string) => cardName(c)) ?? '';
+  const announce = myTurn ? `${lastLine} It is your move.` : lastLine;
+
   // A tick for each of your last five seconds.
   const secsLeft = myTurn && hand?.deadline ? Math.max(0, Math.ceil((hand.deadline - now) / 1000)) : null;
   useEffect(() => {
@@ -226,6 +248,9 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
 
   return (
     <div className="felt">
+      <p className="sr-only" aria-live="polite">
+        {announce}
+      </p>
       <div className="stage">
         {(others.length > 0 || desktop) && (
           <div

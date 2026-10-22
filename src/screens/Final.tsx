@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { net, standings, type Game } from '../game';
 import { closeTable, dispatch, openLog, useApp } from '../state/store';
+import { shareText } from './sheets/InviteSheet';
 import { Avatar, chips } from '../ui/components';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 import { playSound } from '../ui/sound';
@@ -133,6 +134,20 @@ export function Final({ game }: { game: Game }) {
         <button type="button" className={`btn btn-xl ${me && step >= 3 ? 'btn-ghost' : 'btn-dark'}`} onClick={closeTable}>
           Done
         </button>
+        {me && step >= 3 && (
+          <button
+            type="button"
+            className="btn btn-link"
+            onClick={() => {
+              const place = rows.findIndex((p) => p.id === me.id) + 1;
+              const hands = game.hand ? ` over ${game.hand.number} hand${game.hand.number === 1 ? '' : 's'}` : '';
+              const line = iWon ? 'I won' : `I finished ${place}${['th', 'st', 'nd', 'rd'][place % 100 > 10 && place % 100 < 14 ? 0 : Math.min(place % 10, 4) % 4]}`;
+              void shareText('GTODuel result', `${line} at GTODuel: ${signed(net(me))} chips${hands}.`, 'Result copied');
+            }}
+          >
+            Share result
+          </button>
+        )}
         <button type="button" className="btn btn-link" onClick={openLog}>
           Hand log
         </button>

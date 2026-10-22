@@ -47,7 +47,7 @@ function HandBlock({ title, lines, mine, share }: { title: string; lines: HandLo
             type="button"
             className="log-share press"
             aria-label={`Share hand #${share}`}
-            onClick={() => void shareText(`FlipUp hand #${share}`, handLogText(share, lines, mine), 'Hand copied')}
+            onClick={() => void shareText(`GTODuel hand #${share}`, handLogText(share, lines, mine), 'Hand copied')}
           >
             <ShareIcon width={18} height={18} />
           </button>

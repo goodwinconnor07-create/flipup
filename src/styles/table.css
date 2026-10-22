@@ -1545,7 +1545,8 @@ html.calm .bubble-typing i {
 .hidden-wrap {
   position: absolute;
   right: 2px;
-  bottom: 0;
+  /* Just under the row, clear of the cards. */
+  bottom: -20px;
   z-index: 4;
 }
 
@@ -1557,7 +1558,7 @@ html.calm .bubble-typing i {
 .hidden-pop {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 6px);
+  top: calc(100% + 6px);
   min-width: 200px;
   max-width: calc(100vw - 32px);
   display: flex;
@@ -1567,7 +1568,7 @@ html.calm .bubble-typing i {
   border-radius: var(--r-md);
   background: var(--surface);
   box-shadow: 0 8px 28px -8px rgba(18, 18, 40, 0.4), 0 0 0 1px var(--glass-edge);
-  transform-origin: 100% 100%;
+  transform-origin: 100% 0;
 }
 
 .hidden-row {
@@ -1647,5 +1648,49 @@ html.calm .bubble-typing i {
   }
   .my-cards .pcard + .pcard {
     margin-left: -20px;
+  }
+}
+
+/* ── A phone on its side ─────────────────────────────────────────────────── */
+
+.rotate-hint {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 959px) {
+  .rotate-hint {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 8px;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--ink);
+    text-align: center;
+  }
+  .rotate-hint b {
+    font-size: var(--fs-h2);
+    font-weight: 600;
+  }
+  .rotate-hint span {
+    color: var(--ink-3);
+  }
+}
+
+/* The chat button looks small but answers to a full finger. */
+.react-btn::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+}
+
+/* ── Tall phones: the table takes up the extra room ─────────────────────── */
+
+@media (min-height: 800px) and (max-width: 959px) {
+  .table-oval {
+    max-height: 340px;
   }
 }

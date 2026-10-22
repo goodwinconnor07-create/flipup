@@ -44,6 +44,8 @@ import {
   loadDark,
   loadGlass,
   loadMuted,
+  loadTalk,
+  saveTalk,
   loadProfile,
   loadSession,
   loadStats,
@@ -132,6 +134,8 @@ export interface AppState {
   /** Felt and rail, as this phone likes them. */
   look: TableLook;
   muted: boolean;
+  /** Show what the bots say at the table. */
+  talk: boolean;
   /** Animations switched off. */
   calm: boolean;
   dark: boolean;
@@ -171,6 +175,7 @@ let state: AppState = {
   logs: null,
   look: loadTableLook(),
   muted: loadMuted(),
+  talk: loadTalk(),
   calm: loadCalm(),
   dark: loadDark(),
   glass: loadGlass(),
@@ -680,6 +685,12 @@ export function setTableLook(patch: Partial<TableLook>): void {
   const look = { ...state.look, ...patch };
   saveTableLook(look);
   set({ look });
+}
+
+export function toggleTalk(): void {
+  const talk = !state.talk;
+  saveTalk(talk);
+  set({ talk });
 }
 
 export function toggleMuted(): void {

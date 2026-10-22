@@ -251,7 +251,7 @@ test('a finished hand can be shared from the hand log as plain text', async ({ p
   await page.getByRole('button', { name: 'Hand log' }).click();
   await page.getByRole('button', { name: 'Share hand #1' }).click();
   const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData }).__shared);
-  expect(shared.text).toContain('FlipUp · Hand #1');
+  expect(shared.text).toContain('GTODuel · Hand #1');
   expect(shared.text).toContain('Your hand:');
   expect(shared.text).toMatch(/[♠♥♦♣]/);
   expect(shared.text).toContain('Sam folds');

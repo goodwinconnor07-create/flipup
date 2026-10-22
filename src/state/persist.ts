@@ -163,6 +163,15 @@ export function saveBigBlinds(on: boolean): void {
   write('flipup.bb', on);
 }
 
+/** False if the player turned the bots' table talk off. It's on until they do. */
+export function loadTalk(): boolean {
+  return read<boolean>('flipup.talk') !== false;
+}
+
+export function saveTalk(on: boolean): void {
+  write('flipup.talk', on);
+}
+
 export function loadMuted(): boolean {
   return read<boolean>('flipup.muted') === true;
 }

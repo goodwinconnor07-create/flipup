@@ -160,6 +160,8 @@
     z-index: 2;
     height: auto;
     pointer-events: none;
+    /* Seats at the sides rest on the rail and can reach past the stage. */
+    overflow: visible;
   }
 
   .stage .pod {

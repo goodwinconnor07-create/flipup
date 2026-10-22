@@ -154,6 +154,15 @@ export function saveCalm(calm: boolean): void {
   write('flipup.calm', calm);
 }
 
+/** True if my stack on the table is shown in big blinds instead of chips. */
+export function loadBigBlinds(): boolean {
+  return read<boolean>('flipup.bb') === true;
+}
+
+export function saveBigBlinds(on: boolean): void {
+  write('flipup.bb', on);
+}
+
 export function loadMuted(): boolean {
   return read<boolean>('flipup.muted') === true;
 }

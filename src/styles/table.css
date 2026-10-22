@@ -972,7 +972,7 @@ html:not(.no-glass) .raise-panel .icon-btn {
   color: var(--ink-3);
 }
 
-.my-box b {
+.my-box > b {
   font-size: var(--fs-h1);
   font-weight: 700;
   line-height: 1.1;
@@ -1584,4 +1584,40 @@ html.calm .bubble-typing i {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
+}
+
+/* ── Your box: picture, name and chips ───────────────────────────────────── */
+
+.my-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.my-name small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-caption);
+}
+
+.my-stack {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.my-stack small {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-3);
 }

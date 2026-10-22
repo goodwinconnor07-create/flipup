@@ -3,6 +3,7 @@ import { positionOf, seatFor, type Card, type Game, type Player, type Seat } fro
 import { openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
+import { loadBigBlinds, saveBigBlinds } from '../../state/persist';
 import { Bubble, ReactBubble, ReactMenu } from './Bubbles';
 
 /** Everyone else, in seat order starting on this phone's left, so play moves left to right. */
@@ -12,6 +13,9 @@ export function othersInOrder(game: Game, me: Player | undefined): Player[] {
   const i = all.findIndex((p) => p.id === me.id);
   return [...all.slice(i + 1), ...all.slice(0, i)];
 }
+
+/** 98.5 BB, or 120 BB: one decimal only while it's small. */
+const bigBlinds = (n: number) => (n >= 100 ? Math.round(n) : Math.round(n * 10) / 10).toLocaleString('en-US');
 
 export const pct = (n: number) => `${Math.round(n * 100)}%`;
 
@@ -206,6 +210,7 @@ export function MyBox({
 }) {
   const hand = game.hand;
   const desktop = useDesktop();
+  const [inBB, setInBB] = useState(loadBigBlinds);
   // On a computer my seat is on the table (bottom), so the bubble and position are shown there.
   const bubble = desktop ? null : reaction ? (
     <ReactBubble id={reaction} game={game} />
@@ -227,11 +232,27 @@ export function MyBox({
     );
   }
   const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
+  const bb = Math.max(game.settings.bigBlind, 1);
   return (
     <div className="my-box">
       {bubble}
-      <small>Your chips</small>
-      <b>{me ? <Count value={me.stack} /> : '–'}</b>
+      {me && (
+        <span className="my-name">
+          <Avatar emoji={me.emoji} size={22} />
+          <small>{me.name}</small>
+        </span>
+      )}
+      <button
+        type="button"
+        className="my-stack press"
+        aria-label={`${inBB ? 'Stack in big blinds' : 'Stack in chips'}, tap to switch`}
+        onClick={() => {
+          saveBigBlinds(!inBB);
+          setInBB(!inBB);
+        }}
+      >
+        {me ? inBB ? <>{bigBlinds(me.stack / bb)}<small> BB</small></> : <Count value={me.stack} /> : '–'}
+      </button>
       {won > 0 ? (
         <span className="my-box-note win">+{chips(won)}</span>
       ) : seat && seat.bet > 0 && !hand?.result ? (

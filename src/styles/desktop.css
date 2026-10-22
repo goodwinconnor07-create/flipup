@@ -364,8 +364,12 @@
     font-size: 17px;
   }
 
-  .my-box b {
+  .my-stack {
     font-size: 44px;
+  }
+
+  .my-stack small {
+    font-size: 20px;
   }
 
   .my-box-note {

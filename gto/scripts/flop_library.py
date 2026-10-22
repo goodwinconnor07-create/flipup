@@ -32,17 +32,8 @@ from flipup_gto.preflop import CLASS_INDEX  # noqa: E402
 from flipup_gto.review import PreflopCache, class_reach_to_combos  # noqa: E402
 from flipup_gto.solver import PostflopSolver  # noqa: E402
 
-F = "fold"
-# name: (preflop line in the 6-max 100bb solution, IP seat, OOP seat, preflop aggressor seat or None).
-# Seats: 0 UTG, 1 HJ, 2 CO, 3 BTN, 4 SB, 5 BB.
-SPOTS = {
-    "btn_bb": ([F, F, F, "raise", F, "call"], 3, 5, 3),
-    "co_bb": ([F, F, "raise", F, F, "call"], 2, 5, 2),
-    "utg_bb": (["raise", F, F, F, F, "call"], 0, 5, 0),
-    "sb_bb": ([F, F, F, F, "raise", "call"], 5, 4, 4),
-    "sb_limp": ([F, F, F, F, "call", "check"], 5, 4, None),
-    "bb_btn_3bet": ([F, F, F, "raise", F, "raise", "call"], 3, 5, 5),
-}
+from flipup_gto.flop_library import SPOTS  # noqa: E402
+
 DEPTH = 3  # flop decisions stored: up to three actions into the street
 ITERATIONS, TARGET = 200, 0.5
 

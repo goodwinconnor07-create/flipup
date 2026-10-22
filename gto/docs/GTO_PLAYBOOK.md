@@ -270,3 +270,33 @@ explorer tree Custom hand uses). The flops are a fair random sample (the shuffle
 - SB vs BB at 40bb is published as a 58% c-bet; ours is 43% at 100bb, where a lower frequency is expected.
 - The 3-bettor's big 75% c-bet share (43%) looks high next to the usual "small, often" advice for
   3-bet pots; being checked against a tree with river betting (below).
+
+## 15. Value networks (DeepStack-style depth-limited solving)
+
+A solve can stop where the next street would be dealt and ask a small network what each hand is
+worth there, given both players' ranges at that point (flipup_gto/valuenet.py; the engine's LEAF
+nodes). The network is trained on random spots solved exactly, so it stands in for the rest of the
+game without storing it.
+
+- **River network:** input is each player's range mass over 64 river-strength buckets (every live combo ranked on the board) plus log(1 + SPR). Output is each bucket's value as a fraction of the pot, then DeepStack's zero-sum correction. Three hidden layers of 256.
+- **Training data:** random boards, ranges from DeepStack's recursive generator, pot 4-150bb, SPR 0.1-15, solved on the rich river tree (33/75/125%, 60% raises, two raises, all-in). About 20 spots a second per process on a 16-core Fly machine.
+
+| Training spots | Held-out error (range-weighted, fraction of pot) |
+|---|---|
+| 200 | 0.113 |
+| 32,000 | 0.030 |
+| 71,000 | 0.023 |
+| (ignore the ranges) | 0.25 |
+
+Turn solves (BTN vs BB ranges, pot 12bb, 94bb behind; turn and river 33/75/125%) with river leaves
+against the full solve, BB's turn strategy (check / 33%) and BB's average hand value:
+
+| Turn board | Full | River network (71k) | Time |
+|---|---|---|---|
+| Qh9h4c2s | 91 / 9, 0.382 | 87 / 11, 0.378 | 21s -> 5.5s |
+| Ks8d3c7h | 91 / 9, 0.397 | 88 / 8, 0.387 | 21s -> 8.5s |
+| 8h7h5c2d | 74 / 24, 0.430 | 69 / 27, 0.432 | 22s -> 5.8s |
+
+Memory drops from 202MB to 1MB. The turn network (hands bucketed by mean river strength x its
+spread, 16 x 4) is trained from full turn solves the same way; with it a flop solve can stop at the
+turn, which is what would make live flop answers fast.

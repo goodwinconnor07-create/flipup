@@ -98,17 +98,22 @@ def main():
             print(f"epoch {ep + 1}: held-out error {mae_all:.4f} pot (all buckets), {mae_w:.4f} (range-weighted)", flush=True)
             if mae_w < best[0]:
                 best = (mae_w, {k_: v.detach().numpy().copy() for k_, v in net.state_dict().items()})
+                save(args, k, best[1])
     # Baseline: a hand's value = the average bucket value over the training set (ignores the ranges).
     mean_tr = (Y[tr] * Mk[tr]).sum(0) / np.maximum(Mk[tr].sum(0), 1)
     base = (np.abs(Y[va] - mean_tr) * Mk[va]).sum() / Mk[va].sum()
     print(f"baseline (ignore ranges): {base:.4f} pot; best network {best[0]:.4f} (range-weighted)")
-    arrays = {f"w{i}": v for i, v in enumerate(best[1].values())}
+    print("saved", args.out)
+
+
+def save(args, k, state):
+    """Write the network (called whenever the held-out score improves, so a stopped run keeps its best)."""
+    arrays = {f"w{i}": v for i, v in enumerate(state.values())}
     extra = {}
     if args.street == "turn":
         from flipup_gto.valuenet import TURN_S_EDGES
         extra["s_edges"] = np.asarray(TURN_S_EDGES, dtype=np.float32)
-    np.savez(args.out, k=k, names=np.asarray(list(best[1].keys())), **arrays, **extra)
-    print("saved", args.out)
+    np.savez(args.out, k=k, names=np.asarray(list(state.keys())), **arrays, **extra)
 
 
 if __name__ == "__main__":

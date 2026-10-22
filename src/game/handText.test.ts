@@ -9,10 +9,10 @@ describe('hand text', () => {
 
   it('makes a message: title, your hand, then every move without the log heading', () => {
     const text = handLogText(7, ['Hand #7', 'Pia posts the small blind 5', 'Flop: [Ah] [Td] [2c]', 'Sam wins 30'], ['Kd', 'Qd']);
-    expect(text.split('\n')).toEqual(['FlipUp · Hand #7', 'Your hand: K♦ Q♦', 'Pia posts the small blind 5', 'Flop: A♥ 10♦ 2♣', 'Sam wins 30']);
+    expect(text.split('\n')).toEqual(['GTODuel · Hand #7', 'Your hand: K♦ Q♦', 'Pia posts the small blind 5', 'Flop: A♥ 10♦ 2♣', 'Sam wins 30']);
   });
 
   it('leaves out "Your hand" when you were not dealt in', () => {
-    expect(handLogText(2, ['Hand #2', 'Sam wins 10'])).toBe('FlipUp · Hand #2\nSam wins 10');
+    expect(handLogText(2, ['Hand #2', 'Sam wins 10'])).toBe('GTODuel · Hand #2\nSam wins 10');
   });
 });

@@ -256,7 +256,7 @@ export function MyBox({
           setInBB(!inBB);
         }}
       >
-        {me ? inBB ? <>{bigBlinds(me.stack / bb)}<small> BB</small></> : <Count value={me.stack} /> : '–'}
+        {!me ? '–' : me.stack === 0 && (!hand || hand.result) ? 'Out' : inBB ? <>{bigBlinds(me.stack / bb)}<small> BB</small></> : <Count value={me.stack} />}
       </button>
       {won > 0 ? (
         <span className="my-box-note win">+{chips(won)}</span>

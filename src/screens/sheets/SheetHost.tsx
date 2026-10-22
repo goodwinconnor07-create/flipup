@@ -15,6 +15,7 @@ import {
   setProfile,
   setTableLook,
   toggleCalm,
+  toggleTalk,
   toggleDark,
   toggleGlass,
   toggleMuted,
@@ -28,6 +29,7 @@ import { Avatar, Choice, chips, EmojiPicker, PlayingCard, Sheet } from '../../ui
 import { FELTS, RAILS } from '../../state/persist';
 import {
   BoltIcon,
+  ChatIcon,
   ClockIcon,
   ExitIcon,
   GearIcon,
@@ -365,6 +367,7 @@ function ChallengeResultSheet({ sheet }: { sheet: Extract<SheetSpec, { name: 'ch
 function PrefsSheet() {
   const muted = useApp((s) => s.muted);
   const calm = useApp((s) => s.calm);
+  const talk = useApp((s) => s.talk);
   const dark = useApp((s) => s.dark);
   const glass = useApp((s) => s.glass);
   const items: Item[] = [
@@ -372,6 +375,7 @@ function PrefsSheet() {
     { label: glass ? 'Liquid Glass on' : 'Liquid Glass off', Icon: GlassIcon, color: glass ? 'var(--blue)' : 'var(--slate-hi)', onClick: toggleGlass },
     { label: muted ? 'Sound off' : 'Sound on', Icon: muted ? MuteIcon : SoundIcon, color: muted ? 'var(--slate-hi)' : 'var(--green)', onClick: toggleMuted },
     { label: calm ? 'Animations off' : 'Animations on', Icon: BoltIcon, color: calm ? 'var(--slate-hi)' : 'var(--gold)', onClick: toggleCalm },
+    { label: talk ? 'Bot talk on' : 'Bot talk off', Icon: ChatIcon, color: talk ? 'var(--blue)' : 'var(--slate-hi)', onClick: toggleTalk },
     { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
     { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--blue)', onClick: () => openSheet({ name: 'rankings' }) },
   ];
@@ -392,6 +396,7 @@ function MenuSheet() {
   const online = useApp((s) => s.session?.mode === 'online');
   const muted = useApp((s) => s.muted);
   const calm = useApp((s) => s.calm);
+  const talk = useApp((s) => s.talk);
   const dark = useApp((s) => s.dark);
   const glass = useApp((s) => s.glass);
   const host = game?.hostDeviceId === deviceId;
@@ -426,6 +431,12 @@ function MenuSheet() {
       Icon: BoltIcon,
       color: calm ? 'var(--slate-hi)' : 'var(--gold)',
       onClick: toggleCalm,
+    },
+    {
+      label: talk ? 'Bot talk on' : 'Bot talk off',
+      Icon: ChatIcon,
+      color: talk ? 'var(--blue)' : 'var(--slate-hi)',
+      onClick: toggleTalk,
     },
     {
       label: dark ? 'Dark mode on' : 'Dark mode off',

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { REACTIONS, reactionText, type Game, type Seat } from '../../game';
-import { react } from '../../state/store';
+import { react, useApp } from '../../state/store';
 import { chips } from '../../ui/components';
 import { haptic } from '../../ui/effects';
 import { ChatIcon } from '../../ui/Icons';
@@ -38,7 +38,6 @@ export function Bubble({ last, street }: { last: NonNullable<Seat['last']>; stre
     <span
       key={text}
       className={`bubble pop ${money ? 'bubble-blue' : 'bubble-grey'}${street && last.street !== street ? ' bubble-old' : ''}`}
-      role="status"
     >
       {text}
     </span>
@@ -55,6 +54,9 @@ export function useReactions(game: Game): { say: Record<string, string>; quiet: 
   // When a line runs its course, the move it covered stays hidden: otherwise the bubble goes back to
   // "Bet 175" and it looks like the player bet again. A new move shows as normal.
   const [quiet, setQuiet] = useState<Record<string, string>>({});
+  const talkOn = useApp((s) => s.talk);
+  const talkRef = useRef(talkOn);
+  talkRef.current = talkOn;
   const activeRef = useRef(active);
   activeRef.current = active;
   const gameRef = useRef(game);
@@ -163,6 +165,8 @@ export function useReactions(game: Game): { say: Record<string, string>; quiet: 
       seen.current[id] = r.n;
       const value = `${r.id}|${r.n}|${r.to ?? ''}`;
       if (r.id.startsWith('b:')) {
+        // Bot talk is switched off on this phone: nothing is queued or shown.
+        if (!talkRef.current) continue;
         const event = talkEvent(value);
         // One line per bot waiting at a time: the newest.
         queue.current = queue.current.filter((q) => q.id !== id);

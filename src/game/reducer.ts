@@ -697,7 +697,9 @@ function tick(game: Game, ctx: ActionContext): boolean {
       let wait = fast ? 0 : Math.max(0, thought.thinkMs - TIMING.botMin);
       // Sometimes it says what it's thinking first, then moves a moment later.
       const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
-      if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) {
+      // What it says isn't always about the move it's about to make, or the line would give the move away.
+      const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
+      if (event && said && botSays(game, player.id, said, ctx.rng, ctx.now)) {
         wait = Math.max(wait, fast ? 400 : TIMING.botThink);
         if (event === 'allin') owe(game, player.id);
       }
@@ -719,9 +721,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
   }
 
   if (!due(game.nextHandAt)) return false;
+  // "Nothing much happening" is only worth saying when the last hand was over before the flop.
+  const sleepy = !!hand?.result && hand.street === 'preflop';
   startHand(game, ctx);
   // A word from a random bot between deals, now and then.
   const chatty = game.players.filter((p) => p.bot && !p.sittingOut);
-  if (chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
+  if (sleepy && chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
   return true;
 }

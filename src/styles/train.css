@@ -1552,6 +1552,33 @@ html.calm .coach-avatar {
   }
 }
 
+/* ── Solved hands ────────────────────────────────────────────────────────── */
+
+.quiz-ask {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.quiz-options .answer-btn[disabled] {
+  cursor: default;
+}
+
+.quiz-options .quiz-other {
+  opacity: 0.6;
+}
+
+.quiz-options small {
+  font-size: var(--fs-caption);
+  font-weight: 400;
+}
+
 /* ── Custom hand ─────────────────────────────────────────────────────────── */
 
 .pos-row {

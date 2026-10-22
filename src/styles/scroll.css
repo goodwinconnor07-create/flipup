@@ -492,6 +492,26 @@ html.calm .stars .on {
   gap: 12px;
 }
 
+.scroll-solved {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  color: inherit;
+}
+
+.scroll-solved span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.scroll-solved small {
+  color: var(--ink-2);
+}
+
 .scroll-form {
   display: flex;
   align-items: center;

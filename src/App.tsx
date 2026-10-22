@@ -10,6 +10,7 @@ import { SheetHost } from './screens/sheets/SheetHost';
 import { Train } from './screens/train/Train';
 import { Lesson } from './screens/train/Lesson';
 import { Replay } from './screens/train/Replay';
+import { SolvedHands } from './screens/train/SolvedHands';
 import { Drill } from './screens/train/Drill';
 import { Custom } from './screens/train/Custom';
 
@@ -56,6 +57,9 @@ export function App() {
       break;
     case 'scroll':
       screen = <Scroll />;
+      break;
+    case 'solved':
+      screen = <SolvedHands />;
       break;
   }
 

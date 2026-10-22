@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { themeForm } from '../scroll/feed';
 import { levelOf } from '../scroll/save';
 import { THEMES, type Theme } from '../scroll/types';
-import { openScroll, useApp } from '../state/store';
+import { navigate, openScroll, useApp } from '../state/store';
 import { CoachSays } from '../train/Coach';
 import { ChevronIcon, FlameIcon } from '../ui/Icons';
 import { TEMPLATES } from '../scroll/templates';
@@ -48,6 +48,13 @@ export function ScrollTab() {
           {save.cards ? 'Next card' : 'Deal the first card'}
           <ChevronIcon width={18} height={18} />
         </span>
+      </button>
+      <button type="button" className="glass-card scroll-solved press" onClick={() => navigate({ name: 'solved' })}>
+        <span>
+          <b>Solved hands</b>
+          <small>Whole hands, every move graded by the solver.</small>
+        </span>
+        <ChevronIcon width={18} height={18} />
       </button>
       <div className="glass-card coach-card">
         <CoachSays lines={[hello(save.cards, save.combo, weak)]} />

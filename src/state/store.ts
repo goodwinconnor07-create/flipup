@@ -84,7 +84,9 @@ export type Route =
   | { name: 'drill'; scenario: string }
   | { name: 'custom' }
   /** The Scroll feed of short poker cards. */
-  | { name: 'scroll' };
+  | { name: 'scroll' }
+  /** Whole hands solved ahead of time, graded move by move. */
+  | { name: 'solved' };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 

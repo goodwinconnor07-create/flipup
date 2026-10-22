@@ -226,3 +226,46 @@ export function scrollLines(t: Template, moves: CardMove[], outcome: Outcome, bo
 }
 
 export { scenarioTitle };
+
+// ── Solved hands ───────────────────────────────────────────────────────────
+
+/** The coach's word on one of your moves in a solved hand (after the grade), and GTO's mix there. */
+export function quizLines(colour: Colour, best: string, freq: number, loss: number, mix: { label: string; freq: number }[]): string[] {
+  const verdict =
+    colour === 'green'
+      ? freq >= 0.5
+        ? "That's my play."
+        : freq >= 0.15
+          ? `It's one of my plays here, about ${pct(freq)} of the time.`
+          : 'It costs next to nothing.'
+      : colour === 'yellow'
+        ? `My pick is ${lower(best)}, about ${bb(loss)} better.`
+        : `My pick is ${lower(best)}. Yours gives up about ${bb(loss)}.`;
+  const always = mix.length === 1 || mix[0].freq >= 0.99;
+  const how = always
+    ? `With this hand I always ${lower(mix[0].label)}.`
+    : `With this hand I mix it up: ${mix.map((o) => `${lower(o.label)} ${pct(o.freq)}`).join(', ')}.`;
+  return [verdict, how];
+}
+
+/** When the solved line goes a different way from your pick. */
+export function quizCarryOn(line: string): string {
+  return `The hand carries on the way I played it: ${lower(line)}.`;
+}
+
+/** How a solved hand ended for you, in big blinds. */
+export function quizResult(netBb: number, showdown: boolean): string {
+  const n = Number(Math.abs(netBb).toFixed(1));
+  if (netBb > 0) return `You won ${n} big blinds${showdown ? ' at showdown' : ''}.`;
+  if (netBb < 0) return `You lost ${n} big blinds${showdown ? ' at showdown' : ''}.`;
+  return 'You broke even.';
+}
+
+/** The last word on a finished solved hand. */
+export function quizSummary(grades: Colour[]): string {
+  const n = grades.length;
+  const bad = grades.filter((g) => g !== 'green').length;
+  if (n === 0) return 'Nothing to decide in that one.';
+  if (bad === 0) return n === 1 ? 'One decision, and you got it.' : `All ${n} decisions right. Nice.`;
+  return `${n - bad} of ${n} right. ${bad === 1 ? 'One' : bad} worth another look.`;
+}

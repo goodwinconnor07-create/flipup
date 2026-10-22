@@ -313,7 +313,21 @@ against the full solve, BB's turn strategy (check / 33%) and BB's average hand v
 
 The first turn network (5,730 spots, error 0.049) makes flop solves take about 1s instead of 60-100s but
 isn't accurate yet: BB check-raises a 33% c-bet 5-6% (live tree 15%, published 14%), and on Qh9h4c BTN
-checks 61% (live 32%). More turn data is being generated.
+checks 61% (live 32%).
+
+Two gaps in the training data explained it: random strength-sorted ranges never look like the polarized
+ranges after a flop raise, and they stopped at SPR 12 while single-raised pots reach the turn at about 17.
+scripts/value_net_turn.py --library now takes half its spots from real flop lines in the pre-solved
+library (sampled from both players' strategies, flattened so raises come up). Flop solves with turn
+leaves, BTN's c-bet when checked to (check / 33 / 75 / 125) and BB vs a 33% c-bet (fold / call / raise):
+
+| Flop | Live tree | Turn net, 20k random spots | + 1,600 library spots (x4) |
+|---|---|---|---|
+| Qh9h4c | 32 / 46 / 3 / 19, 26 / 59 / 15 | 50 / 25 / 9 / 16, 34 / 61 / 5 | 46 / 23 / 15 / 17, 32 / 52 / 16 |
+| Ks8d3c | 39 / 52 / 5 / 4, 35 / 50 / 15 | 32 / 44 / 13 / 12, 36 / 58 / 6 | 33 / 36 / 23 / 8, 36 / 48 / 16 |
+
+The check-raise is fixed (16% vs 15% live, 14% published); the c-bet size split still leans to 75%.
+More library spots should close it. Each flop solve takes about 1s against 60-100s for the live tree.
 
 Memory drops from 202MB to 1MB. The turn network (hands bucketed by mean river strength x its
 spread, 16 x 4) is trained from full turn solves the same way; with it a flop solve can stop at the

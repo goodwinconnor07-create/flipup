@@ -1,0 +1,11 @@
+.venv/
+.build-src/
+build/
+data/
+__pycache__/
+.pytest_cache/
+*.egg-info/
+out/cache/
+out/runs/
+out/*.npz
+!out/*.log

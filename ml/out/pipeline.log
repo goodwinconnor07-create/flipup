@@ -1,0 +1,13 @@
+learning_curve_0.1 completed 3.323699647000012
+learning_curve_0.25 completed 9.466347279000047
+learning_curve_0.5 completed 5.334035266000001
+learning_curve_0.75 completed 8.119317784999907
+learning_curve_1.0 completed 10.133290740000007
+CV_0 completed 4.194999617000008
+CV_1 completed 0.8473573509999142
+CV_2 completed 0.712213969000004
+CV_3 completed 0.7532983789999435
+CV_4 completed 4.280533912999999
+holdout_paired completed 4.753024387999858
+holdout_monotone completed 4.725454698000021
+{"status": "inconclusive_no_real_data", "costs": {"parameters": 44560, "checkpoint_bytes": 194331, "whole_node_hands": 282, "network_only_ms_per_node": 0.8552174666647261, "whole_node_inference_first_ms": 3756.7469989999154, "whole_node_inference_warm_ms": 17.857425999864063, "training_wall_seconds": 56.64357303199972, "training_process_cpu_seconds": 197.20536792800002, "pipeline_wall_seconds": 156.96523517900005, "pipeline_process_cpu_seconds": 298.725263502, "training_runs": 12, "cpu_threads": 4, "hardware": "x86_64", "torch": "2.14.1+cpu"}}

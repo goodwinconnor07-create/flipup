@@ -1,0 +1,42 @@
+{
+  "status": "inconclusive_no_real_data",
+  "synthetic_fixture_only": true,
+  "accuracy_metrics": null,
+  "reason": "Attached solved-data ZIP exceeds 32 MiB transfer limit. All fits used appendix-B invented ranges; no accuracy claims or fixture accuracy numbers are published.",
+  "executed": {
+    "models": [
+      "MLP",
+      "B0_chart",
+      "B1_equity"
+    ],
+    "learning_curve_fractions": [
+      0.1,
+      0.25,
+      0.5,
+      0.75,
+      1.0
+    ],
+    "cv_folds": 5,
+    "texture_holdouts": [
+      "paired",
+      "monotone"
+    ],
+    "leave_one_spot_out": "unavailable with a single synthetic spot"
+  },
+  "costs": {
+    "parameters": 44560,
+    "checkpoint_bytes": 194331,
+    "whole_node_hands": 282,
+    "network_only_ms_per_node": 0.8552174666647261,
+    "whole_node_inference_first_ms": 3756.7469989999154,
+    "whole_node_inference_warm_ms": 17.857425999864063,
+    "training_wall_seconds": 56.64357303199972,
+    "training_process_cpu_seconds": 197.20536792800002,
+    "pipeline_wall_seconds": 156.96523517900005,
+    "pipeline_process_cpu_seconds": 298.725263502,
+    "training_runs": 12,
+    "cpu_threads": 4,
+    "hardware": "x86_64",
+    "torch": "2.14.1+cpu"
+  }
+}

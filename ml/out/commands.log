@@ -1,0 +1,288 @@
+
+# 2026-10-22T10:14:45.450181+00:00 cwd=/workspace/flipup
+set -euo pipefail
+mkdir -p ml/.build-src/flipup_gto
+cp -a gto/engine ml/.build-src/engine
+ml/.venv/bin/cmake -S ml/.build-src/engine -B ml/build -DPython3_EXECUTABLE="$PWD/ml/.venv/bin/python" -Dpybind11_DIR="$(ml/.venv/bin/python -m pybind11 --cmakedir)"
+ml/.venv/bin/cmake --build ml/build -j4
+# exit=0
+
+# 2026-10-22T10:15:38.948988+00:00 cwd=/workspace/flipup
+OMP_NUM_THREADS=4 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.fixtures --count 12 > ml/out/fixtures.log 2>&1
+
+# 2026-10-22T10:16:50.238100+00:00 cwd=/workspace/flipup
+tail -5 ml/out/fixtures.log; git status --short; ml/.venv/bin/pip freeze > ml/out/installed-packages.txt
+# exit=0
+
+# 2026-10-22T10:19:44.349475+00:00 cwd=/workspace/flipup
+tail -4 ml/out/fixtures.log; cat ml/out/local_solves.json; git diff --stat; git status --short
+# exit=0
+
+# 2026-10-22T10:19:53.592183+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/tests.log 2>&1
+
+# 2026-10-22T10:19:55.043491+00:00 cwd=/workspace/flipup
+XDG_CONFIG_HOME=/workspace/.config npm run check > ml/out/app-check.log 2>&1
+# exit=0
+
+# 2026-10-22T10:20:13.643117+00:00 cwd=/workspace/flipup
+tail -30 ml/out/tests.log; tail -4 ml/out/fixtures.log
+# exit=0
+
+# 2026-10-22T10:21:02.213043+00:00 cwd=/workspace/flipup
+tail -4 ml/out/fixtures.log; tail -8 ml/out/app-check.log
+# exit=0
+# exit=0
+
+# 2026-10-22T10:21:21.122964+00:00 cwd=/workspace/flipup
+tail -6 ml/out/fixtures.log; tail -5 ml/out/app-check.log; PYTHONPATH=ml ml/.venv/bin/python -c "from flipup_ml.audit import audit; e,a=audit(\"ml/data/fixtures\",\"ml/out\"); print(\"readable\",len(e),\"unreadable\",a[\"unreadable\"],\"dropped\",a[\"dropped_exploitability_gt_0_5\"]); from flipup_ml.data import domain; print(\"domain\",list(domain(e)))"
+# exit=0
+# exit=0
+
+# 2026-10-22T10:22:04.559350+00:00 cwd=/workspace/flipup
+tail -3 ml/out/fixtures.log; ps -eo pid,ppid,etime,pcpu,comm --sort=-pcpu | head -8; cat ml/out/initial-commands.log >> ml/out/commands.log
+# Discovery/setup commands before the command wrapper existed (chronological).
+# Editing used apply_patch; no shell commands for edits are omitted.
+pwd; git status --short; rg --files -g 'AGENTS.md' -g 'CLAUDE.md' -g '!node_modules' -g '!dist' /workspace
+cat '/workspace/attachments/b2c2fb20-47a4-47e7-b97b-8c7c4fd7f2da/Pasted text.txt'; ls -l /workspace/attachments/b2c2fb20-47a4-47e7-b97b-8c7c4fd7f2da; ls -la /workspace; cat CLAUDE.md
+git branch --show-current; git branch -a; git ls-remote origin refs/heads/claude/keen-edison-djt6gr; rg --files -g '*HANDOFF*' -g '*.npz' -g '*flop*' -g '!node_modules' /workspace; python3 --version; cmake --version | head -1
+git fetch origin claude/keen-edison-djt6gr; git show FETCH_HEAD:CODEX_GTO_MODEL_HANDOFF.md; git diff --stat HEAD FETCH_HEAD; git ls-tree -r --name-only FETCH_HEAD | rg 'AGENTS.md|HANDOFF|\.npz$'
+git switch -c codex/gto-ev-model FETCH_HEAD; mkdir -p ml/flipup_ml ml/tests ml/out; python3 -m venv ml/.venv; cat gto/engine/CMakeLists.txt; cat gto/requirements.txt; sed -n '1,240p' gto/flipup_gto/flop_library.py; cat gto/scripts/flop_library.py; sed -n '1,190p' gto/engine/src/bindings.cpp
+cat gto/flipup_gto/__init__.py; head -70 gto/flipup_gto/review.py; sed -n '1,160p' gto/flipup_gto/cards.py; sed -n '1,90p' gto/flipup_gto/concepts.py; rg -n 'normalize_ev|contrib\[|action.amount|action.added|all_in' gto/engine/src/solver.cpp | tail -25; command -v g++; command -v ninja
+ml/.venv/bin/pip install --cache-dir /workspace/.cache/pip numpy pybind11 cmake pytest fastapi httpx scikit-learn; ml/.venv/bin/pip install --cache-dir /workspace/.cache/pip torch --index-url https://download.pytorch.org/whl/cpu
+sed -n '190,310p' gto/engine/src/solver.cpp; sed -n '1275,1345p' gto/engine/src/solver.cpp; sed -n '1,110p' gto/flipup_gto/solver.py; sed -n '1,105p' gto/flipup_gto/custom.py
+# Subsequent commands and exit statuses are in commands.log.
+# exit=0
+
+# 2026-10-22T10:22:10.433812+00:00 cwd=/workspace/flipup
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.run --data ml/data/fixtures --epochs 40 > ml/out/pipeline.log 2>&1
+
+# 2026-10-22T10:22:11.754899+00:00 cwd=/workspace/flipup
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m pytest gto/tests/test_ranges.py gto/tests/test_concepts.py gto/tests/test_solver.py -q > ml/out/solver-tests.log 2>&1
+# exit=2
+
+# 2026-10-22T10:22:16.952303+00:00 cwd=/workspace/flipup
+tail -25 ml/out/solver-tests.log; tail -10 ml/out/pipeline.log; git status --short
+# exit=0
+
+# 2026-10-22T10:22:24.844396+00:00 cwd=/workspace/flipup
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -c 'import flipup_ml, pytest; raise SystemExit(pytest.main(["gto/tests/test_ranges.py","gto/tests/test_concepts.py","gto/tests/test_solver.py","-q"]))' > ml/out/solver-tests.log 2>&1
+# exit=0
+
+# 2026-10-22T10:22:25.806252+00:00 cwd=/workspace/flipup
+tail -5 ml/out/pipeline.log; du -sh ml/out/cache; PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/tests.log 2>&1
+# exit=0
+
+# 2026-10-22T10:23:02.881101+00:00 cwd=/workspace/flipup
+tail -10 ml/out/pipeline.log; cat ml/out/solver-tests.log; tail -3 ml/out/tests.log; du -sh ml/out/cache
+# exit=0
+
+# 2026-10-22T10:23:39.843323+00:00 cwd=/workspace/flipup
+tail -8 ml/out/pipeline.log; du -sh ml/out/cache; ps -eo pid,ppid,etime,pcpu,comm --sort=-pcpu | head -6
+# exit=0
+
+# 2026-10-22T10:23:53.150450+00:00 cwd=/workspace/flipup
+kill -TERM 3817
+# exit=0
+# exit=143
+
+# 2026-10-22T10:23:53.456531+00:00 cwd=/workspace/flipup
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.run --data ml/data/fixtures --epochs 40 > ml/out/pipeline.log 2>&1
+
+# 2026-10-22T10:24:14.843960+00:00 cwd=/workspace/flipup
+tail -8 ml/out/pipeline.log; ml/.venv/bin/python -c "import json; a=json.load(open(\"ml/out/audit.json\")); print({k:a[k] for k in [\"retained_files\",\"distinct_boards\",\"max_action_count\",\"node_counts\",\"max_strategy_sum_error\",\"fold_ev_distribution_bb\"]}); print(\"max root sum error\",max(abs(r[\"error_bb\"]) for r in a[\"root_range_ev_sums\"]))"
+# exit=0
+
+# 2026-10-22T10:24:55.498868+00:00 cwd=/workspace/flipup
+tail -12 ml/out/pipeline.log; PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/tests.log 2>&1
+# exit=0
+
+# 2026-10-22T10:25:13.972606+00:00 cwd=/workspace/flipup
+git status --ignored --short gto; tail -10 ml/out/pipeline.log; tail -8 ml/out/tests.log; find gto -name __pycache__ -type d
+# exit=0
+
+# 2026-10-22T10:25:29.574580+00:00 cwd=/workspace/flipup
+tail -12 ml/out/pipeline.log; du -h ml/out/model.pt 2>/dev/null; git diff --check
+# exit=0
+
+# 2026-10-22T10:25:54.600178+00:00 cwd=/workspace/flipup
+rg -n "def test|\.solve\(" gto/tests/test_solver.py; cat gto/tests/test_solver.py; tail -10 ml/out/pipeline.log
+# exit=0
+
+# 2026-10-22T10:26:15.461381+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+p=Path("ml/out/local_solves.json")
+runs=json.loads(p.read_text())
+if not any(r.get("purpose")=="existing river solver tests" for r in runs):
+    runs += [{"purpose":"existing river solver tests","test":name,"status":"completed","source":"gto/tests/test_solver.py","suite_wall_seconds":0.26} for name in ["test_clairvoyance_river_game[0.5]","test_clairvoyance_river_game[1.0]","test_navigation_and_outputs"]]
+p.write_text(json.dumps(runs,indent=2))
+print("Total local solve calls:",len(runs))
+PY
+# exit=0
+
+# 2026-10-22T10:26:29.105762+00:00 cwd=/workspace/flipup
+tail -12 ml/out/pipeline.log; ls -la ml/out/model.pt ml/out/report.md ml/out/metrics.json 2>/dev/null; git status --short
+# exit=0
+# exit=0
+
+# 2026-10-22T10:27:09.648248+00:00 cwd=/workspace/flipup
+tail -15 ml/out/pipeline.log; ls -lh ml/out/model.pt ml/out/report.md ml/out/metrics.json 2>/dev/null; PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/tests.log 2>&1
+# exit=0
+
+# 2026-10-22T10:27:35.986979+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m flipup_ml.infer --spot btn_bb --board Ks7d2c --path "[0]" --hand AsAh > ml/out/inference-smoke.json
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import csv,json
+from pathlib import Path
+from types import SimpleNamespace
+import torch
+from flipup_ml.audit import audit
+from flipup_ml.data import domain
+from flipup_ml.run import report
+out=Path("ml/out")
+entries,a=audit("ml/data/fixtures",out)
+newdomain=domain(entries)
+artifact=torch.load(out/"model.pt",map_location="cpu",weights_only=True)
+for spot,item in newdomain.items():
+    assert item["unresolved_combos"]==[]
+    assert all(item[k]==artifact["domain"][spot][k] for k in ("pot","stack","roots","nodes"))
+artifact["domain"]=newdomain
+torch.save(artifact,out/"model.pt")
+values=json.loads((out/"metrics.json").read_text())
+values["costs"]["checkpoint_bytes"]=(out/"model.pt").stat().st_size
+(out/"metrics.json").write_text(json.dumps(values,indent=2))
+training=json.loads((out/"training.json").read_text()); training["costs"]=values["costs"]
+(out/"training.json").write_text(json.dumps(training,indent=2))
+curve=list(csv.DictReader((out/"learning_curve.csv").open()))
+for r in curve:
+    for k in ("fraction","wall_seconds"): r[k]=float(r[k])
+    for k in ("training_rank_triples","training_boards"): r[k]=int(r[k])
+report(SimpleNamespace(),out,values,a,curve)
+solves=json.loads((out/"local_solves.json").read_text())
+fixture_seconds=sum(x.get("seconds",0) for x in solves)
+with (out/"report.md").open("a") as f:
+    f.write(f"\nLocal solve budget: {len(solves)} calls total: 12 invented-range flop fixtures plus three existing river test cases. Fixture solve wall time was {fixture_seconds:.2f} seconds; individual CPU time was not measured. The 20-solve cap was respected.\n\nThe neural batch timing excludes feature generation. The cold whole-range interface is much slower because it computes sampled root equities; it is not a sub-millisecond end-to-end service.\n")
+smoke=json.loads((out/"inference-smoke.json").read_text())
+assert smoke["supported"] and smoke["evidence"]=="synthetic_fixture_only" and len(smoke["hands"])==1
+print("Final domain validated; checkpoint bytes",values["costs"]["checkpoint_bytes"])
+print((out/"tests.log").read_text())
+PY
+# exit=0
+
+# 2026-10-22T10:28:01.290283+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+from pathlib import Path
+import json,subprocess
+start=Path("ml/.venv/pyvenv.cfg").stat().st_mtime
+for directory in [Path("gto/flipup_gto/__pycache__"),Path("gto/tests/__pycache__")]:
+    if not directory.exists(): continue
+    files=list(directory.iterdir())
+    if any(p.suffix!=".pyc" or p.stat().st_mtime<start for p in files):
+        raise RuntimeError("Unexpected pre-existing cache; preserve it")
+    for p in files: p.unlink()
+    directory.rmdir()
+    print("Removed generated cache",directory)
+status=subprocess.check_output(["git","status","--porcelain","--untracked-files=all"],text=True)
+assert all(line[3:].startswith("ml/") for line in status.splitlines()),status
+assert subprocess.check_output(["git","branch","--show-current"],text=True).strip()=="codex/gto-ev-model"
+assert not subprocess.check_output(["git","diff","--name-only"],text=True)
+checks={"ml_tests":"40 passed", "existing_solver_subset":"27 passed", "app_check":"typecheck, 107 unit tests, production build passed", "local_solves":15,"tracked_changes_outside_ml":[],"real_data_accuracy":"not evaluated: ZIP transfer blocked at 32 MiB"}
+Path("ml/out/validation.json").write_text(json.dumps(checks,indent=2))
+with Path("ml/out/report.md").open("a") as f:
+    f.write("\nValidation: `python -m pytest ml/tests -q`: 40 passed; selected existing range/concept/river-solver tests: 27 passed; `npm run check`: typecheck, 107 unit tests and production build passed. The CLI returned supported:true with synthetic_fixture_only evidence. Tracked source files outside ml/ are unchanged.\n")
+print("Only ml/ changes; branch verified")
+PY
+PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/tests.log 2>&1
+git diff --check
+
+# 2026-10-22T10:28:06.694965+00:00 cwd=/workspace/flipup
+cat ml/out/report.md; cat ml/out/metrics.json; tail -3 ml/out/tests.log; git diff --check; git ls-remote origin refs/heads/codex/gto-ev-model; git status --short
+# exit=0
+# exit=0
+
+# 2026-10-22T10:28:13.096872+00:00 cwd=/workspace/flipup
+set -euo pipefail
+cat ml/out/tests.log
+git add -- ml
+git diff --cached --check
+git diff --cached --stat
+ml/.venv/bin/python - <<'PY'
+import subprocess
+paths=subprocess.check_output(["git","diff","--cached","--name-only"],text=True).splitlines()
+assert paths and all(p.startswith("ml/") for p in paths)
+print("Staged files:",len(paths),"all under ml/")
+PY
+# exit=2
+
+# 2026-10-22T10:28:35.848968+00:00 cwd=/workspace/flipup
+set -euo pipefail
+ml/.venv/bin/python - <<'PY'
+from pathlib import Path
+p=Path("ml/out/learning_curve.csv")
+p.write_bytes(p.read_bytes().replace(b"\r\n",b"\n"))
+PY
+git add -- ml
+git diff --cached --check
+git diff --cached --stat
+ml/.venv/bin/python - <<'PY'
+import subprocess
+paths=subprocess.check_output(["git","diff","--cached","--name-only"],text=True).splitlines()
+assert paths and all(p.startswith("ml/") for p in paths)
+print("Staged files:",len(paths),"all under ml/")
+PY
+# exit=0
+
+# 2026-10-22T10:28:54.414989+00:00 cwd=/workspace/flipup
+set -euo pipefail
+git add -- ml
+git diff --cached --check
+git status --short
+ml/.venv/bin/python - <<'PY'
+import subprocess
+paths=subprocess.check_output(["git","diff","--cached","--name-only"],text=True).splitlines()
+assert "ml/out/commands.log" in paths
+assert all(p.startswith("ml/") for p in paths)
+print(len(paths),"files staged; command log included")
+PY
+# exit=2
+
+# 2026-10-22T10:29:01.825997+00:00 cwd=/workspace/flipup
+set -euo pipefail
+ml/.venv/bin/python - <<'PY'
+from pathlib import Path
+p=Path("ml/out/app-check.log")
+p.write_text("\n".join(line.rstrip() for line in p.read_text().splitlines())+"\n")
+PY
+git add -- ml
+git diff --cached --check
+ml/.venv/bin/python - <<'PY'
+import subprocess
+paths=subprocess.check_output(["git","diff","--cached","--name-only"],text=True).splitlines()
+assert "ml/out/commands.log" in paths
+assert all(p.startswith("ml/") for p in paths)
+print(len(paths),"files staged; command log included")
+PY
+# exit=0
+
+# 2026-10-22T10:29:21.600335+00:00 cwd=/workspace/flipup
+set -euo pipefail
+test "$(git branch --show-current)" = codex/gto-ev-model
+git add -- ml
+git diff --cached --check
+ml/.venv/bin/python - <<'PY'
+import subprocess
+paths=subprocess.check_output(["git","diff","--cached","--name-only"],text=True).splitlines()
+assert paths and all(p.startswith("ml/") for p in paths)
+assert "ml/out/commands.log" in paths
+PY
+git commit -m "Add isolated flop EV experiment with synthetic validation"
+git push --set-upstream origin codex/gto-ev-model
+git rev-parse --short HEAD
+git status --short
+ml/.venv/bin/python - <<'PY'
+import subprocess
+assert not subprocess.check_output(["git","status","--porcelain"],text=True)
+print("Clean checkout; only the requested branch was pushed")
+PY

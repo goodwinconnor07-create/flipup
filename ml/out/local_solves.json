@@ -1,0 +1,107 @@
+[
+  {
+    "board": "Kh7d2c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 44.78800967799998,
+    "exploitability_pct": 0.2747574323125779
+  },
+  {
+    "board": "Ad9d4c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 27.312413754000033,
+    "exploitability_pct": 0.29173603057861136
+  },
+  {
+    "board": "QhJd5c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 30.413550446999977,
+    "exploitability_pct": 0.4611894445059777
+  },
+  {
+    "board": "Tc8c6c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 14.59986995700001,
+    "exploitability_pct": 0.3373082103355195
+  },
+  {
+    "board": "AhAd3c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 24.695131891000074,
+    "exploitability_pct": 0.4259452561332765
+  },
+  {
+    "board": "KhKd8c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 35.322529117000045,
+    "exploitability_pct": 0.3149666728479565
+  },
+  {
+    "board": "Jc9c2c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 18.574355387999958,
+    "exploitability_pct": 0.30929565834522615
+  },
+  {
+    "board": "9h6d3c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 46.529546635999964,
+    "exploitability_pct": 0.3025980092532642
+  },
+  {
+    "board": "8d7d4c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 42.12634565600001,
+    "exploitability_pct": 0.23883566437672019
+  },
+  {
+    "board": "QhQd6c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 39.42128995400003,
+    "exploitability_pct": 0.4932102076470748
+  },
+  {
+    "board": "AcTc5c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 9.143593585999952,
+    "exploitability_pct": 0.45970008449066524
+  },
+  {
+    "board": "Jh8d4c",
+    "purpose": "synthetic fixture",
+    "status": "completed",
+    "seconds": 50.75767189299995,
+    "exploitability_pct": 0.29822786629822445
+  },
+  {
+    "purpose": "existing river solver tests",
+    "test": "test_clairvoyance_river_game[0.5]",
+    "status": "completed",
+    "source": "gto/tests/test_solver.py",
+    "suite_wall_seconds": 0.26
+  },
+  {
+    "purpose": "existing river solver tests",
+    "test": "test_clairvoyance_river_game[1.0]",
+    "status": "completed",
+    "source": "gto/tests/test_solver.py",
+    "suite_wall_seconds": 0.26
+  },
+  {
+    "purpose": "existing river solver tests",
+    "test": "test_navigation_and_outputs",
+    "status": "completed",
+    "source": "gto/tests/test_solver.py",
+    "suite_wall_seconds": 0.26
+  }
+]

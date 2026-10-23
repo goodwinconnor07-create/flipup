@@ -7,6 +7,7 @@
 #include "flipup/cards.h"
 #include "flipup/equity.h"
 #include "flipup/eval.h"
+#include "flipup/multiway.h"
 #include "flipup/preflop.h"
 #include "flipup/solver.h"
 
@@ -36,6 +37,17 @@ const char* node_type_name(NodeType t) {
     case NodeType::SHOWDOWN: return "showdown";
     case NodeType::ALLIN: return "allin";
     case NodeType::LEAF: return "leaf";
+  }
+  return "?";
+}
+
+const char* mw_action_name(MWAction::Type t) {
+  switch (t) {
+    case MWAction::FOLD: return "fold";
+    case MWAction::CHECK: return "check";
+    case MWAction::CALL: return "call";
+    case MWAction::BET: return "bet";
+    case MWAction::RAISE: return "raise";
   }
   return "?";
 }
@@ -387,4 +399,80 @@ PYBIND11_MODULE(_engine, m) {
             return d;
           },
           py::arg("path"), py::arg("with_equity") = true, py::arg("with_ev") = true);
+
+  py::class_<MWConfig>(m, "MWConfig")
+      .def(py::init<>())
+      .def_readwrite("players", &MWConfig::players)
+      .def_readwrite("board", &MWConfig::board)
+      .def_readwrite("pot", &MWConfig::pot)
+      .def_readwrite("stack", &MWConfig::stack)
+      .def_readwrite("range", &MWConfig::range)
+      .def_readwrite("max_raises", &MWConfig::max_raises)
+      .def_readwrite("end_street", &MWConfig::end_street)
+      .def_readwrite("deal_subset", &MWConfig::deal_subset)
+      .def_readwrite("min_bet", &MWConfig::min_bet)
+      .def_readwrite("add_allin_threshold", &MWConfig::add_allin_threshold)
+      .def_readwrite("force_allin_threshold", &MWConfig::force_allin_threshold)
+      .def_readwrite("merge_threshold", &MWConfig::merge_threshold)
+      .def_readwrite("dcfr_alpha", &MWConfig::dcfr_alpha)
+      .def_readwrite("dcfr_gamma", &MWConfig::dcfr_gamma)
+      .def_readwrite("max_memory_mb", &MWConfig::max_memory_mb)
+      .def("set_sizes", [](MWConfig& c, int street, const std::vector<double>& bet, const std::vector<double>& raise) {
+        if (street < 0 || street > 2) throw std::invalid_argument("street 0-2");
+        c.bet[street] = bet;
+        c.raise[street] = raise;
+      });
+
+  py::class_<MultiwaySolver>(m, "MultiwaySolver")
+      .def(py::init<const MWConfig&>(), py::call_guard<py::gil_scoped_release>())
+      .def_property_readonly("num_nodes", &MultiwaySolver::num_nodes)
+      .def_property_readonly("num_action_nodes", &MultiwaySolver::num_action_nodes)
+      .def_property_readonly("memory_bytes", &MultiwaySolver::memory_bytes)
+      .def_property_readonly("iterations", &MultiwaySolver::iteration)
+      .def("iterate", &MultiwaySolver::iterate, py::call_guard<py::gil_scoped_release>())
+      .def("exploitability_pct", &MultiwaySolver::exploitability_pct, py::call_guard<py::gil_scoped_release>())
+      .def("root_ev", &MultiwaySolver::root_ev, py::call_guard<py::gil_scoped_release>())
+      .def("request_stop", &MultiwaySolver::request_stop)
+      .def(
+          "query",
+          [](MultiwaySolver& s, const std::vector<int>& path, bool with_ev, bool with_equity) {
+            MWNodeInfo info;
+            {
+              py::gil_scoped_release release;
+              info = s.query(path, with_ev, with_equity);
+            }
+            static const char* TYPES[] = {"action", "chance", "fold", "showdown"};
+            py::dict d;
+            d["type"] = TYPES[info.type];
+            d["player"] = info.player;
+            d["street"] = info.street;
+            d["pot"] = info.pot;
+            d["contrib"] = info.contrib;
+            d["wager"] = info.wager;
+            d["active"] = info.active;
+            d["board"] = info.board;
+            py::list actions;
+            for (const auto& a : info.actions) {
+              py::dict ad;
+              ad["type"] = mw_action_name(a.type);
+              ad["amount"] = a.amount;
+              ad["added"] = a.added;
+              ad["all_in"] = a.all_in;
+              actions.append(ad);
+            }
+            d["actions"] = actions;
+            d["deal_cards"] = info.deal_cards;
+            auto rows = [](const std::vector<std::vector<float>>& v) {
+              py::list l;
+              for (const auto& r : v) l.append(to_numpy(r));
+              return l;
+            };
+            d["reach"] = rows(info.reach);
+            d["strategy"] = rows(info.strategy);
+            d["action_ev"] = rows(info.action_ev);
+            d["ev"] = rows(info.ev);
+            d["equity"] = rows(info.equity);
+            return d;
+          },
+          py::arg("path"), py::arg("with_ev") = true, py::arg("with_equity") = false);
 }

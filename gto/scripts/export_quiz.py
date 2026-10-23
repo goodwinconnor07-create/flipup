@@ -1,13 +1,16 @@
-"""Pack quiz hands (scripts/quiz_hands.py output) into small files the phone downloads.
+"""Pack quiz hands into small files the phone downloads.
+
+Scroll deals multiway hands (scripts/quiz_multiway.py: three or four players see the flop); heads-up
+hands (scripts/quiz_hands.py) are only packed with --heads-up.
 
 Writes <out>/index.json ({"count", "shards": [file names]}) and <out>/hands-NNN.json (a list of
-hands). Each hand has all six seats, with the other four players' preflop folds put back in table
-order, so the app can replay it like any recorded hand. Every legal option is kept: the solved
-tree's with GTO's frequency for the hand and its EV, the others (GTO never takes them there) with no EV.
-`line` is the option the hand carries on with and `eq` your hand's equity against the other range
+hands). Each hand has all six seats and every move in table order, so the app can replay it like any
+recorded hand. Every legal option is kept: the solved tree's with GTO's frequency for the hand and its
+EV, the others (GTO never takes them there) with no EV. `line` is the option the hand carries on with,
+`eq` your hand's share of the pot against the other players' ranges and `players` how many are still in
 (postflop). Hands over before the flop are left out.
 
-    python3 scripts/export_quiz.py quiz/*.jsonl --out ../public/gto/quiz
+    python3 scripts/export_quiz.py quizmw/*.jsonl --out ../public/gto/quiz
 """
 from __future__ import annotations
 
@@ -42,6 +45,35 @@ def with_folds(steps: list, matchup: set) -> list:
     return out
 
 
+def pack_multiway(h: dict) -> dict | None:
+    """A multiway hand: every seat's moves are already in the steps, in table order."""
+    decisions = []
+    for d in h["decisions"]:
+        opts = d["options"]
+        step = h["steps"][d["step"]]
+        line = next((k for k, o in enumerate(opts) if o["kind"] == step["kind"] and abs(o["to_bb"] - step["to_bb"]) < 0.01), None)
+        if line is None:
+            return None
+        dec = {
+            "at": d["step"], "pot": d["pot_bb"], "toCall": d["to_call_bb"],
+            "options": [{"label": o["label"], "kind": o["kind"], "to": o["to_bb"], "freq": round(o["freq"], 3),
+                         "ev": None if o.get("ev_bb") is None else round(o["ev_bb"], 2)} for o in opts],
+            "line": line,
+            "eq": None if d.get("equity") is None else round(d["equity"], 3),
+        }
+        if d.get("players"):
+            dec["players"] = d["players"]
+        decisions.append(dec)
+    if not decisions or len(h["board"]) < 3:
+        return None
+    return {
+        "id": h["id"], "hero": h["hero"]["seat"], "villains": [v["seat"] for v in h["villains"]],
+        "cards": h["hero"]["cards"], "villainCards": [v["cards"] for v in h["villains"]], "board": h["board"],
+        "steps": [[s["street"][0], s["seat"], s["kind"], s["to_bb"]] for s in h["steps"]],
+        "decisions": decisions, "showdown": h["result"]["showdown"],
+    }
+
+
 def pack(h: dict) -> dict | None:
     hero, opp = h["hero"]["seat"], h["villain"]["seat"]
     steps = with_folds(h["steps"], {hero, opp})
@@ -66,7 +98,7 @@ def pack(h: dict) -> dict | None:
     if not decisions or not h["board"]:
         return None  # nothing to answer, or over before the flop
     return {
-        "id": h["id"], "hero": hero, "villain": opp, "cards": h["hero"]["cards"], "villainCards": h["villain"]["cards"],
+        "id": h["id"], "hero": hero, "villains": [opp], "cards": h["hero"]["cards"], "villainCards": [h["villain"]["cards"]],
         "board": h["board"], "steps": [[s["street"][0], s["seat"], s["kind"], s["to_bb"]] for s in steps],
         "decisions": decisions, "showdown": h["result"]["showdown"],
     }
@@ -76,6 +108,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("files", nargs="+")
     ap.add_argument("--out", required=True)
+    ap.add_argument("--heads-up", action="store_true", help="also pack heads-up hands")
     args = ap.parse_args()
     hands, seen = [], set()
     for f in sorted({q for p in args.files for q in glob.glob(p)}):
@@ -84,7 +117,7 @@ def main():
                 h = json.loads(line)
             except json.JSONDecodeError:
                 continue  # a line cut off when a run was stopped
-            p = pack(h)
+            p = pack_multiway(h) if "villains" in h else (pack(h) if args.heads_up else None)
             if p and p["id"] not in seen:
                 seen.add(p["id"])
                 hands.append(p)

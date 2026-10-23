@@ -1,0 +1,8 @@
+{
+  "ml_tests": "40 passed",
+  "existing_solver_subset": "27 passed",
+  "app_check": "typecheck, 107 unit tests, production build passed",
+  "local_solves": 15,
+  "tracked_changes_outside_ml": [],
+  "real_data_accuracy": "not evaluated: ZIP transfer blocked at 32 MiB"
+}

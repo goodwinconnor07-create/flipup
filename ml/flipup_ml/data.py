@@ -106,7 +106,7 @@ def build_dataset(entries,cache,eq_samples=1024):
     Path(cache).mkdir(parents=True,exist_ok=True)
     fields={k:[] for k in ('x','ev','strategy','mask','reach','weight','pot','group','texture','spot','depth','player','strength','handclass','node','board')}
     for entry in entries:
-        digest=hashlib.sha256(entry.path.read_bytes()+str(eq_samples).encode()+b'features-v1').hexdigest()
+        digest=hashlib.sha256((entry.spot+'/'+entry.path.name).encode()+entry.path.read_bytes()+str(eq_samples).encode()+b'features-v2-batch-exact').hexdigest()
         cp=Path(cache)/(digest+'.npz')
         if cp.exists():
             with np.load(cp) as f:

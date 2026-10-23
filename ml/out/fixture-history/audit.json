@@ -1,0 +1,182 @@
+{
+  "source": "ml/data/fixtures",
+  "synthetic": true,
+  "files_per_spot": {
+    "btn_bb": 12,
+    "co_bb": 0,
+    "utg_bb": 0,
+    "sb_bb": 0,
+    "sb_limp": 0,
+    "bb_btn_3bet": 0
+  },
+  "unreadable": [],
+  "dropped_exploitability_gt_0_5": [],
+  "retained_files": 12,
+  "spots": {
+    "btn_bb": {
+      "files": 12,
+      "pots": [
+        5.5
+      ],
+      "stacks": [
+        97.5
+      ],
+      "root_range_mismatches": [],
+      "shared_combo_comparisons": {
+        "0": 3174,
+        "1": 5319
+      },
+      "combo_count_distribution": {
+        "0": {
+          "min": 265.0,
+          "p25": 284.25,
+          "median": 295.5,
+          "p75": 300.0,
+          "max": 310.0
+        },
+        "1": {
+          "min": 451.0,
+          "p25": 475.75,
+          "median": 495.5,
+          "p75": 502.25,
+          "max": 515.0
+        }
+      },
+      "note": "Board blockers change combo arrays: compare root weights on overlapping unblocked combos, not raw array equality."
+    },
+    "co_bb": {
+      "files": 0
+    },
+    "utg_bb": {
+      "files": 0
+    },
+    "sb_bb": {
+      "files": 0
+    },
+    "sb_limp": {
+      "files": 0
+    },
+    "bb_btn_3bet": {
+      "files": 0
+    }
+  },
+  "distinct_boards": 12,
+  "intersection_all_six_spots": 0,
+  "pairwise_intersections": {
+    "btn_bb/co_bb": 0,
+    "btn_bb/utg_bb": 0,
+    "btn_bb/sb_bb": 0,
+    "btn_bb/sb_limp": 0,
+    "btn_bb/bb_btn_3bet": 0,
+    "co_bb/utg_bb": 0,
+    "co_bb/sb_bb": 0,
+    "co_bb/sb_limp": 0,
+    "co_bb/bb_btn_3bet": 0,
+    "utg_bb/sb_bb": 0,
+    "utg_bb/sb_limp": 0,
+    "utg_bb/bb_btn_3bet": 0,
+    "sb_bb/sb_limp": 0,
+    "sb_bb/bb_btn_3bet": 0,
+    "sb_limp/bb_btn_3bet": 0
+  },
+  "exploitability_pct": {
+    "min": 0.23883566437672019,
+    "p25": 0.2966049073683212,
+    "median": 0.3121311655965913,
+    "p75": 0.4343839632226237,
+    "max": 0.4932102076470748
+  },
+  "iterations": {
+    "min": 40.0,
+    "p25": 60.0,
+    "median": 60.0,
+    "p75": 60.0,
+    "max": 80.0
+  },
+  "node_counts": {
+    "8": 12
+  },
+  "max_action_count": 4,
+  "max_strategy_sum_error": 0.00040435791015625,
+  "root_range_ev_sums": [
+    {
+      "file": "ml/data/fixtures/btn_bb/8d7d4c.npz",
+      "sum_bb": 5.4999988079071045,
+      "pot_bb": 5.5,
+      "error_bb": -1.1920928955078125e-06
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/9h6d3c.npz",
+      "sum_bb": 5.499999284744263,
+      "pot_bb": 5.5,
+      "error_bb": -7.152557373046875e-07
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/AcTc5c.npz",
+      "sum_bb": 5.4999988079071045,
+      "pot_bb": 5.5,
+      "error_bb": -1.1920928955078125e-06
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/Ad9d4c.npz",
+      "sum_bb": 5.499999284744263,
+      "pot_bb": 5.5,
+      "error_bb": -7.152557373046875e-07
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/AhAd3c.npz",
+      "sum_bb": 5.499999284744263,
+      "pot_bb": 5.5,
+      "error_bb": -7.152557373046875e-07
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/Jc9c2c.npz",
+      "sum_bb": 5.499999523162842,
+      "pot_bb": 5.5,
+      "error_bb": -4.76837158203125e-07
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/Jh8d4c.npz",
+      "sum_bb": 5.499999284744263,
+      "pot_bb": 5.5,
+      "error_bb": -7.152557373046875e-07
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/Kh7d2c.npz",
+      "sum_bb": 5.499999284744263,
+      "pot_bb": 5.5,
+      "error_bb": -7.152557373046875e-07
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/KhKd8c.npz",
+      "sum_bb": 5.499998569488525,
+      "pot_bb": 5.5,
+      "error_bb": -1.430511474609375e-06
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/QhJd5c.npz",
+      "sum_bb": 5.4999988079071045,
+      "pot_bb": 5.5,
+      "error_bb": -1.1920928955078125e-06
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/QhQd6c.npz",
+      "sum_bb": 5.4999988079071045,
+      "pot_bb": 5.5,
+      "error_bb": -1.1920928955078125e-06
+    },
+    {
+      "file": "ml/data/fixtures/btn_bb/Tc8c6c.npz",
+      "sum_bb": 5.499999046325684,
+      "pot_bb": 5.5,
+      "error_bb": -9.5367431640625e-07
+    }
+  ],
+  "fold_ev_distribution_bb": {
+    "min": -4.76837158203125e-07,
+    "p25": 0.0,
+    "median": 0.0,
+    "p75": 0.0,
+    "max": 4.76837158203125e-07
+  }
+}

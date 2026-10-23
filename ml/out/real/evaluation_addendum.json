@@ -1,0 +1,6 @@
+{
+  "recorded_before_viewing_held_out_scores": true,
+  "reason": "Holding out a monotone rank group also holds out its non-monotone suit cousins. The requested monotone-family verdict must explicitly inspect the monotone subgroup, not just the combined rank-group score.",
+  "rule": "Report both the complete monotone rank-group holdout and its unpaired:monotone subgroup. Apply the original thresholds and baseline comparisons to both, and downgrade overall use if either fails. No fitting, split, threshold, or hyperparameter changes.",
+  "paired_family": "All suit cousins of a paired rank triple are paired, so the paired grouped holdout is already a paired-only family test."
+}

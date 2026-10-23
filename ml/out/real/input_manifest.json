@@ -1,0 +1,44 @@
+[
+  {
+    "part": "flipup-flops-part01-of-07.zip",
+    "files": 194,
+    "bytes": 26975130,
+    "sha256": "7f14030d09996b7b620a1246cf52deb9eeeb674e0453719a1f4b696e8a0eaba7"
+  },
+  {
+    "part": "flipup-flops-part02-of-07.zip",
+    "files": 282,
+    "bytes": 27104870,
+    "sha256": "b0d212e6e6fdc27b9122fd7645286b29d14931193a4565ae42a8dc402f69ba6b"
+  },
+  {
+    "part": "flipup-flops-part03-of-07.zip",
+    "files": 269,
+    "bytes": 27207278,
+    "sha256": "f869d077b1cd855cd14f2705b7b167a93f4eb213a90ad80b7adccdc7db86c2e0"
+  },
+  {
+    "part": "flipup-flops-part04-of-07.zip",
+    "files": 146,
+    "bytes": 27319288,
+    "sha256": "7c8863f5ecb7e2e8643079ff8f50b58039a128a6e0a73e265f50cfea930cbe0e"
+  },
+  {
+    "part": "flipup-flops-part05-of-07.zip",
+    "files": 144,
+    "bytes": 27435407,
+    "sha256": "9ed52a5515a018036f33c00e1bd8fb6fb2936cdb89d286f0cda221ce8a7a3b2e"
+  },
+  {
+    "part": "flipup-flops-part06-of-07.zip",
+    "files": 143,
+    "bytes": 27373577,
+    "sha256": "33754c88a22ff64dffc9f89bfec8e8da5733edcf6fbf7ac87faa87b5fbb0b187"
+  },
+  {
+    "part": "flipup-flops-part07-of-07.zip",
+    "files": 245,
+    "bytes": 22507423,
+    "sha256": "7a5e274deae3a49186478e5d7e9ce556e5c169cafbdba32c010788963df6995b"
+  }
+]

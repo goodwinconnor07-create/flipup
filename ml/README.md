@@ -2,7 +2,9 @@
 
 Run from the repository root on `codex/gto-ev-model`. All new files and outputs are under `ml/`. The existing solver is imported read-only and built from a scratch source copy. No production service, credentials, external API, deployment or new machine is involved. Package registries and the repository's existing Git transport are used only for setup and the requested branch push.
 
-The attached library ZIP was too large for this session's 32 MiB attachment transfer limit. The executed experiment uses appendix-B **invented ranges**, not production spot data. It validates the pipeline only; `out/metrics.json` intentionally contains no fixture accuracy numbers. The checkpoint is marked `synthetic_fixture_only` and must not be used for coaching. See [out/report.md](out/report.md).
+The seven smaller uploaded ZIP parts are now available: 1,423 readable solved files, with one excluded above 0.5% exploitability. Hashes, sizes and file counts match MANIFEST.json. There are 239 boards, 234 shared across all six spots before filtering, and 19,664,924 retained hand/node rows. Stored root weights are identical for shared unblocked combos within each spot.
+
+See [the real-data report](out/real/report.md), [metrics](out/real/metrics.json), [audit](out/real/data_audit.md), [frozen protocol](out/real/protocol.json), and [learning curve](out/real/learning_curve.csv). Root out/ convenience artifacts are refreshed after final validation. Earlier synthetic-only artifacts are preserved separately under out/fixture-history/. A supported input flag is not a claim of accurate coaching.
 
 ## Reproduce setup
 
@@ -36,7 +38,7 @@ PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.commands \
   'PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q'
 ```
 
-The fixture generator uses the handoff's exact invented OOP/IP ranges, canonicalizes the boards, and stores the production schema (including action descriptors, equity arrays and compatible-weighted root realization). It solves at most 200 iterations per board, stopping at 0.5% exploitability, on four threads. The run ledger `out/local_solves.json` caps attempts at 20 even across restarts. It reuses existing fixture files. This run used 12 fixture solves plus three small river solves from the selected existing solver tests (15 total); no production data is synthesized or labelled real. The new `ml/tests` use tiny deterministic arrays and do not solve games.
+The historical fixture generator uses the handoff's exact invented OOP/IP ranges, canonicalizes the boards, and stores the production schema. It solves at most 200 iterations per board, stopping at 0.5% exploitability. Its ledger caps attempts at 20 across restarts. That stage used 12 fixture solves plus three existing river-test solves (15 total), published no accuracy claims, and produced a synthetic_fixture_only checkpoint. No new solves are run for the real experiment. The fast ml/tests use deterministic arrays and do not solve games.
 
 ## Run with the actual solved library
 
@@ -45,7 +47,9 @@ Provide files at `ml/data/flops/<spot>/<canonical-flop>.npz`. Multiple independe
 ```bash
 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.unpack /path/to/part1.zip /path/to/part2.zip --out ml/data/flops
 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.commands \
-  'OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.run --data ml/data/flops --out ml/out/real --epochs 40'
+  'OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.stream_data > ml/out/real/features.log 2>&1'
+PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.commands \
+  'OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.real_run --epochs 20 --per-node 64 > ml/out/real/pipeline.log 2>&1'
 ```
 
 The unpacker extracts only NPZ files under the six spot names, validates paths and refuses conflicting existing files. It never executes archive contents. Keep real runs in a separate output directory to preserve fixture provenance. Real runs train on real data only. Loading audits every file, drops exploitability above 0.5%, and refuses inconsistent root ranges, stacks or stored trees before pooling. No stored equity, EV, strategy, opponent deeper range or actor deeper range is an input. Root equity is sampled locally without solving.
@@ -56,12 +60,12 @@ Splits group all rows by board rank triple across suits, nodes and spots. Primar
 
 ```bash
 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.infer \
-  --checkpoint ml/out/model.pt --spot btn_bb --board 'Ks7d2c' --path '[0]' --hand 'AsAh'
+  --checkpoint ml/out/real/model.pt --spot btn_bb --board 'Ks7d2c' --path '[0]' --hand 'AsAh'
 ```
 
 ```python
 from flipup_ml.infer import Predictor, UnsupportedInput
-p = Predictor('ml/out/model.pt')
+p = Predictor('ml/out/real/model.pt')
 result = p.predict('btn_bb', 'Ks7d2c', [0], hand='AsAh',
                    players=2, street='flop', stack=97.5, rake=0, rake_cap=0)
 ```
@@ -77,3 +81,15 @@ Metrics call the unchanged `gto/flipup_gto/review.grade`. Truth and prediction e
 `metrics.json` has reach-weighted and unweighted metrics by spot, depth, OOP/IP actor, texture and made-hand strength for real runs. `learning_curve.csv` uses nested fractions of training groups and the same test groups. Confidence intervals are descriptive Student-t intervals from five grouped CV folds; training folds overlap, so these are not independent-replicate guarantees. Network-only timings exclude feature generation; whole-interface timings include it.
 
 Read the handoff's strong/estimate bars before drawing a conclusion. Success also needs a clear improvement over both baselines and robustness on texture holdouts. A fixture run establishes none of those properties.
+
+## Bounded real-data fitting
+
+The real runner processes feature files individually rather than concatenating all 19.7 million rows into memory. Cache identity includes source bytes, spot, board and feature version. It audits all files and uses one fixed width-128 MLP, with at most 20 epochs, six-epoch early stopping, AdamW 0.001 and batch size 4096. Binary features retain scale one, including unseen one-hot categories in exploratory LOSO. There is no hyperparameter search or test-based tuning.
+
+Fitting uniformly samples at most 64 positive-reach hands per board/node. Fixed board/node seeds make learning-curve subsets nested. Multiplying fitting weights by population/sample count preserves the expected full actor-reach × canonical-board-frequency objective. Every board and positive-mass node contributes. Zero-weight rows do not affect that objective. Early stopping uses fixed validation samples; reported validation and held-out metrics use every row. B0 and B1 fit all training rows, giving them at least as much fitting information as the sampled MLP. Population and sampled row counts are recorded for each fit.
+
+The exact engine batch equity routine replaces repeated individual-hand enumeration. Source inspection showed that the samples argument is ignored on flops: both APIs enumerate exactly, contrary to the older fixture report's Monte Carlo description. No stored deeper ranges, action EVs or strategies are features. Recorded probes compare independently computed root equity against stored float16 equity arrays.
+
+Numba compiles the actual unchanged review.grade() function, with disk caching disabled. Random and threshold-boundary tests compare it with direct calls. Streamed aggregation matches the original metrics. The real output includes legal-action-count breakdowns, so forced one-action nodes do not conceal decision quality.
+
+The frozen protocol and source hashes are saved before fitting. All 18 fits share a two-hour training wall cap; feature preparation, baseline fitting and evaluation overhead are reported separately. Every archive's size, SHA-256 and file count was checked against the supplied manifest before unpacking; input_manifest.json records those expected values and commands.log records the exact verification command. Raw data and feature caches are ignored by Git.

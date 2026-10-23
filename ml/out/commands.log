@@ -286,3 +286,437 @@ import subprocess
 assert not subprocess.check_output(["git","status","--porcelain"],text=True)
 print("Clean checkout; only the requested branch was pushed")
 PY
+
+# 2026-10-22T10:51:07.505642+00:00 cwd=/workspace/flipup
+cat /workspace/attachments/cb9f5c3d-429d-49e3-aa72-c603fbe18ad2/MANIFEST.json
+cat ml/flipup_ml/{run,train,data,features,evaluate,baselines,splits}.py
+# exit=0
+
+# 2026-10-22T10:51:24.046262+00:00 cwd=/workspace/flipup
+set -euo pipefail
+mkdir -p ml/out/real
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import hashlib,json,zipfile
+from pathlib import Path
+from flipup_ml.unpack import unpack
+manifest=json.loads(Path("/workspace/attachments/cb9f5c3d-429d-49e3-aa72-c603fbe18ad2/MANIFEST.json").read_text())
+parts={p.name:p for p in Path("/workspace/attachments").rglob("flipup-flops-part*-of-07.zip")}
+assert set(parts)=={x["part"] for x in manifest}
+verified=[]
+for item in manifest:
+    p=parts[item["part"]]
+    assert p.stat().st_size==item["bytes"],p
+    assert hashlib.sha256(p.read_bytes()).hexdigest()==item["sha256"],p
+    with zipfile.ZipFile(p) as z:
+        members=[x for x in z.infolist() if not x.is_dir()]
+        assert len(members)==item["files"],p
+        print(p.name,"verified",len(members),"files; first:",members[0].filename,flush=True)
+    verified.append(item)
+count=unpack([parts[x["part"]] for x in manifest],"ml/data/flops")
+assert count==sum(x["files"] for x in manifest)
+Path("ml/out/real/input_manifest.json").write_text(json.dumps(verified,indent=2))
+print("Extracted",count,"NPZ files",flush=True)
+from flipup_ml.audit import audit
+entries,a=audit("ml/data/flops","ml/out/real")
+print("Audit summary",{k:a[k] for k in ["retained_files","files_per_spot","distinct_boards","intersection_all_six_spots","max_action_count","node_counts","exploitability_pct"]},flush=True)
+print("Unreadable",len(a["unreadable"]),a["unreadable"][:3],"dropped",len(a["dropped_exploitability_gt_0_5"]),flush=True)
+from flipup_ml.data import domain
+try:
+    domains=domain(entries)
+    print("Consistent domains",list(domains),flush=True)
+except ValueError as exc:
+    print("DOMAIN BLOCKER",str(exc),flush=True)
+    raise
+PY
+
+# 2026-10-22T10:51:46.831850+00:00 cwd=/workspace/flipup
+cat ml/flipup_ml/train.py; cat ml/flipup_ml/model.py; cat ml/flipup_ml/audit.py; cat /sys/fs/cgroup/memory.max; cat /sys/fs/cgroup/cpu.max; df -h /workspace
+# exit=0
+# exit=0
+
+# 2026-10-22T10:51:54.524977+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json,numpy as np
+from pathlib import Path
+p=next(Path("ml/data/flops/bb_btn_3bet").glob("*.npz"))
+with np.load(p,allow_pickle=False) as f:
+    m=json.loads(str(f["meta"]))
+    print("Example",p,"pot",m["pot"],"stack",m["stack"],"nodes",len(m["nodes"]),"arrays",len(f.files))
+    print("Combos",len(f["combos0"]),len(f["combos1"]))
+    print("Root",m["nodes"][""])
+    print("Metadata keys",list(m))
+PY
+# exit=0
+
+# 2026-10-22T10:52:16.619924+00:00 cwd=/workspace/flipup
+sed -n '1330,1425p' gto/engine/src/solver.cpp; rg -n "range_equities|equity_vs_range|samples|exact" gto/engine/src/equity.cpp; PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json,numpy as np,time
+from pathlib import Path
+from collections import Counter
+start=time.perf_counter(); totals=Counter(); combos=Counter()
+for p in Path("ml/data/flops").rglob("*.npz"):
+    with np.load(p) as f:
+        m=json.loads(str(f["meta"]))
+        if m["exploitability_pct"]>.5: continue
+        ns=[len(f["combos0"]),len(f["combos1"])]
+        totals[p.parent.name]+=sum(ns[n["player"]] for n in m["nodes"].values())
+        combos[p.parent.name]+=sum(ns)
+print("Rows",dict(totals),"total",sum(totals.values()),"root-hand-equity calculations",sum(combos.values()),"seconds",time.perf_counter()-start)
+Path("ml/out/real/row_counts.json").write_text(json.dumps({"rows_per_spot":dict(totals),"rows":sum(totals.values()),"root_equity_hands":sum(combos.values())},indent=2))
+PY
+# exit=0
+
+# 2026-10-22T10:52:21.773890+00:00 cwd=/workspace/flipup
+sed -n '120,228p' gto/engine/src/equity.cpp; rg -n "equity_vs\(" gto/engine/src/solver.cpp; sed -n '1160,1245p' gto/engine/src/solver.cpp; cat ml/flipup_ml/__init__.py
+# exit=0
+
+# 2026-10-22T10:53:56.427105+00:00 cwd=/workspace/flipup
+ml/.venv/bin/pip install --dry-run --cache-dir /workspace/.cache/pip numba; PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+x=json.loads(Path("ml/out/real/row_counts.json").read_text())
+print("Dataset rows",x["rows"],"float32 feature matrix GB",x["rows"]*73*4/1e9)
+PY
+# exit=0
+
+# 2026-10-22T10:54:13.835424+00:00 cwd=/workspace/flipup
+OMP_NUM_THREADS=4 PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json,time,numpy as np
+from pathlib import Path
+from flipup_ml.data import read_entry
+from flipup_gto import _engine
+results=[]
+for spot in ["btn_bb","bb_btn_3bet"]:
+    e=read_entry(next(Path("ml/data/flops",spot).glob("*.npz")))
+    for p in (0,1):
+        cs=e.arrays[f"combos{p}"]; hero=np.zeros(1326); hero[cs]=1
+        start=time.perf_counter(); eq=np.asarray(_engine.range_equities(hero.tolist(),e.roots[1-p].tolist(),list(e.board),1024,20261022))[cs]
+        stored=e.arrays[f"equity{p}"].astype(float); err=abs(eq-stored)
+        result={"spot":spot,"board":e.path.stem,"player":p,"hands":len(cs),"seconds":time.perf_counter()-start,"max_abs_difference":float(err.max()),"mean_abs_difference":float(err.mean())}
+        results.append(result); print(result,flush=True)
+Path("ml/out/real/equity_verification.json").write_text(json.dumps(results,indent=2))
+PY
+# exit=0
+
+# 2026-10-22T10:56:15.199965+00:00 cwd=/workspace/flipup
+ml/.venv/bin/pip install --cache-dir /workspace/.cache/pip numba==0.68.0
+# exit=0
+
+# 2026-10-22T10:57:13.303995+00:00 cwd=/workspace/flipup
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.stream_data > ml/out/real/features.log 2>&1
+
+# 2026-10-22T10:58:32.608228+00:00 cwd=/workspace/flipup
+tail -4 ml/out/real/features.log; PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/real/tests.log 2>&1
+# exit=0
+
+# 2026-10-22T10:59:20.715570+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/real/tests.log 2>&1
+# exit=0
+
+# 2026-10-22T11:00:45.068106+00:00 cwd=/workspace/flipup
+tail -4 ml/out/real/features.log; tail -12 ml/out/real/tests.log; git diff --stat
+# exit=0
+
+# 2026-10-22T11:02:15.389716+00:00 cwd=/workspace/flipup
+tail -4 ml/out/real/features.log; PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/real/tests.log 2>&1
+# exit=0
+
+# 2026-10-22T11:03:00.682571+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+from flipup_ml.data import load_entries
+import numpy as np,json
+from pathlib import Path
+entries,_,_=load_entries("ml/data/flops")
+result={}
+for spot in sorted({e.spot for e in entries}):
+    es=[e for e in entries if e.spot==spot]
+    result[spot]={}
+    for player in (0,1):
+        values=np.stack([e.roots[player] for e in es]).astype(float)
+        from flipup_gto.cards import combo_cards
+        for i,e in enumerate(es):
+            for c in range(1326):
+                if set(combo_cards(c))&set(e.board): values[i,c]=np.nan
+        spans=np.nanmax(values,axis=0)-np.nanmin(values,axis=0)
+        result[spot][player]={"max_abs_span":float(np.nanmax(spans)),"combos_with_nonidentical_stored_root_weights":int(np.sum(spans>0))}
+print(json.dumps(result,indent=2))
+Path("ml/out/real/strict_range_comparison.json").write_text(json.dumps(result,indent=2))
+assert all(v["combos_with_nonidentical_stored_root_weights"]==0 for spot in result.values() for v in spot.values())
+PY
+
+# 2026-10-22T11:03:01.955593+00:00 cwd=/workspace/flipup
+tail -4 ml/out/real/features.log; tail -8 ml/out/real/tests.log
+# exit=0
+# exit=0
+
+# 2026-10-22T11:03:48.422550+00:00 cwd=/workspace/flipup
+tail -3 ml/out/real/features.log; ls ml/out/real/feature_manifest.json 2>/dev/null; cat ml/out/real/strict_range_comparison.json
+# exit=0
+
+# 2026-10-22T11:04:29.655616+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 ml/.venv/bin/python -m pytest ml/tests -q > ml/out/real/tests.log 2>&1
+
+# 2026-10-22T11:04:30.961213+00:00 cwd=/workspace/flipup
+tail -3 ml/out/real/features.log; du -sh ml/out/real/cache; git status --short
+# exit=0
+# exit=0
+# exit=0
+
+# 2026-10-22T11:04:42.439759+00:00 cwd=/workspace/flipup
+set -euo pipefail
+tail -3 ml/out/real/tests.log
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.real_run --epochs 20 --per-node 64 > ml/out/real/pipeline.log 2>&1
+
+# 2026-10-22T11:05:12.454135+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/pipeline.log; cat ml/out/real/protocol.json | head -24; ps -eo pid,ppid,etime,pcpu,rss,comm --sort=-pcpu | head -7
+# exit=0
+
+# 2026-10-22T11:06:27.309737+00:00 cwd=/workspace/flipup
+tail -15 ml/out/real/pipeline.log; head -8 ml/README.md
+# exit=0
+
+# 2026-10-22T11:07:02.189160+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/pipeline.log; XDG_CONFIG_HOME=/workspace/.config npm run check > ml/out/real/app-check.log 2>&1
+
+# 2026-10-22T11:07:27.223703+00:00 cwd=/workspace/flipup
+tail -14 ml/out/real/pipeline.log; PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+p=Path("ml/out/real/splits.json"); s=json.loads(p.read_text())
+from collections import Counter
+print("Primary rank-triple groups:",dict(Counter(s["primary"].values())))
+for p in sorted(Path("ml/out/real/runs").glob("curve_*.json")):
+    r=json.loads(p.read_text())
+    print(p.stem,"fitting population",r["train"]["population_rows"],"sample",r["train"]["sampled_rows"],"epochs",r["training"]["epochs"],"training seconds",round(r["training"]["wall_seconds"],2))
+PY
+# exit=0
+# exit=0
+
+# 2026-10-22T11:08:21.534094+00:00 cwd=/workspace/flipup
+tail -14 ml/out/real/pipeline.log; tail -5 ml/out/real/app-check.log; du -sh ml/out/real
+# exit=0
+
+# 2026-10-22T11:08:27.998116+00:00 cwd=/workspace/flipup
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json,inspect,hashlib
+from pathlib import Path
+from flipup_ml import ROOT
+p=json.loads(Path("ml/out/real/protocol.json").read_text())
+changed=[name for name,digest in p["source_sha256"].items() if hashlib.sha256((ROOT/name).read_bytes()).hexdigest()!=digest]
+assert not changed,changed
+print("Frozen experiment source hashes unchanged")
+a=json.loads(Path("ml/out/real/audit.json").read_text())
+print("Excluded:",a["dropped_exploitability_gt_0_5"])
+print("Maximum strategy sum error:",a["max_strategy_sum_error"])
+print("Maximum root EV sum error bb:",max(abs(v["error_bb"]) for v in a["root_range_ev_sums"]))
+PY
+# exit=0
+
+# 2026-10-22T11:09:21.866251+00:00 cwd=/workspace/flipup
+ml/.venv/bin/pip freeze > ml/out/real/installed-packages.txt
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json,platform
+from pathlib import Path
+info={"python":platform.python_version(),"machine":platform.machine(),"cpu_quota":Path("/sys/fs/cgroup/cpu.max").read_text().strip(),"memory_limit_bytes":int(Path("/sys/fs/cgroup/memory.max").read_text()),"backend":"CPU only","new_solver_calls":0}
+Path("ml/out/real/environment.json").write_text(json.dumps(info,indent=2))
+PY
+tail -14 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:10:04.448175+00:00 cwd=/workspace/flipup
+tail -14 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:11:14.521351+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:11:46.810382+00:00 cwd=/workspace/flipup
+tail -15 ml/out/real/pipeline.log; ps -p 10643,1080 -o pid,etime,pcpu,rss,comm
+# exit=0
+
+# 2026-10-22T11:13:06.465686+00:00 cwd=/workspace/flipup
+tail -14 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:14:11.006734+00:00 cwd=/workspace/flipup
+tail -16 ml/out/real/pipeline.log; ls -lh ml/out/real/model.pt 2>/dev/null
+# exit=2
+
+# 2026-10-22T11:15:32.304586+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:16:31.933852+00:00 cwd=/workspace/flipup
+tail -15 ml/out/real/pipeline.log
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import subprocess
+paths=subprocess.check_output(["git","ls-files","--others","--exclude-standard","ml/out/real"],text=True).splitlines()
+assert not any("/cache/" in p for p in paths)
+assert all(p.startswith("ml/") for p in paths)
+print("Untracked result files:",len(paths),"feature cache correctly ignored")
+PY
+# exit=0
+
+# 2026-10-22T11:17:37.363045+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/pipeline.log; PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+from pathlib import Path
+print("Primary checkpoint saved:",Path("ml/out/real/model.pt").exists())
+PY
+# exit=0
+
+# 2026-10-22T11:18:23.199569+00:00 cwd=/workspace/flipup
+set -euo pipefail
+OMP_NUM_THREADS=4 PYTHONPATH=ml ml/.venv/bin/python -m flipup_ml.infer --checkpoint ml/out/real/model.pt --spot btn_bb --board Ks7d2c --path "[0]" --hand AsAh > ml/out/real/cli-smoke.json
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+r=json.loads(Path("ml/out/real/cli-smoke.json").read_text())
+assert r["supported"] and r["evidence"]=="experimental_model" and len(r["hands"])==1
+assert abs(sum(a["strategy"] for a in r["hands"][0]["actions"])-1)<1e-6
+print("Real checkpoint CLI passed; experimental domain flag and normalized legal strategy")
+print("Checkpoint bytes:",Path("ml/out/real/model.pt").stat().st_size)
+PY
+tail -10 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:18:48.214136+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:20:06.517320+00:00 cwd=/workspace/flipup
+tail -10 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:21:10.331915+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:21:46.466352+00:00 cwd=/workspace/flipup
+tail -10 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:22:16.732362+00:00 cwd=/workspace/flipup
+tail -10 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:22:45.936247+00:00 cwd=/workspace/flipup
+tail -10 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:23:24.231771+00:00 cwd=/workspace/flipup
+tail -8 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:23:55.101051+00:00 cwd=/workspace/flipup
+tail -8 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:24:32.371860+00:00 cwd=/workspace/flipup
+tail -8 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:25:04.453339+00:00 cwd=/workspace/flipup
+tail -8 ml/out/real/pipeline.log
+# exit=0
+
+# 2026-10-22T11:26:06.866944+00:00 cwd=/workspace/flipup
+tail -8 ml/out/real/pipeline.log
+# exit=0
+# exit=0
+
+# 2026-10-23T00:38:01.684164+00:00 cwd=/workspace/flipup
+tail -22 ml/out/real/pipeline.log; git status --short; git branch --show-current
+# exit=0
+
+# 2026-10-23T00:38:13.236293+00:00 cwd=/workspace/flipup
+set -euo pipefail
+OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 PYTHONPATH=ml ml/.venv/bin/python -m pytest ml/tests -q > ml/out/real/tests.log 2>&1
+PYTHONPATH=ml ml/.venv/bin/python ml/verify_results.py > ml/out/real/verification.log 2>&1
+PYTHONPATH=ml ml/.venv/bin/python ml/finalize_real.py
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+r=json.loads(Path("ml/out/real/metrics.json").read_text())
+print("Verdicts:",r["verdict"],r["primary_verdict"],r["validation_verdict"],r["texture_verdicts"])
+for k,v in r["primary"].items():
+    m=v["reach_weighted"]
+    print(k,{name:m[name] for name in ["mean_regret_pct_pot","p95_regret_pct_pot","grade_agreement","false_costly_rate","missed_costly_rate"]})
+print(Path("ml/out/real/verification.log").read_text())
+PY
+
+# 2026-10-23T00:38:28.159018+00:00 cwd=/workspace/flipup
+tail -12 ml/out/real/verification.log; tail -3 ml/out/real/tests.log
+# exit=0
+# exit=0
+
+# 2026-10-23T00:38:45.655786+00:00 cwd=/workspace/flipup
+cat ml/out/real/learning_curve.csv
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import json
+from pathlib import Path
+r=json.loads(Path("ml/out/real/metrics.json").read_text())
+for family in ["paired","monotone","monotone_only_within_group_holdout"]:
+    print(family, {k:r["holdouts"][family]["MLP"]["reach_weighted"][k] for k in ["mean_regret_pct_pot","p95_regret_pct_pot","grade_agreement","false_costly_rate"]})
+for k in ["mean_regret_pct_pot","grade_agreement","false_costly_rate"]:
+    print("MLP CV",k,r["cv"]["MLP"]["ci95"]["reach_weighted"][k])
+print("By spot:")
+for k,v in r["primary"]["MLP"]["by"]["spot"].items():
+    m=v["reach_weighted"]; print(k,m["mean_regret_pct_pot"],m["grade_agreement"],m["false_costly_rate"])
+PY
+head -22 ml/out/real/report.md
+git diff --check
+# exit=2
+
+# 2026-10-23T00:39:26.519698+00:00 cwd=/workspace/flipup
+set -euo pipefail
+PYTHONPATH=ml ml/.venv/bin/python ml/finalize_real.py
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+from pathlib import Path
+for p in [Path("ml/out/app-check.log"),Path("ml/out/real/app-check.log")]:
+    p.write_text("\n".join(x.rstrip() for x in p.read_text().splitlines())+"\n")
+PY
+PYTHONPATH=ml ml/.venv/bin/python ml/verify_results.py > ml/out/real/verification.log 2>&1
+git diff --check
+git status --short
+# exit=0
+
+# 2026-10-23T00:39:54.699446+00:00 cwd=/workspace/flipup
+set -euo pipefail
+git add -- ml
+git diff --cached --check
+git diff --cached --stat
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import subprocess
+from pathlib import Path
+paths=subprocess.check_output(["git","diff","--cached","--name-only"],text=True).splitlines()
+assert paths and all(p.startswith("ml/") for p in paths)
+assert not any("/cache/" in p or p.startswith("ml/data/") for p in paths)
+for p in paths:
+    if Path(p).exists(): assert Path(p).stat().st_size<10_000_000,p
+assert "ml/out/real/metrics.json" in paths and "ml/out/real/report.md" in paths
+assert "ml/out/commands.log" in paths
+print("Only ml/ staged, no raw data/cache files, all artifacts under 10 MB")
+PY
+# exit=0
+
+# 2026-10-23T00:40:20.662275+00:00 cwd=/workspace/flipup
+set -euo pipefail
+test "$(git branch --show-current)" = codex/gto-ev-model
+git add -- ml
+git diff --cached --check
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import subprocess
+paths=subprocess.check_output(["git","diff","--cached","--name-only"],text=True).splitlines()
+assert paths and all(p.startswith("ml/") for p in paths)
+assert not any("/cache/" in p or p.startswith("ml/data/") for p in paths)
+PY
+git commit -m "Evaluate flop EV model on real solved data"
+git push origin codex/gto-ev-model
+git rev-parse --short HEAD
+git status --short
+PYTHONPATH=ml ml/.venv/bin/python - <<'PY'
+import subprocess
+assert not subprocess.check_output(["git","status","--porcelain"],text=True)
+print("Clean checkout; experiment branch pushed, all changes confined to ml/")
+PY

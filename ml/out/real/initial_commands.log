@@ -1,0 +1,3 @@
+# Read-only discovery before using the retained command logger.
+# cwd=/workspace/flipup
+pwd; git status --short; git branch --show-current; rg --files -g 'AGENTS.md' -g 'ml/README.md' -g 'ml/flipup_ml/*.py' -g '!node_modules' -g '!ml/.venv'

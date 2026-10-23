@@ -1,0 +1,14 @@
+{
+  "source_hashes_unchanged": true,
+  "held_out_rows_all_evaluated": 3013572,
+  "primary_groups": 30,
+  "training_runs": 18,
+  "training_wall_seconds": 1360.541025435999,
+  "tests_passed": 45,
+  "test_wall_seconds": 8.37,
+  "app_unit_tests_passed": 107,
+  "app_typecheck_and_build_passed": true,
+  "only_ml_changes": true,
+  "checkpoint_bytes": 340059,
+  "new_solves": 0
+}

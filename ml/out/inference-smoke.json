@@ -1,37 +1,8 @@
 {
+  "spot": "bb_btn_3bet",
+  "board": "4h3d2c",
+  "path": [],
   "supported": true,
-  "evidence": "synthetic_fixture_only",
-  "spot": "btn_bb",
-  "board": "Ks7d2c",
-  "path": [
-    0
-  ],
-  "pot_bb": 5.5,
-  "hands": [
-    {
-      "hand": "AsAh",
-      "actions": [
-        {
-          "label": "check",
-          "ev_bb": 5.895031750202179,
-          "strategy": 0.003246566979214549
-        },
-        {
-          "label": "bet 33% (1.82)",
-          "ev_bb": 7.6623228788375854,
-          "strategy": 0.6506265997886658
-        },
-        {
-          "label": "bet 75% (4.12)",
-          "ev_bb": 7.316699028015137,
-          "strategy": 0.12791667878627777
-        },
-        {
-          "label": "bet 125% (6.88)",
-          "ev_bb": 7.398939311504364,
-          "strategy": 0.21821022033691406
-        }
-      ]
-    }
-  ]
+  "evidence": "experimental_model",
+  "hands": 1176
 }

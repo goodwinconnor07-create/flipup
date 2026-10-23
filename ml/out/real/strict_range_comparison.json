@@ -1,0 +1,62 @@
+{
+  "bb_btn_3bet": {
+    "0": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    },
+    "1": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    }
+  },
+  "btn_bb": {
+    "0": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    },
+    "1": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    }
+  },
+  "co_bb": {
+    "0": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    },
+    "1": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    }
+  },
+  "sb_bb": {
+    "0": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    },
+    "1": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    }
+  },
+  "sb_limp": {
+    "0": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    },
+    "1": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    }
+  },
+  "utg_bb": {
+    "0": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    },
+    "1": {
+      "max_abs_span": 0.0,
+      "combos_with_nonidentical_stored_root_weights": 0
+    }
+  }
+}

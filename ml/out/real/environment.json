@@ -1,0 +1,8 @@
+{
+  "python": "3.12.14",
+  "machine": "x86_64",
+  "cpu_quota": "400000 100000",
+  "memory_limit_bytes": 34359738368,
+  "backend": "CPU only",
+  "new_solver_calls": 0
+}

@@ -9,3 +9,5 @@ out/cache/
 out/runs/
 out/*.npz
 !out/*.log
+out/**/cache/
+!out/**/*.log

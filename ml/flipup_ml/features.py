@@ -80,21 +80,28 @@ def feature_rows(spot, board, meta, key, combos, roots, equity_samples=1024):
     bfeat += [float(tex.paired),float(tex.monotone),float(tex.two_tone),float(tex.connected), max(c//4 for c in board)/12]
     shared = [float(spot==s) for s in SPOTS] + [p,len(key.split('.'))/3 if key else 0., node['pot']/100, (meta['stack']-wager[p])/100, to_call/node['pot']]
     shared += path + mask.tolist() + bfeat
-    rows, strengths, classes = [], [], []
-    opponent = tuple(float(x) for x in roots[1-p])
-    for c in combos:
+    hands,strengths,classes = hand_rows(board,tuple(map(int,combos)),tuple(map(float,roots[p])),tuple(map(float,roots[1-p])))
+    shared=np.tile(np.asarray(shared,np.float32),(len(combos),1))
+    return np.concatenate([shared,hands],axis=1),mask,strengths,classes
+
+@lru_cache(maxsize=128)
+def hand_rows(board,combos,root,opponent):
+    # Batch exact enumeration uses the same root-range equity definition as the
+    # stored equity arrays. It avoids repeating enumeration for each hand/node.
+    hero=np.zeros(1326,np.float32); hero[list(combos)]=1
+    equities=np.asarray(_engine.range_equities(hero.tolist(),list(opponent),list(board),1024,SEED))[list(combos)]
+    ordered=sorted(board,reverse=True)
+    rows=[]; strengths=[]; classes=[]
+    for c,eq in zip(combos,equities):
         a,b = combo_cards(int(c))
         category = _engine.strength_category(_engine.evaluate([a,b,*board]))
-        # Same equity algorithm at train and inference. Stored equity may include
-        # solver-reach effects; never use it as a model input.
-        eq = root_equity(int(c),board,opponent,equity_samples)
         h = [a//4/12,b//4/12,float(a%4==b%4),float(a//4==b//4),abs(a//4-b//4)/12]
         h += [float(hc%4==bc%4) for hc in (a,b) for bc in ordered]
-        h += [float(category==i) for i in range(9)] + [eq, roots[p][int(c)]]
-        rows.append(shared+h)
+        h += [float(category==i) for i in range(9)] + [float(eq),root[int(c)]]
+        rows.append(h)
         strengths.append(category)
         classes.append(CLASSES.index(hand_class(int(c))))
-    return np.asarray(rows,np.float32), mask, np.asarray(strengths), np.asarray(classes)
+    return np.asarray(rows,np.float32),np.asarray(strengths),np.asarray(classes)
 
 @lru_cache(maxsize=200000)
 def root_equity(combo, board, opponent, samples):

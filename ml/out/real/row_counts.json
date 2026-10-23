@@ -1,0 +1,12 @@
+{
+  "rows_per_spot": {
+    "bb_btn_3bet": 3530204,
+    "utg_bb": 2201472,
+    "sb_bb": 4738104,
+    "sb_limp": 4698120,
+    "btn_bb": 2248512,
+    "co_bb": 2248512
+  },
+  "rows": 19664924,
+  "root_equity_hands": 3193766
+}

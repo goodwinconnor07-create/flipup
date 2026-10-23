@@ -1,13 +1,241 @@
-learning_curve_0.1 completed 3.323699647000012
-learning_curve_0.25 completed 9.466347279000047
-learning_curve_0.5 completed 5.334035266000001
-learning_curve_0.75 completed 8.119317784999907
-learning_curve_1.0 completed 10.133290740000007
-CV_0 completed 4.194999617000008
-CV_1 completed 0.8473573509999142
-CV_2 completed 0.712213969000004
-CV_3 completed 0.7532983789999435
-CV_4 completed 4.280533912999999
-holdout_paired completed 4.753024387999858
-holdout_monotone completed 4.725454698000021
-{"status": "inconclusive_no_real_data", "costs": {"parameters": 44560, "checkpoint_bytes": 194331, "whole_node_hands": 282, "network_only_ms_per_node": 0.8552174666647261, "whole_node_inference_first_ms": 3756.7469989999154, "whole_node_inference_warm_ms": 17.857425999864063, "training_wall_seconds": 56.64357303199972, "training_process_cpu_seconds": 197.20536792800002, "pipeline_wall_seconds": 156.96523517900005, "pipeline_process_cpu_seconds": 298.725263502, "training_runs": 12, "cpu_threads": 4, "hardware": "x86_64", "torch": "2.14.1+cpu"}}
+START curve_010 train files 96 test files 218
+epoch 5 validation_loss 0.181198
+epoch 10 validation_loss 0.16494
+epoch 15 validation_loss 0.154495
+epoch 20 validation_loss 0.148171
+baseline files 1 / 96
+evaluation files 1 / 218
+evaluation files 101 / 218
+evaluation files 201 / 218
+DONE curve_010 training seconds 13.42 stage seconds 82.32
+START curve_025 train files 228 test files 218
+epoch 5 validation_loss 0.159876
+epoch 10 validation_loss 0.142012
+epoch 15 validation_loss 0.133065
+epoch 20 validation_loss 0.126854
+baseline files 1 / 228
+baseline files 201 / 228
+evaluation files 1 / 218
+evaluation files 101 / 218
+evaluation files 201 / 218
+DONE curve_025 training seconds 23.63 stage seconds 95.15
+START curve_050 train files 488 test files 218
+epoch 5 validation_loss 0.138056
+epoch 10 validation_loss 0.123082
+epoch 15 validation_loss 0.115382
+epoch 20 validation_loss 0.111561
+baseline files 1 / 488
+baseline files 201 / 488
+baseline files 401 / 488
+evaluation files 1 / 218
+evaluation files 101 / 218
+evaluation files 201 / 218
+DONE curve_050 training seconds 51.71 stage seconds 143.13
+START curve_075 train files 725 test files 218
+epoch 5 validation_loss 0.127883
+epoch 10 validation_loss 0.114999
+epoch 15 validation_loss 0.110141
+epoch 20 validation_loss 0.104664
+baseline files 1 / 725
+baseline files 201 / 725
+baseline files 401 / 725
+baseline files 601 / 725
+evaluation files 1 / 218
+evaluation files 101 / 218
+evaluation files 201 / 218
+DONE curve_075 training seconds 76.21 stage seconds 161.29
+START curve_100 train files 982 test files 218
+epoch 5 validation_loss 0.123264
+epoch 10 validation_loss 0.110565
+epoch 15 validation_loss 0.103654
+epoch 20 validation_loss 0.100908
+baseline files 1 / 982
+baseline files 201 / 982
+baseline files 401 / 982
+baseline files 601 / 982
+baseline files 801 / 982
+evaluation files 1 / 218
+evaluation files 101 / 218
+evaluation files 201 / 218
+DONE curve_100 training seconds 95.4 stage seconds 219.43
+evaluation files 1 / 222
+evaluation files 101 / 222
+evaluation files 201 / 222
+START cv_0 train files 678 test files 240
+epoch 5 validation_loss 0.13075
+epoch 10 validation_loss 0.118705
+epoch 15 validation_loss 0.11172
+epoch 20 validation_loss 0.10783
+baseline files 1 / 678
+baseline files 201 / 678
+baseline files 401 / 678
+baseline files 601 / 678
+evaluation files 1 / 240
+evaluation files 101 / 240
+evaluation files 201 / 240
+DONE cv_0 training seconds 55.89 stage seconds 158.86
+START cv_1 train files 672 test files 238
+epoch 5 validation_loss 0.124023
+epoch 10 validation_loss 0.112073
+epoch 15 validation_loss 0.106731
+epoch 20 validation_loss 0.104059
+baseline files 1 / 672
+baseline files 201 / 672
+baseline files 401 / 672
+baseline files 601 / 672
+evaluation files 1 / 238
+evaluation files 101 / 238
+evaluation files 201 / 238
+DONE cv_1 training seconds 59.58 stage seconds 162.21
+START cv_2 train files 675 test files 239
+epoch 5 validation_loss 0.126642
+epoch 10 validation_loss 0.115561
+epoch 15 validation_loss 0.109257
+epoch 20 validation_loss 0.105115
+baseline files 1 / 675
+baseline files 201 / 675
+baseline files 401 / 675
+baseline files 601 / 675
+evaluation files 1 / 239
+evaluation files 101 / 239
+evaluation files 201 / 239
+DONE cv_2 training seconds 86.52 stage seconds 210.06
+START cv_3 train files 665 test files 245
+epoch 5 validation_loss 0.126657
+epoch 10 validation_loss 0.1162
+epoch 15 validation_loss 0.10986
+epoch 20 validation_loss 0.104585
+baseline files 1 / 665
+baseline files 201 / 665
+baseline files 401 / 665
+baseline files 601 / 665
+evaluation files 1 / 245
+evaluation files 101 / 245
+evaluation files 201 / 245
+DONE cv_3 training seconds 71.51 stage seconds 206.08
+START cv_4 train files 674 test files 242
+epoch 5 validation_loss 0.125899
+epoch 10 validation_loss 0.113792
+epoch 15 validation_loss 0.107126
+epoch 20 validation_loss 0.102874
+baseline files 1 / 674
+baseline files 201 / 674
+baseline files 401 / 674
+baseline files 601 / 674
+evaluation files 1 / 242
+evaluation files 101 / 242
+evaluation files 201 / 242
+DONE cv_4 training seconds 79.46 stage seconds 199.33
+START family_paired train files 1111 test files 119
+epoch 5 validation_loss 0.109718
+epoch 10 validation_loss 0.100219
+epoch 15 validation_loss 0.095277
+epoch 20 validation_loss 0.091657
+baseline files 1 / 1111
+baseline files 201 / 1111
+baseline files 401 / 1111
+baseline files 601 / 1111
+baseline files 801 / 1111
+baseline files 1001 / 1111
+evaluation files 1 / 119
+evaluation files 101 / 119
+DONE family_paired training seconds 99.79 stage seconds 199.09
+START family_monotone train files 1086 test files 156
+epoch 5 validation_loss 0.113387
+epoch 10 validation_loss 0.103518
+epoch 15 validation_loss 0.098379
+epoch 20 validation_loss 0.095671
+baseline files 1 / 1086
+baseline files 201 / 1086
+baseline files 401 / 1086
+baseline files 601 / 1086
+baseline files 801 / 1086
+baseline files 1001 / 1086
+evaluation files 1 / 156
+evaluation files 101 / 156
+DONE family_monotone training seconds 110.61 stage seconds 233.3
+START loso_bb_btn_3bet train files 818 test files 238
+epoch 5 validation_loss 0.120764
+epoch 10 validation_loss 0.109497
+epoch 15 validation_loss 0.104309
+epoch 20 validation_loss 0.100443
+baseline files 1 / 818
+baseline files 201 / 818
+baseline files 401 / 818
+baseline files 601 / 818
+baseline files 801 / 818
+evaluation files 1 / 238
+evaluation files 101 / 238
+evaluation files 201 / 238
+DONE loso_bb_btn_3bet training seconds 110.51 stage seconds 246.99
+START loso_btn_bb train files 817 test files 239
+epoch 5 validation_loss 0.125935
+epoch 10 validation_loss 0.114575
+epoch 15 validation_loss 0.108138
+epoch 20 validation_loss 0.104243
+baseline files 1 / 817
+baseline files 201 / 817
+baseline files 401 / 817
+baseline files 601 / 817
+baseline files 801 / 817
+evaluation files 1 / 239
+evaluation files 101 / 239
+evaluation files 201 / 239
+DONE loso_btn_bb training seconds 102.25 stage seconds 213.34
+START loso_co_bb train files 817 test files 239
+epoch 5 validation_loss 0.125995
+epoch 10 validation_loss 0.116114
+epoch 15 validation_loss 0.108814
+epoch 20 validation_loss 0.105552
+baseline files 1 / 817
+baseline files 201 / 817
+baseline files 401 / 817
+baseline files 601 / 817
+baseline files 801 / 817
+evaluation files 1 / 239
+evaluation files 101 / 239
+evaluation files 201 / 239
+DONE loso_co_bb training seconds 70.86 stage seconds 178.16
+START loso_sb_bb train files 819 test files 237
+epoch 5 validation_loss 0.115955
+epoch 10 validation_loss 0.105183
+epoch 15 validation_loss 0.099753
+epoch 20 validation_loss 0.096394
+baseline files 1 / 819
+baseline files 201 / 819
+baseline files 401 / 819
+baseline files 601 / 819
+baseline files 801 / 819
+evaluation files 1 / 237
+evaluation files 101 / 237
+evaluation files 201 / 237
+DONE loso_sb_bb training seconds 67.48 stage seconds 191.25
+START loso_sb_limp train files 819 test files 235
+epoch 5 validation_loss 0.117043
+epoch 10 validation_loss 0.105604
+epoch 15 validation_loss 0.099853
+epoch 20 validation_loss 0.096316
+baseline files 1 / 819
+baseline files 201 / 819
+baseline files 401 / 819
+baseline files 601 / 819
+baseline files 801 / 819
+evaluation files 1 / 235
+evaluation files 101 / 235
+evaluation files 201 / 235
+DONE loso_sb_limp training seconds 78.95 stage seconds 222.95
+START loso_utg_bb train files 820 test files 234
+epoch 5 validation_loss 0.125041
+epoch 10 validation_loss 0.113607
+epoch 15 validation_loss 0.106988
+epoch 20 validation_loss 0.103611
+baseline files 1 / 820
+baseline files 201 / 820
+baseline files 401 / 820
+baseline files 601 / 820
+baseline files 801 / 820
+evaluation files 1 / 234
+evaluation files 101 / 234
+evaluation files 201 / 234
+DONE loso_utg_bb training seconds 106.75 stage seconds 201.59
+COMPLETE not sufficient across held-out texture families {"parameters": 44560, "checkpoint_bytes": 340059, "whole_node_stored_hands": 1176, "whole_node_positive_range_hands": 1176, "network_only_ms_per_node": 4.5791329799976666, "whole_node_inference_cold_ms": 51.61021899948537, "whole_node_inference_warm_ms": 6.6197690002809395, "training_wall_seconds": 1360.541025435999, "training_process_cpu_seconds": 5169.418077626, "pipeline_wall_seconds": 3391.3289969169996, "pipeline_process_cpu_seconds": 7580.082022439, "training_runs": 18, "cpu_threads": 4, "platform": "x86_64", "torch": "2.14.1+cpu", "dataset_rows": 19664924, "rank_triples": 199, "boards": 239, "primary_test_rows": 3013572, "primary_test_rank_triples": 30}

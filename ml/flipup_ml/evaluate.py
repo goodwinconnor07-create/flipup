@@ -3,6 +3,29 @@ import numpy as np
 from scipy.stats import t
 from flipup_gto.review import grade
 
+# Compile the actual unchanged repository function, rather than reimplementing
+# its thresholds. No files are emitted into gto/ (Numba disk cache is disabled).
+try:
+    from numba import njit
+    _native_grade=njit(cache=False)(grade)
+
+    @njit(cache=False)
+    def _native_grades(ev,strategy,mask,pot):
+        out=np.full(ev.shape,-1,np.int8)
+        for i in range(ev.shape[0]):
+            best=-np.inf; freq=-np.inf; top=-1
+            for j in range(ev.shape[1]):
+                if mask[i,j]:
+                    best=max(best,ev[i,j])
+                    if strategy[i,j]>freq: freq=strategy[i,j]; top=j
+            for j in range(ev.shape[1]):
+                if mask[i,j]:
+                    label=_native_grade(max(0.,float(best-ev[i,j])),float(pot[i]),float(strategy[i,j]),top==j)
+                    out[i,j]=0 if label=='best' or label=='correct' else 1 if label=='inaccuracy' else 2
+        return out
+except ImportError:
+    _native_grades=None
+
 def centred(ev,mask):
     return (ev-(ev*mask).sum(1,keepdims=True)/mask.sum(1,keepdims=True))*mask
 
@@ -12,6 +35,10 @@ def quantile(values,weights,q):
     return float(v[min(np.searchsorted(np.cumsum(w),q*w.sum()),len(v)-1)])
 
 def grades(ev,strategy,mask,pot):
+    if _native_grades is not None: return _native_grades(ev,strategy,mask,pot)
+    return reference_grades(ev,strategy,mask,pot)
+
+def reference_grades(ev,strategy,mask,pot):
     best=np.where(mask,ev,-np.inf).max(1)
     top=np.where(mask,strategy,-np.inf).argmax(1)
     out=np.full(ev.shape,-1,np.int8)

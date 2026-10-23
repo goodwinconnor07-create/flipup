@@ -1,0 +1,37 @@
+{
+  "supported": true,
+  "evidence": "experimental_model",
+  "spot": "btn_bb",
+  "board": "Ks7d2c",
+  "path": [
+    0
+  ],
+  "pot_bb": 5.5,
+  "hands": [
+    {
+      "hand": "AsAh",
+      "actions": [
+        {
+          "label": "check",
+          "ev_bb": 5.568129360675812,
+          "strategy": 0.0005660903989337385
+        },
+        {
+          "label": "bet 33% (1.82)",
+          "ev_bb": 7.803329169750214,
+          "strategy": 0.7652391791343689
+        },
+        {
+          "label": "bet 75% (4.12)",
+          "ev_bb": 7.672577261924744,
+          "strategy": 0.03070959262549877
+        },
+        {
+          "label": "bet 125% (6.88)",
+          "ev_bb": 7.609417736530304,
+          "strategy": 0.20348504185676575
+        }
+      ]
+    }
+  ]
+}

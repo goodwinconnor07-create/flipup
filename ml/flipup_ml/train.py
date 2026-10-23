@@ -9,14 +9,17 @@ from .model import EVModel
 class Budget:
     def __init__(self,seconds=7200): self.remaining=seconds; self.seconds=0.; self.cpu_seconds=0.; self.runs=[]
 
-def fit(train,val,budget,epochs=40,seed=SEED):
+def fit(train,val,budget,epochs=40,seed=SEED,batch_size=4096):
     if budget.remaining<=0: raise RuntimeError('CPU training wall-time budget exhausted')
     start=time.perf_counter(); cpu=time.process_time()
     torch.manual_seed(seed); rng=np.random.default_rng(seed)
     torch.set_num_threads(4); torch.use_deterministic_algorithms(True)
     model=EVModel(train['x'].shape[1])
     model.mean.copy_(torch.tensor(train['x'].mean(0)))
-    model.scale.copy_(torch.tensor(np.maximum(train['x'].std(0),.01)))
+    scale=np.maximum(train['x'].std(0),.01)
+    binary=np.all((train['x']==0)|(train['x']==1),axis=0)
+    scale[binary]=1. # Includes unseen one-hot categories in exploratory LOSO.
+    model.scale.copy_(torch.tensor(scale))
     tx=torch.tensor(train['x'],dtype=torch.float32); tm=torch.tensor(train['mask'],dtype=torch.float32)
     ty=torch.tensor(train['ev']/train['pot'][:,None],dtype=torch.float32)
     ts=torch.tensor(train['strategy'],dtype=torch.float32)
@@ -37,13 +40,14 @@ def fit(train,val,budget,epochs=40,seed=SEED):
     for epoch in range(epochs):
         model.train()
         order=rng.permutation(len(tx)); total=0.
-        for i in range(0,len(order),2048):
+        for i in range(0,len(order),batch_size):
             if time.perf_counter()-start>=budget.remaining: break
-            ids=order[i:i+2048]; opt.zero_grad(); objective=loss(tx[ids],tm[ids],ty[ids],ts[ids],tw[ids])
+            ids=order[i:i+batch_size]; opt.zero_grad(); objective=loss(tx[ids],tm[ids],ty[ids],ts[ids],tw[ids])
             objective.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(),5); opt.step(); total+=objective.item()
         model.eval()
         with torch.no_grad(): value=float(loss(vx,vm,vy,vs,vw))
         history.append({'epoch':epoch+1,'validation_loss':value})
+        if (epoch+1)%5==0: print('epoch',epoch+1,'validation_loss',round(value,6),flush=True)
         if value<best-1e-5:
             best=value; state=copy.deepcopy(model.state_dict()); patience=0
         else: patience+=1

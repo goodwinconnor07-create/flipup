@@ -1,0 +1,38 @@
+[
+  {
+    "spot": "btn_bb",
+    "board": "JdJc5c",
+    "player": 0,
+    "hands": 1176,
+    "seconds": 0.05917417899991051,
+    "max_abs_difference": 0.0002461075782775879,
+    "mean_abs_difference": 7.022334402110301e-05
+  },
+  {
+    "spot": "btn_bb",
+    "board": "JdJc5c",
+    "player": 1,
+    "hands": 1176,
+    "seconds": 0.03882466100003512,
+    "max_abs_difference": 0.00024431943893432617,
+    "mean_abs_difference": 7.834244950288007e-05
+  },
+  {
+    "spot": "bb_btn_3bet",
+    "board": "JdJc5c",
+    "player": 0,
+    "hands": 1176,
+    "seconds": 0.030939023999962956,
+    "max_abs_difference": 0.0002611875534057617,
+    "mean_abs_difference": 6.380640477144799e-05
+  },
+  {
+    "spot": "bb_btn_3bet",
+    "board": "JdJc5c",
+    "player": 1,
+    "hands": 538,
+    "seconds": 0.029570138000053703,
+    "max_abs_difference": 0.00023621320724487305,
+    "mean_abs_difference": 5.7795344675340615e-05
+  }
+]

@@ -41,7 +41,7 @@ test('scroll plays a whole solved hand and grades every move with a reason', asy
 
   // The next hand deals straight away, and the tab counts what you've played.
   await page.getByRole('button', { name: 'Next hand' }).click();
-  await expect(options.or(page.locator('.rp-felt'))).toBeVisible();
+  await expect(page.locator('.rp-felt')).toBeVisible();
   await page.goBack();
   await page.getByRole('tab', { name: 'Scroll' }).click();
   await expect(page.getByText(/1 hands? played/)).toBeVisible();

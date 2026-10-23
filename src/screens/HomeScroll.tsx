@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { loadQuiz } from '../quiz/save';
-import { openScroll } from '../state/store';
+import { loadBank, loadQuiz } from '../quiz/save';
+import { navigate, openScroll } from '../state/store';
 import { CoachSays } from '../train/Coach';
-import { ChevronIcon } from '../ui/Icons';
+import { ChevronIcon, ScrollIcon } from '../ui/Icons';
 
 /** What the coach opens with on the Scroll tab. */
 function hello(hands: number, right: number | null): string {
@@ -16,6 +16,7 @@ function hello(hands: number, right: number | null): string {
 /** The Scroll tab: where you stand, and a big button to keep going. */
 export function ScrollTab() {
   const [save] = useState(loadQuiz);
+  const [bank] = useState(loadBank);
   const decided = save.green + save.yellow + save.red;
   const right = decided ? (save.green + save.yellow / 2) / decided : null;
   return (
@@ -40,6 +41,16 @@ export function ScrollTab() {
           <ChevronIcon width={18} height={18} />
         </span>
       </button>
+      <div className="group">
+        <button type="button" className="group-row press" onClick={() => navigate({ name: 'train', section: 'scroll' })}>
+          <span className="gr-icon sb-icon">
+            <ScrollIcon />
+          </span>
+          <span className="gr-text">Study bank</span>
+          <small className="muted num">{bank.length || ''}</small>
+          <ChevronIcon className="gr-chev" width={16} height={16} />
+        </button>
+      </div>
       <div className="glass-card coach-card">
         <CoachSays lines={[hello(save.hands, right)]} />
       </div>

@@ -1554,6 +1554,27 @@ html.calm .coach-avatar {
 
 /* ── Solved hands ────────────────────────────────────────────────────────── */
 
+.quiz-save {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quiz-save-actions,
+.quiz-end-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.quiz-save-actions .btn,
+.quiz-end-actions .btn,
+.sb-actions .btn {
+  width: auto;
+}
+
 .quiz-ask {
   display: flex;
   flex-direction: column;
@@ -1745,4 +1766,28 @@ html.calm .coach-avatar {
   font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--ink-3);
+}
+
+/* Study bank: a row with the hand on top and its buttons (or the name field) under it. */
+.sb-row {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.sb-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sb-actions {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sb-icon {
+  background: var(--blue);
 }

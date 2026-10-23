@@ -57,6 +57,20 @@ export interface Spot {
   made: Made;
   draw: Draw;
   texture: Texture | null;
+  /** A card of yours that blocks the nut flush (the ace, or the king when the ace is on the board), when a flush is possible. */
+  blocker: Card | null;
+  /** Both your cards are higher than every board card (and you have no pair). */
+  overcards: boolean;
+  /** Your flush draw is to the ace-high flush. */
+  nutDraw: boolean;
+  /** The card that just came (turn or river). */
+  newCard: Card | null;
+  /** The pot was 3-bet before the flop. */
+  threeBetPot: boolean;
+  /** The size of the bet you face, as a share of the pot before it (0 when nothing to call). */
+  betShare: number;
+  /** Share of your range you'd need to keep (call or raise) so a bluff with any two cards doesn't profit. */
+  mdf: number;
   /** Preflop: the hand as a class ("AKs", "T9o", "77") and what kind of hand it is. */
   handClass: string;
   preflopKind: 'premium' | 'strong' | 'suited-ace' | 'pair' | 'suited-connector' | 'broadway' | 'weak';
@@ -194,6 +208,28 @@ function straightPossible(board: Card[]): boolean {
   return false;
 }
 
+function readBlocker(hole: Card[], board: Card[]): Card | null {
+  for (const s of ['s', 'h', 'd', 'c']) {
+    const onBoard = board.filter((c) => suitOf(c) === s);
+    if (onBoard.length < 3) continue;
+    const boardRanks = onBoard.map(rankOf);
+    const top = [14, 13, 12].find((r) => !boardRanks.includes(r));
+    const mine = hole.find((c) => suitOf(c) === s && rankOf(c) === top);
+    if (mine) return mine;
+  }
+  return null;
+}
+
+function readNutDraw(hole: Card[], board: Card[]): boolean {
+  for (const s of ['s', 'h', 'd', 'c']) {
+    const n = [...hole, ...board].filter((c) => suitOf(c) === s).length;
+    const boardRanks = board.filter((c) => suitOf(c) === s).map(rankOf);
+    const top = [14, 13, 12].find((r) => !boardRanks.includes(r));
+    if (n === 4 && hole.some((c) => suitOf(c) === s && rankOf(c) === top)) return true;
+  }
+  return false;
+}
+
 /** Everything the coach needs about one of your decisions. */
 export function readSpot(h: QuizHand, d: QuizDecision): Spot {
   const step = h.steps[d.at];
@@ -221,6 +257,13 @@ export function readSpot(h: QuizHand, d: QuizDecision): Spot {
     made: readMade(h.cards, board),
     draw: readDraw(h.cards, board),
     texture: readTexture(board),
+    blocker: street === 'preflop' ? null : readBlocker(h.cards, board),
+    overcards: board.length >= 3 && board.length < 5 && h.cards.every((c) => rankOf(c) > Math.max(...board.map(rankOf))) && rankOf(h.cards[0]) !== rankOf(h.cards[1]),
+    nutDraw: board.length >= 3 && board.length < 5 && readNutDraw(h.cards, board),
+    newCard: board.length >= 4 ? board[board.length - 1] : null,
+    threeBetPot: raises.length >= 2,
+    betShare: d.toCall > 0 && d.pot - d.toCall > 0 ? d.toCall / (d.pot - d.toCall) : 0,
+    mdf: d.toCall > 0 && d.pot > 0 ? (d.pot - d.toCall) / d.pot : 0,
     handClass: handClassOf(h.cards),
     preflopKind: preflopKind(h.cards),
     best: mix[0] ?? d.options[d.line],

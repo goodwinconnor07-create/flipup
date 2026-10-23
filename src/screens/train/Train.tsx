@@ -15,13 +15,13 @@ import { Spinner } from '../../ui/components';
 import { ReviewActivity } from './ReviewActivity';
 import { BackIcon, BookIcon, ChartIcon, ListIcon, MenuIcon, PencilIcon, ScrollIcon, TrophyIcon } from '../../ui/Icons';
 import { InsightsTab } from '../HomeInsights';
-import { ScrollHands } from './ScrollHands';
+import { StudyBank } from './StudyBank';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
 const SECTIONS: { id: TrainSection; title: string; hint: string; icon: typeof ListIcon }[] = [
   { id: 'review', title: 'Review hands', hint: 'Every decision, graded by GTO', icon: ListIcon },
-  { id: 'scroll', title: 'Scroll hands', hint: 'Cards you played, with the numbers', icon: ScrollIcon },
+  { id: 'scroll', title: 'Study bank', hint: 'Scroll hands you saved', icon: ScrollIcon },
   { id: 'insights', title: 'Insights', hint: 'How your tables and hands are going', icon: TrophyIcon },
   { id: 'library', title: 'Poker library', hint: 'Practise spot by spot', icon: BookIcon },
   { id: 'stats', title: 'Your stats', hint: 'Strengths and leaks', icon: ChartIcon },
@@ -50,7 +50,7 @@ export function Train({ section = 'review' }: { section?: TrainSection }) {
       </div>
       <div className="screen-body">
         {section === 'review' && <ReviewList />}
-        {section === 'scroll' && <ScrollHands />}
+        {section === 'scroll' && <StudyBank />}
         {section === 'insights' && <InsightsTab />}
         {section === 'library' && <Library />}
         {section === 'stats' && <StatsView />}

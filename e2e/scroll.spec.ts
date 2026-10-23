@@ -32,10 +32,25 @@ test('scroll plays a whole solved hand and grades every move with a reason', asy
   await expect(page.getByRole('button', { name: 'Next hand' })).toBeVisible();
   await shot(page, 'scroll-04-result');
 
+  // Save it to the study bank under a name.
+  await page.getByRole('button', { name: 'Save to study bank' }).click();
+  await page.locator('#quiz-save-name').fill('My test hand');
+  await shot(page, 'scroll-05-save');
+  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await expect(page.getByRole('button', { name: /Saved to your study bank/ })).toBeVisible();
+
   // The next hand deals straight away, and the tab counts what you've played.
   await page.getByRole('button', { name: 'Next hand' }).click();
   await expect(options.or(page.locator('.rp-felt'))).toBeVisible();
   await page.goBack();
   await page.getByRole('tab', { name: 'Scroll' }).click();
   await expect(page.getByText(/1 hands? played/)).toBeVisible();
+
+  // The study bank keeps it, and it plays again from there.
+  await page.getByRole('button', { name: /Study bank/ }).click();
+  await expect(page.getByText('My test hand')).toBeVisible();
+  await shot(page, 'scroll-06-bank');
+  await page.getByRole('button', { name: 'Play again' }).first().click();
+  await expect(page.locator('.rp-felt')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Saved to your study bank/ })).toBeVisible();
 });

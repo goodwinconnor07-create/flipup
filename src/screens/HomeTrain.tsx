@@ -8,7 +8,7 @@ import { BookIcon, ChartIcon, ListIcon, PencilIcon, ScrollIcon, TrophyIcon } fro
 
 const TILES: { id: TrainSection; title: string; hint: string; Icon: typeof ListIcon }[] = [
   { id: 'review', title: 'Review hands', hint: 'Graded by GTO', Icon: ListIcon },
-  { id: 'scroll', title: 'Scroll hands', hint: 'Cards you played', Icon: ScrollIcon },
+  { id: 'scroll', title: 'Study bank', hint: 'Hands you saved', Icon: ScrollIcon },
   { id: 'insights', title: 'Insights', hint: 'Tables and hands', Icon: TrophyIcon },
   { id: 'library', title: 'Poker library', hint: 'Spot by spot', Icon: BookIcon },
   { id: 'stats', title: 'Your stats', hint: 'Strengths and leaks', Icon: ChartIcon },

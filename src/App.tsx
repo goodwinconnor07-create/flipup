@@ -55,7 +55,7 @@ export function App() {
       screen = <Custom />;
       break;
     case 'scroll':
-      screen = <SolvedHands />;
+      screen = <SolvedHands key={route.hand ?? 'feed'} handId={route.hand} />;
       break;
   }
 

@@ -84,7 +84,7 @@ export type Route =
   | { name: 'drill'; scenario: string }
   | { name: 'custom' }
   /** Scroll: whole hands solved ahead of time, every move graded. */
-  | { name: 'scroll' };
+  | { name: 'scroll'; hand?: string };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 

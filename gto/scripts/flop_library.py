@@ -77,7 +77,7 @@ def solve_flop(spot, name, cards, out_dir):
     r_oop = class_reach_to_combos(info["reach"][oop]).astype(np.float32)
     r_ip = class_reach_to_combos(info["reach"][ip]).astype(np.float32)
     s = PostflopSolver(list(cards), pot, stack, r_oop, r_ip,
-                       sizing=explorer_sizing("flop", oop_leads=aggressor != ip), compress=True)
+                       sizing=explorer_sizing("flop", oop_leads=aggressor != ip, spr=stack / pot), compress=True)
     st = s.solve(ITERATIONS, TARGET, 25)
     root = s.node([])
     # Realization data at the root: per class EV share, equity and weight, both players.

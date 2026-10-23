@@ -44,7 +44,7 @@ STREETS = ["preflop", "flop", "turn", "river"]
 # multiway pots, where ranges are tighter and bluffs work less often.
 BET = {0: [0.33, 0.75], 1: [0.66], 2: [0.75]}
 RAISE = {0: [0.7], 1: [0.7], 2: [0.7]}
-ITERATIONS = {0: 150, 1: 200, 2: 300}
+ITERATIONS = {0: 80, 1: 120, 2: 200}
 VERBOSE = False
 # Share of hands kept by the street the quiz player's hand ends on (they fold or it's over).
 KEEP = {"preflop": 0.0, "flop": 0.4, "turn": 0.8, "river": 1.0}

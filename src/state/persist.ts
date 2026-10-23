@@ -22,8 +22,6 @@ export interface Session {
   game: Game | null;
   /** Online: take a seat as soon as the table loads. */
   joining?: boolean;
-  /** Local: a Scroll card in play (see src/scroll). */
-  scroll?: import('../scroll/play').ScrollRun;
 }
 
 export function read<T>(key: string): T | null {
@@ -81,7 +79,7 @@ export function loadSession(): Session | null {
   if (!s || (s.mode !== 'local' && s.mode !== 'online')) return null;
   if (s.mode === 'local' && !s.game) return null;
   if (s.mode === 'online' && !s.code) return null;
-  return { mode: s.mode, code: s.code ?? null, game: s.game ?? null, joining: s.joining, scroll: s.scroll };
+  return { mode: s.mode, code: s.code ?? null, game: s.game ?? null, joining: s.joining };
 }
 
 export function saveSession(session: Session | null): void {
@@ -259,6 +257,12 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 function loadDays(): string[] {
   const d = read<string[]>('flipup.days');
   return Array.isArray(d) ? d.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)) : [];
+}
+
+/** The old Scroll cards' saves (bot-style cards and every card ever played): gone with the cards. */
+export function forgetOldScroll(): void {
+  write('flipup.scroll', null);
+  write('flipup.scrollhands', null);
 }
 
 /** Marks today as a day this phone played a hand. */

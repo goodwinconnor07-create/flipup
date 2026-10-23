@@ -2,9 +2,10 @@
 
 Writes <out>/index.json ({"count", "shards": [file names]}) and <out>/hands-NNN.json (a list of
 hands). Each hand has all six seats, with the other four players' preflop folds put back in table
-order, so the app can replay it like any recorded hand. Only options in the solved tree are kept (each
-has GTO's frequency for the hand and its EV); `line` is the option the hand carries on with. Moves
-with only one option in the tree play out on their own, and hands over before the flop are left out.
+order, so the app can replay it like any recorded hand. Every legal option is kept: the solved
+tree's with GTO's frequency for the hand and its EV, the others (GTO never takes them there) with no EV.
+`line` is the option the hand carries on with and `eq` your hand's equity against the other range
+(postflop). Hands over before the flop are left out.
 
     python3 scripts/export_quiz.py quiz/*.jsonl --out ../public/gto/quiz
 """
@@ -48,18 +49,19 @@ def pack(h: dict) -> dict | None:
     orig = [i for i, s in enumerate(steps) if s["seat"] in (hero, opp)]
     decisions = []
     for d in h["decisions"]:
-        opts = [o for o in d["options"] if o.get("ev_bb") is not None]
+        # Every legal option, including the ones GTO never takes here (no EV: the solved tree leaves them out).
+        opts = d["options"]
         step = h["steps"][d["step"]]
-        if len(opts) < 2:
-            continue  # only one move in the solved tree (a check where it never leads): not a question
         line = next((k for k, o in enumerate(opts) if o["kind"] == step["kind"] and abs(o["to_bb"] - step["to_bb"]) < 0.01), None)
         if line is None:
             return None
         decisions.append({
             "at": orig[d["step"]], "pot": d["pot_bb"], "toCall": d["to_call_bb"],
             "options": [{"label": o["label"], "kind": o["kind"], "to": o["to_bb"], "freq": round(o["freq"], 3),
-                         "ev": round(o["ev_bb"], 2)} for o in opts],
+                         "ev": None if o.get("ev_bb") is None else round(o["ev_bb"], 2)} for o in opts],
             "line": line,
+            # Your hand's equity against the other player's range here (postflop only).
+            "eq": None if d.get("equity") is None else round(d["equity"], 3),
         })
     if not decisions or not h["board"]:
         return None  # nothing to answer, or over before the flop

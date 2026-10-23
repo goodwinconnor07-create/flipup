@@ -278,8 +278,12 @@ export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: numbe
       if (s.street === 'river' && (mediumMade(s.made) || s.made === 'ace-high') && (best === 'call' || best === 'fold'))
         out.push(
           best === 'call'
-            ? `On the river ${made} is a bluff-catcher: it beats their bluffs, not their value bets. Against a ${pct(s.betShare)} pot bet you have to keep calling with about ${pct(s.mdf)} of your hands, or they can bluff you with anything.`
-            : `On the river ${made} only beats bluffs, and this line is weighted to value, so it's one of the hands you let go.`,
+            ? s.players >= 3
+              ? `On the river ${made} is a bluff-catcher, and a bet into several players is weighted to value, so a call has to beat some of their value hands too. This one does often enough at this price.`
+              : `On the river ${made} is a bluff-catcher: it beats their bluffs, not their value bets. Against a ${pct(s.betShare)} pot bet you have to keep calling with about ${pct(s.mdf)} of your hands, or they can bluff you with anything.`
+            : s.players >= 3
+              ? `On the river ${made} only beats bluffs, and someone betting into several players rarely is: multiway river bets are mostly value, so it's one of the hands you let go.`
+              : `On the river ${made} only beats bluffs, and this line is weighted to value, so it's one of the hands you let go.`,
         );
       if (best === 'raise' && s.street === 'flop' && !s.inPosition && t && !t.high && t.connected)
         out.push("A low, connected board like this is where the caller check-raises: you have more sets, two pair and straights here than the preflop raiser.");
@@ -449,6 +453,10 @@ function multiwayWhy(s: Spot, best: ReturnType<typeof moveKind>, made: string, d
       );
     if (s.behind > 0 && (best === 'call' || (best === 'fold' && eq != null && eq >= Math.round(s.needed * 100) - 5)) && out.length < 2)
       out.push(`${s.behind === 1 ? 'One player is' : `${s.behind} players are`} still to act behind you and could raise, so you call a bit tighter than the price alone says.`);
+    if (s.made === 'top-pair' && (best === 'fold' || best === 'call') && out.length < 2)
+      out.push(
+        `Top pair with a weak kicker is often dominated multiway: the more players, the likelier someone has the same pair with a better kicker${best === 'call' ? ', so this call is about the price, not the hand' : ''}.`,
+      );
     if ((s.draw === 'flush' || s.draw === 'combo') && s.street !== 'river' && out.length < 2)
       out.push(
         s.nutDraw

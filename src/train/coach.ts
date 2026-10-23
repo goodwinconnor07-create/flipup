@@ -176,6 +176,7 @@ const MADE_TEXT: Record<Made, string> = {
   'top-pair': 'top pair with a weak kicker',
   'middle-pair': 'middle pair',
   'weak-pair': 'a weak pair',
+  board: 'only what the board gives everyone',
   'ace-high': 'ace high',
   nothing: 'no pair',
 };
@@ -219,7 +220,8 @@ export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: numbe
   const eq = s.equity == null ? null : Math.round(s.equity * 100);
   const best = moveKind(s.best, s.pot);
   const mine = moveKind(chosen, s.pot);
-  const strong = strongMade(s.made) && (s.equity == null || s.equity >= 0.5);
+  // Strong enough to play for value: against one player that's half the pot, multiway a good share above average.
+  const strong = strongMade(s.made) && (s.equity == null || s.equity >= (s.players >= 3 ? s.fairShare + 0.1 : 0.5));
   const made = strongMade(s.made) && !strong ? 'a hand that looks strong but is weaker than it seems here' : MADE_TEXT[s.made];
   const draw = s.draw ? DRAW_TEXT[s.draw] : null;
   // Well ahead of an average hand here, whatever the hand is called.
@@ -250,8 +252,13 @@ export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: numbe
       else out.push(`Even at that price ${hand} loses too often to the hands that raise${!s.inPosition ? ", and you'd play it out of position" : ''}. Folding saves chips.`);
       if (s.callers > 0) {
         const who = s.callers === 1 ? 'a raise and a call' : `a raise and ${s.callers} calls`;
+        const multiwayHand = s.preflopKind === 'pair' || s.handClass.endsWith('s');
         if (best === 'call')
-          out.push(`With ${who} in front, the pot is bigger and the flop will be multiway: hands that make sets, straights and flushes do well, because when they hit they can win a big pot from several players.`);
+          out.push(
+            multiwayHand
+              ? `With ${who} in front, the flop will be multiway, and ${hand} is the kind of hand that wants that: ${s.preflopKind === 'pair' ? 'when it flops a set' : 'when it makes a flush or a straight'} it can win a big pot from several players.`
+              : `With ${who} in front you get a great price. Offsuit hands like ${hand} lose value in multiway pots, so the price is what makes this a call.`,
+          );
         else if (best === 'raise' || best === 'big')
           out.push(`This is a squeeze: with ${who} in front, a re-raise often takes the pot straight away, because the callers rarely have the very best hands (they'd have re-raised).`);
         else
@@ -260,6 +267,8 @@ export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: numbe
     }
   } else {
     const t = s.texture;
+    if (s.made === 'board')
+      out.push("Your hand plays the board: everyone still in has at least what's out there, so the best you can do is split, and anyone holding a card that improves it beats you.");
     if (s.toCall > 0) {
       out.push(
         `You need ${need}% equity to call ${bbWord(s.toCall)}${
@@ -314,15 +323,17 @@ export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: numbe
 
       if (s.street === 'flop' && s.threeBetPot && s.raiser && best === 'small')
         out.push('In a 3-bet pot your range is much stronger than theirs, so small, frequent bets work well.');
-      if (s.street === 'turn' && s.hadInitiative && s.newCard && t) {
+      if (s.street === 'turn' && s.betLastStreet && s.newCard && t) {
         if ((best === 'small' || best === 'big') && t.newCard === 'overcard')
           out.push(`The ${cardName(s.newCard)} is a good card to keep betting: an overcard helps the preflop raiser's range more than the caller's.`);
         else if (best === 'check' && (t.newCard === 'flush' || t.newCard === 'straight' || t.newCard === 'pair'))
           out.push('Slow down: that card helps the hands that called your flop bet more than yours.');
       }
+      if (s.street !== 'flop' && s.prevAggressor == null && !s.hadInitiative && best === 'check' && s.players >= 3)
+        out.push('Everyone checked the last street, so nobody has shown strength, but nobody has folded either: there are still several ranges to get through.');
 
       if (best === 'check') {
-        if (!s.hadInitiative && !s.inPosition && (s.street === 'flop' || s.best.freq > 0.95))
+        if (!s.hadInitiative && !s.inPosition && (s.street === 'flop' || (s.prevAggressor != null && s.best.freq > 0.95)))
           out.push(
             s.street === 'flop'
               ? 'Out of position against the preflop raiser you check almost every hand: their range is stronger here, so you let them bet first.'
@@ -336,7 +347,7 @@ export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: numbe
             `Check: ${s.overcards ? 'two overcards give you about six outs and' : made + ' still has'} about ${eq}% equity, but a bet only folds out worse hands. Checking lets you see the next card cheaply.`,
           );
         else out.push(`Give up for now: you have ${made}, and a bet won't fold out enough better hands.`);
-      } else if ((best === 'small' || best === 'big') && !strong && !mediumMade(s.made) && ahead) {
+      } else if ((best === 'small' || best === 'big') && !strongMade(s.made) && !mediumMade(s.made) && ahead) {
         out.push(
           `Bet for thin value and protection: ${made} is ahead more often than it looks here, about ${eq}% of the pot ${s.players >= 3 ? 'against everyone' : 'against their range'}${
             s.hadInitiative ? '' : ' after the checks'
@@ -422,7 +433,7 @@ function multiwayWhy(s: Spot, best: ReturnType<typeof moveKind>, made: string, d
           best === 'call' ? 'you have enough to come along' : "hands that are fine heads-up don't make it here"
         }.`,
       );
-    if (s.behind > 0 && best !== 'raise' && out.length < 2)
+    if (s.behind > 0 && (best === 'call' || (best === 'fold' && eq != null && eq >= Math.round(s.needed * 100) - 5)) && out.length < 2)
       out.push(`${s.behind === 1 ? 'One player is' : `${s.behind} players are`} still to act behind you and could raise, so you call a bit tighter than the price alone says.`);
     if ((s.draw === 'flush' || s.draw === 'combo') && s.street !== 'river' && out.length < 2)
       out.push(
@@ -445,8 +456,8 @@ function multiwayWhy(s: Spot, best: ReturnType<typeof moveKind>, made: string, d
       out.push(`With ${others} players to get through, a semi-bluff folds out less, so ${draw} often prefers to see the next card for free.`);
     if (s.hadInitiative && s.street === 'flop' && (best === 'small' || best === 'check') && out.length < 2)
       out.push("Multiway, the preflop raiser bets less often and smaller than heads-up: each extra caller makes it likelier that someone hit the board.");
-    else if (!s.hadInitiative && best === 'check' && s.street === 'flop' && out.length < 2)
-      out.push('In multiway pots the players without the initiative mostly check and let the preflop raiser act first.');
+    else if (!s.hadInitiative && !s.inPosition && best === 'check' && s.street === 'flop' && s.behind > 1 && out.length < 2)
+      out.push("Betting into the raiser with another player still to come rarely works: you'd have to get through two ranges, and one of them is strong.");
   }
   if (eq != null && out.length < 2)
     out.push(`You have about ${eq}% of the pot against everyone, and an average hand with ${s.players} players has ${pct(s.fairShare)}.`);

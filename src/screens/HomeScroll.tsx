@@ -7,7 +7,7 @@ import { ChevronIcon, ScrollIcon } from '../ui/Icons';
 /** What the coach opens with on the Scroll tab. */
 function hello(hands: number, right: number | null): string {
   if (hands === 0)
-    return "Play whole hands the solver has already worked out. I'll stop you at every decision, preflop to river, tell you if you got it right and why.";
+    return "Play whole hands the solver has already worked out, with three or four players seeing the flop. I'll stop you at every decision, preflop to river, and tell you straight away if you got it right and why.";
   if (right != null && right >= 0.8) return `You're getting ${Math.round(right * 100)}% of decisions right. Keep it going.`;
   if (right != null && right < 0.5) return "Lots of close spots lately. Read the why after each move: that's where it sticks.";
   return 'Ready for another hand?';
@@ -33,7 +33,7 @@ export function ScrollTab() {
           <span className="hero-sub">
             {save.hands
               ? `${save.hands} hands played · ${decided} decisions`
-              : 'Whole hands, preflop to river. Every move graded by the solver.'}
+              : 'Whole hands with three or four players in the pot. Every move graded the moment you make it.'}
           </span>
         </span>
         <span className="hero-foot">

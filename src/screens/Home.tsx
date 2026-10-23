@@ -124,7 +124,7 @@ export function Home() {
         <div className="home-scroll">
           <div className="home-title">
             <h2 className="large-title">{tab === 'scroll' ? 'Scroll' : tab === 'train' ? 'Train' : 'Play'}</h2>
-            <p>{tab === 'scroll' ? 'Whole hands, graded at every move.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
+            <p>{tab === 'scroll' ? 'Multiway hands, graded at every move.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
           </div>
           <div key={tab} className="home-pane">
             {tab === 'play' && (

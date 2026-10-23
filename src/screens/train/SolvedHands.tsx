@@ -7,7 +7,7 @@ import { recordNet } from '../../game';
 import type { Colour } from '../../gto/types';
 import { getHand, gradeChoice, gtoMix, nextHand, POSITIONS, seatId, toRecord, type QuizHand } from '../../quiz/hands';
 import { isBanked, loadQuiz, recordPlayed, saveQuizHand, saveToBank } from '../../quiz/save';
-import { loadTableLook } from '../../state/persist';
+import { loadTableLook, markPlayedToday } from '../../state/persist';
 import { CoachBusy, CoachSays } from '../../train/Coach';
 import { GRADE_WORD, quizCarryOn, quizLines, quizResult, quizSummary, quizWhy } from '../../train/coach';
 import { readSpot } from '../../quiz/read';
@@ -82,6 +82,7 @@ export function SolvedHands({ handId }: { handId?: string }) {
       setSaved(true);
       setSave(saveQuizHand(hand.id, grades));
       recordPlayed(played());
+      markPlayedToday();
     }
   }, [hand, at, last, saved, frames.length]);
 

@@ -50,7 +50,7 @@ export function Home() {
   const game = useApp((s) => s.game);
   const session = useApp((s) => s.session);
   const profile = useApp((s) => s.profile);
-  const active = session && !session.scroll && (session.mode === 'online' || (game && game.status !== 'ended'));
+  const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
   const named = profile.name.trim().length > 0;
   const [stats] = useState(loadStats);
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
@@ -124,7 +124,7 @@ export function Home() {
         <div className="home-scroll">
           <div className="home-title">
             <h2 className="large-title">{tab === 'scroll' ? 'Scroll' : tab === 'train' ? 'Train' : 'Play'}</h2>
-            <p>{tab === 'scroll' ? 'Whole hands, graded at every move.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
+            <p>{tab === 'scroll' ? 'Multiway hands, graded at every move.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
           </div>
           <div key={tab} className="home-pane">
             {tab === 'play' && (

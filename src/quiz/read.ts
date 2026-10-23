@@ -71,6 +71,21 @@ export interface Spot {
   betShare: number;
   /** Share of your range you'd need to keep (call or raise) so a bluff with any two cards doesn't profit. */
   mdf: number;
+  /** Players still in the hand, you included. */
+  players: number;
+  /** Players still to act after you on this street. */
+  behind: number;
+  /** Players who already called the bet you face. */
+  callers: number;
+  /**
+   * With several of you left to answer a bet, the share each needs to keep so that together you stop a
+   * bluff: 1 - (bet / (pot + bet))^(1 / defenders). Equals mdf heads-up.
+   */
+  mdfEach: number;
+  /** Players left to answer the bet you face, you included (callers already have). */
+  defenders: number;
+  /** The pot share an average hand has by headcount (1 / players). */
+  fairShare: number;
   /** Preflop: the hand as a class ("AKs", "T9o", "77") and what kind of hand it is. */
   handClass: string;
   preflopKind: 'premium' | 'strong' | 'suited-ace' | 'pair' | 'suited-connector' | 'broadway' | 'weak';
@@ -230,30 +245,50 @@ function readNutDraw(hole: Card[], board: Card[]): boolean {
   return false;
 }
 
+/** Chips you've put in so far (big blinds): your last wager on each street, the blinds first. */
+function investedBefore(h: QuizHand, before: QuizHand['steps']): number {
+  const last = new Map<string, number>([['p', h.hero === 4 ? 0.5 : h.hero === 5 ? 1 : 0]]);
+  for (const [st, seat, move, to] of before) if (seat === h.hero && move !== 'fold' && move !== 'check') last.set(st, to);
+  return [...last.values()].reduce((a, b) => a + b, 0);
+}
+
 /** Everything the coach needs about one of your decisions. */
 export function readSpot(h: QuizHand, d: QuizDecision): Spot {
   const step = h.steps[d.at];
   const street = STREETS[step[0]];
   const board = h.board.slice(0, BOARD_AT[street]);
   const before = h.steps.slice(0, d.at);
+  const folded = new Set(before.filter((s) => s[2] === 'fold').map((s) => s[1]));
+  const live = [h.hero, ...h.villains].filter((x) => !folded.has(x));
+  const players = street === 'preflop' ? 6 - folded.size : (d.players ?? live.length);
+  const onStreet = before.filter((s) => s[0] === step[0]);
+  const aggrAt = onStreet.map((s) => s[2] === 'bet' || s[2] === 'raise' || s[2] === 'allin').lastIndexOf(true);
+  const callers = d.toCall > 0 && aggrAt >= 0 ? onStreet.slice(aggrAt + 1).filter((s) => s[2] === 'call').length : 0;
+  // Who still has to act after you on this street: facing a bet, everyone in who hasn't answered it yet;
+  // otherwise everyone in who comes after you and hasn't acted.
+  const inHand = street === 'preflop' ? [0, 1, 2, 3, 4, 5].filter((x) => !folded.has(x)) : live;
+  const order = street === 'preflop' ? [0, 1, 2, 3, 4, 5] : ORDER_POSTFLOP;
+  const answered = new Set(aggrAt >= 0 ? onStreet.slice(aggrAt).map((s) => s[1]) : onStreet.map((s) => s[1]));
+  const behind = inHand.filter((x) => x !== h.hero && !answered.has(x) && (aggrAt >= 0 || order.indexOf(x) > order.indexOf(h.hero))).length;
+  const alpha = d.toCall > 0 && d.pot > 0 ? d.toCall / d.pot : 0;
+  const defenders = street === 'preflop' ? 1 : 1 + behind;
   const raises = before.filter((s) => s[0] === 'p' && (s[2] === 'raise' || s[2] === 'allin'));
   const raiserSeat = raises.length ? raises[raises.length - 1][1] : null;
   const prevStreet = { preflop: null, flop: 'p', turn: 'f', river: 't' }[street];
   const prevAggr = prevStreet ? [...before].reverse().find((s) => s[0] === prevStreet && (s[2] === 'bet' || s[2] === 'raise' || s[2] === 'allin')) : undefined;
-  const invested = Math.max(0, ...before.filter((s) => s[1] === h.hero).map((s) => s[3]));
-  const behind = Math.max(0, 100 - invested);
+  const stack = Math.max(0, 100 - investedBefore(h, before));
   const mix = d.options.filter((o) => o.freq >= 0.01).sort((a, b) => b.freq - a.freq);
   return {
     street,
     position: POSITIONS[h.hero],
-    inPosition: ORDER_POSTFLOP.indexOf(h.hero) > ORDER_POSTFLOP.indexOf(h.villain),
+    inPosition: live.every((x) => x === h.hero || ORDER_POSTFLOP.indexOf(h.hero) > ORDER_POSTFLOP.indexOf(x)),
     raiser: raiserSeat === h.hero,
     hadInitiative: (prevAggr ? prevAggr[1] : raiserSeat) === h.hero,
     pot: d.pot,
     toCall: d.toCall,
     needed: d.toCall > 0 ? d.toCall / (d.pot + d.toCall) : 0,
     equity: d.eq ?? null,
-    spr: d.pot > 0 ? behind / d.pot : 0,
+    spr: d.pot > 0 ? stack / d.pot : 0,
     made: readMade(h.cards, board),
     draw: readDraw(h.cards, board),
     texture: readTexture(board),
@@ -264,6 +299,12 @@ export function readSpot(h: QuizHand, d: QuizDecision): Spot {
     threeBetPot: raises.length >= 2,
     betShare: d.toCall > 0 && d.pot - d.toCall > 0 ? d.toCall / (d.pot - d.toCall) : 0,
     mdf: d.toCall > 0 && d.pot > 0 ? (d.pot - d.toCall) / d.pot : 0,
+    players,
+    behind,
+    callers,
+    mdfEach: alpha > 0 ? 1 - Math.pow(alpha, 1 / defenders) : 0,
+    defenders,
+    fairShare: 1 / Math.max(1, street === 'preflop' ? 2 : players),
     handClass: handClassOf(h.cards),
     preflopKind: preflopKind(h.cards),
     best: mix[0] ?? d.options[d.line],

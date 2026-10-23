@@ -1,5 +1,5 @@
-// Solved hands: full hands played out ahead of time by the GTO solver (gto/scripts/quiz_hands.py) and
-// shipped as static files in public/gto/quiz. Each of your decisions comes with every option, GTO's
+// Solved hands: full multiway hands played out ahead of time by the GTO solver (gto/scripts/quiz_multiway.py)
+// and shipped as static files in public/gto/quiz. Three or four players see every flop. Each of your decisions comes with every option, GTO's
 // frequency for your exact cards and what each option is worth, so grading is instant and needs no
 // server. The hand then carries on the way it was solved, whatever you picked.
 
@@ -25,16 +25,19 @@ export interface QuizDecision {
   options: QuizOption[];
   /** The option the hand carries on with. */
   line: number;
-  /** Your hand's equity against the other player's range here (postflop). */
+  /** Your hand's share of the pot at showdown against the other players' ranges here (postflop). */
   eq?: number | null;
+  /** Players still in the hand, you included (postflop). */
+  players?: number;
 }
 
 export interface QuizHand {
   id: string;
   hero: number;
-  villain: number;
+  /** The other players who saw the flop, and their cards. */
+  villains: number[];
   cards: Card[];
-  villainCards: Card[];
+  villainCards: Card[][];
   board: Card[];
   /** [street initial, seat, move, street wager after it in big blinds]. Seats: 0 UTG ... 5 BB. */
   steps: [string, number, Move, number][];
@@ -81,16 +84,21 @@ export function toRecord(h: QuizHand): HandRecord {
   }
   close();
   const pot = [...put.values()].reduce((a, b) => a + b, 0);
-  const live = [h.hero, h.villain].filter((s) => !folded.has(s));
-  let winners = live;
-  if (live.length === 2 && h.board.length === 5) {
-    const score = (c: Card[]) => scoreHand([...c, ...h.board]);
-    const a = score(h.cards);
-    const b = score(h.villainCards);
-    winners = a > b ? [h.hero] : b > a ? [h.villain] : live;
+  const cardsOf = new Map<number, Card[]>([[h.hero, h.cards], ...h.villains.map((s, i) => [s, h.villainCards[i]] as [number, Card[]])]);
+  const live = [h.hero, ...h.villains].filter((s) => !folded.has(s));
+  // Everyone has the same stack after the flop, so there are no side pots. When you fold, the quiz ends
+  // there and nobody is shown winning.
+  let winners: number[] = folded.has(h.hero) ? [] : live;
+  if (winners.length > 1 && h.board.length === 5) {
+    const scores = live.map((s) => scoreHand([...cardsOf.get(s)!, ...h.board]));
+    const top = Math.max(...scores);
+    winners = live.filter((_, i) => scores[i] === top);
   }
   const won: Record<string, number> = {};
   winners.forEach((s, i) => (won[seatId(s)] = Math.floor(pot / winners.length) + (i === 0 ? pot % winners.length : 0)));
+  // Cards you'd see: yours, and everyone's still in at a showdown.
+  const holes: Record<string, Card[]> = { [seatId(h.hero)]: h.cards };
+  if (h.showdown) for (const s of live) holes[seatId(s)] = cardsOf.get(s)!;
   return {
     tableId: `quiz-${h.id}`,
     number: 1,
@@ -101,7 +109,7 @@ export function toRecord(h: QuizHand): HandRecord {
     players,
     actions,
     board: h.board,
-    holes: { [seatId(h.hero)]: h.cards, [seatId(h.villain)]: h.villainCards },
+    holes,
     won,
     showdown: h.showdown,
   };

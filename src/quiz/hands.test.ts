@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { buildFrames } from '../train/replay';
 import { gradeChoice, gtoMix, QUIZ_BB, seatId, toRecord, type QuizHand } from './hands';
 
-// A solved hand from gto/scripts/quiz_hands.py (BTN Kc4c vs BB 7c6c, check-raised on 9c8c4d, to showdown).
-const HAND = {"id": "q11-32", "hero": 3, "villain": 5, "cards": ["Kc", "4c"], "villainCards": ["6c", "7c"], "board": ["9c", "8c", "4d", "As", "6d"], "steps": [["p", 0, "fold", 0], ["p", 1, "fold", 0], ["p", 2, "fold", 0], ["p", 3, "raise", 2.5], ["p", 4, "fold", 0], ["p", 5, "call", 2.5], ["f", 5, "check", 0.0], ["f", 3, "bet", 4.12], ["f", 5, "raise", 12.38], ["f", 3, "call", 12.38], ["t", 5, "check", 0.0], ["t", 3, "bet", 9.98], ["t", 5, "call", 9.98], ["r", 5, "check", 0.0], ["r", 3, "check", 0.0]], "decisions": [{"at": 3, "pot": 1.5, "toCall": 1.0, "options": [{"label": "Fold", "kind": "fold", "to": 0.0, "freq": 0.0, "ev": 0.0}, {"label": "Raise to 2.5bb", "kind": "raise", "to": 2.5, "freq": 1.0, "ev": 0.22}], "line": 1}, {"at": 7, "pot": 5.5, "toCall": 0.0, "options": [{"label": "Check", "kind": "check", "to": 0.0, "freq": 0.0, "ev": 4.16}, {"label": "Bet 33% (1.8bb)", "kind": "bet", "to": 1.82, "freq": 0.001, "ev": 6.61}, {"label": "Bet 75% (4.1bb)", "kind": "bet", "to": 4.12, "freq": 0.075, "ev": 6.7}, {"label": "Bet 125% (6.9bb)", "kind": "bet", "to": 6.88, "freq": 0.924, "ev": 6.72}], "line": 2}, {"at": 9, "pot": 22.0, "toCall": 8.25, "options": [{"label": "Fold", "kind": "fold", "to": 0.0, "freq": 0.0, "ev": 0.0}, {"label": "Call 12.4bb", "kind": "call", "to": 12.38, "freq": 0.66, "ev": 18.72}, {"label": "Raise to 30.5bb", "kind": "raise", "to": 30.52, "freq": 0.34, "ev": 18.8}], "line": 1}, {"at": 11, "pot": 30.25, "toCall": 0.0, "options": [{"label": "Check", "kind": "check", "to": 0.0, "freq": 0.161, "ev": 23.49}, {"label": "Bet 33% (10bb)", "kind": "bet", "to": 9.98, "freq": 0.441, "ev": 23.29}, {"label": "Bet 75% (22.7bb)", "kind": "bet", "to": 22.69, "freq": 0.398, "ev": 23.46}, {"label": "Bet 125% (37.8bb)", "kind": "bet", "to": 37.81, "freq": 0.0, "ev": 20.5}], "line": 1}, {"at": 14, "pot": 50.22, "toCall": 0.0, "options": [{"label": "Check", "kind": "check", "to": 0.0, "freq": 1.0, "ev": 32.73}, {"label": "Bet 33% (16.6bb)", "kind": "bet", "to": 16.57, "freq": 0.0, "ev": 22.73}, {"label": "Bet 75% (37.7bb)", "kind": "bet", "to": 37.66, "freq": 0.0, "ev": 19.17}, {"label": "All-in 75.1bb", "kind": "allin", "to": 75.14, "freq": 0.0, "ev": 15.83}], "line": 0}], "showdown": true} as QuizHand;
+// A solved multiway hand from gto/scripts/quiz_multiway.py: CO A♥K♠ opens, the button and big blind call,
+// it's checked to the river, the button bets and wins with a pair of jacks.
+const HAND = {"id": "m7-28", "hero": 2, "villains": [3, 5], "cards": ["Ks", "Ah"], "villainCards": [["Ac", "Jd"], ["Th", "Kd"]], "board": ["8c", "3h", "5s", "5d", "Jc"], "steps": [["p", 0, "fold", 0.0], ["p", 1, "fold", 0.0], ["p", 2, "raise", 2.3], ["p", 3, "call", 2.3], ["p", 4, "fold", 0.5], ["p", 5, "call", 2.3], ["f", 5, "check", 0.0], ["f", 2, "check", 0.0], ["f", 3, "check", 0.0], ["t", 5, "check", 0.0], ["t", 2, "check", 0.0], ["t", 3, "check", 0.0], ["r", 5, "check", 0.0], ["r", 2, "check", 0.0], ["r", 3, "bet", 5.55], ["r", 5, "fold", 0.0], ["r", 2, "call", 5.55]], "decisions": [{"at": 2, "pot": 1.5, "toCall": 1.0, "options": [{"label": "Fold", "kind": "fold", "to": 0.0, "freq": 0.0, "ev": 0.0}, {"label": "Raise to 2.3bb", "kind": "raise", "to": 2.3, "freq": 1.0, "ev": 1.57}, {"label": "Limp 1bb", "kind": "call", "to": 1.0, "freq": 0.0, "ev": null}, {"label": "All-in 100bb", "kind": "allin", "to": 100.0, "freq": 0.0, "ev": null}], "line": 1, "eq": null}, {"at": 7, "pot": 7.4, "toCall": 0.0, "options": [{"label": "Check", "kind": "check", "to": 0.0, "freq": 0.479, "ev": 1.61}, {"label": "Bet 33% (2.4bb)", "kind": "bet", "to": 2.44, "freq": 0.52, "ev": 1.63}, {"label": "Bet 75% (5.5bb)", "kind": "bet", "to": 5.55, "freq": 0.0, "ev": 1.25}], "line": 0, "eq": 0.335, "players": 3}, {"at": 10, "pot": 7.4, "toCall": 0.0, "options": [{"label": "Check", "kind": "check", "to": 0.0, "freq": 0.493, "ev": 4.17}, {"label": "Bet 66% (4.9bb)", "kind": "bet", "to": 4.88, "freq": 0.507, "ev": 4.17}], "line": 0, "eq": 0.549, "players": 3}, {"at": 13, "pot": 7.4, "toCall": 0.0, "options": [{"label": "Check", "kind": "check", "to": 0.0, "freq": 1.0, "ev": 2.57}, {"label": "Bet 75% (5.5bb)", "kind": "bet", "to": 5.55, "freq": 0.0, "ev": 0.33}], "line": 0, "eq": 0.402, "players": 3}, {"at": 16, "pot": 12.95, "toCall": 5.55, "options": [{"label": "Fold", "kind": "fold", "to": 0.0, "freq": 0.0, "ev": 0.0}, {"label": "Call 5.5bb", "kind": "call", "to": 5.55, "freq": 1.0, "ev": 0.28}, {"label": "Raise to 18.5bb", "kind": "raise", "to": 18.5, "freq": 0.0, "ev": -1.22}], "line": 1, "eq": 0.315, "players": 2}], "showdown": true} as QuizHand;
 
 describe('solved hands', () => {
   it('replays as a normal hand record', () => {
@@ -17,9 +18,13 @@ describe('solved hands', () => {
     const start = 6 * 100 * QUIZ_BB;
     const after = Object.values(last.stacks).reduce((a, b) => a + b, 0);
     expect(after).toBe(start);
-    // BB made the straight on the river.
-    expect(r.won[seatId(HAND.villain)]).toBeGreaterThan(0);
+    // Three players saw the flop; the button's jacks beat your ace high.
+    expect(HAND.villains).toHaveLength(2);
+    expect(r.won[seatId(3)]).toBeGreaterThan(0);
     expect(r.won[seatId(HAND.hero)] ?? 0).toBe(0);
+    // At a showdown you see the cards of everyone still in, not the big blind who folded.
+    expect(r.holes[seatId(3)]).toEqual(['Ac', 'Jd']);
+    expect(r.holes[seatId(5)]).toBeUndefined();
   });
 
   it('points every decision at your move, on the line the hand carries on with', () => {
@@ -34,14 +39,15 @@ describe('solved hands', () => {
   });
 
   it('grades against the solver', () => {
-    const flop = HAND.decisions[1]; // GTO overbets 92%; checking gives up about 2.5bb
-    const best = flop.options.findIndex((o) => o.freq > 0.9);
-    const check = flop.options.findIndex((o) => o.kind === 'check');
-    expect(gradeChoice(flop, best).colour).toBe('green');
-    expect(gradeChoice(flop, check).colour).toBe('red');
-    // A 75% bet: GTO uses it 7.5% of the time and it's within 0.02bb, so it's good.
-    const mid = flop.options.findIndex((o) => o.label.startsWith('Bet 75%'));
-    expect(gradeChoice(flop, mid).colour).toBe('green');
-    expect(gtoMix(flop)[0].freq).toBeGreaterThan(0.9);
+    const river = HAND.decisions[3]; // GTO always checks; betting gives up over 2bb
+    const check = river.options.findIndex((o) => o.kind === 'check');
+    const bet = river.options.findIndex((o) => o.kind === 'bet');
+    expect(gradeChoice(river, check).colour).toBe('green');
+    expect(gradeChoice(river, bet).colour).toBe('red');
+    // On the flop GTO mixes check and a small bet; the big bet is a close call.
+    const flop = HAND.decisions[1];
+    expect(gradeChoice(flop, flop.options.findIndex((o) => o.kind === 'check')).colour).toBe('green');
+    expect(gradeChoice(flop, flop.options.findIndex((o) => o.label.startsWith('Bet 75%'))).colour).toBe('yellow');
+    expect(gtoMix(flop).length).toBe(2);
   });
 });

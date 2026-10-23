@@ -151,27 +151,49 @@ function getJson<T>(path: string): Promise<T> {
   });
 }
 
-/** A hand you haven't seen (or the least recent one once you've seen them all). */
-export async function nextHand(seen: string[]): Promise<QuizHand> {
+function loadIndex(): Promise<QuizIndex> {
   index ??= getJson<QuizIndex>('/gto/quiz/index.json').catch((e) => {
     index = null;
     throw e;
   });
-  const idx = await index;
+  return index;
+}
+
+function loadShard(name: string): Promise<QuizHand[]> {
+  if (!shards.has(name))
+    shards.set(
+      name,
+      getJson<QuizHand[]>(`/gto/quiz/${name}`).catch((e) => {
+        shards.delete(name);
+        throw e;
+      }),
+    );
+  return shards.get(name)!;
+}
+
+/** One hand by its id (for the study bank). */
+export async function getHand(id: string): Promise<QuizHand> {
+  const idx = await loadIndex();
+  for (const name of idx.shards) {
+    const found = (await loadShard(name)).find((h) => h.id === id);
+    if (found) return found;
+  }
+  throw new Error("That hand isn't in this version of the app any more.");
+}
+
+/** A hand you haven't seen (or the least recent one once you've seen them all). */
+export async function nextHand(seen: string[]): Promise<QuizHand> {
+  const idx = await loadIndex();
   if (idx.shards.length === 0) throw new Error('No solved hands here yet.');
   const done = new Set(seen);
   const order = idx.shards.map((_, i) => i).sort(() => Math.random() - 0.5);
   for (const i of order) {
-    const name = idx.shards[i];
-    if (!shards.has(name)) shards.set(name, getJson<QuizHand[]>(`/gto/quiz/${name}`));
-    const hands = await shards.get(name)!;
+    const hands = await loadShard(idx.shards[i]);
     const fresh = hands.filter((h) => !done.has(h.id));
     if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
   }
   // Seen them all: start again from the one seen longest ago.
-  const first = idx.shards[0];
-  if (!shards.has(first)) shards.set(first, getJson<QuizHand[]>(`/gto/quiz/${first}`));
-  const hands = await shards.get(first)!;
+  const hands = await loadShard(idx.shards[0]);
   const age = new Map(seen.map((id, i) => [id, i]));
   return [...hands].sort((a, b) => (age.get(a.id) ?? -1) - (age.get(b.id) ?? -1))[0];
 }

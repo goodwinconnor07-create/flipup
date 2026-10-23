@@ -5,8 +5,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { recordNet } from '../../game';
 import type { Colour } from '../../gto/types';
-import { gradeChoice, gtoMix, nextHand, seatId, toRecord, type QuizHand } from '../../quiz/hands';
-import { loadQuiz, saveQuizHand } from '../../quiz/save';
+import { getHand, gradeChoice, gtoMix, nextHand, POSITIONS, seatId, toRecord, type QuizHand } from '../../quiz/hands';
+import { isBanked, loadQuiz, recordPlayed, saveQuizHand, saveToBank } from '../../quiz/save';
 import { loadTableLook } from '../../state/persist';
 import { CoachBusy, CoachSays } from '../../train/Coach';
 import { GRADE_WORD, quizCarryOn, quizLines, quizResult, quizSummary, quizWhy } from '../../train/coach';
@@ -16,7 +16,13 @@ import { streetName } from '../../train/widgets';
 import { BackBar, CardSlot, chips, PlayingCard } from '../../ui/components';
 import { Seat } from './Replay';
 
-export function SolvedHands() {
+const SUIT: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
+const cardText = (c: string) => `${c[0] === 'T' ? '10' : c[0]}${SUIT[c[1]]}`;
+/** A name to start from when saving: "BTN K♣9♦ on J♣ 9♥ Q♦". */
+const defaultName = (h: QuizHand) => `${POSITIONS[h.hero]} ${h.cards.map(cardText).join('')} on ${h.board.slice(0, 3).map(cardText).join(' ')}`;
+
+/** Scroll: one solved hand at a time. `handId` opens a particular hand (from the study bank) first. */
+export function SolvedHands({ handId }: { handId?: string }) {
   const [save, setSave] = useState(loadQuiz);
   const [hand, setHand] = useState<QuizHand | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -25,21 +31,26 @@ export function SolvedHands() {
   const [asking, setAsking] = useState<number | null>(null);
   const [picks, setPicks] = useState<(number | undefined)[]>([]);
   const [saved, setSaved] = useState(false);
+  const [naming, setNaming] = useState(false);
+  const [name, setName] = useState('');
+  const [banked, setBanked] = useState(false);
 
-  const deal = () => {
+  const deal = (id?: string) => {
     setError(null);
     setHand(null);
-    nextHand(loadQuiz().seen)
+    setNaming(false);
+    (id ? getHand(id) : nextHand(loadQuiz().seen))
       .then((h) => {
         setHand(h);
         setAt(0);
         setAsking(null);
         setPicks([]);
         setSaved(false);
+        setBanked(isBanked(h.id));
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Couldn't load a hand."));
   };
-  useEffect(deal, []);
+  useEffect(() => deal(handId), []);
 
   const record = useMemo(() => (hand ? toRecord(hand) : null), [hand]);
   const heroId = hand ? seatId(hand.hero) : '';
@@ -63,21 +74,42 @@ export function SolvedHands() {
     return () => clearTimeout(t);
   }, [hand, at, asking, picks, frames, decisionFrame, last]);
 
-  // Count the hand once it's over.
+  const played = () => ({ id: hand!.id, at: Date.now(), title: defaultName(hand!), cards: hand!.cards, picks: hand!.decisions.map((_, k) => picks[k] ?? null), grades });
+
+  // Count the hand once it's over, and keep it for 24 hours in case you want to save it.
   useEffect(() => {
     if (hand && frames.length && at >= last && !saved) {
       setSaved(true);
       setSave(saveQuizHand(hand.id, grades));
+      recordPlayed(played());
     }
   }, [hand, at, last, saved, frames.length]);
+
+  const openSave = () => {
+    if (!hand) return;
+    setName(name && naming ? name : defaultName(hand));
+    setNaming(true);
+  };
+  const confirmSave = () => {
+    if (!hand) return;
+    saveToBank(played(), name || defaultName(hand));
+    setBanked(true);
+    setNaming(false);
+  };
 
   const header = (
     <BackBar
       title="Scroll"
       right={
-        <span className="chip-btn" aria-label={`${save.hands} hands played`}>
-          {save.hands} played
-        </span>
+        hand ? (
+          <button type="button" className={`chip-btn press${banked ? ' on' : ''}`} onClick={openSave} aria-label={banked ? 'Saved to your study bank. Rename it' : 'Save to your study bank'}>
+            {banked ? 'Saved' : 'Save'}
+          </button>
+        ) : (
+          <span className="chip-btn" aria-label={`${save.hands} hands played`}>
+            {save.hands} played
+          </span>
+        )
       }
     />
   );
@@ -89,7 +121,7 @@ export function SolvedHands() {
         <div className="screen-body">
           {error ? (
             <CoachSays quick lines={[error]}>
-              <button type="button" className="btn btn-sm btn-dark" onClick={deal}>
+              <button type="button" className="btn btn-sm btn-dark" onClick={() => deal(handId)}>
                 Try again
               </button>
             </CoachSays>
@@ -149,6 +181,29 @@ export function SolvedHands() {
           ))}
         </div>
 
+        {naming && (
+          <form
+            className="glass-card quiz-save"
+            onSubmit={(e) => {
+              e.preventDefault();
+              confirmSave();
+            }}
+          >
+            <label htmlFor="quiz-save-name" className="eyebrow">
+              Save to your study bank
+            </label>
+            <input id="quiz-save-name" className="field" value={name} maxLength={60} autoFocus onChange={(e) => setName(e.target.value)} />
+            <div className="quiz-save-actions">
+              <button type="button" className="btn btn-link" onClick={() => setNaming(false)}>
+                Cancel
+              </button>
+              <button type="submit" className="btn btn-sm btn-dark">
+                {banked ? 'Rename' : 'Save'}
+              </button>
+            </div>
+          </form>
+        )}
+
         <div className="rp-coach" aria-live="polite">
           {d ? (
             <div className="quiz-ask">
@@ -192,9 +247,16 @@ export function SolvedHands() {
             </div>
           ) : f.kind === 'result' ? (
             <CoachSays key="end" quick lines={[quizResult(recordNet(record, heroId) / record.bigBlind, hand.showdown), quizSummary(grades)]}>
-              <button type="button" className="btn btn-sm btn-dark" onClick={deal}>
-                Next hand
-              </button>
+              <div className="quiz-end-actions">
+                {!banked && (
+                  <button type="button" className="btn btn-sm btn-ghost" onClick={openSave}>
+                    Save to study bank
+                  </button>
+                )}
+                <button type="button" className="btn btn-sm btn-dark" onClick={() => deal()}>
+                  Next hand
+                </button>
+              </div>
             </CoachSays>
           ) : (
             <CoachSays key={at} quick lines={[f.text]} />

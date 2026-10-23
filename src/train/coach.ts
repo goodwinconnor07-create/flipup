@@ -8,6 +8,7 @@ import { STYLE_NOTES } from '../scroll/styleNotes';
 import type { Decision as CardMove, Outcome, Template } from '../scroll/types';
 import { actionKind, bb, pct, prettyAction } from './format';
 import { scenarioTitle } from './scenarios';
+import type { Draw, Made, Spot } from '../quiz/read';
 
 export const COACH_NAME = 'GTO Coach';
 export const COACH_EMOJI = '🧑‍💻';
@@ -226,3 +227,224 @@ export function scrollLines(t: Template, moves: CardMove[], outcome: Outcome, bo
 }
 
 export { scenarioTitle };
+
+// ── Solved hands ───────────────────────────────────────────────────────────
+
+/** The coach's verdict on one of your moves in a solved hand (after the grade), and GTO's mix there. */
+export function quizLines(colour: Colour, best: string, freq: number, loss: number | null, mix: { label: string; freq: number }[]): string[] {
+  const verdict =
+    loss == null
+      ? `I never make that move here. My pick is ${lower(best)}.`
+      : colour === 'green'
+        ? freq >= 0.5
+          ? "That's my play."
+          : freq >= 0.15
+            ? `It's one of my plays here, about ${pct(freq)} of the time.`
+            : 'It costs next to nothing.'
+        : colour === 'yellow'
+          ? `My pick is ${lower(best)}, about ${bb(loss)} better.`
+          : `My pick is ${lower(best)}. Yours gives up about ${bb(loss)}.`;
+  const always = mix.length === 1 || mix[0].freq >= 0.99;
+  const how = always
+    ? `With this hand I always ${lower(mix[0].label)}.`
+    : `With this hand I mix it up: ${mix.map((o) => `${lower(o.label)} ${pct(o.freq)}`).join(', ')}.`;
+  return [verdict, how];
+}
+
+const MADE_TEXT: Record<Made, string> = {
+  'nuts-ish': 'a very strong hand',
+  set: 'a set',
+  'two-pair': 'two pair',
+  overpair: 'an overpair',
+  'top-pair-good': 'top pair with a good kicker',
+  'top-pair': 'top pair with a weak kicker',
+  'middle-pair': 'middle pair',
+  'weak-pair': 'a weak pair',
+  'ace-high': 'ace high',
+  nothing: 'no pair',
+};
+const DRAW_TEXT: Record<NonNullable<Draw>, string> = {
+  combo: 'a flush and straight draw',
+  flush: 'a flush draw',
+  'open-ended': 'an open-ended straight draw',
+  gutshot: 'a gutshot straight draw',
+  backdoor: 'backdoor draws',
+};
+const strongMade = (m: Made) => m === 'nuts-ish' || m === 'set' || m === 'two-pair' || m === 'overpair' || m === 'top-pair-good';
+const mediumMade = (m: Made) => m === 'top-pair' || m === 'middle-pair' || m === 'weak-pair';
+const realDraw = (d: Draw) => d != null && d !== 'backdoor';
+const moveKind = (o: { kind: string; to: number }, pot: number): 'fold' | 'check' | 'call' | 'small' | 'big' | 'raise' =>
+  o.kind === 'fold'
+    ? 'fold'
+    : o.kind === 'check'
+      ? 'check'
+      : o.kind === 'call'
+        ? 'call'
+        : o.kind === 'raise'
+          ? 'raise'
+          : o.kind === 'allin' || o.to >= 0.6 * pot
+            ? 'big'
+            : 'small';
+const PREFLOP_KIND: Record<Spot['preflopKind'], string> = {
+  premium: 'is one of the best starting hands',
+  strong: 'is a strong ace that dominates a lot of the hands that play back',
+  'suited-ace': 'makes the nut flush and takes away some of their aces',
+  pair: 'can flop a set and win a big pot',
+  'suited-connector': 'makes straights and flushes and plays well after the flop',
+  broadway: 'makes strong top pairs often',
+  weak: 'is on the weak side',
+};
+const BEHIND: Record<string, number> = { UTG: 5, HJ: 4, CO: 3, BTN: 2, SB: 1, BB: 0 };
+
+/** Why GTO plays a spot the way it does, and what's wrong with your pick if it differs: the poker reasons in plain words. */
+export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: number; ev: number | null }): string[] {
+  const out: string[] = [];
+  const need = Math.round(s.needed * 100);
+  const eq = s.equity == null ? null : Math.round(s.equity * 100);
+  const best = moveKind(s.best, s.pot);
+  const mine = moveKind(chosen, s.pot);
+  const made = MADE_TEXT[s.made];
+  const draw = s.draw ? DRAW_TEXT[s.draw] : null;
+
+  if (s.street === 'preflop') {
+    const facing = s.toCall > 0 && s.pot > 2;
+    const hand = `${s.handClass}`;
+    if (!facing) {
+      if (best === 'raise' || best === 'big' || best === 'small')
+        out.push(
+          s.preflopKind === 'weak'
+            ? `From the ${s.position} you can raise wide: ${BEHIND[s.position] <= 2 ? 'only the blinds are left to act, they fold often, and you' : 'you'}'ll have position after the flop.`
+            : `${hand} ${PREFLOP_KIND[s.preflopKind]}, so it's a profitable raise from the ${s.position}.`,
+        );
+      else if (best === 'check') out.push(`In the big blind you see the flop for free. With ${hand} there's no reason to raise the limp.`);
+      else out.push(`${hand} is too weak to play from the ${s.position}: ${BEHIND[s.position]} players still to act could wake up with something better, and it does badly when called.`);
+    } else {
+      out.push(`You need about ${need}% equity to call, because you're putting in ${bbWord(s.toCall)} to win ${bbWord(s.pot + s.toCall)}.`);
+      if (best === 'call')
+        out.push(`${hand} ${PREFLOP_KIND[s.preflopKind] === PREFLOP_KIND.weak ? 'has enough equity at that price' : PREFLOP_KIND[s.preflopKind]}, so calling is right${s.position === 'BB' ? ' and you close the action' : ''}.`);
+      else if (best === 'raise' || best === 'big')
+        out.push(
+          s.preflopKind === 'premium' || s.preflopKind === 'strong'
+            ? `Re-raise for value: ${hand} is ahead of most of the hands that raised.`
+            : `A re-raise as a bluff: ${hand} blocks some of their strong hands and still plays well when they call.`,
+        );
+      else out.push(`Even at that price ${hand} loses too often to the hands that raise${!s.inPosition ? ", and you'd play it out of position" : ''}. Folding saves chips.`);
+    }
+  } else {
+    const t = s.texture;
+    if (s.toCall > 0) {
+      out.push(`You need ${need}% equity to call ${bbWord(s.toCall)}${eq != null ? `, and you have about ${eq}% against the hands that bet here` : ''}.`);
+      if (best === 'call')
+        out.push(
+          `So calling makes money${draw && realDraw(s.draw) && s.street !== 'river' ? `, and ${draw} gives you outs to improve` : ''}.${
+            strongMade(s.made) ? ' With a hand this strong, calling also keeps their bluffs in.' : ''
+          }${!s.inPosition && eq != null && eq < need + 10 ? " Out of position you won't realise all of it, so it's close." : ''}`,
+        );
+      else if (best === 'raise' || best === 'big')
+        out.push(
+          strongMade(s.made)
+            ? `Raise for value: with ${made} you're ahead of most of the hands that bet, and you want more money in${t?.wet && s.street !== 'river' ? ' before a draw can come in' : ''}.`
+            : draw && s.street !== 'river'
+              ? `Raise as a semi-bluff: ${draw} wins when they fold and still has outs when they call.`
+              : `Raise as a bluff: your hand takes away some of their strongest hands and they can't call with everything.`,
+        );
+      else out.push(`Fold: that's not enough${eq != null ? '' : ' with ' + made}, and too many of the hands that bet like this beat you.`);
+    } else {
+      // A word on the board or the new card first.
+      if (s.street === 'flop' && t) {
+        if (s.raiser && t.high && !t.connected)
+          out.push('A high, dry board like this favours the preflop raiser: they have more big pairs and strong aces.');
+        else if (!t.high && t.connected) out.push("A low, connected board like this hits the caller's range harder than the raiser's.");
+      } else if (t?.newCard === 'flush') out.push('The flush card changes things: hands that had a flush draw just got there.');
+      else if (t?.newCard === 'straight') out.push('That card completes some straights.');
+      else if (t?.newCard === 'overcard') out.push(`An overcard like that is good for the player who raised before the flop.`);
+      else if (t?.newCard === 'pair') out.push('The board pairing means fewer strong hands are possible.');
+
+      if (best === 'check') {
+        if (!s.hadInitiative && !s.inPosition && (s.street === 'flop' || s.best.freq > 0.95))
+          out.push(
+            s.street === 'flop'
+              ? 'Out of position against the preflop raiser you check almost every hand: their range is stronger here, so you let them bet first.'
+              : 'You check to the player who bet the last street and let them keep betting.',
+          );
+        else if (strongMade(s.made)) out.push(`Check with ${made}: it protects the hands you check with and lets them bet into you. You can still get the money in later.`);
+        else if (mediumMade(s.made)) out.push(`Check for pot control: ${made} has showdown value, but a bet mostly gets called by better hands and folds out worse ones.`);
+        else if (draw && realDraw(s.draw) && s.street !== 'river') out.push(`Check and take a free card with ${draw}.`);
+        else if (eq != null && eq >= 0.35 * 100 && s.street !== 'river')
+          out.push(`Check: ${made} still has about ${eq}% equity, but a bet only folds out worse hands. Checking lets you see the next card cheaply.`);
+        else out.push(`Give up for now: you have ${made}, and a bet won't fold out enough better hands.`);
+      } else if (best === 'small') {
+        if (strongMade(s.made)) out.push(`A small bet for value: plenty of worse hands can call it${t?.wet ? ', and it makes the draws pay' : ''}.`);
+        else if (mediumMade(s.made)) out.push(`A small bet with ${made} gets value from worse pairs and draws, and protects your hand.`);
+        else
+          out.push(
+            `A small bet is cheap: it only needs to work a little to make money${draw && realDraw(s.draw) && s.street !== 'river' ? `, and ${draw} gives you outs when called` : ', and it folds out hands that would beat you by the river'}.`,
+          );
+      } else if (best === 'big') {
+        if (strongMade(s.made)) out.push(`Bet big: with ${made} you want to build the pot${t?.wet && s.street !== 'river' ? ' and charge the draws' : ''}.`);
+        else if (draw && realDraw(s.draw) && s.street !== 'river') out.push(`Bet big as a semi-bluff with ${draw}: lots of folds now, and outs when called.`);
+        else if (mediumMade(s.made)) out.push(`A big bet with ${made}: on a board like this it charges the draws while you're likely ahead.`);
+        else
+          out.push(
+            `Bet big as a bluff: your range has more of the very best hands here, so they can't call big bets with everything. ${s.made === 'nothing' ? 'With no pair you have no showdown value, which makes it a good bluff.' : ''}`.trim(),
+          );
+      }
+    }
+  }
+
+  // What's wrong with your pick, when it's a different kind of move.
+  if (chosen.ev == null) {
+    out.push(
+      s.street === 'preflop'
+        ? "GTO doesn't use that move here: it either raises or folds this spot."
+        : !s.hadInitiative && !s.inPosition
+          ? "Leading into the player who had the betting lead isn't part of my strategy here."
+          : "That size isn't part of my strategy here.",
+    );
+  } else if (mine !== best && chosen.freq >= 0.15) {
+    out.push(`It's close, though: I also ${lower(moveWord[mine])} here ${pct(chosen.freq)} of the time, so yours is fine too.`);
+  } else if (mine !== best && chosen.freq < 0.15) {
+    const why: Partial<Record<string, string>> = {
+      'fold>call': "Folding throws away a hand that's getting the right price.",
+      'fold>raise': 'Folding gives up a hand strong enough to raise.',
+      'call>fold': "Calling loses money over time: you're behind too much of their range.",
+      'call>raise': 'Just calling lets them see the next card cheaply when you should be raising.',
+      'raise>call': 'Raising turns your hand into a bluff: worse hands fold and better ones re-raise.',
+      'raise>fold': "Raising here is too expensive a bluff: they don't fold enough.",
+      'check>small': strongMade(s.made) || mediumMade(s.made) ? 'Checking misses value from worse hands.' : 'Checking gives up a pot a cheap bet would often win.',
+      'check>big': strongMade(s.made) ? `Checking misses value${s.texture?.wet ? ' and gives the draws a free card' : ''}.` : 'Checking lets them off the hook when a big bet would win the pot.',
+      'small>check': 'Betting here mostly gets called by better hands and folds out worse ones.',
+      'big>check': 'A big bet here only gets called by better hands.',
+      'small>big': 'Size matters here: a bigger bet makes them pay more with the hands that call.',
+      'big>small': 'A smaller bet does the job: you want worse hands to keep calling.',
+    };
+    const line = why[`${mine}>${best}`];
+    if (line) out.push(line);
+  }
+  return out;
+}
+
+const bbWord = (x: number) => `${Number(x.toFixed(1))}bb`;
+const moveWord: Record<string, string> = { fold: 'fold', check: 'check', call: 'call', small: 'bet small', big: 'bet big', raise: 'raise' };
+
+/** When the solved line goes a different way from your pick. */
+export function quizCarryOn(line: string): string {
+  return `The hand carries on the way I played it: ${lower(line)}.`;
+}
+
+/** How a solved hand ended for you, in big blinds. */
+export function quizResult(netBb: number, showdown: boolean): string {
+  const n = Number(Math.abs(netBb).toFixed(1));
+  if (netBb > 0) return `You won ${n} big blinds${showdown ? ' at showdown' : ''}.`;
+  if (netBb < 0) return `You lost ${n} big blinds${showdown ? ' at showdown' : ''}.`;
+  return 'You broke even.';
+}
+
+/** The last word on a finished solved hand. */
+export function quizSummary(grades: Colour[]): string {
+  const n = grades.length;
+  const bad = grades.filter((g) => g !== 'green').length;
+  if (n === 0) return 'Nothing to decide in that one.';
+  if (bad === 0) return n === 1 ? 'One decision, and you got it.' : `All ${n} decisions right. Nice.`;
+  return `${n - bad} of ${n} right. ${bad === 1 ? 'One' : bad} worth another look.`;
+}

@@ -1,5 +1,11 @@
 # Scroll
 
+**Scroll now deals whole solved hands** (see "Scroll" in CLAUDE.md): every quiz is a full hand from preflop to river
+against a GTO opponent, every decision graded by the solver with the coach's reason. The card templates, bot styles,
+levels and themes described below are no longer reached from the app; the code is kept until it's decided whether to
+delete it.
+
+
 A feed of short poker cards. Each card is one spot with a goal, played against a bot whose style is named on the
 intro popup, then graded on the phone. Swipe up for the next card once one is done. It lives under the Scroll tab on
 Home (it replaced Insights, which moved into Train).

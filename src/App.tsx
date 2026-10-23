@@ -5,11 +5,11 @@ import { Profile } from './screens/Profile';
 import { Setup } from './screens/Setup';
 import { Join, JoinTable } from './screens/Join';
 import { Table } from './screens/Table';
-import { Scroll } from './screens/Scroll';
 import { SheetHost } from './screens/sheets/SheetHost';
 import { Train } from './screens/train/Train';
 import { Lesson } from './screens/train/Lesson';
 import { Replay } from './screens/train/Replay';
+import { SolvedHands } from './screens/train/SolvedHands';
 import { Drill } from './screens/train/Drill';
 import { Custom } from './screens/train/Custom';
 
@@ -55,7 +55,7 @@ export function App() {
       screen = <Custom />;
       break;
     case 'scroll':
-      screen = <Scroll />;
+      screen = <SolvedHands />;
       break;
   }
 

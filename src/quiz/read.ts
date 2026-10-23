@@ -16,6 +16,7 @@ export type Made =
   | 'top-pair'
   | 'middle-pair'
   | 'weak-pair' // bottom pair, underpair, or a pair on the board
+  | 'board' // your best hand is the board itself (a straight or better everyone shares)
   | 'ace-high'
   | 'nothing';
 
@@ -44,8 +45,12 @@ export interface Spot {
   inPosition: boolean;
   /** You made the last raise before the flop. */
   raiser: boolean;
-  /** You made the last bet or raise on the street before this one. */
+  /** You made the last bet or raise on the street before this one (the preflop raiser when it was checked through). */
   hadInitiative: boolean;
+  /** Who made the last bet or raise on the street before this one (null preflop or when it was checked through). */
+  prevAggressor: number | null;
+  /** You were the one who bet or raised last on the street before this one. */
+  betLastStreet: boolean;
   pot: number;
   toCall: number;
   /** Equity you need for a call to break even (0 when nothing to call). */
@@ -125,7 +130,7 @@ function readMade(hole: Card[], board: Card[]): Made {
   const boardOnly = board.length >= 5 ? describeHand(board) : null;
   const ranks = board.map(rankOf).sort((a, b) => b - a);
   const [h1, h2] = hole.map(rankOf).sort((a, b) => b - a);
-  if (all.category >= 4) return boardOnly && boardOnly.score === all.score ? 'weak-pair' : 'nuts-ish';
+  if (all.category >= 4) return boardOnly && boardOnly.score === all.score ? 'board' : 'nuts-ish';
   if (all.category === 3) return 'set';
   if (all.category === 2 && h1 !== h2 && ranks.includes(h1) && ranks.includes(h2)) return 'two-pair';
   if (all.category === 1 || all.category === 2) {
@@ -190,8 +195,8 @@ function readTexture(board: Card[]): Texture | null {
   const sorted = [...new Set(ranks)].sort((a, b) => b - a);
   const suits = board.map(suitOf);
   const maxSuit = Math.max(...['s', 'h', 'd', 'c'].map((s) => suits.filter((x) => x === s).length));
-  const flop = ranks.slice(0, 3).sort((a, b) => b - a);
-  const connected = flop[0] - flop[2] <= 4 || sorted.some((r, i) => i + 2 < sorted.length && r - sorted[i + 2] <= 4);
+  // Three different ranks within a five-rank window (a paired board like 6-2-2 isn't connected).
+  const connected = sorted.some((r, i) => i + 2 < sorted.length && r - sorted[i + 2] <= 4);
   let newCard: Texture['newCard'] = null;
   if (board.length >= 4) {
     const prev = board.slice(0, -1);
@@ -284,6 +289,8 @@ export function readSpot(h: QuizHand, d: QuizDecision): Spot {
     inPosition: live.every((x) => x === h.hero || ORDER_POSTFLOP.indexOf(h.hero) > ORDER_POSTFLOP.indexOf(x)),
     raiser: raiserSeat === h.hero,
     hadInitiative: (prevAggr ? prevAggr[1] : raiserSeat) === h.hero,
+    prevAggressor: street !== 'preflop' && street !== 'flop' && prevAggr ? prevAggr[1] : null,
+    betLastStreet: street !== 'flop' && !!prevAggr && prevAggr[1] === h.hero,
     pot: d.pot,
     toCall: d.toCall,
     needed: d.toCall > 0 ? d.toCall / (d.pot + d.toCall) : 0,

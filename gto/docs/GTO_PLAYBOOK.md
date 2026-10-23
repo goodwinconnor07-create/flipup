@@ -198,8 +198,9 @@ with (data/rake_growth.json, measured by scripts/measure_rake.py).
 
 ## 12. Postflop benchmarks (BTN vs BB single-raised pot, 100bb, scripts/postflop_bench.py)
 
-Published references: GTO Wizard's BTN c-bets about 53% over all flops (General solutions, smallest bet
-33%); RangeConverter's aggregate BB response to a 1/3-pot c-bet is fold 34 / call 52 / raise 14; paired
+Published references: GTO Wizard's BTN c-bets about 75% over all flops when checked to, about 54% of
+the time with the small size and a little over 10% large or overbet (PokerStrategy's reading of GTO
+Wizard reports; an earlier note here said 53%, which was the small-bet share); RangeConverter's aggregate BB response to a 1/3-pot c-bet is fold 34 / call 52 / raise 14; paired
 and high-card flops are c-bet at very high frequency, mostly small; overbets are common on A-K-x and
 middling connected boards (GTO Wizard: more than half of BTN's c-bets on T-9-5 are overbets).
 
@@ -248,3 +249,67 @@ calibration is still the BTN-vs-BB one. NL50 benchmark (GTO Wizard settings):
   model for small single-raised pots, the 3-bet/4-bet tree, or GTO Wizard's UTG range differing from ours.
 - Not rake: r2 at NL500 still has the BB folding 70.4% vs UTG (GTO Wizard 59%); BB vs BTN 57/28/15, SB
   46/0/54, CO vs BTN 3-bet 54/30/16.
+
+## 14. Library-wide flop strategies (scripts/flop_library.py, about 240 random flops per spot)
+
+Weighted by how often each flop comes up and by the range reaching the decision (6-max, 100bb, the
+explorer tree Custom hand uses). The flops are a fair random sample (the shuffled order).
+
+| Spot | First to act | In position when checked to | Facing 33% | Facing 75% |
+|---|---|---|---|---|
+| BTN vs BB | BB checks 100 | check 27 / 33% 54 / 75% 6 / 125% 13 | fold 31 / call 54 / raise 15 | 48 / 44 / 8 |
+| CO vs BB | BB checks 100 | 26 / 55 / 8 / 11 | 33 / 53 / 15 | 49 / 43 / 8 |
+| UTG vs BB | BB checks 100 | 27 / 54 / 7 / 12 | 34 / 51 / 14 | 50 / 42 / 8 |
+| SB vs BB | SB: 57 / 24 / 8 / 11 | BB: 53 / 20 / 1 / 26 | 17 / 67 / 17 | 38 / 44 / 18 |
+| BB 3-bets BTN | BB: 25 / 30 / 43 / 2 | BTN: 57 / 37 / 5 / 1 | 31 / 51 / 18 | 47 / 44 / 10 |
+| SB limps, BB checks | SB: 49 / 34 (50%) / 10 / 7 | BB: 49 / 9 / 25 / 17 | 28 / 58 / 14 | 39 / 51 / 10 |
+
+- BTN vs BB matches the published aggregate: c-bet 73% (published about 75%), small 54% (54%), large
+  19% (a little over 10%). BB vs a 33% c-bet 31 / 54 / 15 (RangeConverter 34 / 52 / 14; GTO Wizard's
+  average check-raise vs a small bet 17.5%).
+- SB vs BB at 40bb is published as a 58% c-bet; ours is 43% at 100bb, where a lower frequency is expected.
+- The 3-bettor's big 75% c-bet share (43%) was a tree artefact: with shallow stacks, checking the river
+  down makes small c-bets look much worse. BB 3-bet vs BTN call (pot 20.5bb, 90bb behind), flop c-bet
+  check / 33% / 75%:
+
+| Flop | Live tree (river checked down) | + turn & river all-ins | + river 75% & all-in | Full tree |
+|---|---|---|---|---|
+| Ks8d3c | 1 / 29 / 70 | 1 / 65 / 34 | 1 / 73 / 27 | 2 / 81 / 16 |
+| 9h8h6c | 29 / 25 / 45 | 30 / 31 / 39 | 29 / 32 / 39 | 33 / 34 / 30 |
+| 7s7d2c | 0 / 7 / 90 | 0 / 29 / 68 | 0 / 20 / 78 | 0 / 34 / 65 |
+| QhJd4c | 48 / 14 / 37 | 45 / 28 / 26 | 42 / 32 / 25 | 45 / 37 / 18 |
+| As7h2d | 12 / 65 / 23 | 1 / 88 / 11 | 2 / 87 / 11 | 7 / 86 / 6 |
+
+  Small-bet share off by 26 points on average with the live tree, 7 with turn and river all-ins (about
+  1.3x the solve time), 6 with a river bet size too (about 2x). Flop trees now keep turn and river all-ins
+  when the flop SPR is below 6; the 3-bet pot library is being re-solved with it.
+
+## 15. Value networks (DeepStack-style depth-limited solving)
+
+A solve can stop where the next street would be dealt and ask a small network what each hand is
+worth there, given both players' ranges at that point (flipup_gto/valuenet.py; the engine's LEAF
+nodes). The network is trained on random spots solved exactly, so it stands in for the rest of the
+game without storing it.
+
+- **River network:** input is each player's range mass over 64 river-strength buckets (every live combo ranked on the board) plus log(1 + SPR). Output is each bucket's value as a fraction of the pot, then DeepStack's zero-sum correction. Three hidden layers of 256.
+- **Training data:** random boards, ranges from DeepStack's recursive generator, pot 4-150bb, SPR 0.1-15, solved on the rich river tree (33/75/125%, 60% raises, two raises, all-in). About 20 spots a second per process on a 16-core Fly machine.
+
+| Training spots | Held-out error (range-weighted, fraction of pot) |
+|---|---|
+| 200 | 0.113 |
+| 32,000 | 0.030 |
+| 71,000 | 0.023 |
+| (ignore the ranges) | 0.25 |
+
+Turn solves (BTN vs BB ranges, pot 12bb, 94bb behind; turn and river 33/75/125%) with river leaves
+against the full solve, BB's turn strategy (check / 33%) and BB's average hand value:
+
+| Turn board | Full | River network (71k) | Time |
+|---|---|---|---|
+| Qh9h4c2s | 91 / 9, 0.382 | 87 / 11, 0.378 | 21s -> 5.5s |
+| Ks8d3c7h | 91 / 9, 0.397 | 88 / 8, 0.387 | 21s -> 8.5s |
+| 8h7h5c2d | 74 / 24, 0.430 | 69 / 27, 0.432 | 22s -> 5.8s |
+
+Memory drops from 202MB to 1MB. The turn network (hands bucketed by mean river strength x its
+spread, 16 x 4) is trained from full turn solves the same way; with it a flop solve can stop at the
+turn, which is what would make live flop answers fast.

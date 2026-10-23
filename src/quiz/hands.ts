@@ -13,8 +13,8 @@ export interface QuizOption {
   to: number;
   /** How often GTO takes it with this exact hand. */
   freq: number;
-  /** What it's worth, in big blinds (compare options within one decision). */
-  ev: number;
+  /** What it's worth, in big blinds (compare options within one decision); null for a move GTO never makes here. */
+  ev: number | null;
 }
 
 export interface QuizDecision {
@@ -25,6 +25,8 @@ export interface QuizDecision {
   options: QuizOption[];
   /** The option the hand carries on with. */
   line: number;
+  /** Your hand's equity against the other player's range here (postflop). */
+  eq?: number | null;
 }
 
 export interface QuizHand {
@@ -107,8 +109,8 @@ export function toRecord(h: QuizHand): HandRecord {
 
 export interface QuizGrade {
   colour: Colour;
-  /** Big blinds given up against GTO's best option (0 for the best). */
-  loss: number;
+  /** Big blinds given up against GTO's best option (0 for the best; null for a move GTO never makes here). */
+  loss: number | null;
   best: QuizOption;
 }
 
@@ -117,9 +119,12 @@ export interface QuizGrade {
  * when the gap is small next to the pot; costly otherwise.
  */
 export function gradeChoice(d: QuizDecision, pick: number): QuizGrade {
-  const best = d.options.reduce((a, b) => (b.ev > a.ev ? b : a));
+  const solved = d.options.filter((o) => o.ev != null);
+  const best = solved.reduce((a, b) => (b.ev! > a.ev! ? b : a), solved[0] ?? d.options[d.line]);
   const o = d.options[pick];
-  const loss = Math.max(0, best.ev - o.ev);
+  // A move outside the solved tree: GTO never makes it here, so there's no number to give.
+  if (o.ev == null) return { colour: 'red', loss: null, best };
+  const loss = Math.max(0, (best.ev ?? o.ev) - o.ev);
   const colour: Colour = o.freq >= 0.15 || loss <= Math.max(0.05, 0.01 * d.pot) ? 'green' : loss <= Math.max(0.5, 0.05 * d.pot) ? 'yellow' : 'red';
   return { colour, loss, best };
 }

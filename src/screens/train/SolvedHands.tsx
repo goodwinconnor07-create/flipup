@@ -9,7 +9,8 @@ import { gradeChoice, gtoMix, nextHand, seatId, toRecord, type QuizHand } from '
 import { loadQuiz, saveQuizHand } from '../../quiz/save';
 import { loadTableLook } from '../../state/persist';
 import { CoachBusy, CoachSays } from '../../train/Coach';
-import { GRADE_WORD, quizCarryOn, quizLines, quizResult, quizSummary } from '../../train/coach';
+import { GRADE_WORD, quizCarryOn, quizLines, quizResult, quizSummary, quizWhy } from '../../train/coach';
+import { readSpot } from '../../quiz/read';
 import { buildFrames } from '../../train/replay';
 import { streetName } from '../../train/widgets';
 import { BackBar, CardSlot, chips, PlayingCard } from '../../ui/components';
@@ -72,7 +73,7 @@ export function SolvedHands() {
 
   const header = (
     <BackBar
-      title="Solved hands"
+      title="Scroll"
       right={
         <span className="chip-btn" aria-label={`${save.hands} hands played`}>
           {save.hands} played
@@ -163,7 +164,7 @@ export function SolvedHands() {
                       onClick={() => answer(i)}
                     >
                       <span>{o.label}</span>
-                      {pick != null && <small className="num">GTO {Math.round(o.freq * 100)}%</small>}
+                      {pick != null && <small className="num">{o.ev == null ? 'GTO never' : `GTO ${Math.round(o.freq * 100)}%`}</small>}
                     </button>
                   );
                 })}
@@ -175,7 +176,9 @@ export function SolvedHands() {
                   tone={grade.colour}
                   lines={[
                     <b key="g">{GRADE_WORD[grade.colour]}</b>,
-                    ...quizLines(grade.colour, grade.best.label, d.options[pick].freq, grade.loss, gtoMix(d)),
+                    ...(([verdict, mixLine]) => [verdict, ...quizWhy(readSpot(hand, d), d.options[pick]), mixLine])(
+                      quizLines(grade.colour, (gtoMix(d)[0] ?? grade.best).label, d.options[pick].freq, grade.loss, gtoMix(d)),
+                    ),
                     ...(pick !== d.line ? [quizCarryOn(d.options[d.line].label)] : []),
                   ]}
                 >

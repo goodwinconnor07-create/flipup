@@ -5,7 +5,6 @@ import { Profile } from './screens/Profile';
 import { Setup } from './screens/Setup';
 import { Join, JoinTable } from './screens/Join';
 import { Table } from './screens/Table';
-import { Scroll } from './screens/Scroll';
 import { SheetHost } from './screens/sheets/SheetHost';
 import { Train } from './screens/train/Train';
 import { Lesson } from './screens/train/Lesson';
@@ -56,9 +55,6 @@ export function App() {
       screen = <Custom />;
       break;
     case 'scroll':
-      screen = <Scroll />;
-      break;
-    case 'solved':
       screen = <SolvedHands />;
       break;
   }

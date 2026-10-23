@@ -83,10 +83,8 @@ export type Route =
   | { name: 'replay'; key: string }
   | { name: 'drill'; scenario: string }
   | { name: 'custom' }
-  /** The Scroll feed of short poker cards. */
-  | { name: 'scroll' }
-  /** Whole hands solved ahead of time, graded move by move. */
-  | { name: 'solved' };
+  /** Scroll: whole hands solved ahead of time, every move graded. */
+  | { name: 'scroll' };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 
@@ -378,27 +376,8 @@ export function ensureCard(): void {
 
 /** Opens the feed from Home. A table you're sitting at is left first (you're asked). */
 export function openScroll(): void {
-  const s = state.session;
-  const busy = !!s && !s.scroll && (s.mode === 'online' || (!!s.game && s.game.status !== 'ended'));
-  const go = () => {
-    ensureCard();
-    navigate({ name: 'scroll' });
-  };
-  if (busy) {
-    confirm({
-      title: 'Leave your table?',
-      body: s?.mode === 'online' ? 'Scroll uses this phone for a card at a time. You would leave the online table first.' : 'Scroll uses this phone for a card at a time, so your bots table closes first.',
-      confirm: 'Leave and scroll',
-      danger: true,
-      onConfirm: () => {
-        closeSheet();
-        leaveTable();
-        go();
-      },
-    });
-    return;
-  }
-  go();
+  // Scroll plays solved hands back from data: it doesn't need this phone's table, so a game in progress stays put.
+  navigate({ name: 'scroll' });
 }
 
 /** Back to Home. The card you're on stays where it is. */

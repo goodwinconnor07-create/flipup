@@ -516,6 +516,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       for (const seat of hand.seats) {
         const player = playerById(game, seat.playerId);
         if (!player?.bot || seat.shown || seat.cards.length !== 2) continue;
+        if (action.playerId && player.id !== action.playerId) continue;
         seat.shown = true;
         changed = true;
         if (entry) {

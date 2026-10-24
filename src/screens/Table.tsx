@@ -239,12 +239,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const potNow = hand && !hand.result ? pot(hand) : 0;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
   const canShow = !bare && !!hand?.result && !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
-  // The host can turn every bot's cards over once the hand is done.
-  const canReveal =
-    !bare &&
-    !!hand?.result &&
-    game.hostDeviceId === deviceId &&
-    hand.seats.some((s) => !s.shown && game.players.find((p) => p.id === s.playerId)?.bot);
 
   return (
     <div className="felt">
@@ -352,7 +346,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
         {bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />}
       </div>
 
-      <div className={`me-area${canShow || canReveal ? ' has-show' : ''}`}>
+      <div className={`me-area${canShow ? ' has-show' : ''}`}>
         <div className="my-cards">
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
@@ -373,7 +367,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
               <CardSlot size="xl" />
             </>
           )}
-          {(canShow || canReveal) && (
+          {canShow && (
             <span className="show-row">
               {canShow && (
                 <button
@@ -383,16 +377,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                   onClick={() => dispatch({ type: 'show', hand: hand!.number })}
                 >
                   Show cards
-                </button>
-              )}
-              {canReveal && (
-                <button
-                  type="button"
-                  className="show-small press"
-                  aria-label="Reveal the bots' hands"
-                  onClick={() => dispatch({ type: 'revealBots', hand: hand!.number })}
-                >
-                  Reveal bots
                 </button>
               )}
             </span>

@@ -630,6 +630,12 @@ describe('table', () => {
     expect(hiddenBots.length).toBeGreaterThan(0);
     // Only the host can.
     expect(applyAction(game, { type: 'revealBots', hand: n }, ctx('device-friend')).ok).toBe(false);
+    // Tapping one bot turns over just that one.
+    if (hiddenBots.length > 1) {
+      const one = must(game, { type: 'revealBots', hand: n, playerId: hiddenBots[0] }, HOST);
+      expect(redactForDevice(one, 'device-friend').hand!.seats.find((s) => s.playerId === hiddenBots[0])!.cards.length).toBe(2);
+      expect(one.hand!.seats.find((s) => s.playerId === hiddenBots[1])!.shown).toBe(false);
+    }
     game = must(game, { type: 'revealBots', hand: n }, HOST);
     expect(bots.every((id) => !hiddenFrom('device-friend', id))).toBe(true);
     expect(game.logs.at(-1)!.lines.some((l) => /shows \[/.test(l))).toBe(true);

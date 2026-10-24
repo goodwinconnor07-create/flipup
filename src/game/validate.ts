@@ -59,8 +59,10 @@ export function parseAction(raw: unknown): Action | null {
       if (a.to !== undefined && !isInt(a.to)) return null;
       return { type: 'act', hand: a.hand, seq: a.seq, move: a.move as Move, ...(a.to !== undefined ? { to: a.to as number } : {}) };
     case 'next':
-    case 'show':
     case 'revealBots':
+      if (a.playerId !== undefined && !isId(a.playerId)) return null;
+      return isInt(a.hand) ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) } : null;
+    case 'show':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
     case 'react':
       return isReactionId(a.id) ? { type: 'react', id: a.id } : null;

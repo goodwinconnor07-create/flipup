@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { positionOf, seatFor, type Card, type Game, type Player, type Seat } from '../../game';
-import { openSheet, useApp } from '../../state/store';
+import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
 import { loadBigBlinds, saveBigBlinds } from '../../state/persist';
@@ -140,6 +140,7 @@ export function Pod({
   const deviceId = useApp((s) => s.deviceId);
   const host = game.hostDeviceId === deviceId;
   const turn = !!hand && !hand.result && hand.toAct === player.id;
+  const canPeek = !!hand?.result && player.bot && !!seat && !seat.shown;
   // Before the first hand is dealt nobody is out: they're just waiting for the cards.
   const out = !!hand && (!seat || seat.folded);
   const won = hand?.result?.won[player.id] ?? 0;
@@ -158,7 +159,12 @@ export function Pod({
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
       aria-label={`${player.name}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
-      onClick={() => host && !self && openSheet({ name: 'player', playerId: player.id })}
+      onClick={() => {
+        if (!host || self) return;
+        // Once the hand is done, tapping a bot's face-down cards turns them over.
+        if (canPeek) dispatch({ type: 'revealBots', hand: hand!.number, playerId: player.id });
+        else openSheet({ name: 'player', playerId: player.id });
+      }}
     >
       <span className="pod-pic">
         {turn && <span className="pod-ring" aria-hidden />}

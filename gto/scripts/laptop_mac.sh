@@ -70,8 +70,10 @@ esac
 
 case "${2:-}" in
   a) SPOTS="bb_btn_3bet,utg_bb" ;;
+  a1) SPOTS="bb_btn_3bet" ;;
+  a2) SPOTS="utg_bb" ;;
   b) SPOTS="sb_bb,sb_limp" ;;
-  *) echo "usage: bash $0 start a|b"; exit 1 ;;
+  *) echo "usage: bash $0 start a|a1|a2|b"; exit 1 ;;
 esac
 if [ ! -x "$VENV/bin/python3" ]; then echo "Run setup first: bash $0 setup"; exit 1; fi
 if alive solve || alive upload; then echo "Already running. Check it with: bash $0 status"; exit 1; fi

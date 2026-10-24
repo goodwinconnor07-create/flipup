@@ -3,6 +3,7 @@
 # Both start on boot and pick up where they left off. Run laptop_setup.sh first.
 #
 #   bash gto/scripts/laptop_service.sh a        laptop A: bb_btn_3bet, utg_bb
+#   bash gto/scripts/laptop_service.sh a1       half of A's work: bb_btn_3bet (a2: utg_bb), for splitting it over two laptops
 #   bash gto/scripts/laptop_service.sh b        laptop B: sb_bb, sb_limp
 #   bash gto/scripts/laptop_service.sh status   what it's doing now
 #   bash gto/scripts/laptop_service.sh stop     stop both services (start again with: sudo systemctl start flipup-solve flipup-upload)
@@ -18,6 +19,8 @@ COACH="${FLIPUP_COACH:-https://flipup-gto.fly.dev}"
 
 case "${1:-}" in
   a) SPOTS="bb_btn_3bet,utg_bb" ;;
+  a1) SPOTS="bb_btn_3bet" ;;
+  a2) SPOTS="utg_bb" ;;
   b) SPOTS="sb_bb,sb_limp" ;;
   status)
     systemctl --no-pager --lines=0 status flipup-solve flipup-upload || true
@@ -25,7 +28,7 @@ case "${1:-}" in
     echo; echo "== uploading (last lines of $OUT/upload.txt)"; tail -n 5 "$OUT/upload.txt" 2>/dev/null || true
     exit 0 ;;
   stop) sudo systemctl stop flipup-solve flipup-upload; echo "stopped"; exit 0 ;;
-  *) echo "usage: bash $0 a|b|status|stop"; exit 1 ;;
+  *) echo "usage: bash $0 a|a1|a2|b|status|stop"; exit 1 ;;
 esac
 
 if [ ! -x "$VENV/bin/python3" ]; then

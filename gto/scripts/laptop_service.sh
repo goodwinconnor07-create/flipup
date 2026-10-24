@@ -5,6 +5,7 @@
 #   bash gto/scripts/laptop_service.sh a        laptop A: bb_btn_3bet, utg_bb
 #   bash gto/scripts/laptop_service.sh a1       half of A's work: bb_btn_3bet (a2: utg_bb), for splitting it over two laptops
 #   bash gto/scripts/laptop_service.sh b        laptop B: sb_bb, sb_limp
+#   bash gto/scripts/laptop_service.sh a1 reverse   the same, working from the other end of the list: to help a laptop already on that matchup
 #   bash gto/scripts/laptop_service.sh status   what it's doing now
 #   bash gto/scripts/laptop_service.sh stop     stop both services (start again with: sudo systemctl start flipup-solve flipup-upload)
 #
@@ -18,6 +19,8 @@ ENV_FILE="$HOME/.config/flipup-flops.env"
 COACH="${FLIPUP_COACH:-https://flipup-gto.fly.dev}"
 ALL_SPOTS="bb_btn_3bet,btn_bb,co_bb,sb_bb,sb_limp,utg_bb"   # the uploader checks every folder, so a laptop that switches matchups strands nothing
 
+EXTRA=""
+[ "${2:-}" = reverse ] && EXTRA=" --reverse"
 case "${1:-}" in
   a) SPOTS="bb_btn_3bet,utg_bb" ;;
   a1) SPOTS="bb_btn_3bet" ;;
@@ -85,7 +88,7 @@ WantedBy=multi-user.target
 EOF
 }
 unit flipup-solve "FlipUp flop library: solve $SPOTS" on-failure \
-  "$GTO_DIR/scripts/top_up_flops.py --out $OUT --spots $SPOTS" "$OUT/log.txt"
+  "$GTO_DIR/scripts/top_up_flops.py --out $OUT --spots $SPOTS$EXTRA" "$OUT/log.txt"
 unit flipup-upload "FlipUp flop library: upload to the coach" on-failure \
   "$GTO_DIR/scripts/upload_flops.py --out $OUT --spots $ALL_SPOTS --every 1800 --stop-when-idle 6" "$OUT/upload.txt"
 sudo systemctl daemon-reload

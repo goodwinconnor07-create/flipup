@@ -36,16 +36,20 @@ def have(out_dir: str, spot: str) -> set[str]:
     return {f[:-4] for f in os.listdir(folder) if f.endswith(".npz")}
 
 
-def plan(out_dir: str, spots: list[str], target: int, remote: dict):
-    """{spot: [flop name, ...]} still to solve, in the shuffled order, plus the flop cards by name."""
+def plan(out_dir: str, spots: list[str], target: int, remote: dict, reverse: bool = False):
+    """{spot: [flop name, ...]} still to solve, in the shuffled order (last to first with `reverse`, so a second
+    laptop helping on the same matchup works toward the first one instead of repeating it), plus the cards."""
     flops = fl.canonical_flops()
     cards = {fl.flop_name(c): c for c, _ in flops}
+    order = [fl.flop_name(c) for c, _ in flops]
+    if reverse:
+        order.reverse()
     todo = {}
     for spot in spots:
         done = have(out_dir, spot) | set(remote.get(spot, ()))
         need = max(0, target - len(done))
-        todo[spot] = [n for n in (fl.flop_name(c) for c, _ in flops) if n not in done][:need]
-    return todo, cards, [fl.flop_name(c) for c, _ in flops]
+        todo[spot] = [n for n in order if n not in done][:need]
+    return todo, cards, order
 
 
 def fetch_preflop(coach, cache: PreflopCache, listing: dict, log):
@@ -92,6 +96,8 @@ def main():
     ap.add_argument("--max-hours", type=float, default=0, help="stop after this long (0 = no limit)")
     ap.add_argument("--coach", default=os.environ.get("FLIPUP_COACH", ""),
                     help="coach URL: count, check against and download from what it already stores")
+    ap.add_argument("--reverse", action="store_true",
+                    help="work from the end of the flop order: for a second laptop helping on a matchup another one is doing")
     ap.add_argument("--dry-run", action="store_true", help="show what's done and what's left, solve nothing")
     args = ap.parse_args()
     log = lambda m: print(m, flush=True)  # noqa: E731
@@ -108,7 +114,7 @@ def main():
         listing = coach.listing()
     remote = listing["spots"]
     target = round(args.share * 1755)
-    todo, cards, order = plan(args.out, spots, target, remote)
+    todo, cards, order = plan(args.out, spots, target, remote, args.reverse)
 
     log(f"target: {target} flops per matchup ({args.share:.0%} of 1,755)")
     for s in spots:

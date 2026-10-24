@@ -20,7 +20,7 @@ const TABLES: StyleId[][] = [
   ['pro', 'shark', 'tag', 'lag', 'station', 'nervous'],
   ['gambler', 'trapper', 'pro', 'shark', 'maniac', 'station', 'rock', 'tag', 'nervous'],
 ];
-const SCRIPTS = ['callBot', 'raiseBot', 'shoveBot', 'foldBot'] as const;
+const SCRIPTS = ['callBot', 'raiseBot', 'shoveBot', 'foldBot', 'bluffBot'] as const;
 
 const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
 const f1 = (x: number) => x.toFixed(1);
@@ -109,9 +109,11 @@ out();
 out(`| Script | ${STRONG.join(' | ')} | Worst |`);
 out(`|---|${STRONG.map(() => '---').join('|')}|---|`);
 const exploits: Record<string, number> = {};
+const exploitAvg: Record<string, number> = {};
 for (const script of SCRIPTS) {
   const res = STRONG.map((style, i) => -hu(style, script, 500 + i * 7 + SCRIPTS.indexOf(script)));
   exploits[script] = Math.max(...res);
+  exploitAvg[script] = res.reduce((a, b) => a + b, 0) / res.length;
   out(`| ${script} | ${res.map(f1).join(' | ')} | ${f1(exploits[script])} |`);
 }
 
@@ -124,6 +126,23 @@ const abc: Record<string, number> = {};
 for (const style of ALL) {
   abc[style] = -hu(style, 'abc', 300 + ALL.indexOf(style));
   out(`| ${style} | ${f1(abc[style])} |`);
+}
+
+// How the bots treat a player who folds too much, and one who bets every street (against the old
+// bots, so a change shows up): what they win from each, heads-up.
+out();
+out('## Reading the table: a player who folds too much, and one who bets every street');
+out();
+out('| Style | Wins from a player who folds to every bet (bb/100) | Fold to bet against the constant bluffer | Against an honest player |');
+out('|---|---|---|---|');
+for (const style of STRONG) {
+  const i = STRONG.indexOf(style);
+  const folder = hu(style, 'foldBot', 600 + i);
+  const rb = [0, 1000, 2000].map((k) => simulateTable([style, 'bluffBot'], HANDS, 650 + i + k));
+  const foldB = rb.reduce((a, r) => a + r.seats[0].foldToBet, 0) / rb.length;
+  const ra = [0, 1000, 2000].map((k) => simulateTable([style, 'abc'], HANDS, 700 + i + k));
+  const foldA = ra.reduce((a, r) => a + r.seats[0].foldToBet, 0) / ra.length;
+  out(`| ${style} | ${f1(folder)} | ${pct(foldB)} | ${pct(foldA)} |`);
 }
 
 // ── Fun score ─────────────────────────────────────────────────────────────
@@ -157,6 +176,9 @@ const parts: [string, number, number][] = [
   ['Raise-everything loses to all strong styles (≤ -40)', band(-exploits.raiseBot, 40, 1e9, 40), 1.5],
   ['Shove-everything loses to all strong styles (≤ -40)', band(-exploits.shoveBot, 40, 1e9, 40), 1.5],
   ['Fold-to-bets loses to all strong styles (≤ -15)', band(-exploits.foldBot, 15, 1e9, 25), 1.5],
+  // A constant bluffer is a real hand part of the time, so it's beaten on average rather than every time.
+  ['A constant bluffer loses to the strong styles (avg ≤ -10)', band(-exploitAvg.bluffBot, 10, 1e9, 30), 1.5],
+  ['The nervous bot is soft: it doesn\'t win at mixed tables (≤ +30 bb/100)', band(-st('nervous', 'bbPer100'), -30, 1e9, 60), 1],
   ['Strong styles beat an honest player (avg ≥ +20)', band(-mean(STRONG.map((s) => abc[s])), 20, 1e9, 30), 1.5],
   ['An honest player beats the soft styles (avg ≥ +15)', band(mean(SOFT.map((s) => abc[s])), 15, 1e9, 25), 1],
   ['Soft styles lose, but not absurdly (≥ -250 bb/100)', band(Math.min(...SOFT.map((s) => st(s, 'bbPer100'))), -250, 1e9, 250), 1],

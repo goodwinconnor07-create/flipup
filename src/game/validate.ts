@@ -42,6 +42,8 @@ export function parseAction(raw: unknown): Action | null {
     case 'rebuy':
     case 'end':
       return { type: a.type };
+    case 'playAgain':
+      return a.off === true ? { type: 'playAgain', off: true } : { type: 'playAgain' };
     case 'remove':
       return isId(a.playerId) ? { type: 'remove', playerId: a.playerId } : null;
     case 'settings': {

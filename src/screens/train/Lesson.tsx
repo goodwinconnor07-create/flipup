@@ -4,7 +4,7 @@ import { recordNet, type HandRecord } from '../../game';
 import { toHandHistory } from '../../gto/api';
 import type { HandReport } from '../../gto/types';
 import { navigate } from '../../state/store';
-import { loadHistory } from '../../state/training';
+import { findPlayed } from '../../state/training';
 import { reviewAndSave, savedReport } from '../../train/reviews';
 import { drillFor, scenarioTitle } from '../../train/scenarios';
 import { CoachFeedback, CoachSays } from '../../train/Coach';
@@ -34,7 +34,7 @@ function streetMoves(r: HandRecord, street: string): string[] {
 
 /** A coach's walk through one hand you played, street by street. */
 export function Lesson({ handKey }: { handKey: string }) {
-  const [hand] = useState(() => loadHistory().find((h) => h.key === handKey) ?? null);
+  const [hand] = useState(() => findPlayed(handKey));
   const [report, setReport] = useState<HandReport | null>(() => savedReport(handKey));
   const [reviewing, setReviewing] = useState(false);
   const [done, setDone] = useState(0);

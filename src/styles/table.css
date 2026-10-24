@@ -281,15 +281,15 @@ html[data-theme='dark'] .pcard.dim > * {
 /* One row of up to four players. Each sits in a slot and slides between slots, so you can see where everyone goes. */
 .pods {
   position: relative;
-  height: 174px;
+  height: 186px;
   /* Players slid out of view wait off to the side; they mustn't make the page scroll sideways. */
   overflow-x: clip;
 }
 
 .pod {
   position: absolute;
-  /* Room above the picture for the speech bubble. */
-  top: 24px;
+  /* Room above the picture for the speech bubble: three lines of it. */
+  top: 36px;
   left: 0;
   /* The row is shared out between whoever's here, so fewer players get wider slots. */
   width: calc(100% / max(var(--n, 4), 1));
@@ -435,6 +435,15 @@ html[data-theme='dark'] .pcard.dim > * {
 .pod-tag.last-allin {
   background: var(--blue-bg);
   color: var(--blue-ink);
+}
+
+.pod-tag.offline {
+  background: var(--gold-bg);
+  color: var(--gold-ink);
+}
+
+.pod.offline .avatar {
+  opacity: 0.55;
 }
 
 .pod-tag.win {
@@ -963,7 +972,7 @@ html:not(.no-glass) .raise-panel .icon-btn {
   color: var(--ink-3);
 }
 
-.my-box b {
+.my-box > b {
   font-size: var(--fs-h1);
   font-weight: 700;
   line-height: 1.1;
@@ -1276,8 +1285,9 @@ html.calm .pod.won .pod-pic {
   font-size: 22px;
 }
 
-/* A long line wraps to a second line instead of running past the seat into its neighbours. The width
-   limit is a seat's share of the row, plus a little, so bubbles side by side stay clear of each other. */
+/* A long line wraps instead of running past the seat into its neighbours. The width limit is a seat's
+   share of the row, plus a little, so bubbles side by side stay clear of each other. The longest line
+   takes three lines, so there's room above the seats for that. */
 .bubble-react {
   width: max-content;
   max-width: 104px;
@@ -1535,7 +1545,8 @@ html.calm .bubble-typing i {
 .hidden-wrap {
   position: absolute;
   right: 2px;
-  bottom: 0;
+  /* Just under the row, clear of the cards. */
+  bottom: -20px;
   z-index: 4;
 }
 
@@ -1547,7 +1558,7 @@ html.calm .bubble-typing i {
 .hidden-pop {
   position: absolute;
   right: 0;
-  bottom: calc(100% + 6px);
+  top: calc(100% + 6px);
   min-width: 200px;
   max-width: calc(100vw - 32px);
   display: flex;
@@ -1557,7 +1568,7 @@ html.calm .bubble-typing i {
   border-radius: var(--r-md);
   background: var(--surface);
   box-shadow: 0 8px 28px -8px rgba(18, 18, 40, 0.4), 0 0 0 1px var(--glass-edge);
-  transform-origin: 100% 100%;
+  transform-origin: 100% 0;
 }
 
 .hidden-row {
@@ -1574,4 +1585,112 @@ html.calm .bubble-typing i {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-weight: 600;
+}
+
+/* ── Your box: picture, name and chips ───────────────────────────────────── */
+
+.my-name {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  justify-content: center;
+}
+
+.my-name small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-caption);
+}
+
+.my-stack {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: var(--fs-h1);
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+
+.my-stack small {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+/* ── Short screens: a small iPhone, or any iPhone in a Safari tab ────────── */
+
+/* Everything on the table has to fit above the fold, or the action buttons end up under your cards. */
+@media (max-height: 740px) and (max-width: 959px) {
+  .pods {
+    height: 164px;
+  }
+  .pod {
+    top: 28px;
+  }
+  .table-oval {
+    min-height: 140px;
+  }
+  .table-oval .pcard-lg {
+    --w: 46px;
+  }
+  .table-top,
+  .table-foot {
+    min-height: 24px;
+  }
+  .pcard-xl {
+    --w: 84px;
+  }
+  .my-cards .pcard + .pcard {
+    margin-left: -20px;
+  }
+}
+
+/* ── A phone on its side ─────────────────────────────────────────────────── */
+
+.rotate-hint {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) and (max-width: 959px) {
+  .rotate-hint {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 8px;
+    padding: 24px;
+    background: var(--bg);
+    color: var(--ink);
+    text-align: center;
+  }
+  .rotate-hint b {
+    font-size: var(--fs-h2);
+    font-weight: 600;
+  }
+  .rotate-hint span {
+    color: var(--ink-3);
+  }
+}
+
+/* The chat button looks small but answers to a full finger. */
+.react-btn::after {
+  content: '';
+  position: absolute;
+  inset: -5px;
+}
+
+/* ── Tall phones: the table takes up the extra room ─────────────────────── */
+
+@media (min-height: 800px) and (max-width: 959px) {
+  .table-oval {
+    max-height: 340px;
+  }
 }

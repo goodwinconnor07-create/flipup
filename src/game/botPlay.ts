@@ -163,7 +163,7 @@ export function handClass(hole: Card[]): string {
 const AGGRESSIVE: Move[] = ['bet', 'raise', 'allin'];
 
 /** Last to act after the flop among the players still in. */
-function inPosition(hand: Hand, playerId: string): boolean {
+export function inPosition(hand: Hand, playerId: string): boolean {
   const n = hand.seats.length;
   const button = hand.seats.findIndex((s) => s.playerId === hand.buttonId);
   let last: string | null = null;
@@ -177,7 +177,7 @@ function inPosition(hand: Hand, playerId: string): boolean {
 const chipsOf = (game: Game, id: string) => game.players.find((p) => p.id === id)?.stack ?? 0;
 
 /** Effective stack in big blinds: the bot's chips against the biggest opponent still in. */
-function effectiveBb(game: Game, hand: Hand, seat: Seat): number {
+export function effectiveBb(game: Game, hand: Hand, seat: Seat): number {
   const bb = game.settings.bigBlind;
   const mine = chipsOf(game, seat.playerId) + seat.total;
   const theirs = Math.max(0, ...hand.seats.filter((s) => s !== seat && !s.folded).map((s) => chipsOf(game, s.playerId) + s.total));
@@ -188,7 +188,7 @@ function effectiveBb(game: Game, hand: Hand, seat: Seat): number {
 function averageRead(opps: Opponent[]): Read {
   if (!opps.length) return readOf(undefined);
   const avg = (k: keyof Read) => opps.reduce((a, o) => a + o.read[k], 0) / opps.length;
-  return { vpip: avg('vpip'), pfr: avg('pfr'), foldToBet: avg('foldToBet'), aggression: avg('aggression'), shove: avg('shove'), bluffy: avg('bluffy'), known: avg('known') };
+  return { vpip: avg('vpip'), pfr: avg('pfr'), foldToBet: avg('foldToBet'), aggression: avg('aggression'), shove: avg('shove'), bluffy: avg('bluffy'), betFreq: avg('betFreq'), known: avg('known') };
 }
 
 /** Bet sizes people actually say: 85, 120, 250, 1,250 (not 83 or 1,237). */
@@ -223,7 +223,7 @@ function spotFreq(chart: { spots: Record<string, string> }, key: string, cls: st
   return { call: DIGITS.indexOf(s[i * 2]) / 35, raise: DIGITS.indexOf(s[i * 2 + 1]) / 35 };
 }
 
-interface PreSpot {
+export interface PreSpot {
   call: number;
   raise: number;
   spot: 'rfi' | 'limp' | 'open' | '3bet' | '4bet' | '5bet';
@@ -232,17 +232,18 @@ interface PreSpot {
   limpers: number;
   /** The last raise in big blinds. */
   raiseBb: number;
+  /** Players dealt into the hand. */
+  players: number;
 }
 
 /** Call and raise chances for the bot's hand before the flop, straight from GTO. */
-function preflopGto(game: Game, hand: Hand, seat: Seat): PreSpot {
+export function preflopGto(game: Game, hand: Hand, seat: Seat, cls: string = handClass(seat.cards)): PreSpot {
   const bb = game.settings.bigBlind;
   const order = preflopOrder(hand);
   const n = order.length;
   const me = order.indexOf(seat.playerId);
   const chart = chartFor(n, effectiveBb(game, hand, seat));
   const at = (id: string) => chartSeat(order.indexOf(id), n);
-  const cls = handClass(seat.cards);
   const pre = (hand.actions ?? []).filter((a) => a.street === 'preflop');
   const raisers = pre.filter((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > bb));
   const limpers = pre.filter((a) => a.move === 'call' && raisers.length === 0).length;
@@ -278,7 +279,15 @@ function preflopGto(game: Game, hand: Hand, seat: Seat): PreSpot {
     if (raisers.length === 0) f = { call: 0, raise: st > 0.6 ? 0.8 : 0 };
   }
   const last = raisers[raisers.length - 1];
-  return { ...f, spot, raiser: last?.playerId ?? null, limpers, raiseBb: last ? last.to / bb : 1 };
+  return { ...f, spot, raiser: last?.playerId ?? null, limpers, raiseBb: last ? last.to / bb : 1, players: n };
+}
+
+/** How far a tight style's cutoff comes down heads-up, by the same amount for every tight style so they keep their order (nothing at six players or more). */
+const SHORT_TIGHT = 0.14;
+
+/** A tight style's cutoff (a share of all hands) for the number of players dealt in. */
+export function tightLine(tight: number, players: number): number {
+  return tight > 0 ? tight - (SHORT_TIGHT * Math.max(0, 6 - players)) / 4 : 0;
 }
 
 /** Bends the GTO chart by the bot's style and what it has seen of the raiser (or the table). */
@@ -287,10 +296,12 @@ function styledPreflop(style: Style, cls: string, g: PreSpot, read: Read, canLim
   let call = g.call;
   let raise = g.raise;
   const p = style.pre;
-  // Tight: drop the weaker part of the range.
-  if (p.tight > 0 && st < p.tight) {
+  // Tight: drop the weaker part of the range. The line is a share of all hands, so it comes down as the table
+  // shrinks (a hand that's marginal with eight others behind is a fair one heads-up).
+  const tight = tightLine(p.tight, g.players);
+  if (p.tight > 0 && st < tight) {
     // A soft edge, so hands just under the line still get played now and then.
-    const k = Math.max(0, 1 - (p.tight - st) / 0.08);
+    const k = Math.max(0, 1 - (tight - st) / 0.08);
     call *= k;
     raise *= k;
   }
@@ -346,9 +357,9 @@ function styledPreflop(style: Style, cls: string, g: PreSpot, read: Read, canLim
   }
   // Steal more from players who fold too much, before or after the flop.
   if (g.spot === 'rfi' && g.limpers === 0) {
-    const foldy = Math.max(0, Math.min(0.3, read.foldToBet - PRIOR.foldToBet)) + Math.max(0, Math.min(0.25, PRIOR.vpip - read.vpip)) * 2;
+    const foldy = Math.max(0, Math.min(EXPLOIT.stealCap, read.foldToBet - PRIOR.foldToBet)) + Math.max(0, Math.min(0.25, PRIOR.vpip - read.vpip)) * 2;
     const f0 = Math.max(0, 1 - call - raise);
-    if (foldy > 0) raise += f0 * Math.min(1, foldy * 1.5 * (0.3 + style.adapt)) * (st > 0.2 ? 1 : 0.4);
+    if (foldy > 0) raise += f0 * Math.min(1, foldy * EXPLOIT.steal * (0.3 + style.adapt)) * (st > 0.2 ? 1 : 0.4);
   }
   const total = call + raise;
   if (total > 1) {
@@ -673,7 +684,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
       const f = amount / pot;
       const out = betOutcome(im, opps, f, river, false, committed);
       // Folds from a player who folds too much (or too little), as the bot has seen.
-      const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.35) * (1 + foldy * 1.5)));
+      const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.35) * (1 + foldy * EXPLOIT.fold)));
       // When it's called it's up against the hands that call, whatever it thinks of its own.
       const eqCalled = Math.min(1, out.eqCalled + (1 - sense) * 0.05 + bias);
       let v = fold * pot + (1 - fold) * (eqCalled * (pot + 2 * amount) * realise - amount);
@@ -694,7 +705,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
     vCall += pot * s.sticky;
     if (facingBig && myTier < 5) vCall -= pot * s.scared * 0.15;
     // Bots notice players who bet too much and look them up lighter (and give tight ones more credit).
-    vCall += pot * Math.max(-0.08, Math.min(0.12, (read.aggression - PRIOR.aggression) * 0.04 + (read.bluffy - PRIOR.bluffy) * 0.2)) * adapt;
+    vCall += pot * Math.max(-0.08, Math.min(0.2, (read.aggression - PRIOR.aggression) * 0.04 + (read.bluffy - PRIOR.bluffy) * 0.2 + (read.betFreq - PRIOR.betFreq) * BET_CALL)) * adapt;
     vCall -= risk(o.toCall);
     opts.push({ move: call(), value: vCall, kind: 1 });
     if (o.canRaise && !o.callIsAllIn) {
@@ -751,6 +762,9 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   }
   // Nobody folds the near-nuts.
   if (!o.canCheck && eqRange > 0.92) probs[0] = 0;
+  // Nor a hand that's far ahead of the price: when the call costs a small part of the pot and its chance of winning
+  // is several times what the call needs, folding is a blunder, whatever the style (choice noise and nerves included).
+  if (!o.canCheck && eqRange > 0.5 && eqRange > 3 * (o.toCall / (pot + o.toCall))) probs[0] = 0;
   const c = pick(rng, probs);
   const chosen = opts[c];
   tracer?.({ street: hand.street, style: style.id, cards: seat.cards.join(''), board: hand.board.join(''), myTier, eqRange, eqNaive, eq, pot, toCall: o.toCall, behind, quality: im.quality, opts: opts.map((x, i) => `${x.move.move}${x.move.to ?? ''}:${(x.value / pot).toFixed(2)}:${probs[i].toFixed(2)}`).join(' '), chose: `${chosen.move.move}${chosen.move.to ?? ''}` });
@@ -762,6 +776,16 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
     thinkMs: thinkTime(style, rng, { street: hand.street, probs, chosen: c, stakes: stakesOf(amount, stack), folding: chosen.move.move === 'fold', monster: myTier === 6, facing: o.toCall > 0 }),
   };
 }
+
+/** How hard bots punish players who fold too much, before the flop (`steal`) and after it (`fold`). The lab turns these. */
+export const EXPLOIT = { steal: 3, fold: 3, stealCap: 0.5 };
+
+/**
+ * How much lighter to call (in pots, per point of bet frequency above the usual) a player who bets nearly every
+ * time it's checked to. Tested against a constant bluffer: calling much more than this loses chips (a constant
+ * bluffer is still a real hand part of the time), so it's a nudge, not a switch.
+ */
+const BET_CALL = 0.3;
 
 // ── Keeping reads ───────────────────────────────────────────────────────────
 
@@ -804,6 +828,11 @@ export function updateReads(game: Game, hand: Hand): void {
     for (const a of acts.filter((x) => x.street === street && !x.outOfTurn)) {
       const r: PlayerRead | undefined = reads[a.playerId];
       if (!r) continue;
+      // Could they have bet (nobody had yet), and did they?
+      if (!bet && (a.move === 'check' || AGGRESSIVE.includes(a.move))) {
+        r.betOpps = (r.betOpps ?? 0) + 1;
+        if (AGGRESSIVE.includes(a.move)) r.bets = (r.bets ?? 0) + 1;
+      }
       if (raised.has(a)) {
         r.aggr++;
         if (bet) r.betsFaced++;

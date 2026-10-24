@@ -1,0 +1,42 @@
+# Commands actually run, in order (the lab appends to this file; see README.md)
+git checkout -b codex/bot-simulation-tuning        # from e61aa8c
+git archive e61aa8c src/game | tar -x -C bot-lab/engines/baseline   # frozen baseline engine (tests and botSim.ts dropped)
+npx tsx bot-lab/pilot-checks.ts   # determinism, paired cards, baseline==working tree today
+npx tsx bot-lab/run.ts pilot baseline bot-lab/data/pilot-baseline.jsonl --workers 3   # 2026-10-22T10:44:42.370Z engine=baseline sessions=27 hands=2010 workers=3
+#   -> baseline pilot: 2010 hands in 36s wall with 3 workers
+npx tsx bot-lab/run.ts pilot baseline bot-lab/data/pilot-baseline.jsonl --workers 3   # 2,010 hands in 36 s
+npx tsx bot-lab/run.ts dev baseline bot-lab/data/dev-baseline.jsonl --workers 3   # 2026-10-22T10:45:24.844Z engine=baseline sessions=113 hands=20000 workers=3
+#   -> baseline dev: 20000 hands in 724s wall with 3 workers
+npx tsx bot-lab/run.ts dev baseline bot-lab/data/dev-baseline-v2-hu.jsonl --workers 3 --only hu-archetype   # 2026-10-22T11:01:29.494Z engine=baseline sessions=70 hands=4200 workers=3
+#   -> baseline dev: 4200 hands in 12s wall with 3 workers
+npx tsx bot-lab/run.ts probe baseline bot-lab/data/probe-baseline.jsonl --workers 3   # 2026-10-22T11:01:42.919Z engine=baseline sessions=20 hands=4000 workers=3
+#   -> baseline probe: 4000 hands in 137s wall with 3 workers
+npx tsx bot-lab/determinism-check.ts bot-lab/data/dev-baseline.jsonl bot-lab/data/dev-baseline-v2-hu.jsonl
+# Round 1 candidate r1 = baseline + price floor (bot-lab/patches/r1-price-floor.patch)
+npx tsx bot-lab/run.ts dev r1 bot-lab/data/r1.jsonl --workers 3 --only full9-bots,six-bots,six-two-archetypes   # 2026-10-22T11:17:49.610Z engine=r1 sessions=17 hands=7100 workers=3
+#   -> r1 dev: 7100 hands in 309s wall with 3 workers
+# Round 2 candidate r2 = baseline + shorthanded tight cutoff (bot-lab/patches/r2-short-handed-tight.patch)
+npx tsx bot-lab/run.ts dev r2 bot-lab/data/r2.jsonl --workers 3 --only hu-bots,hu-archetype,six-two-archetypes   # 2026-10-22T11:23:46.993Z engine=r2 sessions=87 hands=8300 workers=3
+#   -> r2 dev: 8300 hands in 99s wall with 3 workers
+python merge: dev-baseline-merged.jsonl = dev-baseline.jsonl with hu-archetype sessions replaced by their identical re-run that has the second counter set
+# Round 3 candidate r3 = baseline + additive shorthanded tight cutoff (bot-lab/patches/r3-short-handed-tight-additive.patch); RING (full-ring width) not tested: no baseline evidence
+npx tsx bot-lab/run.ts dev r3 bot-lab/data/r3.jsonl --workers 3 --only hu-bots,hu-archetype   # 2026-10-22T11:26:24.054Z engine=r3 sessions=80 hands=6200 workers=3
+#   -> r3 dev: 6200 hands in 27s wall with 3 workers
+# CONFIRMATION (seeds 900000+, never used before): baseline then candidate (commit 441cd8b), 14,880 hands each
+npx tsx bot-lab/run.ts confirm baseline bot-lab/data/confirm-baseline.jsonl --workers 3   # 2026-10-22T11:29:19.874Z engine=baseline sessions=85 hands=14880 workers=3
+#   -> baseline confirm: 14880 hands in 453s wall with 3 workers
+npx tsx bot-lab/run.ts confirm current bot-lab/data/confirm-candidate.jsonl --workers 3   # 2026-10-22T11:36:53.674Z engine=current sessions=85 hands=14880 workers=3
+#   -> current confirm: 14880 hands in 461s wall with 3 workers
+npx tsx bot-lab/analyze.ts compare confirm-baseline confirm-candidate; report confirm-baseline
+npx tsx bot-lab/export.ts
+cat bot-lab/data/dev-baseline-v2-hu.jsonl bot-lab/data/probe-baseline.jsonl > bot-lab/data/v2-baseline.jsonl   # the second-counter-set baseline sessions
+npx tsx bot-lab/analyze.ts report bot-lab/data/dev-baseline.jsonl --title "Baseline study ..." > baseline.md (tables)
+npx tsx bot-lab/analyze.ts report bot-lab/data/v2-baseline.jsonl   # response tables for baseline.md
+npx tsx bot-lab/hand.ts bot-lab/data/dev-baseline.jsonl dev-full9-bots-5 348   # representative hands in findings.md
+npx tsx bot-lab/analyze.ts compare bot-lab/data/dev-baseline.jsonl bot-lab/data/r1.jsonl                     # round 1
+npx tsx bot-lab/analyze.ts compare bot-lab/data/dev-baseline-merged.jsonl bot-lab/data/r2.jsonl              # round 2
+npx tsx bot-lab/analyze.ts compare bot-lab/data/dev-baseline-merged.jsonl bot-lab/data/r3.jsonl              # round 3
+npx vitest run src/game/bots.test.ts -t "bot blunders"                                                       # new tests pass; same test fails on the baseline botPlay.ts (seed 47)
+npm run check                                                                                                # typecheck + 110 tests + build: pass
+# A few one-off query scripts (VPIP by table size, probe response tables by style, opportunity-normalised bluff rates, fold rates of the
+# unit-test spot on the baseline engine) were run from the scratchpad and are not kept; the numbers they produced are quoted in findings.md and report.md.

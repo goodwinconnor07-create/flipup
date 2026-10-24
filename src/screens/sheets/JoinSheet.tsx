@@ -58,7 +58,7 @@ export function JoinSheet() {
   const onScan = (text: string) => {
     const found = codeFromScan(text);
     if (!found) {
-      if (!looked.current) setError("That QR code isn't a FlipUp table.");
+      if (!looked.current) setError("That QR code isn't a GTODuel table.");
       return;
     }
     setScanning(false);

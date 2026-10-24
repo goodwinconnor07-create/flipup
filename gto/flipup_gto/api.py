@@ -20,6 +20,7 @@ POST /analyze           {"hand": <HandHistory JSON>, "hero": "p1"?}  -> {"job": 
                         a hand that stops early gets a "pending" entry for the next decision
 GET  /library           -> drill scenarios (id, group, title, description, available)
 GET  /library/{id}/drill?seed=1 -> a practice spot: context, your hand, options, and GTO's answer
+/admin/flops, /admin/preflop  -> solved-flop uploads from the laptops (flop_admin.py; needs FLIPUP_UPLOAD_TOKEN)
 """
 from __future__ import annotations
 
@@ -41,7 +42,7 @@ from .concepts import alpha, mdf, pot_odds_ratio, required_equity, river_bluff_s
 from .handhistory import HandHistory
 from .preflop import CLASSES
 from .ranges import Range
-from . import library
+from . import flop_admin, library
 from .custom import Explorer, NeedsSolve
 from .review import Reviewer, aggregate_session
 from .solver import BetSizing, PostflopSolver
@@ -50,6 +51,7 @@ app = FastAPI(title="FlipUp GTO", version="0.2")
 # The app may be served from another origin (its Cloudflare Worker); allow it to call us.
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FLIPUP_CORS", "*").split(","),
                    allow_methods=["GET", "POST"], allow_headers=["*"])
+app.include_router(flop_admin.router)  # flop uploads from the laptops; off without FLIPUP_UPLOAD_TOKEN
 reviewer = Reviewer()
 explorer = Explorer(reviewer)
 

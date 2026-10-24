@@ -1,6 +1,6 @@
 {
-  "name": "FlipUp",
-  "short_name": "FlipUp",
+  "name": "GTODuel",
+  "short_name": "GTODuel",
   "description": "No-limit Texas Hold'em with friends, each on their own phone.",
   "start_url": "/",
   "display": "standalone",

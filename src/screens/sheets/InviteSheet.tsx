@@ -5,13 +5,26 @@ import { CopyIcon, ShareIcon } from '../../ui/Icons';
 import { QRCode } from '../../ui/QRCode';
 import { TILE_COLORS } from '../../ui/theme';
 
-export async function copy(text: string) {
+export async function copy(text: string, done = 'Link copied') {
   try {
     await navigator.clipboard.writeText(text);
-    toast('Link copied', 'success');
+    toast(done, 'success');
   } catch {
     toast("Couldn't copy. Read the code out instead.", 'error');
   }
+}
+
+/** Opens the phone's share sheet with some text (a hand, say), or copies it. */
+export async function shareText(title: string, text: string, done: string) {
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text });
+      return;
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') return;
+    }
+  }
+  await copy(text, done);
 }
 
 /** Opens the phone's share sheet with the join link, or copies it. */
@@ -19,7 +32,7 @@ export async function shareInvite(code: string) {
   const link = joinLink(code);
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Join my poker table', text: `Pull up a chair. FlipUp code: ${code}`, url: link });
+      await navigator.share({ title: 'Join my poker table', text: `Pull up a chair. GTODuel code: ${code}`, url: link });
       return;
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;

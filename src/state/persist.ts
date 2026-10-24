@@ -1,6 +1,6 @@
 // Everything the app keeps on the phone between visits.
 
-import { DEFAULT_EMOJI, DEFAULT_SETTINGS, isDeviceId, isEmoji, newId, type Game, type Settings } from '../game';
+import { cleanName, DEFAULT_EMOJI, DEFAULT_SETTINGS, isDeviceId, isEmoji, newId, type Game, type Settings } from '../game';
 
 const KEYS = {
   device: 'flipup.device',
@@ -22,8 +22,6 @@ export interface Session {
   game: Game | null;
   /** Online: take a seat as soon as the table loads. */
   joining?: boolean;
-  /** Local: a bot challenge in progress (see challenges.ts). */
-  challenge?: import('./challenges').Running;
 }
 
 export function read<T>(key: string): T | null {
@@ -56,7 +54,8 @@ export function loadDeviceId(): string {
 export function loadProfile(): Profile {
   const p = read<Profile>(KEYS.profile);
   return {
-    name: typeof p?.name === 'string' ? p.name : '',
+    // A name saved before the limit was 10 characters is cut to fit.
+    name: typeof p?.name === 'string' ? cleanName(p.name) : '',
     emoji: isEmoji(p?.emoji) ? p.emoji : DEFAULT_EMOJI,
   };
 }
@@ -80,7 +79,7 @@ export function loadSession(): Session | null {
   if (!s || (s.mode !== 'local' && s.mode !== 'online')) return null;
   if (s.mode === 'local' && !s.game) return null;
   if (s.mode === 'online' && !s.code) return null;
-  return { mode: s.mode, code: s.code ?? null, game: s.game ?? null, joining: s.joining, challenge: s.challenge };
+  return { mode: s.mode, code: s.code ?? null, game: s.game ?? null, joining: s.joining };
 }
 
 export function saveSession(session: Session | null): void {
@@ -151,6 +150,24 @@ export function loadCalm(): boolean {
 
 export function saveCalm(calm: boolean): void {
   write('flipup.calm', calm);
+}
+
+/** True if my stack on the table is shown in big blinds instead of chips. */
+export function loadBigBlinds(): boolean {
+  return read<boolean>('flipup.bb') === true;
+}
+
+export function saveBigBlinds(on: boolean): void {
+  write('flipup.bb', on);
+}
+
+/** False if the player turned the bots' table talk off. It's on until they do. */
+export function loadTalk(): boolean {
+  return read<boolean>('flipup.talk') !== false;
+}
+
+export function saveTalk(on: boolean): void {
+  write('flipup.talk', on);
 }
 
 export function loadMuted(): boolean {
@@ -240,6 +257,12 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 function loadDays(): string[] {
   const d = read<string[]>('flipup.days');
   return Array.isArray(d) ? d.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)) : [];
+}
+
+/** The old Scroll cards' saves (bot-style cards and every card ever played): gone with the cards. */
+export function forgetOldScroll(): void {
+  write('flipup.scroll', null);
+  write('flipup.scrollhands', null);
 }
 
 /** Marks today as a day this phone played a hand. */

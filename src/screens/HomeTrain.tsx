@@ -4,10 +4,12 @@ import { loadDrills, loadHistory, loadSummaries } from '../state/training';
 import { CoachSays } from '../train/Coach';
 import { greeting } from '../train/coach';
 import { computeStats } from '../train/stats';
-import { BookIcon, ChartIcon, ListIcon, PencilIcon } from '../ui/Icons';
+import { BookIcon, ChartIcon, ListIcon, PencilIcon, ScrollIcon, TrophyIcon } from '../ui/Icons';
 
 const TILES: { id: TrainSection; title: string; hint: string; Icon: typeof ListIcon }[] = [
   { id: 'review', title: 'Review hands', hint: 'Graded by GTO', Icon: ListIcon },
+  { id: 'scroll', title: 'Study bank', hint: 'Hands you saved', Icon: ScrollIcon },
+  { id: 'insights', title: 'Insights', hint: 'Tables and hands', Icon: TrophyIcon },
   { id: 'library', title: 'Poker library', hint: 'Spot by spot', Icon: BookIcon },
   { id: 'stats', title: 'Your stats', hint: 'Strengths and leaks', Icon: ChartIcon },
   { id: 'custom', title: 'Custom hand', hint: 'See GTO for any hand', Icon: PencilIcon },

@@ -4,7 +4,7 @@ name: Deploy GTO coach
 
 on:
   push:
-    branches: [claude/jolly-turing-82g5vu]
+    branches: [main]
     paths: ["gto/**", ".github/workflows/deploy-coach.yml"]
   workflow_dispatch:
 

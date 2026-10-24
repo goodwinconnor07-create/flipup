@@ -69,13 +69,20 @@ def node_record(node):
     }
 
 
-def solve_flop(spot, name, cards, out_dir):
-    path, ip, oop, aggressor = SPOTS[name]
+def start_ranges(spot, name):
+    """(pot, stack, OOP range, IP range) at the flop of matchup `name`, from the preflop solution."""
+    path, ip, oop, _ = SPOTS[name]
     info = spot.engine.query(spot.resolve(path))
     pot = float(info["pot"])
     stack = 100.0 - max(info["invested"])
     r_oop = class_reach_to_combos(info["reach"][oop]).astype(np.float32)
     r_ip = class_reach_to_combos(info["reach"][ip]).astype(np.float32)
+    return pot, stack, r_oop, r_ip
+
+
+def solve_flop(spot, name, cards, out_dir):
+    _, ip, _, aggressor = SPOTS[name]
+    pot, stack, r_oop, r_ip = start_ranges(spot, name)
     s = PostflopSolver(list(cards), pot, stack, r_oop, r_ip,
                        sizing=explorer_sizing("flop", oop_leads=aggressor != ip, spr=stack / pot), compress=True)
     st = s.solve(ITERATIONS, TARGET, 25)
@@ -103,14 +110,17 @@ def solve_flop(spot, name, cards, out_dir):
         meta[key] = {k: rec[k] for k in ("player", "labels", "actions", "pot")}
         if len(tokens) < DEPTH:
             queue += [tokens + [i] for i in range(len(node.actions))]
-    np.savez_compressed(
-        os.path.join(out_dir, f"{flop_name(cards)}.npz"),
-        combos0=np.asarray(root.info["combos0"], dtype=np.int16), combos1=np.asarray(root.info["combos1"], dtype=np.int16),
-        equity0=np.asarray(root.info["equity0"], dtype=np.float16), equity1=np.asarray(root.info["equity1"], dtype=np.float16),
-        realization=real.astype(np.float32), meta=json.dumps({"pot": pot, "stack": stack, "nodes": meta,
-                                                              "iterations": st.iteration,
-                                                              "exploitability_pct": st.exploitability_pct}),
-        **nodes)
+    # Written to a side file and renamed, so a power cut never leaves a half file that looks finished.
+    final = os.path.join(out_dir, f"{flop_name(cards)}.npz")
+    with open(final + ".part", "wb") as f:
+        np.savez_compressed(
+            f, combos0=np.asarray(root.info["combos0"], dtype=np.int16), combos1=np.asarray(root.info["combos1"], dtype=np.int16),
+            equity0=np.asarray(root.info["equity0"], dtype=np.float16), equity1=np.asarray(root.info["equity1"], dtype=np.float16),
+            realization=real.astype(np.float32), meta=json.dumps({"pot": pot, "stack": stack, "nodes": meta,
+                                                                  "iterations": st.iteration,
+                                                                  "exploitability_pct": st.exploitability_pct}),
+            **nodes)
+    os.replace(final + ".part", final)
     return st
 
 

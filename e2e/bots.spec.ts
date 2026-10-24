@@ -180,6 +180,84 @@ test('the +N badge lists the players out of the row with their chips', async ({ 
   await expect(list).toBeHidden();
 });
 
+test('names are at most 10 characters, even one saved before the limit', async ({ page }) => {
+  watchErrors(page);
+  await page.addInitScript(() => localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Alexandrina Longname', emoji: '🙂' })));
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  // The saved name was cut to ten characters.
+  await expect(page.getByText('Alexandrin', { exact: true })).toBeVisible();
+  await expect(page.getByText(/Alexandrina/)).toHaveCount(0);
+});
+
+test('the name box stops at 10 characters', async ({ page }) => {
+  watchErrors(page);
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  const input = page.getByRole('textbox', { name: 'Your name' });
+  await input.fill('ABCDEFGHIJKLMNOP');
+  await expect(input).toHaveValue('ABCDEFGHIJ');
+});
+
+test('the screen is kept awake while you are at a table', async ({ page }) => {
+  watchErrors(page);
+  // A stand-in for the browser's wake lock that counts what the app asks for and lets go of.
+  await page.addInitScript(() => {
+    const w = window as unknown as { __locks: { asked: number; released: number } };
+    w.__locks = { asked: 0, released: 0 };
+    Object.defineProperty(navigator, 'wakeLock', {
+      value: {
+        request: async () => {
+          w.__locks.asked++;
+          return { release: async () => void w.__locks.released++ };
+        },
+      },
+    });
+  });
+  await page.goto('/');
+  const locks = () => page.evaluate(() => (window as unknown as { __locks: { asked: number; released: number } }).__locks);
+  expect((await locks()).asked).toBe(0);
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await expect.poll(async () => (await locks()).asked).toBeGreaterThanOrEqual(1);
+  // Still held while playing.
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
+  const l = await locks();
+  expect(l.released).toBeLessThan(l.asked);
+});
+
+test('a finished hand can be shared from the hand log as plain text', async ({ page }) => {
+  watchErrors(page);
+  // A stand-in share sheet that keeps what it was given.
+  await page.addInitScript(() => {
+    (navigator as unknown as { share: (d: ShareData) => Promise<void> }).share = async (d) => {
+      (window as unknown as { __shared: ShareData }).__shared = d;
+    };
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 20_000 });
+  await page.locator('.action-buttons .btn-fold').click();
+  await expect(page.getByRole('button', { name: 'Show my cards' })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole('button', { name: 'Menu' }).click();
+  await page.getByRole('button', { name: 'Hand log' }).click();
+  await page.getByRole('button', { name: 'Share hand #1' }).click();
+  const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData }).__shared);
+  expect(shared.text).toContain('GTODuel · Hand #1');
+  expect(shared.text).toContain('Your hand:');
+  expect(shared.text).toMatch(/[♠♥♦♣]/);
+  expect(shared.text).toContain('Sam folds');
+  expect(shared.text).not.toMatch(/\[[2-9TJQKA][shdc]\]/);
+});
+
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Settings' }).click();
@@ -331,7 +409,9 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await page.getByRole('dialog', { name: 'End the game for everyone?' }).getByRole('button', { name: 'End game' }).click();
   await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Done' }).click();
-  await page.getByRole('tab', { name: 'Insights' }).click();
+  // Insights lives under Train.
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText(/chips over 1 table/)).toBeVisible();
   await shot(page, '14-home-totals');
 });
@@ -512,7 +592,7 @@ test('dark mode: a switch in the menu that changes the whole app and sticks', as
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('home: three tabs, results from finished tables, training tiles', async ({ page }) => {
+test('home: three tabs, results from finished tables in Train, training tiles', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => {
     if (localStorage.getItem('flipup.stats')) return;
@@ -528,11 +608,14 @@ test('home: three tabs, results from finished tables, training tiles', async ({ 
   await expect(page.getByText('Hi Connor.')).toBeVisible();
   await expect(page.getByText("You're up 200 chips this week.")).toBeVisible();
   await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Insights' }).click();
+  await page.getByRole('tab', { name: 'Scroll' }).click();
+  await expect(page.getByRole('heading', { name: 'Scroll' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Scroll' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText('+200', { exact: true })).toBeVisible();
   await expect(page.getByText('Recent tables')).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Insights' })).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('button', { name: 'Back' }).click();
   await page.getByRole('button', { name: /Poker library/ }).click();
   await expect(page.getByText('Poker library').first()).toBeVisible();
 });

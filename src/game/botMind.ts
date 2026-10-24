@@ -92,7 +92,7 @@ export function inTheMoment(style: Style, mind: BotMind, grudge: number): Style 
   const post = { ...style.post };
   if (rattled) {
     pre.tight = Math.min(0.95, pre.tight + 0.1 * t);
-    post.scared = Math.min(1, post.scared + 0.4 * t);
+    post.scared = Math.min(Math.max(1, post.scared * 1.3), post.scared + 0.4 * t);
     post.sticky -= 0.05 * t;
   } else {
     pre.tight *= 1 - 0.45 * t;

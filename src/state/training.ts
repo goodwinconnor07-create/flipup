@@ -58,6 +58,11 @@ export function addHand(hand: PlayedHand): boolean {
 
 export const hasHand = (key: string) => loadHistory().some((h) => h.key === key);
 
+/** A hand to review from your games. */
+export function findPlayed(key: string): PlayedHand | null {
+  return loadHistory().find((h) => h.key === key) ?? null;
+}
+
 let captured = new Set<string>();
 
 /** Saves the hand that just finished at this table, once, if this phone was dealt in. */

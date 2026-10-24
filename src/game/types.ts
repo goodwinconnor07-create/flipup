@@ -39,6 +39,8 @@ export interface Player {
   timeouts: number;
   /** Asked to leave during a hand: folded on their turn and removed when it ends. */
   leaving: boolean;
+  /** Their phone has lost the connection to the table (set by the server). Their clock is short until they're back. */
+  offline?: boolean;
   /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
   style?: string;
 }
@@ -54,6 +56,9 @@ export interface PlayerRead {
   calls: number;
   /** Went all in before the flop with a deep stack (8bb or more), first in. */
   shoves?: number;
+  /** After the flop: times they could bet (nobody had yet), and times they did. A player who bets nearly every time is betting hands a value-only player wouldn't. */
+  betOpps?: number;
+  bets?: number;
   /** Hands seen at showdown after they bet or raised the turn or river... */
   shownBets?: number;
   /** ...and how many of those were bluffs. */
@@ -189,6 +194,28 @@ export interface Hand {
   startStacks?: Record<string, number>;
 }
 
+/** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
+export interface ScriptMove {
+  by: 'you' | 'bot';
+  move: Move;
+  to?: number;
+}
+
+/**
+ * A Scroll card: a single hand dealt to order. Your cards and the board are fixed, the button is placed, and the
+ * `script` moves are played before the first real decision. Such a table deals one hand only, and the bots stay quiet.
+ * Never sent to phones.
+ */
+export interface CardScene {
+  /** Where you sit, counted clockwise from the button: 0 is the button, 1 the small blind, 2 the big blind, then under the gun. Heads up, 0 is the button (and small blind) and 1 the big blind. */
+  at: number;
+  /** Your two hole cards. */
+  hero: Card[];
+  /** The board, up to five cards, in the order they come. Anything missing is dealt at random. */
+  board: Card[];
+  script: ScriptMove[];
+}
+
 export interface Game {
   id: string;
   /** Join code for online tables. null for bots-only tables on one phone. */
@@ -229,10 +256,16 @@ export interface Game {
   streaks?: Record<string, number>;
   /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */
   sweating?: string[];
+  /** Players on the finished game's screen who tapped Play again. When the host does, they're seated in the new game; nobody else is. */
+  again?: string[];
+  /** How the game was dealt (blinds rise during a game), so Play again can set up the same one. */
+  first?: { settings: Settings; bots: number };
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
   minds?: Record<string, BotMind>;
+  /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
+  card?: CardScene;
 }
 
 export type Action =
@@ -255,8 +288,12 @@ export type Action =
   | { type: 'sitOut'; out: boolean }
   | { type: 'rebuy' }
   | { type: 'end' }
+  /** After a game ends: the host opens a new one; anyone else says they want in (`off` takes that back). */
+  | { type: 'playAgain'; off?: boolean }
   /** Internal: time has moved on (bots, timers, run-outs). Never accepted from a phone. */
-  | { type: 'tick' };
+  | { type: 'tick' }
+  /** Internal: which phones are connected right now (device ids), from the server. Never accepted from a phone. */
+  | { type: 'presence'; online: string[] };
 
 export interface ActionContext {
   deviceId: string;

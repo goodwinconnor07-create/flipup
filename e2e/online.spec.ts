@@ -73,6 +73,35 @@ test('two phones: join with a code, play a hand, see odds only once both hands a
   await friendCtx.close();
 });
 
+test('a friend whose phone drops is marked offline for everyone else', async ({ browser }) => {
+  const hostCtx = await browser.newContext();
+  const friendCtx = await browser.newContext();
+  const host = await hostCtx.newPage();
+  const friend = await friendCtx.newPage();
+  watchErrors(host);
+  await host.goto('/');
+  await host.getByRole('button', { name: 'Play with Friends' }).click();
+  await setName(host, 'Kavi');
+  await host.getByRole('button', { name: 'Next' }).click();
+  await host.getByRole('button', { name: 'Open the table' }).click();
+  const code = await tableCode(host);
+  await friend.goto(`/${code}`);
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await setName(friend, 'Oliver');
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await expect(host.locator('.roster-item', { hasText: 'Oliver' })).toBeVisible();
+  await host.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(host.locator('.pod', { hasText: 'Oliver' })).toBeVisible({ timeout: 15_000 });
+  await expect(host.locator('.pod.offline')).toHaveCount(0);
+  // The friend's phone goes away.
+  await friend.close();
+  await expect(host.locator('.pod.offline', { hasText: 'Oliver' })).toBeVisible({ timeout: 15_000 });
+  await expect(host.locator('.pod.offline .pod-tag.offline')).toHaveText('Offline');
+  await shot(host, '18-offline');
+  await hostCtx.close();
+  await friendCtx.close();
+});
+
 test('a wrong code says so', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Join with a code' }).click();
@@ -97,7 +126,12 @@ test('bots at an online table play on the server', async ({ page }) => {
   // Play along: the bots' moves come from the server's clock, so the hand finishes without anyone else.
   for (let i = 0; i < 160; i++) {
     if (await page.getByRole('button', { name: 'Next hand' }).isVisible()) break;
-    if (await myTurn(page)) await page.locator('.action-buttons .btn-green').click();
+    // Check when it's free, fold otherwise: never risk the stack, so a bot's shove can't end the game on hand 1.
+    if (await myTurn(page)) {
+      const check = page.getByRole('button', { name: 'Check', exact: true });
+      if (await check.isVisible()) await check.click();
+      else await page.locator('.action-buttons .btn-fold').click();
+    }
     await page.waitForTimeout(500);
   }
   await expect(page.locator('.win-banner').first()).toBeVisible();
@@ -146,6 +180,16 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
   await expect(friend.getByText(/wins?!$/)).toBeVisible();
   await expect(host.locator('.podium-step')).toHaveCount(2);
   await shot(host, '16-podium');
+
+  // Play again: the friend asks first, but nobody is seated until the host opens the new game.
+  await friend.getByRole('button', { name: 'Play again', exact: true }).click();
+  await expect(friend.getByRole('button', { name: /Waiting for Kavi/ })).toBeVisible();
+  await expect(host.getByRole('button', { name: /Play again · 1 waiting/ })).toBeVisible();
+  await host.getByRole('button', { name: /Play again/ }).click();
+  await expect(host.getByRole('button', { name: 'Deal', exact: true })).toBeVisible();
+  await expect(host.locator('.roster-item', { hasText: 'Oliver' })).toBeVisible();
+  await expect(friend.getByText("You're in!")).toBeVisible();
+  await shot(friend, '17-play-again');
   await hostCtx.close();
   await friendCtx.close();
 });

@@ -16,7 +16,7 @@ import { options, seatFor } from './selectors';
 import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
 
 export const LIMITS = {
-  maxNameLength: 16,
+  maxNameLength: 10,
   minStack: 100,
   maxStack: 1_000_000,
   maxTurnSeconds: 300,
@@ -75,6 +75,18 @@ function freeSeat(game: Game): number {
   const taken = new Set(game.players.map((p) => p.seat));
   for (let s = 0; s < MAX_SEATS; s++) if (!taken.has(s)) return s;
   return -1;
+}
+
+/** `name`, or "name 2", "name 3"… if someone else at the table already has it (case doesn't count). */
+function uniqueName(game: Game, name: string, exceptId?: string): string {
+  const taken = new Set(game.players.filter((p) => p.id !== exceptId).map((p) => p.name.toLowerCase()));
+  if (!taken.has(name.toLowerCase())) return name;
+  for (let n = 2; n < 100; n++) {
+    const tail = ` ${n}`;
+    const candidate = name.slice(0, LIMITS.maxNameLength - tail.length).trimEnd() + tail;
+    if (!taken.has(candidate.toLowerCase())) return candidate;
+  }
+  return name;
 }
 
 function newPlayer(game: Game, fields: Pick<Player, 'name' | 'emoji' | 'deviceId' | 'bot'>): Player {
@@ -212,7 +224,7 @@ function afterHand(game: Game, ctx: ActionContext): void {
     const event: TalkEvent = winners.includes(id)
       ? hand.ranOut ? 'sweatWin' : pot >= bb * 15 ? 'bigWin' : 'win'
       : showdownLosers.includes(id)
-        ? hand.ranOut ? 'sweatLose' : 'lostToYou'
+        ? hand.ranOut || !personWon ? 'sweatLose' : 'lostToYou'
         : 'watched';
     if (say(id, event, true)) spoke.push(id);
   }
@@ -226,6 +238,40 @@ function afterHand(game: Game, ctx: ActionContext): void {
   }
   // A little longer before the next deal, so the table talk can be read.
   if (game.nextHandAt !== null) game.nextHandAt += botsOnly(game) ? 1000 : TIMING.talkPause;
+  schedule(game);
+}
+
+/**
+ * Play again: the finished game becomes a new lobby, set up as the last one was. The host is seated, and
+ * so is anyone who tapped Play again; nobody else is put in. Bots come back with fresh chips.
+ */
+function openAgain(game: Game, ctx: ActionContext): void {
+  const first = game.first;
+  if (first) game.settings = { ...first.settings };
+  const wanted = new Set([...(game.again ?? [])]);
+  game.players = game.players.filter((p) => p.bot || p.deviceId === game.hostDeviceId || wanted.has(p.id));
+  for (const p of game.players) {
+    p.stack = game.settings.startingStack;
+    p.bought = game.settings.startingStack;
+    p.sittingOut = false;
+    p.timeouts = 0;
+    p.leaving = false;
+    p.offline = undefined;
+  }
+  // Bots that busted out of the last game left the table: bring the count back.
+  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS) addBot(game);
+  game.id = newId(16);
+  game.createdAt = ctx.now;
+  game.status = 'lobby';
+  game.hand = null;
+  game.buttonSeat = null;
+  game.nextHandAt = null;
+  game.ready = [];
+  game.logs = [];
+  game.reactions = {};
+  game.hands = 0;
+  game.blindsRaiseAt = null;
+  for (const k of ['again', 'first', 'pendingTalk', 'botPlan', 'sweating', 'talkAt', 'reads', 'streaks', 'minds', 'readHand'] as const) delete game[k];
   schedule(game);
 }
 
@@ -323,7 +369,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     return { ok: true, game, changed: true };
   };
 
-  if (game.status === 'ended' && action.type !== 'setLook') return fail('This table has finished.');
+  if (game.status === 'ended' && action.type !== 'setLook' && action.type !== 'playAgain') return fail('This table has finished.');
 
   switch (action.type) {
     case 'join': {
@@ -332,13 +378,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (isNameBlocked(name)) return fail(NAME_BLOCKED);
       const emoji = isEmoji(action.emoji) ? action.emoji : DEFAULT_EMOJI;
       if (me) {
-        if (me.name === name && me.emoji === emoji) return done(false);
-        me.name = name;
+        const mine = uniqueName(game, name, me.id);
+        if (me.name === mine && me.emoji === emoji) return done(false);
+        me.name = mine;
         me.emoji = emoji;
         return done();
       }
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      game.players.push(newPlayer(game, { name, emoji, deviceId: ctx.deviceId, bot: false }));
+      game.players.push(newPlayer(game, { name: uniqueName(game, name), emoji, deviceId: ctx.deviceId, bot: false }));
       wakeIfWaiting(game, ctx);
       return done();
     }
@@ -349,7 +396,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!name) return fail('Add your name first.');
       if (isNameBlocked(name)) return fail(NAME_BLOCKED);
       if (!isEmoji(action.emoji)) return fail('Pick an emoji.');
-      me.name = name;
+      me.name = uniqueName(game, name, me.id);
       me.emoji = action.emoji;
       return done();
     }
@@ -409,6 +456,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status !== 'lobby') return done(false);
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
+      game.first = { settings: { ...game.settings }, bots: game.players.filter((p) => p.bot).length };
+      // A Scroll card deals straight away: the intro popup has already given the table its moment.
+      if (game.card) {
+        startHand(game, ctx);
+        return done();
+      }
       // A few seconds to take the table in, with a word from a bot, before the first cards come.
       game.nextHandAt = ctx.now + TIMING.startDelay;
       const bots = game.players.filter((p) => p.bot);
@@ -522,6 +575,42 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return done();
     }
 
+    case 'presence': {
+      const online = new Set(action.online);
+      let changed = false;
+      for (const p of game.players) {
+        if (p.bot || !p.deviceId) continue;
+        const off = !online.has(p.deviceId);
+        if (!!p.offline === off) continue;
+        p.offline = off || undefined;
+        changed = true;
+        // On the clock when they dropped: the clock shortens. Back in time: they keep at least the short clock.
+        const hand = game.hand;
+        if (!hand || hand.result || hand.toAct !== p.id || game.settings.turnSeconds <= 0) continue;
+        const short = ctx.now + TIMING.offlineClock;
+        if (off && (hand.deadline === null || hand.deadline > short)) hand.deadline = short;
+        else if (!off && hand.deadline !== null) hand.deadline = Math.max(hand.deadline, short);
+        hand.actAt = hand.deadline;
+      }
+      if (!changed) return done(false);
+      schedule(game);
+      return done();
+    }
+
+    case 'playAgain': {
+      if (!me) return fail("You're not at this table.");
+      if (game.status !== 'ended') return done(false);
+      if (host && !action.off) {
+        openAgain(game, ctx);
+        return done();
+      }
+      const wants = new Set(game.again ?? []);
+      if (action.off) wants.delete(me.id);
+      else wants.add(me.id);
+      game.again = [...wants];
+      return done();
+    }
+
     case 'end': {
       if (!host) return fail('Only the host can end the table.');
       // A hand in progress is called off: everyone gets back what they put in.
@@ -613,7 +702,9 @@ function tick(game: Game, ctx: ActionContext): boolean {
       let wait = fast ? 0 : Math.max(0, thought.thinkMs - TIMING.botMin);
       // Sometimes it says what it's thinking first, then moves a moment later.
       const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
-      if (event && botSays(game, player.id, event, ctx.rng, ctx.now)) {
+      // What it says isn't always about the move it's about to make, or the line would give the move away.
+      const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
+      if (event && said && botSays(game, player.id, said, ctx.rng, ctx.now)) {
         wait = Math.max(wait, fast ? 400 : TIMING.botThink);
         if (event === 'allin') owe(game, player.id);
       }
@@ -635,9 +726,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
   }
 
   if (!due(game.nextHandAt)) return false;
+  // "Nothing much happening" is only worth saying when the last hand was over before the flop.
+  const sleepy = !!hand?.result && hand.street === 'preflop';
   startHand(game, ctx);
   // A word from a random bot between deals, now and then.
   const chatty = game.players.filter((p) => p.bot && !p.sittingOut);
-  if (chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
+  if (sleepy && chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
   return true;
 }

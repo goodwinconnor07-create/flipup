@@ -12,11 +12,19 @@ import './styles/table.css';
 import './styles/desktop.css';
 import './styles/train.css';
 import './styles/home.css';
+import './styles/scroll.css';
 
 boot();
 installPressEffects();
 installSoundUnlock();
 installDesktopScale();
+
+// After one visit the app opens without a connection (see public/sw.js). Only in the built app.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

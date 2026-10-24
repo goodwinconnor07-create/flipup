@@ -749,3 +749,160 @@ describe('table', () => {
     for (const e of ['a', '😎😎', '', 'hi😎', '<b>']) expect(isEmoji(e), e).toBe(false);
   });
 });
+
+
+describe('names at one table', () => {
+  const join = (g: Game, device: string, name: string) => must(g, { type: 'join', name, emoji: '🐸' }, device);
+  const make = (bots = 0) =>
+    createTable({ hostDeviceId: HOST, name: 'Sam', emoji: '😎', settings: DEFAULT_SETTINGS, bots, code: 'BCDFG', now: clock });
+
+  it("gives a second 'Sam' a number, whatever the case, and never lets a name run past ten characters", () => {
+    let g = make();
+    g = join(g, 'd1', 'Sam');
+    g = join(g, 'd2', 'sam');
+    g = join(g, 'd3', 'SAM');
+    expect(g.players.map((p) => p.name)).toEqual(['Sam', 'Sam 2', 'sam 3', 'SAM 4']);
+    g = join(g, 'd4', 'Alexandrina');
+    g = join(g, 'd5', 'Alexandrina');
+    const long = g.players.map((p) => p.name).filter((n) => n.startsWith('Alexandr'));
+    expect(long).toEqual(['Alexandrin', 'Alexandr 2']);
+    expect(g.players.every((p) => p.name.length <= 10)).toBe(true);
+  });
+
+  it("won't let a person take a bot's name, and renaming into a taken name gets a number too", () => {
+    let g = make(2);
+    const bot = g.players.find((p) => p.bot)!;
+    g = join(g, 'd1', bot.name);
+    expect(g.players.find((p) => p.deviceId === 'd1')!.name).toBe(`${bot.name} 2`);
+    g = join(g, 'd2', 'Zed');
+    g = must(g, { type: 'setLook', name: 'Sam', emoji: '🐸' }, 'd2');
+    expect(g.players.find((p) => p.deviceId === 'd2')!.name).toBe('Sam 2');
+    expect(new Set(g.players.map((p) => p.name.toLowerCase())).size).toBe(g.players.length);
+    // Sending your own name again changes nothing.
+    const again = applyAction(g, { type: 'join', name: 'Sam', emoji: '😎' }, ctx(HOST));
+    expect(again.ok && again.changed).toBe(false);
+  });
+});
+
+describe('play again', () => {
+  function endedGame() {
+    let g = createTable({ hostDeviceId: HOST, name: 'Sam', emoji: '😎', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 2, code: 'BCDFG', now: clock });
+    g = must(g, { type: 'join', name: 'Ann', emoji: '🐸' }, 'd1');
+    g = must(g, { type: 'join', name: 'Bob', emoji: '🐸' }, 'd2');
+    g = begin(g);
+    g.settings.smallBlind = 50;
+    g.settings.bigBlind = 100;
+    g.players[1].stack = 5;
+    return must(g, { type: 'end' }, HOST);
+  }
+  const ids = (g: Game) => g.players.map((p) => p.name);
+
+  it('lets the host open a new game with only the friends who asked, the bots back, and the first blinds', () => {
+    let g = endedGame();
+    const oldId = g.id;
+    expect(g.status).toBe('ended');
+    // A friend asking just waits: nothing changes for anyone else.
+    g = must(g, { type: 'playAgain' }, 'd1');
+    expect(g.status).toBe('ended');
+    expect(g.again).toHaveLength(1);
+    g = must(g, { type: 'playAgain' }, HOST);
+    expect(g.status).toBe('lobby');
+    expect(g.id).not.toBe(oldId);
+    expect(ids(g)).toContain('Sam');
+    expect(ids(g)).toContain('Ann');
+    expect(ids(g)).not.toContain('Bob');
+    expect(g.players.filter((p) => p.bot)).toHaveLength(2);
+    expect(g.players.every((p) => p.stack === DEFAULT_SETTINGS.startingStack && p.bought === DEFAULT_SETTINGS.startingStack)).toBe(true);
+    expect(g.settings.smallBlind).toBe(DEFAULT_SETTINGS.smallBlind);
+    expect(g.hand).toBeNull();
+    expect(g.again).toBeUndefined();
+    expect(g.logs).toEqual([]);
+    // The one who didn't ask can sit down by hand, and the host can deal again.
+    g = must(g, { type: 'join', name: 'Bob', emoji: '🐸' }, 'd2');
+    expect(ids(g)).toContain('Bob');
+    g = begin(g);
+    expect(g.hand).not.toBeNull();
+  });
+
+  it("only seats people who asked: the host opening it alone puts nobody else in", () => {
+    let g = endedGame();
+    g = must(g, { type: 'playAgain' }, HOST);
+    expect(g.players.filter((p) => !p.bot).map((p) => p.name)).toEqual(['Sam']);
+  });
+
+  it('lets a friend take their request back, and ignores Play again outside an ended game', () => {
+    let g = endedGame();
+    g = must(g, { type: 'playAgain' }, 'd1');
+    g = must(g, { type: 'playAgain', off: true }, 'd1');
+    g = must(g, { type: 'playAgain' }, HOST);
+    expect(ids(g)).not.toContain('Ann');
+    const lobby = applyAction(g, { type: 'playAgain' }, ctx('d2'));
+    expect(lobby.ok).toBe(false);
+    const host = applyAction(g, { type: 'playAgain' }, ctx(HOST));
+    expect(host.ok && host.changed).toBe(false);
+  });
+
+  it('brings back a bot that busted out of the last game', () => {
+    let g = endedGame();
+    g.players = g.players.filter((p) => !p.bot);
+    g = must(g, { type: 'playAgain' }, HOST);
+    expect(g.players.filter((p) => p.bot)).toHaveLength(2);
+  });
+});
+
+describe('a phone that drops off the table', () => {
+  const online = (game: Game, ...devices: string[]) => must(game, { type: 'presence', online: devices }, 'server');
+  const playerOf = (game: Game, device: string) => game.players.find((p) => p.deviceId === device)!;
+
+  it('shows them as offline, puts them back when they return, and ignores a repeat', () => {
+    let g = table(2, { turnSeconds: 45 });
+    g = online(g, HOST);
+    expect(playerOf(g, 'device-1').offline).toBe(true);
+    expect(playerOf(g, HOST).offline).toBeUndefined();
+    const again = applyAction(g, { type: 'presence', online: [HOST] }, ctx('server'));
+    expect(again.ok && again.changed).toBe(false);
+    g = online(g, HOST, 'device-1');
+    expect(playerOf(g, 'device-1').offline).toBeUndefined();
+  });
+
+  it("cuts the clock to 15 seconds when it's their turn, and keeps that short clock if they come back", () => {
+    let g = table(2, { turnSeconds: 45 });
+    const turn = playerOf(g, g.hand!.toAct === playerOf(g, HOST).id ? HOST : 'device-1');
+    const device = turn.deviceId!;
+    const other = device === HOST ? 'device-1' : HOST;
+    expect(g.hand!.deadline).toBe(clock + 45_000);
+    g = online(g, other);
+    expect(g.hand!.deadline).toBe(clock + TIMING.offlineClock);
+    expect(g.hand!.actAt).toBe(g.hand!.deadline);
+    expect(g.wakeAt).toBe(g.hand!.deadline);
+    // Back with time to spare: still the short clock, not a fresh 45 seconds.
+    g = online(g, device, other);
+    expect(g.hand!.deadline).toBe(clock + TIMING.offlineClock);
+    // When the clock runs out, they're checked or folded like anyone else.
+    g = online(g, other);
+    clock = g.hand!.deadline!;
+    g = must(g, { type: 'tick' }, 'server');
+    expect(playerOf(g, device).timeouts).toBe(1);
+  });
+
+  it('gives an offline player the short clock when the turn reaches them', () => {
+    let g = table(2, { turnSeconds: 45 });
+    const first = g.hand!.toAct!;
+    const firstDevice = g.players.find((p) => p.id === first)!.deviceId!;
+    const second = firstDevice === HOST ? 'device-1' : HOST;
+    g = online(g, firstDevice); // the one who isn't on the clock drops
+    const seat = g.hand!.seats.find((s) => s.playerId === first)!;
+    const o = options(g, g.hand!, seat);
+    g = must(g, { type: 'act', hand: g.hand!.number, seq: g.hand!.seq, move: o.canCheck ? 'check' : 'call' }, firstDevice);
+    expect(g.hand!.toAct).toBe(g.players.find((p) => p.deviceId === second)!.id);
+    expect(g.hand!.deadline).toBe(clock + TIMING.offlineClock);
+  });
+
+  it('leaves a table without a clock alone, and never takes a presence report from a phone', () => {
+    let g = table(2, { turnSeconds: 0 });
+    g = online(g, HOST);
+    expect(playerOf(g, 'device-1').offline).toBe(true);
+    expect(g.hand!.deadline).toBeNull();
+    expect(parseAction({ type: 'presence', online: [] })).toBeNull();
+  });
+});

@@ -221,9 +221,9 @@ export const STYLES: Record<StyleId, Style> = {
   nervous: {
     id: 'nervous',
     about: 'Plays fair hands but folds to pressure, bets small when it does bet, and gets rattled after losing.',
-    pre: { ...base, tight: 0.68, aggro: -0.2, open: 2, iso: 0.1, shove: 0.65, callShove: -0.06, survival: 0.9 },
-    post: { ...post, sense: 0.5, sizes: [0.25, 0.4, 0.5], tell: 0.5, value: -0.05, bluff: -0.05, bet: -0.06, sticky: -0.22, raise: -0.05, scared: 0.9, gto: 0.1, wobble: 0.08 },
-    adapt: 0.2,
+    pre: { ...base, tight: 0.4, loose: 0.15, aggro: -0.2, open: 2, iso: 0.1, shove: 0.65, callShove: -0.06, survival: 0.9 },
+    post: { ...post, sense: 0.25, sizes: [0.25, 0.4, 0.5], tell: 0.5, value: -0.15, bluff: -0.05, bet: -0.15, sticky: -0.45, raise: -0.15, scared: 2.4, gto: 0.1, wobble: 0.3 },
+    adapt: 0,
     mind: { tilt: 0.45, grudge: 0.1 },
     tempo: { speed: 1.2, tank: 1.6, snap: 0.05, hollywood: 0 },
     show: { bluffs: 0.01, strong: 0.05, folds: 0.2 },

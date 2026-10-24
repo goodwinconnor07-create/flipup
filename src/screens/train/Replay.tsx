@@ -19,7 +19,7 @@ function seatPos(i: number, n: number): { left: string; top: string } {
   return { left: `${50 + 41 * Math.cos(a)}%`, top: `${48 + 38 * Math.sin(a)}%` };
 }
 
-function Seat({ r, id, f, i, n, heroId }: { r: HandRecord; id: string; f: Frame; i: number; n: number; heroId: string }) {
+export function Seat({ r, id, f, i, n, heroId }: { r: HandRecord; id: string; f: Frame; i: number; n: number; heroId: string }) {
   const p = r.players.find((x) => x.id === id)!;
   const folded = f.folded.includes(id);
   const cards = r.holes[id];

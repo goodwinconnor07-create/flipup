@@ -1,0 +1,12 @@
+--- bot-lab/engines/baseline/game/botPlay.ts	2026-10-22 07:36:19.000000000 +0000
++++ bot-lab/engines/r1/game/botPlay.ts	2026-10-22 11:17:44.285713134 +0000
+@@ -750,6 +750,9 @@
+   }
+   // Nobody folds the near-nuts.
+   if (!o.canCheck && eqRange > 0.92) probs[0] = 0;
++  // Nor a hand that's far ahead of the price: when the call costs a small part of the pot and its chance of winning
++  // is several times what the call needs, folding is a blunder, whatever the style (choice noise and nerves included).
++  if (!o.canCheck && eqRange > 0.5 && eqRange > 3 * (o.toCall / (pot + o.toCall))) probs[0] = 0;
+   const c = pick(rng, probs);
+   const chosen = opts[c];
+   tracer?.({ street: hand.street, style: style.id, cards: seat.cards.join(''), board: hand.board.join(''), myTier, eqRange, eqNaive, eq, pot, toCall: o.toCall, behind, quality: im.quality, opts: opts.map((x, i) => `${x.move.move}${x.move.to ?? ''}:${(x.value / pot).toFixed(2)}:${probs[i].toFixed(2)}`).join(' '), chose: `${chosen.move.move}${chosen.move.to ?? ''}` });

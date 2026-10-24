@@ -26,13 +26,15 @@ import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
-import { challengeFor, countHand, newRunning, saveResult } from './challenges';
 import {
+  forgetOldScroll,
   loadDeviceId,
   loadCalm,
   loadDark,
   loadGlass,
   loadMuted,
+  loadTalk,
+  saveTalk,
   loadProfile,
   loadSession,
   loadStats,
@@ -68,9 +70,11 @@ export type Route =
   /** Watch a saved hand back, with the coach. */
   | { name: 'replay'; key: string }
   | { name: 'drill'; scenario: string }
-  | { name: 'custom' };
+  | { name: 'custom' }
+  /** Scroll: whole hands solved ahead of time, every move graded. */
+  | { name: 'scroll'; hand?: string };
 
-export type TrainSection = 'review' | 'library' | 'stats' | 'custom';
+export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 
 export type Sheet =
   | { name: 'menu' }
@@ -82,10 +86,6 @@ export type Sheet =
   | { name: 'settings' }
   /** This phone's look and sound: dark mode, Liquid Glass, sound, animations. */
   | { name: 'prefs' }
-  /** A bot's challenge: the rules, the goal and a Play button. */
-  | { name: 'challenge'; bot: string }
-  /** How a challenge ended. */
-  | { name: 'challengeResult'; bot: string; won: boolean; stars: number; hands: number }
   | { name: 'standings' }
   | { name: 'rankings' }
   | { name: 'log' }
@@ -122,6 +122,8 @@ export interface AppState {
   /** Felt and rail, as this phone likes them. */
   look: TableLook;
   muted: boolean;
+  /** Show what the bots say at the table. */
+  talk: boolean;
   /** Animations switched off. */
   calm: boolean;
   dark: boolean;
@@ -159,10 +161,12 @@ let state: AppState = {
   logs: null,
   look: loadTableLook(),
   muted: loadMuted(),
+  talk: loadTalk(),
   calm: loadCalm(),
   dark: loadDark(),
   glass: loadGlass(),
 };
+forgetOldScroll();
 applyTheme(state.dark);
 document.documentElement.classList.toggle('no-glass', !state.glass);
 document.documentElement.classList.toggle('calm', state.calm);
@@ -307,57 +311,8 @@ function setSession(session: Session | null): void {
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
   captureFinishedHand(state.game, state.deviceId);
-  trackChallenge();
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
-}
-
-/** Counts a finished hand towards the running bot challenge, and shows the result when it's decided. */
-function trackChallenge(): void {
-  const s = state.session;
-  if (s?.mode !== 'local' || !s.challenge || s.challenge.over || !state.game) return;
-  const c = challengeFor(s.challenge.bot);
-  if (!c) return;
-  const run = structuredClone(s.challenge);
-  countHand(run, c, state.game, state.deviceId);
-  if (run.progress.last === s.challenge.progress.last) return;
-  const next = { ...s, challenge: run };
-  saveSession(next);
-  set({ session: next });
-  if (run.over) {
-    if (run.over.won) saveResult(run.bot, run.over.stars);
-    const over = run.over;
-    setTimeout(() => openSheet({ name: 'challengeResult', bot: run.bot, won: over.won, stars: over.stars, hands: run.progress.hands }), 1800);
-  }
-}
-
-/** Sits down against one bot with a challenge's stacks and blinds, and deals. */
-export function startChallenge(bot: string): void {
-  if (state.busy) return;
-  const c = challengeFor(bot);
-  if (!c) return;
-  const name = cleanName(state.profile.name);
-  if (!name) return navigate({ name: 'profile', then: 'bots' });
-  const settings: Settings = {
-    startingStack: c.you * c.bigBlind,
-    smallBlind: c.bigBlind / 2,
-    bigBlind: c.bigBlind,
-    rebuys: false,
-    turnSeconds: 0,
-    blindMinutes: c.blindMinutes,
-    blindCap: c.blindCap,
-  };
-  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: [bot], code: null, now: Date.now() });
-  const them = game.players.find((p) => p.bot);
-  if (them) {
-    them.stack = c.them * c.bigBlind;
-    them.bought = them.stack;
-  }
-  closeSheet();
-  closeConnection();
-  setSession({ mode: 'local', code: null, game, challenge: newRunning(bot, settings.startingStack) });
-  resetTo({ name: 'table' });
-  dispatch({ type: 'start' });
 }
 
 /** A heads-up game against one bot, loaded with another style's way of playing. */
@@ -373,6 +328,15 @@ export function startPlaystyle(bot: string, style: StyleId): void {
   setSession({ mode: 'local', code: null, game });
   resetTo({ name: 'table' });
   dispatch({ type: 'start' });
+}
+
+// ── Scroll ──────────────────────────────────────────────────────────────────
+// Whole solved hands played back from data (screens/train/SolvedHands.tsx); nothing here touches a table.
+
+/** Opens the feed from Home. A table you're sitting at is left first (you're asked). */
+export function openScroll(): void {
+  // Scroll plays solved hands back from data: it doesn't need this phone's table, so a game in progress stays put.
+  navigate({ name: 'scroll' });
 }
 
 /** Bots-only tables keep their own clock on this phone: bots act, cards run out, hands deal. */
@@ -552,6 +516,12 @@ export function setTableLook(patch: Partial<TableLook>): void {
   set({ look });
 }
 
+export function toggleTalk(): void {
+  const talk = !state.talk;
+  saveTalk(talk);
+  set({ talk });
+}
+
 export function toggleMuted(): void {
   const muted = !state.muted;
   saveMuted(muted);
@@ -624,8 +594,14 @@ export function leaveTable(): void {
 /** Forget a finished table and go home. */
 export function closeTable(): void {
   recordFinished();
+  const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
+  const asked = !!me && !!state.game?.again?.includes(me.id);
   if (state.session?.mode === 'online') saveLastTable(null);
-  closeConnection();
+  if (state.session?.mode === 'online' && asked) {
+    // Leaving after asking to play again: take the request back, so no one's seated who isn't there.
+    send({ type: 'playAgain', off: true });
+    setTimeout(closeConnection, 300);
+  } else closeConnection();
   setSession(null);
   resetTo();
 }

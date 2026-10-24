@@ -89,6 +89,13 @@ class PreflopCache:
         h = hashlib.sha1(json.dumps(parts).encode()).hexdigest()[:16]
         return os.path.join(self.cache_dir, f"preflop_{num_players}p_{stack:g}bb_{h}.npz")
 
+    def file_for(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
+                 rake_cap: float = 0.0) -> str:
+        """Where this game's solution is (or would be) saved."""
+        key = (num_players, round(stack, 2), round(ante, 3), round(rake_rate, 4), round(rake_cap, 2))
+        spot = PreflopSpot(num_players=num_players, stack=stack, ante=ante, rake_rate=rake_rate, rake_cap=rake_cap)
+        return self._path(spot, key, num_players, stack)
+
     def loaded(self, num_players: int, stack: float, ante: float = 0.0, rake_rate: float = 0.0,
                rake_cap: float = 0.0) -> bool:
         """True when this game is already in memory (get() returns at once)."""

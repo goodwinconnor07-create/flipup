@@ -80,3 +80,38 @@ python3 scripts/export_preflop.py --players 6 --stack 100 --out ../public/gto/pr
 ```
 
 The 6-handed solve takes about six minutes on four cores.
+
+## Solving the flop library on laptops
+
+Two Ubuntu laptops finish the flop library and upload each flop to the coach as they go. Each laptop owns
+its own matchups, so the two never solve the same flop, and both skip every flop the coach already has.
+
+| Laptop | Matchups |
+| --- | --- |
+| A | `bb_btn_3bet`, `utg_bb` |
+| B | `sb_bb`, `sb_limp` |
+
+One-time, on the coach (from this folder):
+
+```sh
+openssl rand -hex 24                                         # the upload token: keep it, both laptops need it
+fly secrets set FLIPUP_UPLOAD_TOKEN=<token> -a flipup-gto --stage
+fly deploy
+```
+
+Without the secret the upload routes (`flipup_gto/flop_admin.py`, `/admin/...`) answer 404. The app's Worker
+never forwards them (it passes only GET and POST, without the token).
+
+On each laptop:
+
+```sh
+bash gto/scripts/laptop_setup.sh          # tools, Python environment, engine
+bash gto/scripts/laptop_service.sh a      # or b; asks for the token once
+bash gto/scripts/laptop_service.sh status # any time
+```
+
+`laptop_service.sh` installs two systemd services that start on boot: `flipup-solve` (`top_up_flops.py`) and
+`flipup-upload` (`upload_flops.py`, a round every 30 minutes so the coach machine can sleep in between).
+Before solving, `top_up_flops.py` downloads the coach's preflop solution and checks each matchup's starting
+ranges against a flop the coach already has; if they differ it stops without solving anything. A flop is
+written to a side file and renamed when complete, and the coach never replaces a flop it already stores.

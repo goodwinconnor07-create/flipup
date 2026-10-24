@@ -88,7 +88,8 @@ unit flipup-solve "FlipUp flop library: solve $SPOTS" on-failure \
 unit flipup-upload "FlipUp flop library: upload to the coach" on-failure \
   "$GTO_DIR/scripts/upload_flops.py --out $OUT --spots $SPOTS --every 1800 --stop-when-idle 6" "$OUT/upload.txt"
 sudo systemctl daemon-reload
-sudo systemctl enable --now flipup-solve flipup-upload
+sudo systemctl enable flipup-solve flipup-upload
+sudo systemctl restart flipup-solve flipup-upload   # restart, so a re-run (e.g. a to a1) takes effect
 
 echo
 echo "Running. Check on it with:  bash $0 status"

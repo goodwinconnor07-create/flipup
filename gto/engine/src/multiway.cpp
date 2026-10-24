@@ -268,6 +268,8 @@ std::vector<std::pair<MWAction, MultiwaySolver::BuildState>> MultiwaySolver::leg
     return n;
   };
 
+  // The full menu is only needed on the street this solve answers: later streets get their own solve.
+  const bool hero = p == cfg_.hero && s.street == static_cast<int>(cfg_.board.size()) - 3;
   auto finalize = [&](std::vector<double> adds, double pot_ref, bool raising) {
     for (double& d : adds) {
       d = std::min(d, stack);
@@ -276,7 +278,7 @@ std::vector<std::pair<MWAction, MultiwaySolver::BuildState>> MultiwaySolver::leg
       if (stack - d <= cfg_.force_allin_threshold * pot_after + 1e-9) d = stack;
     }
     double allin_ref = raising ? (s.wager[p] + stack - maxw) : stack;
-    if (allin_ref <= cfg_.add_allin_threshold * pot_ref + 1e-9) adds.push_back(stack);
+    if (hero || allin_ref <= cfg_.add_allin_threshold * pot_ref + 1e-9) adds.push_back(stack);
     std::sort(adds.begin(), adds.end(), std::greater<double>());
     std::vector<double> kept;
     for (double d : adds) {
@@ -311,11 +313,14 @@ std::vector<std::pair<MWAction, MultiwaySolver::BuildState>> MultiwaySolver::leg
       double pot_after_call = s.pot + to_call;
       double min_to = maxw + std::max(s.last_inc, cfg_.min_bet);
       std::vector<double> adds;
-      for (double frac : cfg_.raise[s.street]) {
+      for (double frac : hero ? cfg_.hero_raise[s.street] : cfg_.raise[s.street]) {
         double to = std::max(maxw + frac * pot_after_call, min_to);
         adds.push_back(to - s.wager[p]);
       }
       finalize(adds, pot_after_call, true);
+    } else if (hero && others && stack > to_call + 1e-9) {
+      // Past the raise cap the quiz player can still move all in.
+      finalize({}, s.pot + to_call, true);
     }
   } else {
     BuildState c = s;
@@ -323,8 +328,8 @@ std::vector<std::pair<MWAction, MultiwaySolver::BuildState>> MultiwaySolver::leg
     out.push_back({MWAction{MWAction::CHECK, 0, 0, false}, c});
     if (others && stack > 1e-9) {
       std::vector<double> adds;
-      for (double frac : cfg_.bet[s.street]) adds.push_back(std::max(frac * s.pot, cfg_.min_bet));
-      if (!adds.empty() || stack <= cfg_.add_allin_threshold * s.pot) finalize(adds, s.pot, false);
+      for (double frac : hero ? cfg_.hero_bet[s.street] : cfg_.bet[s.street]) adds.push_back(std::max(frac * s.pot, cfg_.min_bet));
+      if (hero || !adds.empty() || stack <= cfg_.add_allin_threshold * s.pot) finalize(adds, s.pot, false);
     }
   }
   return out;

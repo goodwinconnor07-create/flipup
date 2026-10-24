@@ -39,6 +39,12 @@ struct MWConfig {
   // The cards dealt after the root street (empty = every card). A spread-out sample keeps flop solves
   // fast; values are reweighted so the sample stands in for the whole deck.
   std::vector<int> deal_subset;
+  // One player (the quiz player) can get a fuller menu on the root street: more bet and raise sizes, and
+  // all-in always on offer (even after the raise cap), so every option there has a solved answer.
+  // Later streets are re-solved from their own root, so they keep the normal sizes. -1 = nobody.
+  int hero = -1;
+  std::array<std::vector<double>, 3> hero_bet;
+  std::array<std::vector<double>, 3> hero_raise;
   double min_bet = 1.0;
   double add_allin_threshold = 1.5;      // offer all-in when it is at most this many pots
   double force_allin_threshold = 0.15;   // a bet becomes all-in when less than this share of the pot is left behind

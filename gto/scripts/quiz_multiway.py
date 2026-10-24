@@ -44,6 +44,10 @@ STREETS = ["preflop", "flop", "turn", "river"]
 # multiway pots, where ranges are tighter and bluffs work less often.
 BET = {0: [0.33, 0.75], 1: [0.66], 2: [0.75]}
 RAISE = {0: [0.7], 1: [0.7], 2: [0.7]}
+# The quiz player's own menu on the street being solved: four bet sizes, two raise sizes and all-in
+# always, so every move they might want has a solved answer.
+HERO_BET = [0.33, 0.5, 0.75, 1.25]
+HERO_RAISE = [0.6, 1.0]
 ITERATIONS = {0: 80, 1: 120, 2: 200}
 VERBOSE = False
 # Share of hands kept by the street the quiz player's hand ends on (they fold or it's over).
@@ -133,7 +137,7 @@ def preflop_decision(ex: Explorer, step: dict, seat: int, cards: tuple) -> dict:
             "equity": None}
 
 
-def solve_street(street: int, board: list, seats: list, ranges: dict, pot: float, behind: float):
+def solve_street(street: int, board: list, seats: list, ranges: dict, pot: float, behind: float, hero: int = -1):
     mc = _engine.MWConfig()
     mc.players = len(seats)
     mc.board = board
@@ -145,6 +149,8 @@ def solve_street(street: int, board: list, seats: list, ranges: dict, pot: float
     mc.deal_subset = spread(board) if street == 0 else []
     for st in range(3):
         mc.set_sizes(st, BET[st], RAISE[st])
+        mc.set_hero_sizes(st, HERO_BET, HERO_RAISE)
+    mc.hero = seats.index(hero) if hero in seats else -1
     solver = _engine.MultiwaySolver(mc)
     solver.iterate(ITERATIONS[street])
     return solver
@@ -194,7 +200,7 @@ def play_hand(ex: Explorer, rng: random.Random, hand_id: str, max_players: int):
             break
         # Each player's own cards must be possible given the board (they are: dealt from one deck).
         t = time.time()
-        solver = solve_street(street, board, seats, ranges, pot, stack)
+        solver = solve_street(street, board, seats, ranges, pot, stack, hero)
         if VERBOSE:
             print(f"  {name}: {len(seats)} players, {solver.num_nodes} nodes, {time.time() - t:.0f}s, "
                   f"gain {solver.exploitability_pct():.2f}% pot", flush=True)
@@ -216,6 +222,9 @@ def play_hand(ex: Explorer, rng: random.Random, hand_id: str, max_players: int):
                     opts.append({"label": lab, "kind": kind, "to_bb": round(act["amount"], 2),
                                  "freq": round(float(full["strategy"][j][hero_combo]), 4),
                                  "ev_bb": round(float(full["action_ev"][j][hero_combo]), 3)})
+                if to_call <= 1e-9:
+                    # Folding when you could check is always a mistake, but it's a button: it's worth 0.
+                    opts.append({"label": "Fold", "kind": "fold", "to_bb": 0.0, "freq": 0.0, "ev_bb": 0.0})
                 decisions.append({"step": len(steps), "street": name, "pot_bb": round(full["pot"], 2),
                                   "to_call_bb": round(to_call, 2), "options": opts,
                                   "equity": round(float(full["equity"][q["player"]][hero_combo]), 4),

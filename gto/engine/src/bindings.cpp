@@ -410,6 +410,12 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("max_raises", &MWConfig::max_raises)
       .def_readwrite("end_street", &MWConfig::end_street)
       .def_readwrite("deal_subset", &MWConfig::deal_subset)
+      .def_readwrite("hero", &MWConfig::hero)
+      .def("set_hero_sizes", [](MWConfig& c, int street, const std::vector<double>& bet, const std::vector<double>& raise) {
+        if (street < 0 || street > 2) throw std::invalid_argument("street 0-2");
+        c.hero_bet[street] = bet;
+        c.hero_raise[street] = raise;
+      })
       .def_readwrite("min_bet", &MWConfig::min_bet)
       .def_readwrite("add_allin_threshold", &MWConfig::add_allin_threshold)
       .def_readwrite("force_allin_threshold", &MWConfig::force_allin_threshold)

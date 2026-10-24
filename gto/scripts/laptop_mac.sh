@@ -17,6 +17,7 @@ VENV="${FU_VENV:-$HOME/fu-env}"
 OUT="${FLOPS_DIR:-$HOME/flops}"
 ENV_FILE="$HOME/.config/flipup-flops.env"
 COACH="${FLIPUP_COACH:-https://flipup-gto.fly.dev}"
+ALL_SPOTS="bb_btn_3bet,btn_bb,co_bb,sb_bb,sb_limp,utg_bb"   # upload every folder, so switching matchups strands nothing
 RUN="$OUT/run"   # pid files
 
 alive() { [ -f "$RUN/$1.pid" ] && kill -0 "$(cat "$RUN/$1.pid")" 2>/dev/null; }
@@ -98,7 +99,7 @@ cd "$GTO_DIR"
 echo "3/3  Starting (kept awake with caffeinate)..."
 nohup caffeinate -dims "$VENV/bin/python3" -u scripts/top_up_flops.py --out "$OUT" --spots "$SPOTS" >> "$OUT/log.txt" 2>&1 &
 echo $! > "$RUN/solve.pid"
-nohup "$VENV/bin/python3" -u scripts/upload_flops.py --out "$OUT" --spots "$SPOTS" --every 1800 --stop-when-idle 6 >> "$OUT/upload.txt" 2>&1 &
+nohup "$VENV/bin/python3" -u scripts/upload_flops.py --out "$OUT" --spots "$ALL_SPOTS" --every 1800 --stop-when-idle 6 >> "$OUT/upload.txt" 2>&1 &
 echo $! > "$RUN/upload.pid"
 echo
 echo "Running. Check on it with:  bash $0 status"

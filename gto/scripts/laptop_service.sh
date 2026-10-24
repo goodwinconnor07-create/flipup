@@ -16,6 +16,7 @@ VENV="${FU_VENV:-$HOME/fu-env}"
 OUT="${FLOPS_DIR:-$HOME/flops}"
 ENV_FILE="$HOME/.config/flipup-flops.env"
 COACH="${FLIPUP_COACH:-https://flipup-gto.fly.dev}"
+ALL_SPOTS="bb_btn_3bet,btn_bb,co_bb,sb_bb,sb_limp,utg_bb"   # the uploader checks every folder, so a laptop that switches matchups strands nothing
 
 case "${1:-}" in
   a) SPOTS="bb_btn_3bet,utg_bb" ;;
@@ -86,7 +87,7 @@ EOF
 unit flipup-solve "FlipUp flop library: solve $SPOTS" on-failure \
   "$GTO_DIR/scripts/top_up_flops.py --out $OUT --spots $SPOTS" "$OUT/log.txt"
 unit flipup-upload "FlipUp flop library: upload to the coach" on-failure \
-  "$GTO_DIR/scripts/upload_flops.py --out $OUT --spots $SPOTS --every 1800 --stop-when-idle 6" "$OUT/upload.txt"
+  "$GTO_DIR/scripts/upload_flops.py --out $OUT --spots $ALL_SPOTS --every 1800 --stop-when-idle 6" "$OUT/upload.txt"
 sudo systemctl daemon-reload
 sudo systemctl enable flipup-solve flipup-upload
 sudo systemctl restart flipup-solve flipup-upload   # restart, so a re-run (e.g. a to a1) takes effect

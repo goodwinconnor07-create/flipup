@@ -196,14 +196,6 @@ function PlayerSheet({ playerId }: { playerId: string }) {
   );
 }
 
-interface Item {
-  label: string;
-  Icon: ComponentType<SVGProps<SVGSVGElement>>;
-  color: string;
-  onClick: () => void;
-  danger?: boolean;
-}
-
 /** Felt colour, rail and a live preview. Only changes how the table looks on this phone. */
 function ThemeSheet() {
   const look = useApp((s) => s.look);
@@ -259,19 +251,8 @@ function ThemeSheet() {
   );
 }
 
-function Tile({ label, Icon, color, onClick }: Item) {
-  return (
-    <button type="button" className="menu-tile press" onClick={onClick}>
-      <span className="mi-icon" style={{ background: color }}>
-        <Icon />
-      </span>
-      {label}
-    </button>
-  );
-}
-
 /** A row in a settings list: a switch, or a link to another sheet or screen. */
-type Row = { label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; color: string } & (
+type Row = { label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; color: string; danger?: boolean } & (
   | { on: boolean; onChange: () => void }
   | { onClick: () => void }
 );
@@ -334,7 +315,7 @@ function Rows({ rows }: { rows: Row[] }) {
           <span className="gr-icon" style={{ background: r.color }}>
             <r.Icon />
           </span>
-          <span className="gr-text">{r.label}</span>
+          <span className="gr-text" style={r.danger ? { color: 'var(--red-ink)' } : undefined}>{r.label}</span>
           {'on' in r ? <span className={`toggle${r.on ? ' on' : ''}`} aria-hidden /> : <ChevronIcon className="gr-chev" width={16} height={16} />}
         </button>
       ))}
@@ -390,7 +371,7 @@ function MenuSheet() {
     closeSheet();
   };
 
-  const table: Item[] = [];
+  const table: Row[] = [];
   if (started) table.push({ label: 'Standings', Icon: TrophyIcon, color: 'var(--gold)', onClick: () => openSheet({ name: 'standings' }) });
   if (started) table.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
   if (online && game?.code && !ended)
@@ -410,7 +391,7 @@ function MenuSheet() {
     );
   }
 
-  const leave: Item[] = [{ label: 'Home', Icon: HomeIcon, color: 'var(--green)', onClick: () => resetTo() }];
+  const leave: Row[] = [{ label: 'Home', Icon: HomeIcon, color: 'var(--green)', onClick: () => resetTo() }];
   if (host && game && !ended) {
     leave.push({
       label: 'End the game',
@@ -453,10 +434,8 @@ function MenuSheet() {
       {table.length > 0 && (
         <>
           <p className="menu-section">Table</p>
-          <div className="menu-grid">
-            {table.map((t) => (
-              <Tile key={t.label} {...t} />
-            ))}
+          <div className="settings-list">
+            <Rows rows={table} />
           </div>
         </>
       )}
@@ -466,15 +445,8 @@ function MenuSheet() {
         <Rows rows={switches} />
         <Rows rows={links} />
       </div>
-      <div className="menu-rows">
-        {leave.map(({ label, Icon, color, onClick, danger }) => (
-          <button key={label} type="button" className={`menu-item press${danger ? ' danger' : ''}`} onClick={onClick}>
-            <span className="mi-icon" style={{ background: color }}>
-              <Icon />
-            </span>
-            {label}
-          </button>
-        ))}
+      <div className="settings-list">
+        <Rows rows={leave} />
       </div>
     </Sheet>
   );

@@ -22,15 +22,6 @@
     align-items: center;
   }
 
-  /* The menu's tiles sit three across. */
-  .menu-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
-  .sheet:has(.menu-grid) {
-    max-width: 600px;
-  }
-
   .sheet {
     zoom: calc(1.15 * var(--desk-zoom, 1));
     max-height: calc(88dvh / (1.15 * var(--desk-zoom, 1)));

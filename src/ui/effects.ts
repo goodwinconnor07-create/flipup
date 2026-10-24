@@ -1,6 +1,6 @@
 import { CONFETTI_COLORS } from './theme';
-// Instant feedback: haptics, tap ripples and confetti. All of it is skipped
-// when the phone asks for reduced motion, and none of it blocks the game.
+// Instant feedback: haptics and confetti. Motion is skipped when Animations is switched off,
+// and none of it blocks the game.
 
 type HapticKind = 'light' | 'medium' | 'heavy' | 'success' | 'error';
 
@@ -17,33 +17,50 @@ export function reducedMotion(): boolean {
   return typeof document !== 'undefined' && document.documentElement.classList.contains('calm');
 }
 
-/** A tap on the phone: vibrate on Android browsers (iPhone browsers ignore it). */
+// iPhone browsers ignore navigator.vibrate, but Safari 18 and later tick the Taptic Engine when a
+// switch-style checkbox flips. A hidden one, flipped through its label, gives the app its haptics there.
+let tick: HTMLLabelElement | null = null;
+
+function iosTick(): boolean {
+  if (typeof document === 'undefined' || !/iP(hone|ad|od)/.test(navigator.userAgent)) return false;
+  if (!tick) {
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.setAttribute('switch', '');
+    input.tabIndex = -1;
+    tick = document.createElement('label');
+    tick.setAttribute('aria-hidden', 'true');
+    Object.assign(tick.style, { position: 'fixed', left: '-100px', top: '0', width: '1px', height: '1px', opacity: '0', pointerEvents: 'none' });
+    tick.appendChild(input);
+    // Its clicks stay here, so nothing else on the page thinks it was tapped.
+    tick.addEventListener('click', (e) => e.stopPropagation());
+    document.body.appendChild(tick);
+  }
+  tick.click();
+  return true;
+}
+
+/** A tap on the phone: the Taptic Engine on iPhone, a short buzz on Android. */
 export function haptic(kind: HapticKind = 'light'): void {
   try {
+    if (iosTick()) return;
     navigator.vibrate?.(PATTERNS[kind]);
   } catch {
     // Not supported.
   }
 }
 
-/** One listener for the whole app: every .btn gets a ripple from the touch point and a tiny buzz. */
+/** One listener for the whole app: a tiny buzz on Android when a button goes down. The press itself is
+ *  shown by CSS (a slight shrink and dim), the way iPhone buttons do it. iPhone haptics are kept for the
+ *  moments that matter (switches, choices, your turn), as Apple's own apps do. */
 export function installPressEffects(): void {
+  if (/iP(hone|ad|od)/.test(navigator.userAgent)) return;
   document.addEventListener(
     'pointerdown',
     (event) => {
       const target = (event.target as Element | null)?.closest<HTMLElement>('.btn, .press');
       if (!target || target.hasAttribute('disabled')) return;
-      haptic('light');
-      if (reducedMotion()) return;
-      const rect = target.getBoundingClientRect();
-      const size = Math.max(rect.width, rect.height);
-      const ripple = document.createElement('span');
-      ripple.className = 'ripple';
-      ripple.style.width = ripple.style.height = `${size}px`;
-      ripple.style.left = `${event.clientX - rect.left - size / 2}px`;
-      ripple.style.top = `${event.clientY - rect.top - size / 2}px`;
-      target.appendChild(ripple);
-      ripple.addEventListener('animationend', () => ripple.remove(), { once: true });
+      navigator.vibrate?.(PATTERNS.light);
     },
     { passive: true },
   );
@@ -145,7 +162,7 @@ function solidColour(look: CSSStyleDeclaration): string {
 function tintBrowser(colour: string | null): void {
   const dark = document.documentElement.dataset.theme === 'dark';
   for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) {
-    meta.setAttribute('content', colour ?? (dark ? '#0e0f14' : '#ffffff'));
+    meta.setAttribute('content', colour ?? (dark ? '#000000' : '#ffffff'));
   }
 }
 const WIPE_FADE_MS = 280;

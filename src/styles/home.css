@@ -1,35 +1,36 @@
-/* ── Home: a felt backdrop, a glass sheet and a floating tab bar ─────────── */
+/* ── Home: a large title, the one next step, grouped rows, and a floating tab bar ──────────────
+   One rule per thing. Phones first; computers get their own block at the end. */
 
+/* What floats (the tab bar, its round button) is glass; html.no-glass and Reduce Transparency
+   turn it solid (see global.css). */
 .glass {
-  background: var(--glass-fill);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  background: var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-rim);
   box-shadow: var(--glass-shine), 0 10px 28px -14px rgba(0, 0, 0, 0.4);
 }
 
-.glass-card {
+/* Cells are flat, like Apple's grouped cells: a soft fill, no outline, no blur. */
+.glass-card,
+html:not(.no-glass) .glass-card {
+  border: 0;
   border-radius: var(--r-lg);
-  padding: 16px 18px;
+  padding: 16px;
   background: var(--bg-2);
-  border: 1px solid var(--glass-edge);
-  box-shadow: var(--glass-shine);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
   color: var(--ink);
   font: inherit;
   text-align: left;
 }
 
-html[data-theme='dark'] .glass-card {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--glass-rim);
-}
-
 .eyebrow {
   display: block;
   font-size: var(--fs-caption);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0.02em;
   color: var(--ink-3);
 }
 
@@ -38,156 +39,152 @@ html[data-theme='dark'] .glass-card {
   min-height: 100dvh;
   padding: 0;
   overflow: hidden;
-}
-
-.home-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
   background: var(--bg);
 }
 
-.home-backdrop .glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.5;
-  animation: drift 18s ease-in-out infinite alternate;
-}
-
-.home-backdrop .glow-1 {
-  width: 260px;
-  height: 260px;
-  left: -60px;
-  top: 40px;
-  background: #34d399;
-}
-
-.home-backdrop .glow-2 {
-  width: 240px;
-  height: 240px;
-  right: -70px;
-  top: 150px;
-  background: #3b82f6;
-  animation-delay: -6s;
-}
-
-.home-backdrop .home-card {
-  left: calc(50% - 44px);
-  top: calc(var(--safe-top) + 70px);
-}
-
-.screen.home .home-stats {
-  margin-top: 4px;
-}
-
-.screen.home .home-head {
-  position: relative;
-  z-index: 2;
-  padding: calc(var(--safe-top) + 12px) 16px 8px;
-}
-
-.screen.home .logo {
-  color: var(--ink);
-}
-
-.screen.home .logo span {
-  color: var(--card-red);
-}
-
-.screen.home .me-chip {
-  color: var(--ink);
-}
-
 .home-sheet {
-  position: relative;
-  z-index: 1;
   flex: 1;
   min-height: 0;
-  display: flex;
-  margin-top: max(150px, 44dvh);
-  border-radius: 36px 36px 0 0;
-  overflow: hidden;
-  background: rgba(250, 250, 253, 0.92);
-  backdrop-filter: blur(32px) saturate(1.7);
-  -webkit-backdrop-filter: blur(32px) saturate(1.7);
-  border: 1px solid var(--glass-rim);
-  border-bottom: 0;
-  box-shadow: var(--glass-shine), 0 -18px 50px -20px rgba(0, 0, 0, 0.45);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
 }
 
-html[data-theme='dark'] .home-sheet {
-  background: var(--glass-fill-strong);
+.home-sheet::-webkit-scrollbar {
+  display: none;
 }
 
 .home-scroll {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding: 26px 20px calc(var(--safe-bottom) + 118px);
+  gap: 16px;
+  min-height: 100%;
+  padding: calc(var(--safe-top) + 12px) 20px calc(var(--safe-bottom) + 112px);
 }
 
-.home-title h2 {
+/* ── The large title, with your streak and you beside it ─────────────────────────────────── */
+
+.home-title {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 8px;
+}
+
+.title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.large-title {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   font-family: var(--font-display);
-  font-size: var(--fs-display-1);
+  font-size: var(--fs-title);
   font-weight: 700;
-  letter-spacing: -0.035em;
-  line-height: 1.04;
+  line-height: 1.1;
 }
 
 .home-title p {
-  margin: 6px 0 0;
-  font-size: var(--fs-lead);
-  font-weight: 600;
+  margin: 0;
+  font-size: var(--fs-body);
+  font-weight: 400;
   color: var(--ink-3);
+  text-wrap: pretty;
+}
+
+/* The streak: an outline flame until you've played today, then it lights up orange. */
+.streak-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 12px 0 10px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--bg-2);
+  color: var(--gold);
+  font: inherit;
+}
+
+.streak-pill b {
+  font-size: var(--fs-body);
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.streak-pill.lit {
+  background: var(--gold-bg);
+}
+
+.streak-pill.lit svg {
+  animation: flicker 1.6s ease-in-out 2;
+  transform-origin: 50% 90%;
+}
+
+@keyframes flicker {
+  50% {
+    transform: scale(1.12) rotate(-4deg);
+  }
+}
+
+.avatar-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
 }
 
 .home-pane {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  animation: pane-in 0.28s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation: pane-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
 @keyframes pane-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(8px);
   }
 }
 
-/* Tab bar: a glass pill with a capsule that slides to the chosen tab, and a round quick-join button. */
+/* ── Tab bar: a glass pill with a capsule that slides to the chosen tab, and a round join button ── */
+
 .home-tabs {
   position: fixed;
   z-index: 20;
   left: 50%;
-  bottom: calc(var(--safe-bottom) + 14px);
-  width: min(488px, calc(100% - 32px));
+  bottom: calc(var(--safe-bottom) + 12px);
+  width: min(480px, calc(100% - 32px));
   transform: translateX(-50%);
   display: flex;
-  gap: 10px;
+  gap: 8px;
 }
 
 .tabbar {
-  background: var(--glass-fill-strong);
   position: relative;
   flex: 1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  padding: 6px;
+  padding: 4px;
   border-radius: var(--r-pill);
 }
 
 .tab-capsule {
   position: absolute;
-  top: 6px;
-  bottom: 6px;
-  left: 6px;
-  width: calc((100% - 12px) / 3);
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
   border-radius: var(--r-pill);
   background: var(--bg-3);
   transform: translateX(calc(var(--i, 0) * 100%));
@@ -201,7 +198,7 @@ html[data-theme='dark'] .tab-capsule {
 .tab {
   position: relative;
   z-index: 1;
-  min-height: 58px;
+  min-height: 54px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -210,710 +207,33 @@ html[data-theme='dark'] .tab-capsule {
   border: 0;
   border-radius: var(--r-pill);
   background: none;
-  color: var(--ink-2);
+  color: var(--ink);
   font: inherit;
-  font-size: var(--fs-caption);
-  font-weight: 600;
+  font-size: var(--fs-micro);
+  font-weight: 500;
   transition: color 0.2s;
 }
 
 .tab.on {
-  color: var(--blue-ink);
-}
-
-.tab-round {
-  background: var(--glass-fill-strong);
-  flex: none;
-  width: 70px;
-  height: 70px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: var(--ink);
-}
-
-/* Cards inside the sheet. */
-.home-empty b {
-  font-size: var(--fs-h3);
-  font-weight: 700;
-}
-
-.home-empty p {
-  margin: 6px 0 0;
-  font-size: var(--fs-body);
-  font-weight: 500;
-  color: var(--ink-3);
-}
-
-.screen.home .good {
-  color: var(--green);
-}
-
-.screen.home .bad {
-  color: var(--red);
-}
-
-html[data-theme='dark'] .screen.home .good {
-  color: var(--green-hi);
-}
-
-html[data-theme='dark'] .screen.home .bad {
-  color: var(--red-hi);
-}
-
-.insight-hero {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.insight-net {
-  font-size: var(--fs-display-3);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-}
-
-.insight-sub {
-  font-size: var(--fs-small);
-  font-weight: 600;
-  color: var(--ink-3);
-}
-
-.spark {
-  width: 100%;
-  height: 96px;
-  margin-top: 12px;
-  color: var(--ink-3);
-  overflow: visible;
-}
-
-.spark.good {
-  color: var(--green-hi);
-}
-
-.spark.bad {
-  color: var(--red-hi);
-}
-
-.spark-line {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.spark-zero {
-  stroke: var(--line);
-  stroke-width: 1;
-  stroke-dasharray: 4 5;
-}
-
-html[data-theme='dark'] .spark.good .spark-line {
-  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.55));
-}
-
-.insight-tiles,
-.train-tiles {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.tile {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 14px 16px;
-}
-
-.tile b {
-  font-size: var(--fs-h2);
-  font-weight: 700;
-}
-
-.recent {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.recent-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 0;
-  border-top: 1px solid var(--line);
-}
-
-.recent-row span {
-  display: flex;
-  flex-direction: column;
-}
-
-.recent-row small {
-  font-size: var(--fs-small);
-  font-weight: 500;
-  color: var(--ink-3);
-}
-
-.train-hero {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-}
-
-.train-hero-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.train-hero-text b {
-  font-size: var(--fs-h3);
-  font-weight: 700;
-}
-
-.train-hero-text span {
-  font-size: var(--fs-small);
-  font-weight: 500;
-  color: var(--ink-3);
-}
-
-.ring {
-  flex: none;
-  width: 84px;
-  height: 84px;
-}
-
-.ring-track {
-  fill: none;
-  stroke: var(--bg-3);
-  stroke-width: 8;
-}
-
-.ring-fill {
-  fill: none;
-  stroke: var(--green-hi);
-  stroke-width: 8;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.3, 1);
-}
-
-.ring-text {
-  fill: var(--ink);
-  font-size: 18px;
-  font-weight: 700;
-}
-
-html[data-theme='dark'] .ring-fill {
-  filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.55));
-}
-
-.train-tile {
-  position: relative;
-  gap: 4px;
-  min-height: 118px;
-  align-items: flex-start;
-}
-
-.train-tile small {
-  font-size: var(--fs-small);
-  font-weight: 500;
-  color: var(--ink-3);
-}
-
-.train-tile b {
-  font-size: var(--fs-lead);
-}
-
-.tile-badge {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  min-width: 24px;
-  height: 24px;
-  padding: 0 7px;
-  display: grid;
-  place-items: center;
-  border-radius: var(--r-pill);
-  background: var(--badge);
-  color: var(--on-color);
-  font-size: var(--fs-caption);
-  font-style: normal;
-  font-weight: 700;
-}
-
-@media (min-width: 960px) and (min-height: 600px) {
-  .screen.home {
-    max-width: 860px;
-    height: calc(100dvh / (1.25 * var(--desk-zoom, 1)));
-    min-height: 0;
-  }
-
-  .home-sheet {
-    margin: max(120px, 18dvh) 0 32px;
-    border-radius: 36px;
-    border-bottom: 1px solid var(--glass-rim);
-  }
-
-  .home-backdrop .home-card {
-    left: calc(50% - 56px);
-  }
-
-  .home-scroll {
-    padding: 32px 36px 36px;
-  }
-
-  /* The tab bar becomes a rail down the left. */
-  .home-tabs {
-    left: 40px;
-    top: 50%;
-    bottom: auto;
-    width: 96px;
-    transform: translateY(-50%);
-    flex-direction: column-reverse;
-  }
-
-  .tabbar {
-    grid-template-columns: 1fr;
-    border-radius: 48px;
-  }
-
-  .tab-capsule {
-    width: calc(100% - 12px);
-    height: calc((100% - 12px) / 3);
-    bottom: auto;
-    transform: translateY(calc(var(--i, 0) * 100%));
-  }
-
-  .tab-round {
-    align-self: center;
-  }
-}
-
-html.calm .home-backdrop .glow,
-html.calm .home-pane {
-  animation: none;
-}
-
-/* ── Casino backdrop: blurred lights, and chips and cards drifting through them ─────────────── */
-
-.casino {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.home-backdrop .glow {
-  opacity: 0;
-}
-
-/* A chip: a coloured disc with white edge marks and an inner ring, softly out of focus. */
-.drift-chip {
-  position: absolute;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, transparent 38%, rgba(255, 255, 255, 0.55) 39% 43%, transparent 44%),
-    repeating-conic-gradient(rgba(255, 255, 255, 0.85) 0 12deg, transparent 12deg 45deg),
-    var(--chip);
-  filter: blur(1.5px);
-  opacity: 0.16;
-  animation: drift-slow 30s ease-in-out infinite alternate;
-}
-
-.drift-card {
-  position: absolute;
-  filter: blur(2px);
-  opacity: 0.12;
-  animation: drift-slow 40s ease-in-out infinite alternate;
-}
-
-@keyframes drift-slow {
-  0% {
-    transform: translate(0, 0) rotate(-12deg);
-  }
-  50% {
-    transform: translate(26px, -60px) rotate(18deg);
-  }
-  100% {
-    transform: translate(-22px, -110px) rotate(-8deg);
-  }
-}
-
-html.calm :is(.drift-chip, .drift-card) {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :is(.drift-chip, .drift-card) {
-    animation: none;
-  }
-}
-
-/* ── Lift: cards rise a little under a finger or the mouse ───────────────────────────────── */
-
-.lift {
-  transition:
-    transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.2),
-    box-shadow 0.2s ease;
-}
-
-@media (hover: hover) {
-  .lift:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--glass-shine), 0 14px 26px -14px rgba(0, 0, 0, 0.5);
-  }
-}
-
-.lift:active {
-  transform: translateY(-4px) scale(1.02);
-  box-shadow: var(--glass-shine), 0 18px 30px -14px rgba(0, 0, 0, 0.55);
-}
-
-/* ── Quick games: a row you swipe sideways ───────────────────────────────────────────────── */
-
-.quick-games {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.quick-row {
-  display: flex;
-  gap: 12px;
-  margin: 0 -20px;
-  padding: 6px 20px 14px;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scroll-padding: 0 20px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.quick-row::-webkit-scrollbar {
-  display: none;
-}
-
-.quick-card {
-  flex: 0 0 132px;
-  scroll-snap-align: start;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 16px 12px;
-  border: 1px solid var(--glass-edge);
-  text-align: center;
-}
-
-.quick-card b {
-  font-size: var(--fs-lead);
-  font-weight: 700;
-}
-
-.quick-card small {
-  color: var(--ink-3);
-  font-weight: 600;
-}
-
-.quick-stack {
-  display: flex;
-  justify-content: center;
-  min-height: 64px;
-  align-items: center;
-}
-
-.quick-stack > * {
-  margin-left: -10px;
-  box-shadow: 0 0 0 2px var(--bg);
-  border-radius: 50%;
-}
-
-.quick-stack > *:first-child {
-  margin-left: 0;
-}
-
-/* ── Phones: the sheet is part of the scroll, so scrolling down pushes it up over the photo ───── */
-
-@media not all and (min-width: 960px) and (min-height: 600px) {
-  .home-sheet {
-    display: block;
-    margin-top: 0;
-    padding-top: 12px;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    scrollbar-width: none;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
-  html[data-theme='dark'] .home-sheet,
-  html.no-glass .home-sheet {
-    background: none;
-  }
-
-  .home-sheet::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Same colour as the rest of the app: no photo, no glass, no frame. */
-  .home-scroll {
-    min-height: 100%;
-    overflow: visible;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
-/* "Play again" leads the row, a touch bolder than the fresh games. */
-.quick-again {
-  border-color: var(--brand-ink);
-}
-
-.quick-again b {
   color: var(--brand-ink);
 }
 
-/* Header on phones: the logo, the two switches and you, with room to breathe. */
-@media not all and (min-width: 960px) and (min-height: 600px) {
-  .screen.home .home-head {
-    padding: calc(var(--safe-top) + 20px) 20px 14px;
-  }
-}
-
-/* The daily streak: a flame and a count. Lit once you've played today. */
-.streak {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 8px;
-  margin-top: 10px;
-  padding: 6px 14px 6px 10px;
-  border-radius: var(--r-pill);
-  background: var(--chip);
-  color: var(--ink-3);
-}
-
-.streak b {
-  font-size: var(--fs-lead);
-  font-weight: 700;
-  color: var(--ink);
-}
-
-.streak small {
-  font-size: var(--fs-caption);
-  font-weight: 600;
-}
-
-.streak-fire {
-  font-size: 24px;
-  line-height: 1;
-  filter: grayscale(1) opacity(0.55);
-}
-
-.streak.lit {
-  background: rgba(255, 149, 0, 0.16);
-}
-
-.streak.lit .streak-fire {
-  filter: none;
-  animation: flicker 1.6s ease-in-out infinite;
-  transform-origin: 50% 90%;
-}
-
-@keyframes flicker {
-  50% {
-    transform: scale(1.12) rotate(-4deg);
-  }
-}
-
-html.calm .streak-fire,
-html.no-motion .streak-fire {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .streak.lit .streak-fire {
-    animation: none;
-  }
-}
-
-/* ── The Play screen: what you were doing, one big next step, then the rest ─────────────────── */
-
-.screen.home .home-head {
-  gap: 10px;
-}
-
-.screen.home .home-head .logo {
-  margin-right: auto;
-}
-
-/* The streak sits top right, where you see it first. Grey until you've played today. */
-.streak-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 48px;
-  padding: 0 14px 0 10px;
-  border-radius: var(--r-pill);
-  background: var(--chip);
-}
-
-.streak-pill b {
-  font-size: var(--fs-lead);
-  font-weight: 700;
-}
-
-.streak-pill .streak-fire {
-  font-size: 22px;
-}
-
-.streak-pill.lit {
-  background: rgba(255, 149, 0, 0.18);
-}
-
-.streak-pill.lit .streak-fire {
-  filter: none;
-  animation: flicker 1.6s ease-in-out infinite;
-  transform-origin: 50% 90%;
-}
-
-.hero {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 22px 20px 20px;
-  border-radius: var(--r-xl);
-  background: var(--bg-2);
-  box-shadow: var(--glass-shine), 0 0 0 1px var(--glass-edge);
-}
-
-.hero-faces {
-  display: flex;
-  margin: 6px 0 2px;
-}
-
-.hero-faces > * {
-  margin-left: -10px;
-  box-shadow: 0 0 0 2px var(--bg-2);
-  border-radius: 50%;
-}
-
-.hero-faces > *:first-child {
-  margin-left: 0;
-}
-
-.hero-title {
-  margin: 0;
-  font-size: var(--fs-h1);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.hero-sub {
-  margin: 0 0 12px;
-  color: var(--ink-3);
-  font-size: var(--fs-body);
-  font-weight: 500;
-}
-
-.home-links-3 {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .streak-pill.lit .streak-fire {
-    animation: none;
-  }
-}
-
-html.calm .streak-pill .streak-fire {
-  animation: none;
-}
-
-/* ── Apple-style Home: a large title, a glass capsule, a banner with its own action bar, grouped rows ── */
-
-.screen.home .home-head {
-  justify-content: flex-end;
-  gap: 10px;
-  padding: calc(var(--safe-top) + 8px) 20px 0;
-}
-
-.screen.home .streak-pill {
-  min-height: 44px;
-  padding: 0 14px 0 10px;
-  background: var(--bg-2);
-}
-
-.screen.home .streak-pill b {
-  font-size: var(--fs-body);
-  font-weight: 600;
-}
-
-.capsule {
-  display: inline-flex;
-  align-items: center;
-  height: 44px;
-  padding: 0 4px;
-  border-radius: var(--r-pill);
-  border: 1px solid var(--glass-edge);
-  background: var(--glass-fill-strong);
-  -webkit-backdrop-filter: var(--glass-blur);
-  backdrop-filter: var(--glass-blur);
-}
-
-.capsule-btn {
-  width: 44px;
-  height: 40px;
+.tab-round {
+  flex: none;
+  width: 62px;
+  height: 62px;
   display: grid;
   place-items: center;
   padding: 0;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: none;
-  color: var(--ink);
+  border-radius: 50%;
+  color: var(--brand-ink);
 }
 
-.home-title {
-  padding-top: 6px;
-}
+/* ── The banner: a coloured top with the news, and a darker strip of the same colour that's the action ── */
 
-.large-title {
-  margin: 0;
-  font-family: var(--font-display);
-  font-size: var(--fs-title);
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.home-title p {
-  margin: 4px 0 0;
-  color: var(--ink-3);
-  font-size: var(--fs-small);
-  font-weight: 400;
-}
-
-/* The banner: a coloured top with the news, and a dark bar underneath that's the action. */
 .hero {
+  --hero-1: #23805a;
+  --hero-2: #0f5a3c;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -922,9 +242,19 @@ html.calm .streak-pill .streak-fire {
   border-radius: var(--r-xl);
   overflow: hidden;
   text-align: left;
-  color: #fff;
-  background: #2b2b2e;
+  color: var(--on-color);
+  background: var(--hero-2);
   font: inherit;
+}
+
+.hero-blue {
+  --hero-1: #3a8dff;
+  --hero-2: #0a5fd6;
+}
+
+.hero-violet {
+  --hero-1: #8f6bff;
+  --hero-2: #5b3bd1;
 }
 
 .hero-top {
@@ -934,14 +264,14 @@ html.calm .streak-pill .streak-fire {
   padding: 20px 20px 22px;
   background:
     radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.16), transparent 55%),
-    linear-gradient(160deg, #23805a 0%, #0f5a3c 100%);
+    linear-gradient(160deg, var(--hero-1) 0%, var(--hero-2) 100%);
 }
 
 .hero-eyebrow {
   font-size: var(--fs-caption);
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .hero-faces {
@@ -951,7 +281,7 @@ html.calm .streak-pill .streak-fire {
 
 .hero-faces > * {
   margin-left: -8px;
-  box-shadow: 0 0 0 2px #1a6f4b;
+  box-shadow: 0 0 0 2px var(--hero-1);
   border-radius: 50%;
 }
 
@@ -962,30 +292,32 @@ html.calm .streak-pill .streak-fire {
 .hero-title {
   font-size: var(--fs-h2);
   font-weight: 600;
-  letter-spacing: -0.01em;
   line-height: 1.15;
 }
 
 .hero-sub {
   font-size: var(--fs-small);
-  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.86);
+  text-wrap: pretty;
 }
 
 .hero-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 15px 20px;
+  padding: 14px 20px;
   font-size: var(--fs-body);
-  font-weight: 500;
-  background: #2b2b2e;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.22);
 }
 
 .hero-foot svg {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
 }
 
-/* Inset grouped list, like Settings. */
+/* ── Inset grouped list, like Settings ───────────────────────────────────────────────────── */
+
 .group {
   border-radius: var(--r-lg);
   background: var(--bg-2);
@@ -998,13 +330,20 @@ html.calm .streak-pill .streak-fire {
   align-items: center;
   gap: 14px;
   width: 100%;
-  min-height: 54px;
-  padding: 0 16px;
+  min-height: 52px;
+  padding: 8px 16px;
   border: 0;
+  border-radius: 0;
   background: none;
   color: var(--ink);
   font: inherit;
   text-align: left;
+}
+
+.group-row.press:active:not(:disabled) {
+  transform: none;
+  opacity: 1;
+  background: var(--bg-3);
 }
 
 .group-row + .group-row::before {
@@ -1024,7 +363,7 @@ html.calm .streak-pill .streak-fire {
   display: grid;
   place-items: center;
   border-radius: 8px;
-  color: #fff;
+  color: var(--on-color);
 }
 
 .gr-icon svg {
@@ -1034,144 +373,83 @@ html.calm .streak-pill .streak-fire {
 
 .gr-text {
   flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   font-size: var(--fs-body);
 }
 
+.gr-text small {
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
+.gr-count {
+  font-size: var(--fs-body);
+  color: var(--ink-3);
+}
+
 .gr-chev {
+  flex: none;
   color: var(--ink-4);
 }
 
-.section-head {
-  margin: 4px 0 0;
-  font-size: var(--fs-h2);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+.group.plain .group-row + .group-row::before {
+  left: 16px;
 }
 
-/* Quick games: a shelf of tiles, a soft colour square and the name under it. */
-.quick-card {
-  flex: 0 0 128px;
-  align-items: flex-start;
-  gap: 2px;
-  padding: 0;
-  border: 0;
-  background: none;
-  box-shadow: none;
-  text-align: left;
-}
-
-.quick-card.lift:hover {
-  box-shadow: none;
-}
-
-.quick-art {
-  width: 128px;
-  height: 128px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 6px;
-  border-radius: var(--r-lg);
-  background: hsl(var(--h, 210) 70% 92%);
-}
-
-html[data-theme='dark'] .quick-art {
-  background: hsl(var(--h, 210) 26% 24%);
-}
-
-.quick-art.quick-stack {
-  min-height: 0;
-}
-
-.quick-art.quick-stack > * {
-  box-shadow: 0 0 0 2px hsl(var(--h, 210) 70% 92%);
-}
-
-html[data-theme='dark'] .quick-art.quick-stack > * {
-  box-shadow: 0 0 0 2px hsl(var(--h, 210) 26% 24%);
-}
-
-.quick-card b {
-  font-size: var(--fs-small);
+.group.plain .group-row b {
   font-weight: 600;
 }
 
-.quick-card small {
-  font-size: var(--fs-caption);
-  font-weight: 400;
-}
-
-.quick-again b {
-  color: var(--ink);
-}
-
-/* Cards are flat, like Apple's grouped cells: a soft fill, no outline, no blur. Glass stays on what floats. */
-html .glass-card,
-html:not(.no-glass) .glass-card,
-html:not(.no-glass) .home-row,
-html:not(.no-glass) .menu-tile {
-  background-color: var(--bg-2);
-  background-image: none;
-  border: 0;
-  box-shadow: none;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
-  border-radius: var(--r-lg);
-}
-
-html[data-theme='dark'] .glass-card {
-  background-color: var(--bg-2);
-}
-
-.eyebrow {
-  font-weight: 500;
-  letter-spacing: 0.02em;
-  text-transform: none;
-}
-
-/* Computers: the same flat page, a centred column; no card around it. */
-@media (min-width: 960px) and (min-height: 600px) {
-  .home-sheet,
-  html[data-theme='dark'] .home-sheet,
-  html.no-glass .home-sheet {
-    margin: 8px 0 0;
-    border: 0;
-    border-radius: 0;
-    background: none;
-    box-shadow: none;
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
-  .home-scroll {
-    padding: 16px 36px 36px;
-  }
-
-  .screen.home .home-head {
-    padding: 24px 36px 0;
-  }
-}
-
-.quick-art.quick-stack {
+/* Settings: a few groups, one under the other. */
+.settings-list {
   display: flex;
-  justify-content: center;
-  align-items: center;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 8px;
 }
 
-/* The wordmark, top left. */
-.screen.home .home-head .logo {
-  margin: 0 auto 0 0;
-  font-family: var(--font-display);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
+/* In dark mode a sheet is the grey of a cell, so its rows sit one step lighter, as on the iPhone. */
+html[data-theme='dark'] .sheet .group {
+  background: var(--bg-3);
+}
+
+/* Three segments in a row (Auto, Light, Dark), the chosen one raised. */
+.segmented {
+  flex: none;
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 9px;
+  background: var(--switch-off);
+}
+
+.segmented button {
+  min-width: 52px;
+  height: 28px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 7px;
+  background: none;
   color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-caption);
+  font-weight: 500;
 }
 
-.screen.home .home-head .logo span {
-  color: var(--card-red);
+.segmented button.on {
+  background: var(--segment-on);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
+  font-weight: 600;
 }
 
-/* ── Ways to play: three tall colour cards, each with what it does and the small print ───────── */
+.section-head {
+  margin: 8px 0 0;
+  font-size: var(--fs-h3);
+  font-weight: 600;
+}
+
+/* ── Ways to play: two colour cards, each with what it does and a little scene ─────────────── */
 
 .modes {
   display: flex;
@@ -1182,14 +460,15 @@ html[data-theme='dark'] .glass-card {
 .mode {
   position: relative;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  align-items: center;
+  gap: 8px;
   width: 100%;
-  padding: 18px 20px 20px;
+  min-height: 112px;
+  padding: 0 0 0 20px;
   border: 0;
   border-radius: var(--r-xl);
-  color: #fff;
+  overflow: hidden;
+  color: var(--on-color);
   font: inherit;
   text-align: left;
 }
@@ -1198,106 +477,8 @@ html[data-theme='dark'] .glass-card {
   background: linear-gradient(150deg, #2f93ff 0%, #0062d6 100%);
 }
 
-.mode-green {
-  background: linear-gradient(150deg, #34c759 0%, #1f8a3d 100%);
-}
-
 .mode-violet {
   background: linear-gradient(150deg, #8f6bff 0%, #5b3bd1 100%);
-}
-
-.mode-icon {
-  width: 44px;
-  height: 44px;
-  display: grid;
-  place-items: center;
-  margin-bottom: 10px;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.22);
-}
-
-.mode-icon svg {
-  width: 24px;
-  height: 24px;
-}
-
-.mode-chev {
-  position: absolute;
-  top: 22px;
-  right: 18px;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.mode-title {
-  font-family: var(--font-display);
-  font-size: var(--fs-h2);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.mode-sub {
-  max-width: 34ch;
-  font-size: var(--fs-small);
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.86);
-}
-
-.mode-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 12px;
-}
-
-.mode-tags i {
-  padding: 4px 10px;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.2);
-  font-size: var(--fs-caption);
-  font-style: normal;
-  font-weight: 500;
-}
-
-@media (min-width: 960px) and (min-height: 600px) {
-  .modes {
-    flex-direction: row;
-  }
-
-  .mode {
-    flex: 1;
-  }
-}
-
-/* ── Smaller ways-to-play cards, each with a little scene of players tossing chips ───────────── */
-
-.screen.home .home-head {
-  padding-top: calc(var(--safe-top) + 16px);
-  padding-bottom: 12px;
-}
-
-.screen.home .home-head .logo {
-  font-size: 28px;
-}
-
-.large-title {
-  font-size: 40px;
-}
-
-.home-title {
-  padding: 14px 0 6px;
-}
-
-.home-title p {
-  font-size: var(--fs-body);
-}
-
-.mode {
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  min-height: 112px;
-  padding: 0 0 0 20px;
-  overflow: hidden;
 }
 
 .mode-text {
@@ -1312,11 +493,18 @@ html[data-theme='dark'] .glass-card {
 }
 
 .mode-title {
+  font-family: var(--font-display);
   font-size: var(--fs-h3);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .mode-sub {
+  max-width: 34ch;
   font-size: var(--fs-caption);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.86);
+  text-wrap: pretty;
 }
 
 .mode-art {
@@ -1326,111 +514,15 @@ html[data-theme='dark'] .glass-card {
   align-self: stretch;
 }
 
-.art-face {
-  position: absolute;
-  font-size: 34px;
-  line-height: 1;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
-}
-
-.bot-line {
-  position: absolute;
-  left: 0;
-  right: 10px;
-  bottom: 12px;
-  display: flex;
-  justify-content: flex-end;
-}
-
-.bot-line span {
-  margin-left: -8px;
-  font-size: 30px;
-  line-height: 1;
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
-}
-
-/* A chip: a coloured disc with white edge spots, arcing up and falling back. */
-.toss-chip {
-  position: absolute;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background:
-    radial-gradient(circle, transparent 36%, rgba(255, 255, 255, 0.7) 37% 42%, transparent 43%),
-    repeating-conic-gradient(#fff 0 14deg, transparent 14deg 45deg),
-    var(--c, var(--red));
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-  animation: toss 2.8s cubic-bezier(0.3, 0.6, 0.4, 1) infinite;
-}
-
-.toss-0 { --c: var(--red); left: 18%; top: 58%; animation-delay: 0s; }
-.toss-1 { --c: var(--gold); left: 46%; top: 50%; animation-delay: -0.6s; }
-.toss-2 { --c: var(--green); left: 66%; top: 62%; animation-delay: -1.2s; }
-.toss-3 { --c: #111; left: 30%; top: 46%; animation-delay: -1.8s; }
-.toss-4 { --c: var(--blue); left: 80%; top: 52%; animation-delay: -2.3s; }
-
-@keyframes toss {
-  0% {
-    transform: translate(0, 0) rotate(0deg) scale(0.9);
-    opacity: 0;
-  }
-  15% {
-    opacity: 1;
-  }
-  50% {
-    transform: translate(10px, -46px) rotate(200deg) scale(1);
-  }
-  85% {
-    opacity: 1;
-  }
-  100% {
-    transform: translate(18px, 6px) rotate(400deg) scale(0.9);
-    opacity: 0;
-  }
-}
-
-html.calm .toss-chip {
-  animation: none;
-  opacity: 0.9;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .toss-chip {
-    animation: none;
-  }
-}
-
-/* Join is the small one: a plain button with the QR icon. */
-.join-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  min-height: 52px;
-  border: 0;
-  border-radius: var(--r-lg);
-  background: var(--bg-2);
-  color: var(--brand-ink);
-  font: inherit;
-  font-size: var(--fs-body);
-  font-weight: 600;
-}
-
-@media (min-width: 960px) and (min-height: 600px) {
-  .modes {
-    flex-direction: column;
-  }
-}
-
-/* ── Card art: SVG chips and table, with Apple emoji players between the layers ─────────────── */
-
-.mode-art {
-  width: 52%;
-}
-
+/* Card art: SVG chips and table, with Apple emoji players between the layers. */
+/* The scene keeps the drawing's own shape (200×120), so the emoji faces stay in their seats at any width. */
 .card-art {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  right: 0;
+  width: 100%;
+  aspect-ratio: 200 / 120;
+  transform: translateY(-50%);
 }
 
 .card-art svg {
@@ -1449,51 +541,84 @@ html.calm .toss-chip {
   line-height: 1;
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  animation: seat-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  animation-delay: calc(0.05s + var(--n, 0) * 0.06s);
 }
 
 .card-art-front {
   z-index: 2;
 }
 
-.fly {
-  animation: fly 3.2s ease-in-out infinite;
+/* Played once when the card appears: the players take their seats, then the chips land. */
+.card-art .toss {
+  animation: toss-in 0.46s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation-delay: calc(0.3s + var(--n, 0) * 0.07s);
 }
 
-.fly-1 {
-  animation-delay: -0.8s;
-}
-
-.fly-2 {
-  animation-delay: -1.6s;
-}
-
-.fly-3 {
-  animation-delay: -2.4s;
-}
-
-@keyframes fly {
-  0%,
-  100% {
-    transform: translateY(4px) rotate(-12deg);
-  }
-  50% {
-    transform: translateY(-8px) rotate(14deg);
+@keyframes seat-in {
+  from {
+    opacity: 0;
+    translate: 0 10px;
   }
 }
 
-html.calm .fly {
-  animation: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .fly {
-    animation: none;
+@keyframes toss-in {
+  from {
+    opacity: 0;
+    transform: translateY(-28px);
   }
 }
 
-/* Quick game tiles: a scene per character, a few props round the edges and the face in front. */
+/* ── Quick games: a shelf of tiles, a scene and the name under it ─────────────────────────── */
+
+.quick-games {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-row {
+  display: flex;
+  gap: 12px;
+  margin: 0 -20px;
+  padding: 4px 20px 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding: 0 20px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.quick-row::-webkit-scrollbar {
+  display: none;
+}
+
+/* The tile is just the picture and its text: no card behind it. */
+.quick-card {
+  flex: 0 0 128px;
+  scroll-snap-align: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 0 0 4px;
+  border: 0;
+  background: none;
+  overflow: visible;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
 .quick-art {
   position: relative;
+  width: 128px;
+  height: 128px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 6px;
+  border-radius: var(--r-lg);
   overflow: hidden;
 }
 
@@ -1528,7 +653,26 @@ html.calm .fly {
   filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.28));
 }
 
-/* Text under a tile always fits: names and captions stay on one line, trimmed rather than cut. */
+/* A group of bots: their faces overlapped in a row on green felt. */
+.quick-art.quick-stack {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0 12px;
+  background: linear-gradient(180deg, #5fd09a, #1b7a52);
+}
+
+.quick-art.quick-stack > * {
+  margin: 0 0 0 -8px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+}
+
+.quick-art.quick-stack > *:first-child {
+  margin-left: 0;
+}
+
+/* Names and captions stay on one line, trimmed rather than cut. */
 .quick-card b,
 .quick-card small {
   display: block;
@@ -1539,50 +683,145 @@ html.calm .fly {
   line-height: 1.25;
 }
 
-.quick-row {
-  padding-bottom: 22px;
+.quick-card b {
+  font-size: var(--fs-small);
+  font-weight: 600;
 }
 
-/* The tile is just the picture and its text: no card behind it, and nothing clipped. */
-html .quick-card,
-html:not(.no-glass) .quick-card {
-  background: none;
-  background-color: transparent;
-  overflow: visible;
-  height: auto;
-  padding: 0 0 4px;
+.quick-card small {
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
 }
 
-.quick-art.quick-stack {
-  background: linear-gradient(180deg, #5fd09a, #1b7a52);
+/* ── Review tab: your GTO match ───────────────────────────────────────────────────────────── */
+
+.train-hero {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
 }
 
-html[data-theme='dark'] .quick-art.quick-stack {
-  background: linear-gradient(180deg, #5fd09a, #1b7a52);
+.train-hero-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.quick-art.quick-stack > * {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+.train-hero-text b {
+  font-size: var(--fs-h3);
+  font-weight: 600;
 }
 
-html[data-theme='dark'] .quick-art.quick-stack > * {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+.train-hero-text span {
+  font-size: var(--fs-small);
+  color: var(--ink-3);
 }
 
-.quick-art.quick-stack > * {
-  margin-left: -6px;
+.ring {
+  flex: none;
+  width: 72px;
+  height: 72px;
 }
 
-.quick-art.quick-stack > *:first-child {
-  margin-left: 0;
+.ring-track {
+  fill: none;
+  stroke: var(--bg-3);
+  stroke-width: 8;
 }
 
-/* The streak pill is a button; its sheet lists the details. */
-button.streak-pill {
-  border: 0;
-  font: inherit;
-  color: var(--ink);
+.ring-fill {
+  fill: none;
+  stroke: var(--green-hi);
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.3, 1);
 }
+
+.ring-text {
+  fill: var(--ink);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ── Stat tiles (Learn and Insights) ──────────────────────────────────────────────────────── */
+
+.insight-tiles {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+}
+
+.tile b {
+  font-size: var(--fs-h2);
+  font-weight: 600;
+}
+
+/* ── Insights ─────────────────────────────────────────────────────────────────────────────── */
+
+.home-empty b {
+  font-size: var(--fs-h3);
+  font-weight: 600;
+}
+
+.home-empty p {
+  margin: 6px 0 0;
+  font-size: var(--fs-body);
+  color: var(--ink-3);
+}
+
+.insight-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.insight-net {
+  font-size: var(--fs-display-3);
+  font-weight: 700;
+  line-height: 1.05;
+}
+
+.insight-sub {
+  font-size: var(--fs-small);
+  color: var(--ink-3);
+}
+
+.recent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 0.5px solid var(--line);
+}
+
+.recent-row span {
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-row small {
+  font-size: var(--fs-small);
+  color: var(--ink-3);
+}
+
+/* ── The streak sheet ─────────────────────────────────────────────────────────────────────── */
 
 .streak-hero {
   display: grid;
@@ -1628,14 +867,57 @@ button.streak-pill {
   color: var(--ink);
 }
 
-.group.plain .group-row + .group-row::before {
-  left: 16px;
+/* ── Animations off ───────────────────────────────────────────────────────────────────────── */
+
+html.calm :is(.home-pane, .streak-pill svg, .card-art .art-face, .card-art .toss) {
+  animation: none;
 }
 
-.group.plain .group-row b {
-  font-weight: 600;
-}
+/* ── Computers: the same page as a centred column, and the tab bar as a rail down the left ──── */
 
-.rejoin-card {
-  margin-top: 12px;
+@media (min-width: 960px) and (min-height: 600px) {
+  .screen.home {
+    max-width: 860px;
+    height: calc(100dvh / (1.25 * var(--desk-zoom, 1)));
+    min-height: 0;
+  }
+
+  .home-scroll {
+    padding: 32px 36px 36px;
+  }
+
+  .modes {
+    flex-direction: row;
+  }
+
+  .mode {
+    flex: 1;
+  }
+
+  .home-tabs {
+    left: 40px;
+    top: 50%;
+    bottom: auto;
+    width: 88px;
+    transform: translateY(-50%);
+    flex-direction: column-reverse;
+    align-items: center;
+  }
+
+  .tabbar {
+    width: 100%;
+    grid-template-columns: 1fr;
+    border-radius: 44px;
+  }
+
+  .tab {
+    min-height: 72px;
+  }
+
+  .tab-capsule {
+    width: calc(100% - 8px);
+    height: calc((100% - 8px) / 3);
+    bottom: auto;
+    transform: translateY(calc(var(--i, 0) * 100%));
+  }
 }

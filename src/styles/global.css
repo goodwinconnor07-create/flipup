@@ -68,8 +68,15 @@
 
   /* ── Brand: the ink-black of the logo, with a red "Up" (hearts and diamonds). */
   --brand-ink: #007aff;
-  --violet: #7c3aed;
-  --violet-bg: #f4ecff;
+  --violet: #af52de;
+  --violet-bg: #f6ecfc;
+  --indigo: #5856d6;
+  --pink: #ff2d55;
+  /* The iPhone switch's green, and its grey track when off. */
+  --switch-on: #34c759;
+  --switch-off: rgba(120, 120, 128, 0.16);
+  /* The chosen segment in a segmented control. */
+  --segment-on: #ffffff;
 
   /* ── Cards: white faces on the white page, picked out by a hairline and a soft shadow. */
   --card-face: #ffffff;
@@ -130,26 +137,29 @@
 
   /* ── Liquid Glass: the floating layer (top bar, buttons, footer, sheets, toasts).
      A clear fill that blurs and brightens what's behind it, a bright rim and a top shine. */
-  --glass-fill: rgba(255, 255, 255, 0.62);
-  --glass-fill-strong: rgba(255, 255, 255, 0.8);
+  --glass-fill: rgba(255, 255, 255, 0.72);
+  --glass-fill-strong: rgba(255, 255, 255, 0.86);
   --glass-tint-dark: rgba(20, 20, 32, 0.72);
   --glass-rim: rgba(255, 255, 255, 0.7);
   --glass-edge: rgba(18, 18, 40, 0.08);
   --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 -1px 0 rgba(18, 18, 40, 0.05);
   --glass-shadow: 0 8px 24px -12px rgba(18, 18, 40, 0.28);
-  --glass-blur: blur(20px) saturate(180%);
+  /* Strong enough that text scrolling underneath never fights the labels on top. */
+  --glass-blur: blur(30px) saturate(180%);
 
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-/* Dark mode: the same colours with deep blue-black surfaces. Switched on from the menu (data-theme on <html>).
-   Cards stay white, like real ones, and the felt stays the player's choice. */
+/* Dark mode: true black with Apple's grey cells and its dark-mode system colours. Follows the phone unless
+   Settings → Appearance says otherwise (data-theme on <html>). Cards stay white, like real ones, and the
+   felt stays the player's choice. */
 html[data-theme='dark'] {
   color-scheme: dark;
-  --glass-fill: rgba(27, 28, 36, 0.58);
-  --glass-fill-strong: rgba(27, 28, 36, 0.82);
-  --glass-rim: rgba(255, 255, 255, 0.14);
+  --glass-fill: rgba(30, 30, 32, 0.72);
+  --glass-fill-strong: rgba(30, 30, 32, 0.86);
+  --glass-tint-dark: rgba(30, 30, 32, 0.8);
+  --glass-rim: rgba(255, 255, 255, 0.16);
   --glass-edge: rgba(0, 0, 0, 0.3);
   --glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.12), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
   --ink: #ffffff;
@@ -168,26 +178,42 @@ html[data-theme='dark'] {
   --scrim: rgba(0, 0, 0, 0.86);
   --focus: #64d2ff;
   --brand-ink: #0a84ff;
-  --violet-bg: rgba(139, 92, 246, 0.18);
+  --violet: #bf5af2;
+  --violet-bg: rgba(191, 90, 242, 0.18);
+  --indigo: #5e5ce6;
+  --pink: #ff375f;
+  --switch-on: #30d158;
+  --switch-off: rgba(120, 120, 128, 0.32);
+  --segment-on: #636366;
 
-  --green-bg: rgba(34, 197, 94, 0.14);
-  --green-line: rgba(34, 197, 94, 0.5);
-  --green-ink: #4ade80;
-  --blue-bg: rgba(59, 130, 246, 0.18);
-  --blue-ink: #93c5fd;
-  --red-bg: rgba(244, 63, 94, 0.15);
-  --red-bg-2: rgba(244, 63, 94, 0.25);
-  --red-ink: #fb7185;
-  --red-ink-2: #fda4af;
-  --gold-bg: rgba(245, 158, 11, 0.14);
-  --gold-bg-2: rgba(245, 158, 11, 0.22);
-  --gold-ink: #fcd34d;
-  --gold-ink-2: #fde68a;
+  /* Apple's dark-mode system colours: fills, then the lighter shades it uses for text. */
+  --green: #30d158;
+  --green-lo: #248a3d;
+  --green-hi: #30d158;
+  --green-bg: rgba(48, 209, 88, 0.15);
+  --green-line: rgba(48, 209, 88, 0.5);
+  --green-ink: #30db5b;
+  --blue: #0a84ff;
+  --blue-lo: #0071e3;
+  --blue-bg: rgba(10, 132, 255, 0.18);
+  --blue-ink: #409cff;
+  --red: #ff453a;
+  --red-lo: #d70015;
+  --red-hi: #ff453a;
+  --red-bg: rgba(255, 69, 58, 0.16);
+  --red-bg-2: rgba(255, 69, 58, 0.26);
+  --red-ink: #ff6961;
+  --red-ink-2: #ff9a94;
+  --gold: #ff9f0a;
+  --gold-bg: rgba(255, 159, 10, 0.15);
+  --gold-bg-2: rgba(255, 159, 10, 0.24);
+  --gold-ink: #ffd60a;
+  --gold-ink-2: #ffe066;
 
   --card-edge: rgba(255, 255, 255, 0.14);
   --card-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 16px -8px rgba(0, 0, 0, 0.7);
   --card-dim-bg: #7a7c8c;
-  --bubble-grey: #34353f;
+  --bubble-grey: #262628;
   --card-back-1: #3b4256;
   --card-back-2: #161821;
 
@@ -481,35 +507,24 @@ input {
   color: var(--red-ink);
 }
 
-.btn-ghost .ripple,
-.btn-outline .ripple,
-.btn-link .ripple,
-.press .ripple {
-  background: rgba(11, 11, 18, 0.1);
-}
-
-.ripple {
-  position: absolute;
-  z-index: -1;
-  border-radius: 50%;
-  pointer-events: none;
-  background: rgba(255, 255, 255, 0.45);
-  transform: scale(0);
-  animation: ripple 0.55s ease-out forwards;
-}
-
 .press {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  transition: transform 0.09s ease;
+  /* Lets go with a soft spring, the way iPhone buttons do. */
+  transition:
+    transform 0.35s cubic-bezier(0.3, 1.3, 0.5, 1),
+    opacity 0.2s ease;
   -webkit-user-select: none;
   user-select: none;
   touch-action: manipulation;
 }
 
-.press:active {
+/* Pressed: a little smaller and dimmer, straight away. */
+.press:active:not(:disabled) {
   transform: scale(0.97);
+  opacity: 0.82;
+  transition-duration: 0.08s;
 }
 
 .icon-btn {
@@ -678,40 +693,38 @@ input {
   border-bottom: 0;
 }
 
-/* Off has a grey edge so the switch still shows on a glass sheet; on fills green. */
+/* The iPhone switch: a grey track when off, green when on, with a white knob that springs across. */
 .toggle {
   flex: none;
-  width: 64px;
-  height: 38px;
+  width: 51px;
+  height: 31px;
   border-radius: var(--r-pill);
-  background: var(--bg-3);
-  box-shadow: inset 0 0 0 2px var(--ink-4);
+  background: var(--switch-off);
   position: relative;
-  transition:
-    background 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: background 0.2s ease;
 }
 
 .toggle::after {
   content: '';
   position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 30px;
-  height: 30px;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
   border-radius: 50%;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-  transition: transform 0.18s cubic-bezier(0.3, 1.4, 0.5, 1);
+  background: var(--on-color);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.15),
+    0 3px 1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.25s cubic-bezier(0.3, 1.3, 0.5, 1);
 }
 
 .toggle.on {
-  background: var(--green);
-  box-shadow: none;
+  background: var(--switch-on);
 }
 
 .toggle.on::after {
-  transform: translateX(26px);
+  transform: translateX(20px);
 }
 
 /* ── Stepper ─────────────────────────────────────────────────────────────── */
@@ -866,13 +879,6 @@ body:has(.sheet-backdrop) .toasts {
 }
 
 /* ── Animations ──────────────────────────────────────────────────────────── */
-
-@keyframes ripple {
-  to {
-    transform: scale(2.6);
-    opacity: 0;
-  }
-}
 
 @keyframes screen-in {
   from {
@@ -1179,27 +1185,28 @@ body {
   overflow-x: clip;
 }
 
-/* ── Liquid Glass, the full look ─────────────────────────────────────────────
-   The floating layer above, plus the panels, cards and bubbles: a see-through fill, a blur that
-   brightens what's behind, a bright rim and a soft sheen from the top-left. Settings can turn it
-   off (html.no-glass), and Reduce Transparency or no blur support does the same by itself. */
+/* ── Transparency, the full look ─────────────────────────────────────────────
+   Only what floats (sheets, the tab bar, the raise panel, icon buttons, the footer): a see-through fill,
+   a strong blur that brightens what's behind, a bright rim and a soft sheen from the top-left. Cells stay
+   flat. Settings can turn it off (html.no-glass), and Reduce Transparency or no blur support does the
+   same by itself. A browser can't bend the light at the edges the way iOS does, so this is frosted glass. */
 
 :root {
   --lg-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.16) 100%);
-  --lg-blur: blur(22px) saturate(180%) brightness(1.04);
+  --lg-blur: blur(30px) saturate(180%) brightness(1.04);
 }
 
 html[data-theme='dark'] {
   --lg-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.06) 100%);
 }
 
-html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .menu-tile, .home-row, .glass-card, .me-chip, .quick-btn, .icon-btn, .screen-foot) {
+html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .icon-btn, .screen-foot) {
   background-image: var(--lg-sheen);
   -webkit-backdrop-filter: var(--lg-blur);
   backdrop-filter: var(--lg-blur);
 }
 
-html:not(.no-glass) :is(.raise-panel, .desk-card, .menu-tile, .home-row, .glass-card) {
+html:not(.no-glass) :is(.raise-panel, .desk-card) {
   background-color: var(--glass-fill);
   box-shadow: var(--glass-shine), 0 0 0 1px var(--glass-edge), var(--shadow-sm);
 }
@@ -1214,32 +1221,6 @@ html:not(.no-glass) .pot-pill {
   background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 60%);
 }
 
-/* The round switches in Home's top row. Pressed (on) ones glow a little. */
-.home-quick {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
-.quick-btn {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border: 1px solid var(--glass-rim);
-  border-radius: var(--r-pill);
-  color: var(--ink-3);
-}
-
-.quick-btn[aria-pressed='true'] {
-  color: var(--brand-ink);
-}
-
-.home-head .me-chip {
-  max-width: 42%;
-}
-
 /* Off: solid fills and no blur anywhere. */
 html.no-glass {
   --glass-fill: var(--surface);
@@ -1249,7 +1230,7 @@ html.no-glass {
   --lg-blur: none;
 }
 
-html.no-glass :is(.topbar, .icon-btn, .screen-foot, .sheet, .toast, .glass, .home-sheet, .tabbar, .quick-btn) {
+html.no-glass :is(.topbar, .icon-btn, .screen-foot, .sheet, .toast, .glass, .tabbar) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
@@ -1258,16 +1239,12 @@ html.no-glass .toast {
   color: var(--on-contrast);
 }
 
-html.no-glass .home-sheet {
-  background: var(--surface);
-}
-
-html.no-glass :is(.glass, .quick-btn) {
+html.no-glass .glass {
   background: var(--surface);
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .menu-tile, .home-row, .glass-card, .me-chip, .quick-btn, .icon-btn, .screen-foot) {
+  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .icon-btn, .screen-foot) {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background-image: none;
@@ -1275,21 +1252,15 @@ html.no-glass :is(.glass, .quick-btn) {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .menu-tile, .home-row, .glass-card, .quick-btn) {
+  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card) {
     background-color: var(--surface);
     background-image: none;
   }
 }
 
-/* The glass toast is always a dark tint, so its text is always white with a black outline: in dark
-   mode the normal toast text colour is near-black and vanished into it. */
+/* The glass toast is always a dark tint, so its text is always white (in dark mode the normal toast
+   text colour is near-black and vanished into it). */
 html:not(.no-glass) .toast:not(.error):not(.success) {
-  color: #fff;
-  text-shadow:
-    -1px -1px 0 #000,
-    1px -1px 0 #000,
-    -1px 1px 0 #000,
-    1px 1px 0 #000,
-    0 0 6px rgba(0, 0, 0, 0.6);
+  color: var(--on-color);
 }
 

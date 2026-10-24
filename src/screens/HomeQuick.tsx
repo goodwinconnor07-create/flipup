@@ -32,12 +32,12 @@ function sample(n: number): Bot[] {
   return out;
 }
 
-/** Six of the ten styles, each on a random bot's face (any bot can be loaded with any style). */
-function playstyles(): { bot: Bot; style: StyleId }[] {
+/** A few of the ten styles, each on a random bot's face (any bot can be loaded with any style). */
+function playstyles(n: number): { bot: Bot; style: StyleId }[] {
   const ids = Object.keys(STYLES) as StyleId[];
   const styles: StyleId[] = [];
-  while (styles.length < 6) styles.push(...ids.splice(Math.floor(Math.random() * ids.length), 1));
-  return sample(6).map((bot, i) => ({ bot, style: styles[i] }));
+  while (styles.length < n) styles.push(...ids.splice(Math.floor(Math.random() * ids.length), 1));
+  return sample(n).map((bot, i) => ({ bot, style: styles[i] }));
 }
 
 /** Sits down against the named bots and deals (or asks for a name first). */
@@ -51,13 +51,15 @@ export async function startBots(names: string[], settings: Settings, named: bool
 /** A row of one-tap bot games you can swipe through: faces and names, never how they play. */
 export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
   const named = useApp((s) => s.profile.name.trim().length > 0);
-  const [bots] = useState(() => sample(8));
-  const table = bots.slice(0, 5);
-  const [picks] = useState(playstyles);
+  const [bots] = useState(() => sample(5));
+  const table = bots;
 
   // Your last game against the bots, if there was one: the same faces on the same terms.
   const [last] = useState(loadLastBots);
   const lastBots = last ? last.bots.map((n) => BOTS.find((b) => b.name === n)).filter((b): b is Bot => !!b) : [];
+  const again = showAgain && !!last && lastBots.length > 0;
+  // Five tiles at most: play again, a few heads-up games, and a full table.
+  const [picks] = useState(() => playstyles(again ? 3 : 4));
 
   const play = (names: string[], settings: Settings = DEFAULT_SETTINGS) => startBots(names, settings, named);
 
@@ -65,8 +67,8 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
     <section className="quick-games" aria-label="Quick games">
       <h3 className="section-head">Quick games</h3>
       <div className="quick-row">
-        {showAgain && last && lastBots.length > 0 && (
-          <button type="button" className="glass-card quick-card quick-again lift press" onClick={() => void play(lastBots.map((b) => b.name), last.settings)}>
+        {again && last && (
+          <button type="button" className="quick-card quick-again press" onClick={() => void play(lastBots.map((b) => b.name), last.settings)}>
             {lastBots.length === 1 ? (
               <Scene emoji={lastBots[0].emoji} />
             ) : (
@@ -81,13 +83,13 @@ export function QuickGames({ showAgain = true }: { showAgain?: boolean }) {
           </button>
         )}
         {picks.map(({ bot, style }) => (
-          <button key={bot.name} type="button" className="glass-card quick-card lift press" onClick={() => (named ? startPlaystyle(bot.name, style) : navigate({ name: 'profile', then: 'bots' }))}>
+          <button key={bot.name} type="button" className="quick-card press" onClick={() => (named ? startPlaystyle(bot.name, style) : navigate({ name: 'profile', then: 'bots' }))}>
             <Scene emoji={bot.emoji} />
-            <b>Playstyle</b>
-            <small>Heads-up vs {bot.name}</small>
+            <b>{bot.name}</b>
+            <small>Heads-up</small>
           </button>
         ))}
-        <button type="button" className="glass-card quick-card lift press" onClick={() => void play(table.map((b) => b.name))}>
+        <button type="button" className="quick-card press" onClick={() => void play(table.map((b) => b.name))}>
           <span className="quick-art quick-stack" style={{ ['--h' as string]: 150 }} aria-hidden>
             {table.map((b) => (
               <Avatar key={b.name} emoji={b.emoji} size={28} />

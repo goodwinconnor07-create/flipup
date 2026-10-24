@@ -19,7 +19,7 @@ test('replay is switched off for now: no replay button after a hand', async ({ p
 test('the review list shows a replay button and a coach', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('tab', { name: 'Review' }).click();
   await expect(page.getByText('GTO Coach')).toBeVisible();
   await page.getByRole('button', { name: /Review hands/ }).click();
   await expect(page.getByText('No hands yet')).toBeVisible();

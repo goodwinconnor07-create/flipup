@@ -526,6 +526,21 @@ describe('table', () => {
     expect(game.logs.at(-1)!.lines.at(-1)).toMatch(/shows \[/);
   });
 
+  it('lets a player who has folded see every hole card, only when the host turns it on', () => {
+    let game = table(3);
+    game = act(game, 'fold');
+    const folder = game.hand!.seats.find((s) => s.folded)!;
+    const device = deviceOf(game, folder.playerId);
+    const others = (g: Game, d: string) => redactForDevice(g, d).hand!.seats.filter((s) => s.playerId !== folder.playerId);
+    expect(others(game, device).every((s) => s.cards.length === 0)).toBe(true);
+    const on = { ...game, settings: { ...game.settings, showToFolded: true } };
+    expect(others(on, device).every((s) => s.cards.length === 2)).toBe(true);
+    // Someone still in the hand, or a stranger, sees nothing extra.
+    const live = on.hand!.seats.find((s) => !s.folded)!;
+    expect(redactForDevice(on, deviceOf(on, live.playerId)).hand!.seats.filter((s) => s.playerId !== live.playerId).every((s) => s.cards.length === 0)).toBe(true);
+    expect(redactForDevice(on, 'someone-else').hand!.seats.every((s) => s.cards.length === 0)).toBe(true);
+  });
+
   it("keeps each player's last action for the speech bubble, and a call says what was added", () => {
     let game = table(3);
     const hand = game.hand!;

@@ -9,6 +9,9 @@ const mineFor = (game: Game, deviceId: string) => new Set(game.players.filter((p
 export function redactForDevice(game: Game, deviceId: string): Game {
   const hand = game.hand;
   const mine = mineFor(game, deviceId);
+  // With the host's setting on, someone who has folded sees every hole card until the hand ends.
+  const mySeats = hand ? hand.seats.filter((s) => mine.has(s.playerId)) : [];
+  const peek = !!game.settings.showToFolded && !hand?.result && mySeats.length > 0 && mySeats.every((s) => s.folded);
   return {
     ...game,
     // Bots' styles and their notes on players stay on the server.
@@ -25,7 +28,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     hand: hand && {
       ...hand,
       deck: [],
-      seats: hand.seats.map((s) => (mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
+      seats: hand.seats.map((s) => (peek || mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
     },
   };
 }

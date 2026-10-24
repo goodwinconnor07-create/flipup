@@ -215,7 +215,7 @@ export function loadStats(): Stats {
     games: Array.isArray(s?.games)
       ? s.games
           .filter((g) => g && [g.at, g.net, g.hands, g.players].every((n) => typeof n === 'number' && Number.isFinite(n)))
-          .map((g) => ({ at: g.at, net: g.net, hands: g.hands, players: g.players }))
+          .map((g) => ({ at: g.at, net: g.net, hands: g.hands, players: g.players, ...(typeof g.place === 'number' && g.place >= 1 ? { place: g.place } : {}) }))
       : [],
   };
 }

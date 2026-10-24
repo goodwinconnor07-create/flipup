@@ -414,7 +414,7 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText(/table played/)).toBeVisible();
-  await expect(page.getByText(/1st of 2|2nd of 2/)).toBeVisible();
+  await expect(page.getByText(/^\d(st|nd|rd|th) of \d$/)).toBeVisible();
   await shot(page, '14-home-totals');
 });
 

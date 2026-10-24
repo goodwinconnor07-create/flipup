@@ -24,9 +24,9 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
     if (typeof r.rebuys !== 'boolean') return null;
     out.rebuys = r.rebuys;
   }
-  if (r.showToFolded !== undefined) {
-    if (typeof r.showToFolded !== 'boolean') return null;
-    out.showToFolded = r.showToFolded;
+  if (r.showToBusted !== undefined) {
+    if (typeof r.showToBusted !== 'boolean') return null;
+    out.showToBusted = r.showToBusted;
   }
   if (!partial && !validSettings({ ...DEFAULT_SETTINGS, ...out })) return null;
   return out;

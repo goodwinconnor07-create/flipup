@@ -17,8 +17,8 @@ export interface Settings {
   blindMinutes?: number;
   /** Rising blinds stop at this big blind (0 or missing: they keep doubling). */
   blindCap?: number;
-  /** Online tables: a person who is out of the hand (folded, busted or sitting out) sees every other hole card. */
-  showToFolded?: boolean;
+  /** Online tables: a busted player (no chips) sees every hole card. */
+  showToBusted?: boolean;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
 }

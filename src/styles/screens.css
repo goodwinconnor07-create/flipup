@@ -1,142 +1,5 @@
 /* Screen-specific styles (everything but the table itself, which is in table.css). */
 
-/* ── Home ────────────────────────────────────────────────────────────────── */
-
-.home-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px 0 8px;
-}
-
-.logo {
-  margin: 0;
-  font-size: var(--fs-display-1);
-  font-weight: 700;
-  letter-spacing: -0.04em;
-}
-
-.logo span {
-  color: var(--card-red);
-}
-
-/* You, top right: tap to change your name or emoji. */
-.me-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  max-width: 55%;
-  padding: 4px 16px 4px 8px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--bg-2);
-  font-size: var(--fs-body);
-  font-weight: 600;
-}
-
-.me-chip span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.home-body {
-  gap: 20px;
-  justify-content: center;
-}
-
-/* Two cards fanned out, ace of spades and king of hearts. */
-.home-art {
-  position: relative;
-  height: 196px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.home-card {
-  position: absolute;
-  animation: home-deal 0.6s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
-}
-
-.home-card-1 {
-  transform: translateX(-44px) rotate(-10deg);
-}
-
-.home-card-2 {
-  transform: translateX(44px) rotate(9deg);
-  animation-delay: 0.12s;
-}
-
-@keyframes home-deal {
-  from {
-    opacity: 0;
-    transform: translateY(40px) rotate(0deg) scale(0.8);
-  }
-}
-
-.home-hero {
-  text-align: center;
-}
-
-.home-hero .hero {
-  font-size: var(--fs-display-1);
-  line-height: 1.02;
-}
-
-.home-hero p {
-  margin: 12px auto 0;
-  max-width: 320px;
-  font-size: var(--fs-body);
-}
-
-.home-links {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.home-links .btn {
-  min-height: 56px;
-  font-size: var(--fs-body);
-  padding: 0 8px;
-}
-
-.home-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 64px;
-  padding: 12px 16px;
-  border: 0;
-  border-radius: var(--r-md);
-  background: var(--green-bg);
-  color: var(--green-ink);
-  font: inherit;
-  text-align: left;
-}
-
-.home-row-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.home-row-text b {
-  font-size: var(--fs-body);
-  font-weight: 700;
-}
-
-.home-row-text small {
-  font-size: var(--fs-small);
-  font-weight: 600;
-  opacity: 0.85;
-}
-
 /* ── Name and emoji ──────────────────────────────────────────────────────── */
 
 .profile-middle {
@@ -884,7 +747,6 @@ html.calm .hero-pop,
 html.calm .hero-float,
 html.calm .roster-pic,
 html.calm .roster-float,
-html.calm .home-card,
 html.calm .dots i {
   animation: none;
 }
@@ -1108,18 +970,7 @@ html.calm .dots i {
   border-top: 2px solid var(--line);
 }
 
-/* ── Home: totals and rejoin ─────────────────────────────────────────────── */
-
-.home-rejoin {
-  background: var(--blue-bg);
-  color: var(--blue-ink);
-}
-
-.home-stats {
-  display: grid;
-  grid-template-columns: 1.4fr 1fr 1fr;
-  gap: 8px;
-}
+/* ── Small stat cells ──────────────────────────────────────────────────── */
 
 .stat {
   display: flex;

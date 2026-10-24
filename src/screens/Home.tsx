@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { fetchTableInfo } from '../state/api';
 import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
+import { loadDrills, loadHistory, loadSummaries } from '../state/training';
 import { navigate, openSheet, toast, useApp } from '../state/store';
-import { Avatar, Emoji } from '../ui/components';
-import { ScrollTab } from './HomeScroll';
+import { Avatar } from '../ui/components';
+import { LearnTab } from './HomeLearn';
 import { QuickGames } from './HomeQuick';
 import { BotsArt, HostArt } from './CardArt';
-import { TrainTab } from './HomeTrain';
+import { ReviewTab, lastGameHands } from './HomeReview';
 import { colourWipe } from '../ui/effects';
-import { CardsIcon, ChevronIcon, GearIcon, QrIcon, ScrollIcon, SparkIcon } from '../ui/Icons';
-import { signed } from './Final';
+import { CapIcon, ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
+import { computeStats } from '../train/stats';
 
 function ago(at: number): string {
   const mins = Math.max(1, Math.round((Date.now() - at) / 60_000));
@@ -19,26 +20,21 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'scroll' | 'train';
-const TABS: { id: Tab; label: string; Icon: typeof CardsIcon }[] = [
-  { id: 'play', label: 'Play', Icon: CardsIcon },
-  { id: 'scroll', label: 'Scroll', Icon: ScrollIcon },
-  { id: 'train', label: 'Train', Icon: SparkIcon },
+type Tab = 'play' | 'learn' | 'review';
+const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
+  { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
+  { id: 'learn', label: 'Learn', Icon: CapIcon, title: 'Learn' },
+  { id: 'review', label: 'Review', Icon: HistoryIcon, title: 'Review' },
 ];
 
 // Kept for the session, so coming back from a training screen lands on the same tab.
 let lastTab: Tab = 'play';
 
-const WEEK = 7 * 24 * 3_600_000;
-
-/** One line under the greeting: how the week went, or how the night's going. */
-function statusLine(stats: ReturnType<typeof loadStats>, active: boolean): string {
+/** One line under the greeting: your table, or how your play is matching GTO. Chips reset every game, so they're never the measure. */
+function statusLine(gto: number | null, tables: number, active: boolean): string {
   if (active) return 'Your table is waiting.';
-  const week = stats.games.filter((g) => g.at > Date.now() - WEEK).reduce((n, g) => n + g.net, 0);
-  if (stats.games.some((g) => g.at > Date.now() - WEEK) && week !== 0) {
-    return `You're ${week > 0 ? 'up' : 'down'} ${signed(Math.abs(week)).replace(/^[+−]/, '')} chips this week.`;
-  }
-  return stats.tables > 0 ? 'Ready for another hand?' : 'Deal yourself in.';
+  if (gto !== null) return `${Math.round(gto * 100)}% of your moves matched GTO.`;
+  return tables > 0 ? 'Ready for another hand?' : 'Deal yourself in.';
 }
 
 export function Home() {
@@ -56,6 +52,12 @@ export function Home() {
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
   const [streak] = useState(loadStreak);
+  const training = useMemo(() => {
+    const history = loadHistory();
+    const reviews = loadSummaries();
+    const s = computeStats(history, reviews, loadDrills());
+    return { gto: s.decisions > 0 ? s.gtoPct : null, lastGame: lastGameHands(history, reviews) };
+  }, []);
 
   // The last online table, if it's still open, is one tap away.
   const rejoin = async () => {
@@ -78,57 +80,85 @@ export function Home() {
   };
 
   // No name yet: ask for one first, then carry on.
-  const go = (then: 'host' | 'bots' | 'join') => {
-    if (then === 'join') return openSheet({ name: 'join' });
+  const go = (then: 'host' | 'bots') => {
     if (!named) return navigate({ name: 'profile', then });
     navigate({ name: 'setup', mode: then === 'host' ? 'online' : 'local' });
   };
 
-  // The rejoin card only shows when there's somewhere to go back to: your open table or the online table you left.
-  const rejoinCard: { title: string; sub: string; cta: string; run: () => void; faces: string[] } | null = active
-    ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [] }
+  // The banner only shows when there's one clear next step: your open table, the online table you left,
+  // or the hands from your last game that the coach hasn't seen.
+  const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
+    ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'green' }
     : last
-      ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [] }
-      : null;
-  const active_ = !!active;
+      ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'green' }
+      : training.lastGame.waiting > 0
+        ? {
+            title: 'Your last game',
+            sub: `${training.lastGame.waiting} ${training.lastGame.waiting === 1 ? 'hand' : 'hands'} the coach hasn't seen yet`,
+            cta: 'Review it',
+            run: () => navigate({ name: 'train', section: 'review' }),
+            faces: [],
+            tone: 'violet',
+          }
+        : null;
   const index = TABS.findIndex((t) => t.id === tab);
+  const current = TABS[index];
+  const subtitle =
+    tab === 'learn'
+      ? 'Solved hands and drills, graded as you go.'
+      : tab === 'review'
+        ? 'Your own hands, checked against GTO.'
+        : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(training.gto, stats.tables, !!active)}`;
 
   return (
     <div className="screen home">
-      <div className="home-backdrop" aria-hidden>
-        <i className="glow glow-1" />
-        <i className="glow glow-2" />
-      </div>
-      <div className="home-head">
-        <h1 className="logo">
-          GTO<span>Duel</span>
-        </h1>
-        <button
-          type="button"
-          className={`streak-pill press${streak.today ? ' lit' : ''}`}
-          aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}. Show details`}
-          onClick={() => openSheet({ name: 'streak' })}
-        >
-          <span className="streak-fire" aria-hidden>
-            <Emoji emoji="🔥" size={22} />
-          </span>
-          <b>{streak.days}</b>
-        </button>
-        <div className="capsule glass">
-          <button type="button" className="capsule-btn press" aria-label="Settings" onClick={() => openSheet({ name: 'prefs' })}>
-            <GearIcon width={22} height={22} />
-          </button>
-        </div>
-      </div>
       <div className="home-sheet">
         <div className="home-scroll">
-          <div className="home-title">
-            <h2 className="large-title">{tab === 'scroll' ? 'Scroll' : tab === 'train' ? 'Train' : 'Play'}</h2>
-            <p>{tab === 'scroll' ? 'Multiway hands, graded at every move.' : tab === 'train' ? 'Quick drills, graded against GTO.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(stats, active_)}`}</p>
-          </div>
+          <header className="home-title">
+            <div className="title-row">
+              <h1 className="large-title">{current.title}</h1>
+              <button
+                type="button"
+                className={`streak-pill press${streak.today ? ' lit' : ''}`}
+                aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}. Show details`}
+                onClick={() => openSheet({ name: 'streak' })}
+              >
+                {streak.today ? <FlameIcon width={20} height={20} /> : <FlameOutlineIcon width={20} height={20} />}
+                <b className="num">{streak.days}</b>
+              </button>
+              <button
+                type="button"
+                className="avatar-btn press"
+                aria-label={named ? `Your profile and settings: ${profile.name}` : 'Set up your profile'}
+                onClick={() => navigate({ name: 'profile', then: 'done' })}
+              >
+                <Avatar emoji={profile.emoji} size={36} />
+              </button>
+            </div>
+            <p>{subtitle}</p>
+          </header>
           <div key={tab} className="home-pane">
             {tab === 'play' && (
               <>
+                {banner && (
+                  <button type="button" className={`hero hero-${banner.tone} press`} disabled={looking} onClick={(e) => colourWipe(e, banner.run)} aria-label={`${banner.title}. ${banner.sub}`}>
+                    <span className="hero-top">
+                      {banner.faces.length > 0 && (
+                        <span className="hero-faces" aria-hidden>
+                          {banner.faces.slice(0, 6).map((emoji, i) => (
+                            <Avatar key={i} emoji={emoji} size={36} />
+                          ))}
+                        </span>
+                      )}
+                      <span className="hero-title">{banner.title}</span>
+                      <span className="hero-sub">{banner.sub}</span>
+                    </span>
+                    <span className="hero-foot">
+                      {banner.cta}
+                      <ChevronIcon width={18} height={18} />
+                    </span>
+                  </button>
+                )}
                 <section className="modes" aria-label="Start a game">
                   <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
                     <span className="mode-text">
@@ -148,40 +178,17 @@ export function Home() {
                       <BotsArt />
                     </span>
                   </button>
-                  <button type="button" className="join-btn press" onClick={() => go('join')}>
-                    <QrIcon width={22} height={22} />
-                    Join with a code
-                  </button>
                 </section>
-                {rejoinCard && (
-                  <button type="button" className="hero rejoin-card press" disabled={looking} onClick={(e) => colourWipe(e, rejoinCard.run)} aria-label={`${rejoinCard.title}. ${rejoinCard.sub}`}>
-                    <span className="hero-top">
-                      {rejoinCard.faces.length > 0 && (
-                        <span className="hero-faces" aria-hidden>
-                          {rejoinCard.faces.slice(0, 6).map((emoji, i) => (
-                            <Avatar key={i} emoji={emoji} size={36} />
-                          ))}
-                        </span>
-                      )}
-                      <span className="hero-title">{rejoinCard.title}</span>
-                      <span className="hero-sub">{rejoinCard.sub}</span>
-                    </span>
-                    <span className="hero-foot">
-                      {rejoinCard.cta}
-                      <ChevronIcon width={18} height={18} />
-                    </span>
-                  </button>
-                )}
                 <QuickGames />
               </>
             )}
-            {tab === 'scroll' && <ScrollTab />}
-            {tab === 'train' && <TrainTab />}
+            {tab === 'learn' && <LearnTab />}
+            {tab === 'review' && <ReviewTab />}
           </div>
         </div>
       </div>
       <nav className="home-tabs" aria-label="Home">
-        <div className="tabbar glass" style={{ ['--i' as string]: index }}>
+        <div className="tabbar glass" role="tablist" style={{ ['--i' as string]: index }}>
           <i className="tab-capsule" aria-hidden />
           {TABS.map(({ id, label, Icon }) => (
             <button
@@ -197,13 +204,8 @@ export function Home() {
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className="tab-round glass press"
-          aria-label={named ? `Your profile: ${profile.name}` : 'Set up your profile'}
-          onClick={() => navigate({ name: 'profile', then: 'done' })}
-        >
-          <Avatar emoji={profile.emoji} size={36} />
+        <button type="button" className="tab-round glass press" aria-label="Join with a code" onClick={() => openSheet({ name: 'join' })}>
+          <QrIcon width={26} height={26} />
         </button>
       </nav>
     </div>

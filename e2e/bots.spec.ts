@@ -260,6 +260,7 @@ test('a finished hand can be shared from the hand log as plain text', async ({ p
 
 test('hand rankings from Home', async ({ page }) => {
   await page.goto('/');
+  await page.getByRole('button', { name: /profile/ }).click();
   await page.getByRole('button', { name: 'Settings' }).click();
   await page.getByRole('button', { name: 'Hand rankings' }).click();
   await expect(page.getByRole('dialog', { name: 'Hand rankings' })).toBeVisible();
@@ -359,8 +360,8 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
 
   // Sound can be switched off from the menu, and stays off.
   await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('button', { name: 'Sound on' }).click();
-  await expect(page.getByRole('button', { name: 'Sound off' })).toBeVisible();
+  await page.getByRole('switch', { name: 'Sound' }).click();
+  await expect(page.getByRole('switch', { name: 'Sound' })).toHaveAttribute('aria-checked', 'false');
   await page.getByRole('button', { name: 'Close' }).click();
 
   // Pre-action: while the bot is thinking, "Call any" can be armed, and then it plays itself on our turn.
@@ -409,10 +410,11 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await page.getByRole('dialog', { name: 'End the game for everyone?' }).getByRole('button', { name: 'End game' }).click();
   await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 10_000 });
   await page.getByRole('button', { name: 'Done' }).click();
-  // Insights lives under Train.
-  await page.getByRole('tab', { name: 'Train' }).click();
+  // Insights lives under Review, and counts tables by where you finished, not chips.
+  await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
-  await expect(page.getByText(/chips over 1 table/)).toBeVisible();
+  await expect(page.getByText(/table played/)).toBeVisible();
+  await expect(page.getByText(/^\d(st|nd|rd|th) of \d$/)).toBeVisible();
   await shot(page, '14-home-totals');
 });
 
@@ -566,7 +568,7 @@ test('rising blinds: a setting, a countdown on the table', async ({ page }) => {
   await shot(page, '18-blind-clock');
 });
 
-test('dark mode: a switch in the menu that changes the whole app and sticks', async ({ page }) => {
+test('dark mode: an appearance choice in the menu that changes the whole app and sticks', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   const bg = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
@@ -579,7 +581,8 @@ test('dark mode: a switch in the menu that changes the whole app and sticks', as
   await page.getByText('Your turn').waitFor({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Menu' }).click();
   await shot(page, '19-menu-light');
-  await page.getByRole('button', { name: 'Dark mode off' }).click();
+  await expect(page.getByRole('radio', { name: 'Auto' })).toHaveAttribute('aria-checked', 'true');
+  await page.getByRole('radio', { name: 'Dark' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   expect(await bg()).toBe('rgb(0, 0, 0)');
   await shot(page, '19-menu-dark');
@@ -592,7 +595,7 @@ test('dark mode: a switch in the menu that changes the whole app and sticks', as
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('home: three tabs, results from finished tables in Train, training tiles', async ({ page }) => {
+test('home: three tabs, results from finished tables in Review, training rows', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => {
     if (localStorage.getItem('flipup.stats')) return;
@@ -600,22 +603,25 @@ test('home: three tabs, results from finished tables in Train, training tiles', 
     const at = Date.now() - 3_600_000;
     localStorage.setItem(
       'flipup.stats',
-      JSON.stringify({ net: 200, tables: 2, hands: 40, counted: [], games: [{ at, net: 300, hands: 20, players: 4 }, { at, net: -100, hands: 20, players: 5 }] }),
+      JSON.stringify({ net: 200, tables: 2, hands: 40, counted: [], games: [{ at, net: 300, hands: 20, players: 4, place: 1 }, { at, net: -100, hands: 20, players: 5, place: 3 }] }),
     );
   });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Play' })).toBeVisible();
   await expect(page.getByText('Hi Connor.')).toBeVisible();
-  await expect(page.getByText("You're up 200 chips this week.")).toBeVisible();
+  // Chips reset every game, so Home never counts them.
+  await expect(page.getByText(/chips/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Scroll' }).click();
-  await expect(page.getByRole('heading', { name: 'Scroll' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Scroll' })).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
+  await expect(page.getByRole('heading', { name: 'Learn' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Learn' })).toHaveAttribute('aria-selected', 'true');
+  await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
-  await expect(page.getByText('+200', { exact: true })).toBeVisible();
+  await expect(page.getByText('tables played, 40 hands')).toBeVisible();
+  await expect(page.getByText('1st of 4')).toBeVisible();
   await expect(page.getByText('Recent tables')).toBeVisible();
   await page.getByRole('button', { name: 'Back' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Poker library/ }).click();
   await expect(page.getByText('Poker library').first()).toBeVisible();
 });
@@ -640,7 +646,7 @@ test('preflop drills work with the coach offline: dealt on the phone from the sh
   watchErrors(page);
   await page.route('**/api/gto/**', (route) => route.abort());
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Poker library/ }).click();
   await page.getByRole('button', { name: /Opening the pot/ }).click();
   await expect(page.getByText('What do you do?')).toBeVisible({ timeout: 15_000 });
@@ -671,7 +677,7 @@ test('reviewing a hand shows what the coach is doing, with the time so far and t
   await page.getByRole('button', { name: 'Next hand' }).waitFor({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('button', { name: 'Home' }).click();
-  await page.getByRole('tab', { name: 'Train' }).click();
+  await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Review hands/ }).click();
   await page.getByRole('button', { name: /Hand #1/ }).click();
   const activity = page.getByRole('status', { name: /Reviewing hand #1/ });
@@ -687,7 +693,7 @@ test('a playstyle tile: one tap starts a heads-up game against a random bot', as
   watchErrors(page);
   await page.addInitScript(() => localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Sam', emoji: '🦊' })));
   await page.goto('/');
-  await page.locator('.quick-card', { hasText: 'Playstyle' }).first().click();
+  await page.locator('.quick-card', { hasText: 'Heads-up' }).first().click();
   await expect(page.getByText('Your turn')).toBeVisible({ timeout: 30_000 });
   await shot(page, '20-playstyle');
 });

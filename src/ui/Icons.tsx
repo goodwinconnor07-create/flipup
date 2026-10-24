@@ -304,3 +304,37 @@ export const ScrollIcon = (p: P) => (
     <path d="m9.2 19.4 2.8 2.3 2.8-2.3" />
   </svg>
 );
+
+export const SpadeIcon = (p: P) => (
+  <svg {...stroke({ strokeWidth: 2.4, ...p })}>
+    <path d="M12 2.8C10.2 5.6 4.5 9 4.5 13.3c0 2.4 1.8 4.1 4 4.1 1.4 0 2.6-.7 3.5-1.7.9 1 2.1 1.7 3.5 1.7 2.2 0 4-1.7 4-4.1C19.5 9 13.8 5.6 12 2.8Z" />
+    <path d="M12 15.8c0 2.2-.7 3.9-2 5.2h4c-1.3-1.3-2-3-2-5.2" />
+  </svg>
+);
+
+export const CapIcon = (p: P) => (
+  <svg {...stroke({ strokeWidth: 2.4, ...p })}>
+    <path d="M2.5 9.5 12 5l9.5 4.5L12 14 2.5 9.5Z" />
+    <path d="M6.5 11.6v4.1c0 1.4 2.5 2.8 5.5 2.8s5.5-1.4 5.5-2.8v-4.1M21.5 9.5v5" />
+  </svg>
+);
+
+export const HistoryIcon = (p: P) => (
+  <svg {...stroke({ strokeWidth: 2.4, ...p })}>
+    <path d="M3.8 12a8.2 8.2 0 1 0 2.4-5.8" />
+    <path d="M3.5 3.8v4.4h4.4M12 7.6V12l3 2" />
+  </svg>
+);
+
+export const BookmarkIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M6 3.5h12v17l-6-4.2-6 4.2v-17Z" />
+  </svg>
+);
+
+/** The streak's flame before you've played today: just the outline. */
+export const FlameOutlineIcon = (p: P) => (
+  <svg {...stroke({ strokeWidth: 2, ...p })}>
+    <path d="M12.6 1.6c.5 2.9 2.4 4.6 4.1 6.5 1.6 1.8 2.8 3.8 2.8 6.4A7.5 7.5 0 0 1 12 22a7.5 7.5 0 0 1-7.5-7.5c0-2.7 1.2-4.7 2.7-6.3.1 1.9 1 3.4 2.5 4.1-.4-4.1.9-7.8 2.9-10.7Z" />
+  </svg>
+);

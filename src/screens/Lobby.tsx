@@ -167,9 +167,9 @@ export function Lobby({ game }: { game: Game }) {
           <span className="info-chip">
             Rebuys <b>{s.rebuys ? 'On' : 'Off'}</b>
           </span>
-          {s.showToFolded && (
+          {s.showToBusted && (
             <span className="info-chip">
-              Folded players <b>peek</b>
+              Busted players <b>peek</b>
             </span>
           )}
           {host && <span className="info-chip edit">Change</span>}

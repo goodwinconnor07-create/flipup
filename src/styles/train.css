@@ -945,30 +945,45 @@
   min-width: 0;
 }
 
-.coach-head {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* With a face, like a chat: the avatar on the left, the name and bubbles beside it. */
+.coach.with-face {
+  --coach-face: 32px;
+  display: grid;
+  grid-template-columns: var(--coach-face) minmax(0, 1fr);
+  align-items: start;
+  column-gap: 8px;
 }
 
-.coach-head span {
+.coach.with-face.compact {
+  --coach-face: 28px;
+}
+
+.coach-stack {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.coach-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: var(--coach-face, 0);
+  padding-left: 12px;
 }
 
 .coach-head b {
-  font-size: var(--fs-body);
-  font-weight: 700;
-}
-
-.coach-head.compact b {
-  font-size: var(--fs-small);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--ink-3);
 }
 
 .coach-head small {
   font-size: var(--fs-caption);
-  font-weight: 600;
+  font-weight: 400;
   color: var(--ink-3);
 }
 
@@ -978,9 +993,7 @@
   place-items: center;
   border-radius: 50%;
   background: var(--violet-bg);
-  box-shadow:
-    0 0 0 2px var(--violet),
-    var(--shadow-sm);
+  box-shadow: 0 0 0 1.5px var(--violet);
   line-height: 1;
   /* The emoji's own space sits high in the circle; a little top padding settles it in the middle. */
   padding-top: 0.14em;
@@ -990,21 +1003,31 @@
   animation: coach-bob 0.9s ease-in-out infinite;
 }
 
+/* A grey chat bubble; only a graded move tints it. */
 .coach-bubble {
   --tone: var(--violet);
-  --tone-bg: var(--violet-bg);
+  --tone-bg: var(--bubble-grey);
   --tone-ink: var(--ink);
   position: relative;
   max-width: 100%;
-  margin-left: 12px;
-  padding: 12px 16px;
-  border-radius: var(--r-md) var(--r-md) var(--r-md) var(--r-xs);
+  padding: 10px 14px;
+  border-radius: 18px;
   background: var(--tone-bg);
   color: var(--tone-ink);
   font-size: var(--fs-body);
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.35;
+  text-wrap: pretty;
   overflow-wrap: anywhere;
+}
+
+/* The last bubble in a run gets the tight corner by the coach's face, like Messages. */
+.coach-stack > .coach-bubble:not(:has(~ .coach-bubble)) {
+  border-bottom-left-radius: var(--r-xs);
+}
+
+.coach-cta {
+  margin-top: 2px;
 }
 
 .coach-bubble.green {
@@ -1068,7 +1091,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--violet);
+  background: var(--ink-3);
   animation: coach-blink 1s ease-in-out infinite;
 }
 
@@ -1103,11 +1126,19 @@
   gap: 12px;
 }
 
+.coach-feedback {
+  --coach-indent: 40px;
+}
+
+.coach-feedback.compact {
+  --coach-indent: 36px;
+}
+
 .coach-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-left: 12px;
+  margin-left: var(--coach-indent, 0);
 }
 
 .coach-actions .coach-bubble {
@@ -1115,7 +1146,7 @@
 }
 
 .coach-numbers > summary {
-  margin-left: 12px;
+  margin-left: var(--coach-indent, 0);
   font-size: var(--fs-small);
   font-weight: 600;
   color: var(--brand-ink);

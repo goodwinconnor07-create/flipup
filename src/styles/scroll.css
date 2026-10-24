@@ -468,11 +468,6 @@ html.calm .stars .on {
 
 /* ── The Scroll tab on Home ────────────────────────────────────────────────── */
 
-.scroll-hero .hero-top {
-  background:
-    radial-gradient(120% 140% at 100% 0%, rgba(255, 255, 255, 0.18), transparent 55%), linear-gradient(160deg, #3a8dff 0%, #0a5fd6 100%);
-}
-
 .scroll-tiles {
   display: grid;
   grid-template-columns: 1fr 1fr;

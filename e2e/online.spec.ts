@@ -218,3 +218,41 @@ test('the streak button opens the streak details', async ({ page }) => {
   await expect(dialog.getByText('4 days', { exact: true })).toBeVisible();
   await shot(page, '21-streak');
 });
+
+test('with "Folded players peek" on, a phone that has folded sees the other cards face up', async ({ browser }) => {
+  const hostCtx = await browser.newContext();
+  const friendCtx = await browser.newContext();
+  const host = await hostCtx.newPage();
+  const friend = await friendCtx.newPage();
+  watchErrors(host);
+  watchErrors(friend);
+
+  await host.goto('/');
+  await host.getByRole('button', { name: 'Play with Friends' }).click();
+  await setName(host, 'Kavi', '🤠');
+  await host.getByRole('button', { name: 'Next' }).click();
+  await host.getByRole('switch', { name: /Folded players peek/ }).click();
+  await host.getByRole('button', { name: 'One more bot' }).click();
+  await host.getByRole('button', { name: 'Open the table' }).click();
+  const code = await tableCode(host);
+
+  await friend.goto(`/${code}`);
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await setName(friend, 'Remi', '🐸');
+  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await expect(host.locator('.roster-item', { hasText: 'Remi' })).toBeVisible();
+  await host.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(friend.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
+
+  // Everyone's cards are face down until Remi folds.
+  await expect(friend.locator('.pod .pcard-back')).toHaveCount(4);
+  for (let i = 0; i < 40 && !(await myTurn(friend)); i++) await friend.waitForTimeout(250);
+  await friend.getByRole('button', { name: 'Fold', exact: true }).click();
+  await expect(friend.locator('.pod .pcard:not(.pcard-back)')).toHaveCount(4);
+  await expect(friend.locator('.pod .pcard-back')).toHaveCount(0);
+  // Kavi is still in the hand and sees nothing extra.
+  await expect(host.locator('.pod .pcard:not(.pcard-back)')).toHaveCount(0);
+
+  await hostCtx.close();
+  await friendCtx.close();
+});

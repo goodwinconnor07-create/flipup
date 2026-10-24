@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { cleanName, isNameBlocked, type TableInfo } from '../game';
 import { back, joinTable, openSheet, replace, setProfile, useApp } from '../state/store';
 import { BackBar, NameAndPicture } from '../ui/components';
+import { ChevronIcon, GearIcon } from '../ui/Icons';
 
 const TITLES = { host: 'Host a table', bots: 'Play the bots', join: 'Join the table', done: 'Your profile' };
 
@@ -34,6 +35,17 @@ export function Profile({ then, info }: { then: 'host' | 'bots' | 'join' | 'done
         <div className="profile-middle">
           <NameAndPicture name={name} emoji={profile.emoji} onName={setName} onPicture={() => openSheet({ name: 'emoji' })} onDone={next} />
         </div>
+        {then === 'done' && (
+          <div className="group">
+            <button type="button" className="group-row press" onClick={() => openSheet({ name: 'prefs' })}>
+              <span className="gr-icon" style={{ background: 'var(--slate-hi)' }}>
+                <GearIcon />
+              </span>
+              <span className="gr-text">Settings</span>
+              <ChevronIcon className="gr-chev" width={16} height={16} />
+            </button>
+          </div>
+        )}
       </div>
       <div className="screen-foot">
         <button type="button" className="btn btn-xl btn-dark" disabled={!ok} onClick={next}>

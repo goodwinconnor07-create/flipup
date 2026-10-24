@@ -1,6 +1,6 @@
 import { REPLAY_ON } from '../train/replay';
 import { useMemo } from 'react';
-import { loadStats, type GameResult } from '../state/persist';
+import { loadStats } from '../state/persist';
 import { computeStats } from '../train/stats';
 import { loadDrills, loadHistory, loadSummaries, type PlayedHand } from '../state/training';
 import { recordNet } from '../game';
@@ -8,38 +8,12 @@ import { CoachSays } from '../train/Coach';
 import { trendLine } from '../train/coach';
 import { MiniCards, Trend } from '../train/widgets';
 import { navigate } from '../state/store';
-import { signed } from './Final';
 
-const tone = (n: number) => (n > 0 ? 'good' : n < 0 ? 'bad' : '');
-
-/** How each table went, running total from left to right. */
-function Line({ games }: { games: GameResult[] }) {
-  const points = useMemo(() => {
-    let total = 0;
-    return [0, ...games.map((g) => (total += g.net))];
-  }, [games]);
-  const W = 300;
-  const H = 96;
-  const lo = Math.min(...points);
-  const hi = Math.max(...points);
-  const span = hi - lo || 1;
-  const x = (i: number) => (i / Math.max(1, points.length - 1)) * W;
-  const y = (v: number) => H - 8 - ((v - lo) / span) * (H - 16);
-  const d = points.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
-  const last = points[points.length - 1];
-  return (
-    <svg className={`spark ${tone(last)}`} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Chips won or lost, table by table" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id="spark-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="currentColor" stopOpacity="0.28" />
-          <stop offset="1" stopColor="currentColor" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <line x1="0" x2={W} y1={y(0)} y2={y(0)} className="spark-zero" />
-      <path d={`${d} L${W} ${H} L0 ${H} Z`} fill="url(#spark-fill)" className="spark-area" />
-      <path d={d} className="spark-line" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
+/** 1st, 2nd, 3rd, 4th… */
+export function ordinal(n: number): string {
+  const tens = n % 100;
+  const suffix = tens >= 11 && tens <= 13 ? 'th' : (['th', 'st', 'nd', 'rd'][n % 10] ?? 'th');
+  return `${n}${suffix}`;
 }
 
 const when = (at: number) => new Date(at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -60,7 +34,7 @@ function RecentHands({ hands }: { hands: PlayedHand[] }) {
               <b>Hand #{h.record.number}</b>
               <small>{when(h.record.at)} · replay</small>
             </span>
-            <b className={`num ${tone(net)}`}>{signed(net)}</b>
+            {net > 0 && <b className="good">Won</b>}
           </button>
         );
       })}
@@ -79,32 +53,35 @@ export function InsightsTab() {
     return (
       <div className="glass-card home-empty">
         <b>Nothing to show yet</b>
-        <p>Finish a game and your results land here: chips won and lost, hands played and how you did.</p>
+        <p>Finish a game and your results land here: where you finished, hands played and how you did.</p>
       </div>
     );
   }
 
-  const best = stats.games.length ? Math.max(...stats.games.map((g) => g.net)) : 0;
+  // Chips reset every game, so tables are measured by where you finished, not what you won.
+  const placed = stats.games.filter((g) => g.place != null);
+  const wins = placed.filter((g) => g.place === 1).length;
   const recent = [...stats.games].reverse().slice(0, 5);
   return (
     <>
       <div className="glass-card insight-hero">
         <small className="eyebrow">Lifetime</small>
-        <b className={`insight-net num ${tone(stats.net)}`}>{signed(stats.net)}</b>
-        <span className="insight-sub">chips over {stats.tables} {stats.tables === 1 ? 'table' : 'tables'}</span>
-        {stats.games.length > 1 && <Line games={stats.games} />}
+        <b className="insight-net num">{stats.tables}</b>
+        <span className="insight-sub">
+          {stats.tables === 1 ? 'table' : 'tables'} played, {stats.hands} {stats.hands === 1 ? 'hand' : 'hands'}
+        </span>
       </div>
       <div className="insight-tiles">
         <div className="glass-card tile">
-          <small className="eyebrow">Hands</small>
-          <b className="num">{stats.hands}</b>
+          <small className="eyebrow">Tables won</small>
+          <b className="num">{placed.length ? wins : '–'}</b>
         </div>
         <div className="glass-card tile">
-          <small className="eyebrow">Best table</small>
-          <b className={`num ${tone(best)}`}>{stats.games.length ? signed(best) : '–'}</b>
+          <small className="eyebrow">Best finish</small>
+          <b className="num">{placed.length ? ordinal(Math.min(...placed.map((g) => g.place!))) : '–'}</b>
         </div>
         <div className="glass-card tile">
-          <small className="eyebrow">Win rate</small>
+          <small className="eyebrow">Hands won</small>
           <b className="num">{hands.hands > 0 ? `${Math.round((hands.wins / hands.hands) * 100)}%` : '–'}</b>
         </div>
         <div className="glass-card tile">
@@ -130,7 +107,7 @@ export function InsightsTab() {
                   {g.players} players, {g.hands} {g.hands === 1 ? 'hand' : 'hands'}
                 </small>
               </span>
-              <b className={`num ${tone(g.net)}`}>{signed(g.net)}</b>
+              {g.place != null && <b className="num">{`${ordinal(g.place)} of ${g.players}`}</b>}
             </div>
           ))}
         </div>

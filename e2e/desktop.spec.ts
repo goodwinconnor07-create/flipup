@@ -110,8 +110,8 @@ test.describe('animations stay on even if the computer says to reduce motion', (
     expect(anim.ms).toBeGreaterThan(300);
 
     await page.getByRole('button', { name: 'Menu' }).click();
-    await page.getByRole('button', { name: 'Animations on' }).click();
-    await expect(page.getByRole('button', { name: 'Animations off' })).toBeVisible();
+    await page.getByRole('switch', { name: 'Animations' }).click();
+    await expect(page.getByRole('switch', { name: 'Animations' })).toHaveAttribute('aria-checked', 'false');
     await expect(page.locator('html')).toHaveClass(/calm/);
     await page.reload();
     await expect(page.locator('html')).toHaveClass(/calm/);

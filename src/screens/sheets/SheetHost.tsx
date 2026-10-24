@@ -15,17 +15,19 @@ import {
   setTableLook,
   toggleCalm,
   toggleTalk,
-  toggleDark,
+  setAppearance,
   toggleGlass,
   toggleMuted,
   useApp,
   type Sheet as SheetSpec,
 } from '../../state/store';
 import { Avatar, Choice, chips, EmojiPicker, PlayingCard, Sheet } from '../../ui/components';
-import { FELTS, RAILS } from '../../state/persist';
+import { haptic } from '../../ui/effects';
+import { FELTS, RAILS, type Appearance } from '../../state/persist';
 import {
   BoltIcon,
   ChatIcon,
+  ChevronIcon,
   ClockIcon,
   ExitIcon,
   GearIcon,
@@ -34,7 +36,6 @@ import {
   ListIcon,
   GlassIcon,
   MoonIcon,
-  MuteIcon,
   PaletteIcon,
   PencilIcon,
   PlusIcon,
@@ -269,28 +270,107 @@ function Tile({ label, Icon, color, onClick }: Item) {
   );
 }
 
-/** The app's own switches, for Home: how this phone looks and sounds. */
-function PrefsSheet() {
+/** A row in a settings list: a switch, or a link to another sheet or screen. */
+type Row = { label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; color: string } & (
+  | { on: boolean; onChange: () => void }
+  | { onClick: () => void }
+);
+
+const APPEARANCES: { id: Appearance; label: string }[] = [
+  { id: 'auto', label: 'Auto' },
+  { id: 'light', label: 'Light' },
+  { id: 'dark', label: 'Dark' },
+];
+
+/** Light, dark or the same as the phone, as three segments. */
+function AppearanceRow() {
+  const appearance = useApp((s) => s.appearance);
+  return (
+    <div className="group">
+      <div className="group-row">
+        <span className="gr-icon" style={{ background: 'var(--indigo)' }}>
+          <MoonIcon />
+        </span>
+        <span className="gr-text">Appearance</span>
+        <span className="segmented" role="radiogroup" aria-label="Appearance">
+          {APPEARANCES.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              role="radio"
+              aria-checked={appearance === a.id}
+              className={appearance === a.id ? 'on' : ''}
+              onClick={() => {
+                haptic('light');
+                setAppearance(a.id);
+              }}
+            >
+              {a.label}
+            </button>
+          ))}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** A grouped list, like the iPhone's Settings: icon squares, names, and a switch or a chevron. */
+function Rows({ rows }: { rows: Row[] }) {
+  return (
+    <div className="group">
+      {rows.map((r) => (
+        <button
+          key={r.label}
+          type="button"
+          className="group-row press"
+          {...('on' in r ? { role: 'switch', 'aria-checked': r.on } : {})}
+          onClick={() => {
+            if ('on' in r) {
+              haptic('light');
+              r.onChange();
+            } else r.onClick();
+          }}
+        >
+          <span className="gr-icon" style={{ background: r.color }}>
+            <r.Icon />
+          </span>
+          <span className="gr-text">{r.label}</span>
+          {'on' in r ? <span className={`toggle${r.on ? ' on' : ''}`} aria-hidden /> : <ChevronIcon className="gr-chev" width={16} height={16} />}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** How this phone looks and sounds: the same list in Settings and in the table's menu. */
+function useYouRows(): { switches: Row[]; links: Row[] } {
   const muted = useApp((s) => s.muted);
   const calm = useApp((s) => s.calm);
   const talk = useApp((s) => s.talk);
-  const dark = useApp((s) => s.dark);
   const glass = useApp((s) => s.glass);
-  const items: Item[] = [
-    { label: dark ? 'Dark mode on' : 'Dark mode off', Icon: MoonIcon, color: dark ? 'var(--violet)' : 'var(--slate-hi)', onClick: toggleDark },
-    { label: glass ? 'Liquid Glass on' : 'Liquid Glass off', Icon: GlassIcon, color: glass ? 'var(--blue)' : 'var(--slate-hi)', onClick: toggleGlass },
-    { label: muted ? 'Sound off' : 'Sound on', Icon: muted ? MuteIcon : SoundIcon, color: muted ? 'var(--slate-hi)' : 'var(--green)', onClick: toggleMuted },
-    { label: calm ? 'Animations off' : 'Animations on', Icon: BoltIcon, color: calm ? 'var(--slate-hi)' : 'var(--gold)', onClick: toggleCalm },
-    { label: talk ? 'Bot talk on' : 'Bot talk off', Icon: ChatIcon, color: talk ? 'var(--blue)' : 'var(--slate-hi)', onClick: toggleTalk },
-    { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
-    { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--blue)', onClick: () => openSheet({ name: 'rankings' }) },
-  ];
+  return {
+    switches: [
+      { label: 'Sound', Icon: SoundIcon, color: 'var(--red)', on: !muted, onChange: toggleMuted },
+      { label: 'Animations', Icon: BoltIcon, color: 'var(--gold)', on: !calm, onChange: toggleCalm },
+      { label: 'Bot talk', Icon: ChatIcon, color: 'var(--green)', on: talk, onChange: toggleTalk },
+      { label: 'Transparency', Icon: GlassIcon, color: 'var(--blue)', on: glass, onChange: toggleGlass },
+    ],
+    links: [
+      { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
+      { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'rankings' }) },
+    ],
+  };
+}
+
+/** The app's own settings, opened from your profile. */
+function PrefsSheet() {
+  const { switches, links } = useYouRows();
   return (
     <Sheet title="Settings">
-      <div className="menu-grid">
-        {items.map((t) => (
-          <Tile key={t.label} {...t} />
-        ))}
+      <div className="settings-list">
+        <AppearanceRow />
+        <Rows rows={switches} />
+        <Rows rows={links} />
       </div>
     </Sheet>
   );
@@ -300,11 +380,6 @@ function MenuSheet() {
   const game = useApp((s) => s.game);
   const deviceId = useApp((s) => s.deviceId);
   const online = useApp((s) => s.session?.mode === 'online');
-  const muted = useApp((s) => s.muted);
-  const calm = useApp((s) => s.calm);
-  const talk = useApp((s) => s.talk);
-  const dark = useApp((s) => s.dark);
-  const glass = useApp((s) => s.glass);
   const host = game?.hostDeviceId === deviceId;
   const me = game ? myPlayer(game, deviceId) : undefined;
   const playing = game?.status === 'playing';
@@ -325,43 +400,10 @@ function MenuSheet() {
   if (host && playing && game.players.length < 9)
     table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--violet)', onClick: quick(() => dispatch({ type: 'addBot' })) });
 
-  const you: Item[] = [
-    {
-      label: muted ? 'Sound off' : 'Sound on',
-      Icon: muted ? MuteIcon : SoundIcon,
-      color: muted ? 'var(--slate-hi)' : 'var(--green)',
-      onClick: toggleMuted,
-    },
-    {
-      label: calm ? 'Animations off' : 'Animations on',
-      Icon: BoltIcon,
-      color: calm ? 'var(--slate-hi)' : 'var(--gold)',
-      onClick: toggleCalm,
-    },
-    {
-      label: talk ? 'Bot talk on' : 'Bot talk off',
-      Icon: ChatIcon,
-      color: talk ? 'var(--blue)' : 'var(--slate-hi)',
-      onClick: toggleTalk,
-    },
-    {
-      label: dark ? 'Dark mode on' : 'Dark mode off',
-      Icon: MoonIcon,
-      color: dark ? 'var(--violet)' : 'var(--slate-hi)',
-      onClick: toggleDark,
-    },
-    {
-      label: glass ? 'Liquid Glass on' : 'Liquid Glass off',
-      Icon: GlassIcon,
-      color: glass ? 'var(--blue)' : 'var(--slate-hi)',
-      onClick: toggleGlass,
-    },
-    { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
-    { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--red)', onClick: () => navigate({ name: 'profile', then: 'done' }) },
-    { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--blue)', onClick: () => openSheet({ name: 'rankings' }) },
-  ];
+  const { switches, links } = useYouRows();
+  links.splice(1, 0, { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--pink)', onClick: () => navigate({ name: 'profile', then: 'done' }) });
   if (me && playing) {
-    you.push(
+    table.push(
       me.sittingOut
         ? { label: "I'm back", Icon: ClockIcon, color: 'var(--blue)', onClick: quick(() => dispatch({ type: 'sitOut', out: false })) }
         : { label: 'Sit out', Icon: ClockIcon, color: 'var(--slate-hi)', onClick: quick(() => dispatch({ type: 'sitOut', out: true })) },
@@ -419,10 +461,10 @@ function MenuSheet() {
         </>
       )}
       <p className="menu-section">You</p>
-      <div className="menu-grid">
-        {you.map((t) => (
-          <Tile key={t.label} {...t} />
-        ))}
+      <div className="settings-list">
+        <AppearanceRow />
+        <Rows rows={switches} />
+        <Rows rows={links} />
       </div>
       <div className="menu-rows">
         {leave.map(({ label, Icon, color, onClick, danger }) => (

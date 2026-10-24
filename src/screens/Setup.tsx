@@ -101,7 +101,7 @@ export function SettingsFields({
         {timer && (
           <Toggle
             label="Folded players peek"
-            hint="Once you fold, you see everyone's cards"
+            hint="When you're out of a hand, you see everyone's cards"
             on={!!settings.showToFolded}
             onChange={(showToFolded) => onChange({ ...settings, showToFolded })}
           />

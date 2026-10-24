@@ -73,46 +73,50 @@ function Stack({ id, colours, x, y, r = 10 }: { id: string; colours: ChipColour[
   );
 }
 
-/** A chip in the air: it spins and arcs (CSS animates the group). */
+/** A chip tossed in: it drops from above into place once when the card appears, then stays put (CSS plays it). */
 function Flying({ id, c, x, y, r, n }: { id: string; c: ChipColour; x: number; y: number; r: number; n: number }) {
   return (
-    <g className={`fly fly-${n}`} style={{ transformOrigin: `${x}px ${y}px` }}>
-      <Chip id={id} c={c} x={x} y={y} r={r} tilt={0.75} />
+    <g className="toss" style={{ transformOrigin: `${x}px ${y}px`, ['--n' as string]: n }}>
+      <Chip id={id} c={c} x={x} y={y} r={r} />
     </g>
   );
 }
 
-function Face({ emoji, x, y, size }: { emoji: string; x: number; y: number; size: number }) {
+/** A player at the table: they slide into their seat once when the card appears (`n` staggers them). */
+function Face({ emoji, x, y, size, n = 0 }: { emoji: string; x: number; y: number; size: number; n?: number }) {
   return (
-    <span className="art-face" style={{ left: `${(x / 200) * 100}%`, top: `${(y / 120) * 100}%`, width: size, height: size, fontSize: size }}>
+    <span className="art-face" style={{ left: `${(x / 200) * 100}%`, top: `${(y / 120) * 100}%`, width: size, height: size, fontSize: size, ['--n' as string]: n }}>
       <Emoji emoji={emoji} size={size} />
     </span>
   );
 }
 
-/** Three friends (faces no bot uses) round a little table, flicking chips into the pot. */
+/** Three friends (faces no bot uses) round a little table, chips landing in the pot. */
 export function HostArt() {
   const id = 'host';
   return (
     <span className="card-art" aria-hidden>
       <svg viewBox="0 0 200 120" preserveAspectRatio="xMaxYMid meet">
         <Defs id={id} />
-        <Flying id={id} c="gold" x={74} y={26} r={9} n={0} />
-        <Flying id={id} c="red" x={146} y={22} r={8} n={1} />
-        <Flying id={id} c="black" x={110} y={12} r={7} n={2} />
       </svg>
-      <Face emoji="🎃" x={50} y={66} size={40} />
-      <Face emoji="🤑" x={108} y={52} size={40} />
-      <Face emoji="😸" x={166} y={66} size={40} />
+      <Face emoji="🥳" x={62} y={64} size={34} n={0} />
+      <Face emoji="😄" x={112} y={52} size={34} n={1} />
+      <Face emoji="🤓" x={162} y={64} size={34} n={2} />
       <svg viewBox="0 0 200 120" preserveAspectRatio="xMaxYMid meet" className="card-art-front">
         <Defs id={`${id}f`} />
         <ellipse cx="112" cy="108" rx="92" ry="14" fill={`url(#${id}f-shadow)`} />
         <ellipse cx="112" cy="96" rx="86" ry="22" fill={`url(#${id}f-rail)`} />
         <ellipse cx="112" cy="93" rx="76" ry="16" fill={`url(#${id}f-felt)`} />
         <ellipse cx="112" cy="93" rx="64" ry="11" fill="none" stroke="#fff" strokeOpacity="0.18" strokeWidth="1" />
-        <Stack id={`${id}f`} colours={['red', 'red', 'gold', 'gold']} x={92} y={92} r={9} />
-        <Stack id={`${id}f`} colours={['black', 'green', 'green']} x={122} y={94} r={9} />
-        <Stack id={`${id}f`} colours={['blue', 'red']} x={146} y={92} r={8} />
+        <g className="toss" style={{ ['--n' as string]: 0 }}>
+          <Stack id={`${id}f`} colours={['red', 'red', 'gold', 'gold']} x={92} y={92} r={9} />
+        </g>
+        <g className="toss" style={{ ['--n' as string]: 1 }}>
+          <Stack id={`${id}f`} colours={['black', 'green', 'green']} x={122} y={94} r={9} />
+        </g>
+        <g className="toss" style={{ ['--n' as string]: 2 }}>
+          <Stack id={`${id}f`} colours={['blue', 'red']} x={146} y={92} r={8} />
+        </g>
       </svg>
     </span>
   );
@@ -120,7 +124,7 @@ export function HostArt() {
 
 const LINEUP = ['🐸', '🤩', '🦊', '🐼', '🤠', '🐙'];
 
-/** The bots lined up, each flipping a chip. */
+/** The bots lined up, each with a chip landing in front of them. */
 export function BotsArt() {
   const id = 'bots';
   const colours: ChipColour[] = ['red', 'gold', 'green', 'black', 'blue', 'gold'];
@@ -129,14 +133,16 @@ export function BotsArt() {
       <svg viewBox="0 0 200 120" preserveAspectRatio="xMaxYMid meet">
         <Defs id={id} />
         <ellipse cx="116" cy="110" rx="86" ry="9" fill={`url(#${id}-shadow)`} />
-        {LINEUP.map((_, i) => (
-          <Flying key={i} id={id} c={colours[i]} x={50 + i * 26} y={30 + (i % 2) * 12} r={7} n={i % 4} />
-        ))}
-        
       </svg>
       {LINEUP.map((e, i) => (
-        <Face key={e} emoji={e} x={50 + i * 26} y={82 - (i % 2) * 5} size={30} />
+        <Face key={e} emoji={e} x={50 + i * 26} y={74 - (i % 2) * 5} size={30} n={i} />
       ))}
+      <svg viewBox="0 0 200 120" preserveAspectRatio="xMaxYMid meet" className="card-art-front">
+        <Defs id={`${id}f`} />
+        {LINEUP.map((_, i) => (
+          <Flying key={i} id={`${id}f`} c={colours[i]} x={50 + i * 26} y={104 - (i % 2) * 3} r={7} n={i} />
+        ))}
+      </svg>
     </span>
   );
 }

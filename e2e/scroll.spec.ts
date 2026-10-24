@@ -4,9 +4,9 @@ import { shot, watchErrors } from './helpers';
 test('scroll plays a whole solved hand and grades every move with a reason', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Scroll' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await shot(page, 'scroll-01-tab');
-  await page.getByRole('button', { name: 'Start scrolling' }).click();
+  await page.getByRole('button', { name: 'Play a solved hand' }).click();
 
   const options = page.getByRole('group', { name: 'Your move' });
   const streets = new Set<string>();
@@ -43,10 +43,11 @@ test('scroll plays a whole solved hand and grades every move with a reason', asy
   await page.getByRole('button', { name: 'Next hand' }).click();
   await expect(page.locator('.rp-felt')).toBeVisible();
   await page.goBack();
-  await page.getByRole('tab', { name: 'Scroll' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await expect(page.getByText(/1 hands? played/)).toBeVisible();
 
-  // The study bank keeps it, and it plays again from there.
+  // The study bank (under Review) keeps it, and it plays again from there.
+  await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Study bank/ }).click();
   await expect(page.getByText('My test hand')).toBeVisible();
   await shot(page, 'scroll-06-bank');

@@ -115,3 +115,15 @@ bash gto/scripts/laptop_service.sh status # any time
 Before solving, `top_up_flops.py` downloads the coach's preflop solution and checks each matchup's starting
 ranges against a flop the coach already has; if they differ it stops without solving anything. A flop is
 written to a side file and renamed when complete, and the coach never replaces a flop it already stores.
+
+### On a Mac
+
+Apple silicon works with no code changes (the half-float conversion has a plain fallback that gives the same
+results as the Intel vector code). `scripts/laptop_mac.sh` does the work of `laptop_setup.sh` and
+`laptop_service.sh` for a Mac, with plain background processes and `caffeinate` in place of systemd:
+
+```sh
+bash gto/scripts/laptop_mac.sh setup      # Homebrew tools, Python environment, engine
+bash gto/scripts/laptop_mac.sh start b    # or a; asks for the token once
+bash gto/scripts/laptop_mac.sh status
+```

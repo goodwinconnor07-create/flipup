@@ -98,6 +98,14 @@ export function SettingsFields({
           on={settings.rebuys}
           onChange={(rebuys) => onChange({ ...settings, rebuys })}
         />
+        {timer && (
+          <Toggle
+            label="Folded players peek"
+            hint="Once you fold, you see everyone's cards"
+            on={!!settings.showToFolded}
+            onChange={(showToFolded) => onChange({ ...settings, showToFolded })}
+          />
+        )}
       </div>
     </>
   );

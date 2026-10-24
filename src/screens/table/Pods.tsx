@@ -179,7 +179,7 @@ export function Pod({
       <span className="pod-name">{player.name}</span>
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
       <span className="pod-under">
-        {!self && seat && (!seat.folded || (seat.shown && seat.cards.length > 0)) && (
+        {!self && seat && (!seat.folded || seat.cards.length > 0) && (
           <span className="pod-cards">
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)

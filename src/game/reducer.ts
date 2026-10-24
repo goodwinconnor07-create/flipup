@@ -63,6 +63,7 @@ export function validSettings(s: Settings): boolean {
     s.bigBlind >= s.smallBlind &&
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
+    (s.showToFolded === undefined || typeof s.showToFolded === 'boolean') &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
     int(s.turnSeconds) &&

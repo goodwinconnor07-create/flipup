@@ -1462,6 +1462,7 @@ NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity, b
   std::array<int, 4> perm = {0, 1, 2, 3};  // real suit -> tree suit
   std::array<std::vector<float>, 2> reach = init_weight_;
   std::vector<int> real_board = root_board_;
+  double street_base[2] = {0, 0};
 
   for (const std::string& tok : path) {
     const Node& n = nodes_[node_id];
@@ -1475,6 +1476,7 @@ NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity, b
       for (size_t h = 0; h < nq; ++h) reach[q][h] *= sigma[a * nq + h];
       node_id = children_[n.child_begin + a];
     } else if (n.type == NodeType::CHANCE) {
+      street_base[0] = n.contrib[0]; street_base[1] = n.contrib[1];
       int real_card = parse_card(tok);
       int t = permute_card(real_card, perm);
       if (n.board & card_bit(t)) throw std::invalid_argument("card already on board: " + tok);
@@ -1513,6 +1515,7 @@ NodeInfo Solver::query(const std::vector<std::string>& path, bool with_equity, b
   info.pot = n.pot;
   for (int p = 0; p < 2; ++p) {
     info.contrib[p] = n.contrib[p];
+    info.wager[p] = n.contrib[p] - street_base[p];
     info.stack[p] = n.stack[p];
   }
   info.board = real_board;

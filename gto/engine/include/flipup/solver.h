@@ -125,6 +125,7 @@ struct NodeInfo {
   int street;
   double pot;
   double contrib[2];
+  double wager[2]; // current-street wagers, distinct from lifetime contributions
   double stack[2];
   std::vector<int> board;
   std::vector<Action> actions;            // ACTION nodes

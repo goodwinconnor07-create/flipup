@@ -3,6 +3,7 @@
 
 import type { Colour } from '../gto/types';
 import { read, write } from '../state/persist';
+import type { FullHand } from './fullHands';
 import type { QuizHand } from './hands';
 import type { ScrollScenario } from './scenarios';
 
@@ -50,7 +51,7 @@ export interface PlayedQuiz {
   picks: (number | null)[];
   grades: Colour[];
   /** Full immutable content, so saved hands survive remote pack updates and offline use. */
-  snapshot?: QuizHand | ScrollScenario;
+  snapshot?: QuizHand | ScrollScenario | FullHand;
 }
 
 export interface BankHand extends PlayedQuiz {

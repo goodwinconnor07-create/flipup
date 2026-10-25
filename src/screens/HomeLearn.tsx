@@ -62,6 +62,7 @@ export function LearnTab() {
           </div>
         </>
       )}
+      <button type="button" className="btn btn-outline" onClick={() => navigate({ name: 'scroll', hand: 'full' })}>Play a full Scroll hand</button>
       <div className="group">
         {ROWS.map(({ id, title, hint, Icon, colour }) => (
           <button key={id} type="button" className="group-row press" onClick={() => navigate({ name: 'train', section: id })}>

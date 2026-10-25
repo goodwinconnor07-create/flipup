@@ -12,6 +12,7 @@ import { Replay } from './screens/train/Replay';
 import { SolvedHands } from './screens/train/SolvedHands';
 import { Drill } from './screens/train/Drill';
 import { Custom } from './screens/train/Custom';
+import { FullScrollHand } from './screens/train/FullScrollHand';
 import { ScrollScenarios } from './screens/train/ScrollScenarios';
 
 export function App() {
@@ -56,7 +57,7 @@ export function App() {
       screen = <Custom />;
       break;
     case 'scroll':
-      screen = !route.hand || route.hand.startsWith('s-')
+      screen = route.hand?.startsWith('h-') || route.hand === 'full' ? <FullScrollHand handId={route.hand === 'full' ? undefined : route.hand} /> : !route.hand || route.hand.startsWith('s-')
         ? <ScrollScenarios key={route.hand ?? 'feed'} handId={route.hand} />
         : <SolvedHands key={route.hand} handId={route.hand} />;
       break;

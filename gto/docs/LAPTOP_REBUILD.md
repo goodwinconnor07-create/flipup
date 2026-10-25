@@ -152,3 +152,52 @@ stays in `~/flipup-draft-data/away1/fast` (or `slow`); never delete that directo
 These draft files are excluded from the approved-data network trainer. They require review and
 matching validation before being admitted to any production training set or public feed. Useful
 computed candidates are not equivalent to launch-ready Scroll content.
+
+## Complete-hand implementation (new engine build required)
+
+`scroll_whole.py` follows a SINGLE full-future flop tree through all actions and legal dealt cards.
+The real dealt hole cards are collision-free. No later street gets a fabricated range or forced
+checkdown; every reached actor decision gets additional strategy/EV stability checks. A rejection
+rejects the entire hand, and its input/log remain available. Small/memory-exhausted trees are not
+silently substituted. Preflop history comes from the internal approximate preflop model and retains
+that disclosure. This is implemented whole-hand computation, not certification of that preflop model.
+
+New engine queries expose current-street wagers separately from cumulative contributions. This
+requires recompiling `_engine`; the new laptop audit includes `test_scroll_multistreet.py`.
+Do NOT update a running job. Once it finishes/stops, the full-hand candidate command is:
+
+```bash
+cd "$HOME/flipup-laptop-rebuild"
+git pull --ff-only
+bash gto/scripts/scroll_laptop.sh setup
+bash gto/scripts/scroll_laptop.sh whole fast full1
+```
+
+The same 48-hour resumable deadline and subprocess/memory limits apply. Full flop trees are much
+larger than river studies; the run may reject every attempt if the machine cannot fit the declared
+tree. Three failures stop the run. This is useful resource/quality evidence, not permission to shrink
+the tree unnoticed. Files are under `~/flipup-whole-data/full1/fast` (or slow), explicitly unapproved.
+
+The app now has a full-hand viewer under Learn, sequential hero questions with the existing EV
+feedback/custom-size controls, and full-hand snapshots in the study bank for offline replay.
+After a choice, it explicitly follows the stored solver line, not a fabricated continuation of the
+user's alternative action. Standalone questions remain available.
+
+New server routes are `/scroll/hands/catalogue`, `/scroll/hands/{id}` and authenticated
+`/admin/scroll/hands/publish`. Neither the laptop draft command nor the app can approve a hand.
+`publish_scroll_hands.py` takes an explicit approval plan containing exact file hashes and a current
+independent validation receipt. Every decision needs matching street/player coverage and a private
+root for future custom-size re-solves. Approval also explicitly requires independent checking of the
+preflop range model. This release cannot bypass the currently paused production server; deploy the
+validated replacement only when those checks have been satisfied.
+
+Approved whole-hand files also retain reached turn/river roots for model data. Running the explicit
+reviewed publication command with `--jobs-out /path/to/reviewed-spots.json` exports those roots into
+the existing validated generation/training pipeline. Their ranges include folded players, and the
+three-player re-solve preserves the active-player mask rather than reviving a folded opponent.
+These are genuinely reached roots from the hand, not independent random river ranges.
+
+Verification here: normal frontend type/unit/build checks, protocol-only mocked browser play/save/
+offline replay, pure hand-path traversal tests and C++ syntax checks. The new multi-street wager
+regression is written for the LAPTOP audit and has deliberately NOT been executed here. The backend
+and app changes remain on the rebuild branch; production is not reopened automatically.

@@ -17,7 +17,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from flipup_gto.value_data import atomic_json
 
 
-def make_batch(out,players,stack,seed,memory):
+def make_batch(out,players,stack,seed,memory,whole=False):
     import numpy as np
     from flipup_gto import _engine
     from flipup_gto.preflop import PreflopSpot,CLASS_INDEX
@@ -48,15 +48,25 @@ def make_batch(out,players,stack,seed,memory):
         if len(seats)!=players:continue
         behind=[stack-float(q['invested'][p]) for p in seats]
         if min(behind)<=0 or max(behind)-min(behind)>1e-6:continue
-        board=[deck.pop() for _ in range(5)]
+        runout=[deck.pop() for _ in range(5)]
+        board=runout[:3] if whole else runout
         ranges=[class_reach_to_combos(np.asarray(q['reach'][p])).tolist() for p in seats]
         spec=dict(version=VERSION,players=players,board=board,pot=float(q['pot']),stack=behind[0],ranges=ranges,path=[],extras=[],
                   profile=dict(utility='chip-ev',rake_rate=0,rake_cap=0),
                   range_origin=dict(source='internal approximate preflop model',synthetic=False,history=history),
                   assumptions='DRAFT range-conditioned river study. Internal approximate preflop ranges; intervening streets were not simulated. No rake. Not a whole hand or independently verified GTO.')
+        if whole:spec['assumptions']='DRAFT full hand: internal approximate preflop-model ranges; all future postflop cards and betting are solved in one tree. No rake. Pending independent validation.'
         # Save the inputs BEFORE the expensive postflop solve so rejection remains auditable.
         ident=f'{seed}-{attempt}';atomic_json(out/(ident+'.input.json'),spec)
         try:
+            if whole:
+                from scroll_whole import full_hand
+                actual={i:int(_engine.combo_index(*holes[p])) for i,p in enumerate(seats)}
+                result=full_hand(spec,actual,seats,runout[3:]+deck,history,stack,rng,memory)
+                atomic_json(out/(ident+'.fullhand.draft.json'),result);accepted+=1
+                print(f'{ident}: saved complete quarantined hand',flush=True)
+                if accepted>=4:return
+                continue
             s,tokens,node,quality,drift,edrift=solve(spec,maximum=12000,memory=memory)
             _,weights,combos=arrays(node,players);actor=node['player']
             candidates=[i for i,c in enumerate(combos) if weights[actor,c]>1e-12]
@@ -82,18 +92,19 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--role',choices=['fast','slow'],required=True);ap.add_argument('--hours',type=float,default=48)
     ap.add_argument('--audit',type=Path);ap.add_argument('--memory-mb',type=int,default=1536)
+    ap.add_argument('--whole-hands',action='store_true')
     ap.add_argument('--child',action='store_true');ap.add_argument('--players',type=int,default=2)
     ap.add_argument('--stack',type=int,default=40);ap.add_argument('--seed',type=int,default=1)
     a=ap.parse_args();a.out.mkdir(parents=True,exist_ok=True)
-    if a.child:make_batch(a.out,a.players,a.stack,a.seed,a.memory_mb);return
+    if a.child:make_batch(a.out,a.players,a.stack,a.seed,a.memory_mb,a.whole_hands);return
     report=json.loads(a.audit.read_text())
     if report.get('passed') is not True or len(report.get('steps',[]))!=3 or any(s['exitCode'] for s in report['steps']):
         raise SystemExit('A completed passing internal audit is required for draft computation')
     import fcntl
     lock=(a.out/'.draft.lock').open('w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     statepath=a.out/'status.json'
-    state=json.loads(statepath.read_text()) if statepath.exists() else dict(started=time.time(),nextBatch=0,role=a.role,hours=a.hours)
-    if state['role']!=a.role or state['hours']!=a.hours:raise ValueError('changed run configuration; choose a new run name')
+    state=json.loads(statepath.read_text()) if statepath.exists() else dict(started=time.time(),nextBatch=0,role=a.role,hours=a.hours,wholeHands=a.whole_hands)
+    if state['role']!=a.role or state['hours']!=a.hours or state.get('wholeHands',False)!=a.whole_hands:raise ValueError('changed run configuration; choose a new run name')
     state['internalAuditEngine']=report.get('engine');state['publicationApproved']=False
     end=state['started']+a.hours*3600
     backup=None
@@ -107,6 +118,7 @@ def main():
         atomic_json(statepath,state)
         cmd=[sys.executable,'-u',str(Path(__file__).resolve()),'--child','--out',str(folder),'--role',a.role,
              '--players',str(players),'--stack',str(stack),'--seed',str(1000000*(1 if a.role=='fast' else 2)+i),'--memory-mb',str(a.memory_mb)]
+        if a.whole_hands:cmd.append('--whole-hands')
         with (folder/'worker.log').open('ab') as log:
             p=subprocess.Popen(cmd,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
             try:

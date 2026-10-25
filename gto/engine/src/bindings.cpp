@@ -373,6 +373,7 @@ PYBIND11_MODULE(_engine, m) {
             d["pot"] = info.pot;
             d["contrib"] = py::make_tuple(info.contrib[0], info.contrib[1]);
             d["stack"] = py::make_tuple(info.stack[0], info.stack[1]);
+            d["wager"] = py::make_tuple(info.wager[0], info.wager[1]);
             d["board"] = info.board;
             py::list actions;
             for (const auto& a : info.actions) {

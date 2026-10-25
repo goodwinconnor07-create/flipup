@@ -20,7 +20,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--out',type=Path,required=True)
     a=p.parse_args();root=Path(__file__).resolve().parents[1];a.out.mkdir(parents=True,exist_ok=True)
     steps=[['./build-network/test_solver'],
-           [sys.executable,'-m','pytest','-q','tests/test_solver.py','tests/test_multiway.py','tests/test_scroll_scenarios.py::test_zero_opponent_reach_does_not_freeze_off_path_average_strategy'],
+           [sys.executable,'-m','pytest','-q','tests/test_solver.py','tests/test_scroll_multistreet.py','tests/test_multiway.py','tests/test_scroll_scenarios.py::test_zero_opponent_reach_does_not_freeze_off_path_average_strategy'],
            [sys.executable,'scripts/audit_multiway_teacher.py','--cases','100','--out',str((a.out/'card-removal.json').resolve())]]
     report=dict(engine=fingerprint(),started=time.time(),steps=[],passed=False,publicationApproved=False)
     atomic_json(a.out/'internal-audit.json',report)

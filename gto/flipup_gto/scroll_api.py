@@ -42,7 +42,7 @@ async def size(request:Request):
     if not any(p['active'][i] and p['stacks'][i]>0 for i in range(p['players']) if i!=actor):raise HTTPException(400,'no opponent can call a raise')
     spec=copy.deepcopy(base['solve']);denom=p['pot']+p['toCall'] if kind=='raise' else p['pot']
     numerator=to-max(p['wagers']) if kind=='raise' else to-p['wagers'][actor]
-    spec.setdefault('extras',[]).append(dict(player=actor,kind=kind,fraction=numerator/denom))
+    spec.setdefault('extras',[]).append(dict(player=actor,kind=kind,fraction=numerator/denom,street=len(p['board'])-3))
     key=store.enqueue('size',dict(spec=spec,cards=p['cards'],kind=kind,to=float(to)))
     return dict(id=key,**store.result(key))
 
@@ -88,3 +88,24 @@ async def complete(key:str,request:Request):
     _check(request);d=await body(request)
     try:store.complete(key,d['lease'],d.get('result'),d.get('error'));return {'ok':True}
     except (ValueError,KeyError) as e:raise HTTPException(409,str(e))
+
+@router.get('/scroll/hands/catalogue')
+def hand_catalogue():
+    from .scroll_hands import catalogue
+    return catalogue()
+
+
+@router.get('/scroll/hands/{ident}')
+def hand(ident:str):
+    from .scroll_hands import get
+    result=get(ident)
+    if result is None:raise HTTPException(404,'full hand not found')
+    return result
+
+
+@router.post('/admin/scroll/hands/publish')
+async def publish_hands(request:Request):
+    _check(request);d=await body(request)
+    from .scroll_hands import publish
+    try:return dict(published=publish(d['items'],d['validation']))
+    except (ValueError,KeyError,TypeError) as exc:raise HTTPException(400,str(exc))

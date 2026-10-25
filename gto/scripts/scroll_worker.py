@@ -16,6 +16,7 @@ import numpy as np
 from coach_client import Coach
 from campaign_sync import Artifacts
 from flipup_gto.cards import parse_combo
+from flipup_gto.scroll_contract import require_validation,validate_job
 from flipup_gto.scroll_scenarios import solve,solve_entry,query,arrays,scenario_from
 from flipup_gto.value_data import atomic_json
 
@@ -35,7 +36,7 @@ def process(client,job,memory):
             except Exception:return
     threading.Thread(target=renew,daemon=True).start()
     try:
-        p=job['payload'];maximum=4000*2**(job['attempt']-1)
+        p=job['payload'];validate_job(p['spec']);maximum=4000*2**(job['attempt']-1)
         if job['kind']=='size':
             value=solve_entry(p['spec'],parse_combo(''.join(p['cards'])),maximum,memory)
             selected=next((o for o in value['options'] if (o['kind']==p['kind'] or o['kind']=='allin') and abs(o['to']-p['to'])<1e-4),None)
@@ -75,7 +76,8 @@ def main():
     ap.add_argument('--role',choices=['fast','slow'],required=True);ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--hours',type=float,default=168);ap.add_argument('--memory-mb',type=int,default=1536)
     ap.add_argument('--offline',action='store_true',help='generate and back up locally; no coach publication')
-    a=ap.parse_args();root=a.out.expanduser();root.mkdir(parents=True,exist_ok=True)
+    ap.add_argument('--jobs',type=Path,required=True);ap.add_argument('--validation',type=Path,required=True)
+    a=ap.parse_args();require_validation(a.validation);root=a.out.expanduser();root.mkdir(parents=True,exist_ok=True)
     import fcntl
     lock=(root/'.worker.lock').open('w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     client=None if a.offline else Coach();backup=None if a.offline else Artifacts()
@@ -107,7 +109,7 @@ def main():
             attempted=len(list(folder.glob(f'{players}p-{street}-{worker}-*.result.json')))
             cmd=[sys.executable,str(SCRIPTS/'generate_scroll_scenarios.py'),'--out',str(folder),
                  '--players',str(players),'--street',street,'--worker',str(worker),'--attempts',str(attempted+4),
-                 '--max-hours','.25','--memory-mb',str(a.memory_mb)]
+                 '--jobs',str(a.jobs.resolve()),'--validation',str(a.validation.resolve()),'--max-hours','.25','--memory-mb',str(a.memory_mb)]
             state.update(stage=f'generating {players}-way {street} scenarios');atomic_json(statepath,state)
             with (root/'generation.log').open('ab') as log:
                 proc=subprocess.Popen(cmd,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)

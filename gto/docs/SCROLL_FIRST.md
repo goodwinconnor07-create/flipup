@@ -1,3 +1,6 @@
+> SUPERSEDED: the cloud starter bank was withdrawn. Do not run these generation commands.
+> See [the laptop-only rebuild status](LAPTOP_REBUILD.md); validation and provenance gates are now required.
+
 # Scroll-first production and Ubuntu commands
 
 This is the current workflow. It supersedes the network-first campaign for Scroll production.

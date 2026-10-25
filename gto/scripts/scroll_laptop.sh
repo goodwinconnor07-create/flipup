@@ -20,13 +20,15 @@ case "${1:-}" in
     # shellcheck disable=SC1090
     source "$CONFIG"
     "$VENV/bin/python" "$GTO/scripts/scroll_remote.py" status
+    JOBS="${FU_SCROLL_JOBS:?set FU_SCROLL_JOBS to your traceable input spot library}"
+    VALIDATION="${FU_SCROLL_VALIDATION:?set FU_SCROLL_VALIDATION to the passing laptop validation receipt}"
     SESSION="scroll-$ROLE"
     tmux has-session -t "$SESSION" 2>/dev/null && { echo 'Already running';exit 1; }
     OUT="$HOME/flipup-scroll-data/$NAME/$ROLE";mkdir -p "$OUT"
     printf -v CFG '%q' "$CONFIG"
     CMD=(env "OMP_NUM_THREADS=${FU_NET_THREADS:-2}" OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
       "$VENV/bin/python" -u "$GTO/scripts/scroll_worker.py" --role "$ROLE" --out "$OUT"
-      --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}")
+      --jobs "$JOBS" --validation "$VALIDATION" --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}")
     printf -v LINE '%q ' "${CMD[@]}";printf -v LOG '%q' "$OUT/worker.log"
     tmux new-session -d -s "$SESSION" "source $CFG; $LINE >> $LOG 2>&1"
     echo "Running $SESSION. Keep the laptop awake and plugged in. Data, downloads and logs: $OUT"

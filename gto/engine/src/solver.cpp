@@ -293,7 +293,7 @@ std::vector<std::pair<Action, Solver::BuildState>> Solver::legal_actions(const B
     if (call.all_in) n.stack[p] = 0;
     out.push_back({call, n});
 
-    bool can_raise = stack > to_call + 1e-9 && s.stack[o] > 1e-9 && (s.num_bets - 1) < cfg_.max_raises;
+    bool can_raise = stack > to_call + 1e-9 && s.stack[o] > 1e-9 && (cfg_.max_raises < 0 || (s.num_bets - 1) < cfg_.max_raises);
     if (can_raise) {
       const auto& sizes = cfg_.sizes[p][s.street].raise;
       double pot_after_call = s.pot + to_call;

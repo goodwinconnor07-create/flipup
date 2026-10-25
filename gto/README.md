@@ -1,3 +1,6 @@
+> Scroll generation is being rebuilt for laptop-only execution. See [current status](docs/LAPTOP_REBUILD.md).
+> The previous cloud starter bank is withdrawn. Do not start the old unattended Scroll campaign.
+
 # FlipUp GTO backend
 
 For the current priority (accurate Scroll scenarios, automatic upload/download and continuous

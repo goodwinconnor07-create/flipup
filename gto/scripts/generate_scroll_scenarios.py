@@ -9,6 +9,7 @@ import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from flipup_gto import valuenet as vn
+from flipup_gto.scroll_contract import require_validation,validate_job
 from flipup_gto.cards import hand_class
 from flipup_gto.scroll_scenarios import (VERSION,solve,query,arrays,scenario_from,validate_public)
 from flipup_gto.value_data import atomic_json,atomic_npz,sample_rng,digest,encode
@@ -18,13 +19,17 @@ import hashlib
 from generate_value_data import random_spot
 
 
-def generate(root,players,street,worker,attempts,hours,memory=1536):
+def generate(root,players,street,worker,attempts,hours,memory=1536,jobs=None,validation=None):
+    require_validation(validation,players,street)
+    inputs=[s for s in json.loads(Path(jobs).read_text())["spots"] if s["players"]==players and len(s["board"])=={"river":5,"turn":4}[street]]
+    if not inputs:raise ValueError("no imported, range-traceable roots for this player/street profile")
+    for spec in inputs:validate_job(spec)
     root=Path(root);root.mkdir(parents=True,exist_ok=True)
     training=root.parent/'training'/f'{players}p-{street}-{worker}'
     training.mkdir(parents=True,exist_ok=True)
     manifest=dict(schema=1,players=players,street=street,worker=worker,seed=20261101,
                   source=digest([source_fingerprint(),hashlib.sha256(Path(__file__).read_bytes()).hexdigest()]),
-                  features='strength64-v1',tree=VERSION,target=.1)
+                  features='strength64-v1',tree=VERSION,target=.1,input_jobs=digest(inputs))
     mp=training/'manifest.json'
     if mp.exists() and json.loads(mp.read_text())!=manifest:raise ValueError('teacher changed; use a new Scroll run directory')
     if not mp.exists():atomic_json(mp,manifest)
@@ -34,15 +39,10 @@ def generate(root,players,street,worker,attempts,hours,memory=1536):
         marker=root/f'{players}p-{street}-{worker}-{i:08d}.result.json'
         if marker.exists():continue
         rng=sample_rng(20261101,street,worker,i)
-        board,r0,r1,pot,stack,_=random_spot(rng,street)
-        if players==3:
-            ranks=vn.strength_ranks(board) if len(board)==5 else vn.percentile(vn.turn_stats(board)[0])
-            ranges=[r0,r1,vn.random_range(ranks,rng)]
-        else:ranges=[r0,r1]
-        # River cases are cheap; turn/flop cases still solve all future cards and betting.
-        spec=dict(version=VERSION,players=players,board=board,pot=pot,stack=stack,
-                  ranges=[r.tolist() for r in ranges],path=[],extras=[],
-                  assumptions='Range-conditioned practice: synthetic starting ranges, no rake, equal effective stacks. Sizes shown define the solved betting tree.')
+        # Publication jobs come from traceable reached ranges, never the random training sampler.
+        spec={**inputs[i % len(inputs)],'version':VERSION}
+        board=spec['board'];pot=spec['pot'];stack=spec['stack']
+        ranges=[np.asarray(r) for r in spec['ranges']]
         entries=[];rejected=None;examined+=1
         try:
             # Solve once, then expose different genuinely reached decision types.
@@ -63,7 +63,7 @@ def generate(root,players,street,worker,attempts,hours,memory=1536):
                 # Independently refine and check this decision; root stability alone is insufficient.
                 old=np.asarray(before['strategy']);old_ev=np.asarray(before['action_ev'])
                 if players==2:s.engine.iterate(200);gap=s.exploitability_pct()
-                else:s.iterate(200);gap=s.exploitability_pct()
+                else:s.iterate(200);gap=s.exploitability_pct()*players
                 q=query(s,tokens,players);r,w,combos=arrays(q,players)
                 drift=np.abs(np.asarray(q['strategy'])-old).max(0)
                 edrift=np.abs(np.asarray(q['action_ev'])-old_ev).max(0)/q['pot']
@@ -105,6 +105,7 @@ def generate(root,players,street,worker,attempts,hours,memory=1536):
 if __name__=='__main__':
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--players',type=int,choices=[2,3],default=2);ap.add_argument('--street',choices=['river','turn'],default='river')
+    ap.add_argument('--jobs',type=Path,required=True);ap.add_argument('--validation',type=Path,required=True)
     ap.add_argument('--worker',type=int,default=0);ap.add_argument('--attempts',type=int,default=1000)
     ap.add_argument('--max-hours',type=float,default=8);ap.add_argument('--memory-mb',type=int,default=1536)
-    a=ap.parse_args();print(generate(a.out,a.players,a.street,a.worker,a.attempts,a.max_hours,a.memory_mb))
+    a=ap.parse_args();print(generate(a.out,a.players,a.street,a.worker,a.attempts,a.max_hours,a.memory_mb,a.jobs,a.validation))

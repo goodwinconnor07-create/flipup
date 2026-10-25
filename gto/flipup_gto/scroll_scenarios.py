@@ -10,16 +10,16 @@ from .cards import card_str,combo_cards,parse_combo
 from .solver import BetSizing,StreetSizing,PostflopSolver
 from .value_data import canonical_board,converge,digest
 
-VERSION='scroll-exact-v2'
+VERSION='scroll-laptop-v3'
 TARGET=.1 # percent of pot, in this betting abstraction
 ENGINE_HASH=digest([(p.name,hashlib.sha256(p.read_bytes()).hexdigest()) for p in
                     sorted((Path(__file__).parent.parent/'engine/src').glob('*.cpp'))])
 
 
 def sizing():
-    ss=StreetSizing('33%, 50%, 75%, 125%, a','60%, 100%, a')
+    ss=StreetSizing('0%, 33%, 50%, 75%, 125%, a','0%, 60%, 100%, a','0%, 33%, 50%, 75%, 125%, a')
     return BetSizing(oop={s:ss for s in ('flop','turn','river')},ip={s:ss for s in ('flop','turn','river')},
-                     max_raises=2,merge_threshold=.001)
+                     max_raises=-1,merge_threshold=0,force_allin_threshold=0)
 
 
 def build(spec,memory=1536):
@@ -33,15 +33,15 @@ def build(spec,memory=1536):
     if spec['players']!=3:raise ValueError('only exact HU/three-player supported')
     cfg=E.MWConfig();cfg.players=3;cfg.exact_joint=True;cfg.board=spec['board'];cfg.range=spec['ranges']
     cfg.pot=spec['pot'];cfg.stack=spec['stack'];cfg.end_street=2;cfg.deal_subset=[]
-    cfg.max_raises=1;cfg.max_nodes=100000;cfg.max_memory_mb=memory;cfg.merge_threshold=.001
+    cfg.max_raises=-1;cfg.force_allin_threshold=0;cfg.max_nodes=100000;cfg.max_memory_mb=memory;cfg.merge_threshold=0
     # Always offer all-in where it is legal, rather than treating absent sizes as never played.
     cfg.add_allin_threshold=1e6
-    for st in range(3):cfg.set_sizes(st,[.33,.75],[.6])
+    for st in range(3):cfg.set_sizes(st,[0.,.33,.5,.75,1.25],[0.,.6,1.])
     if spec.get('extras'):
         actor=spec['extras'][0]['player'];cfg.hero=actor
         for st in range(3):
-            bets=[.33,.75]+[e['fraction'] for e in spec['extras'] if e['kind']=='bet']
-            raises=[.6]+[e['fraction'] for e in spec['extras'] if e['kind']=='raise']
+            bets=[0.,.33,.5,.75,1.25]+[e['fraction'] for e in spec['extras'] if e['kind']=='bet']
+            raises=[0.,.6,1.]+[e['fraction'] for e in spec['extras'] if e['kind']=='raise']
             cfg.set_hero_sizes(st,bets,raises)
     return E.MultiwaySolver(cfg)
 
@@ -78,9 +78,9 @@ def solve(spec,maximum=4000,memory=1536):
     else:
         its=0;gap=1e9
         while its<maximum:
-            s.iterate(min(50,maximum-its));its=s.iterations;gap=float(s.exploitability_pct())
+            s.iterate(min(50,maximum-its));its=s.iterations;gap=float(s.exploitability_pct())*players
             if gap<=TARGET:break
-    if not np.isfinite(gap) or gap>TARGET:raise ValueError('teacher did not converge')
+    if not np.isfinite(gap) or gap < -1e-6 or gap>TARGET:raise ValueError('teacher did not converge')
     tokens=resolve(s,spec);first=query(s,tokens,players)
     if first['type']!='action':raise ValueError('not a decision')
     # Do NOT equate an iteration limit or a rounded 100% with a stable strategy.
@@ -90,7 +90,7 @@ def solve(spec,maximum=4000,memory=1536):
         before=np.asarray(q['strategy']);before_ev=np.asarray(q['action_ev'])
         extra=min(200,maximum-its)
         if players==2:s.engine.iterate(extra);gap=float(s.exploitability_pct())
-        else:s.iterate(extra);gap=float(s.exploitability_pct())
+        else:s.iterate(extra);gap=float(s.exploitability_pct())*players
         its+=extra;q=query(s,tokens,players)
         r,w,combos=arrays(q,players);actor=q['player']
         own=w[actor,combos];own=own/max(own.sum(),1e-30)
@@ -98,7 +98,7 @@ def solve(spec,maximum=4000,memory=1536):
         ev_drift=np.abs(np.asarray(q['action_ev'])-before_ev).max(0)/q['pot']
         weighted_drift=float(np.dot(drift,own))
         if extra>=200 and gap<=TARGET and weighted_drift<=.02:break
-    if gap>TARGET or weighted_drift>.02:raise ValueError('strategy unstable after additional iterations')
+    if not np.isfinite(gap) or gap < -1e-6 or gap>TARGET or weighted_drift>.02:raise ValueError('strategy unstable after additional iterations')
     if players==3 and abs(sum(s.root_ev())-spec['pot'])/spec['pot']>.001:raise ValueError('payoff conservation failed')
     quality=dict(method='full-tree-hu' if players==2 else 'full-tree-exact3',version=VERSION,engine=ENGINE_HASH,gapPct=max(0.,gap),
                  iterations=its,rangeFrequencyDrift=weighted_drift,scope='declared ranges and betting tree; no rake')

@@ -365,7 +365,7 @@ std::vector<std::pair<MWAction, MultiwaySolver::BuildState>> MultiwaySolver::leg
     double added = std::min(to_call, stack);
     BuildState c = apply(added);
     out.push_back({MWAction{MWAction::CALL, c.wager[p], added, has(c.allin, p)}, c});
-    if (others && stack > to_call + 1e-9 && (s.num_bets - 1) < cfg_.max_raises) {
+    if (others && stack > to_call + 1e-9 && (cfg_.max_raises < 0 || (s.num_bets - 1) < cfg_.max_raises)) {
       double pot_after_call = s.pot + to_call;
       double min_to = maxw + std::max(s.last_inc, cfg_.min_bet);
       std::vector<double> adds;

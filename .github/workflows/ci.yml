@@ -33,6 +33,7 @@ jobs:
           gto/tests/test_scroll_dashboard.py
           gto/tests/test_scroll_resources.py
           gto/tests/test_scroll_wsl_config.py
+          gto/tests/test_library_questions.py
   check:
     runs-on: ubuntu-latest
     steps:

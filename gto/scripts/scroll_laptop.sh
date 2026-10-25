@@ -5,6 +5,27 @@ VENV="${FU_NET_VENV:-$HOME/flipup-net-env}"
 CONFIG="$HOME/.config/flipup-network-campaign.env"
 if [ ! -f "$CONFIG" ] && [ -f "$HOME/.config/flipup-flops.env" ];then CONFIG="$HOME/.config/flipup-flops.env";fi
 case "${1:-}" in
+  library-pack)
+    ROLE="${2:?fast or slow}";LIBRARY="${3:?library path}";NAME="${4:?run name}"
+    case "$ROLE" in fast) SHARD=0;;slow) SHARD=1;;*) exit 1;;esac
+    [[ "$NAME" =~ ^[a-zA-Z0-9_-]{1,40}$ ]] || exit 1
+    [ -d "$LIBRARY" ] || { echo 'Library directory missing';exit 1; }
+    if [ -f "$CONFIG" ];then set -a;source "$CONFIG";set +a;fi
+    SESSION="scroll-library-$ROLE"
+    for JOB in "$SESSION" scroll-auto-fast scroll-auto-slow scroll-reuse scroll-whole-fast scroll-whole-slow scroll-draft-fast scroll-draft-slow;do
+      if tmux has-session -t "$JOB" 2>/dev/null;then echo "Stop $JOB before starting a library campaign";exit 1;fi
+    done
+    OUT="$HOME/flipup-library-data/$NAME/$ROLE";mkdir -p "$OUT"
+    CMD=("$VENV/bin/python" -u "$GTO/scripts/scroll_library_campaign.py" --library "$LIBRARY" --out "$OUT" --shard "$SHARD" --of "${FU_LIBRARY_SHARDS:-2}" --backup-run "library-$NAME-$ROLE")
+    [ -z "${FU_LIBRARY_REVIEW:-}" ] || CMD+=(--review "$FU_LIBRARY_REVIEW")
+    [ "${FU_LIBRARY_PUBLISH:-0}" != 1 ] || CMD+=(--publish)
+    [ "${FU_LIBRARY_TRAIN:-0}" != 1 ] || CMD+=(--train)
+    [ -z "${FU_LIBRARY_PEER:-}" ] || CMD+=(--peer-run "$FU_LIBRARY_PEER")
+    printf -v LINE '%q ' "${CMD[@]}";printf -v LOG '%q' "$OUT/worker.log"
+    PREFIX='';if [ -f "$CONFIG" ];then printf -v CFG '%q' "$CONFIG";PREFIX="set -a; source $CFG; set +a; ";fi
+    tmux new-session -d -s "$SESSION" "${PREFIX}$LINE >> $LOG 2>&1"
+    echo "Started $SESSION: stored answers only, zero poker solves. Progress: $OUT/status.json"
+    ;;
   resources|whole-auto|whole|draft|reuse-flops|start)
     if [ -f "$CONFIG" ];then set -a;source "$CONFIG";set +a;fi
     RESOURCE_SETTINGS="$("$VENV/bin/python" "$GTO/scripts/scroll_resources.py")"

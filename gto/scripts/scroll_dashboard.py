@@ -98,6 +98,8 @@ class Monitor:
                     value=quality.get(field)
                     if isinstance(value,(int,float)) and math.isfinite(value):target.append(value)
         # Bound cached data after files have been removed externally.
+        if 'questions' in state and 'files' in state:
+            counts.update(questions=state['questions'],rejected=state.get('rejected',0))
         known=set(files);self.cache={p:v for p,v in self.cache.items() if p in known}
         started=state.get('started');budget=state.get('hours')
         elapsed=max(0,now-started) if isinstance(started,(int,float)) else None
@@ -144,6 +146,10 @@ def render(root,s):
         'Publication: PRIVATE CANDIDATES — counts do not certify accuracy',
     ])
     if s['gaps']:lines.append(f"Saved-question deviation: max {max(s['gaps']):.5f}% pot (within model/tree)")
+    if 'files' in state:
+        lines.extend([f"Library files processed: {state['files']} | Reviewed questions: {state.get('approved',0)}",
+                      f"Current source: {state.get('currentFile','none')}",
+                      'Library extraction uses stored answers; whole-hand timing and live-solver metrics do not apply.'])
     if s['iterations']:lines.append(f"Saved-question iterations: {min(s['iterations']):,.0f}–{max(s['iterations']):,.0f}")
     if state.get('lastBackup'):lines.append('Last successful backup: '+datetime.fromtimestamp(state['lastBackup']).strftime('%d %b %H:%M:%S'))
     if s['lastHand']:lines.append('Latest hand: '+s['lastHand'][1])

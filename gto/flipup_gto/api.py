@@ -54,6 +54,8 @@ app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FLIPUP_CORS", "
 app.include_router(flop_admin.router)  # flop uploads from the laptops; off without FLIPUP_UPLOAD_TOKEN
 app.include_router(network_admin.router)  # opaque campaign backups; same private admin token
 app.include_router(scroll_api.router)  # approved Scroll data and a bounded laptop solve queue
+from . import library_question_api
+app.include_router(library_question_api.router)
 from . import scroll_store
 scroll_store.install_seed()
 reviewer = Reviewer()

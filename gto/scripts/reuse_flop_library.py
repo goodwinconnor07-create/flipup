@@ -7,6 +7,7 @@ legacy range provenance and float16 quantization are inherited, not erased by re
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -14,6 +15,24 @@ import numpy as np
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from flipup_gto.cards import parse_cards,combo_cards
 from flipup_gto.value_data import atomic_json
+
+
+def checkpoint(out, state, backup=None, run=None):
+    """Keep local progress even when the private backup service is unavailable."""
+    state['updated']=time.time()
+    atomic_json(out/'status.json',state)
+    if backup is None:
+        state['backup']='local only; upload credentials not configured'
+    else:
+        try:
+            backup.push(out,run)
+            state['backup']='uploaded'
+            state['lastBackup']=time.time()
+            state.pop('backupError',None)
+        except Exception as exc:
+            state['backup']='pending retry'
+            state['backupError']=str(exc)
+    atomic_json(out/'status.json',state)
 
 
 def boundaries(data):
@@ -53,6 +72,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__);p.add_argument('--library',type=Path,required=True);p.add_argument('--out',type=Path,required=True)
     p.add_argument('--hours',type=float,default=48);p.add_argument('--max-roots',type=int,default=10000)
     p.add_argument('--turns-per-line',type=int,default=2);p.add_argument('--solve',action='store_true');p.add_argument('--memory-mb',type=int,default=1536)
+    p.add_argument('--backup-run',help='Private artifact namespace; requires configured coach credentials')
     a=p.parse_args();source=a.library.expanduser().resolve();out=a.out.expanduser().resolve()
     if not source.is_dir():raise ValueError('flop library directory does not exist')
     if source==out or source in out.parents:raise ValueError('output must be outside the original library')
@@ -60,6 +80,13 @@ def main():
     out.mkdir(parents=True,exist_ok=True);start=time.time();count=0;inventory=[]
     import fcntl
     lock=(out/'.reuse.lock').open('w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+    backup=None
+    if a.backup_run and os.environ.get('FLIPUP_UPLOAD_TOKEN') and os.environ.get('FLIPUP_COACH'):
+        from campaign_sync import Artifacts
+        backup=Artifacts()
+    state=dict(stage='starting',roots=0,files=0,publicationApproved=False)
+    checkpoint(out,state,backup,a.backup_run)
+    last_backup=time.time()
     for path in sorted(source.glob('*/*.npz')):
         if time.time()-start>a.hours*3600 or count>=a.max_roots:break
         row=dict(file=str(path.relative_to(source)),publicationApproved=False)
@@ -87,6 +114,9 @@ def main():
                         ident=hashlib.sha256(f'{sha}:{j}:{turn}'.encode()).hexdigest()[:24];dest=out/(ident+'.root.json')
                         if not dest.exists():atomic_json(dest,dict(publicationApproved=False,spec=spec))
                         count+=1
+                        state.update(stage='refining' if a.solve else 'extracting',roots=count,currentFile=row['file'])
+                        # Flush before each solve so a long computation is visible to the operator.
+                        atomic_json(out/'status.json',dict(state,updated=time.time()))
                         if a.solve and not (out/(ident+'.result.json')).exists():
                             from flipup_gto.scroll_scenarios import VERSION,solve,scenario_from,arrays
                             spec['version']=VERSION
@@ -99,11 +129,16 @@ def main():
                                     if len(candidates)>=4:break
                                 atomic_json(out/(ident+'.result.json'),dict(publicationApproved=False,scenarios=candidates,inheritedLegacyRanges=True))
                             except (ValueError,RuntimeError,MemoryError) as exc:atomic_json(out/(ident+'.result.json'),dict(publicationApproved=False,error=str(exc)))
+                        if time.time()-last_backup>=300:
+                            checkpoint(out,state,backup,a.backup_run);last_backup=time.time()
             row['status']='inspected'
         except (ValueError,KeyError,TypeError,OSError) as exc:row.update(status='rejected',error=str(exc))
         inventory.append(row)
         atomic_json(out/'inventory.json',dict(files=inventory,roots=count,publicationApproved=False))
+        state.update(files=len(inventory),roots=count)
         print(f'{row["file"]}: {row["status"]}; {count} reached turn roots',flush=True)
-    print('Library preserved. Outputs remain draft; no public uploads or training activation.',flush=True)
+    state.update(stage='complete',files=len(inventory),roots=count)
+    checkpoint(out,state,backup,a.backup_run)
+    print(f'Library preserved. Outputs remain draft; private backup: {state["backup"]}. No public publication or training activation.',flush=True)
 
 if __name__=='__main__':main()

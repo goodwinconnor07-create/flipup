@@ -24,10 +24,12 @@ case "${1:-}" in
     OUT="$HOME/flipup-flop-reuse/$NAME";mkdir -p "$OUT"
     CMD=(env "OMP_NUM_THREADS=${FU_NET_THREADS:-2}" OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
       "$VENV/bin/python" -u "$GTO/scripts/reuse_flop_library.py" --library "$LIBRARY" --out "$OUT"
-      --solve --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}")
+      --solve --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}" --backup-run "reuse-$NAME")
     printf -v LINE '%q ' "${CMD[@]}";printf -v LOG '%q' "$OUT/worker.log"
-    tmux new-session -d -s scroll-reuse "$LINE >> $LOG 2>&1"
+    PREFIX='';if [ -f "$CONFIG" ];then printf -v CFG '%q' "$CONFIG";PREFIX="source $CFG; ";fi
+    tmux new-session -d -s scroll-reuse "${PREFIX}$LINE >> $LOG 2>&1"
     echo "Started legacy flop reuse. Original files remain untouched. Draft outputs: $OUT"
+    echo "Progress and backup status: $OUT/status.json"
     ;;
   whole-auto)
     ROLE="${2:?fast or slow}";NAME="${3:?run name}"

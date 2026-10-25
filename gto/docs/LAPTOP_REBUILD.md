@@ -258,6 +258,12 @@ bash gto/scripts/scroll_laptop.sh reuse-flops "$HOME/flops" reuse1
 Change the library path to wherever your existing files actually live. `inventory.json` lists
 processed files and extracted roots; `worker.log` records progress. The default limit is 10,000
 turn roots / 48 hours, checked between solves. Completed results are skipped on resume. There are
-no automatic uploads from this adapter yet; keep the output directory. Reusing ranges avoids the
+automatic private backups when the existing coach credentials are configured. The launcher loads
+`~/.config/flipup-network-campaign.env` (or the older flop config) and uses the `reuse-RUNNAME`
+artifact namespace. Backups are attempted every five minutes between computations and at normal
+completion; failures retain local results and retry at the next checkpoint. `status.json` shows
+progress, whether uploads succeeded, and any upload error. Without credentials it explicitly
+reports LOCAL ONLY; keep the output directory. This does not publish candidates to the app.
+Reusing ranges avoids the
 flop calculation but cannot correct an inaccurate legacy flop policy. Independent validation is
 still required before inherited ranges or refined answers can enter the approved feed.

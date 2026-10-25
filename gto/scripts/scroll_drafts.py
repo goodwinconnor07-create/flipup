@@ -109,7 +109,16 @@ def main():
              '--players',str(players),'--stack',str(stack),'--seed',str(1000000*(1 if a.role=='fast' else 2)+i),'--memory-mb',str(a.memory_mb)]
         with (folder/'worker.log').open('ab') as log:
             p=subprocess.Popen(cmd,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
-            try:code=p.wait(timeout=min(1800,max(.1,end-time.time())))
+            try:
+                batch_end=min(end,time.time()+1800)
+                while True:
+                    remaining=batch_end-time.time()
+                    if remaining<=0:raise subprocess.TimeoutExpired(cmd,1800)
+                    try:code=p.wait(timeout=min(30,remaining));break
+                    except subprocess.TimeoutExpired:
+                        if time.time()>=batch_end:raise
+                        state['updated']=time.time();atomic_json(statepath,state)
+                        print(f'Batch {i} still running: {players} players, {stack}bb; log {folder}/worker.log',flush=True)
             except subprocess.TimeoutExpired:
                 os.killpg(p.pid,signal.SIGTERM)
                 try:p.wait(timeout=10)

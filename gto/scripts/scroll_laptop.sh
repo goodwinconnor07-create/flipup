@@ -3,6 +3,7 @@ set -euo pipefail
 GTO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VENV="${FU_NET_VENV:-$HOME/flipup-net-env}"
 CONFIG="$HOME/.config/flipup-network-campaign.env"
+if [ ! -f "$CONFIG" ] && [ -f "$HOME/.config/flipup-flops.env" ];then CONFIG="$HOME/.config/flipup-flops.env";fi
 case "${1:-}" in
   setup) bash "$GTO/scripts/network_laptop.sh" setup ;;
   setup-models) "$VENV/bin/python" -m pip install torch --index-url https://download.pytorch.org/whl/cpu ;;

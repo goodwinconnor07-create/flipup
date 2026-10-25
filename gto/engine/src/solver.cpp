@@ -872,6 +872,24 @@ void Solver::init_leaf() {
       cfg_.leaf_alpha.size() + 1 != cfg_.leaf_w.size())
     throw std::invalid_argument("leaf network missing or malformed");
   const int K = cfg_.leaf_k;
+  // Validate before leaf_net copies the final layer into a 2*K buffer. A bad
+  // checkpoint used to read/write outside those buffers rather than fail cleanly.
+  size_t dim = 2 * static_cast<size_t>(K) + 1;
+  for (size_t l = 0; l < cfg_.leaf_w.size(); ++l) {
+    const auto& W = cfg_.leaf_w[l];
+    const auto& B = cfg_.leaf_b[l];
+    if (B.empty() || W.size() != dim * B.size())
+      throw std::invalid_argument("leaf network layer dimensions do not match");
+    for (float v : W) if (!std::isfinite(v)) throw std::invalid_argument("nonfinite leaf weights");
+    for (float v : B) if (!std::isfinite(v)) throw std::invalid_argument("nonfinite leaf bias");
+    dim = B.size();
+  }
+  if (dim != 2 * static_cast<size_t>(K))
+    throw std::invalid_argument("leaf network output must have 2*K values");
+  for (float a : cfg_.leaf_alpha)
+    if (!std::isfinite(a)) throw std::invalid_argument("nonfinite leaf activation");
+  if (cfg_.rake_rate != 0 || cfg_.rake_cap != 0)
+    throw std::invalid_argument("constant-sum leaf networks do not support rake");
   const int ns = static_cast<int>(cfg_.leaf_s_edges.size()) + 1;
   if (turn && K % ns != 0) throw std::invalid_argument("leaf_k must be a multiple of the spread bins");
   for (int p = 0; p < 2; ++p) {

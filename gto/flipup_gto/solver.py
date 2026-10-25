@@ -172,6 +172,13 @@ class PostflopSolver:
         cfg.compress = compress
         cfg.max_memory_mb = max_memory_mb
         if leaf is not None:
+            if len(self.board) not in (3, 4):
+                raise ValueError('leaf networks require a flop or turn root')
+            if rake_rate or rake_cap:
+                raise ValueError('constant-sum leaf networks do not support rake')
+            expected = 'river' if len(self.board) == 4 else 'turn'
+            if leaf.get('street', expected) != expected:
+                raise ValueError(f'{expected} network required for this root street')
             # Depth-limited: the next street is valued by a network (flipup_gto.valuenet.load) instead of
             # dealt: the river in a turn solve, the turn in a flop solve.
             cfg.leaf_street = 2 if len(self.board) == 4 else 1

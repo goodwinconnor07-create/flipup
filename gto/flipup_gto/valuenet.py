@@ -10,6 +10,7 @@ averaged in.
 from __future__ import annotations
 
 import numpy as np
+import json
 
 from . import _engine
 from .cards import NUM_COMBOS, combo_cards
@@ -108,6 +109,18 @@ def load(path: str) -> dict:
     b = [arrays[f"body.{i}.bias"].astype(np.float32) for i in layers]
     alpha = [float(arrays[f"body.{i + 1}.weight"].ravel()[0]) for i in layers[:-1]]
     out = {"k": int(d["k"]), "w": w, "b": b, "alpha": alpha}
+    if 'metadata' in d:
+        meta = json.loads(str(d['metadata']))
+        if meta.get('players') != 2 or meta.get('rake') != 0 or meta.get('features') != 'strength64-v1':
+            raise ValueError('unsupported value network metadata')
+        out['street'] = meta['street']
+    dim = 2 * out['k'] + 1
+    for wi, bi in zip(w, b):
+        if wi.shape != (len(bi), dim) or not np.isfinite(wi).all() or not np.isfinite(bi).all():
+            raise ValueError('malformed network layer')
+        dim = len(bi)
+    if dim != 2 * out['k'] or not np.isfinite(alpha).all():
+        raise ValueError('malformed network output/activation')
     if "s_edges" in d:
         out["s_edges"] = [float(e) for e in d["s_edges"]]
     return out

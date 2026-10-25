@@ -1,5 +1,8 @@
 # FlipUp GTO backend
 
+For the current two-Ubuntu-laptop network generation commands, validation gates and
+multiway roadmap, see [Network plan and runbook](docs/NETWORK_PLAN.md).
+
 The game-theory side of FlipUp. After a session with friends, it goes through each hand and, at
 every decision, shows what a game-theory-optimal (GTO) strategy does with that hand, what each
 option is worth in big blinds, how much the player's choice cost, a grade, and the reasons in plain

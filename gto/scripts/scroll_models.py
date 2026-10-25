@@ -34,7 +34,7 @@ def inventory(jobs):
         for p in sorted(job.glob('*.npz')):
             with np.load(p,allow_pickle=False) as d:
                 m=json.loads(str(d['metadata']))
-                if m['job']!=digest(manifest) or m['gap_pct']>manifest['target']:raise ValueError('invalid training provenance')
+                if m['job']!=digest(manifest) or not np.isfinite(m['gap_pct']) or not 0<=m['gap_pct']<=manifest['target']:raise ValueError('invalid training provenance')
                 if m['split'] not in counts:raise ValueError('invalid training split')
                 counts[m['split']].add(tuple(board_group(d['board'])))
             files.append((str(p),hashlib.sha256(p.read_bytes()).hexdigest()))

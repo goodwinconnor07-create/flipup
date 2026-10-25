@@ -13,7 +13,7 @@ import threading
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
-from coach_client import Coach
+from coach_client import Coach,Refused
 from campaign_sync import Artifacts
 from scroll_models import train_one
 from flipup_gto.cards import parse_combo
@@ -144,7 +144,11 @@ def main():
                 backup.push(root,'scroll-'+root.parent.name+f'-{a.role}')
             if a.role=='slow' and a.models=='auto' and time.time()<end:
                 peer=root/'.peer'/'fast'
-                if backup:backup.pull(peer,'scroll-'+root.parent.name+'-fast')
+                if backup:
+                    try:backup.pull(peer,'scroll-'+root.parent.name+'-fast')
+                    except Refused as exc:
+                        if 'coach said 404 ' not in str(exc):raise
+                        atomic_json(root/'peer-status.json',dict(stage='waiting for first fast-laptop backup'))
                 state.update(stage='checking network training data');atomic_json(statepath,state)
                 train_one(root,peer,validation,min(end,time.time()+1200))
                 if backup:backup.push(root,'scroll-'+root.parent.name+'-slow')

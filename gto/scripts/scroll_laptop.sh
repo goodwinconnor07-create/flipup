@@ -22,6 +22,8 @@ case "${1:-}" in
     [ -f "$AUDIT" ] || { echo "Missing passing internal audit: $AUDIT";exit 1; }
     MODE="$1"
     SESSION="scroll-$MODE-$ROLE"
+    OTHER=draft;[ "$MODE" != draft ] || OTHER=whole
+    if tmux has-session -t "scroll-$OTHER-$ROLE" 2>/dev/null;then echo "The $OTHER job is still running. Stop it before starting $MODE on the same laptop.";exit 1;fi
     tmux has-session -t "$SESSION" 2>/dev/null && { echo 'Already running';exit 1; }
     OUT="$HOME/flipup-draft-data/$NAME/$ROLE"
     [ "$MODE" != whole ] || OUT="$HOME/flipup-whole-data/$NAME/$ROLE";mkdir -p "$OUT"

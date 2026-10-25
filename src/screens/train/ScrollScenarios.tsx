@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { BackBar, PlayingCard } from '../../ui/components';
 import { CoachSays } from '../../train/Coach';
+import type { Colour } from '../../gto/types';
 import { GRADE_WORD } from '../../train/coach';
 import { getScenario, nextScenario, feedback, formatFrequency, requestSize, scenarioGrade, sizeResult, type ScrollScenario, type ScenarioOption } from '../../quiz/scenarios';
 import { isBanked, loadQuiz, recordPlayed, saveQuizHand, saveToBank } from '../../quiz/save';
 import { markPlayedToday } from '../../state/persist';
 
-export function ScrollScenarios({ handId, provided, onNext }: { handId?: string; provided?: ScrollScenario; onNext?: () => void }) {
+export function ScrollScenarios({ handId, provided, onNext, onAnswered }: { handId?: string; provided?: ScrollScenario; onNext?: () => void; onAnswered?: (colour: Colour, pick: number) => void }) {
   const [s, setScenario] = useState<ScrollScenario | null>(null);
   const [error, setError] = useState('');
   const [choice, setChoice] = useState<ScenarioOption | null>(null);
@@ -38,8 +39,8 @@ export function ScrollScenarios({ handId, provided, onNext }: { handId?: string;
   const played = () => ({ id: s!.id, at: Date.now(), title: name, cards: s!.cards, picks: choice ? [s!.options.indexOf(choice)] : [], grades: grade ? [grade.colour] : [], snapshot: s! });
   const answer = (o: ScenarioOption) => {
     if (!s || choice) return;
-    const g = scenarioGrade(s, o); setChoice(o); saveQuizHand(s.id, [g.colour]);
-    recordPlayed({ id: s.id, at: Date.now(), title: name, cards: s.cards, picks: [s.options.indexOf(o)], grades: [g.colour], snapshot: s }); markPlayedToday();
+    const g = scenarioGrade(s, o); setChoice(o); if (onAnswered) onAnswered(g.colour,s.options.indexOf(o)); else saveQuizHand(s.id, [g.colour]);
+    if (!provided) recordPlayed({ id: s.id, at: Date.now(), title: name, cards: s.cards, picks: [s.options.indexOf(o)], grades: [g.colour], snapshot: s }); markPlayedToday();
   };
   const queueSize = async () => {
     if (!s) return;

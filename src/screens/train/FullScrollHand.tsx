@@ -4,13 +4,15 @@ import { apiUrl } from '../../state/platform';
 import { ScrollScenarios } from './ScrollScenarios';
 
 import type { FullHand } from '../../quiz/fullHands';
-import { loadBank, saveToBank } from '../../quiz/save';
+import type { Colour } from '../../gto/types';
+import { loadBank, saveToBank, recordPlayed, saveQuizHand } from '../../quiz/save';
 export function FullScrollHand({ handId }: { handId?: string }) {
   const [hand,setHand]=useState<FullHand|null>(null);
   const [index,setIndex]=useState(0);
+  const [answers,setAnswers]=useState<{colour:Colour;pick:number}[]>([]);
   const [error,setError]=useState('');
   const load=async () => {
-    setError('');setHand(null);setIndex(0);
+    setError('');setHand(null);setIndex(0);setAnswers([]);
     try {
       let id=handId;
       if (!id) {
@@ -35,6 +37,15 @@ export function FullScrollHand({ handId }: { handId?: string }) {
     <div className="screen-body"><p>{error || (hand ? 'Hand complete. Each answer was compared with its saved solution.' : 'Loading a validated full hand…')}</p>
       <button className="btn btn-blue" onClick={()=>void load()}>{hand?'Another hand':'Check for hands'}</button></div>
   </div>;
+  const continueHand=()=>{
+    setError('');
+    if(index+1===hand.decisions.length){
+      const grades=answers.map(a=>a.colour);
+      saveQuizHand(hand.id,grades);
+      recordPlayed({id:hand.id,at:Date.now(),title:'Full Scroll hand',cards:hand.decisions[0].scenario.cards,picks:answers.map(a=>a.pick),grades,snapshot:hand});
+    }
+    setIndex(index+1);
+  };
   const save=()=>{
     try {
       const first=hand.decisions[0].scenario;
@@ -49,6 +60,6 @@ export function FullScrollHand({ handId }: { handId?: string }) {
       <details><summary>Preflop history and assumptions</summary>
         <p>{hand.preflop.map(a=>`Seat ${a.player+1}: ${a.type}${a.to?' to '+a.to+'bb':''}`).join(' → ')}</p>
         <p>{hand.assumptions}</p></details></div>
-    <ScrollScenarios key={`${hand.id}-${index}`} provided={hand.decisions[index].scenario} onNext={()=>{setError('');setIndex(index+1);}} />
+    <ScrollScenarios key={`${hand.id}-${index}`} provided={hand.decisions[index].scenario} onAnswered={(colour,pick)=>setAnswers(a=>{const next=[...a];next[index]={colour,pick};return next;})} onNext={continueHand} />
   </>;
 }

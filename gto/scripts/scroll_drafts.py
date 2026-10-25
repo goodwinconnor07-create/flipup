@@ -140,7 +140,7 @@ def main():
                 os.killpg(p.pid,signal.SIGTERM);p.wait();raise
         state.update(lastExitCode=code,updated=time.time())
         if backup:
-            try:backup.push(a.out,'draft-'+a.out.parent.name+'-'+a.role);state['backup']='uploaded'
+            try:backup.push(a.out,('whole-' if a.whole_hands else 'draft-')+a.out.parent.name+'-'+a.role);state['backup']='uploaded'
             except Exception as exc:state['backupError']=str(exc)
         else:state['backup']='local only; upload credentials not configured'
         atomic_json(statepath,state)

@@ -23,6 +23,8 @@ test('full Scroll questions play in sequence and save offline snapshots', async 
   await page.getByRole('group',{name:'Your move'}).getByRole('button',{name:'Check',exact:true}).click();
   await page.getByRole('button',{name:'Continue hand',exact:true}).click();
   await expect(page.getByText(/Hand complete/)).toBeVisible();
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('flipup.quiz')!).hands)).toBe(1);
+  expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('flipup.quizrecent')!)[0].id)).toBe('h-protocol-test');
   await page.reload();
   await page.getByRole('tab',{name:'Review'}).click();
   await page.getByRole('button',{name:/Study bank/}).click();

@@ -526,6 +526,21 @@ describe('table', () => {
     expect(game.logs.at(-1)!.lines.at(-1)).toMatch(/shows \[/);
   });
 
+  it('lets a busted player see every hole card, only when the host turns it on', () => {
+    let game = table(3);
+    const busted = game.players.find((p) => !p.bot && p.deviceId)!;
+    game = { ...game, players: game.players.map((p) => (p.id === busted.id ? { ...p, stack: 0 } : p)) };
+    game.hand = { ...game.hand!, seats: game.hand!.seats.map((s) => (s.playerId === busted.id ? { ...s, folded: true } : s)) };
+    const others = (g: Game, d: string) => redactForDevice(g, d).hand!.seats.filter((s) => s.playerId !== busted.id);
+    expect(others(game, busted.deviceId!).every((s) => s.cards.length === 0)).toBe(true);
+    const on = { ...game, settings: { ...game.settings, showToBusted: true } };
+    expect(others(on, busted.deviceId!).every((s) => s.cards.length === 2)).toBe(true);
+    // A player with chips, or a stranger, sees nothing extra.
+    const other = on.players.find((p) => p.deviceId && p.id !== busted.id);
+    if (other) expect(redactForDevice(on, other.deviceId!).hand!.seats.filter((s) => s.playerId !== other.id).every((s) => s.cards.length === 0)).toBe(true);
+    expect(redactForDevice(on, 'someone-else').hand!.seats.every((s) => s.cards.length === 0)).toBe(true);
+  });
+
   it("keeps each player's last action for the speech bubble, and a call says what was added", () => {
     let game = table(3);
     const hand = game.hand!;
@@ -615,6 +630,12 @@ describe('table', () => {
     expect(hiddenBots.length).toBeGreaterThan(0);
     // Only the host can.
     expect(applyAction(game, { type: 'revealBots', hand: n }, ctx('device-friend')).ok).toBe(false);
+    // Tapping one bot turns over just that one.
+    if (hiddenBots.length > 1) {
+      const one = must(game, { type: 'revealBots', hand: n, playerId: hiddenBots[0] }, HOST);
+      expect(redactForDevice(one, 'device-friend').hand!.seats.find((s) => s.playerId === hiddenBots[0])!.cards.length).toBe(2);
+      expect(one.hand!.seats.find((s) => s.playerId === hiddenBots[1])!.shown).toBe(false);
+    }
     game = must(game, { type: 'revealBots', hand: n }, HOST);
     expect(bots.every((id) => !hiddenFrom('device-friend', id))).toBe(true);
     expect(game.logs.at(-1)!.lines.some((l) => /shows \[/.test(l))).toBe(true);

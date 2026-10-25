@@ -57,9 +57,17 @@ commercial-solver comparison has been performed in this workspace. For such a co
 
 ## One-time deployment
 
-No Fly or Cloudflare credentials/CLI are configured in this workspace, so these changes are committed
-and tested but **not deployed here**. Deploy the coach and app once from the same branch. Thereafter
-approved scenario data updates do not require an app/code release.
+Deploy the coach and app once from the same branch. Thereafter approved scenario data updates do
+not require an app/code release. The existing GitHub workflow can deploy the coach using its
+repository Fly secret, even when the local shell has no Fly login:
+
+```bash
+gh workflow run deploy-coach.yml --repo goodwinconnor07-create/flipup --ref codex/scroll-first
+gh run list --repo goodwinconnor07-create/flipup --workflow deploy-coach.yml --limit 3
+```
+
+The app uses its existing Cloudflare GitHub build connection. Confirm that build succeeds on your
+production branch; the direct command below needs a local Cloudflare login/token.
 
 On a machine with your normal Fly and Cloudflare tooling/authentication:
 
@@ -209,4 +217,6 @@ exercise actual solved cases, auth/publication, atomic failed packs, state-depen
 lease retries/pause, private custom-cache lookup and illegal sizing rejection. Frontend tests cover
 fractional frequencies, equal-EV grading, price/fold-equity explanations, time expiry and saving.
 Browser tests play, grade, save, reload and replay a new scenario, and test startup with a bot session.
-No physical laptop run or live deployment was executed from this workspace.
+No physical laptop run was executed from this workspace. After deploying, verify that
+`https://flipup-gto.fly.dev/scroll/catalogue` returns a non-empty JSON catalogue and the app
+loads the new scenarios. Deployment success is separate from solver/test validation.

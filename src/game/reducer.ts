@@ -63,6 +63,7 @@ export function validSettings(s: Settings): boolean {
     s.bigBlind >= s.smallBlind &&
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
+    (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
     int(s.turnSeconds) &&
@@ -515,6 +516,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       for (const seat of hand.seats) {
         const player = playerById(game, seat.playerId);
         if (!player?.bot || seat.shown || seat.cards.length !== 2) continue;
+        if (action.playerId && player.id !== action.playerId) continue;
         seat.shown = true;
         changed = true;
         if (entry) {

@@ -126,7 +126,7 @@ export function saveTableLook(look: TableLook): void {
   write('flipup.table', look);
 }
 
-/** Liquid Glass is on unless the player turned it off. */
+/** Transparency (the frosted glass on what floats) is on unless the player turned it off. */
 export function loadGlass(): boolean {
   return read<boolean>('flipup.glass') !== false;
 }
@@ -135,12 +135,18 @@ export function saveGlass(glass: boolean): void {
   write('flipup.glass', glass);
 }
 
-export function loadDark(): boolean {
-  return read<boolean>('flipup.dark') === true;
+export type Appearance = 'auto' | 'light' | 'dark';
+
+/** Light, dark, or the same as the phone (the default). Phones from before this kept a plain on/off switch. */
+export function loadAppearance(): Appearance {
+  const a = read<Appearance>('flipup.appearance');
+  if (a === 'auto' || a === 'light' || a === 'dark') return a;
+  const old = read<boolean>('flipup.dark');
+  return old === true ? 'dark' : old === false ? 'light' : 'auto';
 }
 
-export function saveDark(dark: boolean): void {
-  write('flipup.dark', dark);
+export function saveAppearance(appearance: Appearance): void {
+  write('flipup.appearance', appearance);
 }
 
 /** True if the player turned Animations off. Animations are on until they do. */
@@ -194,6 +200,8 @@ export interface GameResult {
   net: number;
   hands: number;
   players: number;
+  /** Where you finished by chips at the end, 1 for first (tables from before this was kept have none). */
+  place?: number;
 }
 
 export function loadStats(): Stats {
@@ -207,7 +215,7 @@ export function loadStats(): Stats {
     games: Array.isArray(s?.games)
       ? s.games
           .filter((g) => g && [g.at, g.net, g.hands, g.players].every((n) => typeof n === 'number' && Number.isFinite(n)))
-          .map((g) => ({ at: g.at, net: g.net, hands: g.hands, players: g.players }))
+          .map((g) => ({ at: g.at, net: g.net, hands: g.hands, players: g.players, ...(typeof g.place === 'number' && g.place >= 1 ? { place: g.place } : {}) }))
       : [],
   };
 }

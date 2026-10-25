@@ -26,5 +26,5 @@ in `src/train/coach.ts` writes the reasons. The hand then carries on the way it 
   in `flipup.quizbank`, until you delete it.
 - Every finished hand also goes into `flipup.quizrecent`, and anything older than 24 hours is deleted from
   there, so nothing piles up.
-- The study bank (Train → Study bank, and a row on the Scroll tab) lists saved hands (play again, rename,
+- The study bank (Review → Study bank) lists saved hands (play again, rename,
   delete) and the last 24 hours (play again, save).

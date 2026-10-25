@@ -98,6 +98,14 @@ export function SettingsFields({
           on={settings.rebuys}
           onChange={(rebuys) => onChange({ ...settings, rebuys })}
         />
+        {timer && (
+          <Toggle
+            label="Busted players peek"
+            hint="Once you're out of chips, you see everyone's cards"
+            on={!!settings.showToBusted}
+            onChange={(showToBusted) => onChange({ ...settings, showToBusted })}
+          />
+        )}
       </div>
     </>
   );

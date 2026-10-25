@@ -17,6 +17,8 @@ export interface Settings {
   blindMinutes?: number;
   /** Rising blinds stop at this big blind (0 or missing: they keep doubling). */
   blindCap?: number;
+  /** Online tables: a busted player (no chips) sees every hole card. */
+  showToBusted?: boolean;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
 }
@@ -282,7 +284,7 @@ export type Action =
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
   /** After a hand, the host turns every bot's cards face up for everyone. */
-  | { type: 'revealBots'; hand: number }
+  | { type: 'revealBots'; hand: number; /** Just this bot; all of them when missing. */ playerId?: string }
   /** A quick message to the table ("Nice hand!"). */
   | { type: 'react'; id: string }
   | { type: 'sitOut'; out: boolean }

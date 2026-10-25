@@ -136,11 +136,13 @@ export function trendLine(trend: TrendPoint[]): string | null {
 }
 
 /** What the coach opens with on the Train tab and in Insights. */
-export function greeting(opts: { toReview: number; decisions: number; gtoPct: number; weakest?: { id: string; title: string } | null }): string {
-  if (opts.toReview > 0) return `I haven't looked at ${opts.toReview === 1 ? 'one of your hands' : `${opts.toReview} of your hands`} yet. Want me to?`;
+export function greeting(opts: { toReview: number; lastGame?: number; decisions: number; gtoPct: number; weakest?: { id: string; title: string } | null }): string {
+  const hands = (n: number) => (n === 1 ? 'one hand' : `${n} hands`);
+  if (opts.lastGame) return `Your last game has ${hands(opts.lastGame)} I haven't looked at. Want to go through them?`;
+  if (opts.toReview > 0) return `There are ${hands(opts.toReview)} I haven't looked at yet. Want to go through them?`;
   if (opts.weakest) return `Your toughest spot lately is ${opts.weakest.title.toLowerCase()}. A few drills would help.`;
   if (opts.decisions > 0) return `You're matching me on ${pct(opts.gtoPct)} of your decisions. Keep playing and I'll keep watching.`;
-  return 'Play a few hands and I will go through them with you.';
+  return "Play a few hands and I'll go through them with you.";
 }
 
 export { scenarioTitle };

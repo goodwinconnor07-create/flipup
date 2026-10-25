@@ -4,8 +4,8 @@ import { shot, watchErrors } from './helpers';
 test('fresh Scroll scenarios give honest feedback and survive saving/reload', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Scroll' }).click();
-  await page.getByRole('button', { name: 'Start scrolling' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
+  await page.getByRole('button', { name: 'Play a solved scenario' }).click();
   const options = page.getByRole('group', { name: 'Your move' });
   await expect(options).toBeVisible({ timeout: 30000 });
   await expect(page.getByText(/Your stack/)).toBeVisible();
@@ -23,7 +23,7 @@ test('fresh Scroll scenarios give honest feedback and survive saving/reload', as
   await page.reload();
   // A restart always opens Home, even with persistent state.
   await expect(page.getByRole('tab', { name: 'Play' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Scroll' }).click();
+  await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Study bank/ }).click();
   await expect(page.getByText('A tricky decision', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Play again' }).first().click();

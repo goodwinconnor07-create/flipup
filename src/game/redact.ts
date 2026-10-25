@@ -9,6 +9,13 @@ const mineFor = (game: Game, deviceId: string) => new Set(game.players.filter((p
 export function redactForDevice(game: Game, deviceId: string): Game {
   const hand = game.hand;
   const mine = mineFor(game, deviceId);
+  // With the host's setting on, someone who has gone broke sees every hole card (no one still in a hand does).
+  const peek =
+    !!game.settings.showToBusted &&
+    !!hand &&
+    mine.size > 0 &&
+    game.players.filter((p) => mine.has(p.id)).every((p) => p.stack === 0) &&
+    hand.seats.filter((s) => mine.has(s.playerId)).every((s) => s.folded);
   return {
     ...game,
     // Bots' styles and their notes on players stay on the server.
@@ -25,7 +32,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     hand: hand && {
       ...hand,
       deck: [],
-      seats: hand.seats.map((s) => (mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
+      seats: hand.seats.map((s) => (peek || mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
     },
   };
 }

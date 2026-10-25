@@ -739,10 +739,6 @@ html[data-theme='dark'] .pcard.dim > * {
   box-shadow: none;
 }
 
-.btn-fold .ripple {
-  background: rgba(225, 29, 72, 0.15);
-}
-
 .result-lines {
   display: flex;
   flex-direction: column;

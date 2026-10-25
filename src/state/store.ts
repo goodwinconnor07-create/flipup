@@ -30,7 +30,7 @@ import {
   forgetOldScroll,
   loadDeviceId,
   loadCalm,
-  loadDark,
+  loadAppearance,
   loadGlass,
   loadMuted,
   loadTalk,
@@ -42,7 +42,7 @@ import {
   loadLastTable,
   saveLastTable,
   saveCalm,
-  saveDark,
+  saveAppearance,
   saveGlass,
   saveLastBots,
   saveMuted,
@@ -54,6 +54,7 @@ import {
   type Profile,
   type Session,
   type TableLook,
+  type Appearance,
 } from './persist';
 
 export type Route =
@@ -126,14 +127,20 @@ export interface AppState {
   talk: boolean;
   /** Animations switched off. */
   calm: boolean;
+  /** What the player picked: light, dark or the same as the phone. */
+  appearance: Appearance;
+  /** Whether the app is dark right now (from the pick, or the phone's setting). */
   dark: boolean;
-  /** Liquid Glass look: frosted, see-through panels. Off gives solid ones. */
+  /** Transparency: frosted, see-through glass on what floats. Off gives solid panels. */
   glass: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
 
 const ROOT: Route = { name: 'home' };
+
+const darkQuery = typeof matchMedia === 'function' ? matchMedia('(prefers-color-scheme: dark)') : null;
+const isDark = (appearance: Appearance) => appearance === 'dark' || (appearance === 'auto' && !!darkQuery?.matches);
 const listeners = new Set<() => void>();
 
 const bootDevice = loadDeviceId();
@@ -163,9 +170,11 @@ let state: AppState = {
   muted: loadMuted(),
   talk: loadTalk(),
   calm: loadCalm(),
-  dark: loadDark(),
+  appearance: loadAppearance(),
+  dark: false,
   glass: loadGlass(),
 };
+state.dark = isDark(state.appearance);
 forgetOldScroll();
 applyTheme(state.dark);
 document.documentElement.classList.toggle('no-glass', !state.glass);
@@ -532,16 +541,22 @@ export function toggleMuted(): void {
 /** Dark or light for the whole app: a data-theme on <html> that the stylesheet's colour tokens follow. */
 function applyTheme(dark: boolean): void {
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]'))
-    meta.setAttribute('content', dark ? '#0e0f14' : '#ffffff');
+  for (const meta of document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')) meta.setAttribute('content', dark ? '#000000' : '#ffffff');
 }
 
-export function toggleDark(): void {
-  const dark = !state.dark;
-  saveDark(dark);
+export function setAppearance(appearance: Appearance): void {
+  saveAppearance(appearance);
+  const dark = isDark(appearance);
   applyTheme(dark);
-  set({ dark });
+  set({ appearance, dark });
 }
+
+// On Automatic, the app follows the phone when it switches between light and dark.
+darkQuery?.addEventListener?.('change', () => {
+  if (state.appearance !== 'auto') return;
+  applyTheme(isDark('auto'));
+  set({ dark: isDark('auto') });
+});
 
 export function toggleGlass(): void {
   const glass = !state.glass;
@@ -565,12 +580,13 @@ function recordFinished(): void {
   if (!game || !me || played === 0) return;
   const stats = loadStats();
   if (stats.counted.includes(game.id)) return;
+  const place = 1 + game.players.filter((p) => p.stack > me.stack).length;
   saveStats({
     net: stats.net + (me.stack - me.bought),
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place }],
   });
 }
 

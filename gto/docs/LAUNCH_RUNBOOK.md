@@ -16,6 +16,28 @@ All numerical tests, poker generation and network training run on the laptops.
 
 ## Assign the two laptops
 
+### 8 GB Windows laptop: raise the WSL allocation carefully
+
+`python3 gto/scripts/configure_scroll_wsl.py --apply` runs in Ubuntu, backs up the Windows
+user's existing `.wslconfig`, preserves unrelated settings and sets WSL2 memory to 5GB and
+swap to 4GB. Configuration-text tests pass; Windows application of the settings must be
+verified on the laptop. Save work in every WSL distribution, run `wsl --shutdown` from Windows
+PowerShell, and reopen Ubuntu. Verify with `free -h` and the launcher `resources` command.
+Swap is disk-backed and is not a substitute for RAM or a capacity fix.
+
+Before another full-hand campaign, run a bounded tree-construction check against a saved input:
+
+```bash
+INPUT=$(find "$HOME/flipup-whole-data/launch1/fast/candidates" -name '*.input.json' -print -quit)
+"$HOME/flipup-net-env/bin/python" gto/scripts/scroll_capacity.py \
+  --input "$INPUT" --out "$HOME/flipup-capacity.json"
+```
+
+This runs on the laptop, builds one tree with the current detected memory budget and runs zero
+solver iterations. A timeout, node cap or memory failure is a blocker; do not launch the same
+overnight campaign again. One fitting tree does not prove the whole workload fits. This check
+does not repair the full-tree design or silently shrink betting options.
+
 The launcher now detects CPU affinity, Ubuntu/WSL available RAM and cgroup v2 limits.
 It uses all visible logical CPUs for OpenMP work and selects a solver-memory budget with
 headroom for the OS, Python and tree construction. Explicit `FU_NET_THREADS` and

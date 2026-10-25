@@ -32,6 +32,7 @@ jobs:
           gto/tests/test_launch_preflight.py
           gto/tests/test_scroll_dashboard.py
           gto/tests/test_scroll_resources.py
+          gto/tests/test_scroll_wsl_config.py
   check:
     runs-on: ubuntu-latest
     steps:

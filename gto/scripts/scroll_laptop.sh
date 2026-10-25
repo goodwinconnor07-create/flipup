@@ -13,6 +13,32 @@ case "${1:-}" in
     source "$CONFIG"
     "$VENV/bin/python" "$GTO/scripts/scroll_remote.py" "$1"
     ;;
+  draft)
+    ROLE="${2:?fast or slow}";NAME="${3:?run name}"
+    case "$ROLE" in fast|slow) ;; *) exit 1;; esac
+    [[ "$NAME" =~ ^[a-zA-Z0-9_-]{1,40}$ ]] || exit 1
+    AUDIT="${FU_SCROLL_AUDIT:-$HOME/flipup-engine-audit/internal-audit.json}"
+    [ -f "$AUDIT" ] || { echo "Missing passing internal audit: $AUDIT";exit 1; }
+    SESSION="scroll-draft-$ROLE"
+    tmux has-session -t "$SESSION" 2>/dev/null && { echo 'Already running';exit 1; }
+    OUT="$HOME/flipup-draft-data/$NAME/$ROLE";mkdir -p "$OUT"
+    CMD=(env "OMP_NUM_THREADS=${FU_NET_THREADS:-2}" OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+      "$VENV/bin/python" -u "$GTO/scripts/scroll_drafts.py" --role "$ROLE" --out "$OUT"
+      --audit "$AUDIT" --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}")
+    printf -v LINE '%q ' "${CMD[@]}";printf -v LOG '%q' "$OUT/runner.log"
+    PREFIX=''
+    if [ -f "$CONFIG" ];then printf -v CFG '%q' "$CONFIG";PREFIX="source $CFG; ";fi
+    tmux new-session -d -s "$SESSION" "${PREFIX}$LINE >> $LOG 2>&1"
+    echo "Draft computation started in $SESSION. These candidates never publish to Scroll."
+    echo "Status: $OUT/status.json; logs: $OUT/batch-*/worker.log"
+    echo 'Keep the laptop awake, plugged in and lid open. Close the terminal if needed.'
+    ;;
+  draft-status)
+    ROLE="${2:?fast or slow}";NAME="${3:?run name}"
+    [[ "$NAME" =~ ^[a-zA-Z0-9_-]{1,40}$ ]] || exit 1
+    case "$ROLE" in fast|slow) ;; *) exit 1;; esac
+    cat "$HOME/flipup-draft-data/$NAME/$ROLE/status.json"
+    ;;
   start)
     ROLE="${2:?fast or slow}";NAME="${3:?a run name}"
     case "$ROLE" in fast|slow) ;; *) exit 1;; esac

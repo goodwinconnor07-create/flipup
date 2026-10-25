@@ -114,3 +114,41 @@ pipeline ready for an unattended production campaign.
 
 New audit runs print the current stage and a heartbeat every 15 seconds. Do not update or restart
 an audit already running on a laptop just to obtain that progress display.
+
+## Leave a laptop computing now: QUARANTINED DRAFTS
+
+After the original internal audit passes, the new `draft` mode can perform useful overnight
+computation without granting publication approval or requiring fabricated external references.
+It is a separate command, directory, file extension and remote artifact namespace. It has no call
+to any Scroll publication route. The normal production `start` mode retains its validation gates.
+
+```bash
+cd "$HOME/flipup-laptop-rebuild"
+git pull --ff-only
+bash gto/scripts/scroll_laptop.sh draft fast away1
+# On the slower laptop, after its own setup/internal audit: use draft slow away1
+bash gto/scripts/scroll_laptop.sh draft-status fast away1
+```
+
+Drafts use the existing approximate six-player preflop model to derive reached starting ranges,
+with its own measured model-deviation check. They then solve independent no-rake river study games
+for two or three players across 20/40/100bb starting profiles. These river studies do NOT invent
+intervening flop/turn histories and are not full hands. Their ranges are not externally verified
+preflop GTO. Postflop answers are computed using the strict full river tree and stability gates.
+All saved results explicitly say `publicationApproved: false`. A passed old internal audit is
+recorded as a diagnostic baseline, never upgraded to validation of newer source code.
+
+Defaults: 48 hours, two threads, 1536MB engine-storage cap. Each subprocess batch has a 30-minute
+wall-clock cap; timeouts and failures preserve logs and inputs. Three consecutive failures stop
+rather than silently wasting two days. Status records that stop. Restart with the same command/run
+name keeps the original deadline and completed batches. Terminal closure is safe under tmux;
+sleep/reboot still interrupts computation. To stop: `tmux send-keys -t scroll-draft-fast C-c`.
+
+If you previously configured the upload token with `scroll_laptop.sh configure`, each batch backs up
+to private Fly artifacts under `draft-away1-fast` / `draft-away1-slow`. Without credentials, computation
+still runs and clearly reports LOCAL ONLY in status. It does not pretend uploads succeeded. The data
+stays in `~/flipup-draft-data/away1/fast` (or `slow`); never delete that directory while running.
+
+These draft files are excluded from the approved-data network trainer. They require review and
+matching validation before being admitted to any production training set or public feed. Useful
+computed candidates are not equivalent to launch-ready Scroll content.

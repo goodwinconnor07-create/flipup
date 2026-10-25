@@ -1,3 +1,6 @@
+> GENERATION PAUSED. The cloud starter pack is withdrawn. Do not run the old Scroll generation commands.
+> Use the diagnostic instructions on branch `codex/laptop-only-rebuild`; no replacement engine is launch-validated yet.
+
 # Scroll-first production and Ubuntu commands
 
 This is the current workflow. It supersedes the network-first campaign for Scroll production.

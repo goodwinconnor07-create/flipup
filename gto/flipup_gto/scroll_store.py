@@ -40,6 +40,8 @@ def db():
 
 
 def publish(entries):
+    raise ValueError("Scroll publication is paused until the laptop engine rebuild is validated")
+
     # Validate the entire pack before changing any public content.
     seen=set()
     retired=retired_ids()

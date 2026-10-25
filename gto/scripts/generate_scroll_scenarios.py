@@ -10,6 +10,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from flipup_gto.scroll_contract import require_validation,validate_job,fingerprint
 from flipup_gto.cards import hand_class
+from flipup_gto.scroll_paths import reached_paths
 from flipup_gto.scroll_scenarios import (VERSION,solve,query,arrays,scenario_from,validate_public)
 from flipup_gto.value_data import atomic_json,atomic_npz,sample_rng,digest,encode
 from flipup_gto.strategy import extract_rows
@@ -45,11 +46,13 @@ def generate(root,players,street,worker,attempts,hours,memory=1536,jobs=None,val
         try:
             # Solve once, then expose different genuinely reached decision types.
             s,_,rootq,quality,_,_=solve(spec,memory=memory)
-            paths=[[]]
-            rootfreq=np.asarray(rootq['strategy']).mean(1)
-            for a in sorted(range(len(rootfreq)),key=lambda k:-rootfreq[k]):
-                if rootq['actions'][a]['type']!='fold' and rootfreq[a]>.01:paths.append([a])
-                if len(paths)>=4:break
+            if spec.get('path'):raise ValueError('production root jobs must contain reached ranges at an empty root path')
+            def at(indices):
+                return query(s,[str(i) for i in indices] if players==2 else indices,players,False)
+            def masses(q):
+                _,w,c=arrays(q,players)
+                return w[q['player'],c]
+            paths=reached_paths(at,masses)
             for indices in paths:
                 pathspec={**spec,'path':[]};tokens=[]
                 for idx in indices:

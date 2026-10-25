@@ -8,7 +8,6 @@ import sys
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
-from flipup_gto import valuenet as vn
 from flipup_gto.scroll_contract import require_validation,validate_job
 from flipup_gto.cards import hand_class
 from flipup_gto.scroll_scenarios import (VERSION,solve,query,arrays,scenario_from,validate_public)
@@ -16,7 +15,6 @@ from flipup_gto.value_data import atomic_json,atomic_npz,sample_rng,digest,encod
 from flipup_gto.strategy import extract_rows
 from generate_value_data import source_fingerprint
 import hashlib
-from generate_value_data import random_spot
 
 
 def generate(root,players,street,worker,attempts,hours,memory=1536,jobs=None,validation=None):

@@ -68,3 +68,21 @@ Imported-root generation additionally requires `FU_SCROLL_JOBS` (JSON containing
 independent comparisons are available. Automatic uploads/backups/downloads remain in the runner,
 but are downstream of validation. Model training must use validated labels and stay separate from
 publication of solver answers. No network prediction is a certificate of GTO accuracy.
+
+## Safe first laptop step: diagnostics, not generation
+
+These commands compile and run the existing numerical checks ON THE LAPTOP. They do not create
+Scroll hands, publish answers or activate a model. The report does not claim external validation.
+Do this on both laptops and keep the resulting audit directory.
+
+```bash
+git clone --branch codex/laptop-only-rebuild --single-branch \
+  https://github.com/goodwinconnor07-create/flipup.git "$HOME/flipup-laptop-rebuild"
+cd "$HOME/flipup-laptop-rebuild"
+bash gto/scripts/scroll_laptop.sh setup
+"$HOME/flipup-net-env/bin/python" gto/scripts/laptop_engine_audit.py \
+  --out "$HOME/flipup-engine-audit"
+```
+
+Generation remains disabled while those numerical regressions and the reached-range builder are
+being repaired. This is intentional: a successfully compiled engine is not a validated GTO engine.

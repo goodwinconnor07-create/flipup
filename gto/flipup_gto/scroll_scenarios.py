@@ -28,6 +28,7 @@ def build(spec,memory=1536):
         sizes=sizing()
         for extra in spec.get('extras',[]):
             sizes=sizes.with_extra(extra['player'],len(spec['board'])-3,extra['kind'],str(extra['fraction']*100)+'%')
+            if extra['kind']=='bet':sizes=sizes.with_extra(extra['player'],len(spec['board'])-3,'donk',str(extra['fraction']*100)+'%')
         return PostflopSolver(spec['board'],spec['pot'],spec['stack'],*spec['ranges'],sizing=sizes,
                               compress=False,max_memory_mb=memory,max_nodes=200000)
     if spec['players']!=3:raise ValueError('only exact HU/three-player supported')

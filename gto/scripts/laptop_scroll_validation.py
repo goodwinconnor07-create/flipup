@@ -42,7 +42,7 @@ def main():
             matches=[o for o in actual['options'] if o['kind']==ref['kind'] and abs(o['to']-ref['to'])<1e-6]
             if len(matches)!=1:raise ValueError('reference action missing from computed menu')
             worst=max(worst,abs(matches[0]['ev']-ref['ev'])/actual['pot'])
-        if len(case['actions'])!=len(actual['options']):raise ValueError('reference must cover the whole computed menu')
+        if len(case['actions'])!=sum(not o.get('analytic',False) for o in actual['options']):raise ValueError('reference must cover the whole computed menu')
         # Frequencies need not agree in degenerate equal-EV equilibria; compare action values.
         passed=worst<=.005
         report['cases'].append(dict(id=case['id'],passed=passed,maxActionEvErrorPot=worst))

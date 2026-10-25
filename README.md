@@ -19,6 +19,12 @@ npm run check      # typecheck, unit tests, build
 npm run e2e        # phone-sized browser tests, including two phones playing online
 ```
 
+## Scroll generation
+
+See [the Scroll-first runbook](gto/docs/SCROLL_FIRST.md) for both Ubuntu laptops, exact-solver quality
+gates, automatic publication/downloads and remote worker controls. The coach serves approved
+scenario data separately from app releases; keep both laptops running to expand and refine it.
+
 ## How it's built
 
 - React + Vite app in `src/`, with the poker engine in `src/game/` shared with the server

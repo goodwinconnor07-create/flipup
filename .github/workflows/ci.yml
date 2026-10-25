@@ -4,15 +4,32 @@ name: Check
 
 on:
   push:
-    branches: [main]
+    branches: [main, codex/laptop-only-rebuild]
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 concurrency:
   group: check-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  scroll-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install numpy pytest
+      - name: Release contracts only (no poker solves)
+        run: >-
+          python -m pytest -q
+          gto/tests/test_scroll_release.py gto/tests/test_scroll_contract.py
+          gto/tests/test_scroll_paths.py gto/tests/test_scroll_line.py
+          gto/tests/test_flop_reuse.py gto/tests/test_scroll_schedule.py
+          gto/tests/test_scroll_bootstrap.py
+          gto/tests/test_launch_preflight.py
   check:
     runs-on: ubuntu-latest
     steps:

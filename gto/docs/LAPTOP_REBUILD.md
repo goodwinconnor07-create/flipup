@@ -1,5 +1,9 @@
 # Laptop-only Scroll rebuild: work in progress
 
+For current laptop assignments, deployment gates and remaining launch blockers, see
+[the launch runbook](LAUNCH_RUNBOOK.md). Older status notes below describe earlier stages;
+the whole-hand candidate builder is now implemented, with external validation still outstanding.
+
 This supersedes SCROLL_FIRST.md for generation. Do not use the old start commands yet.
 No new poker solves or scenario generation should be run in the assistant/cloud workspace.
 The 80 cloud-generated starter decisions have been withdrawn; private server rows remain for audit.

@@ -5,8 +5,13 @@ import math
 from fastapi import APIRouter,HTTPException,Request
 from . import scroll_store as store
 from .flop_admin import _check
+from .scroll_release import readiness,require_publication
 
 router=APIRouter()
+
+
+@router.get('/health')
+def health():return readiness()
 
 
 async def body(request,limit=2*1024**2):
@@ -57,7 +62,10 @@ def job(key:str):
 @router.post('/admin/scroll/publish')
 async def publish(request:Request):
     _check(request);d=await body(request)
-    try:return {'published':store.publish(d['items'])}
+    try:
+        profiles=[(e['scenario']['players'],{3:'flop',4:'turn',5:'river'}[len(e['scenario']['board'])]) for e in d['items']]
+        require_publication(d.get('validation'),profiles)
+        return {'published':store.publish(d['items'])}
     except (ValueError,KeyError,TypeError) as e:raise HTTPException(400,str(e))
 
 
@@ -107,5 +115,9 @@ def hand(ident:str):
 async def publish_hands(request:Request):
     _check(request);d=await body(request)
     from .scroll_hands import publish
-    try:return dict(published=publish(d['items'],d['validation']))
+    try:
+        profiles=[(item['scenario']['players'],{3:'flop',4:'turn',5:'river'}[len(item['scenario']['board'])])
+                  for entry in d['items'] for item in entry['hand']['decisions']]
+        require_publication(d.get('validation'),profiles)
+        return dict(published=publish(d['items'],d['validation']))
     except (ValueError,KeyError,TypeError) as exc:raise HTTPException(400,str(exc))

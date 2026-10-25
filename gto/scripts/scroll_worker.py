@@ -30,7 +30,7 @@ def call(client,path,payload=None):
                      None if payload is None else json.dumps(payload,allow_nan=False).encode())[1])
 
 
-def process(client,job,memory):
+def process(client,job,memory,validation):
     stopped=threading.Event()
     def renew():
         while not stopped.wait(60):
@@ -39,11 +39,13 @@ def process(client,job,memory):
     threading.Thread(target=renew,daemon=True).start()
     try:
         p=job['payload'];validate_job(p['spec']);maximum=4000*2**(job['attempt']-1)
+        profile=[p['spec']['players'],{3:'flop',4:'turn',5:'river'}[len(p['spec']['board'])]]
+        if profile not in validation.get('coverage',[]):raise ValueError('queued profile has no passing independent reference')
         if job['kind']=='size':
             value=solve_entry(p['spec'],parse_combo(''.join(p['cards'])),maximum,memory)
             selected=next((o for o in value['options'] if (o['kind']==p['kind'] or o['kind']=='allin') and abs(o['to']-p['to'])<1e-4),None)
             if selected is None:raise ValueError('requested size not retained in tree')
-            call(client,'/publish',dict(items=[{'scenario':value,'solve':p['spec']}]))
+            call(client,'/publish',dict(items=[{'scenario':value,'solve':p['spec']}],validation=validation))
             value={'scenario':value,'option':selected,'quality':value['quality']}
         else:
             s,tokens,q,quality,drift,edrift=solve(p['spec'],maximum,memory)
@@ -126,7 +128,7 @@ def main():
                 receipts=root/'.published';receipts.mkdir(exist_ok=True)
                 for p in sorted(folder.glob('s-*.entry.json')):
                     if (receipts/p.name).exists():continue
-                    call(client,'/publish',dict(items=[json.loads(p.read_text())]));(receipts/p.name).touch()
+                    call(client,'/publish',dict(items=[json.loads(p.read_text())],validation=validation));(receipts/p.name).touch()
                 # Download approved packs onto BOTH laptops, not only the generating machine.
                 import urllib.request
                 with urllib.request.urlopen(client.url+'/scroll/catalogue',timeout=120) as r:cat=json.load(r)
@@ -140,7 +142,7 @@ def main():
                 job=call(client,'/lease',{})
                 if job:
                     state.update(stage='refining queued spot',job=job['id']);atomic_json(statepath,state)
-                    process(client,job,a.memory_mb)
+                    process(client,job,a.memory_mb,validation)
                 backup.push(root,'scroll-'+root.parent.name+f'-{a.role}')
             if a.role=='slow' and a.models=='auto' and time.time()<end:
                 peer=root/'.peer'/'fast'

@@ -202,3 +202,30 @@ Verification here: normal frontend type/unit/build checks, protocol-only mocked 
 offline replay, pure hand-path traversal tests and C++ syntax checks. The new multi-street wager
 regression is written for the LAPTOP audit and has deliberately NOT been executed here. The backend
 and app changes remain on the rebuild branch; production is not reopened automatically.
+
+## One-command full-hand candidate workflow
+
+On a laptop that already completed the original setup, `whole-auto` rebuilds the engine, runs the
+current numerical audit, and starts the full-hand candidate workload only if the audit succeeds.
+All stages run in tmux and retain individual logs plus `bootstrap-status.json`. No sudo installation
+or unattended password prompt is introduced. The 48-hour candidate budget begins after the audit.
+
+Do not update while a previous job is running. Stop the old role's draft session first if you choose
+to switch, preserving its output directory. Then:
+
+```bash
+cd "$HOME/flipup-laptop-rebuild"
+git pull --ff-only
+bash gto/scripts/scroll_laptop.sh whole-auto fast full2
+# On the other laptop after its original setup: whole-auto slow full2
+```
+
+Status: `~/flipup-whole-data/full2/fast/bootstrap-status.json`; numerical audit logs are in `audit/`;
+hand files, inputs and rejection reasons are in `candidates/batch-*/`. Existing uploader configuration
+is reused when present; audit logs are included in those backups. Without credentials, status says
+local only. Close the terminal if needed, but keep Ubuntu running, the laptop awake and plugged in.
+The completed-hand source still needs independent range-model and solver validation before publication.
+
+Supported scope remains equal-root-stack HU/three-player, no rake, chip EV. Four-plus players,
+unequal stacks/side pots, rake profiles and ICM/bounty utility are not implemented by this release.
+A complete pipeline for that supported scope is distinct from claiming universal perfect GTO.

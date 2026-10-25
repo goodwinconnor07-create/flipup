@@ -14,6 +14,24 @@ case "${1:-}" in
     source "$CONFIG"
     "$VENV/bin/python" "$GTO/scripts/scroll_remote.py" "$1"
     ;;
+  whole-auto)
+    ROLE="${2:?fast or slow}";NAME="${3:?run name}"
+    case "$ROLE" in fast|slow) ;; *) exit 1;; esac
+    [[ "$NAME" =~ ^[a-zA-Z0-9_-]{1,40}$ ]] || exit 1
+    for SESSION in "scroll-draft-$ROLE" "scroll-whole-$ROLE" "scroll-auto-$ROLE";do
+      if tmux has-session -t "$SESSION" 2>/dev/null;then echo "$SESSION is already running; stop it before starting a new workload.";exit 1;fi
+    done
+    OUT="$HOME/flipup-whole-data/$NAME/$ROLE";mkdir -p "$OUT"
+    CMD=(env "OMP_NUM_THREADS=${FU_NET_THREADS:-2}" OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+      "$VENV/bin/python" -u "$GTO/scripts/scroll_bootstrap.py" --role "$ROLE" --out "$OUT"
+      --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}")
+    printf -v LINE '%q ' "${CMD[@]}";printf -v LOG '%q' "$OUT/bootstrap.log"
+    PREFIX='';if [ -f "$CONFIG" ];then printf -v CFG '%q' "$CONFIG";PREFIX="source $CFG; ";fi
+    tmux new-session -d -s "scroll-auto-$ROLE" "${PREFIX}$LINE >> $LOG 2>&1"
+    echo "Started scroll-auto-$ROLE: rebuild, numerical audit, then whole-hand candidates."
+    echo "Status: $OUT/bootstrap-status.json; logs: $OUT/*.log"
+    echo 'No hand publishes automatically. Keep the laptop awake and plugged in.'
+    ;;
   draft|whole)
     ROLE="${2:?fast or slow}";NAME="${3:?run name}"
     case "$ROLE" in fast|slow) ;; *) exit 1;; esac

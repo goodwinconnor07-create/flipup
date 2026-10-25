@@ -91,7 +91,7 @@ def make_batch(out,players,stack,seed,memory,whole=False):
 def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--role',choices=['fast','slow'],required=True);ap.add_argument('--hours',type=float,default=48)
-    ap.add_argument('--audit',type=Path);ap.add_argument('--memory-mb',type=int,default=1536)
+    ap.add_argument('--backup-run');ap.add_argument('--audit',type=Path);ap.add_argument('--memory-mb',type=int,default=1536)
     ap.add_argument('--whole-hands',action='store_true');ap.add_argument('--preflight',action='store_true')
     ap.add_argument('--child',action='store_true');ap.add_argument('--players',type=int,default=2)
     ap.add_argument('--stack',type=int,default=40);ap.add_argument('--seed',type=int,default=1)
@@ -145,7 +145,7 @@ def main():
                 os.killpg(p.pid,signal.SIGTERM);p.wait();raise
         state.update(lastExitCode=code,updated=time.time())
         if backup:
-            try:backup.push(a.out,('whole-' if a.whole_hands else 'draft-')+a.out.parent.name+'-'+a.role);state['backup']='uploaded'
+            try:backup.push(a.out,a.backup_run or ('whole-' if a.whole_hands else 'draft-')+a.out.parent.name+'-'+a.role);state['backup']='uploaded'
             except Exception as exc:state['backupError']=str(exc)
         else:state['backup']='local only; upload credentials not configured'
         atomic_json(statepath,state)

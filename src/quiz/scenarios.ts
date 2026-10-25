@@ -1,3 +1,4 @@
+import withdrawn from './withdrawn.json';
 import { describeHand, type Card } from '../game';
 import { apiUrl } from '../state/platform';
 import { read, write } from '../state/persist';
@@ -19,7 +20,7 @@ export interface ScrollScenario {
 }
 interface Catalogue { version: string; count: number; items: Pick<ScrollScenario, 'id' | 'family' | 'tags' | 'difficulty' | 'players'>[] }
 const CACHE = 'flipup.scenario.cache';
-const usable = (s: ScrollScenario) => s?.schema === 2 && s.quality?.gapPct <= .1 && s.quality.heroFrequencyDrift <= .03 && s.quality.heroEvDrift <= .01 && s.options?.length >= 2;
+const usable = (s: ScrollScenario) => s?.schema === 2 && !withdrawn.includes(s.id) && s.quality?.gapPct <= .1 && s.quality.heroFrequencyDrift <= .03 && s.quality.heroEvDrift <= .01 && s.options?.length >= 2;
 const local = () => read<Record<string, ScrollScenario>>(CACHE) ?? {};
 async function get<T>(url: string): Promise<T> {
   const r = await fetch(url, { signal: AbortSignal.timeout(12000), cache: 'no-store' });
@@ -33,6 +34,7 @@ function remember(s: ScrollScenario) {
   return s;
 }
 export async function getScenario(id: string): Promise<ScrollScenario> {
+  if (withdrawn.includes(id)) throw new Error('This starter scenario was withdrawn and cannot be graded.');
   const saved = [...loadBank(), ...loadRecent()].find(h => h.id === id)?.snapshot;
   if (saved && 'schema' in saved && saved.schema === 2 && usable(saved)) return saved;
   if (usable(local()[id])) return local()[id];
@@ -44,6 +46,8 @@ export async function nextScenario(seen: string[]): Promise<ScrollScenario> {
   try { cat = await get<Catalogue>(apiUrl('/api/gto/scroll/catalogue')); if (!cat.count) throw new Error('empty'); }
   catch { cat = await get<Catalogue>('/gto/scenarios/catalogue.json').catch(() => ({ version: '', count: 0, items: Object.values(local()) })); }
   if (!cat.items.length) throw new Error('Fresh verified scenarios are being prepared. Check for new solves again soon.');
+  cat.items = cat.items.filter(s => !withdrawn.includes(s.id));
+  if (!cat.items.length) throw new Error('The previous starter pack has been withdrawn. Waiting for validated laptop-generated content.');
   const cached = local(); const recent = seen.slice(-8).map(id => cached[id]?.family).filter(Boolean);
   const fresh = cat.items.filter(s => !seen.includes(s.id));
   const pool = fresh.length ? fresh : cat.items;

@@ -13,19 +13,16 @@ ROOT=Path(__file__).parent/'data/cache/scroll'
 MAX_PENDING=256
 
 
+def retired_ids():
+    return set(json.loads((Path(__file__).parent/'data/withdrawn_scroll.json').read_text()))
+
+
 def install_seed():
-    """Trusted, bundled synthetic training data; same checks as authenticated publication."""
-    import gzip
-    seed=Path(__file__).parent/'data/scroll_seed_inputs.json.gz'
-    if seed.exists():
-        bank=json.loads(gzip.decompress(seed.read_bytes()))
-        entries=[]
-        for e in bank['items']:
-            spec=e['solve']
-            if 'root' in spec:
-                spec={**bank['roots'][spec['root']],'path':spec.get('path',[]),'extras':spec.get('extras',[])}
-            entries.append({'scenario':e['scenario'],'solve':spec})
-        publish(entries)
+    """Withdraw the unauthorized cloud starter bank, preserving private audit records."""
+    with db() as c:
+        c.execute('CREATE TABLE IF NOT EXISTS withdrawn(id TEXT PRIMARY KEY)')
+        c.executemany('INSERT OR IGNORE INTO withdrawn VALUES(?)', [(i,) for i in retired_ids()])
+
 
 
 def db():
@@ -33,6 +30,7 @@ def db():
     c=sqlite3.connect(ROOT/'scroll.sqlite3',timeout=15);c.row_factory=sqlite3.Row
     c.execute('PRAGMA journal_mode=WAL')
     c.executescript('''
+    CREATE TABLE IF NOT EXISTS withdrawn(id TEXT PRIMARY KEY);
     CREATE TABLE IF NOT EXISTS scenarios(id TEXT PRIMARY KEY, public TEXT NOT NULL, spec TEXT NOT NULL, created REAL NOT NULL);
     CREATE TABLE IF NOT EXISTS jobs(id TEXT PRIMARY KEY, kind TEXT NOT NULL, payload TEXT NOT NULL, state TEXT NOT NULL,
       attempts INTEGER NOT NULL DEFAULT 0, lease TEXT, until REAL, result TEXT, error TEXT, updated REAL NOT NULL);
@@ -44,8 +42,10 @@ def db():
 def publish(entries):
     # Validate the entire pack before changing any public content.
     seen=set()
+    retired=retired_ids()
     for e in entries:
         p=validate_public(e['scenario']);spec=e['solve']
+        if p['id'] in retired:raise ValueError('withdrawn cloud starter cannot be republished')
         if p['id'] in seen or spec.get('version')!=VERSION or spec['players']!=p['players']:raise ValueError('duplicate/mismatched scenario')
         if len(spec['ranges'])!=spec['players'] or any(len(r)!=1326 for r in spec['ranges']):raise ValueError('invalid ranges')
         json.dumps(e,allow_nan=False);seen.add(p['id'])
@@ -62,13 +62,14 @@ def publish(entries):
 
 
 def catalogue():
-    with db() as c:rows=c.execute('SELECT public FROM scenarios ORDER BY created DESC LIMIT 1000').fetchall()
-    items=[json.loads(r['public']) for r in rows]
+    with db() as c:rows=c.execute('SELECT public FROM scenarios WHERE id NOT IN (SELECT id FROM withdrawn) ORDER BY created DESC LIMIT 1000').fetchall()
+    items=[json.loads(r['public']) for r in rows if json.loads(r['public'])['id'] not in retired_ids()]
     small=[{k:d[k] for k in ('id','family','tags','difficulty','players')} for d in items]
     return dict(version=digest(small),count=len(small),items=small)
 
 
 def get_scenario(ident,private=False):
+    if ident in retired_ids():return None
     with db() as c:r=c.execute('SELECT * FROM scenarios WHERE id=?',(ident,)).fetchone()
     if not r:return None
     return {'scenario':json.loads(r['public']),'solve':json.loads(r['spec'])} if private else json.loads(r['public'])

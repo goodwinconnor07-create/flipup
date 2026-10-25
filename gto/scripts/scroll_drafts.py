@@ -30,7 +30,7 @@ def make_batch(out,players,stack,seed,memory,whole=False):
     spot.solve(max_iterations=4000,target_bb=.005,callback=lambda it,gap:print(f'Preflop {it}: model deviation {gap}',flush=True))
     gap,per=spot.engine.nash_conv()
     if not np.isfinite(gap) or gap<0 or gap>.005:raise ValueError('preflop model did not meet its deviation threshold')
-    accepted=0
+    accepted=0;capacity_failures=0
     for attempt in range(2000):
         deck=list(range(52));rng.shuffle(deck);holes=[(deck.pop(),deck.pop()) for _ in range(6)]
         path=[];history=[]
@@ -83,6 +83,11 @@ def make_batch(out,players,stack,seed,memory,whole=False):
         except (ValueError,MemoryError,RuntimeError) as exc:
             atomic_json(out/(ident+'.rejected.json'),dict(error=str(exc),publicationApproved=False))
             print(f'{ident}: rejected: {exc}',flush=True)
+            if whole and 'tree node budget exceeded' in str(exc):
+                capacity_failures+=1
+                if capacity_failures>=3:
+                    print('Blocked: repeated full-tree capacity failures. Review the workload before restarting; no tree settings were reduced.',flush=True)
+                    raise SystemExit(78)
         if accepted>=16:return
     if not accepted:raise RuntimeError('No stable candidate decisions produced within the batch budget')
     print(f'Batch complete: {accepted} candidates; no public publication',flush=True)
@@ -151,6 +156,10 @@ def main():
             except Exception as exc:state.update(backup='pending retry',backupError=str(exc))
         else:state['backup']='local only; upload credentials not configured'
         atomic_json(statepath,state)
+        if code==78:
+            state.update(stage='blocked: full-tree node capacity exceeded; workload review required')
+            atomic_json(statepath,state)
+            raise SystemExit('Full-hand workload exceeds node capacity. Stopped without retrying more batches.')
         failures=state.get('consecutiveFailures',0)+1 if code else 0
         state['consecutiveFailures']=failures;atomic_json(statepath,state)
         if failures>=3:

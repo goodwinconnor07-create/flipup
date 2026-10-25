@@ -66,7 +66,7 @@ export function ScrollScenarios({ handId }: { handId?: string }) {
         </div>
         {!choice && <form className="quiz-save" onSubmit={e => { e.preventDefault(); void queueSize(); }}>
           <label htmlFor="scroll-size">{s.toCall ? 'Raise above the call (% of pot after calling)' : 'Bet (% of pot)'}</label>
-          <input id="scroll-size" className="field" type="number" min={1} max={1000} step={1} value={percent} onChange={e => setPercent(Number(e.target.value))} />
+          <input id="scroll-size" className="field" type="number" min={0} step="any" value={percent} onChange={e => setPercent(Number(e.target.value))} />
           <button className="btn btn-blue" disabled={!!queued || !Number.isFinite(percent) || percent <= 0}>Choose this size</button>
         </form>}
         {queueNote && <p role="status">{queueNote}</p>}

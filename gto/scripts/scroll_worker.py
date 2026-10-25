@@ -16,6 +16,7 @@ import numpy as np
 from coach_client import Coach
 from campaign_sync import Artifacts
 from flipup_gto.cards import parse_combo
+from flipup_gto.scroll_schedule import choose_work
 from flipup_gto.scroll_contract import require_validation,validate_job
 from flipup_gto.scroll_scenarios import solve,solve_entry,query,arrays,scenario_from
 from flipup_gto.value_data import atomic_json
@@ -77,14 +78,14 @@ def main():
     ap.add_argument('--hours',type=float,default=168);ap.add_argument('--memory-mb',type=int,default=1536)
     ap.add_argument('--offline',action='store_true',help='generate and back up locally; no coach publication')
     ap.add_argument('--jobs',type=Path,required=True);ap.add_argument('--validation',type=Path,required=True)
-    a=ap.parse_args();require_validation(a.validation);root=a.out.expanduser();root.mkdir(parents=True,exist_ok=True)
+    a=ap.parse_args();validation=require_validation(a.validation);jobs=json.loads(a.jobs.read_text());choose_work(jobs,validation,a.role,0);root=a.out.expanduser();root.mkdir(parents=True,exist_ok=True)
     import fcntl
     lock=(root/'.worker.lock').open('w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     client=None if a.offline else Coach();backup=None if a.offline else Artifacts()
     worker=1 if a.role=='fast' else 0
     if client:print(call(client,'/status'),flush=True)
     statepath=root/'worker.json'
-    cfg=dict(role=a.role,hours=a.hours,memory=a.memory_mb,offline=a.offline)
+    cfg=dict(role=a.role,hours=a.hours,memory=a.memory_mb,offline=a.offline,jobs=jobs,validation=validation)
     if statepath.exists():
         state=json.loads(statepath.read_text())
         if state['config']!=cfg:raise ValueError('changed worker configuration; use a new output directory')
@@ -103,8 +104,8 @@ def main():
             cycle=state['cycles']
             # Accurate Scroll is always the first workload, not conditional on a network checkpoint.
             # Interleave multiway/turn cases so one expensive class cannot starve the feed.
-            players=3 if a.role=='fast' and cycle%3==2 else 2
-            street='turn' if cycle%4==3 else 'river'
+            validation=require_validation(a.validation)
+            players,street=choose_work(jobs,validation,a.role,cycle)
             folder=root/'scenarios'
             attempted=len(list(folder.glob(f'{players}p-{street}-{worker}-*.result.json')))
             cmd=[sys.executable,str(SCRIPTS/'generate_scroll_scenarios.py'),'--out',str(folder),

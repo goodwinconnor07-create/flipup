@@ -30,6 +30,7 @@ jobs:
           gto/tests/test_flop_reuse.py gto/tests/test_scroll_schedule.py
           gto/tests/test_scroll_bootstrap.py
           gto/tests/test_launch_preflight.py
+          gto/tests/test_scroll_dashboard.py
   check:
     runs-on: ubuntu-latest
     steps:

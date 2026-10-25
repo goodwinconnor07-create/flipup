@@ -119,7 +119,7 @@ def main():
     while time.time()<end:
         i=state['nextBatch'];players=3 if a.role=='fast' and i%3==2 else 2;stack=[20,40,100][(i//3)%3]
         folder=a.out/f'batch-{i:06d}';folder.mkdir(exist_ok=True)
-        state.update(nextBatch=i+1,stage='computing drafts',players=players,stack=stack,publicationApproved=False,updated=time.time())
+        state.update(nextBatch=i+1,stage='computing drafts',players=players,stack=stack,publicationApproved=False,updated=time.time(),batchStarted=time.time())
         atomic_json(statepath,state)
         cmd=[sys.executable,'-u',str(Path(__file__).resolve()),'--child','--out',str(folder),'--role',a.role,
              '--players',str(players),'--stack',str(stack),'--seed',str(1000000*(1 if a.role=='fast' else 2)+i),'--memory-mb',str(a.memory_mb)]
@@ -145,8 +145,10 @@ def main():
                 os.killpg(p.pid,signal.SIGTERM);p.wait();raise
         state.update(lastExitCode=code,updated=time.time())
         if backup:
-            try:backup.push(a.out,a.backup_run or ('whole-' if a.whole_hands else 'draft-')+a.out.parent.name+'-'+a.role);state['backup']='uploaded'
-            except Exception as exc:state['backupError']=str(exc)
+            try:
+                backup.push(a.out,a.backup_run or ('whole-' if a.whole_hands else 'draft-')+a.out.parent.name+'-'+a.role)
+                state.update(backup='uploaded',lastBackup=time.time());state.pop('backupError',None)
+            except Exception as exc:state.update(backup='pending retry',backupError=str(exc))
         else:state['backup']='local only; upload credentials not configured'
         atomic_json(statepath,state)
         failures=state.get('consecutiveFailures',0)+1 if code else 0

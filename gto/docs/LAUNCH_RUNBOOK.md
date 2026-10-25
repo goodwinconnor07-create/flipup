@@ -42,6 +42,27 @@ Keep laptops awake, plugged in, and connected; tmux does not survive shutdown.
 Inspect progress:
 
 ```bash
+bash gto/scripts/scroll_laptop.sh dashboard fast launch1
+```
+
+The terminal dashboard refreshes every five seconds. It reads files only; Ctrl+C closes the view
+without stopping generation. It shows complete hands, hero questions, standalone scenarios,
+rejections/reasons, throughput, observed input-to-output hand timing, profile, budget, backups,
+saved-answer quality metrics, worker output and system resources. Timing excludes preflop setup
+and unsuccessful attempts; throughput uses total generation elapsed time. A status timestamp is
+not proof a process is alive. Candidate counts are not approval counts.
+
+To watch an already-running older checkout without updating code beneath its worker, download
+only the standalone viewer (no Python packages required):
+
+```bash
+curl -fL https://raw.githubusercontent.com/goodwinconnor07-create/flipup/codex/laptop-only-rebuild/gto/scripts/scroll_dashboard.py -o /tmp/flipup-scroll-dashboard.py
+python3 /tmp/flipup-scroll-dashboard.py --root "$HOME/flipup-whole-data/launch1/fast"
+```
+
+Change run/role as appropriate. `--once` prints a single snapshot for diagnostics. Alternatively:
+
+```bash
 cat ~/flipup-whole-data/launch1/fast/bootstrap-status.json
 tail -n 30 ~/flipup-whole-data/launch1/fast/bootstrap.log
 cat ~/flipup-flop-reuse/launch1/status.json

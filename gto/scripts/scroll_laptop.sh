@@ -5,6 +5,12 @@ VENV="${FU_NET_VENV:-$HOME/flipup-net-env}"
 CONFIG="$HOME/.config/flipup-network-campaign.env"
 if [ ! -f "$CONFIG" ] && [ -f "$HOME/.config/flipup-flops.env" ];then CONFIG="$HOME/.config/flipup-flops.env";fi
 case "${1:-}" in
+  dashboard)
+    ROLE="${2:?fast or slow}";NAME="${3:?run name}"
+    case "$ROLE" in fast|slow) ;; *) exit 1;; esac
+    [[ "$NAME" =~ ^[a-zA-Z0-9_-]{1,40}$ ]] || exit 1
+    "$VENV/bin/python" "$GTO/scripts/scroll_dashboard.py" --root "$HOME/flipup-whole-data/$NAME/$ROLE"
+    ;;
   setup) bash "$GTO/scripts/network_laptop.sh" setup ;;
   setup-models) "$VENV/bin/python" -m pip install torch --index-url https://download.pytorch.org/whl/cpu ;;
   configure) bash "$GTO/scripts/network_campaign.sh" configure ;;

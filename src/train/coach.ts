@@ -1,3 +1,4 @@
+import { formatFrequency } from '../quiz/scenarios';
 // What the GTO Coach says. The solver's numbers go in, short plain sentences come out. All the wording
 // lives here so the tone stays the same on every screen: friendly, brief, no jargon until you ask.
 
@@ -160,10 +161,10 @@ export function quizLines(colour: Colour, best: string, freq: number, loss: numb
         : colour === 'yellow'
           ? `My pick is ${lower(best)}, about ${bb(loss)} better.`
           : `My pick is ${lower(best)}. Yours gives up about ${bb(loss)}.`;
-  const always = mix.length === 1 || mix[0].freq >= 0.99;
+  const always = mix.length > 0 && mix[0].freq >= 1 - 1e-9;
   const how = always
     ? `With this hand I always ${lower(mix[0].label)}.`
-    : `With this hand I mix it up: ${mix.map((o) => `${lower(o.label)} ${pct(o.freq)}`).join(', ')}.`;
+    : `With this hand I mix it up: ${mix.map((o) => `${lower(o.label)} ${formatFrequency(o.freq)}`).join(', ')}.`;
   return [verdict, how];
 }
 
@@ -443,7 +444,7 @@ function multiwayWhy(s: Spot, best: ReturnType<typeof moveKind>, made: string, d
   if (s.toCall > 0) {
     if (best === 'fold' && s.defenders > 1 && s.mdfEach < s.mdf - 0.05)
       out.push(
-        `You don't have to defend alone: with ${s.defenders} of you left to answer a ${pct(s.betShare)} pot bet, each only needs to keep about ${pct(s.mdfEach)} of hands, not the ${pct(s.mdf)} you'd need heads-up. So weaker hands can go.`,
+        `With ${s.defenders} players left to answer, defence depends on everyone's ranges and position. The heads-up defence target cannot simply be divided between you.`,
       );
     if (s.callers > 0 && (best === 'call' || best === 'fold'))
       out.push(

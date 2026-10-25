@@ -51,3 +51,9 @@ describe('study bank', () => {
     expect(loadBank().map((h) => h.name)).toEqual(['Again']);
   });
 });
+
+it('does not keep malformed or future recent timestamps', () => {
+  store.clear();
+  store.set('flipup.quizrecent', JSON.stringify([hand('future', 5000), hand('valid', 900), { ...hand('bad', 1), at: null }]));
+  expect(loadRecent(1000).map(h => h.id)).toEqual(['valid']);
+});

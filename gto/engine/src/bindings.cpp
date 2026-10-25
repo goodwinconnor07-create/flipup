@@ -306,6 +306,7 @@ PYBIND11_MODULE(_engine, m) {
       .def_readwrite("rake_cap", &TreeConfig::rake_cap)
       .def_readwrite("compress", &TreeConfig::compress)
       .def_readwrite("max_memory_mb", &TreeConfig::max_memory_mb)
+      .def_readwrite("max_nodes", &TreeConfig::max_nodes)
       .def_readwrite("leaf_street", &TreeConfig::leaf_street)
       .def_readwrite("leaf_k", &TreeConfig::leaf_k)
       .def_readwrite("leaf_w", &TreeConfig::leaf_w)

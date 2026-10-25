@@ -49,7 +49,7 @@ export function Train({ section = 'review' }: { section?: TrainSection }) {
         </button>
       </div>
       <div className="screen-body">
-        {section === 'review' && <ReviewList />}
+        {section === 'review' && <><StudyBank /><h2 className="section-head">Games · last 24 hours</h2><ReviewList /></>}
         {section === 'scroll' && <StudyBank />}
         {section === 'insights' && <InsightsTab />}
         {section === 'library' && <Library />}
@@ -85,8 +85,14 @@ function when(at: number): string {
 }
 
 function ReviewList() {
-  const [hands] = useState(() => [...loadHistory()].reverse());
+  const [hands, setHands] = useState(() => [...loadHistory()].reverse());
   const [summaries, setSummaries] = useState(loadSummaries);
+  useEffect(() => {
+    const refresh = () => { setHands([...loadHistory()].reverse()); setSummaries(loadSummaries()); };
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, []);
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(0);
   const [only, setOnly] = useState<'all' | 'mistakes'>('all');

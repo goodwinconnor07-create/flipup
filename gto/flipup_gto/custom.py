@@ -538,7 +538,7 @@ class Explorer:
                 res = None
                 if lib is not None and not any(x >= FULL_ID for x in steps):
                     res = self._from_library(out, lib, steps, oop, ip, seat, live, hero, hero_combo, names,
-                                             pot, eff, ranges, board)
+                                             pot, eff, ranges, board, req)
                 if res is not None and "done" in res:
                     return res["done"]
                 if res is not None:
@@ -605,7 +605,15 @@ class Explorer:
             for i in live:
                 out["players"][i]["behind_bb"] = round(float(stack_now[seat[i]]), 2)
             if node.type == "action":
-                return self._postflop_decision(out, node, street, oop, ip, hero, hero_combo, names, complete)
+                response = self._postflop_decision(out, node, street, oop, ip, hero, hero_combo, names, complete)
+                response['accuracy'] = 'estimate'
+                from .custom_cache import record
+                try:
+                    response['refinementQueued'] = bool(record(req, response, node))
+                except ValueError:
+                    # A full background queue never prevents the current custom hand from working.
+                    pass
+                return response
             if node.type == "fold":
                 folder = out["history"][-1]["player"]
                 winner = ip if folder == oop else oop
@@ -645,7 +653,7 @@ class Explorer:
         return self.library.get(name, board[:3])
 
     def _from_library(self, out, lib, steps, oop, ip, seat, live, hero, hero_combo, names, pot, eff, ranges,
-                      board):
+                      board, req=None):
         """Play the flop line from a stored solution. Returns {"done": response} when it answers,
         {"ranges", "pot", "eff", "last_bettor"} when the flop's betting ended (go on to the turn), or
         None when the line goes past what's stored (the live solver takes over)."""
@@ -682,7 +690,24 @@ class Explorer:
             out["pot_bb"] = round(nd["pot"], 2)
             for i in live:
                 out["players"][i]["behind_bb"] = round(float(behind[seat[i]]), 2)
-            return {"done": self._library_decision(out, lib, nd, oop, ip, hero, hero_combo, names, contrib, behind)}
+            response=self._library_decision(out, lib, nd, oop, ip, hero, hero_combo, names, contrib, behind)
+            response['accuracy']='estimate'
+            if req is not None:
+                from .custom_cache import record_spec
+                from .scroll_scenarios import VERSION
+                path=[];extras=[];prefix=[];wager=[0.,0.]
+                for step in steps:
+                    prev=lib.node(prefix);a=prev['actions'][step];p=prev['player'];call=max(wager)-wager[p]
+                    if a['type'] in ('bet','raise'):
+                        frac=(a['amount']-max(wager))/(prev['pot']+call) if a['type']=='raise' else (a['amount']-wager[p])/prev['pot']
+                        extras.append(dict(player=p,kind=a['type'],fraction=frac))
+                    path.append(dict(type=a['type'],amount=a['amount'],player=p));prefix.append(step)
+                    if a['type'] not in ('check','fold'):wager[p]=a['amount']
+                spec=dict(version=VERSION,players=2,board=board[:3],pot=pot,stack=eff,
+                          ranges=[ranges[oop].tolist(),ranges[ip].tolist()],path=path,extras=extras)
+                try:response['refinementQueued']=bool(record_spec(req,response,spec))
+                except ValueError:pass
+            return {"done":response}
         ended = last_types and (last_types[-1] == "call" or last_types[-2:] == ["check", "check"])
         if not ended:
             return None  # deeper than the stored decisions

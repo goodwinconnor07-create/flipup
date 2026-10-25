@@ -33,7 +33,7 @@ export function ScrollTab() {
           <span className="hero-sub">
             {save.hands
               ? `${save.hands} hands played · ${decided} decisions`
-              : 'Whole hands with three or four players in the pot. Every move graded the moment you make it.'}
+              : 'Fresh solved scenarios. Close decisions, varied boards, and feedback on the poker behind each choice.'}
           </span>
         </span>
         <span className="hero-foot">

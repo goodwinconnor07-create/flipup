@@ -54,6 +54,7 @@ struct TreeConfig {
   double rake_cap = 0.0;           // 0 = uncapped
   bool compress = false;           // half-float regrets and strategy sums, scaled per node (half the memory)
   double max_memory_mb = 0;        // refuse to allocate trees larger than this (0 = no limit)
+  int max_nodes = 0;               // stop expansion before large tree metadata exhausts memory
   int averaging = 0;               // 0: DCFR gamma=2; 1: gamma=3 restarting at powers of 4
   // DCFR schedule: positive regrets *= t^a/(t^a+1), negative regrets *= neg (0 = CFR+ style reset),
   // strategy sums *= ((t-1)/t)^gamma (averaging 0 only).

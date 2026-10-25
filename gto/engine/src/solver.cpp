@@ -346,6 +346,8 @@ std::vector<std::pair<Action, Solver::BuildState>> Solver::legal_actions(const B
 }
 
 int Solver::build(const BuildState& s, uint8_t dealt_suits) {
+  if (cfg_.max_nodes > 0 && nodes_.size() >= static_cast<size_t>(cfg_.max_nodes))
+    throw std::length_error("heads-up tree node budget exceeded");
   int id = static_cast<int>(nodes_.size());
   Node node{};
   node.type = NodeType::ACTION;
@@ -1144,12 +1146,10 @@ void Solver::cfr(int node_id, int p, const float* opp_reach, const float* own_re
     return;
   }
 
-  float opp_total = 0;
-  for (size_t i = 0; i < no; ++i) opp_total += opp_reach[i];
-  if (opp_total <= 0) {
-    std::fill(out, out + np, 0.0f);
-    return;
-  }
+  // Even when the opponent never reaches this branch, our own average
+  // strategy must accumulate by OWN reach. Skipping it froze off-path averages
+  // at early iterations, so the exported strategy differed from the converged
+  // current strategy and could retain a nonzero best-response gap forever.
 
   if (n.type == NodeType::CHANCE) {
     const int K = n.num_children;

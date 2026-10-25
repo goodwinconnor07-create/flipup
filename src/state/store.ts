@@ -622,7 +622,5 @@ export function boot(): void {
   if (s?.mode === 'local') scheduleLocal();
   if (isCode(linked) && !(s?.mode === 'online' && s.code === linked)) {
     resetTo({ name: 'join', code: linked });
-  } else if (s && (s.game || s.mode === 'online')) {
-    resetTo({ name: 'table' });
   }
 }

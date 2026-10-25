@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { customSpot } from '../../gto/api';
+import { formatFrequency } from '../../quiz/scenarios';
 import type { CustomOption, CustomRequest, CustomSpot } from '../../gto/types';
 import { CardPicker, actionClasses, pct, streetName } from '../../train/widgets';
 import { BackBar, CardSlot, Choice, PlayingCard, Spinner } from '../../ui/components';
@@ -379,6 +380,7 @@ const prettyHand = (h?: string) => (h ? h.replace(/([2-9TJQKA])([shdc])/g, (_, r
 
 /** "How often GTO plays each option with your A♥K♦ (equity 62%):" and the like. */
 function decisionLine(spot: CustomSpot, mine: boolean): string {
+  if (spot.accuracy === 'estimate') return `Estimated answer. These numbers may change.${spot.refinementQueued ? ' An offline refinement has been queued.' : ''}`;
   const what = spot.hand_specific
     ? `how often to play each option with your ${prettyHand(spot.hand)}${spot.equity !== undefined ? ` (equity ${pct(spot.equity)})` : ''}:`
     : mine
@@ -410,13 +412,13 @@ function Decision({ spot, hero, onPick }: { spot: CustomSpot; hero: number; onPi
       <div className="option-list">
         {opts.map((o) => (
           <button key={o.id} type="button" className={`option-btn press${best?.id === o.id ? ' best' : ''}`} onClick={() => onPick(o)}>
-            {o.freq !== null && <span className={`option-fill ${cls[o.label]}`} style={{ width: `${Math.max(0, Math.min(1, o.freq)) * 100}%` }} />}
+            {!o.off_tree && o.freq !== null && <span className={`option-fill ${cls[o.label]}`} style={{ width: `${Math.max(0, Math.min(1, o.freq)) * 100}%` }} />}
             <span className="option-label">
               {o.label}
               {o.ev_bb !== null && <small className="option-ev">EV {o.ev_bb >= 0 ? '+' : ''}{o.ev_bb.toFixed(2)}bb</small>}
-              {o.off_tree && <small className="option-ev">not in GTO strategy</small>}
+              {o.off_tree && <small className="option-ev">not yet solved at this size</small>}
             </span>
-            {o.freq !== null && <b className="option-pct">{pct(o.freq)}</b>}
+            {!o.off_tree && o.freq !== null && <b className="option-pct">{formatFrequency(o.freq)}</b>}
           </button>
         ))}
       </div>

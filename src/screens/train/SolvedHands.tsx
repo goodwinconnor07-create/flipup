@@ -5,16 +5,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { recordNet } from '../../game';
 import type { Colour } from '../../gto/types';
-import { getHand, gradeChoice, gtoMix, nextHand, POSITIONS, seatId, toRecord, type QuizHand } from '../../quiz/hands';
+import { getHand, nextHand, POSITIONS, seatId, toRecord, type QuizHand } from '../../quiz/hands';
 import { isBanked, loadQuiz, recordPlayed, saveQuizHand, saveToBank } from '../../quiz/save';
 import { loadTableLook, markPlayedToday } from '../../state/persist';
 import { CoachBusy, CoachSays } from '../../train/Coach';
-import { GRADE_WORD, quizCarryOn, quizLines, quizResult, quizSummary, quizWhy } from '../../train/coach';
-import { readSpot } from '../../quiz/read';
+import { quizCarryOn, quizResult, quizSummary } from '../../train/coach';
 import { buildFrames } from '../../train/replay';
 import { streetName } from '../../train/widgets';
 import { BackBar, CardSlot, chips, PlayingCard } from '../../ui/components';
 import { Seat } from './Replay';
+import { formatFrequency } from '../../quiz/scenarios';
+import { toast } from '../../state/store';
 
 const SUIT: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
 const cardText = (c: string) => `${c[0] === 'T' ? '10' : c[0]}${SUIT[c[1]]}`;
@@ -58,7 +59,7 @@ export function SolvedHands({ handId }: { handId?: string }) {
   // The frame showing each decision's move, by decision number.
   const decisionFrame = useMemo(() => (hand ? hand.decisions.map((d) => frames.findIndex((f) => f.action === d.at)) : []), [hand, frames]);
   const last = frames.length - 1;
-  const grades: Colour[] = hand ? hand.decisions.flatMap((d, k) => (picks[k] == null ? [] : [gradeChoice(d, picks[k]!).colour])) : [];
+  const grades: Colour[] = []; // Archived packs are unverified and never affect accuracy scores.
 
   // Play on its own, stopping just before each of your moves.
   useEffect(() => {
@@ -74,7 +75,7 @@ export function SolvedHands({ handId }: { handId?: string }) {
     return () => clearTimeout(t);
   }, [hand, at, asking, picks, frames, decisionFrame, last]);
 
-  const played = () => ({ id: hand!.id, at: Date.now(), title: defaultName(hand!), cards: hand!.cards, picks: hand!.decisions.map((_, k) => picks[k] ?? null), grades });
+  const played = () => ({ id: hand!.id, at: Date.now(), title: defaultName(hand!), cards: hand!.cards, picks: hand!.decisions.map((_, k) => picks[k] ?? null), grades, snapshot: hand! });
 
   // Count the hand once it's over, and keep it for 24 hours in case you want to save it.
   useEffect(() => {
@@ -93,9 +94,11 @@ export function SolvedHands({ handId }: { handId?: string }) {
   };
   const confirmSave = () => {
     if (!hand) return;
-    saveToBank(played(), name || defaultName(hand));
-    setBanked(true);
-    setNaming(false);
+    try {
+      saveToBank(played(), name || defaultName(hand));
+      setBanked(true);
+      setNaming(false);
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not save this hand.', 'error'); }
   };
 
   const header = (
@@ -140,7 +143,7 @@ export function SolvedHands({ handId }: { handId?: string }) {
   const seated = [...order.slice(heroAt), ...order.slice(0, heroAt)];
   const d = asking != null ? hand.decisions[asking] : null;
   const pick = asking != null ? picks[asking] : undefined;
-  const grade = d && pick != null ? gradeChoice(d, pick) : null;
+  const grade = d && pick != null ? { colour: null, best: d.options[d.line], loss: null } : null;
 
   const answer = (i: number) => {
     if (asking == null || picks[asking] != null) return;
@@ -158,6 +161,7 @@ export function SolvedHands({ handId }: { handId?: string }) {
     <div className="screen train replay quiz">
       {header}
       <div className="rp-body">
+        <p className="muted">Archived hand · this older solution has not been revalidated.</p>
         <div className="rp-felt" role="img" aria-label={f.text} style={{ ['--felt' as string]: look.felt }}>
           <div className="rp-middle">
             <span className="rp-badge">{streetName(f.street)}</span>
@@ -220,7 +224,7 @@ export function SolvedHands({ handId }: { handId?: string }) {
                       onClick={() => answer(i)}
                     >
                       <span>{o.label}</span>
-                      {pick != null && <small className="num">{o.ev == null ? 'GTO never' : `GTO ${Math.round(o.freq * 100)}%`}</small>}
+                      {pick != null && <small className="num">{o.ev == null ? 'Not solved' : `Solved frequency ${formatFrequency(o.freq)}`}</small>}
                     </button>
                   );
                 })}
@@ -231,10 +235,8 @@ export function SolvedHands({ handId }: { handId?: string }) {
                   quick
                   tone={grade.colour}
                   lines={[
-                    <b key="g">{GRADE_WORD[grade.colour]}</b>,
-                    ...(([verdict, mixLine]) => [verdict, ...quizWhy(readSpot(hand, d), d.options[pick]), mixLine])(
-                      quizLines(grade.colour, (gtoMix(d)[0] ?? grade.best).label, d.options[pick].freq, grade.loss, gtoMix(d)),
-                    ),
+                    <b key="g">Archived solution · not graded</b>,
+                    'This older hand has not passed the new verification checks. Its percentages are kept for reference and do not count toward your score.',
                     ...(pick !== d.line ? [quizCarryOn(d.options[d.line].label)] : []),
                   ]}
                 >

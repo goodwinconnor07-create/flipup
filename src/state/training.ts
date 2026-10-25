@@ -40,9 +40,19 @@ export interface DrillScore {
 
 export const handKey = (tableId: string, number: number) => `${tableId}#${number}`;
 
-export function loadHistory(): PlayedHand[] {
+export function loadHistory(now = Date.now()): PlayedHand[] {
   const h = read<PlayedHand[]>(KEYS.history);
-  return Array.isArray(h) ? h.filter((x) => x && x.record && typeof x.heroId === 'string') : [];
+  const kept = Array.isArray(h) ? h.filter((x) => x && x.record && typeof x.heroId === 'string'
+    && Number.isFinite(x.record.at) && x.record.at <= now && now - x.record.at < 24 * 60 * 60 * 1000) : [];
+  if (Array.isArray(h) && kept.length !== h.length) {
+    write(KEYS.history, kept);
+    const keys = new Set(kept.map(x => x.key));
+    for (const key of [KEYS.reviews, KEYS.reports]) {
+      const all = read<Record<string, unknown>>(key) ?? {};
+      write(key, Object.fromEntries(Object.entries(all).filter(([id]) => keys.has(id))));
+    }
+  }
+  return kept;
 }
 
 function saveHistory(hands: PlayedHand[]): void {

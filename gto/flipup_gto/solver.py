@@ -151,7 +151,7 @@ class PostflopSolver:
     def __init__(self, board, pot: float, stack: float, oop_range, ip_range,
                  sizing: BetSizing | None = None, rake_rate: float = 0.0, rake_cap: float = 0.0,
                  min_bet: float = 1.0, threads: int | None = None, compress: bool = False,
-                 max_memory_mb: float = 0.0, leaf: dict | None = None):
+                 max_memory_mb: float = 0.0, leaf: dict | None = None, max_nodes: int = 0):
         if threads:
             os.environ["OMP_NUM_THREADS"] = str(threads)
         self.board = parse_cards(board)
@@ -171,6 +171,7 @@ class PostflopSolver:
         cfg.rake_cap = rake_cap
         cfg.compress = compress
         cfg.max_memory_mb = max_memory_mb
+        cfg.max_nodes = max_nodes
         if leaf is not None:
             if len(self.board) not in (3, 4):
                 raise ValueError('leaf networks require a flop or turn root')

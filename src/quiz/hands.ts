@@ -5,6 +5,7 @@
 
 import { scoreHand, type Card, type HandRecord, type Move, type Street } from '../game';
 import type { Colour } from '../gto/types';
+import { loadBank, loadRecent } from './save';
 
 export interface QuizOption {
   label: string;
@@ -116,7 +117,7 @@ export function toRecord(h: QuizHand): HandRecord {
 }
 
 export interface QuizGrade {
-  colour: Colour;
+  colour: Colour | null;
   /** Big blinds given up against GTO's best option (0 for the best; null for a move GTO never makes here). */
   loss: number | null;
   best: QuizOption;
@@ -131,9 +132,9 @@ export function gradeChoice(d: QuizDecision, pick: number): QuizGrade {
   const best = solved.reduce((a, b) => (b.ev! > a.ev! ? b : a), solved[0] ?? d.options[d.line]);
   const o = d.options[pick];
   // A move outside the solved tree: GTO never makes it here, so there's no number to give.
-  if (o.ev == null) return { colour: 'red', loss: null, best };
+  if (o.ev == null) return { colour: null, loss: null, best };
   const loss = Math.max(0, (best.ev ?? o.ev) - o.ev);
-  const colour: Colour = o.freq >= 0.15 || loss <= Math.max(0.05, 0.01 * d.pot) ? 'green' : loss <= Math.max(0.5, 0.05 * d.pot) ? 'yellow' : 'red';
+  const colour: Colour = loss <= Math.max(0.05, 0.01 * d.pot) ? 'green' : loss <= Math.max(0.5, 0.05 * d.pot) ? 'yellow' : 'red';
   return { colour, loss, best };
 }
 
@@ -181,6 +182,8 @@ function loadShard(name: string): Promise<QuizHand[]> {
 
 /** One hand by its id (for the study bank). */
 export async function getHand(id: string): Promise<QuizHand> {
+  const saved = [...loadBank(), ...loadRecent()].find(h => h.id === id)?.snapshot;
+  if (saved && 'steps' in saved) return saved;
   const idx = await loadIndex();
   for (const name of idx.shards) {
     const found = (await loadShard(name)).find((h) => h.id === id);

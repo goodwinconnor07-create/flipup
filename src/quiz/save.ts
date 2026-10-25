@@ -3,6 +3,8 @@
 
 import type { Colour } from '../gto/types';
 import { read, write } from '../state/persist';
+import type { QuizHand } from './hands';
+import type { ScrollScenario } from './scenarios';
 
 export interface QuizSave {
   /** Hand ids, oldest first (the last 2,000). */
@@ -47,6 +49,8 @@ export interface PlayedQuiz {
   /** Your pick at each decision (index into its options), when you made one. */
   picks: (number | null)[];
   grades: Colour[];
+  /** Full immutable content, so saved hands survive remote pack updates and offline use. */
+  snapshot?: QuizHand | ScrollScenario;
 }
 
 export interface BankHand extends PlayedQuiz {
@@ -62,7 +66,7 @@ export const KEEP_MS = 24 * 60 * 60 * 1000;
 /** Hands played in the last 24 hours, newest first (older ones are deleted here). */
 export function loadRecent(now = Date.now()): PlayedQuiz[] {
   const all = read<PlayedQuiz[]>(RECENT) ?? [];
-  const kept = all.filter((h) => now - h.at < KEEP_MS);
+  const kept = all.filter((h) => Number.isFinite(h.at) && h.at <= now && now - h.at < KEEP_MS);
   if (kept.length !== all.length) write(RECENT, kept);
   return [...kept].sort((a, b) => b.at - a.at);
 }
@@ -82,6 +86,9 @@ export function saveToBank(hand: PlayedQuiz, name: string, now = Date.now()): Ba
   const entry: BankHand = { ...hand, name: name.trim() || 'Saved hand', saved: now };
   const next = [entry, ...loadBank().filter((h) => h.id !== hand.id)];
   write(BANK, next);
+  const persisted = read<BankHand[]>(BANK);
+  if (!persisted?.some(h => h.id === entry.id && h.saved === entry.saved && h.name === entry.name))
+    throw new Error('This device could not save the hand. Free some storage and try again.');
   return next;
 }
 

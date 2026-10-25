@@ -1,8 +1,8 @@
 # FlipUp GTO backend
 
-For the expanded automatic strategy/multiway/Scroll campaign, see
-[Unattended campaign and Ubuntu commands](docs/UNATTENDED_CAMPAIGN.md).
-The [original value-network plan](docs/NETWORK_PLAN.md) provides background.
+For the current priority (accurate Scroll scenarios, automatic upload/download and continuous
+custom-spot refinement), use [Scroll-first setup and Ubuntu commands](docs/SCROLL_FIRST.md).
+The [network campaign](docs/UNATTENDED_CAMPAIGN.md) remains an optional training workflow.
 
 The game-theory side of FlipUp. After a session with friends, it goes through each hand and, at
 every decision, shows what a game-theory-optimal (GTO) strategy does with that hand, what each

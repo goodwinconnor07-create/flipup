@@ -51,3 +51,13 @@ describe('solved hands', () => {
     expect(gtoMix(flop).length).toBe(2);
   });
 });
+
+it('does not call an uncomputed option a mistake, or excuse costly high-frequency labels', () => {
+  const d = { at: 0, pot: 10, toCall: 0, line: 0, options: [
+    { label: 'Check', kind: 'check' as const, to: 0, freq: .6, ev: 0 },
+    { label: 'Bet', kind: 'bet' as const, to: 5, freq: .4, ev: 3 },
+    { label: 'Other size', kind: 'bet' as const, to: 6, freq: 0, ev: null },
+  ] };
+  expect(gradeChoice(d, 0).colour).toBe('red');
+  expect(gradeChoice(d, 2).colour).toBeNull();
+});

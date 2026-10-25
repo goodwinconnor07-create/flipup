@@ -42,7 +42,7 @@ from .concepts import alpha, mdf, pot_odds_ratio, required_equity, river_bluff_s
 from .handhistory import HandHistory
 from .preflop import CLASSES
 from .ranges import Range
-from . import flop_admin, library, network_admin
+from . import flop_admin, library, network_admin, scroll_api
 from .custom import Explorer, NeedsSolve
 from .review import Reviewer, aggregate_session
 from .solver import BetSizing, PostflopSolver
@@ -53,6 +53,9 @@ app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FLIPUP_CORS", "
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 app.include_router(flop_admin.router)  # flop uploads from the laptops; off without FLIPUP_UPLOAD_TOKEN
 app.include_router(network_admin.router)  # opaque campaign backups; same private admin token
+app.include_router(scroll_api.router)  # approved Scroll data and a bounded laptop solve queue
+from . import scroll_store
+scroll_store.install_seed()
 reviewer = Reviewer()
 explorer = Explorer(reviewer)
 
@@ -200,6 +203,10 @@ class CustomReq(BaseModel):
 def custom_spot(req: CustomReq):
     """The custom hand so far: whose turn it is and GTO's options, or a job if a solve is needed."""
     d = req.model_dump()
+    from .custom_cache import cached
+    hit = cached(d)
+    if hit is not None:
+        return hit
     try:
         return plain(explorer.spot(d))
     except NeedsSolve as e:

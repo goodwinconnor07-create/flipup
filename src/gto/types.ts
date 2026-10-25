@@ -166,6 +166,8 @@ export interface CustomOption {
 }
 
 export interface CustomSpot {
+  accuracy?: 'estimate' | 'verified';
+  refinementQueued?: boolean;
   status: 'ready' | 'solving';
   job?: string;
   message?: string;

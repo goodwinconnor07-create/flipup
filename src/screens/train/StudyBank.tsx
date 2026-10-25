@@ -1,10 +1,10 @@
 // The study bank: Scroll hands you saved with a name, kept until you delete them, and the hands you
 // played in the last 24 hours (saved or not, those go after a day).
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Colour } from '../../gto/types';
 import { loadBank, loadRecent, removeBanked, renameBanked, saveToBank, type BankHand, type PlayedQuiz } from '../../quiz/save';
-import { navigate } from '../../state/store';
+import { navigate, toast } from '../../state/store';
 import { CoachSays } from '../../train/Coach';
 import { Dots, MiniCards } from '../../train/widgets';
 
@@ -17,7 +17,13 @@ const play = (id: string) => navigate({ name: 'scroll', hand: id });
 
 export function StudyBank() {
   const [bank, setBank] = useState(loadBank);
-  const [recent] = useState(() => loadRecent());
+  const [recent, setRecent] = useState(() => loadRecent());
+  useEffect(() => {
+    const refresh = () => { setRecent(loadRecent()); setBank(loadBank()); };
+    const timer = setInterval(refresh, 30000);
+    window.addEventListener('focus', refresh);
+    return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
+  }, []);
   const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState('');
   const banked = new Set(bank.map((h) => h.id));
@@ -28,8 +34,10 @@ export function StudyBank() {
     setName(h.name ?? h.title);
   };
   const commit = (h: PlayedQuiz) => {
-    setBank(banked.has(h.id) ? renameBanked(h.id, name) : saveToBank(h, name || h.title));
-    setEditing(null);
+    try {
+      setBank(banked.has(h.id) ? renameBanked(h.id, name) : saveToBank(h, name || h.title));
+      setEditing(null);
+    } catch (e) { toast(e instanceof Error ? e.message : 'Could not save this hand.', 'error'); }
   };
 
   const nameForm = (h: PlayedQuiz) => (

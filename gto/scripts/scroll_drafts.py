@@ -92,7 +92,7 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__);ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--role',choices=['fast','slow'],required=True);ap.add_argument('--hours',type=float,default=48)
     ap.add_argument('--audit',type=Path);ap.add_argument('--memory-mb',type=int,default=1536)
-    ap.add_argument('--whole-hands',action='store_true')
+    ap.add_argument('--whole-hands',action='store_true');ap.add_argument('--preflight',action='store_true')
     ap.add_argument('--child',action='store_true');ap.add_argument('--players',type=int,default=2)
     ap.add_argument('--stack',type=int,default=40);ap.add_argument('--seed',type=int,default=1)
     a=ap.parse_args();a.out.mkdir(parents=True,exist_ok=True)
@@ -100,6 +100,11 @@ def main():
     report=json.loads(a.audit.read_text())
     if report.get('passed') is not True or len(report.get('steps',[]))!=3 or any(s['exitCode'] for s in report['steps']):
         raise SystemExit('A completed passing internal audit is required for draft computation')
+    if a.whole_hands:
+        from flipup_gto.scroll_contract import fingerprint
+        if report.get('engine')!=fingerprint():raise SystemExit('Whole-hand mode requires a fresh laptop audit after rebuilding the current engine')
+    if a.preflight:
+        print('Draft preflight passed; no computation started',flush=True);return
     import fcntl
     lock=(a.out/'.draft.lock').open('w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     statepath=a.out/'status.json'

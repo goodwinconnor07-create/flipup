@@ -170,6 +170,7 @@ Do NOT update a running job. Once it finishes/stops, the full-hand candidate com
 cd "$HOME/flipup-laptop-rebuild"
 git pull --ff-only
 bash gto/scripts/scroll_laptop.sh setup
+"$HOME/flipup-net-env/bin/python" gto/scripts/laptop_engine_audit.py --out "$HOME/flipup-engine-audit"
 bash gto/scripts/scroll_laptop.sh whole fast full1
 ```
 

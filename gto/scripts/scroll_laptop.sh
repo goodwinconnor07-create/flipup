@@ -32,6 +32,7 @@ case "${1:-}" in
       --audit "$AUDIT" --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}")
     printf -v LINE '%q ' "${CMD[@]}";printf -v LOG '%q' "$OUT/runner.log"
     [ "$MODE" != whole ] || CMD+=(--whole-hands)
+    "${CMD[@]}" --preflight
     printf -v LINE '%q ' "${CMD[@]}"
     PREFIX=''
     if [ -f "$CONFIG" ];then printf -v CFG '%q' "$CONFIG";PREFIX="source $CFG; ";fi

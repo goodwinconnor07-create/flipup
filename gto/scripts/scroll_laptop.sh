@@ -14,6 +14,21 @@ case "${1:-}" in
     source "$CONFIG"
     "$VENV/bin/python" "$GTO/scripts/scroll_remote.py" "$1"
     ;;
+  reuse-flops)
+    LIBRARY="${2:?path to existing flop library}";NAME="${3:?run name}"
+    [[ "$NAME" =~ ^[a-zA-Z0-9_-]{1,40}$ ]] || exit 1
+    [ -d "$LIBRARY" ] || { echo "Library not found: $LIBRARY";exit 1; }
+    for SESSION in scroll-draft-fast scroll-draft-slow scroll-whole-fast scroll-whole-slow scroll-auto-fast scroll-auto-slow scroll-reuse;do
+      if tmux has-session -t "$SESSION" 2>/dev/null;then echo "$SESSION is running; stop it before starting another heavy job.";exit 1;fi
+    done
+    OUT="$HOME/flipup-flop-reuse/$NAME";mkdir -p "$OUT"
+    CMD=(env "OMP_NUM_THREADS=${FU_NET_THREADS:-2}" OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1
+      "$VENV/bin/python" -u "$GTO/scripts/reuse_flop_library.py" --library "$LIBRARY" --out "$OUT"
+      --solve --hours "${FU_SCROLL_HOURS:-48}" --memory-mb "${FU_NET_MEMORY_MB:-1536}")
+    printf -v LINE '%q ' "${CMD[@]}";printf -v LOG '%q' "$OUT/worker.log"
+    tmux new-session -d -s scroll-reuse "$LINE >> $LOG 2>&1"
+    echo "Started legacy flop reuse. Original files remain untouched. Draft outputs: $OUT"
+    ;;
   whole-auto)
     ROLE="${2:?fast or slow}";NAME="${3:?run name}"
     case "$ROLE" in fast|slow) ;; *) exit 1;; esac

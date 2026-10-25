@@ -229,3 +229,35 @@ The completed-hand source still needs independent range-model and solver validat
 Supported scope remains equal-root-stack HU/three-player, no rake, chip EV. Four-plus players,
 unequal stacks/side pots, rake profiles and ICM/bounty utility are not implemented by this release.
 A complete pipeline for that supported scope is distinct from claiming universal perfect GTO.
+
+## Reuse the large existing heads-up flop library
+
+`reuse_flop_library.py` reads existing `<matchup>/<flop>.npz` files without modifying them. It records
+checksums, reported iterations/gaps and missing engine provenance. It reconstructs reached ranges
+from the stored per-combo policies, accepting ONLY explicit call closures or check/check boundaries.
+Missing children at the packed depth limit are never treated as completed streets. It then samples
+turn cards, applies blockers and can solve the full turn/river tree on the LAPTOP. Original flop
+iterations are not repeated. Results retain their inherited legacy-range/float16 uncertainty and
+remain unapproved, outside production training and public Scroll. This is not a resumed CFR checkpoint.
+
+For inspection/extraction only, without any numerical solves, omit `--solve`:
+
+```bash
+"$HOME/flipup-net-env/bin/python" gto/scripts/reuse_flop_library.py \
+  --library "$HOME/flops" --out "$HOME/flipup-flop-reuse/inspection1"
+```
+
+For a background laptop refinement run (stop any other heavy role first):
+
+```bash
+cd "$HOME/flipup-laptop-rebuild"
+git pull --ff-only
+bash gto/scripts/scroll_laptop.sh reuse-flops "$HOME/flops" reuse1
+```
+
+Change the library path to wherever your existing files actually live. `inventory.json` lists
+processed files and extracted roots; `worker.log` records progress. The default limit is 10,000
+turn roots / 48 hours, checked between solves. Completed results are skipped on resume. There are
+no automatic uploads from this adapter yet; keep the output directory. Reusing ranges avoids the
+flop calculation but cannot correct an inaccurate legacy flop policy. Independent validation is
+still required before inherited ranges or refined answers can enter the approved feed.

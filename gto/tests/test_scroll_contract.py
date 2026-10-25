@@ -5,7 +5,7 @@ import pytest
 from flipup_gto.scroll_contract import validate_job,require_validation,fingerprint
 
 def test_synthetic_and_unimplemented_games_fail_closed():
-    job=dict(players=2,pot=10,stack=100,ranges=[[1.]*1326]*2,
+    job=dict(players=2,pot=10,stack=100,board=[0,4,8,12,16],ranges=[[1.]*1326]*2,
              profile=dict(utility='chip-ev',rake_rate=0,rake_cap=0),
              range_origin=dict(source='test-fixture',history=['open','call'],synthetic=False))
     validate_job(job)

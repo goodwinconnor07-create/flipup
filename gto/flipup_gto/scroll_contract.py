@@ -1,6 +1,7 @@
 """Pure-data publication contract. Importing this module never builds or solves a tree."""
 import hashlib
 import json
+import math
 from pathlib import Path
 
 
@@ -24,6 +25,12 @@ def validate_job(spec):
     if spec['range_origin'].get('synthetic',True):raise ValueError('synthetic ranges are research data only')
     ranges=spec.get('ranges',[])
     if len(ranges)!=spec['players'] or any(len(r)!=1326 for r in ranges):raise ValueError('full numeric ranges required')
+    for weights in ranges:
+        if any(not isinstance(w,(int,float)) or not math.isfinite(w) or w<0 for w in weights) or sum(weights)<=0:
+            raise ValueError('ranges must contain finite nonnegative weights with positive mass')
+    board=spec.get('board',[])
+    if len(board) not in (3,4,5) or len(set(board))!=len(board) or any(type(c) is not int or not 0<=c<52 for c in board):
+        raise ValueError('a valid unique numeric board is required')
     json.dumps(spec,allow_nan=False)
 
 

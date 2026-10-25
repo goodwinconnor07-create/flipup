@@ -8,7 +8,7 @@ import sys
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
-from flipup_gto.scroll_contract import require_validation,validate_job
+from flipup_gto.scroll_contract import require_validation,validate_job,fingerprint
 from flipup_gto.cards import hand_class
 from flipup_gto.scroll_scenarios import (VERSION,solve,query,arrays,scenario_from,validate_public)
 from flipup_gto.value_data import atomic_json,atomic_npz,sample_rng,digest,encode
@@ -27,7 +27,7 @@ def generate(root,players,street,worker,attempts,hours,memory=1536,jobs=None,val
     training.mkdir(parents=True,exist_ok=True)
     manifest=dict(schema=1,players=players,street=street,worker=worker,seed=20261101,
                   source=digest([source_fingerprint(),hashlib.sha256(Path(__file__).read_bytes()).hexdigest()]),
-                  features='strength64-v1',tree=VERSION,target=.1,input_jobs=digest(inputs))
+                  features='strength64-v1',tree=VERSION,target=.1,input_jobs=digest(inputs),validation_engine=fingerprint())
     mp=training/'manifest.json'
     if mp.exists() and json.loads(mp.read_text())!=manifest:raise ValueError('teacher changed; use a new Scroll run directory')
     if not mp.exists():atomic_json(mp,manifest)

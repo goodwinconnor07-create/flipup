@@ -86,3 +86,31 @@ bash gto/scripts/scroll_laptop.sh setup
 
 Generation remains disabled while those numerical regressions and the reached-range builder are
 being repaired. This is intentional: a successfully compiled engine is not a validated GTO engine.
+
+## Network scheduling implemented in the rebuild branch
+
+The slow role now checks both its local validated data and a checksum-verified download of the fast
+role's data after a generation batch. Training waits for at least 100 distinct training board groups,
+20 validation groups and 20 test groups for one teacher/player-count/street combination. Datasets
+from an older validation-engine fingerprint are ignored. No waiting for a model blocks Scroll labels.
+
+Install CPU PyTorch on the intended training laptop with:
+
+```bash
+bash gto/scripts/scroll_laptop.sh setup-models
+```
+
+Training takes an immutable local snapshot, invokes the existing policy/action-value trainer and,
+for heads-up data, the value trainer plus held-out evaluator. A candidate gets at most 20 minutes
+per cycle and three attempts for a fixed dataset. New data creates a separate candidate directory.
+Candidates, evaluation reports and logs are backed up to Fly; they are never automatically activated
+as answer keys. Passing those engineering model gates is not a GTO certificate. `--models off` disables
+this stage. Missing PyTorch is reported in `models-status.json` while generation can continue.
+
+This code has only been checked for planning, types/syntax and contracts in the assistant workspace.
+No network was trained and no poker spot was solved here. The from-scratch reached-range/whole-hand
+builder and supported-game expansion remain unfinished, so these additions do not make the complete
+pipeline ready for an unattended production campaign.
+
+New audit runs print the current stage and a heartbeat every 15 seconds. Do not update or restart
+an audit already running on a laptop just to obtain that progress display.

@@ -15,6 +15,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
 from coach_client import Coach
 from campaign_sync import Artifacts
+from scroll_models import train_one
 from flipup_gto.cards import parse_combo
 from flipup_gto.scroll_schedule import choose_work
 from flipup_gto.scroll_contract import require_validation,validate_job
@@ -76,6 +77,7 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--role',choices=['fast','slow'],required=True);ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--hours',type=float,default=168);ap.add_argument('--memory-mb',type=int,default=1536)
+    ap.add_argument('--models',choices=['auto','off'],default='auto')
     ap.add_argument('--offline',action='store_true',help='generate and back up locally; no coach publication')
     ap.add_argument('--jobs',type=Path,required=True);ap.add_argument('--validation',type=Path,required=True)
     a=ap.parse_args();validation=require_validation(a.validation);jobs=json.loads(a.jobs.read_text());choose_work(jobs,validation,a.role,0);root=a.out.expanduser();root.mkdir(parents=True,exist_ok=True)
@@ -85,7 +87,7 @@ def main():
     worker=1 if a.role=='fast' else 0
     if client:print(call(client,'/status'),flush=True)
     statepath=root/'worker.json'
-    cfg=dict(role=a.role,hours=a.hours,memory=a.memory_mb,offline=a.offline,jobs=jobs,validation=validation)
+    cfg=dict(role=a.role,hours=a.hours,memory=a.memory_mb,offline=a.offline,jobs=jobs,validation=validation,models=a.models)
     if statepath.exists():
         state=json.loads(statepath.read_text())
         if state['config']!=cfg:raise ValueError('changed worker configuration; use a new output directory')
@@ -140,6 +142,12 @@ def main():
                     state.update(stage='refining queued spot',job=job['id']);atomic_json(statepath,state)
                     process(client,job,a.memory_mb)
                 backup.push(root,'scroll-'+root.parent.name+f'-{a.role}')
+            if a.role=='slow' and a.models=='auto' and time.time()<end:
+                peer=root/'.peer'/'fast'
+                if backup:backup.pull(peer,'scroll-'+root.parent.name+'-fast')
+                state.update(stage='checking network training data');atomic_json(statepath,state)
+                train_one(root,peer,validation,min(end,time.time()+1200))
+                if backup:backup.push(root,'scroll-'+root.parent.name+'-slow')
             state.update(cycles=cycle+1,stage='batch complete',updated=time.time());atomic_json(statepath,state)
     finally:
         stop.set()

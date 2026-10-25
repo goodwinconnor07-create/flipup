@@ -5,6 +5,7 @@ VENV="${FU_NET_VENV:-$HOME/flipup-net-env}"
 CONFIG="$HOME/.config/flipup-network-campaign.env"
 case "${1:-}" in
   setup) bash "$GTO/scripts/network_laptop.sh" setup ;;
+  setup-models) "$VENV/bin/python" -m pip install torch --index-url https://download.pytorch.org/whl/cpu ;;
   configure) bash "$GTO/scripts/network_campaign.sh" configure ;;
   status|pause|resume)
     [ -f "$CONFIG" ] || { echo 'Run configure first';exit 1; }

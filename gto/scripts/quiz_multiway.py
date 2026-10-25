@@ -318,4 +318,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit('Legacy sampled/checkdown Scroll generation is disabled. Use the gated '
+                     'run_network_campaign.py -> generate_scroll_verified.py pipeline instead. '
+                     'This module remains available for preflop/format helpers.')

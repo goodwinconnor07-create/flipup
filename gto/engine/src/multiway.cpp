@@ -30,6 +30,56 @@ std::vector<int> spread_cards(CardMask board) {
 inline int popcount8(uint8_t x) { return __builtin_popcount(x); }
 inline bool has(uint8_t mask, int p) { return (mask >> p) & 1; }
 
+// Exact compatibility of two ranges after excluding a hero's two cards.
+// Opponent collisions are the sum of shared-card products, with identical
+// combos added back once. O(52) per hero, avoiding O(H^3) joint enumeration.
+struct JointRange {
+  double total = 0;
+  std::array<double, NUM_CARDS> card{};
+  std::array<double, NUM_COMBOS> weight{};
+  void add(int c, double w) {
+    total += w; card[combo_card(c, 0)] += w; card[combo_card(c, 1)] += w; weight[c] += w;
+  }
+};
+
+struct JointIndices { std::array<uint16_t, NUM_CARDS> first{}, second{}; };
+const JointIndices& joint_indices(int hero) {
+  // combo_index is in another translation unit. Calling it twice for every
+  // card at every CFR leaf dominated exact-turn runtime without LTO.
+  static const auto table = [] {
+    std::array<JointIndices, NUM_COMBOS> result{};
+    for (int h = 0; h < NUM_COMBOS; ++h) {
+      const int a = combo_card(h, 0), b = combo_card(h, 1);
+      for (int c = 0; c < NUM_CARDS; ++c) {
+        if (c == a || c == b) continue;
+        result[h].first[c] = static_cast<uint16_t>(combo_index(c, a));
+        result[h].second[c] = static_cast<uint16_t>(combo_index(c, b));
+      }
+    }
+    return result;
+  }();
+  return table[hero];
+}
+
+double joint_compatible(int hero, const JointRange& a, const JointRange& b, const JointRange& product) {
+  if (a.total <= 0 || b.total <= 0) return 0;
+  const int x = combo_card(hero, 0), y = combo_card(hero, 1);
+  const double ma = a.total - a.card[x] - a.card[y] + a.weight[hero];
+  const double mb = b.total - b.card[x] - b.card[y] + b.weight[hero];
+  if (ma <= 0 || mb <= 0) return 0;
+  double collision = 0;
+  const auto& index = joint_indices(hero);
+#pragma omp simd reduction(+ : collision)
+  for (int c = 0; c < NUM_CARDS; ++c) {
+    if (c == x || c == y) continue;
+    const int cx = index.first[c], cy = index.second[c];
+    collision += (a.card[c] - a.weight[cx] - a.weight[cy]) *
+                 (b.card[c] - b.weight[cx] - b.weight[cy]);
+  }
+  const double same = product.total - product.card[x] - product.card[y] + product.weight[hero];
+  return std::max(0.0, ma * mb - collision + same);
+}
+
 // Each player's compatible range mass for every combo (zero where the combo touches `board`).
 // tot - mass holding either card + the combo itself (counted twice).
 void compatible_mass(const float* r, CardMask board, float* out) {
@@ -57,6 +107,8 @@ void compatible_mass(const float* r, CardMask board, float* out) {
 MultiwaySolver::MultiwaySolver(const MWConfig& cfg) : cfg_(cfg) {
   np_ = cfg_.players;
   if (np_ < 2 || np_ > MW_MAX_PLAYERS) throw std::invalid_argument("2 to 4 players");
+  if (np_ == 4 && cfg_.exact_joint)
+    throw std::invalid_argument("exact_joint supports up to three players; four-player teacher is not validated");
   if (cfg_.board.size() < 3 || cfg_.board.size() > 5) throw std::invalid_argument("board must have 3-5 cards");
   if (static_cast<int>(cfg_.range.size()) != np_) throw std::invalid_argument("one range per player");
   const int street = static_cast<int>(cfg_.board.size()) - 3;
@@ -83,7 +135,9 @@ MultiwaySolver::MultiwaySolver(const MWConfig& cfg) : cfg_(cfg) {
 
   BuildState s{};
   s.street = street;
-  s.active = static_cast<uint8_t>((1 << np_) - 1);
+  if (cfg_.initial_active < 0 || cfg_.initial_active >= (1 << np_))
+    throw std::invalid_argument("invalid initial_active mask");
+  s.active = static_cast<uint8_t>(cfg_.initial_active ? cfg_.initial_active : (1 << np_) - 1);
   s.allin = 0;
   s.acted = 0;
   s.pot = cfg_.pot;
@@ -126,6 +180,8 @@ int MultiwaySolver::next_actor(const BuildState& s, int from) const {
 }
 
 int MultiwaySolver::build(const BuildState& s) {
+  if (cfg_.max_nodes > 0 && nodes_.size() >= static_cast<size_t>(cfg_.max_nodes))
+    throw std::length_error("multiway tree node budget exceeded");
   if (popcount8(s.active) == 1) {
     Node n{};
     n.type = 2;
@@ -389,6 +445,19 @@ void MultiwaySolver::average_strategy(const Node& n, float* out) const {
 }
 
 void MultiwaySolver::others_mass(const Node& n, int i, const float* reach, float* out) const {
+  if (np_ == 3 && cfg_.exact_joint) {
+    const int j = (i + 1) % 3, k = (i + 2) % 3;
+    JointRange a, b, product;
+    for (int c = 0; c < NUM_COMBOS; ++c) {
+      if (combo_mask(c) & n.board) continue;
+      a.add(c, reach[j * NUM_COMBOS + c]);
+      b.add(c, reach[k * NUM_COMBOS + c]);
+      product.add(c, static_cast<double>(reach[j * NUM_COMBOS + c]) * reach[k * NUM_COMBOS + c]);
+    }
+    for (int c = 0; c < NUM_COMBOS; ++c)
+      out[c] = (combo_mask(c) & n.board) ? 0 : static_cast<float>(joint_compatible(c, a, b, product));
+    return;
+  }
   std::fill(out, out + NUM_COMBOS, 1.0f);
   std::vector<float> m(NUM_COMBOS);
   for (int j = 0; j < np_; ++j) {
@@ -401,6 +470,46 @@ void MultiwaySolver::others_mass(const Node& n, int i, const float* reach, float
 // Showdown on a complete board: adds each combo's value for player i to `out`.
 void MultiwaySolver::showdown_board(const Node& n, int i, const float* reach, const BoardRank& br, float* out,
                                     bool count_folded) const {
+  if (np_ == 3 && cfg_.exact_joint) {
+    const int j = (i + 1) % 3, k = (i + 2) % 3;
+    JointRange allj, allk, allprod, belowj, belowk, belowprod, zero;
+    for (const auto& e : br.sorted) {
+      allj.add(e.combo, reach[j * NUM_COMBOS + e.combo]);
+      allk.add(e.combo, reach[k * NUM_COMBOS + e.combo]);
+      allprod.add(e.combo, static_cast<double>(reach[j * NUM_COMBOS + e.combo]) * reach[k * NUM_COMBOS + e.combo]);
+    }
+    for (size_t g = 0; g + 1 < br.groups.size(); ++g) {
+      JointRange tiej, tiek, tieprod;
+      for (int x = br.groups[g]; x < br.groups[g + 1]; ++x) {
+        const int c = br.sorted[x].combo;
+        tiej.add(c, reach[j * NUM_COMBOS + c]);
+        tiek.add(c, reach[k * NUM_COMBOS + c]);
+        tieprod.add(c, static_cast<double>(reach[j * NUM_COMBOS + c]) * reach[k * NUM_COMBOS + c]);
+      }
+      for (int x = br.groups[g]; x < br.groups[g + 1]; ++x) {
+        const int c = br.sorted[x].combo;
+        if (root_reach_[i * NUM_COMBOS + c] <= 0) continue;
+        double win;
+        if (!has(n.active, j))
+          win = joint_compatible(c, allj, belowk, belowprod) + joint_compatible(c, allj, tiek, tieprod)/2;
+        else if (!has(n.active, k))
+          win = joint_compatible(c, belowj, allk, belowprod) + joint_compatible(c, tiej, allk, tieprod)/2;
+        else
+          win = joint_compatible(c, belowj, belowk, belowprod) +
+                (joint_compatible(c, tiej, belowk, zero) + joint_compatible(c, belowj, tiek, zero))/2 +
+                joint_compatible(c, tiej, tiek, tieprod)/3;
+        const double mass = joint_compatible(c, allj, allk, allprod);
+        out[c] += static_cast<float>(n.pot * win - n.contrib[i] * mass);
+      }
+      for (int x = br.groups[g]; x < br.groups[g + 1]; ++x) {
+        const int c = br.sorted[x].combo;
+        belowj.add(c, reach[j * NUM_COMBOS + c]);
+        belowk.add(c, reach[k * NUM_COMBOS + c]);
+        belowprod.add(c, static_cast<double>(reach[j * NUM_COMBOS + c]) * reach[k * NUM_COMBOS + c]);
+      }
+    }
+    return;
+  }
   const size_t L = br.sorted.size();
   // Scratch space reused across calls (one set per thread).
   thread_local std::vector<float> coef, allm, fm, W, T, M;
@@ -725,6 +834,10 @@ MWNodeInfo MultiwaySolver::query(const std::vector<int>& path, bool with_ev, boo
     info.wager.push_back(n.wager[p]);
     info.active.push_back(has(n.active, p));
     info.reach.emplace_back(reach.begin() + p * NUM_COMBOS, reach.begin() + (p + 1) * NUM_COMBOS);
+    std::vector<float> joint(NUM_COMBOS);
+    others_mass(n, p, reach.data(), joint.data());
+    for (int c = 0; c < NUM_COMBOS; ++c) joint[c] *= reach[p * NUM_COMBOS + c];
+    info.weight.push_back(std::move(joint));
   }
   for (int c = 0; c < NUM_CARDS; ++c)
     if (n.board & card_bit(c)) info.board.push_back(c);
@@ -799,6 +912,13 @@ MWNodeInfo MultiwaySolver::query(const std::vector<int>& path, bool with_ev, boo
         std::vector<float> share(NUM_COMBOS, 0.0f), mass(NUM_COMBOS, 0.0f), m(NUM_COMBOS);
         for (CardMask b : boards) {
           showdown_board(eqn, p, r.data(), board_rank(b), share.data(), false);
+          if (np_ == 3 && cfg_.exact_joint) {
+            Node bn = eqn;
+            bn.board = b;
+            others_mass(bn, p, r.data(), m.data());
+            for (int c = 0; c < NUM_COMBOS; ++c) mass[c] += m[c];
+            continue;
+          }
           // Mass of the active opponents on this board.
           std::fill(m.begin(), m.end(), 1.0f);
           std::vector<float> mj(NUM_COMBOS);

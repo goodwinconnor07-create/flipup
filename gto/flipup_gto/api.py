@@ -42,7 +42,7 @@ from .concepts import alpha, mdf, pot_odds_ratio, required_equity, river_bluff_s
 from .handhistory import HandHistory
 from .preflop import CLASSES
 from .ranges import Range
-from . import flop_admin, library
+from . import flop_admin, library, network_admin
 from .custom import Explorer, NeedsSolve
 from .review import Reviewer, aggregate_session
 from .solver import BetSizing, PostflopSolver
@@ -52,6 +52,7 @@ app = FastAPI(title="FlipUp GTO", version="0.2")
 app.add_middleware(CORSMiddleware, allow_origins=os.environ.get("FLIPUP_CORS", "*").split(","),
                    allow_methods=["GET", "POST"], allow_headers=["*"])
 app.include_router(flop_admin.router)  # flop uploads from the laptops; off without FLIPUP_UPLOAD_TOKEN
+app.include_router(network_admin.router)  # opaque campaign backups; same private admin token
 reviewer = Reviewer()
 explorer = Explorer(reviewer)
 

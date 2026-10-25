@@ -403,6 +403,9 @@ PYBIND11_MODULE(_engine, m) {
   py::class_<MWConfig>(m, "MWConfig")
       .def(py::init<>())
       .def_readwrite("players", &MWConfig::players)
+      .def_readwrite("exact_joint", &MWConfig::exact_joint)
+      .def_readwrite("initial_active", &MWConfig::initial_active)
+      .def_readwrite("max_nodes", &MWConfig::max_nodes)
       .def_readwrite("board", &MWConfig::board)
       .def_readwrite("pot", &MWConfig::pot)
       .def_readwrite("stack", &MWConfig::stack)
@@ -474,6 +477,7 @@ PYBIND11_MODULE(_engine, m) {
               return l;
             };
             d["reach"] = rows(info.reach);
+            d["weight"] = rows(info.weight);
             d["strategy"] = rows(info.strategy);
             d["action_ev"] = rows(info.action_ev);
             d["ev"] = rows(info.ev);

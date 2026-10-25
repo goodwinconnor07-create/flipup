@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 *.so
 build/
+build-network/
 .pytest_cache/
 gmon.out
 flipup_gto/data/preflop_tensor3.npz

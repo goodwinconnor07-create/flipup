@@ -17,7 +17,7 @@ from flipup_gto import _engine as E
 from flipup_gto.value_data import atomic_json
 
 
-def exact_checkdown(board, ranges, pot):
+def exact_checkdown(board, ranges, pot, active=None):
     options = [np.flatnonzero(r > 0) for r in ranges]
     total = 0.
     pay = np.zeros(len(ranges))
@@ -35,7 +35,9 @@ def exact_checkdown(board, ranges, pot):
             scores.append(E.evaluate(list(board) + list(cards)))
         if not valid:
             continue
-        winners = np.flatnonzero(np.asarray(scores) == max(scores))
+        eligible = list(range(len(ranges))) if active is None else [p for p in range(len(ranges)) if active & (1 << p)]
+        best = max(scores[p] for p in eligible)
+        winners = [p for p in eligible if scores[p] == best]
         pay[winners] += weight * pot / len(winners)
         total += weight
     if total <= 0:
@@ -63,16 +65,18 @@ def main():
         for p in range(3):
             choices = rng.choice(combos, args.hands_per_player, replace=False)
             ranges[p, choices] = rng.uniform(.1, 1., len(choices))
-        exact = exact_checkdown(board, ranges, 10.)
+        active = [7, 3, 5, 6][i % 4]
+        exact = exact_checkdown(board, ranges, 10., active)
         cfg = E.MWConfig()
         cfg.players, cfg.board, cfg.pot, cfg.stack, cfg.range = 3, board, 10., 20., ranges.tolist()
+        cfg.initial_active = active
         for street in range(3):
             cfg.set_sizes(street, [], [])
         solver = E.MultiwaySolver(cfg)
         solver.iterate(1)  # check only; there is no strategic learning problem
         approximate = np.asarray(solver.root_ev())
         error = float(np.max(np.abs(exact - approximate)) / 10)
-        results.append(dict(case=i, board=board, exact=exact.tolist(), approximate=approximate.tolist(),
+        results.append(dict(case=i, board=board, active_mask=active, exact=exact.tolist(), approximate=approximate.tolist(),
                             ranges=[[[int(c), float(r[c])] for c in np.flatnonzero(r)] for r in ranges],
                             worst_player_error_fraction_pot=error,
                             approximate_conservation_error_fraction_pot=float(abs(approximate.sum() - 10) / 10)))

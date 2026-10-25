@@ -47,6 +47,7 @@ def main():
     ap.add_argument('--samples', type=int, default=10000, help='total attempted sample ids; increasing resumes the job')
     ap.add_argument('--library', default='', help='local flop root; required for turn unless --synthetic-only')
     ap.add_argument('--synthetic-only', action='store_true', help='testing/river baseline; not the production turn curriculum')
+    ap.add_argument('--strategy', action='store_true', help='also store policy and action-EV targets from the converged teacher')
     ap.add_argument('--library-share', type=float, default=.7)
     ap.add_argument('--target', type=float, default=.2, help='maximum exact-tree gap in percent of pot')
     ap.add_argument('--max-iterations', type=int, default=3000)
@@ -73,6 +74,7 @@ def main():
                   source=source_fingerprint(), library=lib.fingerprint if lib else None,
                   engine_binary=hashlib.sha256(Path(_engine.__file__).read_bytes()).hexdigest(),
                   numpy_version=np.__version__,
+                  strategy=args.strategy,
                   library_share=args.library_share if lib else 0, target=args.target,
                   max_iterations=args.max_iterations, memory_mb=args.memory_mb,
                   tree='rich-33-75-125-raise60-r2-norake', features='strength64-v1')
@@ -128,6 +130,9 @@ def main():
                 rejected += 1
             else:
                 arrays = encode(board, r0, r1, pot, stack, solver.engine.query([], False, True))
+                if args.strategy:
+                    from flipup_gto.strategy import extract_rows
+                    arrays.update(extract_rows(lambda path: solver.engine.query(path, False, True), stack, rng))
                 atomic_npz(stem.with_suffix('.npz'), **arrays, metadata=np.asarray(json.dumps(meta)))
                 accepted += 1
             elapsed = time.monotonic() - started

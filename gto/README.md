@@ -1,7 +1,8 @@
 # FlipUp GTO backend
 
-For the current two-Ubuntu-laptop network generation commands, validation gates and
-multiway roadmap, see [Network plan and runbook](docs/NETWORK_PLAN.md).
+For the expanded automatic strategy/multiway/Scroll campaign, see
+[Unattended campaign and Ubuntu commands](docs/UNATTENDED_CAMPAIGN.md).
+The [original value-network plan](docs/NETWORK_PLAN.md) provides background.
 
 The game-theory side of FlipUp. After a session with friends, it goes through each hand and, at
 every decision, shows what a game-theory-optimal (GTO) strategy does with that hand, what each

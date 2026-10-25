@@ -5,9 +5,8 @@
 // pots. Payoffs follow the heads-up solver: chips collected minus chips put in after the root, and EVs
 // reported by queries are node-relative (folding is worth exactly 0).
 //
-// Showdowns with three or more players treat the opponents' hands as independent of each other: your
-// own cards still block theirs exactly, but two opponents holding the same card is not ruled out. That
-// keeps a showdown linear in the number of hands, like heads-up, and the error is small.
+// Three-player showdowns enumerate compatibility algebraically, excluding collisions between
+// ALL players, including folded cards. Four-player exact joint inference is not yet supported.
 //
 // The tree runs from the root street to `end_street`. Where betting ends on `end_street` with the board
 // still one card short (a flop root solved through the turn), the showdown is averaged over that last
@@ -28,6 +27,11 @@ constexpr int MW_MAX_PLAYERS = 4;
 
 struct MWConfig {
   int players = 3;
+  // Exact legal joint hole-card assignments for 3 players. Four-player exact
+  // inference is not implemented; opting out explicitly selects the legacy approximation.
+  bool exact_joint = true;
+  int initial_active = 0;               // 0 = everyone; preserves folded ranges in later street re-solves
+  int max_nodes = 0;                    // fail before expanding an unbounded tree (0 = legacy unlimited)
   std::vector<int> board;                // 3, 4 or 5 cards
   double pot = 0;                        // chips in the pot at the root
   double stack = 0;                      // chips behind for every player at the root
@@ -74,6 +78,7 @@ struct MWNodeInfo {
   std::vector<MWAction> actions;
   std::vector<int> deal_cards;
   std::vector<std::vector<float>> reach;     // [player][1326]
+  std::vector<std::vector<float>> weight;    // legal joint reach, including all opponents' card removal
   std::vector<std::vector<float>> strategy;  // actor: [action][1326]
   std::vector<std::vector<float>> action_ev; // actor: [action][1326], node-relative chips
   std::vector<std::vector<float>> ev;        // [player][1326], node-relative chips (0 where not in range)

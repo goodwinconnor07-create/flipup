@@ -16,6 +16,19 @@ All numerical tests, poker generation and network training run on the laptops.
 
 ## Assign the two laptops
 
+The launcher now detects CPU affinity, Ubuntu/WSL available RAM and cgroup v2 limits.
+It uses all visible logical CPUs for OpenMP work and selects a solver-memory budget with
+headroom for the OS, Python and tree construction. Explicit `FU_NET_THREADS` and
+`FU_NET_MEMORY_MB` settings override detection; `resources` prints the resulting budget:
+
+```bash
+bash gto/scripts/scroll_laptop.sh resources
+```
+
+This does not change Windows/WSL allocations, guarantee full CPU utilization in serial stages,
+or remove the separate tree node limits. Full-hand generation remains blocked where the tree
+exceeds capacity. A RAM budget is a solver allocation guard, not a hard limit on process RSS.
+
 Use the faster laptop for the full-hand candidate run, including three-player cases:
 
 ```bash

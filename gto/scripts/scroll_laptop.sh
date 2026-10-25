@@ -5,6 +5,16 @@ VENV="${FU_NET_VENV:-$HOME/flipup-net-env}"
 CONFIG="$HOME/.config/flipup-network-campaign.env"
 if [ ! -f "$CONFIG" ] && [ -f "$HOME/.config/flipup-flops.env" ];then CONFIG="$HOME/.config/flipup-flops.env";fi
 case "${1:-}" in
+  resources|whole-auto|whole|draft|reuse-flops|start)
+    if [ -f "$CONFIG" ];then set -a;source "$CONFIG";set +a;fi
+    RESOURCE_SETTINGS="$("$VENV/bin/python" "$GTO/scripts/scroll_resources.py")"
+    read -r FU_NET_THREADS FU_NET_MEMORY_MB <<< "$RESOURCE_SETTINGS"
+    export FU_NET_THREADS FU_NET_MEMORY_MB
+    echo "Resource budget: $FU_NET_THREADS CPU threads; $FU_NET_MEMORY_MB MiB solver RAM (OS headroom reserved)."
+    ;;
+esac
+case "${1:-}" in
+  resources) ;;
   dashboard)
     ROLE="${2:?fast or slow}";NAME="${3:?run name}"
     case "$ROLE" in fast|slow) ;; *) exit 1;; esac

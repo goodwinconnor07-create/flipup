@@ -17,8 +17,7 @@ const when = (at: number) =>
 
 const play = (id: string) => navigate({ name: 'scroll', hand: id });
 
-/** `compact` (on the Review page): the saved hands only, without the coach's line or the 24-hour Scroll list. */
-export function StudyBank({ compact = false }: { compact?: boolean }) {
+export function StudyBank() {
   const [bank, setBank] = useState(loadBank);
   const [recent, setRecent] = useState(() => loadRecent());
   useEffect(() => {
@@ -36,7 +35,7 @@ export function StudyBank({ compact = false }: { compact?: boolean }) {
   const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState('');
   const banked = new Set(bank.map((h) => h.id));
-  const unsaved = compact ? [] : recent.filter((h) => !banked.has(h.id));
+  const unsaved = recent.filter((h) => !banked.has(h.id));
 
   const edit = (h: PlayedQuiz & { name?: string }) => {
     setEditing(h.id);
@@ -90,9 +89,6 @@ export function StudyBank({ compact = false }: { compact?: boolean }) {
     </form>
   );
 
-  if (compact && bank.length === 0 && tableHands.length === 0)
-    return <p className="muted">Nothing saved yet. Tap Save on any hand below, or during a Scroll hand, to keep it here with a name.</p>;
-
   if (bank.length === 0 && unsaved.length === 0 && tableHands.length === 0) {
     return (
       <div className="t-empty">
@@ -109,8 +105,8 @@ export function StudyBank({ compact = false }: { compact?: boolean }) {
 
   return (
     <>
-      {!compact && <CoachSays lines={['Saved hands stay until you delete them. Play one again to have another go at every decision.']} />}
-      {!compact && <h2 className="section-head">Saved</h2>}
+      <CoachSays lines={['Saved hands stay until you delete them. Play one again to have another go at every decision.']} />
+      <h2 className="section-head">Saved</h2>
       {bank.length === 0 && tableHands.length === 0 ? (
         <p className="muted">No saved hands yet. Save one from the list below or during a hand.</p>
       ) : (

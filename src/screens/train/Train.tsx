@@ -31,6 +31,7 @@ const SECTIONS: { id: TrainSection; title: string; hint: string; icon: typeof Li
 /** The training hub: a sidebar of the four tools, with the chosen one filling the screen. */
 export function Train({ section = 'review' }: { section?: TrainSection }) {
   const [drawer, setDrawer] = useState(false);
+  const [bankVersion, setBankVersion] = useState(0);
   const current = SECTIONS.find((s) => s.id === section)!;
   const go = (id: TrainSection) => {
     setDrawer(false);
@@ -49,7 +50,7 @@ export function Train({ section = 'review' }: { section?: TrainSection }) {
         </button>
       </div>
       <div className="screen-body">
-        {section === 'review' && <><StudyBank /><h2 className="section-head">Games · last 24 hours</h2><ReviewList /></>}
+        {section === 'review' && <><StudyBank key={bankVersion} /><h2 className="section-head">Games · last 24 hours</h2><ReviewList onSaved={() => setBankVersion((v) => v + 1)} /></>}
         {section === 'scroll' && <StudyBank />}
         {section === 'insights' && <InsightsTab />}
         {section === 'library' && <Library />}
@@ -84,7 +85,7 @@ function when(at: number): string {
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) + ' · ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
-function ReviewList() {
+function ReviewList({ onSaved }: { onSaved: () => void }) {
   const [hands, setHands] = useState(() => [...loadHistory()].reverse());
   const [summaries, setSummaries] = useState(loadSummaries);
   useEffect(() => {
@@ -98,8 +99,6 @@ function ReviewList() {
   const [only, setOnly] = useState<'all' | 'mistakes'>('all');
   const [saved, setSaved] = useState(() => new Set(loadSaved().map((h) => h.key)));
   const [naming, setNaming] = useState<{ key: string; name: string } | null>(null);
-  // The study bank re-reads what's saved when this changes.
-  const [bankVersion, setBankVersion] = useState(0);
   const unreviewed = hands.filter((h) => !summaries[h.key]).slice(0, 20);
   const queue = useMemo(() => unreviewed.map((h) => toHandHistory(h.record)), [unreviewed.map((h) => h.key).join('|')]);
   const working = new Set(busy ? unreviewed.map((h) => h.key) : []);
@@ -122,17 +121,9 @@ function ReviewList() {
     }
   };
 
-  const bank = (
-    <>
-      <h2 className="section-head">Study bank</h2>
-      <StudyBank key={bankVersion} compact />
-    </>
-  );
-
   if (hands.length === 0) {
     return (
       <div className="t-empty">
-        {bank}
         <h2 className="h2">No hands in the last 24 hours</h2>
         <p className="muted">Play a few hands with friends or the bots. Every hand you're dealt stays here for 24 hours, ready for a GTO review; save the ones you want to keep.</p>
         <button type="button" className="btn btn-outline" onClick={() => replace({ name: 'train', section: 'custom' })}>
@@ -143,8 +134,6 @@ function ReviewList() {
   }
   return (
     <>
-      {bank}
-      <h2 className="section-head">Last 24 hours</h2>
       <p className="muted">Hands you don't save are deleted 24 hours after you play them.</p>
       <CoachSays
         lines={[
@@ -194,7 +183,7 @@ function ReviewList() {
                   e.preventDefault();
                   saveHand(h.key, naming.name);
                   setSaved(new Set(loadSaved().map((x) => x.key)));
-                  setBankVersion((v) => v + 1);
+                  onSaved();
                   setNaming(null);
                   toast('Saved to your study bank.', 'success');
                 }}

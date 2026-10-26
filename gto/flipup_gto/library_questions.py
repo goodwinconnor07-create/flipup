@@ -56,6 +56,8 @@ def load_questions(path,per_node=4,max_gap=.5):
             for c,w in opp_pairs.items():opp_mass[list(combo_cards(c))]+=w
             for i,combo in enumerate(combos[actor]):
                 if ranges[actor][i]<=1e-10:continue
+                # Avoid mining apparent mixes from effectively unreachable preflop hands.
+                if ranges[actor][i]/max(ranges[actor].sum(),1e-30)<.0001:continue
                 cards=combo_cards(int(combo))
                 compatible=ranges[opp].sum()-opp_mass[cards[0]]-opp_mass[cards[1]]+opp_pairs.get(int(combo),0)
                 if compatible<=1e-10:continue
@@ -91,6 +93,7 @@ def load_questions(path,per_node=4,max_gap=.5):
                        pot=pot,stacks=[stack-w for w in wagers],wagers=wagers,toCall=max(wagers)-wagers[actor],history=history,
                        options=opts,difficulty='mixed' if max(probs)<.9 else 'close' if score>-.025 else 'standard',
                        source=dict(file=path.name,matchup=path.parent.name,sha256=sha,node=key,gapPct=gap,iterations=int(meta['iterations']),
+                                   heroReach=float(ranges[actor][i]),heroRangeShare=float(ranges[actor][i]/ranges[actor].sum()),
                                    model='existing flop-library betting abstraction; future-street simplifications retained',precision='float16'),
                        publicationApproved=False)
                 questions.append((q,dict(context=context,actions=af,mask=mask,target=target,ev=values),board))

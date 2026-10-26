@@ -34,3 +34,17 @@ def test_convergence_threshold_does_not_get_relabelled(tmp_path):
 
 def test_same_flop_suit_variants_have_same_split():
     assert split_for([0,4,8])==split_for([1,5,9])
+
+
+def test_negligible_range_hands_are_not_selected(tmp_path):
+    path=fixture(tmp_path)
+    with np.load(path,allow_pickle=False) as d:arrays={k:d[k].copy() for k in d.files}
+    rare=combo_index(20,24);common=combo_index(28,32)
+    arrays.update(combos1=np.array([rare,common]))
+    arrays['r:0']=np.array([.00006,1.])
+    arrays['s:0']=np.array([[.5,.5],[.5,.5]])
+    arrays['e:0']=np.array([[1.,1.],[1.,1.]])
+    np.savez(path,**arrays)
+    _,questions=load_questions(path)
+    children=[q for q,_,_ in questions if q['source']['node']=='0']
+    assert len(children)==1 and children[0]['source']['heroRangeShare']>.99

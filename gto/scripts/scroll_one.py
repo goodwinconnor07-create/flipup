@@ -45,7 +45,8 @@ def label(option,pot):
 
 def grade(question,index):
     options=question['options'];best=max(o['ev'] for o in options);loss=max(0,best-options[index]['ev'])
-    return dict(pick=index,lossBb=loss,colour='green' if loss<=max(.02,.005*question['pot']) else 'yellow' if loss<=max(.1,.025*question['pot']) else 'red')
+    # Match the ORIGINAL animated Scroll player's gradeChoice in src/quiz/hands.ts.
+    return dict(pick=index,lossBb=loss,colour='green' if loss<=max(.05,.01*question['pot']) else 'yellow' if loss<=max(.5,.05*question['pot']) else 'red')
 
 
 def main():

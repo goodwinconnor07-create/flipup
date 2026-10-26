@@ -14,6 +14,11 @@ def test_rare_equal_ev_action_is_good():
     assert grade(question,1)['lossBb']==0
 
 
+def test_trial_matches_original_scroll_small_loss_threshold():
+    question=dict(pot=5.1,options=[dict(ev=1.1572265625),dict(ev=1.2021484375)])
+    assert grade(question,0)['colour']=='green'
+
+
 def test_range_export_preserves_root_and_reached_weights(tmp_path):
     source=fixture(tmp_path);_,questions=load_questions(source)
     child=next(q for q,_,_ in questions if q['source']['node']=='0')

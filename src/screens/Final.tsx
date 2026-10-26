@@ -3,6 +3,7 @@ import { net, standings, type Game } from '../game';
 import { closeTable, dispatch, openLog, startTwin, useApp } from '../state/store';
 import { shareText } from './sheets/InviteSheet';
 import { Avatar, chips } from '../ui/components';
+import { openTwinReport } from './train/TwinReport';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 import { playSound } from '../ui/sound';
 
@@ -130,6 +131,11 @@ export function Final({ game }: { game: Game }) {
               </button>
             )}
           </>
+        )}
+        {game.twinGame && step >= 3 && (
+          <button type="button" className="btn btn-xl btn-ghost" onClick={openTwinReport}>
+            What your twin found
+          </button>
         )}
         <button type="button" className={`btn btn-xl ${me && step >= 3 ? 'btn-ghost' : 'btn-dark'}`} onClick={closeTable}>
           Done

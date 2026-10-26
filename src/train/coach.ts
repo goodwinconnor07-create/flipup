@@ -5,6 +5,7 @@ import { formatFrequency } from '../quiz/scenarios';
 import type { Colour, Decision, HandReport } from '../gto/types';
 import { actionKind, bb, pct, prettyAction } from './format';
 import { scenarioTitle } from './scenarios';
+import type { GameSummary } from './twinReport';
 import type { Draw, Made, Spot } from '../quiz/read';
 
 export const COACH_NAME = 'GTO Coach';
@@ -514,4 +515,27 @@ export function quizSummary(grades: Colour[]): string {
   if (n === 0) return 'Nothing to decide in that one.';
   if (bad === 0) return n === 1 ? 'One decision, and you got it.' : `All ${n} decisions right. Nice.`;
   return `${n - bad} of ${n} right. ${bad === 1 ? 'One' : bad} worth another look.`;
+}
+
+// ── After a game against your AI twin ───────────────────────────────────────
+
+/** What the coach says first about a game against your twin. `knew` is how many of your hands it had learned from. */
+export function twinGameLines(s: GameSummary, knew: number): string[] {
+  if (s.hands < 5) return ["That was a short one. Play a few more hands against your twin and I'll have something to show you."];
+  const chips = Math.round(Math.abs(s.net)).toLocaleString('en-US');
+  const lines =
+    s.net < 0
+      ? [`Your twin took ${chips} chips from you over ${s.hands} hands.`, "That's your own game coming back at you. Here's where it cost you most."]
+      : s.net > 0
+        ? [`You beat your twin by ${chips} chips over ${s.hands} hands.`, "You're a step ahead of your own habits. Here are the hands it won off you."]
+        : [`You and your twin finished level over ${s.hands} hands.`, 'Here are the hands it won off you.'];
+  if (knew < 100) lines.push("It's still learning you, so it's a loose copy. It gets sharper the more you play.");
+  return lines;
+}
+
+/** The coach's words over the habits list. */
+export function twinHabitsIntro(count: number): string {
+  return count > 0
+    ? 'Your twin copied these habits of yours. Each one is a leak it will use against you.'
+    : "Nothing in your play stands out from what most players do, so your twin is a tough copy to beat.";
 }

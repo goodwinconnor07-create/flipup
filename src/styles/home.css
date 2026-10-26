@@ -821,6 +821,30 @@ html[data-theme='dark'] .sheet .group {
   color: var(--ink-3);
 }
 
+/* The twin report and its entry on Insights. */
+.twin-insight {
+  width: 100%;
+  align-items: flex-start;
+  border: 0;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+}
+
+.twin-story {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+.twin-story > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.twin-again {
+  margin-top: 4px;
+}
+
 /* ── The streak sheet ─────────────────────────────────────────────────────────────────────── */
 
 .streak-hero {

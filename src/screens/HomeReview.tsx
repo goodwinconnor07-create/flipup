@@ -5,7 +5,9 @@ import { CoachSays } from '../train/Coach';
 import { greeting } from '../train/coach';
 import { drillFor } from '../train/scenarios';
 import { computeStats } from '../train/stats';
-import { BookmarkIcon, ChartIcon, ChevronIcon, ListIcon, TrophyIcon } from '../ui/Icons';
+import { loadTwinGames } from '../state/twinGames';
+import { BookmarkIcon, ChartIcon, ChevronIcon, ListIcon, SparkIcon, TrophyIcon } from '../ui/Icons';
+import { openTwinReport } from './train/TwinReport';
 
 /** The hands from the table you played most recently, and how many of them the coach hasn't seen. */
 export function lastGameHands(history: PlayedHand[], reviews: Record<string, ReviewSummary>): { total: number; waiting: number } {
@@ -52,6 +54,7 @@ export function ReviewTab() {
       lastGame: lastGameHands(history, reviews),
     };
   }, []);
+  const twinGames = useMemo(() => loadTwinGames().some((g) => g.hands.length > 0), []);
   const go = (section: TrainSection) => navigate({ name: 'train', section });
   const weakest = stats.weaknesses[0] ?? null;
   const drill = weakest ? drillFor(weakest.id) : null;
@@ -102,6 +105,15 @@ export function ReviewTab() {
             <ChevronIcon className="gr-chev" width={16} height={16} />
           </button>
         ))}
+        {twinGames && (
+          <button type="button" className="group-row press" onClick={openTwinReport}>
+            <span className="gr-icon" style={{ background: 'var(--indigo)' }}>
+              <SparkIcon />
+            </span>
+            <span className="gr-text">Your twin</span>
+            <ChevronIcon className="gr-chev" width={16} height={16} />
+          </button>
+        )}
       </div>
     </>
   );

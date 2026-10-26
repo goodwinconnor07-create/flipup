@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { checkOrCall, myTurn, setName, shot, watchErrors } from './helpers';
+import { checkOrCall, myTurn, reloadToTable, setName, shot, watchErrors } from './helpers';
 
 test('play hands against the bots on one phone', async ({ page }) => {
   watchErrors(page);
@@ -45,8 +45,8 @@ test('play hands against the bots on one phone', async ({ page }) => {
   await next.click();
   await expect(page.locator('.table-title small')).toHaveText('Hand 2', { timeout: 10_000 });
 
-  // The table survives a reload.
-  await page.reload();
+  // The table survives a reload: Home opens first, with your table one tap away.
+  await reloadToTable(page);
   await expect(page.locator('.table-title small')).toHaveText(/Hand \d/);
   await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
 });
@@ -355,7 +355,7 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
   await page.getByRole('button', { name: 'Table theme' }).click();
   await page.getByRole('radio', { name: 'Burgundy' }).click();
   await page.getByRole('button', { name: 'Done' }).click();
-  await page.reload();
+  await reloadToTable(page);
   await expect(page.locator('.table-oval').first()).toHaveAttribute('style', /#8b1e3f/);
 
   // Sound can be switched off from the menu, and stays off.
@@ -473,7 +473,9 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
       const raise = page.locator('.action-buttons .btn-blue');
       if (await raise.isVisible()) {
         await raise.click();
-        await page.locator('.raise-panel .preset[aria-label="All in"]').click();
+        // A short stack has no "All in" preset: the biggest one left is the whole stack.
+        const allIn = page.locator('.raise-panel .preset[aria-label="All in"]');
+        await (((await allIn.count()) > 0 ? allIn : page.locator('.raise-panel .preset').last()).first().click());
         await page.locator('.raise-panel .btn-blue').click();
       } else await page.locator('.action-buttons .btn-green').click();
     } else if (await page.getByRole('button', { name: 'Next hand' }).isVisible())
@@ -504,7 +506,7 @@ test('the recorded sound effects load and decode', async ({ page }) => {
   for (const d of Object.values(durations)) expect(d).toBeGreaterThan(0.3);
 });
 
-test("after a hand the host can reveal the bots' hands, next to Show cards", async ({ page }) => {
+test("after a hand the host can tap a bot to turn its cards over, next to Show cards", async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play with Bots' }).click();
@@ -513,27 +515,33 @@ test("after a hand the host can reveal the bots' hands, next to Show cards", asy
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
   await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
-  // Not during the hand, and it isn't a table setting any more.
-  await expect(page.getByRole('button', { name: "Reveal the bots' hands" })).toHaveCount(0);
+  // There's no button for it, in the hand or in the menu: it's a tap on the bot itself, once the hand is over.
+  await expect(page.getByRole('button', { name: /bots' hands/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'Menu' }).click();
   await expect(page.getByRole('button', { name: /bots' hands/ })).toHaveCount(0);
   await page.getByRole('button', { name: 'Close' }).click();
 
-  // Fold, and wait for the hand to finish.
-  const reveal = page.getByRole('button', { name: "Reveal the bots' hands" });
-  for (let i = 0; i < 100 && !(await reveal.isVisible()); i++) {
-    if (await page.getByText('Your turn').isVisible()) await page.locator('.action-buttons .btn-fold').click();
-    await page.waitForTimeout(400);
+  // Fold every hand until one ends with a bot's cards still face down (a showdown turns them over by itself).
+  const showCards = page.getByRole('button', { name: 'Show my cards' });
+  const hidden = page.locator('.pod .pod-cards .pcard-back');
+  for (let hand = 0; hand < 8; hand++) {
+    for (let i = 0; i < 100 && !(await showCards.isVisible()); i++) {
+      if (await page.getByText('Your turn').isVisible()) await page.locator('.action-buttons .btn-fold').click();
+      await page.waitForTimeout(400);
+    }
+    await expect(showCards).toBeVisible();
+    if ((await hidden.count()) > 0) break;
+    await page.getByRole('button', { name: /^(Next hand|Rebuy)/ }).click();
+    await expect(showCards).toHaveCount(0);
   }
-  await expect(reveal).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Show my cards' })).toBeVisible();
-  const back = page.locator('.pod .pod-cards .pcard-back');
-  // Anyone who folded kept their cards hidden: some backs are showing, until we reveal.
-  await shot(page, '17-reveal-button');
-  await reveal.click();
-  await expect(page.locator('.pod .pod-cards .pcard-back')).toHaveCount(0);
-  await expect(reveal).toHaveCount(0);
-  expect(await back.count()).toBe(0);
+  const pod = page.locator('.pod', { has: page.locator('.pcard-back') }).first();
+  await expect(pod).toBeVisible();
+  const before = await hidden.count();
+  await shot(page, '17-bot-face-down');
+  await pod.click();
+  // Just that bot turns its two cards over.
+  await expect(hidden).toHaveCount(before - 2);
+  await expect(pod.locator('.pcard-back')).toHaveCount(0);
 });
 
 test('every player has a position: yours too', async ({ page }) => {

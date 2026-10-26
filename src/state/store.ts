@@ -31,6 +31,7 @@ import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
 import { loadTwin } from './twin';
+import { beginTwinGame, finishTwinGame } from './twinGames';
 import {
   forgetOldScroll,
   loadDeviceId,
@@ -78,7 +79,9 @@ export type Route =
   | { name: 'drill'; scenario: string }
   | { name: 'custom' }
   /** Scroll: whole hands solved ahead of time, every move graded. */
-  | { name: 'scroll'; hand?: string };
+  | { name: 'scroll'; hand?: string }
+  /** What your AI twin found in your last game against it. */
+  | { name: 'twinReport' };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 
@@ -358,9 +361,12 @@ export function startTwin(): void {
   if (state.busy) return;
   const memory = loadTwin();
   if (memory.hands < TWIN_READY) return;
+  // Playing again leaves the last table without going home: count it first.
+  if (state.game?.twinGame) recordFinished();
   const brain = buildBrain(memory);
   startHeadsUp(undefined, (them, game) => {
     game.twinGame = true;
+    beginTwinGame(game.id, game.settings.bigBlind, memory.hands);
     them.name = twinName(state.profile.name);
     them.emoji = state.profile.emoji;
     them.style = brain.style.id;
@@ -616,8 +622,9 @@ function recordFinished(): void {
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}) }],
   });
+  if (game.twinGame) finishTwinGame(game.id, place);
 }
 
 /** Sends a quick message ("Nice hand!") to the table. */

@@ -1,0 +1,242 @@
+// What your AI twin shows you after a game, worked out from plain counts: no solver, nothing sent
+// anywhere. Two parts: the hands that cost you most and what happened in them, and the habits of yours
+// that your twin copied, set against what players usually do.
+
+import { heroDecisions, recordNet, type HandRecord, type TwinProfile } from '../game';
+import { handBucket, type Bucket } from '../game/handBucket';
+import type { TwinGame, TwinGameHand } from '../state/twinGames';
+import type { PlayedHand } from '../state/training';
+
+// ── The game ────────────────────────────────────────────────────────────────
+
+export interface GameSummary {
+  hands: number;
+  /** Chips you won (or lost, below zero) in all. */
+  net: number;
+  /** Big blinds won per 100 hands. */
+  bbPer100: number;
+  /** The share of hands you won chips in. */
+  won: number;
+}
+
+export function summarize(game: TwinGame): GameSummary {
+  const hands = game.hands.length;
+  const net = game.hands.reduce((a, h) => a + h.net, 0);
+  const wins = game.hands.filter((h) => h.net > 0).length;
+  return { hands, net, bbPer100: hands ? (net / Math.max(1, game.bb) / hands) * 100 : 0, won: hands ? wins / hands : 0 };
+}
+
+const BUCKET_WORDS: Record<Bucket, string> = {
+  monster: 'a very strong hand',
+  strong: 'two pair',
+  top: 'top pair',
+  mid: 'a middle pair',
+  draw: 'a draw that missed',
+  weak: 'high cards',
+  air: 'nothing',
+};
+
+const STREET_WORDS = { preflop: 'before the flop', flop: 'on the flop', turn: 'on the turn', river: 'on the river' } as const;
+
+const chipText = (n: number) => Math.round(n).toLocaleString('en-US');
+
+/** In a sentence: what happened to you in a hand you lost chips in. */
+export function lossLine(h: PlayedHand): string {
+  const r = h.record;
+  const lost = Math.max(0, -recordNet(r, h.heroId));
+  const folded = heroDecisions(r, h.heroId).find((d) => d.move === 'fold');
+  if (folded) {
+    if (folded.spot.street === 'preflop') return `You folded before the flop and lost your blind (${chipText(lost)}).`;
+    return `You folded ${STREET_WORDS[folded.spot.street]} after putting in ${chipText(lost)}.`;
+  }
+  if (r.showdown) {
+    const mine = r.holes[h.heroId];
+    const theirs = r.players.filter((p) => p.id !== h.heroId).map((p) => r.holes[p.id]).find((c) => c && c.length === 2);
+    const board = r.board;
+    const you = mine && board.length >= 3 ? BUCKET_WORDS[handBucket(mine, board)] : null;
+    const them = theirs && board.length >= 3 ? BUCKET_WORDS[handBucket(theirs, board)] : null;
+    if (you && them) return `You went to showdown with ${you} and lost ${chipText(lost)} to ${them}.`;
+    if (you) return `You went to showdown with ${you} and lost ${chipText(lost)}.`;
+    return `You went to showdown and lost ${chipText(lost)}.`;
+  }
+  return `You lost ${chipText(lost)}.`;
+}
+
+export interface LossStory {
+  key: string;
+  number: number;
+  net: number;
+  /** What happened, or null once the hand is older than the hand history keeps. */
+  line: string | null;
+  cards: string[];
+  board: string[];
+  record: HandRecord | null;
+}
+
+/** The hands that cost you most, worst first. */
+export function lossStories(game: TwinGame, find: (key: string) => PlayedHand | null, max = 3): LossStory[] {
+  const worst: TwinGameHand[] = game.hands.filter((h) => h.net < 0).sort((a, b) => a.net - b.net).slice(0, max);
+  return worst.map((h) => {
+    const played = find(h.key);
+    return {
+      key: h.key,
+      number: h.number,
+      net: h.net,
+      line: played ? lossLine(played) : null,
+      cards: played?.record.holes[played.heroId] ?? [],
+      board: played?.record.board ?? [],
+      record: played?.record ?? null,
+    };
+  });
+}
+
+// ── Habits ──────────────────────────────────────────────────────────────────
+
+export interface Habit {
+  id: string;
+  /** The coach's line about it, with your number in it. */
+  line: string;
+  /** One thing to try. */
+  tip: string;
+  /** For "Show me the numbers": your number, how many times, and where most players sit. */
+  numbers: string;
+  /** How far outside the usual range it is, for sorting. */
+  weight: number;
+}
+
+interface Rule {
+  id: string;
+  /** Your number and how many chances it's from, or null. */
+  read: (t: TwinProfile) => { hits: number; of: number } | null;
+  /** Fewest chances before it counts. */
+  enough: number;
+  /** Where most players sit, and how far outside counts as one point of weight. */
+  band: [number, number];
+  scale: number;
+  what: string;
+  high?: { line: (p: string) => string; tip: string };
+  low?: { line: (p: string) => string; tip: string };
+}
+
+const RULES: Rule[] = [
+  {
+    id: 'hands',
+    read: (t) => ({ hits: t.stats.vpip, of: t.hands }),
+    enough: 50,
+    band: [0.18, 0.36],
+    scale: 0.08,
+    what: 'hands you play before the flop',
+    high: { line: (p) => `You play ${p} of your hands. Your twin does too, so you both end up in a lot of tough spots with weak cards.`, tip: 'Fold the weakest hands before the flop. You\'ll miss less and lose less.' },
+    low: { line: (p) => `You only play ${p} of your hands. Your twin folds just as much, and it picks up your blinds while you wait.`, tip: 'Defend your big blind with a few more hands.' },
+  },
+  {
+    id: 'raise',
+    read: (t) => (t.stats.vpip >= 20 ? { hits: t.stats.pfr, of: t.stats.vpip } : null),
+    enough: 20,
+    band: [0.55, 1],
+    scale: 0.15,
+    what: 'hands you play that you raise',
+    low: { line: (p) => `Of the hands you play, you only raise ${p}. The rest you just call, and your twin copies that.`, tip: 'Raise your strong hands instead of calling. It wins the pot right there, or builds it.' },
+  },
+  {
+    id: 'limp',
+    read: (t) => ({ hits: t.stats.limps, of: t.stats.firstIn }),
+    enough: 15,
+    band: [0, 0.12],
+    scale: 0.08,
+    what: 'times you limp when first in',
+    high: { line: (p) => `When you're first in, you limp ${p} of the time. Your twin limps too, and a raise from it takes the pot.`, tip: 'Raise or fold. A limp is the weakest way to start a hand.' },
+  },
+  {
+    id: 'fold-to-raise',
+    read: (t) => ({ hits: t.stats.foldsToRaise, of: t.stats.raiseFaced }),
+    enough: 12,
+    band: [0.5, 0.8],
+    scale: 0.12,
+    what: 'raises before the flop you fold to',
+    high: { line: (p) => `You fold ${p} of the time when someone raises before the flop. Your twin does too, so a raise from it takes your blinds.`, tip: 'Call or re-raise with a few more hands when it raises.' },
+  },
+  {
+    id: 'three-bet',
+    read: (t) => ({ hits: t.stats.threeBets, of: t.stats.raiseFaced }),
+    enough: 12,
+    band: [0.04, 0.15],
+    scale: 0.05,
+    what: 'raises before the flop you re-raise',
+    low: { line: (p) => `You almost never re-raise before the flop (${p}). Your twin doesn't either, so raises against you are easy to call.`, tip: 'Re-raise your best hands now and then, so your raises can\'t be called so lightly.' },
+  },
+  {
+    id: 'fold-to-bet',
+    read: (t) => ({ hits: t.stats.foldsToBet, of: t.stats.betsFaced }),
+    enough: 15,
+    band: [0.32, 0.52],
+    scale: 0.1,
+    what: 'bets after the flop you fold to',
+    high: { line: (p) => `You fold to a bet ${p} of the time after the flop. Your twin copies that, so its bets win pots on their own.`, tip: 'Call a bit lighter with any pair or a draw.' },
+    low: { line: (p) => `You fold to a bet only ${p} of the time after the flop. Your twin calls just as much, and you both pay off big hands.`, tip: 'Let go of a weak pair when someone bets big.' },
+  },
+  {
+    id: 'bet',
+    read: (t) => ({ hits: t.stats.bets, of: t.stats.betOpps }),
+    enough: 20,
+    band: [0.3, 0.55],
+    scale: 0.1,
+    what: 'times you bet when nobody has bet before you',
+    high: { line: (p) => `When nobody has bet, you bet ${p} of the time. Your twin keeps firing too, and it's easy to call down.`, tip: 'Check back some of your weaker hands.' },
+    low: { line: (p) => `When nobody has bet, you only bet ${p} of the time. Your twin checks along, so the hand stays small, or the other player sees a free card.`, tip: 'Bet your good hands and your draws instead of checking them.' },
+  },
+  {
+    id: 'cbet',
+    read: (t) => ({ hits: t.stats.cbets, of: t.stats.cbetOpps }),
+    enough: 10,
+    band: [0.4, 0.75],
+    scale: 0.12,
+    what: 'flops you bet after raising before it',
+    high: { line: (p) => `After you raise before the flop, you bet the flop ${p} of the time. Your twin does too, so a bet on its own doesn't say much.`, tip: 'Check back some hands that would fold to a raise anyway.' },
+    low: { line: (p) => `After you raise before the flop, you only bet the flop ${p} of the time. You hand the pot back to anyone who called.`, tip: 'Bet the flop more often when you raised, even when you missed.' },
+  },
+  {
+    id: 'bluff',
+    read: (t) => ({ hits: t.stats.postBluffs, of: t.stats.postAgg }),
+    enough: 15,
+    band: [0.15, 0.4],
+    scale: 0.1,
+    what: 'bets and raises after the flop that were with a weak hand or a draw',
+    high: { line: (p) => `Of your bets and raises after the flop, ${p} were with a weak hand or a draw. Your twin bluffs just as often.`, tip: 'Pick bluffs that tell a story, like a draw that could get there.' },
+    low: { line: (p) => `Only ${p} of your bets after the flop are bluffs. Your twin is just as honest, so a bet from either of you says "I've got it".`, tip: 'Add a bluff now and then with a draw.' },
+  },
+  {
+    id: 'showdown',
+    read: (t) => ({ hits: t.stats.showdowns, of: t.stats.sawFlop }),
+    enough: 20,
+    band: [0.2, 0.42],
+    scale: 0.08,
+    what: 'flops you see that go to showdown',
+    high: { line: (p) => `You go to showdown ${p} of the time you see a flop. You call a lot of bets all the way to the end, and your twin does too.`, tip: 'Folding on the river to a big bet is allowed.' },
+  },
+];
+
+const pct = (x: number) => `${Math.round(x * 100)}%`;
+
+/** Your habits that sit outside the usual range, biggest first. Empty when nothing stands out (or it hasn't seen enough). */
+export function habitsOf(twin: TwinProfile, max = 3): Habit[] {
+  const out: Habit[] = [];
+  for (const rule of RULES) {
+    const r = rule.read(twin);
+    if (!r || r.of < rule.enough) continue;
+    const value = r.hits / r.of;
+    const [lo, hi] = rule.band;
+    const side = value > hi ? rule.high : value < lo ? rule.low : null;
+    if (!side) continue;
+    const weight = (value > hi ? value - hi : lo - value) / rule.scale;
+    if (weight < 0.5) continue;
+    out.push({
+      id: rule.id,
+      line: side.line(pct(value)),
+      tip: side.tip,
+      numbers: `${pct(value)} of ${r.of} ${rule.what}. Most players land between ${pct(lo)} and ${pct(hi)}.`,
+      weight,
+    });
+  }
+  return out.sort((a, b) => b.weight - a.weight).slice(0, max);
+}

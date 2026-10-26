@@ -1,6 +1,6 @@
 # AI twins: plan
 
-Status: phases 1 (twin memory), 2 (fit and copy) and 3 (the "Your twin" game) are built. The Friends' twins tile is there but says "Coming soon". Decisions below came from the product owner.
+Status: phases 1 (twin memory), 2 (fit and copy), 3 (the "Your twin" game) and 4 (the twin report) are built. The Friends' twins tile is there but says "Coming soon". Decisions below came from the product owner.
 
 Two new ways to play, in an "AI twins" group on the Play tab under the Play with Friends and Play with Bots cards, above Quick games:
 
@@ -88,11 +88,16 @@ What this does and doesn't show: a bot's play depends on things the memory can't
 - **It keeps learning.** Hands against your twin count towards your twin like any other (an end-to-end test checks it grows by one per hand).
 - **Friends' twins tile.** A placeholder for phase 5: it says "Coming soon." and a tap shows a short message.
 
-### 4. Learning from your mistakes
+### 4. Learning from your mistakes (built, basic)
 
-- After a twin game, the GTO Coach (new lines in `coach.ts`: short, plain, contractions) shows the hands where the twin took the most chips. Each opens Replay and the existing GTO review.
-- It also names the habits the twin used, in plain words: "You folded to river bets 8 times out of 11. GTO folds about half as often." The numbers sit behind "Show me the numbers".
-- Results go into `flipup.stats.games` with a twin kind, so Insights can show how you do against yourself.
+No solver and no network: everything here is worked out on the phone from counts and the hands themselves. (The GTO review of a hand, which does call the coach service, is untouched and isn't used.)
+
+- **What's kept.** `src/state/twinGames.ts` keeps your last five games against your twin in `flipup.twingames`: when it started, how many hands the twin knew you from, one line per hand (its key and the chips you won or lost) and where you finished. It survives the 24 hour hand history. `captureFinishedHand()` adds each hand, `startTwin()` begins a game and leaving the table ends it (`recordFinished()` also marks the game in `flipup.stats.games` with `twin: true`, and Play again counts the table you just finished).
+- **The report** (`src/screens/train/TwinReport.tsx`, numbers in `src/train/twinReport.ts`, words in `twinGameLines()` and `twinHabitsIntro()` in `coach.ts`): the coach says how the game went ("Your twin took 200 chips from you over 6 hands.", "You beat your twin by…", and "It's still learning you, so it's a loose copy" under 100 hands), four tiles (chips, hands won, hands, big blinds per 100 hands), then:
+  - **Where it cost you:** your three worst hands, each with your cards and one sentence about what happened ("You folded on the turn after putting in 30.", "You went to showdown with top pair and lost 65 to two pair."). The sentence comes from the saved hand, so it's there while the hand history keeps it (24 hours); after that the line says the hand is too old. Replay links stay off while `REPLAY_ON` is false.
+  - **Habits your twin copied:** up to three of your numbers (hands played, calling instead of raising, limping, folding to raises, re-raising, folding to bets, betting when checked to, flop bets after raising, bluff share, going to showdown) that sit outside the range most players are in, biggest gap first, each with a coach line, one thing to try and "Show me the numbers" (your count and the usual range). A number needs enough chances before it's mentioned (for example 15 bets faced), and nothing is said when nothing stands out. The usual ranges are plain constants in `RULES`, taken from the bot lab's measurements, not from a solver.
+- **Where it opens.** The final screen of a twin game ("What your twin found"), the table menu during one, a "Your twin" row on the Review tab, and an "Against your twin" card on Insights (games won of games played), which also marks twin games in Recent tables.
+- **Left out on purpose.** Hands where the twin bluffed you, and anything graded against GTO: the phone only sees the twin's cards when they're shown, and grading needs the solver.
 
 ### 5. Friends' twins
 

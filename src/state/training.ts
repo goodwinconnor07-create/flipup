@@ -1,9 +1,10 @@
 // Training data kept on this phone: every hand you played (as data), GTO reviews of them, and
 // how you did on practice drills. Stats and weaknesses are worked out from these.
 
-import { handRecord, type Game, type HandRecord } from '../game';
+import { handRecord, recordNet, type Game, type HandRecord } from '../game';
 import { markPlayedToday, read, write } from './persist';
 import { recordTwinHand } from './twin';
+import { addTwinHand } from './twinGames';
 
 const KEYS = {
   history: 'flipup.history',
@@ -92,6 +93,7 @@ export function captureFinishedHand(game: Game | null, deviceId: string): void {
   if (captured.size > 50) captured = new Set([...captured].slice(-20));
   addHand({ key, heroId: me.id, record });
   recordTwinHand(key, record, me.id);
+  if (game.twinGame) addTwinHand(game.id, { key, number: record.number, net: recordNet(record, me.id) }, game.settings.bigBlind);
   markPlayedToday();
 }
 

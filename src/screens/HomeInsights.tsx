@@ -8,6 +8,7 @@ import { CoachSays } from '../train/Coach';
 import { trendLine } from '../train/coach';
 import { MiniCards, Trend } from '../train/widgets';
 import { navigate } from '../state/store';
+import { openTwinReport } from './train/TwinReport';
 
 /** 1st, 2nd, 3rd, 4th… */
 export function ordinal(n: number): string {
@@ -62,6 +63,7 @@ export function InsightsTab() {
   const placed = stats.games.filter((g) => g.place != null);
   const wins = placed.filter((g) => g.place === 1).length;
   const recent = [...stats.games].reverse().slice(0, 5);
+  const twinGames = placed.filter((g) => g.twin);
   return (
     <>
       <div className="glass-card insight-hero">
@@ -95,6 +97,13 @@ export function InsightsTab() {
           <Trend points={hands.trend.map((t) => t.score)} />
         </div>
       )}
+      {twinGames.length > 0 && (
+        <button type="button" className="glass-card tile twin-insight press" onClick={openTwinReport}>
+          <small className="eyebrow">Against your twin</small>
+          <b className="num">{`${twinGames.filter((g) => g.place === 1).length} of ${twinGames.length}`}</b>
+          <span className="insight-sub">{twinGames.length === 1 ? 'game won. See what it found.' : 'games won. See what it found.'}</span>
+        </button>
+      )}
       <RecentHands hands={lastHands} />
       {recent.length > 0 && (
         <div className="glass-card recent">
@@ -104,7 +113,7 @@ export function InsightsTab() {
               <span>
                 <b>{when(g.at)}</b>
                 <small>
-                  {g.players} players, {g.hands} {g.hands === 1 ? 'hand' : 'hands'}
+                  {g.twin ? 'Your twin' : `${g.players} players`}, {g.hands} {g.hands === 1 ? 'hand' : 'hands'}
                 </small>
               </span>
               {g.place != null && <b className="num">{`${ordinal(g.place)} of ${g.players}`}</b>}

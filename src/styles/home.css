@@ -821,6 +821,13 @@ html[data-theme='dark'] .sheet .group {
   color: var(--ink-3);
 }
 
+/* The note under the sharing switch in Settings. */
+.settings-note {
+  margin: -4px 4px 0;
+  font-size: var(--fs-caption);
+  line-height: 1.35;
+}
+
 /* The twin report and its entry on Insights. */
 .twin-insight {
   width: 100%;

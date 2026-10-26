@@ -43,3 +43,95 @@ test('a share needs a name, a picture, a device and something learned', async ({
   expect((await request.get('/api/twins/ABC')).status()).toBe(400);
   expect((await request.get('/api/twins/BCDFG')).status()).toBe(404);
 });
+
+/** Joins a table over its socket as `deviceId` and returns the players as the server then sends them. */
+async function joinAs(port: string, code: string, deviceId: string, name: string, twinCode?: string) {
+  const ws = new WebSocket(`ws://localhost:${port}/api/tables/${code}/ws?device=${deviceId}`);
+  const players = await new Promise<{ name: string; twinCode?: string }[]>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('No table state came back.')), 8000);
+    ws.onopen = () => ws.send(JSON.stringify({ t: 'act', id: 'j1', a: { type: 'join', name, emoji: '🦊', ...(twinCode ? { twinCode } : {}) } }));
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(String(e.data));
+      const me = msg.t === 'state' && msg.ack === 'j1' ? msg.game.players.find((p: { name: string }) => p.name === name) : null;
+      if (me) {
+        clearTimeout(timer);
+        resolve(msg.game.players);
+      }
+    };
+    ws.onerror = () => reject(new Error('Socket error'));
+  });
+  ws.close();
+  return players.find((p) => p.name === name)!;
+}
+
+/** The players as the server first sends them to a phone that connects. */
+async function peek(port: string, code: string, deviceId: string) {
+  const ws = new WebSocket(`ws://localhost:${port}/api/tables/${code}/ws?device=${deviceId}`);
+  const players = await new Promise<{ name: string; twinCode?: string }[]>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('No table state came back.')), 8000);
+    ws.onmessage = (e) => {
+      const msg = JSON.parse(String(e.data));
+      if (msg.t === 'state') {
+        clearTimeout(timer);
+        resolve(msg.game.players);
+      }
+    };
+    ws.onerror = () => reject(new Error('Socket error'));
+  });
+  ws.close();
+  return players;
+}
+
+test("a table shows a twin code only for the phone that shares it", async ({ request, baseURL }) => {
+  const port = new URL(baseURL!).port;
+  const owner = 'd' + 'b'.repeat(19);
+  const stranger = 'd' + 'c'.repeat(19);
+  const host = 'd' + 'e'.repeat(19);
+  const share = await (await request.post('/api/twins', { data: { deviceId: owner, name: 'Dana', emoji: '🦊', profile: profile(80) } })).json();
+  const table = await request.post('/api/tables', { data: { deviceId: host, name: 'Host', emoji: '😎', settings: {}, bots: 0, twinCode: share.code } });
+  const { code } = await table.json();
+
+  // The host claimed a code it doesn't own: it's left off. The owner opening a table keeps it.
+  expect((await peek(port, code, host))[0].twinCode).toBeUndefined();
+  const mine = await (await request.post('/api/tables', { data: { deviceId: owner, name: 'Dana', emoji: '🦊', settings: {}, bots: 0, twinCode: share.code } })).json();
+  expect((await peek(port, mine.code, owner))[0].twinCode).toBe(share.code);
+
+  expect((await joinAs(port, code, owner, 'Dana', share.code)).twinCode).toBe(share.code);
+  expect((await joinAs(port, code, stranger, 'Eve', share.code)).twinCode).toBeUndefined();
+  expect((await joinAs(port, code, 'd' + 'f'.repeat(19), 'Sam')).twinCode).toBeUndefined();
+});
+
+test('Settings: sharing your twin is off until you turn it on, gives a code, and turning it off deletes it', async ({ page, request }) => {
+  await page.addInitScript(() => {
+    if (localStorage.getItem('seeded')) return;
+    localStorage.setItem('seeded', '1');
+    localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Kavisha', emoji: '🦊' }));
+    localStorage.setItem('flipup.twin', JSON.stringify({ v: 1, hands: 60, spots: {}, stats: { vpip: 20 }, seen: [] }));
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: /^Your profile and settings/ }).click();
+  await page.getByRole('button', { name: 'Settings' }).click();
+  const sw = page.getByRole('switch', { name: 'Let friends play my twin' });
+  await expect(sw).toHaveAttribute('aria-checked', 'false');
+  expect(await page.evaluate(() => localStorage.getItem('flipup.share'))).toBeNull();
+
+  await sw.click();
+  await expect(sw).toHaveAttribute('aria-checked', 'true');
+  const row = page.getByRole('button', { name: /^Your twin code · [A-Z]{5}$/ });
+  await expect(row).toBeVisible();
+  const code = ((await row.textContent()) ?? '').slice(-5);
+  const shared = await (await request.get(`/api/twins/${code}`)).json();
+  expect(shared).toMatchObject({ name: 'Kavisha', emoji: '🦊' });
+  expect(shared.profile.hands).toBe(60);
+
+  await row.click();
+  await expect(page.getByRole('heading', { name: 'Your twin code' })).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
+
+  // Off again: the copy on the server goes.
+  await page.getByRole('button', { name: /^Your profile and settings/ }).isVisible();
+  await page.getByRole('switch', { name: 'Let friends play my twin' }).click();
+  await expect(page.getByRole('switch', { name: 'Let friends play my twin' })).toHaveAttribute('aria-checked', 'false');
+  expect((await request.get(`/api/twins/${code}`)).status()).toBe(404);
+  expect(await page.evaluate(() => localStorage.getItem('flipup.share'))).toBeNull();
+});

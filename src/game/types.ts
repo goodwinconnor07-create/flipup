@@ -46,6 +46,8 @@ export interface Player {
   offline?: boolean;
   /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
   style?: string;
+  /** The code of this person's shared AI twin, if they let friends play it (checked by the table's server). Public: friends use it to know who's who. */
+  twinCode?: string;
   /** Plays as an AI twin of a person. Public (the table shows an AI badge), unlike `twin`. */
   ai?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
@@ -150,7 +152,7 @@ export interface HandRecord {
   bigBlind: number;
   buttonId: string;
   /** Everyone dealt in, with their chips before the blinds. */
-  players: { id: string; name: string; emoji: string; seat: number; stack: number }[];
+  players: { id: string; name: string; emoji: string; seat: number; stack: number; /** Their shared twin's code, when they have one. */ twinCode?: string }[];
   actions: HandAction[];
   board: Card[];
   /** Hole cards this phone may see (its own and any shown). */
@@ -279,7 +281,7 @@ export interface Game {
 
 export type Action =
   /** This phone takes a seat (or updates its name and picture). */
-  | { type: 'join'; name: string; emoji: string }
+  | { type: 'join'; name: string; emoji: string; /** Their shared twin's code; the server drops it unless they own it. */ twinCode?: string }
   | { type: 'setLook'; name: string; emoji: string }
   | { type: 'addBot' }
   /** Host removes a player or bot; anyone can remove themselves. */

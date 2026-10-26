@@ -84,6 +84,8 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   const settings = parseSettings(body.settings, false);
   if (!settings) return json({ error: "Those table settings don't work." }, 400);
   const bots = typeof body.bots === 'number' && Number.isInteger(body.bots) ? Math.max(0, Math.min(MAX_SEATS - 1, body.bots)) : 0;
+  // Showing a twin code means owning it: anything else is quietly left off.
+  const twinCode = isCode(body.twinCode) && (await env.TWIN_SHARE.getByName(body.twinCode).owner()) === body.deviceId ? body.twinCode : undefined;
 
   // Codes are random, so a clash is rare. Try a few before giving up.
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -94,6 +96,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
       emoji: body.emoji,
       settings: { ...DEFAULT_SETTINGS, ...settings } as Settings,
       bots,
+      twinCode,
       code,
       now: Date.now(),
     });

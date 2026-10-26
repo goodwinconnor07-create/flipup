@@ -25,6 +25,7 @@ import {
 import { Avatar, Choice, chips, EmojiPicker, PlayingCard, Sheet } from '../../ui/components';
 import { haptic } from '../../ui/effects';
 import { FELTS, RAILS, type Appearance } from '../../state/persist';
+import { loadShare, startSharing, stopSharing } from '../../state/share';
 import { loadTwin, resetTwin } from '../../state/twin';
 import {
   BoltIcon,
@@ -41,6 +42,7 @@ import {
   PaletteIcon,
   PencilIcon,
   PlusIcon,
+  ShareIcon,
   SoundIcon,
   SparkIcon,
   StopIcon,
@@ -55,6 +57,7 @@ import { StreakSheet } from './StreakSheet';
 import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
 import { TwinSheet } from './TwinSheet';
+import { ShareTwinSheet } from './ShareTwinSheet';
 import { openTwinReport } from '../train/TwinReport';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
@@ -85,6 +88,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <PlayerSheet playerId={sheet.playerId} />;
     case 'twin':
       return <TwinSheet />;
+    case 'shareTwin':
+      return <ShareTwinSheet />;
     case 'confirm':
       return <ConfirmSheet sheet={sheet} />;
   }
@@ -354,6 +359,28 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
 function PrefsSheet() {
   const { switches, links } = useYouRows();
   const twinHands = loadTwin().hands;
+  const [share, setShare] = useState(loadShare);
+  const [sharing, setSharing] = useState(false);
+  const toggleShare = async () => {
+    if (sharing) return;
+    setSharing(true);
+    try {
+      if (share) {
+        await stopSharing();
+        setShare(null);
+        toast('Your twin is no longer shared.');
+      } else {
+        setShare(await startSharing());
+        toast('Friends with your code can now play your twin.');
+      }
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn't change sharing.", 'error');
+    } finally {
+      setSharing(false);
+    }
+  };
+  const friends: Row[] = [{ label: 'Let friends play my twin', Icon: SparkIcon, color: 'var(--indigo)', on: !!share, onChange: () => void toggleShare() }];
+  if (share) friends.push({ label: `Your twin code · ${share.code}`, Icon: ShareIcon, color: 'var(--indigo)', onClick: () => openSheet({ name: 'shareTwin' }) });
   const forget: Row[] = [];
   if (twinHands > 0)
     forget.push({
@@ -364,11 +391,13 @@ function PrefsSheet() {
       onClick: () =>
         confirm({
           title: 'Reset your AI twin?',
-          body: `It has learned from ${twinHands} of your hands. This clears all of it.`,
+          body: `It has learned from ${twinHands} of your hands. This clears all of it${share ? ' and stops sharing it. You can turn sharing back on later' : ''}.`,
           confirm: 'Reset',
           danger: true,
           onConfirm: () => {
             resetTwin();
+            // The shared copy is the old twin: take it down too.
+            if (share) void stopSharing().catch(() => toast("Couldn't take down your shared twin. Turn sharing off in Settings.", 'error'));
             toast('Your AI twin was reset.');
           },
         }),
@@ -379,6 +408,8 @@ function PrefsSheet() {
         <AppearanceRow />
         <Rows rows={switches} />
         <Rows rows={links} />
+        <Rows rows={friends} />
+        <p className="muted settings-note">Friends with your twin code can play a copy of you and see how you play: your habits, never your cards. It's off until you turn it on.</p>
         {forget.length > 0 && <Rows rows={forget} />}
       </div>
     </Sheet>

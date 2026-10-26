@@ -1,6 +1,7 @@
 // Checks everything that arrives over the network before it gets near the game.
 
 import { isEmoji } from './emoji';
+import { isCode } from './ids';
 import { isReactionId } from './reactions';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
@@ -38,9 +39,11 @@ export function parseAction(raw: unknown): Action | null {
   const a = raw as Record<string, unknown>;
   switch (a.type) {
     case 'join':
+      if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
+      return { type: 'join', name: a.name, emoji: a.emoji, ...(isCode(a.twinCode) ? { twinCode: a.twinCode } : {}) };
     case 'setLook':
       if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
-      return { type: a.type, name: a.name, emoji: a.emoji };
+      return { type: 'setLook', name: a.name, emoji: a.emoji };
     case 'addBot':
     case 'start':
     case 'rebuy':

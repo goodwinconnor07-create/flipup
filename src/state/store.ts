@@ -31,6 +31,7 @@ import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
 import { loadTwin } from './twin';
+import { queueSync, shareCode, syncShare } from './share';
 import { beginTwinGame, finishTwinGame } from './twinGames';
 import {
   forgetOldScroll,
@@ -103,6 +104,8 @@ export type Sheet =
   | { name: 'player'; playerId: string }
   /** Meet your AI twin: how much it knows, and how to teach it. */
   | { name: 'twin' }
+  /** The code friends use to play your shared twin. */
+  | { name: 'shareTwin' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -312,6 +315,8 @@ export function setProfile(patch: Partial<Profile>): void {
   const profile = { ...state.profile, ...patch };
   saveProfile(profile);
   set({ profile });
+  // Friends who have your twin see your new name and picture.
+  queueSync();
   // Already sitting at a table: everyone sees the change.
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
   const name = cleanName(profile.name);
@@ -440,7 +445,7 @@ function sendJoin(): void {
   if (joinSent) return;
   joinSent = true;
   const { name, emoji } = state.profile;
-  send({ type: 'join', name: cleanName(name), emoji });
+  send({ type: 'join', name: cleanName(name), emoji, ...(shareCode() ? { twinCode: shareCode() } : {}) });
 }
 
 function connect(code: string): void {
@@ -528,7 +533,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   }
   set({ busy: 'Opening your table…' });
   try {
-    const code = await createOnlineTable({ deviceId: state.deviceId, name, emoji, settings, bots });
+    const code = await createOnlineTable({ deviceId: state.deviceId, name, emoji, settings, bots, twinCode: shareCode() });
     setSession({ mode: 'online', code, game: null });
     saveLastTable({ code, at: Date.now() });
     connect(code);
@@ -610,6 +615,8 @@ export function toggleCalm(): void {
 
 /** Counts this table's result towards the Home screen's lifetime numbers (once per table). */
 function recordFinished(): void {
+  // The table's hands are in your twin now: refresh the shared copy, if you share it.
+  void syncShare();
   const game = state.game;
   const me = game?.players.find((p) => p.deviceId === state.deviceId);
   const played = game?.hands ?? game?.hand?.number ?? 0;

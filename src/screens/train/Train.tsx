@@ -4,14 +4,14 @@ import { recordNet } from '../../game';
 import { listScenarios, toHandHistory } from '../../gto/api';
 import type { Scenario } from '../../gto/types';
 import { back, navigate, replace, toast, type TrainSection } from '../../state/store';
-import { loadDrills, loadHistory, loadSummaries, type PlayedHand } from '../../state/training';
+import { loadDrills, loadHistory, loadSummaries, type DrillScore, type PlayedHand } from '../../state/training';
 import { reviewAndSave } from '../../train/reviews';
 import { drillFor, scenarioTitle } from '../../train/scenarios';
 import { computeStats, type ScenarioScore } from '../../train/stats';
 import { CoachSays } from '../../train/Coach';
 import { greeting, trendLine } from '../../train/coach';
 import { Dots, MiniCards, pct, Trend } from '../../train/widgets';
-import { Spinner } from '../../ui/components';
+import { Skeleton, useDelayed } from '../../ui/components';
 import { ReviewActivity } from './ReviewActivity';
 import { BackIcon, BookIcon, ChartIcon, ListIcon, MenuIcon, PencilIcon, ScrollIcon, TrophyIcon } from '../../ui/Icons';
 import { InsightsTab } from '../HomeInsights';
@@ -229,7 +229,27 @@ function Library() {
       live = false;
     };
   }, []);
-  if (!list) return <Spinner label="Opening the library…" />;
+  // Fast loads show nothing; a slow one shows rows shaped like the loaded ones.
+  const slow = useDelayed(!list);
+  if (!list) {
+    return slow ? (
+      <div aria-busy="true">
+        <span className="sr-only" role="status">
+          Opening the library…
+        </span>
+        {[3, 3].map((rows, g) => (
+          <section key={g} className="t-list">
+            <p className="section-title">
+              <Skeleton width="40%" />
+            </p>
+            {Array.from({ length: rows }, (_, i) => (
+              <LibraryRow key={i} s={null} drill={undefined} />
+            ))}
+          </section>
+        ))}
+      </div>
+    ) : null;
+  }
   const groups = [...new Set(list.map((s) => s.group))];
   return (
     <>
@@ -242,21 +262,39 @@ function Library() {
           <p className="section-title">{g}</p>
           {list
             .filter((s) => s.group === g)
-            .map((s) => {
-              const d = drills[s.id];
-              return (
-                <button key={s.id} type="button" className="t-row press" disabled={!s.available} onClick={() => navigate({ name: 'drill', scenario: s.id })}>
-                  <span className="t-row-main">
-                    <b>{s.title}</b>
-                    <small>{s.available ? s.description : 'Coming soon: still being solved.'}</small>
-                  </span>
-                  {d && d.attempts > 0 && <span className="grade-pill">{pct((d.green + 0.5 * d.yellow) / d.attempts)}</span>}
-                </button>
-              );
-            })}
+            .map((s) => (
+              <LibraryRow key={s.id} s={s} drill={drills[s.id]} />
+            ))}
         </section>
       ))}
     </>
+  );
+}
+
+/** One drill in the library. With no scenario it's the placeholder, built from the same markup. */
+function LibraryRow({ s, drill }: { s: Scenario | null; drill: DrillScore | undefined }) {
+  if (!s) {
+    return (
+      <div className="t-row" aria-hidden>
+        <span className="t-row-main">
+          <b>
+            <Skeleton width="55%" />
+          </b>
+          <small>
+            <Skeleton width="85%" />
+          </small>
+        </span>
+      </div>
+    );
+  }
+  return (
+    <button type="button" className="t-row press" disabled={!s.available} onClick={() => navigate({ name: 'drill', scenario: s.id })}>
+      <span className="t-row-main">
+        <b>{s.title}</b>
+        <small>{s.available ? s.description : 'Coming soon: still being solved.'}</small>
+      </span>
+      {drill && drill.attempts > 0 && <span className="grade-pill">{pct((drill.green + 0.5 * drill.yellow) / drill.attempts)}</span>}
+    </button>
   );
 }
 

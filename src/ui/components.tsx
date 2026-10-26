@@ -373,6 +373,25 @@ export function Toasts() {
   );
 }
 
+/** True once `active` has lasted `ms` (about 300): a quick load shows nothing, a slow one shows its placeholder. */
+export function useDelayed(active: boolean, ms = 300): boolean {
+  const [late, setLate] = useState(false);
+  useEffect(() => {
+    if (!active) {
+      setLate(false);
+      return;
+    }
+    const t = setTimeout(() => setLate(true), ms);
+    return () => clearTimeout(t);
+  }, [active, ms]);
+  return active && late;
+}
+
+/** A grey block the size of one line of text. It sits inside the same markup as the loaded content, so nothing moves when it arrives. */
+export function Skeleton({ width = '100%' }: { width?: string }) {
+  return <span className="skeleton" style={{ width }} aria-hidden />;
+}
+
 export function Spinner({ label }: { label?: string }) {
   return (
     <div className="center" style={{ gap: 12, padding: 24 }} role="status">

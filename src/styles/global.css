@@ -1067,6 +1067,28 @@ body:has(.sheet-backdrop) .toasts {
   animation: rise 0.32s ease-out both;
 }
 
+/* A grey placeholder line while content loads. Pulses softly; Reduce Motion (the menu switch or the phone's own) holds it still. */
+.skeleton {
+  display: block;
+  height: 1em;
+  margin: 0.15em 0;
+  border-radius: var(--r-xs);
+  background: var(--bg-3);
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
 .spinner {
   width: 28px;
   height: 28px;

@@ -14,6 +14,7 @@ import { reactionText } from './reactions';
 import { redactForDevice } from './redact';
 import { options } from './selectors';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
+import type { Game } from './types';
 import { seededRng } from './cards';
 import { parseAction } from './validate';
 
@@ -291,15 +292,16 @@ describe('bots', () => {
         now += 10_000;
         g.pendingTalk = undefined;
         go({ type: 'react', id: msg }, 'h');
-        if (!g.pendingTalk) {
+        const planned = (): Game['pendingTalk'] => g.pendingTalk;
+        if (!planned()) {
           // No answer is planned: nothing is said for it (and 'wow' never gets one).
           continue;
         }
         expect(kind, `${msg} should have no answer`).not.toBeNull();
-        expect(g.pendingTalk.event).toBe(kind);
-        expect(g.pendingTalk.forId).toBe(me.id);
+        expect(planned()!.event).toBe(kind);
+        expect(planned()!.forId).toBe(me.id);
         const before = JSON.stringify(g.reactions);
-        now = g.pendingTalk.at;
+        now = planned()!.at;
         go({ type: 'tick' }, 'server');
         const speaker = Object.entries(g.reactions ?? {}).find(([id, r]) => id !== me.id && r.id.split(':')[2] === kind);
         expect(speaker, `${msg} → ${kind}: nobody answered (was ${before})`).toBeDefined();

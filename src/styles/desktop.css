@@ -434,8 +434,8 @@
     box-shadow: var(--shadow-soft);
   }
 
-  .raise-presets .preset {
-    min-height: 72px;
+  .raise-marks {
+    height: 48px;
   }
 
   /* ── Side panel ───────────────────────────────────────────────────────── */

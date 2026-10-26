@@ -783,8 +783,9 @@ html[data-theme='dark'] .pcard.dim > * {
 .raise-panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 8px;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 6px 8px;
   border-radius: var(--r-lg);
   background: var(--bg-2);
   animation: fade-in 0.15s ease-out;
@@ -810,56 +811,53 @@ html:not(.no-glass) .raise-panel .icon-btn {
   }
 }
 
-/* The amount, the slider and the close button share a row. The amount has a fixed width, so the slider
-   doesn't change length as the number gets longer. */
+/* The amount and the close button share the top row. */
 .raise-top {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
 }
 
 .raise-amount {
-  flex: none;
-  min-width: 92px;
-  font-size: var(--fs-title);
+  font-size: var(--fs-h1);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
 }
 
-.raise-slider {
-  flex: 1;
-  min-width: 0;
-  height: 40px;
-  margin: 0;
-  accent-color: var(--blue);
-}
-
 .raise-close {
   flex: none;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   background: var(--surface);
   box-shadow: none;
 }
 
-/* The presets take whatever height is left. Each has an outline, so the boxes read apart from each other and the panel. */
-.raise-presets {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 8px;
+/* One slider, with the presets as marks along it. The marks are spaced evenly (--at runs 0 to 1), and each is
+   shifted left by its own share of its width, so the first sits flush left and the last flush right, with the
+   tick under it lining up with the thumb (the thumb is --thumb wide, so it travels a little less than the track). */
+.raise-panel {
+  --thumb: 28px;
+}
+
+.raise-marks {
+  position: relative;
+  height: 40px;
 }
 
 .preset {
-  flex: 1;
-  min-width: 0;
+  position: absolute;
+  top: 0;
+  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--at, 0));
+  transform: translateX(calc(var(--at, 0) * -100%));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  padding: 4px;
+  gap: 1px;
+  height: 100%;
+  padding: 0 8px;
   border: 1.5px solid var(--ink-4);
   border-radius: var(--r-md);
   background: var(--surface);
@@ -867,13 +865,15 @@ html:not(.no-glass) .raise-panel .icon-btn {
 }
 
 .preset b {
-  font-size: var(--fs-h3);
+  font-size: var(--fs-body);
   font-weight: 700;
+  line-height: 1.1;
 }
 
 .preset small {
-  font-size: var(--fs-small);
+  font-size: var(--fs-caption);
   font-weight: 600;
+  line-height: 1.1;
   color: var(--ink-3);
 }
 
@@ -885,6 +885,54 @@ html:not(.no-glass) .raise-panel .icon-btn {
 
 .preset.on small {
   color: var(--on-color);
+}
+
+.raise-slider {
+  --fill: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--pos, 0));
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 32px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.raise-slider::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
+}
+
+.raise-slider::-moz-range-track {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
+}
+
+.raise-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((8px - var(--thumb)) / 2);
+  border: 1.5px solid var(--ink-4);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.raise-slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: var(--thumb);
+  border: 1.5px solid var(--ink-4);
+  border-radius: 50%;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.raise-slider:disabled {
+  opacity: 0.5;
 }
 
 /* ── You ─────────────────────────────────────────────────────────────────── */

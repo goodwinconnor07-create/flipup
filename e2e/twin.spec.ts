@@ -56,6 +56,10 @@ test('once it knows you, play your twin heads-up and keep teaching it', async ({
   await expect(next).toBeVisible();
   const hands = await page.evaluate(() => JSON.parse(localStorage.getItem('flipup.twin') ?? '{}').hands);
   expect(hands).toBe(61);
+  // The report keeps what the twin held once the hand was over.
+  const facts = await page.evaluate(() => JSON.parse(localStorage.getItem('flipup.twingames') ?? '[]').at(-1)?.hands?.[0]?.facts);
+  expect(facts.mine).toHaveLength(2);
+  expect(facts.theirs).toHaveLength(2);
 
   // The menu has the report, which already counts that hand.
   await page.getByRole('button', { name: 'Menu' }).click();
@@ -74,14 +78,18 @@ test('the twin report: what it cost you and the habits it copied', async ({ page
     // Folds to bets a lot and rarely bets when checked to.
     const stats = { vpip: 50, pfr: 35, betsFaced: 40, foldsToBet: 28, betOpps: 60, bets: 10 };
     localStorage.setItem('flipup.twin', JSON.stringify({ v: 1, hands: 120, spots: {}, stats, seen: [] }));
-    const hands = [60, -40, -120, -30, -90, 20].map((net, i) => ({ key: `t#${i + 1}`, number: i + 1, net }));
+    const bluff = { btn: true, mine: ['Ac', 'Ad'], theirs: ['Kh', '5d'], board: ['2c', '7d', '9h', 'Js'], sd: false, fold: 'turn', out: 'turn', bluff: 'worked', better: true };
+    const hands = [60, -40, -120, -30, -90, 20].map((net, i) => ({ key: `t#${i + 1}`, number: i + 1, net, ...(i === 2 ? { facts: bluff } : {}) }));
     localStorage.setItem('flipup.twingames', JSON.stringify([{ id: 't', at: Date.now(), bb: 10, knew: 120, hands }]));
   });
   await page.goto('/');
   await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: 'Your twin' }).click();
   await expect(page.getByText('Your twin took 200 chips from you over 6 hands.')).toBeVisible();
-  await expect(page.getByText('Hand 3 · −120')).toBeVisible();
+  await expect(page.getByText('Hand 3 · −120').first()).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Its bluffs' })).toBeVisible();
+  await expect(page.getByText('Your twin bluffed you once after the flop.')).toBeVisible();
+  await expect(page.getByText('Your twin bet with nothing. You had top pair and folded: the better hand.')).toBeVisible();
   await expect(page.getByText('You fold to a bet 70% of the time after the flop.')).toBeVisible();
   await expect(page.getByText('When nobody has bet, you only bet 17% of the time.')).toBeVisible();
   await page.locator('details.coach-numbers summary').first().click();

@@ -2,10 +2,11 @@
 // anywhere. Two parts: the hands that cost you most and what happened in them, and the habits of yours
 // that your twin copied, set against what players usually do.
 
-import { heroDecisions, recordNet, type HandRecord, type TwinProfile } from '../game';
+import { heroDecisions, recordNet, type HandRecord, type Street, type TwinProfile } from '../game';
 import { handBucket, type Bucket } from '../game/handBucket';
 import type { TwinGame, TwinGameHand } from '../state/twinGames';
 import type { PlayedHand } from '../state/training';
+import { bucketAt, type HandFacts } from './twinFacts';
 
 // ── The game ────────────────────────────────────────────────────────────────
 
@@ -66,28 +67,131 @@ export interface LossStory {
   key: string;
   number: number;
   net: number;
-  /** What happened, or null once the hand is older than the hand history keeps. */
+  /** What happened, or null once the hand is older than the hand history keeps (and wasn't saved with its facts). */
   line: string | null;
   cards: string[];
   board: string[];
   record: HandRecord | null;
 }
 
+const words = (cards: string[], board: string[], street: Street) => BUCKET_WORDS[bucketAt(cards, board, street) as Bucket];
+
+/** In a sentence, from a hand's saved facts: what happened in a hand you lost chips in (and what the twin had). */
+export function factsLine(h: TwinGameHand): string | null {
+  const f = h.facts;
+  if (!f) return null;
+  const lost = chipText(Math.max(0, -h.net));
+  const theirs = (street: Street) => (f.theirs.length === 2 ? words(f.theirs, f.board, street) : null);
+  if (f.fold) {
+    if (f.fold === 'preflop') return `You folded before the flop and lost your blind (${lost}).`;
+    const them = theirs(f.fold);
+    const base = `You folded ${STREET_WORDS[f.fold]} after putting in ${lost}.`;
+    if (!them) return base;
+    if (f.bluff === 'worked') return `${base} Your twin was bluffing with ${them}${f.better ? ', and you folded the better hand' : ''}.`;
+    return `${base} Your twin had ${them}.`;
+  }
+  if (f.sd) {
+    const you = words(f.mine, f.board, f.out);
+    const them = theirs(f.out);
+    return them ? `You went to showdown with ${you} and lost ${lost} to ${them}.` : `You went to showdown with ${you} and lost ${lost}.`;
+  }
+  return `You lost ${lost}.`;
+}
+
 /** The hands that cost you most, worst first. */
 export function lossStories(game: TwinGame, find: (key: string) => PlayedHand | null, max = 3): LossStory[] {
   const worst: TwinGameHand[] = game.hands.filter((h) => h.net < 0).sort((a, b) => a.net - b.net).slice(0, max);
   return worst.map((h) => {
-    const played = find(h.key);
+    const played = h.facts ? null : find(h.key);
     return {
       key: h.key,
       number: h.number,
       net: h.net,
-      line: played ? lossLine(played) : null,
-      cards: played?.record.holes[played.heroId] ?? [],
-      board: played?.record.board ?? [],
+      line: factsLine(h) ?? (played ? lossLine(played) : null),
+      cards: h.facts?.mine ?? played?.record.holes[played.heroId] ?? [],
+      board: h.facts?.board ?? played?.record.board ?? [],
       record: played?.record ?? null,
     };
   });
+}
+
+// ── How the game went ───────────────────────────────────────────────────────
+
+export interface BluffSummary {
+  /** Bluffs that made you fold, and bluffs you called and beat. */
+  worked: number;
+  caught: number;
+  /** Of the ones that worked: you folded a better hand than it had. */
+  better: number;
+  /** Chips those cost you. */
+  lost: number;
+  /** The worst few. */
+  examples: LossStory[];
+}
+
+/** Times your twin bluffed you after the flop, from the hands saved with the twin's cards. Null when there are none. */
+export function bluffsOnYou(game: TwinGame, max = 3): BluffSummary | null {
+  const marked = game.hands.filter((h) => h.facts?.bluff);
+  if (marked.length === 0) return null;
+  const worked = marked.filter((h) => h.facts!.bluff === 'worked');
+  const examples = [...worked].sort((a, b) => a.net - b.net).slice(0, max).map((h) => ({
+    key: h.key,
+    number: h.number,
+    net: h.net,
+    line: bluffLine(h.facts!),
+    cards: h.facts!.mine,
+    board: h.facts!.board,
+    record: null,
+  }));
+  return {
+    worked: worked.length,
+    caught: marked.length - worked.length,
+    better: worked.filter((h) => h.facts!.better).length,
+    lost: worked.reduce((a, h) => a + Math.max(0, -h.net), 0),
+    examples,
+  };
+}
+
+/** One bluff that worked: what it had, what you had, what you did. */
+function bluffLine(f: HandFacts): string {
+  const street = f.fold ?? 'river';
+  const them = words(f.theirs, f.board, street);
+  const you = words(f.mine, f.board, street);
+  return `Your twin bet with ${them}. You had ${you} and folded${f.better ? ': the better hand' : ''}.`;
+}
+
+export interface GameStory {
+  showdown: { played: number; won: number } | null;
+  /** Chips on the button and off it (the big blind, heads-up), from hands that kept their facts. */
+  position: { btn: number; other: number } | null;
+  /** The street your losses mostly came on. */
+  street: Street | null;
+}
+
+/** Showdowns, position and where you lose: from the hands saved with their facts. */
+export function gameStory(game: TwinGame): GameStory {
+  const known = game.hands.filter((h) => h.facts);
+  const sd = known.filter((h) => h.facts!.sd);
+  const showdown = sd.length >= 3 ? { played: sd.length, won: sd.filter((h) => h.net > 0).length } : null;
+  const position =
+    known.length >= 8
+      ? {
+          btn: known.filter((h) => h.facts!.btn).reduce((a, h) => a + h.net, 0),
+          other: known.filter((h) => !h.facts!.btn).reduce((a, h) => a + h.net, 0),
+        }
+      : null;
+  const lostBy = new Map<Street, { chips: number; hands: number }>();
+  for (const h of known) {
+    if (h.net >= 0) continue;
+    const at = lostBy.get(h.facts!.out) ?? { chips: 0, hands: 0 };
+    at.chips += -h.net;
+    at.hands++;
+    lostBy.set(h.facts!.out, at);
+  }
+  const total = [...lostBy.values()].reduce((a, x) => a + x.chips, 0);
+  const worst = [...lostBy.entries()].sort((a, b) => b[1].chips - a[1].chips)[0];
+  const street = worst && worst[1].hands >= 3 && worst[1].chips >= total * 0.4 && worst[0] !== 'preflop' ? worst[0] : null;
+  return { showdown, position, street };
 }
 
 // ── Habits ──────────────────────────────────────────────────────────────────
@@ -238,5 +342,30 @@ export function habitsOf(twin: TwinProfile, max = 3): Habit[] {
       weight,
     });
   }
+  const tell = sizeTell(twin);
+  if (tell) out.push(tell);
   return out.sort((a, b) => b.weight - a.weight).slice(0, max);
+}
+
+/** Whether the size of your bets gives your hand away: how much bigger you bet with a good hand than with a weak one (or the other way round). */
+function sizeTell(twin: TwinProfile): Habit | null {
+  const mean = (idx: number[]) => {
+    const n = idx.reduce((a, i) => a + twin.stats.sizeN[i], 0);
+    return n >= 4 ? idx.reduce((a, i) => a + twin.stats.sizeSum[i], 0) / n : null;
+  };
+  const strong = mean([4, 5, 6]);
+  const weak = mean([0, 1, 2, 3]);
+  if (strong === null || weak === null) return null;
+  const diff = strong - weak;
+  if (Math.abs(diff) < 0.3) return null;
+  const big = diff > 0;
+  return {
+    id: 'size-tell',
+    line: big
+      ? `Your bets are bigger with a good hand (${pct(strong)} of the pot) than with a weak one (${pct(weak)}). Your twin copies that, and it folds when you size up.`
+      : `You bet bigger with a weak hand (${pct(weak)} of the pot) than with a good one (${pct(strong)}). Your twin copies that, and it calls you down when you bet small.`,
+    tip: 'Use the same size with your good hands and your bluffs, so a bet says nothing.',
+    numbers: `${pct(strong)} of the pot with top pair or better, ${pct(weak)} with less (from your bets when nobody had bet). Hands that bet about the same size either way give nothing away.`,
+    weight: (Math.abs(diff) - 0.3) / 0.15 + 0.5,
+  };
 }

@@ -329,7 +329,7 @@ function setSession(session: Session | null): void {
   saveSession(session);
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
-  captureFinishedHand(state.game, state.deviceId);
+  captureFinishedHand(state.game, state.deviceId, session?.mode === 'local' ? session.game : null);
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
 }

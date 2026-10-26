@@ -3,7 +3,8 @@ import { emptyTwin, type HandRecord, type Move, type Street } from '../game';
 import { addTwinHand, beginTwinGame, finishTwinGame, loadTwinGames, type TwinGame } from '../state/twinGames';
 import type { PlayedHand } from '../state/training';
 import { twinGameLines, twinHabitsIntro } from './coach';
-import { habitsOf, lossLine, lossStories, summarize } from './twinReport';
+import { handFacts } from './twinFacts';
+import { bluffsOnYou, factsLine, gameStory, habitsOf, lossLine, lossStories, summarize } from './twinReport';
 
 const storage = new Map<string, string>();
 (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v), removeItem: (k: string) => storage.delete(k) };
@@ -116,5 +117,80 @@ describe('twin games kept on this phone', () => {
     expect(loadTwinGames()[0]).toMatchObject({ id: 'x', bb: 20, knew: 0 });
     storage.set('flipup.twingames', '[{"id":3},{"id":"ok","at":1,"hands":[{"key":"k"}]}]');
     expect(loadTwinGames()).toEqual([{ id: 'ok', at: 1, bb: 10, knew: 0, hands: [] }]);
+  });
+});
+
+describe('what the twin did to you', () => {
+  // Me on the button with aces; the twin bets the turn with nothing. I fold, or I call and win.
+  const board = ['2c', '7d', '9h', 'Js', '3s'];
+  const bluffed = (iFold: boolean) =>
+    hand(
+      iFold
+        ? [['preflop', 'me', 'raise', 25], ['preflop', 'foe', 'call', 25], ['flop', 'foe', 'check', 0], ['flop', 'me', 'bet', 30], ['flop', 'foe', 'call', 30], ['turn', 'foe', 'bet', 80], ['turn', 'me', 'fold', 0]]
+        : [['preflop', 'me', 'raise', 25], ['preflop', 'foe', 'call', 25], ['flop', 'foe', 'check', 0], ['flop', 'me', 'bet', 30], ['flop', 'foe', 'call', 30], ['turn', 'foe', 'bet', 80], ['turn', 'me', 'call', 80], ['river', 'foe', 'check', 0], ['river', 'me', 'check', 0]],
+      iFold ? board.slice(0, 4) : board,
+      { me: ['Ac', 'Ad'], foe: ['Kh', '5d'] },
+      !iFold,
+      iFold ? 0 : 210,
+    );
+
+  it('spots a bluff that made you fold the better hand, and one you caught', () => {
+    const worked = handFacts(bluffed(true).record, 'me')!;
+    expect(worked).toMatchObject({ btn: true, sd: false, fold: 'turn', out: 'turn', bluff: 'worked', better: true });
+    expect(worked.theirs).toEqual(['Kh', '5d']);
+    const caught = handFacts(bluffed(false).record, 'me')!;
+    expect(caught).toMatchObject({ sd: true, out: 'river', bluff: 'caught' });
+    expect(caught.fold).toBeUndefined();
+  });
+
+  it("can't read a hand without the cards or one that isn't heads-up", () => {
+    const h = bluffed(true).record;
+    expect(handFacts({ ...h, holes: {} }, 'me')).toBeNull();
+    expect(handFacts({ ...h, players: [...h.players, { id: 'x', name: 'X', emoji: '🙂', seat: 2, stack: 100 }] }, 'me')).toBeNull();
+    expect(handFacts({ ...h, holes: { me: ['Ac', 'Ad'] } }, 'me')?.bluff).toBeUndefined();
+  });
+
+  it('tells the story from the saved facts, with no hand history needed', () => {
+    const f = handFacts(bluffed(true).record, 'me')!;
+    const g: TwinGame = { id: 't', at: 0, bb: 10, knew: 100, hands: [{ key: 't#1', number: 1, net: -55, facts: f }, { key: 't#2', number: 2, net: 40 }] };
+    expect(factsLine(g.hands[0])).toBe('You folded on the turn after putting in 55. Your twin was bluffing with nothing, and you folded the better hand.');
+    const stories = lossStories(g, () => null);
+    expect(stories[0].line).toContain('bluffing with nothing');
+    expect(stories[0].cards).toEqual(['Ac', 'Ad']);
+    const b = bluffsOnYou(g)!;
+    expect(b).toMatchObject({ worked: 1, caught: 0, better: 1, lost: 55 });
+    expect(b.examples[0].line).toBe('Your twin bet with nothing. You had top pair and folded: the better hand.');
+    expect(bluffsOnYou(game([10, -10]))).toBeNull();
+  });
+
+  it('adds up showdowns, position and where you lose, once there is enough to say', () => {
+    const f = (btn: boolean, sd: boolean, out: 'flop' | 'river') => ({ btn, mine: ['Ac', 'Ad'], theirs: ['Kh', '5d'], board, sd, out });
+    const hands = [
+      { key: 'a', number: 1, net: -100, facts: f(true, true, 'river') },
+      { key: 'b', number: 2, net: -80, facts: f(false, true, 'river') },
+      { key: 'c', number: 3, net: 60, facts: f(true, true, 'river') },
+      { key: 'd', number: 4, net: -90, facts: f(true, false, 'river') },
+      { key: 'e', number: 5, net: -10, facts: f(false, false, 'flop') },
+      { key: 'f', number: 6, net: 30, facts: f(true, false, 'flop') },
+      { key: 'g', number: 7, net: 20, facts: f(false, false, 'flop') },
+      { key: 'h', number: 8, net: -5, facts: f(false, false, 'flop') },
+    ];
+    expect(gameStory({ id: 't', at: 0, bb: 10, knew: 100, hands })).toEqual({ showdown: { played: 3, won: 1 }, position: { btn: -100, other: -75 }, street: 'river' });
+    // Too little to say anything.
+    expect(gameStory({ id: 't', at: 0, bb: 10, knew: 100, hands: hands.slice(0, 2) })).toEqual({ showdown: null, position: null, street: null });
+  });
+
+  it('notices when the size of your bets gives your hand away', () => {
+    const t = emptyTwin();
+    t.hands = 100;
+    t.stats.vpip = 25;
+    t.stats.pfr = 18;
+    // Top pair or better: about 80% of the pot. Less: about 30%.
+    t.stats.sizeN = [5, 0, 0, 0, 5, 0, 0];
+    t.stats.sizeSum = [1.5, 0, 0, 0, 4, 0, 0];
+    expect(habitsOf(t).map((h) => h.id)).toEqual(['size-tell']);
+    expect(habitsOf(t)[0].line).toContain('80%');
+    t.stats.sizeSum = [4, 0, 0, 0, 4, 0, 0];
+    expect(habitsOf(t)).toEqual([]);
   });
 });

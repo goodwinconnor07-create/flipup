@@ -4,6 +4,7 @@
 import { handRecord, recordNet, type Game, type HandRecord } from '../game';
 import { markPlayedToday, read, write } from './persist';
 import { recordTwinHand } from './twin';
+import { handFacts } from '../train/twinFacts';
 import { addTwinHand } from './twinGames';
 
 const KEYS = {
@@ -78,7 +79,8 @@ export function findPlayed(key: string): PlayedHand | null {
 let captured = new Set<string>();
 
 /** Saves the hand that just finished at this table, once, if this phone was dealt in. */
-export function captureFinishedHand(game: Game | null, deviceId: string): void {
+/** `full` is the whole table when this phone holds it (a game on this phone): after a hand it lets a twin game keep the twin's cards. */
+export function captureFinishedHand(game: Game | null, deviceId: string, full: Game | null = null): void {
   const hand = game?.hand;
   if (!game || !hand?.result) return;
   const me = game.players.find((p) => p.deviceId === deviceId);
@@ -93,7 +95,11 @@ export function captureFinishedHand(game: Game | null, deviceId: string): void {
   if (captured.size > 50) captured = new Set([...captured].slice(-20));
   addHand({ key, heroId: me.id, record });
   recordTwinHand(key, record, me.id);
-  if (game.twinGame) addTwinHand(game.id, { key, number: record.number, net: recordNet(record, me.id) }, game.settings.bigBlind);
+  if (game.twinGame) {
+    const everything = full?.hand?.result && full.hand.number === hand.number ? handRecord(full, full.hand, Date.now()) : null;
+    const facts = everything ? handFacts(everything, me.id) : null;
+    addTwinHand(game.id, { key, number: record.number, net: recordNet(record, me.id), ...(facts ? { facts } : {}) }, game.settings.bigBlind);
+  }
   markPlayedToday();
 }
 

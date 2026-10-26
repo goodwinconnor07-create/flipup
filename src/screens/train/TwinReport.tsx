@@ -5,8 +5,8 @@ import { findPlayed } from '../../state/training';
 import { loadTwin } from '../../state/twin';
 import { loadTwinGames } from '../../state/twinGames';
 import { CoachSays } from '../../train/Coach';
-import { twinGameLines, twinHabitsIntro } from '../../train/coach';
-import { habitsOf, lossStories, summarize } from '../../train/twinReport';
+import { twinBluffLines, twinGameLines, twinHabitsIntro, twinStoryLines } from '../../train/coach';
+import { bluffsOnYou, gameStory, habitsOf, lossStories, summarize } from '../../train/twinReport';
 import { MiniCards } from '../../train/widgets';
 import { chips } from '../../ui/components';
 import { BackIcon } from '../../ui/Icons';
@@ -22,6 +22,8 @@ export function TwinReport() {
   const ready = twin.hands >= TWIN_READY;
   const summary = useMemo(() => (game ? summarize(game) : null), [game]);
   const stories = useMemo(() => (game ? lossStories(game, findPlayed) : []), [game]);
+  const bluffs = useMemo(() => (game ? bluffsOnYou(game) : null), [game]);
+  const story = useMemo(() => (game ? twinStoryLines(gameStory(game)) : []), [game]);
   const habits = useMemo(() => habitsOf(twin), [twin]);
   const played = !!game && !!summary && summary.hands > 0;
 
@@ -77,6 +79,35 @@ export function TwinReport() {
                       </span>
                     </div>
                   ))}
+                </div>
+              </>
+            )}
+            {bluffs && (
+              <>
+                <h2 className="section-head">Its bluffs</h2>
+                <div className="glass-card coach-card">
+                  <CoachSays quick lines={twinBluffLines(bluffs)} />
+                </div>
+                {bluffs.examples.length > 0 && (
+                  <div className="glass-card recent">
+                    {bluffs.examples.map((s) => (
+                      <div key={s.key} className="recent-row twin-story">
+                        <MiniCards cards={s.cards} />
+                        <span>
+                          <b>{`Hand ${s.number} · ${signed(s.net)}`}</b>
+                          <small>{s.line}</small>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            )}
+            {story.length > 0 && (
+              <>
+                <h2 className="section-head">How it went</h2>
+                <div className="glass-card coach-card">
+                  <CoachSays quick lines={story} />
                 </div>
               </>
             )}

@@ -1,6 +1,7 @@
 // The games you've played against your AI twin, kept on this phone for the twin report: one line per
 // hand (just what you won or lost) so the report outlives the 24 hour hand history. Newest last.
 
+import type { HandFacts } from '../train/twinFacts';
 import { read, write } from './persist';
 
 const KEY = 'flipup.twingames';
@@ -13,6 +14,8 @@ export interface TwinGameHand {
   number: number;
   /** Chips you won (or lost, below zero). */
   net: number;
+  /** What happened, with the twin's cards (missing on hands saved before this was kept). */
+  facts?: HandFacts;
 }
 
 export interface TwinGame {
@@ -30,13 +33,18 @@ export interface TwinGame {
 
 const num = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? n : null);
 
+function validFacts(f: unknown): f is HandFacts {
+  const x = f as Partial<HandFacts> | null;
+  return !!x && typeof x === 'object' && typeof x.btn === 'boolean' && Array.isArray(x.mine) && Array.isArray(x.theirs) && Array.isArray(x.board) && typeof x.sd === 'boolean' && typeof x.out === 'string';
+}
+
 export function loadTwinGames(): TwinGame[] {
   const all = read<TwinGame[]>(KEY);
   if (!Array.isArray(all)) return [];
   const out: TwinGame[] = [];
   for (const g of all) {
     if (!g || typeof g.id !== 'string' || num(g.at) === null || !Array.isArray(g.hands)) continue;
-    const hands = g.hands.filter((h) => h && typeof h.key === 'string' && num(h.number) !== null && num(h.net) !== null).map((h) => ({ key: h.key, number: h.number, net: h.net }));
+    const hands = g.hands.filter((h) => h && typeof h.key === 'string' && num(h.number) !== null && num(h.net) !== null).map((h) => ({ key: h.key, number: h.number, net: h.net, ...(validFacts(h.facts) ? { facts: h.facts } : {}) }));
     out.push({ id: g.id, at: g.at, bb: num(g.bb) || 10, knew: num(g.knew) ?? 0, hands, ...(num(g.place) ? { place: g.place } : {}) });
   }
   return out;

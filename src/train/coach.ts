@@ -5,7 +5,7 @@ import { formatFrequency } from '../quiz/scenarios';
 import type { Colour, Decision, HandReport } from '../gto/types';
 import { actionKind, bb, pct, prettyAction } from './format';
 import { scenarioTitle } from './scenarios';
-import type { GameSummary } from './twinReport';
+import type { BluffSummary, GameStory, GameSummary } from './twinReport';
 import type { Draw, Made, Spot } from '../quiz/read';
 
 export const COACH_NAME = 'GTO Coach';
@@ -538,4 +538,26 @@ export function twinHabitsIntro(count: number): string {
   return count > 0
     ? 'Your twin copied these habits of yours. Each one is a leak it will use against you.'
     : "Nothing in your play stands out from what most players do, so your twin is a tough copy to beat.";
+}
+
+/** The coach on your twin's bluffs. */
+export function twinBluffLines(b: BluffSummary): string[] {
+  const times = (n: number) => (n === 1 ? 'once' : `${n} times`);
+  const lines = [`Your twin bluffed you ${times(b.worked + b.caught)} after the flop.`];
+  if (b.worked > 0) lines.push(`${b.worked === 1 ? 'It worked' : `${b.worked} worked`}: you folded${b.better > 0 ? `, and ${b.better === b.worked ? 'every time' : `${b.better} of those`} you folded the better hand` : ''}.`);
+  if (b.caught > 0) lines.push(`You caught it ${times(b.caught)} at showdown.`);
+  return lines;
+}
+
+/** The coach on how the game went beyond the chips: showdowns, position and where you lose. */
+export function twinStoryLines(g: GameStory): string[] {
+  const chips = (n: number) => Math.round(Math.abs(n)).toLocaleString('en-US');
+  const lines: string[] = [];
+  if (g.showdown) lines.push(`At showdown you won ${g.showdown.won} of ${g.showdown.played}.`);
+  if (g.position) {
+    const part = (n: number) => `${n < 0 ? 'lost' : 'won'} ${chips(n)}`;
+    lines.push(`On the button you ${part(g.position.btn)}. In the big blind you ${part(g.position.other)}.`);
+  }
+  if (g.street) lines.push(`Most of what you lost, you lost on the ${g.street}.`);
+  return lines;
 }

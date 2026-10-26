@@ -26,11 +26,11 @@ describe('bots', () => {
     }
   });
 
-  it('has forty bots, four of each of the ten styles, all different', () => {
-    expect(BOTS).toHaveLength(40);
-    expect(new Set(BOTS.map((b) => b.name)).size).toBe(40);
-    expect(new Set(BOTS.map((b) => b.emoji)).size).toBe(40);
-    for (const style of Object.keys(STYLES)) expect(BOTS.filter((b) => b.style === style)).toHaveLength(4);
+  it('has 640 bots, 64 of each foundation, with distinct stable identities', () => {
+    expect(BOTS).toHaveLength(640);
+    expect(new Set(BOTS.map((b) => b.name)).size).toBe(640);
+    expect(new Set(BOTS.map((b) => b.profile.id)).size).toBe(640);
+    for (const style of Object.keys(STYLES)) expect(BOTS.filter((b) => b.style === style)).toHaveLength(64);
   });
 
   it('seats bots in a random order, not top to bottom', () => {

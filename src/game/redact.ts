@@ -19,7 +19,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   return {
     ...game,
     // Bots' styles and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, ...p }) => p),
+    players: game.players.map(({ style: _style, botProfile: _profile, ...p }) => p),
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,
@@ -27,6 +27,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     sweating: undefined,
     streaks: undefined,
     minds: undefined,
+    dialogue: undefined,
     card: undefined,
     logs: [],
     hand: hand && {

@@ -5,6 +5,52 @@ has a recognisable way of playing, makes the kind of mistakes that kind of playe
 table, gets rattled, and takes as long as a person would. This page explains how they work and how
 they were tuned. The rules they follow are in [RULES.md](RULES.md#bots).
 
+## Offline player expansion
+
+The roster now has **640 stable identities**: 600 pub/tournament-style names (Dave B, Mick C,
+Steve D, etc.) and the original 40 names for saved quick-game compatibility. Each has an independent
+profile for discipline, curiosity, pressure, patience, composure, sociability, vocabulary and cadence.
+The ten existing poker foundations remain, with 64 identities per foundation. Profiles vary strategy,
+timing, adaptation and emotion continuously; they are not 640 independently trained poker models.
+New profiles use understated faces and poker-themed emojis through the existing avatar field.
+No screen, component, CSS, input control or layout was changed.
+
+**Conversation is local.** `botDialogue.ts` plans a public-context intent, chooses an authored clause,
+and applies one of twelve voices and occasional sentence framing. Its banks cover ordinary actions,
+all-in sweats, exposed bluffs, results, repeated raises, multi-street pressure, board changes,
+short stacks, rivalries, recoveries and winning runs. Replies interpret the particular quick message
+or bot comment they answer. Delayed replies are cancelled if that message or hand has changed.
+There are no API calls, downloads, token costs or neural model at runtime.
+
+Each identity retains its last 24 clauses in table state, with recent table-wide repetition avoidance
+and least-recent reuse after a bank is exhausted. Individual cooldowns and table pacing limit noise;
+a bot that sweated an all-in still gets its outcome reaction. Text travels as validated, compact
+`b:local:` IDs through the existing reaction channel. Old IDs still decode, and clients cannot
+submit either kind of bot speech. The new planner does not announce an unshown bluff or inspect
+another seat's private cards. Learning, profiles and dialogue memory are redacted from online clients.
+Scroll lessons remain silent.
+
+**Learning reacts to a change of gears.** Lifetime public counts anchor a second, exponentially
+weighted recent window (0.8 decay per hand, roughly five hands of retained evidence). The combination
+lets observed new aggression, calling or folding influence subsequent decisions promptly without
+assuming one raise proves a bluff. Publicly shown bluffs update both windows. This is per-table
+opponent modelling, not a neural network or permanent learning across unrelated games.
+
+**Strategy improvements.** Stronger readers enumerate every legal opponent combination on heads-up
+rivers instead of estimating that range with a small sample. Range assumptions still matter; exact
+enumeration does not make this a solved poker agent. Bots price calls using reachable pots, do not
+assign fold equity to an all-in opponent, ignore all-in seats when assessing position, distinguish
+an all-in call from a preflop raise, and focus multiway calling adjustments on the actual bettor.
+Coarse trained action buckets are discounted when an action's estimated value is clearly worse.
+The existing mood, short-stack, chart, range and mixed-action systems remain in use.
+
+Run `npm run check` for regression, fairness and targeted upgrade tests. Run
+`npm exec --package=tsx -- tsx scripts/verifyBotUpgrade.ts` for six-/nine-handed, short-stack and
+scripted-opponent simulations; JSON evidence defaults to `/tmp/flipup-bot-upgrade.json`. An optional
+argument points to a preserved pre-change game directory for comparison. `BOT_ONLY`, `BOT_HANDS`,
+`BOT_SEEDS` and `BOT_REPORT` select reproducible additional samples. Simulation win rates are
+exploratory; perceived realism and enjoyment still need human playtesting.
+
 ## Fair play
 
 A bot decides from its own two cards, the board, everyone's chips and the public moves. It never
@@ -48,7 +94,7 @@ couple of milliseconds even in a crowded pot, which matters on the server's CPU 
 
 ## Styles (`src/game/botStyles.ts`)
 
-Ten hidden styles, four bots each. Besides the preflop settings, a style says:
+Ten hidden poker foundations, with individual profiles layered on top (64 bots each). Besides the preflop settings, a style says:
 
 | Setting | What it does |
 |---|---|
@@ -82,7 +128,7 @@ notice matter most to how a table feels:
   bet, up from about +22 before.
 
 The nervous bot is meant to be the soft one: it folds to pressure more than anyone (60% of bets),
-bets small, and doesn't adjust to being bluffed (`adapt` 0). It used to win the table (+127 bb/100)
+bets small, and has a base `adapt` of 0 (individual profiles now add a small amount of adaptation). It used to win the table (+127 bb/100)
 because it played tight and folded at the right times; it now loses a little (-44 bb/100) and an
 honest player beats it. A bot that gets rattled gets more scared on tilt, never less.
 
@@ -114,7 +160,9 @@ finish the hand quickly.
 - a decent, honest player against each style (strong styles should beat it, soft ones lose to it);
 - a fun score out of 100 built from all of that.
 
-### Results
+### Historical results before the offline player expansion
+
+The measurements below belong to the earlier bot release; they do not measure the new roster or dialogue engine.
 
 From `npx tsx scripts/botLab.ts 1500` (1,500 hands a table, heads-up matches over three seeds), the
 same lab run on the bots before this update and after it:

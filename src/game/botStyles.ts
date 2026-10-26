@@ -1,4 +1,6 @@
-// The ten ways a bot can play, and the forty bots that play them. A bot's style never leaves the
+import { individualStyle, makeRoster } from './botProfiles';
+
+// Ten poker foundations, with individual player traits layered on top. A bot's style never leaves the
 // server (or the bots-only phone): players work out who's who by playing against them.
 
 export type StyleId =
@@ -231,8 +233,8 @@ export const STYLES: Record<StyleId, Style> = {
   },
 };
 
-/** Forty bots, four of each style. */
-export const BOTS: { name: string; emoji: string; style: StyleId }[] = [
+/** Original identities remain available to saved quick games. */
+const FAMILIAR_BOTS: { name: string; emoji: string; style: StyleId }[] = [
   { name: 'Luna', emoji: '🐸', style: 'gambler' },
   { name: 'Eli', emoji: '🤩', style: 'lag' },
   { name: 'Remi', emoji: '🧌', style: 'rock' },
@@ -275,4 +277,12 @@ export const BOTS: { name: string; emoji: string; style: StyleId }[] = [
   { name: 'Tex', emoji: '🌪️', style: 'maniac' },
 ];
 
-export const styleOf = (id: string | undefined): Style => STYLES[(id as StyleId) ?? 'pro'] ?? STYLES.pro;
+// Keep the original names addressable for saved quick games, alongside 600 new regulars.
+export const BOTS = makeRoster(FAMILIAR_BOTS);
+const PROFILE_STYLES = new Map(BOTS.map((bot) => [bot.profile.id, individualStyle(STYLES[bot.style], bot.profile)]));
+
+export const styleOf = (id: string | undefined, profileId?: string): Style => {
+  const base = Object.hasOwn(STYLES, id ?? '') ? STYLES[id as StyleId] : STYLES.pro;
+  const individual = profileId ? PROFILE_STYLES.get(profileId) : undefined;
+  return individual?.id === base.id ? individual : base;
+};

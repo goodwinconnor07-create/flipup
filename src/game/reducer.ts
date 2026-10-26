@@ -8,7 +8,21 @@ import { STRENGTH } from './botRange';
 import { BOTS, styleOf } from './botStyles';
 import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
-import { botsOnly, canDeal, cardsText, dealNextStreet, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
+import {
+  botsOnly,
+  canDeal,
+  cardsText,
+  dealNextStreet,
+  foldOutOfTurn,
+  makeMove,
+  MAX_SEATS,
+  playerById,
+  potTotal,
+  runoutStep,
+  schedule,
+  startHand,
+  TIMING,
+} from './holdem';
 import { cryptoRng, newId } from './ids';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
@@ -136,7 +150,11 @@ export function createTable(opts: {
   for (const name of opts.botNames ?? []) {
     const pick = BOTS.find((b) => b.name === name);
     if (pick && game.players.length < MAX_SEATS && !game.players.some((p) => p.name === pick.name))
-      game.players.push({ ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }), style: pick.style });
+      game.players.push({
+        ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
+        style: pick.style,
+        botProfile: pick.profile?.id,
+      });
   }
   while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game);
   return game;
@@ -148,8 +166,14 @@ function addBot(game: Game): void {
   // A random bot whose name and picture nobody at the table has yet (so it isn't always the same order).
   const free = BOTS.filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
   const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
-  const pick = pool.length ? pool[Math.floor(cryptoRng() * pool.length)] : { name: `Bot ${game.players.length}`, emoji: '🤖', style: 'pro' };
-  game.players.push({ ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }), style: pick.style });
+  const pick = pool.length
+    ? pool[Math.floor(cryptoRng() * pool.length)]
+    : { name: `Bot ${game.players.length}`, emoji: '🤖', style: 'pro', profile: undefined };
+  game.players.push({
+    ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
+    style: pick.style,
+    botProfile: pick.profile?.id,
+  });
 }
 
 /**
@@ -184,7 +208,9 @@ function afterHand(game: Game, ctx: ActionContext): void {
     else if (s.total > bb) streaks[s.playerId] = (streaks[s.playerId] ?? 0) + 1;
   }
   game.streaks = streaks;
-  const tilted = hand.seats.some((s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2);
+  const tilted = hand.seats.some(
+    (s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2,
+  );
 
   // Now and then a bot turns its cards over when it didn't have to: a bluff that worked, a monster
   // nobody paid off, or a good hand it laid down. Its own cards only, so nothing hidden leaks.
@@ -235,7 +261,14 @@ function afterHand(game: Game, ctx: ActionContext): void {
   const others = game.players.filter((p) => p.bot && !spoke.includes(p.id) && !p.sittingOut);
   if (others.length && ctx.rng() < 0.4) {
     const who = others[Math.floor(ctx.rng() * others.length)];
-    game.pendingTalk = { at: ctx.now + 1400, playerId: who.id };
+    const source = spoke[spoke.length - 1];
+    game.pendingTalk = {
+      at: ctx.now + 850 + Math.floor(ctx.rng() * 500),
+      playerId: who.id,
+      forId: source,
+      reactionN: game.reactions?.[source]?.n,
+      handNumber: hand.number,
+    };
   }
   // A little longer before the next deal, so the table talk can be read.
   if (game.nextHandAt !== null) game.nextHandAt += botsOnly(game) ? 1000 : TIMING.talkPause;
@@ -272,7 +305,20 @@ function openAgain(game: Game, ctx: ActionContext): void {
   game.reactions = {};
   game.hands = 0;
   game.blindsRaiseAt = null;
-  for (const k of ['again', 'first', 'pendingTalk', 'botPlan', 'sweating', 'talkAt', 'reads', 'streaks', 'minds', 'readHand'] as const) delete game[k];
+  for (const k of [
+    'again',
+    'first',
+    'pendingTalk',
+    'botPlan',
+    'sweating',
+    'talkAt',
+    'reads',
+    'streaks',
+    'minds',
+    'readHand',
+    'dialogue',
+  ] as const)
+    delete game[k];
   schedule(game);
 }
 
@@ -301,7 +347,7 @@ function showOffs(game: Game, hand: Game['hand'] & object, ctx: ActionContext): 
   for (const seat of hand.seats) {
     const player = playerById(game, seat.playerId);
     if (!player?.bot || seat.shown || seat.cards.length !== 2) continue;
-    const show = styleOf(player.style).show;
+    const show = styleOf(player.style, player.botProfile).show;
     const won = seat.playerId in result.won;
     const aggressive = acts.some((a) => a.playerId === seat.playerId && (a.move === 'bet' || a.move === 'raise' || a.move === 'allin'));
     let chance = 0;
@@ -336,7 +382,13 @@ function owe(game: Game, id: string): void {
 }
 
 /** What a bot says while it thinks, given the move it's about to make. */
-function thinkingEvent(game: Game, hand: Game['hand'] & object, choice: BotMove, bucket: string | undefined, bigBet: boolean): TalkEvent | null {
+function thinkingEvent(
+  game: Game,
+  hand: Game['hand'] & object,
+  choice: BotMove,
+  bucket: string | undefined,
+  bigBet: boolean,
+): TalkEvent | null {
   const raisedBig = (choice.move === 'raise' || choice.move === 'bet') && (choice.to ?? 0) >= potTotal(hand) * 0.6;
   if (choice.move === 'allin') return 'allin';
   // Folding to an ordinary raise before the flop isn't worth a word; a big one is.
@@ -470,7 +522,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (bots.length) {
         const headsUp = game.players.length === 2 && people.length === 1;
         const who = headsUp ? bots[0] : bots[Math.floor(ctx.rng() * bots.length)];
-        game.pendingTalk = { at: ctx.now + TIMING.greeting, playerId: who.id, event: headsUp ? 'hello' : 'welcome', forId: headsUp ? people[0].id : undefined };
+        game.pendingTalk = {
+          at: ctx.now + TIMING.greeting,
+          playerId: who.id,
+          event: headsUp ? 'hello' : 'welcome',
+          forId: headsUp ? people[0].id : undefined,
+        };
       }
       schedule(game);
       return done();
@@ -490,7 +547,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (big && !game.hand?.result) {
         const bots = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
         const who = bots[Math.floor(ctx.rng() * bots.length)];
-        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng, ctx.now);
+        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng, ctx.now, false, me.id);
       }
       return done();
     }
@@ -531,6 +588,20 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!isReactionId(action.id)) return fail("That isn't one of the quick messages.");
       game.reactions = { ...game.reactions, [me.id]: { id: action.id, n: (game.reactions?.[me.id]?.n ?? 0) + 1 } };
+      // One quick reply to a real quick-message; never replace a greeting or an outstanding reply.
+      if (!game.card && game.status === 'playing' && (!game.pendingTalk || game.pendingTalk.event === 'tank') && ctx.rng() < 0.5) {
+        const bots = game.players.filter((p) => p.bot && !p.sittingOut && ctx.now - (game.talkAt?.[p.id] ?? -Infinity) > 2500);
+        const who = bots[Math.floor(ctx.rng() * bots.length)];
+        if (who)
+          game.pendingTalk = {
+            at: ctx.now + 650 + Math.floor(ctx.rng() * 600),
+            playerId: who.id,
+            forId: me.id,
+            reactionN: game.reactions[me.id].n,
+            handNumber: game.hand?.number,
+          };
+      }
+      schedule(game);
       return done();
     }
 
@@ -645,7 +716,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   // A bot answering what was just said.
   if (game.pendingTalk && due(game.pendingTalk.at)) {
-    const { playerId, event, forId, seq } = game.pendingTalk;
+    const { playerId, event, forId, seq, reactionN, handNumber } = game.pendingTalk;
     delete game.pendingTalk;
     if (event === 'hello' || event === 'welcome') {
       botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
@@ -653,7 +724,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
       return true;
     }
     // A jab at a slow player only lands if they're still on the clock.
-    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now);
+    const current =
+      (handNumber === undefined || hand?.number === handNumber) &&
+      (reactionN === undefined || (forId && game.reactions?.[forId]?.n === reactionN));
+    if (current && (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)))
+      botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now, false, forId);
     schedule(game);
     return true;
   }
@@ -670,7 +745,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
       if (!game.hand?.result) {
         const inIt = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
         const watching = hand.seats.filter((s) => s.folded && playerById(game, s.playerId)?.bot);
-        const pickOne = <T,>(xs: T[]) => xs[Math.floor(ctx.rng() * xs.length)];
+        const pickOne = <T>(xs: T[]) => xs[Math.floor(ctx.rng() * xs.length)];
         if (inIt.length && ctx.rng() < 0.75) {
           const id = pickOne(inIt).playerId;
           if (botSays(game, id, 'sweat', ctx.rng, ctx.now)) owe(game, id);

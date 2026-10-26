@@ -239,6 +239,7 @@ export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb 
   const styleOfAgent = (a: Agent) => (a.includes(':') ? a.split(':')[1] : a);
   game.players.forEach((p, i) => {
     p.style = styleOfAgent(styleAgents[i]);
+    delete p.botProfile; // Benchmark the foundation without a randomly seated identity.
   });
   const step = (deviceId: string, action: Action) => {
     const r = applyAction(game, action, { deviceId, now: clock, rng });

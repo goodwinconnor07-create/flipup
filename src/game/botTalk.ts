@@ -1,7 +1,7 @@
-// What bots say at the table, through the same bubbles as moves and quick messages. Every line is
-// fixed here (ids start "b:"), and phones can't send them: only bots say these. Lines are short so
-// they fit on one line in a seat's bubble.
+// Offline bot speech through the existing bubbles. Legacy banks remain decodable for saved games.
+// New speech is planned by botDialogue.ts; phones cannot submit either format of bot line ID.
 
+import { composeDialogue, dialogueText } from './botDialogue';
 import { styleOf, type StyleId } from './botStyles';
 import type { Game } from './types';
 
@@ -74,7 +74,18 @@ const TRASH: Lines = {
   thinkEasy: ['Easy.', 'Too easy.', 'Obviously.', 'Snap.', 'Light work.', 'Free.', 'Please.', 'Calculated.'],
   allin: ['Let’s gamble.', 'All of it.', 'Your move.', 'Shove time.', 'Let’s dance.'],
   raise: ['Pressure.', 'Let’s go.', 'Pay up.', 'Raise. Duh.', 'Try me.', 'Feeling it.', 'Make a choice.', 'Your problem now.'],
-  foldBig: ['Fine. Take it.', 'Enjoy it.', 'Next time.', 'Not worth it.', 'Saving chips.', 'You win. Barely.', 'Tell me you have it.', 'Cute.', 'Disgusting.', 'I’ll remember that.'],
+  foldBig: [
+    'Fine. Take it.',
+    'Enjoy it.',
+    'Next time.',
+    'Not worth it.',
+    'Saving chips.',
+    'You win. Barely.',
+    'Tell me you have it.',
+    'Cute.',
+    'Disgusting.',
+    'I’ll remember that.',
+  ],
   callLight: ['Don’t buy it.', 'Show me.', 'Prove it.', 'Bluffing again?', 'Nope. Call.'],
   yourBigBet: ['Oh, serious?', 'Smells fishy.', 'Bold.', 'Is that it?', 'Scary. Not.'],
   sweat: ['C’mon, c’mon!', 'Hold!', 'Brick! Brick!', 'Don’t you dare.', 'Gimme one!'],
@@ -98,7 +109,13 @@ const TRASH: Lines = {
   tilted: ['I’m fine.', 'Totally calm.', 'Next hand’s mine.', 'Unreal deck.', 'Just deal.'],
   gotBluffed: ['You had THAT?', 'Noted.', 'I’ll remember that.', 'Enjoy it while it lasts.', 'Cute.'],
   watched: ['Well, well.', 'Brutal.', 'There it is.', 'Wow, okay.', 'Next.'],
-  hello: ['Hey {you}. Ready to lose?', 'Sit down, {you}.', '{you}. Let’s see what you’ve got.', 'Nice to meet you, {you}. Nice chips.', 'Evening, {you}.'],
+  hello: [
+    'Hey {you}. Ready to lose?',
+    'Sit down, {you}.',
+    '{you}. Let’s see what you’ve got.',
+    'Nice to meet you, {you}. Nice chips.',
+    'Evening, {you}.',
+  ],
   welcome: ['Welcome to the table.', 'Fresh chips. Lovely.', 'Hope you all brought chips.', 'Take a seat, fish.', 'Let’s play.'],
 };
 
@@ -107,7 +124,17 @@ const FRIENDLY: Lines = {
   thinkEasy: ['Okay!', 'Easy peasy.', 'Let’s see…', 'Fine by me.', 'Why not!', 'I like this.'],
   allin: ['Here goes!', 'Wish me luck!', 'Feeling brave.', 'All in!', 'Yolo!'],
   raise: ['I like this.', 'Let’s play!', 'Raise!', 'Gotta try.', 'Feeling good.', 'Here we go.', 'Bit of spice.', 'Let’s make it fun.'],
-  foldBig: ['Too rich for me.', 'You have it.', 'Not this time.', 'I’m out.', 'Nope!', 'That’s a lot!', 'Wow, okay.', 'Take it, you earned it.', 'Brave.'],
+  foldBig: [
+    'Too rich for me.',
+    'You have it.',
+    'Not this time.',
+    'I’m out.',
+    'Nope!',
+    'That’s a lot!',
+    'Wow, okay.',
+    'Take it, you earned it.',
+    'Brave.',
+  ],
   callLight: ['Had to see it.', 'Curious…', 'Can’t fold this.', 'Keep me honest.', 'One look.'],
   yourBigBet: ['Whoa!', 'Big bet!', 'Tough one.', 'Okay, okay…', 'Yikes.'],
   sweat: ['Come on!', 'Please, please…', 'Fingers crossed!', 'Hold on!', 'Oh boy…'],
@@ -131,7 +158,13 @@ const FRIENDLY: Lines = {
   tilted: ['Deep breaths…', 'Not my night.', 'I’m okay. Mostly.', 'Need a break.', 'Can I win one?'],
   gotBluffed: ['No way!', 'You had nothing?!', 'Sneaky!', 'Ugh, I believed you.', 'Well played…'],
   watched: ['Wow!', 'What a hand!', 'Wild one.', 'Oof, nice.', 'Phew, glad that’s over.'],
-  hello: ['Hi {you}! Good luck!', 'Hey {you}, let’s have fun!', 'Welcome, {you}! Ready?', 'Good to see you, {you}!', 'Hi {you}! Be gentle 😅'],
+  hello: [
+    'Hi {you}! Good luck!',
+    'Hey {you}, let’s have fun!',
+    'Welcome, {you}! Ready?',
+    'Good to see you, {you}!',
+    'Hi {you}! Be gentle 😅',
+  ],
   welcome: ['Welcome to the table!', 'Hi everyone!', 'Good luck, all!', 'Glad you’re here!', 'Let’s have a good one!'],
 };
 
@@ -297,12 +330,11 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
   },
 };
 
-const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
-
 /** The text for a bot line id, or '' if it isn't one. */
 export function botLineText(lineId: string): string {
+  if (lineId.startsWith('b:local:')) return dialogueText(lineId);
   const [b, tone, event, i] = lineId.split(':');
-  if (b !== 'b') return '';
+  if (b !== 'b' || lineId.split(':').length !== 4 || !Object.hasOwn(TRASH, event) || !/^(0|[1-9]\d{0,3})$/.test(i ?? '')) return '';
   return pool(tone, event as TalkEvent)[Number(i)] ?? '';
 }
 
@@ -310,7 +342,7 @@ export function botLineText(lineId: string): string {
 function pool(voice: string, event: TalkEvent): string[] {
   if (voice === 'trash') return TRASH[event] ?? [];
   if (voice === 'friendly') return FRIENDLY[event] ?? [];
-  const style = voice in VOICES ? styleOf(voice as StyleId) : null;
+  const style = Object.hasOwn(VOICES, voice) ? styleOf(voice as StyleId) : null;
   if (!style) return [];
   return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
 }
@@ -357,19 +389,32 @@ const COOLDOWN = 2500;
  * `owed` is for a reaction the table is waiting for (a bot that cried "c'mon!" and then saw the pot
  * go): it speaks whatever the dice and the cooldown say, so it never goes quiet at the moment it should react.
  */
-export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false, to?: string): boolean {
+export function botSays(
+  game: Game,
+  playerId: string,
+  event: TalkEvent,
+  rng: () => number,
+  now: number,
+  owed = false,
+  to?: string,
+): boolean {
   const player = game.players.find((p) => p.id === playerId);
   if (!player?.bot) return false;
   // Scroll cards are quiet, so nothing muddies the lesson.
   if (game.card) return false;
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return false;
-  const style = styleOf(player.style);
+  const style = styleOf(player.style, player.botProfile);
   if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return false;
-  const lines = pool(style.id, event);
-  if (!lines.length) return false;
-  const i = Math.floor(rng() * lines.length);
-  game.reactions = { ...game.reactions, [playerId]: { id: id(style.id, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(to ? { to } : {}) } };
+  // A table-wide pause keeps nine seats from shouting over an ordinary decision.
+  const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
+  if (!owed && now - tableLast < 700) return false;
+  const target = to ?? (game.hand?.aggressorId !== playerId ? (game.hand?.aggressorId ?? undefined) : undefined);
+  const line = composeDialogue(game, playerId, event, rng, target);
+  game.reactions = {
+    ...game.reactions,
+    [playerId]: { id: line, n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(target ? { to: target } : {}) },
+  };
   game.talkAt = { ...game.talkAt, [playerId]: now };
   return true;
 }

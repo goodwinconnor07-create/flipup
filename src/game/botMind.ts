@@ -40,11 +40,26 @@ export function updateMinds(game: Game, hand: Hand): void {
   for (const seat of hand.seats) {
     const player = game.players.find((p) => p.id === seat.playerId);
     if (!player?.bot) continue;
-    const style = styleOf(player.style);
+    const style = styleOf(player.style, player.botProfile);
     const before = minds[seat.playerId] ?? CALM;
-    const mind: BotMind = { tilt: before.tilt * 0.88, confidence: before.confidence * 0.9, grudges: {} };
+    const mind: BotMind = {
+      tilt: before.tilt * 0.88,
+      confidence: before.confidence * 0.9,
+      winStreak: before.winStreak ?? 0,
+      lossStreak: before.lossStreak ?? 0,
+      previousLosses: 0,
+      grudges: {},
+    };
     for (const [id, g] of Object.entries(before.grudges ?? {})) if (g * 0.92 > 0.05) mind.grudges![id] = g * 0.92;
     const net = ((result.won[seat.playerId] ?? 0) - seat.total) / bb;
+    if (net > 0) {
+      mind.previousLosses = before.lossStreak ?? 0;
+      mind.winStreak = (before.winStreak ?? 0) + 1;
+      mind.lossStreak = 0;
+    } else if (net < -1) {
+      mind.lossStreak = (before.lossStreak ?? 0) + 1;
+      mind.winStreak = 0;
+    }
     if (net <= -20) {
       let hurt = Math.min(1, -net / 80);
       // A strong hand beaten, or a lead lost on the river, hurts more.
@@ -123,7 +138,9 @@ export function cardsShown(game: Game, hand: Hand, playerId: string): string[] {
   const seat = hand.seats.find((s) => s.playerId === playerId);
   if (!result || result.showdown || !(playerId in result.won) || !seat || seat.cards.length !== 2 || hand.board.length < 3) return [];
   const acts = hand.actions ?? [];
-  const bets = acts.filter((a) => a.playerId === playerId && a.street !== 'preflop' && (a.move === 'bet' || a.move === 'raise' || a.move === 'allin'));
+  const bets = acts.filter(
+    (a) => a.playerId === playerId && a.street !== 'preflop' && (a.move === 'bet' || a.move === 'raise' || a.move === 'allin'),
+  );
   if (!bets.length) return [];
   const last = bets[bets.length - 1];
   const board = hand.board.slice(0, last.street === 'flop' ? 3 : last.street === 'turn' ? 4 : 5).map(toInt);
@@ -133,17 +150,27 @@ export function cardsShown(game: Game, hand: Hand, playerId: string): string[] {
     if (r) {
       r.shownBets = (r.shownBets ?? 0) + 1;
       if (bluff) r.shownBluffs = (r.shownBluffs ?? 0) + 1;
+      if (r.recent) {
+        r.recent.shownBets = (r.recent.shownBets ?? 0) + 1;
+        if (bluff) r.recent.shownBluffs = (r.recent.shownBluffs ?? 0) + 1;
+      }
     }
   }
   if (!bluff) return [];
   const victims = hand.seats
-    .filter((s) => s.folded && game.players.find((p) => p.id === s.playerId)?.bot && acts.some((a) => a.playerId === s.playerId && a.move === 'fold' && a.street !== 'preflop'))
+    .filter(
+      (s) =>
+        s.folded &&
+        game.players.find((p) => p.id === s.playerId)?.bot &&
+        acts.some((a) => a.playerId === s.playerId && a.move === 'fold' && a.street !== 'preflop'),
+    )
     .map((s) => s.playerId);
   const minds = { ...game.minds };
   for (const id of victims) {
-    const style = styleOf(game.players.find((p) => p.id === id)?.style);
+    const style = styleOf(game.players.find((p) => p.id === id)?.style, game.players.find((p) => p.id === id)?.botProfile);
     const m = minds[id] ?? CALM;
     minds[id] = {
+      ...m,
       tilt: clamp(m.tilt + style.mind.tilt * 0.35, 0, 1),
       confidence: m.confidence,
       grudges: { ...m.grudges, [playerId]: Math.min(1, (m.grudges?.[playerId] ?? 0) + style.mind.grudge * 0.6) },

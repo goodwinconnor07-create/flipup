@@ -38,7 +38,7 @@ struct MWConfig {
   std::vector<std::vector<float>> range; // [player][1326]
   std::array<std::vector<double>, 3> bet;    // opening bets per street (pot fractions)
   std::array<std::vector<double>, 3> raise;  // raises per street (pot fraction after calling)
-  int max_raises = 1;                    // raises allowed after the opening bet, per street
+  int max_raises = 1;                    // negative = uncapped; otherwise raises allowed after the opening bet, per street
   int end_street = 2;                    // last street with betting (0 flop, 1 turn, 2 river)
   // The cards dealt after the root street (empty = every card). A spread-out sample keeps flop solves
   // fast; values are reweighted so the sample stands in for the whole deck.

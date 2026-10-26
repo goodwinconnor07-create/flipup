@@ -10,16 +10,16 @@ from .cards import card_str,combo_cards,parse_combo
 from .solver import BetSizing,StreetSizing,PostflopSolver
 from .value_data import canonical_board,converge,digest
 
-VERSION='scroll-exact-v2'
+VERSION='scroll-laptop-v3'
 TARGET=.1 # percent of pot, in this betting abstraction
 ENGINE_HASH=digest([(p.name,hashlib.sha256(p.read_bytes()).hexdigest()) for p in
                     sorted((Path(__file__).parent.parent/'engine/src').glob('*.cpp'))])
 
 
 def sizing():
-    ss=StreetSizing('33%, 50%, 75%, 125%, a','60%, 100%, a')
+    ss=StreetSizing('0%, 33%, 50%, 75%, 125%, a','0%, 60%, 100%, a','0%, 33%, 50%, 75%, 125%, a')
     return BetSizing(oop={s:ss for s in ('flop','turn','river')},ip={s:ss for s in ('flop','turn','river')},
-                     max_raises=2,merge_threshold=.001)
+                     max_raises=-1,merge_threshold=0,force_allin_threshold=0)
 
 
 def build(spec,memory=1536):
@@ -27,22 +27,24 @@ def build(spec,memory=1536):
     if spec['players']==2:
         sizes=sizing()
         for extra in spec.get('extras',[]):
-            sizes=sizes.with_extra(extra['player'],len(spec['board'])-3,extra['kind'],str(extra['fraction']*100)+'%')
+            sizes=sizes.with_extra(extra['player'],extra.get('street',len(spec['board'])-3),extra['kind'],str(extra['fraction']*100)+'%')
+            if extra['kind']=='bet':sizes=sizes.with_extra(extra['player'],extra.get('street',len(spec['board'])-3),'donk',str(extra['fraction']*100)+'%')
         return PostflopSolver(spec['board'],spec['pot'],spec['stack'],*spec['ranges'],sizing=sizes,
                               compress=False,max_memory_mb=memory,max_nodes=200000)
     if spec['players']!=3:raise ValueError('only exact HU/three-player supported')
     cfg=E.MWConfig();cfg.players=3;cfg.exact_joint=True;cfg.board=spec['board'];cfg.range=spec['ranges']
     cfg.pot=spec['pot'];cfg.stack=spec['stack'];cfg.end_street=2;cfg.deal_subset=[]
-    cfg.max_raises=1;cfg.max_nodes=100000;cfg.max_memory_mb=memory;cfg.merge_threshold=.001
+    cfg.initial_active=sum(1<<p for p,a in enumerate(spec.get('active',[True]*3)) if a)
+    cfg.max_raises=-1;cfg.force_allin_threshold=0;cfg.max_nodes=100000;cfg.max_memory_mb=memory;cfg.merge_threshold=0
     # Always offer all-in where it is legal, rather than treating absent sizes as never played.
     cfg.add_allin_threshold=1e6
-    for st in range(3):cfg.set_sizes(st,[.33,.75],[.6])
-    if spec.get('extras'):
-        actor=spec['extras'][0]['player'];cfg.hero=actor
-        for st in range(3):
-            bets=[.33,.75]+[e['fraction'] for e in spec['extras'] if e['kind']=='bet']
-            raises=[.6]+[e['fraction'] for e in spec['extras'] if e['kind']=='raise']
-            cfg.set_hero_sizes(st,bets,raises)
+    for st in range(3):cfg.set_sizes(st,[0.,.33,.5,.75,1.25],[0.,.6,1.])
+    # Refine the public menu for every actor on the requested street. The old
+    # hero-only root override silently ignored turn/river custom sizes.
+    for st in range(3):
+        additions=[e for e in spec.get('extras',[]) if e.get('street',len(spec['board'])-3)==st]
+        cfg.set_sizes(st,[0.,.33,.5,.75,1.25]+[e['fraction'] for e in additions if e['kind']=='bet'],
+                      [0.,.6,1.]+[e['fraction'] for e in additions if e['kind']=='raise'])
     return E.MultiwaySolver(cfg)
 
 
@@ -53,6 +55,8 @@ def query(solver,tokens,players,ev=True):
 def resolve(solver,spec):
     tokens=[]
     for wanted in spec.get('path',[]):
+        if wanted['type']=='deal':
+            tokens.append(card_str(wanted['card']) if spec['players']==2 else wanted['card']);continue
         q=query(solver,tokens,spec['players'],False)
         if q['type']!='action':raise ValueError('path ends before decision')
         match=next((i for i,a in enumerate(q['actions']) if a['type']==wanted['type'] and
@@ -78,9 +82,9 @@ def solve(spec,maximum=4000,memory=1536):
     else:
         its=0;gap=1e9
         while its<maximum:
-            s.iterate(min(50,maximum-its));its=s.iterations;gap=float(s.exploitability_pct())
+            s.iterate(min(50,maximum-its));its=s.iterations;gap=float(s.exploitability_pct())*players
             if gap<=TARGET:break
-    if not np.isfinite(gap) or gap>TARGET:raise ValueError('teacher did not converge')
+    if not np.isfinite(gap) or gap < -1e-6 or gap>TARGET:raise ValueError('teacher did not converge')
     tokens=resolve(s,spec);first=query(s,tokens,players)
     if first['type']!='action':raise ValueError('not a decision')
     # Do NOT equate an iteration limit or a rounded 100% with a stable strategy.
@@ -90,7 +94,7 @@ def solve(spec,maximum=4000,memory=1536):
         before=np.asarray(q['strategy']);before_ev=np.asarray(q['action_ev'])
         extra=min(200,maximum-its)
         if players==2:s.engine.iterate(extra);gap=float(s.exploitability_pct())
-        else:s.iterate(extra);gap=float(s.exploitability_pct())
+        else:s.iterate(extra);gap=float(s.exploitability_pct())*players
         its+=extra;q=query(s,tokens,players)
         r,w,combos=arrays(q,players);actor=q['player']
         own=w[actor,combos];own=own/max(own.sum(),1e-30)
@@ -98,7 +102,7 @@ def solve(spec,maximum=4000,memory=1536):
         ev_drift=np.abs(np.asarray(q['action_ev'])-before_ev).max(0)/q['pot']
         weighted_drift=float(np.dot(drift,own))
         if extra>=200 and gap<=TARGET and weighted_drift<=.02:break
-    if gap>TARGET or weighted_drift>.02:raise ValueError('strategy unstable after additional iterations')
+    if not np.isfinite(gap) or gap < -1e-6 or gap>TARGET or weighted_drift>.02:raise ValueError('strategy unstable after additional iterations')
     if players==3 and abs(sum(s.root_ev())-spec['pot'])/spec['pot']>.001:raise ValueError('payoff conservation failed')
     quality=dict(method='full-tree-hu' if players==2 else 'full-tree-exact3',version=VERSION,engine=ENGINE_HASH,gapPct=max(0.,gap),
                  iterations=its,rangeFrequencyDrift=weighted_drift,scope='declared ranges and betting tree; no rake')
@@ -146,10 +150,11 @@ def scenario_from(s,tokens,q,spec,quality,combo,drift,ev_drift):
                     if mass.sum()>0:o['foldEquity']=float(np.dot(child['strategy'][fold],mass)/mass.sum())
         opts.append(o)
     if call<=1e-8:opts.append(dict(label='Fold',kind='fold',to=0.,added=0.,freq=0.,ev=0.,foldEquity=None,analytic=True))
-    hero=combo_cards(combo);tags=describe(spec['board'],hero)+[f'{players}-way','facing-bet' if call>0 else 'first-to-act' if not spec.get('path') else 'checked-to-you']
+    board=list(spec['board'])+[a['card'] for a in spec.get('path',[]) if a['type']=='deal']
+    hero=combo_cards(combo);tags=describe(board,hero)+[f'{players}-way','facing-bet' if call>0 else 'first-to-act' if not spec.get('path') else 'checked-to-you']
     active=list(q.get('active',[True]*players))
     # Group shape independently of suits/hero: avoid multiple near-identical drill variants back to back.
-    family=digest([players,canonical_board(spec['board']),actor,[(p['type'],round(p['amount']/spec['pot'],2)) for p in spec.get('path',[])]])[:16]
+    family=digest([players,canonical_board(board),actor,[(p['type'],p.get('card'),round(p.get('amount',0)/spec['pot'],2)) for p in spec.get('path',[])]])[:16]
     evs=sorted([o['ev'] for o in opts],reverse=True)
     mix=[o for o in opts if o['freq']>=.05]
     close=(evs[0]-evs[1])/pot if len(evs)>1 else 1
@@ -165,10 +170,11 @@ def scenario_from(s,tokens,q,spec,quality,combo,drift,ev_drift):
         range_summary.append(dict(player=p,classes=top,combos=int(np.count_nonzero(r[p])),active=active[p]))
     last_inc=1.;last_to=0.
     for action in spec.get('path',[]):
+        if action['type']=='deal':last_inc=1.;last_to=0.;continue
         if action['type'] in ('bet','raise'):
             last_inc=max(1.,action['amount']-last_to);last_to=action['amount']
     public=dict(schema=2,id='s-'+digest([spec,int(combo),opts])[:24],family=family,players=players,hero=actor,
-                cards=[card_str(c) for c in hero],board=[card_str(c) for c in spec['board']],pot=pot,stacks=stack,
+                cards=[card_str(c) for c in hero],board=[card_str(c) for c in board],pot=pot,stacks=stack,
                 wagers=wager,toCall=float(call),minRaiseTo=float(max(wager)+last_inc),
                 history=spec.get('path',[]),active=active,options=opts,tags=tags,difficulty=difficulty,ranges=range_summary,
                 assumptions=spec.get('assumptions','Synthetic range-conditioned practice spot; this is not a recorded six-max hand.'),

@@ -13,9 +13,12 @@ import threading
 import time
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import numpy as np
-from coach_client import Coach
+from coach_client import Coach,Refused
 from campaign_sync import Artifacts
+from scroll_models import train_one
 from flipup_gto.cards import parse_combo
+from flipup_gto.scroll_schedule import choose_work
+from flipup_gto.scroll_contract import require_validation,validate_job
 from flipup_gto.scroll_scenarios import solve,solve_entry,query,arrays,scenario_from
 from flipup_gto.value_data import atomic_json
 
@@ -27,7 +30,7 @@ def call(client,path,payload=None):
                      None if payload is None else json.dumps(payload,allow_nan=False).encode())[1])
 
 
-def process(client,job,memory):
+def process(client,job,memory,validation):
     stopped=threading.Event()
     def renew():
         while not stopped.wait(60):
@@ -35,12 +38,14 @@ def process(client,job,memory):
             except Exception:return
     threading.Thread(target=renew,daemon=True).start()
     try:
-        p=job['payload'];maximum=4000*2**(job['attempt']-1)
+        p=job['payload'];validate_job(p['spec']);maximum=4000*2**(job['attempt']-1)
+        profile=[p['spec']['players'],{3:'flop',4:'turn',5:'river'}[len(p['spec']['board'])]]
+        if profile not in validation.get('coverage',[]):raise ValueError('queued profile has no passing independent reference')
         if job['kind']=='size':
             value=solve_entry(p['spec'],parse_combo(''.join(p['cards'])),maximum,memory)
             selected=next((o for o in value['options'] if (o['kind']==p['kind'] or o['kind']=='allin') and abs(o['to']-p['to'])<1e-4),None)
             if selected is None:raise ValueError('requested size not retained in tree')
-            call(client,'/publish',dict(items=[{'scenario':value,'solve':p['spec']}]))
+            call(client,'/publish',dict(items=[{'scenario':value,'solve':p['spec']}],validation=validation))
             value={'scenario':value,'option':selected,'quality':value['quality']}
         else:
             s,tokens,q,quality,drift,edrift=solve(p['spec'],maximum,memory)
@@ -74,15 +79,17 @@ def main():
     ap=argparse.ArgumentParser(description=__doc__)
     ap.add_argument('--role',choices=['fast','slow'],required=True);ap.add_argument('--out',type=Path,required=True)
     ap.add_argument('--hours',type=float,default=168);ap.add_argument('--memory-mb',type=int,default=1536)
+    ap.add_argument('--models',choices=['auto','off'],default='auto')
     ap.add_argument('--offline',action='store_true',help='generate and back up locally; no coach publication')
-    a=ap.parse_args();root=a.out.expanduser();root.mkdir(parents=True,exist_ok=True)
+    ap.add_argument('--jobs',type=Path,required=True);ap.add_argument('--validation',type=Path,required=True)
+    a=ap.parse_args();validation=require_validation(a.validation);jobs=json.loads(a.jobs.read_text());choose_work(jobs,validation,a.role,0);root=a.out.expanduser();root.mkdir(parents=True,exist_ok=True)
     import fcntl
     lock=(root/'.worker.lock').open('w');fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
     client=None if a.offline else Coach();backup=None if a.offline else Artifacts()
     worker=1 if a.role=='fast' else 0
     if client:print(call(client,'/status'),flush=True)
     statepath=root/'worker.json'
-    cfg=dict(role=a.role,hours=a.hours,memory=a.memory_mb,offline=a.offline)
+    cfg=dict(role=a.role,hours=a.hours,memory=a.memory_mb,offline=a.offline,jobs=jobs,validation=validation,models=a.models)
     if statepath.exists():
         state=json.loads(statepath.read_text())
         if state['config']!=cfg:raise ValueError('changed worker configuration; use a new output directory')
@@ -101,13 +108,13 @@ def main():
             cycle=state['cycles']
             # Accurate Scroll is always the first workload, not conditional on a network checkpoint.
             # Interleave multiway/turn cases so one expensive class cannot starve the feed.
-            players=3 if a.role=='fast' and cycle%3==2 else 2
-            street='turn' if cycle%4==3 else 'river'
+            validation=require_validation(a.validation)
+            players,street=choose_work(jobs,validation,a.role,cycle)
             folder=root/'scenarios'
             attempted=len(list(folder.glob(f'{players}p-{street}-{worker}-*.result.json')))
             cmd=[sys.executable,str(SCRIPTS/'generate_scroll_scenarios.py'),'--out',str(folder),
                  '--players',str(players),'--street',street,'--worker',str(worker),'--attempts',str(attempted+4),
-                 '--max-hours','.25','--memory-mb',str(a.memory_mb)]
+                 '--jobs',str(a.jobs.resolve()),'--validation',str(a.validation.resolve()),'--max-hours','.25','--memory-mb',str(a.memory_mb)]
             state.update(stage=f'generating {players}-way {street} scenarios');atomic_json(statepath,state)
             with (root/'generation.log').open('ab') as log:
                 proc=subprocess.Popen(cmd,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
@@ -121,7 +128,7 @@ def main():
                 receipts=root/'.published';receipts.mkdir(exist_ok=True)
                 for p in sorted(folder.glob('s-*.entry.json')):
                     if (receipts/p.name).exists():continue
-                    call(client,'/publish',dict(items=[json.loads(p.read_text())]));(receipts/p.name).touch()
+                    call(client,'/publish',dict(items=[json.loads(p.read_text())],validation=validation));(receipts/p.name).touch()
                 # Download approved packs onto BOTH laptops, not only the generating machine.
                 import urllib.request
                 with urllib.request.urlopen(client.url+'/scroll/catalogue',timeout=120) as r:cat=json.load(r)
@@ -135,8 +142,18 @@ def main():
                 job=call(client,'/lease',{})
                 if job:
                     state.update(stage='refining queued spot',job=job['id']);atomic_json(statepath,state)
-                    process(client,job,a.memory_mb)
+                    process(client,job,a.memory_mb,validation)
                 backup.push(root,'scroll-'+root.parent.name+f'-{a.role}')
+            if a.role=='slow' and a.models=='auto' and time.time()<end:
+                peer=root/'.peer'/'fast'
+                if backup:
+                    try:backup.pull(peer,'scroll-'+root.parent.name+'-fast')
+                    except Refused as exc:
+                        if 'coach said 404 ' not in str(exc):raise
+                        atomic_json(root/'peer-status.json',dict(stage='waiting for first fast-laptop backup'))
+                state.update(stage='checking network training data');atomic_json(statepath,state)
+                train_one(root,peer,validation,min(end,time.time()+1200))
+                if backup:backup.push(root,'scroll-'+root.parent.name+'-slow')
             state.update(cycles=cycle+1,stage='batch complete',updated=time.time());atomic_json(statepath,state)
     finally:
         stop.set()

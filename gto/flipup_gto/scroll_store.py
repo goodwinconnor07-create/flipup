@@ -7,6 +7,7 @@ import time
 import shutil
 from pathlib import Path
 from .value_data import digest
+from .scroll_contract import validate_job
 from .scroll_scenarios import validate_public,VERSION
 
 ROOT=Path(__file__).parent/'data/cache/scroll'
@@ -46,7 +47,7 @@ def publish(entries):
     seen=set()
     retired=retired_ids()
     for e in entries:
-        p=validate_public(e['scenario']);spec=e['solve']
+        p=validate_public(e['scenario']);spec=e['solve'];validate_job(spec)
         if p['id'] in retired:raise ValueError('withdrawn cloud starter cannot be republished')
         if p['id'] in seen or spec.get('version')!=VERSION or spec['players']!=p['players']:raise ValueError('duplicate/mismatched scenario')
         if len(spec['ranges'])!=spec['players'] or any(len(r)!=1326 for r in spec['ranges']):raise ValueError('invalid ranges')

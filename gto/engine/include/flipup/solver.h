@@ -45,7 +45,7 @@ struct TreeConfig {
   double starting_pot = 0;         // chips in the pot at the root
   double effective_stack = 0;      // chips behind for each player at the root
   StreetSizes sizes[2][3];         // [player][street: 0 flop, 1 turn, 2 river]
-  int max_raises = 3;              // raises allowed after the opening bet on each street
+  int max_raises = 3;              // negative = uncapped; otherwise raises allowed after the opening bet on each street
   double min_bet = 1.0;            // minimum bet / raise increment (1 big blind)
   double add_allin_threshold = 1.5;    // offer all-in when all-in <= threshold * pot
   double force_allin_threshold = 0.15; // bet becomes all-in if remaining stack <= threshold * pot after a call
@@ -125,6 +125,7 @@ struct NodeInfo {
   int street;
   double pot;
   double contrib[2];
+  double wager[2]; // current-street wagers, distinct from lifetime contributions
   double stack[2];
   std::vector<int> board;
   std::vector<Action> actions;            // ACTION nodes

@@ -10,6 +10,7 @@ primary_region = "lhr"        # pick the region closest to your players (`fly pl
 
 [env]
   FLIPUP_CORS = "*"           # the app calls through its own Worker, so this can stay open
+  FLIPUP_SCROLL_PUBLISH_ENABLED = "0" # Enable only after independent laptop validation/review.
 
 [http_service]
   internal_port = 8000
@@ -21,6 +22,13 @@ primary_region = "lhr"        # pick the region closest to your players (`fly pl
   [http_service.concurrency]
     type = "requests"
     soft_limit = 20
+
+  [[http_service.checks]]
+    grace_period = "30s"
+    interval = "30s"
+    timeout = "5s"
+    method = "GET"
+    path = "/health"
 
 # Solved preflop games are cached here so they survive restarts (a cold solve takes ~13 minutes).
 [mounts]

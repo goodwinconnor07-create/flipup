@@ -1,5 +1,5 @@
-> GENERATION PAUSED. The cloud starter pack is withdrawn. Do not run the old Scroll generation commands.
-> Use the diagnostic instructions on branch `codex/laptop-only-rebuild`; no replacement engine is launch-validated yet.
+> Scroll generation is being rebuilt for laptop-only execution. See [current status](docs/LAPTOP_REBUILD.md).
+> The previous cloud starter bank is withdrawn. Do not start the old unattended Scroll campaign.
 
 # FlipUp GTO backend
 

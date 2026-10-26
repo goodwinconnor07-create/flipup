@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useRevalidate } from '../../ui/useRevalidate';
 import { bestTwin, FRIENDS_CHANGED, loadFriends, refreshStale, type Friend } from '../../state/friends';
 import { loadShare, startSharing } from '../../state/share';
 import { back, navigate, openSheet, toast } from '../../state/store';
@@ -21,9 +22,10 @@ export function Friends() {
   const [share, setShare] = useState(loadShare);
   const [busy, setBusy] = useState(false);
 
-  // Look at everyone again when this opens, so their twins are up to date.
+  // Shows the saved friends at once, then looks at everyone again (when this opens, when you come back to the app
+  // and when the connection returns), so their twins are up to date.
+  useRevalidate(() => refreshStale().then(() => setFriends(loadFriends())));
   useEffect(() => {
-    void refreshStale().then(() => setFriends(loadFriends()));
     const reload = () => setFriends(loadFriends());
     window.addEventListener(FRIENDS_CHANGED, reload);
     return () => window.removeEventListener(FRIENDS_CHANGED, reload);

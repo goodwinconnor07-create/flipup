@@ -18,9 +18,9 @@ as long as its own line takes, and a person's quick message is up the moment it'
   messages. The cutting is done on the template, so a person's name in `{you}` can't add a break.
 - **Typing, then the message.** Dots for `220 ms + 13 ms a letter` (at most 520), follow-ups 30% quicker, a
   80 ms settle between messages, 650 ms before a `||`.
-- **Up long enough to read.** Each message stays `700 ms + 30 ms a letter` (1.2 s to 2.4 s). A seat shows two at
-  a time, the older one stepped back; a third message waits until the first has had `readMs()` (a moment to
-  notice it, then 25 letters a second), so the first of a burst is never pushed out before it can be read.
+- **Up long enough to read.** Each message stays `700 ms + 30 ms a letter` (1.2 s to 2.4 s). A seat shows one
+  message at a time: the next replaces it, but not before it has had `readMs()` (a moment to notice it, then 25
+  letters a second). Nothing stacks, and a bubble is never wider than its seat, so neighbours can't overlap.
 - **One speaker types at a time.** The next bot starts typing 260 ms after the last message of the one before has
   landed, so they answer each other, but a message still up while the next bot types is fine, like a group chat.
 - **Stale lines go.** A "c'mon!" is dropped when the next card lands; a remark about a move is dropped once the move

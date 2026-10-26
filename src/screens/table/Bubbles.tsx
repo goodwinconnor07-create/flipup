@@ -168,8 +168,8 @@ const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
  * the bottom nearest the face, and the typing dots under them while the next one is on its way.
  */
 export function Thread({ talk }: { talk: Talk }) {
-  // There's room above a seat for two bubbles: the dots take the place of the oldest message when both are up.
-  const items: (Message | null)[] = [...talk.shown, ...(talk.typing ? [null] : [])].slice(-2);
+  // One bubble per seat, so nothing stacks or reaches into a neighbour: the newest message (or the dots) is all there is.
+  const items: (Message | null)[] = [...talk.shown, ...(talk.typing ? [null] : [])].slice(-1);
   return (
     <span className="thread" role="status" aria-live="polite">
       {items.map((m, i) =>

@@ -118,21 +118,21 @@ describe('how long things take', () => {
     }
   });
 
-  it('lands the messages of a line in order, each after its own typing', () => {
+  it('lands the messages of a line in order, the next only once the one before could be read', () => {
     const beats = splitBeats('Hey Sam. Ready to lose?');
     const t = beatTimes(beats);
     expect(t[0].from).toBe(0);
     expect(t[0].land).toBe(typeMs('Hey Sam.'));
-    expect(t[1].from).toBe(t[0].land + CHAT.settle);
-    expect(t[1].land).toBe(t[1].from + typeMs('Ready to lose?', true));
+    expect(t[1].land).toBeGreaterThanOrEqual(t[0].land + readMs('Hey Sam.'));
+    expect(t[1].from).toBeGreaterThanOrEqual(t[0].land + CHAT.settle);
     expect(spokenMs(beats)).toBe(t[1].land);
     expect(sayAndReadMs(beats)).toBe(t[1].land + Math.max(CHAT.readTime, readMs('Ready to lose?')));
   });
 
-  it('waits longer before a second thought, with the dots gone', () => {
+  it('waits longer before a second thought', () => {
     const quick = beatTimes(splitBeats('Nice fold.|Scared money.'));
     const slow = beatTimes(splitBeats('Nice fold.||Scared money.'));
-    expect(slow[1].from - quick[1].from).toBe(CHAT.afterthought - CHAT.settle);
+    expect(slow[1].land).toBeGreaterThanOrEqual(quick[1].land);
     expect(slow[1].from).toBeGreaterThan(slow[0].land);
   });
 
@@ -140,8 +140,8 @@ describe('how long things take', () => {
     for (const { text } of allLines()) {
       const beats = splitBeats(text.replaceAll('{you}', 'Connor'));
       // Whole line out in under two seconds, so a bot never makes you wait for its words.
-      expect(spokenMs(beats), text).toBeLessThanOrEqual(2000);
-      expect(sayAndReadMs(beats), text).toBeLessThanOrEqual(2600);
+      expect(spokenMs(beats), text).toBeLessThanOrEqual(2600);
+      expect(sayAndReadMs(beats), text).toBeLessThanOrEqual(3200);
     }
   });
 
@@ -211,28 +211,33 @@ describe('the conversation', () => {
     expect(lane.idle).toBe(true);
   });
 
-  it('sends a burst one message after another, the older one staying up beside the newer', () => {
+  it('sends a burst one message after another, each replacing the one before (never stacked)', () => {
     const lane = new ChatLane();
     lane.push(say('a', 'Hey Sam. Ready to lose?'));
     lane.advance(0);
     const [one, two] = beatTimes(splitBeats('Hey Sam. Ready to lose?'));
     lane.advance(one.land);
     expect(lane.talk('a', one.land)?.shown.map((m) => m.text)).toEqual(['Hey Sam.']);
-    // The dots come back for the second one after a short settle.
-    expect(lane.talk('a', one.land)?.typing).toBe(false);
-    lane.advance(two.from);
-    expect(lane.talk('a', two.from)?.typing).toBe(true);
     lane.advance(two.land);
-    expect(lane.talk('a', two.land)?.shown.map((m) => m.text)).toEqual(['Hey Sam.', 'Ready to lose?']);
+    expect(lane.talk('a', two.land)?.shown.map((m) => m.text)).toEqual(['Ready to lose?']);
+    expect(lane.talk('a', two.land)?.typing).toBe(false);
   });
 
-  it('shows at most two messages at a seat: a third pushes the oldest out', () => {
+  it('shows one message at a seat at any moment, however long the line', () => {
     const lane = new ChatLane();
     lane.push(say('a', 'One. Two. Three.'));
-    run(lane, 0, 300);
-    const end = spokenMs(splitBeats('One. Two. Three.'));
-    lane.advance(end);
-    expect(lane.talk('a', end)?.shown.map((m) => m.text)).toEqual(['Two.', 'Three.']);
+    let now = 0;
+    const seen: string[] = [];
+    for (let i = 0; i < 200; i++) {
+      lane.advance(now);
+      const t = lane.talk('a', now);
+      expect(t?.shown.length ?? 0).toBeLessThanOrEqual(1);
+      for (const m of t?.shown ?? []) if (!seen.includes(m.text)) seen.push(m.text);
+      const due = lane.nextDue(now);
+      if (due === null) break;
+      now = Math.max(now + 1, due);
+    }
+    expect(seen).toEqual(['One.', 'Two.', 'Three.']);
   });
 
   it('lets the next speaker type only after the first has landed their last message', () => {

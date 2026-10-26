@@ -1328,7 +1328,7 @@ html.calm .pod.won .pod-pic {
 
 @supports (width: 1cqw) {
   .pod .bubble-react {
-    max-width: calc(100cqw / max(var(--n, 4), 1) + 8px);
+    max-width: calc(100cqw / max(var(--n, 4), 1) - 6px);
   }
 }
 

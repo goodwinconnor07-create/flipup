@@ -34,7 +34,7 @@ export const CHAT = {
   /** Another bot may start typing this long after the last message of whoever's talking lands. */
   replyGap: 260,
   /** A seat shows this many messages at once; a third pushes the oldest out. */
-  maxShown: 2,
+  maxShown: 1,
   /** How long a bot waits after its last message lands before it moves, so the table can read it: at least this, and long enough for the message itself. */
   readTime: 900,
   /** A line that waited this long to start is stale and dropped. */
@@ -177,8 +177,9 @@ export function beatTimes(beats: Beat[]): { from: number; land: number }[] {
     let from = cursor + (i === 0 ? 0 : b.slow ? CHAT.afterthought : CHAT.settle);
     const type = typeMs(b.text, i > 0);
     let land = from + type;
-    if (i >= 2) {
-      land = Math.max(land, times[i - 2].land + readMs(beats[i - 2].text));
+    // A seat shows one message at a time, so the next replaces this one: not before it has been read.
+    if (i >= 1) {
+      land = Math.max(land, times[i - 1].land + readMs(beats[i - 1].text));
       from = land - type;
     }
     times.push({ from, land });
@@ -415,7 +416,8 @@ export class ChatLane {
     const shown = this.seats.get(who) ?? [];
     const s = this.scripts.get(who);
     const step = s?.steps[s.landed];
-    const typing = !!step && now >= step.from;
+    // The dots only show while nothing else is up at the seat: a message is replaced by the next, never stacked.
+    const typing = !!step && now >= step.from && shown.length === 0;
     return shown.length || typing ? { shown, typing } : undefined;
   }
 

@@ -16,8 +16,8 @@ describe('scouting a twin', () => {
     const notes = scout(twin({ betsFaced: 40, foldsToBet: 30, betOpps: 60, bets: 12 }));
     expect(notes.map((n) => n.id)).toEqual(['fold-to-bet', 'bet']);
     expect(notes[0].say).toBe('They fold to 75% of bets after the flop.');
-    expect(notes[0].plan).toContain('Bet into them');
-    expect(notes[0].kind).toBe('pressure');
+    expect(notes[0].plan).toContain('Bet your good hands');
+    expect(notes[0].kind).toBe('value');
     expect(notes[0].numbers).toBe('75% of 40 bets after the flop you fold to. Most players land between 32% and 52%.');
   });
 
@@ -68,7 +68,6 @@ describe('how the plan did', () => {
     expect(planLines(good, 'pressure')).toEqual(['Your bets and raises won the pot 3 times out of 10 hands.', "That's the plan working: they gave up pots you'd have lost at a showdown."]);
     expect(planLines({ ...good, madeFold: 0 }, 'pressure')[1]).toContain('Not many folds');
     expect(planLines(good, 'value')).toEqual(['You won 3 of 4 showdowns.', "Your good hands got paid. That's the plan working."]);
-    expect(planLines({ ...good, showdownsWon: 1 }, 'call-down')[1]).toContain("didn't pay");
     expect(planLines({ ...good, showdownsWon: 1 }, 'fold-more')[1]).toContain('Fold the medium hands');
   });
 });

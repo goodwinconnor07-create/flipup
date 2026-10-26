@@ -1,13 +1,14 @@
 // Scouting a friend's AI twin: what they do, in plain words, and a way to beat it for each. Worked out
 // from the same counts as your own habits (twinReport.ts) and the same "usual range", so it's the same
 // numbers seen from the other side of the table. No solver: the plans are standard ways to play against
-// each habit (scripts/twinLab.ts `beat` checks them against simulated twins).
+// each habit. scripts/twinLab.ts `beat` checks the kinds of plan against simulated twins, and a plan the
+// lab didn't back (calling light against bluffers, bluffing the most fold-prone copy) isn't offered.
 
 import type { TwinProfile } from '../game';
 import type { TwinGame } from '../state/twinGames';
 import { RULES, sizeMeans } from './twinReport';
 
-export type PlanKind = 'pressure' | 'value' | 'call-down' | 'fold-more';
+export type PlanKind = 'pressure' | 'value' | 'fold-more';
 
 export interface ScoutNote {
   id: string;
@@ -47,19 +48,19 @@ const TAKES: Record<string, { high?: Take; low?: Take }> = {
     low: { say: (p) => `They almost never re-raise before the flop (${p}).`, plan: 'Raise freely. When they do re-raise it is a big hand, so let go of the marginal ones.', kind: 'pressure' },
   },
   'fold-to-bet': {
-    high: { say: (p) => `They fold to ${p} of bets after the flop.`, plan: 'Bet into them often, even with nothing much. Small bets win the pot and cost you little.', kind: 'pressure' },
+    high: { say: (p) => `They fold to ${p} of bets after the flop.`, plan: "Bet your good hands and keep your bluffs small. Betting into them with nothing didn't win enough in testing.", kind: 'value' },
     low: { say: (p) => `They fold to only ${p} of bets after the flop.`, plan: "Don't bluff them. Bet your good hands for value, and bet them big.", kind: 'value' },
   },
   bet: {
     low: { say: (p) => `When it's checked to them, they only bet ${p} of the time.`, plan: 'When they check, bet. They give up a lot of pots.', kind: 'pressure' },
-    high: { say: (p) => `When nobody has bet, they bet ${p} of the time. A lot of those are weak hands.`, plan: 'Call or raise their bets with a medium hand. They are betting more than they hold.', kind: 'call-down' },
+    high: { say: (p) => `When nobody has bet, they bet ${p} of the time. A lot of those are weak hands.`, plan: 'Call with a pair or better and bet your good hands. Calling with weak hands lost chips against copies like this.', kind: 'value' },
   },
   cbet: {
     low: { say: (p) => `After they raise before the flop, they only bet the flop ${p} of the time.`, plan: 'Stay in when they raise and check. Then bet: the pot is yours.', kind: 'pressure' },
-    high: { say: (p) => `After they raise before the flop, they bet the flop ${p} of the time.`, plan: 'Call or raise their flop bets with a pair or a draw. Often they have nothing.', kind: 'call-down' },
+    high: { say: (p) => `After they raise before the flop, they bet the flop ${p} of the time.`, plan: "Call or raise their flop bets with a pair or better. Don't chase with nothing.", kind: 'value' },
   },
   bluff: {
-    high: { say: (p) => `${p} of their bets after the flop are with a weak hand or a draw.`, plan: 'Call them down lighter. A lot of their bets are bluffs.', kind: 'call-down' },
+    high: { say: (p) => `${p} of their bets after the flop are with a weak hand or a draw.`, plan: "Don't try to catch bluffs with weak hands: calling light lost chips in testing. Call with a pair or better and bet your good hands.", kind: 'value' },
     low: { say: (p) => `Only ${p} of their bets after the flop are bluffs.`, plan: "Fold a medium hand to their big bets. When they bet, they usually have it.", kind: 'fold-more' },
   },
   showdown: {
@@ -95,8 +96,8 @@ export function scout(twin: TwinProfile, max = 4): ScoutNote[] {
     out.push({
       id: 'size-tell',
       say: big ? `They bet big with good hands (${pct(means.strong)} of the pot) and small with weak ones (${pct(means.weak)}).` : `They bet bigger with weak hands (${pct(means.weak)} of the pot) than good ones (${pct(means.strong)}).`,
-      plan: big ? 'Fold a medium hand to their big bets, and call or raise their small ones.' : 'Call their big bets more. They size up when they are bluffing.',
-      kind: big ? 'fold-more' : 'call-down',
+      plan: big ? 'Fold a medium hand to their big bets, and call or raise their small ones.' : 'Call their big bets with a pair or better, and fold your weak hands.',
+      kind: big ? 'fold-more' : 'value',
       numbers: `${pct(means.strong)} of the pot with top pair or better, ${pct(means.weak)} with less.`,
       weight: (Math.abs(means.strong - means.weak) - 0.3) / 0.15 + 0.5,
     });
@@ -142,14 +143,12 @@ export function planLines(check: PlanCheck, kind: PlanKind | null): string[] {
     lines.push(`Your bets and raises won the pot ${check.madeFold} ${check.madeFold === 1 ? 'time' : 'times'} out of ${check.hands} hands.`);
     lines.push(share >= 20 ? "That's the plan working: they gave up pots you'd have lost at a showdown." : share >= 8 ? 'Some of it worked. Try betting a little more when they check.' : "Not many folds. Try again, with bets they have to think about.");
   }
-  if (kind === 'value' || kind === 'call-down' || kind === 'fold-more') {
+  if (kind === 'value' || kind === 'fold-more') {
     if (check.showdowns >= 3) lines.push(`You won ${check.showdownsWon} of ${check.showdowns} showdowns.`);
     lines.push(
       kind === 'value'
         ? check.showdownsWon * 2 >= check.showdowns ? "Your good hands got paid. That's the plan working." : 'They beat you at showdown more than they should. Bet your good hands bigger, and skip the bluffs.'
-        : kind === 'call-down'
-          ? check.showdownsWon * 2 >= check.showdowns ? 'Calling them down paid off.' : "Calling them down didn't pay this time. They had it more often than their numbers say."
-          : check.showdownsWon * 2 >= check.showdowns ? 'Folding to their big bets kept you out of trouble.' : 'You still lost a lot at showdown. Fold the medium hands when they bet big.',
+        : check.showdownsWon * 2 >= check.showdowns ? 'Folding to their big bets kept you out of trouble.' : 'You still lost a lot at showdown. Fold the medium hands when they bet big.',
     );
   }
   return lines;

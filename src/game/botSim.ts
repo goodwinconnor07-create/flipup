@@ -20,16 +20,19 @@ import type { Action, Game, Hand, HandRecord, Move, Seat } from './types';
  * - shoveBot: all in every hand.
  * - foldBot: folds to any bet, raises only its best hands.
  * - abc: a decent, straightforward player (top 20% of hands, bets good hands, folds bad ones).
+ * - lightBot, tightBot: abc, but calling a bet much lighter or much tighter (for testing the plans against bluffers and honest players).
+ * - stabBot: the plan against a player who folds a lot: raises about half its hands first in, bets a third of the pot
+ *   whenever it's checked to (any cards), calls a bet with a pair or better and gives up otherwise.
  * - bluffBot: a constant bluffer. Raises most hands before the flop and bets about two thirds of the pot
  *   every street whatever it holds. Gives up only to a raise, unless it has a real hand.
  */
-export type Script = 'callBot' | 'raiseBot' | 'shoveBot' | 'foldBot' | 'abc' | 'bluffBot';
+export type Script = 'callBot' | 'raiseBot' | 'shoveBot' | 'foldBot' | 'abc' | 'bluffBot' | 'stabBot' | 'lightBot' | 'tightBot';
 /** A style played by the bots' brain, a script, or `name:style`: a style played by another brain (see `brains`). */
 export type Agent = StyleId | Script | `${string}:${StyleId}`;
 /** Another way of deciding, for comparing brains (the lab plays the bots from before the update this way). */
 export type Brain = (game: Game, hand: Hand, seat: Seat, rng: () => number) => { move: Move; to?: number };
 
-const SCRIPTS: Script[] = ['callBot', 'raiseBot', 'shoveBot', 'foldBot', 'abc', 'bluffBot'];
+const SCRIPTS: Script[] = ['callBot', 'raiseBot', 'shoveBot', 'foldBot', 'abc', 'bluffBot', 'stabBot', 'lightBot', 'tightBot'];
 const isScript = (a: string): a is Script => (SCRIPTS as string[]).includes(a);
 /** Seats the sim plays itself, as people: scripts and other brains. */
 const isOutside = (a: string) => isScript(a) || a.includes(':');
@@ -186,7 +189,23 @@ function scriptMove(script: Script, game: Game, hand: Hand, seat: Seat, rng: () 
       // Facing a bet or raise: call with a pair or better, give up otherwise.
       return strength() > 0.62 ? callOrCheck() : { move: 'fold' };
     }
-    case 'abc': {
+    case 'stabBot': {
+      const bb = game.settings.bigBlind;
+      if (hand.street === 'preflop') {
+        const s = preflopStrength(seat.cards);
+        if (s > 0.9) return raise(Math.max(hand.currentBet * 3, bb * 3));
+        if (hand.currentBet <= bb) return s > 0.35 ? raise(bb * 2.5) : callOrCheck();
+        return s > 0.6 && o.toCall <= bb * 6 ? callOrCheck() : { move: 'fold' };
+      }
+      // A small bet whenever it's checked to, whatever it holds. Facing a bet it needs a real hand.
+      if (o.canCheck) return raise(pot * 0.33);
+      const s = strength();
+      if (s > 0.85) return raise(hand.currentBet * 2.5 + pot * 0.5);
+      return s > 0.6 ? callOrCheck() : { move: 'fold' };
+    }
+    case 'abc':
+    case 'lightBot':
+    case 'tightBot': {
       const s = strength();
       if (hand.street === 'preflop') {
         // Plays more hands the fewer players there are: top 20% six-handed, about 60% heads up.
@@ -202,7 +221,8 @@ function scriptMove(script: Script, game: Game, hand: Hand, seat: Seat, rng: () 
       const odds = o.toCall / (pot + o.toCall);
       if (s > 0.75) return raise(hand.currentBet * 2.5 + pot * 0.6);
       if (o.canCheck) return s > 0.6 || rng() < 0.12 ? raise(pot * 0.6) : { move: 'check' };
-      return s > odds + 0.12 ? callOrCheck() : { move: 'fold' };
+      // abc wants to be a little ahead of the price; lightBot only half way there, tightBot well ahead.
+      return s > odds + (script === 'lightBot' ? -0.2 : script === 'tightBot' ? 0.3 : 0.12) ? callOrCheck() : { move: 'fold' };
     }
   }
 }

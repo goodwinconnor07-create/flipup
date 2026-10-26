@@ -1,6 +1,6 @@
 # AI twins: plan
 
-Status: phases 1 (twin memory), 2 (fit and copy), 3 (the "Your twin" game) and 4 (the twin report) are built. The Friends' twins tile is there but says "Coming soon". Decisions below came from the product owner.
+Status: all five phases are built: twin memory, fit and copy, the "Your twin" game, the twin report and friends' twins. The Friends' twins tile is there but says "Coming soon". Decisions below came from the product owner.
 
 Two new ways to play, in an "AI twins" group on the Play tab under the Play with Friends and Play with Bots cards, above Quick games:
 
@@ -97,41 +97,46 @@ No solver and no network: everything here is worked out on the phone from counts
   - **Where it cost you:** your three worst hands, each with your cards and one sentence about what happened ("You folded on the turn after putting in 30.", "You went to showdown with top pair and lost 65 to two pair."). The sentence comes from the saved hand, so it's there while the hand history keeps it (24 hours); after that the line says the hand is too old. Replay links stay off while `REPLAY_ON` is false.
   - **Habits your twin copied:** up to three of your numbers (hands played, calling instead of raising, limping, folding to raises, re-raising, folding to bets, betting when checked to, flop bets after raising, bluff share, going to showdown) that sit outside the range most players are in, biggest gap first, each with a coach line, one thing to try and "Show me the numbers" (your count and the usual range). A number needs enough chances before it's mentioned (for example 15 bets faced), and nothing is said when nothing stands out. The usual ranges are plain constants in `RULES`, taken from the bot lab's measurements, not from a solver.
 - **Where it opens.** The final screen of a twin game ("What your twin found"), the table menu during one, a "Your twin" row on the Review tab, and an "Against your twin" card on Insights (games won of games played), which also marks twin games in Recent tables.
-- **Left out on purpose.** Hands where the twin bluffed you, and anything graded against GTO: the phone only sees the twin's cards when they're shown, and grading needs the solver.
+- **What a twin game keeps per hand** (`src/train/twinFacts.ts`): once a hand is over, a local game has every card, so `handFacts()` saves your cards, the twin's cards, the board, whether you had the button, how it ended (you folded, the twin folded, a showdown), who made the last bet, the street it ended on, and whether the twin bluffed you. It's only ever read from your own phone's copy of the table, after the hand, never during one and never for friends' cards at an online table. Because the facts are saved with the hand, the report works after the 24 hour hand history is gone.
+- **More in the report.** *Its bluffs*: times the twin bet or raised after the flop with a draw, a weak hand or nothing, how many made you fold (and how often you folded the better hand), and how many you caught, with the three worst as a sentence each. *How it went*: your showdown record, chips on the button against off it, and the street most of your losses came on (each only said when there are enough hands). *Bet-size tells*: one of the habits, when you bet noticeably bigger with good hands than with weak ones (or the other way round).
 
-### 5. Friends' twins
+### 5. Friends' twins (built)
 
-**Source A: tables you shared.**
-- A phone keeps a `HandRecord` of online hands, which holds public moves plus any cards shown. Friends' stats come from those, so fits are rougher and copied spots exist only where cards were shown.
-- It needs a friend ID that holds across tables. To confirm whether one exists. If not, add a random per-device ID to the join message and the player record (`protocol.ts`, `redact.ts`).
-- Only tracked for friends who've switched on "Let friends play my twin". The flag travels with the player.
+- **Sharing yours** (`src/state/share.ts`, `worker/twinShare.ts`, Settings): "Let friends play my twin", off by default. Turning it on sends a copy of your twin's habit counters (`shareableTwin()`: no list of hands, only the 1,500 spots seen most; never a card) to a `TwinShare` Durable Object under a five letter code, with a secret only your phone keeps. `POST /api/twins` starts it, `GET /api/twins/:code` reads it (40 a 10 minutes per address), `PUT` refreshes it and `DELETE` stops it, both needing the secret (stored hashed). The server cleans what it's sent and keeps it a month after its last refresh. Your phone refreshes it after each game, every 25 hands and when you change your name or picture, and takes it down when you switch off or reset your twin. Friends keep what they already downloaded. The code sheet in Settings has Share and Copy.
+- **Your seat shows the code.** `Player.twinCode`, sent with the join (and the host's table creation), is public so friends at the table know who's who. The server only keeps it when the phone that joined owns that share (`TWIN_SHARE.owner()`), so nobody can wear another person's code.
+- **The friends list** (`src/state/friends.ts`, `flipup.friends`). Two sources feed a friend. *Their shared twin*: add it with their code (Play, Friends' twins, Add a friend's twin), refreshed when you open the list or their page. *What you've seen*: at an online table, `captureFinishedHand()` counts each other player who shows a code, from outside (`addObservedHand()`: no cards, so only the numbers that don't need them: hands played, raising, folding, betting and bet sizes, not hand strengths or bluffs) and adds them to the list, fetching their shared twin too. Someone you've removed isn't added back. A shared twin is used once it has 50 hands; until then what you've seen of them is used from 30 hands (`bestTwin()`), and the screen says how rough the copy is.
+- **Screens.** Play tab, Friends' twins: the list (their face, name and where it comes from), Add a friend's twin, and a card to share yours. Tapping a friend opens their scouting page.
 
-**Source B: a twin the friend shares.**
-- The friend switches sharing on and gets a 5 letter code and a link. Their compact profile is saved on the Worker through a new `/api/twin` route (storage binding to decide in `wrangler.jsonc`; run `npm run cf-typegen` and commit `worker-configuration.d.ts` after).
-- Unused profiles expire like idle tables (3 days).
-- You add it from the Join sheet or the link. A re-sync button refreshes it. Switching sharing off deletes the server copy. It can't remove copies people already downloaded, and Settings says so.
+### 6. Beating a friend's twin (built)
 
-**Merging:** the shared twin wins where there is one; shared-table data fills the gaps.
+- **Scouting** (`src/train/scout.ts`, `Scout.tsx`): what stands out about them, said about them ("They fold to 70% of bets after the flop."), each with a plan ("Bet into them often, even with nothing much. Small bets win the pot and cost you little."), and "Show me the numbers" for their count and the usual range. It's the same counts and ranges as your own habits, seen from across the table, plus the size tell.
+- **Play** starts a heads-up game against their twin (`startFriendTwin()`); it wears their face and the name `twinName()` makes from theirs. Play again deals a new one, and the game counts towards your own twin like any other.
+- **After a game, "How your plan went"** (the same report screen, `TwinReport friend=…`): how your bets and raises did (pots they folded to) when the plan was pressure, or your showdown record when it was value, calling down or folding more, plus the costliest hands, its bluffs and how it went.
+- **Checking the plans.** `npx tsx scripts/twinLab.ts beat` plays scripted players that follow each kind of plan against twins built from each style: `stabBot` (small bets whenever checked to) for the pressure plans, `abc` for value, `lightBot` and `tightBot` (abc calling much lighter or much tighter) for calling down and folding more. Results are below.
 
-New screens: a friends list (face, name, confidence, where the data came from, "Add a friend's twin"), and a per-friend scouting report.
+**What the lab said** (`beat 400`: each script plays 2 × 2,000 hands heads-up against a twin built from each style; bb/100 for the script, so about ±40 of noise in each cell):
 
-### 6. Beating a friend's twin
+| Script | nervous | rock | station | gambler | maniac | lag |
+|---|---|---|---|---|---|---|
+| `stabBot` (small bets when checked to) | −6 | 16 | 54 | 84 | 74 | 63 |
+| `bluffBot` (big bets every street) | −1 | 20 | 10 | 98 | −26 | −22 |
+| `abc` (plain, honest) | 24 | 9 | 85 | −5 | 35 | 8 |
+| `lightBot` (calls bets much lighter) | −35 | −44 | 72 | 42 | −24 | −90 |
+| `tightBot` (calls bets much tighter) | 11 | 10 | 92 | 84 | 25 | 76 |
 
-- The scouting report leads with plain-English habits ("Folds to flop bets two thirds of the time") and keeps the numbers behind "Show me the numbers".
-- A short list of ways to beat it comes from a fixed set of rules ("folds a lot → bet small and often", "calls too much → bet thinner for value, bluff less").
-- Play starts a heads-up game against that twin. Afterwards the coach says which plans worked ("Your steal raises won 7 of 10").
-- Check every rule in `scripts/botLab.ts` by simulating a script that follows it against fitted twins, as the lab does for `bluffBot`. A rule that doesn't win there doesn't ship.
+- Honest value betting (`abc`) beats five of the six twins, and calling tighter (`tightBot`) beats `abc` against four. Those plans are offered.
+- Small stabs beat five of six, but only break even against the most fold-prone copy (nervous), where plain value betting does better. So "they fold to most bets" gets a value plan ("bet your good hands, keep bluffs small"), and stabbing is offered against players who raise too little, limp or play too few hands.
+- Betting big every street (`bluffBot`) loses to the two bluff-heavy copies, and calling lighter (`lightBot`) loses to four of the six, including both of those. So nothing says "call them down lighter": against bluffers the plan is a pair or better to call, and good hands to bet.
+- Reread this when the bots change: it's a different picture if the styles do.
 
-### 7. Tests, docs, rollout
+### 7. Tests and checks
 
-- **Unit:** counters and spot keys; fit round-trip (build a twin from a simulated styled bot and check its stats land within a few points of the original); lookup fallback when data is thin; hidden-information test with a twin; chips test with a twin; the opt-in flag is respected.
-- **E2E:** Play → AI twins → start a table. Add the mirror card to `SHOTS_DIR` screenshots in light and dark.
-- **Docs:** update `CLAUDE.md` with a layout entry, and add anything rule-like to `RULES.md`.
-- **Order of shipping:** 1 → 2 → 3 → 4 (Your twin works end to end), then 5 → 6 (friends).
+- **Unit:** the counters, spot keys and observed counting (`twin.test.ts`), the fit and the copy (`twinPlay.test.ts`: including that a twin decides from its own cards only, and that chips still add up with twins at the table), the twin code at tables (`twinCode.test.ts`), the report (`twinReport.test.ts`), scouting (`scout.test.ts`) and the friends store (`friends.test.ts`).
+- **End to end:** `twin.spec.ts` (the tiles, playing your twin, the report, Insights), `twin-share.spec.ts` (the Worker: share, read, refresh, stop, who can change it; a table keeps a twin code only for its owner; the Settings switch) and `friends.spec.ts` (two phones: add a friend's twin by code, scout it and play it; and meeting a friend at an online table).
+- **Deploying.** The Worker needs the `v2` migration in `wrangler.jsonc` (a new `TwinShare` class) to go out with the code. `worker-configuration.d.ts` is regenerated and committed.
 
-## Not yet checked
+## Limits
 
-- Whether `wrangler.jsonc` already has a storage binding that suits the twin code.
-- Whether players carry an ID that survives across tables.
-- The exact shape of the strength bucket in `botPlay.ts`.
-- Whether the tile text fits at the smallest phone width. Check it in the e2e screenshots.
+- A friend's twin is only as good as what it has seen. A twin built from tables you shared is a rough copy: it has no hand strengths, so it can't copy their choices in particular spots, only their overall habits.
+- A 5 letter code can be guessed, slowly: lookups are limited to 40 every ten minutes per address, and what's behind a code is habit counters and a name, nothing else. Sharing is off until you turn it on.
+- Replay links in the report stay off while `REPLAY_ON` is false.

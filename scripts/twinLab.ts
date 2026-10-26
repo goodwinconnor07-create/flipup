@@ -1,9 +1,11 @@
 // The AI twin lab: how well a twin copies the player it was built from. Run with
 //   npx tsx scripts/twinLab.ts ref [hands]   measures the ten styles and writes src/game/twinRef.json
 //   npx tsx scripts/twinLab.ts fit [hands]   builds a twin from each style's play and compares the two
+//   npx tsx scripts/twinLab.ts beat [hands]  plays scripted plans against twins, to check the scouting plans win
 // Nothing here ships in the app (see docs/TWINS.md).
 
 import { writeFileSync } from 'node:fs';
+import { simulateTable } from '../src/game/botSim';
 import { twinNumbers, type TwinNumbers, type TwinProfile } from '../src/game/twin';
 import type { StyleId } from '../src/game/botStyles';
 import { buildBrain, FIT } from '../src/game/twinFit';
@@ -74,4 +76,26 @@ if (MODE === 'tune') {
   const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   console.log(JSON.stringify(FIT), `\n${'number'.padEnd(12)}${'bias'.padStart(8)}${'gap'.padStart(8)}`);
   for (const k of KEYS) console.log(k.padEnd(12), mean(gaps[k]).toFixed(3).padStart(7), mean(gaps[k].map(Math.abs)).toFixed(3).padStart(7));
+}
+
+if (MODE === 'beat') {
+  // Does each plan in the scouting screen beat the kind of twin it's meant for? A scripted player that follows the
+  // plan plays heads-up against a twin built from each style, and we print its bb/100 (positive: the plan wins).
+  //   stabBot: small bets whenever checked to (the pressure plans)   bluffBot: constant big pressure
+  //   abc: honest value betting (the value plans)
+  //   lightBot / tightBot: abc calling a bet much lighter or much tighter (the plans for bluffers and for honest players)
+  const SCRIPTS = ['stabBot', 'bluffBot', 'abc', 'lightBot', 'tightBot'] as const;
+  const STYLES: StyleId[] = ['nervous', 'rock', 'station', 'gambler', 'maniac', 'lag'];
+  const seeds = [301, 302];
+  console.log('bb/100 for the script against a twin of each style'.padEnd(34), STYLES.map((s) => s.padStart(9)).join(''));
+  const table: Record<string, Record<string, number>> = {};
+  const brains = Object.fromEntries(STYLES.map((s) => [s, buildBrain(heroProfile(s, HANDS, 21))]));
+  for (const script of SCRIPTS) {
+    table[script] = {};
+    for (const style of STYLES) {
+      const runs = seeds.map((seed) => simulateTable(['pro', script], HANDS * 5, seed, 100, {}, { twins: { 0: brains[style] } }).seats[1].bbPer100);
+      table[script][style] = runs.reduce((a, b) => a + b, 0) / runs.length;
+    }
+    console.log(script.padEnd(34), STYLES.map((s) => table[script][s].toFixed(0).padStart(9)).join(''), secs());
+  }
 }

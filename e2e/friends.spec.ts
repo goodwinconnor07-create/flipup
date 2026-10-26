@@ -51,7 +51,7 @@ test("add a friend's twin by its code, scout it, and play it", async ({ browser 
   await sam.getByRole('textbox', { name: 'Twin code' }).fill(code);
   await expect(sam.getByText("Dana's twin").first()).toBeVisible();
   await expect(sam.getByText('They fold to 70% of bets after the flop.')).toBeVisible();
-  await expect(sam.getByText(/^Plan: Bet into them often/)).toBeVisible();
+  await expect(sam.getByText(/^Plan: Bet your good hands and keep your bluffs small/)).toBeVisible();
   await shot(sam, 'friends-02-scout');
 
   // Play their twin: a heads-up game against a copy of Dana, with a badge.

@@ -146,7 +146,7 @@ async function twinRoute(request: Request, env: Env, pathname: string): Promise<
 
   if (!code) {
     if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-    if (limited(request, 'twin-create', 8, 60 * 60_000)) return json({ error: 'Too many shares started. Try again later.' }, 429);
+    if (limited(request, 'twin-create', 20, 60 * 60_000)) return json({ error: 'Too many shares started. Try again later.' }, 429);
     const body = (await readJson(request, MAX_TWIN_CHARS)) as Record<string, unknown> | null;
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
     const fields = twinFields(body);

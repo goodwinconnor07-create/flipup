@@ -3,6 +3,8 @@
 // or more short messages (see chat.ts): a `|` starts a new message right away, a `||` a second thought
 // a beat later, and anything longer than a seat's bubble is cut at its sentences on its own.
 
+import { composeDialogue, DIALOGUE, dialogueText, type FixedLineEvent } from './botDialogue';
+import { reactionText } from './reactions';
 import { playerStyle, styleOf, type StyleId } from './botStyles';
 import { MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
 import { lineBeats, sayAndReadMs } from './chat';
@@ -100,7 +102,18 @@ const TRASH: Lines = {
   thinkEasy: ['Easy.', 'Too easy.', 'Obviously.', 'Snap.', 'Light work.', 'Free.', 'Please.', 'Calculated.'],
   allin: ['Let’s gamble.', 'All of it.', 'Your move.', 'Shove time.', 'Let’s dance.'],
   raise: ['Pressure.', 'Let’s go.', 'Pay up.', 'Raise. Duh.', 'Try me.', 'Feeling it.', 'Make a choice.', 'Your problem now.'],
-  foldBig: ['Fine. Take it.', 'Enjoy it.', 'Next time.', 'Not worth it.', 'Saving chips.', 'You win. Barely.', 'Tell me you have it.', 'Cute.', 'Disgusting.', 'I’ll remember that.'],
+  foldBig: [
+    'Fine. Take it.',
+    'Enjoy it.',
+    'Next time.',
+    'Not worth it.',
+    'Saving chips.',
+    'You win. Barely.',
+    'Tell me you have it.',
+    'Cute.',
+    'Disgusting.',
+    'I’ll remember that.',
+  ],
   callLight: ['Don’t buy it.', 'Show me.', 'Prove it.', 'Bluffing again?', 'Nope. Call.'],
   yourBigBet: ['Oh, serious?', 'Smells fishy.', 'Bold.', 'Is that it?', 'Scary. Not.'],
   sweat: ['C’mon, c’mon!', 'Hold!', 'Brick! Brick!', 'Don’t you dare.', 'Gimme one!'],
@@ -145,7 +158,17 @@ const FRIENDLY: Lines = {
   thinkEasy: ['Okay!', 'Easy peasy.', 'Let’s see…', 'Fine by me.', 'Why not!', 'I like this.'],
   allin: ['Here goes!', 'Wish me luck!', 'Feeling brave.', 'All in!', 'Yolo!'],
   raise: ['I like this.', 'Let’s play!', 'Raise!', 'Gotta try.', 'Feeling good.', 'Here we go.', 'Bit of spice.', 'Let’s make it fun.'],
-  foldBig: ['Too rich for me.', 'You have it.', 'Not this time.', 'I’m out.', 'Nope!', 'That’s a lot!', 'Wow, okay.', 'Take it, you earned it.', 'Brave.'],
+  foldBig: [
+    'Too rich for me.',
+    'You have it.',
+    'Not this time.',
+    'I’m out.',
+    'Nope!',
+    'That’s a lot!',
+    'Wow, okay.',
+    'Take it, you earned it.',
+    'Brave.',
+  ],
   callLight: ['Had to see it.', 'Curious…', 'Can’t fold this.', 'Keep me honest.', 'One look.'],
   yourBigBet: ['Whoa!', 'Big bet!', 'Tough one.', 'Okay, okay…', 'Yikes.'],
   sweat: ['Come on!', 'Please, please…', 'Fingers crossed!', 'Hold on!', 'Oh boy…'],
@@ -363,8 +386,9 @@ const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i
 
 /** The text for a bot line id, or '' if it isn't one. */
 export function botLineText(lineId: string): string {
+  if (lineId.startsWith('b:local:')) return dialogueText(lineId);
   const [b, tone, event, i] = lineId.split(':');
-  if (b !== 'b') return '';
+  if (b !== 'b' || lineId.split(':').length !== 4 || !Object.hasOwn(TRASH, event) || !/^(0|[1-9]\d{0,3})$/.test(i ?? '')) return '';
   return pool(tone, event as TalkEvent)[Number(i)] ?? '';
 }
 
@@ -380,11 +404,11 @@ function pool(voice: string, event: TalkEvent): string[] {
   if (voice === 'trash') return TRASH[event] ?? [];
   if (voice === 'friendly') return FRIENDLY[event] ?? [];
   // A legend: its tone's pool, then its own lines.
-  if (voice in LEGEND_VOICES) {
+  if (Object.hasOwn(LEGEND_VOICES, voice)) {
     const legend = LEGEND_VOICES[voice as LegendId];
     return [...((legend.tone === 'trash' ? TRASH : FRIENDLY)[event] ?? []), ...(legend.lines[event] ?? [])];
   }
-  const style = voice in VOICES ? styleOf(voice as StyleId) : null;
+  const style = Object.hasOwn(VOICES, voice) ? styleOf(voice as StyleId) : null;
   if (!style) return [];
   return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
 }
@@ -465,12 +489,25 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   // A legend speaks in its own voice; everyone else in their style's.
   const voice = player.legend ?? style.id;
   if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return 0;
-  const lines = pool(voice, event);
-  if (!lines.length) return 0;
-  const i = Math.floor(rng() * lines.length);
-  game.reactions = { ...game.reactions, [playerId]: { id: id(voice, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(to ? { to } : {}) } };
+  // A table-wide pause keeps nine seats from shouting over an ordinary decision.
+  const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
+  if (!owed && now - tableLast < 700) return 0;
+  // A regular with a profile talks through the dialogue planner (its own phrasing, aimed at whoever bet).
+  // A legend, or an AI twin, keeps the fixed lines of its own voice.
+  const planned = !player.legend && !!player.botProfile && Object.hasOwn(DIALOGUE, event);
+  const target = planned ? (to ?? (game.hand?.aggressorId !== playerId ? (game.hand?.aggressorId ?? undefined) : undefined)) : to;
+  let line: string;
+  if (planned) {
+    line = composeDialogue(game, playerId, event as Exclude<TalkEvent, FixedLineEvent>, rng, target);
+  } else {
+    const lines = pool(voice, event);
+    if (!lines.length) return 0;
+    const i = Math.floor(rng() * lines.length);
+    line = id(voice, event, i);
+  }
+  game.reactions = { ...game.reactions, [playerId]: { id: line, n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(target ? { to: target } : {}) } };
   game.talkAt = { ...game.talkAt, [playerId]: now };
-  const ms = sayAndReadMs(lineBeats(lines[i], game.players.find((p) => p.id === to)?.name));
+  const ms = sayAndReadMs(lineBeats(reactionText(line, game.players.find((p) => p.id === target)?.name), game.players.find((p) => p.id === target)?.name));
   game.talkDone = { ...game.talkDone, [playerId]: now + ms };
   return ms;
 }

@@ -130,9 +130,9 @@ export function exploitRead(read: Read, k: number): Read {
 }
 
 /** What a bot has seen of a player, eased towards an average pub player until there are enough hands. */
-export function readOf(r: PlayerRead | undefined): Read {
+function summary(r: PlayerRead | undefined, priorHands = PRIOR.hands): Read {
   const h = r?.hands ?? 0;
-  const mix = (seen: number, n: number, prior: number, k = PRIOR.hands) => (seen + prior * k) / (n + k);
+  const mix = (seen: number, n: number, prior: number, k = priorHands) => (seen + prior * k) / (n + k);
   return {
     vpip: mix(r?.vpip ?? 0, h, PRIOR.vpip),
     pfr: mix(r?.pfr ?? 0, h, PRIOR.pfr),
@@ -141,7 +141,7 @@ export function readOf(r: PlayerRead | undefined): Read {
     shove: mix(r?.shoves ?? 0, h, PRIOR.shove, 12),
     bluffy: mix(r?.shownBluffs ?? 0, r?.shownBets ?? 0, PRIOR.bluffy, 5),
     betFreq: mix(r?.bets ?? 0, r?.betOpps ?? 0, PRIOR.betFreq, 6),
-    known: h / (h + 20),
+    known: h / (h + 8),
     // A street's own figure leans on what's seen of every street until it has some bets of its own.
     foldStreet: (() => {
       const general = mix(r?.foldsToBet ?? 0, r?.betsFaced ?? 0, PRIOR.foldToBet);
@@ -159,6 +159,22 @@ export function readOf(r: PlayerRead | undefined): Read {
     tellBig: mix(r?.shownBigStrong ?? 0, r?.shownBig ?? 0, PRIOR.tellBig, 4),
     tellSmall: mix(r?.shownSmallStrong ?? 0, r?.shownSmall ?? 0, PRIOR.tellSmall, 4),
   };
+}
+
+/** A fast recent read is blended with lifetime evidence, rather than forgetting the whole table. */
+export function readOf(r: PlayerRead | undefined): Read {
+  const long = summary(r);
+  if (!r?.recent) return long;
+  const recent = summary(r.recent, 3);
+  const weight = (0.65 * r.recent.hands) / (r.recent.hands + 2);
+  const mixed: Read = { ...long, foldStreet: { ...long.foldStreet } };
+  const blend = (a: number, b: number) => a * (1 - weight) + b * weight;
+  for (const key of Object.keys(long) as (keyof Read)[]) {
+    if (key === 'known') continue;
+    if (key === 'foldStreet') for (const st of ['flop', 'turn', 'river'] as const) mixed.foldStreet[st] = blend(long.foldStreet[st], recent.foldStreet[st]);
+    else mixed[key] = blend(long[key], recent[key]);
+  }
+  return mixed;
 }
 
 // ── Reading a hand's public moves ──────────────────────────────────────────
@@ -225,8 +241,12 @@ export function storyOf(game: Game, hand: Hand, playerId: string): Story {
   const put = new Map<Street, number>();
   for (const st of postStreets) {
     const most = new Map<string, number>();
-    for (const a of acts) if (a.street === st && a.move !== 'fold' && a.move !== 'check') most.set(a.playerId, Math.max(most.get(a.playerId) ?? 0, a.to));
-    put.set(st, [...most.values()].reduce((x, y) => x + y, 0));
+    for (const a of acts)
+      if (a.street === st && a.move !== 'fold' && a.move !== 'check') most.set(a.playerId, Math.max(most.get(a.playerId) ?? 0, a.to));
+    put.set(
+      st,
+      [...most.values()].reduce((x, y) => x + y, 0),
+    );
   }
   let pot = potTotal(hand) - postStreets.reduce((x, st) => x + (put.get(st) ?? 0), 0);
   for (const st of postStreets) {
@@ -397,6 +417,8 @@ export interface Opponent {
   id: string;
   read: Read;
   story: Story;
+  /** Publicly all in: this opponent cannot fold or be bluffed out of its pot. */
+  allIn?: boolean;
 }
 
 /** A few hundred imagined deals, each weighted by how well it fits everyone's story. */
@@ -421,7 +443,16 @@ const STREET_CARDS: Record<Street, number> = { preflop: 0, flop: 3, turn: 4, riv
  * Deals hands to every opponent from their ranges, runs the board out and records who wins.
  * `uniform` ignores the ranges (how a player who only looks at their own cards sees things).
  */
-export function imagine(hole: Card2, board: CardInt[], street: Street, opps: Opponent[], ranges: Float64Array[], rng: () => number, n: number, uniform = false): Imagined {
+export function imagine(
+  hole: Card2,
+  board: CardInt[],
+  street: Street,
+  opps: Opponent[],
+  ranges: Float64Array[],
+  rng: () => number,
+  n: number,
+  uniform = false,
+): Imagined {
   const dead = new Uint8Array(52);
   dead[hole[0]] = 1;
   dead[hole[1]] = 1;
@@ -454,7 +485,15 @@ export function imagine(hole: Card2, board: CardInt[], street: Street, opps: Opp
   const boards: Partial<Record<Street, BoardInfo>> = {};
   if (street !== 'preflop') for (const st of ['flop', 'turn', 'river'] as const) if (board.length >= STREET_CARDS[st]) boards[st] = boardInfo(board.slice(0, STREET_CARDS[st]));
   const scratch: CardInt[] = [];
-  const out: Imagined = { n: 0, opps: m, w: new Float64Array(n), win: new Float64Array(n), tiers: new Int8Array(n * m), cls: new Int16Array(n * m), quality: 1 };
+  const out: Imagined = {
+    n: 0,
+    opps: m,
+    w: new Float64Array(n),
+    win: new Float64Array(n),
+    tiers: new Int8Array(n * m),
+    cls: new Int16Array(n * m),
+    quality: 1,
+  };
   const used = new Uint8Array(52);
   const deck: CardInt[] = [];
   for (let c = 0; c < 52; c++) if (!dead[c]) deck.push(c);
@@ -567,6 +606,41 @@ export function imagine(hole: Card2, board: CardInt[], street: Street, opps: Opp
   return out;
 }
 
+/** Exhaustive heads-up river inference removes sampling noise on expensive final decisions. */
+export function riverRange(hole: Card2, board: CardInt[], opp: Opponent, range: Float64Array): Imagined {
+  const dead = new Set([...hole, ...board]);
+  const info = boardInfo(board),
+    scratch: number[] = [];
+  const mine = score([...hole, ...board]);
+  const boards = { flop: boardInfo(board.slice(0, 3)), turn: boardInfo(board.slice(0, 4)), river: info };
+  const out: Imagined = {
+    n: 0,
+    opps: 1,
+    w: new Float64Array(1326),
+    win: new Float64Array(1326),
+    tiers: new Int8Array(1326),
+    cls: new Int16Array(1326),
+    quality: 1,
+  };
+  for (let i = 0; i < COMBOS.length; i++) {
+    const [a, b] = COMBOS[i];
+    if (dead.has(a) || dead.has(b)) continue;
+    let w = range[COMBO_CLASS[i]];
+    for (const move of opp.story.post) {
+      if (move.street === 'preflop') continue;
+      w *= moveLikelihood(move, tierWith(a, b, boards[move.street], scratch), opp.read);
+    }
+    if (w <= 0) continue;
+    const theirs = score([a, b, ...board]);
+    out.w[out.n] = w;
+    out.win[out.n] = mine > theirs ? 1 : mine === theirs ? 0.5 : 0;
+    out.tiers[out.n] = tierWith(a, b, info, scratch);
+    out.cls[out.n] = COMBO_CLASS[i];
+    out.n++;
+  }
+  return out;
+}
+
 export type Card2 = [CardInt, CardInt];
 
 /** Chance of winning, over the imagined deals. */
@@ -585,7 +659,15 @@ export function equityOf(im: Imagined): number {
  * and its chance of winning when someone calls. `raise` is for raising their bet (they've already
  * shown some strength). `committed` is how much of each opponent's chips are already in (0 to 1).
  */
-export function betOutcome(im: Imagined, opps: Opponent[], frac: number, river: boolean, raise = false, committed: number[] = [], street?: 'flop' | 'turn' | 'river'): { fold: number; raised: number; eqCalled: number } {
+export function betOutcome(
+  im: Imagined,
+  opps: Opponent[],
+  frac: number,
+  river: boolean,
+  raise = false,
+  committed: number[] = [],
+  street?: 'flop' | 'turn' | 'river',
+): { fold: number; raised: number; eqCalled: number } {
   let sw = 0;
   let sFold = 0;
   let sRaise = 0;
@@ -598,8 +680,8 @@ export function betOutcome(im: Imagined, opps: Opponent[], frac: number, river: 
     let noRaise = 1;
     for (let o = 0; o < m; o++) {
       const t = im.tiers[i * m + o];
-      allFold *= 1 - continueChance(t, frac, river, opps[o].read, committed[o] ?? 0, raise, street);
-      if (!raise) noRaise *= 1 - raiseChance(t, river, opps[o].read);
+      allFold *= 1 - (opps[o].allIn ? 1 : continueChance(t, frac, river, opps[o].read, committed[o] ?? 0, raise, street));
+      if (!raise && !opps[o].allIn) noRaise *= 1 - raiseChance(t, river, opps[o].read);
     }
     sw += w;
     sFold += w * allFold;
@@ -625,7 +707,7 @@ export function jamOutcome(im: Imagined, opps: Opponent[], prices: number[]): { 
   const m = im.opps;
   for (let i = 0; i < im.n; i++) {
     let allFold = 1;
-    for (let o = 0; o < m; o++) allFold *= 1 / (1 + Math.exp((callTop[o] - TOP[im.cls[i * m + o]]) / 0.02));
+    for (let o = 0; o < m; o++) allFold *= opps[o].allIn ? 0 : 1 / (1 + Math.exp((callTop[o] - TOP[im.cls[i * m + o]]) / 0.02));
     const w = im.w[i];
     sw += w;
     sFold += w * allFold;
@@ -640,7 +722,13 @@ export function jamOutcome(im: Imagined, opps: Opponent[], prices: number[]): { 
  * weighted by how well each fits every move they made after it. `dead` holds cards that can't be theirs (yours, the
  * whole board, anything else already dealt). Used to give a Scroll card's bot a hand that matches the line it played.
  */
-export function sampleHand(opp: Opponent, range: Float64Array, board: CardInt[], dead: ReadonlySet<number>, rng: () => number): Card2 | null {
+export function sampleHand(
+  opp: Opponent,
+  range: Float64Array,
+  board: CardInt[],
+  dead: ReadonlySet<number>,
+  rng: () => number,
+): Card2 | null {
   const boards: Partial<Record<Street, BoardInfo>> = {};
   for (const st of ['flop', 'turn', 'river'] as const) if (board.length >= STREET_CARDS[st]) boards[st] = boardInfo(board.slice(0, STREET_CARDS[st]));
   const scratch: CardInt[] = [];
@@ -673,5 +761,5 @@ export const boardCards = (hand: Hand) => hand.board.slice(0, STREET_CARDS[hand.
 export function opponentsOf(game: Game, hand: Hand, seat: Seat, exploit = 0): Opponent[] {
   return hand.seats
     .filter((s) => s !== seat && !s.folded)
-    .map((s) => ({ id: s.playerId, read: exploitRead(readOf(game.reads?.[s.playerId]), exploit), story: storyOf(game, hand, s.playerId) }));
+    .map((s) => ({ id: s.playerId, read: exploitRead(readOf(game.reads?.[s.playerId]), exploit), story: storyOf(game, hand, s.playerId), allIn: s.allIn }));
 }

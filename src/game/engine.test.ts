@@ -794,7 +794,11 @@ describe('names at one table', () => {
     let g = make(2);
     const bot = g.players.find((p) => p.bot)!;
     g = join(g, 'd1', bot.name);
-    expect(g.players.find((p) => p.deviceId === 'd1')!.name).toBe(`${bot.name} 2`);
+    // The number goes on the end; a long name is cut to leave room for it (names stop at 10 characters).
+    const mine = g.players.find((p) => p.deviceId === 'd1')!.name;
+    expect(mine).toMatch(/ 2$/);
+    expect(mine.length).toBeLessThanOrEqual(10);
+    expect(mine.toLowerCase()).not.toBe(bot.name.toLowerCase());
     g = join(g, 'd2', 'Zed');
     g = must(g, { type: 'setLook', name: 'Sam', emoji: '🐸' }, 'd2');
     expect(g.players.find((p) => p.deviceId === 'd2')!.name).toBe('Sam 2');

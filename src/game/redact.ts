@@ -18,8 +18,8 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     hand.seats.filter((s) => mine.has(s.playerId)).every((s) => s.folded);
   return {
     ...game,
-    // Bots' styles (and what an AI twin remembers) and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, twin: _twin, ...p }) => p),
+    // Bots' styles and identities (and what an AI twin remembers) and their notes on players stay on the server.
+    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, ...p }) => p),
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,
@@ -28,6 +28,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     sweating: undefined,
     streaks: undefined,
     minds: undefined,
+    dialogue: undefined,
     card: undefined,
     logs: [],
     hand: hand && {

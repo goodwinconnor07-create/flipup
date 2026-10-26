@@ -54,6 +54,8 @@ export interface Player {
   ai?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
   twin?: TwinBrain;
+  /** Stable bot identity, private on online tables. */
+  botProfile?: string;
 }
 
 /** What the bots have seen a player do, from public moves only. */
@@ -100,6 +102,8 @@ export interface PlayerRead {
   shownBigStrong?: number;
   shownSmall?: number;
   shownSmallStrong?: number;
+  /** Exponentially weighted recent public observations (about five hands). */
+  recent?: Omit<PlayerRead, 'recent'>;
 }
 
 /** How a bot feels right now. Never sent to phones. */
@@ -108,6 +112,10 @@ export interface BotMind {
   tilt: number;
   /** -1 rattled to 1 on a heater. */
   confidence: number;
+  winStreak?: number;
+  lossStreak?: number;
+  /** Losses preceding the latest win, for a factual comeback reaction. */
+  previousLosses?: number;
   /** Players who've hurt it lately, by id: it wants those chips back. */
   grudges?: Record<string, number>;
 }
@@ -290,7 +298,7 @@ export interface Game {
   /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
   botPlan?: { playerId: string; seq: number; move: Move; to?: number };
   /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */
-  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome' | 'rematchWon' | 'rematchLost' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'cheer' | 'commiserate'; forId?: string; seq?: number };
+  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome' | 'rematchWon' | 'rematchLost' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'cheer' | 'commiserate'; forId?: string; seq?: number; reactionN?: number; handNumber?: number };
   /** Hands in a row each person has lost chips without winning one. Bots use it to pick their moment. Never sent to phones. */
   streaks?: Record<string, number>;
   /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */
@@ -313,6 +321,8 @@ export interface Game {
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
   minds?: Record<string, BotMind>;
+  /** Bounded private dialogue memory. IDs refer only to authored, public-safe text. */
+  dialogue?: Record<string, { recent: string[]; lastIntent: string }>;
   /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
   card?: CardScene;
 }

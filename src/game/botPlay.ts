@@ -19,10 +19,9 @@ import { rankOf, suitOf, type Card } from './cards';
 import { boardTexture, category, flushDraw, handBucket, straightOuts, type Bucket, type Texture } from './handBucket';
 import { drawLevelWith, boardInfo, tierWith, toInt } from './botEval';
 import { inTheMoment, mindOf } from './botMind';
-import { betOutcome, boardCards, CHARTS, CLASS_INDEX, DIGITS, equityOf, imagine, jamOutcome, opponentsOf, PRIOR, preflopOrder, preflopRange, readOf, shoveWidth, STRENGTH, storyOf, TOP, type Card2, type Opponent, type Read } from './botRange';
+import { betOutcome, boardCards, CHARTS, CLASS_INDEX, DIGITS, equityOf, imagine, jamOutcome, opponentsOf, PRIOR, preflopOrder, preflopRange, readOf, riverRange, shoveWidth, STRENGTH, storyOf, TOP, type Card2, type Opponent, type Read } from './botRange';
 import trained from './botPostflop.json';
 import { playerStyle, type Style } from './botStyles';
-import { potTotal } from './holdem';
 import { options } from './selectors';
 import { blendKinds, postKinds, preKinds, twinLook } from './twinMix';
 import type { Game, Hand, Move, PlayerRead, Seat } from './types';
@@ -60,12 +59,18 @@ export function inPosition(hand: Hand, playerId: string): boolean {
   let last: string | null = null;
   for (let i = 1; i <= n; i++) {
     const s = hand.seats[(button + i) % n];
-    if (!s.folded) last = s.playerId;
+    if (!s.folded && !s.allIn) last = s.playerId;
   }
   return last === playerId;
 }
 
 const chipsOf = (game: Game, id: string) => game.players.find((p) => p.id === id)?.stack ?? 0;
+
+/** Existing chips this seat can actually win at a given additional investment. */
+export function contestablePot(hand: Hand, seat: Seat, additional: number): number {
+  const cap = seat.total + Math.max(0, additional);
+  return hand.seats.reduce((sum, other) => sum + Math.min(other.total, cap), 0);
+}
 
 /** Effective stack in big blinds: the bot's chips against the biggest opponent still in. */
 export function effectiveBb(game: Game, hand: Hand, seat: Seat): number {
@@ -153,8 +158,13 @@ export function preflopGto(game: Game, hand: Hand, seat: Seat, cls: string = han
   const me = order.indexOf(seat.playerId);
   const chart = chartFor(n, effectiveBb(game, hand, seat));
   const at = (id: string) => chartSeat(order.indexOf(id), n);
-  const pre = (hand.actions ?? []).filter((a) => a.street === 'preflop');
-  const raisers = pre.filter((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > bb));
+  const pre = (hand.actions ?? []).filter((a) => a.street === 'preflop' && !a.outOfTurn);
+  let top = bb;
+  const raisers = pre.filter((a) => {
+    const raise = AGGRESSIVE.includes(a.move) && a.to > top;
+    if (a.move !== 'fold' && a.move !== 'check') top = Math.max(top, a.to);
+    return raise;
+  });
   const limpers = pre.filter((a) => a.move === 'call' && raisers.length === 0).length;
   const mySeat = chartSeat(me, n);
   const get = (key: string) => spotFreq(chart, key, cls);
@@ -423,7 +433,11 @@ function stakesOf(amount: number, stack: number): number {
 }
 
 /** How long it takes: quick when it's easy, longer when it's close or a lot is at stake, all shaped by the style's tempo. */
-function thinkTime(style: Style, rng: Rng, opts: { street: string; probs: number[]; chosen: number; stakes: number; folding: boolean; monster: boolean; facing: boolean }): number {
+function thinkTime(
+  style: Style,
+  rng: Rng,
+  opts: { street: string; probs: number[]; chosen: number; stakes: number; folding: boolean; monster: boolean; facing: boolean },
+): number {
   const sorted = [...opts.probs].sort((a, b) => b - a);
   const hard = 1 - (sorted[0] - (sorted[1] ?? 0));
   const t = style.tempo;
@@ -479,11 +493,20 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
   const behind = order.length - 1 - order.indexOf(seat.playerId);
   const raiserRead = g.raiser ? (opps.find((x) => x.id === g.raiser)?.read ?? averageRead(opps)) : averageRead(opps);
   const myStack = chipsOf(game, seat.playerId) + seat.bet;
-  const pot = potTotal(hand);
+  const pot = contestablePot(hand, seat, chipsOf(game, seat.playerId));
+  const callPot = contestablePot(hand, seat, o.toCall);
   // Before the flop the three choices are fold or check, call, and raise or move in.
   const twinned = (probs: number[]) => (look ? blendKinds(probs, probs.map((_, i) => i), preKinds(look.p), look.w) : probs);
   const think = (probs: number[], chosen: number, amount: number) =>
-    thinkTime(style, rng, { street: 'preflop', probs, chosen, stakes: stakesOf(amount, myStack), folding: chosen === 0, monster: TOP[ci] < 0.03, facing: o.toCall > bb });
+    thinkTime(style, rng, {
+      street: 'preflop',
+      probs,
+      chosen,
+      stakes: stakesOf(amount, myStack),
+      folding: chosen === 0,
+      monster: TOP[ci] < 0.03,
+      facing: o.toCall > bb,
+    });
 
   // Short-stacked and nobody has raised: all in or fold, like the push/fold charts.
   if ((g.spot === 'rfi' || g.spot === 'limp') && eff <= 13 && o.canRaise) {
@@ -509,7 +532,7 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
     const allInAlready = o.callIsAllIn || opps.every((x) => hand.seats.find((s) => s.playerId === x.id)?.allIn || chipsOf(game, x.id) === 0);
     // Calling a raise that isn't all in still leaves play behind, where position matters.
     const realise = allInAlready ? 1 : inPosition(hand, seat.playerId) ? 0.95 : 0.85;
-    const evCall = eq * (pot + o.toCall) * realise - o.toCall;
+    const evCall = eq * (callPot + o.toCall) * realise - o.toCall;
     const temp = style.post.wobble * (pot + o.toCall) * 1.2;
     const values = [0, evCall];
     if (!allInAlready && o.canRaise) {
@@ -525,7 +548,18 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
     const probs = twinned(softmax(values, temp));
     const c = pick(rng, probs);
     const move = c === 0 ? check() : c === 1 ? call() : ({ move: 'allin' } as BotMove);
-    tracer?.({ street: 'preflop', big: true, style: style.id, cards: cls, eq, pot, toCall: o.toCall, values: values.map((v) => (v / pot).toFixed(2)).join(' '), probs: probs.map((p) => p.toFixed(2)).join(' '), chose: move.move });
+    tracer?.({
+      street: 'preflop',
+      big: true,
+      style: style.id,
+      cards: cls,
+      eq,
+      pot,
+      toCall: o.toCall,
+      values: values.map((v) => (v / pot).toFixed(2)).join(' '),
+      probs: probs.map((p) => p.toFixed(2)).join(' '),
+      chose: move.move,
+    });
     return { move, thinkMs: think(probs, c, o.toCall) };
   }
 
@@ -561,13 +595,14 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   const myTier = tierWith(hole[0], hole[1], info, []);
   const draw = drawLevelWith(hole[0], hole[1], info);
   const bucket = handBucket(seat.cards, hand.board);
-  const pot = potTotal(hand);
+  const pot = contestablePot(hand, seat, chipsOf(game, seat.playerId));
+  const callPot = contestablePot(hand, seat, o.toCall);
   const behind = chipsOf(game, seat.playerId);
   const theirBehind = Math.max(0, ...opps.map((x) => chipsOf(game, x.id)));
   const effBehind = Math.min(behind, theirBehind + Math.max(0, hand.currentBet - seat.bet));
   const ip = inPosition(hand, seat.playerId);
   const multiway = opps.length > 1;
-  const read = averageRead(opps);
+  const read = opps.find((x) => x.id === hand.aggressorId)?.read ?? averageRead(opps);
   const craft = style.craft;
   const streetKey = hand.street as 'flop' | 'turn' | 'river';
 
@@ -596,7 +631,10 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   const ranges = opps.map((x) => preflopRange(game, hand, x.id, x.story, x.read));
   // Fewer imagined deals when more players are in, so a decision stays within a couple of ms on the server.
   const n = Math.round(300 / (1 + 0.6 * opps.length));
-  const im = imagine(hole, board, hand.street, opps, ranges, rng, n);
+  const im =
+    river && opps.length === 1 && s.sense >= 0.65
+      ? riverRange(hole, board, opps[0], ranges[0])
+      : imagine(hole, board, hand.street, opps, ranges, rng, n);
   const naive = imagine(hole, board, hand.street, opps, ranges, rng, Math.round(n / 3), true);
   const sense = s.sense * (im.quality > 0.05 ? 1 : 0.5);
   const eqRange = equityOf(im);
@@ -659,8 +697,8 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
     if (craft.checkRaise > 0 && !ip && !multiway && !river) vCheck += pot * craft.checkRaise * (myTier >= 5 ? 0.06 : draw >= 2 ? 0.04 : 0) * Math.min(1.5, 0.5 + read.betFreq);
     opts.push({ move: check(), value: vCheck, kind: 0 });
     // Betting: each size the style likes.
-    let sizes = s.sizes.filter((f) => hand.street !== 'flop' || f <= 1.05);
-    if (effBehind <= pot * 1.3) sizes = [...sizes.filter((f) => f * pot < effBehind * 0.8), effBehind / pot];
+    let sizes = (o.canRaise ? s.sizes : []).filter((f) => hand.street !== 'flop' || f <= 1.05);
+    if (o.canRaise && effBehind <= pot * 1.3) sizes = [...sizes.filter((f) => f * pot < effBehind * 0.8), effBehind / pot];
     for (const f0 of sizes) {
       const amount = Math.min(effBehind, f0 * pot);
       if (amount < bb) continue;
@@ -685,11 +723,20 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   } else {
     const facingBig = o.toCall > pot * 0.45;
     opts.push({ move: check(), value: 0, kind: 0 });
-    let vCall = eq * (pot + o.toCall) * (o.callIsAllIn ? 1 : realise) - o.toCall + (o.callIsAllIn ? 0 : implied);
+    let vCall = eq * (callPot + o.toCall) * (o.callIsAllIn ? 1 : realise) - o.toCall + (o.callIsAllIn ? 0 : implied);
     vCall += pot * s.sticky;
     if (facingBig && myTier < 5) vCall -= pot * s.scared * 0.15;
     // Bots notice players who bet too much and look them up lighter (and give tight ones more credit).
-    vCall += pot * Math.max(-0.08, Math.min(0.2, (read.aggression - PRIOR.aggression) * 0.04 + (read.bluffy - PRIOR.bluffy) * 0.2 + (read.betFreq - PRIOR.betFreq) * BET_CALL)) * adapt;
+    vCall +=
+      pot *
+      Math.max(
+        -0.08,
+        Math.min(
+          0.2,
+          (read.aggression - PRIOR.aggression) * 0.04 + (read.bluffy - PRIOR.bluffy) * 0.2 + (read.betFreq - PRIOR.betFreq) * BET_CALL,
+        ),
+      ) *
+      adapt;
     vCall -= risk(o.toCall);
     // Floating: calling a flop bet in position with a weak hand to take the pot away later, against players who give up on the turn.
     if (craft.float > 0 && ip && hand.street === 'flop' && !multiway && myTier <= 3) vCall += pot * craft.float * 0.08 * Math.max(0, 0.5 + (read.foldStreet.turn - PRIOR.foldToBet) * 2);
@@ -750,25 +797,51 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
     probs = probs.map((p, i) => {
       const k = opts[i].kind;
       const share = kindShare(k) + (k > 0 && aggressive ? missing / aggressive : 0);
-      return (1 - g) * p + g * share;
+      // Coarse trained buckets provide balance, but mustn't resurrect a clearly losing action.
+      const best = Math.max(...opts.map((x) => x.value));
+      const guard = Math.exp(Math.min(0, (opts[i].value - best + pot * 0.15) / Math.max(1, pot * (0.12 + s.wobble))));
+      return (1 - g) * p + g * share * guard;
     });
   }
   // Nobody folds the near-nuts.
   if (!o.canCheck && eqRange > 0.92) probs[0] = 0;
   // Nor a hand that's far ahead of the price: when the call costs a small part of the pot and its chance of winning
   // is several times what the call needs, folding is a blunder, whatever the style (choice noise and nerves included).
-  if (!o.canCheck && eqRange > 0.5 && eqRange > 3 * (o.toCall / (pot + o.toCall))) probs[0] = 0;
+  if (!o.canCheck && eqRange > 0.5 && eqRange > 3 * (o.toCall / (callPot + o.toCall))) probs[0] = 0;
   // An AI twin does what the person tends to do, mistakes included: those guards are the bots' own.
   if (look) probs = blendKinds(probs, opts.map((x) => x.kind), postKinds(look.p, o.canCheck), look.w);
   const c = pick(rng, probs);
   const chosen = opts[c];
-  tracer?.({ street: hand.street, style: style.id, cards: seat.cards.join(''), board: hand.board.join(''), myTier, eqRange, eqNaive, eq, pot, toCall: o.toCall, behind, quality: im.quality, opts: opts.map((x, i) => `${x.move.move}${x.move.to ?? ''}:${(x.value / pot).toFixed(2)}:${probs[i].toFixed(2)}`).join(' '), chose: `${chosen.move.move}${chosen.move.to ?? ''}` });
+  tracer?.({
+    street: hand.street,
+    style: style.id,
+    cards: seat.cards.join(''),
+    board: hand.board.join(''),
+    myTier,
+    eqRange,
+    eqNaive,
+    eq,
+    pot,
+    toCall: o.toCall,
+    behind,
+    quality: im.quality,
+    opts: opts.map((x, i) => `${x.move.move}${x.move.to ?? ''}:${(x.value / pot).toFixed(2)}:${probs[i].toFixed(2)}`).join(' '),
+    chose: `${chosen.move.move}${chosen.move.to ?? ''}`,
+  });
   const amount = chosen.move.move === 'allin' ? behind : chosen.move.to ? chosen.move.to - seat.bet : o.toCall;
   return {
     move: chosen.move,
     bucket,
     bluff: bluffing && chosen.kind > 0,
-    thinkMs: thinkTime(style, rng, { street: hand.street, probs, chosen: c, stakes: stakesOf(amount, stack), folding: chosen.move.move === 'fold', monster: myTier === 6, facing: o.toCall > 0 }),
+    thinkMs: thinkTime(style, rng, {
+      street: hand.street,
+      probs,
+      chosen: c,
+      stakes: stakesOf(amount, stack),
+      folding: chosen.move.move === 'fold',
+      monster: myTier === 6,
+      facing: o.toCall > 0,
+    }),
   };
 }
 
@@ -786,8 +859,8 @@ const BET_CALL = 0.3;
 
 /** After each hand: what everyone did, as the bots see it (only public moves, and cards that were shown). */
 export function updateReads(game: Game, hand: Hand): void {
-  const reads = (game.reads ??= {});
-  const acts = hand.actions ?? [];
+  const reads: Record<string, PlayerRead> = {};
+  const acts = (hand.actions ?? []).filter((a) => !a.outOfTurn);
   const bb = game.settings.bigBlind;
   // A move is aggressive if it put in more than the bet to match (calling all in isn't).
   const raised = new Set<(typeof acts)[number]>();
@@ -809,7 +882,9 @@ export function updateReads(game: Game, hand: Hand): void {
     const first = acts.find((a) => a.street === 'preflop' && AGGRESSIVE.includes(a.move));
     if (first?.playerId === s.playerId && first.move === 'allin' && first.to >= bb * 8) r.shoves = (r.shoves ?? 0) + 1;
     // Shown down after betting the turn or river: was it a bluff?
-    const betLate = acts.filter((a) => a.playerId === s.playerId && (a.street === 'turn' || a.street === 'river') && AGGRESSIVE.includes(a.move));
+    const betLate = acts.filter(
+      (a) => a.playerId === s.playerId && (a.street === 'turn' || a.street === 'river') && AGGRESSIVE.includes(a.move),
+    );
     if (s.shown && s.cards.length === 2 && betLate.length && hand.board.length >= 4) {
       const last = betLate[betLate.length - 1];
       const board = hand.board.slice(0, last.street === 'turn' ? 4 : 5).map(toInt);
@@ -852,6 +927,24 @@ export function updateReads(game: Game, hand: Hand): void {
       }
     }
   }
+  // Lifetime evidence anchors the read; a short decaying window notices a change of gears.
+  const totals = { ...game.reads };
+  for (const [id, sample] of Object.entries(reads)) {
+    const before = totals[id];
+    const merged = { ...sample };
+    const recent = { ...sample };
+    for (const key of Object.keys(sample) as (keyof Omit<PlayerRead, 'recent'>)[]) {
+      merged[key] = (before?.[key] ?? 0) + (sample[key] ?? 0);
+      recent[key] = (before?.recent?.[key] ?? 0) * 0.8 + (sample[key] ?? 0);
+    }
+    // Optional counters must decay on hands without that event too.
+    for (const key of ['shoves', 'betOpps', 'bets', 'shownBets', 'shownBluffs'] as const) {
+      merged[key] = (before?.[key] ?? 0) + (sample[key] ?? 0);
+      recent[key] = (before?.recent?.[key] ?? 0) * 0.8 + (sample[key] ?? 0);
+    }
+    totals[id] = { ...merged, recent };
+  }
+  game.reads = Object.fromEntries(Object.entries(totals).filter(([id]) => game.players.some((p) => p.id === id)));
 }
 
 /**

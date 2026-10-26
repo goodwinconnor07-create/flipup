@@ -1,3 +1,6 @@
+> GENERATION PAUSED. The cloud starter pack is withdrawn. Do not run the old Scroll generation commands.
+> Use the diagnostic instructions on branch `codex/laptop-only-rebuild`; no replacement engine is launch-validated yet.
+
 # FlipUp GTO backend
 
 For the current priority (accurate Scroll scenarios, automatic upload/download and continuous

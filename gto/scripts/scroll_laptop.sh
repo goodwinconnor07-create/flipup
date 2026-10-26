@@ -13,6 +13,7 @@ case "${1:-}" in
     "$VENV/bin/python" "$GTO/scripts/scroll_remote.py" "$1"
     ;;
   start)
+    echo "Old Scroll generation is disabled. Use the laptop-only-rebuild diagnostic instructions." >&2; exit 1
     ROLE="${2:?fast or slow}";NAME="${3:?a run name}"
     case "$ROLE" in fast|slow) ;; *) exit 1;; esac
     [[ "$NAME" =~ ^[a-zA-Z0-9_-]{1,40}$ ]] || exit 1

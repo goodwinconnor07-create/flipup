@@ -824,10 +824,11 @@ html:not(.no-glass) .raise-panel .icon-btn {
 }
 
 .raise-head {
+  position: relative;
   display: flex;
-  align-items: baseline;
-  justify-content: center;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
   font-size: var(--fs-body);
 }
 
@@ -838,14 +839,15 @@ html:not(.no-glass) .raise-panel .icon-btn {
   line-height: 1;
 }
 
-.raise-of {
-  font-size: var(--fs-small);
+.raise-presets {
+  display: flex;
+  gap: 8px;
 }
 
-.raise-presets {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+/* Presets share the row evenly, however many show (two that match, like a small pot and the minimum, merge). */
+.raise-presets .preset {
+  flex: 1;
+  min-width: 0;
 }
 
 .preset {
@@ -853,16 +855,16 @@ html:not(.no-glass) .raise-panel .icon-btn {
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  min-height: 56px;
+ min-height: 60px;
   padding: 4px;
   border: 0;
-  border-radius: var(--r-sm);
+  border-radius: var(--r-md);
   background: var(--bg-2);
   white-space: nowrap;
 }
 
 .preset b {
-  font-size: var(--fs-small);
+  font-size: var(--fs-body);
   font-weight: 700;
 }
 
@@ -884,41 +886,24 @@ html:not(.no-glass) .raise-panel .icon-btn {
 .raise-fine {
   display: flex;
   align-items: center;
-  gap: 12px;
-}
-
-.raise-fine .icon-btn {
-  width: 44px;
-  height: 44px;
-  background: var(--bg-2);
-  box-shadow: none;
-}
-
-.raise-fine .icon-btn:disabled {
-  opacity: 0.35;
 }
 
 .raise-slider {
   flex: 1;
   min-width: 0;
-  height: 36px;
+  height: 44px;
   margin: 0;
   accent-color: var(--blue);
 }
 
 .raise-actions {
-  grid-template-columns: 1fr 1fr 1.4fr;
-}
-
-.raise-head {
-  position: relative;
+  grid-template-columns: 1fr 1fr 1.6fr;
 }
 
 .raise-close {
   position: absolute;
   right: 0;
-  top: 50%;
-  translate: 0 -50%;
+  top: 0;
   width: 36px;
   height: 36px;
   background: var(--bg-2);

@@ -4,7 +4,7 @@ import { lastStanding, options, pot, type Game, type Hand, type Player, type Sea
 import { dispatch, navigate, useApp } from '../../state/store';
 import { handKey, hasHand } from '../../state/training';
 import { chips } from '../../ui/components';
-import { CloseIcon, MinusIcon, PlusIcon } from '../../ui/Icons';
+import { CloseIcon } from '../../ui/Icons';
 
 /** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
 export type PreAction = { kind: 'checkfold' | 'callany' | 'current'; bet: number } | null;
@@ -272,15 +272,13 @@ function RaisePanel({
   const presets = [
     { label: 'Min', to: o.minTo },
     { label: '½ pot', to: clamp(potRaise(0.5)) },
-    { label: '¾ pot', to: clamp(potRaise(0.75)) },
     { label: 'Pot', to: clamp(potRaise(1)) },
     { label: 'All in', to: o.maxTo },
   ].filter((p, i, all) => all.findIndex((q) => q.to === p.to) === i);
   const step = Math.max(1, Math.min(bb, Math.floor((o.maxTo - o.minTo) / 50) || 1));
 
-  const nudge = (dir: 1 | -1) => setTo((t) => clamp(t + dir * step));
-
-  // A panel pinned to the bottom of the screen, over your cards, so every option is in view without scrolling.
+  // A panel pinned to the bottom of the screen, over your cards: one amount, four presets, a slider, then the three buttons.
+  const isAllIn = to >= o.maxTo;
   return (
     <div className="raise-layer">
       <div className="raise-scrim" onClick={onCancel} />
@@ -288,7 +286,6 @@ function RaisePanel({
         <div className="raise-head">
           <span className="muted">{o.word} to</span>
           <b className="raise-amount num">{chips(to)}</b>
-          <span className="muted raise-of">of {chips(o.maxTo)}</span>
           <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
             <CloseIcon />
           </button>
@@ -308,9 +305,6 @@ function RaisePanel({
           ))}
         </div>
         <div className="raise-fine">
-          <button type="button" className="icon-btn press" aria-label="Less" disabled={to <= o.minTo} onClick={() => nudge(-1)}>
-            <MinusIcon />
-          </button>
           <input
             ref={range}
             className="raise-slider"
@@ -326,9 +320,6 @@ function RaisePanel({
               setTo(v + step > o.maxTo ? o.maxTo : v);
             }}
           />
-          <button type="button" className="icon-btn press" aria-label="More" disabled={to >= o.maxTo} onClick={() => nudge(1)}>
-            <PlusIcon />
-          </button>
         </div>
         {/* The same three slots as the action row, so Fold and Call stay in reach while you size. */}
         <div className="action-buttons raise-actions">
@@ -340,7 +331,7 @@ function RaisePanel({
             {!o.canCheck && !o.callIsAllIn && <span className="num">{chips(o.toCall)}</span>}
           </button>
           <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
-            {to >= o.maxTo ? 'All in' : o.word}
+            {isAllIn ? 'All in' : `${o.word === 'Bet' ? 'Bet' : 'Raise to'} ${chips(to)}`}
           </button>
         </div>
       </div>

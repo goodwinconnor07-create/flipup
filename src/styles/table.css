@@ -927,7 +927,8 @@ html:not(.no-glass) .raise-panel .icon-btn {
 .raise-slider {
   flex: 1;
   min-width: 0;
-  height: 36px;
+  /* A slider's thumb can't take hit slop, so the control itself is the full 44px. */
+  height: var(--tap);
   margin: 0;
   accent-color: var(--blue);
 }
@@ -1691,7 +1692,7 @@ html.calm .bubble-typing i {
     align-content: center;
     justify-items: center;
     gap: 8px;
-    padding: 24px;
+    padding: 24px max(24px, var(--safe-right)) 24px max(24px, var(--safe-left));
     background: var(--bg);
     color: var(--ink);
     text-align: center;

@@ -113,7 +113,8 @@ test('Settings: sharing your twin is off until you turn it on, gives a code, and
   await page.getByRole('button', { name: 'Settings' }).click();
   const sw = page.getByRole('switch', { name: 'Let friends play my twin' });
   await expect(sw).toHaveAttribute('aria-checked', 'false');
-  expect(await page.evaluate(() => localStorage.getItem('flipup.share'))).toBeNull();
+  // The switch flips as you tap it, so this phone clears its copy a moment after the server has.
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('flipup.share'))).toBeNull();
 
   await sw.click();
   await expect(sw).toHaveAttribute('aria-checked', 'true');

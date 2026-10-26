@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { shot, watchErrors } from './helpers';
 
-test('fresh Scroll scenarios give honest feedback and survive saving/reload', async ({ page }) => {
+// The starter bank was withdrawn (src/quiz/withdrawn.json) and its files removed; this needs validated laptop-made scenarios to come back.
+test.skip('fresh Scroll scenarios give honest feedback and survive saving/reload', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('tab', { name: 'Learn' }).click();

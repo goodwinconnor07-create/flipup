@@ -1,4 +1,4 @@
-import { useState, type ComponentType, type SVGProps } from 'react';
+import { startTransition, useOptimistic, useState, type ComponentType, type SVGProps } from 'react';
 import { myPlayer, seatFor, type Settings } from '../../game';
 import {
   closeSheet,
@@ -367,25 +367,30 @@ function PrefsSheet() {
   const twinHands = loadTwin().hands;
   const [share, setShare] = useState(loadShare);
   const [sharing, setSharing] = useState(false);
-  const toggleShare = async () => {
+  // The switch flips as you tap it. If the server says no, it flips back (React drops the guess when the request ends).
+  const [shared, setShared] = useOptimistic(!!share);
+  const toggleShare = () => {
     if (sharing) return;
-    setSharing(true);
-    try {
-      if (share) {
-        await stopSharing();
-        setShare(null);
-        toast('Your twin is no longer shared.');
-      } else {
-        setShare(await startSharing());
-        toast('Friends with your code can now play your twin.');
+    startTransition(async () => {
+      setShared(!share);
+      setSharing(true);
+      try {
+        if (share) {
+          await stopSharing();
+          setShare(null);
+          toast('Your twin is no longer shared.');
+        } else {
+          setShare(await startSharing());
+          toast('Friends with your code can now play your twin.');
+        }
+      } catch (e) {
+        toast(e instanceof Error ? e.message : "Couldn't change sharing.", 'error');
+      } finally {
+        setSharing(false);
       }
-    } catch (e) {
-      toast(e instanceof Error ? e.message : "Couldn't change sharing.", 'error');
-    } finally {
-      setSharing(false);
-    }
+    });
   };
-  const friends: Row[] = [{ label: 'Let friends play my twin', Icon: SparkIcon, color: 'var(--indigo)', on: !!share, onChange: () => void toggleShare() }];
+  const friends: Row[] = [{ label: 'Let friends play my twin', Icon: SparkIcon, color: 'var(--indigo)', on: shared, onChange: toggleShare }];
   if (share) friends.push({ label: `Your twin code · ${share.code}`, Icon: ShareIcon, color: 'var(--indigo)', onClick: () => openSheet({ name: 'shareTwin' }) });
   const forget: Row[] = [];
   if (twinHands > 0)

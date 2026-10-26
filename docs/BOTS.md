@@ -62,6 +62,53 @@ Ten hidden styles, four bots each. Besides the preflop settings, a style says:
 | `tempo` | How long it takes, how long it tanks on hard spots, how often it snaps, whether it Hollywoods with a monster. |
 | `show` | How often it shows a bluff, a strong hand nobody called, or a good fold. |
 
+## Crafts: techniques that depend on the spot (`Craft` in `botStyles.ts`)
+
+The `post` knobs above apply everywhere. A `craft` says what a style does in particular spots, which is what makes
+two players with the same VPIP feel different. `botPlay.ts` works out what kind of spot it is (who raised before
+the flop, what it did on the street before, the board, position) and each technique adds a pull, in pots, to
+the options it fits:
+
+| Technique | What it does |
+|---|---|
+| `cbetDry`, `cbetWet` | Continuation bets after raising before the flop, by board. |
+| `barrel` | Bets again on the turn and river after betting the street before (below zero it gives up). |
+| `float` | Calls a flop bet in position with a weak hand, planning to take the pot later, more against players who give up on the turn. |
+| `probe`, `donk` | Leads the turn after a checked flop; leads into the raiser (below zero for most). |
+| `checkRaise` | Checks strong hands and draws out of position to raise. |
+| `polar` | River: big bets with the best hands and with bluffs that hold a king or ace, nothing or small with the middle. |
+| `thin`, `hero`, `layDown` | One pair bets for value against callers; calls down light against a bluffy story; folds a good hand to a river raise. |
+| `fourBet`, `threeBet` | 4-bet bluffs with small suited aces, and 3-bets without a premium (more against openers who fold to 3-bets). |
+| `texture` | Small bets on dry boards, big on wet. |
+| `pets`, `petRate` | A signature hand it plays when the chart says fold (Brunson's ten-deuce). |
+| `exploit` | How hard it acts on the reads below. |
+
+A twin has no craft (`NO_CRAFT`): it plays its person's own habits. `scripts/craftLab.ts freq` shows how often
+each style and legend uses each technique, `ab` and `big` play a style with its craft against the same without it.
+
+**How to test it.** A heads-up match run for thousands of hands is not a fair test of a craft: the adaptive bots work
+each other out and the result follows who did that first (the same config gave -63, -46 and +43 bb/100 on three seeds
+of 25,000 hands). The app plays short games, so `craftLab.ts big` plays 300 fresh matches of 150 hands, counts all-in
+run-outs at their equity (`evAdjust` in `botSim.ts`), and alternates seats.
+
+**What it measured** (craft against the same style without it, 300 fresh matches of 150 hands, bb/100): pro +15 (±7), shark +16 (±8),
+Negreanu +1.5 (±6), Ivey +1.5 (±10): never worse. The 800-hand bot lab went from a fun score of 90 to 94, and the new styles beat
+the pre-update ones by more than before (pro 95, shark 87, tag 56, maniac 139 bb/100).
+
+## Reading more about a player
+
+Besides VPIP, PFR, fold to bet, aggression and bluffs shown, bots now keep situational notes (`PlayerRead`,
+written by `recordHabits()` after each hand, public moves only): folds to a bet on each street, to a flop
+bet from the preflop raiser, to a 3-bet after opening, how often they 3-bet an open, check-raise and limp rates, and
+what their bet size has meant when shown down (are their big bets real hands?). A bot uses them through
+`exploitRead(read, k)`, scaled by its `exploit`: street-specific folds change how often a bet works, the c-bet
+fold read changes its c-bets, the 3-bet fold read changes its 3-bets and 4-bet bluffs, and a size tell changes the
+range it imagines behind a bet. A style with `exploit` 0 sees every player as an average one in these spots.
+
+Legends also **study you across games** (`Legend.scouting`, `scoutRead()` in `legends.ts`): they start a game with
+the reads your AI twin's memory gives (scaled to at most 50 hands, by how much that legend studies people, from
+Hellmuth 0.15 to Ivey 1), so Ivey and Negreanu come in already aiming at your habits. Their profile page says so.
+
 ## Reading a player who bets or folds a lot
 
 Bots keep a note on every player (`game.reads`, only from public moves). Two of the things they

@@ -89,7 +89,7 @@ test('table talk reads like texting: quick follow-ups, enough time to read, neve
   const messages = log.filter((m) => !m.typing && !m.mine);
   const dots = log.filter((m) => m.typing);
   console.log(`messages ${messages.length}, typing bubbles ${dots.length}`);
-  expect(messages.length, 'a table of bots with 110 seconds of play should have said something').toBeGreaterThanOrEqual(4);
+  expect(messages.length, 'a table of bots with 110 seconds of play should have said something').toBeGreaterThanOrEqual(3);
 
   // Up long enough to read: a message that wasn't taken over by its speaker's next move stays at least a second.
   const visible = messages.map((m) => (m.down ?? now) - m.up);

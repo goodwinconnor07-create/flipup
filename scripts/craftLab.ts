@@ -5,8 +5,8 @@
 //   npx tsx scripts/craftLab.ts freq [hands]    how often each uses each technique, six-handed
 //   npx tsx scripts/craftLab.ts ab [hands]      each style and legend with its craft against the same without it
 //   npx tsx scripts/craftLab.ts ladder [hands]  the legends against a plain player and each other
-//   npx tsx scripts/craftLab.ts big [handsPerSeed] [seeds] [name]  one style or legend with its craft against the same without it, heads-up, on many hands
-//   npx tsx scripts/craftLab.ts single [hands] [names] [style]  each technique on its own (pro by default) against the plain style, heads-up
+//   npx tsx scripts/craftLab.ts big 0 [matches] [name] [handsPerMatch]  one style or legend with its craft against the same without it, heads-up, over many short fresh matches
+//   npx tsx scripts/craftLab.ts single [handsPerMatch] [names] [style] [matches]  each technique on its own (pro by default) against the plain style, heads-up
 
 import { simulateTable, TECHNIQUES } from '../src/game/botSim';
 import { NO_CRAFT, STYLES, type StyleId } from '../src/game/botStyles';
@@ -105,27 +105,42 @@ if (MODE === 'single') {
   };
   const names = (process.argv[4] ?? '').split(',').filter(Boolean);
   const todo = names.length ? names : Object.keys(variants);
-  console.log(`${style} with one technique against the plain ${style}, heads-up, bb/100 (${HANDS * 4} hands x ${SEEDS.length} seeds)\n`);
+  const matches = Number(process.argv[6] ?? 200);
+  console.log(`${style} with one technique against the plain ${style}, heads-up, bb/100 over ${matches} fresh matches of ${HANDS} hands\n`);
   for (const name of todo) {
     const on: TwinBrain = { style: { ...STYLES[style], craft: { ...NO_CRAFT, pets: [], ...variants[name] } }, spots: {}, hands: 0 };
-    const runs = SEEDS.map((seed) => simulateTable(['pro', 'pro'], HANDS * 4, seed, 100, {}, { twins: { 0: on, 1: plain(style) }, evAdjust: true }).seats[0].bbPer100);
-    console.log(name.padEnd(12), avg(runs).toFixed(0).padStart(6), `  (seeds: ${runs.map((x) => x.toFixed(0)).join(', ')})`, secs());
+    const runs: number[] = [];
+    for (let i = 0; i < matches; i++) {
+      const flip = i % 2 === 1;
+      const r = simulateTable(['pro', 'pro'], HANDS, 3000 + i, 100, {}, { twins: flip ? { 0: plain(style), 1: on } : { 0: on, 1: plain(style) }, evAdjust: true }).seats;
+      runs.push(r[flip ? 1 : 0].bbPer100);
+    }
+    const m = avg(runs);
+    const sd = Math.sqrt(avg(runs.map((x) => (x - m) ** 2)));
+    console.log(name.padEnd(12), m.toFixed(1).padStart(7), ` +-${(sd / Math.sqrt(runs.length)).toFixed(1)}`, secs());
   }
 }
 
 if (MODE === 'big') {
-  // The craft against no craft on enough hands to say something: a heads-up match has a standard deviation of about
-  // 65 bb/100 over 4,000 hands, so it takes a couple of hundred thousand to see ten.
-  const seeds = Number(process.argv[4] ?? 8);
+  // The craft against no craft over many short, fresh matches (how the app plays them: a heads-up game lasts tens to
+  // a couple of hundred hands, and bots start each one knowing nothing). A long session isn't a fair test: the
+  // adaptive bots work each other out and the result follows who did that first.
+  const matches = Number(process.argv[4] ?? 300);
   const name = process.argv[5] ?? 'pro';
+  const per = Number(process.argv[6] ?? 150);
   const legend = LEGENDS.find((l) => l.id === name);
   const on = legend ? legendBrain(legend) : withCraft(name as StyleId);
   const off: TwinBrain = legend ? { ...on, style: { ...on.style, craft: { ...NO_CRAFT, pets: [] } } } : plain(name as StyleId);
   const runs: number[] = [];
-  for (let i = 0; i < seeds; i++) {
-    runs.push(simulateTable(['pro', 'pro'], HANDS, 100 + i, 100, {}, { twins: { 0: on, 1: off }, evAdjust: true }).seats[0].bbPer100);
-    const m = avg(runs);
-    const sd = Math.sqrt(avg(runs.map((x) => (x - m) ** 2)));
-    console.log(`${name} after ${i + 1} seeds (${(i + 1) * HANDS} hands): ${m.toFixed(1)} bb/100, about +-${(sd / Math.sqrt(runs.length)).toFixed(1)}`, secs());
+  for (let i = 0; i < matches; i++) {
+    // Alternate who sits where, so the order of the seats never matters.
+    const flip = i % 2 === 1;
+    const r = simulateTable(['pro', 'pro'], per, 1000 + i, 100, {}, { twins: flip ? { 0: off, 1: on } : { 0: on, 1: off }, evAdjust: true }).seats;
+    runs.push(r[flip ? 1 : 0].bbPer100);
+    if ((i + 1) % 50 === 0 || i + 1 === matches) {
+      const m = avg(runs);
+      const sd = Math.sqrt(avg(runs.map((x) => (x - m) ** 2)));
+      console.log(`${name} after ${i + 1} matches of ${per} hands: ${m.toFixed(1)} bb/100, +-${(sd / Math.sqrt(runs.length)).toFixed(1)}`, secs());
+    }
   }
 }

@@ -7,7 +7,7 @@
 // hands of theirs. Every screen that names one says so (`LEGEND_NOTE`). No photos, and nothing here is
 // a quote: what they say lives in legendTalk.ts and is original.
 
-import type { Player } from './types';
+import type { Player, PlayerRead } from './types';
 import type { Style } from './botStyles';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import { emptyTwin, TWIN_PRIOR, type TwinNumbers, type TwinProfile } from './twin';
@@ -32,6 +32,8 @@ export interface Legend {
   numbers: Partial<TwinNumbers>;
   /** The habits they're known for, laid over the fitted style. */
   habits: DeepPartial<Style>;
+  /** 0 to 1: how much they study the player across games. At a table they start out already knowing what your twin knows about you, as far as this goes. */
+  scouting: number;
 }
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends (infer U)[] ? U[] : T[K] extends object ? DeepPartial<T[K]> : T[K] };
@@ -46,6 +48,7 @@ export const LEGENDS: Legend[] = [
     short: 'Brunson',
     emoji: '🎩',
     rung: 1,
+    scouting: 0.25,
     blurb: 'Old-school and aggressive. Bets big, plays fast, and is happy to put the whole stack in.',
     signature: ['Bets big: three quarters of the pot or more', 'Plays ten-deuce, his lucky hand, whatever the chart says', 'Calls loosely, so he pays off a strong hand'],
     numbers: { vpip: 0.31, pfr: 0.23, limp: 0.03, open: 3.5, threeBet: 0.1, foldToRaise: 0.6, foldToBet: 0.36, betFreq: 0.5, cbet: 0.7, bluff: 0.3, aggression: 0.68, showdown: 0.3 },
@@ -67,6 +70,7 @@ export const LEGENDS: Legend[] = [
     short: 'Hellmuth',
     emoji: '🧐',
     rung: 2,
+    scouting: 0.15,
     blurb: 'Plays very few hands and waits for the best of them. Folds a lot, says so, and comes apart when he gets outdrawn.',
     signature: ['Folds most hands before the flop, then traps with the best ones', 'Lays down a good hand when he thinks he’s beaten', 'Tilts after a bad beat, and plays worse'],
     numbers: { vpip: 0.17, pfr: 0.11, limp: 0.03, open: 3, threeBet: 0.05, foldToRaise: 0.78, foldToBet: 0.52, betFreq: 0.36, cbet: 0.55, bluff: 0.14, aggression: 0.48, showdown: 0.3 },
@@ -87,6 +91,7 @@ export const LEGENDS: Legend[] = [
     short: 'Negreanu',
     emoji: '😄',
     rung: 3,
+    scouting: 0.9,
     blurb: 'Small bets, wide calls and a lot of reading. Talks all the time, and folds when his read says so.',
     signature: ['Bets small: a quarter to a half of the pot', 'Calls a bet to float, and check-raises to take it back', 'Reads how you play: calls you down or folds on it'],
     numbers: { vpip: 0.3, pfr: 0.17, limp: 0.06, open: 2.3, threeBet: 0.07, foldToRaise: 0.62, foldToBet: 0.44, betFreq: 0.46, cbet: 0.56, bluff: 0.26, aggression: 0.45, showdown: 0.33 },
@@ -107,6 +112,7 @@ export const LEGENDS: Legend[] = [
     short: 'Ivey',
     emoji: '🕶️',
     rung: 4,
+    scouting: 1,
     blurb: 'Close to flawless. Balanced, patient and quick to adjust, with no obvious leak to aim at.',
     signature: ['Big river bets with his best hands and with bluffs', 'Bets thin for value, and calls you down on a read', 'Adjusts quickly to what you do, and rarely tilts'],
     numbers: { vpip: 0.3, pfr: 0.23, limp: 0.02, open: 2.5, threeBet: 0.13, foldToRaise: 0.66, foldToBet: 0.42, betFreq: 0.5, cbet: 0.62, bluff: 0.33, aggression: 0.6, showdown: 0.3 },
@@ -129,6 +135,7 @@ export const LEGENDS: Legend[] = [
     short: 'Dwan',
     emoji: '🎲',
     rung: 5,
+    scouting: 0.55,
     blurb: 'Loose and relentless. Plays lots of hands, bets again and again, and is very hard to put on a hand.',
     signature: ['Plays a lot of hands and raises most of them', 'Bets again on the turn and the river', '3-bets and 4-bets light, and floats your bets'],
     numbers: { vpip: 0.38, pfr: 0.27, limp: 0.03, open: 3, threeBet: 0.14, foldToRaise: 0.55, foldToBet: 0.4, betFreq: 0.53, cbet: 0.66, bluff: 0.36, aggression: 0.7, showdown: 0.3 },
@@ -150,6 +157,7 @@ export const LEGENDS: Legend[] = [
     short: 'Rampage',
     emoji: '🎰',
     rung: 6,
+    scouting: 0.7,
     blurb: 'An action player who takes big shots: huge bluffs when he likes the spot, but patient traps and thin value raises too. You never quite know which one it is.',
     signature: ['Huge river bets, with the best hand or with nothing', 'Check-raises to spring a trap, then raises thin for value', 'Sometimes pushes a bluff further than it should go'],
     // Prototype dials for the fit, not his statistics: nobody has his full hands. Roughly "aggressive, with a
@@ -224,6 +232,37 @@ export function legendStyle(l: Legend): Style {
 /** What a bot needs to play as this legend. There are no spots to copy, so it plays its style. */
 export function legendBrain(l: Legend): TwinBrain {
   return { style: legendStyle(l), spots: {}, hands: 0 };
+}
+
+/** The most hands a legend can know you from before the game starts, at full scouting (play changes it from there). */
+export const SCOUT_HANDS = 50;
+/** They only bother to read you once there's something to read. */
+export const SCOUT_MIN = 20;
+
+/**
+ * What a legend already knows about a player from their AI twin's memory, as the notes a bot keeps while it plays
+ * (`game.reads`): the same numbers, scaled down to a few dozen hands and by how much that legend studies people.
+ * Null when they've seen too little of you, or the legend doesn't study.
+ */
+export function scoutRead(legend: Legend, twin: TwinProfile): PlayerRead | null {
+  if (twin.hands < SCOUT_MIN || legend.scouting < 0.1) return null;
+  const s = twin.stats;
+  const k = Math.min(1, (SCOUT_HANDS * legend.scouting) / twin.hands);
+  const r = (n: number) => Math.round(n * k);
+  return {
+    hands: r(twin.hands),
+    vpip: r(s.vpip),
+    pfr: r(s.pfr),
+    betsFaced: r(s.betsFaced),
+    foldsToBet: r(s.foldsToBet),
+    aggr: r(s.postAgg),
+    calls: r(s.postCalls),
+    betOpps: r(s.betOpps),
+    bets: r(s.bets),
+    openFaced: r(s.raiseFaced),
+    threeBets: r(s.threeBets),
+    limps: r(s.limps),
+  };
 }
 
 /** Turns a bot seat into a legend: its name, face, style and voice. */

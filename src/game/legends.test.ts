@@ -4,12 +4,13 @@ import { botLineText, finishLine } from './botTalk';
 import { decide } from './botPlay';
 import { seededRng } from './cards';
 import { isEmoji } from './emoji';
-import { dressAsLegend, LEGEND_IDS, RUNG_WORDS, LEGEND_NOTE, LEGENDS, legendBrain, legendById, legendProfile, legendStyle } from './legends';
+import { dressAsLegend, LEGEND_IDS, RUNG_WORDS, LEGEND_NOTE, LEGENDS, legendBrain, legendById, legendProfile, legendStyle, scoutRead } from './legends';
+import { readOf } from './botRange';
 import { LEGEND_VOICES } from './legendTalk';
 import { redactForDevice } from './redact';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import { options } from './selectors';
-import { twinNumbers, TWIN_PRIOR } from './twin';
+import { emptyTwin, twinNumbers, TWIN_PRIOR } from './twin';
 import { fitStyle } from './twinFit';
 import type { Action, Game } from './types';
 
@@ -180,6 +181,37 @@ describe('legends have techniques, not just numbers', () => {
 
   it('says so when it wins with the signature hand', () => {
     expect(LEGEND_VOICES.brunson.lines.signature?.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('legends study you', () => {
+  const twin = (hands: number) => {
+    const t = emptyTwin();
+    t.hands = hands;
+    Object.assign(t.stats, { vpip: hands * 0.4, pfr: hands * 0.2, betsFaced: hands * 0.3, foldsToBet: hands * 0.3 * 0.6, betOpps: hands * 0.3, bets: hands * 0.3 * 0.5, postAgg: hands * 0.2, postCalls: hands * 0.2, raiseFaced: hands * 0.2, threeBets: hands * 0.02, limps: hands * 0.05 });
+    return t;
+  };
+
+  it('start out knowing what your twin knows, as far as they study people', () => {
+    const ivey = scoutRead(legendById('ivey')!, twin(200))!;
+    const hellmuth = scoutRead(legendById('hellmuth')!, twin(200))!;
+    expect(ivey.hands).toBe(50);
+    expect(hellmuth.hands).toBeLessThan(ivey.hands);
+    // The numbers keep their proportions: a player who folds 60% of bets reads as one.
+    expect(ivey.foldsToBet / ivey.betsFaced).toBeCloseTo(0.6, 1);
+    expect(readOf(ivey).foldToBet).toBeGreaterThan(readOf(undefined).foldToBet);
+  });
+
+  it("don't have anything to go on until they've seen enough of you", () => {
+    expect(scoutRead(legendById('ivey')!, twin(10))).toBeNull();
+    expect(scoutRead(legendById('ivey')!, emptyTwin())).toBeNull();
+  });
+
+  it('never claim to know more hands than your twin has seen', () => {
+    for (const l of LEGENDS) {
+      const r = scoutRead(l, twin(30));
+      if (r) expect(r.hands).toBeLessThanOrEqual(30);
+    }
   });
 });
 

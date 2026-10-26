@@ -584,6 +584,11 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   const prevCheckedThrough = prevStreet !== 'preflop' && !acts.some((a) => a.street === prevStreet && AGGRESSIVE.includes(a.move));
   const floated = mine('flop', (a) => a.move === 'call');
   const wet = ['wet', 'mono'].includes(boardTexture(hand.board.slice(0, board.length)));
+  // A continuation bet meets how they've answered continuation bets (nothing changes for a bot that doesn't act on its reads).
+  const oppsBet =
+    pfa && hand.street === 'flop'
+      ? opps.map((x) => ({ ...x, read: { ...x.read, foldStreet: { ...x.read.foldStreet, flop: Math.max(0.02, Math.min(0.98, x.read.foldStreet.flop + x.read.foldCbet - PRIOR.foldCbet)) } } }))
+      : opps;
   // A king or an ace in the hand: it blocks the top pairs and flushes the other player would call a bluff with.
   const blocker = hole.some((h) => (h >> 2) + 2 >= 13);
 
@@ -660,7 +665,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
       const amount = Math.min(effBehind, f0 * pot);
       if (amount < bb) continue;
       const f = amount / pot;
-      const out = betOutcome(im, opps, f, river, false, committed, streetKey);
+      const out = betOutcome(im, oppsBet, f, river, false, committed, streetKey);
       // Folds from a player who folds too much (or too little), as the bot has seen.
       const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.35) * (1 + foldy * EXPLOIT.fold)));
       // When it's called it's up against the hands that call, whatever it thinks of its own.

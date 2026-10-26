@@ -2,9 +2,9 @@
 // these are the few that need a real value (confetti) or a per-item pick.
 
 export const CONFETTI_COLORS = {
-  party: ['#f97316', '#ec4899', '#8b5cf6', '#14b8a6', '#facc15', '#3b82f6'],
+  party: ['#f97316', '#ec4899', '#ef4444', '#22c55e', '#facc15', '#3b82f6'],
   win: ['#16a34a', '#22c55e', '#facc15', '#fde68a', '#3b82f6'],
 };
 
 /** The join-code letter tiles. */
-export const TILE_COLORS = ['var(--red)', 'var(--blue)', 'var(--green)', 'var(--gold-lo)', 'var(--violet)'];
+export const TILE_COLORS = ['var(--red)', 'var(--blue)', 'var(--green)', 'var(--gold-lo)', 'var(--pink)'];

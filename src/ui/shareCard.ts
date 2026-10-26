@@ -14,8 +14,8 @@ function draw(info: CardInfo): HTMLCanvasElement {
   c.height = 1350;
   const g = c.getContext('2d')!;
   const bg = g.createLinearGradient(0, 0, 0, 1350);
-  bg.addColorStop(0, '#0a7aff');
-  bg.addColorStop(1, '#5856d6');
+  bg.addColorStop(0, '#1a8cff');
+  bg.addColorStop(1, '#0b7545');
   g.fillStyle = bg;
   g.fillRect(0, 0, 1080, 1350);
   g.textAlign = 'center';

@@ -161,7 +161,7 @@ export function JoinSheet() {
             </p>
             <div className="join-code">
               {Array.from({ length: CODE_LENGTH }, (_, i) => (
-                <span key={i} className={`join-cell${i === Math.min(code.length, CODE_LENGTH - 1) ? ' next' : ''}${code[i] ? ' filled' : ''}`}>
+                <span key={`${i}-${code[i] ?? ''}`} className={`join-cell${i === Math.min(code.length, CODE_LENGTH - 1) ? ' next' : ''}${code[i] ? ' filled' : ''}`}>
                   {code[i] ?? ''}
                 </span>
               ))}

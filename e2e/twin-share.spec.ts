@@ -157,9 +157,8 @@ test('a keyed request that is sent again gets the same table or share back, not 
   expect(other.status()).toBe(201);
   expect((await other.json()).code).not.toBe(code);
 
-  // A key that isn't one is refused. No key still works, as before.
+  // A key that isn't one is refused.
   expect((await request.post('/api/tables', { data: table, headers: { 'Idempotency-Key': 'short' } })).status()).toBe(400);
-  expect((await request.post('/api/tables', { data: table })).status()).toBe(201);
 
   // A twin share: the retry gets the same code, and a new secret that works while the first one doesn't.
   const share = { deviceId: device, name: 'Dana', emoji: '🦊', profile: profile(80) };

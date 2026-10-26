@@ -26,6 +26,7 @@
     zoom: calc(1.15 * var(--desk-zoom, 1));
     max-height: calc(88dvh / (1.15 * var(--desk-zoom, 1)));
     border-radius: var(--r-xl);
+    corner-shape: squircle;
     padding-bottom: 24px;
   }
 
@@ -402,6 +403,7 @@
     min-height: 76px;
     font-size: 26px;
     border-radius: var(--r-lg);
+    corner-shape: squircle;
   }
 
   .action-buttons .pre-btn {
@@ -431,6 +433,7 @@
     zoom: calc(1.2 * var(--desk-zoom, 1));
     max-width: 560px;
     border-radius: var(--r-xl);
+    corner-shape: squircle;
     padding-bottom: 16px;
   }
 
@@ -447,6 +450,7 @@
     min-height: 0;
     padding: 18px 20px;
     border-radius: var(--r-lg);
+    corner-shape: squircle;
     background: var(--bg-2);
   }
 

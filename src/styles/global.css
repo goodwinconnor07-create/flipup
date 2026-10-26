@@ -42,6 +42,8 @@
   --r-pill: 999px;
   --radius: var(--r-lg);
   --radius-sm: var(--r-md);
+  /* Rounded rectangles also set `corner-shape: squircle` beside their border-radius: Apple's continuous corners in
+     Chromium, and a plain round corner everywhere else. Circles and pills don't, or they'd stop being round. */
 
   /* ── Neutrals */
   --ink: #000000;
@@ -395,8 +397,38 @@ input {
   font-size: var(--fs-body);
 }
 
-.num {
+.num,
+.tile-num,
+.big-num,
+.stat b,
+.stat-hero,
+.streak-hero b,
+.standing-rank,
+.gr-count,
+.coach-numbers,
+.table-bar .table-title small,
+.table-note {
   font-variant-numeric: tabular-nums;
+}
+
+/* Short titles break into even lines; paragraphs avoid a lone last word. Both are only hints, so older browsers
+   wrap as before. */
+h1,
+h2,
+h3,
+h4,
+.hero,
+.h1,
+.h2,
+.h3,
+[class*='-title'] {
+  text-wrap: balance;
+}
+
+p,
+li,
+blockquote {
+  text-wrap: pretty;
 }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
@@ -411,6 +443,7 @@ input {
   min-height: 50px;
   padding: 0 20px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -449,12 +482,14 @@ input {
   min-height: 56px;
   font-size: var(--fs-lead);
   border-radius: var(--r-md);
+  corner-shape: squircle;
 }
 
 .btn-sm {
   min-height: 40px;
   font-size: var(--fs-small);
   border-radius: var(--r-sm);
+  corner-shape: squircle;
   padding: 0 16px;
 }
 
@@ -636,6 +671,7 @@ input {
 .tile {
   background: var(--surface);
   border-radius: var(--radius);
+  corner-shape: squircle;
   box-shadow:
     0 0 0 2px var(--line),
     var(--shadow-soft);
@@ -645,6 +681,7 @@ input {
 .tile-flat {
   background: var(--bg-2);
   border-radius: var(--radius);
+  corner-shape: squircle;
   padding: 20px;
 }
 
@@ -655,6 +692,7 @@ input {
   min-height: 64px;
   padding: 0 20px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   border: 0;
   background: var(--bg-2);
   box-shadow: inset 0 0 0 3px transparent;
@@ -788,6 +826,7 @@ input {
   overscroll-behavior: contain;
   background: var(--surface);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
+  corner-shape: squircle;
   padding: 12px 20px calc(var(--safe-bottom) + 36px);
   animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.05);
 }
@@ -834,6 +873,7 @@ body:has(.sheet-backdrop) .toasts {
   max-width: 480px;
   padding: 16px 20px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--contrast);
   color: var(--on-contrast);
   font-size: var(--fs-lead);

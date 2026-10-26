@@ -16,6 +16,7 @@
 html:not(.no-glass) .glass-card {
   border: 0;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   padding: 16px;
   background: var(--bg-2);
   box-shadow: none;
@@ -240,6 +241,7 @@ html[data-theme='dark'] .tab-capsule {
   padding: 0;
   border: 0;
   border-radius: var(--r-xl);
+  corner-shape: squircle;
   overflow: hidden;
   text-align: left;
   color: var(--on-color);
@@ -320,6 +322,7 @@ html[data-theme='dark'] .tab-capsule {
 
 .group {
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   background: var(--bg-2);
   overflow: hidden;
 }
@@ -467,6 +470,7 @@ html[data-theme='dark'] .sheet .group {
   padding: 0 0 0 20px;
   border: 0;
   border-radius: var(--r-xl);
+  corner-shape: squircle;
   overflow: hidden;
   color: var(--on-color);
   font: inherit;
@@ -619,6 +623,7 @@ html[data-theme='dark'] .sheet .group {
   place-items: center;
   margin-bottom: 6px;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   overflow: hidden;
 }
 
@@ -880,6 +885,7 @@ html[data-theme='dark'] .sheet .group {
   width: 128px;
   height: 128px;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   overflow: hidden;
 }
 
@@ -1033,6 +1039,7 @@ html[data-theme='dark'] .sheet .group {
   padding: 14px 14px 12px;
   border: 0;
   border-radius: var(--r-xl);
+  corner-shape: squircle;
   color: var(--on-color);
   background: linear-gradient(150deg, var(--hero-1), var(--hero-2));
   font: inherit;
@@ -1212,6 +1219,7 @@ html.calm :is(.mirror-face, .mirror-ref, .mirror-shine) {
 .twin-sheet-art {
   padding: 12px 0;
   border-radius: var(--r-xl);
+  corner-shape: squircle;
   background: linear-gradient(150deg, var(--hero-1), var(--hero-2));
 }
 
@@ -1287,6 +1295,7 @@ html.calm :is(.home-pane, .streak-pill svg, .card-art .art-face, .card-art .toss
   width: 100%;
   padding: 16px;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   background: var(--bg-2);
   text-align: left;
   color: var(--ink);
@@ -1389,6 +1398,7 @@ li.ok > .today-tick,
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   background: var(--bg-2);
   text-align: left;
   color: var(--ink);
@@ -1417,6 +1427,7 @@ li.ok > .today-tick,
   gap: 4px;
   padding: 16px;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   background: var(--bg-2);
   opacity: 0.55;
 }

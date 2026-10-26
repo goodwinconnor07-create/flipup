@@ -80,6 +80,7 @@ html:has(.scroll-screen) body {
   display: block;
   height: 100%;
   border-radius: inherit;
+  corner-shape: inherit;
   background: var(--blue);
   transition: width 0.6s ease;
 }
@@ -198,6 +199,7 @@ html.calm .scroll-page {
   gap: 4px;
   padding: 16px;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -219,6 +221,7 @@ html.calm .scroll-page {
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--r-lg);
+  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -327,6 +330,7 @@ html.calm .pop-in {
   margin: 0 auto;
   padding: 16px 16px calc(var(--safe-bottom) + 16px);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
+  corner-shape: squircle;
   background: var(--glass-fill-strong);
   box-shadow: var(--glass-shine), var(--glass-shadow);
   -webkit-backdrop-filter: var(--glass-blur);
@@ -354,6 +358,7 @@ html.calm .scroll-result {
   top: calc(var(--safe-top) + 72px);
   max-height: calc(100% - var(--safe-top) - 96px);
   border-radius: var(--r-xl);
+  corner-shape: squircle;
   animation: none;
 }
 

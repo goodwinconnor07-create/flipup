@@ -63,6 +63,7 @@
   padding: 0 16px;
   border: 0;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: none;
   font-size: var(--fs-body);
   font-weight: 600;
@@ -98,6 +99,7 @@
   padding: 12px 16px;
   border: 0;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--bg-2);
   font: inherit;
   text-align: left;
@@ -227,6 +229,7 @@
   --tone-bg: var(--bg-2);
   --tone-ink: var(--ink-2);
   border-radius: var(--radius);
+  corner-shape: squircle;
   background: var(--surface);
   box-shadow:
     0 0 0 2px var(--line),
@@ -338,6 +341,7 @@
 .note {
   padding: 12px 14px;
   border-radius: var(--r-sm);
+  corner-shape: squircle;
   background: var(--bg-2);
   font-size: var(--fs-small);
   font-weight: 600;
@@ -407,6 +411,7 @@
   gap: 1px;
   padding: 1px;
   border-radius: var(--r-sm);
+  corner-shape: squircle;
   background: var(--line);
   overflow: hidden;
 }
@@ -535,6 +540,7 @@
   gap: 8px;
   padding: 8px 12px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -553,6 +559,7 @@
   min-height: 48px;
   padding: 0 12px;
   border-radius: var(--r-sm);
+  corner-shape: squircle;
   border: 0;
   background: var(--bg-2);
   font-size: var(--fs-body);
@@ -692,6 +699,7 @@
   gap: 12px;
   padding: 14px 16px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
 }
 
 .focus-card.weak {
@@ -822,6 +830,7 @@
   gap: 10px;
   padding: 16px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -1164,6 +1173,7 @@
   flex: 1 1 100%;
   padding: 12px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -1651,6 +1661,7 @@ html.calm .coach-avatar {
   gap: 8px;
   padding: 4px 12px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -1673,6 +1684,7 @@ html.calm .coach-avatar {
   gap: 8px;
   padding: 16px 12px;
   border-radius: var(--radius);
+  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -1692,6 +1704,7 @@ html.calm .coach-avatar {
   min-width: 52px;
   padding: 8px 6px;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--bg-2);
   font-size: var(--fs-small);
 }
@@ -1722,6 +1735,7 @@ html.calm .coach-avatar {
 .decision-panel {
   padding: 16px;
   border-radius: var(--radius);
+  corner-shape: squircle;
   background: var(--surface);
   box-shadow:
     0 0 0 2px var(--line),
@@ -1751,6 +1765,7 @@ html.calm .coach-avatar {
   padding: 0 16px;
   border: 0;
   border-radius: var(--r-md);
+  corner-shape: squircle;
   background: var(--bg-2);
   overflow: hidden;
   font: inherit;

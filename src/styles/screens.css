@@ -1000,7 +1000,7 @@ html[data-theme='dark'] .btn-dark {
   display: grid;
   place-items: center;
   border-radius: var(--r-md);
-  background: var(--bg-2);
+  background: var(--bg-3);
   font-size: var(--fs-display-2);
   font-weight: 700;
 }

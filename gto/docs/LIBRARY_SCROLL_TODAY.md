@@ -1,5 +1,24 @@
 # Library-first Scroll: today's laptop plan
 
+## Current priority: ONE question trial, before any batch
+
+Stop `scroll-library-fast` if it is still running, update the checkout, then run:
+
+```bash
+"$HOME/flipup-net-env/bin/python" gto/scripts/scroll_one.py \
+  --library "$HOME/flops" --out "$HOME/flipup-scroll-one" --play
+```
+
+This reads one saved source (preferring BTN/BB), extracts one interesting decision, prompts for a
+choice and records EV-loss grading. It exports `question.json`, `review.txt`, numeric root/reached
+ranges and history in `comparison.json`, a copy of the source NPZ, and `timing.json`. Send `trial.zip`
+back for inspection. It measures extraction/export of an existing answer, not fresh solver speed.
+No public upload, training or app UI changes occur. Original source tree/engine settings were not
+fully stored, so comparison remains unverified until settings are matched; do not waste a daily
+Wizard lookup on an unmatched spot. This console trial does not test the unfinished app adapter.
+If the selected source fails checks, it stops without inventing another answer. Preserve outputs;
+a repeat trial needs a new output directory. Do not run the 50-pack or bulk campaign until reviewed.
+
 The expensive whole-flop full-future campaign is superseded for this workload. Do not restart
 `whole-auto launch1`. Preserve its logs. All numerical work stays on the laptops.
 No screen, layout, CSS or frontend component was edited for this backend change.

@@ -1,5 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { legendById, legendProfile, LEGEND_NOTE, LEGENDS, RUNG_WORDS } from '../../game';
+import { legendBefore, legendOpen, loadProgress } from '../../state/progress';
 import { back, startLegend } from '../../state/store';
 import { CoachSays } from '../../train/Coach';
 import { scout } from '../../train/scout';
@@ -11,7 +12,12 @@ export function Legend({ id }: { id: string }) {
   const legend = legendById(id);
   // Their numbers through the same scouting a friend's twin gets.
   const notes = useMemo(() => (legend ? scout(legendProfile(legend), 3, 0.1) : []), [legend]);
+  const [progress] = useState(loadProgress);
   if (!legend) return null;
+  const open = legendOpen(progress, legend.id);
+  const before = legendBefore(legend.id);
+  const record = progress.rivals.legends[legend.id];
+  const beaten = progress.beaten[legend.id];
   return (
     <div className="screen train">
       <div className="topbar">
@@ -51,9 +57,20 @@ export function Legend({ id }: { id: string }) {
             </details>
           </div>
         ))}
-        <button type="button" className="btn btn-xl btn-blue twin-again" onClick={() => startLegend(legend.id)}>
-          {`Play ${legend.short}`}
-        </button>
+        {record && record.w + record.l > 0 && (
+          <p className="legend-record">
+            {beaten ? `You've beaten ${legend.short}${beaten.wins > 1 ? ` ${beaten.wins} times` : ''}.` : `You haven't beaten ${legend.short} yet.`} Record {record.w}–{record.l}.
+          </p>
+        )}
+        {open ? (
+          <button type="button" className="btn btn-xl btn-blue twin-again" onClick={() => startLegend(legend.id)}>
+            {beaten ? `Rematch ${legend.short}` : `Play ${legend.short}`}
+          </button>
+        ) : (
+          <button type="button" className="btn btn-xl btn-ghost twin-again" disabled>
+            {`🔒 Beat ${before?.short} to play ${legend.short}`}
+          </button>
+        )}
         <p className="muted legend-note">{LEGEND_NOTE}</p>
       </div>
     </div>

@@ -262,7 +262,7 @@ export interface Game {
   /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
   botPlan?: { playerId: string; seq: number; move: Move; to?: number };
   /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */
-  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome'; forId?: string; seq?: number };
+  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome' | 'rematchWon' | 'rematchLost'; forId?: string; seq?: number };
   /** Hands in a row each person has lost chips without winning one. Bots use it to pick their moment. Never sent to phones. */
   streaks?: Record<string, number>;
   /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */
@@ -271,12 +271,16 @@ export interface Game {
   again?: string[];
   /** How the game was dealt (blinds rise during a game), so Play again can set up the same one. */
   first?: { settings: Settings; bots: number };
+  /** A bots-only table on this phone that runs on a faster clock (set when it's dealt, so it can't change mid-table). */
+  fast?: boolean;
   /** A heads-up game against the player's own AI twin: "Play again" deals a new one from what the twin has learned since. */
   twinGame?: boolean;
   /** With `twinGame`: the twin is a friend's, whose twin code this is. */
   friendTwin?: string;
   /** A heads-up game against a legend (their id): "Play again" sits down against them again. */
   legendGame?: string;
+  /** With `legendGame`: this person has beaten them before ('won') or only lost to them ('lost'), so they greet them differently. */
+  rematch?: 'won' | 'lost';
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */

@@ -269,3 +269,49 @@ for (const id of Object.keys(MORE) as LegendId[]) {
     LEGEND_VOICES[id].lines[event] = [...(LEGEND_VOICES[id].lines[event] ?? []), ...lines];
   }
 }
+
+// Cross-game memory: what each legend says when you come back (having beaten them, or only lost to them),
+// and what they say when the game is over. Lines hold {you}.
+const MEMORY: Record<LegendId, Partial<Record<TalkEvent, string[]>>> = {
+  hellmuth: {
+    rematchWon: ['{you}. Last time was luck.', 'Back, {you}? I remember that hand.'],
+    rematchLost: ['Again, {you}? I only play the best.', 'Back for more, {you}? Sit down.'],
+    finishWon: ['Patience wins. I told you.', 'The better player won, {you}.'],
+    finishLost: ['I had you beat. Unbelievable.', 'Pure luck, {you}. I’m calling it.'],
+  },
+  brunson: {
+    rematchWon: ['You got me last time, {you}. Again?', 'I’ve got a score to settle, {you}.'],
+    rematchLost: ['Good to see you, {you}. I’m ready.', 'Back at it, {you}. I like that.'],
+    finishWon: ['Good game, {you}. Come back soon.', 'That’s poker, {you}. Run it back.'],
+    finishLost: ['Well played, {you}. You earned it.', 'You had me, {you}. Next time.'],
+  },
+  negreanu: {
+    rematchWon: ['You got me last time, {you}. Round two!', 'I read you better now, {you}.'],
+    rematchLost: ['I’ve figured out your game, {you}.', '{you}, back for another? Let’s go.'],
+    finishWon: ['Good game, {you}. You’re improving.', 'I read it right this time.'],
+    finishLost: ['Nice one, {you}. Didn’t see it.', 'You outplayed me, {you}.'],
+  },
+  ivey: {
+    rematchWon: ['{you}. I remember how you play.', 'You beat me. I adjusted.'],
+    rematchLost: ['{you}. Again.', 'Same table, {you}. New result.'],
+    finishWon: ['Good game.', 'You’ll get there, {you}.'],
+    finishLost: ['Good play, {you}.', 'Well played. I’ll remember it.'],
+  },
+  dwan: {
+    rematchWon: ['{you}! I want my chips back.', 'You again? No mercy, {you}.'],
+    rematchLost: ['Back already, {you}? Good.', '{you}. Let’s gamble.'],
+    finishWon: ['Easy game, {you}. Another?', 'That’s how it goes, {you}.'],
+    finishLost: ['Okay, {you}. One. Rematch?', 'You got me. Don’t get comfy.'],
+  },
+  rampage: {
+    rematchWon: ['You read me last time, {you}. Again?', 'Round two, {you}? New tricks.'],
+    rematchLost: ['{you}! Ready for more action?', 'Run it back, {you}. Big pots.'],
+    finishWon: ['Pressure works, {you}. Again?', 'Good game, {you}. Not enough.'],
+    finishLost: ['Great game, {you}. You earned it.', 'You caught me, {you}. Respect.'],
+  },
+};
+for (const id of Object.keys(MEMORY) as LegendId[]) {
+  for (const [event, lines] of Object.entries(MEMORY[id]) as [TalkEvent, string[]][]) {
+    LEGEND_VOICES[id].lines[event] = [...(LEGEND_VOICES[id].lines[event] ?? []), ...lines];
+  }
+}

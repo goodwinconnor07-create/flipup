@@ -167,6 +167,15 @@ export function saveBigBlinds(on: boolean): void {
   write('flipup.bb', on);
 }
 
+/** True if the player wants bot tables on this phone to run faster. Off until they turn it on. */
+export function loadFast(): boolean {
+  return read<boolean>('flipup.fast') === true;
+}
+
+export function saveFast(on: boolean): void {
+  write('flipup.fast', on);
+}
+
 /** False if the player turned the bots' table talk off. It's on until they do. */
 export function loadTalk(): boolean {
   return read<boolean>('flipup.talk') !== false;
@@ -265,7 +274,7 @@ export function saveLastBots(last: LastBots): void {
 
 // ── Daily streak ────────────────────────────────────────────────────────────
 
-const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 function loadDays(): string[] {
   const d = read<string[]>('flipup.days');

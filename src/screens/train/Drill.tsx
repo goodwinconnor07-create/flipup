@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { getDrill } from '../../gto/api';
 import type { Drill as DrillData } from '../../gto/types';
 import { recordDrill } from '../../state/training';
+import { noteDrill } from '../../state/progress';
 import { CoachSays } from '../../train/Coach';
 import { drillLines } from '../../train/coach';
 import { scenarioTitle } from '../../train/scenarios';
@@ -40,6 +41,7 @@ export function Drill({ scenario }: { scenario: string }) {
     const o = drill.answer.options.find((x) => x.action === action);
     if (o?.colour) {
       recordDrill(scenario, o.colour, o.ev_loss_bb);
+      noteDrill();
       setScore((s) => ({ n: s.n + 1, green: s.green + (o.colour === 'green' ? 1 : 0), yellow: s.yellow + (o.colour === 'yellow' ? 1 : 0) }));
     }
   };

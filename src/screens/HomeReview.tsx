@@ -105,6 +105,13 @@ export function ReviewTab() {
             <ChevronIcon className="gr-chev" width={16} height={16} />
           </button>
         ))}
+        <button type="button" className="group-row press" onClick={() => navigate({ name: 'progress' })}>
+          <span className="gr-icon" style={{ background: 'var(--violet)' }}>
+            <TrophyIcon />
+          </span>
+          <span className="gr-text">Goals and badges</span>
+          <ChevronIcon className="gr-chev" width={16} height={16} />
+        </button>
         {twinGames && (
           <button type="button" className="group-row press" onClick={openTwinReport}>
             <span className="gr-icon" style={{ background: 'var(--indigo)' }}>

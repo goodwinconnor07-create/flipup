@@ -65,6 +65,12 @@ export type TalkEvent =
   | 'watched'
   /** A new heads-up game is about to start: a word to the one person across the table, by name ({you}). */
   | 'hello'
+  /** A legend meets someone who has already beaten them / only lost to them. */
+  | 'rematchWon'
+  | 'rematchLost'
+  /** The game is over: the legend won, or lost. Said on the finish screen. */
+  | 'finishWon'
+  | 'finishLost'
   /** A new game with several players is about to start: a word to the table. */
   | 'welcome';
 
@@ -100,6 +106,10 @@ const TRASH: Lines = {
   gotBluffed: ['You had THAT?', 'Noted.', 'I’ll remember that.', 'Enjoy it while it lasts.', 'Cute.'],
   watched: ['Well, well.', 'Brutal.', 'There it is.', 'Wow, okay.', 'Next.'],
   hello: ['Hey {you}. Ready to lose?', 'Sit down, {you}.', '{you}. Let’s see what you’ve got.', 'Nice to meet you, {you}. Nice chips.', 'Evening, {you}.'],
+  rematchWon: [],
+  rematchLost: [],
+  finishWon: [],
+  finishLost: [],
   welcome: ['Welcome to the table.', 'Fresh chips. Lovely.', 'Hope you all brought chips.', 'Take a seat, fish.', 'Let’s play.'],
 };
 
@@ -133,6 +143,10 @@ const FRIENDLY: Lines = {
   gotBluffed: ['No way!', 'You had nothing?!', 'Sneaky!', 'Ugh, I believed you.', 'Well played…'],
   watched: ['Wow!', 'What a hand!', 'Wild one.', 'Oof, nice.', 'Phew, glad that’s over.'],
   hello: ['Hi {you}! Good luck!', 'Hey {you}, let’s have fun!', 'Welcome, {you}! Ready?', 'Good to see you, {you}!', 'Hi {you}! Be gentle 😅'],
+  rematchWon: [],
+  rematchLost: [],
+  finishWon: [],
+  finishLost: [],
   welcome: ['Welcome to the table!', 'Hi everyone!', 'Good luck, all!', 'Glad you’re here!', 'Let’s have a good one!'],
 };
 
@@ -307,6 +321,13 @@ export function botLineText(lineId: string): string {
   return pool(tone, event as TalkEvent)[Number(i)] ?? '';
 }
 
+/** A line a legend says when the game is over (null for anyone else). `name` is who they played. */
+export function finishLine(legend: string, event: 'finishWon' | 'finishLost', name: string, pick: number): string | null {
+  if (!(legend in LEGEND_VOICES)) return null;
+  const lines = LEGEND_VOICES[legend as LegendId].lines[event] ?? [];
+  return lines.length ? lines[pick % lines.length].replace('{you}', name) : null;
+}
+
 /** Every line a voice can say for an event: its tone's pool, then the style's own lines. Old ids name just the tone. */
 function pool(voice: string, event: TalkEvent): string[] {
   if (voice === 'trash') return TRASH[event] ?? [];
@@ -352,6 +373,10 @@ const CHANCE: Record<TalkEvent, number> = {
   gotBluffed: 0.9,
   watched: 1,
   hello: 1,
+  rematchWon: 1,
+  rematchLost: 1,
+  finishWon: 1,
+  finishLost: 1,
   welcome: 1,
 };
 

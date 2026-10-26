@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cardName, describeHand, equity, myPlayer, options, pot, seatFor, type Card, type Equity, type Game, type Hand } from '../game';
 import { dispatch, openSheet, toast, useApp } from '../state/store';
+import { toTableTime } from '../state/clock';
 import { Avatar, CardSlot, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
 import { MenuIcon } from '../ui/Icons';
@@ -151,7 +152,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const podSlots = usePodSlots(game, others, !desktop, reactions);
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
   const timed = !!hand?.deadline || ((!hand || !!hand.result) && !!game.nextHandAt);
-  const now = useNow(timed ? 200 : 60_000);
+  const real = useNow(timed ? 200 : 60_000);
+  const now = toTableTime(real, game.fast);
   useTableSounds(game, me?.id);
 
   // A buzz when it's your turn, and confetti when you win a pot.

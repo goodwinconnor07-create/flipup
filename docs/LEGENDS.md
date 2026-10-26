@@ -81,3 +81,11 @@ its numbers, then plays heads-up.
 ## Rampage
 
 Added after stage 3. His numbers are prototype dials for the fit (aggressive, a taste for big bluffs, good at reading opponents), not his real statistics: nobody has his full hands, and the profile this comes from says so. The dials map onto existing knobs only: big and overbet sizes, `bluff`/`raise`/`value` leans, `trap` for slow-playing monsters, `sense` and `adapt` for reading, a little `wobble` and `chase` for overreach. No new bot logic. Measured with `twinLab.ts legends 300`, a plain player loses −123 bb/100 against him, the worst of the six, so he sits on the top rung ("Boss"); the rung words are now Warm-up, Easy, Tricky, Tough, Hard, Boss.
+
+## Stage 4, as built
+
+- **Ladder.** Brunson is open. Each next legend opens when you knock the one before out heads-up (their stack at zero, you first). Locked legends can still be read (profile and scouting), but "Play" is greyed out.
+- **Badges and goals.** One badge for each legend beaten, one for the whole ladder, and others for wins, bluffs, big pots, all-ins, comebacks, beating your twin or a friend's, hands played and streaks. Three goals a day, one of them easy. Both live on the "Goals and badges" screen (Review tab, and the Today card on Play).
+- **Memory.** A legend greets you with a rematch line if you've beaten them, or if you've only lost to them, and says a line when the game ends.
+- **Records.** Your score against each legend, your twin and friends' twins, shown on the profile, the twin tile and the finish screen.
+- **Not done.** Coaching review per legend and Insights charts per legend.

@@ -16,6 +16,7 @@ import { ScrollScenarios } from './screens/train/ScrollScenarios';
 import { TwinReport } from './screens/train/TwinReport';
 import { Friends } from './screens/train/Friends';
 import { Scout } from './screens/train/Scout';
+import { Progress } from './screens/train/Progress';
 import { Legend } from './screens/train/Legend';
 
 export function App() {
@@ -75,6 +76,9 @@ export function App() {
       break;
     case 'legend':
       screen = <Legend key={route.id} id={route.id} />;
+      break;
+    case 'progress':
+      screen = <Progress />;
       break;
   }
 

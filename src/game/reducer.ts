@@ -474,7 +474,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (bots.length) {
         const headsUp = game.players.length === 2 && people.length === 1;
         const who = headsUp ? bots[0] : bots[Math.floor(ctx.rng() * bots.length)];
-        game.pendingTalk = { at: ctx.now + TIMING.greeting, playerId: who.id, event: headsUp ? 'hello' : 'welcome', forId: headsUp ? people[0].id : undefined };
+        game.pendingTalk = { at: ctx.now + TIMING.greeting, playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
       }
       schedule(game);
       return done();
@@ -651,7 +651,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
   if (game.pendingTalk && due(game.pendingTalk.at)) {
     const { playerId, event, forId, seq } = game.pendingTalk;
     delete game.pendingTalk;
-    if (event === 'hello' || event === 'welcome') {
+    if (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost') {
       botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
       schedule(game);
       return true;

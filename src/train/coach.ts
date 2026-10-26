@@ -583,3 +583,18 @@ export function scoutLines(name: string, twin: { hands: number; ready: boolean; 
 export function planIntro(name: string, hands: number): string {
   return `Here's how your game plan against ${name}'s twin did over ${hands} hands.`;
 }
+
+/** The coach's read of one table, from the numbers on the finish screen. Short, plain, never harsh. */
+export function tableNote(s: { hands: number; won: number; vpip: number; aggression: number; foldPct: number; showdowns: number; showdownsWon: number; bluffsWon: number; style: string }, won: boolean): string[] {
+  if (s.hands < 5) return ['That was a short one. Play a few more hands and I can say something about your style.'];
+  const lines: string[] = [];
+  lines.push(won ? `Nice game. You played ${s.style.toLowerCase()}, and it worked.` : `You played ${s.style.toLowerCase()} this time.`);
+  if (s.vpip >= 0.45) lines.push(`You entered ${Math.round(s.vpip * 100)}% of the hands. That's a lot. Folding more of the weak ones saves chips.`);
+  else if (s.vpip <= 0.15) lines.push(`You only played ${Math.round(s.vpip * 100)}% of your hands. Good discipline, but players who know that can steal your blinds.`);
+  if (s.aggression < 0.3) lines.push('You called more than you bet. Betting your good hands (and some bluffs) wins pots without a showdown.');
+  else if (s.aggression > 0.7) lines.push('You bet and raised nearly every time you acted. Mixing in a few checks makes your bets harder to read.');
+  if (s.foldPct > 0.6) lines.push(`You folded ${Math.round(s.foldPct * 100)}% of the time. Some of those could have been calls.`);
+  if (s.showdowns >= 4 && s.showdownsWon / s.showdowns < 0.35) lines.push('You lost most of your showdowns. You might be paying off too many bets with medium hands.');
+  if (s.bluffsWon >= 2) lines.push(`${s.bluffsWon} of your pots came from bluffs. Nice.`);
+  return lines.slice(0, 3);
+}

@@ -4,6 +4,7 @@
 import { useState, type ReactNode } from 'react';
 import type { Colour, Decision, PracticeHand } from '../gto/types';
 import { recordDrill } from '../state/training';
+import { noteDrill } from '../state/progress';
 import { COACH_EMOJI, COACH_NAME, GRADE_WORD, lessonLine, verdictLines } from './coach';
 import { bb, pct, prettyAction } from './format';
 import { drillFor, scenarioTitle } from './scenarios';
@@ -182,7 +183,10 @@ export function RetrySpot({ d }: { d: Decision }) {
     if (picked) return;
     setPicked(action);
     const g = gradePick(p, action, d.pot_bb);
-    if (d.scenario) recordDrill(d.scenario, g.colour, g.loss);
+    if (d.scenario) {
+      recordDrill(d.scenario, g.colour, g.loss);
+      noteDrill();
+    }
   };
 
   if (!shown) {

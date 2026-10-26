@@ -409,6 +409,11 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await page.getByRole('button', { name: 'End the game' }).click();
   await page.getByRole('dialog', { name: 'End the game for everyone?' }).getByRole('button', { name: 'End game' }).click();
   await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 10_000 });
+  // The finish screen is one long page: the big number, then standings further down.
+  await expect(page.locator('.fin-big')).toBeVisible();
+  await page.getByRole('heading', { name: 'Final standings' }).scrollIntoViewIfNeeded();
+  await expect(page.locator('.standing')).toHaveCount(await page.locator('.standing').count());
+  await shot(page, '17-finish-screen');
   await page.getByRole('button', { name: 'Done' }).click();
   // Insights lives under Review, and counts tables by where you finished, not chips.
   await page.getByRole('tab', { name: 'Review' }).click();

@@ -7,6 +7,8 @@ test('Play lists the legends; a profile says how they play, and you can sit down
     if (localStorage.getItem('seeded')) return;
     localStorage.setItem('seeded', '1');
     localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Kavisha', emoji: '🦊' }));
+    // Brunson already beaten, so Hellmuth is open and Negreanu is still locked.
+    localStorage.setItem('flipup.progress', JSON.stringify({ beaten: { brunson: { wins: 1, first: 1 } } }));
   });
   await page.goto('/');
   await expect(page.getByRole('heading', { name: 'Legends' })).toBeVisible();
@@ -16,6 +18,10 @@ test('Play lists the legends; a profile says how they play, and you can sit down
   await expect(cards).toHaveText(['Brunson', 'Hellmuth', 'Negreanu', 'Ivey', 'Dwan', 'Rampage']);
   await page.locator('.legends .quick-row').scrollIntoViewIfNeeded();
   await shot(page, 'legends-01-shelf');
+
+  await expect(page.locator('.legends .quick-card.locked')).toHaveCount(4);
+  await expect(page.getByRole('button', { name: /^Daniel Negreanu\./ })).toContainText('Locked');
+  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
 
   await page.getByRole('button', { name: /^Phil Hellmuth\./ }).click();
   await expect(page.getByText('Folds most hands before the flop')).toBeVisible();

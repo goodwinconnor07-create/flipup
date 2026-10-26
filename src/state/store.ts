@@ -33,6 +33,8 @@ import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
 import { loadTwin } from './twin';
+import { FAST, toTableTime } from './clock';
+import { legendBefore, legendOpen, loadProgress } from './progress';
 import { queueSync, shareCode, syncShare } from './share';
 import { beginTwinGame, finishTwinGame } from './twinGames';
 import { bestTwin, loadFriend, notePlayed } from './friends';
@@ -43,7 +45,9 @@ import {
   loadAppearance,
   loadGlass,
   loadMuted,
+  loadFast,
   loadTalk,
+  saveFast,
   saveTalk,
   loadProfile,
   loadSession,
@@ -90,7 +94,9 @@ export type Route =
   | { name: 'friends' }
   | { name: 'scout'; code: string }
   /** A legend's profile: how they play, and a game against them. */
-  | { name: 'legend'; id: string };
+  | { name: 'legend'; id: string }
+  /** Goals, the legends ladder, badges and records. */
+  | { name: 'progress' };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 
@@ -148,6 +154,8 @@ export interface AppState {
   muted: boolean;
   /** Show what the bots say at the table. */
   talk: boolean;
+  /** Bot tables on this phone run on a faster clock. */
+  fast: boolean;
   /** Animations switched off. */
   calm: boolean;
   /** What the player picked: light, dark or the same as the phone. */
@@ -192,6 +200,7 @@ let state: AppState = {
   look: loadTableLook(),
   muted: loadMuted(),
   talk: loadTalk(),
+  fast: loadFast(),
   calm: loadCalm(),
   appearance: loadAppearance(),
   dark: false,
@@ -356,6 +365,7 @@ function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Gam
   const settings: Settings = { ...DEFAULT_SETTINGS, turnSeconds: 0 };
   const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: bot ? [bot] : undefined, code: null, now: Date.now() });
   const them = game.players.find((p) => p.bot);
+  if (state.fast) game.fast = true;
   if (them) prepare(them, game);
   closeConnection();
   setSession({ mode: 'local', code: null, game });
@@ -395,9 +405,17 @@ export function startLegend(id: string): void {
   if (state.busy) return;
   const legend = legendById(id);
   if (!legend) return;
+  const progress = loadProgress();
+  if (!legendOpen(progress, legend.id)) {
+    toast(`Beat ${legendBefore(legend.id)?.short ?? 'the one before'} first.`, 'error');
+    return;
+  }
   if (state.game?.legendGame) recordFinished();
+  const seen = progress.rivals.legends[legend.id];
   startHeadsUp(undefined, (them, game) => {
     game.legendGame = legend.id;
+    if (progress.beaten[legend.id]) game.rematch = 'won';
+    else if (seen && seen.l > 0) game.rematch = 'lost';
     dressAsLegend(them, legend);
   });
 }
@@ -432,6 +450,9 @@ export function openScroll(): void {
   navigate({ name: 'scroll' });
 }
 
+/** Fast tables run their clock at twice the speed: the same waits, half as long. Fixed per table, so nothing moves mid-game. */
+const tableNow = (game: Game | null | undefined): number => toTableTime(Date.now(), game?.fast);
+
 /** Bots-only tables keep their own clock on this phone: bots act, cards run out, hands deal. */
 function scheduleLocal(): void {
   clearTimeout(localTimer);
@@ -441,11 +462,11 @@ function scheduleLocal(): void {
     () => {
       const s = state.session;
       if (s?.mode !== 'local' || !s.game) return;
-      const r = applyAction(s.game, { type: 'tick' }, { deviceId: 'clock', now: Date.now(), rng: cryptoRng });
+      const r = applyAction(s.game, { type: 'tick' }, { deviceId: 'clock', now: tableNow(s.game), rng: cryptoRng });
       if (r.ok && r.changed) setSession({ ...s, game: r.game });
       else scheduleLocal();
     },
-    Math.max(0, wakeAt - Date.now()),
+    Math.max(0, (wakeAt - tableNow(state.session?.game)) / (state.session?.game?.fast ? FAST : 1)),
   );
 }
 
@@ -532,7 +553,7 @@ export function dispatch(action: Action): boolean {
   if (!s) return false;
   if (s.mode === 'online') return send(action);
   if (!s.game) return false;
-  const r = applyAction(s.game, action, { deviceId: state.deviceId, now: Date.now(), rng: cryptoRng });
+  const r = applyAction(s.game, action, { deviceId: state.deviceId, now: tableNow(s.game), rng: cryptoRng });
   if (!r.ok) {
     toast(r.error, 'error');
     haptic('error');
@@ -568,6 +589,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   const emoji = state.profile.emoji;
   if (mode === 'local') {
     const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, code: null, now: Date.now() });
+    if (state.fast) game.fast = true;
     saveLastBots({ bots: game.players.filter((p) => p.bot).map((p) => p.name), settings, at: Date.now() });
     closeConnection();
     setSession({ mode: 'local', code: null, game });
@@ -607,6 +629,12 @@ export function setTableLook(patch: Partial<TableLook>): void {
   const look = { ...state.look, ...patch };
   saveTableLook(look);
   set({ look });
+}
+
+export function toggleFast(): void {
+  const fast = !state.fast;
+  saveFast(fast);
+  set({ fast });
 }
 
 export function toggleTalk(): void {

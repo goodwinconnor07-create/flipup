@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { BOTS } from './botStyles';
-import { botLineText } from './botTalk';
+import { botLineText, finishLine } from './botTalk';
 import { decide } from './botPlay';
 import { seededRng } from './cards';
 import { isEmoji } from './emoji';
@@ -103,6 +103,36 @@ describe('the legends', () => {
     expect(seen).not.toHaveProperty('twin');
     expect(seen).not.toHaveProperty('style');
     expect(seen.legend).toBe('ivey');
+  });
+});
+
+describe('legends remember you', () => {
+  it('greet a person they have met in their own words, and have a word for the end of the game', () => {
+    for (const id of LEGEND_IDS) {
+      for (const event of ['rematchWon', 'rematchLost', 'finishWon', 'finishLost'] as const) expect(LEGEND_VOICES[id].lines[event]?.length, `${id} ${event}`).toBeGreaterThanOrEqual(2);
+      expect(finishLine(id, 'finishWon', 'Sam', 0)).toBeTruthy();
+    }
+    expect(finishLine('hellmuth', 'finishWon', 'Sam', 1)).toBe('The better player won, Sam.');
+    expect(finishLine('somebody-else', 'finishWon', 'Sam', 0)).toBeNull();
+  });
+
+  it('say the rematch line when the game says they have met', () => {
+    for (const rematch of ['won', 'lost'] as const) {
+      let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 1, code: null, now: 1000 });
+      dressAsLegend(g.players[1], legendById('dwan')!);
+      g.rematch = rematch;
+      let now = 1000;
+      const go = (action: Action, deviceId: string) => {
+        const r = applyAction(g, action, { deviceId, now, rng: seededRng(3) });
+        if (!r.ok) throw new Error(r.error);
+        g = r.game;
+      };
+      go({ type: 'start' }, 'h');
+      expect(g.pendingTalk?.event).toBe(rematch === 'won' ? 'rematchWon' : 'rematchLost');
+      now += 800;
+      go({ type: 'tick' }, 'h');
+      expect(g.reactions?.[g.players[1].id]?.id).toMatch(new RegExp(`^b:dwan:rematch${rematch === 'won' ? 'Won' : 'Lost'}:`));
+    }
   });
 });
 

@@ -15,6 +15,7 @@ import {
   setTableLook,
   toast,
   toggleCalm,
+  toggleFast,
   toggleTalk,
   setAppearance,
   toggleGlass,
@@ -343,12 +344,14 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
   const muted = useApp((s) => s.muted);
   const calm = useApp((s) => s.calm);
   const talk = useApp((s) => s.talk);
+  const fast = useApp((s) => s.fast);
   const glass = useApp((s) => s.glass);
   return {
     switches: [
       { label: 'Sound', Icon: SoundIcon, color: 'var(--red)', on: !muted, onChange: toggleMuted },
       { label: 'Animations', Icon: BoltIcon, color: 'var(--gold)', on: !calm, onChange: toggleCalm },
       { label: 'Bot talk', Icon: ChatIcon, color: 'var(--green)', on: talk, onChange: toggleTalk },
+      { label: 'Fast bot games', Icon: ClockIcon, color: 'var(--indigo)', on: fast, onChange: toggleFast },
       { label: 'Transparency', Icon: GlassIcon, color: 'var(--blue)', on: glass, onChange: toggleGlass },
     ],
     links: [

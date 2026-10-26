@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { LEGENDS, RUNG_WORDS, type Legend } from '../game';
+import { legendBefore, legendOpen, loadProgress } from '../state/progress';
 import { navigate, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { LEGEND_SCENES } from './botScenes';
@@ -19,23 +21,28 @@ export function LegendArt({ legend, size = 64, className = 'quick-art' }: { lege
 /** The Play tab's Legends: bots in the style of famous players, easiest first. */
 export function LegendShelf() {
   const named = useApp((s) => s.profile.name.trim().length > 0);
+  const [progress] = useState(loadProgress);
   return (
     <section className="quick-games legends" aria-label="Legends">
       <h3 className="section-head">Legends</h3>
       <div className="quick-row">
-        {LEGENDS.map((l) => (
+        {LEGENDS.map((l) => {
+          const open = legendOpen(progress, l.id);
+          const beaten = !!progress.beaten[l.id];
+          return (
           <button
             key={l.id}
             type="button"
-            className="quick-card press"
-            aria-label={`${l.name}. ${RUNG_WORDS[l.rung - 1]}.`}
+            className={`quick-card press${open ? '' : ' locked'}`}
+            aria-label={`${l.name}. ${open ? (beaten ? 'Beaten.' : RUNG_WORDS[l.rung - 1] + '.') : `Locked. Beat ${legendBefore(l.id)?.short} first.`}`}
             onClick={() => (named ? navigate({ name: 'legend', id: l.id }) : navigate({ name: 'profile', then: 'bots' }))}
           >
             <LegendArt legend={l} />
             <b>{l.short}</b>
-            <small>{RUNG_WORDS[l.rung - 1]}</small>
+            <small>{open ? (beaten ? 'Beaten ✓' : RUNG_WORDS[l.rung - 1]) : '🔒 Locked'}</small>
           </button>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

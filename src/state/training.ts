@@ -11,6 +11,7 @@ import { addTwinHand } from './twinGames';
 
 const KEYS = {
   history: 'flipup.history',
+  saved: 'flipup.savedhands',
   reviews: 'flipup.reviews',
   reports: 'flipup.reports',
   drills: 'flipup.drills',
@@ -45,10 +46,46 @@ export interface DrillScore {
 
 export const handKey = (tableId: string, number: number) => `${tableId}#${number}`;
 
+/** Hands you haven't saved are kept for a day, like Scroll hands. */
+export const KEEP_MS = 24 * 60 * 60 * 1000;
+
+/** A table hand you saved to the study bank, under a name. */
+export interface SavedHand {
+  key: string;
+  name: string;
+  saved: number;
+}
+
+export function loadSaved(): SavedHand[] {
+  const s = read<SavedHand[]>(KEYS.saved);
+  return (Array.isArray(s) ? s.filter((x) => x && typeof x.key === 'string') : []).sort((a, b) => b.saved - a.saved);
+}
+
+export function saveHand(key: string, name: string, now = Date.now()): SavedHand[] {
+  const next = [{ key, name: name.trim() || 'Saved hand', saved: now }, ...loadSaved().filter((h) => h.key !== key)];
+  write(KEYS.saved, next);
+  return next;
+}
+
+export function renameSaved(key: string, name: string): SavedHand[] {
+  const next = loadSaved().map((h) => (h.key === key ? { ...h, name: name.trim() || h.name } : h));
+  write(KEYS.saved, next);
+  return next;
+}
+
+export function unsaveHand(key: string): SavedHand[] {
+  const next = loadSaved().filter((h) => h.key !== key);
+  write(KEYS.saved, next);
+  return next;
+}
+
+/** Hands you played: everything from the last 24 hours plus the ones you saved (older ones are deleted here,
+ * with their reviews). */
 export function loadHistory(now = Date.now()): PlayedHand[] {
   const h = read<PlayedHand[]>(KEYS.history);
+  const saved = new Set(loadSaved().map((s) => s.key));
   const kept = Array.isArray(h) ? h.filter((x) => x && x.record && typeof x.heroId === 'string'
-    && Number.isFinite(x.record.at) && x.record.at <= now && now - x.record.at < 24 * 60 * 60 * 1000) : [];
+    && (saved.has(x.key) || (Number.isFinite(x.record.at) && x.record.at <= now && now - x.record.at < KEEP_MS))) : [];
   if (Array.isArray(h) && kept.length !== h.length) {
     write(KEYS.history, kept);
     const keys = new Set(kept.map(x => x.key));

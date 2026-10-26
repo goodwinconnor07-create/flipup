@@ -1,10 +1,12 @@
-// The study bank: Scroll hands you saved with a name, kept until you delete them, and the hands you
-// played in the last 24 hours (saved or not, those go after a day).
+// The study bank: Scroll hands and table hands you saved with a name, kept until you delete them, and
+// the Scroll hands you played in the last 24 hours (unsaved hands go after a day).
 
 import { useEffect, useState } from 'react';
 import type { Colour } from '../../gto/types';
 import { loadBank, loadRecent, removeBanked, renameBanked, restoreBanked, saveToBank, type BankHand, type PlayedQuiz } from '../../quiz/save';
 import { navigate, toast, undoToast } from '../../state/store';
+import { loadHistory, loadSaved, renameSaved, unsaveHand } from '../../state/training';
+import { REPLAY_ON } from '../../train/replay';
 import { CoachSays } from '../../train/Coach';
 import { Dots, MiniCards } from '../../train/widgets';
 import { transition } from '../../ui/viewTransition';
@@ -25,6 +27,12 @@ export function StudyBank() {
     window.addEventListener('focus', refresh);
     return () => { clearInterval(timer); window.removeEventListener('focus', refresh); };
   }, []);
+  const [saved, setSaved] = useState(loadSaved);
+  const [history] = useState(() => new Map(loadHistory().map((h) => [h.key, h])));
+  const tableHands = saved.flatMap((s) => {
+    const h = history.get(s.key);
+    return h ? [{ ...s, hand: h }] : [];
+  });
   const [editing, setEditing] = useState<string | null>(null);
   const [name, setName] = useState('');
   const banked = new Set(bank.map((h) => h.id));
@@ -68,7 +76,28 @@ export function StudyBank() {
     </form>
   );
 
-  if (bank.length === 0 && unsaved.length === 0) {
+  const renameForm = (key: string) => (
+    <form
+      className="quiz-save sb-form"
+      onSubmit={(e) => {
+        e.preventDefault();
+        setSaved(renameSaved(key, name));
+        setEditing(null);
+      }}
+    >
+      <input className="field" aria-label="Name" value={name} maxLength={60} autoFocus onChange={(e) => setName(e.target.value)} />
+      <div className="quiz-save-actions">
+        <button type="button" className="btn btn-link" onClick={() => setEditing(null)}>
+          Cancel
+        </button>
+        <button type="submit" className="btn btn-sm btn-dark">
+          Rename
+        </button>
+      </div>
+    </form>
+  );
+
+  if (bank.length === 0 && unsaved.length === 0 && tableHands.length === 0) {
     return (
       <div className="t-empty">
         <h2 className="h2">Nothing saved yet</h2>
@@ -86,12 +115,36 @@ export function StudyBank() {
     <>
       <CoachSays lines={['Saved hands stay until you delete them. Play one again to have another go at every decision.']} />
       <h2 className="section-head">Saved</h2>
-      {bank.length === 0 ? (
+      {bank.length === 0 && tableHands.length === 0 ? (
         <p className="muted">No saved hands yet. Save one from the list below or during a hand.</p>
       ) : (
         <div className="t-list">
+          {tableHands.map((s) => (
+            <Row key={s.key} id={s.key} cards={s.hand.record.holes[s.hand.heroId] ?? []} title={s.name} sub={`Table hand · saved ${when(s.saved)}`}>
+              {editing === s.key ? (
+                renameForm(s.key)
+              ) : (
+                <div className="sb-actions">
+                  <button type="button" className="btn btn-link danger" onClick={() => setSaved(unsaveHand(s.key))}>
+                    Delete
+                  </button>
+                  <button type="button" className="btn btn-link" onClick={() => (setEditing(s.key), setName(s.name))}>
+                    Rename
+                  </button>
+                  {REPLAY_ON && (
+                    <button type="button" className="btn btn-link" onClick={() => navigate({ name: 'replay', key: s.key })}>
+                      Replay
+                    </button>
+                  )}
+                  <button type="button" className="btn btn-sm btn-dark" onClick={() => navigate({ name: 'lesson', key: s.key })}>
+                    Review
+                  </button>
+                </div>
+              )}
+            </Row>
+          ))}
           {bank.map((h) => (
-            <Row key={h.id} hand={h} title={h.name} sub={`Saved ${when(h.saved)}`}>
+            <Row key={h.id} id={h.id} cards={h.cards ?? []} grades={h.grades} title={h.name} sub={`Scroll hand · saved ${when(h.saved)}`}>
               {editing === h.id ? (
                 nameForm(h)
               ) : (
@@ -117,7 +170,7 @@ export function StudyBank() {
           <p className="muted">Not saved, so these go a day after you play them.</p>
           <div className="t-list">
             {unsaved.map((h) => (
-              <Row key={h.id} hand={h} title={h.title} sub={when(h.at)}>
+              <Row key={h.id} id={h.id} cards={h.cards ?? []} grades={h.grades} title={h.title} sub={when(h.at)}>
                 {editing === h.id ? (
                   nameForm(h)
                 ) : (
@@ -139,16 +192,16 @@ export function StudyBank() {
   );
 }
 
-function Row({ hand, title, sub, children }: { hand: PlayedQuiz | BankHand; title: string; sub: string; children: React.ReactNode }) {
+function Row({ id, cards, grades, title, sub, children }: { id: string; cards: string[]; grades?: Colour[]; title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="t-row sb-row" style={{ ['--vt' as string]: `bank-${hand.id.replace(/[^\w-]/g, '')}` }}>
+    <div className="t-row sb-row" style={{ ['--vt' as string]: `bank-${id.replace(/[^\w-]/g, '')}` }}>
       <div className="sb-top">
-        <MiniCards cards={hand.cards ?? []} />
+        <MiniCards cards={cards} />
         <span className="t-row-main">
           <b>{title}</b>
           <small>{sub}</small>
         </span>
-        <Dots colours={hand.grades as Colour[]} />
+        {grades && <Dots colours={grades} />}
       </div>
       {children}
     </div>

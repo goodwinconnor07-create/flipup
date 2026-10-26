@@ -11,6 +11,7 @@ import {
   DEFAULT_SETTINGS,
   isCode,
   newId,
+  newIdempotencyKey,
   normalizeCode,
   redactForDevice,
   dressAsLegend,
@@ -28,7 +29,7 @@ import {
 } from '../game';
 import type { StyleId } from '../game/botStyles';
 import { haptic, reducedMotion } from '../ui/effects';
-import { createOnlineTable } from './api';
+import { createOnlineTable, UnsureError } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
@@ -599,6 +600,9 @@ export function refreshLogs(): void {
   else conn?.send({ t: 'log' });
 }
 
+/** The idempotency key of an online table that may or may not have been opened, so asking again can't open a second one. */
+let tableAttempt: { request: string; key: string } | null = null;
+
 /** Opens a new table: online with a join code, or bots-only on this phone. */
 export async function openTable(mode: 'online' | 'local', settings: Settings, bots: number, botNames?: string[]): Promise<void> {
   if (state.busy) return;
@@ -616,12 +620,19 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   }
   set({ busy: 'Opening your table…' });
   try {
-    const code = await createOnlineTable({ deviceId: state.deviceId, name, emoji, settings, bots, twinCode: shareCode() });
+    const body = { deviceId: state.deviceId, name, emoji, settings, bots, twinCode: shareCode() };
+    // A new key for a new request. If the last try ended with no answer, the same request keeps its key: the server
+    // may have opened that table, and the key gets us the same one back.
+    const asked = JSON.stringify(body);
+    if (tableAttempt?.request !== asked) tableAttempt = { request: asked, key: newIdempotencyKey() };
+    const code = await createOnlineTable(body, tableAttempt.key);
+    tableAttempt = null;
     setSession({ mode: 'online', code, game: null });
     saveLastTable({ code, at: Date.now() });
     connect(code);
     resetTo({ name: 'table' });
   } catch (e) {
+    if (!(e instanceof UnsureError)) tableAttempt = null;
     toast(e instanceof Error ? e.message : "Couldn't open a table.", 'error');
   } finally {
     set({ busy: null });

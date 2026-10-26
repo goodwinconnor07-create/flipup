@@ -7,6 +7,8 @@ import {
   sanitizeTwin,
   shareableTwin,
   cleanName,
+  codeFromKey,
+  isIdempotencyKey,
   newCode,
   parseSettings,
   DEFAULT_SETTINGS,
@@ -53,10 +55,10 @@ function sameSite(request: Request): boolean {
   }
 }
 
-function json(data: unknown, status = 200): Response {
+function json(data: unknown, status = 200, headers: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' },
+    headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', ...headers },
   });
 }
 
@@ -70,6 +72,16 @@ async function readJson(request: Request, max = MAX_BODY_CHARS): Promise<unknown
   } catch {
     return null;
   }
+}
+
+/**
+ * The Idempotency-Key header of a request that makes something: undefined when there isn't one, null when it's no good.
+ * With a key, a retry of the same request (same device, same key) gets the first try's table or share back.
+ */
+function idempotencyKey(request: Request): string | undefined | null {
+  const key = request.headers.get('idempotency-key');
+  if (key === null) return undefined;
+  return isIdempotencyKey(key) ? key : null;
 }
 
 /** POST /api/tables: open a new table with this phone as host, and give it a join code. */
@@ -87,9 +99,13 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   // Showing a twin code means owning it: anything else is quietly left off.
   const twinCode = isCode(body.twinCode) && (await env.TWIN_SHARE.getByName(body.twinCode).owner()) === body.deviceId ? body.twinCode : undefined;
 
-  // Codes are random, so a clash is rare. Try a few before giving up.
+  const key = idempotencyKey(request);
+  if (key === null) return json({ error: 'That Idempotency-Key is not valid.' }, 400);
+
+  // Codes are random, so a clash is rare. Try a few before giving up. With a key they aren't random: the same
+  // key tries the same codes in the same order, so a retry lands on the table its first try made.
   for (let attempt = 0; attempt < 6; attempt++) {
-    const code = newCode();
+    const code = key ? await codeFromKey('table', body.deviceId, key, attempt) : newCode();
     const game = createTable({
       hostDeviceId: body.deviceId,
       name,
@@ -100,8 +116,9 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
       code,
       now: Date.now(),
     });
-    const created = await env.TABLE_ROOM.getByName(code).create(game);
-    if (created) return json({ code } satisfies CreateTableResponse, 201);
+    const made = await env.TABLE_ROOM.getByName(code).create(game, key ? `${body.deviceId}:${key}` : undefined);
+    if (made === 'created') return json({ code } satisfies CreateTableResponse, 201);
+    if (made === 'replay') return json({ code } satisfies CreateTableResponse, 200, { 'idempotent-replayed': 'true' });
   }
   return json({ error: "Couldn't find a free code. Try again." }, 503);
 }
@@ -151,13 +168,16 @@ async function twinRoute(request: Request, env: Env, pathname: string): Promise<
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
     const fields = twinFields(body);
     if ('error' in fields) return json({ error: fields.error }, 400);
+    const key = idempotencyKey(request);
+    if (key === null) return json({ error: 'That Idempotency-Key is not valid.' }, 400);
+    // A retry gets a fresh secret and the share swaps to it: the first try's answer never reached the phone.
     const secret = `${newCode()}${newCode()}${newCode()}${newCode()}`.toLowerCase();
     const secretHash = await hashSecret(secret);
     for (let attempt = 0; attempt < 6; attempt++) {
-      const fresh = newCode();
-      if (await env.TWIN_SHARE.getByName(fresh).create(body.deviceId, secretHash, fields.name, fields.emoji, fields.profile)) {
-        return json({ code: fresh, secret } satisfies CreateTwinShareResponse, 201);
-      }
+      const fresh = key ? await codeFromKey('twin', body.deviceId, key, attempt) : newCode();
+      const made = await env.TWIN_SHARE.getByName(fresh).create(body.deviceId, secretHash, fields.name, fields.emoji, fields.profile, key ? `${body.deviceId}:${key}` : undefined);
+      if (made === 'created') return json({ code: fresh, secret } satisfies CreateTwinShareResponse, 201);
+      if (made === 'replay') return json({ code: fresh, secret } satisfies CreateTwinShareResponse, 200, { 'idempotent-replayed': 'true' });
     }
     return json({ error: "Couldn't find a free code. Try again." }, 503);
   }

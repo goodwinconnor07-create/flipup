@@ -3,8 +3,8 @@
 // on the server under a five letter code, and your seat at an online table shows the code so friends
 // at the table can tell who's who.
 
-import { shareableTwin, TWIN_READY } from '../game';
-import { createTwinShare, deleteTwinShare, updateTwinShare } from './api';
+import { newIdempotencyKey, shareableTwin, TWIN_READY } from '../game';
+import { createTwinShare, deleteTwinShare, UnsureError, updateTwinShare } from './api';
 import { loadDeviceId, loadProfile, read, write } from './persist';
 import { loadTwin } from './twin';
 
@@ -29,6 +29,9 @@ export function loadShare(): Share | null {
 /** The code to show at an online table: only while sharing is on. */
 export const shareCode = () => loadShare()?.code;
 
+/** The idempotency key of a share that may or may not have been made, so turning it on again can't make a second one. */
+let shareAttempt: string | null = null;
+
 /** Turns sharing on: copies your twin to the server and returns the code. */
 export async function startSharing(): Promise<Share> {
   const have = loadShare();
@@ -36,7 +39,16 @@ export async function startSharing(): Promise<Share> {
   const twin = loadTwin();
   if (twin.hands < 1) throw new Error('Play a few hands first, then your twin has something to share.');
   const profile = loadProfile();
-  const made = await createTwinShare({ deviceId: loadDeviceId(), name: profile.name, emoji: profile.emoji, profile: shareableTwin(twin) });
+  shareAttempt ??= newIdempotencyKey();
+  let made;
+  try {
+    made = await createTwinShare({ deviceId: loadDeviceId(), name: profile.name, emoji: profile.emoji, profile: shareableTwin(twin) }, shareAttempt);
+  } catch (e) {
+    // With no answer the share might exist: the next try carries the same key. Any other failure starts over.
+    if (!(e instanceof UnsureError)) shareAttempt = null;
+    throw e;
+  }
+  shareAttempt = null;
   const share = { code: made.code, secret: made.secret, hands: twin.hands, at: Date.now() };
   write(KEY, share);
   return share;

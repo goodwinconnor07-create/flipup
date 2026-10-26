@@ -262,7 +262,7 @@ export interface Game {
   /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
   botPlan?: { playerId: string; seq: number; move: Move; to?: number };
   /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */
-  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome' | 'rematchWon' | 'rematchLost'; forId?: string; seq?: number };
+  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome' | 'rematchWon' | 'rematchLost' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'cheer' | 'commiserate'; forId?: string; seq?: number };
   /** Hands in a row each person has lost chips without winning one. Bots use it to pick their moment. Never sent to phones. */
   streaks?: Record<string, number>;
   /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */

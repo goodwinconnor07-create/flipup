@@ -250,11 +250,75 @@ describe('bots', () => {
       expect(text.includes('{you}')).toBe(false);
       if (bots === 1) expect(text).toContain('Sam');
       expect(g.hand).toBeNull();
-      // Then the cards.
-      now = g.wakeAt!;
-      const d = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
-      if (!d.ok) throw new Error(d.error);
-      expect(d.game.hand).not.toBeNull();
+      // Then the cards, after another bot may have said hi back (never heads-up: there's only one bot).
+      let greeted = false;
+      for (let i = 0; i < 3 && !g.hand; i++) {
+        now = g.wakeAt!;
+        // Anything said back lands well before the cards, never after.
+        expect(now).toBeLessThanOrEqual(5000 + 3000);
+        const d = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
+        if (!d.ok) throw new Error(d.error);
+        greeted ||= Object.values(d.game.reactions ?? {}).some((r) => r.id.split(':')[2] === 'greetBack');
+        g = d.game;
+      }
+      expect(g.hand).not.toBeNull();
+      if (bots === 1) expect(greeted).toBe(false);
+    }
+  });
+
+  it('answers a person\'s quick message now and then, in kind, naming them', () => {
+    const answered: Record<string, number> = {};
+    let named = 0;
+    let said = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const rng = seededRng(seed);
+      let now = 5000;
+      let g = createTable({ hostDeviceId: 'h', name: 'Sam', emoji: '🙂', settings: DEFAULT_SETTINGS, bots: 3, code: null, now });
+      const go = (action: Parameters<typeof applyAction>[1], deviceId: string) => {
+        const r = applyAction(g, action, { deviceId, now, rng });
+        if (!r.ok) throw new Error(r.error);
+        g = r.game;
+      };
+      go({ type: 'start' }, 'h');
+      // Let the greetings and the first cards go by.
+      for (let i = 0; i < 6 && !g.hand; i++) {
+        now = g.wakeAt!;
+        go({ type: 'tick' }, 'server');
+      }
+      const me = g.players[0];
+      for (const [msg, kind] of [['nice', 'thanks'], ['lucky', 'ribbed'], ['gl', 'goodLuck'], ['gg', 'gg'], ['wow', null]] as const) {
+        // Quiet table first, so a bot is free to answer.
+        now += 10_000;
+        g.pendingTalk = undefined;
+        go({ type: 'react', id: msg }, 'h');
+        if (!g.pendingTalk) {
+          // No answer is planned: nothing is said for it (and 'wow' never gets one).
+          continue;
+        }
+        expect(kind, `${msg} should have no answer`).not.toBeNull();
+        expect(g.pendingTalk.event).toBe(kind);
+        expect(g.pendingTalk.forId).toBe(me.id);
+        const before = JSON.stringify(g.reactions);
+        now = g.pendingTalk.at;
+        go({ type: 'tick' }, 'server');
+        const speaker = Object.entries(g.reactions ?? {}).find(([id, r]) => id !== me.id && r.id.split(':')[2] === kind);
+        expect(speaker, `${msg} → ${kind}: nobody answered (was ${before})`).toBeDefined();
+        said++;
+        answered[kind!] = (answered[kind!] ?? 0) + 1;
+        if (speaker![1].to === me.id) named++;
+      }
+    }
+    // Over sixty tables each kind gets answered often, and the answer knows who it's for.
+    for (const kind of ['thanks', 'ribbed', 'goodLuck', 'gg']) expect(answered[kind] ?? 0, kind).toBeGreaterThan(10);
+    expect(named).toBe(said);
+  });
+
+  it('lines that name a person never say "you" when they have no one in mind', () => {
+    for (const id of ['b:trash:yourBigBet:20', 'b:friendly:yourBigBet:8', 'b:friendly:tiltJab:9']) {
+      const text = reactionText(id);
+      expect(text, id).toBeTruthy();
+      expect(text, id).not.toContain('{you}');
+      expect(text, id).not.toMatch(/\byou\b[.!?]*$/i);
     }
   });
 

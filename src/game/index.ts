@@ -21,3 +21,4 @@ export * from './reactions';
 export * from './ids';
 export * from './names';
 export * from './emoji';
+export * from './chat';

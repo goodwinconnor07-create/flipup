@@ -72,6 +72,8 @@
   --violet-bg: #f6ecfc;
   --indigo: #5856d6;
   --pink: #ff2d55;
+  --pink-bg: #ffeaf0;
+  --pink-ink: #c4123a;
   /* The iPhone switch's green, and its grey track when off. */
   --switch-on: #34c759;
   --switch-off: rgba(120, 120, 128, 0.16);
@@ -182,6 +184,8 @@ html[data-theme='dark'] {
   --violet-bg: rgba(191, 90, 242, 0.18);
   --indigo: #5e5ce6;
   --pink: #ff375f;
+  --pink-bg: rgba(255, 55, 95, 0.16);
+  --pink-ink: #ff6b8a;
   --switch-on: #30d158;
   --switch-off: rgba(120, 120, 128, 0.32);
   --segment-on: #636366;

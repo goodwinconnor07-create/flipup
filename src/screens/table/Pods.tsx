@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
-import { positionOf, seatFor, type Card, type Game, type Player, type Seat } from '../../game';
+import { positionOf, seatFor, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
 import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
 import { loadBigBlinds, saveBigBlinds } from '../../state/persist';
-import { Bubble, moveSig, ReactBubble, ReactMenu } from './Bubbles';
+import { Bubble, moveSig, ReactMenu, Thread } from './Bubbles';
 
 /** Everyone else, in seat order starting on this phone's left, so play moves left to right. */
 export function othersInOrder(game: Game, me: Player | undefined): Player[] {
@@ -31,7 +31,7 @@ export function usePodSlots(
   game: Game,
   others: Player[],
   windowed: boolean,
-  talking: Record<string, string> = {},
+  talking: Record<string, unknown> = {},
 ): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number } {
   const start = useRef(0);
   const slots = new Map<string, { slot: number; away: boolean }>();
@@ -124,7 +124,7 @@ export function Pod({
   player: Player;
   seat: Seat | undefined;
   odds?: { win: number; tie: number };
-  reaction?: string;
+  reaction?: Talk;
   /** The move whose bubble has been spoken over: it stays hidden. */
   quiet?: string;
   dimCard: (c: Card) => boolean;
@@ -173,7 +173,7 @@ export function Pod({
         {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (
-          <ReactBubble id={reaction} game={game} />
+          <Thread talk={reaction} />
         ) : thinking ? (
           <span className="bubble bubble-grey bubble-typing pop" aria-label={`${player.name} is thinking`}>
             <i />
@@ -218,7 +218,7 @@ export function MyBox({
   me?: Player;
   seat?: Seat;
   odds?: { win: number; tie: number };
-  reaction?: string;
+  reaction?: Talk;
   quiet?: string;
 }) {
   const hand = game.hand;
@@ -226,7 +226,7 @@ export function MyBox({
   const [inBB, setInBB] = useState(loadBigBlinds);
   // On a computer my seat is on the table (bottom), so the bubble and position are shown there.
   const bubble = desktop ? null : reaction ? (
-    <ReactBubble id={reaction} game={game} />
+    <Thread talk={reaction} />
   ) : seat?.last && quiet !== moveSig(hand!.number, seat.last) ? (
     <Bubble last={seat.last} street={hand?.street} />
   ) : null;

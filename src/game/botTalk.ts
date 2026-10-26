@@ -1,8 +1,11 @@
 // What bots say at the table, through the same bubbles as moves and quick messages. Every line is
-// fixed here (ids start "b:"), and phones can't send them: only bots say these. Lines are short so
-// they fit on one line in a seat's bubble.
+// fixed here (ids start "b:"), and phones can't send them: only bots say these. A line is said as one
+// or more short messages (see chat.ts): a `|` starts a new message right away, a `||` a second thought
+// a beat later, and anything longer than a seat's bubble is cut at its sentences on its own.
 
 import { playerStyle, styleOf, type StyleId } from './botStyles';
+import { MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
+import { lineBeats, sayAndReadMs } from './chat';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
 
@@ -72,7 +75,21 @@ export type TalkEvent =
   | 'finishWon'
   | 'finishLost'
   /** A new game with several players is about to start: a word to the table. */
-  | 'welcome';
+  | 'welcome'
+  /** A person said something nice ("Nice hand!", 👏): a bot says thanks. */
+  | 'thanks'
+  /** A person ribbed the table ("Lucky!", "Oops!", 😂): a bot gives it back. */
+  | 'ribbed'
+  /** A person wished the table luck. */
+  | 'goodLuck'
+  /** A person said "GG". */
+  | 'gg'
+  /** Another bot just won or boasted: the answer from across the table. */
+  | 'cheer'
+  /** Another bot just lost: the answer from across the table. */
+  | 'commiserate'
+  /** The first bot has greeted the table: another says hi. */
+  | 'greetBack';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -111,6 +128,13 @@ const TRASH: Lines = {
   finishWon: [],
   finishLost: [],
   welcome: ['Welcome to the table.', 'Fresh chips. Lovely.', 'Hope you all brought chips.', 'Take a seat, fish.', 'Let’s play.'],
+  thanks: [],
+  ribbed: [],
+  goodLuck: [],
+  gg: [],
+  cheer: [],
+  commiserate: [],
+  greetBack: [],
 };
 
 const FRIENDLY: Lines = {
@@ -148,6 +172,13 @@ const FRIENDLY: Lines = {
   finishWon: [],
   finishLost: [],
   welcome: ['Welcome to the table!', 'Hi everyone!', 'Good luck, all!', 'Glad you’re here!', 'Let’s have a good one!'],
+  thanks: [],
+  ribbed: [],
+  goodLuck: [],
+  gg: [],
+  cheer: [],
+  commiserate: [],
+  greetBack: [],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -312,6 +343,18 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
   },
 };
 
+// The second pass of lines, added after the first so earlier ids keep their meaning.
+const grow = (pools: Lines, more: Partial<Lines>) => {
+  for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) pools[event].push(...lines);
+};
+grow(TRASH, NEW_TRASH);
+grow(FRIENDLY, NEW_FRIENDLY);
+grow(TRASH, MORE_TRASH);
+grow(FRIENDLY, MORE_FRIENDLY);
+for (const [style, more] of Object.entries(MORE_VOICES) as [StyleId, Partial<Lines>][]) {
+  for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
+}
+
 const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
 
 /** The text for a bot line id, or '' if it isn't one. */
@@ -342,13 +385,22 @@ function pool(voice: string, event: TalkEvent): string[] {
   return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
 }
 
+/** Every line a bot can say, with who says it and for what: for the chat lab and the tests that check how lines read. */
+export function allLines(): { voice: string; event: TalkEvent; text: string }[] {
+  const out: { voice: string; event: TalkEvent; text: string }[] = [];
+  const events = Object.keys(CHANCE) as TalkEvent[];
+  const voices = ['trash', 'friendly', ...(Object.keys(VOICES) as StyleId[]), ...(Object.keys(LEGEND_VOICES) as LegendId[])];
+  for (const voice of voices) for (const event of events) for (const text of pool(voice, event)) out.push({ voice, event, text });
+  return out;
+}
+
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
   thinkHard: 0.15,
-  thinkEasy: 0.04,
+  thinkEasy: 0.06,
   allin: 0.55,
-  raise: 0.08,
-  foldBig: 0.12,
+  raise: 0.14,
+  foldBig: 0.18,
   callLight: 0.35,
   yourBigBet: 0.25,
   sweat: 0.6,
@@ -357,13 +409,13 @@ const CHANCE: Record<TalkEvent, number> = {
   sweatLose: 1,
   bluffWon: 0.6,
   bigWin: 0.45,
-  win: 0.15,
+  win: 0.25,
   badBeat: 0.8,
   lostToYou: 0.5,
-  reply: 0.3,
+  reply: 0.7,
   tiltJab: 0.35,
   bluffCaught: 0.6,
-  idle: 0.04,
+  idle: 0.08,
   tank: 0.8,
   showBluff: 0.9,
   showStrong: 0.7,
@@ -378,31 +430,40 @@ const CHANCE: Record<TalkEvent, number> = {
   finishWon: 1,
   finishLost: 1,
   welcome: 1,
+  // Answering a person or another bot is what makes it a conversation: a bot nearly always does when asked to.
+  thanks: 0.9,
+  ribbed: 0.9,
+  goodLuck: 0.9,
+  gg: 0.9,
+  cheer: 0.8,
+  commiserate: 0.8,
+  greetBack: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
-const COOLDOWN = 2500;
+const COOLDOWN = 2200;
 
 /**
- * Maybe has a bot say something. Returns true if it spoke. `now` is the table clock, for the cooldown.
+ * Maybe has a bot say something. Returns how long it takes to say and read (ms), or 0 if it stayed quiet.
+ * `now` is the table clock, for the cooldown.
  * `owed` is for a reaction the table is waiting for (a bot that cried "c'mon!" and then saw the pot
  * go): it speaks whatever the dice and the cooldown say, so it never goes quiet at the moment it should react.
  */
-export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false, to?: string): boolean {
+export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () => number, now: number, owed = false, to?: string): number {
   const player = game.players.find((p) => p.id === playerId);
-  if (!player?.bot) return false;
+  if (!player?.bot) return 0;
   // Scroll cards are quiet, so nothing muddies the lesson.
-  if (game.card) return false;
+  if (game.card) return 0;
   const last = game.talkAt?.[playerId] ?? -Infinity;
-  if (!owed && now - last < COOLDOWN) return false;
+  if (!owed && now - last < COOLDOWN) return 0;
   const style = playerStyle(player);
   // A legend speaks in its own voice; everyone else in their style's.
   const voice = player.legend ?? style.id;
-  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return false;
+  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return 0;
   const lines = pool(voice, event);
-  if (!lines.length) return false;
+  if (!lines.length) return 0;
   const i = Math.floor(rng() * lines.length);
   game.reactions = { ...game.reactions, [playerId]: { id: id(voice, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(to ? { to } : {}) } };
   game.talkAt = { ...game.talkAt, [playerId]: now };
-  return true;
+  return sayAndReadMs(lineBeats(lines[i], game.players.find((p) => p.id === to)?.name));
 }

@@ -8,6 +8,7 @@ import { LearnTab } from './HomeLearn';
 import { QuickGames } from './HomeQuick';
 import { TwinTiles } from './HomeTwins';
 import { TodayCard } from './HomeToday';
+import { DAILY_GOALS } from '../state/progress';
 import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
 import { ReviewTab, lastGameHands } from './HomeReview';
@@ -91,9 +92,9 @@ export function Home() {
   // The banner only shows when there's one clear next step: your open table, the online table you left,
   // or the hands from your last game that the coach hasn't seen.
   const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
-    ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'green' }
+    ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
     : last
-      ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'green' }
+      ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate' }
       : training.lastGame.waiting > 0
         ? {
             title: 'Your last game',
@@ -101,7 +102,7 @@ export function Home() {
             cta: 'Review it',
             run: () => navigate({ name: 'train', section: 'review' }),
             faces: [],
-            tone: 'violet',
+            tone: 'orange',
           }
         : null;
   const index = TABS.findIndex((t) => t.id === tab);
@@ -172,7 +173,7 @@ export function Home() {
                       <HostArt />
                     </span>
                   </button>
-                  <button type="button" className="mode mode-violet press" onClick={() => go('bots')}>
+                  <button type="button" className="mode mode-green press" onClick={() => go('bots')}>
                     <span className="mode-text">
                       <span className="mode-title">Play with Bots</span>
                       <span className="mode-sub">Practise on this phone, no timer.</span>
@@ -182,7 +183,7 @@ export function Home() {
                     </span>
                   </button>
                 </section>
-                <TodayCard />
+                {DAILY_GOALS && <TodayCard />}
                 <TwinTiles />
                 <LegendShelf />
                 <QuickGames />

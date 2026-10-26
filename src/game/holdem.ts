@@ -10,12 +10,15 @@ export const TIMING = {
   /** Bots take a moment to look at the spot before deciding (then think for as long as the spot needs, see botPlay.ts). */
   botMin: 500,
   botMax: 800,
-  /** A bot that thinks out loud moves this long after it speaks. */
-  botThink: 1300,
+  /** The bot answering someone: at least this long after the line it answers, and starting this much before that line is read out. */
+  replyMin: 800,
+  replyEarly: 250,
   /** A person has had the clock this long: a bot may poke them. */
   tankJab: 12000,
-  /** Extra time before the next deal when a bot has something to say about the hand. */
-  talkPause: 2000,
+  /** Extra time before the next deal when a bot has something to say about the hand: at least this, at most the max, otherwise how long the talk takes less the slack. */
+  talkPause: 1600,
+  talkPauseMax: 3600,
+  talkSlack: 1200,
   /** Gap between cards on an all-in run-out, so the odds can be read. */
   runoutStep: 2200,
   /** Pause after a hand before the next one deals (unless everyone taps Next hand). */

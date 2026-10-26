@@ -351,11 +351,11 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
       { label: 'Sound', Icon: SoundIcon, color: 'var(--red)', on: !muted, onChange: toggleMuted },
       { label: 'Animations', Icon: BoltIcon, color: 'var(--gold)', on: !calm, onChange: toggleCalm },
       { label: 'Bot talk', Icon: ChatIcon, color: 'var(--green)', on: talk, onChange: toggleTalk },
-      { label: 'Fast bot games', Icon: ClockIcon, color: 'var(--indigo)', on: fast, onChange: toggleFast },
+      { label: 'Fast bot games', Icon: ClockIcon, color: 'var(--gold)', on: fast, onChange: toggleFast },
       { label: 'Transparency', Icon: GlassIcon, color: 'var(--blue)', on: glass, onChange: toggleGlass },
     ],
     links: [
-      { label: 'Table theme', Icon: PaletteIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'theme' }) },
+      { label: 'Table theme', Icon: PaletteIcon, color: 'var(--pink)', onClick: () => openSheet({ name: 'theme' }) },
       { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'rankings' }) },
     ],
   };
@@ -385,8 +385,8 @@ function PrefsSheet() {
       setSharing(false);
     }
   };
-  const friends: Row[] = [{ label: 'Let friends play my twin', Icon: SparkIcon, color: 'var(--indigo)', on: !!share, onChange: () => void toggleShare() }];
-  if (share) friends.push({ label: `Your twin code · ${share.code}`, Icon: ShareIcon, color: 'var(--indigo)', onClick: () => openSheet({ name: 'shareTwin' }) });
+  const friends: Row[] = [{ label: 'Let friends play my twin', Icon: SparkIcon, color: 'var(--pink)', on: !!share, onChange: () => void toggleShare() }];
+  if (share) friends.push({ label: `Your twin code · ${share.code}`, Icon: ShareIcon, color: 'var(--pink)', onClick: () => openSheet({ name: 'shareTwin' }) });
   const forget: Row[] = [];
   if (twinHands > 0)
     forget.push({
@@ -438,14 +438,14 @@ function MenuSheet() {
 
   const table: Row[] = [];
   if (started) table.push({ label: 'Standings', Icon: TrophyIcon, color: 'var(--gold)', onClick: () => openSheet({ name: 'standings' }) });
-  if (started && game?.twinGame) table.push({ label: game.friendTwin ? 'How your plan is going' : 'What your twin found', Icon: SparkIcon, color: 'var(--indigo)', onClick: quick(() => (game.friendTwin ? openFriendReport(game.friendTwin) : openTwinReport())) });
+  if (started && game?.twinGame) table.push({ label: game.friendTwin ? 'How your plan is going' : 'What your twin found', Icon: SparkIcon, color: 'var(--pink)', onClick: quick(() => (game.friendTwin ? openFriendReport(game.friendTwin) : openTwinReport())) });
   if (started) table.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
   if (online && game?.code && !ended)
     table.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });
   if (host && !ended)
     table.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
   if (host && playing && game.players.length < 9)
-    table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--violet)', onClick: quick(() => dispatch({ type: 'addBot' })) });
+    table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--green)', onClick: quick(() => dispatch({ type: 'addBot' })) });
 
   const { switches, links } = useYouRows();
   links.splice(1, 0, { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--pink)', onClick: () => navigate({ name: 'profile', then: 'done' }) });

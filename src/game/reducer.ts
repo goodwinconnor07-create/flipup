@@ -154,6 +154,33 @@ function addBot(game: Game): void {
   game.players.push({ ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }), style: pick.style });
 }
 
+/** Bot lines that are about a person at the table, so they use their name ({you}). */
+const ADDRESSED = new Set<TalkEvent>(['lostToYou', 'tiltJab', 'revenge', 'bluffCaught', 'badBeat', 'bluffWon']);
+
+/** What another bot answers when the first to speak after a hand was cheering, or hurting. */
+const GOOD_NEWS = new Set<TalkEvent>(['bigWin', 'win', 'bluffWon', 'tiltJab', 'revenge', 'sweatWin', 'showBluff', 'showStrong']);
+const BAD_NEWS = new Set<TalkEvent>(['sweatLose', 'badBeat', 'lostToYou', 'bluffCaught', 'gotBluffed', 'tilted', 'showFold']);
+
+/** Pending lines that are said whatever the dice and the cooldown say. */
+const SURE_THINGS = new Set<string>(['hello', 'welcome', 'rematchWon', 'rematchLost', 'greetBack', 'thanks', 'ribbed', 'goodLuck', 'gg']);
+
+/** What a bot says back to each quick message a person can send (none for the others). */
+const ANSWER: Record<string, NonNullable<Game['pendingTalk']>['event']> = {
+  nice: 'thanks',
+  clap: 'thanks',
+  fire: 'thanks',
+  lucky: 'ribbed',
+  oops: 'ribbed',
+  laugh: 'ribbed',
+  grimace: 'ribbed',
+  gl: 'goodLuck',
+  gg: 'gg',
+};
+
+/** How often a bot answers a quick message, and how soon (ms) after it. */
+const ANSWER_CHANCE = 0.6;
+const ANSWER_AFTER = { min: 900, spread: 700 };
+
 /**
  * Once per hand, when it's over: the bots take note of what everyone did, and react. Winners and
  * losers of an all-in sweat it out loud, big pots get a word, and sometimes another bot answers.
@@ -173,7 +200,21 @@ function afterHand(game: Game, ctx: ActionContext): void {
     const seat = hand.seats.find((s) => s.playerId === id);
     return seat && seat.cards.length === 2 && hand.board.length >= 3 ? handBucket(seat.cards, hand.board) : null;
   };
-  const say = (id: string, event: TalkEvent, owed = false) => botSays(game, id, event, ctx.rng, ctx.now, owed);
+  // How long the table talk takes to say and read, line after line: the next deal waits for it.
+  let talkMs = 0;
+  let firstMs = 0;
+  let firstEvent: TalkEvent | null = null;
+  // The person a line is about, when it's about one: a win over them, a loss to them.
+  const aboutPerson = winners.find((id) => !isBot(id)) ?? hand.seats.find((s) => !isBot(s.playerId) && !s.folded)?.playerId;
+  const say = (id: string, event: TalkEvent, owed = false) => {
+    const ms = botSays(game, id, event, ctx.rng, ctx.now, owed, ADDRESSED.has(event) ? aboutPerson : undefined);
+    if (ms) {
+      talkMs += ms;
+      firstMs ||= ms;
+      firstEvent ??= event;
+    }
+    return ms > 0;
+  };
   const spoke: string[] = [];
   const showdownLosers = result.showdown ? hand.seats.filter((s) => !s.folded && !winners.includes(s.playerId)).map((s) => s.playerId) : [];
   const personWon = winners.some((id) => !isBot(id));
@@ -235,12 +276,15 @@ function afterHand(game: Game, ctx: ActionContext): void {
   if (!spoke.length) return;
   // Someone answers now and then: a bot that didn't just speak, a beat later.
   const others = game.players.filter((p) => p.bot && !spoke.includes(p.id) && !p.sittingOut);
-  if (others.length && ctx.rng() < 0.4) {
+  if (others.length && ctx.rng() < 0.55) {
     const who = others[Math.floor(ctx.rng() * others.length)];
-    game.pendingTalk = { at: ctx.now + 1400, playerId: who.id };
+    // It answers once the first line has landed, like someone who was listening: cheering a win, feeling a loss.
+    const event = firstEvent && GOOD_NEWS.has(firstEvent) ? 'cheer' : firstEvent && BAD_NEWS.has(firstEvent) ? 'commiserate' : 'reply';
+    game.pendingTalk = { at: ctx.now + Math.max(TIMING.replyMin, firstMs - TIMING.replyEarly), playerId: who.id, event };
+    talkMs += TIMING.replyMin + 900;
   }
   // A little longer before the next deal, so the table talk can be read.
-  if (game.nextHandAt !== null) game.nextHandAt += botsOnly(game) ? 1000 : TIMING.talkPause;
+  if (game.nextHandAt !== null) game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
   schedule(game);
 }
 
@@ -494,7 +538,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (big && !game.hand?.result) {
         const bots = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
         const who = bots[Math.floor(ctx.rng() * bots.length)];
-        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng, ctx.now);
+        if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng, ctx.now, false, me.id);
       }
       return done();
     }
@@ -535,6 +579,15 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!isReactionId(action.id)) return fail("That isn't one of the quick messages.");
       game.reactions = { ...game.reactions, [me.id]: { id: action.id, n: (game.reactions?.[me.id]?.n ?? 0) + 1 } };
+      // A bot answers now and then: thanks for a compliment, a tease back, good luck to you too.
+      const answer = ANSWER[action.id];
+      if (answer && !game.card && !game.pendingTalk && game.status === 'playing') {
+        const ready = game.players.filter((p) => p.bot && !p.sittingOut && ctx.now - (game.talkAt?.[p.id] ?? -Infinity) > 3000);
+        if (ready.length && ctx.rng() < ANSWER_CHANCE) {
+          game.pendingTalk = { at: ctx.now + ANSWER_AFTER.min + Math.floor(ctx.rng() * ANSWER_AFTER.spread), playerId: ready[Math.floor(ctx.rng() * ready.length)].id, event: answer, forId: me.id };
+          schedule(game);
+        }
+      }
       return done();
     }
 
@@ -551,7 +604,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       }
       // Showing a bluff gets noticed, and one of the bots it worked on may say something.
       const fooled = cardsShown(game, hand, me.id);
-      if (fooled.length) botSays(game, fooled[Math.floor(ctx.rng() * fooled.length)], 'gotBluffed', ctx.rng, ctx.now);
+      if (fooled.length) botSays(game, fooled[Math.floor(ctx.rng() * fooled.length)], 'gotBluffed', ctx.rng, ctx.now, false, me.id);
       return done();
     }
 
@@ -651,13 +704,21 @@ function tick(game: Game, ctx: ActionContext): boolean {
   if (game.pendingTalk && due(game.pendingTalk.at)) {
     const { playerId, event, forId, seq } = game.pendingTalk;
     delete game.pendingTalk;
-    if (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost') {
-      botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
+    // Greetings and answers to a person are always said: someone was waiting for them.
+    if (event && SURE_THINGS.has(event)) {
+      const ms = botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
+      // Someone else at the table says hi back, before the cards come.
+      if (event === 'welcome' && ms) {
+        const rest = game.players.filter((p) => p.bot && p.id !== playerId && !p.sittingOut);
+        const at = ctx.now + ms + 150;
+        if (rest.length && ctx.rng() < 0.65 && game.nextHandAt !== null && at < game.nextHandAt - 400)
+          game.pendingTalk = { at, playerId: rest[Math.floor(ctx.rng() * rest.length)].id, event: 'greetBack' };
+      }
       schedule(game);
       return true;
     }
     // A jab at a slow player only lands if they're still on the clock.
-    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now);
+    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now, false, event === 'tank' ? forId : undefined);
     schedule(game);
     return true;
   }
@@ -710,8 +771,9 @@ function tick(game: Game, ctx: ActionContext): boolean {
       const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
       // What it says isn't always about the move it's about to make, or the line would give the move away.
       const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
-      if (event && said && botSays(game, player.id, said, ctx.rng, ctx.now)) {
-        wait = Math.max(wait, fast ? 400 : TIMING.botThink);
+      const spoken = event && said ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0;
+      if (spoken) {
+        wait = Math.max(wait, fast ? Math.min(spoken, 700) : spoken);
         if (event === 'allin') owe(game, player.id);
       }
       if (wait > 150) {

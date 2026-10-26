@@ -12,8 +12,8 @@ function hello(right: number): string {
 }
 
 const ROWS: { id: TrainSection; title: string; hint: string; Icon: typeof BookIcon; colour: string }[] = [
-  { id: 'library', title: 'Poker library', hint: 'Drills, spot by spot', Icon: BookIcon, colour: 'var(--indigo)' },
-  { id: 'custom', title: 'Custom hand', hint: 'See GTO for any hand', Icon: PencilIcon, colour: 'var(--slate-hi)' },
+  { id: 'library', title: 'Poker library', hint: 'Drills, spot by spot', Icon: BookIcon, colour: 'var(--gold)' },
+  { id: 'custom', title: 'Custom hand', hint: 'See GTO for any hand', Icon: PencilIcon, colour: 'var(--ink-3)' },
 ];
 
 let greeted = false;

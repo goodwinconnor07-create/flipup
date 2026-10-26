@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { REACTIONS, reactionText, type Game, type Seat } from '../../game';
+import { useEffect, useReducer, useRef, useState } from 'react';
+import { BEFORE_MOVE, botSay, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
 import { react, useApp } from '../../state/store';
 import { chips } from '../../ui/components';
 import { haptic } from '../../ui/effects';
@@ -45,32 +45,51 @@ export function Bubble({ last, street }: { last: NonNullable<Seat['last']>; stre
 }
 
 /**
- * Each player's latest message (a quick message, or a bot's table talk), shown for a few seconds
- * after it arrives, or until that player's next move takes over their bubble.
+ * What each seat is saying: the bots' lines come out as short messages, one after another with a moment of
+ * typing dots in front of each, and answer each other (see ChatLane in the game folder for the timing).
+ * A seat's messages go when its next move takes over its bubble, or a few seconds after the last one.
  */
-export function useReactions(game: Game): { say: Record<string, string>; quiet: Record<string, string> } {
-  const seen = useRef<Record<string, number> | null>(null);
-  const [active, setActive] = useState<Record<string, string>>({});
-  // When a line runs its course, the move it covered stays hidden: otherwise the bubble goes back to
-  // "Bet 175" and it looks like the player bet again. A new move shows as normal.
+export function useReactions(game: Game): { say: Record<string, Talk>; quiet: Record<string, string> } {
+  const laneRef = useRef<ChatLane | null>(null);
+  laneRef.current ??= new ChatLane();
+  const chat = laneRef.current;
+  const [, redraw] = useReducer((n: number) => n + 1, 0);
+  // When a seat's messages run their course, the move they covered stays hidden: otherwise the bubble
+  // goes back to "Bet 175" and it looks like the player bet again. A new move shows as normal.
   const [quiet, setQuiet] = useState<Record<string, string>>({});
   const talkOn = useApp((s) => s.talk);
   const talkRef = useRef(talkOn);
   talkRef.current = talkOn;
-  const activeRef = useRef(active);
-  activeRef.current = active;
   const gameRef = useRef(game);
   gameRef.current = game;
-  const retire = (id: string, value: string) => {
-    if (activeRef.current[id] !== value) return;
-    const g = gameRef.current;
-    const seat = g.hand?.seats.find((s) => s.playerId === id);
-    if (g.hand && seat?.last) setQuiet((q) => ({ ...q, [id]: moveSig(g.hand!.number, seat.last) }));
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Moves the conversation along to now, then wakes up again when something next changes.
+  const run = useRef(() => {});
+  run.current = () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const now = Date.now();
+    const changed = chat.advance(now);
+    for (const who of chat.takeRetired()) {
+      const g = gameRef.current;
+      const seat = g.hand?.seats.find((x) => x.playerId === who);
+      if (g.hand && seat?.last) setQuiet((q) => ({ ...q, [who]: moveSig(g.hand!.number, seat.last) }));
+    }
+    if (changed) redraw();
+    const due = chat.nextDue(now);
+    if (due !== null) timer.current = setTimeout(() => run.current(), Math.max(8, due - now));
   };
-  const reactions = game.reactions;
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
+
   // A new move replaces whatever that player was saying.
   const moves = (game.hand?.seats ?? [])
-    .map((s) => `${s.playerId}:${game.hand!.number}:${s.last ? `${s.last.move}-${s.last.amount ?? ''}-${s.last.street ?? ''}` : ''}`)
+    .map((x) => `${x.playerId}:${game.hand!.number}:${x.last ? `${x.last.move}-${x.last.amount ?? ''}-${x.last.street ?? ''}` : ''}`)
     .join('|');
   const lastMoves = useRef<Record<string, string>>({});
   useEffect(() => {
@@ -83,172 +102,88 @@ export function useReactions(game: Game): { say: Record<string, string>; quiet: 
       (id) => lastMoves.current[id] !== undefined && lastMoves.current[id] !== next[id] && next[id].split(':')[1],
     );
     lastMoves.current = next;
-    if (changed.length)
-      setActive((a) => {
-        const out = { ...a };
-        for (const id of changed) delete out[id];
-        return out;
-      });
+    if (!changed.length) return;
+    // Lines about the move that was just made are stale now.
+    for (const id of changed) chat.clear(id, (q) => BEFORE_MOVE.has(q.event));
+    redraw();
+    run.current();
   }, [moves]);
 
   // The moment the table is at: this hand, how many cards are out, whether the pot has been awarded.
-  // A line said before the outcome ("c'mon!") is about that moment, so it's dropped when the moment passes.
+  // A line said before the outcome ("c'mon!") is about that moment, so it's dropped when the moment passes;
+  // any other line is dropped once its hand is over.
   const moment = `${game.hand?.number ?? 0}-${game.hand?.board.length ?? 0}-${game.hand?.result ? 'over' : 'live'}`;
   const momentRef = useRef(moment);
   momentRef.current = moment;
   useEffect(() => {
-    setActive((a) => {
-      const keep = Object.entries(a).filter(([, v]) => !PRE_OUTCOME.has(talkEvent(v)));
-      return keep.length === Object.keys(a).length ? a : Object.fromEntries(keep);
-    });
+    chat.retain(worthSaying(moment));
+    redraw();
+    run.current();
   }, [moment]);
 
-  // Bots talk one at a time, so two long lines never sit on top of each other, and the lines that
-  // react to how a hand ended wait a beat, as if the bot had just seen the cards turn.
-  const queue = useRef<QueuedLine[]>([]);
-  const busyUntil = useRef(0);
-  const timers = useRef(new Set<ReturnType<typeof setTimeout>>());
-  const pumpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const later = (fn: () => void, ms: number) => {
-    const t = setTimeout(() => {
-      timers.current.delete(t);
-      fn();
-    }, ms);
-    timers.current.add(t);
-  };
-  useEffect(
-    () => () => {
-      timers.current.forEach(clearTimeout);
-      if (pumpTimer.current) clearTimeout(pumpTimer.current);
-    },
-    [],
-  );
-  const pump = () => {
-    if (pumpTimer.current) clearTimeout(pumpTimer.current);
-    pumpTimer.current = null;
-    // Lines from an earlier moment are no longer worth saying.
-    queue.current = queue.current.filter((q) =>
-      PRE_OUTCOME.has(q.event) ? q.moment === momentRef.current : q.moment.split('-')[0] === momentRef.current.split('-')[0],
-    );
-    queue.current = queue.current.filter((q) => !BEFORE_MOVE.has(q.event) || (lastMoves.current[q.id] ?? '') === q.sig);
-    const next = queue.current[0];
-    if (!next) return;
-    const wait = Math.max(next.notBefore, busyUntil.current) - Date.now();
-    if (wait > 0) {
-      pumpTimer.current = setTimeout(pump, wait);
-      return;
-    }
-    queue.current.shift();
-    const hold = Math.min(3600, 1800 + next.text.length * 55);
-    busyUntil.current = Date.now() + hold;
-    setActive((a) => ({ ...a, [next.id]: next.value }));
-    later(() => {
-      retire(next.id, next.value);
-      setActive((a) => {
-        if (a[next.id] !== next.value) return a;
-        const { [next.id]: _gone, ...rest } = a;
-        return rest;
-      });
-    }, hold);
-    if (queue.current.length) pumpTimer.current = setTimeout(pump, hold);
-  };
-
+  // What's said arrives as a new line id for that player; whatever was said before you arrived stays unsaid.
+  const seen = useRef<Record<string, number> | null>(null);
+  const reactions = game.reactions;
   useEffect(() => {
     const now = reactions ?? {};
     if (seen.current === null) {
-      // Whatever was said before you arrived stays unsaid.
       seen.current = Object.fromEntries(Object.entries(now).map(([id, r]) => [id, r.n]));
       return;
     }
-    for (const [id, r] of Object.entries(now)) {
-      if (seen.current[id] === r.n) continue;
-      seen.current[id] = r.n;
-      const value = `${r.id}|${r.n}|${r.to ?? ''}`;
-      if (r.id.startsWith('b:')) {
-        // Bot talk is switched off on this phone: nothing is queued or shown.
-        if (!talkRef.current) continue;
-        const event = talkEvent(value);
-        // One line per bot waiting at a time: the newest.
-        queue.current = queue.current.filter((q) => q.id !== id);
-        queue.current.push({
-          id,
-          value,
-          event,
-          text: reactionText(r.id),
-          moment: momentRef.current,
-          sig: lastMoves.current[id] ?? '',
-          notBefore: Date.now() + (POST_OUTCOME.has(event) ? 500 + Math.random() * 500 : 0),
-        });
-        // A long queue means the table has moved on: keep the latest few.
-        if (queue.current.length > 3) queue.current.shift();
-        pump();
+    const at = Date.now();
+    for (const [who, r] of Object.entries(now)) {
+      if (seen.current[who] === r.n) continue;
+      seen.current[who] = r.n;
+      if (!r.id.startsWith('b:')) {
+        // People's quick messages come straight out, with a pop.
+        chat.push(quickSay({ who, lineId: r.id, n: r.n, text: reactionText(r.id), at, moment: momentRef.current }));
+        playSound('pop');
         continue;
       }
-      // People's quick messages come straight out, with a pop.
-      setActive((a) => ({ ...a, [id]: value }));
-      playSound('pop');
-      later(() => {
-        retire(id, value);
-        setActive((a) => {
-          if (a[id] !== value) return a;
-          const { [id]: _gone, ...rest } = a;
-          return rest;
-        });
-      }, 4000);
+      // Bot talk is switched off on this phone: nothing is queued or shown.
+      if (!talkRef.current) continue;
+      const name = gameRef.current.players.find((p) => p.id === r.to)?.name;
+      chat.push(botSay({ who, lineId: r.id, n: r.n, beats: reactionBeats(r.id, name), at, moment: momentRef.current, sig: lastMoves.current[who] ?? '', luck: Math.random() }));
     }
+    run.current();
   }, [reactions]);
-  return { say: active, quiet };
+
+  const say: Record<string, Talk> = {};
+  const now = Date.now();
+  for (const p of game.players) {
+    const talk = chat.talk(p.id, now);
+    if (talk) say[p.id] = talk;
+  }
+  return { say, quiet };
 }
 
 /** Which move a seat's bubble is showing, so it can be told apart from the next one. */
 export const moveSig = (hand: number, last: NonNullable<Seat['last']> | null) => (last ? `${hand}:${last.move}-${last.amount ?? ''}-${last.street ?? ''}` : '');
 
-interface QueuedLine {
-  id: string;
-  value: string;
-  event: string;
-  text: string;
-  moment: string;
-  notBefore: number;
-  /** The speaker's last move when this was queued. */
-  sig: string;
-}
+const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
 
-/** Thinking-out-loud lines belong before the move they're about: once it's made, they're stale. */
-const BEFORE_MOVE = new Set(['thinkHard', 'thinkEasy', 'raise', 'foldBig', 'callLight', 'yourBigBet', 'allin', 'tank']);
-
-/** Bot lines said before a hand's outcome is known. They're dropped when the next card lands or the pot goes. */
-const PRE_OUTCOME = new Set(['allin', 'sweat', 'sweatWatch']);
-
-/** Bot lines that react to how a hand ended. */
-const POST_OUTCOME = new Set([
-  'sweatWin',
-  'sweatLose',
-  'watched',
-  'badBeat',
-  'bigWin',
-  'win',
-  'lostToYou',
-  'bluffWon',
-  'bluffCaught',
-  'revenge',
-  'tiltJab',
-  'showBluff',
-  'showStrong',
-  'showFold',
-]);
-
-/** "b:friendly:sweat:2|7" → "sweat" */
-const talkEvent = (value: string) => (value.startsWith('b:') ? value.split(':')[2] : '');
-
-/** Something said at the table, in the same bubble style as a move. */
-export function ReactBubble({ id: value, game }: { id: string; game: Game }) {
-  const [id, n, to] = value.split('|');
-  const text = reactionText(id, game.players.find((p) => p.id === to)?.name);
-  const emoji = !/[A-Za-z]/.test(text);
+/**
+ * A seat's table talk, in the same bubble style as a move: the last couple of messages stacked, newest at
+ * the bottom nearest the face, and the typing dots under them while the next one is on its way.
+ */
+export function Thread({ talk }: { talk: Talk }) {
+  // There's room above a seat for two bubbles: the dots take the place of the oldest message when both are up.
+  const items: (Message | null)[] = [...talk.shown, ...(talk.typing ? [null] : [])].slice(-2);
   return (
-    <span key={`${id}-${n}`} className={`bubble bubble-grey bubble-react pop${emoji ? ' bubble-emoji' : ''}`} role="status">
-      {text}
+    <span className="thread" role="status" aria-live="polite">
+      {items.map((m, i) =>
+        m ? (
+          <span key={m.key} className={`bubble bubble-grey bubble-react pop${emojiOnly(m.text) ? ' bubble-emoji' : ''}${i < items.length - 1 ? ' bubble-older' : ''}`}>
+            {m.text}
+          </span>
+        ) : (
+          <span key="typing" className="bubble bubble-grey bubble-typing pop" aria-hidden>
+            <i />
+            <i />
+            <i />
+          </span>
+        ),
+      )}
     </span>
   );
 }
@@ -263,7 +198,7 @@ export function ReactMenu() {
     react(id);
     setOpen(false);
     setCooling(true);
-    setTimeout(() => setCooling(false), 2500);
+    setTimeout(() => setCooling(false), 1800);
   };
   return (
     <>

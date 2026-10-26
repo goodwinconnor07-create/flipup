@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
-import { legendById, legendProfile, LEGEND_NOTE, LEGENDS, RUNG_WORDS } from '../../game';
+import { legendById, legendProfile, LEGEND_NOTE, LEGENDS, RUNG_WORDS, SCOUT_MIN } from '../../game';
+import { loadTwin } from '../../state/twin';
 import { legendBefore, legendOpen, loadProgress } from '../../state/progress';
 import { back, startLegend } from '../../state/store';
 import { CoachSays } from '../../train/Coach';
@@ -13,6 +14,7 @@ export function Legend({ id }: { id: string }) {
   // Their numbers through the same scouting a friend's twin gets.
   const notes = useMemo(() => (legend ? scout(legendProfile(legend), 3, 0.1) : []), [legend]);
   const [progress] = useState(loadProgress);
+  const [seenHands] = useState(() => loadTwin().hands);
   if (!legend) return null;
   const open = legendOpen(progress, legend.id);
   const before = legendBefore(legend.id);
@@ -38,6 +40,9 @@ export function Legend({ id }: { id: string }) {
           </div>
         </div>
         <CoachSays quick lines={[legend.blurb]} />
+        {legend.scouting >= 0.5 && seenHands >= SCOUT_MIN && (
+          <CoachSays quick compact header={false} lines={[`${legend.short} studies players. They've seen ${seenHands} of your hands and will play to your habits.`]} />
+        )}
         <div className="glass-card legend-signature">
           <small className="eyebrow">Known for</small>
           <ul>

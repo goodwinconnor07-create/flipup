@@ -89,3 +89,12 @@ Added after stage 3. His numbers are prototype dials for the fit (aggressive, a 
 - **Memory.** A legend greets you with a rematch line if you've beaten them, or if you've only lost to them, and says a line when the game ends.
 - **Records.** Your score against each legend, your twin and friends' twins, shown on the profile, the twin tile and the finish screen.
 - **Not done.** Coaching review per legend and Insights charts per legend.
+
+## Techniques, not just numbers
+
+Each legend now also has a `craft` (see BOTS.md): Brunson plays ten-deuce and says so when it wins; Hellmuth waits, traps
+and lays down good hands; Negreanu floats, probes, check-raises, reads and calls down; Ivey bets big on the river with the
+best hands and with blocker bluffs, bets thin and adjusts fastest; Dwan fires barrels, floats and 3-bets and 4-bets light;
+Rampage overbets the river, check-raises and traps. Their profile bullets say so. A legend that studies players
+(`scouting`) also starts a game knowing what your AI twin knows about you. Daily goals are paused (`DAILY_GOALS`), so the
+page with the ladder and badges is "Badges and ladder".

@@ -270,6 +270,83 @@ for (const id of Object.keys(MORE) as LegendId[]) {
   }
 }
 
+// Answering a person, answering each other and greeting back, in each one's own voice. A few more in the
+// old moments, written as short messages (`|` sends the next one at once, `||` a beat later).
+const CHAT: Record<LegendId, Partial<Record<TalkEvent, string[]>>> = {
+  hellmuth: {
+    thanks: ['Thank you.|I deserve it.'],
+    ribbed: ['Lucky?|You got lucky.'],
+    goodLuck: ['I don’t need luck.'],
+    gg: ['Not over.|Patience.'],
+    cheer: ['Of course.|The nuts.'],
+    commiserate: ['Told you.|Unlucky?'],
+    greetBack: ['Hello.|Patience.'],
+    allin: ['Finally.||All in.'],
+    badBeat: ['Unbelievable.|Again.'],
+    foldBig: ['I was ahead.|I know it.'],
+  },
+  brunson: {
+    signature: ['Ten-deuce.|Never fails.', 'Ten-deuce.||Don’t laugh.', 'Ten-deuce, son.|Remember it.'],
+    thanks: ['Much obliged.'],
+    ribbed: ['Ha.|Fair enough, son.'],
+    goodLuck: ['Same to you.'],
+    gg: ['Plenty of game left.'],
+    cheer: ['Good one, friend.'],
+    commiserate: ['That’s poker.|Next one.'],
+    greetBack: ['Evening.|Deal it up.'],
+    allin: ['Let’s go.||Everything.'],
+    bigWin: ['Good pot.|Thank you.'],
+  },
+  negreanu: {
+    thanks: ['Thanks!|You too!'],
+    ribbed: ['Ha!|I’ll take it.'],
+    goodLuck: ['Thanks!|Same to you.'],
+    gg: ['Early!|But thanks.'],
+    cheer: ['Nice one!|Good read.'],
+    commiserate: ['Ouch.|I felt that.'],
+    greetBack: ['Hey!|Great to be here.'],
+    thinkHard: ['Hmm.|I have a read.'],
+    callLight: ['I think you’re|weak.'],
+  },
+  dwan: {
+    thanks: ['Sure.|Whatever.'],
+    ribbed: ['Lucky.|Keep saying that.'],
+    goodLuck: ['Luck?|Pass.'],
+    gg: ['Not yet.|Not even close.'],
+    cheer: ['Sure.|Cute.'],
+    commiserate: ['Variance.|Next.'],
+    greetBack: ['Yo.|Let’s go.'],
+    allin: ['You can’t call.||Can you?'],
+    raise: ['Again.|Bigger.'],
+  },
+  ivey: {
+    thanks: ['Thanks.'],
+    ribbed: ['Hm.'],
+    goodLuck: ['You too.'],
+    gg: ['Not yet.'],
+    cheer: ['Nice.'],
+    commiserate: ['Unlucky.'],
+    greetBack: ['Hello.'],
+    bigWin: ['Thanks.|Good pot.'],
+  },
+  rampage: {
+    thanks: ['Thanks!|Big plans.'],
+    ribbed: ['Ha!|Keep talking.'],
+    goodLuck: ['Luck!|And chips.'],
+    gg: ['Early gg.|I’m just starting.'],
+    cheer: ['Big pot!|Nice.'],
+    commiserate: ['That’s poker.|Run it back.'],
+    greetBack: ['Hey!|Let’s go big.'],
+    allin: ['Here we go.||All in.'],
+    raise: ['Pressure.|Big bet.'],
+  },
+};
+for (const id of Object.keys(CHAT) as LegendId[]) {
+  for (const [event, lines] of Object.entries(CHAT[id]) as [TalkEvent, string[]][]) {
+    LEGEND_VOICES[id].lines[event] = [...(LEGEND_VOICES[id].lines[event] ?? []), ...lines];
+  }
+}
+
 // Cross-game memory: what each legend says when you come back (having beaten them, or only lost to them),
 // and what they say when the game is over. Lines hold {you}.
 const MEMORY: Record<LegendId, Partial<Record<TalkEvent, string[]>>> = {

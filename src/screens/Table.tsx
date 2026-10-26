@@ -146,10 +146,12 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const others = othersInOrder(game, me);
   const odds = useOdds(hand);
   const desktop = useDesktop();
-  const { say: reactions, quiet } = useReactions(game);
+  const speakerOk = useRef<(id: string) => boolean>(() => true);
+  const { say: reactions, quiet } = useReactions(game, speakerOk);
   // On a phone the row of four slides; on a computer everyone sits round the table.
   // Someone who folded stays in view while they're still saying something.
   const podSlots = usePodSlots(game, others, !desktop, reactions);
+  speakerOk.current = podSlots.canShow;
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
   const timed = !!hand?.deadline || ((!hand || !!hand.result) && !!game.nextHandAt);
   const real = useNow(timed ? 200 : 60_000);

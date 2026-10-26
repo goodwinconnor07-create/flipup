@@ -19,7 +19,7 @@ import { rankOf, suitOf, type Card } from './cards';
 import { boardTexture, category, flushDraw, handBucket, straightOuts, type Bucket, type Texture } from './handBucket';
 import { drawLevelWith, boardInfo, tierWith, toInt } from './botEval';
 import { inTheMoment, mindOf } from './botMind';
-import { betOutcome, boardCards, CHARTS, CLASS_INDEX, DIGITS, equityOf, imagine, jamOutcome, opponentsOf, PRIOR, preflopOrder, preflopRange, readOf, shoveWidth, STRENGTH, TOP, type Card2, type Opponent, type Read } from './botRange';
+import { betOutcome, boardCards, CHARTS, CLASS_INDEX, DIGITS, equityOf, imagine, jamOutcome, opponentsOf, PRIOR, preflopOrder, preflopRange, readOf, shoveWidth, STRENGTH, storyOf, TOP, type Card2, type Opponent, type Read } from './botRange';
 import trained from './botPostflop.json';
 import { playerStyle, type Style } from './botStyles';
 import { potTotal } from './holdem';
@@ -78,8 +78,26 @@ export function effectiveBb(game: Game, hand: Hand, seat: Seat): number {
 /** The average of the reads on everyone still in. */
 function averageRead(opps: Opponent[]): Read {
   if (!opps.length) return readOf(undefined);
-  const avg = (k: keyof Read) => opps.reduce((a, o) => a + o.read[k], 0) / opps.length;
-  return { vpip: avg('vpip'), pfr: avg('pfr'), foldToBet: avg('foldToBet'), aggression: avg('aggression'), shove: avg('shove'), bluffy: avg('bluffy'), betFreq: avg('betFreq'), known: avg('known') };
+  const avg = (k: Exclude<keyof Read, 'foldStreet'>) => opps.reduce((a, o) => a + o.read[k], 0) / opps.length;
+  const street = (k: 'flop' | 'turn' | 'river') => opps.reduce((a, o) => a + o.read.foldStreet[k], 0) / opps.length;
+  return {
+    vpip: avg('vpip'),
+    pfr: avg('pfr'),
+    foldToBet: avg('foldToBet'),
+    aggression: avg('aggression'),
+    shove: avg('shove'),
+    bluffy: avg('bluffy'),
+    betFreq: avg('betFreq'),
+    known: avg('known'),
+    foldStreet: { flop: street('flop'), turn: street('turn'), river: street('river') },
+    foldCbet: avg('foldCbet'),
+    foldThreeBet: avg('foldThreeBet'),
+    threeBet: avg('threeBet'),
+    checkRaise: avg('checkRaise'),
+    limp: avg('limp'),
+    tellBig: avg('tellBig'),
+    tellSmall: avg('tellSmall'),
+  };
 }
 
 /** Bet sizes people actually say: 85, 120, 250, 1,250 (not 83 or 1,237). */
@@ -252,6 +270,25 @@ function styledPreflop(style: Style, cls: string, g: PreSpot, read: Read, canLim
     const f0 = Math.max(0, 1 - call - raise);
     if (foldy > 0) raise += f0 * Math.min(1, foldy * EXPLOIT.steal * (0.3 + style.adapt)) * (st > 0.2 ? 1 : 0.4);
   }
+  // Techniques. A hand it likes (a signature hand) it plays now and then when the chart says fold.
+  const c = style.craft;
+  if (c.petRate > 0 && c.pets.includes(cls) && (g.spot === 'rfi' || g.spot === 'limp' || (g.spot === 'open' && g.raiseBb <= 3.5))) {
+    const f0 = Math.max(0, 1 - call - raise);
+    if (g.spot === 'open') call += f0 * c.petRate * 0.6;
+    else raise += f0 * c.petRate;
+  }
+  // 4-bet bluffs with a card that blocks the hands that continue, more against players who fold to 3-bets.
+  if (c.fourBet > 0 && g.spot === '3bet' && FOUR_BET_BLUFFS.has(cls)) {
+    const f0 = Math.max(0, 1 - call - raise);
+    raise += f0 * Math.min(1, c.fourBet * (0.6 + (read.foldThreeBet - PRIOR.foldThreeBet) * 1.5 * c.exploit));
+  }
+  // 3-bets without a premium: suited hands and decent high cards, more against openers who fold to a 3-bet.
+  if (c.threeBet > 0 && g.spot === 'open' && st > 0.4 && (cls.endsWith('s') || st > 0.55)) {
+    const room = Math.max(0, 1 - call - raise) * 0.7 + call * 0.25;
+    const move = Math.min(room, room * c.threeBet * 0.35 * Math.max(0.3, 0.7 + (read.foldThreeBet - PRIOR.foldThreeBet) * 2 * c.exploit));
+    raise += move;
+    call = Math.max(0, call - move * 0.3);
+  }
   const total = call + raise;
   if (total > 1) {
     call /= total;
@@ -259,6 +296,9 @@ function styledPreflop(style: Style, cls: string, g: PreSpot, read: Read, canLim
   }
   return { call: Math.max(0, call), raise: Math.max(0, raise) };
 }
+
+/** Hands that make good 4-bet bluffs: a small suited ace blocks the aces and kings that would continue. */
+const FOUR_BET_BLUFFS = new Set(['A5s', 'A4s', 'A3s', 'A2s']);
 
 // ── After the flop: GTO's own mix (for balance) ─────────────────────────────
 
@@ -399,7 +439,7 @@ function thinkTime(style: Style, rng: Rng, opts: { street: string; probs: number
 
 export function decide(game: Game, hand: Hand, seat: Seat, rng: Rng): BotThought {
   const player = game.players.find((p) => p.id === seat.playerId);
-  const opps = opponentsOf(game, hand, seat);
+  const opps = opponentsOf(game, hand, seat, playerStyle(player).craft.exploit);
   const mind = mindOf(game, seat.playerId);
   // The grudge that matters is against whoever's betting (or anyone, heads up).
   const aggressor = hand.aggressorId && hand.aggressorId !== seat.playerId ? hand.aggressorId : opps.length === 1 ? opps[0].id : null;
@@ -528,6 +568,29 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   const ip = inPosition(hand, seat.playerId);
   const multiway = opps.length > 1;
   const read = averageRead(opps);
+  const craft = style.craft;
+  const streetKey = hand.street as 'flop' | 'turn' | 'river';
+
+  // What kind of spot this is, for its techniques: who had the initiative, what it did on earlier streets, the board.
+  const acts = hand.actions ?? [];
+  const order = ['preflop', 'flop', 'turn', 'river'] as const;
+  const prevStreet = order[order.indexOf(hand.street as (typeof order)[number]) - 1];
+  const mine = (st: string, f: (a: (typeof acts)[number]) => boolean) => acts.some((a) => a.street === st && a.playerId === seat.playerId && !a.outOfTurn && f(a));
+  const preRaises = acts.filter((a) => a.street === 'preflop' && AGGRESSIVE.includes(a.move) && !a.outOfTurn);
+  const pfa = preRaises.length > 0 && preRaises[preRaises.length - 1].playerId === seat.playerId;
+  const iBetPrev = mine(prevStreet, (a) => AGGRESSIVE.includes(a.move));
+  const iBetNow = mine(hand.street, (a) => AGGRESSIVE.includes(a.move));
+  const iCheckedNow = mine(hand.street, (a) => a.move === 'check');
+  const prevCheckedThrough = prevStreet !== 'preflop' && !acts.some((a) => a.street === prevStreet && AGGRESSIVE.includes(a.move));
+  const floated = mine('flop', (a) => a.move === 'call');
+  const wet = ['wet', 'mono'].includes(boardTexture(hand.board.slice(0, board.length)));
+  // A continuation bet meets how they've answered continuation bets (nothing changes for a bot that doesn't act on its reads).
+  const oppsBet =
+    pfa && hand.street === 'flop'
+      ? opps.map((x) => ({ ...x, read: { ...x.read, foldStreet: { ...x.read.foldStreet, flop: Math.max(0.02, Math.min(0.98, x.read.foldStreet.flop + x.read.foldCbet - PRIOR.foldCbet)) } } }))
+      : opps;
+  // A king or an ace in the hand: it blocks the top pairs and flushes the other player would call a bluff with.
+  const blocker = hole.some((h) => (h >> 2) + 2 >= 13);
 
   // Picture their hands and play it out.
   const ranges = opps.map((x) => preflopRange(game, hand, x.id, x.story, x.read));
@@ -566,11 +629,34 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   const bully = tournament && theirBehind < behind * 0.5 ? pot * 0.03 * (1 - style.pre.survival) : 0;
   const risk = (put: number) => (covered && put >= behind * 0.7 ? pot * style.pre.survival * 0.12 : 0);
 
+  // What its techniques add to betting `f` of the pot here, in pots.
+  const craftBet = (f: number): number => {
+    let b = 0;
+    if (pfa && hand.street === 'flop') b += wet ? craft.cbetWet : craft.cbetDry;
+    if (iBetPrev && hand.street !== 'flop') b += craft.barrel * (myTier <= 2 ? 1 : 0.4);
+    if (!pfa && hand.street === 'turn' && prevCheckedThrough) b += craft.probe * 0.1;
+    if (!pfa && hand.street === 'flop' && !ip) b += craft.donk;
+    if (floated && hand.street !== 'flop' && !iBetPrev) b += craft.float * 0.09;
+    // Small bets on dry boards, big ones on wet boards.
+    if (craft.texture > 0) b += craft.texture * 0.05 * (wet ? (f >= 0.6 ? 1 : -0.6) : f <= 0.45 ? 1 : -0.6);
+    // The river: polarised. Big with the best hands and with bluffs that block, small or nothing with the middle.
+    if (river && craft.polar > 0) {
+      if (f >= 0.9) b += craft.polar * (myTier >= 5 ? 0.09 : bluffing && blocker ? 0.06 : bluffing ? 0.01 : -0.06);
+      else if (f <= 0.5 && myTier >= 5) b -= craft.polar * 0.04;
+      else if (myTier === 3 || myTier === 4) b -= craft.polar * 0.03 * f;
+    }
+    // Thin value: one pair bets for value against players who call.
+    if (craft.thin !== 0 && (myTier === 3 || myTier === 4) && hand.street !== 'flop') b += craft.thin * 0.05 * (f <= 0.6 ? 1 : 0.3) * Math.max(0.2, 1 + (PRIOR.foldToBet - read.foldStreet.river) * 2);
+    return b;
+  };
+
   const opts: Option[] = [];
   if (o.canCheck) {
     // Checking: see the next card (or the showdown) for free. Out of position the others may bet us off it.
     let vCheck = eq * pot * (river ? 1 : realise);
     if (myTier === 6 && !river && !multiway) vCheck += s.trap * 0.3 * pot;
+    // Checking to raise: strong hands and draws out of position, against players who bet when checked to.
+    if (craft.checkRaise > 0 && !ip && !multiway && !river) vCheck += pot * craft.checkRaise * (myTier >= 5 ? 0.06 : draw >= 2 ? 0.04 : 0) * Math.min(1.5, 0.5 + read.betFreq);
     opts.push({ move: check(), value: vCheck, kind: 0 });
     // Betting: each size the style likes.
     let sizes = s.sizes.filter((f) => hand.street !== 'flop' || f <= 1.05);
@@ -579,7 +665,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
       const amount = Math.min(effBehind, f0 * pot);
       if (amount < bb) continue;
       const f = amount / pot;
-      const out = betOutcome(im, opps, f, river, false, committed);
+      const out = betOutcome(im, oppsBet, f, river, false, committed, streetKey);
       // Folds from a player who folds too much (or too little), as the bot has seen.
       const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.35) * (1 + foldy * EXPLOIT.fold)));
       // When it's called it's up against the hands that call, whatever it thinks of its own.
@@ -593,6 +679,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
       v += pot * s.tell * 0.15 * (f - 0.6) * (myTier >= 5 ? 1 : myTier <= 3 ? -1 : 0);
       if (multiway && bluffing) v -= pot * 0.05 * opps.length;
       v += bully - risk(amount);
+      v += pot * craftBet(f);
       opts.push({ move: raiseTo(seat.bet + amount), value: v, kind: f <= 0.5 ? 1 : 2 });
     }
   } else {
@@ -604,6 +691,13 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
     // Bots notice players who bet too much and look them up lighter (and give tight ones more credit).
     vCall += pot * Math.max(-0.08, Math.min(0.2, (read.aggression - PRIOR.aggression) * 0.04 + (read.bluffy - PRIOR.bluffy) * 0.2 + (read.betFreq - PRIOR.betFreq) * BET_CALL)) * adapt;
     vCall -= risk(o.toCall);
+    // Floating: calling a flop bet in position with a weak hand to take the pot away later, against players who give up on the turn.
+    if (craft.float > 0 && ip && hand.street === 'flop' && !multiway && myTier <= 3) vCall += pot * craft.float * 0.08 * Math.max(0, 0.5 + (read.foldStreet.turn - PRIOR.foldToBet) * 2);
+    // Calling down light against a story that smells of a bluff (and not paying off a river raise with one pair).
+    if (river && (myTier === 3 || myTier === 4)) {
+      vCall += pot * craft.hero * Math.max(-0.05, Math.min(0.25, 0.04 + (read.bluffy - PRIOR.bluffy) * 0.6 + (read.betFreq - PRIOR.betFreq) * 0.3));
+      if (iBetNow) vCall -= pot * craft.layDown * 0.12;
+    }
     opts.push({ move: call(), value: vCall, kind: 1 });
     if (o.canRaise && !o.callIsAllIn) {
       const bigPot = pot + o.toCall;
@@ -616,7 +710,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
         if (to <= hand.currentBet) continue;
         const put = Math.min(behind, to - seat.bet);
         const f = (to - hand.currentBet) / Math.max(1, bigPot);
-        const out = betOutcome(im, opps, f, river, true, committed);
+        const out = betOutcome(im, opps, f, river, true, committed, streetKey);
         const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.2) * (1 + foldy)));
         const eqCalled = Math.min(1, out.eqCalled + (1 - sense) * 0.05 + bias);
         let v = fold * pot + (1 - fold) * (eqCalled * (pot + put + (to - hand.currentBet)) * (put >= behind ? 1 : realise) - put);
@@ -625,6 +719,8 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
         v += bully - risk(put);
         v += pot * (s.raise + (bluffing ? s.bluff : 0) + (strong ? s.value : 0));
         if (myTier === 6 && s.trap > 0 && !river && hand.street === 'flop') v -= pot * s.trap * 0.1;
+        // Checked, then raised: with the hands that wanted it (and the odd bluff).
+        if (iCheckedNow && craft.checkRaise > 0) v += pot * craft.checkRaise * (myTier >= 5 ? 0.07 : draw >= 2 && !river ? 0.05 : bluffing ? 0.03 : 0);
         opts.push({ move: raiseTo(to), value: v, kind: 2 });
       }
     }
@@ -720,8 +816,19 @@ export function updateReads(game: Game, hand: Hand): void {
       const t = tierWith(toInt(s.cards[0]), toInt(s.cards[1]), boardInfo(board), []);
       r.shownBets = (r.shownBets ?? 0) + 1;
       if (t <= 1) r.shownBluffs = (r.shownBluffs ?? 0) + 1;
+      // What their size said: a big bet shown down, was it a real hand? (Their size is public; so is what they showed.)
+      const late = storyOf(game, hand, s.playerId).post.filter((m) => (m.street === 'turn' || m.street === 'river') && (m.kind === 'bet' || m.kind === 'raise'));
+      const bet = late[late.length - 1];
+      if (bet && bet.frac >= 0.7) {
+        r.shownBig = (r.shownBig ?? 0) + 1;
+        if (t >= 4) r.shownBigStrong = (r.shownBigStrong ?? 0) + 1;
+      } else if (bet) {
+        r.shownSmall = (r.shownSmall ?? 0) + 1;
+        if (t >= 4) r.shownSmallStrong = (r.shownSmallStrong ?? 0) + 1;
+      }
     }
   }
+  recordHabits(game, hand, reads, raised);
   for (const street of ['flop', 'turn', 'river'] as const) {
     let bet = false;
     for (const a of acts.filter((x) => x.street === street && !x.outOfTurn)) {
@@ -746,3 +853,87 @@ export function updateReads(game: Game, hand: Hand): void {
     }
   }
 }
+
+/**
+ * The habits that are only seen in one kind of spot: how people answer a 3-bet, a continuation bet, a bet on
+ * each street, how often they check-raise or limp. Public moves only, like the rest of `updateReads`.
+ */
+function recordHabits(game: Game, hand: Hand, reads: Record<string, PlayerRead>, raised: Set<NonNullable<Hand['actions']>[number]>): void {
+  const acts = (hand.actions ?? []).filter((a) => !a.outOfTurn);
+  const bb = game.settings.bigBlind;
+  const bump = (r: PlayerRead, k: keyof PlayerRead) => {
+    (r[k] as number | undefined) = ((r[k] as number | undefined) ?? 0) + 1;
+  };
+
+  // Before the flop: who opened, who could 3-bet and did, how the opener answered, who limped.
+  let level = 0;
+  let top = bb;
+  let opener: string | null = null;
+  let lastRaiser: string | null = null;
+  let openerAnswered = false;
+  for (const a of acts.filter((x) => x.street === 'preflop')) {
+    const r = reads[a.playerId];
+    const raises = AGGRESSIVE.includes(a.move) && a.to > top;
+    if (r) {
+      if (level === 1 && a.playerId !== opener) {
+        bump(r, 'openFaced');
+        if (raises) bump(r, 'threeBets');
+      }
+      if (level === 2 && a.playerId === opener && !openerAnswered) {
+        openerAnswered = true;
+        bump(r, 'threeBetFaced');
+        if (a.move === 'fold') bump(r, 'threeBetFolds');
+      }
+      if (level === 0 && a.move === 'call') bump(r, 'limps');
+    }
+    if (raises) {
+      level++;
+      top = a.to;
+      lastRaiser = a.playerId;
+      if (level === 1) opener = a.playerId;
+    }
+  }
+
+  // After the flop, street by street.
+  for (const street of ['flop', 'turn', 'river'] as const) {
+    const onStreet = acts.filter((x) => x.street === street);
+    let bet = false;
+    const checked = new Set<string>();
+    for (const a of onStreet) {
+      const r = reads[a.playerId];
+      if (!r) continue;
+      const faced = `${street}Faced` as 'flopFaced' | 'turnFaced' | 'riverFaced';
+      const folds = `${street}Folds` as 'flopFolds' | 'turnFolds' | 'riverFolds';
+      if (a.move === 'check') checked.add(a.playerId);
+      if (raised.has(a)) {
+        if (bet) bump(r, faced);
+        if (checked.delete(a.playerId)) {
+          bump(r, 'crOpps');
+          bump(r, 'crs');
+        }
+        bet = true;
+      } else if (a.move === 'call' || a.move === 'allin') {
+        bump(r, faced);
+        if (checked.delete(a.playerId)) bump(r, 'crOpps');
+      } else if (a.move === 'fold' && bet) {
+        bump(r, faced);
+        bump(r, folds);
+        if (checked.delete(a.playerId)) bump(r, 'crOpps');
+      }
+    }
+    // The flop bet from whoever raised last before it, and how everyone answered.
+    if (street === 'flop' && lastRaiser) {
+      const first = onStreet.findIndex((x) => raised.has(x));
+      if (first >= 0 && onStreet[first].playerId === lastRaiser) {
+        const answered = new Set<string>([lastRaiser]);
+        for (const a of onStreet.slice(first + 1)) {
+          if (answered.has(a.playerId) || !reads[a.playerId]) continue;
+          answered.add(a.playerId);
+          bump(reads[a.playerId], 'cbetFaced');
+          if (a.move === 'fold') bump(reads[a.playerId], 'cbetFolds');
+        }
+      }
+    }
+  }
+}
+

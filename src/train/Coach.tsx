@@ -2,6 +2,7 @@
 // Wording lives in coach.ts; this file is how it looks and the bits that talk back (retry a spot).
 
 import { useState, type ReactNode } from 'react';
+import { splitSentences } from '../game';
 import type { Colour, Decision, PracticeHand } from '../gto/types';
 import { recordDrill } from '../state/training';
 import { noteDrill } from '../state/progress';
@@ -36,14 +37,17 @@ export function CoachBubble({
   tone,
   className = '',
   i = 0,
+  delay,
 }: {
   children: ReactNode;
   tone?: Colour | null;
   className?: string;
   i?: number;
+  /** When it pops in, in seconds (CoachSays works this out; a bubble on its own follows its place in the run). */
+  delay?: number;
 }) {
   return (
-    <div className={`coach-bubble${tone ? ` ${tone}` : ''} ${className}`} style={{ ['--i' as string]: i }}>
+    <div className={`coach-bubble${tone ? ` ${tone}` : ''} ${className}`} style={{ ['--i' as string]: i, ...(delay !== undefined ? { ['--delay' as string]: `${delay}s` } : {}) }}>
       {children}
     </div>
   );
@@ -72,6 +76,9 @@ export function CoachSays({
   /** Extra things to put inside the last bubble's stack, such as a bar or buttons. */
   children?: ReactNode;
 }) {
+  // A long line is sent as a few short bubbles, each arriving a moment after the one before, as long as the last took to read.
+  const bubbles = lines.flatMap((l) => (typeof l === 'string' ? splitSentences(l) : [l]));
+  const delays = coachDelays(bubbles, quick);
   return (
     <div className={`coach${quick ? ' quick' : ''}${header ? ' with-face' : ''}${compact ? ' compact' : ''}`}>
       {header && <CoachAvatar size={compact ? 28 : 32} />}
@@ -84,8 +91,8 @@ export function CoachSays({
             <i />
           </div>
         )}
-        {lines.map((l, i) => (
-          <CoachBubble key={i} tone={tone} className="pop" i={i}>
+        {bubbles.map((l, i) => (
+          <CoachBubble key={i} tone={tone} className="pop" i={i} delay={delays[i]}>
             {l}
           </CoachBubble>
         ))}
@@ -93,6 +100,21 @@ export function CoachSays({
       </div>
     </div>
   );
+}
+
+/** How the coach paces its bubbles: a first bubble after a short "typing" (none when `quick`), then each as long after the last as that one takes to read. */
+export const COACH_TIMING = { typing: 0.34, gap: 0.14, perChar: 0.006, max: 0.8, quickGap: 0.08, quickPerChar: 0.003, quickMax: 0.4 };
+
+/** The delay of each bubble, in seconds from the moment the coach starts. */
+export function coachDelays(bubbles: ReactNode[], quick: boolean): number[] {
+  const t = COACH_TIMING;
+  let at = quick ? 0 : t.typing;
+  return bubbles.map((b) => {
+    const mine = at;
+    const len = typeof b === 'string' ? b.length : 40;
+    at += quick ? Math.min(t.quickMax, t.quickGap + len * t.quickPerChar) : Math.min(t.max, t.gap + len * t.perChar);
+    return mine;
+  });
 }
 
 /** "Thinking" state while the solver works. */

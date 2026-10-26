@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { LEGENDS, RUNG_WORDS } from '../../game';
-import { BADGES, legendBefore, legendOpen, loadToday, todaysGoals } from '../../state/progress';
+import { BADGES, legendBefore, legendOpen, loadToday, PROGRESS_TITLE, todaysGoals } from '../../state/progress';
 import { back, navigate } from '../../state/store';
 import { BackIcon, CheckIcon } from '../../ui/Icons';
 import { Avatar } from '../../ui/components';
@@ -18,21 +18,25 @@ export function Progress() {
         <button type="button" className="icon-btn press" aria-label="Back" onClick={back}>
           <BackIcon />
         </button>
-        <div className="topbar-title h3">Goals and badges</div>
+        <div className="topbar-title h3">{PROGRESS_TITLE}</div>
         <span className="icon-btn" aria-hidden />
       </div>
       <div className="screen-body">
-        <h2 className="section-head">Today</h2>
-        <div className="glass-card prog-goals">
-          {goals.map(({ def, have, done }) => (
-            <div key={def.id} className={`prog-goal${done ? ' ok' : ''}`}>
-              <span className="today-tick" aria-hidden>{done && <CheckIcon width={14} height={14} />}</span>
-              <span>{def.label}</span>
-              <i className="prog-bar" aria-hidden><b style={{ width: `${Math.round((have / def.target) * 100)}%` }} /></i>
+        {goals.length > 0 && (
+          <>
+            <h2 className="section-head">Today</h2>
+            <div className="glass-card prog-goals">
+              {goals.map(({ def, have, done }) => (
+                <div key={def.id} className={`prog-goal${done ? ' ok' : ''}`}>
+                  <span className="today-tick" aria-hidden>{done && <CheckIcon width={14} height={14} />}</span>
+                  <span>{def.label}</span>
+                  <i className="prog-bar" aria-hidden><b style={{ width: `${Math.round((have / def.target) * 100)}%` }} /></i>
+                </div>
+              ))}
+              <small className="muted">New goals tomorrow.</small>
             </div>
-          ))}
-          <small className="muted">New goals tomorrow.</small>
-        </div>
+          </>
+        )}
 
         <h2 className="section-head">The ladder</h2>
         <div className="prog-ladder">

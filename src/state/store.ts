@@ -16,6 +16,7 @@ import {
   redactForDevice,
   dressAsLegend,
   legendById,
+  scoutRead,
   redactLogs,
   twinName,
   TWIN_READY,
@@ -436,6 +437,10 @@ export function startLegend(id: string): void {
     if (progress.beaten[legend.id]) game.rematch = 'won';
     else if (seen && seen.l > 0) game.rematch = 'lost';
     dressAsLegend(them, legend);
+    // They've studied you: what your AI twin knows is what they start out knowing, as far as they study people.
+    const person = game.players.find((p) => !p.bot);
+    const known = person && scoutRead(legend, loadTwin());
+    if (person && known) game.reads = { [person.id]: known };
   });
 }
 

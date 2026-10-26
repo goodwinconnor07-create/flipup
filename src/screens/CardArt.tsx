@@ -122,7 +122,7 @@ export function HostArt() {
   );
 }
 
-const LINEUP = ['🐸', '🤩', '🦊', '🐼', '🤠', '🐙'];
+const LINEUP = ['🦁', '🤩', '🦊', '🐼', '🤠', '🐙'];
 
 /** The bots lined up, each with a chip landing in front of them. */
 export function BotsArt() {

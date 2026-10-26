@@ -100,7 +100,7 @@ test('opening the bet sizer does not move or resize the table', async ({ page })
   expect(await size()).toEqual(before);
 });
 
-test('bot table talk never overlaps: lines wrap inside the seat row and come one at a time', async ({ page }) => {
+test('bot table talk never overlaps: messages stay inside the seat row, small and in turn', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play with Bots' }).click();
@@ -147,7 +147,7 @@ test('a new game waits three seconds with a countdown, and the bot says hello by
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
   await expect(page.getByText(/Dealing in \d/)).toBeVisible();
   // The greeting names us.
-  await expect(page.locator('.pod .bubble-react')).toContainText('Sam', { timeout: 2500 });
+  await expect(page.locator('.pod .thread')).toContainText('Sam', { timeout: 2500 });
   await shot(page, '15-hello');
   // No cards for about three seconds.
   await expect(page.getByText('Your turn')).toBeHidden();

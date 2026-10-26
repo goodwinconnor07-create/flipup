@@ -1,5 +1,5 @@
 import { beforeEach, expect, it } from 'vitest';
-import { goalsFor, goalById, legendOpen, loadProgress, settleTable, BADGES } from './progress';
+import { DAILY_GOALS, goalsFor, goalById, legendOpen, loadProgress, rollDay, settleTable, BADGES } from './progress';
 import { LEGENDS, type Game } from '../game';
 
 const storage = new Map<string, string>();
@@ -25,6 +25,12 @@ it('picks three different goals for a day, always with an easy one, the same eac
   expect(new Set(a).size).toBe(3);
   expect(goalById(a[0])?.easy).toBe(true);
   expect(goalsFor('2026-10-27', false).some((id) => goalById(id)?.needs === 'twin')).toBe(false);
+});
+
+it('keeps daily goals paused: none picked, none finished', () => {
+  expect(DAILY_GOALS).toBe(false);
+  expect(rollDay(loadProgress(), true).goals).toEqual([]);
+  expect(settleTable(table('g0', 'brunson', true), 'dev', [])?.goalsDone).toEqual([]);
 });
 
 it('opens the ladder one legend at a time', () => {

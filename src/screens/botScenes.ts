@@ -10,7 +10,7 @@ export interface Scene {
 
 const SCENES: Record<string, Scene> = {
   '🐸': { bg: ['#8ee0b0', '#2f8f6a'], props: ['🪷', '🌿', '💧'] },
-  '🤩': { bg: ['#ffb3d9', '#7b4bff'], props: ['✨', '🎤', '⭐'] },
+  '🤩': { bg: ['#ffd1e6', '#ff5fa2'], props: ['✨', '🎤', '⭐'] },
   '🧌': { bg: ['#7b8a6a', '#2e3b2a'], props: ['🪨', '🍄', '🌙'] },
   '🦊': { bg: ['#ffb877', '#b5521e'], props: ['🍂', '🌲', '🍁'] },
   '🐼': { bg: ['#c9eccb', '#4f9d62'], props: ['🎋', '🌿', '🎍'] },
@@ -20,7 +20,7 @@ const SCENES: Record<string, Scene> = {
   '🦄': { bg: ['#ffdaf6', '#a7c7ff'], props: ['🌈', '☁️', '✨'] },
   '🐯': { bg: ['#86e096', '#1f7a43'], props: ['🌴', '🌿', '🍃'] },
   '🐶': { bg: ['#a8e6ff', '#4aa05a'], props: ['🏠', '🌳', '🦴'] },
-  '🦉': { bg: ['#4a4aa8', '#10103a'], props: ['🌙', '⭐', '🌲'] },
+  '🦉': { bg: ['#3a4a6e', '#0e1626'], props: ['🌙', '⭐', '🌲'] },
   '🐻': { bg: ['#9fd89f', '#3a7a3a'], props: ['🌲', '🍯', '⛰️'] },
   '🐧': { bg: ['#dff4ff', '#7fc3e8'], props: ['❄️', '🧊', '⛄'] },
   '🦖': { bg: ['#ffbd7d', '#8c2d1a'], props: ['🌋', '🌿', '🦴'] },
@@ -58,9 +58,9 @@ export const sceneFor = (emoji: string): Scene => SCENES[emoji] ?? FALLBACK;
 /** A legend's backdrop on their card and profile: colours and props that suit how they're known to play. */
 export const LEGEND_SCENES: Record<string, Scene> = {
   brunson: { bg: ['#ffd9a0', '#c9742f'], props: ['🌵', '🐎', '☀️'] },
-  hellmuth: { bg: ['#d6c7ff', '#5b3bd1'], props: ['⏳', '🧣', '💢'] },
+  hellmuth: { bg: ['#ffc2b0', '#b3261e'], props: ['⏳', '🧣', '💢'] },
   negreanu: { bg: ['#ffe39a', '#ff8f3d'], props: ['💬', '🍁', '🎤'] },
   ivey: { bg: ['#4a4a62', '#0b0b12'], props: ['♠️', '🌙', '💎'] },
-  dwan: { bg: ['#7bf0ff', '#6a3bff'], props: ['🎲', '⚡', '💥'] },
-  rampage: { bg: ['#ff9a8b', '#8e2de2'], props: ['💸', '🎰', '🔥'] },
+  dwan: { bg: ['#8ae8ff', '#1f5bff'], props: ['🎲', '⚡', '💥'] },
+  rampage: { bg: ['#ffb199', '#d1294d'], props: ['💸', '🎰', '🔥'] },
 };

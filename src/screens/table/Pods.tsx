@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react';
-import { positionOf, seatFor, type Card, type Game, type Player, type Seat } from '../../game';
+import { positionOf, seatFor, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
 import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
 import { loadBigBlinds, saveBigBlinds } from '../../state/persist';
-import { Bubble, moveSig, ReactBubble, ReactMenu } from './Bubbles';
+import { Bubble, moveSig, ReactMenu, Thread } from './Bubbles';
 
 /** Everyone else, in seat order starting on this phone's left, so play moves left to right. */
 export function othersInOrder(game: Game, me: Player | undefined): Player[] {
@@ -31,30 +31,44 @@ export function usePodSlots(
   game: Game,
   others: Player[],
   windowed: boolean,
-  talking: Record<string, string> = {},
-): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number } {
+  talking: Record<string, unknown> = {},
+): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number; canShow: (id: string) => boolean } {
   const start = useRef(0);
   const slots = new Map<string, { slot: number; away: boolean }>();
   if (!windowed || others.length <= MAX_PODS) {
     others.forEach((p, i) => slots.set(p.id, { slot: i, away: false }));
-    return { slots, n: others.length, hidden: 0 };
+    return { slots, n: others.length, hidden: 0, canShow: () => true };
   }
   const hand = game.hand;
-  // Who's still worth looking at: anyone who hasn't folded (everyone, between hands).
-  const live = others.filter((p) => {
-    if (!hand) return true;
-    const seat = seatFor(hand, p.id);
-    return !!seat && (!seat.folded || !!talking[p.id]);
-  });
-  const n = Math.min(MAX_PODS, live.length);
+  // Who's still worth looking at: anyone who hasn't folded (everyone, between hands) or is saying something.
+  const liveFor = (speaking: ReadonlySet<string>) =>
+    others.filter((p) => {
+      if (!hand) return true;
+      const seat = seatFor(hand, p.id);
+      return !!seat && (!seat.folded || speaking.has(p.id));
+    });
   // The player to keep in view: whoever's turn it is, or the winner once the hand is over.
   const focus = hand?.result ? Object.entries(hand.result.won).sort((a, b) => b[1] - a[1])[0]?.[0] : hand?.toAct;
-  let s = Math.max(0, Math.min(start.current, live.length - n));
-  const at = live.findIndex((p) => p.id === focus);
-  if (at >= 0) {
-    if (at < s) s = at;
-    else if (at > s + n - 1) s = at - n + 1;
-  }
+  // Where the row starts, given who is talking: it moves only to keep the focus in view, or to bring a speaker in
+  // when the focus can stay in view too.
+  const plan = (speaking: ReadonlySet<string>) => {
+    const live = liveFor(speaking);
+    const n = Math.min(MAX_PODS, live.length);
+    let s = Math.max(0, Math.min(start.current, live.length - n));
+    const at = live.findIndex((p) => p.id === focus);
+    if (at >= 0) {
+      if (at < s) s = at;
+      else if (at > s + n - 1) s = at - n + 1;
+    }
+    const speaker = live.findIndex((p, i) => speaking.has(p.id) && (i < s || i > s + n - 1));
+    if (speaker >= 0) {
+      const to = speaker < s ? speaker : speaker - n + 1;
+      if (at < 0 || (at >= to && at <= to + n - 1)) s = to;
+    }
+    return { live, n, s };
+  };
+  const now = new Set(Object.keys(talking));
+  const { live, n, s } = plan(now);
   start.current = s;
   const visible = live.slice(s, s + n);
   const first = visible.length ? others.findIndex((p) => p.id === visible[0].id) : others.length;
@@ -64,7 +78,13 @@ export function usePodSlots(
     // Out of view: to the left if they come before the ones showing, otherwise to the right.
     else slots.set(p.id, { slot: i < first ? -1 : n, away: true });
   });
-  return { slots, n, hidden: others.length - n };
+  // Whether someone could be seen saying something: in the row already, or able to slide in without hiding the one in focus.
+  const canShow = (id: string) => {
+    const speaking = new Set([...now, id]);
+    const p = plan(speaking);
+    return p.live.slice(p.s, p.s + p.n).some((x) => x.id === id);
+  };
+  return { slots, n, hidden: others.length - n, canShow };
 }
 
 /** "+3": the players not in the row right now. Tap it for who they are and how many chips each has. */
@@ -124,7 +144,7 @@ export function Pod({
   player: Player;
   seat: Seat | undefined;
   odds?: { win: number; tie: number };
-  reaction?: string;
+  reaction?: Talk;
   /** The move whose bubble has been spoken over: it stays hidden. */
   quiet?: string;
   dimCard: (c: Card) => boolean;
@@ -173,7 +193,7 @@ export function Pod({
         {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (
-          <ReactBubble id={reaction} game={game} />
+          <Thread talk={reaction} />
         ) : thinking ? (
           <span className="bubble bubble-grey bubble-typing pop" aria-label={`${player.name} is thinking`}>
             <i />
@@ -218,7 +238,7 @@ export function MyBox({
   me?: Player;
   seat?: Seat;
   odds?: { win: number; tie: number };
-  reaction?: string;
+  reaction?: Talk;
   quiet?: string;
 }) {
   const hand = game.hand;
@@ -226,7 +246,7 @@ export function MyBox({
   const [inBB, setInBB] = useState(loadBigBlinds);
   // On a computer my seat is on the table (bottom), so the bubble and position are shown there.
   const bubble = desktop ? null : reaction ? (
-    <ReactBubble id={reaction} game={game} />
+    <Thread talk={reaction} />
   ) : seat?.last && quiet !== moveSig(hand!.number, seat.last) ? (
     <Bubble last={seat.last} street={hand?.street} />
   ) : null;

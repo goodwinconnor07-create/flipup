@@ -24,6 +24,8 @@ export default defineConfig({
     // REDUCED=1 runs with Reduce Motion on.
     contextOptions: { reducedMotion: process.env.REDUCED ? 'reduce' : 'no-preference' },
     trace: 'retain-on-failure',
+    // CHROMIUM_PATH points at a browser that isn't the one this Playwright version installs (the cloud sandbox's).
+    launchOptions: process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH, args: ['--no-sandbox'] } : {},
   },
   webServer: external
     ? undefined

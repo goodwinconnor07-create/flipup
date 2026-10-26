@@ -1,15 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { BOTS } from './botStyles';
+import { BOTS, NO_CRAFT } from './botStyles';
 import { botLineText, finishLine } from './botTalk';
 import { decide } from './botPlay';
 import { seededRng } from './cards';
 import { isEmoji } from './emoji';
-import { dressAsLegend, LEGEND_IDS, RUNG_WORDS, LEGEND_NOTE, LEGENDS, legendBrain, legendById, legendProfile, legendStyle } from './legends';
+import { dressAsLegend, LEGEND_IDS, RUNG_WORDS, LEGEND_NOTE, LEGENDS, legendBrain, legendById, legendProfile, legendStyle, scoutRead } from './legends';
+import { readOf } from './botRange';
 import { LEGEND_VOICES } from './legendTalk';
 import { redactForDevice } from './redact';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import { options } from './selectors';
-import { twinNumbers, TWIN_PRIOR } from './twin';
+import { emptyTwin, twinNumbers, TWIN_PRIOR } from './twin';
+import { fitStyle } from './twinFit';
 import type { Action, Game } from './types';
 
 describe('the legends', () => {
@@ -132,6 +134,83 @@ describe('legends remember you', () => {
       now += 800;
       go({ type: 'tick' }, 'h');
       expect(g.reactions?.[g.players[1].id]?.id).toMatch(new RegExp(`^b:dwan:rematch${rematch === 'won' ? 'Won' : 'Lost'}:`));
+    }
+  });
+});
+
+describe('legends have techniques, not just numbers', () => {
+  const dealt = (legend: (typeof LEGENDS)[number], cards: [string, string]) => {
+    let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0, rebuys: true }, bots: 1, code: null, now: 1000 });
+    dressAsLegend(g.players[1], legend);
+    const rng = seededRng(2);
+    let now = 1000;
+    const go = (action: Action, deviceId: string) => {
+      const r = applyAction(g, action, { deviceId, now, rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    };
+    go({ type: 'start' }, 'h');
+    for (let i = 0; i < 6 && !g.hand; i++) {
+      now = Math.max(now + 1, g.wakeAt ?? now + 1);
+      go({ type: 'tick' }, 'server');
+    }
+    const seat = g.hand!.seats.find((s) => s.playerId === g.players[1].id)!;
+    seat.cards = cards;
+    return { g, seat };
+  };
+  const playsIt = (legend: (typeof LEGENDS)[number], cards: [string, string]) => {
+    const { g, seat } = dealt(legend, cards);
+    let played = 0;
+    for (let i = 0; i < 400; i++) if (decide(g, g.hand!, seat, seededRng(i)).move.move !== 'fold' && decide(g, g.hand!, seat, seededRng(i)).move.move !== 'check') played++;
+    return played / 400;
+  };
+
+  it("Brunson plays his ten-deuce, the others mostly don't", () => {
+    const brunson = playsIt(legendById('brunson')!, ['Ts', '2d']);
+    const ivey = playsIt(legendById('ivey')!, ['Ts', '2d']);
+    expect(brunson).toBeGreaterThan(0.3);
+    expect(brunson).toBeGreaterThan(ivey + 0.15);
+  });
+
+  it('every legend has its own craft, and each is different from the others', () => {
+    const crafts = LEGENDS.map((l) => JSON.stringify(legendStyle(l).craft));
+    expect(new Set(crafts).size).toBe(LEGENDS.length);
+    // And a twin plays its person's habits, not a bot's techniques.
+    for (const l of LEGENDS) expect(JSON.stringify(fitStyle(legendProfile(l)).craft)).toBe(JSON.stringify({ ...NO_CRAFT, pets: [] }));
+  });
+
+  it('says so when it wins with the signature hand', () => {
+    expect(LEGEND_VOICES.brunson.lines.signature?.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('legends study you', () => {
+  const twin = (hands: number) => {
+    const t = emptyTwin();
+    t.hands = hands;
+    Object.assign(t.stats, { vpip: hands * 0.4, pfr: hands * 0.2, betsFaced: hands * 0.3, foldsToBet: hands * 0.3 * 0.6, betOpps: hands * 0.3, bets: hands * 0.3 * 0.5, postAgg: hands * 0.2, postCalls: hands * 0.2, raiseFaced: hands * 0.2, threeBets: hands * 0.02, limps: hands * 0.05 });
+    return t;
+  };
+
+  it('start out knowing what your twin knows, as far as they study people', () => {
+    const ivey = scoutRead(legendById('ivey')!, twin(200))!;
+    const hellmuth = scoutRead(legendById('hellmuth')!, twin(200))!;
+    expect(ivey.hands).toBe(50);
+    expect(hellmuth.hands).toBeLessThan(ivey.hands);
+    // The numbers keep their proportions: a player who folds 60% of bets reads as one.
+    expect(ivey.foldsToBet / ivey.betsFaced).toBeCloseTo(0.6, 1);
+    expect(readOf(ivey).foldToBet).toBeGreaterThan(readOf(undefined).foldToBet);
+  });
+
+  it("don't have anything to go on until they've seen enough of you", () => {
+    expect(scoutRead(legendById('ivey')!, twin(10))).toBeNull();
+    expect(scoutRead(legendById('ivey')!, emptyTwin())).toBeNull();
+  });
+
+  it('never claim to know more hands than your twin has seen', () => {
+    for (const l of LEGENDS) {
+      const r = scoutRead(l, twin(30));
+      if (r) expect(r.hands).toBeLessThanOrEqual(30);
     }
   });
 });

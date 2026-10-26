@@ -59,6 +59,12 @@ export interface Progress {
 
 // ── Goals ───────────────────────────────────────────────────────────────────
 
+/** Daily goals are paused for now: nothing is picked, counted or shown while this is off. */
+export const DAILY_GOALS = false;
+
+/** What the page with the ladder and badges is called. */
+export const PROGRESS_TITLE = DAILY_GOALS ? 'Goals and badges' : 'Badges and ladder';
+
 export interface GoalDef {
   id: string;
   metric: Metric;
@@ -185,8 +191,8 @@ export function saveProgress(p: Progress): void {
 /** Today's goals, rolled over if the day changed (counts start again, the goals change). */
 export function rollDay(p: Progress, twinReady: boolean, now = new Date()): Progress {
   const day = dayKey(now);
-  if (p.day === day && p.goals.length > 0) return p;
-  return { ...p, day, counts: {}, goals: goalsFor(day, twinReady).map((id) => ({ id, done: false })) };
+  if (p.day === day && (!DAILY_GOALS || p.goals.length > 0)) return p;
+  return { ...p, day, counts: {}, goals: DAILY_GOALS ? goalsFor(day, twinReady).map((id) => ({ id, done: false })) : [] };
 }
 
 /** Today's goals with how far each one is. */

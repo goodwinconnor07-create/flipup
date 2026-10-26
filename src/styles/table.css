@@ -1310,12 +1310,16 @@ html.calm .pod.won .pod-pic {
   font-size: 22px;
 }
 
-/* A long line wraps instead of running past the seat into its neighbours. The width limit is a seat's
-   share of the row, plus a little, so bubbles side by side stay clear of each other. The longest line
-   takes three lines, so there's room above the seats for that. */
+/* Table talk is said as short messages, so a bubble is small and mostly one line. A message that still
+   runs long wraps (two lines at most in practice) instead of running past the seat into its neighbours.
+   The width limit is a seat's share of the row, plus a little, so bubbles side by side stay clear. */
 .bubble-react {
   width: max-content;
   max-width: 104px;
+  padding: 3px 8px;
+  border-radius: 13px;
+  font-size: 11.5px;
+  font-weight: 500;
   white-space: normal;
   text-align: center;
   text-wrap: balance;
@@ -1325,14 +1329,90 @@ html.calm .pod.won .pod-pic {
   container-type: inline-size;
 }
 
-.my-box > .bubble-react {
+.my-box .bubble-react {
   max-width: 220px;
+  font-size: var(--fs-caption);
 }
 
 @supports (width: 1cqw) {
   .pod .bubble-react {
-    max-width: calc(100cqw / max(var(--n, 4), 1) + 8px);
+    max-width: calc(100cqw / max(var(--n, 4), 1) - 6px);
   }
+}
+
+/* A seat's talk: the last two messages stacked above the face, the newest at the bottom, and the dots
+   under them while the next one is on its way. The older one steps back so the newest reads first. */
+.thread {
+  position: absolute;
+  z-index: 3;
+  bottom: calc(100% - 6px);
+  left: 50%;
+  translate: -50% 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: max-content;
+  pointer-events: none;
+}
+
+.thread > .bubble {
+  position: relative;
+  bottom: auto;
+  left: auto;
+  translate: none;
+  transition:
+    opacity 0.25s ease,
+    scale 0.25s ease;
+}
+
+.thread > .bubble.pop {
+  animation-duration: 0.28s;
+}
+
+.thread > .bubble::before {
+  display: none;
+}
+
+.thread > .bubble:last-child::before {
+  display: block;
+}
+
+.thread > .bubble-older {
+  opacity: 0.6;
+  scale: 0.94;
+}
+
+/* A short screen has room for one bubble above a seat. */
+@media (max-height: 740px) and (max-width: 959px) {
+  .pod .thread > .bubble:not(:last-child) {
+    display: none;
+  }
+}
+
+.thread > .bubble-typing {
+  min-height: 20px;
+  height: 20px;
+  padding: 0 9px;
+}
+
+/* Yours: on the top edge of your chips box, growing upward, tails on the right. */
+.my-box > .thread {
+  bottom: calc(100% - 14px);
+  left: auto;
+  right: 12px;
+  translate: none;
+  align-items: flex-end;
+}
+
+.my-box > .thread > .bubble {
+  transform-origin: 100% 100%;
+}
+
+.my-box > .thread > .bubble::before {
+  left: auto;
+  right: -5px;
+  transform: scaleX(-1);
 }
 
 /* ── Table theme preview ─────────────────────────────────────────────────── */
@@ -1556,6 +1636,19 @@ html.calm .bubble-typing i {
   translate: 0 0;
 }
 
+.pod.edge-l .pod-pic > .thread {
+  left: -6px;
+  translate: 0 0;
+  align-items: flex-start;
+}
+
+.pod.edge-r .pod-pic > .thread {
+  left: auto;
+  right: -6px;
+  translate: 0 0;
+  align-items: flex-end;
+}
+
 /* ── The players not in the row ──────────────────────────────────────────── */
 
 .hidden-scrim {
@@ -1674,6 +1767,40 @@ html.calm .bubble-typing i {
   }
   .my-cards .pcard + .pcard {
     margin-left: -20px;
+  }
+}
+
+/* Shorter still (an iPhone SE, a small Android): a little less everywhere, so nothing scrolls and the buttons stay clear of your cards. */
+@media (max-height: 690px) and (max-width: 959px) {
+  .pods {
+    height: 150px;
+  }
+  .pod {
+    top: 22px;
+  }
+  .table-oval {
+    min-height: 124px;
+  }
+  .table-oval .pcard-lg {
+    --w: 42px;
+  }
+  .pcard-xl {
+    --w: 72px;
+  }
+  .my-cards .pcard + .pcard {
+    margin-left: -18px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 959px) {
+  .pods {
+    height: 140px;
+  }
+  .pod {
+    top: 18px;
+  }
+  .pcard-xl {
+    --w: 66px;
   }
 }
 

@@ -13,7 +13,7 @@ test('Play lists the legends; a profile says how they play, and you can sit down
   for (const name of ['Phil Ivey', 'Tom Dwan']) await expect(page.getByRole('button', { name: new RegExp(`^${name}\\.`) })).toBeAttached();
   // Easiest first.
   const cards = page.locator('.legends .quick-card b');
-  await expect(cards).toHaveText(['Brunson', 'Hellmuth', 'Negreanu', 'Ivey', 'Dwan']);
+  await expect(cards).toHaveText(['Brunson', 'Hellmuth', 'Negreanu', 'Ivey', 'Dwan', 'Rampage']);
   await page.locator('.legends .quick-row').scrollIntoViewIfNeeded();
   await shot(page, 'legends-01-shelf');
 

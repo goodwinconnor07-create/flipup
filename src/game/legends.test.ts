@@ -13,10 +13,10 @@ import { twinNumbers, TWIN_PRIOR } from './twin';
 import type { Action, Game } from './types';
 
 describe('the legends', () => {
-  it('are five distinct people on a ladder from easiest to hardest', () => {
-    expect(LEGENDS.map((l) => l.rung)).toEqual([1, 2, 3, 4, 5]);
-    expect(new Set(LEGENDS.map((l) => l.id)).size).toBe(5);
-    expect(new Set(LEGENDS.map((l) => l.emoji)).size).toBe(5);
+  it('are six distinct people on a ladder from easiest to hardest', () => {
+    expect(LEGENDS.map((l) => l.rung)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(new Set(LEGENDS.map((l) => l.id)).size).toBe(6);
+    expect(new Set(LEGENDS.map((l) => l.emoji)).size).toBe(6);
     expect(LEGEND_IDS.sort()).toEqual(LEGENDS.map((l) => l.id).sort());
     for (const l of LEGENDS) {
       expect(isEmoji(l.emoji)).toBe(true);

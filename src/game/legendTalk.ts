@@ -4,7 +4,7 @@
 
 import type { TalkEvent } from './botTalk';
 
-export type LegendId = 'hellmuth' | 'brunson' | 'negreanu' | 'dwan' | 'ivey';
+export type LegendId = 'hellmuth' | 'brunson' | 'negreanu' | 'dwan' | 'ivey' | 'rampage';
 
 export interface LegendVoice {
   /** The tone pool its lines come after (see botTalk.ts). */
@@ -160,6 +160,37 @@ export const LEGEND_VOICES: Record<LegendId, LegendVoice> = {
       revenge: ['Even.'],
     },
   },
+  // The action player: big shots when he likes the spot, patience when he has a monster.
+  rampage: {
+    tone: 'friendly',
+    lines: {
+      hello: ['{you}! Let’s make some noise.', 'Hey {you}. Ready for action?'],
+      welcome: ['Big stacks, big pots. Let’s go.'],
+      thinkHard: ['Is this a bluff or a trap?', 'Plenty of ways to play this.'],
+      thinkEasy: ['Easy money.', 'I like this spot.'],
+      allin: ['Fire it all in.', 'This is where it gets fun.', 'Put it to the test.'],
+      raise: ['Time to apply pressure.', 'Let’s make it expensive.', 'Big bet. Big story.'],
+      foldBig: ['Nice hand. I’ll let it go.', 'Not this time.'],
+      callLight: ['I’m not folding that.', 'You might have it. I’ll find out.'],
+      yourBigBet: ['That’s a lot of chips.', 'Scary. Maybe.'],
+      sweat: ['Come on, bring one!', 'Let it run!'],
+      sweatWin: ['That’s what I like to see.', 'Big pot. Thank you.'],
+      sweatLose: ['That’s poker. Run it back.', 'Next one.'],
+      bluffWon: ['Did I have it? Never tell.', 'Sometimes you have to take a shot.'],
+      bigWin: ['That was a fun one.', 'Stack going up.'],
+      win: ['Pressure works.', 'Another one.'],
+      badBeat: ['Variance, my old friend.', 'It happens. We go again.'],
+      lostToYou: ['Nice hand.', 'You got me there.'],
+      tiltJab: ['You can’t fold, can you?', 'I’ll keep betting.'],
+      bluffCaught: ['Worth a try.', 'Great call. Next one.'],
+      idle: ['Where’s the action?', 'Someone give me a spot.'],
+      tank: ['Take your time. I’m thinking too.'],
+      showBluff: ['Nothing. Surprise.', 'Ace high. Big bet.'],
+      showStrong: ['I was trapping all along.', 'Slow-played it. You kept betting.'],
+      showFold: ['I had a hand. Folded it.'],
+      revenge: ['Got that back.'],
+    },
+  },
 };
 
 // More lines, added after the first ones so earlier line ids keep meaning the same thing: the moments
@@ -209,6 +240,17 @@ const MORE: Record<LegendId, Partial<Record<TalkEvent, string[]>>> = {
     bluffCaught: ['Had to try.', 'Still +EV.'],
     showStrong: ['Surprise. I had it.'],
     sweatWin: ['Never in doubt.'],
+  },
+  rampage: {
+    sweatWatch: ['Big pot brewing.', 'Who’s bluffing?'],
+    watched: ['I’d have played it differently.', 'Good pot to watch.'],
+    gotBluffed: ['Nice shot. I’ll remember it.', 'You got me. Respect.'],
+    reply: ['Ha, keep talking.', 'Let’s see you back that up.'],
+    thinkEasy: ['Simple. Bet.', 'Value.'],
+    win: ['Keep calling. I’ll keep betting.'],
+    bluffCaught: ['You read it. Well played.'],
+    showStrong: ['No bluff this time.'],
+    sweatWin: ['Called it.'],
   },
   ivey: {
     sweatWatch: ['…', 'Interesting.'],

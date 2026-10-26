@@ -133,10 +133,31 @@ export const LEGENDS: Legend[] = [
       talk: { tone: 'trash', chatty: 0.3 },
     },
   },
+  {
+    id: 'rampage',
+    name: 'Ethan “Rampage” Yau',
+    short: 'Rampage',
+    emoji: '🎰',
+    rung: 6,
+    blurb: 'An action player who takes big shots: huge bluffs when he likes the spot, but patient traps and thin value raises too. You never quite know which one it is.',
+    signature: ['Makes big bets, sometimes very big ones, with nothing', 'Slow-plays a monster and lets you keep betting', 'Sometimes pushes a bluff further than it should go'],
+    // Prototype dials for the fit, not his statistics: nobody has his full hands. Roughly "aggressive, with a
+    // taste for big bluffs", on a credible base. See docs/LEGENDS.md.
+    numbers: { vpip: 0.34, pfr: 0.25, limp: 0.02, open: 3, threeBet: 0.13, foldToRaise: 0.55, foldToBet: 0.38, betFreq: 0.55, cbet: 0.68, bluff: 0.38, aggression: 0.68, showdown: 0.3 },
+    habits: {
+      post: { sizes: [0.5, 0.75, 1.25, 2], sense: 0.9, gto: 0.2, wobble: 0.07, bluff: 0.05, bet: 0.02, raise: 0.03, value: 0.04, trap: 0.4, chase: 0.1, tell: 0 },
+      pre: { aggro: 0.2, shove: 1.15 },
+      adapt: 0.65,
+      mind: { tilt: 0.15, grudge: 0.3 },
+      tempo: { speed: 0.9, tank: 1.2, snap: 0.15, hollywood: 0.25 },
+      show: { bluffs: 0.15, strong: 0.1, folds: 0.05 },
+      talk: { tone: 'friendly', chatty: 0.6 },
+    },
+  },
 ];
 
 /** How hard each rung is, in a word. */
-export const RUNG_WORDS = ['Warm-up', 'Easy', 'Tricky', 'Hard', 'Boss'] as const;
+export const RUNG_WORDS = ['Warm-up', 'Easy', 'Tricky', 'Tough', 'Hard', 'Boss'] as const;
 
 export const legendById = (id: string): Legend | undefined => LEGENDS.find((l) => l.id === id);
 

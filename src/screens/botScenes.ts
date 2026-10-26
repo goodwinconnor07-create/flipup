@@ -62,4 +62,5 @@ export const LEGEND_SCENES: Record<string, Scene> = {
   negreanu: { bg: ['#ffe39a', '#ff8f3d'], props: ['💬', '🍁', '🎤'] },
   ivey: { bg: ['#4a4a62', '#0b0b12'], props: ['♠️', '🌙', '💎'] },
   dwan: { bg: ['#7bf0ff', '#6a3bff'], props: ['🎲', '⚡', '💥'] },
+  rampage: { bg: ['#ff9a8b', '#8e2de2'], props: ['💸', '🎰', '🔥'] },
 };

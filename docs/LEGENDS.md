@@ -23,6 +23,7 @@ make each one feel like themselves) are built. The ladder that unlocks is stage 
 | 3 | Daniel Negreanu 😄 | Small bets, wide calls, a lot of reading | Bets 25% to 60%, talks a lot, adjusts to you |
 | 4 | Phil Ivey 🕶️ | Balanced, patient, no obvious leak | Quiet, leans on GTO's mix, adapts fast |
 | 5 | Tom Dwan 🎲 | Loose and relentless, lots of hands and barrels | Fast, bets again and again, hard to read |
+| 6 | Ethan “Rampage” Yau 🎰 | Action player: big bluffs, slow-played monsters, thin value raises | Reads opponents, a little overreach |
 
 ## How they're built (`src/game/legends.ts`)
 
@@ -76,3 +77,7 @@ its numbers, then plays heads-up.
 3. Backdrops, seat star, signature lines and more table talk. **Built.**
 4. The ladder: beat one to open the next, badges stored on the phone, results in Insights, and the coach reviewing each game like the twin report.
 5. Later: a full-table "legends night", more legends.
+
+## Rampage
+
+Added after stage 3. His numbers are prototype dials for the fit (aggressive, a taste for big bluffs, good at reading opponents), not his real statistics: nobody has his full hands, and the profile this comes from says so. The dials map onto existing knobs only: big and overbet sizes, `bluff`/`raise`/`value` leans, `trap` for slow-playing monsters, `sense` and `adapt` for reading, a little `wobble` and `chase` for overreach. No new bot logic. Measured with `twinLab.ts legends 300`, a plain player loses −123 bb/100 against him, the worst of the six, so he sits on the top rung ("Boss"); the rung words are now Warm-up, Easy, Tricky, Tough, Hard, Boss.

@@ -778,14 +778,12 @@ input {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  /* The keyboard's height (see Sheet's lift): the sheet rises above it. */
-  padding-bottom: var(--lift, 0px);
 }
 
 .sheet {
   width: 100%;
   max-width: 520px;
-  max-height: calc(92dvh - var(--lift, 0px));
+  max-height: 92dvh;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--surface);

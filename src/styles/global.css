@@ -851,7 +851,6 @@ blockquote {
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   corner-shape: squircle;
   padding: 12px 20px calc(var(--safe-bottom) + 36px);
-  animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.05);
 }
 
 .sheet-grip {
@@ -859,7 +858,7 @@ blockquote {
   height: 5px;
   border-radius: var(--r-xs);
   background: var(--bg-3);
-  margin: 4px auto 16px;
+  margin: 4px auto 0;
 }
 
 .sheet-head {
@@ -991,6 +990,7 @@ body:has(.sheet-backdrop) .toasts {
   }
 }
 
+/* The raise panel still slides up this way; sheets are moved by a spring (see Sheet). */
 @keyframes sheet-up {
   from {
     transform: translateY(100%);
@@ -1148,18 +1148,23 @@ html.calm *::after {
   animation: sheet-down 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
-.sheet.dragging {
-  transition: none;
+/* Its position comes from script (a spring, or the finger), never from a CSS animation or transition, so touching it always takes over. */
+.sheet {
+  position: relative;
 }
 
-.sheet {
-  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+.sheet-close {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 1;
 }
 
 /* A bigger, easier target to grab than the grip itself. */
 .sheet-grip-zone {
   margin: -12px -20px 0;
-  padding: 12px 0 0;
+  /* The grip's old bottom margin, as padding, so the grab zone really is that tall. */
+  padding: 12px 0 16px;
   touch-action: none;
   cursor: grab;
 }

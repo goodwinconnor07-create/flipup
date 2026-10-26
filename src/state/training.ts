@@ -5,6 +5,7 @@ import { handRecord, recordNet, type Game, type HandRecord } from '../game';
 import { markPlayedToday, read, write } from './persist';
 import { recordTwinHand } from './twin';
 import { handFacts } from '../train/twinFacts';
+import { observeHand } from './friends';
 import { maybeSyncShare } from './share';
 import { addTwinHand } from './twinGames';
 
@@ -97,6 +98,8 @@ export function captureFinishedHand(game: Game | null, deviceId: string, full: G
   addHand({ key, heroId: me.id, record });
   recordTwinHand(key, record, me.id);
   maybeSyncShare();
+  // Friends at an online table who share a twin: count what they did.
+  if (game.code) observeHand(record, key, me.id);
   if (game.twinGame) {
     const everything = full?.hand?.result && full.hand.number === hand.number ? handRecord(full, full.hand, Date.now()) : null;
     const facts = everything ? handFacts(everything, me.id) : null;

@@ -60,6 +60,8 @@ export interface TwinStats {
   /** Bets and raises after the flop, and how many were with a draw, a weak hand or nothing. */
   postAgg: number;
   postBluffs: number;
+  /** Calls after the flop (the spot counts hold these too, but a twin seen only from outside has no spots). */
+  postCalls: number;
   /** Saw the flop, and showed down. */
   sawFlop: number;
   showdowns: number;
@@ -91,7 +93,7 @@ const KEEP_SPOTS = 2400;
 const MAX_SEEN = 60;
 const STATS_KEYS: (keyof Omit<TwinStats, 'sizeSum' | 'sizeN'>)[] = [
   'vpip', 'pfr', 'firstIn', 'opens', 'limps', 'openBb', 'raiseFaced', 'threeBets', 'foldsToRaise',
-  'betsFaced', 'foldsToBet', 'betOpps', 'bets', 'cbetOpps', 'cbets', 'postAgg', 'postBluffs', 'sawFlop', 'showdowns', 'smallN', 'smallSum', 'bigN', 'bigSum',
+  'betsFaced', 'foldsToBet', 'betOpps', 'bets', 'cbetOpps', 'cbets', 'postAgg', 'postBluffs', 'postCalls', 'sawFlop', 'showdowns', 'smallN', 'smallSum', 'bigN', 'bigSum',
 ];
 
 export function emptyTwin(): TwinProfile {
@@ -160,8 +162,8 @@ export interface TwinNow {
 }
 
 /** Walks the hand and returns the hero's decisions. Empty when their cards weren't recorded. */
-export function heroDecisions(r: HandRecord, heroId: string): TwinDecision[] {
-  return walkHand(r, heroId, null).decisions;
+export function heroDecisions(r: HandRecord, heroId: string, observed = false): TwinDecision[] {
+  return walkHand(r, heroId, null, observed).decisions;
 }
 
 /** The spot the hero is in on `street`, after every move in `r.actions`. Null when it can't be worked out. */
@@ -169,10 +171,11 @@ export function heroNow(r: HandRecord, heroId: string, street: Street): TwinNow 
   return walkHand(r, heroId, street).now;
 }
 
-function walkHand(r: HandRecord, heroId: string, nextStreet: Street | null): { decisions: TwinDecision[]; now: TwinNow | null } {
+/** `observed`: someone else's hand, seen from outside, so their cards may be missing (their hand strength then reads -1). */
+function walkHand(r: HandRecord, heroId: string, nextStreet: Street | null, observed = false): { decisions: TwinDecision[]; now: TwinNow | null } {
   const none = { decisions: [], now: null };
   const hole = r.holes[heroId];
-  if (!hole || hole.length !== 2) return none;
+  if (!observed && (!hole || hole.length !== 2)) return none;
   const order = [...r.players].sort((a, b) => a.seat - b.seat);
   const n = order.length;
   const heroIdx = order.findIndex((p) => p.id === heroId);
@@ -232,7 +235,7 @@ function walkHand(r: HandRecord, heroId: string, nextStreet: Street | null): { d
       : street === 'preflop' && limpers > 0 ? 'limp'
       : 'none';
     const board = r.board.slice(0, BOARD_AT[street]);
-    const strength = street === 'preflop' ? preflopTier(hole) : POST_BUCKETS.indexOf(handBucket(hole, board));
+    const strength = !hole || hole.length !== 2 ? -1 : street === 'preflop' ? preflopTier(hole) : POST_BUCKETS.indexOf(handBucket(hole, board));
     const spot: TwinSpot = {
       street,
       pos: street === 'preflop' ? prePos : inPosition() ? 'ip' : 'oop',
@@ -327,11 +330,11 @@ export const TWIN_PRIOR: TwinNumbers = { vpip: 0.27, pfr: 0.17, limp: 0.1, open:
 /** How many hands (or chances) of the typical player each number starts with. */
 const PRIOR_WEIGHT = 12;
 
-/** Calls after the flop, from the spot counts. */
+/** Calls after the flop: the counter, or the spot counts when they hold more (a twin saved before the counter existed). */
 function postCalls(twin: TwinProfile): number {
   let n = 0;
   for (const [key, counts] of Object.entries(twin.spots)) if (!key.startsWith('preflop|')) n += counts[TWIN_MOVES.indexOf('call')];
-  return n;
+  return Math.max(n, twin.stats.postCalls);
 }
 
 /** The player's numbers. A few hands pull towards the typical player (`weight` 0 gives the raw counts). */
@@ -359,18 +362,22 @@ export function twinNumbers(twin: TwinProfile, weight = PRIOR_WEIGHT): TwinNumbe
 // ── Counting ────────────────────────────────────────────────────────────────
 
 /** Adds one finished hand. `key` makes a repeat harmless. Returns false when it wasn't counted. */
-export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, key: string): boolean {
+export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, key: string, observed = false): boolean {
   if (twin.seen.includes(key)) return false;
-  const decisions = heroDecisions(r, heroId);
-  if (!r.holes[heroId] || r.holes[heroId].length !== 2) return false;
+  if (!observed && (!r.holes[heroId] || r.holes[heroId].length !== 2)) return false;
+  const decisions = heroDecisions(r, heroId, observed);
+  if (observed && decisions.length === 0) return false;
   const s = twin.stats;
   let vpip = false;
   let pfr = false;
 
   for (const d of decisions) {
     const { spot, move } = d;
-    const counts = (twin.spots[spotKey(spot)] ??= TWIN_MOVES.map(() => 0));
-    counts[TWIN_MOVES.indexOf(move)]++;
+    // Seen from outside there are no cards, so no hand strength: only the counts that don't need it.
+    if (!observed) {
+      const counts = (twin.spots[spotKey(spot)] ??= TWIN_MOVES.map(() => 0));
+      counts[TWIN_MOVES.indexOf(move)]++;
+    }
     const aggressive = move === 'betS' || move === 'betB' || move === 'raise' || move === 'allin';
 
     if (spot.street === 'preflop') {
@@ -405,13 +412,16 @@ export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, 
         if (aggressive) s.cbets++;
       }
     }
+    if (move === 'call') s.postCalls++;
     if (aggressive) {
       s.postAgg++;
-      if (spot.strength <= POST_BUCKETS.indexOf('draw')) s.postBluffs++;
+      if (!observed && spot.strength <= POST_BUCKETS.indexOf('draw')) s.postBluffs++;
       if (d.size !== null) {
         const size = Math.min(3, d.size);
-        s.sizeSum[spot.strength] += size;
-        s.sizeN[spot.strength]++;
+        if (!observed) {
+          s.sizeSum[spot.strength] += size;
+          s.sizeN[spot.strength]++;
+        }
         if (move === 'betS') {
           s.smallN++;
           s.smallSum += size;
@@ -431,6 +441,7 @@ export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, 
   if (r.showdown && !heroFolded) s.showdowns++;
   twin.hands++;
   twin.seen = [...twin.seen, key].slice(-MAX_SEEN);
+  if (observed) return true;
 
   // Rare spots drop out before they fill the phone.
   const keys = Object.keys(twin.spots);
@@ -441,6 +452,9 @@ export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, 
   }
   return true;
 }
+
+/** Counts a hand of someone else's, seen from outside (their cards may not be known). Only the numbers that don't need cards are kept. */
+export const addObservedHand = (twin: TwinProfile, r: HandRecord, playerId: string, key: string) => addHandToTwin(twin, r, playerId, key, true);
 
 /** A saved twin that's the wrong shape (or from a newer version) comes back empty. */
 export function sanitizeTwin(raw: unknown): TwinProfile {

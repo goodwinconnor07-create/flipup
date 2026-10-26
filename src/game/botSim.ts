@@ -9,7 +9,9 @@ import { strengthVsRandom } from './equity';
 import { botsOnly, potTotal } from './holdem';
 import { createTable, DEFAULT_SETTINGS, applyAction } from './reducer';
 import { options } from './selectors';
-import type { Action, Game, Hand, Move, Seat } from './types';
+import { handRecord } from './record';
+import type { TwinBrain } from './twinFit';
+import type { Action, Game, Hand, HandRecord, Move, Seat } from './types';
 
 /**
  * A scripted player, for testing the bots against simple strategies a person might try:
@@ -218,8 +220,14 @@ export function simulate(agents: Agent[], hands: number, seed = 1, stackBb = 100
   return simulateTable(agents, hands, seed, stackBb).seats;
 }
 
+/** For the AI twin lab: seats played by a twin (by index), and a look at every finished hand with all the cards. */
+export interface SimExtras {
+  twins?: Record<number, TwinBrain>;
+  onHand?: (record: HandRecord) => void;
+}
+
 /** Plays `hands` hands. The first agent sits in the host's seat; scripts join as people. */
-export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb = 100, brains: Record<string, Brain> = {}): SimResult {
+export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb = 100, brains: Record<string, Brain> = {}, extras: SimExtras = {}): SimResult {
   const bb = 10;
   let clock = 1_000_000;
   const rng = seededRng(seed);
@@ -245,6 +253,7 @@ export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb 
     if (!r.ok) throw new Error(`${action.type}: ${r.error}`);
     game = r.game;
   };
+  for (const [i, brain] of Object.entries(extras.twins ?? {})) game.players[Number(i)].twin = brain;
   scripts.forEach((s, i) => step(`script${i}`, { type: 'join', name: `${s}${i}`.slice(0, 16), emoji: '🤖' }));
   // Seats played by another brain still need a style for it to play.
   for (const p of game.players) if (p.deviceId?.startsWith('script')) p.style = styleOfAgent(scripts[Number(p.deviceId.slice(6))]);
@@ -331,6 +340,8 @@ export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb 
     if (game.hand?.result && scored !== game.hand.number) {
       scored = game.hand.number;
       scoreHand(game.hand, tallies, table, bb);
+      const record = extras.onHand && handRecord(game, game.hand, clock);
+      if (record) extras.onHand!(record);
       // The sim never reads the hand log, and copying it on every move is most of the work.
       game.logs = [];
     }

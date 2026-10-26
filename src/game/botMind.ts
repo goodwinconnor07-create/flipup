@@ -4,7 +4,7 @@
 // It all fades over a few hands, like it would for a person.
 
 import { boardInfo, tierWith, toInt } from './botEval';
-import { styleOf, type Style } from './botStyles';
+import { playerStyle, type Style } from './botStyles';
 import type { BotMind, Game, Hand } from './types';
 
 const CALM: BotMind = { tilt: 0, confidence: 0 };
@@ -40,7 +40,7 @@ export function updateMinds(game: Game, hand: Hand): void {
   for (const seat of hand.seats) {
     const player = game.players.find((p) => p.id === seat.playerId);
     if (!player?.bot) continue;
-    const style = styleOf(player.style);
+    const style = playerStyle(player);
     const before = minds[seat.playerId] ?? CALM;
     const mind: BotMind = { tilt: before.tilt * 0.88, confidence: before.confidence * 0.9, grudges: {} };
     for (const [id, g] of Object.entries(before.grudges ?? {})) if (g * 0.92 > 0.05) mind.grudges![id] = g * 0.92;
@@ -141,7 +141,7 @@ export function cardsShown(game: Game, hand: Hand, playerId: string): string[] {
     .map((s) => s.playerId);
   const minds = { ...game.minds };
   for (const id of victims) {
-    const style = styleOf(game.players.find((p) => p.id === id)?.style);
+    const style = playerStyle(game.players.find((p) => p.id === id));
     const m = minds[id] ?? CALM;
     minds[id] = {
       tilt: clamp(m.tilt + style.mind.tilt * 0.35, 0, 1),

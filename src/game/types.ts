@@ -1,6 +1,7 @@
 // The table and everything in it. One Game is one table, from lobby to the last hand.
 
 import type { Card } from './cards';
+import type { TwinBrain } from './twinFit';
 
 export type Status = 'lobby' | 'playing' | 'ended';
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
@@ -45,6 +46,8 @@ export interface Player {
   offline?: boolean;
   /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
   style?: string;
+  /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
+  twin?: TwinBrain;
 }
 
 /** What the bots have seen a player do, from public moves only. */

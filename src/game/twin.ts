@@ -4,7 +4,7 @@
 // Pure data in, pure data out: the phone keeps it (`src/state/twin.ts`), nothing here touches storage.
 
 import { rankOf, suitOf, type Card } from './cards';
-import { handBucket, type Bucket } from './botPlay';
+import { handBucket, type Bucket } from './handBucket';
 import type { HandAction, HandRecord, Street } from './types';
 
 /** What a player did, grouped so a few hundred hands say something. Counters follow this order. */
@@ -25,6 +25,8 @@ export interface TwinSpot {
   facing: TwinFacing;
   /** Players still in, with 4 meaning four or more. */
   players: 2 | 3 | 4;
+  /** After the flop: 'a' if they made the last bet or raise on the street before (they have the initiative), else 'd'. Always 'd' before the flop. */
+  role: 'a' | 'd';
 }
 
 /** The post-flop hand buckets from weakest to strongest (a draw sits between a weak hand and a pair). */
@@ -61,6 +63,11 @@ export interface TwinStats {
   /** Saw the flop, and showed down. */
   sawFlop: number;
   showdowns: number;
+  /** Post-flop bets when nobody had bet: how many were small (up to 55% of the pot) and big, and the pot shares added up, for the usual size of each. */
+  smallN: number;
+  smallSum: number;
+  bigN: number;
+  bigSum: number;
   /** Bet size as a share of the pot when nobody had bet, by post-flop hand bucket. */
   sizeSum: number[];
   sizeN: number[];
@@ -84,7 +91,7 @@ const KEEP_SPOTS = 2400;
 const MAX_SEEN = 60;
 const STATS_KEYS: (keyof Omit<TwinStats, 'sizeSum' | 'sizeN'>)[] = [
   'vpip', 'pfr', 'firstIn', 'opens', 'limps', 'openBb', 'raiseFaced', 'threeBets', 'foldsToRaise',
-  'betsFaced', 'foldsToBet', 'betOpps', 'bets', 'cbetOpps', 'cbets', 'postAgg', 'postBluffs', 'sawFlop', 'showdowns',
+  'betsFaced', 'foldsToBet', 'betOpps', 'bets', 'cbetOpps', 'cbets', 'postAgg', 'postBluffs', 'sawFlop', 'showdowns', 'smallN', 'smallSum', 'bigN', 'bigSum',
 ];
 
 export function emptyTwin(): TwinProfile {
@@ -97,12 +104,12 @@ export function emptyTwin(): TwinProfile {
 /** 0 to 1: how well the twin knows this player. */
 export const twinConfidence = (hands: number) => Math.min(1, Math.max(0, hands) / TWIN_CONFIDENT);
 
-export const spotKey = (s: TwinSpot) => `${s.street}|${s.pos}|${s.strength}|${s.facing}|${s.players}`;
+export const spotKey = (s: TwinSpot) => `${s.street}|${s.pos}|${s.strength}|${s.facing}|${s.players}|${s.role}`;
 
 export function parseSpotKey(key: string): TwinSpot | null {
-  const [street, pos, strength, facing, players] = key.split('|');
-  if (!street || !pos || !facing || !players) return null;
-  return { street: street as Street, pos: pos as TwinPosition, strength: Number(strength), facing: facing as TwinFacing, players: Number(players) as 2 | 3 | 4 };
+  const [street, pos, strength, facing, players, role] = key.split('|');
+  if (!street || !pos || !facing || !players || (role !== 'a' && role !== 'd')) return null;
+  return { street: street as Street, pos: pos as TwinPosition, strength: Number(strength), facing: facing as TwinFacing, players: Number(players) as 2 | 3 | 4, role };
 }
 
 // ── Reading a hand ──────────────────────────────────────────────────────────
@@ -141,15 +148,33 @@ export interface TwinDecision {
   raises: number;
 }
 
+/** The hero's spot right now, in a hand still being played (what a twin looks up before it moves). */
+export interface TwinNow {
+  spot: TwinSpot;
+  toCall: number;
+  preAggressor: boolean;
+  raises: number;
+}
+
 /** Walks the hand and returns the hero's decisions. Empty when their cards weren't recorded. */
 export function heroDecisions(r: HandRecord, heroId: string): TwinDecision[] {
+  return walkHand(r, heroId, null).decisions;
+}
+
+/** The spot the hero is in on `street`, after every move in `r.actions`. Null when it can't be worked out. */
+export function heroNow(r: HandRecord, heroId: string, street: Street): TwinNow | null {
+  return walkHand(r, heroId, street).now;
+}
+
+function walkHand(r: HandRecord, heroId: string, nextStreet: Street | null): { decisions: TwinDecision[]; now: TwinNow | null } {
+  const none = { decisions: [], now: null };
   const hole = r.holes[heroId];
-  if (!hole || hole.length !== 2) return [];
+  if (!hole || hole.length !== 2) return none;
   const order = [...r.players].sort((a, b) => a.seat - b.seat);
   const n = order.length;
   const heroIdx = order.findIndex((p) => p.id === heroId);
   const button = order.findIndex((p) => p.id === r.buttonId);
-  if (n < 2 || heroIdx < 0 || button < 0) return [];
+  if (n < 2 || heroIdx < 0 || button < 0) return none;
   const sb = n === 2 ? button : (button + 1) % n;
   const bb = (sb + 1) % n;
   // Seats behind the button: 0 is the button, 1 the cutoff.
@@ -167,10 +192,12 @@ export function heroDecisions(r: HandRecord, heroId: string): TwinDecision[] {
   let lastAgg: string | null = null;
   let lastAggMove = '';
   let preAgg: string | null = null;
+  // Who made the last bet or raise on the street before this one.
+  let prevAgg: string | null = null;
   const out: TwinDecision[] = [];
 
   const currentBet = () => Math.max(0, ...bets.values());
-  const nextStreet = (to: Street) => {
+  const startStreet = (to: Street) => {
     for (const [id, v] of bets) {
       committed += v;
       bets.set(id, 0);
@@ -178,6 +205,7 @@ export function heroDecisions(r: HandRecord, heroId: string): TwinDecision[] {
     street = to;
     streetStart = committed;
     raises = 0;
+    prevAgg = lastAgg;
     lastAgg = null;
     lastAggMove = '';
   };
@@ -190,24 +218,38 @@ export function heroDecisions(r: HandRecord, heroId: string): TwinDecision[] {
     return last === heroId;
   };
 
+  /** Where the hero stands, given the chips they'd need to put in to stay in. */
+  const readSpot = (owed: number) => {
+    const toCall = Math.max(0, owed);
+    const top = currentBet();
+    const facing: TwinFacing =
+      toCall > 0 && lastAggMove === 'allin' ? 'allin'
+      : raises >= 2 ? 'raise'
+      : raises === 1 ? (street === 'preflop' ? (top <= r.bigBlind * 3.5 ? 'small' : 'big') : top <= streetStart * 0.5 ? 'small' : 'big')
+      : street === 'preflop' && limpers > 0 ? 'limp'
+      : 'none';
+    const board = r.board.slice(0, BOARD_AT[street]);
+    const strength = street === 'preflop' ? preflopTier(hole) : POST_BUCKETS.indexOf(handBucket(hole, board));
+    const spot: TwinSpot = {
+      street,
+      pos: street === 'preflop' ? prePos : inPosition() ? 'ip' : 'oop',
+      strength,
+      facing,
+      players: Math.min(4, Math.max(2, n - folded.size)) as 2 | 3 | 4,
+      role: street !== 'preflop' && prevAgg === heroId ? 'a' : 'd',
+    };
+    return { spot, toCall };
+  };
+
   for (const a of r.actions) {
     while (STREETS.indexOf(a.street) > STREETS.indexOf(street)) {
       if (street === 'preflop') preAgg = lastAgg;
-      nextStreet(STREETS[STREETS.indexOf(street) + 1]);
+      startStreet(STREETS[STREETS.indexOf(street) + 1]);
     }
     const mine = bets.get(a.playerId) ?? 0;
     const top = currentBet();
     if (a.playerId === heroId && !a.outOfTurn && r.board.length >= BOARD_AT[street]) {
-      const toCall = Math.max(0, top - mine);
-      const facing: TwinFacing =
-        toCall > 0 && lastAggMove === 'allin' ? 'allin'
-        : raises >= 2 ? 'raise'
-        : raises === 1 ? (street === 'preflop' ? (top <= r.bigBlind * 3.5 ? 'small' : 'big') : top <= streetStart * 0.5 ? 'small' : 'big')
-        : street === 'preflop' && limpers > 0 ? 'limp'
-        : 'none';
-      const board = r.board.slice(0, BOARD_AT[street]);
-      const strength = street === 'preflop' ? preflopTier(hole) : POST_BUCKETS.indexOf(handBucket(hole, board));
-      const alive = n - folded.size;
+      const { spot, toCall } = readSpot(top - mine);
       const aggressive = AGGRESSIVE.has(a.move);
       const unopened = raises === 0;
       const sizeRatio = street === 'preflop' ? a.to / r.bigBlind : streetStart > 0 ? a.to / streetStart : null;
@@ -220,7 +262,7 @@ export function heroDecisions(r: HandRecord, heroId: string): TwinDecision[] {
         : unopened ? (small ? 'betS' : 'betB')
         : 'raise';
       out.push({
-        spot: { street, pos: street === 'preflop' ? prePos : inPosition() ? 'ip' : 'oop', strength, facing, players: Math.min(4, Math.max(2, alive)) as 2 | 3 | 4 },
+        spot,
         move,
         size: aggressive && unopened && a.move !== 'allin' ? sizeRatio : null,
         action: a,
@@ -240,7 +282,75 @@ export function heroDecisions(r: HandRecord, heroId: string): TwinDecision[] {
       } else if (a.move === 'call' && street === 'preflop' && raises === 0 && a.playerId !== order[bb].id) limpers++;
     }
   }
-  return out;
+  let now: TwinNow | null = null;
+  if (nextStreet) {
+    while (STREETS.indexOf(nextStreet) > STREETS.indexOf(street)) {
+      if (street === 'preflop') preAgg = lastAgg;
+      startStreet(STREETS[STREETS.indexOf(street) + 1]);
+    }
+    if (r.board.length >= BOARD_AT[street]) {
+      const { spot, toCall } = readSpot(currentBet() - (bets.get(heroId) ?? 0));
+      now = { spot, toCall, preAggressor: preAgg === heroId, raises };
+    }
+  }
+  return { decisions: out, now };
+}
+
+// ── The numbers ─────────────────────────────────────────────────────────────
+
+/** The usual poker numbers for a player, each a share from 0 to 1 (open size is in big blinds). */
+export interface TwinNumbers {
+  vpip: number;
+  pfr: number;
+  /** Of the times they were first in. */
+  limp: number;
+  open: number;
+  threeBet: number;
+  foldToRaise: number;
+  foldToBet: number;
+  /** After the flop, how often they bet when nobody had. */
+  betFreq: number;
+  cbet: number;
+  /** Of their bets and raises after the flop, how many were with a draw, a weak hand or nothing. */
+  bluff: number;
+  /** Of their bets, raises and calls after the flop, how many were bets and raises. */
+  aggression: number;
+  showdown: number;
+}
+
+/** A typical player: where a twin starts before it has seen enough of someone. */
+export const TWIN_PRIOR: TwinNumbers = { vpip: 0.27, pfr: 0.17, limp: 0.1, open: 2.7, threeBet: 0.07, foldToRaise: 0.6, foldToBet: 0.42, betFreq: 0.4, cbet: 0.55, bluff: 0.28, aggression: 0.4, showdown: 0.3 };
+
+/** How many hands (or chances) of the typical player each number starts with. */
+const PRIOR_WEIGHT = 12;
+
+/** Calls after the flop, from the spot counts. */
+function postCalls(twin: TwinProfile): number {
+  let n = 0;
+  for (const [key, counts] of Object.entries(twin.spots)) if (!key.startsWith('preflop|')) n += counts[TWIN_MOVES.indexOf('call')];
+  return n;
+}
+
+/** The player's numbers. A few hands pull towards the typical player (`weight` 0 gives the raw counts). */
+export function twinNumbers(twin: TwinProfile, weight = PRIOR_WEIGHT): TwinNumbers {
+  const s = twin.stats;
+  const P = TWIN_PRIOR;
+  const share = (hits: number, chances: number, prior: number) => (hits + prior * weight) / (chances + weight || 1);
+  const calls = postCalls(twin);
+  return {
+    vpip: share(s.vpip, twin.hands, P.vpip),
+    pfr: share(s.pfr, twin.hands, P.pfr),
+    limp: share(s.limps, s.firstIn, P.limp),
+    open: share(s.openBb, s.opens, P.open),
+    threeBet: share(s.threeBets, s.raiseFaced, P.threeBet),
+    foldToRaise: share(s.foldsToRaise, s.raiseFaced, P.foldToRaise),
+    foldToBet: share(s.foldsToBet, s.betsFaced, P.foldToBet),
+    betFreq: share(s.bets, s.betOpps, P.betFreq),
+    cbet: share(s.cbets, s.cbetOpps, P.cbet),
+    bluff: share(s.postBluffs, s.postAgg, P.bluff),
+    aggression: share(s.postAgg, s.postAgg + calls, P.aggression),
+    showdown: share(s.showdowns, s.sawFlop, P.showdown),
+  };
 }
 
 // ── Counting ────────────────────────────────────────────────────────────────
@@ -266,9 +376,10 @@ export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, 
       if (spot.facing === 'none' && spot.pos !== 'bb') {
         s.firstIn++;
         if (move === 'call') s.limps++;
-        if (aggressive) {
+        // Moving in isn't an open size.
+        if (aggressive && move !== 'allin') {
           s.opens++;
-          s.openBb += d.size ?? d.action.to / (r.bigBlind || 1);
+          s.openBb += Math.min(10, d.size ?? d.action.to / (r.bigBlind || 1));
         }
       }
       if (d.raises === 1 && d.toCall > 0) {
@@ -295,8 +406,16 @@ export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, 
       s.postAgg++;
       if (spot.strength <= POST_BUCKETS.indexOf('draw')) s.postBluffs++;
       if (d.size !== null) {
-        s.sizeSum[spot.strength] += Math.min(3, d.size);
+        const size = Math.min(3, d.size);
+        s.sizeSum[spot.strength] += size;
         s.sizeN[spot.strength]++;
+        if (move === 'betS') {
+          s.smallN++;
+          s.smallSum += size;
+        } else {
+          s.bigN++;
+          s.bigSum += size;
+        }
       }
     }
   }

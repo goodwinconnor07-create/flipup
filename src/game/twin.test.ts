@@ -92,7 +92,7 @@ describe('twin memory', () => {
   });
 
   it('keeps spot keys readable both ways', () => {
-    const spot = { street: 'turn', pos: 'oop', strength: 4, facing: 'big', players: 3 } as const;
+    const spot = { street: 'turn', pos: 'oop', strength: 4, facing: 'big', players: 3, role: 'a' } as const;
     expect(parseSpotKey(spotKey(spot))).toEqual(spot);
   });
 

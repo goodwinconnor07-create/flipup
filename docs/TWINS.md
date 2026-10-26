@@ -1,6 +1,6 @@
 # AI twins: plan
 
-Status: phase 1 (twin memory) is built. Nothing plays from it yet. Decisions below came from the product owner.
+Status: phases 1 (twin memory) and 2 (fit and copy) are built. A twin can play in the bot simulator and in tests, but no screen seats one yet (that's phase 3). Decisions below came from the product owner.
 
 Two new ways to play, in an "AI twins" group on the Play tab under the Play with Friends and Play with Bots cards, above Quick games:
 
@@ -49,13 +49,36 @@ New pure code in `src/game/` (no DOM) and storage in `src/state/`.
 - Settings gets "Reset my twin". Confidence is hands ÷ 300, capped at 1.
 - Size: sparse counters should stay well under 100 KB of `localStorage`. Check it with a test that plays a few thousand bot hands.
 
-### 2. Fit and copy
+### 2. Fit and copy (built)
 
-- `fitStyle(profile) → Style` maps the stats onto the style knobs: VPIP to `pre.tight` and `pre.loose`, raise-to-call ratio to `pre.aggro`, open size to `pre.open`, fold-to-bet to `post.scared` and `post.sticky`, bet rate to `post.bet`, bluff share to `post.bluff`, size tells to `post.tell`. Start from the nearest of the ten styles and adjust.
-- In `botPlay.ts`, a player with a `twin` attached also runs a similarity lookup. Neighbouring strength buckets, nearby bet sizes and the same street count with less weight. If there are enough weighted samples, the twin draws from the player's own action mix. How much it trusts that grows with the sample count (n / (n + k)). Thin spots use the fitted style.
-- Bet sizes copy the player's share of the pot.
-- It must stay fair: the twin reads only its own cards and public moves. The profile is data. Extend the existing test that hides every hidden card to seat a twin.
-- Keep each decision within the couple-of-milliseconds budget.
+Files: `src/game/twinFit.ts` (the fit), `src/game/twinMix.ts` (the copy), `src/game/handBucket.ts` (hand and board features moved out of `botPlay.ts` so the memory and the bots share them), `src/game/twinRef.json` (how each of the ten bot styles really plays), `scripts/twinLab.ts` and `scripts/twinHarness.ts` (the lab).
+
+- **Fit.** `fitStyle()` works out the player's numbers (`twinNumbers()`, pulled towards a typical player when there are few hands), weights the ten bot styles by how close their numbers are (`twinRef.json`), blends them, then nudges the knobs that move each number: looseness for the share of hands played, aggression for raising versus calling, `sticky` and `scared` for folding to bets, `bet` for betting when checked to, `bluff`, `raise` and `limp`. Open size and the usual bet sizes (small and big) are copied straight across, and `tell` follows whether they bet bigger with strong hands. The gains are in `FIT` and were tuned with the lab.
+- **Copy.** Before it moves, `twinLook()` reads the spot the seat is in right now with the same code that read the finished hands (`heroNow()` in `twin.ts`, checked against the recorded hand in a test), then `twinMix()` pools every remembered spot on the same street, weighting each by how alike it is: a hand about as strong counts half per step away (up to 3 steps), a similar bet or raise counts less, a nearby position, player count and "had the initiative last street" count less than an exact match. The pooled mix of fold, check, call, small bet, big bet, raise and all-in is turned into the bot's own three choices (before the flop: fold or check, call, raise; after it: fold or check, call or small bet, big bet or raise) and blended into the bot's odds by `n / (n + 15)`, where `n` is how many spots' worth of evidence it found. With little evidence the fitted style plays; with a lot, the person's own habits do. A move the bot has no option for goes to the nearest one it has.
+- **Mistakes are kept.** The bots' own "never fold the nuts" guards run on the style's side of the blend only, so a twin folds a strong hand about as often as its person does.
+- **Where it lives.** `Player.twin` holds a `TwinBrain` (the fitted style and the spot counts, about 25 KB for 2,400 hands). `redactForDevice()` strips it, like styles. A seat's `style` string is set to the closest bot style so table talk and tilt still work.
+- **Cost.** A lookup is about 0.3 ms. Cloning the table on each action costs about 0.5 ms more with the memory attached, which only matters in the simulator.
+
+**How close is it?** `npx tsx scripts/twinLab.ts fit 400` learns each of the ten bot styles from 1,200 hands, plays the twin and the original for 1,200 more at the same tables, and compares. The "noise" column is two runs of the same style, so it is the best any twin could do. Mean gap, in points of each number (open size in big blinds):
+
+| Number | Noise | Fitted style alone | Full twin |
+|---|---|---|---|
+| Hands played (VPIP) | 1.5 | 2.3 | 2.2 |
+| Raised before the flop | 1.1 | 1.5 | 1.9 |
+| Limped | 1.2 | 1.5 | 1.3 |
+| Open size | 0.07 | 0.13 | 0.14 |
+| 3-bet | 1.1 | 1.7 | 2.1 |
+| Fold to a raise | 3.2 | 1.9 | 3.0 |
+| Fold to a bet | 2.5 | 4.4 | 5.1 |
+| Bet when checked to | 4.1 | 5.8 | 4.1 |
+| C-bet | 7.1 | 7.2 | 7.6 |
+| Bluff share | 3.0 | 5.8 | 4.8 |
+| Bet share after the flop | 3.5 | 5.4 | 5.1 |
+| Went to showdown | 3.9 | 5.2 | 5.4 |
+
+With a bigger test (`tune`, 2,400 hands per style) the fitted style alone is within 2 to 4 points on the main numbers, with almost no bias on hands played, raising and bluffing, and about 3 points high on betting.
+
+What this does and doesn't show: a bot's play depends on things the memory can't see (the board's texture, what it has read about opponents), so on bot data the copy can't beat the fitted style; it just has to avoid making it much worse. With a trust of 15 it stays within about a point of the fitted style on most numbers (raising before the flop and folding to bets are the two that slip, by under a point each), and it is better at betting when checked to and at bluffing. People's habits are tied to spots far more than a bot's, which is what the copy is for. Phase 3 should check it on real hands.
 
 ### 3. The "Your twin" game
 

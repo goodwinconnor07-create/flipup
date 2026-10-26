@@ -276,3 +276,6 @@ export const BOTS: { name: string; emoji: string; style: StyleId }[] = [
 ];
 
 export const styleOf = (id: string | undefined): Style => STYLES[(id as StyleId) ?? 'pro'] ?? STYLES.pro;
+
+/** How a seat plays: an AI twin's fitted style, or the bot's own. */
+export const playerStyle = (p: { style?: string; twin?: { style: Style } } | undefined): Style => p?.twin?.style ?? styleOf(p?.style);

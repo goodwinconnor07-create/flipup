@@ -47,11 +47,13 @@ export const LEGENDS: Legend[] = [
     emoji: '🎩',
     rung: 1,
     blurb: 'Old-school and aggressive. Bets big, plays fast, and is happy to put the whole stack in.',
-    signature: ['Bets big: three quarters of the pot or more', 'Plays fast and shoves readily', 'Calls loosely, so he pays off a strong hand'],
+    signature: ['Bets big: three quarters of the pot or more', 'Plays ten-deuce, his lucky hand, whatever the chart says', 'Calls loosely, so he pays off a strong hand'],
     numbers: { vpip: 0.31, pfr: 0.23, limp: 0.03, open: 3.5, threeBet: 0.1, foldToRaise: 0.6, foldToBet: 0.36, betFreq: 0.5, cbet: 0.7, bluff: 0.3, aggression: 0.68, showdown: 0.3 },
     habits: {
       post: { sizes: [0.75, 1, 1.5], sense: 0.55, gto: 0.05, tell: 0.3, wobble: 0.11, chase: 0.15, pairs: 0.1 },
       pre: { shove: 1.2 },
+      // The man who won with ten-deuce: his signature hand, big bets with the best and a big bluff now and then.
+      craft: { cbetDry: 0.08, cbetWet: 0.06, barrel: 0.07, float: 0.2, polar: 0.5, thin: 0.3, hero: 0.15, threeBet: 0.25, fourBet: 0.15, exploit: 0.3, pets: ['T2s', 'T2o'], petRate: 0.55 },
       adapt: 0.2,
       mind: { tilt: 0.1, grudge: 0.2 },
       tempo: { speed: 0.85, tank: 0.9, snap: 0.25, hollywood: 0.05 },
@@ -66,10 +68,12 @@ export const LEGENDS: Legend[] = [
     emoji: '🧐',
     rung: 2,
     blurb: 'Plays very few hands and waits for the best of them. Folds a lot, says so, and comes apart when he gets outdrawn.',
-    signature: ['Folds most hands before the flop', 'Tilts after a bad beat, and plays worse', 'Shows you the good hand he folded'],
+    signature: ['Folds most hands before the flop, then traps with the best ones', 'Lays down a good hand when he thinks he’s beaten', 'Tilts after a bad beat, and plays worse'],
     numbers: { vpip: 0.17, pfr: 0.11, limp: 0.03, open: 3, threeBet: 0.05, foldToRaise: 0.78, foldToBet: 0.52, betFreq: 0.36, cbet: 0.55, bluff: 0.14, aggression: 0.48, showdown: 0.3 },
     habits: {
       post: { sense: 0.5, gto: 0.05, wobble: 0.12, scared: 0.8, sticky: -0.12, tell: 0.5, raise: -0.1, bet: -0.04 },
+      // Waits for the best hand, traps with it, and lays down a good one when he thinks he's beaten ("I folded the winner").
+      craft: { cbetDry: 0.0, cbetWet: -0.04, barrel: -0.05, checkRaise: 0.4, polar: 0.2, layDown: 0.7, fourBet: 0.05, exploit: 0.2 },
       adapt: 0.15,
       mind: { tilt: 0.9, grudge: 0.7 },
       tempo: { speed: 1.2, tank: 1.6, snap: 0.05, hollywood: 0.4 },
@@ -84,10 +88,12 @@ export const LEGENDS: Legend[] = [
     emoji: '😄',
     rung: 3,
     blurb: 'Small bets, wide calls and a lot of reading. Talks all the time, and folds when his read says so.',
-    signature: ['Bets small: a quarter to a half of the pot', 'Calls wide, and folds when his read says so', 'Talks all the time, and adjusts to how you play'],
+    signature: ['Bets small: a quarter to a half of the pot', 'Calls a bet to float, and check-raises to take it back', 'Reads how you play: calls you down or folds on it'],
     numbers: { vpip: 0.3, pfr: 0.17, limp: 0.06, open: 2.3, threeBet: 0.07, foldToRaise: 0.62, foldToBet: 0.44, betFreq: 0.46, cbet: 0.56, bluff: 0.26, aggression: 0.45, showdown: 0.33 },
     habits: {
       post: { sizes: [0.25, 0.4, 0.6], sense: 1, gto: 0.3, tell: 0, wobble: 0.045, trap: 0.15, value: 0.03, raise: -0.03 },
+      // Small ball: small leads and probes, calls to float, check-raises, reads you and lays down or calls down on it.
+      craft: { cbetDry: 0.03, cbetWet: -0.02, float: 0.55, probe: 0.4, donk: 0.1, checkRaise: 0.3, polar: 0.1, thin: 0.35, hero: 0.45, layDown: 0.6, fourBet: 0.1, threeBet: 0.15, texture: 0.6, exploit: 1.1 },
       adapt: 0.85,
       mind: { tilt: 0.15, grudge: 0.3 },
       tempo: { speed: 1, tank: 1.3, snap: 0.1, hollywood: 0.2 },
@@ -102,11 +108,14 @@ export const LEGENDS: Legend[] = [
     emoji: '🕶️',
     rung: 4,
     blurb: 'Close to flawless. Balanced, patient and quick to adjust, with no obvious leak to aim at.',
-    signature: ['Balanced, with few habits to aim at', 'Adjusts quickly to what you do', 'Quiet, and rarely tilts'],
+    signature: ['Big river bets with his best hands and with bluffs', 'Bets thin for value, and calls you down on a read', 'Adjusts quickly to what you do, and rarely tilts'],
     numbers: { vpip: 0.3, pfr: 0.23, limp: 0.02, open: 2.5, threeBet: 0.13, foldToRaise: 0.66, foldToBet: 0.42, betFreq: 0.5, cbet: 0.62, bluff: 0.33, aggression: 0.6, showdown: 0.3 },
     habits: {
       post: { sizes: [0.33, 0.75, 1.25], sense: 1, gto: 0.15, tell: 0, wobble: 0.035, trap: 0.15, value: 0.04, bluff: 0.03, raise: 0.04, bet: 0.02 },
       pre: { aggro: 0.25, iso: 0.8, shove: 1.15 },
+      // Complete: big river bets with the best hands and with blocker bluffs, thin value, floats, hero calls, and
+      // he leans on whatever he's learned about you.
+      craft: { cbetDry: 0.03, cbetWet: 0.01, barrel: 0.02, float: 0.35, probe: 0.2, checkRaise: 0.3, polar: 0.6, thin: 0.5, hero: 0.35, layDown: 0.4, fourBet: 0.25, threeBet: 0.3, texture: 0.5, exploit: 1.3 },
       adapt: 1,
       mind: { tilt: 0.05, grudge: 0.15 },
       tempo: { speed: 1, tank: 1.2, snap: 0.05, hollywood: 0.05 },
@@ -121,11 +130,13 @@ export const LEGENDS: Legend[] = [
     emoji: '🎲',
     rung: 5,
     blurb: 'Loose and relentless. Plays lots of hands, bets again and again, and is very hard to put on a hand.',
-    signature: ['Plays a lot of hands and raises most of them', 'Bets again on the turn and the river', 'Uses many bet sizes, so a size tells you little'],
+    signature: ['Plays a lot of hands and raises most of them', 'Bets again on the turn and the river', '3-bets and 4-bets light, and floats your bets'],
     numbers: { vpip: 0.38, pfr: 0.27, limp: 0.03, open: 3, threeBet: 0.14, foldToRaise: 0.55, foldToBet: 0.4, betFreq: 0.53, cbet: 0.66, bluff: 0.36, aggression: 0.7, showdown: 0.3 },
     habits: {
       post: { sizes: [0.5, 0.75, 1.25, 2], sense: 0.55, gto: 0.05, tell: 0.15, wobble: 0.13, bluff: 0.02, scared: 0.3 },
       pre: { shove: 1.2 },
+      // Relentless: c-bets everything, fires second and third barrels, floats, check-raises, 3-bets and 4-bets light.
+      craft: { cbetDry: 0.08, cbetWet: 0.07, barrel: 0.09, float: 0.6, probe: 0.35, donk: 0.06, checkRaise: 0.3, polar: 0.5, thin: 0.1, hero: 0.25, fourBet: 0.5, threeBet: 0.6, exploit: 0.7 },
       adapt: 0.7,
       mind: { tilt: 0.2, grudge: 0.5 },
       tempo: { speed: 0.75, tank: 0.8, snap: 0.35, hollywood: 0.1 },
@@ -140,13 +151,15 @@ export const LEGENDS: Legend[] = [
     emoji: '🎰',
     rung: 6,
     blurb: 'An action player who takes big shots: huge bluffs when he likes the spot, but patient traps and thin value raises too. You never quite know which one it is.',
-    signature: ['Makes big bets, sometimes very big ones, with nothing', 'Slow-plays a monster and lets you keep betting', 'Sometimes pushes a bluff further than it should go'],
+    signature: ['Huge river bets, with the best hand or with nothing', 'Check-raises to spring a trap, then raises thin for value', 'Sometimes pushes a bluff further than it should go'],
     // Prototype dials for the fit, not his statistics: nobody has his full hands. Roughly "aggressive, with a
     // taste for big bluffs", on a credible base. See docs/LEGENDS.md.
     numbers: { vpip: 0.34, pfr: 0.25, limp: 0.02, open: 3, threeBet: 0.13, foldToRaise: 0.55, foldToBet: 0.38, betFreq: 0.55, cbet: 0.68, bluff: 0.38, aggression: 0.68, showdown: 0.3 },
     habits: {
       post: { sizes: [0.5, 0.75, 1.25, 2], sense: 0.9, gto: 0.2, wobble: 0.07, bluff: 0.05, bet: 0.02, raise: 0.03, value: 0.04, trap: 0.4, chase: 0.1, tell: 0 },
       pre: { aggro: 0.2, shove: 1.15 },
+      // Big shots: huge river overbets (value and bluffs), check-raise traps, floats, light 3-bets, thin value raises.
+      craft: { cbetDry: 0.04, cbetWet: 0.03, barrel: 0.06, float: 0.3, probe: 0.2, checkRaise: 0.6, polar: 1, thin: 0.3, hero: 0.2, layDown: 0.2, fourBet: 0.3, threeBet: 0.3, exploit: 0.8 },
       adapt: 0.65,
       mind: { tilt: 0.15, grudge: 0.3 },
       tempo: { speed: 0.9, tank: 1.2, snap: 0.15, hollywood: 0.25 },

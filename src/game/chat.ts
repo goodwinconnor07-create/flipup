@@ -35,8 +35,8 @@ export const CHAT = {
   replyGap: 260,
   /** A seat shows this many messages at once; a third pushes the oldest out. */
   maxShown: 2,
-  /** How long a bot waits after its last message before it moves (so the table can read it). */
-  readTime: 600,
+  /** How long a bot waits after its last message lands before it moves, so the table can read it: at least this, and long enough for the message itself. */
+  readTime: 900,
   /** A line that waited this long to start is stale and dropped. */
   staleAfter: 2600,
   /** Lines the table is waiting on (a reaction to how a hand ended) wait longer. */
@@ -71,6 +71,28 @@ export function splitBeats(template: string): Beat[] {
     out.push({ text: rest.map((b) => b.text).join(' '), slow: rest[0].slow });
   }
   return out.length ? out : [{ text: template.replaceAll('|', ' ').trim(), slow: false }];
+}
+
+/**
+ * A longer line (the coach's, say) as a few bubbles instead of one block: cut at its sentences, small ones kept
+ * together so no bubble is a stub, never more than `max` of them. A line that already fits stays one bubble.
+ */
+export function splitSentences(text: string, soft = 40, hard = 90, max = 3): string[] {
+  if (text.length <= hard * 0.8) return [text];
+  const sentences = text
+    .replace(/([.!?…]+)\s+/g, '$1\u0001')
+    .split('\u0001')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const out: string[] = [];
+  for (const s of sentences) {
+    const last = out[out.length - 1];
+    // Join onto the one before while that one is still short, or while the two fit together.
+    if (last !== undefined && (last.length < soft || last.length + 1 + s.length <= hard * 0.6)) out[out.length - 1] = `${last} ${s}`;
+    else out.push(s);
+  }
+  if (out.length > max) out.splice(max - 1, out.length, out.slice(max - 1).join(' '));
+  return out;
 }
 
 /** "Bold, {you}." with nobody to address → "Bold.": the name and its comma go, and a message that was only the name goes. */
@@ -169,7 +191,7 @@ export function beatTimes(beats: Beat[]): { from: number; land: number }[] {
 export const spokenMs = (beats: Beat[]): number => beatTimes(beats).at(-1)?.land ?? 0;
 
 /** How long a bot should wait before it moves after saying this: the line, then a moment to read it. */
-export const sayAndReadMs = (beats: Beat[]): number => spokenMs(beats) + CHAT.readTime;
+export const sayAndReadMs = (beats: Beat[]): number => spokenMs(beats) + Math.max(CHAT.readTime, beats.length ? readMs(beats[beats.length - 1].text) : 0);
 
 // ── What is still worth saying ──────────────────────────────────────────────────────────────
 
@@ -204,11 +226,15 @@ export const REACT_DELAY = { min: 350, spread: 450 } as const;
 export const talkEvent = (lineId: string): string => (lineId.startsWith('b:') ? lineId.split(':')[2] : '');
 
 /**
- * Whether a line is still about where the table is now. `moment` is "hand-cards-live|over": a line said before
- * the outcome only holds for that exact moment, any other until its hand is over.
+ * Whether a line that hasn't been said yet is still about where the table is now. `moment` is
+ * "hand-cards-live|over": a line said before the outcome only holds for that exact moment, any other until
+ * its hand is over.
  */
 export const worthSaying = (moment: string) => (m: { event: string; moment: string }): boolean =>
   PRE_OUTCOME.has(m.event) ? m.moment === moment : m.moment.split('-')[0] === moment.split('-')[0];
+
+/** Whether a message already up should stay: only a "c'mon!" outlives its moment by being taken down; the rest finish their time. */
+export const worthKeeping = (moment: string) => (m: { event: string; moment: string }): boolean => !PRE_OUTCOME.has(m.event) || m.moment === moment;
 
 /** A bot's line, ready for the lane. `luck` is a number from 0 to 1 that spreads out the reaction delay. */
 export function botSay(a: { who: string; lineId: string; n: number; beats: Beat[]; at: number; moment: string; sig: string; luck: number }): Say {
@@ -307,12 +333,15 @@ export class ChatLane {
     this.queue = this.queue.filter((q) => q.who !== who || !stale(q));
   }
 
-  /** Keeps only what `keep` says is still worth saying: waiting lines, lines being typed and messages up. */
-  retain(keep: (m: { event: string; moment: string }) => boolean): void {
+  /**
+   * Keeps only what is still worth saying: `keep` decides for the lines waiting and the ones being typed, and
+   * `keepUp` (the same by default) for messages already on screen.
+   */
+  retain(keep: (m: { event: string; moment: string }) => boolean, keepUp = keep): void {
     this.queue = this.queue.filter((q) => keep(q));
     for (const [who, s] of this.scripts) if (!keep(s.say)) this.scripts.delete(who);
     for (const [who, msgs] of this.seats) {
-      const kept = msgs.filter(keep);
+      const kept = msgs.filter(keepUp);
       if (kept.length === msgs.length) continue;
       if (kept.length) this.seats.set(who, kept);
       else {

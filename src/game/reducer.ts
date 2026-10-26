@@ -5,7 +5,7 @@ import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
-import { BOTS, styleOf } from './botStyles';
+import { BOTS, playerStyle, styleOf } from './botStyles';
 import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { botsOnly, canDeal, cardsText, dealNextStreet, foldOutOfTurn, makeMove, MAX_SEATS, playerById, potTotal, runoutStep, schedule, startHand, TIMING } from './holdem';
@@ -229,6 +229,14 @@ function afterHand(game: Game, ctx: ActionContext): void {
   game.streaks = streaks;
   const tilted = hand.seats.some((s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2);
 
+  // A bot that won with its signature hand (Brunson's ten-deuce) says so.
+  for (const id of winners) {
+    const p = playerById(game, id);
+    const seat = hand.seats.find((s) => s.playerId === id);
+    if (!p?.bot || !seat || seat.cards.length !== 2 || !playerStyle(p).craft.pets.includes(handClassOf(seat.cards))) continue;
+    if (say(id, 'signature', true)) spoke.push(id);
+  }
+
   // Now and then a bot turns its cards over when it didn't have to: a bluff that worked, a monster
   // nobody paid off, or a good hand it laid down. Its own cards only, so nothing hidden leaks.
   for (const id of showOffs(game, hand, ctx)) if (say(id, id in result.won ? (strongEnough(hand, id) ? 'showStrong' : 'showBluff') : 'showFold')) spoke.push(id);
@@ -318,7 +326,7 @@ function openAgain(game: Game, ctx: ActionContext): void {
   game.reactions = {};
   game.hands = 0;
   game.blindsRaiseAt = null;
-  for (const k of ['again', 'first', 'pendingTalk', 'botPlan', 'sweating', 'talkAt', 'reads', 'streaks', 'minds', 'readHand'] as const) delete game[k];
+  for (const k of ['again', 'first', 'pendingTalk', 'botPlan', 'sweating', 'talkAt', 'talkDone', 'reads', 'streaks', 'minds', 'readHand'] as const) delete game[k];
   schedule(game);
 }
 
@@ -757,6 +765,13 @@ function tick(game: Game, ctx: ActionContext): boolean {
         if (makeMove(game, plan.move, plan.to, ctx)) makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
         return true;
       }
+      // It said something a moment ago (a remark on someone's bet, say) and the table is still reading it.
+      const talking = game.talkDone?.[player.id] ?? 0;
+      if (talking > ctx.now + 20 && !botsOnly(game)) {
+        hand.actAt = talking;
+        schedule(game);
+        return true;
+      }
       const before = options(game, hand, seat);
       // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.
       const bigBet =
@@ -771,9 +786,10 @@ function tick(game: Game, ctx: ActionContext): boolean {
       const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
       // What it says isn't always about the move it's about to make, or the line would give the move away.
       const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
-      const spoken = event && said ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0;
+      // (With every person out of the hand the bots hurry, and nobody has time to read what they think.)
+      const spoken = event && said && !fast ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0;
       if (spoken) {
-        wait = Math.max(wait, fast ? Math.min(spoken, 700) : spoken);
+        wait = Math.max(wait, spoken);
         if (event === 'allin') owe(game, player.id);
       }
       if (wait > 150) {

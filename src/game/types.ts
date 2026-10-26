@@ -74,6 +74,32 @@ export interface PlayerRead {
   shownBets?: number;
   /** ...and how many of those were bluffs. */
   shownBluffs?: number;
+  /** Bets faced on each street, and how many they folded to: some people give up on the turn, others never on the river. */
+  flopFaced?: number;
+  flopFolds?: number;
+  turnFaced?: number;
+  turnFolds?: number;
+  riverFaced?: number;
+  riverFolds?: number;
+  /** Flop bets faced from the player who raised before the flop (c-bets), and folds to them. */
+  cbetFaced?: number;
+  cbetFolds?: number;
+  /** Times they raised first in and then faced a 3-bet, and folded. */
+  threeBetFaced?: number;
+  threeBetFolds?: number;
+  /** Times they faced an open raise and could 3-bet, and did. */
+  openFaced?: number;
+  threeBets?: number;
+  /** Times they checked and then faced a bet on the same street, and raised it (a check-raise). */
+  crOpps?: number;
+  crs?: number;
+  /** Limped in (called the big blind before anyone raised). */
+  limps?: number;
+  /** Shown down after a big bet (70% of the pot or more) or a smaller one on the turn or river, and how many of each were top pair or better. */
+  shownBig?: number;
+  shownBigStrong?: number;
+  shownSmall?: number;
+  shownSmallStrong?: number;
 }
 
 /** How a bot feels right now. Never sent to phones. */
@@ -259,6 +285,8 @@ export interface Game {
   reads?: Record<string, PlayerRead>;
   /** When each bot last spoke (table clock), so nobody chatters non-stop. Never sent to phones. */
   talkAt?: Record<string, number>;
+  /** When each bot's last line is done being said and read: it doesn't move before then. */
+  talkDone?: Record<string, number>;
   /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
   botPlan?: { playerId: string; seq: number; move: Move; to?: number };
   /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */

@@ -34,7 +34,7 @@ export function LearnTab() {
         aria-label={save.hands ? 'Next scenario' : 'Play a solved scenario'}
       >
         <span className="hero-top">
-          <span className="hero-eyebrow">Scroll scenarios</span>
+          <span className="hero-eyebrow">Solved hands</span>
           <span className="hero-title">{save.hands ? 'Next scenario' : 'Play a solved scenario'}</span>
           <span className="hero-sub">
             {save.hands

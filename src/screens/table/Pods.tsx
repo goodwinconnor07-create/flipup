@@ -32,29 +32,43 @@ export function usePodSlots(
   others: Player[],
   windowed: boolean,
   talking: Record<string, unknown> = {},
-): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number } {
+): { slots: Map<string, { slot: number; away: boolean }>; n: number; hidden: number; canShow: (id: string) => boolean } {
   const start = useRef(0);
   const slots = new Map<string, { slot: number; away: boolean }>();
   if (!windowed || others.length <= MAX_PODS) {
     others.forEach((p, i) => slots.set(p.id, { slot: i, away: false }));
-    return { slots, n: others.length, hidden: 0 };
+    return { slots, n: others.length, hidden: 0, canShow: () => true };
   }
   const hand = game.hand;
-  // Who's still worth looking at: anyone who hasn't folded (everyone, between hands).
-  const live = others.filter((p) => {
-    if (!hand) return true;
-    const seat = seatFor(hand, p.id);
-    return !!seat && (!seat.folded || !!talking[p.id]);
-  });
-  const n = Math.min(MAX_PODS, live.length);
+  // Who's still worth looking at: anyone who hasn't folded (everyone, between hands) or is saying something.
+  const liveFor = (speaking: ReadonlySet<string>) =>
+    others.filter((p) => {
+      if (!hand) return true;
+      const seat = seatFor(hand, p.id);
+      return !!seat && (!seat.folded || speaking.has(p.id));
+    });
   // The player to keep in view: whoever's turn it is, or the winner once the hand is over.
   const focus = hand?.result ? Object.entries(hand.result.won).sort((a, b) => b[1] - a[1])[0]?.[0] : hand?.toAct;
-  let s = Math.max(0, Math.min(start.current, live.length - n));
-  const at = live.findIndex((p) => p.id === focus);
-  if (at >= 0) {
-    if (at < s) s = at;
-    else if (at > s + n - 1) s = at - n + 1;
-  }
+  // Where the row starts, given who is talking: it moves only to keep the focus in view, or to bring a speaker in
+  // when the focus can stay in view too.
+  const plan = (speaking: ReadonlySet<string>) => {
+    const live = liveFor(speaking);
+    const n = Math.min(MAX_PODS, live.length);
+    let s = Math.max(0, Math.min(start.current, live.length - n));
+    const at = live.findIndex((p) => p.id === focus);
+    if (at >= 0) {
+      if (at < s) s = at;
+      else if (at > s + n - 1) s = at - n + 1;
+    }
+    const speaker = live.findIndex((p, i) => speaking.has(p.id) && (i < s || i > s + n - 1));
+    if (speaker >= 0) {
+      const to = speaker < s ? speaker : speaker - n + 1;
+      if (at < 0 || (at >= to && at <= to + n - 1)) s = to;
+    }
+    return { live, n, s };
+  };
+  const now = new Set(Object.keys(talking));
+  const { live, n, s } = plan(now);
   start.current = s;
   const visible = live.slice(s, s + n);
   const first = visible.length ? others.findIndex((p) => p.id === visible[0].id) : others.length;
@@ -64,7 +78,13 @@ export function usePodSlots(
     // Out of view: to the left if they come before the ones showing, otherwise to the right.
     else slots.set(p.id, { slot: i < first ? -1 : n, away: true });
   });
-  return { slots, n, hidden: others.length - n };
+  // Whether someone could be seen saying something: in the row already, or able to slide in without hiding the one in focus.
+  const canShow = (id: string) => {
+    const speaking = new Set([...now, id]);
+    const p = plan(speaking);
+    return p.live.slice(p.s, p.s + p.n).some((x) => x.id === id);
+  };
+  return { slots, n, hidden: others.length - n, canShow };
 }
 
 /** "+3": the players not in the row right now. Tap it for who they are and how many chips each has. */

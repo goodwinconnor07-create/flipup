@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BOTS } from './botStyles';
+import { BOTS, NO_CRAFT } from './botStyles';
 import { botLineText, finishLine } from './botTalk';
 import { decide } from './botPlay';
 import { seededRng } from './cards';
@@ -10,6 +10,7 @@ import { redactForDevice } from './redact';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import { options } from './selectors';
 import { twinNumbers, TWIN_PRIOR } from './twin';
+import { fitStyle } from './twinFit';
 import type { Action, Game } from './types';
 
 describe('the legends', () => {
@@ -133,6 +134,52 @@ describe('legends remember you', () => {
       go({ type: 'tick' }, 'h');
       expect(g.reactions?.[g.players[1].id]?.id).toMatch(new RegExp(`^b:dwan:rematch${rematch === 'won' ? 'Won' : 'Lost'}:`));
     }
+  });
+});
+
+describe('legends have techniques, not just numbers', () => {
+  const dealt = (legend: (typeof LEGENDS)[number], cards: [string, string]) => {
+    let g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0, rebuys: true }, bots: 1, code: null, now: 1000 });
+    dressAsLegend(g.players[1], legend);
+    const rng = seededRng(2);
+    let now = 1000;
+    const go = (action: Action, deviceId: string) => {
+      const r = applyAction(g, action, { deviceId, now, rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    };
+    go({ type: 'start' }, 'h');
+    for (let i = 0; i < 6 && !g.hand; i++) {
+      now = Math.max(now + 1, g.wakeAt ?? now + 1);
+      go({ type: 'tick' }, 'server');
+    }
+    const seat = g.hand!.seats.find((s) => s.playerId === g.players[1].id)!;
+    seat.cards = cards;
+    return { g, seat };
+  };
+  const playsIt = (legend: (typeof LEGENDS)[number], cards: [string, string]) => {
+    const { g, seat } = dealt(legend, cards);
+    let played = 0;
+    for (let i = 0; i < 400; i++) if (decide(g, g.hand!, seat, seededRng(i)).move.move !== 'fold' && decide(g, g.hand!, seat, seededRng(i)).move.move !== 'check') played++;
+    return played / 400;
+  };
+
+  it("Brunson plays his ten-deuce, the others mostly don't", () => {
+    const brunson = playsIt(legendById('brunson')!, ['Ts', '2d']);
+    const ivey = playsIt(legendById('ivey')!, ['Ts', '2d']);
+    expect(brunson).toBeGreaterThan(0.3);
+    expect(brunson).toBeGreaterThan(ivey + 0.15);
+  });
+
+  it('every legend has its own craft, and each is different from the others', () => {
+    const crafts = LEGENDS.map((l) => JSON.stringify(legendStyle(l).craft));
+    expect(new Set(crafts).size).toBe(LEGENDS.length);
+    // And a twin plays its person's habits, not a bot's techniques.
+    for (const l of LEGENDS) expect(JSON.stringify(fitStyle(legendProfile(l)).craft)).toBe(JSON.stringify({ ...NO_CRAFT, pets: [] }));
+  });
+
+  it('says so when it wins with the signature hand', () => {
+    expect(LEGEND_VOICES.brunson.lines.signature?.length).toBeGreaterThanOrEqual(2);
   });
 });
 

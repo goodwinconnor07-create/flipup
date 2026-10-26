@@ -69,6 +69,8 @@ export interface Style {
   };
   /** 0 to 1: how much it changes its play after watching yours. */
   adapt: number;
+  /** Techniques it has: situations it plays in its own way, beyond how loose or aggressive it is. */
+  craft: Craft;
   /** How it takes the ups and downs. */
   mind: {
     /** 0 to 1: how easily bad beats and big losses get to it. */
@@ -99,6 +101,47 @@ export interface Style {
   talk: { tone: 'trash' | 'friendly'; chatty: number };
 }
 
+/**
+ * Techniques that depend on the situation (which street, who has the initiative, what the board is like,
+ * who it's against), where the knobs in `post` apply the same everywhere. Numbers are pulls in pots (like
+ * `bet` and `bluff`) or 0 to 1 strengths; zero means the plain play. See botPlay.ts for what each does.
+ */
+export interface Craft {
+  /** Continuation bets after raising before the flop: extra pull towards betting on dry boards and on wet ones. */
+  cbetDry: number;
+  cbetWet: number;
+  /** Betting again on the turn and river after betting the street before. Below zero it gives up. */
+  barrel: number;
+  /** Calling a flop bet in position with a weak hand, to take the pot away later when it's checked to. */
+  float: number;
+  /** Leading the turn out of position after the flop went check, check. */
+  probe: number;
+  /** Leading into the player who raised before the flop (most people almost never do, so below zero for most). */
+  donk: number;
+  /** Checking strong hands and draws out of position to raise the bet. */
+  checkRaise: number;
+  /** River: big bets with the best hands and with bluffs that hold a card the caller needs, check the middle. */
+  polar: number;
+  /** Betting one pair for value against players who call too much. */
+  thin: number;
+  /** Calling down light against stories that smell of a bluff. */
+  hero: number;
+  /** Folding a good hand when the story says it's beaten (not paying off a big river raise). */
+  layDown: number;
+  /** Before the flop: 4-bet bluffs with a blocker, and 3-bets without a premium hand. */
+  fourBet: number;
+  threeBet: number;
+  /** Bet size follows the board: small on dry boards, big on wet ones. */
+  texture: number;
+  /** How much it acts on what it has seen of the other player's habits (folds, size, check-raises). */
+  exploit: number;
+  /** Starting hands it likes (a signature hand), and how often it plays one when the chart says fold. */
+  pets: string[];
+  petRate: number;
+}
+
+export const NO_CRAFT: Craft = { cbetDry: 0, cbetWet: 0, barrel: 0, float: 0, probe: 0, donk: 0, checkRaise: 0, polar: 0, thin: 0, hero: 0, layDown: 0, fourBet: 0, threeBet: 0, texture: 0, exploit: 0, pets: [], petRate: 0 };
+
 const base = { tight: 0, loose: 0, aggro: 0, limp: 0, open: 2.5, iso: 0.5, shove: 1, callShove: 0, survival: 0.3 };
 const post = {
   sense: 0.7,
@@ -125,6 +168,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, open: 2.3, iso: 0.5, survival: 0.3 },
     post: { ...post, sense: 0.95, sizes: [0.33, 0.66, 1, 1.4], value: 0.02, trap: 0.12, gto: 0.3, wobble: 0.05 },
     adapt: 0.5,
+    craft: { ...NO_CRAFT, cbetDry: 0.03, barrel: 0.01, float: 0.2, probe: 0.1, donk: -0.02, checkRaise: 0.15, polar: 0.3, thin: 0.25, hero: 0.15, layDown: 0.2, fourBet: 0.15, threeBet: 0.15, texture: 0.3, exploit: 0.6 },
     mind: { tilt: 0.1, grudge: 0.1 },
     tempo: { ...tempo, tank: 1.1, hollywood: 0.1 },
     show: { bluffs: 0.02, strong: 0.03, folds: 0.01 },
@@ -136,6 +180,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, aggro: 0.15, open: 2.3, iso: 0.7, shove: 1.1, survival: 0.2 },
     post: { ...post, sense: 1, sizes: [0.33, 0.75, 1.25], value: 0.03, bluff: 0.02, raise: 0.02, trap: 0.15, gto: 0.2, wobble: 0.045 },
     adapt: 0.85,
+    craft: { ...NO_CRAFT, cbetDry: 0.05, cbetWet: 0.02, barrel: 0.03, float: 0.4, probe: 0.25, donk: -0.01, checkRaise: 0.25, polar: 0.4, thin: 0.35, hero: 0.3, layDown: 0.3, fourBet: 0.25, threeBet: 0.3, texture: 0.4, exploit: 1 },
     mind: { tilt: 0.15, grudge: 0.5 },
     tempo: { ...tempo, speed: 0.9, snap: 0.2, hollywood: 0.15 },
     show: { bluffs: 0.15, strong: 0.05, folds: 0 },
@@ -147,6 +192,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, tight: 0.72, aggro: 0.15, open: 3, iso: 0.6, shove: 0.95, callShove: -0.01, survival: 0.4 },
     post: { ...post, sense: 0.75, sizes: [0.5, 0.75], tell: 0.3, value: 0.07, bluff: -0.01, bet: 0.03, sticky: -0.05, raise: 0.04, trap: 0.05, gto: 0.2, wobble: 0.06 },
     adapt: 0.35,
+    craft: { ...NO_CRAFT, cbetDry: 0.04, cbetWet: 0.03, barrel: -0.02, donk: -0.04, checkRaise: 0.1, polar: 0.1, thin: 0.2, layDown: 0.4, fourBet: 0.05, threeBet: 0.05, texture: 0.2, exploit: 0.3 },
     mind: { tilt: 0.2, grudge: 0.2 },
     tempo,
     show: { bluffs: 0.02, strong: 0.1, folds: 0.03 },
@@ -158,6 +204,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, loose: 0.3, aggro: 0.35, open: 2.7, iso: 0.8, shove: 1.2, callShove: 0.02, survival: 0.2 },
     post: { ...post, sense: 0.75, sizes: [0.5, 0.75, 1.2], tell: 0.1, value: 0.02, bluff: 0.06, bet: 0.05, raise: 0.06, gto: 0.15, wobble: 0.08 },
     adapt: 0.5,
+    craft: { ...NO_CRAFT, cbetDry: 0.08, cbetWet: 0.06, barrel: 0.05, float: 0.5, probe: 0.3, donk: 0.02, checkRaise: 0.2, polar: 0.3, thin: 0.1, hero: 0.2, fourBet: 0.35, threeBet: 0.5, texture: 0.2, exploit: 0.5 },
     mind: { tilt: 0.35, grudge: 0.4 },
     tempo: { ...tempo, speed: 0.85, snap: 0.2 },
     show: { bluffs: 0.2, strong: 0.03, folds: 0.02 },
@@ -169,6 +216,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, loose: 0.6, aggro: 0.4, open: 3.5, iso: 0.8, shove: 1.4, callShove: -0.02, survival: 0 },
     post: { ...post, sense: 0.55, sizes: [0.75, 1, 1.5], tell: 0.1, value: 0.04, bluff: 0.07, bet: 0.1, sticky: -0.06, raise: 0.1, chase: 0.2, pairs: 0.15, gto: 0.05, wobble: 0.1 },
     adapt: 0.15,
+    craft: { ...NO_CRAFT, cbetDry: 0.1, cbetWet: 0.1, barrel: 0.08, float: 0.2, probe: 0.3, donk: 0.08, checkRaise: 0.15, hero: 0.1, fourBet: 0.2, threeBet: 0.4, exploit: 0.1 },
     mind: { tilt: 0.6, grudge: 0.6 },
     tempo: { speed: 0.6, tank: 0.5, snap: 0.4, hollywood: 0 },
     show: { bluffs: 0.35, strong: 0.1, folds: 0.05 },
@@ -180,6 +228,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, tight: 0.87, aggro: -0.1, open: 3, iso: 0.2, shove: 0.6, callShove: -0.05, survival: 0.8 },
     post: { ...post, sense: 0.55, sizes: [0.66, 0.9], tell: 0.6, value: 0.04, bluff: -0.08, sticky: -0.18, raise: -0.02, scared: 0.5, gto: 0.1, wobble: 0.06 },
     adapt: 0.15,
+    craft: { ...NO_CRAFT, cbetDry: 0.02, cbetWet: -0.02, barrel: -0.06, donk: -0.05, checkRaise: 0.05, polar: 0.2, layDown: 0.6, exploit: 0.2 },
     mind: { tilt: 0.1, grudge: 0.2 },
     tempo: { ...tempo, speed: 1.15, snap: 0.05 },
     show: { bluffs: 0, strong: 0.25, folds: 0.15 },
@@ -191,6 +240,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, loose: 0.45, aggro: -0.6, open: 2, iso: 0, shove: 0.7, callShove: 0.03, survival: 0.2 },
     post: { ...post, sense: 0.25, sizes: [0.33, 0.5], tell: 0.2, value: -0.05, bluff: -0.1, bet: -0.12, sticky: 0.1, raise: -0.15, chase: 0.5, pairs: 0.4, gto: 0.05, wobble: 0.1 },
     adapt: 0.05,
+    craft: { ...NO_CRAFT, donk: 0.03, hero: 0.2, thin: -0.2 },
     mind: { tilt: 0.3, grudge: 0.3 },
     tempo: { ...tempo, speed: 1.1, snap: 0.3 },
     show: { bluffs: 0, strong: 0.05, folds: 0.1 },
@@ -202,6 +252,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, loose: 0.5, limp: 0.6, aggro: 0.05, open: 4, iso: 0.1, shove: 1.3, callShove: 0.04, survival: 0 },
     post: { ...post, sense: 0.4, sizes: [0.5, 1, 1.5], tell: 0.3, bluff: 0.04, bet: 0.04, sticky: 0.06, raise: 0.03, chase: 0.6, pairs: 0.2, gto: 0.05, wobble: 0.11 },
     adapt: 0.1,
+    craft: { ...NO_CRAFT, barrel: 0.03, float: 0.3, donk: 0.06, hero: 0.2, exploit: 0.1 },
     mind: { tilt: 0.55, grudge: 0.4 },
     tempo: { ...tempo, speed: 0.8, snap: 0.25 },
     show: { bluffs: 0.25, strong: 0.1, folds: 0.05 },
@@ -213,6 +264,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, tight: 0.66, aggro: -0.25, open: 2.5, iso: 0.2, shove: 0.9, survival: 0.4 },
     post: { ...post, sense: 0.7, sizes: [0.33, 0.66, 1.3], tell: 0.2, value: -0.04, bluff: -0.02, raise: 0.06, trap: 0.6, gto: 0.15, wobble: 0.07 },
     adapt: 0.3,
+    craft: { ...NO_CRAFT, cbetDry: -0.02, donk: -0.02, float: 0.1, checkRaise: 0.7, polar: 0.3, thin: 0.1, layDown: 0.3, exploit: 0.4 },
     mind: { tilt: 0.2, grudge: 0.3 },
     tempo: { ...tempo, tank: 1.2, hollywood: 0.5 },
     show: { bluffs: 0.02, strong: 0.2, folds: 0.02 },
@@ -224,6 +276,7 @@ export const STYLES: Record<StyleId, Style> = {
     pre: { ...base, tight: 0.4, loose: 0.15, aggro: -0.2, open: 2, iso: 0.1, shove: 0.65, callShove: -0.06, survival: 0.9 },
     post: { ...post, sense: 0.25, sizes: [0.25, 0.4, 0.5], tell: 0.5, value: -0.15, bluff: -0.05, bet: -0.15, sticky: -0.45, raise: -0.15, scared: 2.4, gto: 0.1, wobble: 0.3 },
     adapt: 0,
+    craft: { ...NO_CRAFT, cbetDry: -0.03, cbetWet: -0.05, barrel: -0.08, hero: -0.1, layDown: 0.8 },
     mind: { tilt: 0.45, grudge: 0.1 },
     tempo: { speed: 1.2, tank: 1.6, snap: 0.05, hollywood: 0 },
     show: { bluffs: 0.01, strong: 0.05, folds: 0.2 },

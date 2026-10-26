@@ -1761,6 +1761,40 @@ html.calm .bubble-typing i {
   }
 }
 
+/* Shorter still (an iPhone SE, a small Android): a little less everywhere, so nothing scrolls and the buttons stay clear of your cards. */
+@media (max-height: 690px) and (max-width: 959px) {
+  .pods {
+    height: 150px;
+  }
+  .pod {
+    top: 22px;
+  }
+  .table-oval {
+    min-height: 124px;
+  }
+  .table-oval .pcard-lg {
+    --w: 42px;
+  }
+  .pcard-xl {
+    --w: 72px;
+  }
+  .my-cards .pcard + .pcard {
+    margin-left: -18px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 959px) {
+  .pods {
+    height: 140px;
+  }
+  .pod {
+    top: 18px;
+  }
+  .pcard-xl {
+    --w: 66px;
+  }
+}
+
 /* ── A phone on its side ─────────────────────────────────────────────────── */
 
 .rotate-hint {

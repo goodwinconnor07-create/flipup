@@ -286,6 +286,7 @@ const CHAT: Record<LegendId, Partial<Record<TalkEvent, string[]>>> = {
     foldBig: ['I was ahead.|I know it.'],
   },
   brunson: {
+    signature: ['Ten-deuce.|Never fails.', 'Ten-deuce.||Don’t laugh.', 'Ten-deuce, son.|Remember it.'],
     thanks: ['Much obliged.'],
     ribbed: ['Ha.|Fair enough, son.'],
     goodLuck: ['Same to you.'],

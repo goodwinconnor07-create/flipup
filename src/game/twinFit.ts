@@ -8,7 +8,7 @@
 // each number.
 
 import { POST_BUCKETS, twinNumbers, type SpotCounts, type TwinNumbers, type TwinProfile } from './twin';
-import { STYLES, type Style, type StyleId } from './botStyles';
+import { NO_CRAFT, STYLES, type Style, type StyleId } from './botStyles';
 import ref from './twinRef.json';
 
 /** What a bot needs to play like a person: the fitted style and the memory of their spots. Lives on the player at the table; never sent to a phone. */
@@ -91,6 +91,8 @@ export function fitStyle(twin: TwinProfile): Style {
   const order = [...IDS].sort((a, b) => w[b] - w[a]);
   const style = blend(order.map((id) => ({ w: w[id], v: STYLES[id] })));
   style.id = order[0];
+  // A twin plays its person's own habits (the spots it remembers), not a bot's techniques.
+  style.craft = { ...NO_CRAFT, pets: [] };
   const base = REF;
   // Where the blend of the styles' own numbers sits, and how far the person is from it.
   const at = (k: keyof TwinNumbers) => IDS.reduce((a, id) => a + w[id] * base[id][k], 0);

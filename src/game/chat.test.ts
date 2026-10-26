@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { allLines } from './botTalk';
-import { BEFORE_MOVE, botSay, beatTimes, CHAT, ChatLane, holdMs, lineBeats, lineText, ONE_LINE, quickSay, readMs, sayAndReadMs, spokenMs, splitBeats, typeMs, worthSaying, type Say } from './chat';
+import { BEFORE_MOVE, botSay, beatTimes, CHAT, ChatLane, holdMs, lineBeats, lineText, ONE_LINE, quickSay, readMs, sayAndReadMs, spokenMs, splitBeats, splitSentences, typeMs, worthKeeping, worthSaying, type Say } from './chat';
 
 const texts = (t: string) => splitBeats(t).map((b) => b.text);
 
@@ -62,6 +62,44 @@ describe('splitting a line into messages', () => {
   });
 });
 
+describe('longer lines (the coach) as a few bubbles', () => {
+  it('leaves a line that fits as one bubble', () => {
+    expect(splitSentences('Play a few hands and I’ll go through them with you.')).toEqual(['Play a few hands and I’ll go through them with you.']);
+  });
+
+  it('cuts a long line at its sentences, keeps stubs together, and never sends more than three', () => {
+    const text = 'You called a big bet with a weak pair. The solver mostly folds here. It still calls a little, to stay balanced. Next time try folding and see how it feels.';
+    const parts = splitSentences(text);
+    expect(parts.length).toBeGreaterThan(1);
+    expect(parts.length).toBeLessThanOrEqual(3);
+    expect(parts.join(' ')).toBe(text);
+    for (const p of parts.slice(0, -1)) expect(p.length).toBeGreaterThanOrEqual(30);
+  });
+
+  it('never loses a word', () => {
+    for (const text of ['Short.', 'A. B. C. D. E. F. G. H.', 'One long sentence with no full stop that just keeps going and going until it is well over the limit for one bubble']) {
+      expect(splitSentences(text).join(' ')).toBe(text);
+    }
+  });
+});
+
+describe('lines that greet a person', () => {
+  it('always name them, in every voice (so a heads-up hello is never anonymous)', () => {
+    for (const { voice, event, text } of allLines()) {
+      if (event === 'hello') expect(text, `${voice} ${event}`).toContain('{you}');
+    }
+  });
+
+  it('leaves the name out cleanly when no one is being addressed', () => {
+    expect(lineText('Bold, {you}.')).toBe('Bold.');
+    expect(lineText('Hi {you}!')).toBe('Hi!');
+    expect(lineText('{you}. Nice stack.')).toBe('Nice stack.');
+    expect(lineText('Hey {you}, ready?')).toBe('Hey, ready?');
+    expect(lineText('Look who’s here.|{you}.')).toBe('Look who’s here.');
+    for (const { text } of allLines()) expect(lineText(text), text).not.toContain('{you}');
+  });
+});
+
 describe('how long things take', () => {
   it('types a longer message for longer, within bounds', () => {
     expect(typeMs('Hi')).toBeGreaterThanOrEqual(CHAT.typeBase);
@@ -88,7 +126,7 @@ describe('how long things take', () => {
     expect(t[1].from).toBe(t[0].land + CHAT.settle);
     expect(t[1].land).toBe(t[1].from + typeMs('Ready to lose?', true));
     expect(spokenMs(beats)).toBe(t[1].land);
-    expect(sayAndReadMs(beats)).toBe(t[1].land + CHAT.readTime);
+    expect(sayAndReadMs(beats)).toBe(t[1].land + Math.max(CHAT.readTime, readMs('Ready to lose?')));
   });
 
   it('waits longer before a second thought, with the dots gone', () => {
@@ -272,17 +310,31 @@ describe('the conversation', () => {
     expect(lane.talk('a', 1000)).toBeUndefined();
   });
 
-  it("drops a pre-outcome line when the moment passes, and any line once its hand is over", () => {
+  it("drops a pre-outcome line when the moment passes, but lets a plain message finish its time", () => {
     const lane = new ChatLane();
     lane.push(say('a', 'C’mon!', 0, { event: 'sweat', moment: '3-3-live' }));
-    lane.push(say('b', 'Thanks.', 0, { event: 'win', moment: '3-5-over' }));
-    run(lane, 0, 3000);
-    // The river came: the "c'mon" is about a moment that's over.
-    lane.retain(worthSaying('3-4-live'));
-    expect(lane.talk('a', 3000)).toBeUndefined();
-    expect(lane.talk('b', 3000)?.shown.length ?? 0).toBeGreaterThanOrEqual(0);
-    lane.retain(worthSaying('4-0-live'));
-    expect(lane.talk('b', 3000)).toBeUndefined();
+    lane.push(say('b', 'Thanks.', 0, { event: 'win', moment: '3-3-live' }));
+    // Both are up together at one second.
+    lane.advance(0);
+    for (let t = 1; t <= 1000; t += 1) lane.advance(t);
+    expect(lane.talk('a', 1000)?.shown.map((m) => m.text)).toEqual(['C’mon!']);
+    expect(lane.talk('b', 1000)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
+    // The river came: the "c'mon" is about a moment that's over, a plain message goes on to finish its time.
+    lane.retain(worthSaying('3-4-live'), worthKeeping('3-4-live'));
+    expect(lane.talk('a', 1000)).toBeUndefined();
+    expect(lane.talk('b', 1000)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
+    expect(lane.takeRetired()).toContain('a');
+  });
+
+  it('drops a line still waiting for its turn once its hand is over', () => {
+    const lane = new ChatLane();
+    lane.push(say('a', 'Long one. Two parts.', 0, { event: 'win', moment: '3-5-over' }));
+    lane.push(say('c', 'Later.', 0, { event: 'win', moment: '3-5-over' }));
+    lane.advance(0);
+    lane.retain(worthSaying('4-0-live'), worthKeeping('4-0-live'));
+    run(lane, 0, 5000);
+    expect(lane.talk('c', 5000)).toBeUndefined();
+    expect(lane.idle).toBe(true);
   });
 
   it('turns a bot line into a waiting line that reacts after the hand with a beat, other lines at once', () => {

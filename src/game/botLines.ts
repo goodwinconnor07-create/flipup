@@ -61,7 +61,7 @@ export const MORE_TRASH: Lines = {
   tilted: ['I’m fine.|I’m fine.', 'Just deal.', 'Whatever.', 'Shut up.|Deal.'],
   gotBluffed: ['You had|nothing?', 'Seriously?|Nothing?', 'Noted.|Noted.', 'Cute.|Real cute.'],
   watched: ['Ouch.|Wow.', 'Well, well.', 'Brutal.', 'There it is.'],
-  hello: ['Hi {you}.|Brave of you.', '{you}.|Nice stack.|Mine soon.', 'Sit.|Let’s play.', 'Look who’s here.'],
+  hello: ['Hi {you}.|Brave of you.', '{you}.|Nice stack.|Mine soon.', 'Sit, {you}.|Let’s play.', 'Look who’s here.|{you}.'],
   welcome: ['Hi all.|Bring chips?', 'Fresh meat.', 'Welcome.|Sit. Lose.', 'Evening.|Nice stacks.'],
 };
 

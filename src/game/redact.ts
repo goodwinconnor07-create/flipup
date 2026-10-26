@@ -24,6 +24,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     botPlan: undefined,
     pendingTalk: undefined,
     talkAt: undefined,
+    talkDone: undefined,
     sweating: undefined,
     streaks: undefined,
     minds: undefined,

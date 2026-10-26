@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { BEFORE_MOVE, botSay, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
+import { BEFORE_MOVE, botSay, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
 import { react, useApp } from '../../state/store';
 import { chips } from '../../ui/components';
 import { haptic } from '../../ui/effects';
@@ -49,7 +49,7 @@ export function Bubble({ last, street }: { last: NonNullable<Seat['last']>; stre
  * typing dots in front of each, and answer each other (see ChatLane in the game folder for the timing).
  * A seat's messages go when its next move takes over its bubble, or a few seconds after the last one.
  */
-export function useReactions(game: Game): { say: Record<string, Talk>; quiet: Record<string, string> } {
+export function useReactions(game: Game, canShow: { current: (id: string) => boolean }): { say: Record<string, Talk>; quiet: Record<string, string> } {
   const laneRef = useRef<ChatLane | null>(null);
   laneRef.current ??= new ChatLane();
   const chat = laneRef.current;
@@ -116,7 +116,7 @@ export function useReactions(game: Game): { say: Record<string, Talk>; quiet: Re
   const momentRef = useRef(moment);
   momentRef.current = moment;
   useEffect(() => {
-    chat.retain(worthSaying(moment));
+    chat.retain(worthSaying(moment), worthKeeping(moment));
     redraw();
     run.current();
   }, [moment]);
@@ -140,8 +140,9 @@ export function useReactions(game: Game): { say: Record<string, Talk>; quiet: Re
         playSound('pop');
         continue;
       }
-      // Bot talk is switched off on this phone: nothing is queued or shown.
-      if (!talkRef.current) continue;
+      // Bot talk is switched off on this phone: nothing is queued or shown. Nor is anything said by someone who
+      // can't be seen (a player out of the row, with someone else on turn): it would only hold up the others.
+      if (!talkRef.current || !canShow.current(who)) continue;
       const name = gameRef.current.players.find((p) => p.id === r.to)?.name;
       chat.push(botSay({ who, lineId: r.id, n: r.n, beats: reactionBeats(r.id, name), at, moment: momentRef.current, sig: lastMoves.current[who] ?? '', luck: Math.random() }));
     }

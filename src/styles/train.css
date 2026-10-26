@@ -992,8 +992,8 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: var(--violet-bg);
-  box-shadow: 0 0 0 1.5px var(--violet);
+  background: var(--blue-bg);
+  box-shadow: 0 0 0 1.5px var(--blue);
   line-height: 1;
   /* The emoji's own space sits high in the circle; a little top padding settles it in the middle. */
   padding-top: 0.14em;
@@ -1005,18 +1005,18 @@
 
 /* A grey chat bubble; only a graded move tints it. */
 .coach-bubble {
-  --tone: var(--violet);
+  --tone: var(--blue);
   --tone-bg: var(--bubble-grey);
   --tone-ink: var(--ink);
   position: relative;
   max-width: 100%;
-  padding: 10px 14px;
-  border-radius: 18px;
+  padding: 8px 12px;
+  border-radius: 17px;
   background: var(--tone-bg);
   color: var(--tone-ink);
-  font-size: var(--fs-body);
+  font-size: var(--fs-small);
   font-weight: 400;
-  line-height: 1.35;
+  line-height: 1.32;
   text-wrap: pretty;
   overflow-wrap: anywhere;
 }
@@ -1071,19 +1071,19 @@
 }
 
 .coach-bubble.pop {
-  animation: coach-pop 0.28s ease-out both;
-  animation-delay: calc(0.45s + var(--i, 0) * 0.3s);
+  animation: coach-pop 0.22s ease-out both;
+  animation-delay: var(--delay, calc(0.34s + var(--i, 0) * 0.22s));
 }
 
 .coach.quick .coach-bubble.pop {
-  animation-delay: calc(var(--i, 0) * 0.16s);
+  animation-delay: var(--delay, calc(var(--i, 0) * 0.1s));
 }
 
 .coach-bubble.typing {
   display: flex;
   gap: 4px;
-  padding: 14px 16px;
-  animation: coach-typing 0.45s ease-in both;
+  padding: 12px 14px;
+  animation: coach-typing 0.34s ease-in both;
 }
 
 .coach-bubble.typing i,

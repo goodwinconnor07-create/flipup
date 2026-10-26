@@ -21,7 +21,8 @@ test('Play lists the legends; a profile says how they play, and you can sit down
 
   await expect(page.locator('.legends .quick-card.locked')).toHaveCount(4);
   await expect(page.getByRole('button', { name: /^Daniel Negreanu\./ })).toContainText('Locked');
-  await expect(page.getByRole('heading', { name: 'Today' })).toBeVisible();
+  // The daily goals card is paused for now.
+  await expect(page.getByRole('heading', { name: 'Today' })).toHaveCount(0);
 
   await page.getByRole('button', { name: /^Phil Hellmuth\./ }).click();
   await expect(page.getByText('Folds most hands before the flop')).toBeVisible();

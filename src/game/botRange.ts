@@ -75,9 +75,59 @@ export interface Read {
   betFreq: number;
   /** 0 (never seen them) to 1 (seen plenty). */
   known: number;
+  /** Folds to a bet on each street (the general figure until there are enough bets on that street to say). */
+  foldStreet: { flop: number; turn: number; river: number };
+  /** Folds to a flop bet from the player who raised before the flop. */
+  foldCbet: number;
+  /** Folds to a 3-bet after opening, and how often they 3-bet an open themselves. */
+  foldThreeBet: number;
+  threeBet: number;
+  /** How often they check and then raise a bet. */
+  checkRaise: number;
+  /** How often they limp. */
+  limp: number;
+  /** What their bet size tells, from hands they've shown: the share of big bets that were top pair or better, and of small ones. */
+  tellBig: number;
+  tellSmall: number;
 }
 
-export const PRIOR = { hands: 8, vpip: 0.3, pfr: 0.16, foldToBet: 0.45, aggression: 1.4, shove: 0.01, bluffy: 0.25, betFreq: 0.42 };
+export const PRIOR = {
+  hands: 8,
+  vpip: 0.3,
+  pfr: 0.16,
+  foldToBet: 0.45,
+  aggression: 1.4,
+  shove: 0.01,
+  bluffy: 0.25,
+  betFreq: 0.42,
+  foldCbet: 0.45,
+  foldThreeBet: 0.55,
+  threeBet: 0.06,
+  checkRaise: 0.08,
+  limp: 0.08,
+  tellBig: 0.62,
+  tellSmall: 0.4,
+};
+
+/**
+ * A read with the situational habits scaled by how hard this bot acts on what it's seen (`k`, 0 to 1.5): at 0 it
+ * sees every player as an average one in those spots, at 1 as the numbers say, above 1 it leans on them harder.
+ */
+export function exploitRead(read: Read, k: number): Read {
+  const towards = (v: number, base: number) => Math.max(0.02, Math.min(0.98, base + (v - base) * k));
+  const g = read.foldToBet;
+  return {
+    ...read,
+    foldStreet: { flop: towards(read.foldStreet.flop, g), turn: towards(read.foldStreet.turn, g), river: towards(read.foldStreet.river, g) },
+    foldCbet: towards(read.foldCbet, PRIOR.foldCbet),
+    foldThreeBet: towards(read.foldThreeBet, PRIOR.foldThreeBet),
+    threeBet: towards(read.threeBet, PRIOR.threeBet),
+    checkRaise: towards(read.checkRaise, PRIOR.checkRaise),
+    limp: towards(read.limp, PRIOR.limp),
+    tellBig: towards(read.tellBig, PRIOR.tellBig),
+    tellSmall: towards(read.tellSmall, PRIOR.tellSmall),
+  };
+}
 
 /** What a bot has seen of a player, eased towards an average pub player until there are enough hands. */
 export function readOf(r: PlayerRead | undefined): Read {
@@ -92,6 +142,22 @@ export function readOf(r: PlayerRead | undefined): Read {
     bluffy: mix(r?.shownBluffs ?? 0, r?.shownBets ?? 0, PRIOR.bluffy, 5),
     betFreq: mix(r?.bets ?? 0, r?.betOpps ?? 0, PRIOR.betFreq, 6),
     known: h / (h + 20),
+    // A street's own figure leans on what's seen of every street until it has some bets of its own.
+    foldStreet: (() => {
+      const general = mix(r?.foldsToBet ?? 0, r?.betsFaced ?? 0, PRIOR.foldToBet);
+      return {
+        flop: mix(r?.flopFolds ?? 0, r?.flopFaced ?? 0, general, 6),
+        turn: mix(r?.turnFolds ?? 0, r?.turnFaced ?? 0, general, 6),
+        river: mix(r?.riverFolds ?? 0, r?.riverFaced ?? 0, general, 6),
+      };
+    })(),
+    foldCbet: mix(r?.cbetFolds ?? 0, r?.cbetFaced ?? 0, PRIOR.foldCbet, 5),
+    foldThreeBet: mix(r?.threeBetFolds ?? 0, r?.threeBetFaced ?? 0, PRIOR.foldThreeBet, 4),
+    threeBet: mix(r?.threeBets ?? 0, r?.openFaced ?? 0, PRIOR.threeBet, 12),
+    checkRaise: mix(r?.crs ?? 0, r?.crOpps ?? 0, PRIOR.checkRaise, 10),
+    limp: mix(r?.limps ?? 0, h, PRIOR.limp, 12),
+    tellBig: mix(r?.shownBigStrong ?? 0, r?.shownBig ?? 0, PRIOR.tellBig, 4),
+    tellSmall: mix(r?.shownSmallStrong ?? 0, r?.shownSmall ?? 0, PRIOR.tellSmall, 4),
   };
 }
 
@@ -277,7 +343,7 @@ function moveLikelihood(m: PostMove, t: number, read: Read): number {
       return CHECK[t];
     case 'bet': {
       const table = m.frac <= 0.55 ? BET_SMALL : m.frac <= 1.05 ? BET_BIG : BET_HUGE;
-      return table[t] * (t <= 1 ? bluffs * LATE[m.street] : t === 2 ? Math.sqrt(bluffs) : 1);
+      return table[t] * (t <= 1 ? bluffs * LATE[m.street] : t === 2 ? Math.sqrt(bluffs) : 1) * sizeTell(m.frac, t, read);
     }
     case 'raise':
       return RAISE[t] * (t <= 1 ? bluffs * LATE[m.street] : t === 2 ? Math.sqrt(bluffs) : 1);
@@ -288,6 +354,19 @@ function moveLikelihood(m: PostMove, t: number, read: Read): number {
   }
 }
 
+/**
+ * What this player's bet size has meant when they've shown down: if their big bets have mostly been real hands, a big bet
+ * from them is more likely a real hand than usual, and if their small ones have been weak, a small bet is more likely weak.
+ * (1 for someone nobody has seen enough of, or a bot that doesn't act on it.)
+ */
+function sizeTell(frac: number, t: number, read: Read): number {
+  const big = frac >= 0.7;
+  const tell = big ? read.tellBig : read.tellSmall;
+  const prior = big ? PRIOR.tellBig : PRIOR.tellSmall;
+  const factor = t >= 4 ? tell / prior : (1 - tell) / (1 - prior);
+  return Math.max(0.5, Math.min(2, factor));
+}
+
 /** About how often each tier of hand wins against a betting range (what a player weighs against the price). */
 const TIER_EQUITY = [0.1, 0.2, 0.36, 0.38, 0.55, 0.72, 0.9];
 
@@ -296,10 +375,10 @@ const TIER_EQUITY = [0.1, 0.2, 0.36, 0.38, 0.55, 0.72, 0.9];
  * when their hand seems worth the price, a little more when they're sticky or already committed,
  * and less against a raise (it shows strength).
  */
-export function continueChance(t: number, frac: number, river: boolean, read: Read, committed = 0, raise = false): number {
+export function continueChance(t: number, frac: number, river: boolean, read: Read, committed = 0, raise = false, street?: 'flop' | 'turn' | 'river'): number {
   if (t === 6) return 1;
   const price = frac / (1 + 2 * frac);
-  const sticky = (PRIOR.foldToBet - read.foldToBet) * 0.4;
+  const sticky = (PRIOR.foldToBet - (street ? read.foldStreet[street] : read.foldToBet)) * 0.4;
   const worth = (t === 2 && river ? 0.05 : TIER_EQUITY[t]) + sticky + committed * 0.25 - (raise ? 0.12 : 0);
   const c = 0.03 + 0.95 / (1 + Math.exp(-(worth - price) / 0.08));
   // Nobody folds to a tiny raise: the price is too good.
@@ -506,7 +585,7 @@ export function equityOf(im: Imagined): number {
  * and its chance of winning when someone calls. `raise` is for raising their bet (they've already
  * shown some strength). `committed` is how much of each opponent's chips are already in (0 to 1).
  */
-export function betOutcome(im: Imagined, opps: Opponent[], frac: number, river: boolean, raise = false, committed: number[] = []): { fold: number; raised: number; eqCalled: number } {
+export function betOutcome(im: Imagined, opps: Opponent[], frac: number, river: boolean, raise = false, committed: number[] = [], street?: 'flop' | 'turn' | 'river'): { fold: number; raised: number; eqCalled: number } {
   let sw = 0;
   let sFold = 0;
   let sRaise = 0;
@@ -519,7 +598,7 @@ export function betOutcome(im: Imagined, opps: Opponent[], frac: number, river: 
     let noRaise = 1;
     for (let o = 0; o < m; o++) {
       const t = im.tiers[i * m + o];
-      allFold *= 1 - continueChance(t, frac, river, opps[o].read, committed[o] ?? 0, raise);
+      allFold *= 1 - continueChance(t, frac, river, opps[o].read, committed[o] ?? 0, raise, street);
       if (!raise) noRaise *= 1 - raiseChance(t, river, opps[o].read);
     }
     sw += w;
@@ -591,8 +670,8 @@ export const intsOf = (cards: string[]) => cards.map(toInt);
 export const boardCards = (hand: Hand) => hand.board.slice(0, STREET_CARDS[hand.street]).map(toInt);
 
 /** The opponents still in the hand, with their stories and reads. */
-export function opponentsOf(game: Game, hand: Hand, seat: Seat): Opponent[] {
+export function opponentsOf(game: Game, hand: Hand, seat: Seat, exploit = 0): Opponent[] {
   return hand.seats
     .filter((s) => s !== seat && !s.folded)
-    .map((s) => ({ id: s.playerId, read: readOf(game.reads?.[s.playerId]), story: storyOf(game, hand, s.playerId) }));
+    .map((s) => ({ id: s.playerId, read: exploitRead(readOf(game.reads?.[s.playerId]), exploit), story: storyOf(game, hand, s.playerId) }));
 }

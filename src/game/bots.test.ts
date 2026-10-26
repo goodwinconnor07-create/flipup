@@ -337,6 +337,44 @@ describe('bots', () => {
     expect(vsBluffer).toBeGreaterThan(0.1);
   }, 120_000);
 
+  it('learns situational habits: answers to 3-bets and c-bets, bets by street, check-raises, size tells', () => {
+    const g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: DEFAULT_SETTINGS, bots: 2, code: null, now: 0 });
+    const [a, b, c] = g.players;
+    const seat = (id: string) => ({ playerId: id, cards: [], bet: 0, total: 20, folded: false, allIn: false, acted: true, shown: false, last: null });
+    const act = (street: 'preflop' | 'flop' | 'turn' | 'river', playerId: string, move: 'fold' | 'check' | 'call' | 'bet' | 'raise', to = 0) => ({ street, playerId, move, to });
+    const hand = {
+      number: 1, seq: 9, buttonId: a.id, sbId: b.id, bbId: c.id, seats: [seat(a.id), seat(b.id), seat(c.id)], deck: [], board: [], street: 'flop' as const,
+      toAct: null, currentBet: 0, minRaise: 10, aggressorId: null, runout: false, actAt: null, deadline: null, log: [],
+      actions: [
+        // A opens, B 3-bets, C folds, A folds to the 3-bet.
+        act('preflop', a.id, 'raise', 30), act('preflop', b.id, 'raise', 100), act('preflop', c.id, 'fold'), act('preflop', a.id, 'fold'),
+        // (Another round: only B and C see a flop. B raised last before it, so B's flop bet is a c-bet.)
+        act('flop', c.id, 'check'), act('flop', b.id, 'bet', 60), act('flop', c.id, 'raise', 200), act('flop', b.id, 'fold'),
+      ],
+      result: { pots: [{ amount: 40, eligible: [c.id], winners: [c.id] }], won: { [c.id]: 40 }, names: {}, showdown: false },
+    };
+    updateReads(g, hand);
+    const reads = g.reads!;
+    // A opened and folded to the 3-bet; B faced the open and 3-bet it; C only ever faced the 3-bet.
+    expect(reads[a.id].threeBetFaced).toBe(1);
+    expect(reads[a.id].threeBetFolds).toBe(1);
+    expect(reads[b.id].openFaced).toBe(1);
+    expect(reads[b.id].threeBets).toBe(1);
+    expect(reads[c.id].openFaced ?? 0).toBe(0);
+    // C checked, B bet (the c-bet), C raised it (a check-raise), B folded on the flop.
+    expect(reads[c.id].crOpps).toBe(1);
+    expect(reads[c.id].crs).toBe(1);
+    expect(reads[b.id].flopFaced).toBe(1);
+    expect(reads[b.id].flopFolds).toBe(1);
+    expect(reads[c.id].cbetFaced).toBe(1);
+    expect(reads[c.id].cbetFolds ?? 0).toBe(0);
+    // And a player who folds to a flop bet and a 3-bet reads as one who gives up.
+    const read = readOf(reads[b.id]);
+    expect(read.foldStreet.flop).toBeGreaterThan(readOf(undefined).foldStreet.flop);
+    expect(readOf(reads[a.id]).foldThreeBet).toBeGreaterThan(readOf(undefined).foldThreeBet);
+    expect(readOf(reads[c.id]).checkRaise).toBeGreaterThan(readOf(undefined).checkRaise);
+  });
+
   it('learns how often a player bets, with no showdowns needed', () => {
     const g = createTable({ hostDeviceId: 'h', name: 'Me', emoji: '🙂', settings: DEFAULT_SETTINGS, bots: 1, code: null, now: 0 });
     const [me, bot] = g.players;

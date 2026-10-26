@@ -89,7 +89,9 @@ export type TalkEvent =
   /** Another bot just lost: the answer from across the table. */
   | 'commiserate'
   /** The first bot has greeted the table: another says hi. */
-  | 'greetBack';
+  | 'greetBack'
+  /** Won a pot with its signature hand (see `Craft.pets`). */
+  | 'signature';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -135,6 +137,7 @@ const TRASH: Lines = {
   cheer: [],
   commiserate: [],
   greetBack: [],
+  signature: [],
 };
 
 const FRIENDLY: Lines = {
@@ -179,6 +182,7 @@ const FRIENDLY: Lines = {
   cheer: [],
   commiserate: [],
   greetBack: [],
+  signature: [],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -438,6 +442,7 @@ const CHANCE: Record<TalkEvent, number> = {
   cheer: 0.8,
   commiserate: 0.8,
   greetBack: 1,
+  signature: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
@@ -465,5 +470,7 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   const i = Math.floor(rng() * lines.length);
   game.reactions = { ...game.reactions, [playerId]: { id: id(voice, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(to ? { to } : {}) } };
   game.talkAt = { ...game.talkAt, [playerId]: now };
-  return sayAndReadMs(lineBeats(lines[i], game.players.find((p) => p.id === to)?.name));
+  const ms = sayAndReadMs(lineBeats(lines[i], game.players.find((p) => p.id === to)?.name));
+  game.talkDone = { ...game.talkDone, [playerId]: now + ms };
+  return ms;
 }

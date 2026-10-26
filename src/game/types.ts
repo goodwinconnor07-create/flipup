@@ -48,6 +48,8 @@ export interface Player {
   style?: string;
   /** The code of this person's shared AI twin, if they let friends play it (checked by the table's server). Public: friends use it to know who's who. */
   twinCode?: string;
+  /** Plays in the style of a legend (see legends.ts). Public: the table shows who it is. */
+  legend?: string;
   /** Plays as an AI twin of a person. Public (the table shows an AI badge), unlike `twin`. */
   ai?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */

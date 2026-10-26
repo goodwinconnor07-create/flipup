@@ -2,7 +2,8 @@
 // fixed here (ids start "b:"), and phones can't send them: only bots say these. Lines are short so
 // they fit on one line in a seat's bubble.
 
-import { styleOf, type StyleId } from './botStyles';
+import { playerStyle, styleOf, type StyleId } from './botStyles';
+import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
 
 export type TalkEvent =
@@ -310,6 +311,11 @@ export function botLineText(lineId: string): string {
 function pool(voice: string, event: TalkEvent): string[] {
   if (voice === 'trash') return TRASH[event] ?? [];
   if (voice === 'friendly') return FRIENDLY[event] ?? [];
+  // A legend: its tone's pool, then its own lines.
+  if (voice in LEGEND_VOICES) {
+    const legend = LEGEND_VOICES[voice as LegendId];
+    return [...((legend.tone === 'trash' ? TRASH : FRIENDLY)[event] ?? []), ...(legend.lines[event] ?? [])];
+  }
   const style = voice in VOICES ? styleOf(voice as StyleId) : null;
   if (!style) return [];
   return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
@@ -364,12 +370,14 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   if (game.card) return false;
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return false;
-  const style = styleOf(player.style);
+  const style = playerStyle(player);
+  // A legend speaks in its own voice; everyone else in their style's.
+  const voice = player.legend ?? style.id;
   if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return false;
-  const lines = pool(style.id, event);
+  const lines = pool(voice, event);
   if (!lines.length) return false;
   const i = Math.floor(rng() * lines.length);
-  game.reactions = { ...game.reactions, [playerId]: { id: id(style.id, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(to ? { to } : {}) } };
+  game.reactions = { ...game.reactions, [playerId]: { id: id(voice, event, i), n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(to ? { to } : {}) } };
   game.talkAt = { ...game.talkAt, [playerId]: now };
   return true;
 }

@@ -99,3 +99,29 @@ if (MODE === 'beat') {
     console.log(script.padEnd(34), STYLES.map((s) => table[script][s].toFixed(0).padStart(9)).join(''), secs());
   }
 }
+
+if (MODE === 'legends') {
+  // Do the legends play as their numbers say, and do they rank the way the ladder says? Prints, for each,
+  // how far its play lands from its target (at six-handed tables), then heads-up results: a plain player
+  // (abc) against each, and every legend against every other (bb/100 for the row).
+  const { LEGENDS, legendBrain } = await import('../src/game/legends');
+  const brains = Object.fromEntries(LEGENDS.map((l) => [l.id, legendBrain(l)]));
+  const gaps: Record<string, number[]> = {};
+  for (const l of LEGENDS) {
+    const got = twinNumbers(heroProfile('pro', HANDS, 41, brains[l.id]), 0);
+    const want = { ...twinNumbers({ ...(await import('../src/game/twin')).emptyTwin() }, 0), ...l.numbers };
+    console.log(`${l.short.padEnd(9)} ${KEYS.map((k) => `${k} ${show(k, l.numbers[k] ?? want[k])}→${show(k, got[k])}`).join('  ')}`, secs());
+    for (const k of KEYS) if (l.numbers[k] !== undefined) (gaps[k] ??= []).push(Math.abs(got[k] - (l.numbers[k] as number)));
+  }
+  console.log('\nMean gap from target', KEYS.filter((k) => gaps[k]).map((k) => `${k} ${(gaps[k].reduce((a, b) => a + b, 0) / gaps[k].length).toFixed(3)}`).join('  '));
+
+  const hu = (a: string, b?: string) => {
+    const runs = [501, 502, 503, 504].map((seed) => simulateTable(b ? ['pro', 'pro'] : ['pro', 'abc'], HANDS * 5, seed, 100, {}, { twins: b ? { 0: brains[a], 1: brains[b] } : { 0: brains[a] } }).seats[b ? 0 : 1].bbPer100);
+    return runs.reduce((x, y) => x + y, 0) / runs.length;
+  };
+  console.log('\nA plain player (abc) against each, bb/100 for abc: the lower, the harder the legend');
+  for (const l of LEGENDS) console.log(`  rung ${l.rung} ${l.short.padEnd(9)} ${hu(l.id).toFixed(0).padStart(6)}`, secs());
+  console.log('\nHeads-up, bb/100 for the row against the column');
+  console.log(''.padEnd(10), LEGENDS.map((l) => l.short.padStart(10)).join(''));
+  for (const a of LEGENDS) console.log(a.short.padEnd(10), LEGENDS.map((b) => (a.id === b.id ? '-'.padStart(10) : hu(a.id, b.id).toFixed(0).padStart(10))).join(''), secs());
+}

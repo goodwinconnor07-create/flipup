@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { net, standings, type Game } from '../game';
-import { closeTable, dispatch, openLog, useApp } from '../state/store';
+import { closeTable, dispatch, openLog, startTwin, useApp } from '../state/store';
 import { shareText } from './sheets/InviteSheet';
 import { Avatar, chips } from '../ui/components';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
@@ -117,7 +117,7 @@ export function Final({ game }: { game: Game }) {
         {me && step >= 3 && (
           <>
             {host ? (
-              <button type="button" className="btn btn-xl btn-blue" onClick={() => dispatch({ type: 'playAgain' })}>
+              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.twinGame ? startTwin() : dispatch({ type: 'playAgain' }))}>
                 Play again{waiting > 0 ? ` · ${waiting} waiting` : ''}
               </button>
             ) : asked ? (

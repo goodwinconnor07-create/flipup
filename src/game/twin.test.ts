@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addHandToTwin, emptyTwin, heroDecisions, parseSpotKey, POST_BUCKETS, preflopTier, sanitizeTwin, spotKey, TWIN_MOVES, twinConfidence } from './twin';
+import { addHandToTwin, emptyTwin, heroDecisions, parseSpotKey, POST_BUCKETS, preflopTier, sanitizeTwin, spotKey, TWIN_MOVES, twinConfidence, twinName } from './twin';
 import { options } from './selectors';
 import { seededRng } from './cards';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
@@ -105,6 +105,14 @@ describe('twin memory', () => {
     expect(copy).toEqual(t);
     copy.spots['junk'] = [1];
     expect(Object.keys(sanitizeTwin(copy).spots)).not.toContain('junk');
+  });
+
+  it("names a twin after its person, within the ten character limit", () => {
+    expect(twinName('Kavi')).toBe('Kavi AI');
+    expect(twinName('Kavisha')).toBe('Kavisha AI');
+    expect(twinName('Alexandria')).toBe('Alexand AI');
+    expect(twinName('  Jo  ')).toBe('Jo AI');
+    expect(twinName('Alexandria AI').length).toBeLessThanOrEqual(10);
   });
 
   it('is fully confident at 300 hands', () => {

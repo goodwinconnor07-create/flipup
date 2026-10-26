@@ -14,6 +14,7 @@ export * from './protocol';
 export * from './redact';
 export * from './record';
 export * from './twin';
+export * from './twinFit';
 export * from './handText';
 export * from './reactions';
 export * from './ids';

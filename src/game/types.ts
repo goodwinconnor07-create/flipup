@@ -46,6 +46,8 @@ export interface Player {
   offline?: boolean;
   /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
   style?: string;
+  /** Plays as an AI twin of a person. Public (the table shows an AI badge), unlike `twin`. */
+  ai?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
   twin?: TwinBrain;
 }
@@ -265,6 +267,8 @@ export interface Game {
   again?: string[];
   /** How the game was dealt (blinds rise during a game), so Play again can set up the same one. */
   first?: { settings: Settings; bots: number };
+  /** A heads-up game against the player's own AI twin: "Play again" deals a new one from what the twin has learned since. */
+  twinGame?: boolean;
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */

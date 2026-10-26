@@ -112,6 +112,9 @@ export function parseSpotKey(key: string): TwinSpot | null {
   return { street: street as Street, pos: pos as TwinPosition, strength: Number(strength), facing: facing as TwinFacing, players: Number(players) as 2 | 3 | 4, role };
 }
 
+/** What a person's twin is called at the table: their name (cut to seven letters) and "AI", within the ten character limit. */
+export const twinName = (name: string) => `${name.trim().slice(0, 7).trimEnd()} AI`;
+
 // ── Reading a hand ──────────────────────────────────────────────────────────
 
 /** Chen's formula for a starting hand, as a tier from 0 (junk) to 7 (premium). */

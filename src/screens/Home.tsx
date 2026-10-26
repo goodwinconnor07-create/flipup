@@ -6,6 +6,7 @@ import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { LearnTab } from './HomeLearn';
 import { QuickGames } from './HomeQuick';
+import { TwinTiles } from './HomeTwins';
 import { BotsArt, HostArt } from './CardArt';
 import { ReviewTab, lastGameHands } from './HomeReview';
 import { colourWipe } from '../ui/effects';
@@ -179,6 +180,7 @@ export function Home() {
                     </span>
                   </button>
                 </section>
+                <TwinTiles />
                 <QuickGames />
               </>
             )}

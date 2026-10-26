@@ -350,6 +350,21 @@ html[data-theme='dark'] .pcard.dim > * {
   height: 54px;
 }
 
+/* An AI twin wears the face of the person it copies, so it carries a badge. */
+.ai-chip {
+  position: absolute;
+  bottom: 2px;
+  left: -8px;
+  z-index: 2;
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--indigo);
+  color: var(--on-color);
+  font-size: var(--fs-nano);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
 /* Whose turn it is: a gold ring. */
 .pod-ring {
   position: absolute;

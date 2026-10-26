@@ -54,6 +54,7 @@ import { JoinSheet } from './JoinSheet';
 import { StreakSheet } from './StreakSheet';
 import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
+import { TwinSheet } from './TwinSheet';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
   switch (sheet.name) {
@@ -81,6 +82,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <EmojiSheet />;
     case 'player':
       return <PlayerSheet playerId={sheet.playerId} />;
+    case 'twin':
+      return <TwinSheet />;
     case 'confirm':
       return <ConfirmSheet sheet={sheet} />;
   }

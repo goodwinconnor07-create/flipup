@@ -4,6 +4,7 @@
 import { useSyncExternalStore } from 'react';
 import {
   applyAction,
+  buildBrain,
   cleanName,
   createTable,
   cryptoRng,
@@ -13,9 +14,12 @@ import {
   normalizeCode,
   redactForDevice,
   redactLogs,
+  twinName,
+  TWIN_READY,
   type HandLog,
   type Action,
   type Game,
+  type Player,
   type ServerMessage,
   type Settings,
   type TableInfo,
@@ -26,6 +30,7 @@ import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
+import { loadTwin } from './twin';
 import {
   forgetOldScroll,
   loadDeviceId,
@@ -93,6 +98,8 @@ export type Sheet =
   | { name: 'theme' }
   | { name: 'emoji' }
   | { name: 'player'; playerId: string }
+  /** Meet your AI twin: how much it knows, and how to teach it. */
+  | { name: 'twin' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -324,19 +331,42 @@ function setSession(session: Session | null): void {
   else clearTimeout(localTimer);
 }
 
-/** A heads-up game against one bot, loaded with another style's way of playing. */
-export function startPlaystyle(bot: string, style: StyleId): void {
-  if (state.busy) return;
+/** Sits down heads-up against one bot, which `prepare` can change first (another style, or an AI twin), and deals. */
+function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Game) => void): void {
   const name = cleanName(state.profile.name);
   if (!name) return navigate({ name: 'profile', then: 'bots' });
   const settings: Settings = { ...DEFAULT_SETTINGS, turnSeconds: 0 };
-  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: [bot], code: null, now: Date.now() });
+  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: bot ? [bot] : undefined, code: null, now: Date.now() });
   const them = game.players.find((p) => p.bot);
-  if (them) them.style = style;
+  if (them) prepare(them, game);
   closeConnection();
   setSession({ mode: 'local', code: null, game });
   resetTo({ name: 'table' });
   dispatch({ type: 'start' });
+}
+
+/** A heads-up game against one bot, loaded with another style's way of playing. */
+export function startPlaystyle(bot: string, style: StyleId): void {
+  if (state.busy) return;
+  startHeadsUp(bot, (them) => {
+    them.style = style;
+  });
+}
+
+/** A heads-up game against your AI twin, built from what it has learned about you so far. Needs `TWIN_READY` hands. */
+export function startTwin(): void {
+  if (state.busy) return;
+  const memory = loadTwin();
+  if (memory.hands < TWIN_READY) return;
+  const brain = buildBrain(memory);
+  startHeadsUp(undefined, (them, game) => {
+    game.twinGame = true;
+    them.name = twinName(state.profile.name);
+    them.emoji = state.profile.emoji;
+    them.style = brain.style.id;
+    them.twin = brain;
+    them.ai = true;
+  });
 }
 
 // ── Scroll ──────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 # AI twins: plan
 
-Status: phases 1 (twin memory) and 2 (fit and copy) are built. A twin can play in the bot simulator and in tests, but no screen seats one yet (that's phase 3). Decisions below came from the product owner.
+Status: phases 1 (twin memory), 2 (fit and copy) and 3 (the "Your twin" game) are built. The Friends' twins tile is there but says "Coming soon". Decisions below came from the product owner.
 
 Two new ways to play, in an "AI twins" group on the Play tab under the Play with Friends and Play with Bots cards, above Quick games:
 
@@ -80,11 +80,13 @@ With a bigger test (`tune`, 2,400 hands per style) the fitted style alone is wit
 
 What this does and doesn't show: a bot's play depends on things the memory can't see (the board's texture, what it has read about opponents), so on bot data the copy can't beat the fitted style; it just has to avoid making it much worse. With a trust of 15 it stays within about a point of the fitted style on most numbers (raising before the flop and folding to bets are the two that slip, by under a point each), and it is better at betting when checked to and at bluffing. People's habits are tied to spots far more than a bot's, which is what the copy is for. Phase 3 should check it on real hands.
 
-### 3. The "Your twin" game
+### 3. The "Your twin" game (built)
 
-- `startTwin()` in `src/state/store.ts`, modelled on `startPlaystyle()`: a local heads-up table, the bot seat carrying the twin, no timer.
-- `redactForDevice()` strips the twin data like it does styles and reads.
-- No server needed. Chips still add up (the "keeps every chip accounted for" test gets a twin case).
+- **Play tab.** `HomeTwins.tsx` adds an "AI twins" group between the mode cards and Quick games: two tiles side by side, each a face looking into a mirror (`MirrorArt` in `CardArt.tsx`). The reflection is the same face turned round, with a gold frame, a band of light that crosses the glass once, and a small "AI" chip (a magnifier on the friends' tile). The animation stops when Animations is off.
+- **Your twin tile.** Before 50 hands the tile is quieter, its bar shows how close it is ("Play 38 more hands to meet it.") and a tap opens a short sheet (`TwinSheet.tsx`) that says what the twin is and sends you to Play with Bots to teach it. From 50 hands a tap deals you straight in. The bar then shows how well it knows you ("Still learning you · 20%", "It knows your game." at 300).
+- **The game.** `startTwin()` in `store.ts` builds a `TwinBrain` from `flipup.twin` as it is right now and seats it heads-up, using `startHeadsUp()` (shared with `startPlaystyle()`). The twin takes your face and the name `twinName()` makes from yours (seven letters of it, then " AI"). `Player.ai` is public and puts an "AI" chip on its seat; the brain itself (`Player.twin`) never leaves the phone. The table is marked `twinGame`, so "Play again" on the final screen builds a fresh twin from everything it has learned since, instead of seating a random bot.
+- **It keeps learning.** Hands against your twin count towards your twin like any other (an end-to-end test checks it grows by one per hand).
+- **Friends' twins tile.** A placeholder for phase 5: it says "Coming soon." and a tap shows a short message.
 
 ### 4. Learning from your mistakes
 

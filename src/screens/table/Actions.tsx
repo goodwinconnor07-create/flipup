@@ -1,9 +1,10 @@
 import { REPLAY_ON } from '../../train/replay';
 import { useMemo, type CSSProperties } from 'react';
-import { lastStanding, nearestStop, options, pot, raiseStops, stopAt, trackPosition, type Game, type Hand, type Player, type Seat } from '../../game';
+import { lastStanding, nearestStop, options, pot, raiseStops, type Game, type Hand, type Player, type Seat } from '../../game';
 import { dispatch, navigate, useApp } from '../../state/store';
 import { handKey, hasHand } from '../../state/training';
 import { chips } from '../../ui/components';
+import { haptic } from '../../ui/effects';
 import { CloseIcon } from '../../ui/Icons';
 
 /** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
@@ -253,9 +254,9 @@ function MyTurn({
 }
 
 /**
- * The amount and one slider. Min, half pot, pot and All in are marks along the line you can tap, and the
- * slider moves one round notch at a time. It fills the space your cards and chip counter use (they stay in
- * place underneath, hidden), so nothing else on the table moves.
+ * The amount, a slider that moves one round notch at a time (with a tick under your thumb on each one), and
+ * four big presets. It fills the space your cards and chip counter use (they stay in place underneath,
+ * hidden), so nothing else on the table moves.
  */
 export function RaiseSizer({
   game,
@@ -280,7 +281,7 @@ export function RaiseSizer({
   const potRaise = (fraction: number) => hand.currentBet + Math.round((potNow + o.toCall) * fraction);
   // Sizes that come to the same amount (a small pot next to the minimum) show once, under the name that matters most.
   const rank = ['Min', 'All in', 'Pot', '½ pot'];
-  const marks = [
+  const presets = [
     { label: 'Min', to: o.minTo },
     { label: '½ pot', to: nearestStop(stops, potRaise(0.5)) },
     { label: 'Pot', to: nearestStop(stops, potRaise(1)) },
@@ -288,46 +289,48 @@ export function RaiseSizer({
   ]
     .filter((m, i, all) => all.every((q, j) => q.to !== m.to || j === i || rank.indexOf(m.label) < rank.indexOf(q.label)))
     .sort((a, b) => a.to - b.to);
-  const anchors = marks.map((m) => m.to);
-  const pos = trackPosition(stops, anchors, to);
-  const last = Math.max(1, marks.length - 1);
+  const index = Math.max(0, stops.indexOf(to));
 
   return (
     <div className="raise-panel" role="group" aria-label={`${o.word} amount`}>
       <div className="raise-top">
         <b className="raise-amount num">{chips(to)}</b>
+        <input
+          className="raise-slider"
+          style={{ '--pos': stops.length > 1 ? index / (stops.length - 1) : 0 } as CSSProperties}
+          type="range"
+          min={0}
+          max={Math.max(1, stops.length - 1)}
+          step={1}
+          value={index}
+          disabled={stops.length < 2}
+          aria-label={`${o.word} amount`}
+          aria-valuetext={chips(to)}
+          onChange={(e) => {
+            const next = stops[Number(e.target.value)];
+            if (next === to) return;
+            haptic('light');
+            setTo(next);
+          }}
+        />
         <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
           <CloseIcon />
         </button>
       </div>
-      <div className="raise-marks">
-        {marks.map((m, i) => (
+      <div className="raise-presets">
+        {presets.map((p) => (
           <button
-            key={m.label}
+            key={p.label}
             type="button"
-            aria-label={m.label}
-            className={`preset press${m.to === to ? ' on' : ''}`}
-            style={{ '--at': marks.length > 1 ? i / last : 0 } as CSSProperties}
-            onClick={() => setTo(m.to)}
+            aria-label={p.label}
+            className={`preset press${p.to === to ? ' on' : ''}`}
+            onClick={() => setTo(p.to)}
           >
-            <b>{m.label}</b>
-            <small className="num">{chips(m.to)}</small>
+            <b>{p.label}</b>
+            <small className="num">{chips(p.to)}</small>
           </button>
         ))}
       </div>
-      <input
-        className="raise-slider"
-        style={{ '--pos': pos } as CSSProperties}
-        type="range"
-        min={0}
-        max={1000}
-        step={1}
-        value={Math.round(pos * 1000)}
-        disabled={stops.length < 2}
-        aria-label={`${o.word} amount`}
-        aria-valuetext={chips(to)}
-        onChange={(e) => setTo(stopAt(stops, anchors, Number(e.target.value) / 1000))}
-      />
     </div>
   );
 }

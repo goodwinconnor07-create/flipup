@@ -783,8 +783,7 @@ html[data-theme='dark'] .pcard.dim > * {
 .raise-panel {
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 4px;
+  gap: 6px;
   padding: 6px 8px;
   border-radius: var(--r-lg);
   background: var(--bg-2);
@@ -811,16 +810,18 @@ html:not(.no-glass) .raise-panel .icon-btn {
   }
 }
 
-/* The amount and the close button share the top row. */
+/* The top row: the amount, a slider that takes the rest of the width, and the close button. The amount has a
+   fixed width, so the slider doesn't change length as the number gets longer. */
 .raise-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
 }
 
 .raise-amount {
-  font-size: var(--fs-h1);
+  flex: none;
+  min-width: 88px;
+  font-size: var(--fs-title);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -828,36 +829,95 @@ html:not(.no-glass) .raise-panel .icon-btn {
 
 .raise-close {
   flex: none;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   background: var(--surface);
   box-shadow: none;
 }
 
-/* One slider, with the presets as marks along it. The marks are spaced evenly (--at runs 0 to 1), and each is
-   shifted left by its own share of its width, so the first sits flush left and the last flush right, with the
-   tick under it lining up with the thumb (the thumb is --thumb wide, so it travels a little less than the track). */
+/* The slider: a thick track that fills blue up to the thumb, and a big white thumb with a soft shadow, like the
+   iPhone's own. The row is tall, so there's plenty to grab; --thumb is how wide the thumb is, and the fill is
+   worked out from it so the blue always ends under the middle of the thumb. */
 .raise-panel {
-  --thumb: 28px;
+  --thumb: 34px;
 }
 
-.raise-marks {
-  position: relative;
-  height: 40px;
+.raise-slider {
+  --fill: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--pos, 0));
+  -webkit-appearance: none;
+  appearance: none;
+  flex: 1;
+  min-width: 0;
+  height: 48px;
+  margin: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: pan-y;
+}
+
+.raise-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
+}
+
+.raise-slider::-moz-range-track {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
+}
+
+.raise-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--thumb);
+  height: var(--thumb);
+  margin-top: calc((10px - var(--thumb)) / 2);
+  border: 0;
+  border-radius: 50%;
+  background: var(--on-color);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.raise-slider::-moz-range-thumb {
+  box-sizing: border-box;
+  width: var(--thumb);
+  height: var(--thumb);
+  border: 0;
+  border-radius: 50%;
+  background: var(--on-color);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.raise-slider:active::-webkit-slider-thumb {
+  transform: scale(1.08);
+}
+
+.raise-slider:disabled {
+  opacity: 0.5;
+}
+
+/* The presets take all the height that's left, so they're as big as the box allows. Each has an outline, so the
+   boxes read apart from each other and from the panel. */
+.raise-presets {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 8px;
 }
 
 .preset {
-  position: absolute;
-  top: 0;
-  left: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--at, 0));
-  transform: translateX(calc(var(--at, 0) * -100%));
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1px;
-  height: 100%;
-  padding: 0 8px;
+  gap: 2px;
+  padding: 4px;
   border: 1.5px solid var(--ink-4);
   border-radius: var(--r-md);
   background: var(--surface);
@@ -865,15 +925,13 @@ html:not(.no-glass) .raise-panel .icon-btn {
 }
 
 .preset b {
-  font-size: var(--fs-body);
+  font-size: var(--fs-h3);
   font-weight: 700;
-  line-height: 1.1;
 }
 
 .preset small {
-  font-size: var(--fs-caption);
+  font-size: var(--fs-small);
   font-weight: 600;
-  line-height: 1.1;
   color: var(--ink-3);
 }
 
@@ -885,54 +943,6 @@ html:not(.no-glass) .raise-panel .icon-btn {
 
 .preset.on small {
   color: var(--on-color);
-}
-
-.raise-slider {
-  --fill: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--pos, 0));
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  height: 32px;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-}
-
-.raise-slider::-webkit-slider-runnable-track {
-  height: 8px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
-}
-
-.raise-slider::-moz-range-track {
-  height: 8px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
-}
-
-.raise-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: var(--thumb);
-  height: var(--thumb);
-  margin-top: calc((8px - var(--thumb)) / 2);
-  border: 1.5px solid var(--ink-4);
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.raise-slider::-moz-range-thumb {
-  box-sizing: border-box;
-  width: var(--thumb);
-  height: var(--thumb);
-  border: 1.5px solid var(--ink-4);
-  border-radius: 50%;
-  background: var(--surface);
-  box-shadow: var(--shadow-sm);
-}
-
-.raise-slider:disabled {
-  opacity: 0.5;
 }
 
 /* ── You ─────────────────────────────────────────────────────────────────── */

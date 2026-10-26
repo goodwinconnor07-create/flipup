@@ -434,8 +434,9 @@
     box-shadow: var(--shadow-soft);
   }
 
-  .raise-marks {
-    height: 48px;
+  .raise-presets {
+    flex: none;
+    min-height: 72px;
   }
 
   /* ── Side panel ───────────────────────────────────────────────────────── */

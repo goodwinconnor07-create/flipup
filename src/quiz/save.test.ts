@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { KEEP_MS, loadBank, loadRecent, recordPlayed, removeBanked, renameBanked, saveToBank, type PlayedQuiz } from './save';
+import { KEEP_MS, loadBank, loadRecent, recordPlayed, removeBanked, renameBanked, restoreBanked, saveToBank, type PlayedQuiz } from './save';
 
 // A tiny localStorage for the node test environment.
 const store = new Map<string, string>();
@@ -43,6 +43,17 @@ describe('study bank', () => {
     expect(loadBank().map((h) => h.name)).toEqual(['Two', 'Uno']);
     removeBanked('b');
     expect(loadBank().map((h) => h.id)).toEqual(['a']);
+  });
+
+  it('puts a deleted hand back where it was', () => {
+    saveToBank(hand('a', 1), 'One', 1);
+    saveToBank(hand('b', 2), 'Two', 2);
+    saveToBank(hand('c', 3), 'Three', 3);
+    const [, middle] = loadBank();
+    removeBanked(middle.id);
+    expect(loadBank().map((h) => h.id)).toEqual(['c', 'a']);
+    restoreBanked(middle, 1);
+    expect(loadBank().map((h) => h.id)).toEqual(['c', 'b', 'a']);
   });
 
   it('saving again replaces the old entry', () => {

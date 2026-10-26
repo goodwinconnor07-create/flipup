@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { bestTwin, loadFriends, refreshStale, type Friend } from '../../state/friends';
+import { bestTwin, FRIENDS_CHANGED, loadFriends, refreshStale, type Friend } from '../../state/friends';
 import { loadShare, startSharing } from '../../state/share';
 import { back, navigate, openSheet, toast } from '../../state/store';
 import { CoachSays } from '../../train/Coach';
@@ -24,6 +24,9 @@ export function Friends() {
   // Look at everyone again when this opens, so their twins are up to date.
   useEffect(() => {
     void refreshStale().then(() => setFriends(loadFriends()));
+    const reload = () => setFriends(loadFriends());
+    window.addEventListener(FRIENDS_CHANGED, reload);
+    return () => window.removeEventListener(FRIENDS_CHANGED, reload);
   }, []);
 
   const turnOn = async () => {

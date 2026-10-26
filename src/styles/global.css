@@ -902,6 +902,26 @@ body:has(.sheet-backdrop) .toasts {
   font-size: var(--fs-lead);
   box-shadow: var(--shadow);
   animation: toast-in 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+/* The toasts sit in a layer that ignores taps; the Undo button answers to them. */
+.toast-undo {
+  pointer-events: auto;
+  flex: none;
+  min-width: var(--tap);
+  min-height: var(--tap);
+  margin: -12px -12px -12px 0;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--r-sm);
+  corner-shape: squircle;
+  background: none;
+  color: var(--bubble-blue-hi);
+  font-size: var(--fs-lead);
+  font-weight: 600;
 }
 
 .toast.error {

@@ -128,6 +128,8 @@ export interface Toast {
   id: number;
   text: string;
   kind: 'info' | 'error' | 'success';
+  /** Takes back what was just done; the toast then shows an Undo button. */
+  undo?: () => void;
 }
 
 export interface AppState {
@@ -322,10 +324,26 @@ export function confirm(opts: Omit<Extract<Sheet, { name: 'confirm' }>, 'name'>)
 
 let toastSeq = 0;
 
+function showToast(t: Omit<Toast, 'id'>, ms: number): void {
+  const shown: Toast = { id: ++toastSeq, ...t };
+  set({ toasts: [...state.toasts.slice(-2), shown] });
+  setTimeout(() => dismissToast(shown.id), ms);
+}
+
+export function dismissToast(id: number): void {
+  if (state.toasts.some((x) => x.id === id)) set({ toasts: state.toasts.filter((x) => x.id !== id) });
+}
+
 export function toast(text: string, kind: Toast['kind'] = 'info'): void {
-  const t: Toast = { id: ++toastSeq, text, kind };
-  set({ toasts: [...state.toasts.slice(-2), t] });
-  setTimeout(() => set({ toasts: state.toasts.filter((x) => x.id !== t.id) }), kind === 'error' ? 4000 : 2600);
+  showToast({ text, kind }, kind === 'error' ? 4000 : 2600);
+}
+
+/**
+ * For something reversible: do it straight away, then say so with an Undo button for seven seconds, instead of
+ * asking first. Only the toast's own button runs `undo`, and only once.
+ */
+export function undoToast(text: string, undo: () => void, ms = 7000): void {
+  showToast({ text, kind: 'info', undo }, ms);
 }
 
 // ── Profile ─────────────────────────────────────────────────────────────────

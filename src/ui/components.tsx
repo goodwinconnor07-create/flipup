@@ -12,7 +12,7 @@ import {
   type Card,
   type Position,
 } from '../game';
-import { back, closeSheet, useApp } from '../state/store';
+import { back, closeSheet, dismissToast, useApp } from '../state/store';
 import { haptic, reducedMotion } from './effects';
 import { BackIcon, CloseIcon, PencilIcon } from './Icons';
 
@@ -366,7 +366,20 @@ export function Toasts() {
     <div className="toasts" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className={`toast ${t.kind}`}>
-          {t.text}
+          <span>{t.text}</span>
+          {t.undo && (
+            <button
+              type="button"
+              className="toast-undo press"
+              onClick={() => {
+                haptic('light');
+                dismissToast(t.id);
+                t.undo?.();
+              }}
+            >
+              Undo
+            </button>
+          )}
         </div>
       ))}
     </div>

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { addObservedHand, emptyTwin, twinNumbers, type HandRecord, type Move, type Street } from '../game';
-import { addFriendByCode, bestTwin, loadFriend, loadFriends, notePlayed, observeHand, refreshFriend, removeFriend, type Friend } from './friends';
+import { addFriendByCode, bestTwin, loadFriend, loadFriends, notePlayed, observeHand, refreshFriend, removeFriend, restoreFriend, type Friend } from './friends';
 
 const storage = new Map<string, string>();
 (globalThis as { localStorage?: unknown }).localStorage = { getItem: (k: string) => storage.get(k) ?? null, setItem: (k: string, v: string) => storage.set(k, v), removeItem: (k: string) => storage.delete(k) };
@@ -77,6 +77,16 @@ describe('the friends list', () => {
     expect(loadFriends()).toEqual([]);
     observeHand(hands(2, 1)[0], 't#2', 'me');
     expect(loadFriends()).toEqual([]);
+  });
+
+  it('puts a removed friend back, with their history, and tables can add them again', () => {
+    vi.stubGlobal('fetch', async () => new Response('{}', { status: 404 }));
+    observeHand(hands(1, 3)[0], 't#1', 'me');
+    const gone = removeFriend('BCDFG')!;
+    expect(loadFriends()).toEqual([]);
+    restoreFriend(gone);
+    expect(loadFriend('BCDFG')).toEqual(gone);
+    expect(removeFriend('NOPEE')).toBeNull();
   });
 
   it('adds a friend by their code, keeps what you saw of them, and marks a code that has stopped working', async () => {

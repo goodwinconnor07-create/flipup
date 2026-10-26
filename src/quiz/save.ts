@@ -104,4 +104,12 @@ export function removeBanked(id: string): BankHand[] {
   return next;
 }
 
+/** Puts a deleted hand back where it was in the list. */
+export function restoreBanked(hand: BankHand, index: number): BankHand[] {
+  const rest = loadBank().filter((h) => h.id !== hand.id);
+  const next = [...rest.slice(0, index), hand, ...rest.slice(index)];
+  write(BANK, next);
+  return next;
+}
+
 export const isBanked = (id: string) => loadBank().some((h) => h.id === id);

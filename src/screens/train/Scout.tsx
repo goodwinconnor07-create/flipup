@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { back, confirm, navigate, startFriendTwin, toast } from '../../state/store';
-import { bestTwin, loadFriend, refreshFriend, removeFriend } from '../../state/friends';
+import { back, navigate, startFriendTwin, undoToast } from '../../state/store';
+import { bestTwin, loadFriend, refreshFriend, removeFriend, restoreFriend } from '../../state/friends';
 import { loadTwinGames } from '../../state/twinGames';
 import { CoachSays } from '../../train/Coach';
 import { scoutLines } from '../../train/coach';
@@ -76,19 +76,12 @@ export function Scout({ code }: { code: string }) {
         <button
           type="button"
           className="btn btn-link"
-          onClick={() =>
-            confirm({
-              title: `Remove ${friend.name}?`,
-              body: "Their twin goes from this phone. It comes back if you add their code again.",
-              confirm: 'Remove',
-              danger: true,
-              onConfirm: () => {
-                removeFriend(code);
-                toast(`${friend.name} removed.`);
-                back();
-              },
-            })
-          }
+          onClick={() => {
+            // Gone at once; the toast on the list brings them back.
+            const removed = removeFriend(code);
+            back();
+            if (removed) undoToast(`${removed.name} removed`, () => restoreFriend(removed));
+          }}
         >
           Remove {friend.name}
         </button>

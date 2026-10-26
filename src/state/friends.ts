@@ -101,9 +101,22 @@ export async function refreshStale(now = Date.now()): Promise<void> {
   }
 }
 
-export function removeFriend(code: string): void {
+/** Takes a friend off this phone and returns them, so the removal can be undone. */
+export function removeFriend(code: string): Friend | null {
+  const friend = loadFriend(code);
   save(loadFriends().filter((f) => f.code !== code));
   write(REMOVED, [...removedCodes().filter((c) => c !== code), code].slice(-40));
+  return friend;
+}
+
+/** Fired when a friend is put back, so a list that's open on screen reads them again. */
+export const FRIENDS_CHANGED = 'flipup:friends';
+
+/** Puts back a friend that removeFriend took off (and lets tables add them again). */
+export function restoreFriend(friend: Friend): void {
+  put(friend);
+  write(REMOVED, removedCodes().filter((c) => c !== friend.code));
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(FRIENDS_CHANGED));
 }
 
 /** One more game played against a friend's twin. */

@@ -3,8 +3,8 @@
 
 import { useEffect, useState } from 'react';
 import type { Colour } from '../../gto/types';
-import { loadBank, loadRecent, removeBanked, renameBanked, saveToBank, type BankHand, type PlayedQuiz } from '../../quiz/save';
-import { navigate, toast } from '../../state/store';
+import { loadBank, loadRecent, removeBanked, renameBanked, restoreBanked, saveToBank, type BankHand, type PlayedQuiz } from '../../quiz/save';
+import { navigate, toast, undoToast } from '../../state/store';
 import { CoachSays } from '../../train/Coach';
 import { Dots, MiniCards } from '../../train/widgets';
 
@@ -28,6 +28,13 @@ export function StudyBank() {
   const [name, setName] = useState('');
   const banked = new Set(bank.map((h) => h.id));
   const unsaved = recent.filter((h) => !banked.has(h.id));
+
+  // No "are you sure": it goes at once, and the toast can bring it back.
+  const del = (h: BankHand) => {
+    const index = bank.findIndex((b) => b.id === h.id);
+    setBank(removeBanked(h.id));
+    undoToast(`Deleted "${h.name}"`, () => setBank(restoreBanked(h, Math.max(0, index))));
+  };
 
   const edit = (h: PlayedQuiz & { name?: string }) => {
     setEditing(h.id);
@@ -88,7 +95,7 @@ export function StudyBank() {
                 nameForm(h)
               ) : (
                 <div className="sb-actions">
-                  <button type="button" className="btn btn-link danger" onClick={() => setBank(removeBanked(h.id))}>
+                  <button type="button" className="btn btn-link danger" onClick={() => del(h)}>
                     Delete
                   </button>
                   <button type="button" className="btn btn-link" onClick={() => edit(h)}>

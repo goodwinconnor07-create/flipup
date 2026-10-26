@@ -275,6 +275,8 @@ export interface Game {
   twinGame?: boolean;
   /** With `twinGame`: the twin is a friend's, whose twin code this is. */
   friendTwin?: string;
+  /** A heads-up game against a legend (their id): "Play again" sits down against them again. */
+  legendGame?: string;
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */

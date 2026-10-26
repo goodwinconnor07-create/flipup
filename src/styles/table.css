@@ -365,6 +365,12 @@ html[data-theme='dark'] .pcard.dim > * {
   line-height: 1.4;
 }
 
+/* A legend's seat: a gold star where an AI twin has its chip. */
+.legend-chip {
+  background: var(--gold);
+  color: var(--gold-ink-2);
+}
+
 /* Whose turn it is: a gold ring. */
 .pod-ring {
   position: absolute;

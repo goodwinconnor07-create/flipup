@@ -1,8 +1,8 @@
 # Legends
 
-Bots in the style of famous poker players, for a ladder of heads-up games. Stage 1 (the data, the fit,
-the voices and the lab checks) is built. The Play tab group, profile pages and the ladder are stages 2
-to 4, below.
+Bots in the style of famous poker players, for a ladder of heads-up games. Stages 1 to 3 (the data, the
+fit, the voices and the lab checks; the Play tab group, profile pages and heads-up play; the touches that
+make each one feel like themselves) are built. The ladder that unlocks is stage 4, below.
 
 ## Decisions
 
@@ -48,10 +48,31 @@ its numbers, then plays heads-up.
 - **Heads-up against each other** (row against column, bb/100): Dwan beats all four (64, −12, 87, 102), Ivey comes out roughly even with the field, and Brunson and Hellmuth lose most. So the ladder follows what was measured: Brunson, Hellmuth, Negreanu, Ivey, Dwan. Ivey is the hardest for a plain player and Dwan the hardest against the other legends. Two rounds of making Dwan looser and wilder didn't move that, so it's left as measured.
 - Tests (`legends.test.ts`): five distinct people and faces (none share a face or name with the forty bots), numbers read back from the counts, habits laid over the fit, every line short and spoken from its own voice, a legend's seat never sends its brain or style to a phone, and a legend decides from its own cards only while chips always add up.
 
+## In the app (stages 2 and 3)
+
+- **Play tab.** A "Legends" shelf under AI twins (`HomeLegends.tsx`): one card each, easiest first, on a
+  backdrop that suits them (`LEGEND_SCENES` in `botScenes.ts`: colours and three emoji props, like the
+  quick-game tiles) with their difficulty in a word (`RUNG_WORDS`: Warm-up, Easy, Tricky, Hard, Boss).
+- **Profile** (`train/Legend.tsx`, route `legend`): their backdrop and five dots for how hard they are, a
+  line on how they play, three things they're known for (`Legend.signature`), "How to beat them" (the same
+  scouting a friend's twin gets, from their numbers, with a lower bar for what counts as standing out;
+  Ivey has no habit to aim at and the page says so), a Play button and the note.
+- **Play.** `startLegend()` sits you heads-up against a bot seat dressed by `dressAsLegend()`. The game
+  carries `Game.legendGame`, so Play again on the final screen sits you down against the same legend again.
+  Hands against a legend count towards your own twin like any other, and the game goes in Insights with
+  their name. For now every legend is open: locking comes with the ladder.
+- **Seat.** A gold star chip where a twin has "AI" (`Player.legend`, public), and "a legend" in the seat's
+  accessible name.
+- **Talk.** Each legend has about 40 lines. A second pass added the moments the first left quiet (watching
+  someone else's all-in, a pot they weren't in, being bluffed, a reply), after the first lines so earlier
+  line ids keep their meaning (tested).
+- End to end: `legends.spec.ts` (the shelf in ladder order, a profile, sitting down against one, the star
+  on its seat).
+
 ## Stages
 
 1. Data, fit, voices and lab checks. **Built.**
-2. Play tab "Legends" group under AI twins, one card each on a themed emoji backdrop, a profile page (how they play, difficulty, the note, Study and Play), heads-up play.
-3. Signature touches: art, a seat badge, and more table talk.
+2. Play tab "Legends" group, profile page, heads-up play. **Built.**
+3. Backdrops, seat star, signature lines and more table talk. **Built.**
 4. The ladder: beat one to open the next, badges stored on the phone, results in Insights, and the coach reviewing each game like the twin report.
 5. Later: a full-table "legends night", more legends.

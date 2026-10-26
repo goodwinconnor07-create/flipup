@@ -4,7 +4,7 @@ import { botLineText } from './botTalk';
 import { decide } from './botPlay';
 import { seededRng } from './cards';
 import { isEmoji } from './emoji';
-import { dressAsLegend, LEGEND_IDS, LEGEND_NOTE, LEGENDS, legendBrain, legendById, legendProfile, legendStyle } from './legends';
+import { dressAsLegend, LEGEND_IDS, RUNG_WORDS, LEGEND_NOTE, LEGENDS, legendBrain, legendById, legendProfile, legendStyle } from './legends';
 import { LEGEND_VOICES } from './legendTalk';
 import { redactForDevice } from './redact';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
@@ -61,7 +61,7 @@ describe('the legends', () => {
     for (const id of LEGEND_IDS) {
       const voice = LEGEND_VOICES[id];
       const all = Object.entries(voice.lines).flatMap(([event, lines]) => (lines ?? []).map((text, i) => ({ event, i, text })));
-      expect(all.length).toBeGreaterThan(25);
+      expect(all.length).toBeGreaterThan(40);
       for (const { event, i, text } of all) {
         expect(text.length, `${id} ${event} ${text}`).toBeLessThanOrEqual(42);
         // Spoken as "b:<legend>:<event>:<index>", after the tone's own lines.
@@ -70,6 +70,25 @@ describe('the legends', () => {
         expect(i).toBeGreaterThanOrEqual(0);
       }
       expect(voice.lines.hello?.some((t) => t.includes('{you}'))).toBe(true);
+    }
+  });
+
+  it('keep the first lines where they were when new ones are added, and speak in moments the first pass left quiet', () => {
+    // Line ids are indexes into the tone's lines and then the legend's own, which only grow at the end.
+    for (const id of LEGEND_IDS) {
+      const own = LEGEND_VOICES[id].lines.thinkEasy!;
+      let total = 0;
+      while (botLineText(`b:${id}:thinkEasy:${total}`)) total++;
+      expect(botLineText(`b:${id}:thinkEasy:${total - own.length}`)).toBe(own[0]);
+      expect(botLineText(`b:${id}:thinkEasy:${total - 1}`)).toBe(own[own.length - 1]);
+    }
+    for (const id of LEGEND_IDS) for (const event of ['sweatWatch', 'watched', 'gotBluffed', 'reply'] as const) expect(LEGEND_VOICES[id].lines[event]?.length, `${id} ${event}`).toBeGreaterThanOrEqual(1);
+  });
+
+  it('give each a profile: three things they are known for, a backdrop and a word for how hard they are', () => {
+    for (const l of LEGENDS) {
+      expect(l.signature).toHaveLength(3);
+      expect(RUNG_WORDS[l.rung - 1]).toBeTruthy();
     }
   });
 

@@ -76,7 +76,7 @@ export function confidenceWord(hands: number): string {
 }
 
 /** What they do that stands out, biggest first, each with a plan. Empty when nothing does. */
-export function scout(twin: TwinProfile, max = 4): ScoutNote[] {
+export function scout(twin: TwinProfile, max = 4, minWeight = 0.5): ScoutNote[] {
   const out: ScoutNote[] = [];
   for (const rule of RULES) {
     const r = rule.read(twin);
@@ -87,7 +87,7 @@ export function scout(twin: TwinProfile, max = 4): ScoutNote[] {
     const take = TAKES[rule.id]?.[high ? 'high' : 'low'];
     if (!take || (!high && value >= lo)) continue;
     const weight = (high ? value - hi : lo - value) / rule.scale;
-    if (weight < 0.5) continue;
+    if (weight < minWeight) continue;
     out.push({ id: rule.id, say: take.say(pct(value)), plan: take.plan, kind: take.kind, numbers: `${pct(value)} of ${r.of} ${rule.what}. Most players land between ${pct(lo)} and ${pct(hi)}.`, weight });
   }
   const means = sizeMeans(twin);

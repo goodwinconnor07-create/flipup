@@ -26,6 +26,8 @@ export interface Legend {
   rung: number;
   /** One line on how they play, in plain words. */
   blurb: string;
+  /** Three things they're known for, in plain words, for their profile. */
+  signature: string[];
   /** How they play, as the numbers a twin keeps. Anything left out is a typical player's. */
   numbers: Partial<TwinNumbers>;
   /** The habits they're known for, laid over the fitted style. */
@@ -45,6 +47,7 @@ export const LEGENDS: Legend[] = [
     emoji: '🎩',
     rung: 1,
     blurb: 'Old-school and aggressive. Bets big, plays fast, and is happy to put the whole stack in.',
+    signature: ['Bets big: three quarters of the pot or more', 'Plays fast and shoves readily', 'Calls loosely, so he pays off a strong hand'],
     numbers: { vpip: 0.31, pfr: 0.23, limp: 0.03, open: 3.5, threeBet: 0.1, foldToRaise: 0.6, foldToBet: 0.36, betFreq: 0.5, cbet: 0.7, bluff: 0.3, aggression: 0.68, showdown: 0.3 },
     habits: {
       post: { sizes: [0.75, 1, 1.5], sense: 0.55, gto: 0.05, tell: 0.3, wobble: 0.11, chase: 0.15, pairs: 0.1 },
@@ -63,6 +66,7 @@ export const LEGENDS: Legend[] = [
     emoji: '🧐',
     rung: 2,
     blurb: 'Plays very few hands and waits for the best of them. Folds a lot, says so, and comes apart when he gets outdrawn.',
+    signature: ['Folds most hands before the flop', 'Tilts after a bad beat, and plays worse', 'Shows you the good hand he folded'],
     numbers: { vpip: 0.17, pfr: 0.11, limp: 0.03, open: 3, threeBet: 0.05, foldToRaise: 0.78, foldToBet: 0.52, betFreq: 0.36, cbet: 0.55, bluff: 0.14, aggression: 0.48, showdown: 0.3 },
     habits: {
       post: { sense: 0.5, gto: 0.05, wobble: 0.12, scared: 0.8, sticky: -0.12, tell: 0.5, raise: -0.1, bet: -0.04 },
@@ -80,6 +84,7 @@ export const LEGENDS: Legend[] = [
     emoji: '😄',
     rung: 3,
     blurb: 'Small bets, wide calls and a lot of reading. Talks all the time, and folds when his read says so.',
+    signature: ['Bets small: a quarter to a half of the pot', 'Calls wide, and folds when his read says so', 'Talks all the time, and adjusts to how you play'],
     numbers: { vpip: 0.3, pfr: 0.17, limp: 0.06, open: 2.3, threeBet: 0.07, foldToRaise: 0.62, foldToBet: 0.44, betFreq: 0.46, cbet: 0.56, bluff: 0.26, aggression: 0.45, showdown: 0.33 },
     habits: {
       post: { sizes: [0.25, 0.4, 0.6], sense: 1, gto: 0.3, tell: 0, wobble: 0.045, trap: 0.15, value: 0.03, raise: -0.03 },
@@ -97,6 +102,7 @@ export const LEGENDS: Legend[] = [
     emoji: '🕶️',
     rung: 4,
     blurb: 'Close to flawless. Balanced, patient and quick to adjust, with no obvious leak to aim at.',
+    signature: ['Balanced, with few habits to aim at', 'Adjusts quickly to what you do', 'Quiet, and rarely tilts'],
     numbers: { vpip: 0.3, pfr: 0.23, limp: 0.02, open: 2.5, threeBet: 0.13, foldToRaise: 0.66, foldToBet: 0.42, betFreq: 0.5, cbet: 0.62, bluff: 0.33, aggression: 0.6, showdown: 0.3 },
     habits: {
       post: { sizes: [0.33, 0.75, 1.25], sense: 1, gto: 0.15, tell: 0, wobble: 0.035, trap: 0.15, value: 0.04, bluff: 0.03, raise: 0.04, bet: 0.02 },
@@ -115,6 +121,7 @@ export const LEGENDS: Legend[] = [
     emoji: '🎲',
     rung: 5,
     blurb: 'Loose and relentless. Plays lots of hands, bets again and again, and is very hard to put on a hand.',
+    signature: ['Plays a lot of hands and raises most of them', 'Bets again on the turn and the river', 'Uses many bet sizes, so a size tells you little'],
     numbers: { vpip: 0.38, pfr: 0.27, limp: 0.03, open: 3, threeBet: 0.14, foldToRaise: 0.55, foldToBet: 0.4, betFreq: 0.53, cbet: 0.66, bluff: 0.36, aggression: 0.7, showdown: 0.3 },
     habits: {
       post: { sizes: [0.5, 0.75, 1.25, 2], sense: 0.55, gto: 0.05, tell: 0.15, wobble: 0.13, bluff: 0.02, scared: 0.3 },
@@ -127,6 +134,9 @@ export const LEGENDS: Legend[] = [
     },
   },
 ];
+
+/** How hard each rung is, in a word. */
+export const RUNG_WORDS = ['Warm-up', 'Easy', 'Tricky', 'Hard', 'Boss'] as const;
 
 export const legendById = (id: string): Legend | undefined => LEGENDS.find((l) => l.id === id);
 

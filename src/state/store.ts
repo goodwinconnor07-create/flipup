@@ -13,6 +13,8 @@ import {
   newId,
   normalizeCode,
   redactForDevice,
+  dressAsLegend,
+  legendById,
   redactLogs,
   twinName,
   TWIN_READY,
@@ -86,7 +88,9 @@ export type Route =
   | { name: 'twinReport'; friend?: string }
   /** Friends' AI twins: the list, and scouting one. */
   | { name: 'friends' }
-  | { name: 'scout'; code: string };
+  | { name: 'scout'; code: string }
+  /** A legend's profile: how they play, and a game against them. */
+  | { name: 'legend'; id: string };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 
@@ -386,6 +390,18 @@ export function startTwin(): void {
   });
 }
 
+/** A heads-up game against a legend: a bot seat dressed as them. */
+export function startLegend(id: string): void {
+  if (state.busy) return;
+  const legend = legendById(id);
+  if (!legend) return;
+  if (state.game?.legendGame) recordFinished();
+  startHeadsUp(undefined, (them, game) => {
+    game.legendGame = legend.id;
+    dressAsLegend(them, legend);
+  });
+}
+
 /** A heads-up game against a friend's AI twin, from the twin they share or what you've seen of them. */
 export function startFriendTwin(code: string): void {
   if (state.busy) return;
@@ -656,7 +672,7 @@ function recordFinished(): void {
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}) }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}), ...(game.legendGame ? { legend: game.legendGame } : {}) }],
   });
   if (game.twinGame) finishTwinGame(game.id, place);
 }

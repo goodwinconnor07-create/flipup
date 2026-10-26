@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { net, standings, type Game } from '../game';
-import { closeTable, dispatch, openLog, startFriendTwin, startTwin, useApp } from '../state/store';
+import { closeTable, dispatch, openLog, startFriendTwin, startLegend, startTwin, useApp } from '../state/store';
 import { shareText } from './sheets/InviteSheet';
 import { Avatar, chips } from '../ui/components';
 import { openFriendReport, openTwinReport } from './train/TwinReport';
@@ -118,7 +118,7 @@ export function Final({ game }: { game: Game }) {
         {me && step >= 3 && (
           <>
             {host ? (
-              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.friendTwin ? startFriendTwin(game.friendTwin) : game.twinGame ? startTwin() : dispatch({ type: 'playAgain' }))}>
+              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.legendGame ? startLegend(game.legendGame) : game.friendTwin ? startFriendTwin(game.friendTwin) : game.twinGame ? startTwin() : dispatch({ type: 'playAgain' }))}>
                 Play again{waiting > 0 ? ` · ${waiting} waiting` : ''}
               </button>
             ) : asked ? (

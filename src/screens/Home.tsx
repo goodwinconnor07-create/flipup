@@ -7,6 +7,7 @@ import { Avatar } from '../ui/components';
 import { LearnTab } from './HomeLearn';
 import { QuickGames } from './HomeQuick';
 import { TwinTiles } from './HomeTwins';
+import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
 import { ReviewTab, lastGameHands } from './HomeReview';
 import { colourWipe } from '../ui/effects';
@@ -181,6 +182,7 @@ export function Home() {
                   </button>
                 </section>
                 <TwinTiles />
+                <LegendShelf />
                 <QuickGames />
               </>
             )}

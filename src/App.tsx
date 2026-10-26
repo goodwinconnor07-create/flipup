@@ -16,6 +16,7 @@ import { ScrollScenarios } from './screens/train/ScrollScenarios';
 import { TwinReport } from './screens/train/TwinReport';
 import { Friends } from './screens/train/Friends';
 import { Scout } from './screens/train/Scout';
+import { Legend } from './screens/train/Legend';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
@@ -71,6 +72,9 @@ export function App() {
       break;
     case 'scout':
       screen = <Scout key={route.code} code={route.code} />;
+      break;
+    case 'legend':
+      screen = <Legend key={route.id} id={route.id} />;
       break;
   }
 

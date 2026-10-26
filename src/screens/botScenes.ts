@@ -54,3 +54,12 @@ const SCENES: Record<string, Scene> = {
 const FALLBACK: Scene = { bg: ['#d9e4ff', '#8fa8e8'], props: ['✨', '⭐', '☁️'] };
 
 export const sceneFor = (emoji: string): Scene => SCENES[emoji] ?? FALLBACK;
+
+/** A legend's backdrop on their card and profile: colours and props that suit how they're known to play. */
+export const LEGEND_SCENES: Record<string, Scene> = {
+  brunson: { bg: ['#ffd9a0', '#c9742f'], props: ['🌵', '🐎', '☀️'] },
+  hellmuth: { bg: ['#d6c7ff', '#5b3bd1'], props: ['⏳', '🧣', '💢'] },
+  negreanu: { bg: ['#ffe39a', '#ff8f3d'], props: ['💬', '🍁', '🎤'] },
+  ivey: { bg: ['#4a4a62', '#0b0b12'], props: ['♠️', '🌙', '💎'] },
+  dwan: { bg: ['#7bf0ff', '#6a3bff'], props: ['🎲', '⚡', '💥'] },
+};

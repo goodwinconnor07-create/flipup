@@ -161,3 +161,69 @@ export const LEGEND_VOICES: Record<LegendId, LegendVoice> = {
     },
   },
 };
+
+// More lines, added after the first ones so earlier line ids keep meaning the same thing: the moments
+// the first pass left quiet (watching someone else's all-in, a pot they weren't in, being bluffed, a quick
+// reply) and a few more for the common ones, so a long game doesn't repeat itself.
+const MORE: Record<LegendId, Partial<Record<TalkEvent, string[]>>> = {
+  hellmuth: {
+    sweatWatch: ['Show me the nuts.', 'Somebody has it.'],
+    watched: ['I folded better.', 'Glad I’m out of that.'],
+    gotBluffed: ['Nobody bluffs me. Hm.', 'That was a bluff?'],
+    reply: ['Quiet. I’m thinking.', 'Careful what you say.'],
+    thinkEasy: ['Obvious fold.', 'Not today.'],
+    win: ['Predictable.', 'The patient win.'],
+    bluffCaught: ['I wasn’t bluffing. Was I?'],
+    showStrong: ['Look. The real thing.'],
+    bigWin: ['That’s what waiting is for.'],
+  },
+  brunson: {
+    sweatWatch: ['Let’s see who’s right.', 'Big pot over there.'],
+    watched: ['Fine pot, that.', 'I’d have bet it bigger.'],
+    gotBluffed: ['Well, I’ll be.', 'You got me that time.'],
+    reply: ['You talk like a rookie.', 'Go on, friend.'],
+    thinkEasy: ['No trouble.', 'Straight ahead.'],
+    win: ['Another one in the bank.', 'That’ll do.'],
+    bluffCaught: ['Can’t win them all.', 'Nice call, that.'],
+    showStrong: ['Cards don’t lie.'],
+    sweatWin: ['Told you.'],
+  },
+  negreanu: {
+    sweatWatch: ['I want to see these!', 'Who do you think has it?'],
+    watched: ['Great hand to watch.', 'I had a read on that one.'],
+    gotBluffed: ['I knew it. Folded anyway.', 'Nice bluff. Seriously.'],
+    reply: ['Ha! Good point.', 'Tell me more.'],
+    thinkEasy: ['Pretty easy.', 'That one’s clear.'],
+    win: ['Small pot, big smile.', 'Little by little.'],
+    bluffCaught: ['You called! What did you see?'],
+    showStrong: ['Look at that!', 'I really had it.'],
+    sweatWin: ['Yes! Thank you.'],
+  },
+  dwan: {
+    sweatWatch: ['Run it twice?', 'Put it all in, then.'],
+    watched: ['I’d have bluffed that.', 'Boring pot.'],
+    gotBluffed: ['Nice. I fold way too much.', 'Okay, you got me.'],
+    reply: ['Cute.', 'Say that again.'],
+    thinkEasy: ['Raise. Obviously.', 'Easy spot.'],
+    win: ['Again?', 'Next.'],
+    bluffCaught: ['Had to try.', 'Still +EV.'],
+    showStrong: ['Surprise. I had it.'],
+    sweatWin: ['Never in doubt.'],
+  },
+  ivey: {
+    sweatWatch: ['…', 'Interesting.'],
+    watched: ['Hm.', 'Fine hand.'],
+    gotBluffed: ['Good play.', 'I see.'],
+    reply: ['Okay.', 'Sure.'],
+    thinkEasy: ['Simple.', 'Yes.'],
+    win: ['Good.', 'Thanks.'],
+    bluffCaught: ['You read it.', 'Nice call.'],
+    showStrong: ['Value.'],
+    sweatWin: ['Good.'],
+  },
+};
+for (const id of Object.keys(MORE) as LegendId[]) {
+  for (const [event, lines] of Object.entries(MORE[id]) as [TalkEvent, string[]][]) {
+    LEGEND_VOICES[id].lines[event] = [...(LEGEND_VOICES[id].lines[event] ?? []), ...lines];
+  }
+}

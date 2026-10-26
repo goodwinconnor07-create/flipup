@@ -1,5 +1,6 @@
 import { REPLAY_ON } from '../train/replay';
 import { useMemo } from 'react';
+import { legendById } from '../game';
 import { loadFriend } from '../state/friends';
 import { loadStats } from '../state/persist';
 import { computeStats } from '../train/stats';
@@ -114,7 +115,7 @@ export function InsightsTab() {
               <span>
                 <b>{when(g.at)}</b>
                 <small>
-                  {g.friend ? `${loadFriend(g.friend)?.name ?? 'A friend'}'s twin` : g.twin ? 'Your twin' : `${g.players} players`}, {g.hands} {g.hands === 1 ? 'hand' : 'hands'}
+                  {g.legend ? legendById(g.legend)?.name ?? 'A legend' : g.friend ? `${loadFriend(g.friend)?.name ?? 'A friend'}'s twin` : g.twin ? 'Your twin' : `${g.players} players`}, {g.hands} {g.hands === 1 ? 'hand' : 'hands'}
                 </small>
               </span>
               {g.place != null && <b className="num">{`${ordinal(g.place)} of ${g.players}`}</b>}

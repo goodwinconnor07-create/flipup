@@ -404,6 +404,8 @@ export function quizWhy(s: Spot, chosen: { kind: string; to: number; freq: numbe
           ? "Leading into the player who had the betting lead isn't part of my strategy here."
           : "That size isn't part of my strategy here.",
     );
+  } else if (mine === 'fold' && s.toCall <= 0) {
+    out.push("Never fold when you can check for free: checking keeps your hand in the pot and costs nothing, and folding gives up every chance you had to win it.");
   } else if (mine !== best && chosen.freq >= 0.15) {
     out.push(`It's close, though: I also ${lower(moveWord[mine])} here ${pct(chosen.freq)} of the time, so yours is fine too.`);
   } else if (mine !== best && chosen.freq >= 0.01) {

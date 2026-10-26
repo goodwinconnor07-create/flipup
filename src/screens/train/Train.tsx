@@ -4,7 +4,7 @@ import { recordNet } from '../../game';
 import { listScenarios, toHandHistory } from '../../gto/api';
 import type { Scenario } from '../../gto/types';
 import { back, navigate, replace, toast, type TrainSection } from '../../state/store';
-import { loadDrills, loadHistory, loadSummaries, type PlayedHand } from '../../state/training';
+import { loadDrills, loadHistory, loadSaved, loadSummaries, saveHand, type PlayedHand } from '../../state/training';
 import { reviewAndSave } from '../../train/reviews';
 import { drillFor, scenarioTitle } from '../../train/scenarios';
 import { computeStats, type ScenarioScore } from '../../train/stats';
@@ -96,6 +96,10 @@ function ReviewList() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(0);
   const [only, setOnly] = useState<'all' | 'mistakes'>('all');
+  const [saved, setSaved] = useState(() => new Set(loadSaved().map((h) => h.key)));
+  const [naming, setNaming] = useState<{ key: string; name: string } | null>(null);
+  // The study bank re-reads what's saved when this changes.
+  const [bankVersion, setBankVersion] = useState(0);
   const unreviewed = hands.filter((h) => !summaries[h.key]).slice(0, 20);
   const queue = useMemo(() => unreviewed.map((h) => toHandHistory(h.record)), [unreviewed.map((h) => h.key).join('|')]);
   const working = new Set(busy ? unreviewed.map((h) => h.key) : []);
@@ -118,11 +122,19 @@ function ReviewList() {
     }
   };
 
+  const bank = (
+    <>
+      <h2 className="section-head">Study bank</h2>
+      <StudyBank key={bankVersion} compact />
+    </>
+  );
+
   if (hands.length === 0) {
     return (
       <div className="t-empty">
-        <h2 className="h2">No hands yet</h2>
-        <p className="muted">Play a few hands with friends or the bots. Every hand you're dealt is saved here, ready for a GTO review.</p>
+        {bank}
+        <h2 className="h2">No hands in the last 24 hours</h2>
+        <p className="muted">Play a few hands with friends or the bots. Every hand you're dealt stays here for 24 hours, ready for a GTO review; save the ones you want to keep.</p>
         <button type="button" className="btn btn-outline" onClick={() => replace({ name: 'train', section: 'custom' })}>
           Or enter a hand yourself
         </button>
@@ -131,6 +143,9 @@ function ReviewList() {
   }
   return (
     <>
+      {bank}
+      <h2 className="section-head">Last 24 hours</h2>
+      <p className="muted">Hands you don't save are deleted 24 hours after you play them.</p>
       <CoachSays
         lines={[
           unreviewed.length > 0
@@ -164,14 +179,60 @@ function ReviewList() {
       )}
       <div className="t-list">
         {shown.map((h) => (
-          <HandRow key={h.key} hand={h} colours={summaries[h.key]?.decisions.map((d) => d.colour)} working={working.has(h.key)} />
+          <div key={h.key} className="sh-item">
+            <HandRow
+              hand={h}
+              colours={summaries[h.key]?.decisions.map((d) => d.colour)}
+              working={working.has(h.key)}
+              saved={saved.has(h.key)}
+              onSave={() => setNaming({ key: h.key, name: `Hand #${h.record.number} · ${(h.record.holes[h.heroId] ?? []).join(' ')}` })}
+            />
+            {naming?.key === h.key && (
+              <form
+                className="glass-card quiz-save"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  saveHand(h.key, naming.name);
+                  setSaved(new Set(loadSaved().map((x) => x.key)));
+                  setBankVersion((v) => v + 1);
+                  setNaming(null);
+                  toast('Saved to your study bank.', 'success');
+                }}
+              >
+                <label htmlFor={`save-${h.key}`} className="eyebrow">
+                  Save to your study bank
+                </label>
+                <input id={`save-${h.key}`} className="field" value={naming.name} maxLength={60} autoFocus onChange={(e) => setNaming({ key: h.key, name: e.target.value })} />
+                <div className="quiz-save-actions">
+                  <button type="button" className="btn btn-link" onClick={() => setNaming(null)}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn btn-sm btn-dark">
+                    Save
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         ))}
       </div>
     </>
   );
 }
 
-function HandRow({ hand, colours, working = false }: { hand: PlayedHand; colours?: ('green' | 'yellow' | 'red' | null)[]; working?: boolean }) {
+function HandRow({
+  hand,
+  colours,
+  working = false,
+  saved = false,
+  onSave,
+}: {
+  hand: PlayedHand;
+  colours?: ('green' | 'yellow' | 'red' | null)[];
+  working?: boolean;
+  saved?: boolean;
+  onSave?: () => void;
+}) {
   const r = hand.record;
   const net = recordNet(r, hand.heroId);
   const mine = r.holes[hand.heroId] ?? [];
@@ -194,6 +255,17 @@ function HandRow({ hand, colours, working = false }: { hand: PlayedHand; colours
       {REPLAY_ON && (
         <button type="button" className="btn btn-sm btn-dark t-replay" aria-label={`Replay hand ${r.number}`} onClick={() => navigate({ name: 'replay', key: hand.key })}>
           Replay
+        </button>
+      )}
+      {onSave && (
+        <button
+          type="button"
+          className={`btn btn-sm t-replay ${saved ? 'btn-ghost' : 'btn-outline'}`}
+          aria-label={saved ? `Hand ${r.number} is in your study bank` : `Save hand ${r.number} to your study bank`}
+          disabled={saved}
+          onClick={onSave}
+        >
+          {saved ? 'Saved' : 'Save'}
         </button>
       )}
     </div>

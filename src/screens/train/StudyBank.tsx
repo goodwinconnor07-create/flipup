@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import type { Colour } from '../../gto/types';
-import { loadBank, loadRecent, removeBanked, renameBanked, saveToBank, type BankHand, type PlayedQuiz } from '../../quiz/save';
+import { loadBank, loadRecent, removeBanked, renameBanked, saveToBank, type PlayedQuiz } from '../../quiz/save';
 import { navigate, toast } from '../../state/store';
 import { loadHistory, loadSaved, renameSaved, unsaveHand } from '../../state/training';
 import { REPLAY_ON } from '../../train/replay';

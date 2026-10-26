@@ -10,7 +10,7 @@ async function allInAndCall(host: Page, friend: Page) {
       if (await allin.isVisible()) {
         await allin.click();
         await page.locator('.raise-panel .preset[aria-label="All in"]').click();
-        await page.locator('.raise-panel .btn-blue').click();
+        await page.locator('.action-buttons .btn-blue').click();
       } else {
         await page.locator('.action-buttons .btn-green').click();
       }
@@ -168,7 +168,7 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
       if (await raise.isVisible()) {
         await raise.click();
         await page.locator('.raise-panel .preset[aria-label="All in"]').click();
-        await page.locator('.raise-panel .btn-blue').click();
+        await page.locator('.action-buttons .btn-blue').click();
       } else await page.locator('.action-buttons .btn-green').click();
     }
     const next = host.getByRole('button', { name: 'Next hand' });

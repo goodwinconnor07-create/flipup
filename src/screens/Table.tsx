@@ -11,7 +11,7 @@ import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
 import { Lobby } from './Lobby';
 import { useWakeLock } from '../ui/useWakeLock';
-import { ActionArea, type PreAction } from './table/Actions';
+import { ActionArea, RaiseSizer, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 
@@ -197,6 +197,12 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   // They're cleared on each new street, because the situation has changed. Call current is also cleared the
   // moment someone raises, so it never calls more than you saw.
   const [pre, setPre] = useState<PreAction>(null);
+  // The raise amount while the sizer is open. The sizer takes the place of your cards and chip counter.
+  const [raise, setRaise] = useState<number | null>(null);
+  useEffect(() => {
+    if (!myTurn) setRaise(null);
+  }, [myTurn]);
+  const sizing = raise !== null && myTurn && !!hand && !!mySeat;
   const streetKey = hand ? `${hand.number}-${hand.street}` : '';
   useEffect(() => setPre(null), [streetKey]);
   useEffect(() => {
@@ -343,10 +349,11 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       </div>
 
       <div className="action-area">
-        {bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />}
+        {bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} raise={raise} setRaise={setRaise} />}
+        {sizing && desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
       </div>
 
-      <div className={`me-area${canShow ? ' has-show' : ''}`}>
+      <div className={`me-area${canShow ? ' has-show' : ''}${sizing && !desktop ? ' sizing' : ''}`}>
         <div className="my-cards">
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
@@ -383,6 +390,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           )}
         </div>
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} />
+        {sizing && !desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
       </div>
     </div>
   );

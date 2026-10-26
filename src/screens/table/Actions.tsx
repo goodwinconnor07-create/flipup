@@ -1,5 +1,5 @@
 import { REPLAY_ON } from '../../train/replay';
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { lastStanding, nearestStop, options, pot, raiseStops, type Game, type Hand, type Player, type Seat } from '../../game';
 import { dispatch, navigate, useApp } from '../../state/store';
 import { handKey, hasHand } from '../../state/training';
@@ -18,6 +18,8 @@ export function ActionArea({
   now,
   pre,
   setPre,
+  raise,
+  setRaise,
 }: {
   game: Game;
   me?: Player;
@@ -27,6 +29,9 @@ export function ActionArea({
   now: number;
   pre: PreAction;
   setPre: (p: PreAction) => void;
+  /** The amount while the sizer is open (it sits where your cards are, see Table.tsx); null otherwise. */
+  raise: number | null;
+  setRaise: (to: number | null) => void;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
@@ -35,7 +40,7 @@ export function ActionArea({
   if (!me) return <p className="table-note">You're watching this table.</p>;
 
   if (hand && !hand.result) {
-    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} />;
+    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} raise={raise} setRaise={setRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <p className="table-note">Running it out…</p>;
     // Still in the hand with chips behind: you can set what to do before your turn comes round.
@@ -195,10 +200,22 @@ function SitBack() {
   );
 }
 
-function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: Seat; sending: boolean }) {
+function MyTurn({
+  game,
+  hand,
+  seat,
+  sending,
+  raise,
+  setRaise,
+}: {
+  game: Game;
+  hand: Hand;
+  seat: Seat;
+  sending: boolean;
+  raise: number | null;
+  setRaise: (to: number | null) => void;
+}) {
   const o = options(game, hand, seat);
-  // The amount while the sizer is open. Null the rest of the time.
-  const [raise, setRaise] = useState<number | null>(null);
   const act = (move: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin', to?: number) => {
     setRaise(null);
     dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move, ...(to !== undefined ? { to } : {}) });
@@ -207,48 +224,39 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
     if (raise === null) return;
     act(raise >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', raise);
   };
-  const raiseLabel = raise === null ? o.word : raise >= o.maxTo ? 'All in' : `${o.word === 'Bet' ? 'Bet' : 'Raise to'} ${chips(raise)}`;
-  // The three buttons. While you size, the Raise button becomes the confirm, and the sizer opens under them.
-  const row = (
-    <div className="action-buttons">
-      <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
-        Fold
-      </button>
-      {o.canCheck ? (
-        <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('check')}>
-          Check
-        </button>
-      ) : (
-        <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('call')}>
-          {o.callIsAllIn ? 'All in' : 'Call'} <span className="num">{chips(o.toCall)}</span>
-        </button>
-      )}
-      {o.canRaise && (
-        <button type="button" className="btn btn-blue" disabled={sending} onClick={() => (raise === null ? setRaise(o.minTo) : confirm())}>
-          {raiseLabel}
-        </button>
-      )}
-    </div>
-  );
+  // The buttons never move. While you size, Raise shows the amount and becomes the confirm.
+  const raiseLabel = raise === null ? o.word : raise >= o.maxTo ? 'All in' : `${o.word} ${chips(raise)}`;
   return (
     <div className="stack">
-      {raise === null ? (
-        <>
-          <p className="table-note your-turn">Your turn</p>
-          {row}
-        </>
-      ) : (
-        <div className="raise-panel" role="group" aria-label={`${o.word} amount`}>
-          {row}
-          <RaiseSizer game={game} hand={hand} seat={seat} to={raise} setTo={setRaise} onCancel={() => setRaise(null)} />
-        </div>
-      )}
+      <p className="table-note your-turn">Your turn</p>
+      <div className="action-buttons">
+        <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
+          Fold
+        </button>
+        {o.canCheck ? (
+          <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('check')}>
+            Check
+          </button>
+        ) : (
+          <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('call')}>
+            {o.callIsAllIn ? 'All in' : 'Call'} <span className="num">{chips(o.toCall)}</span>
+          </button>
+        )}
+        {o.canRaise && (
+          <button type="button" className="btn btn-blue" disabled={sending} onClick={() => (raise === null ? setRaise(o.minTo) : confirm())}>
+            {raiseLabel}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
 
-/** The amount, four presets and a slider that moves one notch at a time. Sits under the action buttons. */
-function RaiseSizer({
+/**
+ * The amount, a slider that moves one notch at a time, and four presets. It fills the space your cards
+ * and chip counter use (they stay in place underneath, hidden), so nothing else on the table moves.
+ */
+export function RaiseSizer({
   game,
   hand,
   seat,
@@ -278,10 +286,20 @@ function RaiseSizer({
   ].filter((p, i, all) => all.findIndex((q) => q.to === p.to) === i);
 
   return (
-    <>
-      <div className="raise-head">
-        <span className="muted">{o.word} to</span>
+    <div className="raise-panel" role="group" aria-label={`${o.word} amount`}>
+      <div className="raise-top">
         <b className="raise-amount num">{chips(to)}</b>
+        <input
+          className="raise-slider"
+          type="range"
+          min={0}
+          max={stops.length - 1}
+          step={1}
+          value={Math.max(0, stops.indexOf(to))}
+          aria-label={`${o.word} amount`}
+          aria-valuetext={chips(to)}
+          onChange={(e) => setTo(stops[Number(e.target.value)])}
+        />
         <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
           <CloseIcon />
         </button>
@@ -300,17 +318,6 @@ function RaiseSizer({
           </button>
         ))}
       </div>
-      <input
-        className="raise-slider"
-        type="range"
-        min={0}
-        max={stops.length - 1}
-        step={1}
-        value={Math.max(0, stops.indexOf(to))}
-        aria-label={`${o.word} amount`}
-        aria-valuetext={chips(to)}
-        onChange={(e) => setTo(stops[Number(e.target.value)])}
-      />
-    </>
+    </div>
   );
 }

@@ -1,6 +1,6 @@
 import { REPLAY_ON } from '../../train/replay';
-import { useMemo, useRef, useState } from 'react';
-import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
+import { useMemo, useState } from 'react';
+import { lastStanding, nearestStop, options, pot, raiseStops, type Game, type Hand, type Player, type Seat } from '../../game';
 import { dispatch, navigate, useApp } from '../../state/store';
 import { handKey, hasHand } from '../../state/training';
 import { chips } from '../../ui/components';
@@ -197,144 +197,120 @@ function SitBack() {
 
 function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: Seat; sending: boolean }) {
   const o = options(game, hand, seat);
-  const [raising, setRaising] = useState(false);
+  // The amount while the sizer is open. Null the rest of the time.
+  const [raise, setRaise] = useState<number | null>(null);
   const act = (move: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin', to?: number) => {
-    setRaising(false);
+    setRaise(null);
     dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move, ...(to !== undefined ? { to } : {}) });
   };
-  // While the sizer is open the real row stays in place, unseen, so the table doesn't change size under it.
+  const confirm = () => {
+    if (raise === null) return;
+    act(raise >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', raise);
+  };
+  const raiseLabel = raise === null ? o.word : raise >= o.maxTo ? 'All in' : `${o.word === 'Bet' ? 'Bet' : 'Raise to'} ${chips(raise)}`;
+  // The three buttons. While you size, the Raise button becomes the confirm, and the sizer opens under them.
+  const row = (
+    <div className="action-buttons">
+      <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
+        Fold
+      </button>
+      {o.canCheck ? (
+        <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('check')}>
+          Check
+        </button>
+      ) : (
+        <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('call')}>
+          {o.callIsAllIn ? 'All in' : 'Call'} <span className="num">{chips(o.toCall)}</span>
+        </button>
+      )}
+      {o.canRaise && (
+        <button type="button" className="btn btn-blue" disabled={sending} onClick={() => (raise === null ? setRaise(o.minTo) : confirm())}>
+          {raiseLabel}
+        </button>
+      )}
+    </div>
+  );
   return (
     <div className="stack">
-      {raising && (
-        <RaisePanel
-          game={game}
-          hand={hand}
-          seat={seat}
-          onCancel={() => setRaising(false)}
-          onFold={() => act('fold')}
-          onCall={() => act(o.canCheck ? 'check' : 'call')}
-          onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
-        />
+      {raise === null ? (
+        <>
+          <p className="table-note your-turn">Your turn</p>
+          {row}
+        </>
+      ) : (
+        <div className="raise-panel" role="group" aria-label={`${o.word} amount`}>
+          {row}
+          <RaiseSizer game={game} hand={hand} seat={seat} to={raise} setTo={setRaise} onCancel={() => setRaise(null)} />
+        </div>
       )}
-      <p className={`table-note your-turn${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
-        Your turn
-      </p>
-      <div className={`action-buttons${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
-        <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
-          Fold
-        </button>
-        {o.canCheck ? (
-          <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('check')}>
-            Check
-          </button>
-        ) : (
-          <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('call')}>
-            {o.callIsAllIn ? 'All in' : 'Call'} <span className="num">{chips(o.toCall)}</span>
-          </button>
-        )}
-        {o.canRaise && (
-          <button type="button" className="btn btn-blue" disabled={sending} onClick={() => setRaising(true)}>
-            {o.word}
-          </button>
-        )}
-      </div>
     </div>
   );
 }
 
-function RaisePanel({
+/** The amount, four presets and a slider that moves one notch at a time. Sits under the action buttons. */
+function RaiseSizer({
   game,
   hand,
   seat,
+  to,
+  setTo,
   onCancel,
-  onFold,
-  onCall,
-  onRaise,
 }: {
   game: Game;
   hand: Hand;
   seat: Seat;
+  to: number;
+  setTo: (to: number) => void;
   onCancel: () => void;
-  onFold: () => void;
-  onCall: () => void;
-  onRaise: (to: number) => void;
 }) {
   const o = options(game, hand, seat);
-  const bb = game.settings.bigBlind;
-  const [to, setTo] = useState(o.minTo);
+  const stops = raiseStops(o.minTo, o.maxTo, game.settings.bigBlind);
   const potNow = pot(hand);
-  const range = useRef<HTMLInputElement>(null);
 
   // Pot-sized raise: call first, then raise by the size of the pot after the call.
   const potRaise = (fraction: number) => hand.currentBet + Math.round((potNow + o.toCall) * fraction);
-  const clamp = (n: number) => Math.max(o.minTo, Math.min(o.maxTo, n));
   // Two sizes that come to the same amount (a small pot next to the minimum) show once.
   const presets = [
     { label: 'Min', to: o.minTo },
-    { label: '½ pot', to: clamp(potRaise(0.5)) },
-    { label: 'Pot', to: clamp(potRaise(1)) },
+    { label: '½ pot', to: nearestStop(stops, potRaise(0.5)) },
+    { label: 'Pot', to: nearestStop(stops, potRaise(1)) },
     { label: 'All in', to: o.maxTo },
   ].filter((p, i, all) => all.findIndex((q) => q.to === p.to) === i);
-  const step = Math.max(1, Math.min(bb, Math.floor((o.maxTo - o.minTo) / 50) || 1));
 
-  // A panel pinned to the bottom of the screen, over your cards: one amount, four presets, a slider, then the three buttons.
-  const isAllIn = to >= o.maxTo;
   return (
-    <div className="raise-layer">
-      <div className="raise-scrim" onClick={onCancel} />
-      <div className="raise-panel" role="dialog" aria-label={`${o.word} amount`}>
-        <div className="raise-head">
-          <span className="muted">{o.word} to</span>
-          <b className="raise-amount num">{chips(to)}</b>
-          <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
-            <CloseIcon />
-          </button>
-        </div>
-        <div className="raise-presets">
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              type="button"
-              aria-label={p.label}
-              className={`preset press${p.to === to ? ' on' : ''}`}
-              onClick={() => setTo(p.to)}
-            >
-              <b>{p.label}</b>
-              <small className="num">{chips(p.to)}</small>
-            </button>
-          ))}
-        </div>
-        <div className="raise-fine">
-          <input
-            ref={range}
-            className="raise-slider"
-            type="range"
-            min={o.minTo}
-            max={o.maxTo}
-            step={step}
-            value={to}
-            aria-label={`${o.word} amount`}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              // Snap to all in at the top, so the last step isn't lost to rounding.
-              setTo(v + step > o.maxTo ? o.maxTo : v);
-            }}
-          />
-        </div>
-        {/* The same three slots as the action row, so Fold and Call stay in reach while you size. */}
-        <div className="action-buttons raise-actions">
-          <button type="button" className="btn btn-fold" onClick={onFold}>
-            Fold
-          </button>
-          <button type="button" className="btn btn-green" onClick={onCall}>
-            {o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'}
-            {!o.canCheck && !o.callIsAllIn && <span className="num">{chips(o.toCall)}</span>}
-          </button>
-          <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
-            {isAllIn ? 'All in' : `${o.word === 'Bet' ? 'Bet' : 'Raise to'} ${chips(to)}`}
-          </button>
-        </div>
+    <>
+      <div className="raise-head">
+        <span className="muted">{o.word} to</span>
+        <b className="raise-amount num">{chips(to)}</b>
+        <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
+          <CloseIcon />
+        </button>
       </div>
-    </div>
+      <div className="raise-presets">
+        {presets.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            aria-label={p.label}
+            className={`preset press${p.to === to ? ' on' : ''}`}
+            onClick={() => setTo(p.to)}
+          >
+            <b>{p.label}</b>
+            <small className="num">{chips(p.to)}</small>
+          </button>
+        ))}
+      </div>
+      <input
+        className="raise-slider"
+        type="range"
+        min={0}
+        max={stops.length - 1}
+        step={1}
+        value={Math.max(0, stops.indexOf(to))}
+        aria-label={`${o.word} amount`}
+        aria-valuetext={chips(to)}
+        onChange={(e) => setTo(stops[Number(e.target.value)])}
+      />
+    </>
   );
 }

@@ -778,38 +778,26 @@ html[data-theme='dark'] .pcard.dim > * {
 
 /* ── Raising ─────────────────────────────────────────────────────────────── */
 
-.raise-layer {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
+/* The raise section: the three buttons on top, the sizer under them. It sits in the page, not over it. */
+.raise-panel {
+  position: relative;
   display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-/* The dim layer fades on its own. The glass panel is a sibling, not inside it: blur can't see through
-   a parent that's fading, so the panel would show clear until the fade finished and then pop to blurred. */
-.raise-scrim {
-  position: absolute;
-  inset: 0;
-  background: rgba(11, 11, 18, 0.18);
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
   animation: fade-in 0.15s ease-out;
 }
 
-.raise-panel {
-  position: relative;
-  width: 100%;
-  max-width: 520px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 16px calc(var(--safe-bottom) + 16px);
-  border-radius: var(--r-xl) var(--r-xl) 0 0;
-  background: var(--surface);
-  box-shadow: 0 -8px 32px -12px rgba(18, 18, 40, 0.35);
-  /* No overshoot: it would lift the panel off the bottom edge for a moment. */
-  animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
-  will-change: transform;
+/* The buttons are a little bigger while you size, so the thumb finds them without looking. */
+.raise-panel .action-buttons {
+  grid-template-columns: 1fr 1fr 1.5fr;
+}
+
+.raise-panel .action-buttons .btn {
+  min-height: 64px;
+  font-size: var(--fs-h3);
 }
 
 /* Nothing inside the panel blurs on its own: stacked blurs are slow and shimmer while it slides in. */
@@ -818,9 +806,16 @@ html:not(.no-glass) .raise-panel .icon-btn {
   backdrop-filter: none;
 }
 
-/* The real action row stays in the page, unseen, while the sizer is open, so the table keeps its size. */
-.ghost {
-  visibility: hidden;
+/* On a phone the table and your cards step aside while you size: the section takes the bottom of the screen. */
+@media not all and (min-width: 960px) and (min-height: 600px) {
+  .felt:has(.raise-panel) > .stage,
+  .felt:has(.raise-panel) > .me-area {
+    display: none;
+  }
+
+  .felt:has(.raise-panel) > .action-area {
+    flex: 1;
+  }
 }
 
 .raise-head {
@@ -833,71 +828,10 @@ html:not(.no-glass) .raise-panel .icon-btn {
 }
 
 .raise-amount {
-  font-size: var(--fs-display-1);
+  font-size: var(--fs-display-2);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
-}
-
-.raise-presets {
-  display: flex;
-  gap: 8px;
-}
-
-/* Presets share the row evenly, however many show (two that match, like a small pot and the minimum, merge). */
-.raise-presets .preset {
-  flex: 1;
-  min-width: 0;
-}
-
-.preset {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
- min-height: 60px;
-  padding: 4px;
-  border: 0;
-  border-radius: var(--r-md);
-  background: var(--bg-2);
-  white-space: nowrap;
-}
-
-.preset b {
-  font-size: var(--fs-body);
-  font-weight: 700;
-}
-
-.preset small {
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  color: var(--ink-3);
-}
-
-.preset.on {
-  background: var(--blue);
-  color: var(--on-color);
-}
-
-.preset.on small {
-  color: var(--on-color);
-}
-
-.raise-fine {
-  display: flex;
-  align-items: center;
-}
-
-.raise-slider {
-  flex: 1;
-  min-width: 0;
-  height: 44px;
-  margin: 0;
-  accent-color: var(--blue);
-}
-
-.raise-actions {
-  grid-template-columns: 1fr 1fr 1.6fr;
 }
 
 .raise-close {
@@ -906,8 +840,59 @@ html:not(.no-glass) .raise-panel .icon-btn {
   top: 0;
   width: 36px;
   height: 36px;
-  background: var(--bg-2);
+  background: var(--surface);
   box-shadow: none;
+}
+
+.raise-presets {
+  display: flex;
+  gap: 8px;
+}
+
+/* Presets share the row evenly, however many show (two that match, like a small pot and the minimum, merge).
+   Each one has an outline, so the boxes read apart from each other and from the panel. */
+.preset {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 76px;
+  padding: 4px;
+  border: 1.5px solid var(--ink-4);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  white-space: nowrap;
+}
+
+.preset b {
+  font-size: var(--fs-h3);
+  font-weight: 700;
+}
+
+.preset small {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.preset.on {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: var(--on-color);
+}
+
+.preset.on small {
+  color: var(--on-color);
+}
+
+.raise-slider {
+  width: 100%;
+  height: 48px;
+  margin: 0;
+  accent-color: var(--blue);
 }
 
 /* ── You ─────────────────────────────────────────────────────────────────── */

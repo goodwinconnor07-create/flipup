@@ -16,5 +16,6 @@ export * from './record';
 export * from './handText';
 export * from './reactions';
 export * from './ids';
+export * from './raiseSizes';
 export * from './names';
 export * from './emoji';

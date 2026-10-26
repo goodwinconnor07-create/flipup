@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addHandToTwin, emptyTwin, heroDecisions, parseSpotKey, POST_BUCKETS, preflopTier, sanitizeTwin, spotKey, TWIN_MOVES, twinConfidence, twinName } from './twin';
+import { addHandToTwin, emptyTwin, heroDecisions, parseSpotKey, POST_BUCKETS, preflopTier, sanitizeTwin, spotKey, TWIN_MOVES, twinConfidence, twinName, shareableTwin } from './twin';
 import { options } from './selectors';
 import { seededRng } from './cards';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
@@ -113,6 +113,32 @@ describe('twin memory', () => {
     expect(twinName('Alexandria')).toBe('Alexand AI');
     expect(twinName('  Jo  ')).toBe('Jo AI');
     expect(twinName('Alexandria AI').length).toBeLessThanOrEqual(10);
+  });
+
+  it('shares only counters: no list of hands, and only the spots seen most', () => {
+    const t = emptyTwin();
+    t.hands = 500;
+    t.seen = ['a#1', 'a#2'];
+    let n = 0;
+    for (const street of ['flop', 'turn', 'river'])
+      for (const pos of ['ip', 'oop'])
+        for (let strength = 0; strength < 7; strength++)
+          for (const facing of ['none', 'limp', 'small', 'big', 'raise', 'allin'])
+            for (const players of [2, 3, 4])
+              for (const role of ['a', 'd']) {
+                if (n++ < 1700) t.spots[`${street}|${pos}|${strength}|${facing}|${players}|${role}`] = [0, n === 3 ? 99 : 1, 0, 0, 0, 0, 0];
+              }
+    expect(Object.keys(t.spots)).toHaveLength(1512);
+    for (let i = 0; i < 400; i++) t.spots[`preflop|ep|${i % 8}|none|${(i % 3) + 2}|d`] = [1, 1, 0, 0, 0, 0, 0];
+    t.spots['preflop|ep|7|big|4|d'] = [50, 50, 0, 0, 0, 0, 0];
+    const shared = shareableTwin(t);
+    expect(shared.seen).toEqual([]);
+    expect(t.seen).toHaveLength(2);
+    expect(shared.hands).toBe(500);
+    expect(Object.keys(shared.spots).length).toBeLessThanOrEqual(1500);
+    // The most-seen spot survives the trimming.
+    expect(shared.spots['preflop|ep|7|big|4|d']).toEqual([50, 50, 0, 0, 0, 0, 0]);
+    expect(Object.keys(t.spots).length).toBeGreaterThan(1500);
   });
 
   it('is fully confident at 300 hands', () => {

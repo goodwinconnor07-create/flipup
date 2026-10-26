@@ -460,3 +460,37 @@ export function sanitizeTwin(raw: unknown): TwinProfile {
   }
   return { v: 1, hands: num(t.hands), spots, stats, seen: Array.isArray(t.seen) ? t.seen.filter((x) => typeof x === 'string').slice(-MAX_SEEN) : [] };
 }
+
+// ── Sharing a twin ──────────────────────────────────────────────────────────
+
+/** What a friend sees of a shared twin: who it is and what it has learned. Habit counters only: no cards, no hands. */
+export interface SharedTwin {
+  code: string;
+  name: string;
+  emoji: string;
+  profile: TwinProfile;
+  /** When its owner last sent it. */
+  updatedAt: number;
+}
+
+/** Returned when someone starts sharing: the code friends use, and the secret that lets only this phone change or stop it. */
+export interface CreateTwinShareResponse {
+  code: string;
+  secret: string;
+}
+
+/** The most spots a shared twin carries (the ones seen most), which keeps it to a few dozen KB. */
+const SHARE_SPOTS = 1500;
+
+/** A copy of a twin that's fit to send: no list of hands counted, and only its most-seen spots. */
+export function shareableTwin(twin: TwinProfile): TwinProfile {
+  const copy = sanitizeTwin(structuredClone(twin));
+  copy.seen = [];
+  const keys = Object.keys(copy.spots);
+  if (keys.length > SHARE_SPOTS) {
+    const total = (k: string) => copy.spots[k].reduce((a, b) => a + b, 0);
+    const keep = new Set(keys.sort((a, b) => total(b) - total(a)).slice(0, SHARE_SPOTS));
+    for (const k of Object.keys(copy.spots)) if (!keep.has(k)) delete copy.spots[k];
+  }
+  return copy;
+}

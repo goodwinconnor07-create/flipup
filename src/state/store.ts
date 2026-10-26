@@ -33,6 +33,7 @@ import { captureFinishedHand } from './training';
 import { loadTwin } from './twin';
 import { queueSync, shareCode, syncShare } from './share';
 import { beginTwinGame, finishTwinGame } from './twinGames';
+import { bestTwin, loadFriend, notePlayed } from './friends';
 import {
   forgetOldScroll,
   loadDeviceId,
@@ -82,7 +83,10 @@ export type Route =
   /** Scroll: whole hands solved ahead of time, every move graded. */
   | { name: 'scroll'; hand?: string }
   /** What your AI twin found in your last game against it. */
-  | { name: 'twinReport' };
+  | { name: 'twinReport'; friend?: string }
+  /** Friends' AI twins: the list, and scouting one. */
+  | { name: 'friends' }
+  | { name: 'scout'; code: string };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
 
@@ -106,6 +110,8 @@ export type Sheet =
   | { name: 'twin' }
   /** The code friends use to play your shared twin. */
   | { name: 'shareTwin' }
+  /** Type a friend's twin code. */
+  | { name: 'addTwin' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -380,6 +386,27 @@ export function startTwin(): void {
   });
 }
 
+/** A heads-up game against a friend's AI twin, from the twin they share or what you've seen of them. */
+export function startFriendTwin(code: string): void {
+  if (state.busy) return;
+  const friend = loadFriend(code);
+  const twin = friend ? bestTwin(friend) : null;
+  if (!friend || !twin?.ready) return;
+  if (state.game?.twinGame) recordFinished();
+  const brain = buildBrain(twin.profile);
+  startHeadsUp(undefined, (them, game) => {
+    game.twinGame = true;
+    game.friendTwin = code;
+    beginTwinGame(game.id, game.settings.bigBlind, twin.hands, code);
+    notePlayed(code);
+    them.name = twinName(friend.name);
+    them.emoji = friend.emoji;
+    them.style = brain.style.id;
+    them.twin = brain;
+    them.ai = true;
+  });
+}
+
 // ── Scroll ──────────────────────────────────────────────────────────────────
 // Whole solved hands played back from data (screens/train/SolvedHands.tsx); nothing here touches a table.
 
@@ -629,7 +656,7 @@ function recordFinished(): void {
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}) }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}) }],
   });
   if (game.twinGame) finishTwinGame(game.id, place);
 }

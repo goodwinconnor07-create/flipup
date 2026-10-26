@@ -29,6 +29,8 @@ export interface TwinGame {
   hands: TwinGameHand[];
   /** Where you finished by chips when you left the table (1 is first). */
   place?: number;
+  /** The code of the friend whose twin this was (missing: your own twin). */
+  friend?: string;
 }
 
 const num = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) ? n : null);
@@ -45,7 +47,7 @@ export function loadTwinGames(): TwinGame[] {
   for (const g of all) {
     if (!g || typeof g.id !== 'string' || num(g.at) === null || !Array.isArray(g.hands)) continue;
     const hands = g.hands.filter((h) => h && typeof h.key === 'string' && num(h.number) !== null && num(h.net) !== null).map((h) => ({ key: h.key, number: h.number, net: h.net, ...(validFacts(h.facts) ? { facts: h.facts } : {}) }));
-    out.push({ id: g.id, at: g.at, bb: num(g.bb) || 10, knew: num(g.knew) ?? 0, hands, ...(num(g.place) ? { place: g.place } : {}) });
+    out.push({ id: g.id, at: g.at, bb: num(g.bb) || 10, knew: num(g.knew) ?? 0, hands, ...(num(g.place) ? { place: g.place } : {}), ...(typeof g.friend === 'string' ? { friend: g.friend } : {}) });
   }
   return out;
 }
@@ -55,9 +57,9 @@ function save(games: TwinGame[]): void {
 }
 
 /** A new game against your twin, with how much it knew of you. */
-export function beginTwinGame(id: string, bb: number, knew: number, now = Date.now()): void {
+export function beginTwinGame(id: string, bb: number, knew: number, friend?: string, now = Date.now()): void {
   const games = loadTwinGames().filter((g) => g.id !== id);
-  save([...games, { id, at: now, bb, knew, hands: [] }]);
+  save([...games, { id, at: now, bb, knew, hands: [], ...(friend ? { friend } : {}) }]);
 }
 
 /** One more finished hand in a twin game. Counting the same hand twice does nothing. */

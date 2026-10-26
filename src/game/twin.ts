@@ -366,7 +366,6 @@ export function addHandToTwin(twin: TwinProfile, r: HandRecord, heroId: string, 
   if (twin.seen.includes(key)) return false;
   if (!observed && (!r.holes[heroId] || r.holes[heroId].length !== 2)) return false;
   const decisions = heroDecisions(r, heroId, observed);
-  if (observed && decisions.length === 0) return false;
   const s = twin.stats;
   let vpip = false;
   let pfr = false;

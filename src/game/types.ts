@@ -271,6 +271,8 @@ export interface Game {
   first?: { settings: Settings; bots: number };
   /** A heads-up game against the player's own AI twin: "Play again" deals a new one from what the twin has learned since. */
   twinGame?: boolean;
+  /** With `twinGame`: the twin is a friend's, whose twin code this is. */
+  friendTwin?: string;
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */

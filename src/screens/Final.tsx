@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { net, standings, type Game } from '../game';
-import { closeTable, dispatch, openLog, startTwin, useApp } from '../state/store';
+import { closeTable, dispatch, openLog, startFriendTwin, startTwin, useApp } from '../state/store';
 import { shareText } from './sheets/InviteSheet';
 import { Avatar, chips } from '../ui/components';
-import { openTwinReport } from './train/TwinReport';
+import { openFriendReport, openTwinReport } from './train/TwinReport';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 import { playSound } from '../ui/sound';
 
@@ -118,7 +118,7 @@ export function Final({ game }: { game: Game }) {
         {me && step >= 3 && (
           <>
             {host ? (
-              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.twinGame ? startTwin() : dispatch({ type: 'playAgain' }))}>
+              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.friendTwin ? startFriendTwin(game.friendTwin) : game.twinGame ? startTwin() : dispatch({ type: 'playAgain' }))}>
                 Play again{waiting > 0 ? ` · ${waiting} waiting` : ''}
               </button>
             ) : asked ? (
@@ -133,8 +133,8 @@ export function Final({ game }: { game: Game }) {
           </>
         )}
         {game.twinGame && step >= 3 && (
-          <button type="button" className="btn btn-xl btn-ghost" onClick={openTwinReport}>
-            What your twin found
+          <button type="button" className="btn btn-xl btn-ghost" onClick={() => (game.friendTwin ? openFriendReport(game.friendTwin) : openTwinReport())}>
+            {game.friendTwin ? 'How your plan went' : 'What your twin found'}
           </button>
         )}
         <button type="button" className={`btn btn-xl ${me && step >= 3 ? 'btn-ghost' : 'btn-dark'}`} onClick={closeTable}>

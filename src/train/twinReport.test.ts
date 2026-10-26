@@ -102,7 +102,7 @@ describe('the twin report', () => {
 
 describe('twin games kept on this phone', () => {
   it('keeps hands per game once, notes where you finished, and holds the last five games', () => {
-    beginTwinGame('a', 10, 55, 1);
+    beginTwinGame('a', 10, 55, undefined, 1);
     addTwinHand('a', { key: 'a#1', number: 1, net: 20 });
     addTwinHand('a', { key: 'a#1', number: 1, net: 20 });
     addTwinHand('a', { key: 'a#2', number: 2, net: -50 });
@@ -136,10 +136,10 @@ describe('what the twin did to you', () => {
 
   it('spots a bluff that made you fold the better hand, and one you caught', () => {
     const worked = handFacts(bluffed(true).record, 'me')!;
-    expect(worked).toMatchObject({ btn: true, sd: false, fold: 'turn', out: 'turn', bluff: 'worked', better: true });
+    expect(worked).toMatchObject({ btn: true, sd: false, fold: 'turn', out: 'turn', bluff: 'worked', better: true, end: 'fold-me', lastAgg: 'them' });
     expect(worked.theirs).toEqual(['Kh', '5d']);
     const caught = handFacts(bluffed(false).record, 'me')!;
-    expect(caught).toMatchObject({ sd: true, out: 'river', bluff: 'caught' });
+    expect(caught).toMatchObject({ sd: true, out: 'river', bluff: 'caught', end: 'showdown', lastAgg: 'them' });
     expect(caught.fold).toBeUndefined();
   });
 

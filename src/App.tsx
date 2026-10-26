@@ -14,6 +14,8 @@ import { Drill } from './screens/train/Drill';
 import { Custom } from './screens/train/Custom';
 import { ScrollScenarios } from './screens/train/ScrollScenarios';
 import { TwinReport } from './screens/train/TwinReport';
+import { Friends } from './screens/train/Friends';
+import { Scout } from './screens/train/Scout';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
@@ -62,7 +64,13 @@ export function App() {
         : <SolvedHands key={route.hand} handId={route.hand} />;
       break;
     case 'twinReport':
-      screen = <TwinReport />;
+      screen = <TwinReport friend={route.friend} />;
+      break;
+    case 'friends':
+      screen = <Friends />;
+      break;
+    case 'scout':
+      screen = <Scout key={route.code} code={route.code} />;
       break;
   }
 

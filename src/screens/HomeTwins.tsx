@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { TWIN_READY } from '../game';
-import { navigate, openSheet, startTwin, toast, useApp } from '../state/store';
+import { loadFriends } from '../state/friends';
+import { navigate, openSheet, startTwin, useApp } from '../state/store';
 import { twinStatus } from '../state/twin';
 import { MirrorArt } from './CardArt';
 
@@ -8,11 +9,14 @@ import { MirrorArt } from './CardArt';
 export function TwinTiles() {
   const emoji = useApp((s) => s.profile.emoji);
   const [twin] = useState(twinStatus);
+  const [friends] = useState(() => loadFriends().length);
   const left = Math.max(0, TWIN_READY - twin.hands);
   const pct = Math.round(twin.confidence * 100);
   const line = twin.ready ? (twin.confidence >= 1 ? 'It knows your game.' : `Still learning you · ${pct}%`) : `Play ${left} more ${left === 1 ? 'hand' : 'hands'} to meet it.`;
   // Locked: the bar shows how close it is to ready. Ready: how well it knows you.
   const fill = twin.ready ? twin.confidence : twin.hands / TWIN_READY;
+
+  const friendsLine = friends > 0 ? `${friends} ${friends === 1 ? 'friend' : 'friends'} added.` : "Add a friend's twin.";
 
   return (
     <section className="twins" aria-label="AI twins">
@@ -36,16 +40,16 @@ export function TwinTiles() {
         </button>
         <button
           type="button"
-          className="twin-card twin-friends press locked"
-          aria-label="Friends' twins. Coming soon."
-          onClick={() => toast("Friends' twins are on the way.")}
+          className="twin-card twin-friends press"
+          aria-label={`Friends' twins. ${friendsLine}`}
+          onClick={() => navigate({ name: 'friends' })}
         >
           <MirrorArt faces={['🥳', '😄']} scout />
           <span className="twin-text">
             <b>Friends' twins</b>
             <small>Scout a friend.</small>
           </span>
-          <small className="twin-line">Coming soon.</small>
+          <small className="twin-line">{friendsLine}</small>
         </button>
       </div>
     </section>

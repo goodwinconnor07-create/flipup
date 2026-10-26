@@ -54,7 +54,7 @@ export function ReviewTab() {
       lastGame: lastGameHands(history, reviews),
     };
   }, []);
-  const twinGames = useMemo(() => loadTwinGames().some((g) => g.hands.length > 0), []);
+  const twinGames = useMemo(() => loadTwinGames().some((g) => !g.friend && g.hands.length > 0), []);
   const go = (section: TrainSection) => navigate({ name: 'train', section });
   const weakest = stats.weaknesses[0] ?? null;
   const drill = weakest ? drillFor(weakest.id) : null;

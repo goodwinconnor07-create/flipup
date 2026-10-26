@@ -1,5 +1,6 @@
 import { REPLAY_ON } from '../train/replay';
 import { useMemo } from 'react';
+import { loadFriend } from '../state/friends';
 import { loadStats } from '../state/persist';
 import { computeStats } from '../train/stats';
 import { loadDrills, loadHistory, loadSummaries, type PlayedHand } from '../state/training';
@@ -63,7 +64,7 @@ export function InsightsTab() {
   const placed = stats.games.filter((g) => g.place != null);
   const wins = placed.filter((g) => g.place === 1).length;
   const recent = [...stats.games].reverse().slice(0, 5);
-  const twinGames = placed.filter((g) => g.twin);
+  const twinGames = placed.filter((g) => g.twin && !g.friend);
   return (
     <>
       <div className="glass-card insight-hero">
@@ -113,7 +114,7 @@ export function InsightsTab() {
               <span>
                 <b>{when(g.at)}</b>
                 <small>
-                  {g.twin ? 'Your twin' : `${g.players} players`}, {g.hands} {g.hands === 1 ? 'hand' : 'hands'}
+                  {g.friend ? `${loadFriend(g.friend)?.name ?? 'A friend'}'s twin` : g.twin ? 'Your twin' : `${g.players} players`}, {g.hands} {g.hands === 1 ? 'hand' : 'hands'}
                 </small>
               </span>
               {g.place != null && <b className="num">{`${ordinal(g.place)} of ${g.players}`}</b>}

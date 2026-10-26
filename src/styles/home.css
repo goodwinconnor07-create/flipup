@@ -821,6 +821,50 @@ html[data-theme='dark'] .sheet .group {
   color: var(--ink-3);
 }
 
+/* Friends' twins: a face in place of an icon square, and the scouting header. */
+.gr-face {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+}
+
+.friend-row .gr-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.friend-row .gr-text small {
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
+.scout-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.scout-head span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.scout-head small {
+  font-size: var(--fs-small);
+  color: var(--ink-3);
+}
+
+.friends-share {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 /* The note under the sharing switch in Settings. */
 .settings-note {
   margin: -4px 4px 0;

@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { TWIN_READY } from '../../game';
-import { back, navigate, startTwin, useApp } from '../../state/store';
+import { back, navigate, startFriendTwin, startTwin, useApp } from '../../state/store';
 import { findPlayed } from '../../state/training';
 import { loadTwin } from '../../state/twin';
+import { bestTwin, loadFriend } from '../../state/friends';
 import { loadTwinGames } from '../../state/twinGames';
 import { CoachSays } from '../../train/Coach';
-import { twinBluffLines, twinGameLines, twinHabitsIntro, twinStoryLines } from '../../train/coach';
+import { planIntro, twinBluffLines, twinGameLines, twinHabitsIntro, twinStoryLines } from '../../train/coach';
+import { planCheck, planLines, scout } from '../../train/scout';
 import { bluffsOnYou, gameStory, habitsOf, lossStories, summarize } from '../../train/twinReport';
 import { MiniCards } from '../../train/widgets';
 import { chips } from '../../ui/components';
@@ -14,10 +16,21 @@ import { playBotsToTeach } from '../HomeTwins';
 
 const signed = (n: number) => (n > 0 ? `+${chips(Math.round(n))}` : n < 0 ? `−${chips(Math.round(-n))}` : '0');
 
-/** What your AI twin found in your last game against it: the hands that cost you, and the habits it copied. No solver: just counts. */
-export function TwinReport() {
+/**
+ * What your AI twin found in your last game against it: the hands that cost you, and the habits it copied.
+ * With `friend` it's your last game against that friend's twin: the same, with how your plan against them did
+ * in place of your habits. No solver: just counts.
+ */
+export function TwinReport({ friend }: { friend?: string }) {
   const named = useApp((s) => s.profile.name.trim().length > 0);
-  const game = useMemo(() => loadTwinGames().at(-1) ?? null, []);
+  const game = useMemo(() => loadTwinGames().filter((g) => g.friend === friend).at(-1) ?? null, [friend]);
+  const pal = useMemo(() => (friend ? loadFriend(friend) : null), [friend]);
+  const plan = useMemo(() => {
+    const twin = pal ? bestTwin(pal) : null;
+    const kind = twin ? (scout(twin.profile)[0]?.kind ?? null) : null;
+    const check = game ? planCheck(game) : null;
+    return check ? planLines(check, kind) : [];
+  }, [pal, game]);
   const twin = useMemo(loadTwin, []);
   const ready = twin.hands >= TWIN_READY;
   const summary = useMemo(() => (game ? summarize(game) : null), [game]);
@@ -33,15 +46,21 @@ export function TwinReport() {
         <button type="button" className="icon-btn press" aria-label="Back" onClick={back}>
           <BackIcon />
         </button>
-        <div className="topbar-title h3">Your twin</div>
+        <div className="topbar-title h3">{pal ? `${pal.name}'s twin` : friend ? 'A friend\'s twin' : 'Your twin'}</div>
         <span className="icon-btn" aria-hidden />
       </div>
       <div className="screen-body">
         {!played ? (
-          <CoachSays lines={['Play a game against your twin first, then I\'ll show you what it found.']}>
-            <button type="button" className="btn btn-sm btn-blue coach-cta" onClick={() => (ready ? startTwin() : playBotsToTeach(named))}>
-              {ready ? 'Play your twin' : 'Play with Bots'}
-            </button>
+          <CoachSays lines={[friend ? 'Play a game against their twin first, then I\'ll show you how your plan did.' : 'Play a game against your twin first, then I\'ll show you what it found.']}>
+            {friend ? (
+              <button type="button" className="btn btn-sm btn-blue coach-cta" onClick={back}>
+                Back to scouting
+              </button>
+            ) : (
+              <button type="button" className="btn btn-sm btn-blue coach-cta" onClick={() => (ready ? startTwin() : playBotsToTeach(named))}>
+                {ready ? 'Play your twin' : 'Play with Bots'}
+              </button>
+            )}
           </CoachSays>
         ) : (
           <>
@@ -111,11 +130,21 @@ export function TwinReport() {
                 </div>
               </>
             )}
-            <h2 className="section-head">Habits your twin copied</h2>
-            <div className="glass-card coach-card">
-              <CoachSays quick lines={[twinHabitsIntro(habits.length)]} />
-            </div>
-            {habits.map((h) => (
+            {friend && plan.length > 0 && (
+              <>
+                <h2 className="section-head">Your plan</h2>
+                <div className="glass-card coach-card">
+                  <CoachSays quick lines={[planIntro(pal?.name ?? 'their', summary.hands), ...plan]} />
+                </div>
+              </>
+            )}
+            {!friend && <h2 className="section-head">Habits your twin copied</h2>}
+            {!friend && (
+              <div className="glass-card coach-card">
+                <CoachSays quick lines={[twinHabitsIntro(habits.length)]} />
+              </div>
+            )}
+            {!friend && habits.map((h) => (
               <div key={h.id} className="glass-card coach-card twin-habit">
                 <CoachSays quick compact lines={[h.line, `Try this: ${h.tip}`]} />
                 <details className="coach-numbers">
@@ -124,9 +153,14 @@ export function TwinReport() {
                 </details>
               </div>
             ))}
-            {ready && (
+            {!friend && ready && (
               <button type="button" className="btn btn-xl btn-blue twin-again" onClick={() => startTwin()}>
                 Play your twin again
+              </button>
+            )}
+            {friend && pal && bestTwin(pal)?.ready && (
+              <button type="button" className="btn btn-xl btn-blue twin-again" onClick={() => startFriendTwin(friend)}>
+                {`Play ${pal.name}'s twin again`}
               </button>
             )}
           </>
@@ -136,5 +170,8 @@ export function TwinReport() {
   );
 }
 
-/** Opens the report (from the final screen, the Review tab, Insights or the table menu). */
+/** Opens the report on your own twin (from the final screen, the Review tab, Insights or the table menu). */
 export const openTwinReport = () => navigate({ name: 'twinReport' });
+
+/** Opens the report on your last game against a friend's twin. */
+export const openFriendReport = (code: string) => navigate({ name: 'twinReport', friend: code });

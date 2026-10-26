@@ -561,3 +561,25 @@ export function twinStoryLines(g: GameStory): string[] {
   if (g.street) lines.push(`Most of what you lost, you lost on the ${g.street}.`);
   return lines;
 }
+
+// ── Scouting a friend's twin ────────────────────────────────────────────────
+
+/** The coach's words over a friend's scouting report. */
+export function scoutLines(name: string, twin: { hands: number; ready: boolean; source: 'shared' | 'seen' } | null, notes: number, word: string): string[] {
+  if (!twin) return [`I haven't seen ${name} play yet. Add their twin code, or play a few hands with them online.`];
+  if (!twin.ready) {
+    return [
+      `I only know ${twin.hands} of ${name}'s hands${twin.source === 'seen' ? ' from tables with them' : ''}. I need a few more before their twin is worth playing.`,
+      twin.source === 'seen' ? 'Play more online with them, or ask them to share their twin.' : 'Ask them to play a few more hands.',
+    ];
+  }
+  return [
+    `Here's how ${name} plays. This copy is built on ${twin.hands} hands, so it's ${word}.`,
+    notes > 0 ? "And here's what I'd do about it." : "Nothing stands out: they play like most people do. Expect a fair fight.",
+  ];
+}
+
+/** The coach on the plan, over a friend's report. */
+export function planIntro(name: string, hands: number): string {
+  return `Here's how your game plan against ${name}'s twin did over ${hands} hands.`;
+}

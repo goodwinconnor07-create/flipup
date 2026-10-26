@@ -47,10 +47,11 @@ describe('counting someone else from the outside', () => {
     expect(twinNumbers(t, 0).foldToBet).toBe(1);
   });
 
-  it('ignores a hand where the player never had a move', () => {
+  it('counts a hand they were dealt into even when they never got to act', () => {
     const t = emptyTwin();
-    expect(addObservedHand(t, seen(1, [['preflop', 'me', 'fold', 0]]), 'foe', 'k')).toBe(false);
-    expect(t.hands).toBe(0);
+    expect(addObservedHand(t, seen(1, [['preflop', 'me', 'fold', 0]]), 'foe', 'k')).toBe(true);
+    expect(t.hands).toBe(1);
+    expect(t.stats.vpip).toBe(0);
   });
 });
 

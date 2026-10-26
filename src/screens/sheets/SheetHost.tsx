@@ -58,7 +58,8 @@ import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
 import { TwinSheet } from './TwinSheet';
 import { ShareTwinSheet } from './ShareTwinSheet';
-import { openTwinReport } from '../train/TwinReport';
+import { AddTwinSheet } from './AddTwinSheet';
+import { openFriendReport, openTwinReport } from '../train/TwinReport';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
   switch (sheet.name) {
@@ -90,6 +91,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <TwinSheet />;
     case 'shareTwin':
       return <ShareTwinSheet />;
+    case 'addTwin':
+      return <AddTwinSheet />;
     case 'confirm':
       return <ConfirmSheet sheet={sheet} />;
   }
@@ -432,7 +435,7 @@ function MenuSheet() {
 
   const table: Row[] = [];
   if (started) table.push({ label: 'Standings', Icon: TrophyIcon, color: 'var(--gold)', onClick: () => openSheet({ name: 'standings' }) });
-  if (started && game?.twinGame) table.push({ label: 'What your twin found', Icon: SparkIcon, color: 'var(--indigo)', onClick: quick(openTwinReport) });
+  if (started && game?.twinGame) table.push({ label: game.friendTwin ? 'How your plan is going' : 'What your twin found', Icon: SparkIcon, color: 'var(--indigo)', onClick: quick(() => (game.friendTwin ? openFriendReport(game.friendTwin) : openTwinReport())) });
   if (started) table.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
   if (online && game?.code && !ended)
     table.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });

@@ -21,6 +21,10 @@ export interface HandFacts {
   bluff?: 'worked' | 'caught';
   /** On a bluff that worked: you folded a better hand than it had. */
   better?: boolean;
+  /** How it ended: you folded, the twin folded, or showdown. */
+  end?: 'fold-me' | 'fold-them' | 'showdown';
+  /** Who made the last bet or raise. */
+  lastAgg?: 'me' | 'them';
 }
 
 const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];
@@ -35,6 +39,9 @@ export function handFacts(r: HandRecord, heroId: string): HandFacts | null {
   const last = r.actions[r.actions.length - 1];
   const out: Street = r.showdown ? (r.board.length >= 5 ? 'river' : STREETS[Math.max(0, STREETS.findIndex((s) => BOARD_AT[s] === r.board.length))]) : (last?.street ?? 'preflop');
   const facts: HandFacts = { btn: r.buttonId === heroId, mine: [...mine], theirs: theirs ? [...theirs] : [], board: [...r.board], sd: r.showdown, out };
+  facts.end = r.actions.some((a) => a.playerId === heroId && a.move === 'fold') ? 'fold-me' : r.actions.some((a) => a.playerId === foe.id && a.move === 'fold') ? 'fold-them' : 'showdown';
+  const lastAggressor = [...r.actions].reverse().find((a) => a.move === 'bet' || a.move === 'raise' || a.move === 'allin');
+  if (lastAggressor) facts.lastAgg = lastAggressor.playerId === heroId ? 'me' : 'them';
   const myMoves = heroDecisions(r, heroId);
   const fold = myMoves.find((d) => d.move === 'fold');
   if (fold) facts.fold = fold.spot.street;

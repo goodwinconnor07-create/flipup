@@ -208,7 +208,7 @@ export interface Habit {
   weight: number;
 }
 
-interface Rule {
+export interface Rule {
   id: string;
   /** Your number and how many chances it's from, or null. */
   read: (t: TwinProfile) => { hits: number; of: number } | null;
@@ -222,7 +222,7 @@ interface Rule {
   low?: { line: (p: string) => string; tip: string };
 }
 
-const RULES: Rule[] = [
+export const RULES: Rule[] = [
   {
     id: 'hands',
     read: (t) => ({ hits: t.stats.vpip, of: t.hands }),
@@ -348,14 +348,21 @@ export function habitsOf(twin: TwinProfile, max = 3): Habit[] {
 }
 
 /** Whether the size of your bets gives your hand away: how much bigger you bet with a good hand than with a weak one (or the other way round). */
-function sizeTell(twin: TwinProfile): Habit | null {
+/** The average bet size (a share of the pot) with a good hand and with a weak one, or null with too few bets of either. */
+export function sizeMeans(twin: TwinProfile): { strong: number; weak: number } | null {
   const mean = (idx: number[]) => {
     const n = idx.reduce((a, i) => a + twin.stats.sizeN[i], 0);
     return n >= 4 ? idx.reduce((a, i) => a + twin.stats.sizeSum[i], 0) / n : null;
   };
   const strong = mean([4, 5, 6]);
   const weak = mean([0, 1, 2, 3]);
-  if (strong === null || weak === null) return null;
+  return strong === null || weak === null ? null : { strong, weak };
+}
+
+function sizeTell(twin: TwinProfile): Habit | null {
+  const means = sizeMeans(twin);
+  if (!means) return null;
+  const { strong, weak } = means;
   const diff = strong - weak;
   if (Math.abs(diff) < 0.3) return null;
   const big = diff > 0;

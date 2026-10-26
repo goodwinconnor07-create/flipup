@@ -25,9 +25,9 @@ test('Play shows the AI twins, and your twin asks for more hands first', async (
   await shot(page, 'twin-02-sheet');
   await page.getByRole('button', { name: 'Not now' }).click();
 
-  // Friends' twins aren't built yet: the tile says so.
+  // Friends' twins open their own list.
   await page.getByRole('button', { name: /^Friends' twins/ }).click();
-  await expect(page.getByText("Friends' twins are on the way.")).toBeVisible();
+  await expect(page.getByRole('button', { name: "Add a friend's twin" }).first()).toBeVisible();
 });
 
 test('once it knows you, play your twin heads-up and keep teaching it', async ({ page }) => {

@@ -1,6 +1,6 @@
 # AI twins: plan
 
-Status: plan only, nothing built yet. Decisions below came from the product owner.
+Status: phase 1 (twin memory) is built. Nothing plays from it yet. Decisions below came from the product owner.
 
 Two new ways to play, in an "AI twins" group on the Play tab under the Play with Friends and Play with Bots cards, above Quick games:
 
@@ -38,7 +38,7 @@ Two tiles side by side in a `.twins` grid, each with a drawing at the top and a 
 
 ## Build order
 
-### 1. Twin memory
+### 1. Twin memory (built)
 
 New pure code in `src/game/` (no DOM) and storage in `src/state/`.
 

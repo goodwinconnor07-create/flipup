@@ -13,6 +13,7 @@ import {
   resetTo,
   setProfile,
   setTableLook,
+  toast,
   toggleCalm,
   toggleTalk,
   setAppearance,
@@ -24,6 +25,7 @@ import {
 import { Avatar, Choice, chips, EmojiPicker, PlayingCard, Sheet } from '../../ui/components';
 import { haptic } from '../../ui/effects';
 import { FELTS, RAILS, type Appearance } from '../../state/persist';
+import { loadTwin, resetTwin } from '../../state/twin';
 import {
   BoltIcon,
   ChatIcon,
@@ -40,6 +42,7 @@ import {
   PencilIcon,
   PlusIcon,
   SoundIcon,
+  SparkIcon,
   StopIcon,
   TrophyIcon,
   UsersIcon,
@@ -346,12 +349,33 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
 /** The app's own settings, opened from your profile. */
 function PrefsSheet() {
   const { switches, links } = useYouRows();
+  const twinHands = loadTwin().hands;
+  const forget: Row[] = [];
+  if (twinHands > 0)
+    forget.push({
+      label: 'Reset my AI twin',
+      Icon: SparkIcon,
+      color: 'var(--red)',
+      danger: true,
+      onClick: () =>
+        confirm({
+          title: 'Reset your AI twin?',
+          body: `It has learned from ${twinHands} of your hands. This clears all of it.`,
+          confirm: 'Reset',
+          danger: true,
+          onConfirm: () => {
+            resetTwin();
+            toast('Your AI twin was reset.');
+          },
+        }),
+    });
   return (
     <Sheet title="Settings">
       <div className="settings-list">
         <AppearanceRow />
         <Rows rows={switches} />
         <Rows rows={links} />
+        {forget.length > 0 && <Rows rows={forget} />}
       </div>
     </Sheet>
   );

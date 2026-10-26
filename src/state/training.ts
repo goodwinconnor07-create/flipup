@@ -3,6 +3,7 @@
 
 import { handRecord, type Game, type HandRecord } from '../game';
 import { markPlayedToday, read, write } from './persist';
+import { recordTwinHand } from './twin';
 
 const KEYS = {
   history: 'flipup.history',
@@ -90,6 +91,7 @@ export function captureFinishedHand(game: Game | null, deviceId: string): void {
   captured.add(key);
   if (captured.size > 50) captured = new Set([...captured].slice(-20));
   addHand({ key, heroId: me.id, record });
+  recordTwinHand(key, record, me.id);
   markPlayedToday();
 }
 

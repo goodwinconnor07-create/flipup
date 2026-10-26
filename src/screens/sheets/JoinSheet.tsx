@@ -6,6 +6,7 @@ import { Sheet } from '../../ui/components';
 import { haptic } from '../../ui/effects';
 import { QrIcon } from '../../ui/Icons';
 import { QRScanner } from '../../ui/QRScanner';
+import { useKeyboardLift } from '../../ui/useKeyboardLift';
 
 /** Looks a code up. Returns the table, or the sentence to show when it can't be found. */
 export async function findTable(code: string): Promise<{ info: TableInfo } | { error: string }> {
@@ -37,6 +38,8 @@ export function JoinSheet() {
   const [scanning, setScanning] = useState(false);
   const input = useRef<HTMLInputElement>(null);
   const looked = useRef('');
+  // The on-screen keyboard covers the bottom of the phone, so the sheet rises above it while you type.
+  const lift = useKeyboardLift();
 
   const lookUp = async (value: string) => {
     if (looked.current) return;
@@ -67,7 +70,7 @@ export function JoinSheet() {
   };
 
   return (
-    <Sheet title="Join a table">
+    <Sheet title="Join a table" lift={lift}>
       <div className="stack">
         {scanning ? (
           <>

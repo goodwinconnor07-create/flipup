@@ -296,7 +296,18 @@ export function Choice<T extends string | number>({
   );
 }
 
-export function Sheet({ title, children, onClose = closeSheet }: { title?: ReactNode; children: ReactNode; onClose?: () => void }) {
+export function Sheet({
+  title,
+  children,
+  onClose = closeSheet,
+  lift = 0,
+}: {
+  title?: ReactNode;
+  children: ReactNode;
+  onClose?: () => void;
+  /** Pixels to raise the sheet by, e.g. the height of the on-screen keyboard. */
+  lift?: number;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const leaving = useApp((s) => s.sheetLeaving);
   const drag = useRef<{ startY: number; dy: number } | null>(null);
@@ -331,7 +342,11 @@ export function Sheet({ title, children, onClose = closeSheet }: { title?: React
   const dragProps = { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp };
 
   return (
-    <div className={`sheet-backdrop${leaving ? ' leaving' : ''}`} onClick={onClose}>
+    <div
+      className={`sheet-backdrop${leaving ? ' leaving' : ''}`}
+      onClick={onClose}
+      style={{ '--lift': `${lift}px` } as CSSProperties}
+    >
       <div
         className="sheet"
         role="dialog"

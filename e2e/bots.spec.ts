@@ -697,3 +697,42 @@ test('a playstyle tile: one tap starts a heads-up game against a random bot', as
   await expect(page.getByText('Your turn')).toBeVisible({ timeout: 30_000 });
   await shot(page, '20-playstyle');
 });
+
+test('when the blinds go up, a red banner slides down from the top, stays about five seconds, then slides out', async ({ page }) => {
+  watchErrors(page);
+  // A fake clock, so the five-minute blind level passes at once.
+  await page.clock.install();
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await setName(page, 'Sam');
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('slider', { name: 'Blinds go up every' }).fill('5');
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await page.clock.fastForward(4000);
+  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
+  await page.clock.fastForward('06:00');
+  const banner = page.locator('.blind-banner');
+  for (let i = 0; i < 80 && !(await banner.isVisible()); i++) {
+    if (await page.getByText('Your turn').isVisible()) await page.locator('.action-buttons .btn-fold').click().catch(() => {});
+    await page.clock.fastForward(1500);
+    await page.waitForTimeout(100);
+  }
+  await expect(banner).toBeVisible();
+  await expect(banner).toHaveText(/Blinds are now 10\/20 🚨/);
+  await page.waitForTimeout(600);
+  await shot(page, '22-blinds-banner');
+  expect((await banner.boundingBox())?.y).toBe(0);
+  // Still there a few seconds in, then it slides out and is removed.
+  await page.clock.fastForward(2500);
+  await expect(banner).toBeVisible();
+  await expect(banner).not.toHaveClass(/leaving/);
+  let sawLeaving = false;
+  for (let i = 0; i < 60 && (await banner.count()) > 0; i++) {
+    if (((await banner.getAttribute('class')) ?? '').includes('leaving')) sawLeaving = true;
+    await page.clock.fastForward(100);
+    await page.waitForTimeout(30);
+  }
+  expect(sawLeaving).toBe(true);
+  await expect(banner).toHaveCount(0);
+});

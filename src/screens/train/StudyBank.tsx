@@ -7,6 +7,7 @@ import { loadBank, loadRecent, removeBanked, renameBanked, restoreBanked, saveTo
 import { navigate, toast, undoToast } from '../../state/store';
 import { CoachSays } from '../../train/Coach';
 import { Dots, MiniCards } from '../../train/widgets';
+import { transition } from '../../ui/viewTransition';
 
 const when = (at: number) =>
   new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) +
@@ -32,8 +33,8 @@ export function StudyBank() {
   // No "are you sure": it goes at once, and the toast can bring it back.
   const del = (h: BankHand) => {
     const index = bank.findIndex((b) => b.id === h.id);
-    setBank(removeBanked(h.id));
-    undoToast(`Deleted "${h.name}"`, () => setBank(restoreBanked(h, Math.max(0, index))));
+    transition(() => setBank(removeBanked(h.id)));
+    undoToast(`Deleted "${h.name}"`, () => transition(() => setBank(restoreBanked(h, Math.max(0, index)))));
   };
 
   const edit = (h: PlayedQuiz & { name?: string }) => {
@@ -140,7 +141,7 @@ export function StudyBank() {
 
 function Row({ hand, title, sub, children }: { hand: PlayedQuiz | BankHand; title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="t-row sb-row">
+    <div className="t-row sb-row" style={{ ['--vt' as string]: `bank-${hand.id.replace(/[^\w-]/g, '')}` }}>
       <div className="sb-top">
         <MiniCards cards={hand.cards ?? []} />
         <span className="t-row-main">

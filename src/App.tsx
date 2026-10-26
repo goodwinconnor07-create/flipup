@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useApp } from './state/store';
 import { Toasts } from './ui/components';
 import { Home } from './screens/Home';
@@ -18,13 +19,28 @@ import { Friends } from './screens/train/Friends';
 import { Scout } from './screens/train/Scout';
 import { Progress } from './screens/train/Progress';
 import { Legend } from './screens/train/Legend';
+import { canTransition, transition } from './ui/viewTransition';
 
 export function App() {
-  const route = useApp((s) => s.stack[s.stack.length - 1]);
+  const top = useApp((s) => s.stack[s.stack.length - 1]);
   const depth = useApp((s) => s.stack.length);
   const sheet = useApp((s) => s.sheet);
   const sheetKey = useApp((s) => s.sheetKey);
 
+  // A change of screen cross-fades (and the shared names in global.css glide): the old screen stays for a frame
+  // while the browser takes its picture, then the new one is swapped in. The store has already moved on, so
+  // nothing that reads it waits. The table is left out: it's busy, and it changes with the game, not with a tap.
+  const current = useMemo(() => ({ route: top, depth }), [top, depth]);
+  const [shown, setShown] = useState(current);
+  const smooth = canTransition() && top.name !== 'table' && shown.route.name !== 'table';
+  useEffect(() => {
+    if (shown === current) return;
+    if (smooth) transition(() => setShown(current));
+    else setShown(current);
+  }, [current]);
+  const view = smooth ? shown : current;
+
+  const { route } = view;
   let screen;
   switch (route.name) {
     case 'home':
@@ -84,7 +100,7 @@ export function App() {
 
   return (
     <>
-      <div key={`${depth}-${route.name}`}>{screen}</div>
+      <div key={`${view.depth}-${route.name}`}>{screen}</div>
       {sheet && <SheetHost key={sheetKey} sheet={sheet} />}
       <Toasts />
     </>

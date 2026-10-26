@@ -20,6 +20,7 @@ export * from './handText';
 export * from './reactions';
 export * from './ids';
 export * from './idempotency';
+export * from './raiseSizes';
 export * from './names';
 export * from './emoji';
 export * from './chat';

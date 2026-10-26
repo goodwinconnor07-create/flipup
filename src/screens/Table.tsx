@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { cardName, describeHand, equity, myPlayer, options, pot, seatFor, type Card, type Equity, type Game, type Hand } from '../game';
-import { dispatch, openSheet, toast, useApp } from '../state/store';
+import { dispatch, openSheet, useApp } from '../state/store';
 import { toTableTime } from '../state/clock';
 import { Avatar, CardSlot, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
@@ -12,19 +12,20 @@ import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
 import { Lobby } from './Lobby';
 import { useWakeLock } from '../ui/useWakeLock';
-import { ActionArea, type PreAction } from './table/Actions';
+import { ActionArea, RaiseSizer, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 
 export function Table() {
   const desktop = useDesktop();
   const game = useApp((s) => s.game);
-  // Say so when the blinds go up.
+  // Say so when the blinds go up: a red banner slides down from the top of the screen.
   const bigBlind = game?.settings.bigBlind;
   const lastBlind = useRef(bigBlind);
+  const [blindNews, setBlindNews] = useState<{ id: number; text: string } | null>(null);
   useEffect(() => {
     if (game && bigBlind !== undefined && lastBlind.current !== undefined && bigBlind > lastBlind.current && game.status === 'playing') {
-      toast(`Blinds are now ${chips(game.settings.smallBlind)}/${chips(bigBlind)}`, 'info');
+      setBlindNews({ id: Date.now(), text: `Blinds are now ${chips(game.settings.smallBlind)}/${chips(bigBlind)} 🚨` });
       playSound('chips');
     }
     lastBlind.current = bigBlind;
@@ -46,6 +47,7 @@ export function Table() {
   }
   return (
     <div className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}`}>
+      {blindNews && <BlindBanner key={blindNews.id} text={blindNews.text} onDone={() => setBlindNews(null)} />}
       <TableBar game={game} />
       <div className="rotate-hint" role="alert">
         <b>Turn your phone upright</b>
@@ -69,6 +71,27 @@ export function Table() {
           <Felt game={game} />
         ))}
       {game.status === 'ended' && <Final game={game} />}
+    </div>
+  );
+}
+
+/** An announcement bar that slides down from the top, stays for five seconds, then slides back out. */
+const BANNER_MS = 5000;
+const BANNER_OUT_MS = 320; // matches banner-out in table.css
+
+function BlindBanner({ text, onDone }: { text: string; onDone: () => void }) {
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    const out = setTimeout(() => setLeaving(true), BANNER_MS);
+    const gone = setTimeout(onDone, BANNER_MS + BANNER_OUT_MS);
+    return () => {
+      clearTimeout(out);
+      clearTimeout(gone);
+    };
+  }, []);
+  return (
+    <div className={`blind-banner${leaving ? ' leaving' : ''}`} role="status">
+      {text}
     </div>
   );
 }
@@ -201,6 +224,12 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   // They're cleared on each new street, because the situation has changed. Call current is also cleared the
   // moment someone raises, so it never calls more than you saw.
   const [pre, setPre] = useState<PreAction>(null);
+  // The raise amount while the sizer is open. The sizer takes the place of your cards and chip counter.
+  const [raise, setRaise] = useState<number | null>(null);
+  useEffect(() => {
+    if (!myTurn) setRaise(null);
+  }, [myTurn]);
+  const sizing = raise !== null && myTurn && !!hand && !!mySeat;
   const streetKey = hand ? `${hand.number}-${hand.street}` : '';
   useEffect(() => setPre(null), [streetKey]);
   useEffect(() => {
@@ -347,10 +376,11 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       </div>
 
       <div className="action-area">
-        {bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />}
+        {bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} raise={raise} setRaise={setRaise} />}
+        {sizing && desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
       </div>
 
-      <div className={`me-area${canShow ? ' has-show' : ''}`}>
+      <div className={`me-area${canShow ? ' has-show' : ''}${sizing && !desktop ? ' sizing' : ''}`}>
         <div className="my-cards">
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
@@ -387,6 +417,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           )}
         </div>
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} />
+        {sizing && !desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
       </div>
     </div>
   );

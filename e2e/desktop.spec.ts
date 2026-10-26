@@ -55,7 +55,7 @@ test('the table uses the wide screen: everyone seated round it, a side panel, no
   for (const el of [
     panel.getByRole('button', { name: 'Min' }),
     panel.locator('.preset[aria-label="All in"]'),
-    panel.locator('.btn-blue'),
+    page.locator('.action-buttons .btn-blue'),
     panel.getByRole('button', { name: 'Back' }),
   ])
     await expect(el).toBeInViewport({ ratio: 1 });

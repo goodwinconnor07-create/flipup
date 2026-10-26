@@ -1,10 +1,11 @@
 import { REPLAY_ON } from '../../train/replay';
-import { useMemo, useRef, useState } from 'react';
-import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
+import { useMemo, type CSSProperties } from 'react';
+import { lastStanding, nearestStop, options, pot, raiseStops, type Game, type Hand, type Player, type Seat } from '../../game';
 import { dispatch, navigate, useApp } from '../../state/store';
 import { handKey, hasHand } from '../../state/training';
 import { chips } from '../../ui/components';
-import { CloseIcon, MinusIcon, PlusIcon } from '../../ui/Icons';
+import { haptic } from '../../ui/effects';
+import { CloseIcon } from '../../ui/Icons';
 
 /** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
 export type PreAction = { kind: 'checkfold' | 'callany' | 'current'; bet: number } | null;
@@ -18,6 +19,8 @@ export function ActionArea({
   now,
   pre,
   setPre,
+  raise,
+  setRaise,
 }: {
   game: Game;
   me?: Player;
@@ -27,6 +30,9 @@ export function ActionArea({
   now: number;
   pre: PreAction;
   setPre: (p: PreAction) => void;
+  /** The amount while the sizer is open (it sits where your cards are, see Table.tsx); null otherwise. */
+  raise: number | null;
+  setRaise: (to: number | null) => void;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
@@ -35,7 +41,7 @@ export function ActionArea({
   if (!me) return <p className="table-note">You're watching this table.</p>;
 
   if (hand && !hand.result) {
-    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} />;
+    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} raise={raise} setRaise={setRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <p className="table-note">Running it out…</p>;
     // Still in the hand with chips behind: you can set what to do before your turn comes round.
@@ -195,31 +201,36 @@ function SitBack() {
   );
 }
 
-function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: Seat; sending: boolean }) {
+function MyTurn({
+  game,
+  hand,
+  seat,
+  sending,
+  raise,
+  setRaise,
+}: {
+  game: Game;
+  hand: Hand;
+  seat: Seat;
+  sending: boolean;
+  raise: number | null;
+  setRaise: (to: number | null) => void;
+}) {
   const o = options(game, hand, seat);
-  const [raising, setRaising] = useState(false);
   const act = (move: 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin', to?: number) => {
-    setRaising(false);
+    setRaise(null);
     dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move, ...(to !== undefined ? { to } : {}) });
   };
-  // While the sizer is open the real row stays in place, unseen, so the table doesn't change size under it.
+  const confirm = () => {
+    if (raise === null) return;
+    act(raise >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', raise);
+  };
+  // The buttons never move. While you size, Raise shows the amount and becomes the confirm.
+  const raiseLabel = raise === null ? o.word : raise >= o.maxTo ? 'All in' : `${o.word} ${chips(raise)}`;
   return (
     <div className="stack">
-      {raising && (
-        <RaisePanel
-          game={game}
-          hand={hand}
-          seat={seat}
-          onCancel={() => setRaising(false)}
-          onFold={() => act('fold')}
-          onCall={() => act(o.canCheck ? 'check' : 'call')}
-          onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
-        />
-      )}
-      <p className={`table-note your-turn${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
-        Your turn
-      </p>
-      <div className={`action-buttons${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
+      <p className="table-note your-turn">Your turn</p>
+      <div className="action-buttons">
         <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
           Fold
         </button>
@@ -233,8 +244,8 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
           </button>
         )}
         {o.canRaise && (
-          <button type="button" className="btn btn-blue" disabled={sending} onClick={() => setRaising(true)}>
-            {o.word}
+          <button type="button" className="btn btn-blue" disabled={sending} onClick={() => (raise === null ? setRaise(o.minTo) : confirm())}>
+            {raiseLabel}
           </button>
         )}
       </div>
@@ -242,107 +253,83 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
   );
 }
 
-function RaisePanel({
+/**
+ * The amount, a slider that moves one round notch at a time (with a tick under your thumb on each one), and
+ * four big presets. It fills the space your cards and chip counter use (they stay in place underneath,
+ * hidden), so nothing else on the table moves.
+ */
+export function RaiseSizer({
   game,
   hand,
   seat,
+  to,
+  setTo,
   onCancel,
-  onFold,
-  onCall,
-  onRaise,
 }: {
   game: Game;
   hand: Hand;
   seat: Seat;
+  to: number;
+  setTo: (to: number) => void;
   onCancel: () => void;
-  onFold: () => void;
-  onCall: () => void;
-  onRaise: (to: number) => void;
 }) {
   const o = options(game, hand, seat);
-  const bb = game.settings.bigBlind;
-  const [to, setTo] = useState(o.minTo);
+  const stops = raiseStops(o.minTo, o.maxTo, game.settings.bigBlind);
   const potNow = pot(hand);
-  const range = useRef<HTMLInputElement>(null);
 
   // Pot-sized raise: call first, then raise by the size of the pot after the call.
   const potRaise = (fraction: number) => hand.currentBet + Math.round((potNow + o.toCall) * fraction);
-  const clamp = (n: number) => Math.max(o.minTo, Math.min(o.maxTo, n));
-  // Two sizes that come to the same amount (a small pot next to the minimum) show once.
+  // Sizes that come to the same amount (a small pot next to the minimum) show once, under the name that matters most.
+  const rank = ['Min', 'All in', 'Pot', '½ pot'];
   const presets = [
     { label: 'Min', to: o.minTo },
-    { label: '½ pot', to: clamp(potRaise(0.5)) },
-    { label: '¾ pot', to: clamp(potRaise(0.75)) },
-    { label: 'Pot', to: clamp(potRaise(1)) },
+    { label: '½ pot', to: nearestStop(stops, potRaise(0.5)) },
+    { label: 'Pot', to: nearestStop(stops, potRaise(1)) },
     { label: 'All in', to: o.maxTo },
-  ].filter((p, i, all) => all.findIndex((q) => q.to === p.to) === i);
-  const step = Math.max(1, Math.min(bb, Math.floor((o.maxTo - o.minTo) / 50) || 1));
+  ]
+    .filter((m, i, all) => all.every((q, j) => q.to !== m.to || j === i || rank.indexOf(m.label) < rank.indexOf(q.label)))
+    .sort((a, b) => a.to - b.to);
+  const index = Math.max(0, stops.indexOf(to));
 
-  const nudge = (dir: 1 | -1) => setTo((t) => clamp(t + dir * step));
-
-  // A panel pinned to the bottom of the screen, over your cards, so every option is in view without scrolling.
   return (
-    <div className="raise-layer">
-      <div className="raise-scrim" onClick={onCancel} />
-      <div className="raise-panel" role="dialog" aria-label={`${o.word} amount`}>
-        <div className="raise-head">
-          <span className="muted">{o.word} to</span>
-          <b className="raise-amount num">{chips(to)}</b>
-          <span className="muted raise-of">of {chips(o.maxTo)}</span>
-          <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
-            <CloseIcon />
+    <div className="raise-panel" role="group" aria-label={`${o.word} amount`}>
+      <div className="raise-top">
+        <b className="raise-amount num">{chips(to)}</b>
+        <input
+          className="raise-slider"
+          style={{ '--pos': stops.length > 1 ? index / (stops.length - 1) : 0 } as CSSProperties}
+          type="range"
+          min={0}
+          max={Math.max(1, stops.length - 1)}
+          step={1}
+          value={index}
+          disabled={stops.length < 2}
+          aria-label={`${o.word} amount`}
+          aria-valuetext={chips(to)}
+          onChange={(e) => {
+            const next = stops[Number(e.target.value)];
+            if (next === to) return;
+            haptic('light');
+            setTo(next);
+          }}
+        />
+        <button type="button" className="icon-btn press raise-close" aria-label="Back" onClick={onCancel}>
+          <CloseIcon />
+        </button>
+      </div>
+      <div className="raise-presets">
+        {presets.map((p) => (
+          <button
+            key={p.label}
+            type="button"
+            aria-label={p.label}
+            className={`preset press${p.to === to ? ' on' : ''}`}
+            onClick={() => setTo(p.to)}
+          >
+            <b>{p.label}</b>
+            <small className="num">{chips(p.to)}</small>
           </button>
-        </div>
-        <div className="raise-presets">
-          {presets.map((p) => (
-            <button
-              key={p.label}
-              type="button"
-              aria-label={p.label}
-              className={`preset press${p.to === to ? ' on' : ''}`}
-              onClick={() => setTo(p.to)}
-            >
-              <b>{p.label}</b>
-              <small className="num">{chips(p.to)}</small>
-            </button>
-          ))}
-        </div>
-        <div className="raise-fine">
-          <button type="button" className="icon-btn press" aria-label="Less" disabled={to <= o.minTo} onClick={() => nudge(-1)}>
-            <MinusIcon />
-          </button>
-          <input
-            ref={range}
-            className="raise-slider"
-            type="range"
-            min={o.minTo}
-            max={o.maxTo}
-            step={step}
-            value={to}
-            aria-label={`${o.word} amount`}
-            onChange={(e) => {
-              const v = Number(e.target.value);
-              // Snap to all in at the top, so the last step isn't lost to rounding.
-              setTo(v + step > o.maxTo ? o.maxTo : v);
-            }}
-          />
-          <button type="button" className="icon-btn press" aria-label="More" disabled={to >= o.maxTo} onClick={() => nudge(1)}>
-            <PlusIcon />
-          </button>
-        </div>
-        {/* The same three slots as the action row, so Fold and Call stay in reach while you size. */}
-        <div className="action-buttons raise-actions">
-          <button type="button" className="btn btn-fold" onClick={onFold}>
-            Fold
-          </button>
-          <button type="button" className="btn btn-green" onClick={onCall}>
-            {o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'}
-            {!o.canCheck && !o.callIsAllIn && <span className="num">{chips(o.toCall)}</span>}
-          </button>
-          <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
-            {to >= o.maxTo ? 'All in' : o.word}
-          </button>
-        </div>
+        ))}
       </div>
     </div>
   );

@@ -10,7 +10,7 @@ async function allInAndCall(host: Page, friend: Page) {
       if (await allin.isVisible()) {
         await allin.click();
         await page.locator('.raise-panel .preset[aria-label="All in"]').click();
-        await page.locator('.raise-panel .btn-blue').click();
+        await page.locator('.action-buttons .btn-blue').click();
       } else {
         await page.locator('.action-buttons .btn-green').click();
       }
@@ -105,7 +105,8 @@ test('a friend whose phone drops is marked offline for everyone else', async ({ 
 test('a wrong code says so', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Join with a code' }).click();
-  await page.getByRole('dialog', { name: 'Join a table' }).getByRole('textbox', { name: 'Table code' }).fill('BCDFG');
+  const dialog = page.getByRole('dialog', { name: 'Join a table' });
+  for (const letter of 'BCDFG') await dialog.getByRole('button', { name: letter, exact: true }).click();
   await expect(page.getByText("There's no table with that code")).toBeVisible();
 });
 
@@ -167,7 +168,7 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
       if (await raise.isVisible()) {
         await raise.click();
         await page.locator('.raise-panel .preset[aria-label="All in"]').click();
-        await page.locator('.raise-panel .btn-blue').click();
+        await page.locator('.action-buttons .btn-blue').click();
       } else await page.locator('.action-buttons .btn-green').click();
     }
     const next = host.getByRole('button', { name: 'Next hand' });
@@ -194,12 +195,13 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
   await friendCtx.close();
 });
 
-test('the join popup opens without the keyboard and shows a scan button', async ({ page }) => {
+test('the join popup shows its own letter keys and no phone keyboard', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Join with a code' }).click();
   const dialog = page.getByRole('dialog', { name: 'Join a table' });
   await expect(dialog.getByRole('button', { name: 'Scan a QR code' })).toBeVisible();
-  await expect(dialog.getByRole('textbox', { name: 'Table code' })).not.toBeFocused();
+  await expect(dialog.getByRole('button', { name: 'B', exact: true })).toBeVisible();
+  await expect(dialog.getByRole('textbox')).toHaveCount(0);
   await shot(page, '20-join-popup');
 });
 

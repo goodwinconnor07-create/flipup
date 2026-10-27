@@ -108,15 +108,18 @@ export function TableCam({
   fallback: ReactNode;
 }) {
   const desktop = useDesktop();
-  const [mode, setMode] = useState<'loading' | 'on' | 'off'>(() => (desktop || !hardware3d() ? 'off' : 'loading'));
+  // Off unless the player turned on "3D table" in Settings.
+  const wanted = useApp((s) => s.cam3d);
+  const [mode, setMode] = useState<'loading' | 'on' | 'off'>(() => (!wanted || desktop || !hardware3d() ? 'off' : 'loading'));
   const [focus, setFocus] = useState<string | null>(null);
   const felt = useApp((s) => s.look.felt);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<TableStage | null>(null);
 
   useEffect(() => {
-    if (desktop) setMode('off');
-  }, [desktop]);
+    if (desktop || !wanted) setMode('off');
+    else if (hardware3d()) setMode((m) => (m === 'off' ? 'loading' : m));
+  }, [desktop, wanted]);
 
   useEffect(() => {
     if (mode === 'off') return;

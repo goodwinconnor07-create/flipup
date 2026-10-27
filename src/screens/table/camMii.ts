@@ -13,7 +13,7 @@ export type Mouth = 'line' | 'smile' | 'grin' | 'o' | 'frown';
 
 /** Head radius, in metres. A Mii's head is big for its body. */
 const R = 0.125;
-const ARM = { upper: 0.2, lower: 0.2, r: 0.034, hand: 0.044 };
+const ARM = { upper: 0.25, lower: 0.25, r: 0.034, hand: 0.044 };
 
 /** A repeatable random stream from a name. */
 function seeded(text: string): () => number {
@@ -254,7 +254,7 @@ export class Mii {
     };
     for (const s of [-1, 1]) {
       const pivot = new THREE.Group();
-      const geo = decal(s * eyeGap, 0.02, 0.046, 0.046, 0.0012);
+      const geo = decal(s * eyeGap, 0.0, 0.05, 0.05, 0.0012);
       const open = feature(geo, this.openEye);
       const shut = feature(geo.clone(), kit.eyes.closed);
       shut.visible = false;
@@ -263,7 +263,7 @@ export class Mii {
       this.eyes.push({ open, shut, pivot });
 
       const bp = new THREE.Group();
-      const browGeo = decal(s * (eyeGap + 0.02), 0.27, 0.06, 0.03, 0.0016);
+      const browGeo = decal(s * (eyeGap + 0.02), 0.25, 0.065, 0.032, 0.0016);
       // Each brow is drawn for the right side; the left one is the mirror image.
       if (s < 0) {
         const uv = browGeo.attributes.uv;
@@ -272,11 +272,11 @@ export class Mii {
       const brow = feature(browGeo, kit.brow, hair);
       bp.add(brow);
       skull.add(bp);
-      this.brows.push({ pivot: bp, n: frame(s * (eyeGap + 0.02), 0.27).n, side: s });
-      bp.quaternion.setFromAxisAngle(frame(s * (eyeGap + 0.02), 0.27).n, -s * browTilt);
+      this.brows.push({ pivot: bp, n: frame(s * (eyeGap + 0.02), 0.25).n, side: s });
+      bp.quaternion.setFromAxisAngle(frame(s * (eyeGap + 0.02), 0.25).n, -s * browTilt);
     }
-    skull.add(feature(decal(0, -0.16, 0.028, 0.028, 0.0012), kit.nose, shade));
-    this.mouth = feature(decal(0, -0.42, 0.07, 0.035, 0.0012), kit.mouths.line) as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
+    skull.add(feature(decal(0, -0.15, 0.032, 0.032, 0.0012), kit.nose, shade));
+    this.mouth = feature(decal(0, -0.36, 0.09, 0.045, 0.0012), kit.mouths.line) as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
     skull.add(this.mouth);
     this.hair(style, skull, hairMat, keep, r);
     skull.position.y = R * 1.02 + 0.02;
@@ -312,7 +312,7 @@ export class Mii {
       return m;
     };
     // A cap over the top and back, tipped back so the face shows.
-    const tip = style === 'bob' || style === 'long' ? 0.36 : 0.44;
+    const tip = style === 'bob' || style === 'long' ? 0.62 : 0.7;
     add(new THREE.SphereGeometry(R * 1.055, 128, 64, 0, Math.PI * 2, 0, Math.PI * 0.55), (m) => (m.rotation.x = -tip));
     // Sides down past the ears, leaving the face open.
     if (style !== 'spiky' && style !== 'short') {
@@ -321,18 +321,18 @@ export class Mii {
     }
     // A fringe of soft points over the forehead.
     const points = style === 'spiky' ? 7 : style === 'short' ? 5 : 6;
-    const cone = new THREE.ConeGeometry(style === 'spiky' ? 0.03 : 0.036, style === 'spiky' ? 0.085 : 0.06, 32);
+    const cone = new THREE.ConeGeometry(style === 'spiky' ? 0.034 : 0.04, style === 'spiky' ? 0.09 : 0.065, 48);
     keep(cone);
     for (let i = 0; i < points; i++) {
       const yaw = (i / (points - 1) - 0.5) * (style === 'spiky' ? 1.25 : 1.1) + (r() - 0.5) * 0.06;
-      const { n, right, up } = frame(yaw, 0.4 + (style === 'spiky' ? 0.02 : -0.02));
+      const { n, right, up } = frame(yaw, 0.5 + (style === 'spiky' ? 0.02 : -0.02));
       const m = new THREE.Mesh(cone, mat);
       m.castShadow = true;
       // Pointing down the forehead, flattened against it.
       m.matrix.makeBasis(right, up.clone().negate(), n.clone().negate());
       m.quaternion.setFromRotationMatrix(m.matrix);
       m.position.copy(n).multiplyScalar(R * 1.03);
-      m.scale.set(1, 1, 0.45);
+      m.scale.set(1.15, 1, 0.7);
       skull.add(m);
     }
     if (style === 'long') {

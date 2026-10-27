@@ -225,8 +225,8 @@ export class CamStage {
     rim.position.set(0.6, 2.2, -3);
     rim.target.position.set(0, 1, -1);
     this.scene.add(rim, rim.target);
-    const fill = new THREE.PointLight(CAM.key, 0.6, 4, 2);
-    fill.position.set(0.3, 1.3, 1.4);
+    const fill = new THREE.PointLight(CAM.key, 1.6, 4, 2);
+    fill.position.set(0.25, 1.35, 0.2);
     this.scene.add(fill);
   }
 
@@ -566,7 +566,7 @@ export class CamStage {
     mii.blink(!still && face[0] === 'open' && t % 3.3 > 3.18);
 
     // The hands: resting on the felt, unless they're doing something.
-    const rest = (side: number) => new THREE.Vector3(side * 0.13, TOP + 0.045, -0.8);
+    const rest = (side: number) => new THREE.Vector3(side * 0.13, TOP + 0.045, -0.76);
     let left = rest(-1);
     let right = rest(1);
     if (peek > 0) {
@@ -577,7 +577,7 @@ export class CamStage {
     }
     if (fidget > 0) right = right.lerp(new THREE.Vector3(0.19, this.fiddle.position.y + 0.04, -0.765), fidget);
     if (bets) {
-      const go = span(mt, 0, 1.1, 0.25);
+      const go = span(mt, 0, 1.6, 0.3);
       const at = (side: number) => new THREE.Vector3(shove * 0.2 + side * 0.06, TOP + 0.04, -0.69 + shove * 0.12);
       left = left.lerp(at(-1), go);
       right = right.lerp(at(1), go);

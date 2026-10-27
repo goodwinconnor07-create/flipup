@@ -28,8 +28,8 @@ export interface SpringState {
   velocity: number;
 }
 
-/** One small step of a weight on a spring pulling towards `to` (semi-implicit Euler). Critically damped at the defaults: it never overshoots. */
-export function stepSpring({ value, velocity }: SpringState, to: number, dt: number, stiffness = 380, damping = 40): SpringState {
+/** One small step of a weight on a spring pulling towards `to` (semi-implicit Euler). Critically damped at the defaults (about 0.2s to settle): it never overshoots. */
+export function stepSpring({ value, velocity }: SpringState, to: number, dt: number, stiffness = 1000, damping = 64): SpringState {
   const v = velocity + (-stiffness * (value - to) - damping * velocity) * dt;
   return { value: value + v * dt, velocity: v };
 }
@@ -203,7 +203,7 @@ export function confetti(colors: string[] = CONFETTI.party, origin?: { x: number
   requestAnimationFrame(frame);
 }
 
-const WIPE_GROW_MS = 380;
+const WIPE_GROW_MS = 240;
 
 /** The button's main colour: its background colour, or the first colour of its gradient. */
 function solidColour(look: CSSStyleDeclaration): string {
@@ -223,7 +223,7 @@ function tintBrowser(colour: string | null): void {
     meta.setAttribute('content', colour ?? (dark ? '#000000' : '#ffffff'));
   }
 }
-const WIPE_FADE_MS = 280;
+const WIPE_FADE_MS = 200;
 
 /**
  * Big-decision transition: the tapped button's colour grows from the touch point to fill
@@ -298,17 +298,20 @@ export function colourWipe(event: { currentTarget: Element; clientX: number; cli
  * that was still moving (a tap to stop a fling is not a press). Clicks from the keyboard have no touch and pass.
  */
 export function installTapGuard(): void {
-  let down: { x: number; y: number; t: number; moving: boolean; scrolled: boolean } | null = null;
-  let lastScroll = 0;
+  let down: { x: number; y: number; touch: boolean; moving: boolean; scrolls: number } | null = null;
+  // When the last few scroll events came: a fling keeps firing them, a single jump into view fires one or two.
+  let recent: number[] = [];
   addEventListener('scroll', () => {
-    lastScroll = performance.now();
-    if (down) down.scrolled = true;
+    const now = performance.now();
+    recent = [...recent.filter((t) => now - t < 120), now];
+    if (down) down.scrolls += 1;
   }, { capture: true, passive: true });
   addEventListener(
     'pointerdown',
     (e) => {
       const now = performance.now();
-      down = { x: e.clientX, y: e.clientY, t: now, moving: now - lastScroll < 120, scrolled: false };
+      const live = recent.filter((t) => now - t < 120).length;
+      down = { x: e.clientX, y: e.clientY, touch: e.pointerType === 'touch', moving: live >= 3, scrolls: 0 };
     },
     { capture: true, passive: true },
   );
@@ -319,7 +322,8 @@ export function installTapGuard(): void {
       down = null;
       if (!d || e.detail === 0) return;
       const drag = Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10;
-      if (drag || d.scrolled || d.moving) {
+      // Only a finger can scroll the page and press at once; a mouse or a script can't.
+      if (drag || (d.touch && (d.moving || d.scrolls >= 2))) {
         e.stopPropagation();
         e.preventDefault();
       }

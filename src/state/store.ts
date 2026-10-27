@@ -298,7 +298,7 @@ export function back(): void {
 
 let sheetTimer: ReturnType<typeof setTimeout> | undefined;
 /** Matches the sheet-down animation in global.css. */
-const SHEET_OUT_MS = 200;
+const SHEET_OUT_MS = 160;
 
 export function openSheet(sheet: Sheet): void {
   clearTimeout(sheetTimer);

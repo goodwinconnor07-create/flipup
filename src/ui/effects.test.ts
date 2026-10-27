@@ -23,7 +23,7 @@ describe('spring', () => {
     const still = Math.max(...run(40, 0, 0).map((p) => p.value));
     const flicked = Math.max(...run(40, 1500, 0).map((p) => p.value));
     expect(still).toBeCloseTo(40, 1);
-    expect(flicked).toBeGreaterThan(still + 10);
+    expect(flicked).toBeGreaterThan(still + 5);
   });
 
   it('turns around from where it is when its target changes', () => {

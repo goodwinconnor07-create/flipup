@@ -2477,58 +2477,68 @@ html.calm .pod-cards.shimmer::after {
   pointer-events: none;
 }
 
-.cam-label {
+/* The player on camera, along the bottom: what they say or do, big and easy to read, then who they are. */
+.cam-caption {
   position: absolute;
-  top: 0;
   left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0;
-  padding: 2px 8px 4px;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 32px 16px 12px;
   border: 0;
-  border-radius: var(--r-md);
-  background: var(--cam-chip);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
   color: var(--on-color);
   font: inherit;
-  line-height: 1.15;
-  white-space: nowrap;
-  transition: opacity 0.2s ease;
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
-  will-change: transform;
+  text-align: left;
 }
 
-.cam-label.turn {
-  box-shadow: 0 0 0 2px var(--blue);
-}
-
-.cam-label.out .cam-name,
-.cam-label.out .cam-chips {
-  opacity: 0.55;
-}
-
-.cam-label.won {
-  box-shadow: 0 0 0 2px var(--green-hi);
-}
-
-/* Bubbles sit above the name, the same as above a seat. */
-.cam-say {
-  position: relative;
-  width: 100%;
-  height: 0;
-}
-
-.cam-name {
+/* Talk and moves as plain text: the bubble parts of the table's bubbles are switched off here. */
+.cam-line {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: var(--fs-micro);
-  font-weight: 600;
+  min-height: 24px;
 }
 
-.cam-name .pos-chips {
+.cam-line .thread,
+.cam-line .bubble {
+  position: static;
+  translate: none;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--on-color);
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cam-line .thread {
+  align-items: flex-start;
+}
+
+.cam-line .bubble::before,
+.cam-line .bubble::after {
+  display: none;
+}
+
+.cam-line .bubble-typing i {
+  background: var(--on-color);
+}
+
+.cam-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-small);
+}
+
+.cam-who .pos-chips {
   position: static;
 }
 
@@ -2544,29 +2554,21 @@ html.calm .pod-cards.shimmer::after {
 }
 
 .cam-chips {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: var(--fs-micro);
   opacity: 0.85;
 }
 
 .cam-tag {
   font-weight: 600;
+  opacity: 0.85;
 }
 
 .cam-tag.win {
   color: var(--green-hi);
+  opacity: 1;
 }
 
 .cam-cards {
   display: flex;
   gap: 2px;
-  margin-top: 2px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .cam-label {
-    transition: none;
-  }
-}

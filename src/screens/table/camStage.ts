@@ -50,12 +50,6 @@ export interface TableView {
   felt: string;
 }
 
-/** Where a player's name goes on screen, in CSS pixels from the canvas's top left. */
-export interface LabelSpot {
-  x: number;
-  y: number;
-  on: boolean;
-}
 
 // The table: an oval, in metres.
 const A = 1.5;
@@ -161,14 +155,17 @@ export class TableStage {
   private cardGeo: THREE.PlaneGeometry;
   private cardTextures = new Map<string, THREE.CanvasTexture>();
   private cardMats = new Map<THREE.Texture, THREE.MeshStandardMaterial>();
-  private onLabels: (spots: Record<string, LabelSpot>) => void;
+  private onFocus: (id: string | null) => void;
+  /** Who the camera was last on, so it stays with a player rather than pulling back to the whole table. */
+  private lastFocus: string | null = null;
+  private focused: string | null | undefined = undefined;
 
   constructor(
     private el: HTMLCanvasElement,
-    opts: { reduced: boolean; onLabels: (spots: Record<string, LabelSpot>) => void },
+    opts: { reduced: boolean; onFocus: (id: string | null) => void },
   ) {
     this.reduced = opts.reduced;
-    this.onLabels = opts.onLabels;
+    this.onFocus = opts.onFocus;
     this.renderer = new THREE.WebGLRenderer({ canvas: el, antialias: true, alpha: false, powerPreference: 'high-performance' });
     // Sharp on any screen, up to 3x, without drawing more pixels than that.
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
@@ -660,7 +657,6 @@ export class TableStage {
       if (!document.hidden) {
         this.pose(dt);
         this.renderer.render(this.scene, this.camera);
-        this.labels();
       }
       this.frame = requestAnimationFrame(loop);
     };
@@ -691,19 +687,6 @@ export class TableStage {
     this.camera.updateProjectionMatrix();
   }
 
-  private labels() {
-    const w = this.el.clientWidth;
-    const h = this.el.clientHeight;
-    const out: Record<string, LabelSpot> = {};
-    const p = V();
-    for (const [id, seat] of this.seats) {
-      seat.mii.crown.getWorldPosition(p);
-      p.project(this.camera);
-      out[id] = { x: ((p.x + 1) / 2) * w, y: ((1 - p.y) / 2) * h, on: p.z < 1 && Math.abs(p.x) < 1.1 && p.y > -1 };
-    }
-    this.onLabels(out);
-  }
-
   // ── The camera ─────────────────────────────────────────────────────────
 
   private shot(): Shot {
@@ -712,7 +695,10 @@ export class TableStage {
     if (v?.actor && this.seats.has(v.actor)) return { id: v.actor, close: v.bigBet };
     const winner = v?.result?.winners.find((id) => this.seats.has(id));
     if (winner) return { id: winner, close: false };
-    return { id: null, close: false };
+    // Your turn, or between hands: stay on whoever it was last on (or the first player), never the whole table.
+    if (this.lastFocus && this.seats.has(this.lastFocus)) return { id: this.lastFocus, close: false };
+    const first = v?.seats[0]?.id;
+    return { id: first && this.seats.has(first) ? first : null, close: false };
   }
 
   /** Where the camera would be for a shot: wide from this phone's seat, or across the table at one player. */
@@ -731,6 +717,11 @@ export class TableStage {
 
   private moveCamera() {
     const s = this.shot();
+    if (s.id) this.lastFocus = s.id;
+    if (s.id !== this.focused) {
+      this.focused = s.id;
+      this.onFocus(s.id);
+    }
     const key = `${s.id}:${s.close}`;
     const c = this.cam;
     const aim = this.aim(s);

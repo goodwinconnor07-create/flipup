@@ -5,13 +5,12 @@ import { chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
 import { Bubble, moveSig, Thread } from './Bubbles';
 import { pct } from './Pods';
-import type { CamMove, LabelSpot, TableStage, TableView } from './camStage';
+import type { CamMove, TableStage, TableView } from './camStage';
 
 /**
  * The table cam: on a phone, everyone else at the table is shown in 3D, sitting round a real table as a
- * Mii-style character, in place of the row of seats. Each one has their name and chips floating over their head,
- * with their speech bubbles above that, and a tap on it does what a tap on their seat did. The camera flies to
- * whoever is acting and moves in for the big moments (see camStage.ts).
+ * Mii-style character, in place of the row of seats. The camera stays on one player at a time, flies to whoever
+ * is acting and moves in for the big moments (see camStage.ts); along the bottom is that player's caption.
  *
  * Where there's no graphics chip to draw it (or on a computer, which seats everyone round the table already),
  * the row of seats stays: `fallback`.
@@ -110,10 +109,10 @@ export function TableCam({
 }) {
   const desktop = useDesktop();
   const [mode, setMode] = useState<'loading' | 'on' | 'off'>(() => (desktop || !hardware3d() ? 'off' : 'loading'));
+  const [focus, setFocus] = useState<string | null>(null);
   const felt = useApp((s) => s.look.felt);
   const canvas = useRef<HTMLCanvasElement>(null);
   const stage = useRef<TableStage | null>(null);
-  const labels = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
     if (desktop) setMode('off');
@@ -125,23 +124,8 @@ export function TableCam({
     import('./camStage')
       .then(({ TableStage }) => {
         if (!alive || !canvas.current) return;
-        stage.current = new TableStage(canvas.current, {
-          reduced: reducedMotion(),
-          // Every frame: each name follows its player's head across the screen.
-          onLabels: (spots: Record<string, LabelSpot>) => {
-            for (const [id, el] of labels.current) {
-              const s = spots[id];
-              if (!s || !s.on) {
-                el.style.opacity = '0';
-                el.style.pointerEvents = 'none';
-                continue;
-              }
-              el.style.opacity = '1';
-              el.style.pointerEvents = '';
-              el.style.transform = `translate(${Math.round(s.x)}px, ${Math.round(Math.max(s.y, 46))}px) translate(-50%, -100%)`;
-            }
-          },
-        });
+        // The camera says who it's on; the caption under the picture is theirs.
+        stage.current = new TableStage(canvas.current, { reduced: reducedMotion(), onFocus: setFocus });
         stage.current.start();
         setMode('on');
       })
@@ -160,61 +144,46 @@ export function TableCam({
   }, [game, others.map((p) => p.id).join(), talking, felt, mode]);
 
   if (mode === 'off') return <>{fallback}</>;
+  const player = others.find((p) => p.id === focus);
   return (
     <div className="table-cam" aria-label="The table">
       <canvas ref={canvas} className="cam-canvas" aria-hidden />
       <span className="cam-vignette" aria-hidden />
-      {mode === 'on' &&
-        others.map((p) => (
-          <CamLabel
-            key={p.id}
-            game={game}
-            player={p}
-            reaction={say[p.id]}
-            quiet={quiet[p.id]}
-            odds={odds?.get(p.id)}
-            ref={(el) => {
-              if (el) labels.current.set(p.id, el);
-              else labels.current.delete(p.id);
-            }}
-          />
-        ))}
+      {mode === 'on' && player && <CamCaption key={player.id} game={game} player={player} reaction={say[player.id]} quiet={quiet[player.id]} odds={odds?.get(player.id)} />}
     </div>
   );
 }
 
-/** A player's name and chips over their head, with what they're saying above. Tapping it is tapping their seat. */
-function CamLabel({
-  game,
-  player,
-  reaction,
-  quiet,
-  odds,
-  ref,
-}: {
-  game: Game;
-  player: Player;
-  reaction?: Talk;
-  quiet?: string;
-  odds?: { win: number; tie: number };
-  ref: (el: HTMLButtonElement | null) => void;
-}) {
+/**
+ * The player on camera, along the bottom of the picture: what they're saying (typed out the same way as table
+ * talk) or what they just did, then their name and chips. Plain text, no bubbles. A tap does what a tap on their
+ * seat did.
+ */
+function CamCaption({ game, player, reaction, quiet, odds }: { game: Game; player: Player; reaction?: Talk; quiet?: string; odds?: { win: number; tie: number } }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
   const host = game.hostDeviceId === deviceId;
   const seat = seatFor(hand, player.id);
   const turn = !!hand && !hand.result && hand.toAct === player.id;
   const canPeek = !!hand?.result && player.bot && !!seat && !seat.shown;
-  const out = !!hand && (!seat || seat.folded);
   const won = hand?.result?.won[player.id] ?? 0;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   const thinking = turn && player.bot && !hand?.runout;
+  const line = reaction?.shown.length || reaction?.typing ? (
+    <Thread talk={reaction} />
+  ) : thinking ? (
+    <span className="bubble bubble-typing" aria-label={`${player.name} is thinking`}>
+      <i />
+      <i />
+      <i />
+    </span>
+  ) : seat?.last && quiet !== moveSig(hand!.number, seat.last) ? (
+    <Bubble last={seat.last} street={hand?.street} />
+  ) : null;
   return (
     <button
-      ref={ref}
       type="button"
-      className={`cam-label${turn ? ' turn' : ''}${out ? ' out' : ''}${won ? ' won' : ''}`}
-      style={{ opacity: 0 }}
+      className={`cam-caption${turn ? ' turn' : ''}`}
       aria-label={`${player.name}${player.ai ? ', an AI twin' : ''}${player.legend ? ', a legend' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
       onClick={() => {
         if (!host) return;
@@ -222,36 +191,25 @@ function CamLabel({
         else openSheet({ name: 'player', playerId: player.id });
       }}
     >
-      <span className="cam-say">
-        {reaction ? (
-          <Thread talk={reaction} />
-        ) : thinking ? (
-          <span className="bubble bubble-grey bubble-typing pop" aria-label={`${player.name} is thinking`}>
-            <i />
-            <i />
-            <i />
-          </span>
-        ) : (
-          seat?.last && quiet !== moveSig(hand!.number, seat.last) && <Bubble last={seat.last} street={hand?.street} />
-        )}
+      <span className="cam-line" aria-live="polite">
+        {line}
       </span>
-      <span className="cam-name">
+      <span className="cam-who">
         {player.legend && <span className="cam-star" aria-hidden>★</span>}
-        {player.name}
+        <b>{player.name}</b>
         {player.ai && <span className="cam-ai" aria-hidden>AI</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
-      </span>
-      <span className="cam-chips num">
-        {status ?? <Count value={player.stack} />}
+        <span className="cam-chips num">{status ?? <Count value={player.stack} />}</span>
+        {seat && seat.bet > 0 && !hand?.result && <span className="cam-tag">In {chips(seat.bet)}</span>}
         {won > 0 ? <b className="cam-tag win">+{chips(won)}</b> : odds ? <b className="cam-tag">{pct(odds.win)}</b> : player.offline ? <b className="cam-tag">Offline</b> : null}
+        {!!seat?.cards.length && (
+          <span className="cam-cards">
+            {seat.cards.map((c) => (
+              <PlayingCard key={c} card={c} size="sm" flip />
+            ))}
+          </span>
+        )}
       </span>
-      {!!seat?.cards.length && (
-        <span className="cam-cards">
-          {seat.cards.map((c) => (
-            <PlayingCard key={c} card={c} size="sm" flip />
-          ))}
-        </span>
-      )}
     </button>
   );
 }

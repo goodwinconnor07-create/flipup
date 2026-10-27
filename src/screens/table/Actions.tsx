@@ -1,4 +1,3 @@
-import { REPLAY_ON } from '../../train/replay';
 import { useMemo, type CSSProperties } from 'react';
 import { lastStanding, nearestStop, options, pot, raiseStops, type Game, type Hand, type Player, type Seat } from '../../game';
 import { dispatch, navigate, useApp } from '../../state/store';
@@ -180,7 +179,7 @@ export function ActionArea({
 function ReplayButton({ gameId, number }: { gameId: string; number: number }) {
   const key = handKey(gameId, number);
   const saved = useMemo(() => hasHand(key), [key]);
-  if (!saved || !REPLAY_ON) return null;
+  if (!saved) return null;
   return (
     <button type="button" className="btn btn-sm btn-outline" onClick={() => navigate({ name: 'replay', key })}>
       Replay this hand

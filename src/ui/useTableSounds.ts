@@ -79,3 +79,24 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     if (snap.myTurn && !before.myTurn) playSound('turn', 150);
   }, [hand, myId, game.settings.bigBlind]);
 }
+
+/** The mini games' own sounds: the die, the ghost taking a pot, the vote, a red river. Nothing plays for what was already there. */
+export function useThemeMoments(game: Game | null): void {
+  const hand = game?.hand ?? null;
+  const dice = hand?.dice ? `${hand.number}` : '';
+  const kept = hand?.result?.ghost?.kept ? `${hand.number}` : '';
+  const voting = hand?.variant === 'imposter' && hand.result?.imposter ? `${hand.number}` : '';
+  const reds = hand?.variant === 'redriver' && hand.board.length > 5 ? `${hand.number}:${hand.board.length}` : '';
+  const seen = useRef<Record<string, string> | null>(null);
+  useEffect(() => {
+    const now = { dice, kept, voting, reds };
+    const before = seen.current;
+    seen.current = now;
+    // The first look is whatever was on the table when this phone arrived.
+    if (!before) return;
+    if (dice && dice !== before.dice) playSound('dice');
+    if (kept && kept !== before.kept) playSound('spook');
+    if (voting && voting !== before.voting) playSound('sting');
+    if (reds && reds !== before.reds) playSound('splash');
+  }, [dice, kept, voting, reds]);
+}

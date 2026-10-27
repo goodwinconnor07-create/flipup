@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { cleanName, isNameBlocked, type TableInfo } from '../game';
+import { cleanName, isNameBlocked, type TableInfo, type Variant } from '../game';
 import { back, joinTable, openSheet, replace, setProfile, useApp } from '../state/store';
 import { BackBar, NameAndPicture } from '../ui/components';
 import { ChevronIcon, GearIcon } from '../ui/Icons';
@@ -7,7 +7,7 @@ import { ChevronIcon, GearIcon } from '../ui/Icons';
 const TITLES = { host: 'Host a table', bots: 'Play the bots', join: 'Join the table', done: 'Your profile' };
 
 /** Your name and emoji. Asked once, then remembered; also reachable from Home to change them. */
-export function Profile({ then, info }: { then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo }) {
+export function Profile({ then, info, variant }: { then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo; variant?: Variant }) {
   const profile = useApp((s) => s.profile);
   const [name, setName] = useState(profile.name);
   const clean = cleanName(name);
@@ -16,8 +16,8 @@ export function Profile({ then, info }: { then: 'host' | 'bots' | 'join' | 'done
   const next = () => {
     if (!ok) return;
     setProfile({ name: clean });
-    if (then === 'host') replace({ name: 'setup', mode: 'online' });
-    else if (then === 'bots') replace({ name: 'setup', mode: 'local' });
+    if (then === 'host') replace({ name: 'setup', mode: 'online', variant });
+    else if (then === 'bots') replace({ name: 'setup', mode: 'local', variant });
     else if (then === 'join' && info) joinTable(info.code);
     else back();
   };

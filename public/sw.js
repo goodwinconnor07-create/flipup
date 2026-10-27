@@ -1,11 +1,11 @@
-// FlipUp's service worker. After one visit online, the app opens with no connection: Home, Insights,
-// Train and games against the bots all run on the phone. Online tables still need signal, and
+// FlipUp's service worker. After one visit online, the app opens with no connection: Home, History
+// and games against the bots all run on the phone. Online tables still need signal, and
 // their sockets and /api calls are never touched here.
 //
 // - Pages: network first (so a new version arrives at once), the last good copy when offline or slow.
-// - Files under /assets (hashed), /sounds, /icons and /gto: cached on first use, then served from the cache.
+// - Files under /assets (hashed), /sounds and /icons: cached on first use, then served from the cache.
 // Bump VERSION if this file's behaviour changes, so old caches are cleared.
-const VERSION = 'v1';
+const VERSION = 'v2';
 const PAGES = `flipup-pages-${VERSION}`;
 const FILES = `flipup-files-${VERSION}`;
 const SLOW_MS = 4000;
@@ -29,7 +29,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
   if (request.mode === 'navigate') event.respondWith(page(request));
-  else if (/^\/(assets|sounds|icons|gto)\//.test(url.pathname)) event.respondWith(file(request));
+  else if (/^\/(assets|sounds|icons)\//.test(url.pathname)) event.respondWith(file(request));
 });
 
 /** A real file: not an error, and not the single-page fallback (an HTML page where a script should be). */

@@ -4,7 +4,6 @@
 import { useSyncExternalStore } from 'react';
 import {
   applyAction,
-  buildBrain,
   cleanName,
   createTable,
   cryptoRng,
@@ -15,16 +14,14 @@ import {
   redactForDevice,
   dressAsLegend,
   legendById,
-  scoutRead,
   redactLogs,
-  twinName,
-  TWIN_READY,
   type HandLog,
   type Action,
   type Game,
   type Player,
   type ServerMessage,
   type Settings,
+  type Variant,
   type TableInfo,
 } from '../game';
 import type { StyleId } from '../game/botStyles';
@@ -33,14 +30,10 @@ import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
-import { loadTwin } from './twin';
 import { FAST, toTableTime } from './clock';
 import { legendBefore, legendOpen, loadProgress } from './progress';
-import { queueSync, shareCode, syncShare } from './share';
-import { beginTwinGame, finishTwinGame } from './twinGames';
-import { bestTwin, loadFriend, notePlayed } from './friends';
 import {
-  forgetOldScroll,
+  forgetOldLearning,
   loadDeviceId,
   loadCalm,
   loadAppearance,
@@ -75,37 +68,23 @@ import {
 export type Route =
   | { name: 'home' }
   /** Name and picture, then carry on to `then`. */
-  | { name: 'profile'; then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo }
-  | { name: 'setup'; mode: 'online' | 'local' }
+  | { name: 'profile'; then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo; variant?: Variant }
+  | { name: 'setup'; mode: 'online' | 'local'; variant?: Variant }
   | { name: 'join'; code: string }
   | { name: 'joinTable'; info: TableInfo }
   | { name: 'table' }
-  /** Training: reviews, the poker library, stats and custom hands. */
-  | { name: 'train'; section?: TrainSection }
-  | { name: 'lesson'; key: string }
-  /** Watch a saved hand back, with the coach. */
+  /** Watch a saved hand back. */
   | { name: 'replay'; key: string }
-  | { name: 'drill'; scenario: string }
-  | { name: 'custom' }
-  /** Scroll: whole hands solved ahead of time, every move graded. */
-  | { name: 'scroll'; hand?: string }
-  /** What your AI twin found in your last game against it. */
-  | { name: 'twinReport'; friend?: string }
-  /** Friends' AI twins: the list, and scouting one. */
-  | { name: 'friends' }
-  | { name: 'scout'; code: string }
   /** A legend's profile: how they play, and a game against them. */
-  | { name: 'legend'; id: string }
-  /** Goals, the legends ladder, badges and records. */
-  | { name: 'progress' };
-
-export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'odds' | 'stats' | 'custom';
+  | { name: 'legend'; id: string };
 
 export type Sheet =
   | { name: 'menu' }
   | { name: 'invite' }
   /** How the daily streak is going. */
   | { name: 'streak' }
+  /** A game's card on Home: how it plays, and who to play it with. */
+  | { name: 'game'; variant: Variant }
   /** Type the table code or scan its QR code. */
   | { name: 'join' }
   | { name: 'settings' }
@@ -117,12 +96,6 @@ export type Sheet =
   | { name: 'theme' }
   | { name: 'emoji' }
   | { name: 'player'; playerId: string }
-  /** Meet your AI twin: how much it knows, and how to teach it. */
-  | { name: 'twin' }
-  /** The code friends use to play your shared twin. */
-  | { name: 'shareTwin' }
-  /** Type a friend's twin code. */
-  | { name: 'addTwin' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -210,7 +183,7 @@ let state: AppState = {
   glass: loadGlass(),
 };
 state.dark = isDark(state.appearance);
-forgetOldScroll();
+forgetOldLearning();
 applyTheme(state.dark);
 document.documentElement.classList.toggle('no-glass', !state.glass);
 document.documentElement.classList.toggle('calm', state.calm);
@@ -353,8 +326,6 @@ export function setProfile(patch: Partial<Profile>): void {
   const profile = { ...state.profile, ...patch };
   saveProfile(profile);
   set({ profile });
-  // Friends who have your twin see your new name and picture.
-  queueSync();
   // Already sitting at a table: everyone sees the change.
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
   const name = cleanName(profile.name);
@@ -372,12 +343,12 @@ function setSession(session: Session | null): void {
   saveSession(session);
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
-  captureFinishedHand(state.game, state.deviceId, session?.mode === 'local' ? session.game : null);
+  captureFinishedHand(state.game, state.deviceId);
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
 }
 
-/** Sits down heads-up against one bot, which `prepare` can change first (another style, or an AI twin), and deals. */
+/** Sits down heads-up against one bot, which `prepare` can change first, and deals. */
 function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Game) => void): void {
   const name = cleanName(state.profile.name);
   if (!name) return navigate({ name: 'profile', then: 'bots' });
@@ -400,25 +371,6 @@ export function startPlaystyle(bot: string, style: StyleId): void {
   });
 }
 
-/** A heads-up game against your AI twin, built from what it has learned about you so far. Needs `TWIN_READY` hands. */
-export function startTwin(): void {
-  if (state.busy) return;
-  const memory = loadTwin();
-  if (memory.hands < TWIN_READY) return;
-  // Playing again leaves the last table without going home: count it first.
-  if (state.game?.twinGame) recordFinished();
-  const brain = buildBrain(memory);
-  startHeadsUp(undefined, (them, game) => {
-    game.twinGame = true;
-    beginTwinGame(game.id, game.settings.bigBlind, memory.hands);
-    them.name = twinName(state.profile.name);
-    them.emoji = state.profile.emoji;
-    them.style = brain.style.id;
-    them.twin = brain;
-    them.ai = true;
-  });
-}
-
 /** A heads-up game against a legend: a bot seat dressed as them. */
 export function startLegend(id: string): void {
   if (state.busy) return;
@@ -436,41 +388,7 @@ export function startLegend(id: string): void {
     if (progress.beaten[legend.id]) game.rematch = 'won';
     else if (seen && seen.l > 0) game.rematch = 'lost';
     dressAsLegend(them, legend);
-    // They've studied you: what your AI twin knows is what they start out knowing, as far as they study people.
-    const person = game.players.find((p) => !p.bot);
-    const known = person && scoutRead(legend, loadTwin());
-    if (person && known) game.reads = { [person.id]: known };
   });
-}
-
-/** A heads-up game against a friend's AI twin, from the twin they share or what you've seen of them. */
-export function startFriendTwin(code: string): void {
-  if (state.busy) return;
-  const friend = loadFriend(code);
-  const twin = friend ? bestTwin(friend) : null;
-  if (!friend || !twin?.ready) return;
-  if (state.game?.twinGame) recordFinished();
-  const brain = buildBrain(twin.profile);
-  startHeadsUp(undefined, (them, game) => {
-    game.twinGame = true;
-    game.friendTwin = code;
-    beginTwinGame(game.id, game.settings.bigBlind, twin.hands, code);
-    notePlayed(code);
-    them.name = twinName(friend.name);
-    them.emoji = friend.emoji;
-    them.style = brain.style.id;
-    them.twin = brain;
-    them.ai = true;
-  });
-}
-
-// ── Scroll ──────────────────────────────────────────────────────────────────
-// Whole solved hands played back from data (screens/train/SolvedHands.tsx); nothing here touches a table.
-
-/** Opens the feed from Home. A table you're sitting at is left first (you're asked). */
-export function openScroll(): void {
-  // Scroll plays solved hands back from data: it doesn't need this phone's table, so a game in progress stays put.
-  navigate({ name: 'scroll' });
 }
 
 /** Fast tables run their clock at twice the speed: the same waits, half as long. Fixed per table, so nothing moves mid-game. */
@@ -532,7 +450,7 @@ function sendJoin(): void {
   if (joinSent) return;
   joinSent = true;
   const { name, emoji } = state.profile;
-  send({ type: 'join', name: cleanName(name), emoji, ...(shareCode() ? { twinCode: shareCode() } : {}) });
+  send({ type: 'join', name: cleanName(name), emoji });
 }
 
 function connect(code: string): void {
@@ -621,7 +539,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   }
   set({ busy: 'Opening your table…' });
   try {
-    const code = await createOnlineTable({ deviceId: state.deviceId, name, emoji, settings, bots, twinCode: shareCode() });
+    const code = await createOnlineTable({ deviceId: state.deviceId, name, emoji, settings, bots });
     setSession({ mode: 'online', code, game: null });
     saveLastTable({ code, at: Date.now() });
     connect(code);
@@ -709,8 +627,6 @@ export function toggleCalm(): void {
 
 /** Counts this table's result towards the Home screen's lifetime numbers (once per table). */
 function recordFinished(): void {
-  // The table's hands are in your twin now: refresh the shared copy, if you share it.
-  void syncShare();
   const game = state.game;
   const me = game?.players.find((p) => p.deviceId === state.deviceId);
   const played = game?.hands ?? game?.hand?.number ?? 0;
@@ -723,9 +639,8 @@ function recordFinished(): void {
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}), ...(game.legendGame ? { legend: game.legendGame } : {}) }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, variant: game.settings.variant ?? 'holdem', ...(game.legendGame ? { legend: game.legendGame } : {}) }],
   });
-  if (game.twinGame) finishTwinGame(game.id, place);
 }
 
 /** Sends a quick message ("Nice hand!") to the table. */

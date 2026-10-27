@@ -1,25 +1,16 @@
-// What you've earned on this phone: legends beaten (which opens the next one), badges, today's goals
-// and your record against your twin, your friends' twins and each legend. Kept in `flipup.progress`.
-// Nothing here takes anything away: no streak penalties, no goals that expire loudly.
+// What you've earned on this phone: legends beaten (which opens the next one), badges and your record
+// against each legend. Kept in `flipup.progress`. Nothing here takes anything away.
 
 import { LEGENDS, legendById, type Game, type HandRecord } from '../game';
-import { dayKey, loadStats, loadStreak, read, write } from './persist';
+import { loadStats, loadStreak, read, write } from './persist';
 import { loadHistory } from './training';
-import { twinStatus } from './twin';
 import { tableStats, type TableStats } from '../train/tableStats';
 
 const KEY = 'flipup.progress';
 
-export type Metric = 'hands' | 'tables' | 'tablesWon' | 'bluffs' | 'showdownsWon' | 'legendWins' | 'twinGames' | 'drills' | 'bigPots' | 'allInsWon';
-
 export interface Tally {
   w: number;
   l: number;
-}
-
-export interface GoalState {
-  id: string;
-  done: boolean;
 }
 
 /** What happened when one table was counted, kept so the end screen can show it again after a reload. */
@@ -34,12 +25,11 @@ export interface TableReport {
   knockedOut: boolean;
   stats: TableStats;
   newBadges: string[];
-  goalsDone: string[];
   /** A legend this table opened, and the legend beaten (first time only counts for the first). */
   unlocked: string | null;
   beat: string | null;
   firstBeat: boolean;
-  rival: { kind: 'twin' | 'friend' | 'legend'; id?: string; record: Tally; won: boolean } | null;
+  rival: { id: string; record: Tally; won: boolean } | null;
   comeback: boolean;
   /** Streak after this table. */
   streak: number;
@@ -49,65 +39,9 @@ export interface Progress {
   beaten: Record<string, { wins: number; first: number }>;
   badges: Record<string, number>;
   totals: Record<'bluffs' | 'allInsWon' | 'tablesWon' | 'bigPots' | 'showdownsWon' | 'comebacks', number>;
-  rivals: { twin: Tally; friends: Record<string, Tally>; legends: Record<string, Tally> };
-  day: string;
-  counts: Partial<Record<Metric, number>>;
-  goals: GoalState[];
+  rivals: { legends: Record<string, Tally> };
   settled: string[];
   reports: Record<string, TableReport>;
-}
-
-// ── Goals ───────────────────────────────────────────────────────────────────
-
-/** Daily goals are paused for now: nothing is picked, counted or shown while this is off. */
-export const DAILY_GOALS = false;
-
-/** What the page with the ladder and badges is called. */
-export const PROGRESS_TITLE = DAILY_GOALS ? 'Goals and badges' : 'Badges and ladder';
-
-export interface GoalDef {
-  id: string;
-  metric: Metric;
-  target: number;
-  label: string;
-  /** Easy ones: one of these is always in the day. */
-  easy?: boolean;
-  /** Only offered when it can be done (a twin needs its hands first). */
-  needs?: 'twin';
-}
-
-export const GOALS: GoalDef[] = [
-  { id: 'hands20', metric: 'hands', target: 20, label: 'Play 20 hands', easy: true },
-  { id: 'table1', metric: 'tables', target: 1, label: 'Finish a table', easy: true },
-  { id: 'win1', metric: 'tablesWon', target: 1, label: 'Win a table' },
-  { id: 'bluff1', metric: 'bluffs', target: 1, label: 'Win a pot with a bluff' },
-  { id: 'show2', metric: 'showdownsWon', target: 2, label: 'Win 2 showdowns' },
-  { id: 'legend1', metric: 'legendWins', target: 1, label: 'Beat a legend' },
-  { id: 'twin1', metric: 'twinGames', target: 1, label: 'Play your AI twin', needs: 'twin' },
-  { id: 'drill3', metric: 'drills', target: 3, label: 'Do 3 practice drills' },
-  { id: 'pot20', metric: 'bigPots', target: 1, label: 'Win a pot of 20 big blinds or more' },
-  { id: 'allin1', metric: 'allInsWon', target: 1, label: 'Win an all-in' },
-];
-
-export const goalById = (id: string): GoalDef | undefined => GOALS.find((g) => g.id === id);
-
-const hash = (s: string) => [...s].reduce((a, c) => (a * 31 + c.charCodeAt(0)) >>> 0, 7);
-
-/** Three goals for a day: one easy, two others, the same for the whole day. */
-export function goalsFor(day: string, twinReady: boolean): string[] {
-  const pool = GOALS.filter((g) => !g.needs || (g.needs === 'twin' && twinReady));
-  const easy = pool.filter((g) => g.easy);
-  const rest = pool.filter((g) => !g.easy);
-  let h = hash(day);
-  const pick = <T,>(xs: T[]): T => {
-    const x = xs[h % xs.length];
-    h = Math.floor(h / xs.length) + 17;
-    return x;
-  };
-  const first = pick(easy);
-  const second = pick(rest);
-  const third = pick(rest.filter((g) => g.id !== second.id));
-  return [first.id, second.id, third.id];
 }
 
 // ── Badges ──────────────────────────────────────────────────────────────────
@@ -140,8 +74,6 @@ export const BADGES: BadgeDef[] = [
   { id: 'all-in', name: 'Fearless', emoji: '🔥', text: 'Win 3 all-ins.', has: (p) => p.totals.allInsWon >= 3 },
   { id: 'showdowns', name: 'Cool under pressure', emoji: '🧊', text: 'Win 10 showdowns.', has: (p) => p.totals.showdownsWon >= 10 },
   { id: 'comeback', name: 'Comeback', emoji: '🎢', text: 'Win a table after falling below half your chips.', has: (p) => p.totals.comebacks >= 1 },
-  { id: 'twin', name: 'Beat yourself', emoji: '🪞', text: 'Beat your AI twin.', has: (p) => p.rivals.twin.w >= 1 },
-  { id: 'friend-twin', name: 'Scouted', emoji: '🔭', text: "Beat a friend's AI twin.", has: (p) => Object.values(p.rivals.friends).some((r) => r.w >= 1) },
   { id: 'hands-100', name: '100 hands', emoji: '🎴', text: 'Play 100 hands.', has: (_p, hands) => hands >= 100 },
   { id: 'hands-500', name: '500 hands', emoji: '📚', text: 'Play 500 hands.', has: (_p, hands) => hands >= 500 },
   { id: 'streak-3', name: 'Three days', emoji: '🔥', text: 'Play 3 days in a row.', has: (_p, _h, days) => days >= 3 },
@@ -165,19 +97,13 @@ export function loadProgress(): Progress {
     for (const g of loadStats().games) if (g.legend && legendById(g.legend) && g.place === 1) beaten[g.legend] = { wins: (beaten[g.legend]?.wins ?? 0) + 1, first: beaten[g.legend]?.first ?? g.at };
   }
   const t = s?.totals ?? ({} as Progress['totals']);
-  const day = dayKey(new Date());
   return {
     beaten,
     badges: Object.fromEntries(Object.entries(s?.badges ?? {}).filter(([id]) => badgeById(id)).map(([id, at]) => [id, num(at)])),
     totals: { bluffs: num(t.bluffs), allInsWon: num(t.allInsWon), tablesWon: num(t.tablesWon), bigPots: num(t.bigPots), showdownsWon: num(t.showdownsWon), comebacks: num(t.comebacks) },
     rivals: {
-      twin: rec(s?.rivals?.twin),
-      friends: Object.fromEntries(Object.entries(s?.rivals?.friends ?? {}).map(([k, v]) => [k, rec(v)])),
       legends: Object.fromEntries(Object.entries(s?.rivals?.legends ?? {}).filter(([k]) => legendById(k)).map(([k, v]) => [k, rec(v)])),
     },
-    day: typeof s?.day === 'string' ? s.day : day,
-    counts: s?.counts && typeof s.counts === 'object' ? s.counts : {},
-    goals: Array.isArray(s?.goals) ? s.goals.filter((g) => g && typeof g.id === 'string' && goalById(g.id)).map((g) => ({ id: g.id, done: g.done === true })) : [],
     settled: Array.isArray(s?.settled) ? s.settled.filter((x) => typeof x === 'string') : [],
     reports: s?.reports && typeof s.reports === 'object' ? (s.reports as Progress['reports']) : {},
   };
@@ -186,21 +112,6 @@ export function loadProgress(): Progress {
 export function saveProgress(p: Progress): void {
   const keep = Object.entries(p.reports).sort((a, b) => b[1].at - a[1].at).slice(0, 4);
   write(KEY, { ...p, settled: p.settled.slice(-40), reports: Object.fromEntries(keep) });
-}
-
-/** Today's goals, rolled over if the day changed (counts start again, the goals change). */
-export function rollDay(p: Progress, twinReady: boolean, now = new Date()): Progress {
-  const day = dayKey(now);
-  if (p.day === day && (!DAILY_GOALS || p.goals.length > 0)) return p;
-  return { ...p, day, counts: {}, goals: DAILY_GOALS ? goalsFor(day, twinReady).map((id) => ({ id, done: false })) : [] };
-}
-
-/** Today's goals with how far each one is. */
-export function todaysGoals(p: Progress): { def: GoalDef; have: number; done: boolean }[] {
-  return p.goals.map((g) => {
-    const def = goalById(g.id)!;
-    return { def, have: Math.min(def.target, p.counts[def.metric] ?? 0), done: g.done };
-  });
 }
 
 // ── Ladder ──────────────────────────────────────────────────────────────────
@@ -227,27 +138,6 @@ export function nextLegend(p: Progress) {
 
 // ── Counting a table ────────────────────────────────────────────────────────
 
-/** Adds to today's counts and marks goals done; returns the ones that just finished. */
-function bump(p: Progress, add: Partial<Record<Metric, number>>): string[] {
-  for (const [k, v] of Object.entries(add) as [Metric, number][]) p.counts[k] = (p.counts[k] ?? 0) + v;
-  const done: string[] = [];
-  for (const g of p.goals) {
-    const def = goalById(g.id);
-    if (def && !g.done && (p.counts[def.metric] ?? 0) >= def.target) {
-      g.done = true;
-      done.push(g.id);
-    }
-  }
-  return done;
-}
-
-/** A practice drill was finished. */
-export function noteDrill(): void {
-  const p = rollDay(loadProgress(), twinStatus().ready);
-  bump(p, { drills: 1 });
-  saveProgress(p);
-}
-
 /**
  * Counts a table once: the numbers from the hands you saved, what you earned and what it opened.
  * Safe to call again for the same table: it gives back the same report.
@@ -261,7 +151,7 @@ export function settleTable(game: Game, deviceId: string, history: { key: string
   const played = game.hands ?? game.hand?.number ?? 0;
   if (played === 0 || before.settled.includes(game.id)) return null;
 
-  const p = rollDay(before, twinStatus().ready);
+  const p = before;
   const records = history.filter((h) => h.key.startsWith(`${game.id}#`)).map((h) => h.record);
   const stats = tableStats(records, me.id);
   const place = 1 + game.players.filter((x) => x.stack > me.stack).length;
@@ -295,25 +185,8 @@ export function settleTable(game: Game, deviceId: string, history: { key: string
       if (firstBeat && after) unlocked = after.id;
     } else if (place !== 1) r.l++;
     p.rivals.legends[id] = r;
-    rival = { kind: 'legend', id, record: r, won: place === 1 };
-  } else if (game.twinGame) {
-    const target = game.friendTwin ? (p.rivals.friends[game.friendTwin] ??= { w: 0, l: 0 }) : p.rivals.twin;
-    if (place === 1) target.w++;
-    else target.l++;
-    rival = { kind: game.friendTwin ? 'friend' : 'twin', id: game.friendTwin, record: { ...target }, won: place === 1 };
+    rival = { id, record: r, won: place === 1 };
   }
-
-  const goalsDone = bump(p, {
-    hands: stats.hands,
-    tables: 1,
-    tablesWon: won ? 1 : 0,
-    bluffs: stats.bluffsWon,
-    showdownsWon: stats.showdownsWon,
-    legendWins: beat ? 1 : 0,
-    twinGames: game.twinGame ? 1 : 0,
-    bigPots,
-    allInsWon: stats.allInsWon,
-  });
 
   const streak = loadStreak().days;
   const lifetime = loadStats().hands + played;
@@ -323,17 +196,9 @@ export function settleTable(game: Game, deviceId: string, history: { key: string
     newBadges.push(b.id);
   }
 
-  const report: TableReport = { id: game.id, at: Date.now(), place, players: game.players.length, won, knockedOut, stats, newBadges, goalsDone, unlocked, beat, firstBeat, rival, comeback, streak };
+  const report: TableReport = { id: game.id, at: Date.now(), place, players: game.players.length, won, knockedOut, stats, newBadges, unlocked, beat, firstBeat, rival, comeback, streak };
   p.settled = [...p.settled, game.id];
   p.reports = { ...p.reports, [game.id]: report };
   saveProgress(p);
   return report;
-}
-
-/** Progress with today's goals in place (saved when the day just turned over), for the screens that show them. */
-export function loadToday(): Progress {
-  const before = loadProgress();
-  const p = rollDay(before, twinStatus().ready);
-  if (p !== before) saveProgress(p);
-  return p;
 }

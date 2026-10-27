@@ -10,9 +10,9 @@ import './styles/global.css';
 import './styles/screens.css';
 import './styles/table.css';
 import './styles/desktop.css';
-import './styles/train.css';
+import './styles/replay.css';
+import './styles/themes.css';
 import './styles/home.css';
-import './styles/scroll.css';
 
 boot();
 installPressEffects();

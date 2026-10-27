@@ -32,7 +32,7 @@ export async function shareInvite(code: string) {
   const link = joinLink(code);
   if (navigator.share) {
     try {
-      await navigator.share({ title: 'Join my poker table', text: `Pull up a chair. GTODuel code: ${code}`, url: link });
+      await navigator.share({ title: 'Join my poker table', text: `Pull up a chair. FlipUp code: ${code}`, url: link });
       return;
     } catch (e) {
       if (e instanceof DOMException && e.name === 'AbortError') return;

@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { BLIND_CAP_CHOICES, BLIND_LEVELS, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings } from '../game';
+import { BLIND_CAP_CHOICES, BLIND_LEVELS, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings, type Variant } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
 import { BackBar, Choice, chips, Toggle } from '../ui/components';
 import { ChevronIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 import { BOTS } from '../game/botStyles';
 import { BotPicker } from './BotPicker';
-import { GameRow } from './GamePicker';
+import { GameRow, withVariant } from './GamePicker';
 
 const RANDOM = 'Random table (recommended)';
 const PICK = 'Pick your bots';
@@ -118,13 +118,15 @@ export function SettingsFields({
   );
 }
 
-export function Setup({ mode }: { mode: 'online' | 'local' }) {
+export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: Variant }) {
   const [settings, setSettings] = useState<Settings>(() => {
     const s = loadSettings();
     // Old saved settings that don't fit today's choices fall back to the defaults' shape.
     const fits =
       levelsFor(s.startingStack).some(([sb, bb]) => sb === s.smallBlind && bb === s.bigBlind) && STACK_CHOICES.includes(s.startingStack);
-    const base = fits ? s : { ...s, startingStack: 1000, smallBlind: 5, bigBlind: 10 };
+    const fitted = fits ? s : { ...s, startingStack: 1000, smallBlind: 5, bigBlind: 10 };
+    // A game picked on Home starts with the stacks and blinds it plays best with.
+    const base = variant ? withVariant(fitted, variant) : fitted;
     // Against bots nobody's waiting on you, so there's no clock.
     return mode === 'local' ? { ...base, turnSeconds: 0 } : { ...base, turnSeconds: base.turnSeconds || DEFAULT_SETTINGS.turnSeconds };
   });

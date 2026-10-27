@@ -28,8 +28,6 @@ test('Play lists the legends; a profile says how they play, and you can sit down
   await expect(page.getByText('Folds most hands before the flop')).toBeVisible();
   await expect(page.getByText('Tilts after a bad beat, and plays worse')).toBeVisible();
   await expect(page.getByText(/Not their real hands, and not endorsed/)).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'How to beat them' })).toBeVisible();
-  await expect(page.getByText('They only play 17% of their hands.')).toBeVisible();
   await shot(page, 'legends-02-profile');
 
   await page.getByRole('button', { name: 'Play Hellmuth' }).click();

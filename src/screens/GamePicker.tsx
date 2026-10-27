@@ -5,28 +5,34 @@ import { useState } from 'react';
 import { BLIND_LEVELS, variantInfo, VARIANTS, type Settings, type Variant } from '../game';
 import { Sheet } from '../ui/components';
 import { ChevronIcon } from '../ui/Icons';
+import { GameArt } from './HomeGames';
 
 /** Ghost Hold'em plays best deep: picking it gives everyone at least this many big blinds. */
 const GHOST_DEPTH = 500;
 const GHOST_STACKS = [5000, 10000];
+
+/** The settings a game plays best with: Ghost wants deep stacks, Imposter bigger blinds. */
+export function withVariant(settings: Settings, variant: Variant): Settings {
+  let next: Settings = { ...settings, variant };
+  // Deep stacks for the ghost, so a pot it keeps doesn't wipe anyone out.
+  if (variant === 'ghost' && settings.startingStack < settings.bigBlind * GHOST_DEPTH) {
+    const stack = GHOST_STACKS.find((s) => s >= settings.bigBlind * GHOST_DEPTH) ?? GHOST_STACKS[GHOST_STACKS.length - 1];
+    next = { ...next, startingStack: stack, ...(settings.bigBlind * GHOST_DEPTH > stack ? { smallBlind: 10, bigBlind: 20 } : {}) };
+  }
+  // Imposter plays for bigger blinds (about 50 big blinds deep), so every hand matters.
+  if (variant === 'imposter' && settings.bigBlind < next.startingStack / 50) {
+    const [smallBlind, bigBlind] = [...BLIND_LEVELS].reverse().find(([, bb]) => bb <= next.startingStack / 50) ?? [settings.smallBlind, settings.bigBlind];
+    next = { ...next, smallBlind, bigBlind };
+  }
+  return next;
+}
 
 /** The "Game" row: what the table plays, and a tap to pick another. */
 export function GameRow({ settings, onChange }: { settings: Settings; onChange: (s: Settings) => void }) {
   const [open, setOpen] = useState(false);
   const info = variantInfo(settings.variant);
   const pick = (variant: Variant) => {
-    let next: Settings = { ...settings, variant };
-    // Deep stacks for the ghost, so a pot it keeps doesn't wipe anyone out.
-    if (variant === 'ghost' && settings.startingStack < settings.bigBlind * GHOST_DEPTH) {
-      const stack = GHOST_STACKS.find((s) => s >= settings.bigBlind * GHOST_DEPTH) ?? GHOST_STACKS[GHOST_STACKS.length - 1];
-      next = { ...next, startingStack: stack, ...(settings.bigBlind * GHOST_DEPTH > stack ? { smallBlind: 10, bigBlind: 20 } : {}) };
-    }
-    // Imposter plays for bigger blinds (about 50 big blinds deep), so every hand matters.
-    if (variant === 'imposter' && settings.bigBlind < next.startingStack / 50) {
-      const [smallBlind, bigBlind] = [...BLIND_LEVELS].reverse().find(([, bb]) => bb <= next.startingStack / 50) ?? [settings.smallBlind, settings.bigBlind];
-      next = { ...next, smallBlind, bigBlind };
-    }
-    onChange(next);
+    onChange(withVariant(settings, variant));
     setOpen(false);
   };
   return (
@@ -55,6 +61,7 @@ export function GameRow({ settings, onChange }: { settings: Settings; onChange: 
                 aria-pressed={v.id === info.id}
                 onClick={() => pick(v.id)}
               >
+                <GameArt variant={v.id} className="game-tile-art" />
                 <span className="game-tile-emoji" aria-hidden>
                   {v.emoji}
                 </span>

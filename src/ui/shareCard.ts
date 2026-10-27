@@ -45,7 +45,7 @@ function draw(info: CardInfo): HTMLCanvasElement {
   });
   g.globalAlpha = 0.7;
   g.font = '600 40px system-ui, sans-serif';
-  g.fillText('GTODuel', 540, 1280);
+  g.fillText('FlipUp', 540, 1280);
   return c;
 }
 
@@ -54,9 +54,9 @@ export async function shareCard(info: CardInfo): Promise<boolean> {
   try {
     const blob = await new Promise<Blob | null>((ok) => draw(info).toBlob(ok, 'image/png'));
     if (!blob) return false;
-    const file = new File([blob], 'gtoduel-result.png', { type: 'image/png' });
+    const file = new File([blob], 'flipup-result.png', { type: 'image/png' });
     if (!navigator.canShare?.({ files: [file] })) return false;
-    await navigator.share({ files: [file], title: 'GTODuel result' });
+    await navigator.share({ files: [file], title: 'FlipUp result' });
     return true;
   } catch (e) {
     // Closing the share sheet counts as handled.

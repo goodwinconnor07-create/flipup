@@ -1,24 +1,10 @@
-// Training data kept on this phone: every hand you played (as data), GTO reviews of them, and
-// how you did on practice drills. Stats and weaknesses are worked out from these.
+// Hands you played on this phone, kept for a day so you can watch them back in Replay.
 
-import { handRecord, recordNet, type Game, type HandRecord } from '../game';
+import { handRecord, type Game, type HandRecord } from '../game';
 import { markPlayedToday, read, write } from './persist';
-import { recordTwinHand } from './twin';
-import { handFacts } from '../train/twinFacts';
-import { observeHand } from './friends';
-import { maybeSyncShare } from './share';
-import { addTwinHand } from './twinGames';
 
-const KEYS = {
-  history: 'flipup.history',
-  saved: 'flipup.savedhands',
-  reviews: 'flipup.reviews',
-  reports: 'flipup.reports',
-  drills: 'flipup.drills',
-} as const;
-
+const KEY = 'flipup.history';
 const MAX_HANDS = 400;
-const MAX_REPORTS = 40;
 
 /** A hand you played, and which seat was you. */
 export interface PlayedHand {
@@ -27,110 +13,41 @@ export interface PlayedHand {
   record: HandRecord;
 }
 
-export type Colour = 'green' | 'yellow' | 'red';
-
-/** The bits of a review the stats need (kept for every reviewed hand). */
-export interface ReviewSummary {
-  key: string;
-  at: number;
-  decisions: { street: string; colour: Colour | null; evLoss: number | null; scenario: string | null }[];
-}
-
-export interface DrillScore {
-  attempts: number;
-  green: number;
-  yellow: number;
-  red: number;
-  evLoss: number;
-}
-
 export const handKey = (tableId: string, number: number) => `${tableId}#${number}`;
 
-/** Hands you haven't saved are kept for a day, like Scroll hands. */
+/** Hands are kept for a day. */
 export const KEEP_MS = 24 * 60 * 60 * 1000;
 
-/** A table hand you saved to the study bank, under a name. */
-export interface SavedHand {
-  key: string;
-  name: string;
-  saved: number;
-}
-
-export function loadSaved(): SavedHand[] {
-  const s = read<SavedHand[]>(KEYS.saved);
-  return (Array.isArray(s) ? s.filter((x) => x && typeof x.key === 'string') : []).sort((a, b) => b.saved - a.saved);
-}
-
-export function saveHand(key: string, name: string, now = Date.now()): SavedHand[] {
-  const next = [{ key, name: name.trim() || 'Saved hand', saved: now }, ...loadSaved().filter((h) => h.key !== key)];
-  write(KEYS.saved, next);
-  return next;
-}
-
-export function renameSaved(key: string, name: string): SavedHand[] {
-  const next = loadSaved().map((h) => (h.key === key ? { ...h, name: name.trim() || h.name } : h));
-  write(KEYS.saved, next);
-  return next;
-}
-
-export function unsaveHand(key: string): SavedHand[] {
-  const next = loadSaved().filter((h) => h.key !== key);
-  write(KEYS.saved, next);
-  return next;
-}
-
-/** Hands you played: everything from the last 24 hours plus the ones you saved (older ones are deleted here,
- * with their reviews). */
+/** Hands you played in the last 24 hours (older ones are deleted here). */
 export function loadHistory(now = Date.now()): PlayedHand[] {
-  const h = read<PlayedHand[]>(KEYS.history);
-  const saved = new Set(loadSaved().map((s) => s.key));
-  const kept = Array.isArray(h) ? h.filter((x) => x && x.record && typeof x.heroId === 'string'
-    && (saved.has(x.key) || (Number.isFinite(x.record.at) && x.record.at <= now && now - x.record.at < KEEP_MS))) : [];
-  if (Array.isArray(h) && kept.length !== h.length) {
-    write(KEYS.history, kept);
-    const keys = new Set(kept.map(x => x.key));
-    for (const key of [KEYS.reviews, KEYS.reports]) {
-      const all = read<Record<string, unknown>>(key) ?? {};
-      write(key, Object.fromEntries(Object.entries(all).filter(([id]) => keys.has(id))));
-    }
-  }
+  const h = read<PlayedHand[]>(KEY);
+  const kept = Array.isArray(h) ? h.filter((x) => x && x.record && typeof x.heroId === 'string' && Number.isFinite(x.record.at) && x.record.at <= now && now - x.record.at < KEEP_MS) : [];
+  if (Array.isArray(h) && kept.length !== h.length) write(KEY, kept);
   return kept;
-}
-
-function saveHistory(hands: PlayedHand[]): void {
-  write(KEYS.history, hands.slice(-MAX_HANDS));
 }
 
 export function addHand(hand: PlayedHand): boolean {
   const hands = loadHistory();
   if (hands.some((h) => h.key === hand.key)) return false;
-  saveHistory([...hands, hand]);
+  write(KEY, [...hands, hand].slice(-MAX_HANDS));
   return true;
 }
 
 export const hasHand = (key: string) => loadHistory().some((h) => h.key === key);
 
-/** A hand to review from your games. */
-export function findPlayed(key: string): PlayedHand | null {
-  return loadHistory().find((h) => h.key === key) ?? null;
-}
-
 let captured = new Set<string>();
 
 /** Saves the hand that just finished at this table, once, if this phone was dealt in. */
-/** `full` is the whole table when this phone holds it (a game on this phone): after a hand it lets a twin game keep the twin's cards. */
-export function captureFinishedHand(game: Game | null, deviceId: string, full: Game | null = null): void {
+export function captureFinishedHand(game: Game | null, deviceId: string): void {
   const hand = game?.hand;
   if (!game || !hand?.result) return;
   const me = game.players.find((p) => p.deviceId === deviceId);
   if (!me) return;
   const seat = hand.seats.find((s) => s.playerId === me.id);
-  if (!seat || seat.cards.length !== 2) return;
-  // Hold'em variants still count for the daily streak, but their hands aren't plain Hold'em, so they stay out of the hand history and twins.
-  if ((game.settings.variant ?? 'holdem') !== 'holdem') {
-    markPlayedToday();
-    return;
-  }
+  if (!seat || seat.cards.length < 2) return;
+  markPlayedToday();
+  // The other games deal and score differently, so only plain Hold'em hands can be watched back.
+  if ((game.settings.variant ?? 'holdem') !== 'holdem') return;
   const key = handKey(game.id, hand.number);
   if (captured.has(key)) return;
   const record = handRecord(game, hand, Date.now());
@@ -138,53 +55,4 @@ export function captureFinishedHand(game: Game | null, deviceId: string, full: G
   captured.add(key);
   if (captured.size > 50) captured = new Set([...captured].slice(-20));
   addHand({ key, heroId: me.id, record });
-  recordTwinHand(key, record, me.id);
-  maybeSyncShare();
-  // Friends at an online table who share a twin: count what they did.
-  if (game.code) observeHand(record, key, me.id);
-  if (game.twinGame) {
-    const everything = full?.hand?.result && full.hand.number === hand.number ? handRecord(full, full.hand, Date.now()) : null;
-    const facts = everything ? handFacts(everything, me.id) : null;
-    addTwinHand(game.id, { key, number: record.number, net: recordNet(record, me.id), ...(facts ? { facts } : {}) }, game.settings.bigBlind);
-  }
-  markPlayedToday();
-}
-
-// ── Reviews ─────────────────────────────────────────────────────────────────
-
-export function loadSummaries(): Record<string, ReviewSummary> {
-  const r = read<Record<string, ReviewSummary>>(KEYS.reviews);
-  return r && typeof r === 'object' ? r : {};
-}
-
-/** Full review reports for the most recent reviewed hands (they're big, so only a few are kept). */
-export function loadReport<T>(key: string): T | null {
-  const all = read<Record<string, { at: number; report: T }>>(KEYS.reports) ?? {};
-  return all[key]?.report ?? null;
-}
-
-export function saveReview<T>(summary: ReviewSummary, report: T): void {
-  write(KEYS.reviews, { ...loadSummaries(), [summary.key]: summary });
-  const all = read<Record<string, { at: number; report: T }>>(KEYS.reports) ?? {};
-  all[summary.key] = { at: summary.at, report };
-  const keep = Object.entries(all)
-    .sort((a, b) => b[1].at - a[1].at)
-    .slice(0, MAX_REPORTS);
-  write(KEYS.reports, Object.fromEntries(keep));
-}
-
-// ── Drills ──────────────────────────────────────────────────────────────────
-
-export function loadDrills(): Record<string, DrillScore> {
-  const d = read<Record<string, DrillScore>>(KEYS.drills);
-  return d && typeof d === 'object' ? d : {};
-}
-
-export function recordDrill(scenario: string, colour: Colour, evLoss: number): void {
-  const all = loadDrills();
-  const s = all[scenario] ?? { attempts: 0, green: 0, yellow: 0, red: 0, evLoss: 0 };
-  s.attempts += 1;
-  s[colour] += 1;
-  s.evLoss += Math.max(0, evLoss);
-  write(KEYS.drills, { ...all, [scenario]: s });
 }

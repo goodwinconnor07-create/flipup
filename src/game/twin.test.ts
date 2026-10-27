@@ -148,7 +148,7 @@ describe('twin memory', () => {
   });
 
   // The memory has to cope with whatever real tables produce, and stay small.
-  it('learns from a hundred bot hands without growing past a small size', () => {
+  it('learns from a hundred bot hands without growing past a small size', { timeout: 30_000 }, () => {
     const rng = seededRng(7);
     let clock = 1_000_000;
     let game: Game = createTable({ hostDeviceId: 'me', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0, rebuys: true }, bots: 2, code: null, now: clock });

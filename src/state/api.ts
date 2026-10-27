@@ -1,4 +1,4 @@
-// HTTP calls to the GTODuel server (the Cloudflare Worker in /worker).
+// HTTP calls to the FlipUp server (the Cloudflare Worker in /worker).
 
 import { sanitizeTwin, type CreateTableRequest, type CreateTableResponse, type CreateTwinShareResponse, type SharedTwin, type TableInfo, type TwinProfile } from '../game';
 import { apiUrl } from './platform';

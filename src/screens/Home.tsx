@@ -1,20 +1,16 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { fetchTableInfo } from '../state/api';
 import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
-import { loadDrills, loadHistory, loadSummaries } from '../state/training';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
-import { LearnTab } from './HomeLearn';
+import { GameShelf } from './HomeGames';
+import { HistoryTab } from './HomeHistory';
 import { QuickGames } from './HomeQuick';
-import { TwinTiles } from './HomeTwins';
-import { TodayCard } from './HomeToday';
-import { DAILY_GOALS } from '../state/progress';
 import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
-import { ReviewTab, lastGameHands } from './HomeReview';
 import { colourWipe } from '../ui/effects';
-import { CapIcon, ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
-import { computeStats } from '../train/stats';
+import { ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
+import { variantInfo } from '../game';
 
 function ago(at: number): string {
   const mins = Math.max(1, Math.round((Date.now() - at) / 60_000));
@@ -24,21 +20,24 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'learn' | 'review';
+type Tab = 'play' | 'history';
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
-  { id: 'learn', label: 'Learn', Icon: CapIcon, title: 'Learn' },
-  { id: 'review', label: 'Review', Icon: HistoryIcon, title: 'Review' },
+  { id: 'history', label: 'History', Icon: HistoryIcon, title: 'History' },
 ];
 
-// Kept for the session, so coming back from a training screen lands on the same tab.
+// Kept for the session, so coming back from a replay lands on the same tab.
 let lastTab: Tab = 'play';
 
-/** One line under the greeting: your table, or how your play is matching GTO. Chips reset every game, so they're never the measure. */
-function statusLine(gto: number | null, tables: number, active: boolean): string {
+/** One line under the greeting: your table, or how your last game went. Chips reset every game, so they're never the measure. */
+function statusLine(active: boolean): string {
   if (active) return 'Your table is waiting.';
-  if (gto !== null) return `${Math.round(gto * 100)}% of your moves matched GTO.`;
-  return tables > 0 ? 'Ready for another hand?' : 'Deal yourself in.';
+  const last = loadStats().games.at(-1);
+  if (last) {
+    const info = variantInfo(last.variant as never);
+    return `Last time: ${info.emoji} ${info.name}${last.place ? `, ${last.place === 1 ? 'you won' : `finished ${last.place === 2 ? '2nd' : last.place === 3 ? '3rd' : `${last.place}th`}`}` : ''}.`;
+  }
+  return 'Pick a game and deal yourself in.';
 }
 
 export function Home() {
@@ -52,17 +51,9 @@ export function Home() {
   const profile = useApp((s) => s.profile);
   const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
   const named = profile.name.trim().length > 0;
-  const [stats] = useState(loadStats);
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
   const [streak] = useState(loadStreak);
-  const training = useMemo(() => {
-    const history = loadHistory();
-    const reviews = loadSummaries();
-    const s = computeStats(history, reviews, loadDrills());
-    return { gto: s.decisions > 0 ? s.gtoPct : null, lastGame: lastGameHands(history, reviews) };
-  }, []);
-
   // The last online table, if it's still open, is one tap away.
   const rejoin = async () => {
     if (!last || looking) return;
@@ -89,30 +80,15 @@ export function Home() {
     navigate({ name: 'setup', mode: then === 'host' ? 'online' : 'local' });
   };
 
-  // The banner only shows when there's one clear next step: your open table, the online table you left,
-  // or the hands from your last game that the coach hasn't seen.
+  // The banner only shows when there's one clear next step: your open table, or the online table you left.
   const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
     ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
     : last
       ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate' }
-      : training.lastGame.waiting > 0
-        ? {
-            title: 'Your last game',
-            sub: `${training.lastGame.waiting} ${training.lastGame.waiting === 1 ? 'hand' : 'hands'} the coach hasn't seen yet`,
-            cta: 'Review it',
-            run: () => navigate({ name: 'train', section: 'review' }),
-            faces: [],
-            tone: 'orange',
-          }
-        : null;
+      : null;
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
-  const subtitle =
-    tab === 'learn'
-      ? 'Solved hands and drills, graded as you go.'
-      : tab === 'review'
-        ? 'Your own hands, checked against GTO.'
-        : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(training.gto, stats.tables, !!active)}`;
+  const subtitle = tab === 'history' ? 'How your tables went.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
 
   return (
     <div className="screen home">
@@ -163,6 +139,9 @@ export function Home() {
                     </span>
                   </button>
                 )}
+                <h3 className="section-head">Games</h3>
+                <GameShelf />
+                <h3 className="section-head">Quick start</h3>
                 <section className="modes" aria-label="Start a game">
                   <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
                     <span className="mode-text">
@@ -176,26 +155,23 @@ export function Home() {
                   <button type="button" className="mode mode-green press" onClick={() => go('bots')}>
                     <span className="mode-text">
                       <span className="mode-title">Play with Bots</span>
-                      <span className="mode-sub">Practise on this phone, no timer.</span>
+                      <span className="mode-sub">On this phone, no timer.</span>
                     </span>
                     <span className="mode-art">
                       <BotsArt />
                     </span>
                   </button>
                 </section>
-                {DAILY_GOALS && <TodayCard />}
-                <TwinTiles />
                 <LegendShelf />
                 <QuickGames />
               </>
             )}
-            {tab === 'learn' && <LearnTab />}
-            {tab === 'review' && <ReviewTab />}
+            {tab === 'history' && <HistoryTab />}
           </div>
         </div>
       </div>
       <nav className="home-tabs" aria-label="Home">
-        <div className="tabbar glass" role="tablist" style={{ ['--i' as string]: index }}>
+        <div className="tabbar glass" role="tablist" style={{ ['--i' as string]: index, ['--n' as string]: TABS.length }}>
           <i className="tab-capsule" aria-hidden />
           {TABS.map(({ id, label, Icon }) => (
             <button

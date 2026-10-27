@@ -1679,6 +1679,8 @@ html[data-theme='dark'] .btn-dark {
 }
 
 .game-tile {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1687,9 +1689,23 @@ html[data-theme='dark'] .btn-dark {
   border: 0;
   border-radius: var(--r-lg);
   background: var(--bg-2);
-  color: var(--ink);
+  color: #fff;
   font: inherit;
   text-align: left;
+}
+
+/* Each tile wears its game's colours. */
+.game-tile-art {
+  position: absolute;
+  inset: 0;
+}
+
+.game-tile-art .prop {
+  display: none;
+}
+
+.game-tile > :not(.game-tile-art) {
+  position: relative;
 }
 
 .game-tile.on {
@@ -1706,7 +1722,7 @@ html[data-theme='dark'] .btn-dark {
 }
 
 .game-tile small {
-  color: var(--ink-3);
+  color: rgba(255, 255, 255, 0.85);
   font-size: var(--fs-caption);
 }
 

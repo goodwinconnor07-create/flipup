@@ -18,8 +18,6 @@ export interface CreateTableRequest {
   emoji: string;
   settings: Settings;
   bots: number;
-  /** The host's shared twin code; dropped unless it's theirs. */
-  twinCode?: string;
 }
 
 export interface CreateTableResponse {

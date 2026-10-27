@@ -17,6 +17,9 @@ import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { RulesSheet } from './GamePicker';
+import { themeFor, themeVars } from '../ui/gameThemes';
+import { setSoundMood } from '../ui/sound';
+import { useThemeMoments } from '../ui/useTableSounds';
 
 export function Table() {
   const desktop = useDesktop();
@@ -36,6 +39,13 @@ export function Table() {
   const online = useApp((s) => s.session?.mode === 'online');
   // The screen stays on while you're at a table that's still going.
   useWakeLock(!!game && game.status !== 'ended');
+  // Each game pitches the table's sounds its own way, and has a few sounds of its own.
+  const mood = game ? themeFor(variantOf(game)) : null;
+  useEffect(() => {
+    setSoundMood(mood?.pitch ?? 1);
+    return () => setSoundMood(1);
+  }, [mood]);
+  useThemeMoments(game);
 
   if (!game) {
     return (
@@ -47,8 +57,12 @@ export function Table() {
       </div>
     );
   }
+  const theme = themeFor(variantOf(game));
   return (
-    <div className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}`}>
+    <div
+      className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}${theme ? ` themed theme-${theme.id}` : ''}`}
+      style={theme ? (themeVars(theme) as React.CSSProperties) : undefined}
+    >
       {blindNews && <BlindBanner key={blindNews.id} text={blindNews.text} onDone={() => setBlindNews(null)} />}
       <TableBar game={game} />
       <div className="rotate-hint" role="alert">
@@ -74,6 +88,7 @@ export function Table() {
           <Felt game={game} />
         ))}
       {game.status === 'ended' && <Final game={game} />}
+      {theme && <div className={`ambient ambient-${theme.ambient}`} aria-hidden />}
     </div>
   );
 }
@@ -182,6 +197,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const mySeat = seatFor(hand, me?.id);
   const others = othersInOrder(game, me);
   const variant = variantOf(game);
+  const theme = themeFor(variant);
   const odds = useOdds(hand, showsOdds(variant));
   // Imposter: you only learn it's you; everyone else in the hand is innocent.
   const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
@@ -218,7 +234,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
 
   // The tab says so when it's your turn and you're looking at something else.
   useEffect(() => {
-    const base = 'GTODuel';
+    const base = 'FlipUp';
     const update = () => {
       document.title = myTurn && document.hidden ? `Your turn · ${base}` : base;
     };
@@ -354,7 +370,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           </div>
         )}
 
-        <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
+        <div className={`table-oval${theme ? '' : ` rail-${look.rail}`}`} style={theme ? undefined : { ['--felt' as string]: look.felt }}>
           <TableTimer game={game} now={now} mine={myTurn} />
           <div className="table-felt">
             <div className="table-top">

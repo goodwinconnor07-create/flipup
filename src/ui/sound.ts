@@ -19,7 +19,12 @@ export type SoundName =
   | 'build0'
   | 'build1'
   | 'build2'
-  | 'victory';
+  | 'victory'
+  /** The mini games' own moments (see gameThemes.ts). */
+  | 'spook'
+  | 'dice'
+  | 'sting'
+  | 'splash';
 
 /** Recorded sounds. Anything not listed here is made in code. */
 const SAMPLES: Partial<Record<SoundName, string>> = {
@@ -50,7 +55,7 @@ function sample(c: AudioContext, url: string, at: number, gain = 0.85, rate = 1)
   if (!buf) return;
   const src = c.createBufferSource();
   src.buffer = buf;
-  src.playbackRate.value = rate * (0.97 + Math.random() * 0.06);
+  src.playbackRate.value = rate * pitch * (0.97 + Math.random() * 0.06);
   const env = c.createGain();
   env.gain.value = gain;
   src.connect(env).connect(master!);
@@ -61,6 +66,12 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let noise: AudioBuffer | null = null;
 let muted = false;
+/** Each game pitches the table's sounds: low and heavy for the ghost, bright for the pineapple. */
+let pitch = 1;
+
+export function setSoundMood(value: number): void {
+  pitch = value;
+}
 
 export function setMuted(value: boolean): void {
   muted = value;
@@ -109,8 +120,8 @@ function hiss(c: AudioContext, at: number, dur: number, from: number, to: number
   const filter = c.createBiquadFilter();
   filter.type = 'bandpass';
   filter.Q.value = q;
-  filter.frequency.setValueAtTime(from, at);
-  filter.frequency.exponentialRampToValueAtTime(to, at + dur);
+  filter.frequency.setValueAtTime(from * pitch, at);
+  filter.frequency.exponentialRampToValueAtTime(to * pitch, at + dur);
   const env = c.createGain();
   env.gain.setValueAtTime(0.0001, at);
   env.gain.exponentialRampToValueAtTime(gain, at + Math.min(0.012, dur / 3));
@@ -123,8 +134,8 @@ function hiss(c: AudioContext, at: number, dur: number, from: number, to: number
 function tone(c: AudioContext, at: number, dur: number, from: number, to: number, gain: number, type: OscillatorType = 'sine'): void {
   const osc = c.createOscillator();
   osc.type = type;
-  osc.frequency.setValueAtTime(from, at);
-  if (to !== from) osc.frequency.exponentialRampToValueAtTime(to, at + dur);
+  osc.frequency.setValueAtTime(from * pitch, at);
+  if (to !== from) osc.frequency.exponentialRampToValueAtTime(to * pitch, at + dur);
   const env = c.createGain();
   env.gain.setValueAtTime(0.0001, at);
   env.gain.exponentialRampToValueAtTime(gain, at + 0.006);
@@ -138,7 +149,7 @@ function tone(c: AudioContext, at: number, dur: number, from: number, to: number
 function ring(c: AudioContext, at: number, freq: number, decay: number, gain: number): void {
   const osc = c.createOscillator();
   osc.type = 'sine';
-  osc.frequency.value = freq;
+  osc.frequency.value = freq * pitch;
   const env = c.createGain();
   env.gain.setValueAtTime(gain, at);
   env.gain.exponentialRampToValueAtTime(0.0001, at + decay);
@@ -256,6 +267,30 @@ export function playSound(name: SoundName, offsetMs = 0): void {
     }
     case 'pop':
       tone(c, t, 0.1, 520, 880, 0.18, 'triangle');
+      break;
+    case 'spook':
+      // A low wobbling moan under a cold breath.
+      hiss(c, t, 0.9, 900, 300, 0.2, 0.6);
+      tone(c, t, 0.9, 150, 95, 0.16, 'sawtooth');
+      tone(c, t + 0.05, 0.9, 158, 90, 0.1, 'triangle');
+      break;
+    case 'dice':
+      // A handful of knocks as the die tumbles, then it settles.
+      for (let i = 0; i < 6; i++) {
+        const k = i / 5;
+        tone(c, t + k * k * 0.55, 0.05, 260 + Math.random() * 120, 120, 0.2 * (1 - k * 0.5));
+        hiss(c, t + k * k * 0.55, 0.04, 3000, 1600, 0.1, 1);
+      }
+      break;
+    case 'sting':
+      // Two low notes, a half step apart: something isn't right.
+      tone(c, t, 0.5, 196, 196, 0.16, 'sawtooth');
+      tone(c, t, 0.5, 208, 208, 0.12, 'sawtooth');
+      tone(c, t + 0.02, 0.5, 98, 98, 0.12, 'triangle');
+      break;
+    case 'splash':
+      hiss(c, t, 0.5, 1800, 500, 0.3, 0.5);
+      tone(c, t, 0.25, 330, 120, 0.14);
       break;
   }
 }

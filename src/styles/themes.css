@@ -1,0 +1,275 @@
+/* ── Mini game themes ─────────────────────────────────────────────────────────
+   Each game (see ui/gameThemes.ts) sets its palette as --t-* variables on the table screen. This file turns
+   them into a page, a table, card backs and a moving background. The page goes dark in every themed game, so
+   the table's text and glass read the same way whatever the phone's appearance is. */
+
+.table-screen.themed {
+  isolation: isolate;
+  position: relative;
+  background: linear-gradient(180deg, var(--t-bg-a), var(--t-bg-b));
+  color-scheme: dark;
+  color: var(--ink);
+  --ink: #ffffff;
+  --ink-2: #ebebf5;
+  --ink-3: #a4a4ad;
+  --ink-4: #6c6c72;
+  --line: rgba(255, 255, 255, 0.16);
+  --bg: transparent;
+  --bg-2: rgba(255, 255, 255, 0.08);
+  --bg-3: rgba(255, 255, 255, 0.14);
+  --surface: rgba(20, 20, 24, 0.78);
+  --chip: rgba(255, 255, 255, 0.12);
+  --btn-dark: rgba(255, 255, 255, 0.14);
+  --card-edge: rgba(255, 255, 255, 0.14);
+  --bubble-grey: rgba(255, 255, 255, 0.14);
+  --glass-fill: rgba(24, 24, 28, 0.62);
+  --glass-fill-strong: rgba(24, 24, 28, 0.82);
+  --glass-rim: rgba(255, 255, 255, 0.16);
+  --card-back-1: var(--t-back-a);
+  --card-back-2: var(--t-back-b);
+  --blue: var(--t-accent);
+  --blue-lo: var(--t-accent);
+  --blue-ink: var(--t-accent);
+}
+
+/* Text on the accent keeps its contrast; everything else keeps the app's own colours. */
+.table-screen.themed .btn-blue {
+  color: var(--t-on-accent);
+}
+
+.table-screen.themed > .topbar.table-bar:first-child {
+  background: transparent;
+  box-shadow: none;
+}
+
+/* The table: this game's felt and rail, whatever the player picked in Settings. */
+.table-screen.themed .table-oval {
+  --felt: var(--t-felt);
+  --rail-a: var(--t-rail-a);
+  --rail-b: var(--t-rail-b);
+  background: linear-gradient(165deg, var(--rail-a), var(--rail-b));
+}
+
+.table-screen.themed .pot-chip {
+  background: var(--t-chip);
+}
+
+.table-screen.themed .variant-pill {
+  background: color-mix(in srgb, var(--t-accent) 22%, rgba(0, 0, 0, 0.5));
+  color: #fff;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--t-accent) 60%, transparent);
+}
+
+/* ── The moving background ────────────────────────────────────────────────── */
+
+.ambient {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ambient::before,
+.ambient::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+}
+
+/* Pineapple: warm light and glints drifting up. */
+.ambient-sparkle::before {
+  background:
+    radial-gradient(circle at 20% 80%, rgba(255, 207, 61, 0.28), transparent 38%),
+    radial-gradient(circle at 85% 15%, rgba(255, 140, 60, 0.22), transparent 40%);
+  animation: amb-drift 14s ease-in-out infinite alternate;
+}
+
+.ambient-sparkle::after {
+  inset: 0;
+  background-image:
+    radial-gradient(circle, rgba(255, 244, 190, 0.9) 0 1.5px, transparent 2.5px),
+    radial-gradient(circle, rgba(255, 244, 190, 0.7) 0 1px, transparent 2px);
+  background-size: 90px 120px, 140px 170px;
+  background-position: 0 0, 40px 60px;
+  opacity: 0.5;
+  animation: amb-rise 18s linear infinite;
+}
+
+/* Deuces: confetti that never lands. */
+.ambient-confetti::before {
+  inset: 0;
+  background-image:
+    linear-gradient(35deg, #ff4fa0 0 6px, transparent 6px),
+    linear-gradient(-20deg, #3ad7ff 0 5px, transparent 5px),
+    linear-gradient(60deg, #ffe14d 0 6px, transparent 6px),
+    linear-gradient(10deg, #7affb0 0 5px, transparent 5px);
+  background-size: 110px 140px, 160px 190px, 130px 170px, 190px 150px;
+  background-position: 0 0, 50px 30px, 20px 90px, 90px 10px;
+  opacity: 0.42;
+  animation: amb-fall 16s linear infinite;
+}
+
+.ambient-confetti::after {
+  background: radial-gradient(circle at 50% 0%, rgba(255, 79, 160, 0.28), transparent 55%);
+  animation: amb-pulse 4s ease-in-out infinite alternate;
+}
+
+/* Ghost: mist rolling across, and the light failing now and then. */
+.ambient-fog::before {
+  background:
+    radial-gradient(ellipse 60% 30% at 30% 70%, rgba(125, 255, 196, 0.2), transparent 70%),
+    radial-gradient(ellipse 55% 26% at 75% 40%, rgba(150, 200, 255, 0.14), transparent 70%);
+  filter: blur(18px);
+  animation: amb-drift 16s ease-in-out infinite alternate;
+}
+
+.ambient-fog::after {
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, transparent 35%, rgba(0, 0, 0, 0.78) 100%);
+  animation: amb-flicker 9s steps(1, end) infinite;
+}
+
+/* Pittsburgh: the rivers, slow ripples along the bottom. */
+.ambient-water::before {
+  inset: auto 0 0 0;
+  height: 38%;
+  background:
+    repeating-linear-gradient(180deg, rgba(246, 201, 69, 0.06) 0 2px, transparent 2px 18px),
+    linear-gradient(180deg, transparent, rgba(60, 110, 160, 0.3));
+  animation: amb-ripple 6s linear infinite;
+}
+
+.ambient-water::after {
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 0%, rgba(246, 201, 69, 0.14), transparent 50%);
+}
+
+/* Die on the River: pips in the dark. */
+.ambient-pips::before {
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0 4px, transparent 5px);
+  background-size: 70px 70px;
+  opacity: 0.1;
+  animation: amb-fall 40s linear infinite;
+}
+
+.ambient-pips::after {
+  background: radial-gradient(circle at 50% 100%, rgba(255, 60, 80, 0.3), transparent 55%);
+  animation: amb-pulse 5s ease-in-out infinite alternate;
+}
+
+/* Red River: red moving down the page. */
+.ambient-flow::before {
+  inset: -50% 0;
+  background: repeating-linear-gradient(170deg, rgba(255, 70, 60, 0.2) 0 28px, transparent 28px 90px);
+  filter: blur(6px);
+  animation: amb-flow 9s linear infinite;
+}
+
+.ambient-flow::after {
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 120%, rgba(255, 60, 50, 0.35), transparent 60%);
+}
+
+/* Imposter: one lamp over the table, swinging a little. */
+.ambient-spotlight::before {
+  inset: -10% -30% 30% -30%;
+  background: conic-gradient(from 180deg at 50% 0%, transparent 150deg, rgba(255, 244, 214, 0.22) 172deg, rgba(255, 244, 214, 0.22) 188deg, transparent 210deg);
+  transform-origin: 50% 0;
+  animation: amb-sway 7s ease-in-out infinite alternate;
+}
+
+.ambient-spotlight::after {
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 35%, transparent 30%, rgba(0, 0, 0, 0.7) 100%);
+}
+
+/* What's printed on the felt itself. */
+.theme-dice .table-felt::after,
+.theme-deuces .table-felt::after,
+.theme-ghost .table-felt::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.theme-dice .table-felt::after {
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.16) 0 3px, transparent 4px);
+  background-size: 34px 34px;
+}
+
+.theme-deuces .table-felt::after {
+  background: repeating-conic-gradient(from 0deg at 50% 50%, rgba(255, 255, 255, 0.05) 0 12deg, transparent 12deg 24deg);
+}
+
+.theme-ghost .table-felt::after {
+  background: radial-gradient(ellipse at 50% 50%, rgba(125, 255, 196, 0.14), transparent 60%);
+  animation: amb-pulse 5s ease-in-out infinite alternate;
+}
+
+/* The ghost's cards glow on the cold felt. */
+.theme-ghost .ghost {
+  color: #fff;
+  background: none;
+  text-shadow: 0 0 10px rgba(125, 255, 196, 0.7);
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────── */
+
+@keyframes amb-drift {
+  from { transform: translate3d(-4%, 2%, 0); }
+  to { transform: translate3d(4%, -3%, 0); }
+}
+
+@keyframes amb-rise {
+  from { background-position: 0 0, 40px 60px; }
+  to { background-position: 0 -480px, 40px -340px; }
+}
+
+@keyframes amb-fall {
+  from { background-position: 0 0, 50px 30px, 20px 90px, 90px 10px; }
+  to { background-position: 40px 560px, 10px 760px, 60px 680px, 30px 600px; }
+}
+
+@keyframes amb-pulse {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}
+
+@keyframes amb-flicker {
+  0%, 38%, 41%, 44%, 100% { opacity: 1; }
+  39%, 43% { opacity: 0.55; }
+  40% { opacity: 0.8; }
+  70% { opacity: 0.9; }
+}
+
+@keyframes amb-ripple {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 28px, 0 0; }
+}
+
+@keyframes amb-flow {
+  from { transform: translateY(-90px); }
+  to { transform: translateY(90px); }
+}
+
+@keyframes amb-sway {
+  from { transform: rotate(-4deg); }
+  to { transform: rotate(4deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient::before,
+  .ambient::after,
+  .theme-ghost .table-felt::after {
+    animation: none;
+  }
+}
+
+html.calm .ambient::before,
+html.calm .ambient::after {
+  animation: none;
+}

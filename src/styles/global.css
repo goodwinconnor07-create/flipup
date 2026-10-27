@@ -42,8 +42,6 @@
   --r-pill: 999px;
   --radius: var(--r-lg);
   --radius-sm: var(--r-md);
-  /* Rounded rectangles also set `corner-shape: squircle` beside their border-radius: Apple's continuous corners in
-     Chromium, and a plain round corner everywhere else. Circles and pills don't, or they'd stop being round. */
 
   /* ── Neutrals */
   --ink: #000000;
@@ -151,16 +149,8 @@
   /* Strong enough that text scrolling underneath never fights the labels on top. */
   --glass-blur: blur(30px) saturate(180%);
 
-  /* The least a finger needs: 44pt on iPhone (Android asks for 48dp, which a phone shows at about this size too). */
-  --tap: 44px;
-
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
-  --safe-left: env(safe-area-inset-left, 0px);
-  --safe-right: env(safe-area-inset-right, 0px);
-  /* Side padding of a screen: 16px, or the notch when that's wider (a phone on its side). */
-  --gutter-left: max(16px, var(--safe-left));
-  --gutter-right: max(16px, var(--safe-right));
 }
 
 /* Dark mode: true black with Apple's grey cells and its dark-mode system colours. Follows the phone unless
@@ -311,8 +301,8 @@ input {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--safe-top) + 12px) var(--gutter-right) 0 var(--gutter-left);
-  animation: screen-in 0.14s ease-out;
+  padding: calc(var(--safe-top) + 12px) 16px 0;
+  animation: screen-in 0.18s ease-out;
 }
 
 .screen-body {
@@ -409,38 +399,8 @@ input {
   font-size: var(--fs-body);
 }
 
-.num,
-.tile-num,
-.big-num,
-.stat b,
-.stat-hero,
-.streak-hero b,
-.standing-rank,
-.gr-count,
-.coach-numbers,
-.table-bar .table-title small,
-.table-note {
+.num {
   font-variant-numeric: tabular-nums;
-}
-
-/* Short titles break into even lines; paragraphs avoid a lone last word. Both are only hints, so older browsers
-   wrap as before. */
-h1,
-h2,
-h3,
-h4,
-.hero,
-.h1,
-.h2,
-.h3,
-[class*='-title'] {
-  text-wrap: balance;
-}
-
-p,
-li,
-blockquote {
-  text-wrap: pretty;
 }
 
 /* ── Buttons ─────────────────────────────────────────────────────────────── */
@@ -455,7 +415,6 @@ blockquote {
   min-height: 50px;
   padding: 0 20px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -494,14 +453,12 @@ blockquote {
   min-height: 56px;
   font-size: var(--fs-lead);
   border-radius: var(--r-md);
-  corner-shape: squircle;
 }
 
 .btn-sm {
   min-height: 40px;
   font-size: var(--fs-small);
   border-radius: var(--r-sm);
-  corner-shape: squircle;
   padding: 0 16px;
 }
 
@@ -589,21 +546,6 @@ blockquote {
 .icon-btn svg {
   width: 22px;
   height: 22px;
-}
-
-/* Hit slop. These look smaller than a fingertip, so an invisible layer around each one grows what answers to a
-   tap up to --tap, only in the direction it falls short. They sit far enough apart that the layers never overlap. */
-:is(.streak-pill, .avatar-btn, .segmented button, .my-stack, .table-bar .icon-btn, .table-bar .code-chip, .choice-option) {
-  position: relative;
-}
-
-:is(.streak-pill, .avatar-btn, .segmented button, .my-stack, .table-bar .icon-btn, .table-bar .code-chip, .choice-option)::after {
-  content: '';
-  position: absolute;
-  top: min(0px, calc((100% - var(--tap)) / 2));
-  bottom: min(0px, calc((100% - var(--tap)) / 2));
-  left: min(0px, calc((100% - var(--tap)) / 2));
-  right: min(0px, calc((100% - var(--tap)) / 2));
 }
 
 /* ── Top bar ─────────────────────────────────────────────────────────────── */
@@ -698,7 +640,6 @@ blockquote {
 .tile {
   background: var(--surface);
   border-radius: var(--radius);
-  corner-shape: squircle;
   box-shadow:
     0 0 0 2px var(--line),
     var(--shadow-soft);
@@ -708,7 +649,6 @@ blockquote {
 .tile-flat {
   background: var(--bg-2);
   border-radius: var(--radius);
-  corner-shape: squircle;
   padding: 20px;
 }
 
@@ -719,7 +659,6 @@ blockquote {
   min-height: 64px;
   padding: 0 20px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   border: 0;
   background: var(--bg-2);
   box-shadow: inset 0 0 0 3px transparent;
@@ -781,7 +720,7 @@ blockquote {
   box-shadow:
     0 3px 8px rgba(0, 0, 0, 0.15),
     0 3px 1px rgba(0, 0, 0, 0.06);
-  transition: transform 0.2s cubic-bezier(0.3, 1.3, 0.5, 1);
+  transition: transform 0.25s cubic-bezier(0.3, 1.3, 0.5, 1);
 }
 
 .toggle.on {
@@ -853,8 +792,8 @@ blockquote {
   overscroll-behavior: contain;
   background: var(--surface);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
-  corner-shape: squircle;
   padding: 12px 20px calc(var(--safe-bottom) + 36px);
+  animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.05);
 }
 
 .sheet-grip {
@@ -862,7 +801,7 @@ blockquote {
   height: 5px;
   border-radius: var(--r-xs);
   background: var(--bg-3);
-  margin: 4px auto 0;
+  margin: 4px auto 16px;
 }
 
 .sheet-head {
@@ -899,7 +838,6 @@ body:has(.sheet-backdrop) .toasts {
   max-width: 480px;
   padding: 16px 20px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--contrast);
   color: var(--on-contrast);
   font-size: var(--fs-lead);
@@ -914,13 +852,12 @@ body:has(.sheet-backdrop) .toasts {
 .toast-undo {
   pointer-events: auto;
   flex: none;
-  min-width: var(--tap);
-  min-height: var(--tap);
+  min-width: 44px;
+  min-height: 44px;
   margin: -12px -12px -12px 0;
   padding: 0 12px;
   border: 0;
   border-radius: var(--r-sm);
-  corner-shape: squircle;
   background: none;
   color: var(--bubble-blue-hi);
   font-size: var(--fs-lead);
@@ -969,37 +906,7 @@ body:has(.sheet-backdrop) .toasts {
 @keyframes screen-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
-  }
-}
-
-/* ── View transitions: a change to a list (see StudyBank) fades and glides in 200ms or less (under 300ms
-   with the browser's own set-up).
-   The page underneath stays tappable, and Reduce Motion never starts one. `html.vt` is on while one runs. */
-::view-transition {
-  pointer-events: none;
-}
-
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 0.16s;
-}
-
-::view-transition-group(*) {
-  animation-duration: 0.2s;
-  animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
-}
-
-/* Rows in a list keep their own place while it changes, so the others slide up when one goes. */
-html.vt [style*='--vt'] {
-  view-transition-name: var(--vt);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  ::view-transition-group(*),
-  ::view-transition-old(*),
-  ::view-transition-new(*) {
-    animation: none;
+    transform: translateY(10px);
   }
 }
 
@@ -1024,7 +931,6 @@ html.vt [style*='--vt'] {
   }
 }
 
-/* The raise panel still slides up this way; sheets are moved by a spring (see Sheet). */
 @keyframes sheet-up {
   from {
     transform: translateY(100%);
@@ -1179,26 +1085,21 @@ html.calm *::after {
 }
 
 .sheet-backdrop.leaving .sheet {
-  animation: sheet-down 0.16s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: sheet-down 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
-/* Its position comes from script (a spring, or the finger), never from a CSS animation or transition, so touching it always takes over. */
+.sheet.dragging {
+  transition: none;
+}
+
 .sheet {
-  position: relative;
-}
-
-.sheet-close {
-  position: absolute;
-  top: 12px;
-  right: 16px;
-  z-index: 1;
+  transition: transform 0.2s cubic-bezier(0.2, 0.9, 0.3, 1.05);
 }
 
 /* A bigger, easier target to grab than the grip itself. */
 .sheet-grip-zone {
   margin: -12px -20px 0;
-  /* The grip's old bottom margin, as padding, so the grab zone really is that tall. */
-  padding: 12px 0 16px;
+  padding: 12px 0 0;
   touch-action: none;
   cursor: grab;
 }
@@ -1246,8 +1147,8 @@ html.calm *::after {
   position: sticky;
   top: 0;
   z-index: 20;
-  margin: 0 calc(-1 * var(--gutter-right)) 8px calc(-1 * var(--gutter-left));
-  padding: calc(var(--safe-top) + 12px) var(--gutter-right) 8px var(--gutter-left);
+  margin: 0 -16px 8px;
+  padding: calc(var(--safe-top) + 12px) 16px 8px;
   background: var(--glass-fill);
   box-shadow: 0 1px 0 var(--glass-edge);
 }
@@ -1263,8 +1164,8 @@ html.calm *::after {
 
 /* The footer is a glass shelf: the list scrolls under it, blurred. */
 .screen-foot {
-  margin: -20px calc(-1 * var(--gutter-right)) 0 calc(-1 * var(--gutter-left));
-  padding: 16px var(--gutter-right) calc(var(--safe-bottom) + 16px) var(--gutter-left);
+  margin: -20px -16px 0;
+  padding: 16px 16px calc(var(--safe-bottom) + 16px);
   background: var(--glass-fill);
   box-shadow:
     0 -1px 0 var(--glass-edge),

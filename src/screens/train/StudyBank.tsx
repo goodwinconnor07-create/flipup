@@ -9,7 +9,6 @@ import { loadHistory, loadSaved, renameSaved, unsaveHand } from '../../state/tra
 import { REPLAY_ON } from '../../train/replay';
 import { CoachSays } from '../../train/Coach';
 import { Dots, MiniCards } from '../../train/widgets';
-import { transition } from '../../ui/viewTransition';
 
 const when = (at: number) =>
   new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) +
@@ -41,8 +40,8 @@ export function StudyBank() {
   // No "are you sure": it goes at once, and the toast can bring it back.
   const del = (h: BankHand) => {
     const index = bank.findIndex((b) => b.id === h.id);
-    transition(() => setBank(removeBanked(h.id)));
-    undoToast(`Deleted "${h.name}"`, () => transition(() => setBank(restoreBanked(h, Math.max(0, index)))));
+    setBank(removeBanked(h.id));
+    undoToast(`Deleted "${h.name}"`, () => setBank(restoreBanked(h, Math.max(0, index))));
   };
 
   const edit = (h: PlayedQuiz & { name?: string }) => {
@@ -120,7 +119,7 @@ export function StudyBank() {
       ) : (
         <div className="t-list">
           {tableHands.map((s) => (
-            <Row key={s.key} id={s.key} cards={s.hand.record.holes[s.hand.heroId] ?? []} title={s.name} sub={`Table hand · saved ${when(s.saved)}`}>
+            <Row key={s.key} cards={s.hand.record.holes[s.hand.heroId] ?? []} title={s.name} sub={`Table hand · saved ${when(s.saved)}`}>
               {editing === s.key ? (
                 renameForm(s.key)
               ) : (
@@ -144,7 +143,7 @@ export function StudyBank() {
             </Row>
           ))}
           {bank.map((h) => (
-            <Row key={h.id} id={h.id} cards={h.cards ?? []} grades={h.grades} title={h.name} sub={`Scroll hand · saved ${when(h.saved)}`}>
+            <Row key={h.id} cards={h.cards ?? []} grades={h.grades} title={h.name} sub={`Scroll hand · saved ${when(h.saved)}`}>
               {editing === h.id ? (
                 nameForm(h)
               ) : (
@@ -170,7 +169,7 @@ export function StudyBank() {
           <p className="muted">Not saved, so these go a day after you play them.</p>
           <div className="t-list">
             {unsaved.map((h) => (
-              <Row key={h.id} id={h.id} cards={h.cards ?? []} grades={h.grades} title={h.title} sub={when(h.at)}>
+              <Row key={h.id} cards={h.cards ?? []} grades={h.grades} title={h.title} sub={when(h.at)}>
                 {editing === h.id ? (
                   nameForm(h)
                 ) : (
@@ -192,9 +191,9 @@ export function StudyBank() {
   );
 }
 
-function Row({ id, cards, grades, title, sub, children }: { id: string; cards: string[]; grades?: Colour[]; title: string; sub: string; children: React.ReactNode }) {
+function Row({ cards, grades, title, sub, children }: { cards: string[]; grades?: Colour[]; title: string; sub: string; children: React.ReactNode }) {
   return (
-    <div className="t-row sb-row" style={{ ['--vt' as string]: `bank-${id.replace(/[^\w-]/g, '')}` }}>
+    <div className="t-row sb-row">
       <div className="sb-top">
         <MiniCards cards={cards} />
         <span className="t-row-main">

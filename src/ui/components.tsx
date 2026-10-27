@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type CSSProperties, type ReactNode } from 'react';
 import {
   cardName,
   EMOJIS,
@@ -13,7 +13,7 @@ import {
   type Position,
 } from '../game';
 import { back, closeSheet, dismissToast, useApp } from '../state/store';
-import { haptic, motionOff, reducedMotion, springTo, type SpringHandle } from './effects';
+import { haptic, reducedMotion } from './effects';
 import { BackIcon, CloseIcon, PencilIcon } from './Icons';
 
 /** 1,240 */
@@ -296,75 +296,37 @@ export function Choice<T extends string | number>({
   );
 }
 
-/** Pulled down this far, or flicked down this fast (pixels per second), a sheet closes. */
-const SHEET_CLOSE_PX = 90;
-const SHEET_FLICK = 600;
-
 export function Sheet({ title, children, onClose = closeSheet }: { title?: ReactNode; children: ReactNode; onClose?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const leaving = useApp((s) => s.sheetLeaving);
-  const drag = useRef<{ startY: number; moves: { t: number; y: number }[] } | null>(null);
-  // Where the sheet is (pixels below its resting place), and the spring that's moving it, if one is.
-  const offset = useRef(0);
-  const motion = useRef<SpringHandle | null>(null);
-  const place = (y: number) => {
-    offset.current = Math.max(0, y);
-    if (ref.current) ref.current.style.transform = offset.current ? `translateY(${offset.current}px)` : '';
-  };
+  const drag = useRef<{ startY: number; dy: number } | null>(null);
   useEffect(() => {
     ref.current?.focus();
   }, []);
 
-  // It rises on a spring instead of a keyframe, so a finger can catch it on the way up.
-  useLayoutEffect(() => {
-    const height = ref.current?.offsetHeight ?? 0;
-    if (!height || motionOff()) return;
-    place(height);
-    motion.current = springTo(height, 0, 0, place);
-    return () => {
-      motion.current?.stop();
-    };
-  }, []);
-
-  // Closing slides it down from wherever it is.
-  useLayoutEffect(() => {
-    if (!leaving) return;
-    motion.current?.stop();
-    ref.current?.style.setProperty('--drag', `${offset.current}px`);
-  }, [leaving]);
-
-  // Follows the finger on the grip or title. Let go past 90px, or in a quick flick down, and it closes;
-  // otherwise it springs back at the speed you let go with. Catch it again mid-spring and it carries on from there.
+  // Swipe down on the grip or title to close. Past 90px it closes; otherwise it springs back.
   const onDown = (e: ReactPointerEvent) => {
     if ((e.target as HTMLElement).closest('button')) return;
-    const held = motion.current?.stop();
-    motion.current = null;
-    if (held) place(held.value);
-    drag.current = { startY: e.clientY - offset.current, moves: [{ t: e.timeStamp, y: e.clientY }] };
+    drag.current = { startY: e.clientY, dy: 0 };
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    ref.current?.classList.add('dragging');
   };
   const onMove = (e: ReactPointerEvent) => {
-    const d = drag.current;
-    if (!d) return;
-    place(e.clientY - d.startY);
-    d.moves.push({ t: e.timeStamp, y: e.clientY });
-    // Only the last 100ms say how fast the finger is going.
-    while (d.moves.length > 2 && e.timeStamp - d.moves[0].t > 100) d.moves.shift();
+    if (!drag.current || !ref.current) return;
+    drag.current.dy = Math.max(0, e.clientY - drag.current.startY);
+    ref.current.style.transform = `translateY(${drag.current.dy}px)`;
   };
   const onUp = () => {
     const d = drag.current;
     drag.current = null;
     const el = ref.current;
     if (!d || !el) return;
-    const first = d.moves[0];
-    const lastMove = d.moves[d.moves.length - 1];
-    const velocity = lastMove.t > first.t ? ((lastMove.y - first.y) / (lastMove.t - first.t)) * 1000 : 0;
-    if (offset.current > SHEET_CLOSE_PX || (velocity > SHEET_FLICK && offset.current > 8)) {
-      el.style.setProperty('--drag', `${offset.current}px`);
+    el.classList.remove('dragging');
+    if (d.dy > 90) {
+      el.style.setProperty('--drag', `${d.dy}px`);
       onClose();
-    } else {
-      motion.current = springTo(offset.current, velocity, 0, place);
     }
+    el.style.transform = '';
   };
   const dragProps = { onPointerDown: onDown, onPointerMove: onMove, onPointerUp: onUp, onPointerCancel: onUp };
 
@@ -378,14 +340,11 @@ export function Sheet({ title, children, onClose = closeSheet }: { title?: React
         tabIndex={-1}
         ref={ref}
         onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => {
-          if (e.key === 'Escape') onClose();
-        }}
       >
         <div className="sheet-grip-zone" {...dragProps}>
           <div className="sheet-grip" />
         </div>
-        {title ? (
+        {title && (
           <div className="sheet-head" {...dragProps}>
             <h2 className="h2" style={{ flex: 1 }}>
               {title}
@@ -394,11 +353,6 @@ export function Sheet({ title, children, onClose = closeSheet }: { title?: React
               <CloseIcon />
             </button>
           </div>
-        ) : (
-          // A sheet with no title still has a way to close it besides the swipe.
-          <button type="button" className="icon-btn press sheet-close" aria-label="Close" onClick={onClose}>
-            <CloseIcon />
-          </button>
         )}
         {children}
       </div>

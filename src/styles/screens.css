@@ -88,7 +88,6 @@
   border: 0;
   aspect-ratio: 1;
   border-radius: var(--r-sm);
-  corner-shape: squircle;
   background: var(--bg-2);
   font-size: 26px;
   line-height: 1;
@@ -113,7 +112,6 @@
   width: 56px;
   height: 56px;
   border-radius: var(--r-sm);
-  corner-shape: squircle;
   display: grid;
   place-items: center;
   background: var(--bg-2);
@@ -165,7 +163,6 @@
 .choice {
   padding: 14px 14px 16px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -201,7 +198,6 @@
   white-space: nowrap;
   border: 0;
   border-radius: var(--r-sm);
-  corner-shape: squircle;
   background: var(--bg-2);
   font-size: var(--fs-small);
   font-weight: 600;
@@ -236,7 +232,6 @@
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -287,7 +282,6 @@
   min-height: 84px;
   border: 0;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
   text-align: center;
   font-size: var(--fs-display-2);
@@ -316,7 +310,6 @@
   padding: 4px 16px 4px 8px;
   border: 0;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--bg-2);
   font-size: var(--fs-body);
   font-weight: 500;
@@ -344,7 +337,6 @@
   width: 56px;
   height: 54px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   display: grid;
   place-items: center;
   font-size: var(--fs-h1);
@@ -360,7 +352,6 @@
   gap: 10px;
   padding: 12px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--blue-bg);
   text-align: center;
 }
@@ -374,7 +365,6 @@
   padding: 0 12px;
   border: 0;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--surface);
   color: var(--blue-ink);
   font-size: var(--fs-body);
@@ -410,7 +400,6 @@
   place-items: center;
   padding: 12px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--surface);
   box-shadow: inset 0 0 0 3px var(--line);
   width: fit-content;
@@ -545,7 +534,6 @@ button.roster-item:active:not(:disabled) {
   min-height: 64px;
   margin: 0;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--bg-2);
   color: var(--ink-2);
   font-size: var(--fs-body);
@@ -614,7 +602,6 @@ button.roster-item:active:not(:disabled) {
   min-height: 64px;
   padding: 8px 16px 8px 12px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -862,7 +849,6 @@ html.calm .dots i {
   display: grid;
   place-items: center;
   border-radius: var(--r-md) var(--r-md) 0 0;
-  corner-shape: squircle;
   background: var(--bg-2);
   box-shadow: inset 0 0 0 1px var(--line);
   color: var(--ink-3);
@@ -912,7 +898,6 @@ html.calm .dots i {
   gap: 2px;
   padding: 10px 14px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -963,7 +948,6 @@ html.calm .dots i {
   gap: 2px;
   padding: 2px;
   border-radius: var(--r-sm);
-  corner-shape: squircle;
   background: var(--bg-3);
 }
 
@@ -1015,7 +999,6 @@ html[data-theme='dark'] .btn-dark {
   display: grid;
   place-items: center;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--bg-3);
   font-size: var(--fs-display-2);
   font-weight: 700;
@@ -1093,7 +1076,6 @@ html[data-theme='dark'] .btn-dark {
   aspect-ratio: 1;
   overflow: hidden;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--ink);
 }
 
@@ -1107,7 +1089,6 @@ html[data-theme='dark'] .btn-dark {
   position: absolute;
   inset: 18%;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   box-shadow: 0 0 0 3px var(--on-color);
 }
 
@@ -1239,7 +1220,6 @@ html[data-theme='dark'] .btn-dark {
   gap: 8px;
   padding: 32px 16px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   text-align: center;
 }
 
@@ -1289,7 +1269,6 @@ html[data-theme='dark'] .btn-dark {
   width: 80px;
   height: 80px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   overflow: hidden;
 }
 
@@ -1309,7 +1288,6 @@ html[data-theme='dark'] .btn-dark {
   gap: 4px;
   padding: 16px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -1360,7 +1338,6 @@ html[data-theme='dark'] .btn-dark {
   gap: 12px;
   padding: 16px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
 }
 
@@ -1443,7 +1420,6 @@ html[data-theme='dark'] .btn-dark {
   gap: 12px;
   padding: 16px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
 }
 

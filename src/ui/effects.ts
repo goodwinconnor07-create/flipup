@@ -17,64 +17,6 @@ export function reducedMotion(): boolean {
   return typeof document !== 'undefined' && document.documentElement.classList.contains('calm');
 }
 
-/** The menu's Animations switch, or the phone's own Reduce Motion setting. New motion checks this one. */
-export function motionOff(): boolean {
-  return reducedMotion() || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
-}
-
-export interface SpringState {
-  value: number;
-  /** Units per second. */
-  velocity: number;
-}
-
-/** One small step of a weight on a spring pulling towards `to` (semi-implicit Euler). Critically damped at the defaults (about 0.2s to settle): it never overshoots. */
-export function stepSpring({ value, velocity }: SpringState, to: number, dt: number, stiffness = 1000, damping = 64): SpringState {
-  const v = velocity + (-stiffness * (value - to) - damping * velocity) * dt;
-  return { value: value + v * dt, velocity: v };
-}
-
-export interface SpringHandle {
-  /** Stops where it is and says where that is and how fast it was going, so a touch can take over from there. */
-  stop: () => SpringState;
-}
-
-/**
- * Moves a number to `to` like a spring, from where it is and at the speed it already has. Nothing here is a
- * fixed-length animation, so stopping it and starting a new one (a finger grabbing a sheet that's still settling)
- * carries the speed through instead of restarting. Jumps straight there when motion is off.
- */
-export function springTo(from: number, velocity: number, to: number, onFrame: (value: number) => void): SpringHandle {
-  let state: SpringState = { value: from, velocity };
-  if (motionOff() || typeof requestAnimationFrame !== 'function') {
-    onFrame(to);
-    return { stop: () => ({ value: to, velocity: 0 }) };
-  }
-  let raf = 0;
-  let live = true;
-  let last = performance.now();
-  const frame = (now: number) => {
-    const dt = Math.min(0.032, (now - last) / 1000);
-    last = now;
-    // Small fixed steps keep a stiff spring stable on a slow frame.
-    for (let i = 0; i < 8; i++) state = stepSpring(state, to, dt / 8);
-    if (Math.abs(state.value - to) < 0.3 && Math.abs(state.velocity) < 8) {
-      state = { value: to, velocity: 0 };
-      live = false;
-    }
-    onFrame(state.value);
-    if (live) raf = requestAnimationFrame(frame);
-  };
-  raf = requestAnimationFrame(frame);
-  return {
-    stop: () => {
-      live = false;
-      cancelAnimationFrame(raf);
-      return state;
-    },
-  };
-}
-
 // iPhone browsers ignore navigator.vibrate, but Safari 18 and later tick the Taptic Engine when a
 // switch-style checkbox flips. A hidden one, flipped through its label, gives the app its haptics there.
 let tick: HTMLLabelElement | null = null;
@@ -203,7 +145,7 @@ export function confetti(colors: string[] = CONFETTI.party, origin?: { x: number
   requestAnimationFrame(frame);
 }
 
-const WIPE_GROW_MS = 240;
+const WIPE_GROW_MS = 380;
 
 /** The button's main colour: its background colour, or the first colour of its gradient. */
 function solidColour(look: CSSStyleDeclaration): string {
@@ -223,7 +165,7 @@ function tintBrowser(colour: string | null): void {
     meta.setAttribute('content', colour ?? (dark ? '#000000' : '#ffffff'));
   }
 }
-const WIPE_FADE_MS = 200;
+const WIPE_FADE_MS = 280;
 
 /**
  * Big-decision transition: the tapped button's colour grows from the touch point to fill

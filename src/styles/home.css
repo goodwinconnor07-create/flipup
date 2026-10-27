@@ -16,7 +16,6 @@
 html:not(.no-glass) .glass-card {
   border: 0;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   padding: 16px;
   background: var(--bg-2);
   box-shadow: none;
@@ -148,7 +147,7 @@ html:not(.no-glass) .glass-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  animation: pane-in 0.16s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  animation: pane-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
 }
 
 @keyframes pane-in {
@@ -189,7 +188,7 @@ html:not(.no-glass) .glass-card {
   border-radius: var(--r-pill);
   background: var(--bg-3);
   transform: translateX(calc(var(--i, 0) * 100%));
-  transition: transform 0.28s cubic-bezier(0.3, 1.2, 0.4, 1);
+  transition: transform 0.38s cubic-bezier(0.3, 1.2, 0.4, 1);
 }
 
 html[data-theme='dark'] .tab-capsule {
@@ -241,7 +240,6 @@ html[data-theme='dark'] .tab-capsule {
   padding: 0;
   border: 0;
   border-radius: var(--r-xl);
-  corner-shape: squircle;
   overflow: hidden;
   text-align: left;
   color: var(--on-color);
@@ -327,7 +325,6 @@ html[data-theme='dark'] .tab-capsule {
 
 .group {
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
   overflow: hidden;
 }
@@ -488,7 +485,6 @@ html[data-theme='dark'] .sheet .group {
   padding: 0 0 0 20px;
   border: 0;
   border-radius: var(--r-xl);
-  corner-shape: squircle;
   overflow: hidden;
   color: var(--on-color);
   font: inherit;
@@ -641,7 +637,6 @@ html[data-theme='dark'] .sheet .group {
   place-items: center;
   margin-bottom: 6px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   overflow: hidden;
 }
 
@@ -903,7 +898,6 @@ html[data-theme='dark'] .sheet .group {
   width: 128px;
   height: 128px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   overflow: hidden;
 }
 
@@ -1057,7 +1051,6 @@ html[data-theme='dark'] .sheet .group {
   padding: 14px 14px 12px;
   border: 0;
   border-radius: var(--r-xl);
-  corner-shape: squircle;
   color: var(--ink);
   background: linear-gradient(165deg, var(--twin-bg) 0%, var(--bg-2) 85%);
   font: inherit;
@@ -1240,7 +1233,6 @@ html.calm :is(.mirror-face, .mirror-ref, .mirror-shine) {
 .twin-sheet-art {
   padding: 12px 0;
   border-radius: var(--r-xl);
-  corner-shape: squircle;
   background: linear-gradient(165deg, var(--twin-bg, var(--gold-bg-2)) 0%, var(--bg-2) 85%);
 }
 
@@ -1316,7 +1308,6 @@ html.calm :is(.home-pane, .streak-pill svg, .card-art .art-face, .card-art .toss
   width: 100%;
   padding: 16px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
   text-align: left;
   color: var(--ink);
@@ -1419,7 +1410,6 @@ li.ok > .today-tick,
   gap: 12px;
   padding: 12px 16px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
   text-align: left;
   color: var(--ink);
@@ -1448,7 +1438,6 @@ li.ok > .today-tick,
   gap: 4px;
   padding: 16px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
   opacity: 0.55;
 }

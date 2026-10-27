@@ -157,7 +157,6 @@ html[data-theme='dark'] .pcard.dim > * {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  corner-shape: inherit;
   background:
     repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.12) 0 4px, transparent 4px 8px),
     linear-gradient(160deg, var(--card-back-1), var(--card-back-2));
@@ -257,7 +256,6 @@ html[data-theme='dark'] .pcard.dim > * {
   padding: 0 12px;
   border: 0;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--blue-bg);
   color: var(--blue-ink);
   font-size: var(--fs-body);
@@ -552,7 +550,6 @@ html[data-theme='dark'] .pcard.dim > * {
   position: absolute;
   inset: 9px;
   border-radius: inherit;
-  corner-shape: inherit;
   border: 2px solid rgba(255, 255, 255, 0.16);
   pointer-events: none;
 }
@@ -810,7 +807,6 @@ html[data-theme='dark'] .pcard.dim > * {
   gap: 6px;
   padding: 6px 8px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--bg-2);
   animation: fade-in 0.15s ease-out;
 }
@@ -945,7 +941,6 @@ html:not(.no-glass) .raise-panel .icon-btn {
   padding: 4px;
   border: 1.5px solid var(--ink-4);
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--surface);
   white-space: nowrap;
 }
@@ -1004,7 +999,6 @@ html:not(.no-glass) .raise-panel .icon-btn {
   gap: 2px;
   padding: 8px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   box-shadow: inset 0 0 0 3px var(--line);
   text-align: center;
 }
@@ -1297,7 +1291,6 @@ html.calm .pod.won .pod-pic {
   gap: 6px;
   padding: 10px;
   border-radius: var(--r-lg);
-  corner-shape: squircle;
   background: var(--surface);
   box-shadow:
     0 0 0 1px var(--card-edge),
@@ -1703,7 +1696,6 @@ html.calm .bubble-typing i {
   gap: 8px;
   padding: 12px 14px;
   border-radius: var(--r-md);
-  corner-shape: squircle;
   background: var(--surface);
   box-shadow: 0 8px 28px -8px rgba(18, 18, 40, 0.4), 0 0 0 1px var(--glass-edge);
   transform-origin: 100% 0;
@@ -1838,7 +1830,7 @@ html.calm .bubble-typing i {
     align-content: center;
     justify-items: center;
     gap: 8px;
-    padding: 24px max(24px, var(--safe-right)) 24px max(24px, var(--safe-left));
+    padding: 24px;
     background: var(--bg);
     color: var(--ink);
     text-align: center;

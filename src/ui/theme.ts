@@ -18,6 +18,8 @@ export const CAM = {
   wood: '#5a3720',
   woodDark: '#2b1a10',
   key: '#ffe2b8',
+  lampShade: '#123a2a',
+  lampGlow: '#fff1d6',
   sky: '#ffd9a8',
   ground: '#1a0f08',
   rim: '#8fb4ff',
@@ -34,6 +36,8 @@ export const CAM = {
   lip: '#b8473f',
   mouth: '#5a1f1c',
   teeth: '#ffffff',
+  tongue: '#e8616b',
+  heart: '#f0304e',
   bokeh: ['#ffb347', '#ff6b4a', '#ffd27a', '#7fc8ff', '#ff9f6e'],
   chips: [
     { face: '#c8312b', stripe: '#ffffff' },

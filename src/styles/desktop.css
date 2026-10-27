@@ -501,12 +501,4 @@
       0 0 0 3px var(--gold),
       var(--shadow);
   }
-
-  /* The live cam floats over the top of the oval instead of spanning the row. */
-  .live-cam {
-    left: calc(50% - 220px);
-    right: auto;
-    width: 440px;
-    --cam-h: 208px;
-  }
 }

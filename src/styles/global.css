@@ -107,7 +107,8 @@
   --blue: #007aff;
   --blue-lo: #0062d6;
   --blue-bg: #e5f0ff;
-  /* The live cam is a dark film in either mode (table/LiveCam.tsx). */
+  /* The table cam is a dark room in either mode (table/TableCam.tsx). */
+  --cam-h: 264px;
   --cam-bg: #0d0a08;
   --cam-edge: rgba(255, 255, 255, 0.18);
   --cam-chip: rgba(0, 0, 0, 0.45);

@@ -15,7 +15,7 @@ import { useWakeLock } from '../ui/useWakeLock';
 import { ActionArea, RaiseSizer, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
-import { LiveCam } from './table/LiveCam';
+import { TableCam } from './table/TableCam';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 
 export function Table() {
@@ -291,9 +291,17 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       <p className="sr-only" aria-live="polite">
         {announce}
       </p>
-      {!bare && <LiveCam game={game} />}
       <div className="stage">
         {(others.length > 0 || desktop) && (
+          // On a phone everyone else sits in 3D; where that can't be drawn, the row of seats.
+          <TableCam
+            game={game}
+            others={others}
+            meId={me?.id}
+            say={reactions}
+            quiet={quiet}
+            odds={odds ?? undefined}
+            fallback={
           <div
             className={`pods${others.length >= 8 ? ' crowded' : ''}`}
             style={{ ['--tile' as string]: others.length >= 8 ? '192px' : '232px' }}
@@ -345,6 +353,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
             )}
             {podSlots.hidden > 0 && <HiddenPlayers game={game} players={others.filter((p) => podSlots.slots.get(p.id)?.away)} />}
           </div>
+            }
+          />
         )}
 
         <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>

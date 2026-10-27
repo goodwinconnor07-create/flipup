@@ -191,7 +191,7 @@ export function Pod({
         else openSheet({ name: 'player', playerId: player.id });
       }}
     >
-      <span className={`pod-pic${hasRig(player) ? ' has-rig' : ''}`}>
+      <span className="pod-pic">
         {hasRig(player) ? <BotFace emoji={player.emoji} pose={pose} gaze={gaze} /> : <Avatar emoji={player.emoji} size={50} />}
         {player.ai && <span className="ai-chip" aria-hidden>AI</span>}
         {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}

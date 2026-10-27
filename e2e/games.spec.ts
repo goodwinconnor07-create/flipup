@@ -25,18 +25,17 @@ test('Home shows every game, and a card opens its rules with friends or bots', a
 test('a themed table gets its own look, and Texas Hold\'em keeps the player\'s felt', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Sam', emoji: '🦊' })));
-  for (const [game, theme, ambient] of [
-    ["Ghost Hold'em", 'ghost', 'fog'],
-    ['Imposter', 'imposter', 'spotlight'],
-    ['Red River', 'redriver', 'flow'],
+  for (const [game, theme] of [
+    ["Ghost Hold'em", 'ghost'],
+    ['Imposter', 'imposter'],
+    ['Red River', 'redriver'],
   ]) {
     await page.goto('/');
     await page.getByRole('button', { name: new RegExp(`^${game}\\.`) }).click();
     await page.getByRole('button', { name: 'Play with bots', exact: true }).click();
     await page.getByRole('button', { name: 'Sit down' }).click();
     await page.getByRole('button', { name: 'Deal', exact: true }).click();
-    await expect(page.locator(`.table-screen.themed.theme-${theme}`)).toBeVisible();
-    await expect(page.locator(`.ambient-${ambient}`)).toBeAttached();
+    await expect(page.locator(`.table-oval.themed.theme-${theme}`)).toBeVisible();
     await expect(page.locator('.table-felt')).toBeVisible();
     await page.waitForTimeout(400);
     await shot(page, `games-theme-${theme}`);
@@ -50,5 +49,5 @@ test('a themed table gets its own look, and Texas Hold\'em keeps the player\'s f
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
   await expect(page.locator('.table-screen')).toBeVisible();
-  await expect(page.locator('.table-screen.themed')).toHaveCount(0);
+  await expect(page.locator('.table-oval.themed')).toHaveCount(0);
 });

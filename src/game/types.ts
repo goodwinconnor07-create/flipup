@@ -158,6 +158,8 @@ export interface HandResult {
   showdown: boolean;
   /** Ghost Hold'em: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
   ghost?: { cards: Card[]; name: string; kept: number };
+  /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
+  imposter?: { id: string; votes: Record<string, string>; caught: boolean };
 }
 
 /** One finished hand, for the hand log. */
@@ -250,6 +252,14 @@ export interface Hand {
   discarding?: boolean;
   /** The game this hand is played as (a change of game in the settings waits for the next hand). Missing = Texas Hold'em. */
   variant?: Variant;
+  /** Die on the River: what the die rolled, and the board card it swapped (out) for a new one (in). A 6 swaps nothing. */
+  dice?: { roll: number; out?: Card; in?: Card };
+  /** Imposter: the imposter's id. Phones only get it if it's them, or once the hand is over. */
+  imposter?: string;
+  /** Imposter: everyone dealt in is voting for who the imposter is. */
+  voting?: boolean;
+  /** Imposter: votes so far, voter to suspect. Phones see who has voted, not for whom, until the hand is over. */
+  votes?: Record<string, string>;
 }
 
 /** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
@@ -355,6 +365,8 @@ export type Action =
   | { type: 'next'; hand: number }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
+  /** Imposter: who you think the imposter is. */
+  | { type: 'vote'; hand: number; playerId: string }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
   /** After a hand, the host turns every bot's cards face up for everyone. */

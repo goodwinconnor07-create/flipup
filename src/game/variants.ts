@@ -5,7 +5,7 @@ import { rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 
-export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh';
+export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter';
 
 export interface VariantInfo {
   id: Variant;
@@ -72,6 +72,45 @@ export const VARIANTS: VariantInfo[] = [
       'The app picks the river that gives you the best hand.',
     ],
   },
+  {
+    id: 'dice',
+    name: 'Die on the River',
+    emoji: '🎲',
+    tagline: 'When the river comes, a die swaps out one board card.',
+    rules: [
+      'Normal Hold\'em until the river.',
+      'As soon as the river is dealt, a die is rolled. Roll a 1 to 5 and that card on the board (counting from the left) is replaced by a new card from the deck.',
+      'Roll a 6 and the board stays as it is.',
+      'Then the river betting starts with the new board.',
+    ],
+  },
+  {
+    id: 'redriver',
+    name: 'Red River',
+    emoji: '🟥',
+    tagline: 'A red river keeps the cards coming until a black one lands.',
+    rules: [
+      'Normal Hold\'em until the river.',
+      'If the river is red (a heart or a diamond), another card is dealt, and another, until a black card (a spade or a club) comes.',
+      'Every card on the board counts: make your best five from your two and all of them.',
+      'Then there\'s one round of river betting.',
+    ],
+  },
+  {
+    id: 'imposter',
+    name: 'Imposter',
+    emoji: '🕵️',
+    tagline: 'Everyone has the same hand but one. Find the imposter.',
+    rules: [
+      'Everyone gets the same two cards, except the imposter, who gets a different hand. You\'re told whether you\'re the imposter or innocent.',
+      'How strong your cards are doesn\'t matter. Bet, call and fold to read the table (or, as the imposter, to blend in).',
+      'Everyone antes a big blind each hand, so there\'s money in the middle from the start.',
+      'If two or more players are still in after the river, everyone who was dealt in votes for who they think the imposter is.',
+      'If the most votes go to the imposter, the innocent players still in split the pot. If not (a tie counts as not), the imposter takes it all.',
+      'If the imposter folds, the innocents still in split the pot. If everyone folds to one player, they win it as usual.',
+      'Needs three or more players: with two, the hand is plain Hold\'em.',
+    ],
+  },
 ];
 
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
@@ -87,6 +126,10 @@ export const riverCount = (v: Variant) => (v === 'pittsburgh' ? 3 : 1);
 export const potLimit = (v: Variant) => v === 'ghost';
 /** Win odds can be worked out for the all-in run-out (only plain Hold'em: the others score hands differently). */
 export const showsOdds = (v: Variant) => v === 'holdem';
+/** Everyone puts in this many big blinds before the blinds (dead money in the middle). */
+export const anteBigBlinds = (v: Variant) => (v === 'imposter' ? 1 : 0);
+/** Imposter needs three players to be a guessing game. */
+export const IMPOSTER_MIN = 3;
 
 // ── Wild deuces ─────────────────────────────────────────────────────────────
 
@@ -198,9 +241,35 @@ export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand:
   if (v === 'pittsburgh' && board.length > 5) {
     const base = board.slice(0, 4);
     board = [...base, board.slice(4).reduce((a, b) => (describeHand([...cards, ...base, b]).score > describeHand([...cards, ...base, a]).score ? b : a))];
+  } else if (board.length > 5) {
+    // Red River: the five board cards that matter most to its hand (the ones it uses, then the first others).
+    const used = new Set(describeHand([...cards, ...board]).best);
+    board = [...board.filter((c) => used.has(c)), ...board.filter((c) => !used.has(c))].slice(0, 5);
   }
   if (cards === seat.cards && board === hand.board) return { game, hand, seat };
   const mine: Seat = { ...seat, cards };
   const view: Hand = { ...hand, board, seats: hand.seats.map((s) => (s === seat ? mine : s)) };
   return { game: { ...game, hand: view }, hand: view, seat: mine };
+}
+
+// ── Imposter votes ──────────────────────────────────────────────────────────
+
+/** How pushy each player has been this hand: bets, raises and all-ins count, calls a little. */
+function pushiness(hand: Hand): Map<string, number> {
+  const score = new Map(hand.seats.map((s) => [s.playerId, 0]));
+  for (const a of hand.actions ?? []) score.set(a.playerId, (score.get(a.playerId) ?? 0) + (a.move === 'bet' || a.move === 'raise' || a.move === 'allin' ? 2 : a.move === 'call' ? 1 : 0));
+  return score;
+}
+
+/**
+ * A bot's vote. Innocent, it suspects whoever played most differently from itself (it holds the same cards as every
+ * other innocent). As the imposter it points at whoever stood out most, to throw the others off.
+ */
+export function botVote(hand: Hand, botId: string): string | null {
+  const others = hand.seats.map((s) => s.playerId).filter((id) => id !== botId);
+  if (!others.length) return null;
+  const push = pushiness(hand);
+  const mine = push.get(botId) ?? 0;
+  const odd = (id: string) => (botId === hand.imposter ? (push.get(id) ?? 0) : Math.abs((push.get(id) ?? 0) - mine));
+  return others.reduce((a, b) => (odd(b) > odd(a) ? b : a));
 }

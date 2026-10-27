@@ -2,7 +2,7 @@
 // rules sheet a player can open from the table.
 
 import { useState } from 'react';
-import { variantInfo, VARIANTS, type Settings, type Variant } from '../game';
+import { BLIND_LEVELS, variantInfo, VARIANTS, type Settings, type Variant } from '../game';
 import { Sheet } from '../ui/components';
 import { ChevronIcon } from '../ui/Icons';
 
@@ -20,6 +20,11 @@ export function GameRow({ settings, onChange }: { settings: Settings; onChange: 
     if (variant === 'ghost' && settings.startingStack < settings.bigBlind * GHOST_DEPTH) {
       const stack = GHOST_STACKS.find((s) => s >= settings.bigBlind * GHOST_DEPTH) ?? GHOST_STACKS[GHOST_STACKS.length - 1];
       next = { ...next, startingStack: stack, ...(settings.bigBlind * GHOST_DEPTH > stack ? { smallBlind: 10, bigBlind: 20 } : {}) };
+    }
+    // Imposter plays for bigger blinds (about 50 big blinds deep), so every hand matters.
+    if (variant === 'imposter' && settings.bigBlind < next.startingStack / 50) {
+      const [smallBlind, bigBlind] = [...BLIND_LEVELS].reverse().find(([, bb]) => bb <= next.startingStack / 50) ?? [settings.smallBlind, settings.bigBlind];
+      next = { ...next, smallBlind, bigBlind };
     }
     onChange(next);
     setOpen(false);

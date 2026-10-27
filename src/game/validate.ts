@@ -73,6 +73,8 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) } : null;
     case 'show':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
+    case 'vote':
+      return isInt(a.hand) && isId(a.playerId) ? { type: 'vote', hand: a.hand, playerId: a.playerId } : null;
     case 'discard':
       return isInt(a.hand) && isCard(a.card) ? { type: 'discard', hand: a.hand, card: a.card } : null;
     case 'react':

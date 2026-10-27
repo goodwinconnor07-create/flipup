@@ -75,3 +75,46 @@ test('Pittsburgh: the board fits on a phone once the rivers are out', async ({ p
   expect(box.x + box.width).toBeLessThanOrEqual(felt.x + felt.width);
   await shot(page, 'variant-pittsburgh-board');
 });
+
+/** Calls along until `done` says stop (or two minutes pass). */
+async function playUntil(page: Page, done: () => Promise<boolean>) {
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (await done()) return true;
+    if (await myTurn(page)) await checkOrCall(page);
+    await page.waitForTimeout(300);
+  }
+  return false;
+}
+
+test('Die on the River: the die rolls when the river comes', async ({ page }) => {
+  await sitDown(page, 'Die on the River');
+  expect(await playUntil(page, () => page.locator('.dice-note').isVisible())).toBe(true);
+  await expect(page.locator('.dice-note')).toContainText('Rolled');
+  await shot(page, 'variant-dice');
+});
+
+test('Red River: the rules explain the extra cards', async ({ page }) => {
+  await sitDown(page, 'Red River');
+  await page.getByRole('button', { name: /Red River: how it plays/ }).click();
+  await expect(page.getByText(/another card is dealt, and another, until a black card/)).toBeVisible();
+});
+
+test('Imposter: you know your role, vote after the river and see who it was', async ({ page }) => {
+  await sitDown(page, 'Imposter');
+  await expect(page.getByRole('button', { name: /Imposter: how it plays/ })).toContainText(/You're (the imposter|innocent)/, { timeout: 30_000 });
+  await shot(page, 'variant-imposter-role');
+  const voted = await playUntil(page, async () => {
+    if (await page.getByText("Who's the imposter?").isVisible()) {
+      await shot(page, 'variant-imposter-vote');
+      await page.locator('.vote-btn').first().click();
+      return true;
+    }
+    return false;
+  });
+  // Folding bots can end a hand before the river; the vote comes when two or more get there.
+  if (voted) {
+    await expect(page.locator('.win-banner')).toContainText('Imposter:', { timeout: 30_000 });
+    await shot(page, 'variant-imposter-result');
+  }
+});

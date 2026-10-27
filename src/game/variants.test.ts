@@ -83,7 +83,10 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
     const host = game.players.find((p) => p.deviceId === HOST)!;
     const mine = hand?.seats.find((s) => s.playerId === host.id);
     let r;
-    if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
+    if (hand && !hand.result && hand.voting && mine && !hand.votes?.[host.id]) {
+      const others = hand.seats.filter((x) => x.playerId !== host.id);
+      r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[Math.floor(rng() * others.length)].playerId }, { deviceId: HOST, now: clock, rng });
+    } else if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
       r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
     } else if (hand && !hand.result && hand.toAct === host.id && mine) {
       const o = options(game, hand, mine);
@@ -105,7 +108,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
 }
 
 describe('variant tables', () => {
-  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh'] as Variant[]) {
+  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter'] as Variant[]) {
     it(`plays ${v} hands with bots and keeps every chip`, () => {
       play(v, 40);
     });
@@ -156,11 +159,82 @@ describe('variant tables', () => {
   });
 });
 
+describe('the second batch', () => {
+  it('Die on the River swaps the board card the die names', () => {
+    let rolled = 0;
+    play('dice', 40, (g) => {
+      const hand = g.hand;
+      if (!hand?.dice) return;
+      rolled++;
+      expect(hand.board.length).toBe(5);
+      expect(hand.dice.roll).toBeGreaterThanOrEqual(1);
+      expect(hand.dice.roll).toBeLessThanOrEqual(6);
+      if (hand.dice.roll <= 5) {
+        expect(hand.board[hand.dice.roll - 1]).toBe(hand.dice.in);
+        expect(hand.board).not.toContain(hand.dice.out);
+      }
+    });
+    expect(rolled).toBeGreaterThan(0);
+  });
+
+  it('Red River keeps dealing until a black card', () => {
+    let rivers = 0;
+    play('redriver', 60, (g) => {
+      const b = g.hand?.board ?? [];
+      if (b.length < 5) return;
+      rivers++;
+      const extra = b.slice(4);
+      expect(['s', 'c']).toContain(extra[extra.length - 1][1]);
+      for (const c of extra.slice(0, -1)) expect(['h', 'd']).toContain(c[1]);
+    });
+    expect(rivers).toBeGreaterThan(0);
+  });
+
+  it('Imposter deals one odd hand out, antes up, keeps the secret and settles by vote', () => {
+    let settled = 0;
+    play('imposter', 40, (g) => {
+      const hand = g.hand;
+      if (!hand?.imposter) return;
+      const same = hand.seats.filter((s) => s.playerId !== hand.imposter).map((s) => s.cards.join());
+      expect(new Set(same).size).toBe(1);
+      expect(hand.seats.find((s) => s.playerId === hand.imposter)!.cards.join()).not.toBe(same[0]);
+      const host = g.players.find((p) => p.deviceId === HOST)!;
+      const seen = redactForDevice(g, HOST).hand!;
+      if (!hand.result) {
+        expect(seen.imposter).toBe(hand.imposter === host.id ? host.id : undefined);
+        for (const [voter, suspect] of Object.entries(seen.votes ?? {})) if (voter !== host.id) expect(suspect).toBe('');
+      } else if (hand.result.imposter) {
+        settled++;
+        expect(seen.imposter).toBe(hand.imposter);
+        const { caught, id } = hand.result.imposter;
+        const winners = Object.keys(hand.result.won);
+        const impFolded = hand.seats.find((s) => s.playerId === id)!.folded;
+        if (caught || impFolded) expect(winners).not.toContain(id);
+        else expect(winners).toEqual([id]);
+      }
+    });
+    expect(settled).toBeGreaterThan(0);
+  });
+
+  it('plays Imposter heads-up as plain Hold\'em', () => {
+    let g = table('imposter', 1);
+    for (let i = 0; i < 5 && !g.hand; i++) {
+      const r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (g.wakeAt ?? 0) + 1, rng: seededRng(3) });
+      if (r.ok) g = r.game;
+    }
+    expect(g.hand).toBeTruthy();
+    expect(g.hand!.imposter).toBeUndefined();
+    expect(g.hand!.variant).toBeUndefined();
+  });
+});
+
 describe('network input', () => {
   it('accepts a discard and a variant, and nothing else', () => {
     expect(parseAction({ type: 'discard', hand: 3, card: 'Ah' })).toEqual({ type: 'discard', hand: 3, card: 'Ah' });
     expect(parseAction({ type: 'discard', hand: 3, card: 'Zz' })).toBeNull();
     expect(parseAction({ type: 'settings', settings: { variant: 'ghost' } })).toEqual({ type: 'settings', settings: { variant: 'ghost' } });
     expect(parseAction({ type: 'settings', settings: { variant: 'omaha' } })).toBeNull();
+    expect(parseAction({ type: 'vote', hand: 2, playerId: 'abc123' })).toEqual({ type: 'vote', hand: 2, playerId: 'abc123' });
+    expect(parseAction({ type: 'vote', hand: 2, playerId: '../x' })).toBeNull();
   });
 });

@@ -2,8 +2,8 @@
 // Everything here works on a copy of the game that applyAction() already made, so it changes it in place.
 
 import { handRecord } from './record';
-import { fullDeck, shuffle, type Card } from './cards';
-import { bestHand, holeCount, keepTwo, potLimit, riverCount, variantOf, type Variant } from './variants';
+import { fullDeck, isRed, shuffle, type Card } from './cards';
+import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, keepTwo, potLimit, riverCount, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
 
 export const TIMING = {
@@ -232,8 +232,18 @@ export function startHand(game: Game, ctx: ActionContext): void {
     ctx.rng,
   );
   // One card at a time, starting left of the button, until everyone has two (three in Crazy Pineapple).
-  const variant: Variant = game.settings.variant ?? 'holdem';
-  for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
+  // Imposter needs three players; with two the hand is plain Hold'em.
+  const chosen: Variant = game.settings.variant ?? 'holdem';
+  const variant: Variant = chosen === 'imposter' && n < IMPOSTER_MIN ? 'holdem' : chosen;
+  let imposter: string | undefined;
+  if (variant === 'imposter') {
+    // Everyone gets the same two cards except one player, picked at random, who gets their own.
+    const same = [deck.shift()!, deck.shift()!];
+    const own = [deck.shift()!, deck.shift()!];
+    const at = Math.floor(ctx.rng() * n);
+    imposter = seats[at].playerId;
+    seats.forEach((s, i) => (s.cards = [...(i === at ? own : same)]));
+  } else for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
   // Ghost Hold'em: the ghost's two cards come last, face down.
   const ghost = variant === 'ghost' ? [deck.shift()!, deck.shift()!] : undefined;
   // Whatever the ghost kept goes into this pot (even if the table has since switched to another game).
@@ -270,6 +280,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     actions: [],
     startStacks: Object.fromEntries(players.map((p) => [p.id, p.stack])),
     ...(variant !== 'holdem' ? { variant } : {}),
+    ...(imposter ? { imposter } : {}),
     ...(ghost ? { ghost } : {}),
     ...(carry ? { carry } : {}),
   };
@@ -280,6 +291,17 @@ export function startHand(game: Game, ctx: ActionContext): void {
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
   if (carry) log(game, `The ghost's ${n0(carry)} is in the pot`);
 
+  // Antes (Imposter): dead money from everyone before the blinds. It counts in the pot but isn't a bet on the street.
+  const ante = anteBigBlinds(variant) * game.settings.bigBlind;
+  if (ante) {
+    seats.forEach((seat, i) => {
+      const chips = Math.min(ante, players[i].stack);
+      players[i].stack -= chips;
+      seat.total += chips;
+      if (players[i].stack === 0) seat.allIn = true;
+    });
+    log(game, `Everyone antes ${n0(ante)}`);
+  }
   put(seats[sb], players[sb], game.settings.smallBlind);
   seats[sb].last = { move: 'sb', amount: seats[sb].bet, street: 'preflop' };
   log(game, `${players[sb].name} posts the small blind ${n0(seats[sb].bet)}`);
@@ -409,6 +431,7 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   hand.seq += 1;
   if (hand.seats.filter((s) => !s.folded).length === 1) winWithoutShowdown(game, ctx);
   else if (hand.discarding && !pendingDiscards(game).length) endDiscards(game, ctx);
+  else if (hand.voting && !pendingVoters(game).length) endVote(game, ctx);
 }
 
 /** After a move (or the blinds): next player, next street, or the end of the hand. */
@@ -480,7 +503,7 @@ function returnUncalled(game: Game): void {
 
 const NEXT_STREET: Record<Street, Street | null> = { preflop: 'flop', flop: 'turn', turn: 'river', river: null };
 
-function dealStreet(game: Game, hand: Hand): void {
+function dealStreet(game: Game, hand: Hand, rng: () => number): void {
   const next = NEXT_STREET[hand.street]!;
   const variant = variantOf(game);
   // Crazy Pineapple: anyone who still has three cards when the turn comes (all in, out of time) keeps their best two.
@@ -496,6 +519,27 @@ function dealStreet(game: Game, hand: Hand): void {
       ? `${label}: ${cardsText(hand.board)}`
       : `${label}: ${cardsText(hand.board.slice(0, -count))} ${cardsText(hand.board.slice(-count))}`,
   );
+  if (next !== 'river') return;
+  if (variant === 'dice') {
+    // Die on the River: a 1 to 5 swaps that board card (from the left) for a fresh one; a 6 leaves it.
+    const roll = 1 + Math.floor(rng() * 6);
+    if (roll <= 5 && hand.deck.length) {
+      const out = hand.board[roll - 1];
+      const fresh = hand.deck.shift()!;
+      hand.board[roll - 1] = fresh;
+      hand.dice = { roll, out, in: fresh };
+      hand.log.push(`The die rolls a ${roll}: ${cardsText([out])} is replaced by ${cardsText([fresh])}`);
+    } else {
+      hand.dice = { roll };
+      hand.log.push(`The die rolls a ${roll}: the board stays`);
+    }
+  } else if (variant === 'redriver') {
+    // Red River: while the last card is red, another one comes.
+    while (isRed(hand.board[hand.board.length - 1]) && hand.deck.length) {
+      hand.board.push(hand.deck.shift()!);
+      hand.log.push(`Red river, another card: ${cardsText(hand.board.slice(-1))}`);
+    }
+  }
 }
 
 function endStreet(game: Game, ctx: ActionContext): void {
@@ -597,7 +641,7 @@ export function endDiscards(game: Game, ctx: ActionContext): void {
 export function dealNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.nextStreetAt = null;
-  dealStreet(game, hand);
+  dealStreet(game, hand, ctx.rng);
   const button = indexOf(hand, hand.buttonId);
   // After the flop the first player still in, left of the button, acts first.
   const first = nextIndex(hand, button === -1 ? hand.seats.length - 1 : button, isLive);
@@ -611,7 +655,7 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
     showdown(game, ctx);
     return;
   }
-  dealStreet(game, hand);
+  dealStreet(game, hand, ctx.rng);
   hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
   schedule(game);
 }
@@ -641,6 +685,12 @@ function showdown(game: Game, ctx: ActionContext): void {
   hand.toAct = null;
   hand.actAt = null;
   hand.deadline = null;
+  // Imposter: the hand isn't decided by the cards but by the vote.
+  if (hand.imposter) {
+    if (!hand.votes) startVote(game, ctx);
+    else imposterShowdown(game, ctx);
+    return;
+  }
   const n = hand.seats.length;
   const button = Math.max(0, indexOf(hand, hand.buttonId));
   const variant: Variant = variantOf(game);
@@ -712,6 +762,120 @@ function showdown(game: Game, ctx: ActionContext): void {
       );
   });
   hand.result = { pots, won, names, showdown: true, ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept } } : {}) };
+  finishHand(game, ctx, TIMING.afterShowdown);
+}
+
+// ── Imposter ────────────────────────────────────────────────────────────────
+
+/** Players who still have to vote: everyone dealt in who's still at the table. */
+export function pendingVoters(game: Game): Seat[] {
+  const hand = game.hand;
+  if (!hand?.voting) return [];
+  return hand.seats.filter((s) => {
+    const p = playerById(game, s.playerId);
+    return p && !p.leaving && !hand.votes?.[s.playerId];
+  });
+}
+
+/** After the river: everyone dealt in votes for who they think the imposter is. Bots vote straight away. */
+function startVote(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.votes = {};
+  hand.voting = true;
+  log(game, 'Time to vote: who is the imposter?');
+  for (const s of pendingVoters(game)) {
+    if (!playerById(game, s.playerId)?.bot) continue;
+    const pick = botVote(hand, s.playerId);
+    if (pick) hand.votes[s.playerId] = pick;
+  }
+  if (!pendingVoters(game).length) {
+    endVote(game, ctx);
+    return;
+  }
+  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
+  hand.actAt = hand.deadline;
+  schedule(game);
+}
+
+/** A player's vote. Returns an error message, or null. */
+export function castVote(game: Game, voterId: string, suspectId: string, ctx: ActionContext): string | null {
+  const hand = game.hand;
+  if (!hand?.voting || !hand.votes) return "There's no vote on.";
+  if (!hand.seats.some((s) => s.playerId === voterId)) return "You weren't dealt in.";
+  if (hand.votes[voterId]) return "You've already voted.";
+  if (suspectId === voterId || !hand.seats.some((s) => s.playerId === suspectId)) return "You can't vote for them.";
+  hand.votes[voterId] = suspectId;
+  log(game, `${nameOf(game, voterId)} votes`);
+  hand.seq += 1;
+  if (!pendingVoters(game).length) endVote(game, ctx);
+  else schedule(game);
+  return null;
+}
+
+/** Everyone has voted (or time's up): count the votes and settle the pot. */
+export function endVote(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.voting = false;
+  hand.deadline = null;
+  hand.actAt = null;
+  imposterShowdown(game, ctx);
+}
+
+/** Pays one pot out evenly to its winners; odd chips go to the winners closest to the left of the button. */
+function splitPot(hand: Hand, pot: PotResult, won: Record<string, number>): void {
+  const n = hand.seats.length;
+  const button = Math.max(0, indexOf(hand, hand.buttonId));
+  const share = Math.floor(pot.amount / pot.winners.length);
+  let odd = pot.amount - share * pot.winners.length;
+  for (let i = 1; i <= n; i++) {
+    const id = hand.seats[(button + i) % n].playerId;
+    if (!pot.winners.includes(id)) continue;
+    won[id] = (won[id] ?? 0) + share + (odd > 0 ? 1 : 0);
+    if (odd > 0) odd--;
+  }
+}
+
+/**
+ * The most votes on the imposter (and no tie): the innocents still in split the pot. Otherwise the imposter takes it.
+ * If the imposter folded, the innocents still in split it either way.
+ */
+function imposterShowdown(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  const imp = hand.imposter!;
+  const votes = hand.votes ?? {};
+  const tally = new Map<string, number>();
+  for (const suspect of Object.values(votes)) tally.set(suspect, (tally.get(suspect) ?? 0) + 1);
+  const top = Math.max(0, ...tally.values());
+  const leaders = [...tally].filter(([, n]) => n === top).map(([id]) => id);
+  const caught = top > 0 && leaders.length === 1 && leaders[0] === imp;
+  const live = hand.seats.filter((s) => !s.folded).map((s) => s.playerId);
+  const innocents = live.filter((id) => id !== imp);
+  const impIn = live.includes(imp);
+  const winners = !impIn || caught ? innocents : [imp];
+
+  const pots = buildPots(hand.seats);
+  if (hand.carry && pots.length) pots[0].amount += hand.carry;
+  const won: Record<string, number> = {};
+  for (const pot of pots) {
+    // A side pot the winners can't win goes to whoever can.
+    const mine = pot.eligible.filter((id) => winners.includes(id));
+    pot.winners = mine.length ? mine : pot.eligible;
+    splitPot(hand, pot, won);
+  }
+  const names: Record<string, string> = {};
+  for (const s of hand.seats) {
+    if (s.folded) continue;
+    s.shown = true;
+    names[s.playerId] = s.playerId === imp ? 'The imposter' : 'Innocent';
+  }
+  log(game, `The imposter was ${nameOf(game, imp)} with ${cardsText(hand.seats.find((s) => s.playerId === imp)!.cards)}`);
+  log(game, caught ? 'The innocents found the imposter!' : impIn ? `${nameOf(game, imp)} got away with it` : 'The imposter folded');
+  for (const [id, chips] of Object.entries(won)) {
+    const p = playerById(game, id);
+    if (p) p.stack += chips;
+    log(game, `${nameOf(game, id)} wins ${n0(chips)}`);
+  }
+  hand.result = { pots, won, names, showdown: true, imposter: { id: imp, votes, caught } };
   finishHand(game, ctx, TIMING.afterShowdown);
 }
 

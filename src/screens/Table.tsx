@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { bestHand, cardName, equity, holeCount, myPlayer, options, pendingDiscards, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Seat } from '../game';
+import { bestHand, cardName, equity, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
 import { dispatch, openSheet, useApp } from '../state/store';
 import { toTableTime } from '../state/clock';
-import { Avatar, CardSlot, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
+import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
 import { MenuIcon } from '../ui/Icons';
 import { playSound } from '../ui/sound';
@@ -183,6 +183,10 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const others = othersInOrder(game, me);
   const variant = variantOf(game);
   const odds = useOdds(hand, showsOdds(variant));
+  // Imposter: you only learn it's you; everyone else in the hand is innocent.
+  const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
+  // Pittsburgh always has room for three rivers; Red River grows as the red cards come.
+  const boardSlots = variant === 'pittsburgh' ? 7 : Math.max(5, hand?.board.length ?? 0);
   const [rules, setRules] = useState(false);
   const desktop = useDesktop();
   const speakerOk = useRef<(id: string) => boolean>(() => true);
@@ -266,7 +270,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
 
   // Which cards make the hand that matters: yours while you're in, the winner's at a showdown.
   const highlight = useMemo(() => {
-    if (!hand || hand.board.length < 3) return null;
+    // In Imposter the cards don't decide anything, so no hand is singled out.
+    if (!hand || hand.board.length < 3 || hand.variant === 'imposter') return null;
     if (hand.result?.showdown) {
       const winner = hand.result.pots[0]?.winners[0];
       const seat = seatFor(hand, winner);
@@ -280,7 +285,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const showdown = !!hand?.result?.showdown && !!highlight;
   const dim = (c: Card) => showdown && !lit.has(c);
   const glow = (c: Card) => showdown && lit.has(c);
-  const myValue = mySeat && !mySeat.folded && mySeat.cards.length ? bestHand(variant, mySeat.cards, hand?.board ?? []) : null;
+  const myValue = mySeat && !mySeat.folded && mySeat.cards.length && hand?.variant !== 'imposter' ? bestHand(variant, mySeat.cards, hand?.board ?? []) : null;
   // Before the flop, "High card" says nothing; a pocket pair is worth pointing out.
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? myValue.name : null;
   const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
@@ -354,8 +359,14 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <div className="table-felt">
             <div className="table-top">
               {variant !== 'holdem' && (
-                <button type="button" className="variant-pill press" onClick={() => setRules(true)} aria-label={`${variantInfo(variant).name}: how it plays`}>
-                  {variantInfo(variant).emoji} {variantInfo(variant).name}
+                // In an Imposter hand the badge tells you your role instead of the game's name.
+                <button
+                  type="button"
+                  className={`variant-pill press${role === 'imposter' ? ' imposter' : ''}`}
+                  onClick={() => setRules(true)}
+                  aria-label={`${variantInfo(variant).name}: how it plays`}
+                >
+                  {role === 'imposter' ? "🕵️ You're the imposter" : role === 'innocent' ? "😇 You're innocent" : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
                 </button>
               )}
               {hand && (
@@ -366,10 +377,15 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
               )}
             </div>
             <Ghost game={game} />
-            <div className={`board${variant === 'pittsburgh' ? ' board-wide' : ''}`} aria-label="Board">
-              {Array.from({ length: variant === 'pittsburgh' ? 7 : 5 }, (_, i) => i).map((i) => {
+            {hand?.dice && (
+              <p className="dice-note pop" key={`dice-${hand.number}`}>
+                🎲 {hand.dice.out ? <CardText text={`Rolled ${hand.dice.roll}: [${hand.dice.out}] → [${hand.dice.in}]`} /> : `Rolled ${hand.dice.roll}: the board stays`}
+              </p>
+            )}
+            <div className={`board${boardSlots > 5 ? ' board-wide' : ''}${variant === 'pittsburgh' ? ' board-rivers' : ''}`} aria-label="Board">
+              {Array.from({ length: boardSlots }, (_, i) => i).map((i) => {
                 const c = hand?.board[i];
-                const size = variant === 'pittsburgh' ? 'md' : 'lg';
+                const size = boardSlots > 5 ? 'md' : 'lg';
                 return c ? (
                   <PlayingCard
                     key={`${hand!.number}-${c}`}
@@ -399,7 +415,9 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       </div>
 
       <div className="action-area">
-        {hand?.discarding && mySeat && !mySeat.folded ? (
+        {hand?.voting && mySeat && me ? (
+          <Vote game={game} me={me} />
+        ) : hand?.discarding && mySeat && !mySeat.folded ? (
           <Discard game={game} seat={mySeat} />
         ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} raise={raise} setRaise={setRaise} />}
         {sizing && desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
@@ -460,6 +478,29 @@ function Discard({ game, seat }: { game: Game; seat: Seat }) {
         {seat.cards.map((c) => (
           <button key={c} type="button" className="discard-card press" aria-label={`Throw away the ${cardName(c)}`} onClick={() => dispatch({ type: 'discard', hand: hand.number, card: c })}>
             <PlayingCard card={c} size="lg" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Imposter: after the river, everyone dealt in votes for who they think the imposter is. */
+function Vote({ game, me }: { game: Game; me: Player }) {
+  const hand = game.hand!;
+  if (hand.votes?.[me.id]) {
+    const waiting = pendingVoters(game).length;
+    return <p className="discard-wait">{waiting ? `Waiting for ${waiting === 1 ? 'one more vote' : `${waiting} more votes`}…` : 'Counting the votes…'}</p>;
+  }
+  const suspects = hand.seats.map((s) => game.players.find((p) => p.id === s.playerId)).filter((p): p is Player => !!p && p.id !== me.id);
+  return (
+    <div className="vote">
+      <p className="discard-title">Who's the imposter?</p>
+      <div className="vote-grid">
+        {suspects.map((p) => (
+          <button key={p.id} type="button" className="vote-btn press" onClick={() => dispatch({ type: 'vote', hand: hand.number, playerId: p.id })}>
+            <Avatar emoji={p.emoji} size={36} />
+            <span>{p.name}</span>
           </button>
         ))}
       </div>
@@ -545,6 +586,27 @@ function WinBanner({ game }: { game: Game }) {
     .map(([id, amount]) => ({ p: game.players.find((x) => x.id === id), id, amount }))
     .filter((w) => w.p)
     .sort((a, b) => b.amount - a.amount);
+  // Imposter: who it was and whether the table found them.
+  if (result.imposter) {
+    const imp = game.players.find((p) => p.id === result.imposter!.id);
+    const tally = Object.values(result.imposter.votes).filter((v) => v === result.imposter!.id).length;
+    const total = Object.keys(result.imposter.votes).length;
+    const pot = Object.values(result.won).reduce((a, b) => a + b, 0);
+    const title = result.imposter.caught
+      ? `Caught! Innocents split ${chips(pot)}`
+      : winners.length === 1 && winners[0].id === result.imposter.id
+        ? `${imp?.name ?? 'Imposter'} got away: ${chips(pot)}`
+        : `Innocents split ${chips(pot)}`;
+    return (
+      <div key={hand.number} className="win-banner pop" role="status">
+        <Avatar emoji="🕵️" size={34} />
+        <span className="win-text">
+          <b>{title}</b>
+          <small>{`Imposter: ${imp?.name ?? '?'} · ${tally} of ${total} votes`}</small>
+        </span>
+      </div>
+    );
+  }
   if (!winners.length) {
     // Ghost Hold'em: nobody beat the ghost, so it keeps the pot for the next hand.
     if (!result.ghost?.kept) return null;

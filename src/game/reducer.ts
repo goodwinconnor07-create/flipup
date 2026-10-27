@@ -12,8 +12,10 @@ import {
   botsOnly,
   canDeal,
   cardsText,
+  castVote,
   dealNextStreet,
   discardCard,
+  endVote,
   endDiscards,
   foldOutOfTurn,
   makeMove,
@@ -597,6 +599,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return error ? fail(error) : done();
     }
 
+    case 'vote': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = castVote(game, me.id, action.playerId, ctx);
+      return error ? fail(error) : done();
+    }
+
     case 'next': {
       const hand = game.hand;
       if (!me || game.status !== 'playing') return done(false);
@@ -795,6 +805,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
     // Crazy Pineapple: time's up for throwing a card away.
     if (hand.discarding) {
       endDiscards(game, ctx);
+      return true;
+    }
+    // Imposter: time's up for voting.
+    if (hand.voting) {
+      endVote(game, ctx);
       return true;
     }
     if (hand.nextStreetAt != null) {

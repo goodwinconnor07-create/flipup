@@ -34,6 +34,8 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     hand: hand && {
       ...hand,
       deck: [],
+      // Ghost Hold'em: the ghost's cards stay face down until a showdown.
+      ghost: hand.result?.showdown ? hand.ghost : undefined,
       seats: hand.seats.map((s) => (peek || mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
     },
   };

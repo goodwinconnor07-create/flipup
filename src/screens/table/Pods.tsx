@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { positionOf, seatFor, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
+import { positionOf, seatFor, variantOf, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
 import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
@@ -210,7 +210,7 @@ export function Pod({
           <span className={`pod-cards${turn ? ' shimmer' : ''}`}>
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)
-              : [0, 1].map((i) => <PlayingCard key={i} back size="sm" />)}
+              : Array.from({ length: variantOf(game) === 'pineapple' && threeCardsLeft(game) ? 3 : 2 }, (_, i) => <PlayingCard key={i} back size="sm" />)}
           </span>
         )}
         {won > 0 ? (
@@ -295,3 +295,9 @@ export function MyBox({
     </div>
   );
 }
+
+/** Crazy Pineapple: everyone still holds three cards (before the flop, and during the flop betting; bots throw theirs away as soon as it ends). */
+const threeCardsLeft = (game: Game) => {
+  const hand = game.hand;
+  return !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && !hand.result));
+};

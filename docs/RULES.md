@@ -40,6 +40,15 @@ When betting can't continue (everyone's all in, or all but one, and the bets are
 - **Showing.** The last player to bet or raise on the river shows first; if nobody bet, the first player left of the button. After that, a hand is shown only if it beats or ties the best hand shown so far, or wins a pot. Losing hands are mucked (hidden), like auto-muck on online sites. **A player who's all in always shows**, even on the river and even when they lose (product owner's call).
 - If everyone else folds, the last player wins without showing.
 
+## Hold'em variants
+
+The host picks the game under **Game** in the table settings (`src/game/variants.ts`). A change of game, like any setting, starts with the next hand. Everything not listed here plays exactly as above. Run-out odds are shown only in plain Hold'em. Hands from a variant still count for the daily streak, but they aren't saved to the hand history or used by twins.
+
+- **Crazy Pineapple.** Three hole cards each. After the flop betting round, everyone still in throws one card away (at the same time, in secret), then the turn comes and it's normal Hold'em with the two kept. With a clock, anyone who hasn't chosen when it runs out keeps their best two; bots choose at once. A player all in before the discard (the cards are face up for the run-out) has their best two kept for them. "Best two" means the two that make the best hand with the flop (before the flop: a pair, then high, suited, connected cards).
+- **Crazy Deuces.** Every 2, in a hand or on the board, is wild and becomes whatever card makes that player's hand best. **Five of a kind** is the best hand of all, above a royal flush; five of a kind ties break on rank. Two hands that make the same hand split as usual (a wild card has no suit of its own to break ties).
+- **Ghost Hold'em.** Two extra cards are dealt face down to the ghost after everyone's hole cards. They're turned over only at a showdown. At a showdown, the winner of each pot (main and side pots separately) must also beat the ghost's hand; a tie with the ghost isn't enough. If they don't, the ghost keeps that pot and it goes into the next hand's main pot, which anyone dealt in can win. If everyone folds to one player, they win the pot (including anything the ghost was holding) without facing the ghost. Betting is **pot limit**: a bet or raise can go up to the size of the pot after calling, and all in means the most the pot allows. Picking Ghost in the settings deepens the stacks to at least 500 big blinds. If the game ends, or switches to another game, what the ghost holds goes into the next pot dealt (or stays with the ghost when the table closes).
+- **Pittsburgh.** Three river cards are dealt (after a burn) instead of one, with one betting round after them. Each player's hand is the best five of their two hole cards, the flop, the turn and exactly one of the three rivers; the app picks the river that gives them the best hand.
+
 ## Between hands
 
 - The next hand deals by itself (5 seconds after a fold-out, 9 after a showdown), or straight away once every person at the table taps **Next hand**.

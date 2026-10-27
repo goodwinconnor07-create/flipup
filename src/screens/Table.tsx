@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { cardName, describeHand, equity, myPlayer, options, pot, seatFor, type Card, type Equity, type Game, type Hand } from '../game';
+import { bestHand, cardName, equity, holeCount, myPlayer, options, pendingDiscards, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Seat } from '../game';
 import { dispatch, openSheet, useApp } from '../state/store';
 import { toTableTime } from '../state/clock';
 import { Avatar, CardSlot, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -16,6 +16,7 @@ import { ActionArea, RaiseSizer, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
+import { RulesSheet } from './GamePicker';
 
 export function Table() {
   const desktop = useDesktop();
@@ -157,8 +158,9 @@ function TableBar({ game }: { game: Game | null }) {
 }
 
 /** Win and tie chances, only during an all-in run-out when every live hand is face up. */
-function useOdds(hand: Hand | null): Map<string, { win: number; tie: number }> | null {
-  const live = hand?.runout ? hand.seats.filter((s) => !s.folded && s.cards.length === 2) : [];
+function useOdds(hand: Hand | null, oddsOk: boolean): Map<string, { win: number; tie: number }> | null {
+  // Only plain Hold'em: the variants score hands differently.
+  const live = hand?.runout && oddsOk ? hand.seats.filter((s) => !s.folded && s.cards.length === 2) : [];
   const key = hand?.runout ? `${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}` : '';
   return useMemo(() => {
     if (!hand?.runout || live.length < 2) return null;
@@ -179,7 +181,9 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const hand = game.hand;
   const mySeat = seatFor(hand, me?.id);
   const others = othersInOrder(game, me);
-  const odds = useOdds(hand);
+  const variant = variantOf(game);
+  const odds = useOdds(hand, showsOdds(variant));
+  const [rules, setRules] = useState(false);
   const desktop = useDesktop();
   const speakerOk = useRef<(id: string) => boolean>(() => true);
   const { say: reactions, quiet } = useReactions(game, speakerOk);
@@ -266,9 +270,9 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
     if (hand.result?.showdown) {
       const winner = hand.result.pots[0]?.winners[0];
       const seat = seatFor(hand, winner);
-      if (seat?.cards.length) return describeHand([...seat.cards, ...hand.board]);
+      if (seat?.cards.length) return bestHand(variant, seat.cards, hand.board);
     }
-    if (mySeat && !mySeat.folded && mySeat.cards.length) return describeHand([...mySeat.cards, ...hand.board]);
+    if (mySeat && !mySeat.folded && mySeat.cards.length) return bestHand(variant, mySeat.cards, hand.board);
     return null;
   }, [hand?.number, hand?.board.length, hand?.result, mySeat?.folded, mySeat?.cards.length]);
   const lit = new Set(highlight?.best ?? []);
@@ -276,7 +280,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const showdown = !!hand?.result?.showdown && !!highlight;
   const dim = (c: Card) => showdown && !lit.has(c);
   const glow = (c: Card) => showdown && lit.has(c);
-  const myValue = mySeat && !mySeat.folded && mySeat.cards.length ? describeHand([...mySeat.cards, ...(hand?.board ?? [])]) : null;
+  const myValue = mySeat && !mySeat.folded && mySeat.cards.length ? bestHand(variant, mySeat.cards, hand?.board ?? []) : null;
   // Before the flop, "High card" says nothing; a pocket pair is worth pointing out.
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? myValue.name : null;
   const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
@@ -349,6 +353,11 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <TableTimer game={game} now={now} mine={myTurn} />
           <div className="table-felt">
             <div className="table-top">
+              {variant !== 'holdem' && (
+                <button type="button" className="variant-pill press" onClick={() => setRules(true)} aria-label={`${variantInfo(variant).name}: how it plays`}>
+                  {variantInfo(variant).emoji} {variantInfo(variant).name}
+                </button>
+              )}
               {hand && (
                 <span className="pot-pill" aria-label={`Pot ${chips(pot(hand))}`}>
                   <i className="pot-chip" aria-hidden />
@@ -356,21 +365,23 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 </span>
               )}
             </div>
-            <div className="board" aria-label="Board">
-              {[0, 1, 2, 3, 4].map((i) => {
+            <Ghost game={game} />
+            <div className={`board${variant === 'pittsburgh' ? ' board-wide' : ''}`} aria-label="Board">
+              {Array.from({ length: variant === 'pittsburgh' ? 7 : 5 }, (_, i) => i).map((i) => {
                 const c = hand?.board[i];
+                const size = variant === 'pittsburgh' ? 'md' : 'lg';
                 return c ? (
                   <PlayingCard
                     key={`${hand!.number}-${c}`}
                     card={c}
-                    size="lg"
+                    size={size}
                     dim={dim(c)}
                     glow={glow(c)}
                     flip
                     delay={i < 3 ? i * 160 : 0}
                   />
                 ) : (
-                  <CardSlot key={`slot-${i}`} size="lg" />
+                  <CardSlot key={`slot-${i}`} size={size} />
                 );
               })}
             </div>
@@ -388,7 +399,9 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       </div>
 
       <div className="action-area">
-        {bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} raise={raise} setRaise={setRaise} />}
+        {hand?.discarding && mySeat && !mySeat.folded ? (
+          <Discard game={game} seat={mySeat} />
+        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} raise={raise} setRaise={setRaise} />}
         {sizing && desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
       </div>
 
@@ -408,10 +421,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
               />
             ))
           ) : (
-            <>
-              <CardSlot size="xl" />
-              <CardSlot size="xl" />
-            </>
+            Array.from({ length: holeCount(variant) }, (_, i) => <CardSlot key={i} size="xl" />)
           )}
           {canShow && (
             <span className="show-row">
@@ -431,6 +441,49 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} />
         {sizing && !desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
       </div>
+      {rules && <RulesSheet variant={variant} onClose={() => setRules(false)} />}
+    </div>
+  );
+}
+
+/** Crazy Pineapple: after the flop betting, tap the card you're throwing away. */
+function Discard({ game, seat }: { game: Game; seat: Seat }) {
+  const hand = game.hand!;
+  if (seat.cards.length < 3) {
+    const waiting = pendingDiscards(game).length;
+    return <p className="discard-wait">{waiting ? `Waiting for ${waiting === 1 ? 'one player' : `${waiting} players`} to throw a card away…` : 'Here comes the turn…'}</p>;
+  }
+  return (
+    <div className="discard">
+      <p className="discard-title">Tap the card to throw away</p>
+      <div className="discard-cards">
+        {seat.cards.map((c) => (
+          <button key={c} type="button" className="discard-card press" aria-label={`Throw away the ${cardName(c)}`} onClick={() => dispatch({ type: 'discard', hand: hand.number, card: c })}>
+            <PlayingCard card={c} size="lg" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Ghost Hold'em: the ghost's two cards (face down until a showdown) and what it's holding for the next hand. */
+function Ghost({ game }: { game: Game }) {
+  const hand = game.hand;
+  const ghost = hand?.result?.ghost;
+  const holding = hand && !hand.result ? (hand.carry ?? 0) : (game.ghostPot ?? 0);
+  if (variantOf(game) !== 'ghost' && !holding) return null;
+  return (
+    <div className={`ghost${ghost?.kept ? ' won' : ''}`} aria-label="The ghost">
+      <span className="ghost-face" aria-hidden>
+        👻
+      </span>
+      {hand && variantOf(game) === 'ghost' && (
+        <span className="ghost-cards">
+          {(ghost?.cards ?? hand.ghost ?? [null, null]).map((c, i) => (c ? <PlayingCard key={c} card={c} size="sm" flip /> : <PlayingCard key={i} back size="sm" />))}
+        </span>
+      )}
+      <small>{ghost ? (ghost.kept ? `Keeps ${chips(ghost.kept)} · ${ghost.name}` : ghost.name) : holding ? `Holding ${chips(holding)}` : 'Ghost'}</small>
     </div>
   );
 }
@@ -492,7 +545,19 @@ function WinBanner({ game }: { game: Game }) {
     .map(([id, amount]) => ({ p: game.players.find((x) => x.id === id), id, amount }))
     .filter((w) => w.p)
     .sort((a, b) => b.amount - a.amount);
-  if (!winners.length) return null;
+  if (!winners.length) {
+    // Ghost Hold'em: nobody beat the ghost, so it keeps the pot for the next hand.
+    if (!result.ghost?.kept) return null;
+    return (
+      <div key={hand.number} className="win-banner pop" role="status">
+        <Avatar emoji="👻" size={34} />
+        <span className="win-text">
+          <b>The ghost keeps {chips(result.ghost.kept)}</b>
+          <small>{result.ghost.name} · it goes to the next hand</small>
+        </span>
+      </div>
+    );
+  }
   const top = winners[0];
   const split = winners.length > 1;
   const you = top.p!.deviceId === deviceId;

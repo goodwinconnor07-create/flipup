@@ -2,6 +2,7 @@
 
 import type { Card } from './cards';
 import type { TwinBrain } from './twinFit';
+import type { Variant } from './variants';
 
 export type Status = 'lobby' | 'playing' | 'ended';
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
@@ -22,6 +23,8 @@ export interface Settings {
   showToBusted?: boolean;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
+  /** Which game the table plays (see variants.ts). Missing = Texas Hold'em. */
+  variant?: Variant;
 }
 
 export interface Player {
@@ -153,6 +156,8 @@ export interface HandResult {
   names: Record<string, string>;
   /** True if it went to a showdown; false if everyone else folded. */
   showdown: boolean;
+  /** Ghost Hold'em: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
+  ghost?: { cards: Card[]; name: string; kept: number };
 }
 
 /** One finished hand, for the hand log. */
@@ -237,6 +242,14 @@ export interface Hand {
   ranOut?: boolean;
   /** Each player's chips before the blinds. */
   startStacks?: Record<string, number>;
+  /** Ghost Hold'em: the ghost's two cards. Sent to phones only once the hand reaches a showdown. */
+  ghost?: Card[];
+  /** Ghost Hold'em: chips the ghost kept from earlier hands, in this pot too. */
+  carry?: number;
+  /** Crazy Pineapple: the flop betting is over and everyone still in throws a card away before the turn. */
+  discarding?: boolean;
+  /** The game this hand is played as (a change of game in the settings waits for the next hand). Missing = Texas Hold'em. */
+  variant?: Variant;
 }
 
 /** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
@@ -325,6 +338,8 @@ export interface Game {
   dialogue?: Record<string, { recent: string[]; lastIntent: string }>;
   /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
   card?: CardScene;
+  /** Ghost Hold'em: chips the ghost is holding, which go into the next hand's pot. */
+  ghostPot?: number;
 }
 
 export type Action =
@@ -338,6 +353,8 @@ export type Action =
   | { type: 'start' }
   | { type: 'act'; hand: number; seq: number; move: Move; to?: number }
   | { type: 'next'; hand: number }
+  /** Crazy Pineapple: throw this card away after the flop. */
+  | { type: 'discard'; hand: number; card: Card }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
   /** After a hand, the host turns every bot's cards face up for everyone. */

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { loadQuiz } from '../quiz/save';
 import { navigate, openScroll, type TrainSection } from '../state/store';
 import { CoachSays } from '../train/Coach';
-import { BookIcon, ChevronIcon, PencilIcon } from '../ui/Icons';
+import { BookIcon, CardsIcon, ChevronIcon, PencilIcon } from '../ui/Icons';
 
 /** What the coach says once you've played some solved hands (nothing before: the banner already explains). */
 function hello(right: number): string {
@@ -12,6 +12,7 @@ function hello(right: number): string {
 }
 
 const ROWS: { id: TrainSection; title: string; hint: string; Icon: typeof BookIcon; colour: string }[] = [
+  { id: 'odds', title: 'Odds and outs', hint: 'Pot odds, outs, MDF, combos, EV', Icon: CardsIcon, colour: 'var(--indigo)' },
   { id: 'library', title: 'Poker library', hint: 'Drills, spot by spot', Icon: BookIcon, colour: 'var(--gold)' },
   { id: 'custom', title: 'Custom hand', hint: 'See GTO for any hand', Icon: PencilIcon, colour: 'var(--ink-3)' },
 ];

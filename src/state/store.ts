@@ -99,7 +99,7 @@ export type Route =
   /** Goals, the legends ladder, badges and records. */
   | { name: 'progress' };
 
-export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'stats' | 'custom';
+export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'odds' | 'stats' | 'custom';
 
 export type Sheet =
   | { name: 'menu' }

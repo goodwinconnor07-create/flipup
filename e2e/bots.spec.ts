@@ -145,19 +145,19 @@ test('a heads-up game opens with the VS intro, and the bot says hello by name', 
   await page.getByRole('button', { name: 'Sit down' }).click();
   const started = Date.now();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
-  // Heads-up opens with the VS intro in place of a countdown.
+  // Heads-up opens with the VS intro in place of a countdown, and nobody speaks until it's over.
   await expect(page.locator('.versus')).toBeVisible();
   await expect(page.locator('.versus')).toContainText('Sam');
-  await page.waitForTimeout(2200);
+  await expect(page.getByText(/Dealing in \d/)).toHaveCount(0);
+  await page.waitForTimeout(1200);
   await shot(page, '14-versus');
-  // The greeting names us once the intro has cleared.
-  await expect(page.locator('.pod .thread')).toContainText('Sam', { timeout: 4000 });
+  await expect(page.locator('.pod .thread')).toHaveCount(0);
+  await expect(page.locator('.versus')).toBeHidden({ timeout: 3000 });
+  // Then the bot says hello by name, and only after it has spoken do the cards come.
+  await expect(page.locator('.pod .thread')).toContainText('Sam', { timeout: 3000 });
   await shot(page, '15-hello');
-  await expect(page.locator('.versus')).toBeHidden();
-  // No cards for the length of the intro.
-  await expect(page.getByText('Your turn')).toBeHidden();
-  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2, { timeout: 8000 });
-  expect(Date.now() - started).toBeGreaterThanOrEqual(4400);
+  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2, { timeout: 10_000 });
+  expect(Date.now() - started).toBeGreaterThanOrEqual(2900);
 });
 
 test('the +N badge lists the players out of the row with their chips', async ({ page }) => {

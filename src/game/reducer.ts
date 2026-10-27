@@ -21,6 +21,7 @@ import {
   runoutStep,
   schedule,
   startHand,
+  greetWait,
   startWait,
   TIMING,
 } from './holdem';
@@ -559,7 +560,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (bots.length) {
         const headsUp = game.players.length === 2 && people.length === 1;
         const who = headsUp ? bots[0] : bots[Math.floor(ctx.rng() * bots.length)];
-        game.pendingTalk = { at: ctx.now + (game.players.length === 2 ? TIMING.versusDelay - 900 : TIMING.greeting), playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
+        game.pendingTalk = { at: ctx.now + greetWait(game), playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
       }
       schedule(game);
       return done();
@@ -756,6 +757,9 @@ function tick(game: Game, ctx: ActionContext): boolean {
     // Greetings and answers to a person are always said: someone was waiting for them.
     if (event && SURE_THINGS.has(event)) {
       const ms = botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
+      // The opening hello: nobody is dealt in until it has been said and read.
+      if (ms && !game.hand && game.nextHandAt !== null && (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost'))
+        game.nextHandAt = Math.max(game.nextHandAt, ctx.now + ms + TIMING.afterHello);
       // Someone else at the table says hi back, before the cards come.
       if (event === 'welcome' && ms) {
         const rest = game.players.filter((p) => p.bot && p.id !== playerId && !p.sittingOut);

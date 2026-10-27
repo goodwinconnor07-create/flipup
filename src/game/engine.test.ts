@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  startWait,
   TIMING,
   applyAction,
   buildPots,
@@ -141,7 +142,7 @@ function table(players: number, settings: Partial<Settings> = {}, seed = 1): Gam
 function begin(game: Game, seed = 7): Game {
   let g = must(game, { type: 'start' }, HOST, seededRng(seed));
   expect(g.hand).toBeNull();
-  expect(g.nextHandAt).toBe(clock + (g.players.length === 2 ? TIMING.versusDelay : TIMING.startDelay));
+  expect(g.nextHandAt).toBe(clock + startWait(g));
   for (let i = 0; i < 5 && !g.hand; i++) {
     clock = g.wakeAt ?? clock + 1;
     g = must(g, { type: 'tick' }, 'server', seededRng(seed));

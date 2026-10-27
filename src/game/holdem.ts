@@ -28,8 +28,12 @@ export const TIMING = {
   offlineClock: 15000,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
   startDelay: 3000,
-  /** A heads-up game opens with the full-screen VS intro, which takes this long. */
-  versusDelay: 4600,
+  /** A heads-up game opens with the full-screen VS intro, which takes this long. The bot stays quiet until it's over. */
+  versusDelay: 2600,
+  /** After the intro, how long before the bot says hello. */
+  versusHello: 250,
+  /** Once the opening hello has been said and read, this long before the first cards. */
+  afterHello: 700,
   /** ...and a bot says hello this long into it. */
   greeting: 700,
   /** Someone joined or came back: give the table a beat before dealing. */
@@ -49,8 +53,12 @@ export const TIMING = {
   endPause: 7000,
 };
 
-/** How long a new game waits for its first deal: the VS intro when it's two players, else a few seconds to take the table in. */
-export const startWait = (game: Game): number => (game.players.length === 2 ? TIMING.versusDelay : TIMING.startDelay);
+/** How long a new game waits before its first greeting. A heads-up table plays the VS intro first (the clock of a fast table runs at twice the speed, so its intro is twice as long in table time). */
+export const greetWait = (game: Game): number =>
+  game.players.length === 2 ? (TIMING.versusDelay + TIMING.versusHello) * (game.fast ? 2 : 1) : TIMING.greeting;
+
+/** The first deal is pencilled in just after the greeting; saying it moves the deal to after it has been read. */
+export const startWait = (game: Game): number => (game.players.length === 2 ? greetWait(game) + TIMING.afterHello : TIMING.startDelay);
 
 /** Hands kept in the hand log. */
 export const MAX_LOGS = 150;

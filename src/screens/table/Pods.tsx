@@ -187,7 +187,6 @@ export function Pod({
       }}
     >
       <span className="pod-pic">
-        {turn && <span className="pod-ring" aria-hidden />}
         <Avatar emoji={player.emoji} size={50} />
         {player.ai && <span className="ai-chip" aria-hidden>AI</span>}
         {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}
@@ -208,7 +207,7 @@ export function Pod({
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
       <span className="pod-under">
         {!self && seat && (!seat.folded || seat.cards.length > 0) && (
-          <span className="pod-cards">
+          <span className={`pod-cards${turn ? ' shimmer' : ''}`}>
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)
               : [0, 1].map((i) => <PlayingCard key={i} back size="sm" />)}

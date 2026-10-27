@@ -13,7 +13,7 @@ import { botLineText } from './botTalk';
 import { reactionText } from './reactions';
 import { redactForDevice } from './redact';
 import { options } from './selectors';
-import { TIMING } from './holdem';
+import { startWait, TIMING } from './holdem';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import type { Game } from './types';
 import { seededRng } from './cards';
@@ -231,15 +231,16 @@ describe('bots', () => {
       if (!r.ok) throw new Error(r.error);
       g = r.game;
       // No cards yet; heads-up they come after the VS intro, otherwise three seconds later.
-      const wait = bots === 1 ? TIMING.versusDelay : TIMING.startDelay;
+      const wait = startWait(g);
       expect(g.hand).toBeNull();
       expect(g.nextHandAt).toBe(now + wait);
       const me = g.players[0];
       expect(g.pendingTalk?.event).toBe(bots === 1 ? 'hello' : 'welcome');
       expect(g.pendingTalk?.forId).toBe(bots === 1 ? me.id : undefined);
-      // The greeting comes first, well inside the wait.
+      // The greeting comes first, well inside the wait (heads-up, only once the VS intro is over).
       now = g.wakeAt!;
       expect(now).toBeLessThan(5000 + wait);
+      if (bots === 1) expect(now - 5000).toBeGreaterThanOrEqual(TIMING.versusDelay);
       const t = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
       if (!t.ok) throw new Error(t.error);
       g = t.game;
@@ -253,12 +254,14 @@ describe('bots', () => {
       expect(text.includes('{you}')).toBe(false);
       if (bots === 1) expect(text).toContain('Sam');
       expect(g.hand).toBeNull();
+      // Nobody is dealt in until the hello has been said and read.
+      expect(g.nextHandAt!).toBeGreaterThanOrEqual(now + TIMING.afterHello);
       // Then the cards, after another bot may have said hi back (never heads-up: there's only one bot).
       let greeted = false;
       for (let i = 0; i < 3 && !g.hand; i++) {
         now = g.wakeAt!;
         // Anything said back lands well before the cards, never after.
-        expect(now).toBeLessThanOrEqual(5000 + wait);
+        expect(now).toBeLessThanOrEqual(g.nextHandAt!);
         const d = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
         if (!d.ok) throw new Error(d.error);
         greeted ||= Object.values(d.game.reactions ?? {}).some((r) => r.id.split(':')[2] === 'greetBack');

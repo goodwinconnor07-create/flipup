@@ -134,6 +134,8 @@ export function ActionArea({
   }
   // A new game: a few seconds to take in the table before the first cards.
   if (!hand && game.status === 'playing' && game.nextHandAt !== null) {
+    // Heads-up opens with the VS screen and a hello, so there's no countdown.
+    if (game.players.length === 2) return <div className="stack" />;
     const secs = Math.max(1, Math.ceil((game.nextHandAt - now) / 1000));
     return (
       <div className="stack">

@@ -10,7 +10,7 @@ import { fullDeck, isRed, type Card } from './cards';
 import { potTotal } from './holdem';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
-import { holeCount, isWild, keepTwo, riverCount, variantOf, wildHand, type Variant } from './variants';
+import { boardSize, handSets, holeCount, isWild, keepTwo, variantOf, wildHand, type Variant } from './variants';
 
 /** Run-outs played per decision: enough to tell a strong hand from a weak one, quick enough on the server. Fewer at a
  * big table, where each run-out deals more hands. */
@@ -22,18 +22,18 @@ const myCards = (cards: Card[], board: Card[]) => (cards.length > 2 ? keepTwo(ca
 
 /** The same number bestHand() scores, without naming the hand: the bots' fast evaluator, wild deuces aside. */
 export function variantScore(v: Variant, hole: Card[], board: Card[]): number {
-  const one = (cards: Card[]) => (v === 'deuces' && cards.some(isWild) ? wildHand(cards).score : score(cards.map(toInt)));
-  if (v === 'pittsburgh' && board.length > 5) {
-    const base = [...hole, ...board.slice(0, 4)];
-    return Math.max(...board.slice(4).map((river) => one([...base, river])));
+  let best = 0;
+  for (const cards of handSets(v, hole, board)) {
+    const value = v === 'deuces' && cards.some(isWild) ? wildHand(cards).score : score(cards.map(toInt));
+    if (value > best) best = value;
   }
-  return one([...hole, ...board]);
+  return best;
 }
 
 /** The rest of the board, dealt by the variant's rules. */
 function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => number): Card[] {
   const out = board.slice();
-  const target = v === 'pittsburgh' ? 4 + riverCount(v) : 5;
+  const target = boardSize(v);
   const hadRiver = out.length >= 5;
   while (out.length < target && deck.length) out.push(deck.pop()!);
   if (!hadRiver && v === 'dice') {

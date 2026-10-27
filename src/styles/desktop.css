@@ -101,6 +101,15 @@
     gap: 10px;
   }
 
+  /* The circle has room to grow on a computer; the cross is as tall as the felt allows already. */
+  .board.board-cross {
+    --cw: 32px;
+  }
+
+  .board.board-circle {
+    --cw: 44px;
+  }
+
   .table-top,
   .table-foot {
     min-height: 46px;

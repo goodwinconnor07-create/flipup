@@ -118,3 +118,31 @@ test('Imposter: you know your role, vote after the river and see who it was', as
   await shot(page, 'variant-imposter-result');
   await expect(page.getByRole('button', { name: 'Fold', exact: true })).toHaveCount(0);
 });
+
+/** Every board card sits inside the felt (nothing spills over the rail). */
+async function boardFits(page: Page) {
+  const felt = (await page.locator('.table-felt').boundingBox())!;
+  for (const box of await page.locator('.board .pcard').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().toJSON()))) {
+    expect(box.x).toBeGreaterThanOrEqual(felt.x);
+    expect(box.x + box.width).toBeLessThanOrEqual(felt.x + felt.width);
+    expect(box.y).toBeGreaterThanOrEqual(felt.y);
+    expect(box.y + box.height).toBeLessThanOrEqual(felt.y + felt.height);
+  }
+}
+
+test('Crucifix: a cross of nine cards that fits the felt', async ({ page }) => {
+  await sitDown(page, 'Crucifix');
+  await expect(page.locator('.board-cross .pcard')).toHaveCount(9);
+  await shot(page, 'variant-crucifix-empty');
+  expect(await playUntil(page, async () => (await page.locator('.board-cross .pcard:not(.pcard-slot)').count()) === 9)).toBe(true);
+  await shot(page, 'variant-crucifix');
+  await boardFits(page);
+});
+
+test("Circle Hold'em: six cards round a clock that fit the felt", async ({ page }) => {
+  await sitDown(page, "Circle Hold'em");
+  await expect(page.locator('.board-circle .pcard')).toHaveCount(6);
+  expect(await playUntil(page, async () => (await page.locator('.board-circle .pcard:not(.pcard-slot)').count()) === 6)).toBe(true);
+  await shot(page, 'variant-circle');
+  await boardFits(page);
+});

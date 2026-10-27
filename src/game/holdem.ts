@@ -3,7 +3,7 @@
 
 import { handRecord } from './record';
 import { fullDeck, isRed, shuffle, type Card } from './cards';
-import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, keepTwo, potLimit, riverCount, variantOf, type Variant } from './variants';
+import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, keepTwo, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
 
 export const TIMING = {
@@ -517,7 +517,7 @@ function dealStreet(game: Game, hand: Hand, rng: () => number): void {
   // Crazy Pineapple: anyone who still has three cards when the turn comes (all in, out of time) keeps their best two.
   if (next === 'turn') for (const s of hand.seats) if (!s.folded && s.cards.length > 2) throwAway(game, s, null);
   hand.deck.shift(); // burn
-  const count = next === 'flop' ? 3 : next === 'river' ? riverCount(variant) : 1;
+  const count = streetCards(variant, next as 'flop' | 'turn' | 'river');
   for (let i = 0; i < count; i++) hand.board.push(hand.deck.shift()!);
   hand.street = next;
   const label = next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';

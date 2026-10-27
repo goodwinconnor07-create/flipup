@@ -1253,13 +1253,13 @@ html[data-theme='dark'] {
   --lg-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.04) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.06) 100%);
 }
 
-html:not(.no-glass) :is(.sheet, .tabbar, .desk-card, .icon-btn, .screen-foot) {
+html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .icon-btn, .screen-foot) {
   background-image: var(--lg-sheen);
   -webkit-backdrop-filter: var(--lg-blur);
   backdrop-filter: var(--lg-blur);
 }
 
-html:not(.no-glass) :is(.desk-card) {
+html:not(.no-glass) :is(.raise-panel, .desk-card) {
   background-color: var(--glass-fill);
   box-shadow: var(--glass-shine), 0 0 0 1px var(--glass-edge), var(--shadow-sm);
 }
@@ -1297,7 +1297,7 @@ html.no-glass .glass {
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  html:not(.no-glass) :is(.sheet, .tabbar, .desk-card, .icon-btn, .screen-foot) {
+  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card, .icon-btn, .screen-foot) {
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
     background-image: none;
@@ -1305,7 +1305,7 @@ html.no-glass .glass {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  html:not(.no-glass) :is(.sheet, .tabbar, .desk-card) {
+  html:not(.no-glass) :is(.sheet, .raise-panel, .tabbar, .desk-card) {
     background-color: var(--surface);
     background-image: none;
   }

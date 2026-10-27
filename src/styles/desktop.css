@@ -419,21 +419,16 @@
     max-width: 220px;
   }
 
-  /* The bet sizer floats just above the buttons, over the lower edge of the table, so nothing moves. */
-  .action-area > .raise-panel {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: calc(100% + 12px);
-    z-index: 30;
-    gap: 12px;
-    padding: 12px;
-    box-shadow: var(--shadow-soft);
+  /* The bet sizer: a centred panel, not a strip along the bottom. */
+  .raise-layer {
+    align-items: center;
   }
 
-  .raise-presets {
-    flex: none;
-    min-height: 72px;
+  .raise-panel {
+    zoom: calc(1.2 * var(--desk-zoom, 1));
+    max-width: 560px;
+    border-radius: var(--r-xl);
+    padding-bottom: 16px;
   }
 
   /* ── Side panel ───────────────────────────────────────────────────────── */

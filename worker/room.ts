@@ -40,15 +40,11 @@ export class TableRoom extends DurableObject<Env> {
     this.ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(PING, PONG));
   }
 
-  /**
-   * RPC: store a brand-new table. `taken` if this code is in use. With an idempotency key (device and key together),
-   * the table remembers it, and asking again with the same one is a `replay`: the first try's table, not a second.
-   */
-  async create(game: Game, idem?: string): Promise<'created' | 'replay' | 'taken'> {
-    if (await this.load()) return idem && (await this.ctx.storage.get<string>('idem')) === idem ? 'replay' : 'taken';
+  /** RPC: store a brand-new table. Returns false if this code is already in use. */
+  async create(game: Game): Promise<boolean> {
+    if (await this.load()) return false;
     await this.save(game);
-    if (idem) await this.ctx.storage.put('idem', idem);
-    return 'created';
+    return true;
   }
 
   /** RPC: public details for the join screen, or null if there's no table here. */

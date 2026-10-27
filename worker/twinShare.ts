@@ -12,8 +12,6 @@ interface Stored {
   /** Who made it, and a hash of the secret only that phone has. */
   deviceId: string;
   secretHash: string;
-  /** Device and idempotency key it was made with, so a retry of that request finds it again. */
-  idem?: string;
 }
 
 /** SHA-256 of a secret, as hex. */
@@ -31,19 +29,11 @@ export async function hashSecret(secret: string): Promise<string> {
 export class TwinShare extends DurableObject<Env> {
   private data: Stored | null | undefined;
 
-  /**
-   * RPC: store a new share: `taken` if this code is in use, `replay` if it's this same keyed request coming again.
-   * A replay swaps in the secret this try made, since the secret from the first try was never seen by the phone.
-   */
-  async create(deviceId: string, secretHash: string, name: string, emoji: string, profile: TwinProfile, idem?: string): Promise<'created' | 'replay' | 'taken'> {
-    const have = await this.load();
-    if (have) {
-      if (!idem || have.idem !== idem) return 'taken';
-      await this.save({ ...have, secretHash });
-      return 'replay';
-    }
-    await this.save({ name, emoji, profile: sanitizeTwin(profile), updatedAt: Date.now(), deviceId, secretHash, ...(idem ? { idem } : {}) });
-    return 'created';
+  /** RPC: store a new share. Returns false if this code is already in use. */
+  async create(deviceId: string, secretHash: string, name: string, emoji: string, profile: TwinProfile): Promise<boolean> {
+    if (await this.load()) return false;
+    await this.save({ name, emoji, profile: sanitizeTwin(profile), updatedAt: Date.now(), deviceId, secretHash });
+    return true;
   }
 
   /** RPC: new numbers from the owner. */

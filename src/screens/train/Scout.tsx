@@ -1,5 +1,4 @@
-import { useMemo, useState } from 'react';
-import { useRevalidate } from '../../ui/useRevalidate';
+import { useEffect, useMemo, useState } from 'react';
 import { back, navigate, startFriendTwin, undoToast } from '../../state/store';
 import { bestTwin, loadFriend, refreshFriend, removeFriend, restoreFriend } from '../../state/friends';
 import { loadTwinGames } from '../../state/twinGames';
@@ -13,8 +12,11 @@ import { friendLine } from './Friends';
 /** Scouting a friend's twin: how they play, what to do about it, and a game against their twin. */
 export function Scout({ code }: { code: string }) {
   const [friend, setFriend] = useState(() => loadFriend(code));
-  // The saved twin shows at once; the latest copy is fetched behind it, and again when you return or the connection does.
-  useRevalidate(() => refreshFriend(code).then(() => setFriend(loadFriend(code))));
+  useEffect(() => {
+    void refreshFriend(code)
+      .then(() => setFriend(loadFriend(code)))
+      .catch(() => undefined);
+  }, [code]);
   const twin = useMemo(() => (friend ? bestTwin(friend) : null), [friend]);
   const notes = useMemo(() => (twin?.ready ? scout(twin.profile) : []), [twin]);
   const played = useMemo(() => loadTwinGames().some((g) => g.friend === code && g.hands.length > 0), [code]);

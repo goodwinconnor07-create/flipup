@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { variantDecide, variantEquity } from './botVariants';
-import { applyAction, createTable, DEFAULT_SETTINGS, makeMove, seededRng, type Game, type Variant } from './index';
+import { variantDecide, variantEquity, variantScore } from './botVariants';
+import { applyAction, bestHand, createTable, DEFAULT_SETTINGS, fullDeck, makeMove, seededRng, type Game, type Variant } from './index';
 
 const HOST = 'host-device';
 const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter'];
@@ -18,7 +18,7 @@ function dealt(variant: Variant, bots = 4, seed = 1): Game {
   return game;
 }
 
-describe('variant bots', () => {
+describe('variant bots', { timeout: 20_000 }, () => {
   it('leave plain Hold\'em to the usual bot brain', () => {
     const g = dealt('holdem');
     const seat = g.hand!.seats[0];
@@ -85,6 +85,20 @@ describe('variant bots', () => {
         game = r.game;
       }
       expect(checked, v).toBeGreaterThan(10);
+    }
+  });
+});
+
+describe('the bots\' quick scoring', () => {
+  it('scores every hand exactly as the table does, long red-river boards and three rivers included', () => {
+    const rng = seededRng(11);
+    const deck = fullDeck();
+    for (let n = 0; n < 3000; n++) {
+      const d = deck.slice().sort(() => rng() - 0.5);
+      const v = (['deuces', 'pittsburgh', 'redriver', 'holdem'] as Variant[])[n % 4];
+      const boardSize = v === 'pittsburgh' ? 7 : v === 'redriver' ? 5 + (n % 5) : 5;
+      const [hole, board] = [d.slice(0, 2), d.slice(2, 2 + boardSize)];
+      expect(variantScore(v, hole, board)).toBe(bestHand(v, hole, board).score);
     }
   });
 });

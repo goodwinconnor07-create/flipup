@@ -4,12 +4,13 @@
 // own style. In Imposter the cards don't matter, so it plays to blend in.
 
 import type { BotThought } from './botPlay';
+import { score, toInt } from './botEval';
 import { playerStyle } from './botStyles';
 import { fullDeck, isRed, type Card } from './cards';
 import { potTotal } from './holdem';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
-import { bestHand, holeCount, keepTwo, riverCount, variantOf, type Variant } from './variants';
+import { holeCount, isWild, keepTwo, riverCount, variantOf, wildHand, type Variant } from './variants';
 
 /** Run-outs played per decision: enough to tell a strong hand from a weak one, quick enough on the server. Fewer at a
  * big table, where each run-out deals more hands. */
@@ -18,6 +19,16 @@ const samplesFor = (others: number) => Math.max(50, Math.min(SAMPLES, Math.round
 
 /** The cards a bot plays with: its best two of three in Crazy Pineapple. */
 const myCards = (cards: Card[], board: Card[]) => (cards.length > 2 ? keepTwo(cards, board.slice(0, 3)) : cards);
+
+/** The same number bestHand() scores, without naming the hand: the bots' fast evaluator, wild deuces aside. */
+export function variantScore(v: Variant, hole: Card[], board: Card[]): number {
+  const one = (cards: Card[]) => (v === 'deuces' && cards.some(isWild) ? wildHand(cards).score : score(cards.map(toInt)));
+  if (v === 'pittsburgh' && board.length > 5) {
+    const base = [...hole, ...board.slice(0, 4)];
+    return Math.max(...board.slice(4).map((river) => one([...base, river])));
+  }
+  return one([...hole, ...board]);
+}
 
 /** The rest of the board, dealt by the variant's rules. */
 function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => number): Card[] {
@@ -41,7 +52,8 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
   const v = variantOf(game);
   const others = hand.seats.filter((s) => s.playerId !== seat.playerId && !s.folded).length;
   if (!others) return 1;
-  const samples = runs ?? samplesFor(others);
+  // Wild deuces take longest to score, so a rougher estimate there.
+  const samples = runs ?? Math.round(samplesFor(others) * (v === 'deuces' ? 0.5 : 1));
   const known = new Set([...seat.cards, ...hand.board]);
   const pool = fullDeck().filter((c) => !known.has(c));
   const ghost = v === 'ghost';
@@ -57,16 +69,16 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
     for (let k = 0; k < others; k++) hands.push(Array.from({ length: holeCount(v) }, () => deck.pop()!));
     const ghostHand = ghost ? [deck.pop()!, deck.pop()!] : null;
     const board = finishBoard(v, hand.board, deck, rng);
-    const mine = bestHand(v, myCards(seat.cards, board), board).score;
+    const mine = variantScore(v, myCards(seat.cards, board), board);
     let best = 0;
     let ties = 0;
     for (const h of hands) {
-      const s = bestHand(v, myCards(h, board), board).score;
+      const s = variantScore(v, myCards(h, board), board);
       if (s > best) [best, ties] = [s, 1];
       else if (s === best) ties++;
     }
     // The ghost has to be beaten outright: tying it keeps the pot in the middle.
-    if (ghostHand && bestHand(v, ghostHand, board).score >= mine) continue;
+    if (ghostHand && variantScore(v, ghostHand, board) >= mine) continue;
     if (mine > best) won += 1;
     else if (mine === best) won += 1 / (ties + 1);
   }

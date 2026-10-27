@@ -133,7 +133,7 @@ export const IMPOSTER_MIN = 3;
 // ── Wild deuces ─────────────────────────────────────────────────────────────
 
 const FIVE_OF_A_KIND = 10;
-const isWild = (c: Card) => c[0] === '2';
+export const isWild = (c: Card) => c[0] === '2';
 const RANK_CHARS = '23456789TJQKA';
 
 /** The best hand from these cards with every 2 wild. Five of a kind beats everything. `best` holds the real cards used. */

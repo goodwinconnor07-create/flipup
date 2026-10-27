@@ -16,6 +16,8 @@ import {
 
 const h = (s: string) => s.split(' ');
 const HOST = 'host-device';
+/** Whole tables play dozens of hands, each bot move a small simulation: more than the usual five seconds on a slow runner. */
+const TABLE_MS = 20_000;
 
 describe('wild deuces', () => {
   it('makes five of a kind, the best hand there is', () => {
@@ -107,7 +109,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
   return game;
 }
 
-describe('variant tables', () => {
+describe('variant tables', { timeout: TABLE_MS }, () => {
   for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter'] as Variant[]) {
     it(`plays ${v} hands with bots and keeps every chip`, () => {
       play(v, 40);
@@ -159,7 +161,7 @@ describe('variant tables', () => {
   });
 });
 
-describe('the second batch', () => {
+describe('the second batch', { timeout: TABLE_MS }, () => {
   it('Die on the River swaps the board card the die names', () => {
     let rolled = 0;
     play('dice', 40, (g) => {

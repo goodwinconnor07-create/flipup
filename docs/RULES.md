@@ -44,7 +44,7 @@ When betting can't continue (everyone's all in, or all but one, and the bets are
 
 - The next hand deals by itself (5 seconds after a fold-out, 9 after a showdown), or straight away once every person at the table taps **Next hand**.
 - **Busting:** with rebuys on, a busted player can buy back in for another starting stack. Without rebuys they're out. Bots that bust leave the table.
-- **Game over:** without rebuys, the game ends when one player has all the chips (or only bots have chips left). The host can end the game at any time; a hand in progress is called off and bets go back.
+- **Game over:** without rebuys, the game ends when one player has all the chips (or only bots have chips left). The host can end the game at any time; a hand in progress is called off and bets go back. The deciding hand stays up for 3 seconds before the winner's page for games without rebuys, legend games and online tables. A table on one phone with rebuys on waits 20 seconds for anyone to rebuy first.
 - **Standings** show each player's chips minus everything they've bought in for.
 
 ## Being away

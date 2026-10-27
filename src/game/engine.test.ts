@@ -191,6 +191,19 @@ function rig(game: Game, holes: Record<string, string>, board: string): Game {
   return g;
 }
 
+/** Two players, both all in, and the aces win: the hand that decides a heads-up game, played to its result. */
+function decidingHand(game: Game): Game {
+  const [a, b] = game.hand!.seats.map((s) => nameOf(game, s.playerId)!);
+  let g = rig(game, { [a]: 'Ah Ad', [b]: '7c 2d' }, 'Ks 9c 5d 3h Jc');
+  g = act(g, 'allin');
+  g = act(g, 'call');
+  for (let i = 0; i < 6 && !g.hand!.result; i++) {
+    clock = (g.wakeAt ?? clock) + 1;
+    g = must(g, { type: 'tick' }, 'server');
+  }
+  return g;
+}
+
 function chipsInPlay(game: Game): number {
   return (
     game.players.reduce((sum, p) => sum + p.stack, 0) +
@@ -478,14 +491,35 @@ describe('table', () => {
     }
     expect(game.status).toBe('playing');
     expect(game.hand!.result).not.toBeNull();
-    expect(game.wakeAt).toBeGreaterThan(clock + 5000);
+    expect(game.wakeAt).toBe(clock + TIMING.endPause);
     clock = game.wakeAt! + 1;
     game = must(game, { type: 'tick' }, 'server');
     expect(game.status).toBe('ended');
   });
 
-  it('ends with a winner when one player has all the chips, after a window to rebuy', () => {
+  it('ends an online game three seconds after the deciding hand, even with rebuys on', () => {
     let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 });
+    game = decidingHand(game);
+    expect(game.hand!.result).not.toBeNull();
+    expect(game.wakeAt).toBe(clock + 3000);
+  });
+
+  it('ends a legend game three seconds after the deciding hand, even with rebuys on and no code', () => {
+    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 }), code: null, legendGame: 'legend-test' };
+    game = decidingHand(game);
+    expect(game.hand!.result).not.toBeNull();
+    expect(game.wakeAt).toBe(clock + 3000);
+  });
+
+  it('keeps the rebuy window for a table on one phone with rebuys on', () => {
+    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 }), code: null };
+    game = decidingHand(game);
+    expect(game.hand!.result).not.toBeNull();
+    expect(game.wakeAt).toBe(clock + TIMING.rebuyWindow);
+  });
+
+  it('ends with a winner when one player has all the chips, after a window to rebuy', () => {
+    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 }), code: null };
     const [a, b] = game.hand!.seats.map((s) => nameOf(game, s.playerId)!);
     game = rig(game, { [a]: 'Ah Ad', [b]: '7c 2d' }, 'Ks 9c 5d 3h Jc');
     game = act(game, 'allin');

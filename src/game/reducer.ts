@@ -13,7 +13,9 @@ import {
   canDeal,
   cardsText,
   dealNextStreet,
+  endsAtOnce,
   foldOutOfTurn,
+  lastStanding,
   makeMove,
   MAX_SEATS,
   playerById,
@@ -319,8 +321,8 @@ function afterHand(game: Game, ctx: ActionContext): void {
     game.pendingTalk = { at: ctx.now + Math.max(TIMING.replyMin, firstMs - TIMING.replyEarly), playerId: who.id, event, forId: spoke[spoke.length - 1], reactionN: game.reactions?.[spoke[spoke.length - 1]]?.n, handNumber: hand.number };
     talkMs += TIMING.replyMin + 900;
   }
-  // A little longer before the next deal, so the table talk can be read.
-  if (game.nextHandAt !== null) game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
+  // A little longer before the next deal, so the table talk can be read (but not when the game is about to end).
+  if (game.nextHandAt !== null && !(endsAtOnce(game) && lastStanding(game))) game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
   schedule(game);
 }
 

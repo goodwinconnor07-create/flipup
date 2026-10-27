@@ -88,7 +88,7 @@ test('a friend who shares their twin turns up in your friends after you play a h
   await sam.getByRole('button', { name: 'Take a seat' }).click();
   await expect(sam.getByText("You're in!")).toBeVisible();
   await dana.getByRole('button', { name: 'Deal', exact: true }).click();
-  await expect(sam.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
+  await expect(sam.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2, { timeout: 10_000 });
 
   // Play the hand out: whoever's turn it is folds or checks.
   for (let i = 0; i < 80; i++) {

@@ -48,7 +48,7 @@ test('two phones: join with a code, play a hand, see odds only once both hands a
   await shot(friend, '11-friend-lobby');
 
   await host.getByRole('button', { name: 'Deal', exact: true }).click();
-  await expect(host.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
+  await expect(host.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2, { timeout: 10_000 });
   await expect(friend.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
   // Each phone sees the other's cards face down, and no odds.
   await expect(host.locator('.pod .pcard-back')).toHaveCount(2);

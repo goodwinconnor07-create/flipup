@@ -802,7 +802,7 @@ html[data-theme='dark'] .pcard.dim > * {
   bottom: 0;
   height: 4px;
   width: calc(var(--left, 0) * 100%);
-  background: rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.85);
   transition: width 0.2s linear;
 }
 
@@ -2066,6 +2066,38 @@ html.calm .pod-cards.shimmer::after {
   animation-name: vs-shimmer-hi;
 }
 
+/* Speed lines: thin, soft and always flying, under the faces. Only transform and opacity move. */
+.vs-line {
+  position: absolute;
+  left: 0;
+  width: 42%;
+  height: 4px;
+  border-radius: 2px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  animation: vs-line-right 0.9s linear infinite;
+}
+
+.vs-line-right {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85));
+}
+
+.vs-line-left {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.85), transparent);
+  animation-name: vs-line-left;
+}
+
+.vs-line-0 { top: 9%; }
+.vs-line-1 { top: 17%; width: 30%; }
+.vs-line-2 { top: 27%; width: 55%; }
+.vs-line-3 { top: 38%; }
+.vs-line-4 { top: 49%; width: 34%; }
+.vs-line-5 { top: 60%; width: 52%; }
+.vs-line-6 { top: 71%; }
+.vs-line-7 { top: 82%; width: 36%; }
+.vs-line-8 { top: 92%; width: 50%; }
+
 /* A little depth: the corners of each panel fall off to dark. */
 .vs-half::after {
   content: '';
@@ -2264,6 +2296,34 @@ html.calm .pod-cards.shimmer::after {
   }
 }
 
+@keyframes vs-line-right {
+  from {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(260%);
+  }
+}
+
+@keyframes vs-line-left {
+  from {
+    opacity: 0;
+    transform: translateX(260%);
+  }
+  25% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-60%);
+  }
+}
+
 @keyframes vs-shimmer {
   50% {
     opacity: 0.09;
@@ -2355,6 +2415,10 @@ html.calm .pod-cards.shimmer::after {
   .vs-plate,
   .vs-vs {
     animation: none;
+  }
+
+  .vs-line {
+    display: none;
   }
 
   .vs-rays polygon:nth-child(even) {

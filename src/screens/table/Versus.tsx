@@ -29,6 +29,15 @@ const edge = (from: [number, number], to: [number, number], steps: number): [num
 const TOP_EDGE: [number, number][] = [...edge([0, 57], [0, 0], 4), ...edge([0, 0], [100, 0], 8), ...edge([100, 0], [100, 43], 4), [100, 43]];
 const BOTTOM_EDGE: [number, number][] = [...edge([100, 43], [100, 100], 4), ...edge([100, 100], [0, 100], 8), ...edge([0, 100], [0, 57], 4), [0, 57]];
 
+/** Thin speed lines that keep flying across a panel, the you panel's to the right and theirs to the left. */
+const Streaks = ({ dir }: { dir: 'right' | 'left' }) => (
+  <>
+    {Array.from({ length: 9 }, (_, i) => (
+      <i key={i} className={`vs-line vs-line-${dir} vs-line-${i}`} style={{ animationDelay: `${-((i * 0.37) % 0.9)}s` }} aria-hidden />
+    ))}
+  </>
+);
+
 /** Rays from the middle of the screen (where VS lands) to evenly spaced points round the panel, so the edges of the rays meet its corners. */
 function Rays({ edgePts }: { edgePts: [number, number][] }) {
   return (
@@ -70,6 +79,7 @@ export function Versus({ me, foe }: { game: Game; me: Player; foe: Player }) {
       <div className="vs-stage">
         <div className="vs-half vs-you" style={{ clipPath: TOP_SHAPE }}>
           <Rays edgePts={TOP_EDGE} />
+          <Streaks dir="right" />
           <span className="vs-face">
             <Emoji emoji={me.emoji} size={150} />
           </span>
@@ -80,6 +90,7 @@ export function Versus({ me, foe }: { game: Game; me: Player; foe: Player }) {
         </div>
         <div className="vs-half vs-foe" style={{ clipPath: BOTTOM_SHAPE }}>
           <Rays edgePts={BOTTOM_EDGE} />
+          <Streaks dir="left" />
           <span className="vs-face">
             <Emoji emoji={foe.emoji} size={150} />
           </span>

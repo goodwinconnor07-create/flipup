@@ -2055,10 +2055,10 @@ html.calm .pod-cards.shimmer::after {
   animation: vs-rays 0.35s 0.85s ease-out both;
 }
 
-/* Alternate rays are brighter, and the brightness travels round the fan. Only opacity moves. */
+/* Alternate rays are brighter, and a flash of brightness travels round the fan. Only opacity moves. */
 .vs-rays polygon {
   opacity: 0.02;
-  animation: vs-shimmer 1.3s ease-in-out infinite;
+  animation: vs-shimmer 1.6s ease-in-out infinite;
 }
 
 .vs-rays polygon:nth-child(even) {
@@ -2324,15 +2324,26 @@ html.calm .pod-cards.shimmer::after {
   }
 }
 
+/* Each ray flashes once a lap; the delays stagger it, so the bright spot travels round the fan. */
 @keyframes vs-shimmer {
-  50% {
-    opacity: 0.09;
+  0%,
+  35%,
+  100% {
+    opacity: 0.02;
+  }
+  12% {
+    opacity: 0.4;
   }
 }
 
 @keyframes vs-shimmer-hi {
-  50% {
-    opacity: 0.3;
+  0%,
+  35%,
+  100% {
+    opacity: 0.12;
+  }
+  12% {
+    opacity: 0.42;
   }
 }
 

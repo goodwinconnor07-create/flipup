@@ -43,7 +43,7 @@ function Rays({ edgePts }: { edgePts: [number, number][] }) {
   return (
     <svg className="vs-rays" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
       {edgePts.slice(0, -1).map((p, i) => (
-        <polygon key={i} points={`50,50 ${p[0]},${p[1]} ${edgePts[i + 1][0]},${edgePts[i + 1][1]}`} style={{ animationDelay: `${-i * 0.11}s` }} />
+        <polygon key={i} points={`50,50 ${p[0]},${p[1]} ${edgePts[i + 1][0]},${edgePts[i + 1][1]}`} style={{ animationDelay: `${-i * 0.1}s` }} />
       ))}
     </svg>
   );

@@ -349,6 +349,8 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
   // Over the pot limit: the bet goes in at the limit.
   if (potLimit(variantOf(game)) && (move === 'bet' || move === 'raise') && to !== undefined && to > cap && cap > hand.currentBet) to = cap;
 
+  // Imposter: nobody can fold (only someone leaving the table folds).
+  if (move === 'fold' && hand.imposter && !player.leaving) return "There's no folding in Imposter.";
   switch (move) {
     case 'fold':
       seat.folded = true;
@@ -413,6 +415,12 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
   hand.seq += 1;
   continueFrom(game, idx, ctx);
   return null;
+}
+
+/** What happens when a player doesn't choose (out of time, or a bot's move didn't fit): check, else fold, or in Imposter (no folding) call. */
+export function passiveMove(hand: Hand, seat: Seat): Move {
+  if (hand.currentBet - seat.bet <= 0) return 'check';
+  return hand.imposter ? 'call' : 'fold';
 }
 
 /** Someone left the table mid-hand, out of turn: their hand is folded straight away. */

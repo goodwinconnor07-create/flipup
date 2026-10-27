@@ -20,6 +20,7 @@ import {
   foldOutOfTurn,
   makeMove,
   MAX_SEATS,
+  passiveMove,
   playerById,
   potTotal,
   runoutStep,
@@ -31,6 +32,7 @@ import {
 } from './holdem';
 import { cryptoRng, newId } from './ids';
 import { botView, isVariant } from './variants';
+import { variantDecide } from './botVariants';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
@@ -841,7 +843,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
       const plan = game.botPlan;
       if (plan && plan.playerId === player.id && plan.seq === hand.seq) {
         delete game.botPlan;
-        if (makeMove(game, plan.move, plan.to, ctx)) makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+        if (makeMove(game, plan.move, plan.to, ctx)) makeMove(game, passiveMove(hand, seat), undefined, ctx);
         return true;
       }
       // It said something a moment ago (a remark on someone's bet, say) and the table is still reading it.
@@ -857,7 +859,8 @@ function tick(game: Game, ctx: ActionContext): boolean {
         hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
       // In a Hold'em variant it sees the hand as plain Hold'em (see botView).
       const view = botView(game, hand, seat);
-      const thought = decide(view.game, view.hand, view.seat, ctx.rng);
+      // At a variant table it plays the variant's own way (botVariants.ts); plain Hold'em gets the full bot brain.
+      const thought = variantDecide(game, hand, seat, ctx.rng) ?? decide(view.game, view.hand, view.seat, ctx.rng);
       const choice = thought.move;
       const fast = botsOnly(game);
       // It has already taken a moment to look; the rest of its thinking time depends on how hard
@@ -880,11 +883,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
         return true;
       }
       if (makeMove(game, choice.move, choice.to, ctx))
-        makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+        makeMove(game, passiveMove(hand, seat), undefined, ctx);
       return true;
     }
     // Out of time: check if that's free, otherwise fold. Two in a row and they sit out.
-    makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+    makeMove(game, passiveMove(hand, seat), undefined, ctx);
     player.timeouts += 1;
     if (player.timeouts >= 2) player.sittingOut = true;
     return true;

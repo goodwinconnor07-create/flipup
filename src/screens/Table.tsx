@@ -16,6 +16,7 @@ import { ActionArea, RaiseSizer, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
+import type { Gaze } from './table/BotFace';
 
 export function Table() {
   const desktop = useDesktop();
@@ -305,6 +306,10 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
               const deg = others.length === 1 ? 90 : 90 + span / 2 - (i * span) / (others.length - 1);
               const rad = (deg * Math.PI) / 180;
               const ring = { x: 50 + (crowded ? 41 : 40) * Math.cos(rad), y: 55 - (crowded ? 41 : 40) * Math.sin(rad) };
+              // A drawn bot watches whoever is on turn: along the row, or down at me.
+              const onTurn = hand && !hand.result && hand.toAct !== p.id ? hand.toAct : undefined;
+              const there = onTurn ? podSlots.slots.get(onTurn) : undefined;
+              const gaze: Gaze = !onTurn ? null : onTurn === me?.id ? 'down' : !there || there.away ? null : there.slot < at.slot ? 'left' : 'right';
               return (
                 <Pod
                   key={p.id}
@@ -320,6 +325,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                   ring={ring}
                   n={podSlots.n}
                   away={at.away}
+                  gaze={gaze}
                 />
               );
             })}

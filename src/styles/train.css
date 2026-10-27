@@ -1822,3 +1822,133 @@ html.calm .coach-avatar {
 .sb-icon {
   background: var(--blue);
 }
+
+/* ── Odds and outs ───────────────────────────────────────────────────────── */
+
+.odds-emoji {
+  background: var(--bg-2);
+  font-size: var(--fs-h3);
+}
+
+.odds-sources {
+  font-size: var(--fs-caption);
+  margin-top: 16px;
+}
+
+.btn.odds-back {
+  width: auto;
+  align-self: flex-start;
+  justify-content: flex-start;
+  padding-left: 0;
+}
+
+.odds-formula {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+
+.odds-formula b {
+  font-size: var(--fs-body);
+  font-weight: 600;
+}
+
+.odds-how {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.odds-progress {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.odds-bar {
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--bg-2);
+  overflow: hidden;
+  margin: 8px 0 16px;
+}
+
+.odds-bar i {
+  display: block;
+  height: 100%;
+  background: var(--brand-ink);
+  transition: width 0.3s ease;
+}
+
+.odds-table {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  justify-content: center;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+
+.odds-hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.odds-row {
+  display: flex;
+  gap: 4px;
+}
+
+.odds-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.odds-facts .tile {
+  flex: 1 1 72px;
+  text-align: center;
+}
+
+.odds-prompt {
+  font-size: var(--fs-body);
+  margin: 16px 0 12px;
+}
+
+.odds-choices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.odds-choices .answer-btn {
+  justify-content: center;
+}
+
+.odds-done {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: stretch;
+}
+
+.odds-done > .h2,
+.odds-score {
+  text-align: center;
+}
+
+.odds-score {
+  font-size: var(--fs-display-2);
+}

@@ -19,14 +19,14 @@ async function call<T>(path: string, init: RequestInit = {}, timeoutMs = 60000):
         signal: controller.signal,
       });
     } catch {
-      if (attempt === 1) throw new Error("Couldn't reach the GTO coach. Check your connection.");
+      if (attempt === 1) throw new Error("Couldn't reach the coach. Check your connection.");
     } finally {
       clearTimeout(timer);
     }
   }
-  if (!res) throw new Error("Couldn't reach the GTO coach. Check your connection.");
+  if (!res) throw new Error("Couldn't reach the coach. Check your connection.");
   if (!res.ok) {
-    let msg = 'The GTO coach had a problem. Try again.';
+    let msg = 'The coach had a problem. Try again.';
     try {
       const body = (await res.json()) as { error?: string; detail?: string };
       msg = body.error || body.detail || msg;

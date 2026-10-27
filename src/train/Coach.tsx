@@ -1,4 +1,4 @@
-// The GTO Coach: an emoji at the top of anything that gives advice, and the advice itself in text bubbles.
+// The Coach: an emoji at the top of anything that gives advice, and the advice itself in text bubbles.
 // Wording lives in coach.ts; this file is how it looks and the bits that talk back (retry a spot).
 
 import { useState, type ReactNode } from 'react';

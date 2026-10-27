@@ -1,5 +1,5 @@
 import { formatFrequency } from '../quiz/scenarios';
-// What the GTO Coach says. The solver's numbers go in, short plain sentences come out. All the wording
+// What the Coach says. The solver's numbers go in, short plain sentences come out. All the wording
 // lives here so the tone stays the same on every screen: friendly, brief, no jargon until you ask.
 
 import type { Colour, Decision, HandReport } from '../gto/types';
@@ -8,7 +8,7 @@ import { scenarioTitle } from './scenarios';
 import type { BluffSummary, GameStory, GameSummary } from './twinReport';
 import type { Draw, Made, Spot } from '../quiz/read';
 
-export const COACH_NAME = 'GTO Coach';
+export const COACH_NAME = 'Coach';
 export const COACH_EMOJI = '🧑‍💻';
 
 /** The label on a grade: plain words first, the solver's terms one tap deeper. */

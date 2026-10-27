@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 const REPLAY_ON = /REPLAY_ON = true/.test(readFileSync('src/train/replay.ts', 'utf8'));
 import { shot, watchErrors } from './helpers';
 
-// A saved hand with a coach report, so the replay and the GTO Coach can be checked without the solver service.
+// A saved hand with a coach report, so the replay and the Coach can be checked without the solver service.
 const record = {
   tableId: 'T1',
   number: 7,
@@ -55,7 +55,7 @@ const report = {
   ],
 };
 
-test('replay a saved hand with the GTO Coach', async ({ page }) => {
+test('replay a saved hand with the Coach', async ({ page }) => {
   test.skip(!REPLAY_ON, 'Replay is switched off for now (REPLAY_ON in src/train/replay.ts)');
   watchErrors(page);
   await page.addInitScript(
@@ -77,7 +77,7 @@ test('replay a saved hand with the GTO Coach', async ({ page }) => {
   await page.getByRole('button', { name: 'Replay hand 7' }).click();
 
   // The coach introduces themself, and the hand starts playing on its own.
-  await expect(page.getByText('GTO Coach').first()).toBeVisible();
+  await expect(page.getByText('Coach', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('Replay · Preflop')).toBeVisible();
   await shot(page, 'replay-1-deal');
 
@@ -105,7 +105,7 @@ test('replay a saved hand with the GTO Coach', async ({ page }) => {
 
   // The full written review opens from here, with the same coach.
   await page.getByRole('button', { name: 'Full review' }).click();
-  await expect(page.getByText('GTO Coach').first()).toBeVisible();
+  await expect(page.getByText('Coach', { exact: true }).first()).toBeVisible();
   await shot(page, 'replay-5-review');
 });
 

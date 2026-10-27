@@ -295,7 +295,7 @@ function ResultExtras({ report, mistakes, onJump }: { report: HandReport; mistak
 /** The coach's chatter on frames that aren't one of your graded moves. */
 function narration(r: HandRecord, f: Frame, intro: boolean, report: HandReport | null, net: number): string[] {
   if (f.kind === 'deal') {
-    return [...(intro ? ["Hi, I'm your GTO Coach. I'll talk you through this one."] : []), "Here's the hand. I'll pause at any move worth a look."];
+    return [...(intro ? ["Hi, I'm your Coach. I'll talk you through this one."] : []), "Here's the hand. I'll pause at any move worth a look."];
   }
   if (f.kind === 'street') {
     const bbs = r.bigBlind ? Number((f.pot / r.bigBlind).toFixed(1)) : null;

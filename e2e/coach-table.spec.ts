@@ -20,7 +20,7 @@ test('the review list shows a replay button and a coach', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('tab', { name: 'Review' }).click();
-  await expect(page.getByText('GTO Coach')).toBeVisible();
+  await expect(page.getByText('Coach', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: /Review hands/ }).click();
   await expect(page.getByText('No hands in the last 24 hours')).toBeVisible();
   // The study bank sits at the top of the Review page.

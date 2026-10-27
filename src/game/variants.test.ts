@@ -210,7 +210,8 @@ describe('the second batch', () => {
         const winners = Object.keys(hand.result.won);
         const impFolded = hand.seats.find((s) => s.playerId === id)!.folded;
         if (caught || impFolded) expect(winners).not.toContain(id);
-        else expect(winners).toEqual([id]);
+        // Got away with it: every pot the imposter is in is theirs alone; a side pot they're not in goes to the others.
+        else for (const pot of hand.result.pots) expect(pot.winners).toEqual(pot.eligible.includes(id) ? [id] : pot.eligible);
       }
     });
     expect(settled).toBeGreaterThan(0);

@@ -1368,8 +1368,24 @@ li.ok > .today-tick,
   background: var(--switch-on);
 }
 
-.quick-card.locked {
-  opacity: 0.55;
+/* A locked legend: their picture is blurred behind a bold line on how to open them. */
+.quick-art.legend-locked > .prop,
+.quick-art.legend-locked > .avatar {
+  filter: blur(5px);
+}
+
+.legend-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: color-mix(in srgb, var(--scrim) 55%, transparent);
+  color: var(--ink);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .legend-record {

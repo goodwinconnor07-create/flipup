@@ -718,12 +718,14 @@ function recordFinished(): void {
   const stats = loadStats();
   if (stats.counted.includes(game.id)) return;
   const place = 1 + game.players.filter((p) => p.stack > me.stack).length;
+  // Only a finished legend game counts as a legend result: one left half way, while ahead, is not a win.
+  const legend = game.legendGame && game.status === 'ended' ? game.legendGame : null;
   saveStats({
     net: stats.net + (me.stack - me.bought),
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}), ...(game.legendGame ? { legend: game.legendGame } : {}) }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}), ...(legend ? { legend } : {}) }],
   });
   if (game.twinGame) finishTwinGame(game.id, place);
 }

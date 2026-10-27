@@ -166,9 +166,12 @@ export function loadProgress(): Progress {
   }
   const t = s?.totals ?? ({} as Progress['totals']);
   const day = dayKey(new Date());
+  const badges: Progress['badges'] = Object.fromEntries(Object.entries(s?.badges ?? {}).filter(([id]) => badgeById(id)).map(([id, at]) => [id, num(at)]));
+  // A legend beaten before, read from the old table history, already has its badge: don't announce it again.
+  if (first) for (const id of Object.keys(beaten)) badges[`beat-${id}`] ??= beaten[id].first;
   return {
     beaten,
-    badges: Object.fromEntries(Object.entries(s?.badges ?? {}).filter(([id]) => badgeById(id)).map(([id, at]) => [id, num(at)])),
+    badges,
     totals: { bluffs: num(t.bluffs), allInsWon: num(t.allInsWon), tablesWon: num(t.tablesWon), bigPots: num(t.bigPots), showdownsWon: num(t.showdownsWon), comebacks: num(t.comebacks) },
     rivals: {
       twin: rec(s?.rivals?.twin),

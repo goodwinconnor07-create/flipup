@@ -179,18 +179,20 @@ function raiseBlindsIfDue(game: Game, now: number): boolean {
 
 /** Deals a new hand, or leaves the table waiting if there aren't enough players. */
 export function startHand(game: Game, ctx: ActionContext): void {
-  // Bots that ran out of chips leave now (not straight after the hand, so their cards can still be seen).
-  // People stay, and can buy back in if the table allows it.
-  game.players = game.players.filter((p) => !p.leaving && !(p.bot && p.stack === 0));
   game.ready = [];
   game.sweating = undefined;
   game.nextHandAt = null;
   if (!canDeal(game)) {
-    // Nobody rebought in time: the last player with chips wins.
+    // Nobody rebought in time: the last player with chips wins. Busted bots stay on the roster here,
+    // so the finished game still shows (and counts) the one that was knocked out.
+    game.players = game.players.filter((p) => !p.leaving);
     if (game.hand && lastStanding(game)) game.status = 'ended';
     schedule(game);
     return;
   }
+  // Bots that ran out of chips leave now (not straight after the hand, so their cards can still be seen).
+  // People stay, and can buy back in if the table allows it.
+  game.players = game.players.filter((p) => !p.leaving && !(p.bot && p.stack === 0));
   const players = dealable(game);
   const raised = raiseBlindsIfDue(game, ctx.now);
 

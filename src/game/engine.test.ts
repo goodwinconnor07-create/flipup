@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  startHand,
   startWait,
   TIMING,
   applyAction,
@@ -509,6 +510,25 @@ describe('table', () => {
     game = decidingHand(game);
     expect(game.hand!.result).not.toBeNull();
     expect(game.wakeAt).toBe(clock + 3000);
+  });
+
+  it('keeps a busted bot on the table when the game is over, and drops it once the next hand deals', () => {
+    let game = begin(createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0, rebuys: false }, bots: 1, code: null, now: clock }), 1);
+    const bot = game.players.find((p) => p.bot)!;
+    const me = game.players.find((p) => !p.bot)!;
+    // Heads-up: the bot is out, so the game ends and the bot is still listed (the result counts it as knocked out).
+    game.players.forEach((p) => (p.stack = p === bot ? 0 : 200));
+    startHand(game, ctx(HOST));
+    expect(game.status).toBe('ended');
+    expect(game.players.some((p) => p.id === bot.id && p.stack === 0)).toBe(true);
+    // Three players with chips: the next hand deals, and the busted bot leaves.
+    let more = begin(createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 1, code: null, now: clock }), 1);
+    const busted = more.players.find((p) => p.bot)!;
+    more.players.forEach((p) => (p.stack = p === busted ? 0 : 200));
+    more = { ...more, players: [...more.players, { ...me, id: 'extra', deviceId: 'device-extra', bot: false }] };
+    startHand(more, ctx(HOST));
+    expect(more.status).toBe('playing');
+    expect(more.players.some((p) => p.id === busted.id)).toBe(false);
   });
 
   it('keeps the rebuy window for a table on one phone with rebuys on', () => {

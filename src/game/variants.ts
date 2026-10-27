@@ -103,11 +103,10 @@ export const VARIANTS: VariantInfo[] = [
     tagline: 'Everyone has the same hand but one. Find the imposter.',
     rules: [
       'Everyone gets the same two cards, except the imposter, who gets a different hand. You\'re told whether you\'re the imposter or innocent.',
-      'How strong your cards are doesn\'t matter. Bet, call and fold to read the table (or, as the imposter, to blend in).',
+      'How strong your cards are doesn\'t matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table (or, as the imposter, to blend in).',
       'Everyone antes a big blind each hand, so there\'s money in the middle from the start.',
-      'If two or more players are still in after the river, everyone who was dealt in votes for who they think the imposter is.',
+      'After the river everyone votes for who they think the imposter is.',
       'If the most votes go to the imposter, the innocent players still in split the pot. If not (a tie counts as not), the imposter takes it all.',
-      'If the imposter folds, the innocents still in split the pot. If everyone folds to one player, they win it as usual.',
       'Needs three or more players: with two, the hand is plain Hold\'em.',
     ],
   },
@@ -157,9 +156,10 @@ export function wildHand(cards: Card[]): HandValue {
     }
   }
 
-  // Every rank for every wild card, all in one suit (which only matters for flushes).
-  const suits = [...new Set(natural.map(suitOf))];
-  if (!suits.length) suits.push(SUITS[0]);
+  // Every rank for the wild cards, all in one suit (which only matters for flushes). The wilds are alike, so each
+  // set of ranks is tried once (in rising order), and only suits that could make a flush get their own pass.
+  const flushSuits = SUITS.filter((s) => natural.filter((c) => suitOf(c) === s).length + wilds.length >= 5);
+  const suits = flushSuits.length ? flushSuits : [natural.length ? suitOf(natural[0]) : SUITS[0]];
   let bestScore = -1;
   let bestSet: Card[] = cards;
   const ranks = new Array(wilds.length).fill(0);
@@ -173,9 +173,10 @@ export function wildHand(cards: Card[]): HandValue {
         bestSet = concrete;
       }
       let i = 0;
-      while (i < ranks.length && ranks[i] === 12) ranks[i++] = 0;
+      while (i < ranks.length && ranks[i] === 12) i++;
       if (i === ranks.length) break;
       ranks[i]++;
+      for (let j = 0; j < i; j++) ranks[j] = ranks[i];
     }
   }
   const value = describeHand(bestSet);

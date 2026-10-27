@@ -81,7 +81,7 @@ export function ActionArea({
         </p>
         {o && (
           <div className="action-buttons pre" role="group" aria-label="Before your turn">
-            {preBtn('checkfold', 'Check / Fold')}
+            {o.canFold && preBtn('checkfold', 'Check / Fold')}
             {o.canCheck
               ? preBtn('current', 'Check', 'Check, unless someone bets')
               : preBtn('current', `Call ${chips(o.toCall)}`, `Call ${chips(o.toCall)}, unless someone raises`)}
@@ -233,9 +233,11 @@ function MyTurn({
     <div className="stack">
       <p className="table-note your-turn">Your turn</p>
       <div className="action-buttons">
-        <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
-          Fold
-        </button>
+        {o.canFold && (
+          <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
+            Fold
+          </button>
+        )}
         {o.canCheck ? (
           <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('check')}>
             Check

@@ -183,6 +183,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const others = othersInOrder(game, me);
   const variant = variantOf(game);
   const odds = useOdds(hand, showsOdds(variant));
+  const themed = variant !== 'holdem';
   // Imposter: you only learn it's you; everyone else in the hand is innocent.
   const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
   // Pittsburgh always has room for three rivers; Red River grows as the red cards come.
@@ -295,7 +296,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const canShow = !bare && !!hand?.result && !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
 
   return (
-    <div className="felt">
+    <div className={`felt${themed ? ` theme-${variant}` : ''}`}>
       <p className="sr-only" aria-live="polite">
         {announce}
       </p>
@@ -354,9 +355,10 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           </div>
         )}
 
-        <div className={`table-oval rail-${look.rail}`} style={{ ['--felt' as string]: look.felt }}>
+        {/* Each game has its own table; plain Hold'em uses the player's own felt and rail. */}
+        <div className={`table-oval${themed ? ` themed theme-${variant}` : ` rail-${look.rail}`}`} style={themed ? undefined : { ['--felt' as string]: look.felt }}>
           <TableTimer game={game} now={now} mine={myTurn} />
-          <div className="table-felt">
+          <div className="table-felt" data-motif={themed ? variantInfo(variant).emoji : undefined}>
             <div className="table-top">
               {variant !== 'holdem' && (
                 // In an Imposter hand the badge tells you your role instead of the game's name.
@@ -366,7 +368,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                   onClick={() => setRules(true)}
                   aria-label={`${variantInfo(variant).name}: how it plays`}
                 >
-                  {role === 'imposter' ? "🕵️ You're the imposter" : role === 'innocent' ? "😇 You're innocent" : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
+                  {role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
                 </button>
               )}
               {hand && (

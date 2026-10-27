@@ -62,7 +62,7 @@ export function InviteSheet() {
       <div className="stack center">
         <CodeTiles code={code} />
         <div className="qr-box">
-          <QRCode text={joinLink(code)} size={220} />
+          <QRCode text={joinLink(code)} size={260} />
         </div>
         <p className="muted" style={{ margin: 0 }}>
           Scan to join, or go to <b>{joinLinkLabel(code)}</b>

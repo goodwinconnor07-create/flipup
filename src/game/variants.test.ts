@@ -90,7 +90,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
       r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
     } else if (hand && !hand.result && hand.toAct === host.id && mine) {
       const o = options(game, hand, mine);
-      const move = o.canCheck ? 'check' : o.toCall <= game.settings.bigBlind * 3 ? 'call' : 'fold';
+      const move = o.canCheck ? 'check' : o.toCall <= game.settings.bigBlind * 3 || !o.canFold ? 'call' : 'fold';
       r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move }, { deviceId: HOST, now: clock, rng });
     } else {
       clock = (game.wakeAt ?? clock) + 1;

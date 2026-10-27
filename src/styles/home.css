@@ -96,7 +96,7 @@ html:not(.no-glass) .glass-card {
   text-wrap: pretty;
 }
 
-/* The streak: an outline flame until you've played today, then it lights up orange. */
+/* The streak: the system fire emoji, greyed out until you've played today, then in full colour. */
 .streak-pill {
   display: inline-flex;
   align-items: center;
@@ -116,11 +116,20 @@ html:not(.no-glass) .glass-card {
   color: var(--ink);
 }
 
+.streak-emoji {
+  font-size: var(--fs-h3);
+  line-height: 1;
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
 .streak-pill.lit {
   background: var(--gold-bg);
 }
 
-.streak-pill.lit svg {
+.streak-pill.lit .streak-emoji {
+  filter: none;
+  opacity: 1;
   animation: flicker 1.6s ease-in-out 2;
   transform-origin: 50% 90%;
 }
@@ -1247,7 +1256,7 @@ html.calm :is(.mirror-face, .mirror-ref, .mirror-shine) {
 
 /* ── Animations off ───────────────────────────────────────────────────────────────────────── */
 
-html.calm :is(.home-pane, .streak-pill svg, .card-art .art-face, .card-art .toss) {
+html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
   animation: none;
 }
 
@@ -1359,8 +1368,24 @@ li.ok > .today-tick,
   background: var(--switch-on);
 }
 
-.quick-card.locked {
-  opacity: 0.55;
+/* A locked legend: their picture is blurred behind a bold line on how to open them. */
+.quick-art.legend-locked > .prop,
+.quick-art.legend-locked > .avatar {
+  filter: blur(5px);
+}
+
+.legend-lock {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+  background: color-mix(in srgb, var(--scrim) 55%, transparent);
+  color: var(--ink);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .legend-record {

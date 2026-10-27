@@ -13,7 +13,7 @@ import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
 import { ReviewTab, lastGameHands } from './HomeReview';
 import { colourWipe } from '../ui/effects';
-import { CapIcon, ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
+import { CapIcon, ChevronIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
 import { computeStats } from '../train/stats';
 
 function ago(at: number): string {
@@ -127,7 +127,9 @@ export function Home() {
                 aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}. Show details`}
                 onClick={() => openSheet({ name: 'streak' })}
               >
-                {streak.today ? <FlameIcon width={20} height={20} /> : <FlameOutlineIcon width={20} height={20} />}
+                <span className="streak-emoji" aria-hidden>
+                  🔥
+                </span>
                 <b className="num">{streak.days}</b>
               </button>
               <button

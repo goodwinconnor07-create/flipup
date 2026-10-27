@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { allLines } from './botTalk';
-import { BEFORE_MOVE, botSay, beatTimes, CHAT, ChatLane, holdMs, lineBeats, lineText, ONE_LINE, quickSay, readMs, sayAndReadMs, spokenMs, splitBeats, splitSentences, typeMs, worthKeeping, worthSaying, type Say } from './chat';
+import { BEFORE_MOVE, botSay, beatTimes, CHAT, ChatLane, holdMs, ticker, windowAt, widestWindow, wordsOf, lineBeats, lineText, ONE_LINE, quickSay, readMs, sayAndReadMs, spokenMs, splitBeats, splitSentences, typeMs, worthKeeping, worthSaying, type Say } from './chat';
 
 const texts = (t: string) => splitBeats(t).map((b) => b.text);
 
@@ -56,8 +56,9 @@ describe('splitting a line into messages', () => {
   });
 
   it("fills in a name after cutting, so a name can't add a break or a bar", () => {
-    const beats = lineBeats('Hey {you}. Ready?', 'A|B');
-    expect(beats.map((b) => b.text)).toEqual(['Hey A|B.', 'Ready?']);
+    // A bot's whole line is one bubble now (its words come through one at a time), so the name never splits it.
+    const beats = lineBeats('Hey {you}.|Ready?', 'A|B');
+    expect(beats.map((b) => b.text)).toEqual(['Hey A|B. Ready?']);
     expect(lineText('Hey {you}. Ready?', 'Sam')).toBe('Hey Sam. Ready?');
   });
 });
@@ -433,5 +434,47 @@ describe('the conversation under load (a few hundred random tables)', () => {
       });
     }
     expect(worst, `the tightest message to read is in: ${worstText}`).toBeGreaterThanOrEqual(0);
+  });
+});
+
+describe('words coming through a bubble', () => {
+  it('shows the words of a line one after another, a little longer at the end of a phrase or sentence', () => {
+    const t = ticker('Hello, Connor. How are you?');
+    expect(t.words).toEqual(['Hello,', 'Connor.', 'How', 'are', 'you?']);
+    expect(t.at[0]).toBe(0);
+    for (let i = 1; i < t.at.length; i++) expect(t.at[i]).toBeGreaterThan(t.at[i - 1]);
+    // The word after a full stop waits longer than the word after a plain word.
+    expect(t.at[3] - t.at[2]).toBeLessThan(t.at[2] - t.at[1] + 100);
+    expect(t.at[2] - t.at[1]).toBeGreaterThan(t.at[3] - t.at[2]);
+  });
+
+  it('keeps a window of a few words that fits a seat, old words leaving as new ones arrive', () => {
+    const words = wordsOf('Hello, Connor, how are you doing today?');
+    expect(windowAt(words, 0)).toEqual([0, 0]);
+    expect(windowAt(words, 1)).toEqual([0, 1]);
+    for (let i = 0; i < words.length; i++) {
+      const [a, b] = windowAt(words, i);
+      expect(b).toBe(i);
+      expect(b - a + 1).toBeLessThanOrEqual(CHAT.windowWords);
+      // Fits one line, unless a single word is longer than that.
+      if (b > a) expect(words.slice(a, b + 1).join(' ').length).toBeLessThanOrEqual(CHAT.windowChars);
+    }
+    expect(widestWindow(words).length).toBeLessThanOrEqual(CHAT.windowChars);
+  });
+
+  it('keeps the bubble the same size all the way through (its widest window is known up front)', () => {
+    const words = wordsOf('I think you are bluffing here, my friend.');
+    const widest = widestWindow(words);
+    for (let i = 0; i < words.length; i++) {
+      const [a, b] = windowAt(words, i);
+      expect(words.slice(a, b + 1).join(' ').length).toBeLessThanOrEqual(widest.length);
+    }
+  });
+
+  it('speeds a long line up so it finishes in good time, and holds a moment on the last words', () => {
+    const long = Array.from({ length: 30 }, () => 'something').join(' ');
+    expect(ticker(long).ms).toBeLessThanOrEqual(CHAT.tickerMax);
+    expect(holdMs('Hi')).toBeGreaterThanOrEqual(CHAT.holdMin);
+    expect(holdMs('Hello, Connor. How are you?')).toBeGreaterThan(ticker('Hello, Connor. How are you?').ms + CHAT.tail - 1);
   });
 });

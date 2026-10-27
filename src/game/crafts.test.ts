@@ -64,11 +64,12 @@ describe('techniques', () => {
   }, 60_000);
 
   it('are told apart by how often they use them: the aggressive styles c-bet and barrel more than the cautious ones', () => {
-    const lag = simulateTable(['lag', 'pro', 'tag', 'station', 'rock', 'nervous'], 900, 3).seats;
+    // A big enough sample that the order of events (which the table talk can shift) doesn't swing it.
+    const lag = simulateTable(['lag', 'pro', 'tag', 'station', 'rock', 'nervous'], 2400, 3).seats;
     const rock = lag.find((s) => s.style === 'rock')!;
     const nervous = lag.find((s) => s.style === 'nervous')!;
     const aggressive = lag.find((s) => s.style === 'lag')!;
     expect(aggressive.craft.barrel2).toBeGreaterThan(nervous.craft.barrel2 - 0.05);
     expect(aggressive.craft.cbetDry).toBeGreaterThan(rock.craft.cbetDry - 0.2);
-  }, 60_000);
+  }, 180_000);
 });

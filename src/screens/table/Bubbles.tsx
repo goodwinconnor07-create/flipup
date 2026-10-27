@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import { BEFORE_MOVE, botSay, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
+import { BEFORE_MOVE, botSay, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, ticker, widestWindow, windowAt, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
 import { react, useApp } from '../../state/store';
 import { chips } from '../../ui/components';
 import { haptic } from '../../ui/effects';
@@ -164,6 +164,42 @@ export const moveSig = (hand: number, last: NonNullable<Seat['last']> | null) =>
 const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
 
 /**
+ * A line, said the way a game character says it: the words come through the bubble a few at a time, each one
+ * sliding in at the end as the oldest slides away, then the last words hold a moment and the bubble goes. The
+ * bubble is as wide as the widest few words from the start, so it never changes size or reaches into a neighbour.
+ */
+function Ticker({ text, until }: { text: string; until: number }) {
+  const { words, at } = ticker(text);
+  const [shown, setShown] = useState(0);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    const t0 = Date.now();
+    const timers = at.slice(1).map((ms, i) => setTimeout(() => setShown(i + 1), Math.max(0, ms - (Date.now() - t0))));
+    // A moment before the lane takes the bubble down, it fades.
+    const out = setTimeout(() => setLeaving(true), Math.max(0, until - t0 - 260));
+    return () => {
+      timers.forEach(clearTimeout);
+      clearTimeout(out);
+    };
+  }, []);
+  const [first, last] = windowAt(words, shown);
+  return (
+    <span className={`bubble bubble-grey bubble-react bubble-ticker pop${leaving ? ' bubble-leaving' : ''}`} aria-label={text}>
+      <span className="tk-size" aria-hidden>
+        {widestWindow(words)}
+      </span>
+      <span className="tk-words" aria-hidden>
+        {words.slice(0, last + 1).map((w, i) => (
+          <span key={i} className={`tk-word${i < first ? ' tk-gone' : ''}`}>
+            {w}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+/**
  * A seat's table talk, in the same bubble style as a move: the last couple of messages stacked, newest at
  * the bottom nearest the face, and the typing dots under them while the next one is on its way.
  */
@@ -173,7 +209,9 @@ export function Thread({ talk }: { talk: Talk }) {
   return (
     <span className="thread" role="status" aria-live="polite">
       {items.map((m, i) =>
-        m ? (
+        m?.rolling ? (
+          <Ticker key={m.key} text={m.text} until={m.until} />
+        ) : m ? (
           <span key={m.key} className={`bubble bubble-grey bubble-react pop${emojiOnly(m.text) ? ' bubble-emoji' : ''}${i < items.length - 1 ? ' bubble-older' : ''}`}>
             {m.text}
           </span>

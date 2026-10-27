@@ -1910,3 +1910,74 @@ html.calm .bubble-typing i {
     visibility: hidden;
   }
 }
+
+/* A bot's line coming through its bubble a few words at a time. The bubble is sized by an invisible copy of the
+   widest few words, so it never changes size while the real words slide in at the right and out at the left. */
+.bubble-ticker {
+  position: relative;
+  display: inline-block;
+  max-width: inherit;
+  white-space: nowrap;
+  text-wrap: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+}
+
+.bubble-ticker .tk-size {
+  visibility: hidden;
+}
+
+.bubble-ticker .tk-words {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.bubble-ticker .tk-word {
+  flex: none;
+  max-width: 14em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: 0.28em;
+  max-width: 14em;
+  opacity: 1;
+  transition:
+    max-width 0.2s ease,
+    margin 0.2s ease,
+    opacity 0.16s ease;
+  animation: tk-in 0.16s ease-out;
+}
+
+.bubble-ticker .tk-word:first-child {
+  margin-left: 0;
+}
+
+/* The oldest word fades while its place closes up, so the rest slide left like a conveyor. */
+.bubble-ticker .tk-word.tk-gone {
+  max-width: 0;
+  margin-left: 0;
+  opacity: 0;
+}
+
+.bubble-ticker.bubble-leaving {
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+@keyframes tk-in {
+  from {
+    opacity: 0;
+    translate: 6px 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bubble-ticker .tk-word,
+  .bubble-ticker.bubble-leaving {
+    transition: none;
+    animation: none;
+  }
+}

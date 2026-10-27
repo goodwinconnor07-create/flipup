@@ -9,6 +9,8 @@ export interface Beat {
   slow: boolean;
 }
 
+const ONE_LINE_CHARS = 15;
+
 export const CHAT = {
   /** A line is never more than this many messages. */
   maxBeats: 3,
@@ -28,7 +30,20 @@ export const CHAT = {
   holdBase: 700,
   holdPerChar: 30,
   holdMin: 1200,
-  holdMax: 2400,
+  holdMax: 4200,
+  /** A line's words come through its bubble one at a time (see `ticker`): a base and a little per letter for each word. */
+  wordBase: 120,
+  wordPerChar: 32,
+  /** A little longer on the word that ends a phrase, longer still on one that ends a sentence. */
+  wordComma: 90,
+  wordStop: 190,
+  /** A long line speeds up so the words still finish within this long. */
+  tickerMax: 3400,
+  /** The last words stay up this long before the bubble goes. */
+  tail: 800,
+  /** Words on show at once, and the most letters they may take together (the narrowest seat on a phone fits about 15). */
+  windowWords: 3,
+  windowChars: ONE_LINE_CHARS,
   /** A person's quick message stays up this long. */
   quickHold: 2600,
   /** Another bot may start typing this long after the last message of whoever's talking lands. */
@@ -110,10 +125,15 @@ function withoutName(text: string): string {
  * add a break. With no name (a bot talking to the whole table) the name is left out of the line.
  */
 export function lineBeats(template: string, you?: string): Beat[] {
-  const beats = splitBeats(template)
-    .map((b) => ({ ...b, text: you === undefined ? withoutName(b.text) : b.text.replaceAll('{you}', you) }))
-    .filter((b) => b.text !== '');
-  return beats.length ? beats : [{ text: '…', slow: false }];
+  // A bot's whole line is one bubble now: its words come through one at a time, so nothing is cut into stubs.
+  const text = template
+    .split(/\|\|?/)
+    .map((piece) => (you === undefined ? withoutName(piece.trim()) : piece.trim().replaceAll('{you}', you)))
+    .filter(Boolean)
+    .join(' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return [{ text: text || '…', slow: false }];
 }
 
 /** A line as one piece of plain text (for anywhere that wants the words, not the timing). */
@@ -160,8 +180,55 @@ const size = (text: string) => [...text].length;
 export const typeMs = (text: string, followUp = false): number =>
   Math.round(Math.min(CHAT.typeMax, CHAT.typeBase + CHAT.typePerChar * size(text)) * (followUp ? CHAT.burst : 1));
 
-/** How long a message stays up once it has landed. */
-export const holdMs = (text: string): number => Math.round(Math.min(CHAT.holdMax, Math.max(CHAT.holdMin, CHAT.holdBase + CHAT.holdPerChar * size(text))));
+/** The words of a line, as they come through a bubble. */
+export const wordsOf = (text: string): string[] => text.split(/\s+/).filter(Boolean);
+
+/** How long one word takes: longer words, and the ones that end a phrase or a sentence, take longer. */
+const wordMs = (w: string): number =>
+  CHAT.wordBase + CHAT.wordPerChar * size(w) + (/[.!?…]["')\]]?$/.test(w) ? CHAT.wordStop : /[,;:—–-]$/.test(w) ? CHAT.wordComma : 0);
+
+/**
+ * The words of a line and when each one shows, counted from the moment the bubble lands (the first is at 0).
+ * A long line is sped up evenly so it finishes within `tickerMax`. `ms` is when the last word has shown.
+ */
+export function ticker(text: string): { words: string[]; at: number[]; ms: number } {
+  const words = wordsOf(text);
+  const raw = words.map(wordMs);
+  const total = raw.slice(0, -1).reduce((a, b) => a + b, 0);
+  const speed = total > CHAT.tickerMax ? CHAT.tickerMax / total : 1;
+  const at: number[] = [];
+  let t = 0;
+  raw.forEach((ms) => {
+    at.push(Math.round(t));
+    t += ms * speed;
+  });
+  return { words, at, ms: at.at(-1) ?? 0 };
+}
+
+/** Which words are on show when word `i` has just come in: the latest few that fit together in a seat's bubble. */
+export function windowAt(words: string[], i: number): [number, number] {
+  let first = i;
+  let chars = size(words[i] ?? '');
+  while (first > 0 && i - first + 1 < CHAT.windowWords && chars + 1 + size(words[first - 1]) <= CHAT.windowChars) {
+    first--;
+    chars += 1 + size(words[first]);
+  }
+  return [first, i];
+}
+
+/** The widest window a line ever shows, so its bubble can be as wide as that from the start and never change size. */
+export function widestWindow(words: string[]): string {
+  let best = '';
+  for (let i = 0; i < words.length; i++) {
+    const [a, b] = windowAt(words, i);
+    const text = words.slice(a, b + 1).join(' ');
+    if (size(text) > size(best)) best = text;
+  }
+  return best;
+}
+
+/** How long a message stays up once it has landed: its words coming through, then a moment on the last of them. */
+export const holdMs = (text: string): number => Math.round(Math.min(CHAT.holdMax, Math.max(CHAT.holdMin, ticker(text).ms + wordMs(wordsOf(text).at(-1) ?? '') + CHAT.tail)));
 
 /** The least a message of this size needs on screen to be read: a moment to notice it, then fast reading. */
 export const readMs = (text: string): number => Math.round(300 + (size(text) / 25) * 1000);
@@ -192,7 +259,7 @@ export function beatTimes(beats: Beat[]): { from: number; land: number }[] {
 export const spokenMs = (beats: Beat[]): number => beatTimes(beats).at(-1)?.land ?? 0;
 
 /** How long a bot should wait before it moves after saying this: the line, then a moment to read it. */
-export const sayAndReadMs = (beats: Beat[]): number => spokenMs(beats) + Math.max(CHAT.readTime, beats.length ? readMs(beats[beats.length - 1].text) : 0);
+export const sayAndReadMs = (beats: Beat[]): number => spokenMs(beats) + Math.max(CHAT.readTime, beats.length ? Math.min(CHAT.tickerMax, readMs(beats[beats.length - 1].text)) : 0);
 
 // ── What is still worth saying ──────────────────────────────────────────────────────────────
 
@@ -290,6 +357,8 @@ export interface Message {
   until: number;
   event: string;
   moment: string;
+  /** A bot's line: its words come through the bubble one at a time. A person's quick message is shown whole. */
+  rolling?: boolean;
 }
 
 /** What one seat shows: its messages, oldest first, and whether its dots are on. */
@@ -372,7 +441,7 @@ export class ChatLane {
       for (const [who, s] of this.scripts) {
         while (s.landed < s.steps.length && s.steps[s.landed].land <= now) {
           const step = s.steps[s.landed];
-          this.show(who, { key: `${s.say.key}#${s.landed}`, text: s.say.beats[s.landed].text, at: step.land, until: step.land + holdMs(s.say.beats[s.landed].text), event: s.say.event, moment: s.say.moment });
+          this.show(who, { key: `${s.say.key}#${s.landed}`, text: s.say.beats[s.landed].text, at: step.land, until: step.land + holdMs(s.say.beats[s.landed].text), event: s.say.event, moment: s.say.moment, rolling: true });
           s.landed++;
           moved = true;
         }

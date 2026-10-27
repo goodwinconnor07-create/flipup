@@ -72,7 +72,7 @@ test('replay a saved hand with the GTO Coach', async ({ page }) => {
     [record, report] as const,
   );
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
   await page.getByRole('button', { name: 'Replay hand 7' }).click();
 
@@ -134,7 +134,7 @@ test('a full ring of nine still fits on a phone', async ({ page }) => {
     localStorage.setItem('flipup.history', JSON.stringify([{ key: 'T1#9', heroId: 'p0', record: rec }]));
   }, nine);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
   await page.getByRole('button', { name: 'Replay hand 9' }).click();
   await page.getByRole('button', { name: /of \d+: .* raised to 60/ }).click();

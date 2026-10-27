@@ -24,7 +24,7 @@ test.skip('fresh Scroll scenarios give honest feedback and survive saving/reload
   await page.reload();
   // A restart always opens Home, even with persistent state.
   await expect(page.getByRole('tab', { name: 'Play' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Study bank/ }).click();
   await expect(page.getByText('A tricky decision', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Play again' }).first().click();

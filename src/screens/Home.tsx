@@ -11,9 +11,11 @@ import { TodayCard } from './HomeToday';
 import { DAILY_GOALS } from '../state/progress';
 import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
-import { ReviewTab, lastGameHands } from './HomeReview';
+import { lastGameHands } from './HomeReview';
+import { PartyTab } from './HomeParty';
+import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { CapIcon, ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
+import { CapIcon, ChevronIcon, FlameIcon, FlameOutlineIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 import { computeStats } from '../train/stats';
 
 function ago(at: number): string {
@@ -24,11 +26,11 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'learn' | 'review';
+type Tab = 'play' | 'learn' | 'party';
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
   { id: 'learn', label: 'Learn', Icon: CapIcon, title: 'Learn' },
-  { id: 'review', label: 'Review', Icon: HistoryIcon, title: 'Review' },
+  { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
 ];
 
 // Kept for the session, so coming back from a training screen lands on the same tab.
@@ -56,6 +58,7 @@ export function Home() {
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
   const [streak] = useState(loadStreak);
+  const [party] = useState(loadPartyRef);
   const training = useMemo(() => {
     const history = loadHistory();
     const reviews = loadSummaries();
@@ -93,7 +96,9 @@ export function Home() {
   // or the hands from your last game that the coach hasn't seen.
   const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
     ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
-    : last
+    : party
+      ? { title: 'Your party', sub: `Code ${party.code}`, cta: 'Open the party', run: () => navigate({ name: 'party' }), faces: [], tone: 'slate' }
+      : last
       ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate' }
       : training.lastGame.waiting > 0
         ? {
@@ -110,8 +115,8 @@ export function Home() {
   const subtitle =
     tab === 'learn'
       ? 'Solved hands and drills, graded as you go.'
-      : tab === 'review'
-        ? 'Your own hands, checked against GTO.'
+      : tab === 'party'
+        ? 'Mini game tournaments with your friends.'
         : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(training.gto, stats.tables, !!active)}`;
 
   return (
@@ -190,7 +195,7 @@ export function Home() {
               </>
             )}
             {tab === 'learn' && <LearnTab />}
-            {tab === 'review' && <ReviewTab />}
+            {tab === 'party' && <PartyTab />}
           </div>
         </div>
       </div>

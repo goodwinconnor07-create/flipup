@@ -152,23 +152,24 @@ export function canRaise(hand: Hand, seat: Seat): boolean {
 // ── Starting a hand ─────────────────────────────────────────────────────────
 
 /**
- * Rising blinds: when the clock has run out, both blinds double as the next hand is dealt (never mid-hand).
+ * Rising blinds: when the clock has run out (or the hand count is up, in a party round), both blinds double as the next hand is dealt (never mid-hand).
  * They stop at the host's "stop increasing at" big blind, if one is set (the last rise is cut short to land on it).
  * Returns true if they went up.
  */
 function raiseBlindsIfDue(game: Game, now: number): boolean {
   const minutes = game.settings.blindMinutes ?? 0;
-  if (!minutes) {
-    game.blindsRaiseAt = null;
-    return false;
-  }
+  const every = game.settings.blindHands ?? 0;
+  // By hands (party rounds): after every `every` hands dealt.
+  const byHands = every > 0 && (game.hands ?? 0) > 0 && (game.hands ?? 0) % every === 0;
+  let due = byHands;
+  if (!minutes) game.blindsRaiseAt = null;
   // The clock starts with the first hand.
-  if (game.blindsRaiseAt == null) {
+  else if (game.blindsRaiseAt == null) game.blindsRaiseAt = now + minutes * 60_000;
+  else if (now >= game.blindsRaiseAt) {
     game.blindsRaiseAt = now + minutes * 60_000;
-    return false;
+    due = true;
   }
-  if (now < game.blindsRaiseAt) return false;
-  game.blindsRaiseAt = now + minutes * 60_000;
+  if (!due) return false;
   const { smallBlind, bigBlind, blindCap } = game.settings;
   if (blindCap && bigBlind >= blindCap) return false;
   let nextBig = bigBlind * 2;

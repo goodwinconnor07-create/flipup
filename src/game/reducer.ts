@@ -89,6 +89,7 @@ export function validSettings(s: Settings): boolean {
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
     (s.variant === undefined || isVariant(s.variant)) &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
+    (s.blindHands === undefined || (int(s.blindHands) && s.blindHands >= 0 && s.blindHands <= 100)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
     int(s.turnSeconds) &&
     s.turnSeconds >= 0 &&
@@ -220,10 +221,20 @@ const ANSWER_AFTER = { min: 900, spread: 700 };
  * losers of an all-in sweat it out loud, big pots get a word, and sometimes another bot answers.
  * When someone speaks, the next deal waits a little longer so it can be read.
  */
+/** Party rounds: remember who ran out of chips on this hand. The one with fewer chips at the start goes out first. */
+function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
+  if (!game.party) return;
+  const out = game.busted ?? [];
+  const fresh = game.players.filter((p) => p.stack === 0 && !out.includes(p.id) && hand.seats.some((s) => s.playerId === p.id));
+  fresh.sort((a, b) => (hand.startStacks?.[a.id] ?? 0) - (hand.startStacks?.[b.id] ?? 0));
+  game.busted = [...out, ...fresh.map((p) => p.id)];
+}
+
 function afterHand(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   const result = hand.result!;
   game.readHand = hand.number;
+  noteBusts(game, hand);
   updateReads(game, hand);
   updateMinds(game, hand);
   const bb = game.settings.bigBlind;
@@ -512,6 +523,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const target = playerById(game, action.playerId);
       if (!target) return done(false);
       if (!host && target.deviceId !== ctx.deviceId) return fail('Only the host can remove players.');
+      if (game.party && game.status === 'playing' && !game.busted?.includes(target.id)) game.busted = [...(game.busted ?? []), target.id];
       const seat = seatFor(game.hand, target.id);
       const inHand = game.status === 'playing' && game.hand && !game.hand.result && seat && !seat.folded;
       if (inHand) {

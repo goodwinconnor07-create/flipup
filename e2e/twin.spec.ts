@@ -83,7 +83,7 @@ test('the twin report: what it cost you and the habits it copied', async ({ page
     localStorage.setItem('flipup.twingames', JSON.stringify([{ id: 't', at: Date.now(), bb: 10, knew: 120, hands }]));
   });
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: 'Your twin' }).click();
   await expect(page.getByText('Your twin took 200 chips from you over 6 hands.')).toBeVisible();
   await expect(page.getByText('Hand 3 · −120').first()).toBeVisible();
@@ -112,7 +112,7 @@ test('Insights counts the games you played against your twin', async ({ page }) 
     localStorage.setItem('flipup.twingames', JSON.stringify([{ id: 'b', at: Date.now(), bb: 10, knew: 90, hands: [{ key: 'b#1', number: 1, net: -30 }] }]));
   });
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: 'Insights' }).click();
   await expect(page.getByText('Against your twin')).toBeVisible();
   await expect(page.getByText('1 of 2')).toBeVisible();

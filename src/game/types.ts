@@ -17,6 +17,8 @@ export interface Settings {
   rebuys: boolean;
   /** Minutes between blind increases. 0 (or missing) = the blinds never go up. */
   blindMinutes?: number;
+  /** Blinds double every this many hands (party tournaments). Works alongside `blindMinutes`; 0 or missing = off. */
+  blindHands?: number;
   /** Rising blinds stop at this big blind (0 or missing: they keep doubling). */
   blindCap?: number;
   /** Online tables: a busted player (no chips) sees every hole card. */
@@ -350,6 +352,10 @@ export interface Game {
   card?: CardScene;
   /** Ghost Hold'em: chips the ghost is holding, which go into the next hand's pot. */
   ghostPot?: number;
+  /** This table is one round of a party tournament (see party.ts). Public. */
+  party?: { code: string; round: number; total: number };
+  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. */
+  busted?: string[];
 }
 
 export type Action =

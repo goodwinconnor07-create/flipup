@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { bestHand, cardName, equity, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
-import { dispatch, openSheet, useApp } from '../state/store';
+import { closeTable, dispatch, navigate, openSheet, useApp } from '../state/store';
 import { toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
@@ -8,6 +8,8 @@ import { MenuIcon } from '../ui/Icons';
 import { playSound } from '../ui/sound';
 import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
+import { PartyPanel } from './Party';
+import { forgetParty } from '../state/party';
 import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
 import { Lobby } from './Lobby';
@@ -73,7 +75,21 @@ export function Table() {
         ) : (
           <Felt game={game} />
         ))}
-      {game.status === 'ended' && <Final game={game} />}
+      {game.status === 'ended' &&
+        (game.party ? (
+          <div className="screen-body">
+            <PartyPanel
+              code={game.party.code}
+              embedded
+              onGone={() => {
+                forgetParty();
+                closeTable();
+              }}
+            />
+          </div>
+        ) : (
+          <Final game={game} />
+        ))}
     </div>
   );
 }
@@ -143,7 +159,12 @@ function TableBar({ game }: { game: Game | null }) {
           </>
         )}
       </div>
-      {online && game?.code && (
+      {game?.party && (
+        <button type="button" className="code-chip party-pill press" aria-label="Party standings" onClick={() => navigate({ name: 'party' })}>
+          {variantInfo(game.settings.variant).emoji} {game.party.round + 1}/{game.party.total}
+        </button>
+      )}
+      {online && game?.code && !game?.party && (
         <button
           type="button"
           className="code-chip press"

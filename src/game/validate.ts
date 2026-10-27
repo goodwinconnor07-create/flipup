@@ -18,7 +18,7 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const out: Partial<Settings> = {};
-  for (const key of ['startingStack', 'smallBlind', 'bigBlind', 'turnSeconds', 'blindMinutes', 'blindCap'] as const) {
+  for (const key of ['startingStack', 'smallBlind', 'bigBlind', 'turnSeconds', 'blindMinutes', 'blindCap', 'blindHands'] as const) {
     if (r[key] === undefined) continue;
     if (!isInt(r[key])) return null;
     out[key] = r[key];

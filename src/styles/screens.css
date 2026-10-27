@@ -1473,3 +1473,180 @@ html[data-theme='dark'] .btn-dark {
   font-weight: 600;
   color: var(--ink-2);
 }
+
+/* ── Pick your bots: every bot, grouped by how it plays ───────────────────────────────────── */
+
+.picker-top {
+  position: sticky;
+  /* Just under the screen's own top bar, which sticks too. */
+  top: calc(var(--safe-top) + 71px);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 -16px;
+  padding: 4px 16px 8px;
+  background: var(--bg);
+  box-shadow: 0 1px 0 var(--line);
+}
+
+.picker-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.picker-count .btn {
+  width: auto;
+  min-height: 32px;
+  padding: 0 4px;
+}
+
+.picker-chosen {
+  display: flex;
+  gap: 4px;
+  font-size: 26px;
+  line-height: 1.1;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.picker-search {
+  width: 100%;
+}
+
+.picker-jump {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.picker-jump .chip-btn {
+  flex: none;
+  white-space: nowrap;
+}
+
+.picker-body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 16px 0 56px;
+}
+
+/* Sections draw only when they're near the screen, so six hundred faces stay light to scroll. */
+.picker-group {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+  scroll-margin-top: calc(var(--safe-top) + 230px);
+}
+
+.picker-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.picker-blurb {
+  margin: 2px 0 12px;
+  font-size: var(--fs-small);
+}
+
+.picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.picker-bot {
+  /* Keep a bot brought into view (by keyboard, say) clear of the sticky header above and the Save bar below. */
+  scroll-margin: calc(var(--safe-top) + 250px) 0 120px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 92px;
+  padding: 12px 4px 10px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  font: inherit;
+  color: var(--ink);
+}
+
+.picker-bot.on {
+  background: var(--blue-bg);
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+
+.picker-face {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.picker-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.picker-tick {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--r-pill);
+  background: var(--blue);
+  color: var(--on-color);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.picker-none {
+  text-align: center;
+  padding: 32px 0;
+}
+
+/* The chosen bots on the setup screen. */
+.picked-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+}
+
+.picked-row .picked-faces {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.picked-row svg {
+  flex: none;
+  color: var(--ink-3);
+}
+
+.picked-row .picked-faces > span {
+  font-size: 24px;
+  line-height: 1.2;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}

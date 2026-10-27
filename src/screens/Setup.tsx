@@ -1,9 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BLIND_CAP_CHOICES, BLIND_LEVELS, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
 import { BackBar, Choice, chips, Toggle } from '../ui/components';
-import { MinusIcon, PlusIcon } from '../ui/Icons';
+import { ChevronIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { BOTS } from '../game/botStyles';
+import { BotPicker } from './BotPicker';
+
+const RANDOM = 'Random table (recommended)';
+const PICK = 'Pick your bots';
 
 /** The longest wait between blind rises on the slider (0 is never). */
 export const BLIND_MINUTE_MAX = 20;
@@ -115,54 +120,97 @@ export function Setup({ mode }: { mode: 'online' | 'local' }) {
   const [settings, setSettings] = useState<Settings>(() => {
     const s = loadSettings();
     // Old saved settings that don't fit today's choices fall back to the defaults' shape.
-    const fits = levelsFor(s.startingStack).some(([sb, bb]) => sb === s.smallBlind && bb === s.bigBlind) && STACK_CHOICES.includes(s.startingStack);
+    const fits =
+      levelsFor(s.startingStack).some(([sb, bb]) => sb === s.smallBlind && bb === s.bigBlind) && STACK_CHOICES.includes(s.startingStack);
     const base = fits ? s : { ...s, startingStack: 1000, smallBlind: 5, bigBlind: 10 };
     // Against bots nobody's waiting on you, so there's no clock.
     return mode === 'local' ? { ...base, turnSeconds: 0 } : { ...base, turnSeconds: base.turnSeconds || DEFAULT_SETTINGS.turnSeconds };
   });
   const [bots, setBots] = useState(mode === 'local' ? 4 : 0);
+  // Against the bots you can leave the table to chance, or choose exactly who sits down.
+  const [how, setHow] = useState<string>(RANDOM);
+  const [picked, setPicked] = useState<string[]>([]);
+  const [picking, setPicking] = useState(false);
   const busy = useApp((s) => s.busy);
   const minBots = mode === 'local' ? 1 : 0;
+  // Each of the two screens starts at its top, not wherever the long list left the page.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [picking]);
+  const choosing = mode === 'local' && how === PICK;
+  const faces = new Map(BOTS.map((b) => [b.name, b.emoji]));
+
+  if (picking) {
+    return (
+      <BotPicker
+        picked={picked}
+        onBack={() => setPicking(false)}
+        onSave={(names) => {
+          setPicked(names);
+          setPicking(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="screen">
       <BackBar title={mode === 'online' ? 'Host a table' : 'Play the bots'} />
       <div className="screen-body">
         <h1 className="h1">{mode === 'online' ? 'Set up the table' : 'You vs the bots'}</h1>
-        <div className="bots-row">
-          <div>
-            <b>Bots</b>
-            <small className="muted">{mode === 'online' ? 'Fill seats your friends leave empty' : 'Computer players at your table'}</small>
+        {mode === 'local' && <Choice label="Who plays" value={how} options={[RANDOM, PICK]} onChange={setHow} columns={1} />}
+        {choosing ? (
+          <button type="button" className="picked-row press" onClick={() => setPicking(true)}>
+            <span className="picked-faces">
+              <b>{picked.length === 0 ? 'Choose your bots' : `${picked.length} ${picked.length === 1 ? 'bot' : 'bots'} picked`}</b>
+              <span aria-hidden>{picked.length === 0 ? '🤖' : picked.map((n) => faces.get(n)).join(' ')}</span>
+              <small className="muted">{picked.length === 0 ? 'Browse every bot by playstyle' : picked.join(', ')}</small>
+            </span>
+            <ChevronIcon width={20} height={20} aria-hidden />
+          </button>
+        ) : (
+          <div className="bots-row">
+            <div>
+              <b>Bots</b>
+              <small className="muted">
+                {mode === 'online' ? 'Fill seats your friends leave empty' : 'Computer players at your table'}
+              </small>
+            </div>
+            <div className="mini-stepper">
+              <button
+                type="button"
+                className="icon-btn press"
+                aria-label="One less bot"
+                disabled={bots <= minBots}
+                onClick={() => setBots(bots - 1)}
+              >
+                <MinusIcon />
+              </button>
+              <b className="num" aria-live="polite" aria-label={`${bots} bots`}>
+                {bots}
+              </b>
+              <button
+                type="button"
+                className="icon-btn press"
+                aria-label="One more bot"
+                disabled={bots >= MAX_SEATS - 1}
+                onClick={() => setBots(bots + 1)}
+              >
+                <PlusIcon />
+              </button>
+            </div>
           </div>
-          <div className="mini-stepper">
-            <button
-              type="button"
-              className="icon-btn press"
-              aria-label="One less bot"
-              disabled={bots <= minBots}
-              onClick={() => setBots(bots - 1)}
-            >
-              <MinusIcon />
-            </button>
-            <b className="num" aria-live="polite" aria-label={`${bots} bots`}>
-              {bots}
-            </b>
-            <button
-              type="button"
-              className="icon-btn press"
-              aria-label="One more bot"
-              disabled={bots >= MAX_SEATS - 1}
-              onClick={() => setBots(bots + 1)}
-            >
-              <PlusIcon />
-            </button>
-          </div>
-        </div>
+        )}
         <SettingsFields settings={settings} onChange={setSettings} timer={mode === 'online'} />
       </div>
       <div className="screen-foot">
-        <button type="button" className="btn btn-xl btn-dark" disabled={!!busy} onClick={() => void openTable(mode, settings, bots)}>
-          {busy ? 'Opening…' : mode === 'online' ? 'Open the table' : 'Sit down'}
+        <button
+          type="button"
+          className="btn btn-xl btn-dark"
+          disabled={!!busy || (choosing && picked.length === 0)}
+          onClick={() => void (choosing ? openTable(mode, settings, picked.length, picked) : openTable(mode, settings, bots))}
+        >
+          {busy ? 'Opening…' : mode === 'online' ? 'Open the table' : choosing && picked.length === 0 ? 'Pick your bots first' : 'Sit down'}
         </button>
       </div>
     </div>

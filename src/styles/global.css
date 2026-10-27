@@ -973,7 +973,7 @@ body:has(.sheet-backdrop) .toasts {
   }
 }
 
-/* ── View transitions: a change of screen (see App) or of a list (see StudyBank) fades and glides in 200ms or less (under 300ms
+/* ── View transitions: a change to a list (see StudyBank) fades and glides in 200ms or less (under 300ms
    with the browser's own set-up).
    The page underneath stays tappable, and Reduce Motion never starts one. `html.vt` is on while one runs. */
 ::view-transition {
@@ -988,17 +988,6 @@ body:has(.sheet-backdrop) .toasts {
 ::view-transition-group(*) {
   animation-duration: 0.2s;
   animation-timing-function: cubic-bezier(0.2, 0.9, 0.3, 1);
-}
-
-/* The new screen's own fade-in would stack on the cross-fade. */
-html.vt .screen {
-  animation: none;
-}
-
-/* Elements that are on both screens glide from one to the other: your picture on Home becomes the one on your profile. */
-html.vt .avatar-btn,
-html.vt .hero-pic .avatar-button {
-  view-transition-name: me;
 }
 
 /* Rows in a list keep their own place while it changes, so the others slide up when one goes. */

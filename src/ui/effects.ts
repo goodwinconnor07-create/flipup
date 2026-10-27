@@ -291,3 +291,39 @@ export function colourWipe(event: { currentTarget: Element; clientX: number; cli
   // Safety net in case the animation never reports back.
   setTimeout(swap, WIPE_GROW_MS + 200);
 }
+
+/**
+ * Stops a scroll or a swipe from pressing a button. A click is dropped when the finger moved more than a few pixels
+ * between touching down and lifting, when the page scrolled while it was down, or when it touched down on a page
+ * that was still moving (a tap to stop a fling is not a press). Clicks from the keyboard have no touch and pass.
+ */
+export function installTapGuard(): void {
+  let down: { x: number; y: number; t: number; moving: boolean; scrolled: boolean } | null = null;
+  let lastScroll = 0;
+  addEventListener('scroll', () => {
+    lastScroll = performance.now();
+    if (down) down.scrolled = true;
+  }, { capture: true, passive: true });
+  addEventListener(
+    'pointerdown',
+    (e) => {
+      const now = performance.now();
+      down = { x: e.clientX, y: e.clientY, t: now, moving: now - lastScroll < 120, scrolled: false };
+    },
+    { capture: true, passive: true },
+  );
+  addEventListener(
+    'click',
+    (e) => {
+      const d = down;
+      down = null;
+      if (!d || e.detail === 0) return;
+      const drag = Math.hypot(e.clientX - d.x, e.clientY - d.y) > 10;
+      if (drag || d.scrolled || d.moving) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
+    },
+    true,
+  );
+}

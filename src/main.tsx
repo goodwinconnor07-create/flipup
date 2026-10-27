@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { boot } from './state/store';
 import { ErrorBoundary } from './ui/ErrorBoundary';
-import { installPressEffects } from './ui/effects';
+import { installPressEffects, installTapGuard } from './ui/effects';
 import { installSoundUnlock } from './ui/sound';
 import { installDesktopScale } from './ui/useDesktop';
 import './styles/global.css';
@@ -16,6 +16,7 @@ import './styles/scroll.css';
 
 boot();
 installPressEffects();
+installTapGuard();
 installSoundUnlock();
 installDesktopScale();
 

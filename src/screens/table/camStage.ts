@@ -78,6 +78,16 @@ export class CamStage {
   ) {
     this.reduced = opts.reduced;
     this.renderer = new THREE.WebGLRenderer({ canvas: el, antialias: true, alpha: false, powerPreference: 'low-power' });
+    // Drawn on the CPU (no graphics chip, or it's switched off), a 3D room every frame would slow the whole table
+    // down, timers and all: no cam then.
+    const gl = this.renderer.getContext();
+    const info = gl.getExtension('WEBGL_debug_renderer_info');
+    const name = String(info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER));
+    if (/swiftshader|llvmpipe|software|basic render/i.test(name)) {
+      this.renderer.dispose();
+      this.renderer.forceContextLoss();
+      throw new Error(`No live cam on a software renderer (${name})`);
+    }
     // Sharp on any screen, up to 3x, without drawing more pixels than that.
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 3));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;

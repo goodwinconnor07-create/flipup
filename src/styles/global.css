@@ -107,6 +107,12 @@
   --blue: #007aff;
   --blue-lo: #0062d6;
   --blue-bg: #e5f0ff;
+  /* The live cam is a dark film in either mode (table/LiveCam.tsx). */
+  --cam-bg: #0d0a08;
+  --cam-edge: rgba(255, 255, 255, 0.18);
+  --cam-chip: rgba(0, 0, 0, 0.45);
+  --cam-pill: rgba(120, 120, 128, 0.55);
+  --cam-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   --blue-ink: #0062d6;
   --red: #ff3b30;
   --red-lo: #d70015;

@@ -3,7 +3,7 @@ import type { Game, Player, Seat } from '../../game';
 
 /**
  * A prototype of bots drawn as characters instead of emoji, so their faces can move: eyes that follow the
- * action, brows, a mouth and a hand. Only one rig so far (the frog). Everything here is read from what the
+ * action, brows, a mouth and a hand. One figure so far, dressed per bot. Everything here is read from what the
  * phone can already see (whose turn it is, the moves on the table), so the faces give nothing away.
  */
 
@@ -11,9 +11,16 @@ export type Pose = 'neutral' | 'leanIn' | 'leanBack' | 'lookAway' | 'tap' | 'dou
 /** Where the eyes point: at another seat in the row, or down at the person holding this phone. */
 export type Gaze = 'left' | 'right' | 'down' | null;
 
-/** Bots that have a rig, by the emoji they'd otherwise wear. */
-const RIGS: Record<string, { skin: string; shade: string }> = {
-  '🐸': { skin: 'var(--rig-frog)', shade: 'var(--rig-frog-shade)' },
+/** Bots that have a rig, by the emoji they'd otherwise wear. One shared figure, dressed differently. */
+interface Look {
+  skin: string;
+  shade: string;
+  hair: string;
+  shirt: string;
+}
+const RIGS: Record<string, Look> = {
+  '🤠': { skin: 'var(--rig-skin-1)', shade: 'var(--rig-shade-1)', hair: 'var(--rig-hair-1)', shirt: 'var(--rig-shirt-1)' },
+  '😎': { skin: 'var(--rig-skin-2)', shade: 'var(--rig-shade-2)', hair: 'var(--rig-hair-2)', shirt: 'var(--rig-shirt-2)' },
 };
 
 export const hasRig = (p: Player) => p.bot && p.emoji in RIGS;
@@ -67,40 +74,53 @@ export function usePose(game: Game, player: Player, seat: Seat | undefined, thin
   return flash?.pose ?? 'neutral';
 }
 
-export function BotFace({ emoji, pose, gaze, size = 50 }: { emoji: string; pose: Pose; gaze: Gaze; size?: number }) {
+export function BotFace({ emoji, pose, gaze, size = 76 }: { emoji: string; pose: Pose; gaze: Gaze; size?: number }) {
   const rig = RIGS[emoji];
   if (!rig) return null;
   // Looking away wins over following the action.
   const look = pose === 'lookAway' ? '' : gaze ? ` gaze-${gaze}` : '';
+  const vars = { width: size, height: size, ['--skin' as string]: rig.skin, ['--shade' as string]: rig.shade, ['--hair' as string]: rig.hair, ['--shirt' as string]: rig.shirt };
+  // Vector art, so it stays sharp at any size or screen density.
   return (
-    <span
-      className={`avatar rig rig-${pose}${look}`}
-      style={{ width: size, height: size, ['--skin' as string]: rig.skin, ['--shade' as string]: rig.shade }}
-      aria-hidden
-    >
+    <span className={`avatar rig rig-${pose}${look}`} style={vars} aria-hidden>
       <svg viewBox="0 0 100 100" width="100%" height="100%">
-        <ellipse className="rig-body" cx="50" cy="98" rx="30" ry="14" fill="var(--shade)" />
+        <g className="rig-torso">
+          <path d="M10 102 C10 82 26 72 50 72 C74 72 90 82 90 102 Z" fill="var(--shirt)" />
+          <path d="M40 72 L50 86 L60 72 Z" fill="var(--shade)" />
+          <path d="M40 72 L46 80 L50 86 M60 72 L54 80 L50 86" fill="none" stroke="var(--rig-fold)" strokeWidth="1.2" />
+          <path d="M26 84 Q30 92 28 102 M74 84 Q70 92 72 102" fill="none" stroke="var(--rig-fold)" strokeWidth="1.2" />
+        </g>
+        <rect x="44" y="56" width="12" height="18" rx="5" fill="var(--shade)" />
         <g className="rig-head">
-          <circle cx="34" cy="30" r="14" fill="var(--skin)" />
-          <circle cx="66" cy="30" r="14" fill="var(--skin)" />
-          <ellipse cx="50" cy="58" rx="38" ry="28" fill="var(--skin)" />
-          {[34, 66].map((x) => (
+          <ellipse cx="31" cy="44" rx="4" ry="6" fill="var(--shade)" />
+          <ellipse cx="69" cy="44" rx="4" ry="6" fill="var(--shade)" />
+          <ellipse cx="50" cy="42" rx="19" ry="22" fill="var(--skin)" />
+          <path d="M30.5 42 C28 20 39 13 50 13 C62 13 73 20 69.5 42 C67 31 59 27 50 28 C41 27 33 31 30.5 42 Z" fill="var(--hair)" />
+          {[42, 58].map((x) => (
             <g key={x} className="rig-eye">
               <g className="rig-lid">
-                <circle cx={x} cy="29" r="9.5" fill="var(--rig-eye)" />
-                <circle className="rig-pupil" cx={x} cy="30" r="4.5" fill="var(--rig-pupil)" />
+                <ellipse cx={x} cy="44" rx="4.6" ry="3.4" fill="var(--rig-eye)" />
+                <g className="rig-pupil">
+                  <circle cx={x} cy="44.2" r="2.5" fill="var(--rig-iris)" />
+                  <circle cx={x} cy="44.2" r="1.2" fill="var(--rig-pupil)" />
+                  <circle cx={x + 0.8} cy="43.4" r="0.55" fill="var(--rig-eye)" />
+                </g>
               </g>
             </g>
           ))}
-          <path className="rig-brow rig-brow-l" d="M25 13 Q34 9 42 13" />
-          <path className="rig-brow rig-brow-r" d="M58 13 Q66 9 75 13" />
-          <circle cx="24" cy="62" r="5" fill="var(--rig-cheek)" />
-          <circle cx="76" cy="62" r="5" fill="var(--rig-cheek)" />
-          <path className="rig-mouth rig-smile" d="M36 62 Q50 73 64 62" />
-          <path className="rig-mouth rig-flat" d="M39 66 L61 66" />
-          <ellipse className="rig-mouth rig-o" cx="50" cy="67" rx="4" ry="5" fill="var(--rig-ink)" />
+          <path className="rig-brow rig-brow-l" d="M37 38 Q41.5 35.5 46 37.5" />
+          <path className="rig-brow rig-brow-r" d="M54 37.5 Q58.5 35.5 63 38" />
+          <path d="M50 45 Q48.3 50.5 51 51.2" fill="none" stroke="var(--shade)" strokeWidth="1.3" strokeLinecap="round" />
+          <circle cx="38" cy="52" r="3.2" fill="var(--rig-cheek)" />
+          <circle cx="62" cy="52" r="3.2" fill="var(--rig-cheek)" />
+          <path className="rig-mouth rig-smile" d="M44 56 Q50 60.5 56 56" />
+          <path className="rig-mouth rig-flat" d="M45 57.5 L55 57.5" />
+          <ellipse className="rig-mouth rig-o" cx="50" cy="58" rx="2.2" ry="2.8" fill="var(--rig-lip)" />
         </g>
-        <circle className="rig-hand" cx="80" cy="94" r="8" fill="var(--skin)" stroke="var(--shade)" strokeWidth="2" />
+        <g className="rig-hand">
+          <ellipse cx="80" cy="95" rx="7" ry="5" fill="var(--skin)" stroke="var(--shade)" strokeWidth="1" />
+          <path d="M76 93 L76 97 M79 92.5 L79 97.5 M82 93 L82 97" stroke="var(--shade)" strokeWidth="0.8" />
+        </g>
       </svg>
     </span>
   );

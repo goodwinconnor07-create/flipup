@@ -237,6 +237,16 @@
     font-size: 48px !important;
   }
 
+  .pod-pic.has-rig {
+    width: 84px;
+    height: 82px;
+  }
+
+  .pod .avatar.rig {
+    width: 84px !important;
+    height: 84px !important;
+  }
+
   .pod-name {
     grid-area: name;
     align-self: end;

@@ -5,7 +5,6 @@ import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/compo
 import { useDesktop } from '../../ui/useDesktop';
 import { loadBigBlinds, saveBigBlinds } from '../../state/persist';
 import { Bubble, moveSig, ReactMenu, Thread } from './Bubbles';
-import { BotFace, hasRig, usePose, type Gaze } from './BotFace';
 
 /** Everyone else, in seat order starting on this phone's left, so play moves left to right. */
 export function othersInOrder(game: Game, me: Player | undefined): Player[] {
@@ -139,7 +138,6 @@ export function Pod({
   ring,
   n,
   away,
-  gaze = null,
   self = false,
 }: {
   game: Game;
@@ -155,8 +153,6 @@ export function Pod({
   ring: { x: number; y: number };
   n: number;
   away: boolean;
-  /** Where a drawn bot's eyes point: at whoever is on turn. */
-  gaze?: Gaze;
   /** My own seat, at the bottom of the table on a computer. */
   self?: boolean;
 }) {
@@ -171,7 +167,6 @@ export function Pod({
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   // A bot on the clock shows typing dots until it speaks or moves.
   const thinking = turn && player.bot && !hand?.runout;
-  const pose = usePose(game, player, seat, thinking);
   // The seats at each end of the row keep their bubble from hanging off the screen.
   const desk = useDesktop();
   const edge = n > 1 && !self && !desk ? (slot === 0 ? ' edge-l' : slot === n - 1 ? ' edge-r' : '') : '';
@@ -192,7 +187,7 @@ export function Pod({
       }}
     >
       <span className="pod-pic">
-        {hasRig(player) ? <BotFace emoji={player.emoji} pose={pose} gaze={gaze} /> : <Avatar emoji={player.emoji} size={50} />}
+        <Avatar emoji={player.emoji} size={50} />
         {player.ai && <span className="ai-chip" aria-hidden>AI</span>}
         {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}
         <PositionChips pos={positionOf(hand, player.id)} />

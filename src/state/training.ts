@@ -126,6 +126,11 @@ export function captureFinishedHand(game: Game | null, deviceId: string, full: G
   if (!me) return;
   const seat = hand.seats.find((s) => s.playerId === me.id);
   if (!seat || seat.cards.length !== 2) return;
+  // Hold'em variants still count for the daily streak, but their hands aren't plain Hold'em, so they stay out of the hand history and twins.
+  if ((game.settings.variant ?? 'holdem') !== 'holdem') {
+    markPlayedToday();
+    return;
+  }
   const key = handKey(game.id, hand.number);
   if (captured.has(key)) return;
   const record = handRecord(game, hand, Date.now());

@@ -13,6 +13,8 @@ import {
   canDeal,
   cardsText,
   dealNextStreet,
+  discardCard,
+  endDiscards,
   foldOutOfTurn,
   makeMove,
   MAX_SEATS,
@@ -26,6 +28,7 @@ import {
   TIMING,
 } from './holdem';
 import { cryptoRng, newId } from './ids';
+import { botView, isVariant } from './variants';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
@@ -80,6 +83,7 @@ export function validSettings(s: Settings): boolean {
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
+    (s.variant === undefined || isVariant(s.variant)) &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
     int(s.turnSeconds) &&
@@ -585,6 +589,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return done();
     }
 
+    case 'discard': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = discardCard(game, me.id, action.card, ctx);
+      return error ? fail(error) : done();
+    }
+
     case 'next': {
       const hand = game.hand;
       if (!me || game.status !== 'playing') return done(false);
@@ -721,6 +733,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
           const p = playerById(game, s.playerId);
           if (p) p.stack += s.total;
         }
+        // The ghost keeps what it was holding.
+        if (hand.carry) game.ghostPot = (game.ghostPot ?? 0) + hand.carry;
         game.hand = null;
       }
       game.players = game.players.filter((p) => !p.leaving);
@@ -778,6 +792,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (hand && !hand.result) {
     if (!due(hand.actAt)) return false;
+    // Crazy Pineapple: time's up for throwing a card away.
+    if (hand.discarding) {
+      endDiscards(game, ctx);
+      return true;
+    }
     if (hand.nextStreetAt != null) {
       dealNextStreet(game, ctx);
       return true;
@@ -821,14 +840,16 @@ function tick(game: Game, ctx: ActionContext): boolean {
       // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.
       const bigBet =
         hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
-      const thought = decide(game, hand, seat, ctx.rng);
+      // In a Hold'em variant it sees the hand as plain Hold'em (see botView).
+      const view = botView(game, hand, seat);
+      const thought = decide(view.game, view.hand, view.seat, ctx.rng);
       const choice = thought.move;
       const fast = botsOnly(game);
       // It has already taken a moment to look; the rest of its thinking time depends on how hard
       // this one is (a snap fold, a long tank over a big call).
       let wait = fast ? 0 : Math.max(0, thought.thinkMs - TIMING.botMin);
       // Sometimes it says what it's thinking first, then moves a moment later.
-      const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
+      const event = thinkingEvent(view.game, view.hand, choice, thought.bucket, bigBet);
       // What it says isn't always about the move it's about to make, or the line would give the move away.
       const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
       // (With every person out of the hand the bots hurry, and nobody has time to read what they think.)

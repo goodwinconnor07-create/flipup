@@ -5,6 +5,7 @@ export * from './evaluate';
 export * from './equity';
 export * from './types';
 export * from './holdem';
+export * from './variants';
 export * from './selectors';
 export * from './bots';
 export * from './judge';

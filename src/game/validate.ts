@@ -3,6 +3,8 @@
 import { isEmoji } from './emoji';
 import { isCode } from './ids';
 import { isReactionId } from './reactions';
+import { isCard } from './cards';
+import { isVariant } from './variants';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
 
@@ -24,6 +26,10 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (r.rebuys !== undefined) {
     if (typeof r.rebuys !== 'boolean') return null;
     out.rebuys = r.rebuys;
+  }
+  if (r.variant !== undefined) {
+    if (!isVariant(r.variant)) return null;
+    out.variant = r.variant;
   }
   if (r.showToBusted !== undefined) {
     if (typeof r.showToBusted !== 'boolean') return null;
@@ -67,6 +73,8 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) } : null;
     case 'show':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
+    case 'discard':
+      return isInt(a.hand) && isCard(a.card) ? { type: 'discard', hand: a.hand, card: a.card } : null;
     case 'react':
       return isReactionId(a.id) ? { type: 'react', id: a.id } : null;
     case 'sitOut':

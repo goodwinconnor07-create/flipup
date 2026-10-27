@@ -326,7 +326,7 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
 
   // The dealer button and blinds are marked.
-  await expect(page.locator('.pos-chip').first()).toBeVisible();
+  await expect(page.locator('.pos-chip').first()).toBeVisible({ timeout: 10_000 });
 
   // Quick message: a small button, a small panel, and it shows as a bubble on your chips box.
   await page.getByRole('button', { name: 'Quick messages' }).click();

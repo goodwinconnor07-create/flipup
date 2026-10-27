@@ -176,7 +176,7 @@ function Quiz({ topic, qs, onAgain, onDone }: { topic: TopicId | 'mixed'; qs: Qu
         <div className="odds-table">
           {q.hero && <Hand label="You" cards={q.hero} />}
           {q.villain && <Hand label="Them" cards={q.villain} />}
-          {q.board && <Hand label="Board" cards={q.board} />}
+          {q.board && <Hand label={['Flop', 'Turn', 'River'][q.board.length - 3] ?? 'Board'} cards={q.board} />}
         </div>
       )}
       {q.facts && (

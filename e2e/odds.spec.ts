@@ -25,4 +25,11 @@ test('odds and outs: read a formula, answer a round, see the working and the sco
   await shot(page, 'odds-score');
   await page.getByRole('button', { name: 'All topics' }).click();
   await expect(page.getByText(/right/).first()).toBeVisible();
+
+  // Every question is set in a hand, even the pure maths ones.
+  await page.getByRole('button', { name: /Pot odds/ }).click();
+  await page.getByRole('button', { name: /Start the quiz/ }).click();
+  await expect(page.locator('.odds-table .pcard')).toHaveCount(7);
+  await expect(page.getByText('River', { exact: true })).toBeVisible();
+  await shot(page, 'odds-potodds');
 });

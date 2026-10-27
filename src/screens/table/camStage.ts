@@ -53,7 +53,8 @@ export class CamStage {
   private disposables: { dispose(): void }[] = [];
   private frame = 0;
   private running = false;
-  private clock = new THREE.Clock(false);
+  /** When the last frame was drawn (ms). */
+  private last = 0;
   /** Seconds since the shot started, and since the move. */
   private t = 0;
   private moveT = 0;
@@ -451,10 +452,11 @@ export class CamStage {
     if (this.running) return;
     this.running = true;
     if (this.reduced) return this.draw();
-    this.clock.start();
-    const loop = () => {
+    this.last = performance.now();
+    const loop = (at: number) => {
       if (!this.running) return;
-      const dt = Math.min(0.05, this.clock.getDelta());
+      const dt = Math.min(0.05, Math.max(0, at - this.last) / 1000);
+      this.last = at;
       this.t += dt;
       this.moveT += dt;
       this.pose();
@@ -466,7 +468,6 @@ export class CamStage {
 
   stop() {
     this.running = false;
-    this.clock.stop();
     cancelAnimationFrame(this.frame);
   }
 

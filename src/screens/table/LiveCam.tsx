@@ -65,23 +65,43 @@ export function LiveCam({ game }: { game: Game }) {
   const shown = last.current;
   const player = shown ? game.players.find((x) => x.id === shown.id) : undefined;
 
-  // three.js is loaded with the table, in its own file, so nothing else waits for it.
+  // three.js is in its own file, loaded the first time a bot is on the clock, when the phone has a moment to
+  // spare: opening the table and the first deal never wait for it. The first shot may come a moment late.
+  const wanted = useRef(false);
+  if (shot) wanted.current = true;
+  const want = wanted.current;
   useEffect(() => {
+    if (!want) return;
     let alive = true;
-    import('./camStage')
-      .then(({ CamStage }) => {
-        if (!alive || !canvas.current) return;
-        stage.current = new CamStage(canvas.current, { reduced: reducedMotion() });
-        setReady(true);
-      })
-      // No WebGL (or it failed): the table plays on without a cam.
-      .catch(() => {});
+    const load = () =>
+      import('./camStage')
+        .then(({ CamStage }) => {
+          if (!alive || !canvas.current) return;
+          stage.current = new CamStage(canvas.current, { reduced: reducedMotion() });
+          setReady(true);
+        })
+        // No WebGL, or it's drawn without a graphics chip: the table plays on without a cam.
+        .catch(() => {});
+    if (typeof requestIdleCallback === 'function') {
+      const idle = requestIdleCallback(load, { timeout: 1500 });
+      return () => {
+        alive = false;
+        cancelIdleCallback(idle);
+      };
+    }
+    const t = setTimeout(load, 200);
     return () => {
       alive = false;
+      clearTimeout(t);
+    };
+  }, [want]);
+  useEffect(
+    () => () => {
       stage.current?.dispose();
       stage.current = null;
-    };
-  }, []);
+    },
+    [],
+  );
 
   const s = stage.current;
   const emoji = player?.emoji;

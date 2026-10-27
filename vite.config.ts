@@ -7,7 +7,4 @@ import { cloudflare } from '@cloudflare/vite-plugin';
 export default defineConfig({
   plugins: [react(), cloudflare()],
   server: { host: true },
-  // three.js is only reached through a lazy import (the live cam, mid-game), which the dev server would otherwise
-  // find late, bundle, and reload the page for.
-  optimizeDeps: { include: ['three'] },
 });

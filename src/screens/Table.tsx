@@ -15,7 +15,6 @@ import { useWakeLock } from '../ui/useWakeLock';
 import { ActionArea, RaiseSizer, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
-import { LiveCam } from './table/LiveCam';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 
 export function Table() {
@@ -291,7 +290,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       <p className="sr-only" aria-live="polite">
         {announce}
       </p>
-      {!bare && <LiveCam game={game} />}
       <div className="stage">
         {(others.length > 0 || desktop) && (
           <div

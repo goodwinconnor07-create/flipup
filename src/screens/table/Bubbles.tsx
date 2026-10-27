@@ -7,7 +7,7 @@ import { ChatIcon } from '../../ui/Icons';
 import { playSound } from '../../ui/sound';
 
 /** What a player's last move says in their speech bubble: "Call 150", "Fold". */
-export function bubbleText(last: NonNullable<Seat['last']>): string {
+function bubbleText(last: NonNullable<Seat['last']>): string {
   const n = chips(last.amount);
   switch (last.move) {
     case 'fold':

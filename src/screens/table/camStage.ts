@@ -56,14 +56,14 @@ const A = 1.5;
 const B = 0.88;
 const TOP = 0.76;
 const CARD = { w: 0.063, h: 0.088 };
-const CHIP = { r: 0.02, h: 0.0036 };
+const CHIP = { r: 0.024, h: 0.0042 };
 /** How far behind the felt's edge each player sits, and where their things go, along the line to the middle. */
 const SEAT_BACK = 0.22;
 const HOLE_Z = 0.38;
 const BET_Z = 0.56;
 const STACK = { x: -0.19, z: 0.35 };
 /** Its hands rest on the rail in front of it. */
-const REST = { x: 0.13, y: TOP + 0.1, z: 0.19 };
+const REST = { x: 0.12, y: TOP + 0.095, z: 0.22 };
 /** One pass of the tell, in seconds. */
 const LOOP = 4.4;
 
@@ -313,7 +313,7 @@ export class TableStage {
     this.scene.add(shade, glow);
     // Three bulbs along it, wide enough to light every seat; the middle one casts the shadows.
     [-0.65, 0, 0.65].forEach((x, i) => {
-      const s = new THREE.SpotLight(CAM.key, 7, 7, 1.15, 0.75, 1.3);
+      const s = new THREE.SpotLight(CAM.key, 6, 7, 1.15, 0.85, 1.3);
       s.position.set(x, y - 0.02, 0);
       s.target.position.set(x * 1.2, 0, 0);
       if (i === 1) {
@@ -324,7 +324,7 @@ export class TableStage {
       }
       this.scene.add(s, s.target);
     });
-    this.scene.add(new THREE.HemisphereLight(CAM.sky, CAM.ground, 0.5));
+    this.scene.add(new THREE.HemisphereLight(CAM.sky, CAM.ground, 0.65));
     // A cool light from behind picks people out from the dark.
     const rim = new THREE.DirectionalLight(CAM.rim, 0.7);
     rim.position.set(0.6, 2.6, -4);
@@ -500,14 +500,15 @@ export class TableStage {
   }
 
   private setStack(seat: Seat, stack: number, bb: number) {
-    const n = stack <= 0 ? 0 : clamp(Math.round(5 * Math.log2(1 + stack / Math.max(bb, 1))), 2, 36);
+    const n = stack <= 0 ? 0 : clamp(Math.round(4 * Math.log2(1 + stack / Math.max(bb, 1))), 2, 24);
     if (n === seat.stackN) return;
     seat.stackN = n;
     seat.stack.clear();
     seat.fiddle = null;
-    const per = Math.ceil(n / 3);
+    // Two tidy stacks, not a crowd of little ones.
+    const per = Math.ceil(n / 2);
     for (let k = 0, left = n; left > 0; k++, left -= per) {
-      const top = this.pile(seat.stack, STACK.x - k * 0.042, STACK.z + (k % 2) * 0.03, Math.min(per, left), k + 1);
+      const top = this.pile(seat.stack, STACK.x - k * 0.052, STACK.z + k * 0.012, Math.min(per, left), k + 1);
       if (k === 0) seat.fiddle = top;
     }
   }
@@ -821,7 +822,7 @@ export class TableStage {
       // The chip on top of its stack, flicked up and dropped while it waits.
       const flick = fidget ? Math.abs(Math.sin((l - 3.05) * Math.PI * 3.2)) * fidget : 0;
       if (seat.fiddle) {
-        seat.fiddle.position.y = TOP + CHIP.h * (Math.ceil(seat.stackN / 3) - 0.5) + flick * 0.028;
+        seat.fiddle.position.y = TOP + CHIP.h * (Math.ceil(seat.stackN / 2) - 0.5) + flick * 0.028;
         seat.fiddle.rotation.z = flick * 0.4;
       }
       // A new bet slides out from its stack.

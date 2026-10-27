@@ -108,7 +108,8 @@
   --blue-lo: #0062d6;
   --blue-bg: #e5f0ff;
   /* The table cam is a dark room in either mode (table/TableCam.tsx). */
-  --cam-h: 264px;
+  /* The 3D picture's height: about a quarter of the screen, within limits. */
+  --cam-h: clamp(156px, 24dvh, 228px);
   --cam-bg: #0d0a08;
   --cam-edge: rgba(255, 255, 255, 0.18);
   --cam-chip: rgba(0, 0, 0, 0.45);

@@ -379,7 +379,13 @@ export class Mii {
     const r = seeded(who);
     const skin = pick(CAM.skin, r);
     const hair = pick(CAM.hair, r);
-    const shirt = pick(CAM.shirt, r);
+    // A shirt that stands apart from the skin, so nobody looks bare-chested.
+    const skinC = new THREE.Color(skin);
+    const far = CAM.shirt.filter((c) => {
+      const d = new THREE.Color(c).sub(skinC);
+      return Math.hypot(d.r, d.g, d.b) > 0.38;
+    });
+    const shirt = pick(far.length ? far : CAM.shirt, r);
     const style = pick(['spiky', 'bob', 'long', 'bun', 'short'] as const, r);
     this.openEye = r() < 0.5 ? kit.eyes.open : kit.eyes.tall;
     const browTilt = (r() - 0.35) * 0.5;
@@ -387,7 +393,7 @@ export class Mii {
     this.blinkAt = 1 + r() * 3;
 
     const keep = <T extends { dispose(): void }>(x: T) => (this.disposables.push(x), x);
-    const skinMat = keep(new THREE.MeshPhysicalMaterial({ color: skin, roughness: 0.55, sheen: 0.4, sheenColor: '#ffd9c4', sheenRoughness: 0.6, clearcoat: 0.08 }));
+    const skinMat = keep(new THREE.MeshPhysicalMaterial({ color: skin, roughness: 0.68, sheen: 0.2, sheenColor: '#ffd9c4', sheenRoughness: 0.7 }));
     const hairMat = keep(new THREE.MeshPhysicalMaterial({ color: hair, roughness: 0.5, sheen: 0.35, sheenColor: new THREE.Color(hair).lerp(new THREE.Color('#ffffff'), 0.35), sheenRoughness: 0.45 }));
     const shirtMat = keep(new THREE.MeshPhysicalMaterial({ color: shirt, roughness: 0.62, sheen: 0.5, sheenColor: '#ffffff', sheenRoughness: 0.7 }));
     const shade = new THREE.Color(skin).multiplyScalar(0.72);
@@ -588,7 +594,7 @@ export class Mii {
     const f = this.face;
     const [left, right] = Array.isArray(f.eyes) ? f.eyes : [f.eyes, f.eyes];
     // A blink every few seconds, on eyes that are open.
-    if (t > this.blinkAt + 0.13) this.blinkAt = t + 2.2 + Math.random() * 3.2;
+    if (t > this.blinkAt + 0.09) this.blinkAt = t + 2.2 + Math.random() * 3.2;
     const shut = t > this.blinkAt;
     const blinks = (k: EyeKind) => k === 'open' || k === 'wide' || k === 'half' || k === 'sad' || k === 'angry';
     this.setEye(0, shut && blinks(right) ? 'closed' : right);
@@ -625,8 +631,8 @@ export class Mii {
       const hand = s.clone().addScaledVector(dir, d);
       const x = (a * a - b * b + d * d) / (2 * d);
       const h = Math.sqrt(Math.max(0, a * a - x * x));
-      // Elbows go out to the side and back, a little down.
-      const pole = new THREE.Vector3(arm.side, -0.35, -0.6).applyQuaternion(bodyQ);
+      // Elbows hang down and a little back and out, so the arms fall naturally to the rail.
+      const pole = new THREE.Vector3(arm.side * 0.35, -1, -0.4).applyQuaternion(bodyQ);
       pole.addScaledVector(dir, -pole.dot(dir)).normalize();
       const elbow = s.clone().addScaledVector(dir, x).addScaledVector(pole, h);
       // Keep both parts of the arm above the rail and the felt: lift the elbow (and the hand) where they'd dip in.

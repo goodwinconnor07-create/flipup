@@ -147,15 +147,21 @@ export function TableCam({
   const player = others.find((p) => p.id === focus);
   return (
     <div className="table-cam" aria-label="The table">
-      <canvas ref={canvas} className="cam-canvas" aria-hidden />
-      <span className="cam-vignette" aria-hidden />
-      {mode === 'on' && player && <CamCaption key={player.id} game={game} player={player} reaction={say[player.id]} quiet={quiet[player.id]} odds={odds?.get(player.id)} />}
+      <div className="cam-view">
+        <canvas ref={canvas} className="cam-canvas" aria-hidden />
+        <span className="cam-vignette" aria-hidden />
+      </div>
+      {mode === 'on' && player ? (
+        <CamCaption key={player.id} game={game} player={player} reaction={say[player.id]} quiet={quiet[player.id]} odds={odds?.get(player.id)} />
+      ) : (
+        <span className="cam-caption" aria-hidden />
+      )}
     </div>
   );
 }
 
 /**
- * The player on camera, along the bottom of the picture: what they're saying (typed out the same way as table
+ * The player on camera, in the strip under the picture: what they're saying (typed out the same way as table
  * talk) or what they just did, then their name and chips. Plain text, no bubbles. A tap does what a tap on their
  * seat did.
  */

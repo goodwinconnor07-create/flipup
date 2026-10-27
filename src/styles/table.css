@@ -2454,13 +2454,19 @@ html.calm .pod-cards.shimmer::after {
 .table-cam {
   position: relative;
   flex: none;
-  height: var(--cam-h);
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border-radius: var(--r-lg);
   background: var(--cam-bg);
   box-shadow:
     0 0 0 1px var(--cam-edge),
     var(--cam-shadow);
+}
+
+.cam-view {
+  position: relative;
+  height: var(--cam-h);
 }
 
 .cam-canvas {
@@ -2477,23 +2483,45 @@ html.calm .pod-cards.shimmer::after {
   pointer-events: none;
 }
 
-/* The player on camera, along the bottom: what they say or do, big and easy to read, then who they are. */
+/* The player on camera, in a strip under the picture: what they say or do, big and easy to read, then who they are. */
 .cam-caption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 2;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   align-items: flex-start;
-  gap: 4px;
-  padding: 32px 16px 12px;
+  gap: 2px;
+  min-height: 64px;
+  padding: 8px 16px 10px;
   border: 0;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.72), rgba(0, 0, 0, 0));
+  border-top: 1px solid var(--cam-edge);
+  background: var(--cam-bg);
   color: var(--on-color);
   font: inherit;
   text-align: left;
+}
+
+/* With the cam up, the felt below is just a strip for the board and the pot: the players are in the picture. */
+.felt:has(.table-cam) .table-oval {
+  flex: none;
+  min-height: 0;
+  max-height: none;
+  padding: 6px;
+  border-radius: var(--r-xl);
+}
+
+.felt:has(.table-cam) .table-felt {
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-radius: var(--r-lg);
+}
+
+.felt:has(.table-cam) .table-foot:empty {
+  display: none;
+}
+
+.felt:has(.table-cam) .table-oval .pcard-lg {
+  --w: min(48px, calc((100vw - 32px - 24px - 30px) / 5));
 }
 
 /* Talk and moves as plain text: the bubble parts of the table's bubbles are switched off here. */

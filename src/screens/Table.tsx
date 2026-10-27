@@ -17,7 +17,7 @@ import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { RulesSheet } from './GamePicker';
-import { themeFor, themeVars } from '../ui/gameThemes';
+import { soundMoodFor } from '../ui/gameThemes';
 import { setSoundMood } from '../ui/sound';
 import { useThemeMoments } from '../ui/useTableSounds';
 
@@ -40,11 +40,11 @@ export function Table() {
   // The screen stays on while you're at a table that's still going.
   useWakeLock(!!game && game.status !== 'ended');
   // Each game pitches the table's sounds its own way, and has a few sounds of its own.
-  const mood = game ? themeFor(variantOf(game)) : null;
+  const pitch = game ? soundMoodFor(variantOf(game)) : 1;
   useEffect(() => {
-    setSoundMood(mood?.pitch ?? 1);
+    setSoundMood(pitch);
     return () => setSoundMood(1);
-  }, [mood]);
+  }, [pitch]);
   useThemeMoments(game);
 
   if (!game) {
@@ -57,11 +57,9 @@ export function Table() {
       </div>
     );
   }
-  const theme = themeFor(variantOf(game));
   return (
     <div
-      className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}${theme ? ` themed theme-${theme.id}` : ''}`}
-      style={theme ? (themeVars(theme) as React.CSSProperties) : undefined}
+      className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}`}
     >
       {blindNews && <BlindBanner key={blindNews.id} text={blindNews.text} onDone={() => setBlindNews(null)} />}
       <TableBar game={game} />
@@ -88,7 +86,6 @@ export function Table() {
           <Felt game={game} />
         ))}
       {game.status === 'ended' && <Final game={game} />}
-      {theme && <div className={`ambient ambient-${theme.ambient}`} aria-hidden />}
     </div>
   );
 }
@@ -197,8 +194,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const mySeat = seatFor(hand, me?.id);
   const others = othersInOrder(game, me);
   const variant = variantOf(game);
-  const theme = themeFor(variant);
   const odds = useOdds(hand, showsOdds(variant));
+  const themed = variant !== 'holdem';
   // Imposter: you only learn it's you; everyone else in the hand is innocent.
   const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
   // Pittsburgh always has room for three rivers; Red River grows as the red cards come.
@@ -311,7 +308,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const canShow = !bare && !!hand?.result && !!mySeat && !mySeat.shown && mySeat.cards.length === 2;
 
   return (
-    <div className="felt">
+    <div className={`felt${themed ? ` theme-${variant}` : ''}`}>
       <p className="sr-only" aria-live="polite">
         {announce}
       </p>
@@ -370,9 +367,10 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           </div>
         )}
 
-        <div className={`table-oval${theme ? '' : ` rail-${look.rail}`}`} style={theme ? undefined : { ['--felt' as string]: look.felt }}>
+        {/* Each game has its own table; plain Hold'em uses the player's own felt and rail. */}
+        <div className={`table-oval${themed ? ` themed theme-${variant}` : ` rail-${look.rail}`}`} style={themed ? undefined : { ['--felt' as string]: look.felt }}>
           <TableTimer game={game} now={now} mine={myTurn} />
-          <div className="table-felt">
+          <div className="table-felt" data-motif={themed ? variantInfo(variant).emoji : undefined}>
             <div className="table-top">
               {variant !== 'holdem' && (
                 // In an Imposter hand the badge tells you your role instead of the game's name.
@@ -382,7 +380,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                   onClick={() => setRules(true)}
                   aria-label={`${variantInfo(variant).name}: how it plays`}
                 >
-                  {role === 'imposter' ? "🕵️ You're the imposter" : role === 'innocent' ? "😇 You're innocent" : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
+                  {role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
                 </button>
               )}
               {hand && (

@@ -16,6 +16,8 @@ import {
 
 const h = (s: string) => s.split(' ');
 const HOST = 'host-device';
+/** Whole tables play dozens of hands, each bot move a small simulation: more than the usual five seconds on a slow runner. */
+const TABLE_MS = 20_000;
 
 describe('wild deuces', () => {
   it('makes five of a kind, the best hand there is', () => {
@@ -90,7 +92,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
       r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
     } else if (hand && !hand.result && hand.toAct === host.id && mine) {
       const o = options(game, hand, mine);
-      const move = o.canCheck ? 'check' : o.toCall <= game.settings.bigBlind * 3 ? 'call' : 'fold';
+      const move = o.canCheck ? 'check' : o.toCall <= game.settings.bigBlind * 3 || !o.canFold ? 'call' : 'fold';
       r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move }, { deviceId: HOST, now: clock, rng });
     } else {
       clock = (game.wakeAt ?? clock) + 1;
@@ -107,7 +109,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
   return game;
 }
 
-describe('variant tables', () => {
+describe('variant tables', { timeout: TABLE_MS }, () => {
   for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter'] as Variant[]) {
     it(`plays ${v} hands with bots and keeps every chip`, () => {
       play(v, 40);
@@ -159,7 +161,7 @@ describe('variant tables', () => {
   });
 });
 
-describe('the second batch', () => {
+describe('the second batch', { timeout: TABLE_MS }, () => {
   it('Die on the River swaps the board card the die names', () => {
     let rolled = 0;
     play('dice', 40, (g) => {
@@ -210,7 +212,8 @@ describe('the second batch', () => {
         const winners = Object.keys(hand.result.won);
         const impFolded = hand.seats.find((s) => s.playerId === id)!.folded;
         if (caught || impFolded) expect(winners).not.toContain(id);
-        else expect(winners).toEqual([id]);
+        // Got away with it: every pot the imposter is in is theirs alone; a side pot they're not in goes to the others.
+        else for (const pot of hand.result.pots) expect(pot.winners).toEqual(pot.eligible.includes(id) ? [id] : pot.eligible);
       }
     });
     expect(settled).toBeGreaterThan(0);

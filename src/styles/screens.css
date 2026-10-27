@@ -1861,3 +1861,111 @@ html[data-theme='dark'] .btn-dark {
   border: 0;
   background: none;
 }
+
+/* ── Game tables ─────────────────────────────────────────────────────────────
+   Each Hold'em variant has its own felt, rail, a big faded emblem behind the board and a glow behind the table. */
+
+.table-oval.themed {
+  --felt: var(--theme-felt);
+  --rail-a: var(--theme-rail-a);
+  --rail-b: var(--theme-rail-b);
+}
+
+.felt[class*='theme-'] {
+  background: radial-gradient(ellipse at 50% 40%, var(--theme-glow) 0%, transparent 65%);
+}
+
+.table-felt[data-motif]::after {
+  content: attr(data-motif);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-12deg);
+  font-size: 140px;
+  line-height: 1;
+  opacity: 0.12;
+  pointer-events: none;
+}
+
+.theme-ghost {
+  --theme-felt: var(--theme-ghost-felt);
+  --theme-rail-a: var(--theme-ghost-rail-a);
+  --theme-rail-b: var(--theme-ghost-rail-b);
+  --theme-glow: var(--theme-ghost-glow);
+}
+
+.theme-imposter {
+  --theme-felt: var(--theme-imposter-felt);
+  --theme-rail-a: var(--theme-imposter-rail-a);
+  --theme-rail-b: var(--theme-imposter-rail-b);
+  --theme-glow: var(--theme-imposter-glow);
+}
+
+.theme-pineapple {
+  --theme-felt: var(--theme-pineapple-felt);
+  --theme-rail-a: var(--theme-pineapple-rail-a);
+  --theme-rail-b: var(--theme-pineapple-rail-b);
+  --theme-glow: var(--theme-pineapple-glow);
+}
+
+.theme-deuces {
+  --theme-felt: var(--theme-deuces-felt);
+  --theme-rail-a: var(--theme-deuces-rail-a);
+  --theme-rail-b: var(--theme-deuces-rail-b);
+  --theme-glow: var(--theme-deuces-glow);
+}
+
+.theme-pittsburgh {
+  --theme-felt: var(--theme-pittsburgh-felt);
+  --theme-rail-a: var(--theme-pittsburgh-rail-a);
+  --theme-rail-b: var(--theme-pittsburgh-rail-b);
+  --theme-glow: var(--theme-pittsburgh-glow);
+}
+
+.theme-dice {
+  --theme-felt: var(--theme-dice-felt);
+  --theme-rail-a: var(--theme-dice-rail-a);
+  --theme-rail-b: var(--theme-dice-rail-b);
+  --theme-glow: var(--theme-dice-glow);
+}
+
+.theme-redriver {
+  --theme-felt: var(--theme-redriver-felt);
+  --theme-rail-a: var(--theme-redriver-rail-a);
+  --theme-rail-b: var(--theme-redriver-rail-b);
+  --theme-glow: var(--theme-redriver-glow);
+}
+
+/* Ghost: the emblem drifts like it's haunting the table. */
+.theme-ghost .table-felt::after {
+  animation: haunt 6s ease-in-out infinite;
+}
+
+@keyframes haunt {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) rotate(-12deg);
+    opacity: 0.1;
+  }
+  50% {
+    transform: translate(-46%, -56%) rotate(-6deg);
+    opacity: 0.18;
+  }
+}
+
+/* Imposter: a detective's dotted case-file line round the felt. */
+.theme-imposter .table-felt::before {
+  border-style: dashed;
+  border-color: rgba(201, 164, 106, 0.4);
+}
+
+/* Red River: the felt line runs red. */
+.theme-redriver .table-felt::before {
+  border-color: rgba(255, 59, 48, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .theme-ghost .table-felt::after {
+    animation: none;
+  }
+}

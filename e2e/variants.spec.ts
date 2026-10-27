@@ -102,7 +102,7 @@ test('Red River: the rules explain the extra cards', async ({ page }) => {
 
 test('Imposter: you know your role, vote after the river and see who it was', async ({ page }) => {
   await sitDown(page, 'Imposter');
-  await expect(page.getByRole('button', { name: /Imposter: how it plays/ })).toContainText(/You're (the imposter|innocent)/, { timeout: 30_000 });
+  await expect(page.getByRole('button', { name: /Imposter: how it plays/ })).toContainText(/Imposter: you|Innocent/, { timeout: 30_000 });
   await shot(page, 'variant-imposter-role');
   const voted = await playUntil(page, async () => {
     if (await page.getByText("Who's the imposter?").isVisible()) {
@@ -112,9 +112,9 @@ test('Imposter: you know your role, vote after the river and see who it was', as
     }
     return false;
   });
-  // Folding bots can end a hand before the river; the vote comes when two or more get there.
-  if (voted) {
-    await expect(page.locator('.win-banner')).toContainText('Imposter:', { timeout: 30_000 });
-    await shot(page, 'variant-imposter-result');
-  }
+  // Nobody can fold, so every hand reaches the vote.
+  expect(voted).toBe(true);
+  await expect(page.locator('.win-banner')).toContainText('Imposter:', { timeout: 30_000 });
+  await shot(page, 'variant-imposter-result');
+  await expect(page.getByRole('button', { name: 'Fold', exact: true })).toHaveCount(0);
 });

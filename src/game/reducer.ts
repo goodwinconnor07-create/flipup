@@ -21,6 +21,7 @@ import {
   runoutStep,
   schedule,
   startHand,
+  startWait,
   TIMING,
 } from './holdem';
 import { cryptoRng, newId } from './ids';
@@ -552,13 +553,13 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         return done();
       }
       // A few seconds to take the table in, with a word from a bot, before the first cards come.
-      game.nextHandAt = ctx.now + TIMING.startDelay;
+      game.nextHandAt = ctx.now + startWait(game);
       const bots = game.players.filter((p) => p.bot);
       const people = game.players.filter((p) => !p.bot);
       if (bots.length) {
         const headsUp = game.players.length === 2 && people.length === 1;
         const who = headsUp ? bots[0] : bots[Math.floor(ctx.rng() * bots.length)];
-        game.pendingTalk = { at: ctx.now + TIMING.greeting, playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
+        game.pendingTalk = { at: ctx.now + (game.players.length === 2 ? TIMING.versusDelay - 900 : TIMING.greeting), playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
       }
       schedule(game);
       return done();

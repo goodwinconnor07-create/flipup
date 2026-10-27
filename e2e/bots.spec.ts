@@ -133,7 +133,7 @@ test('bot table talk never overlaps: messages stay inside the seat row, small an
   console.log('bot lines seen:', seen);
 });
 
-test('a new game waits three seconds with a countdown, and the bot says hello by name heads-up', async ({ page }) => {
+test('a heads-up game opens with the VS intro, and the bot says hello by name', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play with Bots' }).click();
@@ -145,14 +145,19 @@ test('a new game waits three seconds with a countdown, and the bot says hello by
   await page.getByRole('button', { name: 'Sit down' }).click();
   const started = Date.now();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
-  await expect(page.getByText(/Dealing in \d/)).toBeVisible();
-  // The greeting names us.
-  await expect(page.locator('.pod .thread')).toContainText('Sam', { timeout: 2500 });
+  // Heads-up opens with the VS intro in place of a countdown.
+  await expect(page.locator('.versus')).toBeVisible();
+  await expect(page.locator('.versus')).toContainText('Sam');
+  await page.waitForTimeout(2200);
+  await shot(page, '14-versus');
+  // The greeting names us once the intro has cleared.
+  await expect(page.locator('.pod .thread')).toContainText('Sam', { timeout: 4000 });
   await shot(page, '15-hello');
-  // No cards for about three seconds.
+  await expect(page.locator('.versus')).toBeHidden();
+  // No cards for the length of the intro.
   await expect(page.getByText('Your turn')).toBeHidden();
   await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2, { timeout: 8000 });
-  expect(Date.now() - started).toBeGreaterThanOrEqual(2800);
+  expect(Date.now() - started).toBeGreaterThanOrEqual(4400);
 });
 
 test('the +N badge lists the players out of the row with their chips', async ({ page }) => {

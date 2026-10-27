@@ -13,6 +13,7 @@ import { botLineText } from './botTalk';
 import { reactionText } from './reactions';
 import { redactForDevice } from './redact';
 import { options } from './selectors';
+import { TIMING } from './holdem';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import type { Game } from './types';
 import { seededRng } from './cards';
@@ -221,7 +222,7 @@ describe('bots', () => {
     expect(kept).toBeGreaterThanOrEqual(5);
   }, 60_000);
 
-  it('a new game waits three seconds, and a bot greets first: by name heads-up, the table otherwise', () => {
+  it('a new game waits (the VS intro heads-up, three seconds otherwise), and a bot greets first: by name heads-up, the table otherwise', () => {
     for (const bots of [1, 3]) {
       let now = 5000;
       const rng = seededRng(5);
@@ -229,15 +230,16 @@ describe('bots', () => {
       const r = applyAction(g, { type: 'start' }, { deviceId: 'h', now, rng });
       if (!r.ok) throw new Error(r.error);
       g = r.game;
-      // No cards yet; they come three seconds later.
+      // No cards yet; heads-up they come after the VS intro, otherwise three seconds later.
+      const wait = bots === 1 ? TIMING.versusDelay : TIMING.startDelay;
       expect(g.hand).toBeNull();
-      expect(g.nextHandAt).toBe(now + 3000);
+      expect(g.nextHandAt).toBe(now + wait);
       const me = g.players[0];
       expect(g.pendingTalk?.event).toBe(bots === 1 ? 'hello' : 'welcome');
       expect(g.pendingTalk?.forId).toBe(bots === 1 ? me.id : undefined);
       // The greeting comes first, well inside the wait.
       now = g.wakeAt!;
-      expect(now).toBeLessThan(5000 + 3000);
+      expect(now).toBeLessThan(5000 + wait);
       const t = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
       if (!t.ok) throw new Error(t.error);
       g = t.game;
@@ -256,7 +258,7 @@ describe('bots', () => {
       for (let i = 0; i < 3 && !g.hand; i++) {
         now = g.wakeAt!;
         // Anything said back lands well before the cards, never after.
-        expect(now).toBeLessThanOrEqual(5000 + 3000);
+        expect(now).toBeLessThanOrEqual(5000 + wait);
         const d = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
         if (!d.ok) throw new Error(d.error);
         greeted ||= Object.values(d.game.reactions ?? {}).some((r) => r.id.split(':')[2] === 'greetBack');

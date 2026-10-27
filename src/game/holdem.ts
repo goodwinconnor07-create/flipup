@@ -28,6 +28,8 @@ export const TIMING = {
   offlineClock: 15000,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
   startDelay: 3000,
+  /** A heads-up game opens with the full-screen VS intro, which takes this long. */
+  versusDelay: 4600,
   /** ...and a bot says hello this long into it. */
   greeting: 700,
   /** Someone joined or came back: give the table a beat before dealing. */
@@ -46,6 +48,9 @@ export const TIMING = {
   /** Without rebuys: how long the deciding hand stays on screen before the winner's page. */
   endPause: 7000,
 };
+
+/** How long a new game waits for its first deal: the VS intro when it's two players, else a few seconds to take the table in. */
+export const startWait = (game: Game): number => (game.players.length === 2 ? TIMING.versusDelay : TIMING.startDelay);
 
 /** Hands kept in the hand log. */
 export const MAX_LOGS = 150;

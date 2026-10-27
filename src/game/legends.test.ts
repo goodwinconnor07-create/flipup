@@ -131,7 +131,7 @@ describe('legends remember you', () => {
       };
       go({ type: 'start' }, 'h');
       expect(g.pendingTalk?.event).toBe(rematch === 'won' ? 'rematchWon' : 'rematchLost');
-      now += 800;
+      now = g.wakeAt!;
       go({ type: 'tick' }, 'h');
       expect(g.reactions?.[g.players[1].id]?.id).toMatch(new RegExp(`^b:dwan:rematch${rematch === 'won' ? 'Won' : 'Lost'}:`));
     }

@@ -12,7 +12,9 @@ import {
   combosOf,
   countCombos,
   countOuts,
+  drawOuts,
   exactEquity,
+  handName,
   hitChance,
   impliedNeed,
   mdf,
@@ -69,6 +71,69 @@ function pick(id: string, value: number, fmt: (x: number) => string, traps: numb
 }
 
 const PCT_SPREAD = [-0.15, -0.1, -0.07, -0.05, 0.05, 0.07, 0.1, 0.15];
+
+// Every question is set in a hand: your cards and the board so far.
+interface Scene {
+  hero: string;
+  board: string;
+}
+
+/** What you've got, for the story: "pair of kings". */
+const made = (sc: Scene) => {
+  const name = handName(S(sc.hero), S(sc.board)).toLowerCase();
+  const high = name.match(/^(flush|straight), (\w+) high$/);
+  if (high) return `${high[2] === 'ace' ? 'an' : 'a'} ${high[2]}-high ${high[1]}`;
+  return /^(pair|flush|straight|full house)/.test(name) ? `a ${name}` : name;
+};
+const scene = (sc: Scene) => ({ hero: S(sc.hero), board: S(sc.board) });
+
+/** River hands that beat a bluff but not much else. */
+const CATCH: Scene[] = [
+  { hero: 'KhJd', board: 'Kc9h5s2d7c' },
+  { hero: 'AsTc', board: 'Td8c5s2hKd' },
+  { hero: 'QhQs', board: 'Jc7c3d2sAh' },
+  { hero: '9c9d', board: 'Ts6h4s2cJd' },
+  { hero: 'AhQc', board: 'Qd8s6h3c9s' },
+  { hero: 'JsJh', board: 'Kd7c4h2s3d' },
+  { hero: 'Ac5c', board: 'Ah9d7s4c2h' },
+  { hero: '8h8d', board: '9s6c3d2hTc' },
+  { hero: 'KsQd', board: 'Kh8c6d3s2s' },
+  { hero: 'TdTh', board: 'Qc8s5h3d4c' },
+];
+
+/** River hands whose draw missed: they can't win at showdown. */
+const AIR: Scene[] = [
+  { hero: 'JhTh', board: 'Ah8h3c2s5d' },
+  { hero: '7s6s', board: '9s8d2hAsKc' },
+  { hero: 'QcJc', board: 'Tc9d3c2h4s' },
+  { hero: '5d4d', board: '6s3hKd9cJh' },
+  { hero: 'KdQd', board: 'Jh9c3s2d5h' },
+  { hero: '9h8h', board: 'Kd7c2h4sAs' },
+];
+
+/** River hands strong enough to bet for value. */
+const VALUE: Scene[] = [
+  { hero: 'AhKh', board: 'Qh9h4h2s7d' },
+  { hero: '8s8c', board: '8dKh4c2s9h' },
+  { hero: 'AdKc', board: 'AcKs7h3d2c' },
+];
+
+/** Flop hands for SPR. */
+const FLOPS: Scene[] = [
+  { hero: 'AsKd', board: 'Kh7c2d' },
+  { hero: 'JcTc', board: '9c8d2s' },
+  { hero: 'QhQd', board: '9s6c3h' },
+  { hero: 'AhAc', board: 'Td7h4s' },
+  { hero: '6s6h', board: 'Kd6c2h' },
+  { hero: 'KcQs', board: 'Kd8h5c' },
+];
+
+/** Flop hands with nothing, for bluffing into a crowd. */
+const BLUFF_FLOPS: Scene[] = [
+  { hero: '6c5c', board: 'KdJh2s' },
+  { hero: 'QdJd', board: '9s4c2h' },
+  { hero: '7d6d', board: 'AcKs3h' },
+];
 
 // ---------------------------------------------------------------------------------------------------------
 // Outs against a hand you've put them on
@@ -158,25 +223,37 @@ function outsQuestion(spot: CardSpot, i: number, street: 'turn' | 'flop'): Quest
 // ---------------------------------------------------------------------------------------------------------
 // Equity from outs
 
-const DRAWS: [string, number][] = [
-  ['a gutshot straight draw', 4],
-  ['two overcards', 6],
-  ['an open-ended straight draw', 8],
-  ['a flush draw', 9],
-  ['a flush draw and a gutshot', 12],
-  ['a flush draw and an open-ended straight draw', 15],
-  ['a pocket pair hoping to hit a set', 2],
+export interface Draw {
+  name: string;
+  outs: number;
+  kind: 'draw' | 'set' | 'overs';
+  hero: string;
+  flop: string;
+  turn: string;
+}
+
+const DRAWS: Draw[] = [
+  { name: 'a gutshot straight draw', outs: 4, kind: 'draw', hero: '9h8d', flop: 'Jc7s2h', turn: '3c' },
+  { name: 'two overcards', outs: 6, kind: 'overs', hero: 'AhKd', flop: '9c6s2d', turn: '4h' },
+  { name: 'an open-ended straight draw', outs: 8, kind: 'draw', hero: '9c8d', flop: 'Ts7h2s', turn: 'Kc' },
+  { name: 'a flush draw', outs: 9, kind: 'draw', hero: 'AhJh', flop: 'Kh8h3c', turn: '2d' },
+  { name: 'a flush draw and a gutshot', outs: 12, kind: 'draw', hero: 'QhJh', flop: 'Kh9h4c', turn: '2s' },
+  { name: 'a flush draw and an open-ended straight draw', outs: 15, kind: 'draw', hero: '9h8h', flop: '7h6c2h', turn: 'Ks' },
+  { name: 'a pocket pair hoping to hit a set', outs: 2, kind: 'set', hero: '5s5d', flop: 'Ac9h3c', turn: 'Kd' },
 ];
 
-function equityQuestion(name: string, outs: number, cardsLeft: 1 | 2, i: number): Question {
+function equityQuestion(d: Draw, cardsLeft: 1 | 2, i: number): Question {
   const id = `eq-${cardsLeft}-${i}`;
+  const { outs, name } = d;
+  const hero = S(d.hero);
+  const board = S(cardsLeft === 2 ? d.flop : d.flop + d.turn);
   const left = cardsLeft === 2 ? 47 : 46;
   const exact = hitChance(outs, left, cardsLeft);
   const rule = ruleOf(outs, cardsLeft);
   const wrongRule = ruleOf(outs, cardsLeft === 2 ? 1 : 2);
   const { choices, answer } = pick(id, exact, (x) => pc(x), [wrongRule], PCT_SPREAD, 0.03, 0.01, 0.99);
   const steps = [
-    `You have ${outs} outs with ${cardsLeft === 2 ? 'two cards (turn and river)' : 'one card'} to come.`,
+    `Your ${outs} outs: ${cards(drawOuts(hero, board, d.kind))}.`,
     `Quick way, the rule of 2 and 4: ${outs} × ${cardsLeft === 2 ? 4 : 2} ≈ ${pc(rule)}.`,
     cardsLeft === 2
       ? `Exactly: 1 − (${left - outs}/${left} × ${left - 1 - outs}/${left - 1}) = ${pc(exact, 1)}. That's the chance you miss twice, taken away from 100%.`
@@ -186,7 +263,12 @@ function equityQuestion(name: string, outs: number, cardsLeft: 1 | 2, i: number)
   return {
     id,
     topic: 'equity',
-    prompt: `You have ${name} (${outs} outs) on the ${cardsLeft === 2 ? 'flop and you\'re all-in, so you\'ll see the turn and river' : 'turn, with just the river to come'}. How often do you hit?`,
+    prompt:
+      cardsLeft === 2
+        ? `Flop. You get all-in with ${name} (${outs} outs), so you'll see the turn and the river. How often do you hit?`
+        : `Turn. You have ${name} (${outs} outs), with just the river to come. How often do you hit?`,
+    hero,
+    board,
     choices,
     answer,
     steps,
@@ -232,12 +314,14 @@ const POT_ODDS: [number, number][] = [
 
 function potOddsQuestion(pot: number, bet: number, i: number): Question {
   const id = `po-${i}`;
+  const sc = CATCH[i % CATCH.length];
   const need = potOddsNeed(pot, bet);
   const { choices, answer } = pick(id, need, (x) => pc(x), [alpha(pot, bet), bet / pot], PCT_SPREAD, 0.03, 0.01, 0.99);
   return {
     id,
     topic: 'potodds',
-    prompt: `The pot is ${pot} and they bet ${bet}. How much equity do you need to call?`,
+    prompt: `River. You have ${made(sc)}, which only beats a bluff. The pot is ${pot} and they bet ${bet}. How much equity do you need to call?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Bet', String(bet)]],
     choices,
     answer,
@@ -254,12 +338,14 @@ const ratio = (x: number) => `${Number.isInteger(Math.round(x * 10) / 10) ? Math
 
 function ratioQuestion(pot: number, bet: number, i: number): Question {
   const id = `po-ratio-${i}`;
+  const sc = CATCH[(i + 4) % CATCH.length];
   const r = (pot + bet) / bet;
   const { choices, answer } = pick(id, r, ratio, [pot / bet, (pot + 2 * bet) / bet], [-1.5, -1, -0.5, 0.5, 1, 1.5, 2], 0.4, 1);
   return {
     id,
     topic: 'potodds',
-    prompt: `The pot is ${pot} and they bet ${bet}. What pot odds are you getting?`,
+    prompt: `River. You have ${made(sc)}. The pot is ${pot} and they bet ${bet}. What pot odds are you getting?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Bet', String(bet)]],
     choices,
     answer,
@@ -278,24 +364,27 @@ function ratioQuestion(pot: number, bet: number, i: number): Question {
 interface CallSpot {
   draw: string;
   outs: number;
+  kind: 'draw' | 'overs';
+  hero: string;
+  board: string;
   street: 'flop' | 'turn' | 'flop all-in';
   pot: number;
   bet: number;
 }
 
 const CALLS: CallSpot[] = [
-  { draw: 'a flush draw', outs: 9, street: 'turn', pot: 100, bet: 100 },
-  { draw: 'a flush draw', outs: 9, street: 'turn', pot: 100, bet: 25 },
-  { draw: 'an open-ended straight draw', outs: 8, street: 'turn', pot: 100, bet: 75 },
-  { draw: 'a gutshot', outs: 4, street: 'turn', pot: 100, bet: 20 },
-  { draw: 'a gutshot', outs: 4, street: 'turn', pot: 150, bet: 10 },
-  { draw: 'a flush draw and an open-ended straight draw', outs: 15, street: 'turn', pot: 100, bet: 50 },
-  { draw: 'a flush draw', outs: 9, street: 'flop all-in', pot: 100, bet: 80 },
-  { draw: 'an open-ended straight draw', outs: 8, street: 'flop all-in', pot: 100, bet: 200 },
-  { draw: 'a flush draw and a gutshot', outs: 12, street: 'flop all-in', pot: 100, bet: 150 },
-  { draw: 'a flush draw', outs: 9, street: 'flop', pot: 100, bet: 66 },
-  { draw: 'two overcards', outs: 6, street: 'turn', pot: 60, bet: 45 },
-  { draw: 'a flush draw', outs: 9, street: 'turn', pot: 120, bet: 60 },
+  { draw: 'a flush draw', outs: 9, kind: 'draw', hero: 'AhJh', board: 'Kh8h3c2d', street: 'turn', pot: 100, bet: 100 },
+  { draw: 'a flush draw', outs: 9, kind: 'draw', hero: 'Ts9s', board: 'As6s2dQc', street: 'turn', pot: 100, bet: 25 },
+  { draw: 'an open-ended straight draw', outs: 8, kind: 'draw', hero: 'JcTd', board: '9s8h3c2d', street: 'turn', pot: 100, bet: 75 },
+  { draw: 'a gutshot', outs: 4, kind: 'draw', hero: '7c6d', board: '9h5s2cKd', street: 'turn', pot: 100, bet: 20 },
+  { draw: 'a gutshot', outs: 4, kind: 'draw', hero: 'AdQc', board: 'KsTh4d2c', street: 'turn', pot: 150, bet: 10 },
+  { draw: 'a flush draw and an open-ended straight draw', outs: 15, kind: 'draw', hero: '9h8h', board: '7h6c2hKs', street: 'turn', pot: 100, bet: 50 },
+  { draw: 'a flush draw', outs: 9, kind: 'draw', hero: 'KcQc', board: 'Jc5c2h', street: 'flop all-in', pot: 100, bet: 80 },
+  { draw: 'an open-ended straight draw', outs: 8, kind: 'draw', hero: '8s7d', board: '6h5c2s', street: 'flop all-in', pot: 100, bet: 200 },
+  { draw: 'a flush draw and a gutshot', outs: 12, kind: 'draw', hero: 'Ts9s', board: 'Js7s2d', street: 'flop all-in', pot: 100, bet: 150 },
+  { draw: 'a flush draw', outs: 9, kind: 'draw', hero: 'Ad5d', board: 'Kd9d4s', street: 'flop', pot: 100, bet: 66 },
+  { draw: 'two overcards', outs: 6, kind: 'overs', hero: 'AcQd', board: '8s6h3d2c', street: 'turn', pot: 60, bet: 45 },
+  { draw: 'a flush draw', outs: 9, kind: 'draw', hero: 'Kh9h', board: 'Jh6h4s2c', street: 'turn', pot: 120, bet: 60 },
 ];
 
 function callQuestion(c: CallSpot, i: number): Question {
@@ -308,7 +397,9 @@ function callQuestion(c: CallSpot, i: number): Question {
   return {
     id,
     topic: 'call',
-    prompt: `${c.street === 'turn' ? 'On the turn' : c.street === 'flop' ? 'On the flop (more betting can come on the turn)' : 'On the flop, facing an all-in'} you have ${c.draw} (${c.outs} outs). The pot is ${c.pot} and they bet ${c.bet}. Ignoring what you might win later, call or fold?`,
+    prompt: `${c.street === 'turn' ? 'Turn.' : c.street === 'flop' ? 'Flop, with more betting to come on the turn.' : 'Flop, and they move all-in.'} You have ${c.draw} (${c.outs} outs). The pot is ${c.pot} and they bet ${c.bet}. Ignoring what you might win later, call or fold?`,
+    hero: S(c.hero),
+    board: S(c.board),
     facts: [['Pot', String(c.pot)], ['Bet', String(c.bet)], ['Outs', String(c.outs)]],
     choices: ['Call', 'Fold'],
     answer: call ? 0 : 1,
@@ -326,16 +417,16 @@ function callQuestion(c: CallSpot, i: number): Question {
 // ---------------------------------------------------------------------------------------------------------
 // Implied odds
 
-const IMPLIED: [string, number, number, number][] = [
-  ['a flush draw', 9, 100, 100],
-  ['an open-ended straight draw', 8, 100, 75],
-  ['a gutshot', 4, 100, 50],
-  ['a flush draw', 9, 60, 60],
-  ['a gutshot', 4, 50, 25],
-  ['an open-ended straight draw', 8, 150, 150],
+const IMPLIED: [string, number, number, number, string, string][] = [
+  ['a flush draw', 9, 100, 100, 'AsTs', 'Ks7s3d2h'],
+  ['an open-ended straight draw', 8, 100, 75, '6d5c', '7h4sKc2d'],
+  ['a gutshot', 4, 100, 50, '9c7c', 'Js8d2hKd'],
+  ['a flush draw', 9, 60, 60, 'Qd8d', 'Ad5d2s9c'],
+  ['a gutshot', 4, 50, 25, 'KhJc', 'Qd9s3c4h'],
+  ['an open-ended straight draw', 8, 150, 150, '9d8c', 'Th7s2cAc'],
 ];
 
-function impliedQuestion([draw, outs, pot, bet]: (typeof IMPLIED)[number], i: number): Question {
+function impliedQuestion([draw, outs, pot, bet, hero, board]: (typeof IMPLIED)[number], i: number): Question {
   const id = `imp-${i}`;
   const eq = outs / 46;
   const x = impliedNeed(pot, bet, eq);
@@ -343,7 +434,9 @@ function impliedQuestion([draw, outs, pot, bet]: (typeof IMPLIED)[number], i: nu
   return {
     id,
     topic: 'implied',
-    prompt: `On the turn you have ${draw} (${outs} outs). The pot is ${pot} and they bet ${bet}. How much more do you need to win on the river when you hit, for the call to break even?`,
+    prompt: `Turn. You have ${draw} (${outs} outs). The pot is ${pot} and they bet ${bet}. How much more do you need to win on the river when you hit, for the call to break even?`,
+    hero: S(hero),
+    board: S(board),
     facts: [['Pot', String(pot)], ['Bet', String(bet)], ['Outs', String(outs)]],
     choices,
     answer,
@@ -364,12 +457,14 @@ const SIZES: [number, number][] = [[100, 33], [100, 50], [100, 75], [100, 100], 
 
 function mdfQuestion([pot, bet]: [number, number], i: number): Question {
   const id = `mdf-${i}`;
+  const sc = CATCH[i];
   const v = mdf(pot, bet);
   const { choices, answer } = pick(id, v, (x) => pc(x), [alpha(pot, bet), 1 - potOddsNeed(pot, bet)], PCT_SPREAD, 0.04, 0.05, 0.95);
   return {
     id,
     topic: 'mdf',
-    prompt: `They bet ${bet} into a pot of ${pot}. What's your minimum defence frequency (MDF): how much of your range must you keep (call or raise) so their bluffs don't print money?`,
+    prompt: `River. They bet ${bet} into a pot of ${pot}, and you hold ${made(sc)}, one of many hands you could have here. What's your minimum defence frequency (MDF): how much of your range must you keep (call or raise) so their bluffs don't print money?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Bet', String(bet)]],
     choices,
     answer,
@@ -384,12 +479,14 @@ function mdfQuestion([pot, bet]: [number, number], i: number): Question {
 
 function bluffQuestion([pot, bet]: [number, number], i: number): Question {
   const id = `alpha-${i}`;
+  const sc = AIR[i];
   const v = alpha(pot, bet);
   const { choices, answer } = pick(id, v, (x) => pc(x), [mdf(pot, bet), potOddsNeed(pot, bet)], PCT_SPREAD, 0.04, 0.05, 0.95);
   return {
     id,
     topic: 'bluff',
-    prompt: `You bluff ${bet} into a pot of ${pot} with a hand that can't win. How often must they fold for the bluff to break even?`,
+    prompt: `River. Your draw missed, leaving you with ${made(sc)}, which can't win at showdown. You bluff ${bet} into a pot of ${pot}. How often must they fold for the bluff to break even?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Your bet', String(bet)]],
     choices,
     answer,
@@ -404,12 +501,15 @@ function bluffQuestion([pot, bet]: [number, number], i: number): Question {
 
 function ratioRiverQuestion([pot, bet]: [number, number], i: number): Question {
   const id = `ratio-${i}`;
+  const value = i < VALUE.length;
+  const sc = value ? VALUE[i] : AIR[i];
   const v = bluffShare(pot, bet);
   const { choices, answer } = pick(id, v, (x) => pc(x), [alpha(pot, bet), 0.5], PCT_SPREAD, 0.04, 0.05, 0.95);
   return {
     id,
     topic: 'ratio',
-    prompt: `On the river you bet ${bet} into ${pot}, with some value hands and some bluffs. What share of your betting range can be bluffs so their bluff-catchers can't do better by calling or folding?`,
+    prompt: `River. You bet ${bet} into ${pot} ${value ? `for value with ${made(sc)}` : `as a bluff with ${made(sc)}`}. Your betting range has value hands and bluffs. What share of it can be bluffs so their bluff-catchers can't do better by calling or folding?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Your bet', String(bet)]],
     choices,
     answer,
@@ -426,11 +526,13 @@ function multiwayBluffQuestion(players: number, pot: number, bet: number, i: num
   const id = `alpha-mw-${i}`;
   const whole = alpha(pot, bet);
   const each = whole ** (1 / players);
+  const sc = BLUFF_FLOPS[i];
   const { choices, answer } = pick(id, each, (x) => pc(x), [whole, whole / players, 1 - (1 - whole) / players], PCT_SPREAD, 0.04, 0.05, 0.99);
   return {
     id,
     topic: 'bluff',
-    prompt: `You bluff ${bet} into ${pot} against ${players} opponents. If each decides on their own, how often must each one fold for the bluff to break even?`,
+    prompt: `Flop. ${players === 2 ? 'Two players check' : 'Three players check'} to you and you've missed completely. You bluff ${bet} into ${pot}. If each of them decides on their own, how often must each one fold for the bluff to break even?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Your bet', String(bet)], ['Opponents', String(players)]],
     choices,
     answer,
@@ -457,10 +559,10 @@ interface ComboSpot {
 const cl = (s: string): HandClass[] => s.split(' ').map((c) => (c.includes(':') ? { cls: c.split(':')[0], suit: c.split(':')[1] } : { cls: c }));
 
 const COMBOS: ComboSpot[] = [
-  { prompt: 'Before the flop, how many ways can someone be dealt ace-king?', classes: cl('AK'), explain: 'Four aces × four kings = 16: 4 suited and 12 offsuit.' },
-  { prompt: 'Before the flop, how many ways can someone be dealt a pair of queens?', classes: cl('QQ'), explain: 'Pick 2 of the 4 queens: 4 × 3 ÷ 2 = 6.' },
-  { prompt: 'Before the flop, how many ways can someone be dealt ace-king offsuit?', classes: cl('AKo'), explain: '16 ace-kings minus the 4 suited ones = 12.' },
-  { prompt: 'Before the flop, how many ways can someone be dealt any pocket pair?', classes: cl('AA KK QQ JJ TT 99 88 77 66 55 44 33 22'), explain: '13 ranks × 6 combos each = 78, about 1 hand in 17.' },
+  { prompt: 'Flop. The preflop raiser bets and you have an open-ended straight draw. How many ways can they have ace-king?', classes: cl('AK'), hero: 'Js9s', board: 'Th8c2d', explain: 'No ace or king is in your hand or on the board, so all of them are live: four aces × four kings = 16, 4 suited and 12 offsuit.' },
+  { prompt: 'Flop. They three-bet before the flop and now bet again. How many ways can they have pocket queens?', classes: cl('QQ'), hero: 'Js9s', board: 'Th8c2d', explain: 'No queens are out, so pick 2 of the 4: 4 × 3 ÷ 2 = 6.' },
+  { prompt: 'Flop. You put them on ace-king offsuit or better. How many ways can they have ace-king offsuit?', classes: cl('AKo'), hero: 'Js9s', board: 'Th8c2d', explain: '16 ace-kings minus the 4 suited ones = 12.' },
+  { prompt: 'Flop. How many ways can they have a pocket pair here?', classes: cl('AA KK QQ JJ TT 99 88 77 66 55 44 33 22'), hero: 'Js9s', board: 'Th8c2d', explain: '13 ranks × 6 combos = 78. Your jack and nine and the board\'s ten, eight and two each leave only 3 combos of that pair, so it\'s 78 − 15 = 63.' },
   { prompt: 'The flop is shown and you hold the cards below. How many ways can they have ace-king?', classes: cl('AK'), hero: 'AsKd', board: 'Kh7c2d', explain: 'You hold an ace, and a king is in your hand and on the board: 3 aces × 2 kings = 6.' },
   { prompt: 'How many ways can they have a set (KK, 77 or 22) on this flop?', classes: cl('KK 77 22'), hero: 'AsKd', board: 'Kh7c2d', explain: 'Two kings are gone (yours and the board\'s), so 1 combo of KK. Three sevens and three twos are left: 3 combos each. 1 + 3 + 3 = 7.' },
   { prompt: 'How many ways can they have pocket aces here?', classes: cl('AA'), hero: 'AhQh', board: 'Ac9s4d', explain: 'Two aces are gone, so only one pair of aces is left: 1 combo.' },
@@ -595,13 +697,15 @@ const SPRS: [number, number, string][] = [
 
 function sprQuestion([stack, pot, story]: (typeof SPRS)[number], i: number): Question {
   const id = `spr-${i}`;
+  const sc = FLOPS[i];
   const v = stack / pot;
   const fmt = (x: number) => (Math.round(x * 10) / 10).toFixed(1);
   const { choices, answer } = pick(id, v, fmt, [pot / stack, (stack + pot) / pot], [-3, -2, -1, 1, 2, 3, 5], Math.max(0.5, v * 0.2), 0.1);
   return {
     id,
     topic: 'spr',
-    prompt: `${story} The pot is ${pot} and the smaller stack has ${stack} behind. What's the stack-to-pot ratio (SPR)?`,
+    prompt: `${story} You have ${made(sc)}${sc.hero === 'JcTc' ? ' with a big draw' : ''}. The pot is ${pot} and the smaller stack has ${stack} behind. What's the stack-to-pot ratio (SPR)?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Effective stack', String(stack)]],
     choices,
     answer,
@@ -620,22 +724,36 @@ function sprQuestion([stack, pot, story]: (typeof SPRS)[number], i: number): Que
 // ---------------------------------------------------------------------------------------------------------
 // EV
 
-const CALL_EVS: [number, number, number][] = [[100, 50, 0.3], [100, 100, 0.4], [200, 100, 0.2], [60, 30, 0.35], [100, 75, 0.25]];
+const CALL_EVS: [number, number, number, string, string, string][] = [
+  [100, 50, 15, 'a flush draw and an open-ended straight draw', '9h8h', '7h6c2hKs'],
+  [100, 100, 9, 'a flush draw', 'AhJh', 'Kh8h3c2d'],
+  [200, 100, 12, 'a flush draw and a gutshot', 'QhJh', 'Kh9h4c2s'],
+  [60, 30, 8, 'an open-ended straight draw', '9c8d', 'Ts7h2sKc'],
+  [100, 25, 4, 'a gutshot', '9h8d', 'Jc7s2h3c'],
+];
 const BLUFF_EVS: [number, number, number][] = [[100, 75, 0.5], [100, 50, 0.3], [100, 100, 0.45], [80, 60, 0.4]];
-const SEMI_EVS: [number, number, number, number][] = [[100, 100, 0.4, 0.2], [100, 150, 0.3, 0.33], [60, 90, 0.5, 0.18]];
+const SEMI_EVS: [number, number, number, number, string, string, string][] = [
+  [100, 100, 0.4, 9, 'a flush draw', 'AsTs', 'Ks7s3d2h'],
+  [100, 150, 0.3, 15, 'a flush draw and an open-ended straight draw', '9h8h', '7h6c2hKs'],
+  [60, 90, 0.5, 8, 'an open-ended straight draw', '6d5c', '7h4sKc2d'],
+];
 
-function callEVQuestion([pot, bet, eq]: (typeof CALL_EVS)[number], i: number): Question {
+function callEVQuestion([pot, bet, outs, draw, hero, board]: (typeof CALL_EVS)[number], i: number): Question {
   const id = `ev-call-${i}`;
+  const eq = outs / 46;
   const v = callEV(pot, bet, eq);
   const { choices, answer } = pick(id, v, signed, [eq * (pot + bet), eq * pot - (1 - eq) * bet], [-30, -20, -12, 12, 20, 30], 4, -Infinity);
   return {
     id,
     topic: 'ev',
-    prompt: `The pot is ${pot}, they bet ${bet} and your equity is ${pc(eq)}. On average, what does calling win or lose (its EV)?`,
-    facts: [['Pot', String(pot)], ['Bet', String(bet)], ['Equity', pc(eq)]],
+    prompt: `Turn. You have ${draw} (${outs} outs). The pot is ${pot} and they bet ${bet}. Counting only the river card, what does calling win or lose on average (its EV)?`,
+    hero: S(hero),
+    board: S(board),
+    facts: [['Pot', String(pot)], ['Bet', String(bet)], ['Outs', String(outs)]],
     choices,
     answer,
     steps: [
+      `Your equity: ${outs} outs ÷ 46 cards = ${pc(eq, 1)}.`,
       'EV of a call = equity × (pot + their bet) − (1 − equity) × your call.',
       `${pc(eq)} × ${pot + bet} − ${pc(1 - eq)} × ${bet} = ${(eq * (pot + bet)).toFixed(1)} − ${((1 - eq) * bet).toFixed(1)} = ${signed(v)}.`,
       v > 0 ? 'Positive, so calling makes money over time.' : 'Negative, so calling loses money over time.',
@@ -645,12 +763,14 @@ function callEVQuestion([pot, bet, eq]: (typeof CALL_EVS)[number], i: number): Q
 
 function bluffEVQuestion([pot, bet, fold]: (typeof BLUFF_EVS)[number], i: number): Question {
   const id = `ev-bluff-${i}`;
+  const sc = AIR[i];
   const v = bluffEV(pot, bet, fold);
   const { choices, answer } = pick(id, v, signed, [fold * pot, fold * (pot + bet) - bet], [-30, -20, -12, 12, 20, 30], 4, -Infinity);
   return {
     id,
     topic: 'ev',
-    prompt: `You bluff ${bet} into ${pot} with a hand that can't win, and they fold ${pc(fold)} of the time. What's the bluff's EV?`,
+    prompt: `River. Your draw missed, leaving you with ${made(sc)}, which can't win. You bluff ${bet} into ${pot}, and you think they fold ${pc(fold)} of the time. What's the bluff's EV?`,
+    ...scene(sc),
     facts: [['Pot', String(pot)], ['Your bet', String(bet)], ['They fold', pc(fold)]],
     choices,
     answer,
@@ -662,15 +782,18 @@ function bluffEVQuestion([pot, bet, fold]: (typeof BLUFF_EVS)[number], i: number
   };
 }
 
-function semiBluffQuestion([pot, bet, fold, eq]: (typeof SEMI_EVS)[number], i: number): Question {
+function semiBluffQuestion([pot, bet, fold, outs, draw, hero, board]: (typeof SEMI_EVS)[number], i: number): Question {
   const id = `ev-semi-${i}`;
+  const eq = outs / 46;
   const v = semiBluffEV(pot, bet, fold, eq);
   const { choices, answer } = pick(id, v, signed, [bluffEV(pot, bet, fold), fold * pot], [-30, -20, -12, 12, 20, 30], 4, -Infinity);
   return {
     id,
     topic: 'ev',
-    prompt: `On the turn you shove ${bet} into ${pot} with a draw. They fold ${pc(fold)} of the time, and when they call you hit ${pc(eq)} of the time. What's the shove's EV?`,
-    facts: [['Pot', String(pot)], ['Your shove', String(bet)], ['They fold', pc(fold)], ['Your equity', pc(eq)]],
+    prompt: `Turn. You shove ${bet} into ${pot} with ${draw} (${outs} outs, so ${pc(eq, 1)} to hit when they call). You think they fold ${pc(fold)} of the time. What's the shove's EV?`,
+    hero: S(hero),
+    board: S(board),
+    facts: [['Pot', String(pot)], ['Your shove', String(bet)], ['They fold', pc(fold)], ['Outs', String(outs)]],
     choices,
     answer,
     steps: [
@@ -724,51 +847,59 @@ function matchupQuestion([a, b, eq]: (typeof MATCHUPS)[number], i: number): Ques
 
 const total5 = choose(50, 5);
 const total3 = choose(50, 3);
-const FACTS: { prompt: string; value: number; steps: string[]; traps: number[] }[] = [
+const FACTS: { prompt: string; hero: string; value: number; steps: string[]; traps: number[] }[] = [
   {
-    prompt: 'How often are you dealt a pocket pair?',
+    prompt: 'You look down at a pocket pair. How often are you dealt one?',
+    hero: '8c8d',
     value: 78 / 1326,
     steps: ['There are 1,326 two-card hands and 78 of them are pairs (13 ranks × 6).', '78 ÷ 1,326 = 5.9%, about 1 hand in 17.'],
     traps: [1 / 13, 6 / 1326],
   },
   {
-    prompt: 'How often are you dealt pocket aces?',
+    prompt: 'Pocket aces! How often are you dealt them?',
+    hero: 'AsAh',
     value: 6 / 1326,
     steps: ['6 combos of aces out of 1,326 hands.', '6 ÷ 1,326 = 0.45%, once every 221 hands.'],
     traps: [78 / 1326, 16 / 1326],
   },
   {
-    prompt: 'How often are you dealt ace-king (suited or not)?',
+    prompt: 'You\'re dealt ace-king. How often do you get ace-king (suited or not)?',
+    hero: 'AdKs',
     value: 16 / 1326,
     steps: ['16 combos of ace-king out of 1,326.', '16 ÷ 1,326 = 1.2%, about once every 83 hands.'],
     traps: [6 / 1326, 4 / 1326],
   },
   {
-    prompt: 'With a pocket pair, how often do you flop a set or better?',
+    prompt: 'You call a raise with this pair to try to hit a set. How often do you flop a set or better?',
+    hero: '7s7d',
     value: 1 - choose(48, 3) / total3,
     steps: ['Two of your rank are left among 50 unseen cards.', `Chance of missing all three flop cards: 48/50 × 47/49 × 46/48 = ${pc(choose(48, 3) / total3, 1)}.`, `So you flop a set ${pc(1 - choose(48, 3) / total3, 1)} of the time, about 1 in 8.5.`, 'That\'s why set mining needs deep stacks: a common guide is calling raises only when you can win 15 to 20 times the call.'],
     traps: [0.06, 0.19],
   },
   {
-    prompt: 'With a pocket pair, how often do you make a set or better by the river?',
+    prompt: 'You\'re all-in before the flop with this pair. How often do you make a set or better by the river?',
+    hero: '7s7d',
     value: 1 - choose(48, 5) / total5,
     steps: [`Missing all five board cards: C(48,5) ÷ C(50,5) = ${pc(choose(48, 5) / total5, 1)}.`, `So you hit ${pc(1 - choose(48, 5) / total5, 1)} of the time, about 1 in 5.`],
     traps: [1 - choose(48, 3) / total3, 0.3],
   },
   {
-    prompt: 'With two suited cards, how often do you flop a flush draw (exactly two of your suit)?',
+    prompt: 'You see a flop with these suited cards. How often do you flop a flush draw (exactly two hearts)?',
+    hero: 'Jh9h',
     value: (choose(11, 2) * 39) / total3,
     steps: ['11 cards of your suit are left, 39 others.', `Two of your suit and one other: C(11,2) × 39 ÷ C(50,3) = ${55 * 39} ÷ ${total3} = ${pc((55 * 39) / total3, 1)}.`],
     traps: [choose(11, 3) / total3 + 0.05, 0.19],
   },
   {
-    prompt: 'With two suited cards, how often do you flop a flush?',
+    prompt: 'You see a flop with these suited cards. How often do you flop a flush?',
+    hero: 'Jh9h',
     value: choose(11, 3) / total3,
     steps: [`All three flop cards in your suit: C(11,3) ÷ C(50,3) = 165 ÷ ${total3} = ${pc(choose(11, 3) / total3, 2)}.`, 'About once every 119 flops.'],
     traps: [0.05, 0.11],
   },
   {
-    prompt: 'With two suited cards, how often do you make a flush by the river?',
+    prompt: 'You\'re all-in before the flop with these suited cards. How often do you make a flush by the river?',
+    hero: 'Jh9h',
     value: (choose(11, 3) * choose(39, 2) + choose(11, 4) * 39 + choose(11, 5)) / total5,
     steps: ['You need at least three of the 11 cards of your suit among the five on the board.', `Three, four or five of them: (165 × 741 + 330 × 39 + 462) ÷ ${total5.toLocaleString()} = ${pc((choose(11, 3) * choose(39, 2) + choose(11, 4) * 39 + choose(11, 5)) / total5, 1)}.`, 'So suited cards add only a couple of percent of equity. Nice, but not a reason to play a weak hand.'],
     traps: [0.2, 0.35],
@@ -780,7 +911,7 @@ const fmtFact = (x: number) => pc(x, x < 0.02 ? 2 : 1);
 function factQuestion(f: (typeof FACTS)[number], i: number): Question {
   const id = `pf-f-${i}`;
   const { choices, answer } = pick(id, f.value, fmtFact, f.traps, f.value < 0.02 ? [-0.004, 0.006, 0.01, 0.02, 0.04] : [-0.04, -0.03, 0.03, 0.05, 0.08, 0.12], f.value < 0.02 ? 0.002 : 0.02, 0.0005, 0.99);
-  return { id, topic: 'preflop', prompt: f.prompt, choices, answer, steps: f.steps };
+  return { id, topic: 'preflop', prompt: f.prompt, hero: S(f.hero), choices, answer, steps: f.steps };
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -793,7 +924,7 @@ export function allQuestions(): Question[] {
   bank = [
     ...TURN_SPOTS.map((s, i) => outsQuestion(s, i, 'turn')),
     ...FLOP_SPOTS.map((s, i) => outsQuestion(s, i, 'flop')),
-    ...DRAWS.flatMap(([name, outs], i) => [equityQuestion(name, outs, 2, i), equityQuestion(name, outs, 1, i)]),
+    ...DRAWS.flatMap((d, i) => [equityQuestion(d, 2, i), equityQuestion(d, 1, i)]),
     ...ALLIN_FLOPS.map((k, i) => allinEquityQuestion(FLOP_SPOTS[k], i)),
     ...POT_ODDS.map(([p, b], i) => potOddsQuestion(p, b, i)),
     ...POT_ODDS.slice(0, 6).map(([p, b], i) => ratioQuestion(p, b, i)),
@@ -827,4 +958,4 @@ export function deal(topic: TopicId | 'mixed', size: number, rng: () => number):
 }
 
 // Exported for the unit test.
-export const SPECS = { TURN_SPOTS, FLOP_SPOTS, COMBOS, CALLS };
+export const SPECS = { TURN_SPOTS, FLOP_SPOTS, COMBOS, CALLS, DRAWS, IMPLIED, CALL_EVS, SEMI_EVS };

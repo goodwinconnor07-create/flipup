@@ -2,7 +2,7 @@
 // card with the app's own hand evaluator, so no answer in the trainer is typed in by hand.
 
 import { fullDeck, rankOf, suitOf, RANKS, type Card } from '../../game/cards';
-import { scoreHand } from '../../game/evaluate';
+import { describeHand, scoreHand } from '../../game/evaluate';
 
 /** The cards still unseen once these are out. */
 export function unseen(...known: Card[][]): Card[] {
@@ -26,6 +26,22 @@ export function countOuts(hero: Card[], villain: Card[], board: Card[]): { outs:
   }
   return { outs, splits };
 }
+
+/**
+ * The cards that complete a draw, with no hand to beat: `draw` = a straight or better, `set` = trips or better,
+ * `overs` = a pair with one of your cards above everything on the board.
+ */
+export function drawOuts(hero: Card[], board: Card[], kind: 'draw' | 'set' | 'overs'): Card[] {
+  const top = Math.max(...board.map(rankOf));
+  return unseen(hero, board).filter((c) => {
+    if (kind === 'overs') return rankOf(c) > top && hero.some((h) => rankOf(h) === rankOf(c));
+    const cat = describeHand(hero.concat(board, c)).category;
+    return cat >= (kind === 'draw' ? 4 : 3);
+  });
+}
+
+/** The made hand's name, for the story: "Pair of kings". */
+export const handName = (hero: Card[], board: Card[]) => describeHand(hero.concat(board)).detail;
 
 /** Whether you're winning right now (the board as it is). */
 export function ahead(hero: Card[], villain: Card[], board: Card[]): boolean {

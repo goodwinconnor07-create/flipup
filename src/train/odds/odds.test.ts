@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { equity } from '../../game/equity';
-import { ahead, alpha, baseCombos, bluffShare, callEV, countCombos, countOuts, hitChance, impliedNeed, mdf, potOddsNeed, semiBluffEV } from './math';
+import { ahead, alpha, drawOuts, baseCombos, bluffShare, callEV, countCombos, countOuts, hitChance, impliedNeed, mdf, potOddsNeed, semiBluffEV } from './math';
 import { allQuestions, deal, MATCHUPS, SPECS, type TopicId } from './bank';
 
 const S = (s: string) => s.match(/../g) ?? [];
@@ -66,6 +66,27 @@ describe('question bank', () => {
       const seen = [...(q.hero ?? []), ...(q.villain ?? []), ...(q.board ?? [])];
       expect(new Set(seen).size, q.id).toBe(seen.length);
     }
+  });
+
+  it('sets every question in a hand: your cards, and a board after the flop', () => {
+    for (const q of qs) {
+      expect(q.hero?.length, q.id).toBe(2);
+      const preflop = q.topic === 'preflop';
+      if (!preflop) expect(q.board?.length ?? 0, q.id).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it('states the outs the cards really have', () => {
+    const check = (hero: string, board: string, kind: 'draw' | 'set' | 'overs', outs: number, label: string) =>
+      expect(drawOuts(S(hero), S(board), kind).length, `${label} ${hero} ${board}`).toBe(outs);
+    for (const d of SPECS.DRAWS) {
+      check(d.hero, d.flop, d.kind, d.outs, d.name);
+      check(d.hero, d.flop + d.turn, d.kind, d.outs, d.name);
+    }
+    for (const c of SPECS.CALLS) check(c.hero, c.board, c.kind, c.outs, c.draw);
+    for (const [draw, outs, , , hero, board] of SPECS.IMPLIED) check(hero, board, 'draw', outs, draw);
+    for (const [, , outs, draw, hero, board] of SPECS.CALL_EVS) check(hero, board, 'draw', outs, draw);
+    for (const [, , , outs, draw, hero, board] of SPECS.SEMI_EVS) check(hero, board, 'draw', outs, draw);
   });
 
   it('only asks for outs when you are behind, and never offers the answer as a trap', () => {

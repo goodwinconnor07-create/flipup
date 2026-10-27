@@ -51,7 +51,7 @@ const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(pre
 
 /**
  * The live cam: when a bot is thinking, a glass card slides down over the row of players and shows it in 3D,
- * sitting at a real table and giving off its tell. The seats themselves stay as emoji.
+ * as a Mii-style character sitting at a real table, giving off its tell. The seats themselves stay as emoji.
  */
 export function LiveCam({ game }: { game: Game }) {
   const shot = useShot(game);
@@ -104,10 +104,11 @@ export function LiveCam({ game }: { game: Game }) {
   );
 
   const s = stage.current;
-  const emoji = player?.emoji;
+  // Each bot is drawn from its name, so it looks the same every time the cam comes round to it.
+  const who = player ? `${player.name}${player.emoji}` : '';
   const take = shot && !shot.done ? `${shot.id}:${game.hand?.number}:${game.hand?.seq}` : '';
   useEffect(() => {
-    if (s && take && emoji) s.cut(emoji);
+    if (s && take && who) s.cut(who);
   }, [s, take]);
   useEffect(() => {
     if (s && shot?.done && shot.move && shot.move.move !== 'sb' && shot.move.move !== 'bb') s.react(shot.move.move as CamMove);

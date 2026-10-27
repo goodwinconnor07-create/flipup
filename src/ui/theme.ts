@@ -26,6 +26,14 @@ export const CAM = {
   cardRed: '#d42a26',
   cardBack: '#1f3c88',
   cardBackLine: '#3d63c9',
+  /** The live cam's Mii-style players (table/camMii.ts). */
+  skin: ['#ffe3cc', '#f8d0ad', '#eab88f', '#cf9466', '#a16a43', '#6e442a'],
+  hair: ['#1d1714', '#3b2417', '#6b3f22', '#c9974a', '#8f3a1e', '#8c8783'],
+  shirt: ['#e0352b', '#f08a24', '#f4cc2a', '#7ac143', '#1f8f3a', '#1f5fd1', '#44b6e8', '#f27aa8', '#7d4cbf', '#7a4a26', '#f2f2f2', '#2b2b2e'],
+  eye: '#17130f',
+  lip: '#b8473f',
+  mouth: '#5a1f1c',
+  teeth: '#ffffff',
   bokeh: ['#ffb347', '#ff6b4a', '#ffd27a', '#7fc8ff', '#ff9f6e'],
   chips: [
     { face: '#c8312b', stripe: '#ffffff' },

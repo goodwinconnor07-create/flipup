@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import { CAM } from '../../ui/theme';
+import { FaceKit, Mii, type Mouth } from './camMii';
 
 /**
- * The live cam's 3D room: a bot's emoji sitting behind a real-looking poker table (felt, a padded rail, chips, its
+ * The live cam's 3D room: a bot, as a Mii-style character (camMii.ts), sitting behind a real-looking poker table (felt, a padded rail, chips, its
  * two cards and the board), under a warm overhead light, filmed by a slightly unsteady camera. While the bot thinks
  * it plays one tell on a loop: it leans in, peeks at its cards, glances away and fiddles with a chip. When it moves
  * it reacts (chips pushed in, cards mucked, a nod for a check). Plain three.js, loaded only when a table opens.
@@ -20,6 +21,9 @@ const CARD = { w: 0.063, h: 0.088 };
 const CHIP = { r: 0.02, h: 0.0036 };
 /** One pass of the tell, in seconds. */
 const LOOP = 4.4;
+/** Where the player sits, and where its cards lie. */
+const SEAT_Z = -1.0;
+const HOLE_Z = -0.72;
 
 const ease = (x: number) => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 2 * x));
 /** 0 outside [a, b], rising to 1 over `ramp` seconds at each end. */
@@ -44,8 +48,6 @@ function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: numbe
   ctx.roundRect(x, y, w, h, r);
 }
 
-const EMOJI_FONT = '"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif';
-
 export class CamStage {
   private renderer: THREE.WebGLRenderer;
   private scene = new THREE.Scene();
@@ -62,9 +64,10 @@ export class CamStage {
   private reduced: boolean;
   private resize: ResizeObserver;
 
-  private bot = new THREE.Group();
-  private face: THREE.Mesh<THREE.PlaneGeometry, THREE.MeshStandardMaterial>;
-  private faceDepth: THREE.MeshDepthMaterial;
+  private kit: FaceKit;
+  private mii: Mii | null = null;
+  private miiFor = '';
+  private faceKey = '';
   private holes: THREE.Group[] = [];
   private fiddle: THREE.Mesh;
   private pushed = new THREE.Group();
@@ -103,9 +106,8 @@ export class CamStage {
     this.room();
     this.felt = this.table();
     this.lights();
-    const { face, depth } = this.seat();
-    this.face = face;
-    this.faceDepth = depth;
+    this.kit = new FaceKit(this.renderer);
+    this.seat();
     this.fiddle = this.chips();
     this.scene.add(this.board, this.pushed);
 
@@ -228,27 +230,16 @@ export class CamStage {
     this.scene.add(fill);
   }
 
-  /** The player: their emoji, sitting in a leather chair behind the table. */
+  /** The chair the player sits in, and its two cards. The player itself comes with each cut. */
   private seat() {
     const chair = new THREE.Mesh(
       this.keep(new THREE.CapsuleGeometry(0.3, 0.5, 8, 24)),
       this.keep(new THREE.MeshPhysicalMaterial({ color: CAM.leather, roughness: 0.5, clearcoat: 0.3 })),
     );
     chair.scale.set(0.9, 0.85, 0.3);
-    chair.position.set(0, 0.98, -1.32);
+    chair.position.set(0, 0.98, SEAT_Z - 0.26);
     chair.castShadow = true;
     this.scene.add(chair);
-
-    const mat = this.keep(new THREE.MeshStandardMaterial({ transparent: true, alphaTest: 0.4, roughness: 0.7, emissive: '#ffffff', emissiveIntensity: 0.12 }));
-    const face = new THREE.Mesh(this.keep(new THREE.PlaneGeometry(0.44, 0.44)), mat);
-    face.castShadow = true;
-    // Shadows follow the emoji's outline, not its square.
-    const depth = this.keep(new THREE.MeshDepthMaterial({ depthPacking: THREE.RGBADepthPacking, alphaTest: 0.4 }));
-    face.customDepthMaterial = depth;
-    face.position.y = 0.22;
-    this.bot.add(face);
-    this.bot.position.set(0, TOP + 0.1, -1.08);
-    this.scene.add(this.bot);
 
     // Its two cards, face down in front of it.
     for (const [x, r] of [
@@ -260,12 +251,11 @@ export class CamStage {
       card.position.z = -CARD.h / 2;
       pivot.add(card);
       // Turned so the near edge is the one it lifts.
-      pivot.position.set(x, TOP + 0.002, -0.56 + CARD.h / 2);
+      pivot.position.set(x, TOP + 0.002, HOLE_Z + CARD.h / 2);
       pivot.rotation.y = r;
       this.holes.push(pivot);
       this.scene.add(pivot);
     }
-    return { face, depth };
   }
 
   // Shared by every card, so a new board makes nothing new once each card has been seen.
@@ -383,38 +373,36 @@ export class CamStage {
       return last;
     };
     // The bot's own chips, to its right.
-    stack(0.16, -0.62, 14, 2);
-    stack(0.205, -0.6, 9, 0);
-    const top = stack(0.185, -0.66, 11, 1);
-    stack(-0.17, -0.63, 6, 3);
+    stack(0.155, -0.72, 14, 2);
+    stack(0.215, -0.705, 9, 0);
+    const top = stack(0.19, -0.765, 11, 1);
+    stack(-0.18, -0.73, 6, 3);
     // The pot.
     stack(0.24, -0.4, 7, 0);
     stack(0.275, -0.43, 5, 1);
     stack(0.255, -0.37, 9, 2);
     // What it pushes in when it bets.
-    stack(-0.02, -0.5, 8, 0, this.pushed);
-    stack(0.025, -0.51, 6, 1, this.pushed);
+    stack(-0.02, -0.64, 8, 0, this.pushed);
+    stack(0.03, -0.655, 6, 1, this.pushed);
     this.pushed.visible = false;
     return top;
   }
 
   // ── What the shot shows ────────────────────────────────────────────────
 
-  /** Cut to a new player: their face, a fresh take. */
-  cut(emoji: string) {
-    const [c, ctx] = canvas(512, 512);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = `420px ${EMOJI_FONT}`;
-    ctx.fillText(emoji, 256, 280);
-    const old = this.face.material.map;
-    const t = texture(c, this.renderer);
-    this.face.material.map = t;
-    this.face.material.emissiveMap = t;
-    this.face.material.needsUpdate = true;
-    this.faceDepth.map = t;
-    this.faceDepth.needsUpdate = true;
-    old?.dispose();
+  /** Cut to a player (by name: each one always looks the same): a fresh take. */
+  cut(who: string) {
+    if (who !== this.miiFor) {
+      if (this.mii) {
+        this.scene.remove(this.mii.root);
+        this.mii.dispose();
+      }
+      this.mii = new Mii(who, this.kit);
+      this.mii.root.position.set(0, TOP - 0.02, SEAT_Z);
+      this.scene.add(this.mii.root);
+      this.miiFor = who;
+      this.faceKey = '';
+    }
     this.t = 0;
     this.move = null;
     this.draw();
@@ -474,7 +462,8 @@ export class CamStage {
   dispose() {
     this.stop();
     this.resize.disconnect();
-    this.face.material.map?.dispose();
+    this.mii?.dispose();
+    this.kit.dispose();
     for (const d of this.disposables) d.dispose();
     this.renderer.dispose();
     this.renderer.forceContextLoss();
@@ -516,42 +505,40 @@ export class CamStage {
     );
     this.camera.lookAt(Math.sin(t * 0.5) * 0.005 * sway, 0.86, -0.82);
 
+    const mii = this.mii;
     // The tell, while it thinks: lean in and peek at the cards, glance away, then fiddle with a chip.
     const thinking = !m;
     const peek = thinking ? span(l, 0.6, 2.0, 0.35) : 0;
     const away = thinking ? span(l, 2.2, 3.0, 0.2) : 0;
     const fidget = thinking ? span(l, 3.05, 4.3, 0.1) : 0;
-    const breathe = Math.sin(t * 3.4) * 0.006;
+    const breathe = Math.sin(t * 3.4) * 0.004;
 
-    let lean = peek * 0.32;
-    let drop = peek * 0.05;
-    let turn = away * 0.5;
-    let shift = -away * 0.035;
-    let nod = 0;
+    let lean = peek * 0.22;
+    let turn = away * 0.55;
+    let nod = peek * 0.35;
+    let lookX = away * -1 + fidget * 0.7 + Math.sin(t * 0.7) * 0.15 * (1 - peek - away - fidget);
+    let lookY = -peek * 0.9 - fidget * 0.7;
+    let face: [Parameters<Mii['express']>[0], Mouth, number] = peek > 0.5 ? ['open', 'line', -0.7] : away > 0.5 ? ['open', 'smile', 0.2] : ['open', 'line', 0];
 
     // The reaction, once it has moved.
     if (m === 'fold') {
-      lean = -0.18 * ease(mt / 0.4);
-      drop = -0.02 * ease(mt / 0.4);
+      lean = -0.12 * ease(mt / 0.4);
+      face = mt < 0.7 ? ['closed', 'frown', -0.3] : ['open', 'frown', -0.2];
+      lookX = 0.6;
+      lookY = -0.3;
     } else if (m === 'check') {
-      nod = Math.max(0, Math.sin(Math.min(mt, 0.9) * Math.PI * 4.4)) * 0.16;
+      nod = Math.max(0, Math.sin(Math.min(mt, 0.9) * Math.PI * 4.4)) * 0.1;
+      face = ['open', 'line', 0.2];
     } else if (m) {
-      lean = 0.22 * span(mt, 0, 0.9, 0.2) + (m === 'allin' ? 0.12 : 0);
-      drop = 0.04 * span(mt, 0, 0.9, 0.2);
+      lean = 0.18 * span(mt, 0, 1.0, 0.25) + (m === 'allin' ? 0.08 : 0);
+      face = m === 'allin' ? (mt > 0.5 ? ['happy', 'grin', 0.8] : ['open', 'o', 0.9]) : m === 'call' ? ['open', 'line', 0.1] : ['open', 'smile', 0.4];
     }
-
-    this.bot.rotation.x = lean + nod;
-    this.bot.rotation.y = turn;
-    this.bot.position.x = shift;
-    this.bot.position.y = TOP + 0.1 - drop + breathe;
-    this.bot.position.z = -1.08 + lean * 0.14;
-    this.face.scale.y = 1 + breathe * 1.5;
 
     // Its cards: the near edges lift for the peek; mucked, they slide in towards the middle.
     const muck = m === 'fold' ? ease(mt / 0.5) : 0;
     this.holes.forEach((h, i) => {
       h.rotation.x = peek * (0.5 + i * 0.08);
-      h.position.z = -0.56 + CARD.h / 2 + muck * 0.09;
+      h.position.z = HOLE_Z + CARD.h / 2 + muck * 0.09;
       h.position.x = (i ? 0.036 : -0.036) * (1 - muck * 0.6);
     });
 
@@ -562,7 +549,48 @@ export class CamStage {
 
     // Chips pushed in for a call, bet or raise.
     const bets = m === 'call' || m === 'bet' || m === 'raise' || m === 'allin';
+    const shove = bets ? ease(mt / 0.6) : 0;
     this.pushed.visible = bets;
-    if (bets) this.pushed.position.set(ease(mt / 0.6) * 0.2, 0, ease(mt / 0.6) * 0.09);
+    if (bets) this.pushed.position.set(shove * 0.2, 0, shove * 0.12);
+
+    if (!mii) return;
+    mii.body.rotation.x = lean;
+    mii.body.position.y = breathe;
+    mii.head.rotation.set(nod, turn, 0);
+    mii.look(lookX, lookY);
+    const key = face.join();
+    if (key !== this.faceKey) {
+      this.faceKey = key;
+      mii.express(...face);
+    }
+    mii.blink(!still && face[0] === 'open' && t % 3.3 > 3.18);
+
+    // The hands: resting on the felt, unless they're doing something.
+    const rest = (side: number) => new THREE.Vector3(side * 0.13, TOP + 0.045, -0.8);
+    let left = rest(-1);
+    let right = rest(1);
+    if (peek > 0) {
+      // Both hands on its cards, lifting the near edges.
+      const up = Math.sin(peek * 0.55) * CARD.h;
+      left = left.lerp(new THREE.Vector3(-0.06, TOP + 0.03 + up, HOLE_Z - 0.035), peek);
+      right = right.lerp(new THREE.Vector3(0.06, TOP + 0.03 + up, HOLE_Z - 0.035), peek);
+    }
+    if (fidget > 0) right = right.lerp(new THREE.Vector3(0.19, this.fiddle.position.y + 0.04, -0.765), fidget);
+    if (bets) {
+      const go = span(mt, 0, 1.1, 0.25);
+      const at = (side: number) => new THREE.Vector3(shove * 0.2 + side * 0.06, TOP + 0.04, -0.69 + shove * 0.12);
+      left = left.lerp(at(-1), go);
+      right = right.lerp(at(1), go);
+    }
+    if (m === 'fold') {
+      const go = span(mt, 0, 0.9, 0.2);
+      left = left.lerp(new THREE.Vector3(-0.05, TOP + 0.04, HOLE_Z - 0.03 + muck * 0.09), go);
+      right = right.lerp(new THREE.Vector3(0.05, TOP + 0.04, HOLE_Z - 0.03 + muck * 0.09), go);
+    }
+    if (m === 'check') {
+      const tap = Math.max(0, Math.sin(Math.min(mt, 0.9) * Math.PI * 4.4)) * 0.035;
+      right = new THREE.Vector3(0.1, TOP + 0.045 + tap, -0.74);
+    }
+    mii.reach(left, right);
   }
 }

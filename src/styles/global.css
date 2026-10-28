@@ -474,8 +474,7 @@ input {
   font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.01em;
-  /* A chunky edge under the button: it sinks when you press it. */
-  box-shadow: 0 4px 0 var(--party-edge);
+  box-shadow: 0 12px 22px -12px rgba(0, 0, 0, 0.5);
   text-decoration: none;
   color: var(--on-color);
   user-select: none;
@@ -490,8 +489,8 @@ input {
 }
 
 .btn:active {
-  transform: translateY(3px) scale(0.98);
-  box-shadow: 0 1px 0 var(--party-edge);
+  transform: scale(0.97);
+  box-shadow: 0 4px 10px -6px rgba(0, 0, 0, 0.5);
   filter: brightness(0.94);
 }
 
@@ -541,14 +540,14 @@ input {
   background: var(--bg-2);
   color: var(--ink);
   text-shadow: none;
-  box-shadow: 0 3px 0 var(--bg-3);
+  box-shadow: none;
 }
 
 .btn-outline {
   background: var(--bg-2);
   color: var(--brand-ink);
   text-shadow: none;
-  box-shadow: 0 3px 0 var(--bg-3);
+  box-shadow: none;
 }
 
 .btn-link {
@@ -1369,3 +1368,147 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   color: var(--on-color);
 }
 
+
+/* ── Party look for every menu ────────────────────────────────────────────────────────────────
+   Setup, lobby, profile, party, the finish page and every sheet get the bolder, bigger style. The game
+   screen (.table-screen) keeps the sizes it had: the tokens below are put back inside it. */
+
+.table-screen {
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+  --fs-h2: 22px;
+  --fs-h3: 20px;
+  --fs-title: 34px;
+}
+
+.table-screen .btn {
+  min-height: 50px;
+  padding: 0 20px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.table-screen .btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
+  box-shadow: none;
+}
+
+.table-screen .btn-xl {
+  min-height: 56px;
+  font-size: var(--fs-lead);
+}
+
+.table-screen .btn-sm {
+  min-height: 40px;
+  font-size: var(--fs-small);
+  border-radius: var(--r-sm);
+  padding: 0 16px;
+}
+
+.table-screen .btn-green {
+  background: var(--green);
+}
+
+.table-screen .btn-blue {
+  background: var(--blue);
+}
+
+.table-screen .btn-red {
+  background: var(--red);
+}
+
+.screen:not(.table-screen):not(.home)::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 320px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(220px 180px at 10% 0%, rgba(255, 61, 139, 0.2), transparent 70%),
+    radial-gradient(240px 200px at 90% 4%, rgba(47, 123, 255, 0.22), transparent 70%),
+    radial-gradient(200px 160px at 55% 0%, rgba(255, 214, 10, 0.16), transparent 70%);
+}
+
+.screen:not(.table-screen) .h1 {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.screen:not(.table-screen) .h2 {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.screen:not(.table-screen) .topbar-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.screen:not(.table-screen) .muted {
+  font-weight: 500;
+}
+
+.screen:not(.table-screen) .section-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.sheet {
+  border-radius: 32px 32px 0 0;
+}
+
+.sheet h2,
+.sheet .h2,
+.sheet .sheet-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.field {
+  border-radius: var(--r-lg);
+  font-weight: 600;
+}
+
+.group,
+.glass-card,
+.tile {
+  border-radius: var(--r-xl);
+}
+
+.stepper-btn {
+  box-shadow: 0 8px 14px -8px rgba(0, 0, 0, 0.4);
+}
+
+.emoji-picker .emoji-grid {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+.emoji-picker .emoji-option {
+  border-radius: var(--r-md);
+  font-size: 40px;
+}
+
+.emoji-picker .emoji-custom-pic {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-md);
+  font-size: 40px;
+}
+
+.emoji-picker .emoji-custom .field {
+  min-height: 72px;
+  font-size: var(--fs-h3);
+}
+
+.hero-pic {
+  gap: 28px;
+}

@@ -32,7 +32,8 @@ const record = {
   showdown: true,
 };
 
-test('replay a saved hand', async ({ page }) => {
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('replay a saved hand', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript((rec) => {
     if (localStorage.getItem('flipup.history')) return;
@@ -59,7 +60,8 @@ test('replay a saved hand', async ({ page }) => {
   await shot(page, 'replay-4-result');
 });
 
-test('a full ring of nine still fits on a phone', async ({ page }) => {
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('a full ring of nine still fits on a phone', async ({ page }) => {
   watchErrors(page);
   const names = ['Connor', 'Ollie', 'Bot Bea', 'Longname Lou', 'Sam', 'Priya', 'Mo', 'Jess', 'Dave'];
   const nine = {

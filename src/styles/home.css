@@ -1270,14 +1270,8 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
 }
 
 .avatar-btn {
-  width: 48px;
-  height: 48px;
-}
-
-.avatar-btn > * {
-  width: 44px !important;
-  height: 44px !important;
-  box-shadow: 0 0 0 3px var(--party-yellow);
+  width: 56px;
+  height: 56px;
 }
 
 .section-head {
@@ -1287,7 +1281,7 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
 }
 
 .hero {
-  box-shadow: 0 8px 0 -2px var(--party-edge);
+  box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.55);
 }
 
 .hero-title {
@@ -1330,7 +1324,7 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
   width: 42px;
   height: 42px;
   border-radius: 13px;
-  box-shadow: 0 3px 0 var(--party-edge);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.4);
 }
 
 .gr-icon svg {
@@ -1390,7 +1384,7 @@ html[data-theme='dark'] .tab-capsule {
   border: 0;
   color: var(--on-color);
   background: linear-gradient(160deg, var(--party-pink), var(--party-orange));
-  box-shadow: 0 6px 0 -1px var(--party-edge), 0 12px 24px -8px rgba(255, 61, 139, 0.7);
+  box-shadow: 0 14px 26px -8px rgba(255, 61, 139, 0.65);
 }
 
 .tab-round svg {
@@ -1437,10 +1431,10 @@ html[data-theme='dark'] .tab-capsule {
 /* The games shelf: tall, loud cards with a chunky edge and a coloured glow. */
 .game-card {
   flex-basis: min(80vw, 312px);
-  height: 236px;
+  height: 268px;
   padding: 20px;
   border-radius: var(--r-xl);
-  box-shadow: 0 8px 0 -1px var(--party-edge), 0 18px 30px -16px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 18px 32px -14px rgba(0, 0, 0, 0.6);
 }
 
 .game-card::before {
@@ -1473,11 +1467,87 @@ html[data-theme='dark'] .tab-capsule {
   padding: 8px 20px;
   font-size: 17px;
   font-weight: 800;
-  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.4);
 }
 
 @media (prefers-reduced-motion: no-preference) {
   .game-card {
+    animation: party-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+}
+
+/* The drawn scene on each game's card. */
+.game-illo {
+  position: absolute;
+  top: 4px;
+  right: -6px;
+  width: 56%;
+  height: auto;
+  aspect-ratio: 200 / 150;
+  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
+}
+
+.game-start-art .game-illo {
+  top: 50%;
+  right: 50%;
+  width: auto;
+  height: 118%;
+  transform: translate(50%, -50%);
+}
+
+.game-tile-art .game-illo {
+  top: 0;
+  right: 0;
+  width: 100%;
+  filter: none;
+}
+
+/* The two quick-start cards: tall, with big art and a soft coloured glow under each. */
+.mode {
+  min-height: 184px;
+  padding-left: 24px;
+  box-shadow: 0 18px 34px -14px var(--mode-glow, rgba(0, 0, 0, 0.5));
+}
+
+.mode::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(90% 70% at 0% 0%, rgba(255, 255, 255, 0.26), transparent 60%);
+}
+
+.mode-blue {
+  --mode-glow: rgba(47, 123, 255, 0.7);
+  background: linear-gradient(150deg, #4aa3ff 0%, #2f5bff 55%, #5b3df0 100%);
+}
+
+.mode-green {
+  --mode-glow: rgba(25, 194, 107, 0.7);
+  background: linear-gradient(150deg, #39e08c 0%, #12a85f 55%, #0b7f6b 100%);
+}
+
+.mode-title {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: normal;
+  line-height: 1.02;
+}
+
+.mode-sub {
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.mode-art {
+  width: 50%;
+  margin-right: -6px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mode {
     animation: party-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
   }
 }

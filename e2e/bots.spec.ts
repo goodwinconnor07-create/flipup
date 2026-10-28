@@ -401,7 +401,8 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
   }
 });
 
-test('ending a game adds to History', async ({ page }) => {
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('ending a game adds to History', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play with Bots' }).click();
@@ -612,7 +613,8 @@ test('dark mode: an appearance choice in the menu that changes the whole app and
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('home: games first, results from finished tables in History', async ({ page }) => {
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('home: games first, results from finished tables in History', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => {
     if (localStorage.getItem('flipup.stats')) return;

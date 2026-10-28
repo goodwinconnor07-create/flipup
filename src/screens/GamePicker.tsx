@@ -62,9 +62,6 @@ export function GameRow({ settings, onChange }: { settings: Settings; onChange: 
                 onClick={() => pick(v.id)}
               >
                 <GameArt variant={v.id} className="game-tile-art" />
-                <span className="game-tile-emoji" aria-hidden>
-                  {v.emoji}
-                </span>
                 <b>{v.name}</b>
                 <small>{v.tagline}</small>
               </button>

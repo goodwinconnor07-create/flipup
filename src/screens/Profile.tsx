@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { loadStreak } from '../state/persist';
 import { cleanName, isNameBlocked, type TableInfo, type Variant } from '../game';
 import { back, joinTable, openSheet, replace, setProfile, useApp } from '../state/store';
 import { BackBar, NameAndPicture } from '../ui/components';
@@ -10,6 +11,7 @@ const TITLES = { host: 'Host a table', bots: 'Play the bots', join: 'Join the ta
 export function Profile({ then, info, variant }: { then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo; variant?: Variant }) {
   const profile = useApp((s) => s.profile);
   const [name, setName] = useState(profile.name);
+  const [streak] = useState(loadStreak);
   const clean = cleanName(name);
   const ok = clean.length > 0 && !isNameBlocked(clean);
 
@@ -37,6 +39,17 @@ export function Profile({ then, info, variant }: { then: 'host' | 'bots' | 'join
         </div>
         {then === 'done' && (
           <div className="group">
+            <button type="button" className="group-row press" onClick={() => openSheet({ name: 'streak' })}>
+              <span className="gr-icon" style={{ background: 'linear-gradient(160deg, var(--gold-hi), var(--party-orange))' }}>
+                <span aria-hidden>🔥</span>
+              </span>
+              <span className="gr-text">
+                Streak
+                <small>{streak.today ? 'You played today.' : 'Play a hand today to keep it.'}</small>
+              </span>
+              <span className="gr-count num">{streak.days} {streak.days === 1 ? 'day' : 'days'}</span>
+              <ChevronIcon className="gr-chev" width={16} height={16} />
+            </button>
             <button type="button" className="group-row press" onClick={() => openSheet({ name: 'prefs' })}>
               <span className="gr-icon" style={{ background: 'var(--slate-hi)' }}>
                 <GearIcon />

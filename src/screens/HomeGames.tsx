@@ -1,15 +1,14 @@
 import { VARIANTS, type Variant } from '../game';
 import { openSheet } from '../state/store';
 import { cardArt } from '../ui/gameThemes';
+import { GameIllustration } from '../ui/GameIllustrations';
 
-/** The picture behind a game: its colours, with the emoji that belong to it floating about. */
+/** The picture behind a game: its colours, with a scene drawn for that game on top. */
 export function GameArt({ variant, className }: { variant: Variant; className?: string }) {
   const art = cardArt(variant);
   return (
     <span className={className ?? 'game-art'} style={{ background: `linear-gradient(160deg, ${art.card[0]}, ${art.card[1]})` }} aria-hidden>
-      <span className="prop prop-a">{art.props[0]}</span>
-      <span className="prop prop-b">{art.props[1]}</span>
-      <span className="prop prop-c">{art.props[2]}</span>
+      <GameIllustration variant={variant} className="game-illo" />
     </span>
   );
 }
@@ -22,9 +21,6 @@ export function GameShelf() {
         {VARIANTS.map((v) => (
           <button key={v.id} type="button" className="game-card press" onClick={() => openSheet({ name: 'game', variant: v.id })} aria-label={`${v.name}. ${v.tagline}`}>
             <GameArt variant={v.id} />
-            <span className="game-card-emoji" aria-hidden>
-              {v.emoji}
-            </span>
             <span className="game-card-text">
               <b>{v.name}</b>
               <small>{v.tagline}</small>

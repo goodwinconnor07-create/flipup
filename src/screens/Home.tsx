@@ -1,17 +1,16 @@
 import { useState } from 'react';
 import { fetchTableInfo } from '../state/api';
-import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
+import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
-import { HistoryTab } from './HomeHistory';
 import { QuickGames } from './HomeQuick';
 import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
 import { PartyTab } from './HomeParty';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { ChevronIcon, HistoryIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
+import { ChevronIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 import { variantInfo } from '../game';
 
 function ago(at: number): string {
@@ -22,11 +21,10 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'party' | 'history';
+type Tab = 'play' | 'party';
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
   { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
-  { id: 'history', label: 'History', Icon: HistoryIcon, title: 'History' },
 ];
 
 // Kept for the session, so coming back from a replay lands on the same tab.
@@ -56,7 +54,6 @@ export function Home() {
   const named = profile.name.trim().length > 0;
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
-  const [streak] = useState(loadStreak);
   const [party] = useState(loadPartyRef);
   // The last online table, if it's still open, is one tap away.
   const rejoin = async () => {
@@ -95,9 +92,7 @@ export function Home() {
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
   const subtitle =
-    tab === 'history'
-      ? 'How your tables went.'
-      : tab === 'party'
+    tab === 'party'
         ? 'Mini game tournaments with your friends.'
         : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
 
@@ -110,22 +105,11 @@ export function Home() {
               <h1 className="large-title">{current.title}</h1>
               <button
                 type="button"
-                className={`streak-pill press${streak.today ? ' lit' : ''}`}
-                aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}. Show details`}
-                onClick={() => openSheet({ name: 'streak' })}
-              >
-                <span className="streak-emoji" aria-hidden>
-                  🔥
-                </span>
-                <b className="num">{streak.days}</b>
-              </button>
-              <button
-                type="button"
                 className="avatar-btn press"
                 aria-label={named ? `Your profile and settings: ${profile.name}` : 'Set up your profile'}
                 onClick={() => navigate({ name: 'profile', then: 'done' })}
               >
-                <Avatar emoji={profile.emoji} size={36} />
+                <Avatar emoji={profile.emoji} size={52} />
               </button>
             </div>
             <p>{subtitle}</p>
@@ -152,9 +136,8 @@ export function Home() {
                     </span>
                   </button>
                 )}
-                <h3 className="section-head">Games</h3>
-                <GameShelf />
                 <h3 className="section-head">Quick start</h3>
+                <GameShelf />
                 <section className="modes" aria-label="Start a game">
                   <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
                     <span className="mode-text">
@@ -179,7 +162,6 @@ export function Home() {
                 <QuickGames />
               </>
             )}
-            {tab === 'history' && <HistoryTab />}
             {tab === 'party' && <PartyTab />}
           </div>
         </div>

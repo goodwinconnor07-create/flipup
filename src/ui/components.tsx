@@ -56,7 +56,7 @@ export function NameAndPicture({
       <button type="button" className="avatar-button" aria-label="Change your emoji" onClick={onPicture}>
         <span key={emoji} className="hero-pop">
           <span className="hero-float">
-            <Avatar emoji={emoji} size={132} />
+            <Avatar emoji={emoji} size={176} />
             <span className="hero-edit-badge" aria-hidden>
               <PencilIcon width={20} height={20} />
             </span>

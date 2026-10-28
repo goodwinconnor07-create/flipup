@@ -92,6 +92,10 @@ export type Sheet =
   | { name: 'game'; variant: Variant }
   /** Type the table code or scan its QR code. */
   | { name: 'join' }
+  /** How a game plays, from the badge on the table. */
+  | { name: 'rules'; variant: Variant | undefined }
+  /** Choose which game a table plays. */
+  | { name: 'pick'; current: Variant; onPick: (variant: Variant) => void }
   | { name: 'settings' }
   /** This phone's look and sound: dark mode, Liquid Glass, sound, animations. */
   | { name: 'prefs' }
@@ -429,6 +433,20 @@ function closeConnection(): void {
   set({ conn: 'none' });
 }
 
+/** Lets a last message go, then closes. Only the connection that was open now is closed: a table opened in
+ * the meantime keeps its own. */
+function closeConnectionSoon(): void {
+  const old = conn;
+  conn = null;
+  set({ conn: 'none' });
+  setTimeout(() => old?.close(), 300);
+}
+
+/** Sends without a toast if it can't go, for messages that don't matter once you've left. */
+function sendQuietly(action: Action): void {
+  conn?.send({ t: 'act', id: newId(8), a: action });
+}
+
 /** Keeps who's at an online table with the "rejoin" card on Home. */
 function rememberFaces(code: string | null, game: Game): void {
   const last = loadLastTable();
@@ -671,9 +689,9 @@ export function leaveTable(): void {
   recordFinished();
   const s = state.session;
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
-  if (s?.mode === 'online' && me && state.game?.status !== 'ended') send({ type: 'remove', playerId: me.id });
+  if (s?.mode === 'online' && me && state.game?.status !== 'ended') sendQuietly({ type: 'remove', playerId: me.id });
   // Give the message a moment to go before the socket closes.
-  setTimeout(closeConnection, 300);
+  closeConnectionSoon();
   setSession(null);
   resetTo();
 }
@@ -686,8 +704,8 @@ export function closeTable(): void {
   if (state.session?.mode === 'online') saveLastTable(null);
   if (state.session?.mode === 'online' && asked) {
     // Leaving after asking to play again: take the request back, so no one's seated who isn't there.
-    send({ type: 'playAgain', off: true });
-    setTimeout(closeConnection, 300);
+    sendQuietly({ type: 'playAgain', off: true });
+    closeConnectionSoon();
   } else closeConnection();
   setSession(null);
   resetTo();

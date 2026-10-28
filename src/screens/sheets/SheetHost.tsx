@@ -54,6 +54,7 @@ import { GameStartSheet } from './GameStartSheet';
 import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
 import { AddPalSheet, JoinPartySheet } from './CodeSheets';
+import { PickSheet, RulesSheet } from '../GamePicker';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
   switch (sheet.name) {
@@ -67,6 +68,10 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <GameStartSheet variant={sheet.variant} />;
     case 'join':
       return <JoinSheet />;
+    case 'rules':
+      return <RulesSheet variant={sheet.variant} />;
+    case 'pick':
+      return <PickSheet current={sheet.current} onPick={sheet.onPick} />;
     case 'settings':
       return <SettingsSheet />;
     case 'prefs':

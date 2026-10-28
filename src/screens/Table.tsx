@@ -19,7 +19,6 @@ import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
 import { TableCam } from './table/TableCam';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
-import { RulesSheet } from './GamePicker';
 import { soundMoodFor } from '../ui/gameThemes';
 import { setSoundMood } from '../ui/sound';
 import { useThemeMoments } from '../ui/useTableSounds';
@@ -231,7 +230,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
     const a = (CIRCLE_HOURS[i] / 12) * 2 * Math.PI;
     return { '--x': Math.sin(a).toFixed(3), '--y': (-Math.cos(a)).toFixed(3) } as CSSProperties;
   };
-  const [rules, setRules] = useState(false);
   const desktop = useDesktop();
   const speakerOk = useRef<(id: string) => boolean>(() => true);
   const { say: reactions, quiet } = useReactions(game, speakerOk);
@@ -413,7 +411,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 <button
                   type="button"
                   className={`variant-pill press${role === 'imposter' ? ' imposter' : ''}`}
-                  onClick={() => setRules(true)}
+                  onClick={() => openSheet({ name: 'rules', variant })}
                   aria-label={`${variantInfo(variant).name}: how it plays`}
                 >
                   {role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
@@ -511,7 +509,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
         </div>
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} />
       </div>
-      {rules && <RulesSheet variant={variant} onClose={() => setRules(false)} />}
     </div>
   );
 }

@@ -37,6 +37,9 @@ export function StandingsList({ game }: { game: Game }) {
   );
 }
 
+/** Tables whose win has been celebrated on this phone, so reopening the page stays quiet. */
+const celebrated = new Set<string>();
+
 const ordinal = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : Math.min(n % 10, 4) % 4]}`;
 
 /** True once the element has been on screen (straight away with Reduce Motion). */
@@ -179,17 +182,21 @@ export function Final({ game }: { game: Game }) {
   const progress = useMemo(() => loadProgress(), [report]);
   const legend = game.legendGame ? legendById(game.legendGame) : undefined;
   const next = report && LEGENDS_ON ? nextLegend(progress) : null;
+  const [pick] = useState(() => Math.floor(Math.random() * 8));
+  const myName = me?.name;
   const line = useMemo(() => {
-    if (!legend || !me) return null;
-    return finishLine(legend.id, iWon ? 'finishLost' : 'finishWon', me.name, Math.floor(Math.random() * 8));
-  }, [legend, me, iWon]);
+    if (!legend || !myName) return null;
+    return finishLine(legend.id, iWon ? 'finishLost' : 'finishWon', myName, pick);
+  }, [legend, myName, iWon, pick]);
 
   useEffect(() => {
-    if (!iWon) return;
+    // Once per table: coming back to a finished table doesn't throw another party.
+    if (!iWon || celebrated.has(game.id)) return;
+    celebrated.add(game.id);
     haptic('success');
     playSound('victory');
     confetti(CONFETTI.win, { x: innerWidth / 2, y: innerHeight * 0.25 }, 150);
-  }, [iWon]);
+  }, [iWon, game.id]);
 
   const headline = !top ? 'Table closed' : iWon ? 'You win!' : `${top.name} wins!`;
   const hands = stats?.hands ?? game.hand?.number ?? 0;

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { fetchTableInfo } from '../state/api';
 import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
@@ -28,6 +28,8 @@ const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] 
 
 // Kept for the session, so coming back from another screen lands on the same tab.
 let lastTab: Tab = 'play';
+// And the same place on the page, so coming back doesn't throw you to the top.
+let lastScroll = 0;
 
 /** One line under the greeting: your table, or how your last game went. Chips reset every game, so they're never the measure. */
 function statusLine(active: boolean): string {
@@ -42,8 +44,15 @@ function statusLine(active: boolean): string {
 
 export function Home() {
   const [tab, setTabState] = useState<Tab>(lastTab);
+  const sheet = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (sheet.current) sheet.current.scrollTop = lastScroll;
+  }, []);
   const setTab = (t: Tab) => {
+    if (t === lastTab) return;
     lastTab = t;
+    lastScroll = 0;
+    if (sheet.current) sheet.current.scrollTop = 0;
     setTabState(t);
   };
   const game = useApp((s) => s.game);
@@ -97,7 +106,7 @@ export function Home() {
 
   return (
     <div className="screen home">
-      <div className="home-sheet">
+      <div className="home-sheet" ref={sheet} onScroll={(e) => (lastScroll = e.currentTarget.scrollTop)}>
         <div className="home-scroll">
           <header className="home-title">
             <div className="title-row">

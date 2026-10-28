@@ -18,20 +18,35 @@ function usePartyView(code: string, onGone: () => void): PartyView | null {
   gone.current = onGone;
   useEffect(() => {
     let live = true;
-    let timer: ReturnType<typeof setTimeout>;
+    let busy = false;
+    let finished = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    // One poll at a time. A round in play moves fast; the lobby and the breaks can be slower.
     const poll = async () => {
+      if (!live || busy) return;
+      busy = true;
+      let wait = 3000;
       try {
         const v = await readParty(code);
         if (!live) return;
         if (!v) return gone.current();
         setView(v);
+        finished = v.status === 'done';
+        wait = v.status === 'playing' ? 2000 : 3500;
       } catch {
         // Offline for a moment: try again.
+      } finally {
+        busy = false;
       }
-      if (live) timer = setTimeout(poll, 1800);
+      // Nothing changes once the party is over, and a hidden page doesn't need to ask.
+      if (live && !finished && document.visibilityState === 'visible') timer = setTimeout(poll, wait);
     };
     void poll();
-    const wake = () => document.visibilityState === 'visible' && (clearTimeout(timer), void poll());
+    const wake = () => {
+      if (document.visibilityState !== 'visible' || finished) return;
+      clearTimeout(timer);
+      void poll();
+    };
     document.addEventListener('visibilitychange', wake);
     return () => {
       live = false;

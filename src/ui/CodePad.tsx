@@ -31,13 +31,20 @@ export function useCode(run: (code: string) => Promise<string | null>, listening
     looking.current = true;
     setBusy(true);
     setError('');
-    const problem = await run(value);
+    let problem: string | null;
+    try {
+      problem = await run(value);
+    } catch {
+      problem = "Couldn't look that up. Try again.";
+    }
     looking.current = false;
     if (!problem) {
       haptic('success');
       return;
     }
+    // A wrong code starts over, so there's nothing to backspace through.
     setBusy(false);
+    setCode('');
     setError(problem);
     haptic('error');
   };
@@ -57,6 +64,7 @@ export function useCode(run: (code: string) => Promise<string | null>, listening
   };
 
   const fill = (value: string) => {
+    if (busy || looking.current) return;
     setCode(value);
     void submit(value);
   };
@@ -88,7 +96,7 @@ export function CodePad({ state, label }: { state: CodeState; label: string }) {
     <>
       <div className="join-code" role="status" aria-label={`${label}: ${code.split('').join(' ') || 'empty'}`}>
         {Array.from({ length: CODE_LENGTH }, (_, i) => (
-          <span key={`${i}-${code[i] ?? ''}`} className={`join-cell${i === Math.min(code.length, CODE_LENGTH - 1) && !busy ? ' next' : ''}${code[i] ? ' filled' : ''}`}>
+          <span key={`${i}-${code[i] ?? ''}`} className={`join-cell${i === code.length && !busy ? ' next' : ''}${code[i] ? ' filled' : ''}`}>
             {code[i] ?? ''}
           </span>
         ))}

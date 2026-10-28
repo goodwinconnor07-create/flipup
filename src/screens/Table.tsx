@@ -314,7 +314,9 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const glow = (c: Card) => showdown && lit.has(c);
   const myValue = mySeat && !mySeat.folded && mySeat.cards.length && hand?.variant !== 'imposter' ? bestHand(variant, mySeat.cards, hand?.board ?? []) : null;
   // Before the flop, "High card" says nothing; a pocket pair is worth pointing out.
-  const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? myValue.name : null;
+  // "Pair of kings" says more than "Pair"; the longer ones ("Two pair, kings and fives") would crowd the pill.
+  const short = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
+  const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? short(myValue) : null;
   const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
   // The pot counts down to nothing as it's pushed to the winner.
   const potNow = hand && !hand.result ? pot(hand) : 0;

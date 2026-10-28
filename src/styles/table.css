@@ -382,7 +382,8 @@ html[data-theme='dark'] .pcard.dim > * {
 .pod-cards.shimmer {
   position: relative;
   overflow: hidden;
-  border-radius: var(--r-sm, 6px);
+  /* The same corner as the small cards (5px), so the sweep never shaves them. */
+  border-radius: 5px;
 }
 
 .pod-cards.shimmer::after {
@@ -2888,4 +2889,19 @@ html.calm .mood-mark {
 .pod.away .thread,
 .pod.away .pod-pic > .bubble {
   display: none;
+}
+
+/* A bot's badge, in a quiet grey so it reads as a label and not a rank. */
+.bot-chip {
+  background: var(--slate-hi, #64748b);
+  letter-spacing: 0.04em;
+}
+
+/* Speech bubbles are plain capsules: the seat they sit on says who is talking, so there is no tail. */
+.bubble::before {
+  content: none !important;
+}
+
+.bubble {
+  border-radius: 999px !important;
 }

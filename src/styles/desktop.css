@@ -266,6 +266,10 @@
     gap: 6px;
   }
 
+  .pod-cards.shimmer {
+    border-radius: 7px;
+  }
+
   .pcard-sm {
     --w: 32px;
     border-radius: 7px;

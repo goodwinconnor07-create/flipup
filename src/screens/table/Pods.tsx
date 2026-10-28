@@ -227,7 +227,7 @@ export function Pod({
       style={{ ['--slot' as string]: slot, ['--n' as string]: n, ['--ax' as string]: `${ring.x}%`, ['--ay' as string]: `${ring.y}%` }}
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
-      aria-label={`${player.name}${player.legend ? ', a legend' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
+      aria-label={`${player.name}${player.bot && !player.legend ? ', a bot' : ''}${player.legend ? ', a legend' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
       onClick={() => {
         if (!host || self) return;
         // Once the hand is done, tapping a bot's face-down cards turns them over.
@@ -237,7 +237,7 @@ export function Pod({
     >
       <span className="pod-pic">
         <MoodFace game={game} player={player} seat={seat} size={50} />
-        {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}
+        {player.legend ? <span className="ai-chip legend-chip" aria-hidden>★</span> : player.bot && <span className="ai-chip bot-chip" aria-hidden>BOT</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (
           <Thread talk={reaction} />

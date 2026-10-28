@@ -181,7 +181,7 @@ function addBot(game: Game): void {
   const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
   const pick = pool.length
     ? pool[Math.floor(cryptoRng() * pool.length)]
-    : { name: `Bot ${game.players.length}`, emoji: '🤖', style: 'pro', profile: undefined };
+    : { name: `Bot ${game.players.length}`, emoji: '🦾', style: 'pro', profile: undefined };
   game.players.push({
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
     style: pick.style,

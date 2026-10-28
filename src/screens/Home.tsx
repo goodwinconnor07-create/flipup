@@ -155,6 +155,17 @@ export function Home() {
                     </span>
                   </button>
                 )}
+                <button type="button" className="join-bar press" onClick={() => openSheet({ name: 'join' })} aria-label="Join a game with a code">
+                  <span className="join-bar-text">
+                    <b>Join a game</b>
+                    <small>Got a code from a friend?</small>
+                  </span>
+                  <span className="join-bar-boxes" aria-hidden>
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <i key={i} />
+                    ))}
+                  </span>
+                </button>
                 <h3 className="section-head">Quick start</h3>
                 <GameShelf />
                 <section className="start-row" aria-label="Start a table">

@@ -39,3 +39,14 @@ export type ServerMessage =
 /** Heartbeats are fixed strings so the server can answer without waking up. */
 export const PING = '{"t":"ping"}';
 export const PONG = '{"t":"pong"}';
+
+/** A friend code's public details. */
+export interface FriendCardInfo {
+  code: string;
+  name: string;
+  emoji: string;
+}
+
+export interface CreateFriendCardResponse {
+  code: string;
+}

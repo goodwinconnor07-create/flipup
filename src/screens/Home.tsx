@@ -8,8 +8,10 @@ import { HistoryTab } from './HomeHistory';
 import { QuickGames } from './HomeQuick';
 import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
+import { PartyTab } from './HomeParty';
+import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
+import { ChevronIcon, HistoryIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 import { variantInfo } from '../game';
 
 function ago(at: number): string {
@@ -20,9 +22,10 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'history';
+type Tab = 'play' | 'party' | 'history';
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
+  { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
   { id: 'history', label: 'History', Icon: HistoryIcon, title: 'History' },
 ];
 
@@ -54,6 +57,7 @@ export function Home() {
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
   const [streak] = useState(loadStreak);
+  const [party] = useState(loadPartyRef);
   // The last online table, if it's still open, is one tap away.
   const rejoin = async () => {
     if (!last || looking) return;
@@ -83,12 +87,19 @@ export function Home() {
   // The banner only shows when there's one clear next step: your open table, or the online table you left.
   const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
     ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
-    : last
+    : party
+      ? { title: 'Your party', sub: `Code ${party.code}`, cta: 'Open the party', run: () => navigate({ name: 'party' }), faces: [], tone: 'slate' }
+      : last
       ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate' }
       : null;
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
-  const subtitle = tab === 'history' ? 'How your tables went.' : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
+  const subtitle =
+    tab === 'history'
+      ? 'How your tables went.'
+      : tab === 'party'
+        ? 'Mini game tournaments with your friends.'
+        : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
 
   return (
     <div className="screen home">
@@ -103,7 +114,9 @@ export function Home() {
                 aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}. Show details`}
                 onClick={() => openSheet({ name: 'streak' })}
               >
-                {streak.today ? <FlameIcon width={20} height={20} /> : <FlameOutlineIcon width={20} height={20} />}
+                <span className="streak-emoji" aria-hidden>
+                  🔥
+                </span>
                 <b className="num">{streak.days}</b>
               </button>
               <button
@@ -167,6 +180,7 @@ export function Home() {
               </>
             )}
             {tab === 'history' && <HistoryTab />}
+            {tab === 'party' && <PartyTab />}
           </div>
         </div>
       </div>

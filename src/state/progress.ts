@@ -96,10 +96,13 @@ export function loadProgress(): Progress {
   if (first) {
     for (const g of loadStats().games) if (g.legend && legendById(g.legend) && g.place === 1) beaten[g.legend] = { wins: (beaten[g.legend]?.wins ?? 0) + 1, first: beaten[g.legend]?.first ?? g.at };
   }
+  const badges: Progress['badges'] = Object.fromEntries(Object.entries(s?.badges ?? {}).filter(([id]) => badgeById(id)).map(([id, at]) => [id, num(at)]));
+  // A legend beaten before, read from the old table history, already has its badge: don't announce it again.
+  if (first) for (const id of Object.keys(beaten)) badges[`beat-${id}`] ??= beaten[id].first;
   const t = s?.totals ?? ({} as Progress['totals']);
   return {
     beaten,
-    badges: Object.fromEntries(Object.entries(s?.badges ?? {}).filter(([id]) => badgeById(id)).map(([id, at]) => [id, num(at)])),
+    badges,
     totals: { bluffs: num(t.bluffs), allInsWon: num(t.allInsWon), tablesWon: num(t.tablesWon), bigPots: num(t.bigPots), showdownsWon: num(t.showdownsWon), comebacks: num(t.comebacks) },
     rivals: {
       legends: Object.fromEntries(Object.entries(s?.rivals?.legends ?? {}).filter(([k]) => legendById(k)).map(([k, v]) => [k, rec(v)])),

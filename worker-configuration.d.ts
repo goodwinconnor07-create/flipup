@@ -3,11 +3,13 @@
 // Runtime types generated with workerd@1.20261019.1 2026-10-01
 interface __BaseEnv_Env {
 	TABLE_ROOM: DurableObjectNamespace<import("./worker/index").TableRoom>;
+	PARTY_ROOM: DurableObjectNamespace<import("./worker/index").PartyRoom>;
+	FRIEND_CARD: DurableObjectNamespace<import("./worker/index").FriendCard>;
 }
 declare namespace Cloudflare {
 	interface GlobalProps {
 		mainModule: typeof import("./worker/index");
-		durableNamespaces: "TableRoom";
+		durableNamespaces: "TableRoom" | "PartyRoom" | "FriendCard";
 	}
 	interface Env extends __BaseEnv_Env {}
 }

@@ -22,13 +22,19 @@
   "durable_objects": {
     "bindings": [
       { "name": "TABLE_ROOM", "class_name": "TableRoom" },
+      { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
+      { "name": "FRIEND_CARD", "class_name": "FriendCard" },
     ],
   },
+  // Production already recorded v3 without the classes below ever being created, so they are all made in v4.
+  // v2 and v3 are kept (empty) so the tags match what Cloudflare has.
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["TableRoom"] },
-    { "tag": "v2", "new_sqlite_classes": ["TwinShare"] },
-    // AI twins are gone, so their shared copies go with them.
-    { "tag": "v3", "deleted_classes": ["TwinShare"] },
+    { "tag": "v2" },
+    { "tag": "v3" },
+    { "tag": "v4", "new_sqlite_classes": ["TwinShare", "PartyRoom", "FriendCard"] },
+    // Shared AI twins are gone from the app; this removes their Durable Object class.
+    { "tag": "v5", "deleted_classes": ["TwinShare"] },
   ],
   "observability": { "enabled": true },
 }

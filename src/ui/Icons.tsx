@@ -24,17 +24,6 @@ export const ShieldIcon = (p: P) => (
   </svg>
 );
 
-export const FlameIcon = (p: P) => (
-  <svg {...solid(p)}>
-    <path d="M12.6 1.6c.5 2.9 2.4 4.6 4.1 6.5 1.6 1.8 2.8 3.8 2.8 6.4A7.5 7.5 0 0 1 12 22a7.5 7.5 0 0 1-7.5-7.5c0-2.7 1.2-4.7 2.7-6.3.1 1.9 1 3.4 2.5 4.1-.4-4.1.9-7.8 2.9-10.7Z" />
-    <path
-      d="M12 21c-2 0-3.4-1.5-3.4-3.4 0-1.6 1-2.7 2-3.6.2 1 .8 1.7 1.6 2 .1-1.4.6-2.6 1.4-3.6.4 1.5 1.8 2.6 1.8 4.7 0 2.2-1.5 3.9-3.4 3.9Z"
-      fill="#fff"
-      opacity=".55"
-    />
-  </svg>
-);
-
 export const BoltIcon = (p: P) => (
   <svg {...solid(p)}>
     <path d="M13.8 1.5 3.6 13.6h6.9l-1.6 8.9 10.5-12.6h-7l1.4-8.4Z" />
@@ -329,12 +318,5 @@ export const HistoryIcon = (p: P) => (
 export const BookmarkIcon = (p: P) => (
   <svg {...stroke(p)}>
     <path d="M6 3.5h12v17l-6-4.2-6 4.2v-17Z" />
-  </svg>
-);
-
-/** The streak's flame before you've played today: just the outline. */
-export const FlameOutlineIcon = (p: P) => (
-  <svg {...stroke({ strokeWidth: 2, ...p })}>
-    <path d="M12.6 1.6c.5 2.9 2.4 4.6 4.1 6.5 1.6 1.8 2.8 3.8 2.8 6.4A7.5 7.5 0 0 1 12 22a7.5 7.5 0 0 1-7.5-7.5c0-2.7 1.2-4.7 2.7-6.3.1 1.9 1 3.4 2.5 4.1-.4-4.1.9-7.8 2.9-10.7Z" />
   </svg>
 );

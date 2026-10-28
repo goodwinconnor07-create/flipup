@@ -1,3 +1,4 @@
+import { GameThumb } from '../ui/GameIllustrations';
 import { useState } from 'react';
 import {
   PARTY_BLIND_HANDS,
@@ -75,9 +76,7 @@ export function PartySetup() {
             return (
               <li key={`${i}-${g}`} className="playlist-row">
                 <span className="playlist-n num">{i + 1}</span>
-                <span className="playlist-emoji" aria-hidden>
-                  {info.emoji}
-                </span>
+                <GameThumb variant={g} size={36} />
                 <span className="playlist-name">{info.name}</span>
                 <button
                   type="button"
@@ -97,7 +96,7 @@ export function PartySetup() {
         <div className="addgames">
           {VARIANTS.map((v) => (
             <button key={v.id} type="button" className="addgame press" onClick={() => add(v.id)} aria-label={`Add ${v.name}`}>
-              <span aria-hidden>{v.emoji}</span>
+              <GameThumb variant={v.id} size={30} />
               <span>{v.name}</span>
               <PlusIcon width={16} height={16} />
             </button>

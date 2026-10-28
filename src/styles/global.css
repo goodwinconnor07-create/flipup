@@ -1371,9 +1371,9 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
 
 /* ── Party look for every menu ────────────────────────────────────────────────────────────────
    Setup, lobby, profile, party, the finish page and every sheet get the bolder, bigger style. The game
-   screen (.table-screen) keeps the sizes it had: the tokens below are put back inside it. */
+   screen (.table-screen, once the cards are dealt) keeps the sizes it had; its lobby gets the new look: the tokens below are put back inside it. */
 
-.table-screen {
+.table-screen:not(.status-lobby) {
   --r-md: 14px;
   --r-lg: 20px;
   --r-xl: 26px;
@@ -1382,7 +1382,7 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   --fs-title: 34px;
 }
 
-.table-screen .btn {
+.table-screen:not(.status-lobby) .btn {
   min-height: 50px;
   padding: 0 20px;
   border-radius: var(--r-md);
@@ -1391,33 +1391,33 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   box-shadow: none;
 }
 
-.table-screen .btn:active {
+.table-screen:not(.status-lobby) .btn:active {
   transform: scale(0.97);
   filter: brightness(0.92);
   box-shadow: none;
 }
 
-.table-screen .btn-xl {
+.table-screen:not(.status-lobby) .btn-xl {
   min-height: 56px;
   font-size: var(--fs-lead);
 }
 
-.table-screen .btn-sm {
+.table-screen:not(.status-lobby) .btn-sm {
   min-height: 40px;
   font-size: var(--fs-small);
   border-radius: var(--r-sm);
   padding: 0 16px;
 }
 
-.table-screen .btn-green {
+.table-screen:not(.status-lobby) .btn-green {
   background: var(--green);
 }
 
-.table-screen .btn-blue {
+.table-screen:not(.status-lobby) .btn-blue {
   background: var(--blue);
 }
 
-.table-screen .btn-red {
+.table-screen:not(.status-lobby) .btn-red {
   background: var(--red);
 }
 
@@ -1434,7 +1434,8 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
     radial-gradient(200px 160px at 55% 0%, rgba(255, 214, 10, 0.16), transparent 70%);
 }
 
-.screen:not(.table-screen) .h1 {
+.screen:not(.table-screen) .h1,
+.status-lobby .h1 {
   font-size: 40px;
   font-weight: 800;
   letter-spacing: -0.035em;
@@ -1511,4 +1512,37 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
 
 .hero-pic {
   gap: 28px;
+}
+
+/* A game's scene shrunk to a rounded square for lists. */
+.game-thumb {
+  position: relative;
+  flex: none;
+  display: block;
+  border-radius: 28%;
+  overflow: hidden;
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.45);
+}
+
+.game-thumb > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Menus: list rows read as headers you tap, and a segmented control never pushes into its label. */
+.sheet .group-row .gr-text,
+.screen:not(.table-screen) .group-row .gr-text {
+  font-weight: 600;
+}
+
+.group-row .gr-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-row .segmented button {
+  min-width: 42px;
+  padding: 0 6px;
 }

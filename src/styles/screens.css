@@ -2047,3 +2047,60 @@ html[data-theme='dark'] .btn-dark {
     animation: none;
   }
 }
+
+/* ── The code keyboard (ui/CodePad.tsx): laid out like the phone's own; letters codes never use are off ── */
+.code-kb {
+  display: grid;
+  gap: 8px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.code-kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.code-key {
+  flex: 1 1 0;
+  max-width: 44px;
+  min-width: 0;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.45);
+  touch-action: manipulation;
+}
+
+.code-key.off {
+  background: transparent;
+  color: var(--ink-4);
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.code-key:disabled:not(.off) {
+  opacity: 0.5;
+}
+
+.code-key-delete {
+  flex-grow: 1.5;
+  max-width: 66px;
+  background: var(--bg-3);
+  font-size: 20px;
+}
+
+html[data-theme='dark'] .sheet .code-key:not(.off) {
+  background: var(--bg-3);
+}
+
+html[data-theme='dark'] .sheet .code-key-delete {
+  background: #48484a;
+}

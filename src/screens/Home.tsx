@@ -4,13 +4,11 @@ import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
-import { QuickGames } from './HomeQuick';
 import { LegendShelf } from './HomeLegends';
-import { BotsArt, HostArt } from './CardArt';
 import { PartyTab } from './HomeParty';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { ChevronIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
+import { ChevronIcon, PencilIcon, PersonIcon, PlusIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 import { variantInfo } from '../game';
 
 function ago(at: number): string {
@@ -109,7 +107,16 @@ export function Home() {
                 aria-label={named ? `Your profile and settings: ${profile.name}` : 'Set up your profile'}
                 onClick={() => navigate({ name: 'profile', then: 'done' })}
               >
-                <Avatar emoji={profile.emoji} size={52} />
+                {named ? (
+                  <Avatar emoji={profile.emoji} size={52} />
+                ) : (
+                  <span className="avatar-empty" aria-hidden>
+                    <PersonIcon width={30} height={30} />
+                  </span>
+                )}
+                <span className="avatar-badge" aria-hidden>
+                  {named ? <PencilIcon width={12} height={12} /> : <PlusIcon width={13} height={13} />}
+                </span>
               </button>
             </div>
             <p>{subtitle}</p>
@@ -138,28 +145,27 @@ export function Home() {
                 )}
                 <h3 className="section-head">Quick start</h3>
                 <GameShelf />
-                <section className="modes" aria-label="Start a game">
-                  <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
-                    <span className="mode-text">
-                      <span className="mode-title">Play with Friends</span>
-                      <span className="mode-sub">Share a code. Friends join on their phones.</span>
+                <section className="start-row" aria-label="Start a table">
+                  <button type="button" className="start-tile start-blue press" onClick={() => go('host')}>
+                    <span className="start-faces" aria-hidden>
+                      <span>🥳</span>
+                      <span>😄</span>
+                      <span>🤓</span>
                     </span>
-                    <span className="mode-art">
-                      <HostArt />
-                    </span>
+                    <b>Play with friends</b>
+                    <small>Share a code. They join on their phones.</small>
                   </button>
-                  <button type="button" className="mode mode-green press" onClick={() => go('bots')}>
-                    <span className="mode-text">
-                      <span className="mode-title">Play with Bots</span>
-                      <span className="mode-sub">On this phone, no timer.</span>
+                  <button type="button" className="start-tile start-green press" onClick={() => go('bots')}>
+                    <span className="start-faces" aria-hidden>
+                      <span>🦁</span>
+                      <span>🤩</span>
+                      <span>🦊</span>
                     </span>
-                    <span className="mode-art">
-                      <BotsArt />
-                    </span>
+                    <b>Play with bots</b>
+                    <small>On this phone, no timer.</small>
                   </button>
                 </section>
                 <LegendShelf />
-                <QuickGames />
               </>
             )}
             {tab === 'party' && <PartyTab />}

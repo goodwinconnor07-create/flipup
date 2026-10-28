@@ -1,3 +1,4 @@
+import { GameThumb } from '../ui/GameIllustrations';
 import { useEffect, useRef, useState } from 'react';
 import { PARTY_BREAK_SECONDS, partyStandings, variantInfo, type PartyRow, type PartyView } from '../game';
 import { addPal, isPal, PALS_CHANGED } from '../state/pals';
@@ -229,7 +230,7 @@ function GameHeader({ eyebrow, variant, line }: { eyebrow: string; variant: Retu
       <small className="eyebrow">{eyebrow}</small>
       {info && (
         <div className="game-head-title">
-          <span aria-hidden>{info.emoji}</span>
+          <GameThumb variant={info.id} size={44} />
           <h1 className="h1">{info.name}</h1>
         </div>
       )}

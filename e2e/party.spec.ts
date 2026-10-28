@@ -46,7 +46,7 @@ test('party: host picks games, a friend joins, the table opens for both, and the
   await friend.getByRole('button', { name: 'Save' }).click();
   await friend.getByRole('tab', { name: 'Party' }).click();
   await friend.getByRole('button', { name: /Join a party/ }).click();
-  await friend.getByLabel('Party code').fill(code);
+  await friend.keyboard.type(code);
   await expect(friend.getByText("You're in!")).toBeVisible({ timeout: 10_000 });
   await expect(host.locator('.board-row', { hasText: 'Remi' })).toBeVisible({ timeout: 10_000 });
   await shot(friend, 'party-2-lobby');
@@ -96,7 +96,7 @@ test('friends: get a friend code, add a friend by it', async ({ browser }) => {
 
   await toPartyTab(b);
   await b.getByRole('button', { name: 'Add a friend' }).click();
-  await b.getByLabel('Friend code').fill(code);
+  await b.keyboard.type(code);
   await expect(b.locator('.friend-row', { hasText: 'Ana' })).toBeVisible({ timeout: 10_000 });
   await shot(b, 'party-5-friends');
 

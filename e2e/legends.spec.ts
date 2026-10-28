@@ -11,7 +11,7 @@ test('Play lists the legends; a profile says how they play, and you can sit down
     localStorage.setItem('flipup.progress', JSON.stringify({ beaten: { brunson: { wins: 1, first: 1 } } }));
   });
   await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Legends' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'AI Legends' })).toBeVisible();
   for (const name of ['Phil Ivey', 'Tom Dwan']) await expect(page.getByRole('button', { name: new RegExp(`^${name}\\.`) })).toBeAttached();
   // Easiest first.
   const cards = page.locator('.legends .quick-card b');

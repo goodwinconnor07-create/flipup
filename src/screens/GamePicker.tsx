@@ -6,6 +6,7 @@ import { BLIND_LEVELS, variantInfo, VARIANTS, type Settings, type Variant } from
 import { Sheet } from '../ui/components';
 import { ChevronIcon } from '../ui/Icons';
 import { GameArt } from './HomeGames';
+import { GameThumb } from '../ui/GameIllustrations';
 
 /** Ghost Hold'em plays best deep: picking it gives everyone at least this many big blinds. */
 const GHOST_DEPTH = 500;
@@ -40,9 +41,7 @@ export function GameRow({ settings, onChange }: { settings: Settings; onChange: 
       <div className="choice">
         <p className="section-title">Game</p>
         <button type="button" className="game-row press" onClick={() => setOpen(true)}>
-          <span className="game-emoji" aria-hidden>
-            {info.emoji}
-          </span>
+          <GameThumb variant={info.id} size={48} />
           <span className="gr-text">
             {info.name}
             <small>{info.tagline}</small>

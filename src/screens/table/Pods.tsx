@@ -156,15 +156,18 @@ export function moodOf(game: Game, player: Player, seat: Seat | undefined): Mood
   return null;
 }
 
+/** The little extra that floats by a face: sweat over a big bet, stars when knocked out, sparkles for a win. */
+const MOOD_MARK: Partial<Record<NonNullable<Mood>, string>> = { sweat: '💦', bust: '💫', out: '💫', win: '✨', beat: '💔', shove: '🔥' };
+
 /** A seat's emoji, reacting. Keyed on the hand and the mood, so each new reaction plays from the start. */
 export function MoodFace({ game, player, seat, size }: { game: Game; player: Player; seat: Seat | undefined; size: number }) {
   const mood = moodOf(game, player, seat);
   return (
     <span key={`${game.hand?.number ?? 0}:${mood}`} className={`mood${mood ? ` mood-${mood}` : ''}`}>
       <Avatar emoji={player.emoji} size={size} />
-      {mood === 'sweat' && (
-        <span className="sweat" aria-hidden>
-          💧
+      {mood && MOOD_MARK[mood] && (
+        <span className={`mood-mark mark-${mood}`} aria-hidden>
+          {MOOD_MARK[mood]}
         </span>
       )}
     </span>

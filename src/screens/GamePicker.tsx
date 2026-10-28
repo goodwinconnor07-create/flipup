@@ -4,9 +4,9 @@
 import { useState } from 'react';
 import { BLIND_LEVELS, variantInfo, VARIANTS, type Settings, type Variant } from '../game';
 import { Sheet } from '../ui/components';
-import { ChevronIcon } from '../ui/Icons';
-import { GameArt } from './HomeGames';
-import { GameThumb } from '../ui/GameIllustrations';
+import { CheckIcon, ChevronIcon } from '../ui/Icons';
+import { GameIllustration, GameThumb } from '../ui/GameIllustrations';
+import { cardArt } from '../ui/gameThemes';
 
 /** Ghost Hold'em plays best deep: picking it gives everyone at least this many big blinds. */
 const GHOST_DEPTH = 500;
@@ -51,20 +51,33 @@ export function GameRow({ settings, onChange }: { settings: Settings; onChange: 
       </div>
       {open && (
         <Sheet title="Choose a game" onClose={() => setOpen(false)}>
-          <div className="game-grid">
-            {VARIANTS.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                className={`game-tile press${v.id === info.id ? ' on' : ''}`}
-                aria-pressed={v.id === info.id}
-                onClick={() => pick(v.id)}
-              >
-                <GameArt variant={v.id} className="game-tile-art" />
-                <b>{v.name}</b>
-                <small>{v.tagline}</small>
-              </button>
-            ))}
+          <div className="pick-list">
+            {VARIANTS.map((v) => {
+              const art = cardArt(v.id);
+              return (
+                <button
+                  key={v.id}
+                  type="button"
+                  className={`pick-card press${v.id === info.id ? ' on' : ''}`}
+                  style={{ background: `linear-gradient(160deg, ${art.card[0]}, ${art.card[1]})` }}
+                  aria-pressed={v.id === info.id}
+                  onClick={() => pick(v.id)}
+                >
+                  <span className="pick-scene game-live">
+                    <GameIllustration variant={v.id} />
+                  </span>
+                  <span className="pick-text">
+                    <b>{v.name}</b>
+                    <small>{v.tagline}</small>
+                  </span>
+                  {v.id === info.id && (
+                    <span className="pick-on" aria-hidden>
+                      <CheckIcon width={18} height={18} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
           <p className="muted game-more">More games are on the way.</p>
         </Sheet>

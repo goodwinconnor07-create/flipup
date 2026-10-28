@@ -25,7 +25,7 @@ const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] 
   { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
 ];
 
-// Kept for the session, so coming back from a replay lands on the same tab.
+// Kept for the session, so coming back from another screen lands on the same tab.
 let lastTab: Tab = 'play';
 
 /** One line under the greeting: your table, or how your last game went. Chips reset every game, so they're never the measure. */

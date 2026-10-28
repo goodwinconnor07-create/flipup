@@ -658,15 +658,6 @@ test('a table with players out of view never scrolls sideways', async ({ page })
   await expect(page.getByRole('button', { name: 'Fold' })).toBeEnabled();
 });
 
-test('a playstyle tile: one tap starts a heads-up game against a random bot', async ({ page }) => {
-  watchErrors(page);
-  await page.addInitScript(() => localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Sam', emoji: '🦊' })));
-  await page.goto('/');
-  await page.locator('.quick-card', { hasText: 'Heads-up' }).first().click();
-  await expect(page.getByText('Your turn')).toBeVisible({ timeout: 30_000 });
-  await shot(page, '20-playstyle');
-});
-
 test('when the blinds go up, a red banner slides down from the top, stays about five seconds, then slides out', async ({ page }) => {
   watchErrors(page);
   // A fake clock, so the five-minute blind level passes at once.

@@ -2853,3 +2853,28 @@ html.calm .mood-mark {
 .pod-stack {
   font-weight: 700;
 }
+
+/* A split pot names everyone who shared it, which can be too long for the strip under the board: it lifts
+   over the board instead, wraps onto two lines and stays inside the table. */
+.table-foot {
+  z-index: 4;
+}
+
+.win-banner.split {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  translate: -50% 0;
+  width: max-content;
+  max-width: min(320px, 86vw);
+  padding: 8px 16px 8px 8px;
+  border-radius: var(--r-lg);
+}
+
+.win-banner.split .win-text b {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}

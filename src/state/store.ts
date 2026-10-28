@@ -75,8 +75,6 @@ export type Route =
   | { name: 'join'; code: string }
   | { name: 'joinTable'; info: TableInfo }
   | { name: 'table' }
-  /** Watch a saved hand back. */
-  | { name: 'replay'; key: string }
   /** A legend's profile: how they play, and a game against them. */
   | { name: 'legend'; id: string }
   /** Set up a party tournament: pick the games and the pace. */

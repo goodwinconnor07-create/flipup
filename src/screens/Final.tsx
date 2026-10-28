@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { legendById, net, standings, type Game } from '../game';
 import { finishLine } from '../game/botTalk';
 import { badgeById, legendBefore, loadProgress, nextLegend, settleTable, type TableReport } from '../state/progress';
-import { closeTable, dispatch, navigate, openLog, startLegend, useApp } from '../state/store';
-import { handKey } from '../state/training';
+import { closeTable, dispatch, openLog, startLegend, useApp } from '../state/store';
 import { shareCard } from '../ui/shareCard';
 import { shareText } from './sheets/InviteSheet';
 import { Avatar, PlayingCard, chips } from '../ui/components';
@@ -194,7 +193,6 @@ export function Final({ game }: { game: Game }) {
 
   const headline = !top ? 'Table closed' : iWon ? 'You win!' : `${top.name} wins!`;
   const hands = stats?.hands ?? game.hand?.number ?? 0;
-  const replayable = (n: number) => (me ? () => navigate({ name: 'replay', key: handKey(game.id, n) }) : undefined);
   const announced = report && (report.newBadges.length > 0 || report.firstBeat || report.unlocked || report.comeback || report.rival);
 
   const send = async () => {
@@ -347,30 +345,6 @@ export function Final({ game }: { game: Game }) {
               <Meter label="Betting" value={stats.aggression} tip="Bets and raises against calls" />
               <Meter label="Folded" value={stats.foldPct} tip="How often you gave up the hand" />
             </Reveal>
-          </section>
-        )}
-
-        {stats && (stats.bigWin || stats.bigLoss) && me && (
-          <section className="fin-section" aria-label="Moments">
-            <h2 className="fin-h">Hands to watch back</h2>
-            {stats.bigWin && (
-              <Reveal className="moment">
-                <span>
-                  <small>Your best hand</small>
-                  <b>Hand {stats.bigWin.number} · {signed(stats.bigWin.net)}</b>
-                </span>
-                <button type="button" className="btn btn-sm btn-dark" onClick={replayable(stats.bigWin.number)}>Replay</button>
-              </Reveal>
-            )}
-            {stats.bigLoss && (
-              <Reveal className="moment" delay={80}>
-                <span>
-                  <small>Your costliest hand</small>
-                  <b>Hand {stats.bigLoss.number} · {signed(stats.bigLoss.net)}</b>
-                </span>
-                <button type="button" className="btn btn-sm btn-dark" onClick={replayable(stats.bigLoss.number)}>Replay</button>
-              </Reveal>
-            )}
           </section>
         )}
 

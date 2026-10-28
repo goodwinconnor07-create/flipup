@@ -1,7 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
-import { dispatch, navigate, useApp } from '../../state/store';
-import { handKey, hasHand } from '../../state/training';
+import { dispatch, useApp } from '../../state/store';
 import { chips } from '../../ui/components';
 import { CloseIcon, MinusIcon, PlusIcon } from '../../ui/Icons';
 
@@ -164,20 +163,7 @@ export function ActionArea({
         <span className="next-fill" aria-hidden />
         {ready ? 'Waiting for the others…' : 'Next hand'}
       </button>
-      <ReplayButton gameId={game.id} number={hand.number} />
     </div>
-  );
-}
-
-/** Watch the hand that just finished, if this phone was dealt in and saved it. */
-function ReplayButton({ gameId, number }: { gameId: string; number: number }) {
-  const key = handKey(gameId, number);
-  const saved = useMemo(() => hasHand(key), [key]);
-  if (!saved) return null;
-  return (
-    <button type="button" className="btn btn-sm btn-outline" onClick={() => navigate({ name: 'replay', key })}>
-      Replay this hand
-    </button>
   );
 }
 

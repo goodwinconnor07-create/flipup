@@ -1,4 +1,4 @@
-// Hands you played on this phone, kept for a day so you can watch them back in Replay.
+// Hands you played on this phone, kept for a day (the finish page and the table's stats read them).
 
 import { handRecord, type Game, type HandRecord } from '../game';
 import { markPlayedToday, read, write } from './persist';

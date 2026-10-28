@@ -33,34 +33,6 @@ const record = {
 };
 
 // History is off Home for now, so nothing opens this; it comes back with it.
-test.skip('replay a saved hand', async ({ page }) => {
-  watchErrors(page);
-  await page.addInitScript((rec) => {
-    if (localStorage.getItem('flipup.history')) return;
-    localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Connor', emoji: '😎' }));
-    localStorage.setItem('flipup.history', JSON.stringify([{ key: 'T1#7', heroId: 'a', record: rec }]));
-  }, record);
-  await page.goto('/');
-  await page.getByRole('tab', { name: 'History' }).click();
-  await page.getByRole('button', { name: 'Replay hand 7' }).click();
-
-  // The hand starts playing on its own, with a plain sentence under the table and no coach.
-  await expect(page.getByText('Replay · Preflop')).toBeVisible();
-  await expect(page.getByText('GTO Coach')).toHaveCount(0);
-  await shot(page, 'replay-1-deal');
-
-  // Only what this phone could see is face up: the other seats stay face down until the result.
-  await expect(page.locator('.rp-seat:not(.hero) .pcard-back').first()).toBeVisible();
-
-  // Jump to the end with the timeline.
-  await page.getByRole('button', { name: /of \d+: Result/ }).click();
-  await expect(page.getByText('Ollie', { exact: true }).first()).toBeVisible();
-  await expect(page.locator('.rp-seat:not(.hero) .pcard:not(.pcard-back)').first()).toBeVisible();
-  await expect(page.getByText(/You won/)).toBeVisible();
-  await shot(page, 'replay-4-result');
-});
-
-// History is off Home for now, so nothing opens this; it comes back with it.
 test.skip('a full ring of nine still fits on a phone', async ({ page }) => {
   watchErrors(page);
   const names = ['Connor', 'Ollie', 'Bot Bea', 'Longname Lou', 'Sam', 'Priya', 'Mo', 'Jess', 'Dave'];

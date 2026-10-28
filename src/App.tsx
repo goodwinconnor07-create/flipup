@@ -6,7 +6,6 @@ import { Setup } from './screens/Setup';
 import { Join, JoinTable } from './screens/Join';
 import { Table } from './screens/Table';
 import { SheetHost } from './screens/sheets/SheetHost';
-import { Replay } from './screens/Replay';
 import { Legend } from './screens/Legend';
 import { PartyScreen } from './screens/Party';
 import { PartySetup } from './screens/PartySetup';
@@ -36,9 +35,6 @@ export function App() {
       break;
     case 'table':
       screen = <Table />;
-      break;
-    case 'replay':
-      screen = <Replay key={route.key} handKey={route.key} />;
       break;
     case 'partySetup':
       screen = <PartySetup />;

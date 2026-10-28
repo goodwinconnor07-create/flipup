@@ -1720,3 +1720,64 @@ html[data-theme='dark'] .tab-capsule {
   width: 168px;
   height: 189px;
 }
+
+/* ── Swiping the shelves ──────────────────────────────────────────────────────────────────────
+   Each swipe lands one card at the left edge, and the cards don't animate or shrink while you drag, so the
+   row follows your finger. The rows have room underneath for the cards' shadows, so a shadow is never cut
+   off into a hard line. */
+.game-row-scroll,
+.quick-row {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 20px;
+  padding-top: 8px;
+  padding-bottom: 40px;
+  margin-bottom: -28px;
+  touch-action: pan-x pan-y;
+}
+
+.game-card,
+.quick-card {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  touch-action: pan-x pan-y;
+}
+
+.game-card,
+.game-card.press {
+  animation: none;
+}
+
+.game-row-scroll .press:active:not(:disabled),
+.quick-row .press:active:not(:disabled) {
+  transform: scale(0.985);
+  opacity: 1;
+}
+
+.game-card {
+  box-shadow: 0 14px 24px -14px rgba(0, 0, 0, 0.55);
+}
+
+.legends .quick-art {
+  box-shadow: 0 12px 22px -14px rgba(0, 0, 0, 0.55);
+}
+
+.start-tile {
+  box-shadow: 0 14px 24px -16px var(--tile-glow);
+}
+
+/* On a computer the tab bar is still the narrow rail on the left (the phone sizes above don't apply). */
+@media (min-width: 960px) and (min-height: 600px) {
+  .home-tabs {
+    width: 88px;
+    gap: 10px;
+  }
+
+  .tab {
+    min-height: 72px;
+  }
+
+  .tab-round {
+    width: 64px;
+    height: 64px;
+  }
+}

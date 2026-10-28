@@ -680,7 +680,7 @@ function WinBanner({ game }: { game: Game }) {
     : `${you ? 'You win' : `${top.p!.name} wins`} ${chips(top.amount)}`;
   const how = result.showdown ? result.names[top.id] : 'Everyone else folded';
   return (
-    <div key={hand.number} className="win-banner pop" role="status">
+    <div key={hand.number} className={`win-banner pop${split ? ' split' : ''}`} role="status">
       <Avatar emoji={top.p!.emoji} size={34} />
       <span className="win-text">
         <b>{title}</b>

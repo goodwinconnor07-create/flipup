@@ -17,7 +17,7 @@ export function GameStartSheet({ variant }: { variant: Variant }) {
     <Sheet>
       <div className="game-start">
         <div className="game-start-head">
-          <GameArt variant={variant} className="game-start-art" />
+          <GameArt variant={variant} className="game-start-art game-live" />
         </div>
         <h2 className="game-start-title">{info.name}</h2>
         <p className="game-start-mood">{cardArt(variant).mood}</p>

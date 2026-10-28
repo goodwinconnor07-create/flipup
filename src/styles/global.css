@@ -1488,7 +1488,8 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
 /* ── Moving between screens, like iOS ────────────────────────────────────────
    store.ts sets data-nav to push or pop while the browser's view transition runs. The new screen slides over
    the old one, which drifts back a little and dims; going back is the same in reverse. */
-html[data-nav] .screen {
+html[data-nav] .screen,
+html[data-slides] .screen {
   animation: none;
 }
 

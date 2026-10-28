@@ -17,13 +17,6 @@ const stroke = (props: P) => ({
 
 const solid = (props: P) => ({ viewBox: '0 0 24 24', fill: 'currentColor', 'aria-hidden': true, ...props });
 
-export const ShieldIcon = (p: P) => (
-  <svg {...solid(p)}>
-    <path d="M12 1.8 20.5 5v6.4c0 5.3-3.6 9.6-8.5 11-4.9-1.4-8.5-5.7-8.5-11V5L12 1.8Z" />
-    <path d="m8 12 2.8 2.8L16.4 9" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" opacity=".9" />
-  </svg>
-);
-
 export const BoltIcon = (p: P) => (
   <svg {...solid(p)}>
     <path d="M13.8 1.5 3.6 13.6h6.9l-1.6 8.9 10.5-12.6h-7l1.4-8.4Z" />
@@ -34,13 +27,6 @@ export const TrophyIcon = (p: P) => (
   <svg {...stroke(p)}>
     <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
     <path d="M7 6H4v1.5A3.5 3.5 0 0 0 7.5 11M17 6h3v1.5a3.5 3.5 0 0 1-3.5 3.5M12 14v4M8 21h8M9.5 18h5" />
-  </svg>
-);
-
-export const BellIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15L6 16z" />
-    <path d="M10 20a2 2 0 0 0 4 0" />
   </svg>
 );
 
@@ -86,12 +72,6 @@ export const CheckIcon = (p: P) => (
   </svg>
 );
 
-export const CrossIcon = (p: P) => (
-  <svg {...stroke({ strokeWidth: 3.2, ...p })}>
-    <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
-  </svg>
-);
-
 export const ShareIcon = (p: P) => (
   <svg {...stroke(p)}>
     <path d="M12 3v12M7.5 7.5 12 3l4.5 4.5" />
@@ -123,13 +103,6 @@ export const UsersIcon = (p: P) => (
   </svg>
 );
 
-export const FlagIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M6 21V3.5" />
-    <path d="M6 4h11l-2.5 4L17 12H6" fill="currentColor" />
-  </svg>
-);
-
 /** A cog with teeth (the old one, a circle with rays, read as a brightness or sun icon). */
 export const GearIcon = (p: P) => (
   <svg {...stroke({ strokeWidth: 2.3, ...p })}>
@@ -149,12 +122,6 @@ export const ListIcon = (p: P) => (
   <svg {...stroke(p)}>
     <rect x="3.5" y="3.5" width="17" height="17" rx="3" />
     <path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17" />
-  </svg>
-);
-
-export const SwapIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M4 9h13l-3.5-3.5M20 15H7l3.5 3.5" />
   </svg>
 );
 
@@ -184,27 +151,6 @@ export const ChevronIcon = (p: P) => (
   </svg>
 );
 
-export const ArrowIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M5 12h14M13 6l6 6-6 6" />
-  </svg>
-);
-
-export const BallIcon = (p: P) => (
-  <svg {...solid(p)}>
-    <circle cx="12" cy="12" r="9.5" />
-    <g fill="#000" opacity=".12">
-      <circle cx="9" cy="8.5" r="1.2" />
-      <circle cx="13" cy="7.5" r="1.2" />
-      <circle cx="16" cy="10.5" r="1.2" />
-      <circle cx="8" cy="12.5" r="1.2" />
-      <circle cx="12" cy="11.5" r="1.2" />
-      <circle cx="15" cy="14.5" r="1.2" />
-      <circle cx="10.5" cy="15.5" r="1.2" />
-    </g>
-  </svg>
-);
-
 export const ClockIcon = (p: P) => (
   <svg {...stroke(p)}>
     <circle cx="12" cy="12" r="8.6" />
@@ -225,38 +171,12 @@ export const SoundIcon = (p: P) => (
   </svg>
 );
 
-export const MuteIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5H4z" />
-    <path d="M16 9.5l5 5M21 9.5l-5 5" />
-  </svg>
-);
-
 export const PaletteIcon = (p: P) => (
   <svg {...stroke(p)}>
     <path d="M12 3a9 9 0 1 0 0 18c1.4 0 2-.9 2-1.8 0-1.2-1-1.6-1-2.7 0-1 .8-1.6 1.8-1.6H17a4 4 0 0 0 4-4C21 6.4 17 3 12 3z" />
     <circle cx="7.5" cy="11" r="1" />
     <circle cx="10" cy="7" r="1" />
     <circle cx="15" cy="7.5" r="1" />
-  </svg>
-);
-
-export const ChartIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />
-  </svg>
-);
-
-export const BookIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5v-15ZM4 19.5A1.5 1.5 0 0 0 5.5 21H20" />
-  </svg>
-);
-
-export const EyeIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" />
-    <circle cx="12" cy="12" r="3" />
   </svg>
 );
 
@@ -273,27 +193,6 @@ export const GlassIcon = (p: P) => (
   </svg>
 );
 
-export const CardsIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <rect x="3.5" y="5" width="11" height="15" rx="2.5" transform="rotate(-9 9 12.5)" />
-    <path d="M14 6.2a2.5 2.5 0 0 1 3.1 1.6l2.6 9.4a2.5 2.5 0 0 1-1.7 3.1" />
-  </svg>
-);
-
-export const SparkIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="m13 2-9 12h7l-1 8 9-12h-7l1-8Z" />
-  </svg>
-);
-
-export const ScrollIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <rect x="5" y="7.5" width="14" height="9" rx="2.8" />
-    <path d="m9.2 4.6 2.8-2.3 2.8 2.3" />
-    <path d="m9.2 19.4 2.8 2.3 2.8-2.3" />
-  </svg>
-);
-
 export const SpadeIcon = (p: P) => (
   <svg {...stroke({ strokeWidth: 2.4, ...p })}>
     <path d="M12 2.8C10.2 5.6 4.5 9 4.5 13.3c0 2.4 1.8 4.1 4 4.1 1.4 0 2.6-.7 3.5-1.7.9 1 2.1 1.7 3.5 1.7 2.2 0 4-1.7 4-4.1C19.5 9 13.8 5.6 12 2.8Z" />
@@ -301,22 +200,9 @@ export const SpadeIcon = (p: P) => (
   </svg>
 );
 
-export const CapIcon = (p: P) => (
-  <svg {...stroke({ strokeWidth: 2.4, ...p })}>
-    <path d="M2.5 9.5 12 5l9.5 4.5L12 14 2.5 9.5Z" />
-    <path d="M6.5 11.6v4.1c0 1.4 2.5 2.8 5.5 2.8s5.5-1.4 5.5-2.8v-4.1M21.5 9.5v5" />
-  </svg>
-);
-
-export const HistoryIcon = (p: P) => (
-  <svg {...stroke({ strokeWidth: 2.4, ...p })}>
-    <path d="M3.8 12a8.2 8.2 0 1 0 2.4-5.8" />
-    <path d="M3.5 3.8v4.4h4.4M12 7.6V12l3 2" />
-  </svg>
-);
-
-export const BookmarkIcon = (p: P) => (
-  <svg {...stroke(p)}>
-    <path d="M6 3.5h12v17l-6-4.2-6 4.2v-17Z" />
+export const PersonIcon = (p: P) => (
+  <svg viewBox="0 0 24 24" width={24} height={24} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden {...p}>
+    <circle cx="12" cy="8.5" r="4" />
+    <path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" />
   </svg>
 );

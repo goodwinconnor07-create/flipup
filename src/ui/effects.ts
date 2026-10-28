@@ -12,9 +12,12 @@ const PATTERNS: Record<HapticKind, number | number[]> = {
   error: [32, 40, 32],
 };
 
-/** True only if the player switched Animations off in the menu (the computer's own setting isn't used). */
+/** True if the player switched Animations off in the menu, or a touch phone has Reduce Motion on. A computer's own
+ * setting isn't used: animations stay on there unless the menu switch says otherwise. */
 export function reducedMotion(): boolean {
-  return typeof document !== 'undefined' && document.documentElement.classList.contains('calm');
+  if (typeof document === 'undefined') return false;
+  if (document.documentElement.classList.contains('calm')) return true;
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce) and (pointer: coarse)').matches;
 }
 
 // iPhone browsers ignore navigator.vibrate, but Safari 18 and later tick the Taptic Engine when a

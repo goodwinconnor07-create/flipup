@@ -97,42 +97,6 @@ html:not(.no-glass) .glass-card {
 }
 
 /* The streak: the system fire emoji, greyed out until you've played today, then in full colour. */
-.streak-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 36px;
-  padding: 0 12px 0 10px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: var(--bg-2);
-  color: var(--gold);
-  font: inherit;
-}
-
-.streak-pill b {
-  font-size: var(--fs-body);
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.streak-emoji {
-  font-size: var(--fs-h3);
-  line-height: 1;
-  filter: grayscale(1);
-  opacity: 0.5;
-}
-
-.streak-pill.lit {
-  background: var(--gold-bg);
-}
-
-.streak-pill.lit .streak-emoji {
-  filter: none;
-  opacity: 1;
-  animation: flicker 1.6s ease-in-out 2;
-  transform-origin: 50% 90%;
-}
 
 @keyframes flicker {
   50% {
@@ -256,11 +220,6 @@ html[data-theme='dark'] .tab-capsule {
   font: inherit;
 }
 
-.hero-blue {
-  --hero-1: #3a8dff;
-  --hero-2: #0a5fd6;
-}
-
 .hero-slate {
   --hero-1: #4b5563;
   --hero-2: #1f2430;
@@ -373,10 +332,6 @@ html[data-theme='dark'] .tab-capsule {
   height: 18px;
 }
 
-.gr-icon-yellow {
-  background: linear-gradient(160deg, #ffd60a, #ffa800);
-}
-
 /* The lists on Learn and Review are buttons with headers, so their titles are semibold. */
 .home-pane .group-row .gr-text {
   font-weight: 600;
@@ -481,47 +436,6 @@ html[data-theme='dark'] .sheet .group {
   color: var(--on-color);
   font: inherit;
   text-align: left;
-}
-
-.mode-blue {
-  background: linear-gradient(150deg, #2f93ff 0%, #0062d6 100%);
-}
-
-.mode-green {
-  background: linear-gradient(150deg, #2fb877 0%, #0b7545 100%);
-}
-
-.mode-text {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-  min-width: 0;
-  padding: 18px 0;
-}
-
-.mode-title {
-  font-family: var(--font-display);
-  font-size: var(--fs-h3);
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.mode-sub {
-  max-width: 34ch;
-  font-size: var(--fs-caption);
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.86);
-  text-wrap: pretty;
-}
-
-.mode-art {
-  position: relative;
-  flex: none;
-  width: 46%;
-  align-self: stretch;
 }
 
 /* Card art: SVG chips and table, with Apple emoji players between the layers. */
@@ -664,23 +578,6 @@ html[data-theme='dark'] .sheet .group {
 }
 
 /* A group of bots: their faces overlapped in a row on green felt. */
-.quick-art.quick-stack {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0 12px;
-  background: linear-gradient(180deg, #5fd09a, #1b7a52);
-}
-
-.quick-art.quick-stack > * {
-  margin: 0 0 0 -8px;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
-  border-radius: 50%;
-}
-
-.quick-art.quick-stack > *:first-child {
-  margin-left: 0;
-}
 
 /* Names and captions stay on one line, trimmed rather than cut. */
 .quick-card b,
@@ -847,10 +744,6 @@ html[data-theme='dark'] .sheet .group {
 
 /* ── Animations off ───────────────────────────────────────────────────────────────────────── */
 
-html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
-  animation: none;
-}
-
 /* ── Computers: the same page as a centred column, and the tab bar as a rail down the left ──── */
 
 @media (min-width: 960px) and (min-height: 600px) {
@@ -1011,16 +904,6 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
   pointer-events: none;
 }
 
-.game-card-emoji {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  z-index: 1;
-  font-size: 44px;
-  line-height: 1;
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
-}
-
 .game-card-text,
 .game-card-play {
   position: relative;
@@ -1089,15 +972,6 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
   left: 40%;
 }
 
-.game-start-emoji {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 64px;
-  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.35));
-}
-
 .game-start-title {
   margin: 0;
   font-size: var(--fs-h1);
@@ -1121,94 +995,6 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
 }
 
 /* ── History tab ─────────────────────────────────────────────────────────────────────────── */
-
-.hist-totals {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.hist-total {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 16px 8px;
-  border-radius: var(--r-md);
-  background: var(--bg-2);
-}
-
-.hist-total b {
-  font-size: var(--fs-title);
-  font-weight: 700;
-}
-
-.hist-total small {
-  color: var(--ink-3);
-}
-
-.hist-list {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  border-radius: var(--r-md);
-  overflow: hidden;
-  background: var(--bg-2);
-}
-
-.hist-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 0;
-  background: var(--bg-2);
-  color: var(--ink);
-  font: inherit;
-  text-align: left;
-}
-
-.hist-row .hist-emoji {
-  font-size: 28px;
-  line-height: 1;
-}
-
-.hist-row .hist-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.hist-row .hist-text small {
-  color: var(--ink-3);
-}
-
-.hist-badges {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-}
-
-.hist-badge {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 12px 4px;
-  border-radius: var(--r-md);
-  background: var(--bg-2);
-  font-size: var(--fs-caption);
-  text-align: center;
-}
-
-.hist-badge span {
-  font-size: 28px;
-}
-
-.hist-badge.locked {
-  opacity: 0.4;
-  filter: grayscale(1);
-}
 
 .game-start-how {
   margin: 8px 0 0;
@@ -1249,26 +1035,6 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
   font-weight: 500;
 }
 
-.streak-pill {
-  height: 44px;
-  padding: 0 16px 0 12px;
-  gap: 6px;
-}
-
-.streak-pill b {
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.streak-pill.lit {
-  background: linear-gradient(160deg, var(--gold-hi), var(--party-orange));
-}
-
-.streak-pill.lit b,
-.streak-pill.lit svg {
-  color: var(--gold-ink-2);
-}
-
 .avatar-btn {
   width: 56px;
   height: 56px;
@@ -1298,11 +1064,6 @@ html.calm :is(.home-pane, .streak-emoji, .card-art .art-face, .card-art .toss) {
   padding: 16px 20px;
   font-size: 18px;
   font-weight: 800;
-}
-
-.hero-orange {
-  --hero-1: #ffb02e;
-  --hero-2: #ff5a1f;
 }
 
 /* Rows: a bigger coloured icon tile and heavier names. */
@@ -1394,7 +1155,7 @@ html[data-theme='dark'] .tab-capsule {
 
 @media (prefers-reduced-motion: no-preference) {
   .tab-round {
-    animation: party-wiggle 4s ease-in-out 1.5s infinite;
+    animation: party-wiggle 4s ease-in-out 1.5s 3;
   }
 }
 
@@ -1428,43 +1189,77 @@ html[data-theme='dark'] .tab-capsule {
   }
 }
 
-/* The games shelf: tall, loud cards with a chunky edge and a coloured glow. */
+/* The games shelf: every card the same shape. The game's scene sits in a big box on top, edge to edge,
+   and the name, a line about it and Play sit underneath. */
 .game-card {
   flex-basis: min(80vw, 312px);
-  height: 268px;
-  padding: 20px;
+  height: auto;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 10px 10px 14px;
   border-radius: var(--r-xl);
   box-shadow: 0 18px 32px -14px rgba(0, 0, 0, 0.6);
 }
 
-.game-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: radial-gradient(90% 60% at 0% 0%, rgba(255, 255, 255, 0.26), transparent 60%);
+.game-card::after {
+  content: none;
 }
 
-.game-card-emoji {
-  top: 14px;
-  right: 16px;
-  font-size: 64px;
+.game-scene {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 200 / 120;
+  border-radius: calc(var(--r-xl) - 8px);
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 10px 20px -12px rgba(0, 0, 0, 0.6);
+}
+
+.game-scene svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.game-card-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 6px;
+}
+
+.game-card-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .game-card-text b {
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 1.05;
+  line-height: 1.1;
 }
 
 .game-card-text small {
-  font-size: 15px;
+  max-width: none;
+  margin-top: 2px;
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.6em;
 }
 
 .game-card-play {
-  padding: 8px 20px;
+  flex: none;
+  align-self: center;
+  margin: 0;
+  padding: 10px 18px;
   font-size: 17px;
   font-weight: 800;
   box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.4);
@@ -1476,30 +1271,14 @@ html[data-theme='dark'] .tab-capsule {
   }
 }
 
-/* The drawn scene on each game's card. */
-.game-illo {
+/* Where a game's art fills a whole box (its start sheet, the picker), the scene covers it. */
+.game-art > svg,
+.game-start-art > svg,
+.game-tile-art > svg {
   position: absolute;
-  top: 4px;
-  right: -6px;
-  width: 56%;
-  height: auto;
-  aspect-ratio: 200 / 150;
-  filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.3));
-}
-
-.game-start-art .game-illo {
-  top: 50%;
-  right: 50%;
-  width: auto;
-  height: 118%;
-  transform: translate(50%, -50%);
-}
-
-.game-tile-art .game-illo {
-  top: 0;
-  right: 0;
+  inset: 0;
   width: 100%;
-  filter: none;
+  height: 100%;
 }
 
 /* The two quick-start cards: tall, with big art and a soft coloured glow under each. */
@@ -1517,37 +1296,268 @@ html[data-theme='dark'] .tab-capsule {
   background: radial-gradient(90% 70% at 0% 0%, rgba(255, 255, 255, 0.26), transparent 60%);
 }
 
-.mode-blue {
-  --mode-glow: rgba(47, 123, 255, 0.7);
-  background: linear-gradient(150deg, #4aa3ff 0%, #2f5bff 55%, #5b3df0 100%);
-}
-
-.mode-green {
-  --mode-glow: rgba(25, 194, 107, 0.7);
-  background: linear-gradient(150deg, #39e08c 0%, #12a85f 55%, #0b7f6b 100%);
-}
-
-.mode-title {
-  font-size: 30px;
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  white-space: normal;
-  line-height: 1.02;
-}
-
-.mode-sub {
-  font-size: 16px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.mode-art {
-  width: 50%;
-  margin-right: -6px;
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .mode {
     animation: party-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
   }
+}
+
+/* ── Play with friends / bots: two tiles side by side under the games, a shortcut to a plain table ── */
+.start-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.start-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  min-height: 148px;
+  padding: 16px;
+  border: 0;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  color: var(--on-color);
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 16px 30px -14px var(--tile-glow);
+}
+
+.start-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(90% 70% at 0% 0%, rgba(255, 255, 255, 0.26), transparent 60%);
+}
+
+.start-blue {
+  --tile-glow: rgba(47, 123, 255, 0.7);
+  background: linear-gradient(150deg, #4aa3ff 0%, #2f5bff 55%, #5b3df0 100%);
+}
+
+.start-green {
+  --tile-glow: rgba(25, 194, 107, 0.7);
+  background: linear-gradient(150deg, #39e08c 0%, #12a85f 55%, #0b7f6b 100%);
+}
+
+.start-faces {
+  display: flex;
+  margin-bottom: auto;
+  padding-bottom: 12px;
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25));
+}
+
+.start-faces > span + span {
+  margin-left: -8px;
+}
+
+.start-tile b {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.start-tile small {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Your profile button: your emoji with a little pen on it, or an empty outline before you've set one up. */
+.avatar-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.avatar-empty {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 2px var(--line);
+}
+
+.avatar-badge {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: var(--on-color);
+  box-shadow: 0 0 0 2.5px var(--bg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .start-tile {
+    animation: party-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+
+  .start-green {
+    animation-delay: 0.06s;
+  }
+}
+
+/* ── AI Legends: bigger cards, each a drawn portrait ─────────────────────────────────────── */
+.legends .quick-card {
+  flex-basis: 168px;
+}
+
+.legends .quick-art {
+  width: 168px;
+  height: 189px;
+  border-radius: var(--r-xl);
+  box-shadow: 0 16px 28px -16px rgba(0, 0, 0, 0.6);
+}
+
+.legends .quick-card b {
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.legends .quick-card small {
+  font-size: 14px;
+}
+
+.portrait {
+  overflow: hidden;
+}
+
+.portrait > .legend-portrait {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.quick-art.legend-locked > .legend-portrait {
+  filter: blur(5px) saturate(0.7);
+}
+
+.legend-art.portrait {
+  width: 168px;
+  height: 189px;
+}
+
+/* ── Swiping the shelves ──────────────────────────────────────────────────────────────────────
+   Each swipe lands one card at the left edge, and the cards don't animate or shrink while you drag, so the
+   row follows your finger. The rows have room underneath for the cards' shadows, so a shadow is never cut
+   off into a hard line. */
+.game-row-scroll,
+.quick-row {
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 20px;
+  padding-top: 8px;
+  padding-bottom: 40px;
+  margin-bottom: -28px;
+  touch-action: pan-x pan-y;
+}
+
+.game-card,
+.quick-card {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  touch-action: pan-x pan-y;
+}
+
+.game-card,
+.game-card.press {
+  animation: none;
+}
+
+.game-row-scroll .press:active:not(:disabled),
+.quick-row .press:active:not(:disabled) {
+  transform: scale(0.985);
+  opacity: 1;
+}
+
+.game-card {
+  box-shadow: 0 14px 24px -14px rgba(0, 0, 0, 0.55);
+}
+
+.legends .quick-art {
+  box-shadow: 0 12px 22px -14px rgba(0, 0, 0, 0.55);
+}
+
+.start-tile {
+  box-shadow: 0 14px 24px -16px var(--tile-glow);
+}
+
+/* On a computer the tab bar is still the narrow rail on the left (the phone sizes above don't apply). */
+@media (min-width: 960px) and (min-height: 600px) {
+  .home-tabs {
+    width: 88px;
+    gap: 10px;
+  }
+
+  .tab {
+    min-height: 72px;
+  }
+
+  .tab-round {
+    width: 64px;
+    height: 64px;
+  }
+}
+
+/* Join a game: the one place to type a friend's code, right under the banner. */
+.join-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 12px 16px;
+  border: 0;
+  border-radius: var(--r-xl);
+  background: linear-gradient(160deg, var(--party-pink), var(--party-orange));
+  color: #fff;
+  text-align: left;
+}
+
+.join-bar-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.join-bar-text b {
+  font-size: var(--fs-h3);
+  font-weight: 800;
+}
+
+.join-bar-text small {
+  font-size: var(--fs-small);
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.join-bar-boxes {
+  display: flex;
+  gap: 4px;
+  flex: none;
+}
+
+.join-bar-boxes i {
+  width: 22px;
+  height: 30px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55);
 }

@@ -97,7 +97,7 @@ test('the built app keeps every stylesheet: Home is laid out, not plain text', a
   await expect(page.getByRole('button', { name: /^Ghost Hold'em\./ })).toBeAttached();
   const look = await page.evaluate(() => {
     const display = (sel: string) => getComputedStyle(document.querySelector(sel)!).display;
-    return { card: display('.game-card'), modes: display('.modes'), tabs: display('.home-tabs') };
+    return { card: display('.game-card'), modes: display('.start-row'), tabs: display('.home-tabs') };
   });
-  expect(look).toEqual({ card: 'flex', modes: 'flex', tabs: 'flex' });
+  expect(look).toEqual({ card: 'flex', modes: 'grid', tabs: 'flex' });
 });

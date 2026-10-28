@@ -303,6 +303,16 @@ export function Sheet({ title, children, onClose = closeSheet }: { title?: React
   useEffect(() => {
     ref.current?.focus();
   }, []);
+  // Escape closes it, as it does on a computer's keyboard everywhere else.
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close.current();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Swipe down on the grip or title to close. Past 90px it closes; otherwise it springs back.
   const onDown = (e: ReactPointerEvent) => {

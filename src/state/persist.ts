@@ -178,7 +178,8 @@ export function saveFast(on: boolean): void {
 
 /** True if the player turned on the 3D table (the table cam). Off until they do. */
 export function loadCam3d(): boolean {
-  return read<boolean>('flipup.cam3d') === true;
+  // The 3D table is still in beta, so it stays off until it has a switch in Settings again.
+  return false;
 }
 
 export function saveCam3d(on: boolean): void {
@@ -261,23 +262,6 @@ export function loadLastTable(): LastTable | null {
 
 export function saveLastTable(table: LastTable | null): void {
   write('flipup.last', table);
-}
-
-/** The last game against bots: who sat down and on what terms, for Home's "Play again". */
-export interface LastBots {
-  bots: string[];
-  settings: Settings;
-  at: number;
-}
-
-export function loadLastBots(): LastBots | null {
-  const t = read<LastBots>('flipup.lastbots');
-  const ok = t && Array.isArray(t.bots) && t.bots.length > 0 && t.bots.every((b) => typeof b === 'string') && typeof t.at === 'number' && t.settings;
-  return ok ? { ...t, settings: { ...DEFAULT_SETTINGS, ...t.settings } } : null;
-}
-
-export function saveLastBots(last: LastBots): void {
-  write('flipup.lastbots', last);
 }
 
 // ── Daily streak ────────────────────────────────────────────────────────────

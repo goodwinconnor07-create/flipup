@@ -9,6 +9,10 @@ import { QrIcon, TrophyIcon } from '../ui/Icons';
 import { copy } from './sheets/InviteSheet';
 
 /** The Party tab: host or join a tournament of mini games, and your friends. */
+/** When friends and the friend card were last checked with the server, and how long to wait before the next time. */
+let lastSync = 0;
+const SYNC_EVERY = 60_000;
+
 export function PartyTab() {
   const profile = useApp((s) => s.profile);
   const named = profile.name.trim().length > 0;
@@ -20,9 +24,13 @@ export function PartyTab() {
   useEffect(() => {
     const reload = () => setPals(loadPals());
     window.addEventListener(PALS_CHANGED, reload);
-    void refreshPals();
-    // A phone that already has a code keeps its name and picture fresh on the server.
-    if (myPalCode() && named) void ensureMyCode().catch(() => undefined);
+    // Switching tabs back and forth shouldn't ask the server every time.
+    if (Date.now() - lastSync > SYNC_EVERY) {
+      lastSync = Date.now();
+      void refreshPals();
+      // A phone that already has a code keeps its name and picture fresh on the server.
+      if (myPalCode() && named) void ensureMyCode().catch(() => undefined);
+    }
     return () => window.removeEventListener(PALS_CHANGED, reload);
   }, []);
 
@@ -107,7 +115,7 @@ export function PartyTab() {
             <button
               type="button"
               className="btn btn-sm btn-blue"
-              onClick={() => void copy(`Add me on GTODuel. My friend code is ${code}`, 'Code copied')}
+              onClick={() => void copy(`Add me on FlipUp. My friend code is ${code}`, 'Code copied')}
               aria-label="Copy your friend code"
             >
               <ShareIcon width={18} height={18} /> Copy

@@ -156,15 +156,18 @@ export function moodOf(game: Game, player: Player, seat: Seat | undefined): Mood
   return null;
 }
 
+/** The little extra that floats by a face: sweat over a big bet, stars when knocked out, sparkles for a win. */
+const MOOD_MARK: Partial<Record<NonNullable<Mood>, string>> = { sweat: '💦', bust: '💫', out: '💫', win: '✨', beat: '💔', shove: '🔥' };
+
 /** A seat's emoji, reacting. Keyed on the hand and the mood, so each new reaction plays from the start. */
 export function MoodFace({ game, player, seat, size }: { game: Game; player: Player; seat: Seat | undefined; size: number }) {
   const mood = moodOf(game, player, seat);
   return (
     <span key={`${game.hand?.number ?? 0}:${mood}`} className={`mood${mood ? ` mood-${mood}` : ''}`}>
       <Avatar emoji={player.emoji} size={size} />
-      {mood === 'sweat' && (
-        <span className="sweat" aria-hidden>
-          💧
+      {mood && MOOD_MARK[mood] && (
+        <span className={`mood-mark mark-${mood}`} aria-hidden>
+          {MOOD_MARK[mood]}
         </span>
       )}
     </span>
@@ -224,7 +227,7 @@ export function Pod({
       style={{ ['--slot' as string]: slot, ['--n' as string]: n, ['--ax' as string]: `${ring.x}%`, ['--ay' as string]: `${ring.y}%` }}
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
-      aria-label={`${player.name}${player.ai ? ', an AI twin' : ''}${player.legend ? ', a legend' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
+      aria-label={`${player.name}${player.bot && !player.legend ? ', a bot' : ''}${player.legend ? ', a legend' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
       onClick={() => {
         if (!host || self) return;
         // Once the hand is done, tapping a bot's face-down cards turns them over.
@@ -234,8 +237,7 @@ export function Pod({
     >
       <span className="pod-pic">
         <MoodFace game={game} player={player} seat={seat} size={50} />
-        {player.ai && <span className="ai-chip" aria-hidden>AI</span>}
-        {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}
+        {player.legend ? <span className="ai-chip legend-chip" aria-hidden>★</span> : player.bot && <span className="ai-chip bot-chip" aria-hidden>BOT</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (
           <Thread talk={reaction} />
@@ -263,6 +265,10 @@ export function Pod({
           <span className="pod-tag win">+{chips(won)}</span>
         ) : odds ? (
           <span className="pod-tag odds">{pct(odds.win)}</span>
+        ) : seat && seat.bet > 0 && hand && !hand.result ? (
+          <span className="pod-tag bet" aria-label={`${chips(seat.bet)} in this round`}>
+            {chips(seat.bet)}
+          </span>
         ) : player.offline ? (
           <span className="pod-tag offline">Offline</span>
         ) : null}

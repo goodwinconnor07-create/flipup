@@ -2,13 +2,13 @@
 
 Live at **https://flipup.kavishahtemu11.workers.dev**
 
-Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mini games (Crazy Pineapple, Crazy Deuces, Ghost, Pittsburgh, Die on the River, Red River and Imposter), each with its own look: the host opens a table, friends join on their own phones with a 5-letter code or link, and bots fill any empty seats. Or play the bots on your own, offline.
+Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mini games (Crazy Pineapple, Crazy Deuces, Ghost, Pittsburgh, Die on the River, Red River, Imposter, Crucifix and Circle Hold'em), each with its own look: the host opens a table, friends join on their own phones with a 5-letter code or link, and bots fill any empty seats. Or play the bots on your own, offline.
 
-- White, clean design with big cards, SF Pro and emoji profile pictures (pick one or type any emoji)
+- A bold, Apple-like design with big cards, the system font and emoji profile pictures (pick one or type any emoji)
 - Real Hold'em rules: moving button, heads-up blinds, min-raises, short all-ins that don't reopen betting, side pots, split pots, showdown order and auto-muck. See [docs/RULES.md](docs/RULES.md).
 - Win and tie odds appear only during an all-in run-out, once every hand is face up
 - Host settings: starting chips, blinds, rebuys, time to act
-- Bots in forty flavours, and legends in the style of famous players to climb through
+- Bots with ten playing styles. AI Legends (bots in the style of famous players) are built but switched off for launch: `LEGENDS_ON` in `src/game/legends.ts`
 - Every mini game dresses the table in its own colours, cards, moving background and sounds
 
 ## Running it

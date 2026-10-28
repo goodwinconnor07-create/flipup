@@ -1,8 +1,8 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
-import { dispatch, navigate, useApp } from '../../state/store';
-import { handKey, hasHand } from '../../state/training';
-import { chips } from '../../ui/components';
+import { dispatch, useApp } from '../../state/store';
+import { toTableTime } from '../../state/clock';
+import { chips, useNow } from '../../ui/components';
 import { CloseIcon, MinusIcon, PlusIcon } from '../../ui/Icons';
 
 /** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
@@ -14,7 +14,6 @@ export function ActionArea({
   seat,
   myTurn,
   sending,
-  now,
   pre,
   setPre,
 }: {
@@ -23,13 +22,15 @@ export function ActionArea({
   seat?: Seat;
   myTurn: boolean;
   sending: boolean;
-  now: number;
   pre: PreAction;
   setPre: (p: PreAction) => void;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
   const host = game.hostDeviceId === deviceId;
+  // Only the between-hands countdowns need a clock, and it lives here so the rest of the table isn't redrawn with it.
+  const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
+  const now = toTableTime(useNow(waiting ? 200 : 60_000), game.fast);
 
   if (!me) return <p className="table-note">You're watching this table.</p>;
 
@@ -164,20 +165,7 @@ export function ActionArea({
         <span className="next-fill" aria-hidden />
         {ready ? 'Waiting for the others…' : 'Next hand'}
       </button>
-      <ReplayButton gameId={game.id} number={hand.number} />
     </div>
-  );
-}
-
-/** Watch the hand that just finished, if this phone was dealt in and saved it. */
-function ReplayButton({ gameId, number }: { gameId: string; number: number }) {
-  const key = handKey(gameId, number);
-  const saved = useMemo(() => hasHand(key), [key]);
-  if (!saved) return null;
-  return (
-    <button type="button" className="btn btn-sm btn-outline" onClick={() => navigate({ name: 'replay', key })}>
-      Replay this hand
-    </button>
   );
 }
 
@@ -217,10 +205,10 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
           onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
         />
       )}
-      <p className={`table-note your-turn${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
+      <p className={`table-note your-turn${raising ? ' raise-hidden' : ''}`} aria-hidden={raising || undefined}>
         Your turn
       </p>
-      <div className={`action-buttons${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
+      <div className={`action-buttons${raising ? ' raise-hidden' : ''}`} aria-hidden={raising || undefined}>
         {o.canFold && (
           <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
             Fold

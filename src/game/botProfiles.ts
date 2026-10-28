@@ -95,6 +95,13 @@ function profile(name: string): BotProfile {
   };
 }
 
+// Bots never wear a face from the profile picker (`EMOJIS`), so a bot can't be mistaken for a friend.
+const BOT_FACES: Record<string, string> = {
+  '😎': '🦝', '🤠': '🦬', '🥸': '🦧', '🤩': '🦜', '🐸': '🦎', '🦊': '🦡', '🐼': '🦥', '🐯': '🐆', '🦁': '🦌', '🐙': '🦑', '🦄': '🐴',
+  '🐶': '🐕', '🐱': '🐈', '🐻': '🐗', '🦖': '🐊', '🧌': '🐲', '🔥': '⚡', '🌵': '🪴', '🦈': '🐬', '🃏': '♟️', '🤖': '🦾', '🎲': '🎰',
+};
+export const botFace = (emoji: string): string => BOT_FACES[emoji] ?? emoji;
+
 export function makeRoster(familiar: { name: string; emoji: string; style: StyleId }[]): BotIdentity[] {
   // 100 first names × 6 surname initials. Initials keep names within the existing ten-character limit.
   const regulars = FIRST.slice(0, 100).flatMap((first, i) =>
@@ -102,13 +109,13 @@ export function makeRoster(familiar: { name: string; emoji: string; style: Style
       const name = `${first} ${initial}`;
       return {
         name,
-        emoji: AVATARS[(i * 7 + j * 11) % AVATARS.length],
+        emoji: botFace(AVATARS[(i * 7 + j * 11) % AVATARS.length]),
         style: STYLES[(i + j * 3) % STYLES.length],
         profile: profile(name),
       };
     }),
   );
-  return [...regulars, ...familiar.map((b) => ({ ...b, profile: profile(b.name) }))];
+  return [...regulars, ...familiar.map((b) => ({ ...b, emoji: botFace(b.emoji), profile: profile(b.name) }))];
 }
 
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));

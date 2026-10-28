@@ -12,6 +12,8 @@ async function sitDown(page: Page, game: string) {
   await expect(page.getByRole('dialog', { name: 'Choose a game' })).toBeVisible();
   await shot(page, `variant-picker`);
   await page.getByRole('button', { name: new RegExp(game) }).click();
+  // The picker slides away, then the game row shows the choice.
+  await expect(page.getByRole('dialog', { name: 'Choose a game' })).toBeHidden();
   await expect(page.getByRole('button', { name: new RegExp(game) })).toBeVisible();
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();

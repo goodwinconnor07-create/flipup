@@ -15,7 +15,6 @@ import {
   setTableLook,
   toggleCalm,
   toggleFast,
-  toggleCam3d,
   toggleTalk,
   setAppearance,
   toggleGlass,
@@ -55,6 +54,7 @@ import { GameStartSheet } from './GameStartSheet';
 import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
 import { AddPalSheet, JoinPartySheet } from './CodeSheets';
+import { PickSheet, RulesSheet } from '../GamePicker';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
   switch (sheet.name) {
@@ -68,6 +68,10 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <GameStartSheet variant={sheet.variant} />;
     case 'join':
       return <JoinSheet />;
+    case 'rules':
+      return <RulesSheet variant={sheet.variant} />;
+    case 'pick':
+      return <PickSheet current={sheet.current} onPick={sheet.onPick} />;
     case 'settings':
       return <SettingsSheet />;
     case 'prefs':
@@ -339,7 +343,6 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
   const calm = useApp((s) => s.calm);
   const talk = useApp((s) => s.talk);
   const fast = useApp((s) => s.fast);
-  const cam3d = useApp((s) => s.cam3d);
   const glass = useApp((s) => s.glass);
   return {
     switches: [
@@ -347,7 +350,6 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
       { label: 'Animations', Icon: BoltIcon, color: 'var(--gold)', on: !calm, onChange: toggleCalm },
       { label: 'Bot talk', Icon: ChatIcon, color: 'var(--green)', on: talk, onChange: toggleTalk },
       { label: 'Fast bot games', Icon: ClockIcon, color: 'var(--gold)', on: fast, onChange: toggleFast },
-      { label: '3D table (beta)', Icon: PaletteIcon, color: 'var(--blue)', on: cam3d, onChange: toggleCam3d },
       { label: 'Transparency', Icon: GlassIcon, color: 'var(--blue)', on: glass, onChange: toggleGlass },
     ],
     links: [

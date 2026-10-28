@@ -4,10 +4,19 @@ import { legendBefore, legendOpen, loadProgress } from '../state/progress';
 import { navigate, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { LEGEND_SCENES } from './botScenes';
+import { hasPortrait, LegendPortrait } from '../ui/LegendPortraits';
 
-/** A legend's backdrop with their face on it: the picture on their card and their profile. */
+/** A legend's picture: their drawn portrait (or, without one, their backdrop and emoji). Used on their card and profile. */
 export function LegendArt({ legend, size = 64, className = 'quick-art', children }: { legend: Legend; size?: number; className?: string; children?: ReactNode }) {
   const s = LEGEND_SCENES[legend.id];
+  if (hasPortrait(legend.id)) {
+    return (
+      <span className={`${className} portrait`} style={{ background: s.bg[1] }}>
+        <LegendPortrait id={legend.id} className="legend-portrait" />
+        {children}
+      </span>
+    );
+  }
   return (
     <span className={className} style={{ background: `linear-gradient(180deg, ${s.bg[0]}, ${s.bg[1]})` }}>
       <span className="prop prop-a" aria-hidden>{s.props[0]}</span>
@@ -24,8 +33,8 @@ export function LegendShelf() {
   const named = useApp((s) => s.profile.name.trim().length > 0);
   const [progress] = useState(loadProgress);
   return (
-    <section className="quick-games legends" aria-label="Legends">
-      <h3 className="section-head">Legends</h3>
+    <section className="quick-games legends" aria-label="AI Legends">
+      <h3 className="section-head">AI Legends</h3>
       <div className="quick-row">
         {LEGENDS.map((l) => {
           const open = legendOpen(progress, l.id);

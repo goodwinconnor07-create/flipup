@@ -193,7 +193,7 @@ function CamCaption({ game, player, reaction, quiet, odds }: { game: Game; playe
     <button
       type="button"
       className={`cam-caption${turn ? ' turn' : ''}`}
-      aria-label={`${player.name}${player.ai ? ', an AI twin' : ''}${player.legend ? ', a legend' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
+      aria-label={`${player.name}${player.legend ? ', a legend' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
       onClick={() => {
         if (!host) return;
         if (canPeek) dispatch({ type: 'revealBots', hand: hand!.number, playerId: player.id });
@@ -206,7 +206,6 @@ function CamCaption({ game, player, reaction, quiet, odds }: { game: Game; playe
       <span className="cam-who">
         {player.legend && <span className="cam-star" aria-hidden>★</span>}
         <b>{player.name}</b>
-        {player.ai && <span className="cam-ai" aria-hidden>AI</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
         <span className="cam-chips num">{status ?? <Count value={player.stack} />}</span>
         {seat && seat.bet > 0 && !hand?.result && <span className="cam-tag">In {chips(seat.bet)}</span>}

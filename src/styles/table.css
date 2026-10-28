@@ -211,6 +211,12 @@ html[data-theme='dark'] .pcard.dim > * {
     height: 40px;
   }
 
+  /* The bar behind them is solid, so there's nothing to blur. */
+  html:not(.no-glass) .table-bar .icon-btn {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   .table-bar .icon-btn svg {
     width: 20px;
     height: 20px;
@@ -351,7 +357,7 @@ html[data-theme='dark'] .pcard.dim > * {
   height: 54px;
 }
 
-/* An AI twin wears the face of the person it copies, so it carries a badge. */
+/* A small badge on the corner of a seat's picture. */
 .ai-chip {
   position: absolute;
   bottom: 2px;
@@ -366,7 +372,7 @@ html[data-theme='dark'] .pcard.dim > * {
   line-height: 1.4;
 }
 
-/* A legend's seat: a gold star where an AI twin has its chip. */
+/* A legend's seat: a gold star chip. */
 .legend-chip {
   background: var(--gold);
   color: var(--gold-ink-2);
@@ -376,7 +382,8 @@ html[data-theme='dark'] .pcard.dim > * {
 .pod-cards.shimmer {
   position: relative;
   overflow: hidden;
-  border-radius: var(--r-sm, 6px);
+  /* The same corner as the small cards (5px), so the sweep never shaves them. */
+  border-radius: 5px;
 }
 
 .pod-cards.shimmer::after {
@@ -452,20 +459,26 @@ html[data-theme='dark'] .pcard.dim > * {
 }
 
 .pod-tag.bet {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   background: var(--gold-bg);
   color: var(--gold-ink);
+}
+
+/* A little chip in front of the amount. */
+.pod-tag.bet::before {
+  content: '';
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
 }
 
 .pod-tag.last {
   background: var(--bg-2);
   color: var(--ink-3);
-}
-
-.pod-tag.last-raise,
-.pod-tag.last-bet,
-.pod-tag.last-allin {
-  background: var(--blue-bg);
-  color: var(--blue-ink);
 }
 
 .pod-tag.offline {
@@ -674,8 +687,11 @@ html[data-theme='dark'] .pcard.dim > * {
 }
 
 .win-text b {
+  display: block;
+  overflow: hidden;
   font-size: var(--fs-small);
   font-weight: 700;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -741,15 +757,6 @@ html[data-theme='dark'] .pcard.dim > * {
   min-height: 44px;
 }
 
-.turn-clock {
-  color: var(--ink-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.turn-clock.low {
-  color: var(--red);
-}
-
 .action-buttons {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
@@ -768,28 +775,6 @@ html[data-theme='dark'] .pcard.dim > * {
   color: var(--red-ink);
   text-shadow: none;
   box-shadow: none;
-}
-
-.result-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.result-line {
-  margin: 0;
-  text-align: center;
-  font-size: var(--fs-body);
-  font-weight: 600;
-}
-
-.show-btn {
-  min-height: 48px;
-  font-size: var(--fs-body);
-}
-
-.result-line.you b {
-  color: var(--green);
 }
 
 /* The next hand deals itself when the bar runs out. */
@@ -850,7 +835,7 @@ html:not(.no-glass) .raise-panel .icon-btn {
 }
 
 /* The real action row stays in the page, unseen, while the sizer is open, so the table keeps its size. */
-.ghost {
+.raise-hidden {
   visibility: hidden;
 }
 
@@ -1207,10 +1192,7 @@ html.calm .pod.won .pod-pic {
 .timer-run {
   stroke: var(--gold);
   stroke-width: 5;
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
-  transition:
-    stroke-dasharray 0.2s linear,
-    stroke 0.3s ease;
+  transition: stroke 0.3s ease;
 }
 
 .table-timer.mine .timer-run {
@@ -1555,18 +1537,6 @@ html[data-theme='dark'] .hand-pill {
   box-shadow:
     0 0 0 1px var(--card-edge),
     0 0 14px rgba(120, 160, 255, 0.16);
-}
-
-html[data-theme='dark'] .timer-run {
-  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6));
-}
-
-html[data-theme='dark'] .table-timer.mine .timer-run {
-  filter: drop-shadow(0 0 5px rgba(74, 163, 255, 0.75));
-}
-
-html[data-theme='dark'] .table-timer.low .timer-run {
-  filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.8));
 }
 
 html[data-theme='dark'] .your-turn {
@@ -2673,13 +2643,6 @@ html.calm .pod-cards.shimmer::after {
   color: var(--gold);
 }
 
-.cam-ai {
-  padding: 0 4px;
-  border-radius: var(--r-pill);
-  background: var(--indigo);
-  font-size: var(--fs-nano);
-}
-
 .cam-chips {
   opacity: 0.85;
 }
@@ -2699,3 +2662,259 @@ html.calm .pod-cards.shimmer::after {
   gap: 2px;
 }
 
+/* ── Louder reactions and slightly bigger talk ────────────────────────────────────────────────
+   Bots fall over when they're knocked out, sweat and tremble over a big bet, jump for a win, and flare up on
+   a shove. The mark (💦 💫 ✨ 💔 🔥) floats by the face. Table talk is a touch bigger and bolder. */
+
+.mood-bust,
+.mood-out {
+  /* Tips over on the spot, round its middle, so it stays above its name. */
+  transform-origin: 50% 50%;
+  transition: none;
+  animation: mood-fall 0.9s cubic-bezier(0.5, 0, 0.6, 1.4) forwards;
+}
+
+.mood-sweat {
+  animation: mood-tremble 0.16s linear infinite;
+}
+
+.mood-win {
+  animation: mood-jump 0.7s cubic-bezier(0.3, 0.7, 0.4, 1) 3;
+}
+
+.mood-shove {
+  animation: mood-pop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) 1;
+}
+
+.mood-fold {
+  animation: mood-slump 0.5s ease forwards;
+}
+
+.mood-mark {
+  position: absolute;
+  z-index: 2;
+  top: -10px;
+  right: -10px;
+  font-size: 22px;
+  line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
+}
+
+.mark-sweat {
+  animation: mood-drip 1.2s ease-in infinite;
+}
+
+.mark-bust,
+.mark-out {
+  top: -16px;
+  right: 50%;
+  translate: 50% 0;
+  animation: mood-dizzy 1.6s linear 4;
+}
+
+.mark-win {
+  animation: mood-twinkle 0.9s ease-in-out 3 both;
+}
+
+.mark-beat {
+  animation: mood-pop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) 1 both;
+}
+
+.mark-shove {
+  top: auto;
+  bottom: -6px;
+  animation: mood-pop 0.6s cubic-bezier(0.3, 1.6, 0.5, 1) 1 both;
+}
+
+@keyframes mood-fall {
+  0% {
+    transform: none;
+  }
+  30% {
+    transform: rotate(12deg) translateY(-3px);
+  }
+  100% {
+    transform: rotate(-80deg) scale(0.86);
+    filter: grayscale(0.7);
+  }
+}
+
+@keyframes mood-tremble {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-1.2px) rotate(-1deg);
+  }
+  75% {
+    transform: translateX(1.2px) rotate(1deg);
+  }
+}
+
+@keyframes mood-jump {
+  0%,
+  100% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(-16px) scale(1.1, 0.94) rotate(-6deg);
+  }
+  60% {
+    transform: translateY(0) scale(0.95, 1.06);
+  }
+}
+
+@keyframes mood-slump {
+  to {
+    transform: translateY(5px) rotate(8deg) scale(0.92);
+    opacity: 0.8;
+  }
+}
+
+@keyframes mood-dizzy {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes mood-twinkle {
+  0%,
+  100% {
+    transform: scale(0.6);
+    opacity: 0.3;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+html.calm .mood,
+html.calm .mood-mark {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mood,
+  .mood-mark {
+    animation: none !important;
+  }
+}
+
+/* Move bubbles ("Call 10", "Fold") are a touch bigger and bolder. */
+.bubble:not(.bubble-react):not(.bubble-typing) {
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 16px;
+}
+
+.pod-name {
+  font-weight: 700;
+}
+
+.pod-stack {
+  font-weight: 700;
+}
+
+/* A split pot names everyone who shared it, which can be too long for the strip under the board: it lifts
+   over the board instead, wraps onto two lines and stays inside the table. */
+.table-foot {
+  z-index: 4;
+}
+
+.win-banner.split {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  translate: -50% 0;
+  width: max-content;
+  max-width: min(320px, 86vw);
+  padding: 8px 16px 8px 8px;
+  border-radius: var(--r-lg);
+}
+
+.win-banner.split .win-text b {
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ── Table talk ───────────────────────────────────────────────────────────────────────────────
+   A talk bubble is 13px semibold, and the typing dots sit in a bubble exactly as tall as a one-line message,
+   so the dots turn into the words without a jump. Every bubble is centred over its seat: a bubble is never
+   wider than the seat's share of the row, so even the end seats stay on screen. On a phone the row reaches
+   into the side margins, so each seat (and its bubble) gets a little more room. */
+.bubble-react {
+  padding: 4px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 16px;
+  border-radius: 14px;
+}
+
+.bubble-ticker .tk-size {
+  display: inline-block;
+}
+
+.bubble-typing,
+.thread > .bubble-typing {
+  height: 24px;
+  min-height: 24px;
+  padding: 0 11px;
+  gap: 4px;
+  border-radius: 14px;
+}
+
+.bubble-typing i {
+  width: 6px;
+  height: 6px;
+}
+
+.pod.edge-l .pod-pic > .bubble,
+.pod.edge-r .pod-pic > .bubble,
+.pod.edge-l .pod-pic > .thread,
+.pod.edge-r .pod-pic > .thread {
+  left: 50%;
+  right: auto;
+  translate: -50% 0;
+  align-items: center;
+}
+
+@supports (width: 1cqw) {
+  .pod .bubble-react {
+    max-width: calc(100cqw / max(var(--n, 4), 1) - 4px);
+  }
+}
+
+@media not all and (min-width: 960px) and (min-height: 600px) {
+  .pods {
+    margin-inline: -12px;
+  }
+}
+
+/* A seat that's out of the row says nothing until it's back in view, so a bubble never hangs off the screen
+   while its seat slides away. */
+.pod.away .thread,
+.pod.away .pod-pic > .bubble {
+  display: none;
+}
+
+/* A bot's badge, in a quiet grey so it reads as a label and not a rank. */
+.bot-chip {
+  background: var(--slate-hi, #64748b);
+  letter-spacing: 0.04em;
+}
+
+/* Speech bubbles are plain capsules: the seat they sit on says who is talking, so there is no tail. */
+.bubble::before {
+  content: none !important;
+}
+
+.bubble {
+  border-radius: 999px !important;
+}

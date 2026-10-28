@@ -2,6 +2,7 @@
 // One small store (no library): screens read it with useApp(selector).
 
 import { useSyncExternalStore } from 'react';
+import { flushSync } from 'react-dom';
 import {
   applyAction,
   cleanName,
@@ -13,6 +14,7 @@ import {
   normalizeCode,
   redactForDevice,
   dressAsLegend,
+  LEGENDS_ON,
   legendById,
   redactLogs,
   type HandLog,
@@ -24,7 +26,6 @@ import {
   type Variant,
   type TableInfo,
 } from '../game';
-import type { StyleId } from '../game/botStyles';
 import { haptic, reducedMotion } from '../ui/effects';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
@@ -54,7 +55,6 @@ import {
   saveCalm,
   saveAppearance,
   saveGlass,
-  saveLastBots,
   saveMuted,
   saveProfile,
   saveSession,
@@ -75,8 +75,6 @@ export type Route =
   | { name: 'join'; code: string }
   | { name: 'joinTable'; info: TableInfo }
   | { name: 'table' }
-  /** Watch a saved hand back. */
-  | { name: 'replay'; key: string }
   /** A legend's profile: how they play, and a game against them. */
   | { name: 'legend'; id: string }
   /** Set up a party tournament: pick the games and the pace. */
@@ -93,6 +91,10 @@ export type Sheet =
   | { name: 'game'; variant: Variant }
   /** Type the table code or scan its QR code. */
   | { name: 'join' }
+  /** How a game plays, from the badge on the table. */
+  | { name: 'rules'; variant: Variant | undefined }
+  /** Choose which game a table plays. */
+  | { name: 'pick'; current: Variant; onPick: (variant: Variant) => void }
   | { name: 'settings' }
   /** This phone's look and sound: dark mode, Liquid Glass, sound, animations. */
   | { name: 'prefs' }
@@ -253,9 +255,21 @@ function onPopState(): void {
   back();
 }
 
+/** Moves between screens the way iOS does: the new one slides in over the old (push), or the old slides away (pop).
+ * The browser draws it (View Transitions, Safari 18 and up); anywhere else the screen just fades in as before. */
+function slide(kind: 'push' | 'pop', change: () => void): void {
+  const doc = document as Document & { startViewTransition?: (update: () => void) => { finished: Promise<unknown> } };
+  if (!doc.startViewTransition || reducedMotion()) return change();
+  const root = document.documentElement;
+  root.dataset.nav = kind;
+  const run = doc.startViewTransition(() => flushSync(change));
+  const clear = () => delete root.dataset.nav;
+  run.finished.then(clear, clear);
+}
+
 export function navigate(route: Route): void {
   clearTimeout(sheetTimer);
-  set({ stack: [...state.stack, route], sheet: null, sheetLeaving: false });
+  slide('push', () => set({ stack: [...state.stack, route], sheet: null, sheetLeaving: false }));
   syncHistory();
 }
 
@@ -277,7 +291,7 @@ export function back(): void {
     clearTimeout(sheetTimer);
     set({ sheet: null, sheetLeaving: false });
   }
-  if (state.stack.length > 1) set({ stack: state.stack.slice(0, -1) });
+  if (state.stack.length > 1) slide('pop', () => set({ stack: state.stack.slice(0, -1) }));
   syncHistory();
 }
 
@@ -352,8 +366,31 @@ export function setProfile(patch: Partial<Profile>): void {
 let conn: Connection | null = null;
 let localTimer: ReturnType<typeof setTimeout> | undefined;
 
+// The table is saved to the phone so a reload picks it back up. Writing the whole game on every move is a lot of
+// work in the middle of play, so it waits a moment and goes in one go, and always before the page is put away.
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+let unsaved: Session | null | undefined;
+
+function flushSession(): void {
+  clearTimeout(saveTimer);
+  saveTimer = undefined;
+  if (unsaved !== undefined) saveSession(unsaved);
+  unsaved = undefined;
+}
+
+function saveSessionSoon(session: Session | null): void {
+  unsaved = session;
+  if (session === null) return flushSession();
+  saveTimer ??= setTimeout(flushSession, 600);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flushSession());
+  addEventListener('pagehide', flushSession);
+}
+
 function setSession(session: Session | null): void {
-  saveSession(session);
+  saveSessionSoon(session);
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
   captureFinishedHand(state.game, state.deviceId);
@@ -376,17 +413,9 @@ function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Gam
   dispatch({ type: 'start' });
 }
 
-/** A heads-up game against one bot, loaded with another style's way of playing. */
-export function startPlaystyle(bot: string, style: StyleId): void {
-  if (state.busy) return;
-  startHeadsUp(bot, (them) => {
-    them.style = style;
-  });
-}
-
 /** A heads-up game against a legend: a bot seat dressed as them. */
 export function startLegend(id: string): void {
-  if (state.busy) return;
+  if (!LEGENDS_ON || state.busy) return;
   const legend = legendById(id);
   if (!legend) return;
   const progress = loadProgress();
@@ -428,6 +457,20 @@ function closeConnection(): void {
   conn?.close();
   conn = null;
   set({ conn: 'none' });
+}
+
+/** Lets a last message go, then closes. Only the connection that was open now is closed: a table opened in
+ * the meantime keeps its own. */
+function closeConnectionSoon(): void {
+  const old = conn;
+  conn = null;
+  set({ conn: 'none' });
+  setTimeout(() => old?.close(), 300);
+}
+
+/** Sends without a toast if it can't go, for messages that don't matter once you've left. */
+function sendQuietly(action: Action): void {
+  conn?.send({ t: 'act', id: newId(8), a: action });
 }
 
 /** Keeps who's at an online table with the "rejoin" card on Home. */
@@ -544,7 +587,6 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   if (mode === 'local') {
     const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, code: null, now: Date.now() });
     if (state.fast) game.fast = true;
-    saveLastBots({ bots: game.players.filter((p) => p.bot).map((p) => p.name), settings, at: Date.now() });
     closeConnection();
     setSession({ mode: 'local', code: null, game });
     resetTo({ name: 'table' });
@@ -672,9 +714,9 @@ export function leaveTable(): void {
   recordFinished();
   const s = state.session;
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
-  if (s?.mode === 'online' && me && state.game?.status !== 'ended') send({ type: 'remove', playerId: me.id });
+  if (s?.mode === 'online' && me && state.game?.status !== 'ended') sendQuietly({ type: 'remove', playerId: me.id });
   // Give the message a moment to go before the socket closes.
-  setTimeout(closeConnection, 300);
+  closeConnectionSoon();
   setSession(null);
   resetTo();
 }
@@ -687,8 +729,8 @@ export function closeTable(): void {
   if (state.session?.mode === 'online') saveLastTable(null);
   if (state.session?.mode === 'online' && asked) {
     // Leaving after asking to play again: take the request back, so no one's seated who isn't there.
-    send({ type: 'playAgain', off: true });
-    setTimeout(closeConnection, 300);
+    sendQuietly({ type: 'playAgain', off: true });
+    closeConnectionSoon();
   } else closeConnection();
   setSession(null);
   resetTo();

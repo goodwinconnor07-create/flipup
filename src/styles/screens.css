@@ -271,37 +271,6 @@
 
 /* ── Join ────────────────────────────────────────────────────────────────── */
 
-.code-input {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.code-input input {
-  width: 100%;
-  min-height: 84px;
-  border: 0;
-  border-radius: var(--r-lg);
-  background: var(--bg-2);
-  text-align: center;
-  font-size: var(--fs-display-2);
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  padding-left: 0.3em;
-}
-
-.code-input input:focus {
-  outline: none;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 4px var(--blue);
-}
-
-.join-busy {
-  align-self: center;
-  color: var(--ink-3);
-}
-
 .me-row {
   display: flex;
   align-items: center;
@@ -379,20 +348,6 @@
 
 .link-chip svg {
   flex: none;
-}
-
-.invite-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.invite-actions .btn {
-  flex: 1;
-}
-
-.invite-actions .btn.icon-only {
-  flex: 0 0 64px;
-  padding: 0;
 }
 
 .qr-box {
@@ -638,20 +593,6 @@ button.roster-item:active:not(:disabled) {
 .standing-net {
   font-size: var(--fs-h3);
   font-weight: 700;
-}
-
-.final-hero {
-  gap: 8px;
-  padding: 24px 0 8px;
-}
-
-.final-hero p {
-  margin: 0;
-  font-size: var(--fs-h3);
-}
-
-.final-pic {
-  display: inline-grid;
 }
 
 /* ── Hand rankings ───────────────────────────────────────────────────────── */
@@ -1010,52 +951,67 @@ html[data-theme='dark'] .btn-dark {
 }
 
 /* A letter pops into its box. The key changes with the letter, so this plays once per letter typed. */
+.join-cell {
+  position: relative;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
 .join-cell.filled {
+  background: color-mix(in srgb, var(--blue) 14%, var(--bg-3));
   animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
+/* The box waiting for a letter has a blinking cursor in it. */
+.join-cell.next::after {
+  content: '';
+  width: 3px;
+  height: 34px;
+  border-radius: 2px;
+  background: var(--blue);
+  animation: code-caret 1s steps(1) infinite;
+}
+
+@keyframes code-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* A wrong code: every box shakes and flashes red, then they empty. */
+.join-code.err .join-cell {
+  box-shadow: inset 0 0 0 3px var(--red);
+  animation: shake 0.45s ease-in-out;
+}
+
+/* While it's looked up, the letters ripple across. */
+.join-code.busy .join-cell.filled {
+  animation: code-wave 0.9s ease-in-out infinite;
+}
+
+.join-code.busy .join-cell:nth-child(2) { animation-delay: 0.08s; }
+.join-code.busy .join-cell:nth-child(3) { animation-delay: 0.16s; }
+.join-code.busy .join-cell:nth-child(4) { animation-delay: 0.24s; }
+.join-code.busy .join-cell:nth-child(5) { animation-delay: 0.32s; }
+
+@keyframes code-wave {
+  50% {
+    transform: translateY(-6px);
+    background: color-mix(in srgb, var(--green) 24%, var(--bg-3));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .join-cell.filled {
+  .join-cell.filled,
+  .join-cell.next::after,
+  .join-code.err .join-cell,
+  .join-code.busy .join-cell.filled {
     animation: none;
   }
 }
 
 /* Letter keys: a 7-across grid, each key a bold coloured tile with a press. */
-.join-keys {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-}
-
-.join-key {
-  appearance: none;
-  border: 0;
-  min-height: 56px;
-  padding: 0;
-  border-radius: var(--r-md);
-  color: var(--on-color);
-  font: inherit;
-  font-size: var(--fs-h1);
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease-out, filter 0.08s ease-out;
-}
-
-.join-key:active {
-  transform: scale(0.94);
-  filter: brightness(0.9);
-}
-
-.join-key:disabled {
-  opacity: 0.5;
-}
-
-.join-key-delete {
-  background: var(--bg-3);
-  color: var(--ink);
-  font-size: var(--fs-h2);
-}
 
 .join-status {
   min-height: 28px;
@@ -1667,64 +1623,7 @@ html[data-theme='dark'] .btn-dark {
   text-align: left;
 }
 
-.game-emoji {
-  font-size: var(--fs-h1);
-  line-height: 1;
-}
-
-.game-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.game-tile {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 16px;
-  border: 0;
-  border-radius: var(--r-lg);
-  background: var(--bg-2);
-  color: #fff;
-  font: inherit;
-  text-align: left;
-}
-
 /* Each tile wears its game's colours. */
-.game-tile-art {
-  position: absolute;
-  inset: 0;
-}
-
-.game-tile-art .prop {
-  display: none;
-}
-
-.game-tile > :not(.game-tile-art) {
-  position: relative;
-}
-
-.game-tile.on {
-  box-shadow: inset 0 0 0 2px var(--brand-ink);
-}
-
-.game-tile-emoji {
-  font-size: var(--fs-display-1);
-  line-height: 1.1;
-}
-
-.game-tile b {
-  font-weight: 600;
-}
-
-.game-tile small {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: var(--fs-caption);
-}
 
 .game-more {
   margin-top: 16px;
@@ -2046,4 +1945,256 @@ html[data-theme='dark'] .btn-dark {
   .theme-ghost .table-felt::after {
     animation: none;
   }
+}
+
+/* ── The code keyboard (ui/CodePad.tsx): laid out like the phone's own; letters codes never use are off ── */
+.code-kb {
+  display: grid;
+  gap: 8px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.code-kb-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.code-key {
+  flex: 1 1 0;
+  max-width: 44px;
+  min-width: 0;
+  height: 52px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.45);
+  touch-action: manipulation;
+}
+
+.code-key.off {
+  background: transparent;
+  color: var(--ink-4);
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.code-key:disabled:not(.off) {
+  opacity: 0.5;
+}
+
+.code-key-delete {
+  flex-grow: 1.5;
+  max-width: 66px;
+  background: var(--bg-3);
+  font-size: 20px;
+}
+
+html[data-theme='dark'] .sheet .code-key:not(.off) {
+  background: var(--bg-3);
+}
+
+html[data-theme='dark'] .sheet .code-key-delete {
+  background: #48484a;
+}
+
+/* ── Choose a game: one big card per game, with plenty of room, in a list that scrolls. Each scene plays a
+   hand on a loop (cards dealt one by one, the players breathing, sparkles), so you see the game first. ── */
+.pick-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 4px 0 8px;
+}
+
+.pick-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 10px 16px;
+  border: 0;
+  border-radius: var(--r-xl);
+  color: var(--on-color);
+  font: inherit;
+  text-align: left;
+  box-shadow: 0 14px 24px -16px rgba(0, 0, 0, 0.55);
+}
+
+.pick-card.on {
+  box-shadow:
+    0 0 0 3px var(--surface),
+    0 0 0 6px var(--blue),
+    0 14px 24px -16px rgba(0, 0, 0, 0.55);
+}
+
+.pick-scene {
+  display: block;
+  width: 100%;
+  aspect-ratio: 200 / 120;
+  border-radius: calc(var(--r-xl) - 8px);
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.pick-scene svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.pick-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 8px;
+}
+
+.pick-text b {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.pick-text small {
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.pick-on {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--blue);
+  color: var(--on-color);
+  box-shadow: 0 0 0 3px #fff;
+}
+
+/* The scenes' moving parts (ui/GameIllustrations.tsx), only where a scene is `.game-live`. */
+@media (prefers-reduced-motion: no-preference) {
+  .game-live .deal {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: scene-deal 6s cubic-bezier(0.2, 0.9, 0.3, 1.2) infinite;
+    animation-delay: calc(var(--i, 0) * 0.35s);
+  }
+
+  .game-live .bob {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: scene-bob 2.4s ease-in-out infinite;
+    animation-delay: calc(var(--b, 0) * -0.8s);
+  }
+
+  .game-live .twinkle {
+    animation: scene-twinkle 1.8s ease-in-out infinite;
+  }
+
+  .game-live .roll {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: scene-roll 3s cubic-bezier(0.3, 0.8, 0.4, 1) infinite;
+  }
+
+  .game-live .tick {
+    animation: scene-tick 6s steps(12) infinite;
+  }
+}
+
+@keyframes scene-deal {
+  0%,
+  6% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.7) rotate(-8deg);
+  }
+  14%,
+  84% {
+    opacity: 1;
+    transform: none;
+  }
+  94%,
+  100% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.9);
+  }
+}
+
+@keyframes scene-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px) rotate(-1.5deg);
+  }
+}
+
+@keyframes scene-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes scene-roll {
+  0% {
+    transform: translate(-30px, -10px) rotate(-200deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  45%,
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes scene-tick {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Small pieces shared by the hand log and the bot picker. */
+
+.log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chip-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.chip-btn.on {
+  background: var(--btn-dark);
+  color: var(--on-contrast);
 }

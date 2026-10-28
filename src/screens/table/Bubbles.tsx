@@ -1,5 +1,5 @@
-import { useEffect, useReducer, useRef, useState } from 'react';
-import { BEFORE_MOVE, botSay, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, ticker, widestWindow, windowAt, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
+import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
+import { BEFORE_MOVE, botSay, CHAT, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, ticker, widestWindow, windowAt, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
 import { react, useApp } from '../../state/store';
 import { chips } from '../../ui/components';
 import { haptic } from '../../ui/effects';
@@ -182,11 +182,23 @@ function Ticker({ text, until }: { text: string; until: number }) {
       clearTimeout(out);
     };
   }, []);
-  const [first, last] = windowAt(words, shown);
+  // The window starts at the usual few words. If the widest of them doesn't fit the room this seat has (a
+  // narrow phone, a full row), it shrinks a letter at a time until it does, so nothing is ever cut off.
+  const [room, setRoom] = useState<number>(CHAT.windowChars);
+  const bubble = useRef<HTMLSpanElement>(null);
+  const sizer = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const b = bubble.current;
+    const s = sizer.current;
+    if (!b || !s) return;
+    const pad = parseFloat(getComputedStyle(b).paddingLeft) + parseFloat(getComputedStyle(b).paddingRight);
+    if (s.getBoundingClientRect().width > b.clientWidth - pad + 0.5 && room > 4) setRoom(room - 1);
+  }, [room]);
+  const [first, last] = windowAt(words, shown, room);
   return (
-    <span className={`bubble bubble-grey bubble-react bubble-ticker pop${leaving ? ' bubble-leaving' : ''}`} aria-label={text}>
-      <span className="tk-size" aria-hidden>
-        {widestWindow(words)}
+    <span ref={bubble} className={`bubble bubble-grey bubble-react bubble-ticker pop${leaving ? ' bubble-leaving' : ''}`} aria-label={text}>
+      <span ref={sizer} className="tk-size" aria-hidden>
+        {widestWindow(words, room)}
       </span>
       <span className="tk-words" aria-hidden>
         {words.slice(0, last + 1).map((w, i) => (

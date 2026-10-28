@@ -4,7 +4,7 @@ import { watchErrors } from './helpers';
 test('a drag across a button does not press it, a tap does', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  const tile = page.getByRole('button', { name: /^Play with Bots/ });
+  const tile = page.getByRole('button', { name: /^Play with Bots/i });
   const box = (await tile.boundingBox())!;
   const x = box.x + box.width / 2;
   const y = box.y + box.height / 2;

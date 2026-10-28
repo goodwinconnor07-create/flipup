@@ -53,8 +53,6 @@ export interface Player {
   style?: string;
   /** Plays in the style of a legend (see legends.ts). Public: the table shows who it is. */
   legend?: string;
-  /** Plays as an AI twin of a person. Public (the table shows an AI badge), unlike `twin`. */
-  ai?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
   twin?: TwinBrain;
   /** Stable bot identity, private on online tables. */

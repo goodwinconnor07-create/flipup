@@ -1,11 +1,12 @@
 // Choosing which game a table plays: a row in the table settings that opens a grid of every variant, and the
 // rules sheet a player can open from the table.
 
-import { useState } from 'react';
 import { BLIND_LEVELS, variantInfo, VARIANTS, type Settings, type Variant } from '../game';
+import { closeSheet, openSheet } from '../state/store';
 import { Sheet } from '../ui/components';
-import { ChevronIcon } from '../ui/Icons';
-import { GameArt } from './HomeGames';
+import { CheckIcon, ChevronIcon } from '../ui/Icons';
+import { GameIllustration, GameThumb } from '../ui/GameIllustrations';
+import { cardArt } from '../ui/gameThemes';
 
 /** Ghost Hold'em plays best deep: picking it gives everyone at least this many big blinds. */
 const GHOST_DEPTH = 500;
@@ -29,56 +30,71 @@ export function withVariant(settings: Settings, variant: Variant): Settings {
 
 /** The "Game" row: what the table plays, and a tap to pick another. */
 export function GameRow({ settings, onChange }: { settings: Settings; onChange: (s: Settings) => void }) {
-  const [open, setOpen] = useState(false);
   const info = variantInfo(settings.variant);
-  const pick = (variant: Variant) => {
-    onChange(withVariant(settings, variant));
-    setOpen(false);
-  };
   return (
-    <>
-      <div className="choice">
-        <p className="section-title">Game</p>
-        <button type="button" className="game-row press" onClick={() => setOpen(true)}>
-          <span className="game-emoji" aria-hidden>
-            {info.emoji}
-          </span>
-          <span className="gr-text">
-            {info.name}
-            <small>{info.tagline}</small>
-          </span>
-          <ChevronIcon className="gr-chev" width={16} height={16} />
-        </button>
-      </div>
-      {open && (
-        <Sheet title="Choose a game" onClose={() => setOpen(false)}>
-          <div className="game-grid">
-            {VARIANTS.map((v) => (
-              <button
-                key={v.id}
-                type="button"
-                className={`game-tile press${v.id === info.id ? ' on' : ''}`}
-                aria-pressed={v.id === info.id}
-                onClick={() => pick(v.id)}
-              >
-                <GameArt variant={v.id} className="game-tile-art" />
+    <div className="choice">
+      <p className="section-title">Game</p>
+      <button
+        type="button"
+        className="game-row press"
+        onClick={() => openSheet({ name: 'pick', current: info.id, onPick: (variant) => onChange(withVariant(settings, variant)) })}
+      >
+        <GameThumb variant={info.id} size={48} />
+        <span className="gr-text">
+          {info.name}
+          <small>{info.tagline}</small>
+        </span>
+        <ChevronIcon className="gr-chev" width={16} height={16} />
+      </button>
+    </div>
+  );
+}
+
+/** Every game as a card to pick from. */
+export function PickSheet({ current, onPick }: { current: Variant; onPick: (variant: Variant) => void }) {
+  return (
+    <Sheet title="Choose a game">
+      <div className="pick-list">
+        {VARIANTS.map((v) => {
+          const art = cardArt(v.id);
+          return (
+            <button
+              key={v.id}
+              type="button"
+              className={`pick-card press${v.id === current ? ' on' : ''}`}
+              style={{ background: `linear-gradient(160deg, ${art.card[0]}, ${art.card[1]})` }}
+              aria-pressed={v.id === current}
+              onClick={() => {
+                onPick(v.id);
+                closeSheet();
+              }}
+            >
+              <span className="pick-scene game-live">
+                <GameIllustration variant={v.id} />
+              </span>
+              <span className="pick-text">
                 <b>{v.name}</b>
                 <small>{v.tagline}</small>
-              </button>
-            ))}
-          </div>
-          <p className="muted game-more">More games are on the way.</p>
-        </Sheet>
-      )}
-    </>
+              </span>
+              {v.id === current && (
+                <span className="pick-on" aria-hidden>
+                  <CheckIcon width={18} height={18} />
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+      <p className="muted game-more">More games are on the way.</p>
+    </Sheet>
   );
 }
 
 /** How the table's game plays, from the badge on the table. */
-export function RulesSheet({ variant, onClose }: { variant: Variant | undefined; onClose: () => void }) {
+export function RulesSheet({ variant }: { variant: Variant | undefined }) {
   const info = variantInfo(variant);
   return (
-    <Sheet title={`${info.emoji} ${info.name}`} onClose={onClose}>
+    <Sheet title={`${info.emoji} ${info.name}`}>
       <ul className="game-rules">
         {info.rules.map((r) => (
           <li key={r}>{r}</li>

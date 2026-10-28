@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react';
+import { saveSession } from '../state/persist';
 import { resetTo } from '../state/store';
 
 /**
@@ -21,6 +22,12 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { crashed:
     this.setState({ crashed: false });
   };
 
+  /** If the saved table is what keeps crashing, forget it and start fresh. */
+  private leave = (): void => {
+    saveSession(null);
+    location.reload();
+  };
+
   render(): ReactNode {
     if (!this.state.crashed) return this.props.children;
     return (
@@ -38,6 +45,9 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { crashed:
           </button>
           <button type="button" className="btn btn-link" onClick={this.home}>
             Go to Home
+          </button>
+          <button type="button" className="btn btn-link" onClick={this.leave}>
+            Leave the table and start over
           </button>
         </div>
       </div>

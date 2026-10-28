@@ -397,10 +397,6 @@ input {
   gap: 12px;
 }
 
-.spacer {
-  flex: 1;
-}
-
 .stack {
   display: flex;
   flex-direction: column;
@@ -516,10 +512,6 @@ input {
   padding: 0 16px;
 }
 
-.btn-auto {
-  width: auto;
-}
-
 .btn-green {
   background: linear-gradient(180deg, var(--party-green), var(--green));
 }
@@ -620,6 +612,9 @@ input {
 .topbar-title {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar:has(.conn-pill) {
@@ -674,16 +669,6 @@ input {
   font-weight: 700;
   letter-spacing: 0.03em;
   white-space: nowrap;
-}
-
-.chip-big {
-  font-size: var(--fs-lead);
-  padding: 8px 16px;
-}
-
-.delta {
-  font-variant-numeric: tabular-nums;
-  font-weight: 700;
 }
 
 .good {
@@ -799,37 +784,6 @@ input {
   gap: 20px;
 }
 
-.stepper-btn {
-  width: 76px;
-  height: 76px;
-  border-radius: 50%;
-  border: 0;
-  display: grid;
-  place-items: center;
-  background: var(--bg-2);
-  color: var(--ink);
-  box-shadow: inset 0 0 0 3px var(--line);
-}
-
-.stepper-btn svg {
-  width: 34px;
-  height: 34px;
-}
-
-.stepper-value {
-  min-width: 132px;
-  text-align: center;
-  font-size: var(--fs-counter);
-  font-weight: 700;
-  line-height: 1;
-  letter-spacing: -0.05em;
-  font-variant-numeric: tabular-nums;
-}
-
-.stepper-value.bump {
-  animation: bump 0.22s ease-out;
-}
-
 /* ── Sheets ──────────────────────────────────────────────────────────────── */
 
 .sheet-backdrop {
@@ -852,7 +806,7 @@ input {
   background: var(--surface);
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   padding: 12px 20px calc(var(--safe-bottom) + 36px);
-  animation: sheet-up 0.24s cubic-bezier(0.2, 0.9, 0.3, 1.05);
+  animation: sheet-up 0.38s cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 .sheet-grip {
@@ -934,22 +888,6 @@ body:has(.sheet-backdrop) .toasts {
 }
 
 /* ── Background colour blobs ─────────────────────────────────────────────── */
-
-.blobs {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.blobs i {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(46px);
-  opacity: 0.32;
-  animation: drift 18s ease-in-out infinite alternate;
-}
 
 .confetti-canvas {
   position: fixed;
@@ -1117,14 +1055,24 @@ body:has(.sheet-backdrop) .toasts {
   animation: spin 0.8s linear infinite;
 }
 
-/* Animations are on by default, whatever the computer's own setting says. The menu's Animations switch
-   turns them off (it puts "calm" on <html>). */
+/* Animations stop when a touch phone's Reduce Motion is on, or when the menu's Animations switch is off
+   (it puts "calm" on <html>). A computer's own setting is left alone: animations stay on there. */
 html.calm *,
 html.calm *::before,
 html.calm *::after {
   animation-duration: 0.01ms !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) and (pointer: coarse) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .avatar-button {
@@ -1177,11 +1125,6 @@ html.calm *::after {
 
 .look-preview .pop {
   display: inline-flex;
-}
-
-.look-preview-name {
-  font-size: var(--fs-h3);
-  font-weight: 700;
 }
 
 /* ── Liquid Glass ────────────────────────────────────────────────────────────
@@ -1297,7 +1240,7 @@ body {
 
 :root {
   --lg-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.16) 100%);
-  --lg-blur: blur(30px) saturate(180%) brightness(1.04);
+  --lg-blur: blur(20px) saturate(180%) brightness(1.04);
 }
 
 html[data-theme='dark'] {
@@ -1368,12 +1311,11 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   color: var(--on-color);
 }
 
-
 /* ── Party look for every menu ────────────────────────────────────────────────────────────────
    Setup, lobby, profile, party, the finish page and every sheet get the bolder, bigger style. The game
-   screen (.table-screen) keeps the sizes it had: the tokens below are put back inside it. */
+   screen (.table-screen, once the cards are dealt) keeps the sizes it had; its lobby gets the new look: the tokens below are put back inside it. */
 
-.table-screen {
+.table-screen:not(.status-lobby) {
   --r-md: 14px;
   --r-lg: 20px;
   --r-xl: 26px;
@@ -1382,7 +1324,7 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   --fs-title: 34px;
 }
 
-.table-screen .btn {
+.table-screen:not(.status-lobby) .btn {
   min-height: 50px;
   padding: 0 20px;
   border-radius: var(--r-md);
@@ -1391,33 +1333,33 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   box-shadow: none;
 }
 
-.table-screen .btn:active {
+.table-screen:not(.status-lobby) .btn:active {
   transform: scale(0.97);
   filter: brightness(0.92);
   box-shadow: none;
 }
 
-.table-screen .btn-xl {
+.table-screen:not(.status-lobby) .btn-xl {
   min-height: 56px;
   font-size: var(--fs-lead);
 }
 
-.table-screen .btn-sm {
+.table-screen:not(.status-lobby) .btn-sm {
   min-height: 40px;
   font-size: var(--fs-small);
   border-radius: var(--r-sm);
   padding: 0 16px;
 }
 
-.table-screen .btn-green {
+.table-screen:not(.status-lobby) .btn-green {
   background: var(--green);
 }
 
-.table-screen .btn-blue {
+.table-screen:not(.status-lobby) .btn-blue {
   background: var(--blue);
 }
 
-.table-screen .btn-red {
+.table-screen:not(.status-lobby) .btn-red {
   background: var(--red);
 }
 
@@ -1434,7 +1376,8 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
     radial-gradient(200px 160px at 55% 0%, rgba(255, 214, 10, 0.16), transparent 70%);
 }
 
-.screen:not(.table-screen) .h1 {
+.screen:not(.table-screen) .h1,
+.status-lobby .h1 {
   font-size: 40px;
   font-weight: 800;
   letter-spacing: -0.035em;
@@ -1483,10 +1426,6 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   border-radius: var(--r-xl);
 }
 
-.stepper-btn {
-  box-shadow: 0 8px 14px -8px rgba(0, 0, 0, 0.4);
-}
-
 .emoji-picker .emoji-grid {
   grid-template-columns: repeat(6, 1fr);
   gap: 10px;
@@ -1511,4 +1450,95 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
 
 .hero-pic {
   gap: 28px;
+}
+
+/* A game's scene shrunk to a rounded square for lists. */
+.game-thumb {
+  position: relative;
+  flex: none;
+  display: block;
+  border-radius: 28%;
+  overflow: hidden;
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.45);
+}
+
+.game-thumb > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Menus: list rows read as headers you tap, and a segmented control never pushes into its label. */
+.sheet .group-row .gr-text,
+.screen:not(.table-screen) .group-row .gr-text {
+  font-weight: 600;
+}
+
+.group-row .gr-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.group-row .segmented button {
+  min-width: 42px;
+  padding: 0 6px;
+}
+
+/* ── Moving between screens, like iOS ────────────────────────────────────────
+   store.ts sets data-nav to push or pop while the browser's view transition runs. The new screen slides over
+   the old one, which drifts back a little and dims; going back is the same in reverse. */
+html[data-nav] .screen {
+  animation: none;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  mix-blend-mode: normal;
+}
+
+html[data-nav='push']::view-transition-old(root) {
+  animation-name: nav-away-left;
+}
+
+html[data-nav='push']::view-transition-new(root) {
+  animation-name: nav-in-right;
+  z-index: 2;
+}
+
+html[data-nav='pop']::view-transition-old(root) {
+  animation-name: nav-away-right;
+  z-index: 2;
+}
+
+html[data-nav='pop']::view-transition-new(root) {
+  animation-name: nav-in-left;
+}
+
+@keyframes nav-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes nav-away-left {
+  to {
+    transform: translateX(-28%);
+    filter: brightness(0.82);
+  }
+}
+
+@keyframes nav-away-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes nav-in-left {
+  from {
+    transform: translateX(-28%);
+    filter: brightness(0.82);
+  }
 }

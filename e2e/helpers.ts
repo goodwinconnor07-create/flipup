@@ -50,5 +50,5 @@ export async function checkOrCall(page: Page): Promise<void> {
 /** Reloads the page. A launch lands on Home, so a table in progress is a tap away on its banner. */
 export async function reloadToTable(page: Page): Promise<void> {
   await page.reload();
-  await page.getByRole('button', { name: /^Rejoin Lobby/ }).click();
+  await page.getByRole('button', { name: /^(Rejoin Lobby|Back to your table)/ }).click();
 }

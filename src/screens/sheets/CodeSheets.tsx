@@ -1,71 +1,19 @@
-import { useRef, useState } from 'react';
-import { CODE_LENGTH, normalizeCode } from '../../game';
 import { addPal } from '../../state/pals';
 import { joinParty, readParty } from '../../state/party';
 import { closeSheet, navigate, toast } from '../../state/store';
 import { Sheet } from '../../ui/components';
-import { haptic } from '../../ui/effects';
+import { CodePad, useCode } from '../../ui/CodePad';
 
-/** Five code boxes over a hidden input. Calls `run` once all five letters are in; it returns an error sentence, or null when it worked. */
+/** Five code boxes and the code keyboard. Calls `run` once all five letters are in; it returns an error sentence, or null when it worked. */
 function CodeEntry({ title, blurb, label, run }: { title: string; blurb: string; label: string; run: (code: string) => Promise<string | null> }) {
-  const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState('');
-  const input = useRef<HTMLInputElement>(null);
-  const looked = useRef('');
-
-  const submit = async (value: string) => {
-    if (looked.current) return;
-    looked.current = value;
-    setBusy(true);
-    setError('');
-    const problem = await run(value);
-    if (!problem) return haptic('success');
-    looked.current = '';
-    setBusy(false);
-    setError(problem);
-    haptic('error');
-  };
-
+  const state = useCode(run);
   return (
     <Sheet title={title}>
       <div className="stack">
         <p className="muted" style={{ margin: 0 }}>
           {blurb}
         </p>
-        <div className="join-code" onClick={() => input.current?.focus()}>
-          {Array.from({ length: CODE_LENGTH }, (_, i) => (
-            <span key={i} className={`join-cell${i === Math.min(code.length, CODE_LENGTH - 1) ? ' next' : ''}${code[i] ? ' filled' : ''}`}>
-              {code[i] ?? ''}
-            </span>
-          ))}
-          <input
-            ref={input}
-            className="join-code-input"
-            value={code}
-            onChange={(e) => {
-              const next = normalizeCode(e.target.value);
-              setCode(next);
-              setError('');
-              if (next.length === CODE_LENGTH) void submit(next);
-            }}
-            autoCapitalize="characters"
-            autoComplete="off"
-            autoCorrect="off"
-            spellCheck={false}
-            enterKeyHint="go"
-            aria-label={label}
-          />
-        </div>
-        <div className="join-status" aria-live="polite">
-          {busy ? (
-            <span className="spinner" aria-label="Looking" />
-          ) : error ? (
-            <p className="bad shake" role="alert" style={{ margin: 0 }}>
-              {error}
-            </p>
-          ) : null}
-        </div>
+        <CodePad state={state} label={label} />
       </div>
     </Sheet>
   );

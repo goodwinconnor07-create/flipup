@@ -74,9 +74,3 @@ by frame: messages up for a median 1.2 s (never under 0.9 s), follow-ups 300 to 
 Two things the browser test found that the unit tests didn't: a bot moved only 0.6 s after speaking, so its message
 was gone before it could be read (now `CHAT.readTime`, and the bot waits for its own line), and a new hand dealing
 wiped messages that had just landed (now only a waiting line or a "c'mon" is dropped when the moment changes).
-
-## The coach
-
-The coach's bubbles (`Coach.tsx`) get the same treatment: a long line is cut at its sentences into at most three
-bubbles (`splitSentences()`), smaller (15 px), and each pops in as long after the one before as that one takes to
-read (`COACH_TIMING`), after a 0.34 s "typing" bubble.

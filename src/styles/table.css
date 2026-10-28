@@ -351,7 +351,7 @@ html[data-theme='dark'] .pcard.dim > * {
   height: 54px;
 }
 
-/* An AI twin wears the face of the person it copies, so it carries a badge. */
+/* A small badge on the corner of a seat's picture. */
 .ai-chip {
   position: absolute;
   bottom: 2px;
@@ -366,7 +366,7 @@ html[data-theme='dark'] .pcard.dim > * {
   line-height: 1.4;
 }
 
-/* A legend's seat: a gold star where an AI twin has its chip. */
+/* A legend's seat: a gold star chip. */
 .legend-chip {
   background: var(--gold);
   color: var(--gold-ink-2);
@@ -674,8 +674,11 @@ html[data-theme='dark'] .pcard.dim > * {
 }
 
 .win-text b {
+  display: block;
+  overflow: hidden;
   font-size: var(--fs-small);
   font-weight: 700;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -2671,13 +2674,6 @@ html.calm .pod-cards.shimmer::after {
 
 .cam-star {
   color: var(--gold);
-}
-
-.cam-ai {
-  padding: 0 4px;
-  border-radius: var(--r-pill);
-  background: var(--indigo);
-  font-size: var(--fs-nano);
 }
 
 .cam-chips {

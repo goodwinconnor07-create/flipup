@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { shot, watchErrors } from './helpers';
 
-test('Play lists the legends; a profile says how they play, and you can sit down against one', async ({ page }) => {
+// Legends are hidden for launch (LEGENDS_ON in src/game/legends.ts). Turn them back on and remove this skip.
+test.skip('Play lists the legends; a profile says how they play, and you can sit down against one', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => {
     if (localStorage.getItem('seeded')) return;

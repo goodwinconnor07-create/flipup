@@ -39,6 +39,9 @@ export interface Legend {
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends (infer U)[] ? U[] : T[K] extends object ? DeepPartial<T[K]> : T[K] };
 
 /** Said on every screen that shows a legend by name. */
+/** Legends are held back for launch. The code stays; this one switch hides every way in. */
+export const LEGENDS_ON = false;
+
 export const LEGEND_NOTE = "A style inspired by this player's public reputation. Not their real hands, and not endorsed by or affiliated with them.";
 
 export const LEGENDS: Legend[] = [

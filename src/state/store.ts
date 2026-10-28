@@ -13,6 +13,7 @@ import {
   normalizeCode,
   redactForDevice,
   dressAsLegend,
+  LEGENDS_ON,
   legendById,
   redactLogs,
   type HandLog,
@@ -384,7 +385,7 @@ export function startPlaystyle(bot: string, style: StyleId): void {
 
 /** A heads-up game against a legend: a bot seat dressed as them. */
 export function startLegend(id: string): void {
-  if (state.busy) return;
+  if (!LEGENDS_ON || state.busy) return;
   const legend = legendById(id);
   if (!legend) return;
   const progress = loadProgress();

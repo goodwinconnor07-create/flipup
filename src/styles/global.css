@@ -620,6 +620,9 @@ input {
 .topbar-title {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .topbar:has(.conn-pill) {

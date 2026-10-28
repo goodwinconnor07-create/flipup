@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { legendById, net, standings, type Game } from '../game';
+import { LEGENDS_ON, legendById, net, standings, type Game } from '../game';
 import { finishLine } from '../game/botTalk';
 import { badgeById, legendBefore, loadProgress, nextLegend, settleTable, type TableReport } from '../state/progress';
 import { closeTable, dispatch, openLog, startLegend, useApp } from '../state/store';
@@ -178,7 +178,7 @@ export function Final({ game }: { game: Game }) {
   const stats = report?.stats ?? null;
   const progress = useMemo(() => loadProgress(), [report]);
   const legend = game.legendGame ? legendById(game.legendGame) : undefined;
-  const next = report ? nextLegend(progress) : null;
+  const next = report && LEGENDS_ON ? nextLegend(progress) : null;
   const line = useMemo(() => {
     if (!legend || !me) return null;
     return finishLine(legend.id, iWon ? 'finishLost' : 'finishWon', me.name, Math.floor(Math.random() * 8));

@@ -107,7 +107,7 @@ export function PartyTab() {
             <button
               type="button"
               className="btn btn-sm btn-blue"
-              onClick={() => void copy(`Add me on GTODuel. My friend code is ${code}`, 'Code copied')}
+              onClick={() => void copy(`Add me on FlipUp. My friend code is ${code}`, 'Code copied')}
               aria-label="Copy your friend code"
             >
               <ShareIcon width={18} height={18} /> Copy

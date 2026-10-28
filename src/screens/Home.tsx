@@ -5,6 +5,7 @@ import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
 import { LegendShelf } from './HomeLegends';
+import { LEGENDS_ON } from '../game';
 import { PartyTab } from './HomeParty';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
@@ -81,7 +82,7 @@ export function Home() {
 
   // The banner only shows when there's one clear next step: your open table, or the online table you left.
   const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
-    ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
+    ? { title: 'Back to your table', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
     : party
       ? { title: 'Your party', sub: `Code ${party.code}`, cta: 'Open the party', run: () => navigate({ name: 'party' }), faces: [], tone: 'slate' }
       : last
@@ -165,7 +166,7 @@ export function Home() {
                     <small>On this phone, no timer.</small>
                   </button>
                 </section>
-                <LegendShelf />
+                {LEGENDS_ON && <LegendShelf />}
               </>
             )}
             {tab === 'party' && <PartyTab />}

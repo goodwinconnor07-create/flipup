@@ -67,7 +67,7 @@ export function Versus({ me, foe }: { game: Game; me: Player; foe: Player }) {
 
   const legend = foe.legend ? legendById(foe.legend) : undefined;
   const scene = legend ? LEGEND_SCENES[legend.id] : undefined;
-  const tag = legend ? `Legend · Level ${legend.rung}` : foe.ai ? 'AI twin' : foe.bot ? 'Bot' : 'Player';
+  const tag = legend ? `Legend · Level ${legend.rung}` : foe.bot ? 'Bot' : 'Player';
   return (
     <div
       className={`versus${legend ? ' legend' : ''}`}
@@ -84,7 +84,7 @@ export function Versus({ me, foe }: { game: Game; me: Player; foe: Player }) {
             <Emoji emoji={me.emoji} size={150} />
           </span>
           <span className="vs-plate">
-            <small>{foe.bot || foe.ai ? 'You' : 'Player 1'}</small>
+            <small>{foe.bot ? 'You' : 'Player 1'}</small>
             <b>{me.name}</b>
           </span>
         </div>

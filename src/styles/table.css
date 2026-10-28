@@ -2934,3 +2934,10 @@ html.calm .mood-mark {
     margin-inline: -12px;
   }
 }
+
+/* A seat that's out of the row says nothing until it's back in view, so a bubble never hangs off the screen
+   while its seat slides away. */
+.pod.away .thread,
+.pod.away .pod-pic > .bubble {
+  display: none;
+}

@@ -630,18 +630,13 @@ test('home: three tabs, results from finished tables in Review, training rows', 
   // Chips reset every game, so Home never counts them.
   await expect(page.getByText(/chips/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await expect(page.getByRole('heading', { name: 'Learn' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Learn' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('tab', { name: 'Learn' })).toHaveCount(0);
   await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText('tables played, 40 hands')).toBeVisible();
   await expect(page.getByText('1st of 4')).toBeVisible();
   await expect(page.getByText('Recent tables')).toBeVisible();
   await page.getByRole('button', { name: 'Back' }).click();
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Poker library/ }).click();
-  await expect(page.getByText('Poker library').first()).toBeVisible();
 });
 
 test('a table with players out of view never scrolls sideways', async ({ page }) => {
@@ -660,7 +655,8 @@ test('a table with players out of view never scrolls sideways', async ({ page })
   await expect(page.getByRole('button', { name: 'Fold' })).toBeEnabled();
 });
 
-test('preflop drills work with the coach offline: dealt on the phone from the shipped solution', async ({ page }) => {
+// The Learn tab is gone, so nothing on Home opens the library; this comes back with it.
+test.skip('preflop drills work with the coach offline: dealt on the phone from the shipped solution', async ({ page }) => {
   watchErrors(page);
   await page.route('**/api/gto/**', (route) => route.abort());
   await page.goto('/');

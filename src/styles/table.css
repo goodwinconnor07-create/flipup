@@ -756,9 +756,9 @@ html[data-theme='dark'] .pcard.dim > * {
 }
 
 .action-buttons .btn {
-  min-height: 60px;
+  min-height: 66px;
   padding: 0 8px;
-  font-size: var(--fs-lead);
+  font-size: 19px;
   gap: 6px;
 }
 

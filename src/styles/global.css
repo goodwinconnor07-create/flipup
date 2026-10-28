@@ -15,10 +15,10 @@
   --fs-small: 15px;
   --fs-body: 17px;
   --fs-lead: 17px;
-  --fs-h3: 20px;
-  --fs-h2: 22px;
+  --fs-h3: 22px;
+  --fs-h2: 24px;
   --fs-h1: 28px;
-  --fs-title: 34px;
+  --fs-title: 44px;
   --fs-stamp: 42px;
   /* Display sizes: big headings, card titles, scores, codes and counters. */
   --fs-display-1: 34px;
@@ -36,9 +36,9 @@
   /* ── Shape. Spacing is on a 4px grid. */
   --r-xs: 4px;
   --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 26px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
   --r-pill: 999px;
   --radius: var(--r-lg);
   --radius-sm: var(--r-md);
@@ -65,6 +65,13 @@
   --on-color: #ffffff;
   --focus: #93c5fd;
   --badge: #ff3b30;
+  /* Party accents: loud colours for what you tap to play. */
+  --party-pink: #ff3d8b;
+  --party-orange: #ff8a1f;
+  --party-yellow: #ffd60a;
+  --party-blue: #2f7bff;
+  --party-green: #19c26b;
+  --party-edge: rgba(0, 0, 0, 0.24);
 
   /* ── Brand: the ink-black of the logo, with a red "Up" (hearts and diamonds). */
   --brand-ink: #007aff;
@@ -441,16 +448,18 @@ input {
   appearance: none;
   border: 0;
   width: 100%;
-  min-height: 50px;
-  padding: 0 20px;
-  border-radius: var(--r-md);
+  min-height: 58px;
+  padding: 0 24px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  font-size: var(--fs-body);
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 800;
   letter-spacing: -0.01em;
+  /* A chunky edge under the button: it sinks when you press it. */
+  box-shadow: 0 4px 0 var(--party-edge);
   text-decoration: none;
   color: var(--on-color);
   user-select: none;
@@ -465,8 +474,9 @@ input {
 }
 
 .btn:active {
-  transform: scale(0.97);
-  filter: brightness(0.92);
+  transform: translateY(3px) scale(0.98);
+  box-shadow: 0 1px 0 var(--party-edge);
+  filter: brightness(0.94);
 }
 
 .btn[disabled] {
@@ -479,9 +489,9 @@ input {
 }
 
 .btn-xl {
-  min-height: 56px;
-  font-size: var(--fs-lead);
-  border-radius: var(--r-md);
+  min-height: 66px;
+  font-size: 20px;
+  border-radius: var(--r-lg);
 }
 
 .btn-sm {
@@ -496,15 +506,15 @@ input {
 }
 
 .btn-green {
-  background: var(--green);
+  background: linear-gradient(180deg, var(--party-green), var(--green));
 }
 
 .btn-blue {
-  background: var(--blue);
+  background: linear-gradient(180deg, var(--party-blue), var(--blue-lo));
 }
 
 .btn-red {
-  background: var(--red);
+  background: linear-gradient(180deg, var(--red-hi), var(--red-lo));
 }
 
 .btn-dark {
@@ -515,14 +525,14 @@ input {
   background: var(--bg-2);
   color: var(--ink);
   text-shadow: none;
-  box-shadow: none;
+  box-shadow: 0 3px 0 var(--bg-3);
 }
 
 .btn-outline {
   background: var(--bg-2);
   color: var(--brand-ink);
   text-shadow: none;
-  box-shadow: none;
+  box-shadow: 0 3px 0 var(--bg-3);
 }
 
 .btn-link {
@@ -533,6 +543,11 @@ input {
   min-height: 44px;
   font-weight: 400;
   font-size: var(--fs-body);
+}
+
+.btn-link:active {
+  box-shadow: none;
+  transform: scale(0.97);
 }
 
 /* Destructive text buttons are red. */

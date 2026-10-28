@@ -35,6 +35,7 @@ html:not(.no-glass) .glass-card {
 }
 
 .screen.home {
+  position: relative;
   height: 100dvh;
   min-height: 100dvh;
   padding: 0;
@@ -174,7 +175,7 @@ html:not(.no-glass) .glass-card {
   position: relative;
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(var(--tabs, 2), 1fr);
   padding: 4px;
   border-radius: var(--r-pill);
 }
@@ -184,7 +185,7 @@ html:not(.no-glass) .glass-card {
   top: 4px;
   bottom: 4px;
   left: 4px;
-  width: calc((100% - 8px) / 3);
+  width: calc((100% - 8px) / var(--tabs, 2));
   border-radius: var(--r-pill);
   background: var(--bg-3);
   transform: translateX(calc(var(--i, 0) * 100%));
@@ -1294,7 +1295,7 @@ html.calm :is(.home-pane, .streak-pill svg, .card-art .art-face, .card-art .toss
 
   .tab-capsule {
     width: calc(100% - 8px);
-    height: calc((100% - 8px) / 3);
+    height: calc((100% - 8px) / var(--tabs, 2));
     bottom: auto;
     transform: translateY(calc(var(--i, 0) * 100%));
   }
@@ -1468,4 +1469,273 @@ li.ok > .today-tick,
 
 .prog-records p {
   margin: 0;
+}
+
+/* ── Party mode: bolder and bigger, still Apple underneath ─────────────────────────────────
+   Loud colour on what you tap to play, chunky type, and a few soft blobs of colour behind the title. */
+
+.screen.home::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 340px;
+  pointer-events: none;
+  background:
+    radial-gradient(220px 180px at 12% 0%, rgba(255, 61, 139, 0.26), transparent 70%),
+    radial-gradient(240px 200px at 88% 6%, rgba(47, 123, 255, 0.26), transparent 70%),
+    radial-gradient(200px 160px at 55% 0%, rgba(255, 214, 10, 0.22), transparent 70%);
+}
+
+.home-scroll {
+  position: relative;
+  gap: 20px;
+}
+
+.home-pane {
+  gap: 16px;
+}
+
+.large-title {
+  font-size: var(--fs-title);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.home-title p {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.streak-pill {
+  height: 44px;
+  padding: 0 16px 0 12px;
+  gap: 6px;
+}
+
+.streak-pill b {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.streak-pill.lit {
+  background: linear-gradient(160deg, var(--gold-hi), var(--party-orange));
+}
+
+.streak-pill.lit b,
+.streak-pill.lit svg {
+  color: var(--gold-ink-2);
+}
+
+.avatar-btn {
+  width: 48px;
+  height: 48px;
+}
+
+.avatar-btn > * {
+  width: 44px !important;
+  height: 44px !important;
+  box-shadow: 0 0 0 3px var(--party-yellow);
+}
+
+.section-head {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+/* The two ways to play: big loud cards with a coloured glow and a shine across the top. */
+.mode {
+  min-height: 156px;
+  padding-left: 24px;
+  box-shadow: 0 10px 0 -2px var(--party-edge), 0 18px 32px -14px var(--mode-glow, rgba(0, 0, 0, 0.4));
+}
+
+.mode::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(90% 70% at 0% 0%, rgba(255, 255, 255, 0.28), transparent 60%),
+    radial-gradient(40% 50% at 100% 100%, rgba(255, 255, 255, 0.14), transparent 70%);
+}
+
+.mode-blue {
+  --mode-glow: rgba(47, 123, 255, 0.7);
+  background: linear-gradient(150deg, #4aa3ff 0%, #2f5bff 55%, #5b3df0 100%);
+}
+
+.mode-green {
+  --mode-glow: rgba(25, 194, 107, 0.7);
+  background: linear-gradient(150deg, #39e08c 0%, #12a85f 55%, #0b7f6b 100%);
+}
+
+.mode-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: normal;
+  line-height: 1.05;
+}
+
+.mode-sub {
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.hero {
+  box-shadow: 0 8px 0 -2px var(--party-edge);
+}
+
+.hero-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.hero-sub {
+  font-size: 16px;
+}
+
+.hero-foot {
+  padding: 16px 20px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.hero-orange {
+  --hero-1: #ffb02e;
+  --hero-2: #ff5a1f;
+}
+
+/* Rows: a bigger coloured icon tile and heavier names. */
+.group {
+  border-radius: var(--r-xl);
+}
+
+.group-row {
+  min-height: 68px;
+  padding: 10px 18px;
+  gap: 16px;
+}
+
+.group-row + .group-row::before {
+  left: 74px;
+}
+
+.gr-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  box-shadow: 0 3px 0 var(--party-edge);
+}
+
+.gr-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+.gr-text {
+  font-size: 18px;
+}
+
+.home-pane .group-row .gr-text {
+  font-weight: 700;
+}
+
+/* The tab bar: taller, with a bright capsule on the chosen tab and a hot-pink join button. */
+.home-tabs {
+  width: min(520px, calc(100% - 24px));
+  gap: 10px;
+}
+
+.tabbar {
+  padding: 5px;
+}
+
+.tab-capsule {
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc((100% - 10px) / var(--tabs, 2));
+  background: linear-gradient(160deg, var(--party-blue), #5b3df0);
+  box-shadow: 0 6px 16px -6px rgba(47, 123, 255, 0.8);
+}
+
+html[data-theme='dark'] .tab-capsule {
+  background: linear-gradient(160deg, var(--party-blue), #5b3df0);
+}
+
+.tab {
+  min-height: 62px;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.tab svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tab.on {
+  color: var(--on-color);
+}
+
+.tab-round {
+  width: 72px;
+  height: 72px;
+  border: 0;
+  color: var(--on-color);
+  background: linear-gradient(160deg, var(--party-pink), var(--party-orange));
+  box-shadow: 0 6px 0 -1px var(--party-edge), 0 12px 24px -8px rgba(255, 61, 139, 0.7);
+}
+
+.tab-round svg {
+  width: 32px;
+  height: 32px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mode {
+    animation: party-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+  }
+
+  .mode-green {
+    animation-delay: 0.08s;
+  }
+
+  .tab-round {
+    animation: party-wiggle 4s ease-in-out 1.5s infinite;
+  }
+}
+
+@keyframes party-pop {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+
+@keyframes party-wiggle {
+  0%,
+  88%,
+  100% {
+    transform: rotate(0);
+  }
+  92% {
+    transform: rotate(-10deg) scale(1.06);
+  }
+  96% {
+    transform: rotate(8deg) scale(1.06);
+  }
+}
+
+@media (min-width: 960px) and (min-height: 600px) {
+  .tab-capsule {
+    width: calc(100% - 10px);
+    height: calc((100% - 10px) / var(--tabs, 2));
+    left: 5px;
+    bottom: auto;
+  }
 }

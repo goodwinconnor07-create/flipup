@@ -4,7 +4,6 @@ import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/pe
 import { loadDrills, loadHistory, loadSummaries } from '../state/training';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
-import { LearnTab } from './HomeLearn';
 import { QuickGames } from './HomeQuick';
 import { TwinTiles } from './HomeTwins';
 import { TodayCard } from './HomeToday';
@@ -13,7 +12,7 @@ import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
 import { ReviewTab, lastGameHands } from './HomeReview';
 import { colourWipe } from '../ui/effects';
-import { CapIcon, ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
+import { ChevronIcon, FlameIcon, FlameOutlineIcon, HistoryIcon, QrIcon, SpadeIcon } from '../ui/Icons';
 import { computeStats } from '../train/stats';
 
 function ago(at: number): string {
@@ -24,10 +23,9 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'learn' | 'review';
+type Tab = 'play' | 'review';
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
-  { id: 'learn', label: 'Learn', Icon: CapIcon, title: 'Learn' },
   { id: 'review', label: 'Review', Icon: HistoryIcon, title: 'Review' },
 ];
 
@@ -108,11 +106,9 @@ export function Home() {
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
   const subtitle =
-    tab === 'learn'
-      ? 'Solved hands and drills, graded as you go.'
-      : tab === 'review'
-        ? 'Your own hands, checked against GTO.'
-        : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(training.gto, stats.tables, !!active)}`;
+    tab === 'review'
+      ? 'Your own hands, checked against GTO.'
+      : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(training.gto, stats.tables, !!active)}`;
 
   return (
     <div className="screen home">
@@ -189,13 +185,12 @@ export function Home() {
                 <QuickGames />
               </>
             )}
-            {tab === 'learn' && <LearnTab />}
             {tab === 'review' && <ReviewTab />}
           </div>
         </div>
       </div>
       <nav className="home-tabs" aria-label="Home">
-        <div className="tabbar glass" role="tablist" style={{ ['--i' as string]: index }}>
+        <div className="tabbar glass" role="tablist" style={{ ['--i' as string]: index, ['--tabs' as string]: TABS.length }}>
           <i className="tab-capsule" aria-hidden />
           {TABS.map(({ id, label, Icon }) => (
             <button

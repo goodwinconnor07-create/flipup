@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 // Protocol-only fixture. These arbitrary numbers are NOT a computed poker hand or production data.
-test('full Scroll questions play in sequence and save offline snapshots', async ({ page }) => {
+// The Learn tab is gone, so nothing on Home opens this; the test comes back with it.
+test.skip('full Scroll questions play in sequence and save offline snapshots', async ({ page }) => {
   const scenario={schema:2,id:'s-protocol-test',family:'fixture',players:2,hero:0,
     cards:['As','Kd'],board:['Qs','Jh','2d'],pot:10,stacks:[20,20],wagers:[0,0],toCall:0,minRaiseTo:1,
     history:[],active:[true,true],difficulty:'close',tags:[],ranges:[],assumptions:'UI protocol test only',

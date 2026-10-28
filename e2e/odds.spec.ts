@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test';
 import { shot, watchErrors } from './helpers';
 
-test('odds and outs: read a formula, answer a round, see the working and the score', async ({ page }) => {
+// The Learn tab is gone, so nothing on Home opens this; the test comes back with it.
+test.skip('odds and outs: read a formula, answer a round, see the working and the score', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('tab', { name: 'Learn' }).click();

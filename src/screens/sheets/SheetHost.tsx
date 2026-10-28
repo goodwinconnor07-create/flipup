@@ -61,6 +61,7 @@ import { LogSheet } from './LogSheet';
 import { TwinSheet } from './TwinSheet';
 import { ShareTwinSheet } from './ShareTwinSheet';
 import { AddTwinSheet } from './AddTwinSheet';
+import { AddPalSheet, JoinPartySheet } from './CodeSheets';
 import { openFriendReport, openTwinReport } from '../train/TwinReport';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
@@ -95,6 +96,10 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <ShareTwinSheet />;
     case 'addTwin':
       return <AddTwinSheet />;
+    case 'addPal':
+      return <AddPalSheet />;
+    case 'joinParty':
+      return <JoinPartySheet />;
     case 'confirm':
       return <ConfirmSheet sheet={sheet} />;
   }

@@ -34,6 +34,11 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     hand: hand && {
       ...hand,
       deck: [],
+      // Ghost Hold'em: the ghost's cards stay face down until a showdown.
+      ghost: hand.result?.showdown ? hand.ghost : undefined,
+      // Imposter: only the imposter knows it's them until the hand is over, and votes stay secret until then too.
+      imposter: hand.result || (hand.imposter && mine.has(hand.imposter)) ? hand.imposter : undefined,
+      votes: hand.votes && (hand.result ? hand.votes : Object.fromEntries(Object.keys(hand.votes).map((k) => [k, mine.has(k) ? hand.votes![k] : '']))),
       seats: hand.seats.map((s) => (peek || mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
     },
   };

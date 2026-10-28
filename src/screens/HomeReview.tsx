@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 import { navigate, type TrainSection } from '../state/store';
 import { loadDrills, loadHistory, loadSummaries, type PlayedHand, type ReviewSummary } from '../state/training';
-import { CoachSays } from '../train/Coach';
-import { greeting } from '../train/coach';
-import { drillFor } from '../train/scenarios';
 import { computeStats } from '../train/stats';
 import { PROGRESS_TITLE } from '../state/progress';
 import { loadTwinGames } from '../state/twinGames';
@@ -41,11 +38,8 @@ function Ring({ value }: { value: number }) {
   );
 }
 
-// The coach types its greeting once per visit to the app, not every time the tab opens.
-let greeted = false;
-
-/** The Review tab: the coach's one next step, how your play matches GTO, and your own hands. */
-export function ReviewTab() {
+/** Your own hands, checked against GTO: the match ring and the review, stats and insights rows. It sits at the bottom of Learn. */
+export function YourPlay() {
   const { stats, toReview, lastGame } = useMemo(() => {
     const history = loadHistory();
     const reviews = loadSummaries();
@@ -57,31 +51,12 @@ export function ReviewTab() {
   }, []);
   const twinGames = useMemo(() => loadTwinGames().some((g) => !g.friend && g.hands.length > 0), []);
   const go = (section: TrainSection) => navigate({ name: 'train', section });
-  const weakest = stats.weaknesses[0] ?? null;
-  const drill = weakest ? drillFor(weakest.id) : null;
-  const action: { label: string; run: () => void } | null =
-    toReview > 0
-      ? { label: lastGame.waiting > 0 ? 'Review last game' : 'Review hands', run: () => go('review') }
-      : drill
-        ? { label: `Practise ${weakest!.title.toLowerCase()}`, run: () => navigate({ name: 'drill', scenario: drill }) }
-        : null;
   // The coach names the count; the row only shows one when it's a different number.
   const said = lastGame.waiting > 0 ? lastGame.waiting : toReview;
-  const quick = greeted;
-  greeted = true;
 
   return (
     <>
-      <CoachSays
-        quick={quick}
-        lines={[greeting({ toReview, lastGame: lastGame.waiting, decisions: stats.decisions, gtoPct: stats.gtoPct, weakest })]}
-      >
-        {action && (
-          <button type="button" className="btn btn-sm btn-blue coach-cta" onClick={action.run}>
-            {action.label}
-          </button>
-        )}
-      </CoachSays>
+      <p className="section-title">Your hands</p>
       {stats.decisions > 0 && (
         <button type="button" className="glass-card train-hero press" onClick={() => go('stats')}>
           <Ring value={stats.gtoPct} />

@@ -19,8 +19,7 @@ test('replay is switched off for now: no replay button after a hand', async ({ p
 test('the review list shows a replay button and a coach', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Review' }).click();
-  await expect(page.getByText('GTO Coach')).toBeVisible();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Review hands/ }).click();
   await expect(page.getByText('No hands in the last 24 hours')).toBeVisible();
   // The study bank sits at the top of the Review page.

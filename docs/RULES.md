@@ -40,6 +40,19 @@ When betting can't continue (everyone's all in, or all but one, and the bets are
 - **Showing.** The last player to bet or raise on the river shows first; if nobody bet, the first player left of the button. After that, a hand is shown only if it beats or ties the best hand shown so far, or wins a pot. Losing hands are mucked (hidden), like auto-muck on online sites. **A player who's all in always shows**, even on the river and even when they lose (product owner's call).
 - If everyone else folds, the last player wins without showing.
 
+## Hold'em variants
+
+The host picks the game under **Game** in the table settings (`src/game/variants.ts`). A change of game, like any setting, starts with the next hand. Everything not listed here plays exactly as above. Run-out odds are shown only in plain Hold'em. Hands from a variant still count for the daily streak, but they aren't saved to the hand history or used by twins.
+
+- **Crazy Pineapple.** Three hole cards each. After the flop betting round, everyone still in throws one card away (at the same time, in secret), then the turn comes and it's normal Hold'em with the two kept. With a clock, anyone who hasn't chosen when it runs out keeps their best two; bots choose at once. A player all in before the discard (the cards are face up for the run-out) has their best two kept for them. "Best two" means the two that make the best hand with the flop (before the flop: a pair, then high, suited, connected cards).
+- **Crazy Deuces.** Every 2, in a hand or on the board, is wild and becomes whatever card makes that player's hand best. **Five of a kind** is the best hand of all, above a royal flush; five of a kind ties break on rank. Two hands that make the same hand split as usual (a wild card has no suit of its own to break ties).
+- **Ghost Hold'em.** Two extra cards are dealt face down to the ghost after everyone's hole cards. They're turned over only at a showdown. At a showdown, the winner of each pot (main and side pots separately) must also beat the ghost's hand; a tie with the ghost isn't enough. If they don't, the ghost keeps that pot and it goes into the next hand's main pot, which anyone dealt in can win. If everyone folds to one player, they win the pot (including anything the ghost was holding) without facing the ghost. Betting is **pot limit**: a bet or raise can go up to the size of the pot after calling, and all in means the most the pot allows. Picking Ghost in the settings deepens the stacks to at least 500 big blinds. If the game ends, or switches to another game, what the ghost holds goes into the next pot dealt (or stays with the ghost when the table closes).
+- **Pittsburgh.** Three river cards are dealt (after a burn) instead of one, with one betting round after them. Each player's hand is the best five of their two hole cards, the flop, the turn and exactly one of the three rivers; the app picks the river that gives them the best hand.
+
+- **Die on the River.** As soon as the river is dealt, a die is rolled. On a 1 to 5 the board card in that position (counting from the left, the first flop card is 1, the river is 5) is replaced by the next card in the deck, face up for everyone; the old card is out of play. On a 6 the board stays. Then the river betting round is played on the new board. On an all-in run-out the die rolls the same way.
+- **Red River.** If the river (the fifth board card) is red, a heart or a diamond, another card is dealt straight away (no burn), and so on until a black card, a spade or a club, comes. There's one river betting round after the last card. Every board card counts: a hand is the best five of a player's two cards and the whole board.
+- **Imposter.** Needs three or more players dealt in (with two, the hand is plain Hold'em). Everyone gets the same two cards except one player, picked at random, who gets two different cards. Each phone is told only its own role: "You're the imposter" or "You're innocent". Everyone antes one big blind before the blinds, so there's dead money in the middle from the start, and picking Imposter in the settings sets blinds of about 50 big blinds deep. Betting is no-limit Hold'em except that **nobody can fold** (product owner's call): the Fold buttons are gone, and a player who runs out of time checks if that's free, otherwise calls. Only someone leaving the table folds. After the river (or after an all-in run-out), everyone dealt in votes for who they think the imposter is (folded players and the imposter too; you can't vote for yourself; bots vote straight away, and with a clock anyone who hasn't voted when it runs out doesn't). Votes stay secret until the hand is over. If the imposter gets the most votes on their own, the innocent players still in split the pot (odd chips as usual); if not, a tie included, the imposter takes it all. If the imposter left the table mid-hand, the innocents still in split it. A side pot the winners can't win goes to the players who can. The strength of the cards never matters, so no hand is named or highlighted.
+
 ## Between hands
 
 - The next hand deals by itself (5 seconds after a fold-out, 9 after a showdown), or straight away once every person at the table taps **Next hand**.
@@ -49,13 +62,15 @@ When betting can't continue (everyone's all in, or all but one, and the bets are
 
 ## Being away
 
-- If the clock runs out, you check if you can, otherwise fold. Two timeouts in a row and you're sat out until you tap **I'm back**.
+- If the clock runs out, you check if you can, otherwise fold (in Imposter, call). Two timeouts in a row and you're sat out until you tap **I'm back**.
 - **Sit out next hand** from the menu skips you until you come back.
 - Leaving mid-hand folds your hand at once.
 
 ## Bots
 
 Bots see only what a player in their seat would see: their own two cards, the board, everyone's chips and every public move. They never see the deck or anyone else's hidden cards, and they don't call any server to decide (the GTO coach is never used during play).
+
+At a variant table a bot judges its hand by that game's rules: it deals out the rest of the hand many times in its head (its own cards and the board only, the other hands guessed at random) to see how often it wins, then plays in its own style against the price of calling. In Imposter it can't fold and the cards don't decide the pot, so it mostly checks and calls with the crowd and now and then makes a small bet.
 
 - **How they think.** Before the flop they start from solved charts and bend them by style. After the flop they picture what each opponent could hold given everything that player has done, and weigh checking, betting, calling, raising and folding by how often they'd win and how often a bet would make the others fold. Short-stacked they move all in or fold.
 - **Styles.** The 640 stable bot identities have individual traits layered over one of ten hidden styles (from a solid regular to a calling station or a maniac). Styles change how many hands they play, how much they bluff, how much they read the other players, what they over- or underrate and how their bet sizes give their hand away.

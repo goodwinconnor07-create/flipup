@@ -24,11 +24,15 @@
       { "name": "TABLE_ROOM", "class_name": "TableRoom" },
       // A shared AI twin: one per five letter code (see worker/twinShare.ts).
       { "name": "TWIN_SHARE", "class_name": "TwinShare" },
+      // A party tournament (worker/party.ts) and a friend code (worker/friendCard.ts), each keyed by its five letter code.
+      { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
+      { "name": "FRIEND_CARD", "class_name": "FriendCard" },
     ],
   },
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["TableRoom"] },
     { "tag": "v2", "new_sqlite_classes": ["TwinShare"] },
+    { "tag": "v3", "new_sqlite_classes": ["PartyRoom", "FriendCard"] },
   ],
   "observability": { "enabled": true },
   // Where the GTO coach service (gto/, a separate Python server) runs. /api/gto/* is proxied there.

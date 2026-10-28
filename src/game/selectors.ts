@@ -1,6 +1,6 @@
 // Read-only questions about a table, shared by the screens and the bots.
 
-import { canRaise, playerById, potTotal } from './holdem';
+import { canRaise, maxRaiseTo, playerById, potTotal } from './holdem';
 import type { Game, Hand, Player, Seat } from './types';
 
 export interface Options {
@@ -14,6 +14,8 @@ export interface Options {
   maxTo: number;
   /** Bet (nothing to match yet) or raise. */
   word: 'Bet' | 'Raise';
+  /** False in Imposter, where nobody folds. */
+  canFold: boolean;
 }
 
 /** What the player whose turn it is can do. */
@@ -21,7 +23,8 @@ export function options(game: Game, hand: Hand, seat: Seat): Options {
   const player = playerById(game, seat.playerId);
   const stack = player?.stack ?? 0;
   const toCall = Math.max(0, hand.currentBet - seat.bet);
-  const maxTo = seat.bet + stack;
+  // Everything they have, or at a pot-limit table no more than the pot.
+  const maxTo = maxRaiseTo(game, hand, seat, stack);
   const minTo = Math.min(maxTo, hand.currentBet + hand.minRaise);
   return {
     toCall: Math.min(toCall, stack),
@@ -31,6 +34,7 @@ export function options(game: Game, hand: Hand, seat: Seat): Options {
     minTo,
     maxTo,
     word: hand.currentBet > 0 ? 'Raise' : 'Bet',
+    canFold: !hand.imposter,
   };
 }
 

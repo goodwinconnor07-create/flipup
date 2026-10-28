@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { loadQuiz } from '../quiz/save';
 import { navigate, openScroll, type TrainSection } from '../state/store';
 import { CoachSays } from '../train/Coach';
+import { YourPlay } from './HomeReview';
 import { BookIcon, CardsIcon, ChevronIcon, PencilIcon } from '../ui/Icons';
 
 /** What the coach says once you've played some solved hands (nothing before: the banner already explains). */
@@ -78,6 +79,7 @@ export function LearnTab() {
           </button>
         ))}
       </div>
+      <YourPlay />
     </>
   );
 }

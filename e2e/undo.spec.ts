@@ -12,7 +12,7 @@ test('deleting a saved hand is instant, and the toast brings it back', async ({ 
     }
   }, [hand('h1', 'Big river fold'), hand('h2', 'Second')]);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Study bank/ }).first().click();
   const deletes = page.getByRole('button', { name: 'Delete' });
   await expect(deletes).toHaveCount(2);

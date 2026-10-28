@@ -2,6 +2,7 @@
 
 import type { Card } from './cards';
 import type { TwinBrain } from './twinFit';
+import type { Variant } from './variants';
 
 export type Status = 'lobby' | 'playing' | 'ended';
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
@@ -16,12 +17,16 @@ export interface Settings {
   rebuys: boolean;
   /** Minutes between blind increases. 0 (or missing) = the blinds never go up. */
   blindMinutes?: number;
+  /** Blinds double every this many hands (party tournaments). Works alongside `blindMinutes`; 0 or missing = off. */
+  blindHands?: number;
   /** Rising blinds stop at this big blind (0 or missing: they keep doubling). */
   blindCap?: number;
   /** Online tables: a busted player (no chips) sees every hole card. */
   showToBusted?: boolean;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
+  /** Which game the table plays (see variants.ts). Missing = Texas Hold'em. */
+  variant?: Variant;
 }
 
 export interface Player {
@@ -153,6 +158,10 @@ export interface HandResult {
   names: Record<string, string>;
   /** True if it went to a showdown; false if everyone else folded. */
   showdown: boolean;
+  /** Ghost Hold'em: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
+  ghost?: { cards: Card[]; name: string; kept: number };
+  /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
+  imposter?: { id: string; votes: Record<string, string>; caught: boolean };
 }
 
 /** One finished hand, for the hand log. */
@@ -237,6 +246,22 @@ export interface Hand {
   ranOut?: boolean;
   /** Each player's chips before the blinds. */
   startStacks?: Record<string, number>;
+  /** Ghost Hold'em: the ghost's two cards. Sent to phones only once the hand reaches a showdown. */
+  ghost?: Card[];
+  /** Ghost Hold'em: chips the ghost kept from earlier hands, in this pot too. */
+  carry?: number;
+  /** Crazy Pineapple: the flop betting is over and everyone still in throws a card away before the turn. */
+  discarding?: boolean;
+  /** The game this hand is played as (a change of game in the settings waits for the next hand). Missing = Texas Hold'em. */
+  variant?: Variant;
+  /** Die on the River: what the die rolled, and the board card it swapped (out) for a new one (in). A 6 swaps nothing. */
+  dice?: { roll: number; out?: Card; in?: Card };
+  /** Imposter: the imposter's id. Phones only get it if it's them, or once the hand is over. */
+  imposter?: string;
+  /** Imposter: everyone dealt in is voting for who the imposter is. */
+  voting?: boolean;
+  /** Imposter: votes so far, voter to suspect. Phones see who has voted, not for whom, until the hand is over. */
+  votes?: Record<string, string>;
 }
 
 /** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
@@ -325,6 +350,12 @@ export interface Game {
   dialogue?: Record<string, { recent: string[]; lastIntent: string }>;
   /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
   card?: CardScene;
+  /** Ghost Hold'em: chips the ghost is holding, which go into the next hand's pot. */
+  ghostPot?: number;
+  /** This table is one round of a party tournament (see party.ts). Public. */
+  party?: { code: string; round: number; total: number };
+  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. */
+  busted?: string[];
 }
 
 export type Action =
@@ -338,6 +369,10 @@ export type Action =
   | { type: 'start' }
   | { type: 'act'; hand: number; seq: number; move: Move; to?: number }
   | { type: 'next'; hand: number }
+  /** Crazy Pineapple: throw this card away after the flop. */
+  | { type: 'discard'; hand: number; card: Card }
+  /** Imposter: who you think the imposter is. */
+  | { type: 'vote'; hand: number; playerId: string }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
   /** After a hand, the host turns every bot's cards face up for everyone. */

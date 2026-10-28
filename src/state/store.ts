@@ -99,7 +99,11 @@ export type Route =
   /** A legend's profile: how they play, and a game against them. */
   | { name: 'legend'; id: string }
   /** Goals, the legends ladder, badges and records. */
-  | { name: 'progress' };
+  | { name: 'progress' }
+  /** Set up a party tournament: pick the games and the pace. */
+  | { name: 'partySetup' }
+  /** The party this phone is in: lobby, leaderboard and the way to the table. */
+  | { name: 'party' };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'odds' | 'stats' | 'custom';
 
@@ -125,6 +129,10 @@ export type Sheet =
   | { name: 'shareTwin' }
   /** Type a friend's twin code. */
   | { name: 'addTwin' }
+  /** Type a friend code to add them to your friends. */
+  | { name: 'addPal' }
+  /** Type a party code to join it. */
+  | { name: 'joinParty' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {

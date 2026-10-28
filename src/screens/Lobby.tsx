@@ -1,4 +1,4 @@
-import { MAX_SEATS, type Game } from '../game';
+import { MAX_SEATS, variantInfo, type Game } from '../game';
 import { joinLinkLabel } from '../state/platform';
 import { closeTable, confirm, dispatch, openSheet, useApp } from '../state/store';
 import { Avatar, chips } from '../ui/components';
@@ -145,6 +145,9 @@ export function Lobby({ game }: { game: Game }) {
           onClick={() => openSheet({ name: 'settings' })}
           aria-label="Table settings"
         >
+          <span className="info-chip">
+            Game <b>{variantInfo(s.variant).emoji} {variantInfo(s.variant).name}</b>
+          </span>
           <span className="info-chip">
             Blinds{' '}
             <b>

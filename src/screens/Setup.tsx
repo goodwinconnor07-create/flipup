@@ -6,6 +6,7 @@ import { BackBar, Choice, chips, Toggle } from '../ui/components';
 import { ChevronIcon, MinusIcon, PlusIcon } from '../ui/Icons';
 import { BOTS } from '../game/botStyles';
 import { BotPicker } from './BotPicker';
+import { GameRow } from './GamePicker';
 
 const RANDOM = 'Random table (recommended)';
 const PICK = 'Pick your bots';
@@ -34,6 +35,7 @@ export function SettingsFields({
   const blindKey = blindsLabel([settings.smallBlind, settings.bigBlind]);
   return (
     <>
+      <GameRow settings={settings} onChange={onChange} />
       <Choice
         label="Starting chips"
         value={settings.startingStack}

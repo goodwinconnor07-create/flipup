@@ -59,7 +59,8 @@ export function QRScanner({ onText }: { onText: (text: string) => void }) {
             if (native) {
               text = (await native.detect(el))[0]?.rawValue ?? '';
             } else if (ctx && jsQR) {
-              const scale = Math.min(1, 480 / el.videoWidth);
+              // Enough detail to read a code across a table, small enough to scan several times a second.
+              const scale = Math.min(1, 800 / el.videoWidth);
               canvas.width = Math.round(el.videoWidth * scale);
               canvas.height = Math.round(el.videoHeight * scale);
               ctx.drawImage(el, 0, 0, canvas.width, canvas.height);

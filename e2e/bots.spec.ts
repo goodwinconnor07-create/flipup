@@ -421,7 +421,7 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await shot(page, '17-finish-screen');
   await page.getByRole('button', { name: 'Done' }).click();
   // Insights lives under Review, and counts tables by where you finished, not chips.
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText(/table played/)).toBeVisible();
   await expect(page.getByText(/^\d(st|nd|rd|th) of \d$/)).toBeVisible();
@@ -633,7 +633,7 @@ test('home: three tabs, results from finished tables in Review, training rows', 
   await page.getByRole('tab', { name: 'Learn' }).click();
   await expect(page.getByRole('heading', { name: 'Learn' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Learn' })).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText('tables played, 40 hands')).toBeVisible();
   await expect(page.getByText('1st of 4')).toBeVisible();
@@ -695,7 +695,7 @@ test('reviewing a hand shows what the coach is doing, with the time so far and t
   await page.getByRole('button', { name: 'Next hand' }).waitFor({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('button', { name: 'Home' }).click();
-  await page.getByRole('tab', { name: 'Review' }).click();
+  await page.getByRole('tab', { name: 'Learn' }).click();
   await page.getByRole('button', { name: /Review hands/ }).click();
   await page.getByRole('button', { name: /Hand #1/ }).click();
   const activity = page.getByRole('status', { name: /Reviewing hand #1/ });

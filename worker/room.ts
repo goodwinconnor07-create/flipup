@@ -9,6 +9,8 @@ import {
   PONG,
   redactForDevice,
   redactLogs,
+  finishOrder,
+  liveOf,
   type Action,
   type Game,
   type ServerMessage,
@@ -125,10 +127,34 @@ export class TableRoom extends DurableObject<Env> {
       return;
     }
     await this.save(result.game);
+    if (result.game.party) this.ctx.waitUntil(this.reportToParty(result.game));
     for (const socket of this.ctx.getWebSockets()) {
       const meta = socket.deserializeAttachment() as SocketMeta | null;
       if (!meta) continue;
       this.send(socket, { t: 'state', game: redactForDevice(result.game, meta.deviceId), ack: socket === from ? id : undefined });
+    }
+  }
+
+  /** A party round tells its party how the chips stand after each hand, and when it's over. Never throws. */
+  private async reportToParty(game: Game): Promise<void> {
+    const party = game.party;
+    if (!party) return;
+    try {
+      const done = game.status === 'ended';
+      // One report per finished hand, and one at the end.
+      const key = `${done ? 'ended' : game.hand?.result ? game.hand.number : 'x'}`;
+      if (key === 'x' || key === (await this.ctx.storage.get<string>('reported'))) return;
+      const room = this.env.PARTY_ROOM.getByName(party.code);
+      const code = game.code ?? '';
+      if (done) {
+        await room.roundEnded(code, party.round, finishOrder(game).flatMap((p) => (p.deviceId ? [p.deviceId] : [])));
+      } else {
+        const ids = Object.fromEntries(game.players.flatMap((p) => (p.deviceId ? [[p.deviceId, p.deviceId]] : [])));
+        await room.progress(code, party.round, liveOf(game, ids));
+      }
+      await this.ctx.storage.put('reported', key);
+    } catch {
+      // The party will hear about the next hand.
     }
   }
 

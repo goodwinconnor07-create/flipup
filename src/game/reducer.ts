@@ -12,12 +12,17 @@ import {
   botsOnly,
   canDeal,
   cardsText,
+  castVote,
   dealNextStreet,
   endsAtOnce,
+  discardCard,
+  endVote,
+  endDiscards,
   foldOutOfTurn,
   lastStanding,
   makeMove,
   MAX_SEATS,
+  passiveMove,
   playerById,
   potTotal,
   runoutStep,
@@ -28,6 +33,8 @@ import {
   TIMING,
 } from './holdem';
 import { cryptoRng, newId } from './ids';
+import { botView, isVariant } from './variants';
+import { variantDecide } from './botVariants';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
@@ -82,7 +89,9 @@ export function validSettings(s: Settings): boolean {
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
+    (s.variant === undefined || isVariant(s.variant)) &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
+    (s.blindHands === undefined || (int(s.blindHands) && s.blindHands >= 0 && s.blindHands <= 100)) &&
     (s.blindMinutes === undefined || (int(s.blindMinutes) && s.blindMinutes >= 0 && s.blindMinutes <= 120)) &&
     int(s.turnSeconds) &&
     s.turnSeconds >= 0 &&
@@ -214,10 +223,20 @@ const ANSWER_AFTER = { min: 900, spread: 700 };
  * losers of an all-in sweat it out loud, big pots get a word, and sometimes another bot answers.
  * When someone speaks, the next deal waits a little longer so it can be read.
  */
+/** Party rounds: remember who ran out of chips on this hand. The one with fewer chips at the start goes out first. */
+function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
+  if (!game.party) return;
+  const out = game.busted ?? [];
+  const fresh = game.players.filter((p) => p.stack === 0 && !out.includes(p.id) && hand.seats.some((s) => s.playerId === p.id));
+  fresh.sort((a, b) => (hand.startStacks?.[a.id] ?? 0) - (hand.startStacks?.[b.id] ?? 0));
+  game.busted = [...out, ...fresh.map((p) => p.id)];
+}
+
 function afterHand(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   const result = hand.result!;
   game.readHand = hand.number;
+  noteBusts(game, hand);
   updateReads(game, hand);
   updateMinds(game, hand);
   const bb = game.settings.bigBlind;
@@ -506,6 +525,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const target = playerById(game, action.playerId);
       if (!target) return done(false);
       if (!host && target.deviceId !== ctx.deviceId) return fail('Only the host can remove players.');
+      if (game.party && game.status === 'playing' && !game.busted?.includes(target.id)) game.busted = [...(game.busted ?? []), target.id];
       const seat = seatFor(game.hand, target.id);
       const inHand = game.status === 'playing' && game.hand && !game.hand.result && seat && !seat.folded;
       if (inHand) {
@@ -585,6 +605,22 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng, ctx.now, false, me.id);
       }
       return done();
+    }
+
+    case 'discard': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = discardCard(game, me.id, action.card, ctx);
+      return error ? fail(error) : done();
+    }
+
+    case 'vote': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = castVote(game, me.id, action.playerId, ctx);
+      return error ? fail(error) : done();
     }
 
     case 'next': {
@@ -723,6 +759,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
           const p = playerById(game, s.playerId);
           if (p) p.stack += s.total;
         }
+        // The ghost keeps what it was holding.
+        if (hand.carry) game.ghostPot = (game.ghostPot ?? 0) + hand.carry;
         game.hand = null;
       }
       game.players = game.players.filter((p) => !p.leaving);
@@ -780,6 +818,16 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (hand && !hand.result) {
     if (!due(hand.actAt)) return false;
+    // Crazy Pineapple: time's up for throwing a card away.
+    if (hand.discarding) {
+      endDiscards(game, ctx);
+      return true;
+    }
+    // Imposter: time's up for voting.
+    if (hand.voting) {
+      endVote(game, ctx);
+      return true;
+    }
     if (hand.nextStreetAt != null) {
       dealNextStreet(game, ctx);
       return true;
@@ -809,7 +857,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
       const plan = game.botPlan;
       if (plan && plan.playerId === player.id && plan.seq === hand.seq) {
         delete game.botPlan;
-        if (makeMove(game, plan.move, plan.to, ctx)) makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+        if (makeMove(game, plan.move, plan.to, ctx)) makeMove(game, passiveMove(hand, seat), undefined, ctx);
         return true;
       }
       // It said something a moment ago (a remark on someone's bet, say) and the table is still reading it.
@@ -823,14 +871,17 @@ function tick(game: Game, ctx: ActionContext): boolean {
       // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.
       const bigBet =
         hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
-      const thought = decide(game, hand, seat, ctx.rng);
+      // In a Hold'em variant it sees the hand as plain Hold'em (see botView).
+      const view = botView(game, hand, seat);
+      // At a variant table it plays the variant's own way (botVariants.ts); plain Hold'em gets the full bot brain.
+      const thought = variantDecide(game, hand, seat, ctx.rng) ?? decide(view.game, view.hand, view.seat, ctx.rng);
       const choice = thought.move;
       const fast = botsOnly(game);
       // It has already taken a moment to look; the rest of its thinking time depends on how hard
       // this one is (a snap fold, a long tank over a big call).
       let wait = fast ? 0 : Math.max(0, thought.thinkMs - TIMING.botMin);
       // Sometimes it says what it's thinking first, then moves a moment later.
-      const event = thinkingEvent(game, hand, choice, thought.bucket, bigBet);
+      const event = thinkingEvent(view.game, view.hand, choice, thought.bucket, bigBet);
       // What it says isn't always about the move it's about to make, or the line would give the move away.
       const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
       // (With every person out of the hand the bots hurry, and nobody has time to read what they think.)
@@ -846,11 +897,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
         return true;
       }
       if (makeMove(game, choice.move, choice.to, ctx))
-        makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+        makeMove(game, passiveMove(hand, seat), undefined, ctx);
       return true;
     }
     // Out of time: check if that's free, otherwise fold. Two in a row and they sit out.
-    makeMove(game, options(game, hand, seat).canCheck ? 'check' : 'fold', undefined, ctx);
+    makeMove(game, passiveMove(hand, seat), undefined, ctx);
     player.timeouts += 1;
     if (player.timeouts >= 2) player.sittingOut = true;
     return true;

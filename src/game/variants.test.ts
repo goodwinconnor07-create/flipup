@@ -110,7 +110,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
 }
 
 describe('variant tables', { timeout: TABLE_MS }, () => {
-  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter'] as Variant[]) {
+  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle'] as Variant[]) {
     it(`plays ${v} hands with bots and keeps every chip`, () => {
       play(v, 40);
     });
@@ -228,6 +228,47 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
     expect(g.hand).toBeTruthy();
     expect(g.hand!.imposter).toBeUndefined();
     expect(g.hand!.variant).toBeUndefined();
+  });
+});
+
+describe('Crucifix and Circle', { timeout: TABLE_MS }, () => {
+  // Crucifix board in dealing order: middle, top, right, bottom, left, outer top, outer right, outer bottom, outer left.
+  const cross = h('Ah 9c Kd 3s 8h Qs 7d 4c Jh');
+  it('Crucifix plays one line, across or down, never both', () => {
+    // Down is Qs 9c Ah 3s 4c; across is Jh 8h Ah Kd 7d. With two hearts in hand, across makes a flush.
+    expect(bestHand('crucifix', h('2h 5h'), cross).name).toBe('Flush');
+    // Q-J in hand: K from across and Q from down would be a pair of each, but only one line counts.
+    expect(bestHand('crucifix', h('Qc 6d'), cross).name).toBe('Pair');
+    expect(bestHand('crucifix', h('Tc 5d'), cross).name).toBe('High card');
+  });
+
+  it('Circle uses both hole cards and three in a row round the clock', () => {
+    // Dealt at 12, 6, 8, 2, 10, 4: so round the clock it's 12 Ah, 2 Kd, 4 Jh, 6 2c, 8 7s, 10 Qs.
+    const circle = h('Ah 2c 7s Kd Qs Jh');
+    // 10-12-2 (Qs Ah Kd) with JT makes a straight, wrapping past 12.
+    expect(bestHand('circle', h('Jc Tc'), circle).name).toBe('Straight');
+    // Ace and king aren't next to the jack... Ah Kd Jh is 12-2-4: three in a row, so the jack plays with them.
+    expect(bestHand('circle', h('Jd Js'), circle).name).toBe('Three of a kind');
+    // Both hole cards must play: a pair in hand plus the board can't be just the board.
+    expect(bestHand('circle', h('3c 3d'), circle).best).toEqual(expect.arrayContaining(['3c', '3d']));
+    // Jh and Qs sit opposite (4 and 10 o'clock), never in a run together, so no two pair with Q-J.
+    expect(bestHand('circle', h('Qc Jc'), circle).name).toBe('Pair');
+  });
+
+  it('deals the cross as 5, 2, 2 and the circle as 2, 2, 2', () => {
+    for (const [v, sizes] of [
+      ['crucifix', [0, 5, 7, 9]],
+      ['circle', [0, 2, 4, 6]],
+    ] as const) {
+      const seen = new Set<number>();
+      play(v, 25, (g) => {
+        if (g.hand) {
+          expect(sizes).toContain(g.hand.board.length);
+          seen.add(g.hand.board.length);
+        }
+      });
+      expect(seen.has(sizes[3])).toBe(true);
+    }
   });
 });
 

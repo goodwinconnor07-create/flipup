@@ -5,7 +5,7 @@ import { rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 
-export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter';
+export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter' | 'crucifix' | 'circle';
 
 export interface VariantInfo {
   id: Variant;
@@ -110,6 +110,30 @@ export const VARIANTS: VariantInfo[] = [
       'Needs three or more players: with two, the hand is plain Hold\'em.',
     ],
   },
+  {
+    id: 'crucifix',
+    name: 'Crucifix',
+    emoji: '➕',
+    tagline: 'The board is a cross. Play the line across or the line down.',
+    rules: [
+      'The board is dealt as a cross of nine cards: one in the middle and two on each arm.',
+      'The flop is the middle card and one card on each arm. The turn adds one to the top arm and one to the right arm, and the river finishes the cross.',
+      'Your hand is your two cards with one line: either the five across or the five down (the middle card is in both). Make your best five from those seven.',
+      'You can\'t mix cards from the two lines. The app picks the line that gives you the best hand.',
+    ],
+  },
+  {
+    id: 'circle',
+    name: "Circle Hold'em",
+    emoji: '⭕',
+    tagline: 'Six cards round a clock. Use three in a row with both of yours.',
+    rules: [
+      'The board is six cards in a circle, like the hours on a clock.',
+      'The flop is two cards, at 12 and 6 o\'clock. The turn adds 8 and 2 o\'clock, and the river adds 10 and 4 o\'clock to close the circle.',
+      'Your hand is both of your cards plus three board cards that sit next to each other round the circle (12, 2 and 4, or 10, 12 and 2, and so on).',
+      'You must use both of your cards. The app picks the best three in a row for you.',
+    ],
+  },
 ];
 
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
@@ -119,8 +143,14 @@ export const isVariant = (v: unknown): v is Variant => VARIANTS.some((x) => x.id
 
 /** Hole cards dealt to each player. */
 export const holeCount = (v: Variant) => (v === 'pineapple' ? 3 : 2);
-/** Cards dealt on the river. */
-export const riverCount = (v: Variant) => (v === 'pittsburgh' ? 3 : 1);
+/** Board cards dealt on each street. */
+export function streetCards(v: Variant, street: 'flop' | 'turn' | 'river'): number {
+  if (v === 'crucifix') return street === 'flop' ? 5 : 2;
+  if (v === 'circle') return 2;
+  return street === 'flop' ? 3 : street === 'river' && v === 'pittsburgh' ? 3 : 1;
+}
+/** Board cards once the river is out (Red River can add more). */
+export const boardSize = (v: Variant) => streetCards(v, 'flop') + streetCards(v, 'turn') + streetCards(v, 'river');
 /** Bets are capped at the size of the pot. */
 export const potLimit = (v: Variant) => v === 'ghost';
 /** Win odds can be worked out for the all-in run-out (only plain Hold'em: the others score hands differently). */
@@ -190,21 +220,67 @@ export function wildHand(cards: Card[]): HandValue {
   return { ...value, best };
 }
 
+// ── Crucifix and Circle boards ──────────────────────────────────────────────
+
+/**
+ * Crucifix board, in the order it's dealt: the middle, then one card on the top, right, bottom and left arms (the
+ * flop), the outer top and right cards (the turn) and the outer bottom and left cards (the river). Each line is
+ * listed from one end to the other, the middle card third.
+ */
+export const CROSS_LINES = [
+  [5, 1, 0, 3, 7], // down: outer top, top, middle, bottom, outer bottom
+  [8, 4, 0, 2, 6], // across: outer left, left, middle, right, outer right
+];
+/** Where each Crucifix board card sits on a 5×5 grid, as [row, column] (1-based). */
+export const CROSS_CELLS: [number, number][] = [
+  [3, 3],
+  [2, 3],
+  [3, 4],
+  [4, 3],
+  [3, 2],
+  [1, 3],
+  [3, 5],
+  [5, 3],
+  [3, 1],
+];
+/** Circle board, dealt at 12 and 6 o'clock, then 8 and 2, then 10 and 4. Each card's o'clock position. */
+export const CIRCLE_HOURS = [12, 6, 8, 2, 10, 4];
+/** The board cards in order round the circle, clockwise from 12. */
+export const CIRCLE_RING = [0, 3, 5, 1, 2, 4];
+
 // ── Scoring for any variant ─────────────────────────────────────────────────
+
+/**
+ * The card sets a hand can be made from, by the table's rules: hole cards plus the whole board, or plus each
+ * Pittsburgh river, each Crucifix line, or each three-in-a-row on the Circle (only lines and runs that are out so far).
+ */
+export function handSets(v: Variant, hole: Card[], board: Card[]): Card[][] {
+  if (v === 'pittsburgh' && board.length > 5) return board.slice(4).map((river) => [...hole, ...board.slice(0, 4), river]);
+  if (v === 'crucifix' && board.length >= 5) {
+    // Before the river a line has three or four cards out; a hand is made from what's there.
+    return CROSS_LINES.map((line) => [...hole, ...line.filter((i) => i < board.length).map((i) => board[i])]);
+  }
+  if (v === 'circle') {
+    const runs: Card[][] = [];
+    for (let p = 0; p < 6; p++) {
+      const run = [0, 1, 2].map((k) => CIRCLE_RING[(p + k) % 6]);
+      if (run.every((i) => i < board.length)) runs.push([...hole, ...run.map((i) => board[i])]);
+    }
+    // No three in a row until the river: until then a hand is just the two hole cards.
+    return runs.length ? runs : [hole];
+  }
+  return [[...hole, ...board]];
+}
 
 /** A player's best hand with this board, by the table's rules. */
 export function bestHand(v: Variant, hole: Card[], board: Card[]): HandValue {
   const evaluate = v === 'deuces' ? wildHand : describeHand;
-  if (v === 'pittsburgh' && board.length > 5) {
-    const base = board.slice(0, 4);
-    let best: HandValue | null = null;
-    for (const river of board.slice(4)) {
-      const value = evaluate([...hole, ...base, river]);
-      if (!best || value.score > best.score) best = value;
-    }
-    return best!;
+  let best: HandValue | null = null;
+  for (const cards of handSets(v, hole, board)) {
+    const value = evaluate(cards);
+    if (!best || value.score > best.score) best = value;
   }
-  return evaluate([...hole, ...board]);
+  return best!;
 }
 
 // ── Crazy Pineapple ─────────────────────────────────────────────────────────
@@ -232,19 +308,17 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
 
 /**
  * The bots think in plain Hold'em: two hole cards and up to five board cards. In Crazy Pineapple a bot looks at the
- * two of its three cards it would keep; in Pittsburgh at the board with the river that suits it best. All public
+ * two of its three cards it would keep; with a bigger board, at the five board cards its best hand uses. All public
  * (or its own) cards, so it never learns anything a player in its seat couldn't.
  */
 export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand: Hand; seat: Seat } {
   const v = variantOf(game);
   const cards = seat.cards.length > 2 ? keepTwo(seat.cards, hand.board.slice(0, 3)) : seat.cards;
   let board = hand.board;
-  if (v === 'pittsburgh' && board.length > 5) {
-    const base = board.slice(0, 4);
-    board = [...base, board.slice(4).reduce((a, b) => (describeHand([...cards, ...base, b]).score > describeHand([...cards, ...base, a]).score ? b : a))];
-  } else if (board.length > 5) {
-    // Red River: the five board cards that matter most to its hand (the ones it uses, then the first others).
-    const used = new Set(describeHand([...cards, ...board]).best);
+  if (board.length > 5) {
+    // Three rivers, a cross, a circle or a long red river: the five board cards that matter most to its hand (the
+    // ones it uses, then the first others).
+    const used = new Set(bestHand(v, cards, board).best);
     board = [...board.filter((c) => used.has(c)), ...board.filter((c) => !used.has(c))].slice(0, 5);
   }
   if (cards === seat.cards && board === hand.board) return { game, hand, seat };

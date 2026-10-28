@@ -152,6 +152,14 @@
   --theme-redriver-rail-a: #3a3a44;
   --theme-redriver-rail-b: #0d0d12;
   --theme-redriver-glow: rgba(255, 59, 48, 0.22);
+  --theme-crucifix-felt: #2a1f3d;
+  --theme-crucifix-rail-a: #d7d4de;
+  --theme-crucifix-rail-b: #4b4757;
+  --theme-crucifix-glow: rgba(214, 196, 255, 0.2);
+  --theme-circle-felt: #0f3a57;
+  --theme-circle-rail-a: #d9ab52;
+  --theme-circle-rail-b: #5c3f0b;
+  --theme-circle-glow: rgba(100, 210, 255, 0.2);
   --gold: #ff9f0a;
   --gold-lo: #d97706;
   --gold-hi: #fde68a;

@@ -12,7 +12,7 @@ test('party: host picks games, a friend joins, the table opens for both, and the
   watchErrors(host);
   watchErrors(friend);
 
-  // The Party tab has replaced History: Play, Learn, Party.
+  // The tabs are Play and Party.
   await toPartyTab(host);
   await expect(host.getByRole('tab', { name: 'Review' })).toHaveCount(0);
   await shot(host, 'party-0-tab');

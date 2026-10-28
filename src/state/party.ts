@@ -4,7 +4,6 @@ import { cleanName, type PartySettings, type PartyView } from '../game';
 import { createPartyOnServer, fetchParty, partyAct } from './api';
 import { myPalCode } from './pals';
 import { loadDeviceId, loadProfile, read, write } from './persist';
-import { shareCode } from './share';
 
 const KEY = 'flipup.party';
 
@@ -23,7 +22,7 @@ const remember = (code: string): void => write(KEY, { code, at: Date.now() });
 
 const who = () => {
   const { name, emoji } = loadProfile();
-  return { deviceId: loadDeviceId(), name: cleanName(name), emoji, ...(myPalCode() ? { friendCode: myPalCode() } : {}), ...(shareCode() ? { twinCode: shareCode() } : {}) };
+  return { deviceId: loadDeviceId(), name: cleanName(name), emoji, ...(myPalCode() ? { friendCode: myPalCode() } : {}), };
 };
 
 export async function createParty(settings: PartySettings): Promise<string> {

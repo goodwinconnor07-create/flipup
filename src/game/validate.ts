@@ -1,7 +1,6 @@
 // Checks everything that arrives over the network before it gets near the game.
 
 import { isEmoji } from './emoji';
-import { isCode } from './ids';
 import { isReactionId } from './reactions';
 import { isCard } from './cards';
 import { isVariant } from './variants';
@@ -46,7 +45,7 @@ export function parseAction(raw: unknown): Action | null {
   switch (a.type) {
     case 'join':
       if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
-      return { type: 'join', name: a.name, emoji: a.emoji, ...(isCode(a.twinCode) ? { twinCode: a.twinCode } : {}) };
+      return { type: 'join', name: a.name, emoji: a.emoji };
     case 'setLook':
       if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
       return { type: 'setLook', name: a.name, emoji: a.emoji };

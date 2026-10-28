@@ -56,7 +56,7 @@ export function NameAndPicture({
       <button type="button" className="avatar-button" aria-label="Change your emoji" onClick={onPicture}>
         <span key={emoji} className="hero-pop">
           <span className="hero-float">
-            <Avatar emoji={emoji} size={132} />
+            <Avatar emoji={emoji} size={176} />
             <span className="hero-edit-badge" aria-hidden>
               <PencilIcon width={20} height={20} />
             </span>
@@ -210,8 +210,8 @@ export function CardText({ text }: { text: string }) {
 }
 
 /** An empty place on the board where a card will go. */
-export function CardSlot({ size = 'lg' }: { size?: CardSize }) {
-  return <span className={`pcard pcard-${size} pcard-slot`} aria-hidden />;
+export function CardSlot({ size = 'lg', style }: { size?: CardSize; style?: CSSProperties }) {
+  return <span className={`pcard pcard-${size} pcard-slot`} style={style} aria-hidden />;
 }
 
 // ── Bits ────────────────────────────────────────────────────────────────────

@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { bestHand, cardName, equity, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { bestHand, boardSize, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
 import { closeTable, dispatch, navigate, openSheet, useApp } from '../state/store';
 import { toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -20,6 +20,9 @@ import { Versus } from './table/Versus';
 import { TableCam } from './table/TableCam';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { RulesSheet } from './GamePicker';
+import { soundMoodFor } from '../ui/gameThemes';
+import { setSoundMood } from '../ui/sound';
+import { useThemeMoments } from '../ui/useTableSounds';
 
 export function Table() {
   const desktop = useDesktop();
@@ -39,6 +42,13 @@ export function Table() {
   const online = useApp((s) => s.session?.mode === 'online');
   // The screen stays on while you're at a table that's still going.
   useWakeLock(!!game && game.status !== 'ended');
+  // Each game pitches the table's sounds its own way, and has a few sounds of its own.
+  const pitch = game ? soundMoodFor(variantOf(game)) : 1;
+  useEffect(() => {
+    setSoundMood(pitch);
+    return () => setSoundMood(1);
+  }, [pitch]);
+  useThemeMoments(game);
 
   if (!game) {
     return (
@@ -51,7 +61,9 @@ export function Table() {
     );
   }
   return (
-    <div className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}`}>
+    <div
+      className={`screen table-screen status-${game.status}${desktop ? ' desk' : ''}`}
+    >
       {blindNews && <BlindBanner key={blindNews.id} text={blindNews.text} onDone={() => setBlindNews(null)} />}
       <TableBar game={game} />
       <div className="rotate-hint" role="alert">
@@ -208,8 +220,17 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const themed = variant !== 'holdem';
   // Imposter: you only learn it's you; everyone else in the hand is innocent.
   const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
-  // Pittsburgh always has room for three rivers; Red River grows as the red cards come.
-  const boardSlots = variant === 'pittsburgh' ? 7 : Math.max(5, hand?.board.length ?? 0);
+  // Pittsburgh always has room for three rivers, the cross for nine and the circle for six; Red River grows as the
+  // red cards come.
+  const boardSlots = Math.max(boardSize(variant), hand?.board.length ?? 0);
+  // The cross and the circle lay their cards out in a shape instead of a row.
+  const shape = variant === 'crucifix' ? 'cross' : variant === 'circle' ? 'circle' : null;
+  const place = (i: number): CSSProperties | undefined => {
+    if (shape === 'cross') return { gridRow: CROSS_CELLS[i][0], gridColumn: CROSS_CELLS[i][1] };
+    if (shape !== 'circle') return undefined;
+    const a = (CIRCLE_HOURS[i] / 12) * 2 * Math.PI;
+    return { '--x': Math.sin(a).toFixed(3), '--y': (-Math.cos(a)).toFixed(3) } as CSSProperties;
+  };
   const [rules, setRules] = useState(false);
   const desktop = useDesktop();
   const speakerOk = useRef<(id: string) => boolean>(() => true);
@@ -241,7 +262,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
 
   // The tab says so when it's your turn and you're looking at something else.
   useEffect(() => {
-    const base = 'GTODuel';
+    const base = 'FlipUp';
     const update = () => {
       document.title = myTurn && document.hidden ? `Your turn · ${base}` : base;
     };
@@ -411,10 +432,13 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 🎲 {hand.dice.out ? <CardText text={`Rolled ${hand.dice.roll}: [${hand.dice.out}] → [${hand.dice.in}]`} /> : `Rolled ${hand.dice.roll}: the board stays`}
               </p>
             )}
-            <div className={`board${boardSlots > 5 ? ' board-wide' : ''}${variant === 'pittsburgh' ? ' board-rivers' : ''}`} aria-label="Board">
+            <div
+              className={`board${shape ? ` board-${shape}` : boardSlots > 5 ? ' board-wide' : ''}${variant === 'pittsburgh' ? ' board-rivers' : ''}`}
+              aria-label="Board"
+            >
               {Array.from({ length: boardSlots }, (_, i) => i).map((i) => {
                 const c = hand?.board[i];
-                const size = boardSlots > 5 ? 'md' : 'lg';
+                const size = boardSlots > 5 || shape ? 'md' : 'lg';
                 return c ? (
                   <PlayingCard
                     key={`${hand!.number}-${c}`}
@@ -423,10 +447,11 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                     dim={dim(c)}
                     glow={glow(c)}
                     flip
-                    delay={i < 3 ? i * 160 : 0}
+                    delay={i < streetCards(variant, 'flop') ? i * 160 : 0}
+                    style={place(i)}
                   />
                 ) : (
-                  <CardSlot key={`slot-${i}`} size={size} />
+                  <CardSlot key={`slot-${i}`} size={size} style={place(i)} />
                 );
               })}
             </div>

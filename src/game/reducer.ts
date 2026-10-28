@@ -139,8 +139,6 @@ export function createTable(opts: {
   bots: number;
   /** Bots to seat by name first (Home's quick games); the rest are random. */
   botNames?: string[];
-  /** The host's shared twin, if they have one (the server checks it's theirs before passing it in). */
-  twinCode?: string;
   code: string | null;
   now: number;
 }): Game {
@@ -161,7 +159,7 @@ export function createTable(opts: {
     logs: [],
     reactions: {},
   };
-  game.players.push({ ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }), ...(opts.twinCode ? { twinCode: opts.twinCode } : {}) });
+  game.players.push({ ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }) });
   for (const name of opts.botNames ?? []) {
     const pick = BOTS.find((b) => b.name === name);
     if (pick && game.players.length < MAX_SEATS && !game.players.some((p) => p.name === pick.name))
@@ -489,15 +487,13 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const emoji = isEmoji(action.emoji) ? action.emoji : DEFAULT_EMOJI;
       if (me) {
         const mine = uniqueName(game, name, me.id);
-        if (me.name === mine && me.emoji === emoji && me.twinCode === action.twinCode) return done(false);
+        if (me.name === mine && me.emoji === emoji) return done(false);
         me.name = mine;
         me.emoji = emoji;
-        me.twinCode = action.twinCode;
-        if (!me.twinCode) delete me.twinCode;
         return done();
       }
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      game.players.push({ ...newPlayer(game, { name: uniqueName(game, name), emoji, deviceId: ctx.deviceId, bot: false }), ...(action.twinCode ? { twinCode: action.twinCode } : {}) });
+      game.players.push({ ...newPlayer(game, { name: uniqueName(game, name), emoji, deviceId: ctx.deviceId, bot: false }) });
       wakeIfWaiting(game, ctx);
       return done();
     }

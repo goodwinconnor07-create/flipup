@@ -1,27 +1,21 @@
-import { useMemo, useState } from 'react';
-import { legendById, legendProfile, LEGEND_NOTE, LEGENDS, RUNG_WORDS, SCOUT_MIN } from '../../game';
-import { loadTwin } from '../../state/twin';
-import { legendBefore, legendOpen, loadProgress } from '../../state/progress';
-import { back, startLegend } from '../../state/store';
-import { CoachSays } from '../../train/Coach';
-import { scout } from '../../train/scout';
-import { BackIcon } from '../../ui/Icons';
-import { LegendArt } from '../HomeLegends';
+import { useState } from 'react';
+import { legendById, LEGEND_NOTE, LEGENDS, RUNG_WORDS } from '../game';
+import { legendBefore, legendOpen, loadProgress } from '../state/progress';
+import { back, startLegend } from '../state/store';
+import { BackIcon } from '../ui/Icons';
+import { LegendArt } from './HomeLegends';
 
-/** A legend's profile: how they play in plain words, what to do about it, and a heads-up game against them. */
+/** A legend's profile: who they are, what they're known for, and a heads-up game against them. */
 export function Legend({ id }: { id: string }) {
   const legend = legendById(id);
-  // Their numbers through the same scouting a friend's twin gets.
-  const notes = useMemo(() => (legend ? scout(legendProfile(legend), 3, 0.1) : []), [legend]);
   const [progress] = useState(loadProgress);
-  const [seenHands] = useState(() => loadTwin().hands);
   if (!legend) return null;
   const open = legendOpen(progress, legend.id);
   const before = legendBefore(legend.id);
   const record = progress.rivals.legends[legend.id];
   const beaten = progress.beaten[legend.id];
   return (
-    <div className="screen train">
+    <div className="screen">
       <div className="topbar">
         <button type="button" className="icon-btn press" aria-label="Back" onClick={back}>
           <BackIcon />
@@ -39,10 +33,7 @@ export function Legend({ id }: { id: string }) {
             <span>{RUNG_WORDS[legend.rung - 1]}</span>
           </div>
         </div>
-        <CoachSays quick lines={[legend.blurb]} />
-        {legend.scouting >= 0.5 && seenHands >= SCOUT_MIN && (
-          <CoachSays quick compact header={false} lines={[`${legend.short} studies players. They've seen ${seenHands} of your hands and will play to your habits.`]} />
-        )}
+        <p className="legend-blurb">{legend.blurb}</p>
         <div className="glass-card legend-signature">
           <small className="eyebrow">Known for</small>
           <ul>
@@ -51,17 +42,6 @@ export function Legend({ id }: { id: string }) {
             ))}
           </ul>
         </div>
-        <h2 className="section-head">How to beat them</h2>
-        {notes.length === 0 && <CoachSays quick lines={["There's no habit to aim at. Keep your game simple, bet your good hands and pick your spots."]} />}
-        {notes.map((n) => (
-          <div key={n.id} className="glass-card coach-card twin-habit">
-            <CoachSays quick compact lines={[n.say, `Plan: ${n.plan}`]} />
-            <details className="coach-numbers">
-              <summary>Show me the numbers</summary>
-              <p>{n.numbers}</p>
-            </details>
-          </div>
-        ))}
         {record && record.w + record.l > 0 && (
           <p className="legend-record">
             {beaten ? `You've beaten ${legend.short}${beaten.wins > 1 ? ` ${beaten.wins} times` : ''}.` : `You haven't beaten ${legend.short} yet.`} Record {record.w}–{record.l}.

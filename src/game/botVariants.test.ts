@@ -3,7 +3,7 @@ import { variantDecide, variantEquity, variantScore } from './botVariants';
 import { applyAction, bestHand, createTable, DEFAULT_SETTINGS, fullDeck, makeMove, seededRng, type Game, type Variant } from './index';
 
 const HOST = 'host-device';
-const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter'];
+const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle'];
 
 /** A bots-only table (the host sits out of the way by calling) with the first hand dealt. */
 function dealt(variant: Variant, bots = 4, seed = 1): Game {
@@ -90,13 +90,13 @@ describe('variant bots', { timeout: 20_000 }, () => {
 });
 
 describe('the bots\' quick scoring', () => {
-  it('scores every hand exactly as the table does, long red-river boards and three rivers included', () => {
+  it('scores every hand exactly as the table does, long red-river boards, three rivers, the cross and the circle included', () => {
     const rng = seededRng(11);
     const deck = fullDeck();
     for (let n = 0; n < 3000; n++) {
       const d = deck.slice().sort(() => rng() - 0.5);
-      const v = (['deuces', 'pittsburgh', 'redriver', 'holdem'] as Variant[])[n % 4];
-      const boardSize = v === 'pittsburgh' ? 7 : v === 'redriver' ? 5 + (n % 5) : 5;
+      const v = (['deuces', 'pittsburgh', 'redriver', 'holdem', 'crucifix', 'circle'] as Variant[])[n % 6];
+      const boardSize = v === 'pittsburgh' ? 7 : v === 'redriver' ? 5 + (n % 5) : v === 'crucifix' ? 9 : v === 'circle' ? 6 : 5;
       const [hole, board] = [d.slice(0, 2), d.slice(2, 2 + boardSize)];
       expect(variantScore(v, hole, board)).toBe(bestHand(v, hole, board).score);
     }

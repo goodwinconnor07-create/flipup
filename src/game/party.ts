@@ -215,7 +215,7 @@ export function buildPartyGame(opts: {
     variant: settings.games[opts.round] ?? 'holdem',
   };
   const [host, ...rest] = people;
-  let game = createTable({ hostDeviceId: host.deviceId, name: host.name, emoji: host.emoji, settings: game0, bots: 0, twinCode: host.twinCode, code: opts.tableCode, now });
+  let game = createTable({ hostDeviceId: host.deviceId, name: host.name, emoji: host.emoji, settings: game0, bots: 0, code: opts.tableCode, now });
   const step = (action: Parameters<typeof applyAction>[1], deviceId: string): boolean => {
     const r = applyAction(game, action, { deviceId, now, rng });
     if (r.ok) game = r.game;

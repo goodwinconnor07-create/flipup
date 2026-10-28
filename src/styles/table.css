@@ -1577,7 +1577,6 @@ html[data-theme='dark'] .pot-pill {
   box-shadow: 0 0 14px rgba(0, 0, 0, 0.25);
 }
 
-
 /* Each seat has one bubble that keeps changing: typing dots while a bot thinks, sometimes what it's
    thinking, then its move; table talk shows in the same style and gives way to the next move. */
 .bubble-typing {

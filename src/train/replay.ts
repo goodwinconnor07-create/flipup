@@ -2,7 +2,6 @@
 // only draws them. A frame is the whole table at one moment (stacks, bets, who has folded, the board).
 
 import { blindFor, type HandRecord, type Street } from '../game';
-import type { Decision } from '../gto/types';
 
 const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];
 const BOARD_AT: Record<Street, number> = { preflop: 0, flop: 3, turn: 4, river: 5 };
@@ -166,36 +165,4 @@ export function buildFrames(r: HandRecord, heroId: string): Frame[] {
   return frames;
 }
 
-/**
- * Pairs each of your moves with the coach's grade for it. The coach grades your decisions street by
- * street in order, so match them up that way; when a street has a different count (a move the coach
- * skipped, such as folding out of turn), match by the kind of move instead.
- */
-export function matchDecisions(r: HandRecord, heroId: string, decisions: Decision[]): Map<number, Decision> {
-  const out = new Map<number, Decision>();
-  for (const s of STREETS) {
-    const mine = r.actions.map((a, i) => ({ a, i })).filter(({ a }) => a.playerId === heroId && a.street === s && !a.outOfTurn);
-    const graded = decisions.filter((d) => d.street === s && !d.pending);
-    if (mine.length === graded.length) {
-      mine.forEach(({ i }, k) => out.set(i, graded[k]));
-      continue;
-    }
-    const left = [...graded];
-    for (const { a, i } of mine) {
-      const at = left.findIndex((d) => !d.action || d.action.move === a.move);
-      if (at >= 0) out.set(i, left.splice(at, 1)[0]);
-    }
-  }
-  return out;
-}
-
-/** The frame numbers of your moves that weren't the GTO play, in order. */
-export function mistakeFrames(frames: Frame[], graded: Map<number, Decision>): number[] {
-  return frames.flatMap((f, i) => {
-    const d = f.action == null ? undefined : graded.get(f.action);
-    return d && (d.colour === 'red' || d.colour === 'yellow') ? [i] : [];
-  });
-}
-
-/** Replay is switched off for now: every button that opens it checks this. */
-export const REPLAY_ON = false;
+export const streetName = (s: Street) => s[0].toUpperCase() + s.slice(1);

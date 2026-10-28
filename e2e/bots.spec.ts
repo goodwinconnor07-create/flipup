@@ -256,7 +256,7 @@ test('a finished hand can be shared from the hand log as plain text', async ({ p
   await page.getByRole('button', { name: 'Hand log' }).click();
   await page.getByRole('button', { name: 'Share hand #1' }).click();
   const shared = await page.evaluate(() => (window as unknown as { __shared: ShareData }).__shared);
-  expect(shared.text).toContain('GTODuel · Hand #1');
+  expect(shared.text).toContain('FlipUp · Hand #1');
   expect(shared.text).toContain('Your hand:');
   expect(shared.text).toMatch(/[♠♥♦♣]/);
   expect(shared.text).toContain('Sam folds');
@@ -401,7 +401,8 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
   }
 });
 
-test('ending a game adds to the Insights totals', async ({ page }) => {
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('ending a game adds to History', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
   await page.getByRole('button', { name: 'Play with Bots' }).click();
@@ -420,11 +421,10 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await expect(page.locator('.standing')).toHaveCount(await page.locator('.standing').count());
   await shot(page, '17-finish-screen');
   await page.getByRole('button', { name: 'Done' }).click();
-  // Insights lives under Review, and counts tables by where you finished, not chips.
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Insights/ }).click();
-  await expect(page.getByText(/table played/)).toBeVisible();
-  await expect(page.getByText(/^\d(st|nd|rd|th) of \d$/)).toBeVisible();
+  // History counts tables by where you finished, not chips.
+  await page.getByRole('tab', { name: 'History' }).click();
+  await expect(page.getByText('Recent tables')).toBeVisible();
+  await expect(page.getByText(/\d(st|nd|rd|th) of \d/)).toBeVisible();
   await shot(page, '14-home-totals');
 });
 
@@ -613,7 +613,8 @@ test('dark mode: an appearance choice in the menu that changes the whole app and
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
 });
 
-test('home: three tabs, results from finished tables in Review, training rows', async ({ page }) => {
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('home: games first, results from finished tables in History', async ({ page }) => {
   watchErrors(page);
   await page.addInitScript(() => {
     if (localStorage.getItem('flipup.stats')) return;
@@ -621,7 +622,7 @@ test('home: three tabs, results from finished tables in Review, training rows', 
     const at = Date.now() - 3_600_000;
     localStorage.setItem(
       'flipup.stats',
-      JSON.stringify({ net: 200, tables: 2, hands: 40, counted: [], games: [{ at, net: 300, hands: 20, players: 4, place: 1 }, { at, net: -100, hands: 20, players: 5, place: 3 }] }),
+      JSON.stringify({ net: 200, tables: 2, hands: 40, counted: [], games: [{ at, net: 300, hands: 20, players: 4, place: 1, variant: 'ghost' }, { at, net: -100, hands: 20, players: 5, place: 3 }] }),
     );
   });
   await page.goto('/');
@@ -629,19 +630,16 @@ test('home: three tabs, results from finished tables in Review, training rows', 
   await expect(page.getByText('Hi Connor.')).toBeVisible();
   // Chips reset every game, so Home never counts them.
   await expect(page.getByText(/chips/)).toHaveCount(0);
+  // Every game has a card, and there are no learning tabs any more.
+  await expect(page.getByRole('button', { name: /Ghost Hold'em/ })).toBeVisible();
+  await expect(page.getByRole('tab', { name: 'Learn' })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: 'Review' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await expect(page.getByRole('heading', { name: 'Learn' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Learn' })).toHaveAttribute('aria-selected', 'true');
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Insights/ }).click();
-  await expect(page.getByText('tables played, 40 hands')).toBeVisible();
+  await page.getByRole('tab', { name: 'History' }).click();
+  await expect(page.getByRole('heading', { name: 'History' })).toBeVisible();
   await expect(page.getByText('1st of 4')).toBeVisible();
   await expect(page.getByText('Recent tables')).toBeVisible();
-  await page.getByRole('button', { name: 'Back' }).click();
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Poker library/ }).click();
-  await expect(page.getByText('Poker library').first()).toBeVisible();
+  await expect(page.getByText("Ghost Hold'em").first()).toBeVisible();
 });
 
 test('a table with players out of view never scrolls sideways', async ({ page }) => {
@@ -658,53 +656,6 @@ test('a table with players out of view never scrolls sideways', async ({ page })
   await page.waitForTimeout(800);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await expect(page.getByRole('button', { name: 'Fold' })).toBeEnabled();
-});
-
-test('preflop drills work with the coach offline: dealt on the phone from the shipped solution', async ({ page }) => {
-  watchErrors(page);
-  await page.route('**/api/gto/**', (route) => route.abort());
-  await page.goto('/');
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Poker library/ }).click();
-  await page.getByRole('button', { name: /Opening the pot/ }).click();
-  await expect(page.getByText('What do you do?')).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText(/You are/)).toBeVisible();
-  // Answer: the first option. GTO's answer and its reasons show.
-  await page.locator('.answer-btn').first().click();
-  await expect(page.getByText('GTO says')).toBeVisible();
-  await expect(page.getByText(/equity against a random hand/)).toBeVisible();
-});
-
-test('reviewing a hand shows what the coach is doing, with the time so far and the time left', async ({ page }) => {
-  watchErrors(page);
-  let polls = 0;
-  await page.route('**/api/gto/review/session', (route) => route.fulfill({ json: { job: 'j1' } }));
-  await page.route('**/api/gto/jobs/j1', (route) => {
-    polls++;
-    const report = { hand_id: 'x', players: {}, board: [], summary: { decisions: 0, graded: 0, total_ev_loss_bb: 0, grades: {} }, decisions: [], notes: [] };
-    return route.fulfill({ json: polls < 4 ? { status: 'running', progress: 0, total: 1, result: null } : { status: 'done', progress: 1, total: 1, result: { hands: [report] } } });
-  });
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Play with Bots' }).click();
-  await setName(page, 'Sam');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Sit down' }).click();
-  await page.getByRole('button', { name: 'Deal', exact: true }).click();
-  await page.getByText('Your turn').waitFor({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Fold', exact: true }).click();
-  await page.getByRole('button', { name: 'Next hand' }).waitFor({ timeout: 30_000 });
-  await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('button', { name: 'Home' }).click();
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Review hands/ }).click();
-  await page.getByRole('button', { name: /Hand #1/ }).click();
-  const activity = page.getByRole('status', { name: /Reviewing hand #1/ });
-  await expect(activity).toBeVisible();
-  await expect(activity.getByText('Reading the hand')).toBeVisible();
-  await expect(activity.getByText(/left/)).toBeVisible();
-  await expect(activity.getByText(/^\d+:\d\d$/)).toBeVisible();
-  await shot(page, '24-review-activity');
-  await expect(activity).toBeHidden({ timeout: 20_000 });
 });
 
 test('a playstyle tile: one tap starts a heads-up game against a random bot', async ({ page }) => {

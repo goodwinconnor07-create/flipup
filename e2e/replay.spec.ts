@@ -1,11 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-
-// Replay is switched off for now; these tests come back when it does.
-const REPLAY_ON = /REPLAY_ON = true/.test(readFileSync('src/train/replay.ts', 'utf8'));
 import { shot, watchErrors } from './helpers';
 
-// A saved hand with a coach report, so the replay and the GTO Coach can be checked without the solver service.
+// A saved hand to watch back.
 const record = {
   tableId: 'T1',
   number: 7,
@@ -36,81 +32,36 @@ const record = {
   showdown: true,
 };
 
-const gto = (best: string, mine: string, freq: number) => [
-  { action: 'fold', frequency: best === 'fold' ? 1 : 0, ev_bb: 0 },
-  { action: 'call', frequency: mine === 'call' ? freq : 0, ev_bb: -0.4 },
-  { action: 'raise to 6', frequency: best === 'raise to 6' ? 1 - freq : 0.1, ev_bb: 0.3 },
-];
-
-const report = {
-  hand_id: 'T1#7',
-  players: {},
-  board: record.board,
-  summary: { decisions: 3, graded: 3, colours: { green: 1, yellow: 0, red: 2 }, total_ev_loss_bb: 1.4, grades: {} },
-  notes: [],
-  decisions: [
-    { street: 'preflop', player: 'a', position: 'BTN', hand: 'AhQd', board: [], pot_bb: 1.5, to_call_bb: 1, action: { move: 'raise', to_bb: 3 }, matched_action: 'raise to 6', method: 'solver', best_action: 'raise to 6', gto: gto('raise to 6', 'raise to 6', 0.8), grade: 'best', colour: 'green', scenario: 'rfi', explanation: [] },
-    { street: 'flop', player: 'a', position: 'BTN', hand: 'AhQd', board: ['Ks', '7d', '2c'], pot_bb: 6, to_call_bb: 0, action: { move: 'bet', to_bb: 4 }, matched_action: 'call', method: 'solver', best_action: 'fold', ev_loss_bb: 1.2, ev_loss_pct_pot: 20, gto: gto('fold', 'call', 0), grade: 'blunder', colour: 'red', scenario: 'cbet_ip', explanation: [] },
-    { street: 'flop', player: 'a', position: 'BTN', hand: 'AhQd', board: ['Ks', '7d', '2c'], pot_bb: 18, to_call_bb: 8, action: { move: 'call', to_bb: 12 }, matched_action: 'call', method: 'solver', best_action: 'fold', ev_loss_bb: 0.2, gto: gto('fold', 'call', 0.3), grade: 'inaccuracy', colour: 'yellow', scenario: 'vs_checkraise', explanation: [] },
-  ],
-};
-
-test('replay a saved hand with the GTO Coach', async ({ page }) => {
-  test.skip(!REPLAY_ON, 'Replay is switched off for now (REPLAY_ON in src/train/replay.ts)');
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('replay a saved hand', async ({ page }) => {
   watchErrors(page);
-  await page.addInitScript(
-    ([rec, rep]) => {
-      if (localStorage.getItem('flipup.history')) return;
-      localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Connor', emoji: '😎' }));
-      localStorage.setItem('flipup.history', JSON.stringify([{ key: 'T1#7', heroId: 'a', record: rec }]));
-      localStorage.setItem('flipup.reports', JSON.stringify({ 'T1#7': { at: Date.now(), report: rep } }));
-      localStorage.setItem(
-        'flipup.reviews',
-        JSON.stringify({ 'T1#7': { key: 'T1#7', at: Date.now(), decisions: rep.decisions.map((d: { street: string; colour: string; ev_loss_bb?: number; scenario: string }) => ({ street: d.street, colour: d.colour, evLoss: d.ev_loss_bb ?? 0, scenario: d.scenario })) } }),
-      );
-    },
-    [record, report] as const,
-  );
+  await page.addInitScript((rec) => {
+    if (localStorage.getItem('flipup.history')) return;
+    localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Connor', emoji: '😎' }));
+    localStorage.setItem('flipup.history', JSON.stringify([{ key: 'T1#7', heroId: 'a', record: rec }]));
+  }, record);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Insights/ }).click();
+  await page.getByRole('tab', { name: 'History' }).click();
   await page.getByRole('button', { name: 'Replay hand 7' }).click();
 
-  // The coach introduces themself, and the hand starts playing on its own.
-  await expect(page.getByText('GTO Coach').first()).toBeVisible();
+  // The hand starts playing on its own, with a plain sentence under the table and no coach.
   await expect(page.getByText('Replay · Preflop')).toBeVisible();
+  await expect(page.getByText('GTO Coach')).toHaveCount(0);
   await shot(page, 'replay-1-deal');
-
-  // It stops at the first move that wasn't the GTO play.
-  await expect(page.getByText("I'd skip call here.", { exact: false })).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByRole('button', { name: 'Play' })).toBeVisible();
-  await shot(page, 'replay-2-mistake');
 
   // Only what this phone could see is face up: the other seats stay face down until the result.
   await expect(page.locator('.rp-seat:not(.hero) .pcard-back').first()).toBeVisible();
 
-  // Retry the spot.
-  await page.getByRole('button', { name: 'Try this spot again' }).click();
-  await page.getByRole('button', { name: 'Fold', exact: true }).click();
-  await expect(page.getByText("That's it. You fixed it.")).toBeVisible();
-  await shot(page, 'replay-3-retry');
-
-  // Jump around with the buttons, then to the end.
-  await page.getByRole('button', { name: /Jump to my mistakes/ }).click();
+  // Jump to the end with the timeline.
   await page.getByRole('button', { name: /of \d+: Result/ }).click();
-  await expect(page.getByText('One thing to take away')).toBeVisible();
   await expect(page.getByText('Ollie', { exact: true }).first()).toBeVisible();
   await expect(page.locator('.rp-seat:not(.hero) .pcard:not(.pcard-back)').first()).toBeVisible();
+  await expect(page.getByText(/You won/)).toBeVisible();
   await shot(page, 'replay-4-result');
-
-  // The full written review opens from here, with the same coach.
-  await page.getByRole('button', { name: 'Full review' }).click();
-  await expect(page.getByText('GTO Coach').first()).toBeVisible();
-  await shot(page, 'replay-5-review');
 });
 
-test('a full ring of nine still fits on a phone', async ({ page }) => {
-  test.skip(!REPLAY_ON, 'Replay is switched off for now (REPLAY_ON in src/train/replay.ts)');
+// History is off Home for now, so nothing opens this; it comes back with it.
+test.skip('a full ring of nine still fits on a phone', async ({ page }) => {
   watchErrors(page);
   const names = ['Connor', 'Ollie', 'Bot Bea', 'Longname Lou', 'Sam', 'Priya', 'Mo', 'Jess', 'Dave'];
   const nine = {
@@ -134,8 +85,7 @@ test('a full ring of nine still fits on a phone', async ({ page }) => {
     localStorage.setItem('flipup.history', JSON.stringify([{ key: 'T1#9', heroId: 'p0', record: rec }]));
   }, nine);
   await page.goto('/');
-  await page.getByRole('tab', { name: 'Learn' }).click();
-  await page.getByRole('button', { name: /Insights/ }).click();
+  await page.getByRole('tab', { name: 'History' }).click();
   await page.getByRole('button', { name: 'Replay hand 9' }).click();
   await page.getByRole('button', { name: /of \d+: .* raised to 60/ }).click();
   await expect(page.locator('.rp-seat')).toHaveCount(9);

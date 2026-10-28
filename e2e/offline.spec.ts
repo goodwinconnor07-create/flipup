@@ -89,3 +89,15 @@ test('without the worker an offline reload fails (so the test above proves somet
   await expect(page.reload()).rejects.toThrow();
   await context.setOffline(false);
 });
+
+// The dev server loads each stylesheet on its own, so a broken one (an unclosed brace swallows every file after it)
+// only shows up in the built app, where they're joined into one.
+test('the built app keeps every stylesheet: Home is laid out, not plain text', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('button', { name: /^Ghost Hold'em\./ })).toBeAttached();
+  const look = await page.evaluate(() => {
+    const display = (sel: string) => getComputedStyle(document.querySelector(sel)!).display;
+    return { card: display('.game-card'), modes: display('.modes'), tabs: display('.home-tabs') };
+  });
+  expect(look).toEqual({ card: 'flex', modes: 'flex', tabs: 'flex' });
+});

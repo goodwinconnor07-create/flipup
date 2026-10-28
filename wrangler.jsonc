@@ -22,9 +22,6 @@
   "durable_objects": {
     "bindings": [
       { "name": "TABLE_ROOM", "class_name": "TableRoom" },
-      // A shared AI twin: one per five letter code (see worker/twinShare.ts).
-      { "name": "TWIN_SHARE", "class_name": "TwinShare" },
-      // A party tournament (worker/party.ts) and a friend code (worker/friendCard.ts), each keyed by its five letter code.
       { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
       { "name": "FRIEND_CARD", "class_name": "FriendCard" },
     ],
@@ -36,9 +33,8 @@
     { "tag": "v2" },
     { "tag": "v3" },
     { "tag": "v4", "new_sqlite_classes": ["TwinShare", "PartyRoom", "FriendCard"] },
+    // Shared AI twins are gone from the app; this removes their Durable Object class.
+    { "tag": "v5", "deleted_classes": ["TwinShare"] },
   ],
   "observability": { "enabled": true },
-  // Where the GTO coach service (gto/, a separate Python server) runs. /api/gto/* is proxied there.
-  // Hosted on Fly.io (gto/fly.toml). For local work override it in .dev.vars (e.g. http://127.0.0.1:8000).
-  "vars": { "GTO_URL": "https://flipup-gto.fly.dev" },
 }

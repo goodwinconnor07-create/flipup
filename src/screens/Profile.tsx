@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { cleanName, isNameBlocked, type TableInfo } from '../game';
+import { loadStreak } from '../state/persist';
+import { cleanName, isNameBlocked, type TableInfo, type Variant } from '../game';
 import { back, joinTable, openSheet, replace, setProfile, useApp } from '../state/store';
 import { BackBar, NameAndPicture } from '../ui/components';
 import { ChevronIcon, GearIcon } from '../ui/Icons';
@@ -7,17 +8,18 @@ import { ChevronIcon, GearIcon } from '../ui/Icons';
 const TITLES = { host: 'Host a table', bots: 'Play the bots', join: 'Join the table', done: 'Your profile' };
 
 /** Your name and emoji. Asked once, then remembered; also reachable from Home to change them. */
-export function Profile({ then, info }: { then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo }) {
+export function Profile({ then, info, variant }: { then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo; variant?: Variant }) {
   const profile = useApp((s) => s.profile);
   const [name, setName] = useState(profile.name);
+  const [streak] = useState(loadStreak);
   const clean = cleanName(name);
   const ok = clean.length > 0 && !isNameBlocked(clean);
 
   const next = () => {
     if (!ok) return;
     setProfile({ name: clean });
-    if (then === 'host') replace({ name: 'setup', mode: 'online' });
-    else if (then === 'bots') replace({ name: 'setup', mode: 'local' });
+    if (then === 'host') replace({ name: 'setup', mode: 'online', variant });
+    else if (then === 'bots') replace({ name: 'setup', mode: 'local', variant });
     else if (then === 'join' && info) joinTable(info.code);
     else back();
   };
@@ -37,6 +39,17 @@ export function Profile({ then, info }: { then: 'host' | 'bots' | 'join' | 'done
         </div>
         {then === 'done' && (
           <div className="group">
+            <button type="button" className="group-row press" onClick={() => openSheet({ name: 'streak' })}>
+              <span className="gr-icon" style={{ background: 'linear-gradient(160deg, var(--gold-hi), var(--party-orange))' }}>
+                <span aria-hidden>🔥</span>
+              </span>
+              <span className="gr-text">
+                Streak
+                <small>{streak.today ? 'You played today.' : 'Play a hand today to keep it.'}</small>
+              </span>
+              <span className="gr-count num">{streak.days} {streak.days === 1 ? 'day' : 'days'}</span>
+              <ChevronIcon className="gr-chev" width={16} height={16} />
+            </button>
             <button type="button" className="group-row press" onClick={() => openSheet({ name: 'prefs' })}>
               <span className="gr-icon" style={{ background: 'var(--slate-hi)' }}>
                 <GearIcon />

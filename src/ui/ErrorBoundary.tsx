@@ -13,7 +13,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { crashed:
   }
 
   componentDidCatch(error: unknown): void {
-    console.error('GTODuel hit an error:', error);
+    console.error('FlipUp hit an error:', error);
   }
 
   private home = (): void => {

@@ -11,7 +11,7 @@ export function handRecord(game: Game, hand: Hand, now: number): HandRecord | nu
   const players = ids
     .map((id) => game.players.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p)
-    .map((p) => ({ id: p.id, name: p.name, emoji: p.emoji, seat: p.seat, stack: hand.startStacks![p.id] ?? p.stack, ...(p.twinCode ? { twinCode: p.twinCode } : {}) }));
+    .map((p) => ({ id: p.id, name: p.name, emoji: p.emoji, seat: p.seat, stack: hand.startStacks![p.id] ?? p.stack }));
   return {
     tableId: game.id,
     number: hand.number,

@@ -15,10 +15,10 @@
   --fs-small: 15px;
   --fs-body: 17px;
   --fs-lead: 17px;
-  --fs-h3: 20px;
-  --fs-h2: 22px;
+  --fs-h3: 22px;
+  --fs-h2: 24px;
   --fs-h1: 28px;
-  --fs-title: 34px;
+  --fs-title: 44px;
   --fs-stamp: 42px;
   /* Display sizes: big headings, card titles, scores, codes and counters. */
   --fs-display-1: 34px;
@@ -36,9 +36,9 @@
   /* ── Shape. Spacing is on a 4px grid. */
   --r-xs: 4px;
   --r-sm: 10px;
-  --r-md: 14px;
-  --r-lg: 20px;
-  --r-xl: 26px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
   --r-pill: 999px;
   --radius: var(--r-lg);
   --radius-sm: var(--r-md);
@@ -65,6 +65,13 @@
   --on-color: #ffffff;
   --focus: #93c5fd;
   --badge: #ff3b30;
+  /* Party accents: loud colours for what you tap to play. */
+  --party-pink: #ff3d8b;
+  --party-orange: #ff8a1f;
+  --party-yellow: #ffd60a;
+  --party-blue: #2f7bff;
+  --party-green: #19c26b;
+  --party-edge: rgba(0, 0, 0, 0.24);
 
   /* ── Brand: the ink-black of the logo, with a red "Up" (hearts and diamonds). */
   --brand-ink: #007aff;
@@ -152,6 +159,14 @@
   --theme-redriver-rail-a: #3a3a44;
   --theme-redriver-rail-b: #0d0d12;
   --theme-redriver-glow: rgba(255, 59, 48, 0.22);
+  --theme-crucifix-felt: #2a1f3d;
+  --theme-crucifix-rail-a: #d7d4de;
+  --theme-crucifix-rail-b: #4b4757;
+  --theme-crucifix-glow: rgba(214, 196, 255, 0.2);
+  --theme-circle-felt: #0f3a57;
+  --theme-circle-rail-a: #d9ab52;
+  --theme-circle-rail-b: #5c3f0b;
+  --theme-circle-glow: rgba(100, 210, 255, 0.2);
   --gold: #ff9f0a;
   --gold-lo: #d97706;
   --gold-hi: #fde68a;
@@ -449,16 +464,17 @@ input {
   appearance: none;
   border: 0;
   width: 100%;
-  min-height: 50px;
-  padding: 0 20px;
-  border-radius: var(--r-md);
+  min-height: 58px;
+  padding: 0 24px;
+  border-radius: var(--r-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  font-size: var(--fs-body);
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 800;
   letter-spacing: -0.01em;
+  box-shadow: 0 12px 22px -12px rgba(0, 0, 0, 0.5);
   text-decoration: none;
   color: var(--on-color);
   user-select: none;
@@ -474,7 +490,8 @@ input {
 
 .btn:active {
   transform: scale(0.97);
-  filter: brightness(0.92);
+  box-shadow: 0 4px 10px -6px rgba(0, 0, 0, 0.5);
+  filter: brightness(0.94);
 }
 
 .btn[disabled] {
@@ -487,9 +504,9 @@ input {
 }
 
 .btn-xl {
-  min-height: 56px;
-  font-size: var(--fs-lead);
-  border-radius: var(--r-md);
+  min-height: 66px;
+  font-size: 20px;
+  border-radius: var(--r-lg);
 }
 
 .btn-sm {
@@ -504,15 +521,15 @@ input {
 }
 
 .btn-green {
-  background: var(--green);
+  background: linear-gradient(180deg, var(--party-green), var(--green));
 }
 
 .btn-blue {
-  background: var(--blue);
+  background: linear-gradient(180deg, var(--party-blue), var(--blue-lo));
 }
 
 .btn-red {
-  background: var(--red);
+  background: linear-gradient(180deg, var(--red-hi), var(--red-lo));
 }
 
 .btn-dark {
@@ -541,6 +558,11 @@ input {
   min-height: 44px;
   font-weight: 400;
   font-size: var(--fs-body);
+}
+
+.btn-link:active {
+  box-shadow: none;
+  transform: scale(0.97);
 }
 
 /* Destructive text buttons are red. */
@@ -1346,3 +1368,147 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   color: var(--on-color);
 }
 
+
+/* ── Party look for every menu ────────────────────────────────────────────────────────────────
+   Setup, lobby, profile, party, the finish page and every sheet get the bolder, bigger style. The game
+   screen (.table-screen) keeps the sizes it had: the tokens below are put back inside it. */
+
+.table-screen {
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 26px;
+  --fs-h2: 22px;
+  --fs-h3: 20px;
+  --fs-title: 34px;
+}
+
+.table-screen .btn {
+  min-height: 50px;
+  padding: 0 20px;
+  border-radius: var(--r-md);
+  font-size: var(--fs-body);
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.table-screen .btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.92);
+  box-shadow: none;
+}
+
+.table-screen .btn-xl {
+  min-height: 56px;
+  font-size: var(--fs-lead);
+}
+
+.table-screen .btn-sm {
+  min-height: 40px;
+  font-size: var(--fs-small);
+  border-radius: var(--r-sm);
+  padding: 0 16px;
+}
+
+.table-screen .btn-green {
+  background: var(--green);
+}
+
+.table-screen .btn-blue {
+  background: var(--blue);
+}
+
+.table-screen .btn-red {
+  background: var(--red);
+}
+
+.screen:not(.table-screen):not(.home)::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 320px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(220px 180px at 10% 0%, rgba(255, 61, 139, 0.2), transparent 70%),
+    radial-gradient(240px 200px at 90% 4%, rgba(47, 123, 255, 0.22), transparent 70%),
+    radial-gradient(200px 160px at 55% 0%, rgba(255, 214, 10, 0.16), transparent 70%);
+}
+
+.screen:not(.table-screen) .h1 {
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+}
+
+.screen:not(.table-screen) .h2 {
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.screen:not(.table-screen) .topbar-title {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.screen:not(.table-screen) .muted {
+  font-weight: 500;
+}
+
+.screen:not(.table-screen) .section-title {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.sheet {
+  border-radius: 32px 32px 0 0;
+}
+
+.sheet h2,
+.sheet .h2,
+.sheet .sheet-title {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.field {
+  border-radius: var(--r-lg);
+  font-weight: 600;
+}
+
+.group,
+.glass-card,
+.tile {
+  border-radius: var(--r-xl);
+}
+
+.stepper-btn {
+  box-shadow: 0 8px 14px -8px rgba(0, 0, 0, 0.4);
+}
+
+.emoji-picker .emoji-grid {
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+}
+
+.emoji-picker .emoji-option {
+  border-radius: var(--r-md);
+  font-size: 40px;
+}
+
+.emoji-picker .emoji-custom-pic {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--r-md);
+  font-size: 40px;
+}
+
+.emoji-picker .emoji-custom .field {
+  min-height: 72px;
+  font-size: var(--fs-h3);
+}
+
+.hero-pic {
+  gap: 28px;
+}

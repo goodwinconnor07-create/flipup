@@ -1,15 +1,12 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { legendById, net, standings, type Game } from '../game';
 import { finishLine } from '../game/botTalk';
-import { badgeById, goalById, legendBefore, loadProgress, nextLegend, settleTable, type TableReport } from '../state/progress';
-import { closeTable, dispatch, navigate, openLog, startFriendTwin, startLegend, startTwin, useApp } from '../state/store';
+import { badgeById, legendBefore, loadProgress, nextLegend, settleTable, type TableReport } from '../state/progress';
+import { closeTable, dispatch, navigate, openLog, startLegend, useApp } from '../state/store';
 import { handKey } from '../state/training';
-import { CoachSays } from '../train/Coach';
-import { tableNote } from '../train/coach';
 import { shareCard } from '../ui/shareCard';
 import { shareText } from './sheets/InviteSheet';
 import { Avatar, PlayingCard, chips } from '../ui/components';
-import { openFriendReport, openTwinReport } from './train/TwinReport';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 import { playSound } from '../ui/sound';
 import { LegendArt } from './HomeLegends';
@@ -197,15 +194,14 @@ export function Final({ game }: { game: Game }) {
 
   const headline = !top ? 'Table closed' : iWon ? 'You win!' : `${top.name} wins!`;
   const hands = stats?.hands ?? game.hand?.number ?? 0;
-  const note = stats ? tableNote(stats, iWon) : [];
   const replayable = (n: number) => (me ? () => navigate({ name: 'replay', key: handKey(game.id, n) }) : undefined);
-  const announced = report && (report.newBadges.length > 0 || report.goalsDone.length > 0 || report.firstBeat || report.unlocked || report.comeback || report.rival);
+  const announced = report && (report.newBadges.length > 0 || report.firstBeat || report.unlocked || report.comeback || report.rival);
 
   const send = async () => {
     if (!me) return;
     const info = {
       headline,
-      sub: `${hands} hand${hands === 1 ? '' : 's'} at GTODuel`,
+      sub: `${hands} hand${hands === 1 ? '' : 's'} at FlipUp`,
       emoji: me.emoji,
       big: signed(myNet),
       stats: stats
@@ -219,7 +215,7 @@ export function Final({ game }: { game: Game }) {
     };
     if (await shareCard(info)) return;
     const where = iWon ? 'I won' : `I finished ${ordinal(place)}`;
-    void shareText('GTODuel result', `${where} at GTODuel: ${signed(myNet)} chips over ${hands} hand${hands === 1 ? '' : 's'}.`, 'Result copied');
+    void shareText('FlipUp result', `${where} at FlipUp: ${signed(myNet)} chips over ${hands} hand${hands === 1 ? '' : 's'}.`, 'Result copied');
   };
 
   return (
@@ -259,13 +255,10 @@ export function Final({ game }: { game: Game }) {
               return b ? <Announce key={id} icon={b.emoji} title={`Badge: ${b.name}`} text={b.text} /> : null;
             })}
             {report.comeback && <Announce icon="🎢" title="What a comeback" text={`You were down to ${Math.round((stats?.lowest ?? 0) * 100)}% of your chips and still won.`} tone="green" />}
-            {report.goalsDone.map((id) => (
-              <Announce key={id} icon="✅" title="Goal done" text={goalById(id)?.label ?? ''} tone="green" burst={false} />
-            ))}
             {report.rival && (
               <Announce
-                icon={report.rival.kind === 'legend' ? legend?.emoji ?? '⚔️' : '🪞'}
-                title={`${report.rival.kind === 'legend' ? legend?.short : report.rival.kind === 'twin' ? 'Your twin' : "The friend's twin"}: ${report.rival.record.w}–${report.rival.record.l}`}
+                icon={legend?.emoji ?? '⚔️'}
+                title={`${legend?.short}: ${report.rival.record.w}–${report.rival.record.l}`}
                 text={report.rival.record.w > report.rival.record.l ? 'You lead the series.' : report.rival.record.w < report.rival.record.l ? 'They lead the series. Rematch?' : 'All square.'}
                 tone="blue"
                 burst={false}
@@ -381,27 +374,6 @@ export function Final({ game }: { game: Game }) {
           </section>
         )}
 
-        {note.length > 0 && (
-          <section className="fin-section" aria-label="The coach">
-            <Reveal>
-              <CoachSays quick lines={note}>
-                {hands >= 3 && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-blue coach-cta"
-                    onClick={() => {
-                      closeTable();
-                      navigate({ name: 'train', section: 'review' });
-                    }}
-                  >
-                    Review this game
-                  </button>
-                )}
-              </CoachSays>
-            </Reveal>
-          </section>
-        )}
-
         {next && !report?.firstBeat && (
           <section className="fin-section" aria-label="Next up">
             <Reveal className="fin-card next-up">
@@ -440,7 +412,7 @@ export function Final({ game }: { game: Game }) {
         {me && (
           <>
             {host ? (
-              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.legendGame ? startLegend(game.legendGame) : game.friendTwin ? startFriendTwin(game.friendTwin) : game.twinGame ? startTwin() : dispatch({ type: 'playAgain' }))}>
+              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.legendGame ? startLegend(game.legendGame) : dispatch({ type: 'playAgain' }))}>
                 {game.legendGame && report?.beat ? `Rematch ${legend?.short ?? ''}`.trim() : 'Play again'}
                 {waiting > 0 ? ` · ${waiting} waiting` : ''}
               </button>
@@ -454,11 +426,6 @@ export function Final({ game }: { game: Game }) {
               </button>
             )}
           </>
-        )}
-        {game.twinGame && (
-          <button type="button" className="btn btn-xl btn-ghost" onClick={() => (game.friendTwin ? openFriendReport(game.friendTwin) : openTwinReport())}>
-            {game.friendTwin ? 'How your plan went' : 'What your twin found'}
-          </button>
         )}
         <button type="button" className={`btn btn-xl ${me ? 'btn-ghost' : 'btn-dark'}`} onClick={closeTable}>
           Done

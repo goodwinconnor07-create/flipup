@@ -108,8 +108,6 @@ export class TableRoom extends DurableObject<Env> {
 
     const action = parseAction(a);
     if (!action) return this.send(ws, { t: 'reject', id, error: "The server didn't understand that." });
-    // A twin code shown at the table has to be one this phone really shares.
-    if (action.type === 'join' && action.twinCode && (await this.env.TWIN_SHARE.getByName(action.twinCode).owner()) !== deviceId) delete action.twinCode;
     await this.apply(action, deviceId, ws, id);
   }
 

@@ -1679,6 +1679,8 @@ html[data-theme='dark'] .btn-dark {
 }
 
 .game-tile {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -1687,9 +1689,23 @@ html[data-theme='dark'] .btn-dark {
   border: 0;
   border-radius: var(--r-lg);
   background: var(--bg-2);
-  color: var(--ink);
+  color: #fff;
   font: inherit;
   text-align: left;
+}
+
+/* Each tile wears its game's colours. */
+.game-tile-art {
+  position: absolute;
+  inset: 0;
+}
+
+.game-tile-art .prop {
+  display: none;
+}
+
+.game-tile > :not(.game-tile-art) {
+  position: relative;
 }
 
 .game-tile.on {
@@ -1706,7 +1722,7 @@ html[data-theme='dark'] .btn-dark {
 }
 
 .game-tile small {
-  color: var(--ink-3);
+  color: rgba(255, 255, 255, 0.85);
   font-size: var(--fs-caption);
 }
 
@@ -1918,6 +1934,84 @@ html[data-theme='dark'] .btn-dark {
   --theme-rail-a: var(--theme-redriver-rail-a);
   --theme-rail-b: var(--theme-redriver-rail-b);
   --theme-glow: var(--theme-redriver-glow);
+}
+
+.theme-crucifix {
+  --theme-felt: var(--theme-crucifix-felt);
+  --theme-rail-a: var(--theme-crucifix-rail-a);
+  --theme-rail-b: var(--theme-crucifix-rail-b);
+  --theme-glow: var(--theme-crucifix-glow);
+}
+
+.theme-circle {
+  --theme-felt: var(--theme-circle-felt);
+  --theme-rail-a: var(--theme-circle-rail-a);
+  --theme-rail-b: var(--theme-circle-rail-b);
+  --theme-glow: var(--theme-circle-glow);
+}
+
+/* Crucifix: nine cards in a cross on a 5×5 grid (the card spots come from CROSS_CELLS). */
+.board.board-cross {
+  --cw: 30px;
+  display: grid;
+  grid-template-columns: repeat(5, var(--cw));
+  grid-auto-rows: calc(var(--cw) * 1.4);
+  gap: 3px;
+}
+
+/* Circle: six cards round a clock face (each card's --x and --y come from its hour). */
+.board.board-circle {
+  --cw: 36px;
+  --rx: calc(var(--cw) * 1.9);
+  --ry: calc(var(--cw) * 1.4 + 4px);
+  display: block;
+  width: calc(var(--cw) * 4.4);
+  height: calc(var(--cw) * 4.2 + 8px);
+}
+
+.board-circle .pcard {
+  position: absolute;
+  left: calc(50% + var(--x) * var(--rx) - var(--cw) / 2);
+  top: calc(50% + var(--y) * var(--ry) - var(--cw) * 0.7);
+}
+
+.table-oval .board-cross .pcard,
+.table-oval .board-circle .pcard {
+  --w: var(--cw);
+}
+
+/* A shorter phone has no room for a cross five cards tall: the cards turn into small tiles, rank and suit side by side. */
+@media (max-height: 799px) and (max-width: 959px) {
+  .board.board-cross {
+    --cw: 36px;
+    --ch: 26px;
+    grid-auto-rows: var(--ch);
+  }
+
+  .table-oval .board-cross .pcard {
+    aspect-ratio: auto;
+    height: var(--ch);
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 1px;
+    padding: 0;
+    border-radius: 6px;
+  }
+
+  .board-cross .pcard-rank {
+    font-size: 15px;
+  }
+
+  .board-cross .pcard-suit {
+    font-size: 12px;
+  }
+}
+
+@media (max-height: 690px) and (max-width: 959px) {
+  .board.board-cross {
+    --ch: 23px;
+  }
 }
 
 /* Ghost: the emblem drifts like it's haunting the table. */

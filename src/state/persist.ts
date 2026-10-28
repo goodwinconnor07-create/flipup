@@ -220,9 +220,8 @@ export interface GameResult {
   players: number;
   /** Where you finished by chips at the end, 1 for first (tables from before this was kept have none). */
   place?: number;
-  /** A game against an AI twin: yours, or a friend's (their code). */
-  twin?: boolean;
-  friend?: string;
+  /** Which game it was (Hold'em when missing). */
+  variant?: string;
   /** A game against a legend (their id). */
   legend?: string;
 }
@@ -238,7 +237,7 @@ export function loadStats(): Stats {
     games: Array.isArray(s?.games)
       ? s.games
           .filter((g) => g && [g.at, g.net, g.hands, g.players].every((n) => typeof n === 'number' && Number.isFinite(n)))
-          .map((g) => ({ at: g.at, net: g.net, hands: g.hands, players: g.players, ...(typeof g.place === 'number' && g.place >= 1 ? { place: g.place } : {}), ...(g.twin === true ? { twin: true } : {}), ...(typeof g.friend === 'string' ? { friend: g.friend } : {}), ...(typeof g.legend === 'string' ? { legend: g.legend } : {}) }))
+          .map((g) => ({ at: g.at, net: g.net, hands: g.hands, players: g.players, ...(typeof g.place === 'number' && g.place >= 1 ? { place: g.place } : {}), ...(typeof g.variant === 'string' ? { variant: g.variant } : {}), ...(typeof g.legend === 'string' ? { legend: g.legend } : {}) }))
       : [],
   };
 }
@@ -290,10 +289,9 @@ function loadDays(): string[] {
   return Array.isArray(d) ? d.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)) : [];
 }
 
-/** The old Scroll cards' saves (bot-style cards and every card ever played): gone with the cards. */
-export function forgetOldScroll(): void {
-  write('flipup.scroll', null);
-  write('flipup.scrollhands', null);
+/** Everything the learning features kept (GTO reviews, drills, Scroll, odds, AI twins and friends' twins): gone with them. */
+export function forgetOldLearning(): void {
+  for (const key of ['scroll', 'scrollhands', 'quizbank', 'quizrecent', 'odds', 'twin', 'twingames', 'friends', 'share', 'reviews', 'reports', 'drills', 'savedhands', 'coach', 'coachmet']) write(`flipup.${key}`, null);
 }
 
 /** Marks today as a day this phone played a hand. */
@@ -358,15 +356,4 @@ export function loadStreakInfo(): StreakInfo {
     return { label: d.toLocaleDateString(undefined, { weekday: 'narrow' }), played: have.has(dayKey(d)), today: i === 6 };
   });
   return { days, today, start, best: Math.max(best, days), total: all.length, week };
-}
-
-// ── GTO Coach ───────────────────────────────────────────────────────────────
-
-/** The coach introduces themself once; after that they get straight to it. */
-export function loadCoachMet(): boolean {
-  return read<boolean>('flipup.coach') === true;
-}
-
-export function saveCoachMet(): void {
-  write('flipup.coach', true);
 }

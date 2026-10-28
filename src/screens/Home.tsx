@@ -1,22 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { fetchTableInfo } from '../state/api';
-import { loadLastTable, loadStats, loadStreak, saveLastTable } from '../state/persist';
-import { loadDrills, loadHistory, loadSummaries } from '../state/training';
+import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
-import { LearnTab } from './HomeLearn';
+import { GameShelf } from './HomeGames';
 import { QuickGames } from './HomeQuick';
-import { TwinTiles } from './HomeTwins';
-import { TodayCard } from './HomeToday';
-import { DAILY_GOALS } from '../state/progress';
 import { LegendShelf } from './HomeLegends';
 import { BotsArt, HostArt } from './CardArt';
-import { lastGameHands } from './HomeReview';
 import { PartyTab } from './HomeParty';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { CapIcon, ChevronIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
-import { computeStats } from '../train/stats';
+import { ChevronIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
+import { variantInfo } from '../game';
 
 function ago(at: number): string {
   const mins = Math.max(1, Math.round((Date.now() - at) / 60_000));
@@ -26,21 +21,24 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'learn' | 'party';
+type Tab = 'play' | 'party';
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
-  { id: 'learn', label: 'Learn', Icon: CapIcon, title: 'Learn' },
   { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
 ];
 
-// Kept for the session, so coming back from a training screen lands on the same tab.
+// Kept for the session, so coming back from a replay lands on the same tab.
 let lastTab: Tab = 'play';
 
-/** One line under the greeting: your table, or how your play is matching GTO. Chips reset every game, so they're never the measure. */
-function statusLine(gto: number | null, tables: number, active: boolean): string {
+/** One line under the greeting: your table, or how your last game went. Chips reset every game, so they're never the measure. */
+function statusLine(active: boolean): string {
   if (active) return 'Your table is waiting.';
-  if (gto !== null) return `${Math.round(gto * 100)}% of your moves matched GTO.`;
-  return tables > 0 ? 'Ready for another hand?' : 'Deal yourself in.';
+  const last = loadStats().games.at(-1);
+  if (last) {
+    const info = variantInfo(last.variant as never);
+    return `Last time: ${info.emoji} ${info.name}${last.place ? `, ${last.place === 1 ? 'you won' : `finished ${last.place === 2 ? '2nd' : last.place === 3 ? '3rd' : `${last.place}th`}`}` : ''}.`;
+  }
+  return 'Pick a game and deal yourself in.';
 }
 
 export function Home() {
@@ -54,18 +52,9 @@ export function Home() {
   const profile = useApp((s) => s.profile);
   const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
   const named = profile.name.trim().length > 0;
-  const [stats] = useState(loadStats);
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
-  const [streak] = useState(loadStreak);
   const [party] = useState(loadPartyRef);
-  const training = useMemo(() => {
-    const history = loadHistory();
-    const reviews = loadSummaries();
-    const s = computeStats(history, reviews, loadDrills());
-    return { gto: s.decisions > 0 ? s.gtoPct : null, lastGame: lastGameHands(history, reviews) };
-  }, []);
-
   // The last online table, if it's still open, is one tap away.
   const rejoin = async () => {
     if (!last || looking) return;
@@ -92,32 +81,20 @@ export function Home() {
     navigate({ name: 'setup', mode: then === 'host' ? 'online' : 'local' });
   };
 
-  // The banner only shows when there's one clear next step: your open table, the online table you left,
-  // or the hands from your last game that the coach hasn't seen.
+  // The banner only shows when there's one clear next step: your open table, or the online table you left.
   const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
     ? { title: 'Rejoin Lobby', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
     : party
       ? { title: 'Your party', sub: `Code ${party.code}`, cta: 'Open the party', run: () => navigate({ name: 'party' }), faces: [], tone: 'slate' }
       : last
       ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate' }
-      : training.lastGame.waiting > 0
-        ? {
-            title: 'Your last game',
-            sub: `${training.lastGame.waiting} ${training.lastGame.waiting === 1 ? 'hand' : 'hands'} the coach hasn't seen yet`,
-            cta: 'Review it',
-            run: () => navigate({ name: 'train', section: 'review' }),
-            faces: [],
-            tone: 'orange',
-          }
-        : null;
+      : null;
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
   const subtitle =
-    tab === 'learn'
-      ? 'Solved hands and drills, graded as you go.'
-      : tab === 'party'
+    tab === 'party'
         ? 'Mini game tournaments with your friends.'
-        : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(training.gto, stats.tables, !!active)}`;
+        : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
 
   return (
     <div className="screen home">
@@ -128,22 +105,11 @@ export function Home() {
               <h1 className="large-title">{current.title}</h1>
               <button
                 type="button"
-                className={`streak-pill press${streak.today ? ' lit' : ''}`}
-                aria-label={`${streak.days} day streak${streak.today ? '' : ', play today to keep it'}. Show details`}
-                onClick={() => openSheet({ name: 'streak' })}
-              >
-                <span className="streak-emoji" aria-hidden>
-                  🔥
-                </span>
-                <b className="num">{streak.days}</b>
-              </button>
-              <button
-                type="button"
                 className="avatar-btn press"
                 aria-label={named ? `Your profile and settings: ${profile.name}` : 'Set up your profile'}
                 onClick={() => navigate({ name: 'profile', then: 'done' })}
               >
-                <Avatar emoji={profile.emoji} size={36} />
+                <Avatar emoji={profile.emoji} size={52} />
               </button>
             </div>
             <p>{subtitle}</p>
@@ -170,6 +136,8 @@ export function Home() {
                     </span>
                   </button>
                 )}
+                <h3 className="section-head">Quick start</h3>
+                <GameShelf />
                 <section className="modes" aria-label="Start a game">
                   <button type="button" className="mode mode-blue press" onClick={() => go('host')}>
                     <span className="mode-text">
@@ -183,26 +151,23 @@ export function Home() {
                   <button type="button" className="mode mode-green press" onClick={() => go('bots')}>
                     <span className="mode-text">
                       <span className="mode-title">Play with Bots</span>
-                      <span className="mode-sub">Practise on this phone, no timer.</span>
+                      <span className="mode-sub">On this phone, no timer.</span>
                     </span>
                     <span className="mode-art">
                       <BotsArt />
                     </span>
                   </button>
                 </section>
-                {DAILY_GOALS && <TodayCard />}
-                <TwinTiles />
                 <LegendShelf />
                 <QuickGames />
               </>
             )}
-            {tab === 'learn' && <LearnTab />}
             {tab === 'party' && <PartyTab />}
           </div>
         </div>
       </div>
       <nav className="home-tabs" aria-label="Home">
-        <div className="tabbar glass" role="tablist" style={{ ['--i' as string]: index }}>
+        <div className="tabbar glass" role="tablist" style={{ ['--i' as string]: index, ['--n' as string]: TABS.length }}>
           <i className="tab-capsule" aria-hidden />
           {TABS.map(({ id, label, Icon }) => (
             <button

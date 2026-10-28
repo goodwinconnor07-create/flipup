@@ -821,7 +821,7 @@ html:not(.no-glass) .raise-panel .icon-btn {
 }
 
 /* The real action row stays in the page, unseen, while the sizer is open, so the table keeps its size. */
-.ghost {
+.raise-hidden {
   visibility: hidden;
 }
 

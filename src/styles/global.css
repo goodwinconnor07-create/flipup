@@ -1055,8 +1055,8 @@ body:has(.sheet-backdrop) .toasts {
   animation: spin 0.8s linear infinite;
 }
 
-/* Animations stop when the phone's Reduce Motion is on, or when the menu's Animations switch is off
-   (it puts "calm" on <html>). */
+/* Animations stop when a touch phone's Reduce Motion is on, or when the menu's Animations switch is off
+   (it puts "calm" on <html>). A computer's own setting is left alone: animations stay on there. */
 html.calm *,
 html.calm *::before,
 html.calm *::after {
@@ -1065,7 +1065,7 @@ html.calm *::after {
   transition-duration: 0.01ms !important;
 }
 
-@media (prefers-reduced-motion: reduce) {
+@media (prefers-reduced-motion: reduce) and (pointer: coarse) {
   *,
   *::before,
   *::after {

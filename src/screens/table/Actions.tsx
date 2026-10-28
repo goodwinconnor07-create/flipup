@@ -205,10 +205,10 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
           onRaise={(to) => act(to >= o.maxTo ? 'allin' : o.word === 'Bet' ? 'bet' : 'raise', to)}
         />
       )}
-      <p className={`table-note your-turn${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
+      <p className={`table-note your-turn${raising ? ' raise-hidden' : ''}`} aria-hidden={raising || undefined}>
         Your turn
       </p>
-      <div className={`action-buttons${raising ? ' ghost' : ''}`} aria-hidden={raising || undefined}>
+      <div className={`action-buttons${raising ? ' raise-hidden' : ''}`} aria-hidden={raising || undefined}>
         {o.canFold && (
           <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>
             Fold

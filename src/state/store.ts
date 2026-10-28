@@ -2,6 +2,7 @@
 // One small store (no library): screens read it with useApp(selector).
 
 import { useSyncExternalStore } from 'react';
+import { flushSync } from 'react-dom';
 import {
   applyAction,
   cleanName,
@@ -254,9 +255,21 @@ function onPopState(): void {
   back();
 }
 
+/** Moves between screens the way iOS does: the new one slides in over the old (push), or the old slides away (pop).
+ * The browser draws it (View Transitions, Safari 18 and up); anywhere else the screen just fades in as before. */
+function slide(kind: 'push' | 'pop', change: () => void): void {
+  const doc = document as Document & { startViewTransition?: (update: () => void) => { finished: Promise<unknown> } };
+  if (!doc.startViewTransition || reducedMotion()) return change();
+  const root = document.documentElement;
+  root.dataset.nav = kind;
+  const run = doc.startViewTransition(() => flushSync(change));
+  const clear = () => delete root.dataset.nav;
+  run.finished.then(clear, clear);
+}
+
 export function navigate(route: Route): void {
   clearTimeout(sheetTimer);
-  set({ stack: [...state.stack, route], sheet: null, sheetLeaving: false });
+  slide('push', () => set({ stack: [...state.stack, route], sheet: null, sheetLeaving: false }));
   syncHistory();
 }
 
@@ -278,7 +291,7 @@ export function back(): void {
     clearTimeout(sheetTimer);
     set({ sheet: null, sheetLeaving: false });
   }
-  if (state.stack.length > 1) set({ stack: state.stack.slice(0, -1) });
+  if (state.stack.length > 1) slide('pop', () => set({ stack: state.stack.slice(0, -1) }));
   syncHistory();
 }
 

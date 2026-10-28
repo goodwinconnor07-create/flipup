@@ -50,6 +50,8 @@ Poker night on your phones: no-limit Texas Hold'em for play chips. A host opens 
 
 - Bot identity: bots never wear a face from the profile picker (`botFace()` in `botProfiles.ts` swaps any picker emoji for an animal or object nobody can pick), and every bot seat carries a small BOT chip. Speech bubbles are plain capsules with no tail. Home has a "Join a game" bar under the banner that opens the join sheet.
 
+- Motion: `navigate()`/`back()` in `store.ts` wrap the screen change in a View Transition (`slide()`, `html[data-nav]`, keyframes at the end of `global.css`): the new screen slides in over the old one, back is the reverse, and browsers without it (or Reduce Motion on a touch phone) keep the old fade. Sheets rise over 0.38s on the iOS curve. The code pad (`CodePad.tsx`) blinks a cursor, shakes red on a wrong code and ripples while it looks the code up. Seats show the chips they've put in this round as a small tag. Game cards (`GameIllustrations.tsx`) are drawn from real playing cards in the four-colour deck, one layout per game.
+
 ## Rules that matter
 
 - Hidden information stays hidden. `redactForDevice()` strips the deck and every hole card that isn't yours or face up. Bots-only tables keep the deck on the phone but the screens still only get the redacted view.

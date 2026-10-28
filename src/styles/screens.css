@@ -951,12 +951,62 @@ html[data-theme='dark'] .btn-dark {
 }
 
 /* A letter pops into its box. The key changes with the letter, so this plays once per letter typed. */
+.join-cell {
+  position: relative;
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
 .join-cell.filled {
+  background: color-mix(in srgb, var(--blue) 14%, var(--bg-3));
   animation: pop 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
 }
 
+/* The box waiting for a letter has a blinking cursor in it. */
+.join-cell.next::after {
+  content: '';
+  width: 3px;
+  height: 34px;
+  border-radius: 2px;
+  background: var(--blue);
+  animation: code-caret 1s steps(1) infinite;
+}
+
+@keyframes code-caret {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* A wrong code: every box shakes and flashes red, then they empty. */
+.join-code.err .join-cell {
+  box-shadow: inset 0 0 0 3px var(--red);
+  animation: shake 0.45s ease-in-out;
+}
+
+/* While it's looked up, the letters ripple across. */
+.join-code.busy .join-cell.filled {
+  animation: code-wave 0.9s ease-in-out infinite;
+}
+
+.join-code.busy .join-cell:nth-child(2) { animation-delay: 0.08s; }
+.join-code.busy .join-cell:nth-child(3) { animation-delay: 0.16s; }
+.join-code.busy .join-cell:nth-child(4) { animation-delay: 0.24s; }
+.join-code.busy .join-cell:nth-child(5) { animation-delay: 0.32s; }
+
+@keyframes code-wave {
+  50% {
+    transform: translateY(-6px);
+    background: color-mix(in srgb, var(--green) 24%, var(--bg-3));
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .join-cell.filled {
+  .join-cell.filled,
+  .join-cell.next::after,
+  .join-code.err .join-cell,
+  .join-code.busy .join-cell.filled {
     animation: none;
   }
 }

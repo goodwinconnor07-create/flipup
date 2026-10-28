@@ -265,6 +265,10 @@ export function Pod({
           <span className="pod-tag win">+{chips(won)}</span>
         ) : odds ? (
           <span className="pod-tag odds">{pct(odds.win)}</span>
+        ) : seat && seat.bet > 0 && hand && !hand.result ? (
+          <span className="pod-tag bet" aria-label={`${chips(seat.bet)} in this round`}>
+            {chips(seat.bet)}
+          </span>
         ) : player.offline ? (
           <span className="pod-tag offline">Offline</span>
         ) : null}

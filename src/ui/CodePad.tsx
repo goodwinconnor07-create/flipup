@@ -94,7 +94,7 @@ export function CodePad({ state, label }: { state: CodeState; label: string }) {
   const { code, busy, error } = state;
   return (
     <>
-      <div className="join-code" role="status" aria-label={`${label}: ${code.split('').join(' ') || 'empty'}`}>
+      <div className={`join-code${error ? ' err' : ''}${busy ? ' busy' : ''}`} role="status" aria-label={`${label}: ${code.split('').join(' ') || 'empty'}`}>
         {Array.from({ length: CODE_LENGTH }, (_, i) => (
           <span key={`${i}-${code[i] ?? ''}`} className={`join-cell${i === code.length && !busy ? ' next' : ''}${code[i] ? ' filled' : ''}`}>
             {code[i] ?? ''}

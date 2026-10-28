@@ -316,7 +316,8 @@ function GlassesShape({ kind, lens }: { kind: Glasses; lens: string }) {
   return null;
 }
 
-export function MiiFace({ name, mood, size }: { name: string; mood: string | null; size: number }) {
+/** `full` shows the top half of the body too (arms and hands), for the bigger seats; otherwise just the head. */
+export function MiiFace({ name, mood, size, full = false }: { name: string; mood: string | null; size: number; full?: boolean }) {
   const id = useId().replace(/:/g, '');
   const look = miiLook(name);
   const face: Face = FACES[(mood && MOOD_FACE[mood]) || 'normal'];
@@ -345,7 +346,7 @@ export function MiiFace({ name, mood, size }: { name: string; mood: string | nul
   const url = (n: string) => `url(#${n}-${id})`;
 
   return (
-    <svg className={`mii-face${mood ? ` mii-${mood}` : ''}`} width={size} height={size} viewBox="22 -14 196 196" aria-hidden>
+    <svg className={`mii-face${mood ? ` mii-${mood}` : ''}`} width={size} height={full ? Math.round((size * 284) / 212) : size} viewBox={full ? '14 -14 212 284' : '22 -14 196 196'} aria-hidden>
       <defs>
         <radialGradient id={`sk-${id}`} cx="0.4" cy="0.32" r="0.8">
           <stop offset="0" stopColor={mix(look.skin, '#ffffff', 0.4)} />
@@ -399,6 +400,14 @@ export function MiiFace({ name, mood, size }: { name: string; mood: string | nul
 
       <path d="M80 190 C64 196 56 222 56 250 L88 204Z" fill={bare ? url('sk') : url('sh')} />
       <path d="M160 190 C176 196 184 222 184 250 L152 204Z" fill={bare ? url('sk') : url('sh')} />
+      {full && (
+        <>
+          <path d="M80 190 C64 196 56 222 56 250 C56 262 70 264 71 252 C72 232 76 216 88 204Z" fill={bare ? url('sk') : url('sh')} />
+          <path d="M160 190 C176 196 184 222 184 250 C184 262 170 264 169 252 C168 232 164 216 152 204Z" fill={bare ? url('sk') : url('sh')} />
+          <circle cx={63} cy={256} r={11} fill={url('sk')} />
+          <circle cx={177} cy={256} r={11} fill={url('sk')} />
+        </>
+      )}
       <path d={TORSO} fill={url('sh')} />
       <g clipPath={url('tor')}>
         {look.top === 'stripes' && [200, 222].map((y) => <rect key={y} x={60} y={y} width={120} height={10} fill={look.shirt2} />)}

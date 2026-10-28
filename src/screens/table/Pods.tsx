@@ -161,12 +161,12 @@ export function moodOf(game: Game, player: Player, seat: Seat | undefined): Mood
 const MOOD_MARK: Partial<Record<NonNullable<Mood>, string>> = { sweat: '💦', bust: '💫', out: '💫', win: '✨', beat: '💔', shove: '🔥' };
 
 /** A seat's emoji, reacting. Keyed on the hand and the mood, so each new reaction plays from the start. */
-export function MoodFace({ game, player, seat, size }: { game: Game; player: Player; seat: Seat | undefined; size: number }) {
+export function MoodFace({ game, player, seat, size, full }: { game: Game; player: Player; seat: Seat | undefined; size: number; full?: boolean }) {
   const mood = moodOf(game, player, seat);
   const mii = useApp((s) => s.miiFaces);
   return (
     <span key={`${game.hand?.number ?? 0}:${mood}`} className={`mood${mood ? ` mood-${mood}` : ''}`}>
-      {mii ? <MiiFace name={player.name} mood={mood} size={size} /> : <Avatar emoji={player.emoji} size={size} />}
+      {mii ? <MiiFace name={player.name} mood={mood} size={size} full={full} /> : <Avatar emoji={player.emoji} size={size} />}
       {mood && MOOD_MARK[mood] && (
         <span className={`mood-mark mark-${mood}`} aria-hidden>
           {MOOD_MARK[mood]}
@@ -221,11 +221,20 @@ export function Pod({
   // The seats at each end of the row keep their bubble from hanging off the screen.
   const desk = useDesktop();
   const edge = n > 1 && !self && !desk ? (slot === 0 ? ' edge-l' : slot === n - 1 ? ' edge-r' : '') : '';
+  // The Mii faces test on a phone: a bigger character holding its cards, with the name as a tag on its chest.
+  const mii = useApp((s) => s.miiFaces) && !desk && !self;
+  const cards = !self && seat && (!seat.folded || seat.cards.length > 0) && (
+    <span className={`pod-cards${turn ? ' shimmer' : ''}`}>
+      {seat.cards.length
+        ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)
+        : Array.from({ length: variantOf(game) === 'pineapple' && threeCardsLeft(game) ? 3 : 2 }, (_, i) => <PlayingCard key={i} back size="sm" />)}
+    </span>
+  );
 
   return (
     <button
       type="button"
-      className={`pod${out ? ' out' : ''}${player.offline ? ' offline' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}${self ? ' self' : ''}${edge}`}
+      className={`pod${out ? ' out' : ''}${player.offline ? ' offline' : ''}${turn ? ' turn' : ''}${won ? ' won' : ''}${away ? ' away' : ''}${self ? ' self' : ''}${edge}${mii ? ' mii' : ''}`}
       style={{ ['--slot' as string]: slot, ['--n' as string]: n, ['--ax' as string]: `${ring.x}%`, ['--ay' as string]: `${ring.y}%` }}
       tabIndex={away ? -1 : undefined}
       aria-hidden={away || undefined}
@@ -238,7 +247,8 @@ export function Pod({
       }}
     >
       <span className="pod-pic">
-        <MoodFace game={game} player={player} seat={seat} size={50} />
+        <MoodFace game={game} player={player} seat={seat} size={mii ? 72 : 50} full={mii} />
+        {mii && cards && <span className="pod-hold">{cards}</span>}
         {player.ai && <span className="ai-chip" aria-hidden>AI</span>}
         {player.legend && <span className="ai-chip legend-chip" aria-hidden>★</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
@@ -257,13 +267,7 @@ export function Pod({
       <span className="pod-name">{player.name}</span>
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
       <span className="pod-under">
-        {!self && seat && (!seat.folded || seat.cards.length > 0) && (
-          <span className={`pod-cards${turn ? ' shimmer' : ''}`}>
-            {seat.cards.length
-              ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)
-              : Array.from({ length: variantOf(game) === 'pineapple' && threeCardsLeft(game) ? 3 : 2 }, (_, i) => <PlayingCard key={i} back size="sm" />)}
-          </span>
-        )}
+        {!mii && cards}
         {won > 0 ? (
           <span className="pod-tag win">+{chips(won)}</span>
         ) : odds ? (

@@ -2910,3 +2910,48 @@ html.calm .mood-mark {
     animation: none;
   }
 }
+
+/* The Mii faces test's bigger seats (phone only; .pod.mii in table/Pods.tsx): the character takes the room the cards
+   had, holds its cards at its side, and wears its name as a tag on its chest. The row keeps its height. */
+
+.pod.mii .pod-pic {
+  width: 76px;
+  height: 92px;
+  align-items: end;
+}
+
+.pod.mii .mood {
+  transform-origin: 50% 100%;
+}
+
+.pod.mii .pod-name {
+  margin-top: -20px;
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+}
+
+.pod.mii .pod-stack {
+  position: relative;
+  z-index: 3;
+  text-shadow: 0 0 4px var(--bg), 0 0 2px var(--bg);
+}
+
+.pod.mii .pod-under {
+  min-height: 0;
+}
+
+/* In the left hand, away from the position badge on the right. */
+.pod-hold {
+  position: absolute;
+  left: -8px;
+  bottom: 24px;
+  z-index: 2;
+  transform: rotate(-10deg) scale(0.7);
+  transform-origin: 0 100%;
+}
+
+.pod-hold .pod-cards {
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.3));
+}

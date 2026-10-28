@@ -160,10 +160,8 @@ export function Home() {
                     <b>Join a game</b>
                     <small>Got a code from a friend?</small>
                   </span>
-                  <span className="join-bar-boxes" aria-hidden>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <i key={i} />
-                    ))}
+                  <span className="join-bar-go" aria-hidden>
+                    <QrIcon width={26} height={26} />
                   </span>
                 </button>
                 <h3 className="section-head">Quick start</h3>

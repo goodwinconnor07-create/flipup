@@ -25,6 +25,8 @@ const ART: Record<Variant, GameArt> = {
   pittsburgh: { card: ['#32465c', '#0e151d'], props: ['🌉', '🏭', '🌊'], mood: 'Steel, rivers and a bridge in the dark.', pitch: 0.94, sting: null },
   dice: { card: ['#c0283f', '#4a0a16'], props: ['🎲', '🎰', '💥'], mood: 'Craps table energy. Everything is one roll from changing.', pitch: 1, sting: 'dice' },
   redriver: { card: ['#d92b2b', '#2a0606'], props: ['🟥', '🌊', '🩸'], mood: 'The river runs red. Keep going until it stops.', pitch: 0.9, sting: 'splash' },
+  crucifix: { card: ['#5a4691', '#1a1230'], props: ['➕', '🕯️', '🌙'], mood: 'Five cards in a cross. Read the arms.', pitch: 0.92, sting: null },
+  circle: { card: ['#1d7fb8', '#0a2a45'], props: ['🕛', '⭕', '🔵'], mood: 'Six cards round a clock. Hours matter.', pitch: 1.05, sting: null },
   imposter: { card: ['#2f3441', '#0a0b10'], props: ['🕵️', '❓', '🔦'], mood: 'Trust nobody. Watch the bets.', pitch: 0.88, sting: 'sting' },
 };
 

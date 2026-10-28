@@ -14,7 +14,7 @@ test('party: host picks games, a friend joins, the table opens for both, and the
 
   // The Party tab has replaced History: Play, Learn, Party.
   await toPartyTab(host);
-  await expect(host.getByRole('tab', { name: 'Learn' })).toHaveCount(0);
+  await expect(host.getByRole('tab', { name: 'Review' })).toHaveCount(0);
   await shot(host, 'party-0-tab');
 
   // Hosting needs a name; the profile screen comes first.

@@ -467,13 +467,6 @@ html[data-theme='dark'] .pcard.dim > * {
   color: var(--ink-3);
 }
 
-.pod-tag.last-raise,
-.pod-tag.last-bet,
-.pod-tag.last-allin {
-  background: var(--blue-bg);
-  color: var(--blue-ink);
-}
-
 .pod-tag.offline {
   background: var(--gold-bg);
   color: var(--gold-ink);
@@ -750,15 +743,6 @@ html[data-theme='dark'] .pcard.dim > * {
   min-height: 44px;
 }
 
-.turn-clock {
-  color: var(--ink-3);
-  font-variant-numeric: tabular-nums;
-}
-
-.turn-clock.low {
-  color: var(--red);
-}
-
 .action-buttons {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(0, 1fr));
@@ -777,28 +761,6 @@ html[data-theme='dark'] .pcard.dim > * {
   color: var(--red-ink);
   text-shadow: none;
   box-shadow: none;
-}
-
-.result-lines {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.result-line {
-  margin: 0;
-  text-align: center;
-  font-size: var(--fs-body);
-  font-weight: 600;
-}
-
-.show-btn {
-  min-height: 48px;
-  font-size: var(--fs-body);
-}
-
-.result-line.you b {
-  color: var(--green);
 }
 
 /* The next hand deals itself when the bar runs out. */
@@ -2685,7 +2647,6 @@ html.calm .pod-cards.shimmer::after {
   display: flex;
   gap: 2px;
 }
-
 
 /* ── Louder reactions and slightly bigger talk ────────────────────────────────────────────────
    Bots fall over when they're knocked out, sweat and tremble over a big bet, jump for a win, and flare up on

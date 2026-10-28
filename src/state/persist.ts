@@ -264,23 +264,6 @@ export function saveLastTable(table: LastTable | null): void {
   write('flipup.last', table);
 }
 
-/** The last game against bots: who sat down and on what terms, for Home's "Play again". */
-export interface LastBots {
-  bots: string[];
-  settings: Settings;
-  at: number;
-}
-
-export function loadLastBots(): LastBots | null {
-  const t = read<LastBots>('flipup.lastbots');
-  const ok = t && Array.isArray(t.bots) && t.bots.length > 0 && t.bots.every((b) => typeof b === 'string') && typeof t.at === 'number' && t.settings;
-  return ok ? { ...t, settings: { ...DEFAULT_SETTINGS, ...t.settings } } : null;
-}
-
-export function saveLastBots(last: LastBots): void {
-  write('flipup.lastbots', last);
-}
-
 // ── Daily streak ────────────────────────────────────────────────────────────
 
 export const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;

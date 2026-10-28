@@ -271,37 +271,6 @@
 
 /* ── Join ────────────────────────────────────────────────────────────────── */
 
-.code-input {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.code-input input {
-  width: 100%;
-  min-height: 84px;
-  border: 0;
-  border-radius: var(--r-lg);
-  background: var(--bg-2);
-  text-align: center;
-  font-size: var(--fs-display-2);
-  font-weight: 700;
-  letter-spacing: 0.3em;
-  text-transform: uppercase;
-  padding-left: 0.3em;
-}
-
-.code-input input:focus {
-  outline: none;
-  background: var(--surface);
-  box-shadow: inset 0 0 0 4px var(--blue);
-}
-
-.join-busy {
-  align-self: center;
-  color: var(--ink-3);
-}
-
 .me-row {
   display: flex;
   align-items: center;
@@ -379,20 +348,6 @@
 
 .link-chip svg {
   flex: none;
-}
-
-.invite-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.invite-actions .btn {
-  flex: 1;
-}
-
-.invite-actions .btn.icon-only {
-  flex: 0 0 64px;
-  padding: 0;
 }
 
 .qr-box {
@@ -638,20 +593,6 @@ button.roster-item:active:not(:disabled) {
 .standing-net {
   font-size: var(--fs-h3);
   font-weight: 700;
-}
-
-.final-hero {
-  gap: 8px;
-  padding: 24px 0 8px;
-}
-
-.final-hero p {
-  margin: 0;
-  font-size: var(--fs-h3);
-}
-
-.final-pic {
-  display: inline-grid;
 }
 
 /* ── Hand rankings ───────────────────────────────────────────────────────── */
@@ -1021,41 +962,6 @@ html[data-theme='dark'] .btn-dark {
 }
 
 /* Letter keys: a 7-across grid, each key a bold coloured tile with a press. */
-.join-keys {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 8px;
-}
-
-.join-key {
-  appearance: none;
-  border: 0;
-  min-height: 56px;
-  padding: 0;
-  border-radius: var(--r-md);
-  color: var(--on-color);
-  font: inherit;
-  font-size: var(--fs-h1);
-  font-weight: 700;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
-  transition: transform 0.08s ease-out, filter 0.08s ease-out;
-}
-
-.join-key:active {
-  transform: scale(0.94);
-  filter: brightness(0.9);
-}
-
-.join-key:disabled {
-  opacity: 0.5;
-}
-
-.join-key-delete {
-  background: var(--bg-3);
-  color: var(--ink);
-  font-size: var(--fs-h2);
-}
 
 .join-status {
   min-height: 28px;
@@ -1667,64 +1573,7 @@ html[data-theme='dark'] .btn-dark {
   text-align: left;
 }
 
-.game-emoji {
-  font-size: var(--fs-h1);
-  line-height: 1;
-}
-
-.game-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.game-tile {
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-  padding: 16px;
-  border: 0;
-  border-radius: var(--r-lg);
-  background: var(--bg-2);
-  color: #fff;
-  font: inherit;
-  text-align: left;
-}
-
 /* Each tile wears its game's colours. */
-.game-tile-art {
-  position: absolute;
-  inset: 0;
-}
-
-.game-tile-art .prop {
-  display: none;
-}
-
-.game-tile > :not(.game-tile-art) {
-  position: relative;
-}
-
-.game-tile.on {
-  box-shadow: inset 0 0 0 2px var(--brand-ink);
-}
-
-.game-tile-emoji {
-  font-size: var(--fs-display-1);
-  line-height: 1.1;
-}
-
-.game-tile b {
-  font-weight: 600;
-}
-
-.game-tile small {
-  color: rgba(255, 255, 255, 0.85);
-  font-size: var(--fs-caption);
-}
 
 .game-more {
   margin-top: 16px;
@@ -2272,4 +2121,30 @@ html[data-theme='dark'] .sheet .code-key-delete {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* Small pieces shared by the hand log and the bot picker. */
+
+.log-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chip-btn {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: var(--bg-2);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.chip-btn.on {
+  background: var(--btn-dark);
+  color: var(--on-contrast);
 }

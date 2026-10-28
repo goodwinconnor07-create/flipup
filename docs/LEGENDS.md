@@ -1,5 +1,7 @@
 # Legends
 
+> **Hidden for launch.** `LEGENDS_ON` in `src/game/legends.ts` is `false`, which removes the Home shelf, the finish screen's next-legend card and `startLegend()`. Everything below is still built. Parts of it also describe the AI twins, Insights, History and the coach, which have since been removed from the app.
+
 Bots in the style of famous poker players, for a ladder of heads-up games. Stages 1 to 3 (the data, the
 fit, the voices and the lab checks; the Play tab group, profile pages and heads-up play; the touches that
 make each one feel like themselves) are built. The ladder that unlocks is stage 4, below.

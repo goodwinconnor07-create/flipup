@@ -25,7 +25,6 @@ import {
   type Variant,
   type TableInfo,
 } from '../game';
-import type { StyleId } from '../game/botStyles';
 import { haptic, reducedMotion } from '../ui/effects';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
@@ -55,7 +54,6 @@ import {
   saveCalm,
   saveAppearance,
   saveGlass,
-  saveLastBots,
   saveMuted,
   saveProfile,
   saveSession,
@@ -402,14 +400,6 @@ function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Gam
   dispatch({ type: 'start' });
 }
 
-/** A heads-up game against one bot, loaded with another style's way of playing. */
-export function startPlaystyle(bot: string, style: StyleId): void {
-  if (state.busy) return;
-  startHeadsUp(bot, (them) => {
-    them.style = style;
-  });
-}
-
 /** A heads-up game against a legend: a bot seat dressed as them. */
 export function startLegend(id: string): void {
   if (!LEGENDS_ON || state.busy) return;
@@ -584,7 +574,6 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   if (mode === 'local') {
     const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, code: null, now: Date.now() });
     if (state.fast) game.fast = true;
-    saveLastBots({ bots: game.players.filter((p) => p.bot).map((p) => p.name), settings, at: Date.now() });
     closeConnection();
     setSession({ mode: 'local', code: null, game });
     resetTo({ name: 'table' });

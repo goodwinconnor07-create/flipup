@@ -33,7 +33,6 @@ export function addHand(hand: PlayedHand): boolean {
   return true;
 }
 
-export const hasHand = (key: string) => loadHistory().some((h) => h.key === key);
 
 let captured = new Set<string>();
 

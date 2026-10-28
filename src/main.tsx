@@ -10,7 +10,6 @@ import './styles/global.css';
 import './styles/screens.css';
 import './styles/table.css';
 import './styles/desktop.css';
-import './styles/replay.css';
 import './styles/home.css';
 import './styles/party.css';
 

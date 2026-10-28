@@ -80,10 +80,6 @@
   font-weight: 600;
 }
 
-.playlist-emoji {
-  font-size: 22px;
-}
-
 .playlist-name {
   flex: 1;
   min-width: 0;

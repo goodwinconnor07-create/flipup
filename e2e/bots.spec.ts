@@ -401,33 +401,6 @@ test('quick messages, table theme, sound toggle and the pre-action buttons', asy
   }
 });
 
-// History is off Home for now, so nothing opens this; it comes back with it.
-test.skip('ending a game adds to History', async ({ page }) => {
-  watchErrors(page);
-  await page.goto('/');
-  await page.getByRole('button', { name: 'Play with Bots' }).click();
-  await setName(page, 'Sam');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Sit down' }).click();
-  await page.getByRole('button', { name: 'Deal', exact: true }).click();
-  await expect(page.locator('.my-cards .pcard:not(.pcard-slot)')).toHaveCount(2);
-  await page.getByRole('button', { name: 'Menu' }).click();
-  await page.getByRole('button', { name: 'End the game' }).click();
-  await page.getByRole('dialog', { name: 'End the game for everyone?' }).getByRole('button', { name: 'End game' }).click();
-  await expect(page.getByText(/wins?!$/)).toBeVisible({ timeout: 10_000 });
-  // The finish screen is one long page: the big number, then standings further down.
-  await expect(page.locator('.fin-big')).toBeVisible();
-  await page.getByRole('heading', { name: 'Final standings' }).scrollIntoViewIfNeeded();
-  await expect(page.locator('.standing')).toHaveCount(await page.locator('.standing').count());
-  await shot(page, '17-finish-screen');
-  await page.getByRole('button', { name: 'Done' }).click();
-  // History counts tables by where you finished, not chips.
-  await page.getByRole('tab', { name: 'History' }).click();
-  await expect(page.getByText('Recent tables')).toBeVisible();
-  await expect(page.getByText(/\d(st|nd|rd|th) of \d/)).toBeVisible();
-  await shot(page, '14-home-totals');
-});
-
 test('with more than four others the row slides, keeps whoever is acting in view, and drops folded players', async ({ page }) => {
   watchErrors(page);
   await page.goto('/');
@@ -611,35 +584,6 @@ test('dark mode: an appearance choice in the menu that changes the whole app and
   expect(await page.evaluate(() => getComputedStyle(document.body).color)).toBe('rgb(255, 255, 255)');
   await page.reload();
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
-});
-
-// History is off Home for now, so nothing opens this; it comes back with it.
-test.skip('home: games first, results from finished tables in History', async ({ page }) => {
-  watchErrors(page);
-  await page.addInitScript(() => {
-    if (localStorage.getItem('flipup.stats')) return;
-    localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Connor', emoji: '😎' }));
-    const at = Date.now() - 3_600_000;
-    localStorage.setItem(
-      'flipup.stats',
-      JSON.stringify({ net: 200, tables: 2, hands: 40, counted: [], games: [{ at, net: 300, hands: 20, players: 4, place: 1, variant: 'ghost' }, { at, net: -100, hands: 20, players: 5, place: 3 }] }),
-    );
-  });
-  await page.goto('/');
-  await expect(page.getByRole('heading', { name: 'Play' })).toBeVisible();
-  await expect(page.getByText('Hi Connor.')).toBeVisible();
-  // Chips reset every game, so Home never counts them.
-  await expect(page.getByText(/chips/)).toHaveCount(0);
-  // Every game has a card, and there are no learning tabs any more.
-  await expect(page.getByRole('button', { name: /Ghost Hold'em/ })).toBeVisible();
-  await expect(page.getByRole('tab', { name: 'Learn' })).toHaveCount(0);
-  await expect(page.getByRole('tab', { name: 'Review' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
-  await page.getByRole('tab', { name: 'History' }).click();
-  await expect(page.getByRole('heading', { name: 'History' })).toBeVisible();
-  await expect(page.getByText('1st of 4')).toBeVisible();
-  await expect(page.getByText('Recent tables')).toBeVisible();
-  await expect(page.getByText("Ghost Hold'em").first()).toBeVisible();
 });
 
 test('a table with players out of view never scrolls sideways', async ({ page }) => {

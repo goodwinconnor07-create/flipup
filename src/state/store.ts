@@ -89,6 +89,8 @@ export type Sheet =
   | { name: 'streak' }
   /** A game's card on Home: how it plays, and who to play it with. */
   | { name: 'game'; variant: Variant }
+  /** The games that aren't on Home's shelf. */
+  | { name: 'more' }
   /** Type the table code or scan its QR code. */
   | { name: 'join' }
   /** How a game plays, from the badge on the table. */

@@ -1720,3 +1720,33 @@ html[data-theme='dark'] .tab-capsule {
   grid-row: 1 / 3;
   margin-bottom: 0;
 }
+
+/* "More game modes": the last card on the shelf, a grid of the games tucked inside it. */
+.game-more-card {
+  background: linear-gradient(160deg, #6a4cff 0%, #3a1fa8 55%, #1d1250 100%);
+}
+
+.game-more-scene {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.game-more-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  gap: 8px;
+  transform: rotate(-4deg);
+}
+
+.game-more-grid i {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  font-size: 28px;
+  font-style: normal;
+  line-height: 1;
+  box-shadow: 0 6px 14px -6px rgba(0, 0, 0, 0.6);
+}

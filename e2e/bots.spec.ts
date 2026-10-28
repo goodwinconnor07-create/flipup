@@ -70,7 +70,7 @@ test('raise with the bet sizer, then fold the next hand', async ({ page }) => {
   await shot(page, '07-raise');
   const amount = Number((await page.locator('.raise-amount').textContent())!.replace(/,/g, ''));
   expect(amount).toBeGreaterThan(10);
-  await page.locator('.action-buttons .btn-blue').click();
+  await page.locator('.raise-panel .btn-blue').click();
   await expect(page.locator('.raise-panel')).toBeHidden();
   // Our raise is out in front of us.
   await expect(page.locator('.my-box-note')).toContainText(String(amount));
@@ -292,7 +292,7 @@ test('the raise panel fits on a short screen, and the hand log records the hand'
   for (const el of [
     panel.getByRole('button', { name: 'Min' }),
     panel.getByRole('button', { name: 'All in' }),
-    page.locator('.action-buttons .btn-blue'),
+    panel.locator('.btn-blue'),
     panel.getByRole('button', { name: 'Back' }),
   ]) {
     await expect(el).toBeInViewport({ ratio: 1 });
@@ -420,8 +420,7 @@ test('ending a game adds to the Insights totals', async ({ page }) => {
   await expect(page.locator('.standing')).toHaveCount(await page.locator('.standing').count());
   await shot(page, '17-finish-screen');
   await page.getByRole('button', { name: 'Done' }).click();
-  // Insights lives under Review, and counts tables by where you finished, not chips.
-  await page.getByRole('tab', { name: 'Review' }).click();
+  // Insights lives on the Play tab, and counts tables by where you finished, not chips.
   await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText(/table played/)).toBeVisible();
   await expect(page.getByText(/^\d(st|nd|rd|th) of \d$/)).toBeVisible();
@@ -486,7 +485,7 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
         // A short stack has no "All in" preset: the biggest one left is the whole stack.
         const allIn = page.locator('.raise-panel .preset[aria-label="All in"]');
         await (((await allIn.count()) > 0 ? allIn : page.locator('.raise-panel .preset').last()).first().click());
-        await page.locator('.action-buttons .btn-blue').click();
+        await page.locator('.raise-panel .btn-blue').click();
       } else await page.locator('.action-buttons .btn-green').click();
     } else if (await page.getByRole('button', { name: 'Next hand' }).isVisible())
       await page.getByRole('button', { name: 'Next hand' }).click();
@@ -631,7 +630,6 @@ test('home: three tabs, results from finished tables in Review, training rows', 
   await expect(page.getByText(/chips/)).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Play with Friends' })).toBeVisible();
   await expect(page.getByRole('tab', { name: 'Learn' })).toHaveCount(0);
-  await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Insights/ }).click();
   await expect(page.getByText('tables played, 40 hands')).toBeVisible();
   await expect(page.getByText('1st of 4')).toBeVisible();
@@ -691,7 +689,6 @@ test('reviewing a hand shows what the coach is doing, with the time so far and t
   await page.getByRole('button', { name: 'Next hand' }).waitFor({ timeout: 30_000 });
   await page.getByRole('button', { name: 'Menu' }).click();
   await page.getByRole('button', { name: 'Home' }).click();
-  await page.getByRole('tab', { name: 'Review' }).click();
   await page.getByRole('button', { name: /Review hands/ }).click();
   await page.getByRole('button', { name: /Hand #1/ }).click();
   const activity = page.getByRole('status', { name: /Reviewing hand #1/ });

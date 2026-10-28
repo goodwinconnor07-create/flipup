@@ -1,0 +1,302 @@
+/* Party tournaments: the Party tab, the playlist builder and the leaderboard. Tokens only. */
+
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 8px 12px;
+  color: var(--blue);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.friend-code {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+
+.friend-code-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.friend-code-value {
+  font-size: 24px;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+}
+
+.friend-code .btn {
+  width: auto;
+  flex: none;
+  white-space: nowrap;
+}
+
+.friend-row .link-btn {
+  flex: none;
+  color: var(--red);
+  font-weight: 500;
+}
+
+/* Playlist builder */
+.party-setup {
+  gap: 16px;
+}
+
+.playlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  overflow: hidden;
+}
+
+.playlist-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  min-height: 48px;
+}
+
+.playlist-row + .playlist-row {
+  border-top: 0.5px solid var(--line);
+}
+
+.playlist-n {
+  width: 20px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.playlist-emoji {
+  font-size: 22px;
+}
+
+.playlist-name {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.playlist-x {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--bg-3);
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.playlist-x:disabled {
+  opacity: 0.35;
+}
+
+.addgames {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.addgame {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--fs-small);
+  text-align: left;
+  cursor: pointer;
+}
+
+.addgame span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+
+.addgame svg {
+  color: var(--blue);
+}
+
+/* The party screen */
+.party-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.game-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.game-head-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 32px;
+}
+
+.podium-head {
+  text-align: center;
+}
+
+.podium-trophy {
+  font-size: 56px;
+}
+
+.playlist-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pl-chip {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg-2);
+  font-size: 18px;
+  opacity: 0.5;
+}
+
+.pl-chip.done {
+  opacity: 1;
+  background: var(--green-bg);
+}
+
+.pl-chip.now {
+  opacity: 1;
+  background: var(--blue-bg);
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+
+/* The leaderboard: rows are placed by rank, so they slide when the ranking changes. */
+.board {
+  position: relative;
+}
+
+.board-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: var(--bg-2);
+  transition: transform 0.7s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.board-row.me {
+  box-shadow: inset 0 0 0 2px var(--blue);
+}
+
+.board-row.first .board-rank {
+  color: var(--gold-lo);
+}
+
+.board-row.out {
+  opacity: 0.55;
+}
+
+.board-rank {
+  width: 20px;
+  text-align: center;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.board-name {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-name small {
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.board-name-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.board-move {
+  font-size: var(--fs-small);
+  font-weight: 700;
+}
+
+.board-move.up {
+  color: var(--green);
+}
+
+.board-move.down {
+  color: var(--red);
+}
+
+.board-pts {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  min-width: 36px;
+}
+
+.board-pts b {
+  font-size: 20px;
+}
+
+.board-pts small {
+  color: var(--green);
+  font-weight: 600;
+}
+
+.board-add {
+  flex: none;
+  border: 0;
+  border-radius: var(--r-pill);
+  padding: 4px 12px;
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-row {
+    transition: none;
+  }
+}

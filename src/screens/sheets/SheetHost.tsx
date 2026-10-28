@@ -16,6 +16,7 @@ import {
   toast,
   toggleCalm,
   toggleFast,
+  toggleCam3d,
   toggleTalk,
   setAppearance,
   toggleGlass,
@@ -60,6 +61,7 @@ import { LogSheet } from './LogSheet';
 import { TwinSheet } from './TwinSheet';
 import { ShareTwinSheet } from './ShareTwinSheet';
 import { AddTwinSheet } from './AddTwinSheet';
+import { AddPalSheet, JoinPartySheet } from './CodeSheets';
 import { openFriendReport, openTwinReport } from '../train/TwinReport';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
@@ -94,6 +96,10 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <ShareTwinSheet />;
     case 'addTwin':
       return <AddTwinSheet />;
+    case 'addPal':
+      return <AddPalSheet />;
+    case 'joinParty':
+      return <JoinPartySheet />;
     case 'confirm':
       return <ConfirmSheet sheet={sheet} />;
   }
@@ -345,6 +351,7 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
   const calm = useApp((s) => s.calm);
   const talk = useApp((s) => s.talk);
   const fast = useApp((s) => s.fast);
+  const cam3d = useApp((s) => s.cam3d);
   const glass = useApp((s) => s.glass);
   return {
     switches: [
@@ -352,6 +359,7 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
       { label: 'Animations', Icon: BoltIcon, color: 'var(--gold)', on: !calm, onChange: toggleCalm },
       { label: 'Bot talk', Icon: ChatIcon, color: 'var(--green)', on: talk, onChange: toggleTalk },
       { label: 'Fast bot games', Icon: ClockIcon, color: 'var(--gold)', on: fast, onChange: toggleFast },
+      { label: '3D table (beta)', Icon: PaletteIcon, color: 'var(--blue)', on: cam3d, onChange: toggleCam3d },
       { label: 'Transparency', Icon: GlassIcon, color: 'var(--blue)', on: glass, onChange: toggleGlass },
     ],
     links: [

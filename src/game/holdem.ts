@@ -38,7 +38,7 @@ export const TIMING = {
   greeting: 700,
   /** Someone joined or came back: give the table a beat before dealing. */
   resume: 2000,
-  /** One player has all the chips: this long for the others to rebuy before the game ends. */
+  /** One player has all the chips on a table where rebuys are allowed: this long for the others to rebuy before the game ends. */
   rebuyWindow: 20000,
   /** After the last bet of a street is matched, a beat before the next card so the move can be seen. */
   streetPause: 1100,
@@ -49,9 +49,12 @@ export const TIMING = {
   fastRunout: 600,
   /** The pause before the next deal is this share of the usual when every person has folded. */
   fastAfter: 0.45,
-  /** Without rebuys: how long the deciding hand stays on screen before the winner's page. */
-  endPause: 7000,
+  /** A game that ends at once (see endsAtOnce): how long the deciding hand stays on screen before the winner's page. */
+  endPause: 3000,
 };
+
+/** Games that end as soon as one player has all the chips: no rebuys, a legend, or an online table. Other tables (bots-only on one phone, rebuys on) wait the rebuy window. */
+export const endsAtOnce = (game: Game): boolean => !game.settings.rebuys || !!game.legendGame || !!game.code;
 
 /** How long a new game waits before its first greeting. A heads-up table plays the VS intro first (the clock of a fast table runs at twice the speed, so its intro is twice as long in table time). */
 export const greetWait = (game: Game): number =>
@@ -152,23 +155,24 @@ export function canRaise(hand: Hand, seat: Seat): boolean {
 // ── Starting a hand ─────────────────────────────────────────────────────────
 
 /**
- * Rising blinds: when the clock has run out, both blinds double as the next hand is dealt (never mid-hand).
+ * Rising blinds: when the clock has run out (or the hand count is up, in a party round), both blinds double as the next hand is dealt (never mid-hand).
  * They stop at the host's "stop increasing at" big blind, if one is set (the last rise is cut short to land on it).
  * Returns true if they went up.
  */
 function raiseBlindsIfDue(game: Game, now: number): boolean {
   const minutes = game.settings.blindMinutes ?? 0;
-  if (!minutes) {
-    game.blindsRaiseAt = null;
-    return false;
-  }
+  const every = game.settings.blindHands ?? 0;
+  // By hands (party rounds): after every `every` hands dealt.
+  const byHands = every > 0 && (game.hands ?? 0) > 0 && (game.hands ?? 0) % every === 0;
+  let due = byHands;
+  if (!minutes) game.blindsRaiseAt = null;
   // The clock starts with the first hand.
-  if (game.blindsRaiseAt == null) {
+  else if (game.blindsRaiseAt == null) game.blindsRaiseAt = now + minutes * 60_000;
+  else if (now >= game.blindsRaiseAt) {
     game.blindsRaiseAt = now + minutes * 60_000;
-    return false;
+    due = true;
   }
-  if (now < game.blindsRaiseAt) return false;
-  game.blindsRaiseAt = now + minutes * 60_000;
+  if (!due) return false;
   const { smallBlind, bigBlind, blindCap } = game.settings;
   if (blindCap && bigBlind >= blindCap) return false;
   let nextBig = bigBlind * 2;
@@ -184,18 +188,20 @@ function raiseBlindsIfDue(game: Game, now: number): boolean {
 
 /** Deals a new hand, or leaves the table waiting if there aren't enough players. */
 export function startHand(game: Game, ctx: ActionContext): void {
-  // Bots that ran out of chips leave now (not straight after the hand, so their cards can still be seen).
-  // People stay, and can buy back in if the table allows it.
-  game.players = game.players.filter((p) => !p.leaving && !(p.bot && p.stack === 0));
   game.ready = [];
   game.sweating = undefined;
   game.nextHandAt = null;
   if (!canDeal(game)) {
-    // Nobody rebought in time: the last player with chips wins.
+    // Nobody rebought in time: the last player with chips wins. Busted bots stay on the roster here,
+    // so the finished game still shows (and counts) the one that was knocked out.
+    game.players = game.players.filter((p) => !p.leaving);
     if (game.hand && lastStanding(game)) game.status = 'ended';
     schedule(game);
     return;
   }
+  // Bots that ran out of chips leave now (not straight after the hand, so their cards can still be seen).
+  // People stay, and can buy back in if the table allows it.
+  game.players = game.players.filter((p) => !p.leaving && !(p.bot && p.stack === 0));
   const players = dealable(game);
   const raised = raiseBlindsIfDue(game, ctx.now);
 
@@ -930,9 +936,9 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
     schedule(game);
     return;
   }
-  // Without rebuys the table is over once one player has all the chips (or only bots have any).
+  // Where the game ends at once, it's over once one player has all the chips (or only bots have any).
   // The table stays up for a few seconds first, so the hand that decided it can be seen.
-  if (!game.settings.rebuys && lastStanding(game)) {
+  if (endsAtOnce(game) && lastStanding(game)) {
     game.ready = [];
     game.nextHandAt = ctx.now + TIMING.endPause;
     schedule(game);

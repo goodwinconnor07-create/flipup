@@ -269,6 +269,7 @@ html[data-theme='dark'] .pcard.dim > * {
 }
 
 .felt {
+  position: relative;
   flex: 1;
   display: flex;
   flex-direction: column;
@@ -808,16 +809,38 @@ html[data-theme='dark'] .pcard.dim > * {
 
 /* ── Raising ─────────────────────────────────────────────────────────────── */
 
-/* The sizer. On a phone it sits over the box your cards and chip counter use, so nothing on the table moves;
-   they stay underneath, hidden. */
+.raise-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* The dim layer fades on its own. The glass panel is a sibling, not inside it: blur can't see through
+   a parent that's fading, so the panel would show clear until the fade finished and then pop to blurred. */
+.raise-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(11, 11, 18, 0.18);
+  animation: fade-in 0.15s ease-out;
+}
+
 .raise-panel {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 6px 8px;
-  border-radius: var(--r-lg);
-  background: var(--bg-2);
-  animation: fade-in 0.15s ease-out;
+  gap: 12px;
+  padding: 16px 16px calc(var(--safe-bottom) + 16px);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: var(--surface);
+  box-shadow: 0 -8px 32px -12px rgba(18, 18, 40, 0.35);
+  /* No overshoot: it would lift the panel off the bottom edge for a moment. */
+  animation: sheet-up 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+  will-change: transform;
 }
 
 /* Nothing inside the panel blurs on its own: stacked blurs are slow and shimmer while it slides in. */
@@ -826,153 +849,111 @@ html:not(.no-glass) .raise-panel .icon-btn {
   backdrop-filter: none;
 }
 
-@media not all and (min-width: 960px) and (min-height: 600px) {
-  .me-area.sizing > :not(.raise-panel) {
-    visibility: hidden;
-  }
-
-  .me-area > .raise-panel {
-    position: absolute;
-    top: 12px;
-    left: 16px;
-    right: 16px;
-    bottom: calc(var(--safe-bottom) + 8px);
-  }
+/* The real action row stays in the page, unseen, while the sizer is open, so the table keeps its size. */
+.ghost {
+  visibility: hidden;
 }
 
-/* The top row: the amount, a slider that takes the rest of the width, and the close button. The amount has a
-   fixed width, so the slider doesn't change length as the number gets longer. */
-.raise-top {
+.raise-head {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--fs-body);
 }
 
 .raise-amount {
-  flex: none;
-  min-width: 88px;
-  font-size: var(--fs-title);
+  font-size: var(--fs-display-1);
   font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1;
 }
 
-.raise-close {
-  flex: none;
-  width: 40px;
-  height: 40px;
-  background: var(--surface);
-  box-shadow: none;
+.raise-of {
+  font-size: var(--fs-small);
 }
 
-/* The slider: a thick track that fills blue up to the thumb, and a big white thumb with a soft shadow, like the
-   iPhone's own. The row is tall, so there's plenty to grab; --thumb is how wide the thumb is, and the fill is
-   worked out from it so the blue always ends under the middle of the thumb. */
-.raise-panel {
-  --thumb: 34px;
-}
-
-.raise-slider {
-  --fill: calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--pos, 0));
-  -webkit-appearance: none;
-  appearance: none;
-  flex: 1;
-  min-width: 0;
-  height: 48px;
-  margin: 0;
-  background: transparent;
-  cursor: pointer;
-  touch-action: pan-y;
-}
-
-.raise-slider::-webkit-slider-runnable-track {
-  height: 10px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
-}
-
-.raise-slider::-moz-range-track {
-  height: 10px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(to right, var(--blue) var(--fill), var(--bg-3) var(--fill));
-}
-
-.raise-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: var(--thumb);
-  height: var(--thumb);
-  margin-top: calc((10px - var(--thumb)) / 2);
-  border: 0;
-  border-radius: 50%;
-  background: var(--on-color);
-  box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.12),
-    0 2px 6px rgba(0, 0, 0, 0.35);
-}
-
-.raise-slider::-moz-range-thumb {
-  box-sizing: border-box;
-  width: var(--thumb);
-  height: var(--thumb);
-  border: 0;
-  border-radius: 50%;
-  background: var(--on-color);
-  box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.12),
-    0 2px 6px rgba(0, 0, 0, 0.35);
-}
-
-.raise-slider:active::-webkit-slider-thumb {
-  transform: scale(1.08);
-}
-
-.raise-slider:disabled {
-  opacity: 0.5;
-}
-
-/* The presets take all the height that's left, so they're as big as the box allows. Each has an outline, so the
-   boxes read apart from each other and from the panel. */
 .raise-presets {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
 }
 
 .preset {
-  flex: 1;
-  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   gap: 2px;
+  min-height: 56px;
   padding: 4px;
-  border: 1.5px solid var(--ink-4);
-  border-radius: var(--r-md);
-  background: var(--surface);
+  border: 0;
+  border-radius: var(--r-sm);
+  background: var(--bg-2);
   white-space: nowrap;
 }
 
 .preset b {
-  font-size: var(--fs-h3);
+  font-size: var(--fs-small);
   font-weight: 700;
 }
 
 .preset small {
-  font-size: var(--fs-small);
+  font-size: var(--fs-caption);
   font-weight: 600;
   color: var(--ink-3);
 }
 
 .preset.on {
   background: var(--blue);
-  border-color: var(--blue);
   color: var(--on-color);
 }
 
 .preset.on small {
   color: var(--on-color);
+}
+
+.raise-fine {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.raise-fine .icon-btn {
+  width: 44px;
+  height: 44px;
+  background: var(--bg-2);
+  box-shadow: none;
+}
+
+.raise-fine .icon-btn:disabled {
+  opacity: 0.35;
+}
+
+.raise-slider {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  margin: 0;
+  accent-color: var(--blue);
+}
+
+.raise-actions {
+  grid-template-columns: 1fr 1fr 1.4fr;
+}
+
+.raise-head {
+  position: relative;
+}
+
+.raise-close {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  translate: 0 -50%;
+  width: 36px;
+  height: 36px;
+  background: var(--bg-2);
+  box-shadow: none;
 }
 
 /* ── You ─────────────────────────────────────────────────────────────────── */
@@ -2445,3 +2426,277 @@ html.calm .pod-cards.shimmer::after {
     animation: vs-out 0.3s 2.3s ease-in both;
   }
 }
+
+/* ── Reacting faces (MoodFace in table/Pods.tsx) ──────────────────────────
+   A seat's emoji reacts to the hand: a bounce for a win, a shake for a beaten all-in, a pop for a shove, a sink
+   for a fold, a droop when knocked out, and a sweat drop while it thinks over a big bet. */
+
+.mood {
+  position: relative;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 90%;
+}
+
+.mood-win {
+  animation: mood-bounce 0.7s cubic-bezier(0.3, 0.7, 0.4, 1) 3;
+}
+
+.mood-beat {
+  animation: mood-shake 0.6s ease 1;
+}
+
+.mood-shove {
+  animation: mood-pop 0.5s cubic-bezier(0.3, 1.6, 0.5, 1) 1;
+}
+
+.mood-fold {
+  animation: mood-sink 0.45s ease forwards;
+}
+
+.mood-bust,
+.mood-out {
+  filter: grayscale(0.7);
+  transform: rotate(-14deg) translateY(4px) scale(0.92);
+  transition:
+    transform 0.5s ease,
+    filter 0.5s ease;
+}
+
+.sweat {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  font-size: 16px;
+  animation: mood-drip 1.4s ease-in infinite;
+}
+
+@keyframes mood-bounce {
+  0%,
+  100% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(-10px) scale(1.08, 0.94);
+  }
+  60% {
+    transform: translateY(0) scale(0.96, 1.05);
+  }
+}
+
+@keyframes mood-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  20% {
+    transform: translateX(-5px) rotate(-6deg);
+  }
+  40% {
+    transform: translateX(5px) rotate(6deg);
+  }
+  60% {
+    transform: translateX(-3px) rotate(-3deg);
+  }
+  80% {
+    transform: translateX(2px) rotate(2deg);
+  }
+}
+
+@keyframes mood-pop {
+  0% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.22);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes mood-sink {
+  to {
+    transform: translateY(3px) scale(0.94);
+    opacity: 0.85;
+  }
+}
+
+@keyframes mood-drip {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  25% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(14px) scale(0.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mood-win,
+  .mood-beat,
+  .mood-shove,
+  .mood-fold,
+  .sweat {
+    animation: none;
+  }
+}
+
+/* ── Table cam (table/TableCam.tsx) ──────────────────────────────────────
+   On a phone, everyone else sits round a 3D table in place of the row of seats. The canvas fills the section;
+   each name floats over its player's head (moved every frame from code) with their bubbles above it. */
+
+.table-cam {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  background: var(--cam-bg);
+  box-shadow:
+    0 0 0 1px var(--cam-edge),
+    var(--cam-shadow);
+}
+
+.cam-view {
+  position: relative;
+  height: var(--cam-h);
+}
+
+.cam-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Darker corners, like a lens. */
+.cam-vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+  pointer-events: none;
+}
+
+/* The player on camera, in a strip under the picture: what they say or do, big and easy to read, then who they are. */
+.cam-caption {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: 64px;
+  padding: 8px 16px 10px;
+  border: 0;
+  border-top: 1px solid var(--cam-edge);
+  background: var(--cam-bg);
+  color: var(--on-color);
+  font: inherit;
+  text-align: left;
+}
+
+/* With the cam up, the felt below is just a strip for the board and the pot: the players are in the picture. */
+.felt:has(.table-cam) .table-oval {
+  flex: none;
+  min-height: 0;
+  max-height: none;
+  padding: 6px;
+  border-radius: var(--r-xl);
+}
+
+.felt:has(.table-cam) .table-felt {
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-radius: var(--r-lg);
+}
+
+.felt:has(.table-cam) .table-foot:empty {
+  display: none;
+}
+
+.felt:has(.table-cam) .table-oval .pcard-lg {
+  --w: min(48px, calc((100vw - 32px - 24px - 30px) / 5));
+}
+
+/* Talk and moves as plain text: the bubble parts of the table's bubbles are switched off here. */
+.cam-line {
+  display: flex;
+  align-items: center;
+  min-height: 24px;
+}
+
+.cam-line .thread,
+.cam-line .bubble {
+  position: static;
+  translate: none;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--on-color);
+  font-size: var(--fs-h3);
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.cam-line .thread {
+  align-items: flex-start;
+}
+
+.cam-line .bubble::before,
+.cam-line .bubble::after {
+  display: none;
+}
+
+.cam-line .bubble-typing i {
+  background: var(--on-color);
+}
+
+.cam-who {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-small);
+}
+
+.cam-who .pos-chips {
+  position: static;
+}
+
+.cam-star {
+  color: var(--gold);
+}
+
+.cam-ai {
+  padding: 0 4px;
+  border-radius: var(--r-pill);
+  background: var(--indigo);
+  font-size: var(--fs-nano);
+}
+
+.cam-chips {
+  opacity: 0.85;
+}
+
+.cam-tag {
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+.cam-tag.win {
+  color: var(--green-hi);
+  opacity: 1;
+}
+
+.cam-cards {
+  display: flex;
+  gap: 2px;
+}
+

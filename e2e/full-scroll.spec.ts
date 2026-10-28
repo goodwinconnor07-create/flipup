@@ -27,7 +27,7 @@ test.skip('full Scroll questions play in sequence and save offline snapshots', a
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('flipup.quiz')!).hands)).toBe(1);
   expect(await page.evaluate(()=>JSON.parse(localStorage.getItem('flipup.quizrecent')!)[0].id)).toBe('h-protocol-test');
   await page.reload();
-  await page.getByRole('tab',{name:'Review'}).click();
+  await page.getByRole('tab',{name:'Learn'}).click();
   await page.getByRole('button',{name:/Study bank/}).click();
   await page.route('**/api/gto/scroll/hands/h-*',r=>r.abort());
   await page.getByRole('button',{name:'Play again'}).first().click();

@@ -47,8 +47,10 @@ import {
   loadGlass,
   loadMuted,
   loadFast,
+  loadCam3d,
   loadTalk,
   saveFast,
+  saveCam3d,
   saveTalk,
   loadProfile,
   loadSession,
@@ -97,7 +99,11 @@ export type Route =
   /** A legend's profile: how they play, and a game against them. */
   | { name: 'legend'; id: string }
   /** Goals, the legends ladder, badges and records. */
-  | { name: 'progress' };
+  | { name: 'progress' }
+  /** Set up a party tournament: pick the games and the pace. */
+  | { name: 'partySetup' }
+  /** The party this phone is in: lobby, leaderboard and the way to the table. */
+  | { name: 'party' };
 
 export type TrainSection = 'review' | 'scroll' | 'insights' | 'library' | 'odds' | 'stats' | 'custom';
 
@@ -123,6 +129,10 @@ export type Sheet =
   | { name: 'shareTwin' }
   /** Type a friend's twin code. */
   | { name: 'addTwin' }
+  /** Type a friend code to add them to your friends. */
+  | { name: 'addPal' }
+  /** Type a party code to join it. */
+  | { name: 'joinParty' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -159,6 +169,8 @@ export interface AppState {
   talk: boolean;
   /** Bot tables on this phone run on a faster clock. */
   fast: boolean;
+  /** Show the other players in the 3D table cam instead of the row of seats. */
+  cam3d: boolean;
   /** Animations switched off. */
   calm: boolean;
   /** What the player picked: light, dark or the same as the phone. */
@@ -204,6 +216,7 @@ let state: AppState = {
   muted: loadMuted(),
   talk: loadTalk(),
   fast: loadFast(),
+  cam3d: loadCam3d(),
   calm: loadCalm(),
   appearance: loadAppearance(),
   dark: false,
@@ -660,6 +673,12 @@ export function toggleFast(): void {
   set({ fast });
 }
 
+export function toggleCam3d(): void {
+  const cam3d = !state.cam3d;
+  saveCam3d(cam3d);
+  set({ cam3d });
+}
+
 export function toggleTalk(): void {
   const talk = !state.talk;
   saveTalk(talk);
@@ -718,12 +737,14 @@ function recordFinished(): void {
   const stats = loadStats();
   if (stats.counted.includes(game.id)) return;
   const place = 1 + game.players.filter((p) => p.stack > me.stack).length;
+  // Only a finished legend game counts as a legend result: one left half way, while ahead, is not a win.
+  const legend = game.legendGame && game.status === 'ended' ? game.legendGame : null;
   saveStats({
     net: stats.net + (me.stack - me.bought),
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}), ...(game.legendGame ? { legend: game.legendGame } : {}) }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, ...(game.twinGame ? { twin: true } : {}), ...(game.friendTwin ? { friend: game.friendTwin } : {}), ...(legend ? { legend } : {}) }],
   });
   if (game.twinGame) finishTwinGame(game.id, place);
 }

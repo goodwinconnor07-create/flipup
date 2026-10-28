@@ -61,6 +61,14 @@ it('does not open anything for a loss, but keeps the record', () => {
   expect(legendOpen(loadProgress(), 'hellmuth')).toBe(false);
 });
 
+it('does not announce a legend read from old table history as a new badge', () => {
+  // A saved game against Rampage from before the ladder: no progress is saved yet, so it's read from the history.
+  storage.set('flipup.stats', JSON.stringify({ net: 0, tables: 1, hands: 8, counted: ['old'], games: [{ at: 1, net: 500, hands: 8, players: 2, place: 1, legend: 'rampage' }] }));
+  expect(loadProgress().beaten.rampage).toBeDefined();
+  const report = settleTable(table('g4', 'brunson', false), 'dev', []);
+  expect(report?.newBadges).not.toContain('beat-rampage');
+});
+
 it('has a badge for every legend and no two with the same id', () => {
   for (const l of LEGENDS) expect(BADGES.some((b) => b.id === `beat-${l.id}`)).toBe(true);
   expect(new Set(BADGES.map((b) => b.id)).size).toBe(BADGES.length);

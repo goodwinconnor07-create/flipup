@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { bestHand, cardName, equity, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
-import { dispatch, openSheet, useApp } from '../state/store';
+import { closeTable, dispatch, navigate, openSheet, useApp } from '../state/store';
 import { toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
@@ -8,13 +8,16 @@ import { MenuIcon } from '../ui/Icons';
 import { playSound } from '../ui/sound';
 import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
+import { PartyPanel } from './Party';
+import { forgetParty } from '../state/party';
 import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
 import { Lobby } from './Lobby';
 import { useWakeLock } from '../ui/useWakeLock';
-import { ActionArea, RaiseSizer, type PreAction } from './table/Actions';
+import { ActionArea, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
+import { TableCam } from './table/TableCam';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { RulesSheet } from './GamePicker';
 
@@ -73,7 +76,21 @@ export function Table() {
         ) : (
           <Felt game={game} />
         ))}
-      {game.status === 'ended' && <Final game={game} />}
+      {game.status === 'ended' &&
+        (game.party ? (
+          <div className="screen-body">
+            <PartyPanel
+              code={game.party.code}
+              embedded
+              onGone={() => {
+                forgetParty();
+                closeTable();
+              }}
+            />
+          </div>
+        ) : (
+          <Final game={game} />
+        ))}
     </div>
   );
 }
@@ -143,7 +160,12 @@ function TableBar({ game }: { game: Game | null }) {
           </>
         )}
       </div>
-      {online && game?.code && (
+      {game?.party && (
+        <button type="button" className="code-chip party-pill press" aria-label="Party standings" onClick={() => navigate({ name: 'party' })}>
+          {variantInfo(game.settings.variant).emoji} {game.party.round + 1}/{game.party.total}
+        </button>
+      )}
+      {online && game?.code && !game?.party && (
         <button
           type="button"
           className="code-chip press"
@@ -245,12 +267,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   // They're cleared on each new street, because the situation has changed. Call current is also cleared the
   // moment someone raises, so it never calls more than you saw.
   const [pre, setPre] = useState<PreAction>(null);
-  // The raise amount while the sizer is open. The sizer takes the place of your cards and chip counter.
-  const [raise, setRaise] = useState<number | null>(null);
-  useEffect(() => {
-    if (!myTurn) setRaise(null);
-  }, [myTurn]);
-  const sizing = raise !== null && myTurn && !!hand && !!mySeat;
   const streetKey = hand ? `${hand.number}-${hand.street}` : '';
   useEffect(() => setPre(null), [streetKey]);
   useEffect(() => {
@@ -302,6 +318,15 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       </p>
       <div className="stage">
         {(others.length > 0 || desktop) && (
+          // On a phone everyone else sits in 3D; where that can't be drawn, the row of seats.
+          <TableCam
+            game={game}
+            others={others}
+            meId={me?.id}
+            say={reactions}
+            quiet={quiet}
+            odds={odds ?? undefined}
+            fallback={
           <div
             className={`pods${others.length >= 8 ? ' crowded' : ''}`}
             style={{ ['--tile' as string]: others.length >= 8 ? '192px' : '232px' }}
@@ -353,6 +378,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
             )}
             {podSlots.hidden > 0 && <HiddenPlayers game={game} players={others.filter((p) => podSlots.slots.get(p.id)?.away)} />}
           </div>
+            }
+          />
         )}
 
         {/* Each game has its own table; plain Hold'em uses the player's own felt and rail. */}
@@ -421,11 +448,10 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <Vote game={game} me={me} />
         ) : hand?.discarding && mySeat && !mySeat.folded ? (
           <Discard game={game} seat={mySeat} />
-        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} raise={raise} setRaise={setRaise} />}
-        {sizing && desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
+        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />}
       </div>
 
-      <div className={`me-area${canShow ? ' has-show' : ''}${sizing && !desktop ? ' sizing' : ''}`}>
+      <div className={`me-area${canShow ? ' has-show' : ''}`}>
         <div className="my-cards">
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
@@ -459,7 +485,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           )}
         </div>
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} />
-        {sizing && !desktop && <RaiseSizer game={game} hand={hand!} seat={mySeat!} to={raise!} setTo={setRaise} onCancel={() => setRaise(null)} />}
       </div>
       {rules && <RulesSheet variant={variant} onClose={() => setRules(false)} />}
     </div>

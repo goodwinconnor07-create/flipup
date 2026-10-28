@@ -19,6 +19,8 @@ import { Friends } from './screens/train/Friends';
 import { Scout } from './screens/train/Scout';
 import { Progress } from './screens/train/Progress';
 import { Legend } from './screens/train/Legend';
+import { PartyScreen } from './screens/Party';
+import { PartySetup } from './screens/PartySetup';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
@@ -68,6 +70,12 @@ export function App() {
       break;
     case 'twinReport':
       screen = <TwinReport friend={route.friend} />;
+      break;
+    case 'partySetup':
+      screen = <PartySetup />;
+      break;
+    case 'party':
+      screen = <PartyScreen />;
       break;
     case 'friends':
       screen = <Friends />;

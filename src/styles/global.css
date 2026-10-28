@@ -1310,7 +1310,7 @@ body {
 
 :root {
   --lg-sheen: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.1) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.16) 100%);
-  --lg-blur: blur(30px) saturate(180%) brightness(1.04);
+  --lg-blur: blur(20px) saturate(180%) brightness(1.04);
 }
 
 html[data-theme='dark'] {

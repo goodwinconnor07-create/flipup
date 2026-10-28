@@ -211,6 +211,12 @@ html[data-theme='dark'] .pcard.dim > * {
     height: 40px;
   }
 
+  /* The bar behind them is solid, so there's nothing to blur. */
+  html:not(.no-glass) .table-bar .icon-btn {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
   .table-bar .icon-btn svg {
     width: 20px;
     height: 20px;
@@ -1210,10 +1216,7 @@ html.calm .pod.won .pod-pic {
 .timer-run {
   stroke: var(--gold);
   stroke-width: 5;
-  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.35));
-  transition:
-    stroke-dasharray 0.2s linear,
-    stroke 0.3s ease;
+  transition: stroke 0.3s ease;
 }
 
 .table-timer.mine .timer-run {
@@ -1558,18 +1561,6 @@ html[data-theme='dark'] .hand-pill {
   box-shadow:
     0 0 0 1px var(--card-edge),
     0 0 14px rgba(120, 160, 255, 0.16);
-}
-
-html[data-theme='dark'] .timer-run {
-  filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6));
-}
-
-html[data-theme='dark'] .table-timer.mine .timer-run {
-  filter: drop-shadow(0 0 5px rgba(74, 163, 255, 0.75));
-}
-
-html[data-theme='dark'] .table-timer.low .timer-run {
-  filter: drop-shadow(0 0 5px rgba(244, 63, 94, 0.8));
 }
 
 html[data-theme='dark'] .your-turn {
@@ -2732,7 +2723,7 @@ html.calm .pod-cards.shimmer::after {
   font-size: 22px;
   line-height: 1;
   pointer-events: none;
-  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+  text-shadow: 0 2px 3px rgba(0, 0, 0, 0.35);
 }
 
 .mark-sweat {
@@ -2744,7 +2735,7 @@ html.calm .pod-cards.shimmer::after {
   top: -16px;
   right: 50%;
   translate: 50% 0;
-  animation: mood-dizzy 1.6s linear infinite;
+  animation: mood-dizzy 1.6s linear 4;
 }
 
 .mark-win {

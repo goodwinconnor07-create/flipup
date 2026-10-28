@@ -3,8 +3,12 @@ import { useSyncExternalStore } from 'react';
 /** Computers and tablets in landscape. Phones (and phones on their side) keep the phone layout. Matches desktop.css. */
 const QUERY = '(min-width: 960px) and (min-height: 600px)';
 
+// One query list for the whole app: this is read on every render of every seat.
+let query: MediaQueryList | undefined;
+const desktopQuery = (): MediaQueryList => (query ??= window.matchMedia(QUERY));
+
 function subscribe(onChange: () => void): () => void {
-  const mq = window.matchMedia(QUERY);
+  const mq = desktopQuery();
   mq.addEventListener('change', onChange);
   return () => mq.removeEventListener('change', onChange);
 }
@@ -12,7 +16,7 @@ function subscribe(onChange: () => void): () => void {
 export function useDesktop(): boolean {
   return useSyncExternalStore(
     subscribe,
-    () => window.matchMedia(QUERY).matches,
+    () => desktopQuery().matches,
     () => false,
   );
 }

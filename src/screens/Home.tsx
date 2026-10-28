@@ -55,10 +55,12 @@ export function Home() {
     if (sheet.current) sheet.current.scrollTop = 0;
     setTabState(t);
   };
-  const game = useApp((s) => s.game);
+  // Only these are read from the table, as plain values, so a bot's move at a table you're not looking at doesn't redraw Home.
+  const gameOn = useApp((s) => !!s.game && s.game.status !== 'ended');
+  const gameFaces = useApp((s) => (s.game ? s.game.players.map((p) => p.emoji).join('|') : ''));
   const session = useApp((s) => s.session);
   const profile = useApp((s) => s.profile);
-  const active = session && (session.mode === 'online' || (game && game.status !== 'ended'));
+  const active = session && (session.mode === 'online' || gameOn);
   const named = profile.name.trim().length > 0;
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
@@ -91,7 +93,7 @@ export function Home() {
 
   // The banner only shows when there's one clear next step: your open table, or the online table you left.
   const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
-    ? { title: 'Back to your table', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: game ? game.players.map((p) => p.emoji) : [], tone: 'slate' }
+    ? { title: 'Back to your table', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: gameFaces ? gameFaces.split('|') : [], tone: 'slate' }
     : party
       ? { title: 'Your party', sub: `Code ${party.code}`, cta: 'Open the party', run: () => navigate({ name: 'party' }), faces: [], tone: 'slate' }
       : last

@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
 import { dispatch, useApp } from '../../state/store';
-import { chips } from '../../ui/components';
+import { toTableTime } from '../../state/clock';
+import { chips, useNow } from '../../ui/components';
 import { CloseIcon, MinusIcon, PlusIcon } from '../../ui/Icons';
 
 /** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
@@ -13,7 +14,6 @@ export function ActionArea({
   seat,
   myTurn,
   sending,
-  now,
   pre,
   setPre,
 }: {
@@ -22,13 +22,15 @@ export function ActionArea({
   seat?: Seat;
   myTurn: boolean;
   sending: boolean;
-  now: number;
   pre: PreAction;
   setPre: (p: PreAction) => void;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
   const host = game.hostDeviceId === deviceId;
+  // Only the between-hands countdowns need a clock, and it lives here so the rest of the table isn't redrawn with it.
+  const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
+  const now = toTableTime(useNow(waiting ? 200 : 60_000), game.fast);
 
   if (!me) return <p className="table-note">You're watching this table.</p>;
 

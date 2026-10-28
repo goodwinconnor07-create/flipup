@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { bestHand, boardSize, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
 import { closeTable, dispatch, navigate, openSheet, useApp } from '../state/store';
-import { toTableTime } from '../state/clock';
+import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
 import { MenuIcon } from '../ui/Icons';
@@ -238,9 +238,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const podSlots = usePodSlots(game, others, !desktop, reactions);
   speakerOk.current = podSlots.canShow;
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
-  const timed = !!hand?.deadline || ((!hand || !!hand.result) && !!game.nextHandAt);
-  const real = useNow(timed ? 200 : 60_000);
-  const now = toTableTime(real, game.fast);
   useTableSounds(game, me?.id);
 
   // A buzz when it's your turn, and confetti when you win a pot.
@@ -275,12 +272,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   // For a screen reader: what just happened, and when it's your turn, said once each.
   const lastLine = hand?.log[hand.log.length - 1]?.replace(/\[([2-9TJQKA][shdc])\]/g, (_m, c: string) => cardName(c)) ?? '';
   const announce = myTurn ? `${lastLine} It is your move.` : lastLine;
-
-  // A tick for each of your last five seconds.
-  const secsLeft = myTurn && hand?.deadline ? Math.max(0, Math.ceil((hand.deadline - now) / 1000)) : null;
-  useEffect(() => {
-    if (secsLeft !== null && secsLeft > 0 && secsLeft <= 5) playSound('tick');
-  }, [secsLeft]);
 
   // Pre-actions: tap Check/Fold, Call current or Call any before your turn and it plays itself when it comes round.
   // They're cleared on each new street, because the situation has changed. Call current is also cleared the
@@ -403,7 +394,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
 
         {/* Each game has its own table; plain Hold'em uses the player's own felt and rail. */}
         <div className={`table-oval${themed ? ` themed theme-${variant}` : ` rail-${look.rail}`}`} style={themed ? undefined : { ['--felt' as string]: look.felt }}>
-          <TableTimer game={game} now={now} mine={myTurn} />
+          <TableTimer game={game} mine={myTurn} />
+          <TurnTicks game={game} myTurn={myTurn} />
           <div className="table-felt" data-motif={themed ? variantInfo(variant).emoji : undefined}>
             <div className="table-top">
               {variant !== 'holdem' && (
@@ -471,7 +463,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <Vote game={game} me={me} />
         ) : hand?.discarding && mySeat && !mySeat.folded ? (
           <Discard game={game} seat={mySeat} />
-        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} now={now} pre={pre} setPre={setPre} />}
+        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} pre={pre} setPre={setPre} />}
       </div>
 
       <div className={`me-area${canShow ? ' has-show' : ''}`}>
@@ -582,8 +574,21 @@ function Ghost({ game }: { game: Game }) {
  * The turn timer, wrapped round the table: a bright line along the rail that shrinks back
  * towards the top as time runs out (blue on your turn, gold for anyone else, red at the end).
  */
-function TableTimer({ game, now, mine }: { game: Game; now: number; mine: boolean }) {
+/** A tick for each of your last five seconds. Has its own clock so the rest of the table isn't redrawn with it. */
+function TurnTicks({ game, myTurn }: { game: Game; myTurn: boolean }) {
+  const deadline = game.hand?.deadline;
+  const active = myTurn && !!deadline;
+  const real = useNow(active ? 250 : 60_000);
+  const secsLeft = active ? Math.max(0, Math.ceil((deadline! - toTableTime(real, game.fast)) / 1000)) : null;
+  useEffect(() => {
+    if (secsLeft !== null && secsLeft > 0 && secsLeft <= 5) playSound('tick');
+  }, [secsLeft]);
+  return null;
+}
+
+function TableTimer({ game, mine }: { game: Game; mine: boolean }) {
   const ref = useRef<SVGSVGElement>(null);
+  const run = useRef<SVGPathElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   useEffect(() => {
     const el = ref.current?.parentElement;
@@ -596,11 +601,36 @@ function TableTimer({ game, now, mine }: { game: Game; now: number; mine: boolea
   }, []);
   const hand = game.hand;
   const live = !!hand?.deadline && !hand.result && game.settings.turnSeconds > 0;
+  const deadline = hand?.deadline ?? 0;
   const total = game.settings.turnSeconds * 1000;
-  const left = live ? Math.max(0, Math.min(1, (hand!.deadline! - now) / total)) : 0;
-  const low = live && left * game.settings.turnSeconds <= 5;
-  // A stadium along the middle of the rail, starting at the top middle and running clockwise.
+  const speed = game.fast ? FAST : 1;
+  const [low, setLow] = useState(false);
   const { w, h } = size;
+  const drawn = w > 0 && live;
+
+  // The line drains in one animation that the browser runs, instead of this component redrawing it five times a
+  // second. It starts from however much time is left, so a phone that joins mid-turn shows the right amount.
+  useEffect(() => {
+    setLow(false);
+    if (!drawn) return;
+    const remaining = Math.max(0, deadline - toTableTime(Date.now(), game.fast));
+    const from = Math.max(0, Math.min(1, remaining / total)) * 100;
+    const ms = remaining / speed;
+    const drain = run.current?.animate([{ strokeDasharray: `${from} 100` }, { strokeDasharray: '0 100' }], { duration: ms, easing: 'linear', fill: 'forwards' });
+    // The last five seconds turn red.
+    const lowAt = ms - 5000 / speed;
+    if (lowAt <= 0) {
+      setLow(true);
+      return () => drain?.cancel();
+    }
+    const t = setTimeout(() => setLow(true), lowAt);
+    return () => {
+      clearTimeout(t);
+      drain?.cancel();
+    };
+  }, [drawn, deadline, total, speed, game.fast]);
+
+  // A stadium along the middle of the rail, starting at the top middle and running clockwise.
   const inset = 5.5;
   const r = (h - inset * 2) / 2;
   const x0 = inset;
@@ -614,12 +644,12 @@ function TableTimer({ game, now, mine }: { game: Game; now: number; mine: boolea
       className={`table-timer${live ? ' live' : ''}${mine ? ' mine' : ''}${low ? ' low' : ''}`}
       aria-hidden={!live}
       role={live ? 'timer' : undefined}
-      aria-label={live ? `${Math.ceil(left * game.settings.turnSeconds)} seconds left` : undefined}
+      aria-label={live ? `${game.settings.turnSeconds} seconds a turn` : undefined}
     >
-      {w > 0 && live && (
+      {drawn && (
         <>
           <path d={d} className="timer-track" pathLength={100} />
-          <path d={d} className="timer-run" pathLength={100} strokeDasharray={`${left * 100} 100`} />
+          <path ref={run} d={d} className="timer-run" pathLength={100} strokeDasharray="100 100" />
         </>
       )}
     </svg>

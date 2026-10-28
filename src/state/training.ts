@@ -37,6 +37,8 @@ export const hasHand = (key: string) => loadHistory().some((h) => h.key === key)
 
 let captured = new Set<string>();
 
+let counted = new Set<string>();
+
 /** Saves the hand that just finished at this table, once, if this phone was dealt in. */
 export function captureFinishedHand(game: Game | null, deviceId: string): void {
   const hand = game?.hand;
@@ -45,10 +47,15 @@ export function captureFinishedHand(game: Game | null, deviceId: string): void {
   if (!me) return;
   const seat = hand.seats.find((s) => s.playerId === me.id);
   if (!seat || seat.cards.length < 2) return;
-  markPlayedToday();
+  const key = handKey(game.id, hand.number);
+  // This runs on every update while a result is showing, so the day is only noted once per hand.
+  if (!counted.has(key)) {
+    counted.add(key);
+    if (counted.size > 50) counted = new Set([...counted].slice(-20));
+    markPlayedToday();
+  }
   // The other games deal and score differently, so only plain Hold'em hands can be watched back.
   if ((game.settings.variant ?? 'holdem') !== 'holdem') return;
-  const key = handKey(game.id, hand.number);
   if (captured.has(key)) return;
   const record = handRecord(game, hand, Date.now());
   if (!record) return;

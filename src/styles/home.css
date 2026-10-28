@@ -1394,7 +1394,7 @@ html[data-theme='dark'] .tab-capsule {
 
 @media (prefers-reduced-motion: no-preference) {
   .tab-round {
-    animation: party-wiggle 4s ease-in-out 1.5s infinite;
+    animation: party-wiggle 4s ease-in-out 1.5s 3;
   }
 }
 

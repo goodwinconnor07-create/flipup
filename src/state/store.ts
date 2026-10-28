@@ -355,8 +355,31 @@ export function setProfile(patch: Partial<Profile>): void {
 let conn: Connection | null = null;
 let localTimer: ReturnType<typeof setTimeout> | undefined;
 
+// The table is saved to the phone so a reload picks it back up. Writing the whole game on every move is a lot of
+// work in the middle of play, so it waits a moment and goes in one go, and always before the page is put away.
+let saveTimer: ReturnType<typeof setTimeout> | undefined;
+let unsaved: Session | null | undefined;
+
+function flushSession(): void {
+  clearTimeout(saveTimer);
+  saveTimer = undefined;
+  if (unsaved !== undefined) saveSession(unsaved);
+  unsaved = undefined;
+}
+
+function saveSessionSoon(session: Session | null): void {
+  unsaved = session;
+  if (session === null) return flushSession();
+  saveTimer ??= setTimeout(flushSession, 600);
+}
+
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'hidden' && flushSession());
+  addEventListener('pagehide', flushSession);
+}
+
 function setSession(session: Session | null): void {
-  saveSession(session);
+  saveSessionSoon(session);
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
   captureFinishedHand(state.game, state.deviceId);

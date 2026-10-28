@@ -29,10 +29,13 @@
       { "name": "FRIEND_CARD", "class_name": "FriendCard" },
     ],
   },
+  // Production already recorded v3 without the classes below ever being created, so they are all made in v4.
+  // v2 and v3 are kept (empty) so the tags match what Cloudflare has.
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["TableRoom"] },
-    { "tag": "v2", "new_sqlite_classes": ["TwinShare"] },
-    { "tag": "v3", "new_sqlite_classes": ["PartyRoom", "FriendCard"] },
+    { "tag": "v2" },
+    { "tag": "v3" },
+    { "tag": "v4", "new_sqlite_classes": ["TwinShare", "PartyRoom", "FriendCard"] },
   ],
   "observability": { "enabled": true },
   // Where the GTO coach service (gto/, a separate Python server) runs. /api/gto/* is proxied there.

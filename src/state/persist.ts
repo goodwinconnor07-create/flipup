@@ -185,6 +185,15 @@ export function saveCam3d(on: boolean): void {
   write('flipup.cam3d', on);
 }
 
+/** True if the player turned on the Mii faces test (Mii characters in place of the seat emoji). Off until they do. */
+export function loadMiiFaces(): boolean {
+  return read<boolean>('flipup.mii') === true;
+}
+
+export function saveMiiFaces(on: boolean): void {
+  write('flipup.mii', on);
+}
+
 /** False if the player turned the bots' table talk off. It's on until they do. */
 export function loadTalk(): boolean {
   return read<boolean>('flipup.talk') !== false;

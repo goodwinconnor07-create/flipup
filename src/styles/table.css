@@ -2878,3 +2878,35 @@ html.calm .mood-mark {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ── Mii faces test (MiiFace in ui/MiiFace.tsx, "Mii faces (test)" in Settings) ──
+   Stands in for the seat emoji inside .mood, so the bounce, shake, droop and the 💦🔥💫 marks still play. */
+
+.mii-face {
+  display: block;
+  /* The same square as the emoji: just the head, like an emoji face. */
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+
+.mii-face .mii-blink {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: mii-blink 4.6s infinite;
+}
+
+@keyframes mii-blink {
+  0%,
+  93%,
+  100% {
+    transform: scaleY(1);
+  }
+  95.5% {
+    transform: scaleY(0.08);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mii-face .mii-blink {
+    animation: none;
+  }
+}

@@ -3,6 +3,7 @@ import { pot, positionOf, seatFor, variantOf, type Card, type Game, type Player,
 import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
+import { MiiFace } from '../../ui/MiiFace';
 import { loadBigBlinds, saveBigBlinds } from '../../state/persist';
 import { Bubble, moveSig, ReactMenu, Thread } from './Bubbles';
 
@@ -162,9 +163,10 @@ const MOOD_MARK: Partial<Record<NonNullable<Mood>, string>> = { sweat: '💦', b
 /** A seat's emoji, reacting. Keyed on the hand and the mood, so each new reaction plays from the start. */
 export function MoodFace({ game, player, seat, size }: { game: Game; player: Player; seat: Seat | undefined; size: number }) {
   const mood = moodOf(game, player, seat);
+  const mii = useApp((s) => s.miiFaces);
   return (
     <span key={`${game.hand?.number ?? 0}:${mood}`} className={`mood${mood ? ` mood-${mood}` : ''}`}>
-      <Avatar emoji={player.emoji} size={size} />
+      {mii ? <MiiFace name={player.name} mood={mood} size={size} /> : <Avatar emoji={player.emoji} size={size} />}
       {mood && MOOD_MARK[mood] && (
         <span className={`mood-mark mark-${mood}`} aria-hidden>
           {MOOD_MARK[mood]}

@@ -41,9 +41,11 @@ import {
   loadMuted,
   loadFast,
   loadCam3d,
+  loadMiiFaces,
   loadTalk,
   saveFast,
   saveCam3d,
+  saveMiiFaces,
   saveTalk,
   loadProfile,
   loadSession,
@@ -142,6 +144,8 @@ export interface AppState {
   fast: boolean;
   /** Show the other players in the 3D table cam instead of the row of seats. */
   cam3d: boolean;
+  /** Mii characters in place of the seat emoji (a test, off by default). */
+  miiFaces: boolean;
   /** Animations switched off. */
   calm: boolean;
   /** What the player picked: light, dark or the same as the phone. */
@@ -188,6 +192,7 @@ let state: AppState = {
   talk: loadTalk(),
   fast: loadFast(),
   cam3d: loadCam3d(),
+  miiFaces: loadMiiFaces(),
   calm: loadCalm(),
   appearance: loadAppearance(),
   dark: false,
@@ -593,6 +598,12 @@ export function toggleCam3d(): void {
   const cam3d = !state.cam3d;
   saveCam3d(cam3d);
   set({ cam3d });
+}
+
+export function toggleMiiFaces(): void {
+  const miiFaces = !state.miiFaces;
+  saveMiiFaces(miiFaces);
+  set({ miiFaces });
 }
 
 export function toggleTalk(): void {

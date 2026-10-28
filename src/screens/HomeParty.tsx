@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PARTY_MAX_GAMES, PARTY_MIN_GAMES } from '../game';
+import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, VARIANTS } from '../game';
 import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, removePal, restorePal, type Pal } from '../state/pals';
 import { loadPartyRef } from '../state/party';
 import { navigate, openSheet, toast, undoToast, useApp } from '../state/store';
@@ -7,6 +7,8 @@ import { Avatar } from '../ui/components';
 import { ChevronIcon, PlusIcon, ShareIcon, UsersIcon } from '../ui/Icons';
 import { QrIcon, TrophyIcon } from '../ui/Icons';
 import { copy } from './sheets/InviteSheet';
+
+const SHOWCASE = VARIANTS.slice(0, 6);
 
 /** The Party tab: host or join a tournament of mini games, and your friends. */
 /** When friends and the friend card were last checked with the server, and how long to wait before the next time. */
@@ -65,39 +67,42 @@ export function PartyTab() {
 
   return (
     <>
-      <div className="group">
-        <button type="button" className="group-row press" onClick={() => !needName() && navigate({ name: 'partySetup' })}>
-          <span className="gr-icon" style={{ background: 'var(--blue)' }}>
-            <TrophyIcon />
+      <button type="button" className="party-host press" onClick={() => !needName() && navigate({ name: 'partySetup' })}>
+        <span className="party-host-games" aria-hidden>
+          {SHOWCASE.map((v, i) => (
+            <span key={v.id} style={{ ['--i' as string]: i }}>
+              {v.emoji}
+            </span>
+          ))}
+        </span>
+        <span className="party-host-trophy" aria-hidden>
+          <TrophyIcon width={30} height={30} />
+        </span>
+        <b>Host a party</b>
+        <small>
+          Pick {PARTY_MIN_GAMES} to {PARTY_MAX_GAMES} mini games. Blinds climb fast, and the best finisher wins the night.
+        </small>
+        <span className="party-host-cta">
+          Set it up
+          <ChevronIcon width={18} height={18} />
+        </span>
+      </button>
+
+      <div className={`party-row${party ? ' two' : ''}`}>
+        <button type="button" className="party-tile party-join press" onClick={() => !needName() && openSheet({ name: 'joinParty' })}>
+          <span className="party-tile-icon" aria-hidden>
+            <QrIcon width={26} height={26} />
           </span>
-          <span className="gr-text">
-            Host a party
-            <small>
-              Pick {PARTY_MIN_GAMES} to {PARTY_MAX_GAMES} mini games. Blinds climb fast.
-            </small>
-          </span>
-          <ChevronIcon className="gr-chev" width={16} height={16} />
-        </button>
-        <button type="button" className="group-row press" onClick={() => !needName() && openSheet({ name: 'joinParty' })}>
-          <span className="gr-icon" style={{ background: 'var(--green)' }}>
-            <QrIcon />
-          </span>
-          <span className="gr-text">
-            Join a party
-            <small>Type the code from your host</small>
-          </span>
-          <ChevronIcon className="gr-chev" width={16} height={16} />
+          <b>Join a party</b>
+          <small>Type the code from your host</small>
         </button>
         {party && (
-          <button type="button" className="group-row press" onClick={() => navigate({ name: 'party' })}>
-            <span className="gr-icon" style={{ background: 'var(--gold)' }}>
-              <UsersIcon />
+          <button type="button" className="party-tile party-mine press" onClick={() => navigate({ name: 'party' })}>
+            <span className="party-tile-icon" aria-hidden>
+              <UsersIcon width={26} height={26} />
             </span>
-            <span className="gr-text">
-              Your party
-              <small>Code {party.code}</small>
-            </span>
-            <ChevronIcon className="gr-chev" width={16} height={16} />
+            <b>Your party</b>
+            <small>Code {party.code}</small>
           </button>
         )}
       </div>
@@ -105,7 +110,7 @@ export function PartyTab() {
       <div className="section-row">
         <p className="section-title">Friends</p>
       </div>
-      <div className="friend-code glass-card">
+      <div className="friend-code">
         {code ? (
           <>
             <span className="friend-code-text">

@@ -156,13 +156,11 @@ export function Home() {
                   </button>
                 )}
                 <button type="button" className="join-bar press" onClick={() => openSheet({ name: 'join' })} aria-label="Join a game with a code">
-                  <span className="join-bar-text">
-                    <b>Join a game</b>
-                    <small>Got a code from a friend?</small>
-                  </span>
                   <span className="join-bar-go" aria-hidden>
                     <QrIcon width={26} height={26} />
                   </span>
+                  <b>Join a game</b>
+                  <small>Got a code from a friend?</small>
                 </button>
                 <h3 className="section-head">Quick start</h3>
                 <GameShelf />

@@ -5,7 +5,18 @@ import { useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import {
   applyAction,
+  buyAgain,
+  CASH,
+  cashBuyIn,
+  cashMax,
+  cashMin,
+  cashOut,
   cleanName,
+  finishSng,
+  SNG,
+  sitDown,
+  sngPlace,
+  venueById,
   createTable,
   cryptoRng,
   DEFAULT_SETTINGS,
@@ -35,6 +46,7 @@ import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
 import { FAST, toTableTime } from './clock';
 import { legendBefore, legendOpen, loadProgress } from './progress';
+import { getCampaign, setCampaign } from './campaign';
 import {
   forgetOldLearning,
   loadDeviceId,
@@ -84,7 +96,9 @@ export type Route =
   /** Set up a party tournament: pick the games and the pace. */
   | { name: 'partySetup' }
   /** The party this phone is in: lobby, leaderboard and the way to the table. */
-  | { name: 'party' };
+  | { name: 'party' }
+  /** The campaign's roulette wheel. */
+  | { name: 'roulette' };
 
 export type Sheet =
   | { name: 'menu' }
@@ -122,6 +136,8 @@ export type Sheet =
   | { name: 'addPal' }
   /** Type a party code to join it. */
   | { name: 'joinParty' }
+  /** How the campaign works: shown the first time the tab opens. */
+  | { name: 'campaignIntro' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -454,7 +470,9 @@ if (typeof document !== 'undefined') {
 }
 
 function setSession(session: Session | null): void {
+  const prev = state.session?.game;
   saveSessionSoon(session);
+  settleCampaign(prev, session?.game);
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
   captureFinishedHand(state.game, state.deviceId);
@@ -769,6 +787,108 @@ export function toggleCalm(): void {
   set({ calm });
 }
 
+// ── Campaign ────────────────────────────────────────────────────────────────
+
+/** Which Home tab to show and how far down it was, kept for the session so coming back lands in the same place. */
+export const homeView: { tab: 'play' | 'campaign' | 'party'; scroll: number } = { tab: 'play', scroll: 0 };
+
+const n0 = (n: number) => n.toLocaleString('en-US');
+
+/**
+ * Settles the campaign table this phone sits at, once it's over for you or you've left it: a cash table's chips go
+ * back to the bankroll, a sit and go pays its prize. Runs on every table change; settling twice does nothing.
+ */
+function settleCampaign(prev: Game | null | undefined, next: Game | null | undefined): void {
+  const c = getCampaign();
+  const seat = c.seat;
+  if (!seat) return;
+  const here = next?.id === seat.gameId;
+  const game = here ? next : prev?.id === seat.gameId ? prev : null;
+  if (!game) return;
+  const me = game.players.find((p) => p.deviceId === state.deviceId);
+  const now = Date.now();
+  if (seat.kind === 'sng') {
+    const place = me ? sngPlace(game, me.id) : undefined;
+    if (place !== undefined || !here || game.status === 'ended') setCampaign(finishSng(c, seat.gameId, place, now));
+  } else if (!here || game.status === 'ended') setCampaign(cashOut(c, seat.gameId, me?.stack ?? 0, now));
+}
+
+/** A seat whose table is gone from this phone (it can't be played any more): settled as left, so the bankroll isn't stuck. */
+export function reconcileCampaign(): void {
+  const c = getCampaign();
+  if (!c.seat || state.session?.game?.id === c.seat.gameId) return;
+  setCampaign(c.seat.kind === 'cash' ? cashOut(c, c.seat.gameId, 0, Date.now()) : finishSng(c, c.seat.gameId, undefined, Date.now()));
+}
+
+/** Sits down at a venue's cash table or sit and go, paying the buy-in from the bankroll, and deals. */
+export function startCampaign(kind: 'cash' | 'sng', venueId: string): void {
+  const v = venueById(venueId);
+  if (!v || state.busy) return;
+  const name = cleanName(state.profile.name);
+  if (!name) return navigate({ name: 'profile', then: 'done' });
+  reconcileCampaign();
+  const c = getCampaign();
+  const buyIn = kind === 'cash' ? cashBuyIn(c, v) : v.sng;
+  const settings: Settings =
+    kind === 'cash'
+      ? { startingStack: Math.max(buyIn, cashMin(v)), smallBlind: v.smallBlind, bigBlind: v.bigBlind, rebuys: true, turnSeconds: 0 }
+      : { startingStack: SNG.stack, smallBlind: SNG.smallBlind, bigBlind: SNG.bigBlind, rebuys: false, turnSeconds: 0, blindHands: SNG.levelHands };
+  const seats = kind === 'cash' ? CASH.seats : SNG.seats;
+  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: seats - 1, botStyles: v.styles, ...premiumLook(), code: null, now: Date.now() });
+  game.campaign = { kind, venue: v.id, seats };
+  // The bots at a cash table sit with 100 big blinds, whatever you sat down with.
+  if (kind === 'cash') for (const p of game.players) if (p.bot) p.stack = p.bought = cashMax(v);
+  const sat = sitDown(c, kind, v, game.id, Date.now());
+  if (typeof sat === 'string') {
+    toast(sat, 'error');
+    haptic('error');
+    return;
+  }
+  if (state.fast) game.fast = true;
+  setCampaign(sat);
+  closeConnection();
+  setSession({ mode: 'local', code: null, game });
+  resetTo({ name: 'table' });
+  dispatch({ type: 'start' });
+}
+
+/** Gone bust at a campaign cash table: buy back in from the bankroll (up to 100 big blinds). */
+export function campaignRebuy(): void {
+  const s = state.session;
+  const game = s?.mode === 'local' ? s.game : null;
+  const v = venueById(game?.campaign?.venue);
+  if (!s || !game || !v || game.campaign?.kind !== 'cash') return;
+  const c = getCampaign();
+  const amount = cashBuyIn(c, v);
+  if (!amount) {
+    toast(`You need ${n0(cashMin(v))} in your bankroll to buy in here.`, 'error');
+    return;
+  }
+  // The table's rebuy hands out its starting stack, so that's set to what you're buying first.
+  const ctx = { deviceId: state.deviceId, now: tableNow(game), rng: cryptoRng };
+  const sized = applyAction(game, { type: 'settings', settings: { startingStack: amount } }, ctx);
+  const bought = sized.ok ? applyAction(sized.game, { type: 'rebuy' }, ctx) : sized;
+  const paid = buyAgain(c, game.id, amount);
+  if (!bought.ok || typeof paid === 'string') {
+    toast(bought.ok ? (paid as string) : bought.error, 'error');
+    return;
+  }
+  setCampaign(paid);
+  setSession({ ...s, game: bought.game });
+}
+
+/** Back on Home after a campaign table: the Campaign tab, with a word on how it went. */
+function backFromCampaign(game: Game | null | undefined): void {
+  if (!game?.campaign) return;
+  homeView.tab = 'campaign';
+  homeView.scroll = 0;
+  const last = getCampaign().last;
+  if (last?.gameId !== game.id) return;
+  const net = last.back - last.paid;
+  if (last.kind === 'cash') toast(`Cashed out ${n0(last.back)} (${net >= 0 ? '+' : '−'}${n0(Math.abs(net))}).`, net > 0 ? 'success' : 'info');
+  else if (last.place === undefined) toast('You left the tournament. The buy-in stays in the pot.');
+}
+
 /** Counts this table's result towards the Home screen's lifetime numbers (once per table). */
 function recordFinished(): void {
   const game = state.game;
@@ -800,7 +920,9 @@ export function leaveTable(): void {
   if (s?.mode === 'online' && me && state.game?.status !== 'ended') sendQuietly({ type: 'remove', playerId: me.id });
   // Give the message a moment to go before the socket closes.
   closeConnectionSoon();
+  const was = state.session?.game;
   setSession(null);
+  backFromCampaign(was);
   resetTo();
 }
 
@@ -815,7 +937,9 @@ export function closeTable(): void {
     sendQuietly({ type: 'playAgain', off: true });
     closeConnectionSoon();
   } else closeConnection();
+  const was = state.session?.game;
   setSession(null);
+  backFromCampaign(was);
   resetTo();
 }
 

@@ -1,15 +1,16 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { fetchTableInfo } from '../state/api';
 import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
-import { navigate, openSheet, toast, useApp } from '../state/store';
+import { homeView, navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
 import { LegendShelf } from './HomeLegends';
 import { LEGENDS_ON } from '../game';
 import { PartyTab } from './HomeParty';
+import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { ChevronIcon, PencilIcon, PersonIcon, PlusIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
+import { ChevronIcon, ChipIcon, PencilIcon, PersonIcon, PlusIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 import { variantInfo } from '../game';
 
 function ago(at: number): string {
@@ -20,16 +21,12 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)} days ago`;
 }
 
-type Tab = 'play' | 'party';
+type Tab = typeof homeView.tab;
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
+  { id: 'campaign', label: 'Campaign', Icon: ChipIcon, title: 'Campaign' },
   { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
 ];
-
-// Kept for the session, so coming back from another screen lands on the same tab.
-let lastTab: Tab = 'play';
-// And the same place on the page, so coming back doesn't throw you to the top.
-let lastScroll = 0;
 
 /** One line under the greeting: your table, or how your last game went. Chips reset every game, so they're never the measure. */
 function statusLine(active: boolean): string {
@@ -43,15 +40,16 @@ function statusLine(active: boolean): string {
 }
 
 export function Home() {
-  const [tab, setTabState] = useState<Tab>(lastTab);
+  // Coming back from another screen lands on the same tab, at the same place on the page.
+  const [tab, setTabState] = useState<Tab>(homeView.tab);
   const sheet = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
-    if (sheet.current) sheet.current.scrollTop = lastScroll;
+    if (sheet.current) sheet.current.scrollTop = homeView.scroll;
   }, []);
   const setTab = (t: Tab) => {
-    if (t === lastTab) return;
-    lastTab = t;
-    lastScroll = 0;
+    if (t === homeView.tab) return;
+    homeView.tab = t;
+    homeView.scroll = 0;
     if (sheet.current) sheet.current.scrollTop = 0;
     setTabState(t);
   };
@@ -104,11 +102,13 @@ export function Home() {
   const subtitle =
     tab === 'party'
         ? 'Mini game tournaments with your friends.'
-        : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
+        : tab === 'campaign'
+          ? 'Your bankroll against the bots. Climb from the Garage to the Yacht.'
+          : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
 
   return (
     <div className="screen home">
-      <div className="home-sheet" ref={sheet} onScroll={(e) => (lastScroll = e.currentTarget.scrollTop)}>
+      <div className="home-sheet" ref={sheet} onScroll={(e) => (homeView.scroll = e.currentTarget.scrollTop)}>
         <div className="home-scroll">
           <header className="home-title">
             <div className="title-row">
@@ -187,6 +187,7 @@ export function Home() {
                 {LEGENDS_ON && <LegendShelf />}
               </>
             )}
+            {tab === 'campaign' && <CampaignTab />}
             {tab === 'party' && <PartyTab />}
           </div>
         </div>

@@ -72,6 +72,47 @@
   --party-blue: #2f7bff;
   --party-green: #19c26b;
   --party-edge: rgba(0, 0, 0, 0.24);
+  /* Campaign (campaign.css): the bankroll card, payday, each venue's card and the roulette table. The same in light and dark mode. */
+  --bank-a: #0f9d58;
+  --bank-b: #0b5d4b;
+  --bank-glow: rgba(15, 157, 88, 0.6);
+  --payday-ink: #5a2d00;
+  /* The white buttons on a venue's card keep dark text in dark mode too. */
+  --venue-btn: #ffffff;
+  --venue-btn-ink: #3c3c43;
+  --venue-btn-dim: #6c6c70;
+  --venue-garage-a: #8d9aab;
+  --venue-garage-b: #4b5563;
+  --venue-backroom-a: #2bb673;
+  --venue-backroom-b: #0f6b4a;
+  --venue-riverboat-a: #3aa0ff;
+  --venue-riverboat-b: #1c4fb8;
+  --venue-casino-a: #ff5f6d;
+  --venue-casino-b: #b0124a;
+  --venue-strip-a: #c04bff;
+  --venue-strip-b: #5b21b6;
+  --venue-monaco-a: #ff9f0a;
+  --venue-monaco-b: #c2410c;
+  --venue-penthouse-a: #3f4a5c;
+  --venue-penthouse-b: #0b0f19;
+  --venue-yacht-a: #ffd60a;
+  --venue-yacht-b: #0a84ff;
+  --rl-red: #d61f2c;
+  --rl-black: #1c1c1e;
+  --rl-green: #0f8a4b;
+  --rl-felt: #0b6b3a;
+  --rl-fret: #c9a24a;
+  --rl-wood-a: #6b3a1f;
+  --rl-wood-b: #3b1f10;
+  --rl-hub: #241309;
+  --rl-gold: #e7c06a;
+  --rl-ball: #fdfdfd;
+  --rl-chip-0: #f2f2f7;
+  --rl-chip-1: #e5322d;
+  --rl-chip-2: #2563eb;
+  --rl-chip-3: #16a34a;
+  --rl-chip-4: #1c1c1e;
+  --rl-chip-on: #ffd60a;
 
   /* FlipUp Premium: the gold of the chest and the upgrade buttons, the night behind the offer, and the five bubble colours. */
   --prem-gold-1: #fff3b0;

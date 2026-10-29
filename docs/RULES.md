@@ -81,3 +81,36 @@ At a variant table a bot judges its hand by that game's rules: it deals out the 
 - **Table talk.** An offline context engine selects authored comments and voices through the existing bubbles. Bots remember recent lines, answer specific quick messages, and react to public events. No network service is used. Unshown bluffs are not announced.
 - **Timing.** A bot takes as long as a person would: quick with easy folds, longer over close calls and big bets. Some take ages with a monster.
 - **Showing cards.** After a hand a bot sometimes turns over a bluff that worked, a big hand nobody paid off, or a good hand it folded. It only ever shows its own cards.
+
+## Campaign
+
+One player's bankroll against the bots, kept on the phone (`flipup.campaign`) from day to day. Code: `src/game/campaign.ts`.
+
+- **Salary.** The first time you open the Campaign tab on a new day (this phone's calendar), the salary tops your bankroll up to 1,000, counting any chips on the campaign table you're sitting at. Above 1,000 it adds nothing. Days you don't open the app pay nothing: ten days away is one top-up, not ten (product owner's call).
+- **Out of chips.** With no table going and less than the smallest roulette chip (5), you're done until tomorrow's salary. Between 5 and the cheapest buy-in (100), only the roulette wheel is open.
+- **Venues.** Eight, each with a cash table and a sit and go. The Garage and the Back Room are open from the start; each one after opens for good the first time your bankroll reaches its mark, and stays open if the bankroll drops. Bots at each venue come from that venue's styles, loose ones at the Garage and the sharks on the Yacht.
+
+  | Venue | Blinds | Cash buy-in | Tournament | Opens at |
+  | --- | --- | --- | --- | --- |
+  | The Garage | 1/2 | 100–200 | 100 | start |
+  | The Back Room | 5/10 | 500–1,000 | 250 | start |
+  | The Riverboat | 25/50 | 2,500–5,000 | 1,000 | 5,000 |
+  | Downtown Casino | 100/200 | 10K–20K | 5,000 | 20,000 |
+  | The Strip | 500/1K | 50K–100K | 25,000 | 100,000 |
+  | Monte Carlo | 2.5K/5K | 250K–500K | 100,000 | 500,000 |
+  | The Penthouse | 10K/20K | 1M–2M | 500,000 | 2,000,000 |
+  | The Yacht | 50K/100K | 5M–10M | 2,500,000 | 10,000,000 |
+
+- **Cash tables.** Six seats. You sit with as much of your bankroll as you can, up to 100 big blinds, and need at least 50. Bots sit with 100 big blinds; a bot that goes bust leaves and a new one sits down before the next deal, so the table never runs dry. **Cash out** from the menu puts your stack back in the bankroll (in a hand, your cards are folded and what you've bet stays in the pot). Go bust and you have the usual rebuy window to buy in again from the bankroll; otherwise the table ends.
+- **Tournaments (sit and go).** Six players, 1,500 chips each, blinds start at 10/20 and double every six hands, no rebuys. 1st wins four buy-ins and 2nd two, so all six buy-ins are paid out. Your place is settled the moment you go out (or win). Leaving before then gives up the buy-in.
+- **Titles and goals.** Titles go by the best bankroll you've ever had (Rookie up to Billionaire) and never go down. Goals pay a chip reward once, collected with a tap.
+
+## Roulette
+
+The campaign's wheel: European, one zero, 37 pockets. Bets come out of the bankroll, the smallest chip is 5 and there's no table limit. Code: `src/game/roulette.ts`.
+
+- **Straight up** on any number, 0 included: pays 35 to 1.
+- **Dozens** (1–12, 13–24, 25–36) and **columns** (the 2:1 boxes): pay 2 to 1.
+- **Red, black, odd, even, 1–18 and 19–36**: pay even money.
+- The 0 loses every bet except a straight-up bet on 0. There's no "en prison" or half-back rule.
+- A winning bet gets its stake back on top of what it pays. Every bet has the same house edge of 1 in 37.

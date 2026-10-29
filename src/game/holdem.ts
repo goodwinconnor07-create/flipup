@@ -946,7 +946,9 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   }
   game.ready = [];
   // One player left with chips: the others get a short window to rebuy, then the game ends.
-  game.nextHandAt = lastStanding(game) ? ctx.now + TIMING.rebuyWindow : canDeal(game) ? ctx.now + pause : null;
+  // A campaign cash table where the person still has chips fills its empty seats with new bots instead.
+  const refills = game.campaign?.kind === 'cash' && game.players.some((p) => !p.bot && p.stack > 0);
+  game.nextHandAt = lastStanding(game) && !refills ? ctx.now + TIMING.rebuyWindow : canDeal(game) || refills ? ctx.now + pause : null;
   schedule(game);
 }
 

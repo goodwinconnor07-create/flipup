@@ -41,6 +41,7 @@ import { variantDecide } from './botVariants';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
+import { venueById } from './campaign';
 import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
 
 export const LIMITS = {
@@ -146,6 +147,8 @@ export function createTable(opts: {
   bubble?: string;
   /** The host's card back (a Premium extra). */
   cardPack?: string;
+  /** The random bots come only from these styles (campaign venues). */
+  botStyles?: string[];
   code: string | null;
   now: number;
 }): Game {
@@ -185,7 +188,7 @@ export function createTable(opts: {
         botProfile: pick.profile?.id,
       });
   }
-  while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game);
+  while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles);
   return game;
 }
 
@@ -200,11 +203,13 @@ function addLegend(game: Game, id: string): void {
   game.players.push(bot);
 }
 
-function addBot(game: Game): void {
+function addBot(game: Game, styles?: string[]): void {
   const names = new Set(game.players.map((p) => p.name.toLowerCase()));
   const emojis = new Set(game.players.map((p) => p.emoji));
   // A random bot whose name and picture nobody at the table has yet (so it isn't always the same order).
-  const free = BOTS.filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
+  // A campaign venue only seats the styles that play there.
+  const fits = styles?.length ? BOTS.filter((b) => styles.includes(b.style)) : BOTS;
+  const free = (fits.length ? fits : BOTS).filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
   const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
   const pick = pool.length
     ? pool[Math.floor(cryptoRng() * pool.length)]
@@ -248,9 +253,27 @@ const ANSWER_AFTER = { min: 900, spread: 700 };
  * losers of an all-in sweat it out loud, big pots get a word, and sometimes another bot answers.
  * When someone speaks, the next deal waits a little longer so it can be read.
  */
+/** Campaign cash tables: bots that went bust get up and new ones sit down with 100 big blinds, so the game never runs dry. */
+function refillCash(game: Game): void {
+  if (game.campaign?.kind !== 'cash') return;
+  const styles = venueById(game.campaign.venue)?.styles;
+  game.players = game.players.filter((p) => !(p.bot && p.stack === 0));
+  while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) {
+    addBot(game, styles);
+    const bot = game.players[game.players.length - 1];
+    bot.stack = bot.bought = game.settings.bigBlind * 100;
+  }
+}
+
+/** Deals the next hand, filling a campaign cash table's empty seats first. */
+function deal(game: Game, ctx: ActionContext): void {
+  refillCash(game);
+  startHand(game, ctx);
+}
+
 /** Party rounds: remember who ran out of chips on this hand. The one with fewer chips at the start goes out first. */
 function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
-  if (!game.party) return;
+  if (!game.party && game.campaign?.kind !== 'sng') return;
   const out = game.busted ?? [];
   const fresh = game.players.filter((p) => p.stack === 0 && !out.includes(p.id) && hand.seats.some((s) => s.playerId === p.id));
   fresh.sort((a, b) => (hand.startStacks?.[a.id] ?? 0) - (hand.startStacks?.[b.id] ?? 0));
@@ -663,7 +686,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       game.ready.push(me.id);
       // Everyone who's playing has seen enough: deal now.
       const waitingOn = game.players.filter((p) => !p.bot && !p.sittingOut && p.stack > 0 && !game.ready.includes(p.id));
-      if (waitingOn.length === 0 && game.nextHandAt !== null && canDeal(game)) startHand(game, ctx);
+      if (waitingOn.length === 0 && game.nextHandAt !== null && canDeal(game)) deal(game, ctx);
       return done();
     }
 
@@ -942,7 +965,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
   if (!due(game.nextHandAt)) return false;
   // "Nothing much happening" is only worth saying when the last hand was over before the flop.
   const sleepy = !!hand?.result && hand.street === 'preflop';
-  startHand(game, ctx);
+  deal(game, ctx);
   // A word from a random bot between deals, now and then.
   const chatty = game.players.filter((p) => p.bot && !p.sittingOut);
   if (sleepy && chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);

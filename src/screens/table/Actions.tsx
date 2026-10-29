@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
-import { dispatch, useApp } from '../../state/store';
+import { campaignRebuy, closeTable, dispatch, useApp } from '../../state/store';
+import { cashBuyIn, venueById } from '../../game';
+import { useCampaign } from '../../state/campaign';
 import { toTableTime } from '../../state/clock';
 import { chips, useNow } from '../../ui/components';
 import { CloseIcon, MinusIcon, PlusIcon } from '../../ui/Icons';
@@ -85,6 +87,9 @@ export function ActionArea({
       </div>
     );
   }
+
+  // A campaign cash table: buying back in comes out of the bankroll.
+  if (me.stack === 0 && game.campaign?.kind === 'cash') return <CampaignRebuy game={game} />;
 
   // Between hands.
   if (game.status === 'playing' && hand?.result && lastStanding(game) && game.nextHandAt) {
@@ -335,6 +340,27 @@ function RaisePanel({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Out of chips at a campaign cash table: buy back in from the bankroll, or go. */
+function CampaignRebuy({ game }: { game: Game }) {
+  const c = useCampaign();
+  const v = venueById(game.campaign?.venue);
+  const amount = v ? cashBuyIn(c, v) : 0;
+  return (
+    <div className="stack">
+      {amount > 0 ? (
+        <button type="button" className="btn btn-green" onClick={campaignRebuy}>
+          Buy in again with {chips(amount)}
+        </button>
+      ) : (
+        <p className="table-note">You're out of chips, and your bankroll can't cover another buy-in here.</p>
+      )}
+      <button type="button" className="btn btn-ghost" onClick={closeTable}>
+        Leave the table
+      </button>
     </div>
   );
 }

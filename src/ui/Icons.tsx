@@ -215,6 +215,15 @@ export const CrownIcon = (p: P) => (
   </svg>
 );
 
+/** A poker chip: the Campaign tab. */
+export const ChipIcon = (p: P) => (
+  <svg {...stroke({ strokeWidth: 2.4, ...p })}>
+    <circle cx="12" cy="12" r="9" />
+    <circle cx="12" cy="12" r="4.2" />
+    <path d="M12 3v3.6M12 17.4V21M3 12h3.6M17.4 12H21M5.6 5.6l2.5 2.5M15.9 15.9l2.5 2.5M18.4 5.6l-2.5 2.5M8.1 15.9l-2.5 2.5" />
+  </svg>
+);
+
 export const LockIcon = (p: P) => (
   <svg {...solid(p)}>
     <path d="M7 10V7.5a5 5 0 0 1 10 0V10h.5A2.5 2.5 0 0 1 20 12.5v7a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5v-7A2.5 2.5 0 0 1 6.5 10H7Zm2.2 0h5.6V7.5a2.8 2.8 0 0 0-5.6 0V10Z" />

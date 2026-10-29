@@ -263,6 +263,8 @@ function slide(kind: 'push' | 'pop', change: () => void): void {
   const doc = document as Document & { startViewTransition?: (update: () => void) => { finished: Promise<unknown> } };
   if (!doc.startViewTransition || reducedMotion()) return change();
   const root = document.documentElement;
+  // Once screens slide, they never fade in as well: the fade comes back the moment `nav` is cleared, which flashed the page.
+  root.dataset.slides = '';
   root.dataset.nav = kind;
   const run = doc.startViewTransition(() => flushSync(change));
   const clear = () => delete root.dataset.nav;

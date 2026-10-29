@@ -1006,6 +1006,12 @@ html[data-theme='dark'] .sheet .group {
     radial-gradient(200px 160px at 55% 0%, rgba(255, 214, 10, 0.22), transparent 70%);
 }
 
+/* In dark mode the phone's status bar is black, so the glow fades in under it instead of starting at the edge. */
+html[data-theme='dark'] .screen.home::before {
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 140px);
+  mask-image: linear-gradient(180deg, transparent 0, #000 140px);
+}
+
 .home-scroll {
   position: relative;
   gap: 20px;

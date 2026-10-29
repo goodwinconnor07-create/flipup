@@ -61,6 +61,7 @@ export class TableRoom extends DurableObject<Env> {
       players: game.players.map((p) => ({ name: p.name, emoji: p.emoji, bot: p.bot })),
       settings: game.settings,
       seatsLeft: MAX_SEATS - game.players.length,
+      ...(game.campaign ? { campaign: game.campaign } : {}),
     };
   }
 

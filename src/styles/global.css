@@ -78,6 +78,9 @@
   --bank-glow: rgba(15, 157, 88, 0.6);
   --payday-ink: #5a2d00;
   /* The white buttons on a venue's card keep dark text in dark mode too. */
+  --cash-a: #ff4d6d;
+  --cash-b: #b0123f;
+  --cash-glow: rgba(214, 31, 70, 0.6);
   --venue-btn: #ffffff;
   --venue-btn-ink: #3c3c43;
   --venue-btn-dim: #6c6c70;

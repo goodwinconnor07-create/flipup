@@ -356,8 +356,21 @@ export interface Game {
   party?: { code: string; round: number; total: number };
   /** Party rounds: player ids in the order they ran out of chips (or left), first out first. Campaign sit and gos keep it too. */
   busted?: string[];
-  /** A campaign table on this phone (see campaign.ts): a cash table whose empty seats fill with new bots, or a sit and go of `seats` players. */
-  campaign?: { kind: 'cash' | 'sng'; venue: string; seats: number };
+  /**
+   * A campaign table (see campaign.ts): a cash game whose empty seats fill with new bots, or a tournament of `seats` players.
+   * On this phone for bots only, or online (it has a code) with friends. `venue` is a stake id for cash, a venue id for a tournament.
+   * Public: every phone pays its own buy-in and works out its own prize from it.
+   */
+  campaign?: {
+    kind: 'cash' | 'sng';
+    venue: string;
+    seats: number;
+    /** Tournaments: the format, and the prize drawn for this one. */
+    format?: 'sng' | 'jackpot';
+    prize?: number;
+    /** What it costs to sit down: a tournament's buy-in, or an online cash table's fixed stack. */
+    buyIn?: number;
+  };
 }
 
 export type Action =

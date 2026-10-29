@@ -21,13 +21,13 @@ export function setCampaign(c: Campaign): void {
   listeners.forEach((l) => l());
 }
 
-function subscribe(listener: () => void): () => void {
+export function subscribeCampaign(listener: () => void): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
 
 export function useCampaign(): Campaign {
-  return useSyncExternalStore(subscribe, getCampaign);
+  return useSyncExternalStore(subscribeCampaign, getCampaign);
 }
 
 /** Today on this phone's calendar: the salary comes once per day. */

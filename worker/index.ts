@@ -15,6 +15,15 @@ import {
   type PartySettings,
   type CreateFriendCardResponse,
   type Settings,
+  campaignTable,
+  cashMax,
+  cryptoRng,
+  drawMultiplier,
+  FORMATS,
+  parseCampaignCard,
+  stakeById,
+  venueById,
+  type Game,
 } from '../src/game';
 
 export { TableRoom } from './room';
@@ -79,9 +88,23 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   if (!name) return json({ error: 'Add your name first.' }, 400);
   if (isNameBlocked(name)) return json({ error: 'Pick a different name.' }, 400);
   if (!isEmoji(body.emoji)) return json({ error: 'Pick an emoji.' }, 400);
-  const settings = parseSettings(body.settings, false);
+  let settings = parseSettings(body.settings, false);
   if (!settings) return json({ error: "Those table settings don't work." }, 400);
-  const bots = typeof body.bots === 'number' && Number.isInteger(body.bots) ? Math.max(0, Math.min(MAX_SEATS - 1, body.bots)) : 0;
+  let bots = typeof body.bots === 'number' && Number.isInteger(body.bots) ? Math.max(0, Math.min(MAX_SEATS - 1, body.bots)) : 0;
+  // A campaign table with friends: the stakes come from the campaign, never from the phone, and the prize is drawn here.
+  let campaign: Game['campaign'];
+  const pick = body.campaign as { kind?: unknown; id?: unknown } | undefined;
+  if (pick !== undefined) {
+    const stake = pick?.kind === 'cash' && typeof pick.id === 'string' ? stakeById(pick.id) : undefined;
+    const venue = pick?.kind === 'sng' && typeof pick.id === 'string' ? venueById(pick.id) : undefined;
+    if (!stake && !venue) return json({ error: "That campaign table doesn't exist." }, 400);
+    const table = stake
+      ? campaignTable({ kind: 'cash', stake, stack: cashMax(stake) }, true)
+      : campaignTable({ kind: 'sng', venue: venue!, prize: venue!.buyIn * drawMultiplier(FORMATS[venue!.format], cryptoRng) }, true);
+    settings = table.settings;
+    campaign = table.campaign;
+    bots = 0;
+  }
 
   // Codes are random, so a clash is rare. Try a few before giving up.
   for (let attempt = 0; attempt < 6; attempt++) {
@@ -95,6 +118,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
       code,
       now: Date.now(),
     });
+    if (campaign) game.campaign = { ...campaign };
     const created = await env.TABLE_ROOM.getByName(code).create(game);
     if (created) return json({ code } satisfies CreateTableResponse, 201);
   }
@@ -151,7 +175,7 @@ async function friendRoute(request: Request, env: Env, pathname: string): Promis
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
     const look = lookFields(body);
     if ('error' in look) return json({ error: look.error }, 400);
-    const result = await card.update(body.deviceId, look.name, look.emoji);
+    const result = await card.update(body.deviceId, look.name, look.emoji, parseCampaignCard(body.campaign));
     if (result === 'missing') return json({ error: 'No friend with that code.' }, 404);
     if (result === 'forbidden') return json({ error: 'That code belongs to another phone.' }, 403);
     return json({ ok: true });

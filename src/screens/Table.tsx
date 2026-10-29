@@ -10,6 +10,7 @@ import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
 import { PartyPanel } from './Party';
 import { CampaignResult } from './CampaignResult';
+import { PrizeReel } from './table/PrizeReel';
 import { forgetParty } from '../state/party';
 import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
@@ -76,6 +77,7 @@ export function Table() {
         </div>
       )}
       <VersusGate game={game} />
+      <PrizeReel game={game} />
       {game.status === 'lobby' && <Lobby game={game} />}
       {game.status === 'playing' &&
         (desktop ? (
@@ -142,12 +144,14 @@ function BlindBanner({ text, onDone }: { text: string; onDone: () => void }) {
 
 /** A campaign table says where it is, and a tournament how many are still in: "🎱 The Back Room · 4 left · ". */
 function CampaignWhere({ game }: { game: Game }) {
-  const v = venueById(game.campaign?.venue);
+  const tag = game.campaign;
+  if (tag?.kind === 'cash') return <>🃏 Cash game · </>;
+  const v = venueById(tag?.venue);
   if (!v) return null;
   const left = game.players.filter((p) => p.stack > 0).length;
   return (
     <>
-      {v.emoji} {v.name} · {game.campaign?.kind === 'sng' && game.status === 'playing' ? `${left} left · ` : ''}
+      {v.emoji} {v.name} · {game.status === 'playing' ? `${left} left · ` : ''}
     </>
   );
 }

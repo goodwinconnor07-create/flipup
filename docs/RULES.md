@@ -88,22 +88,48 @@ One player's bankroll against the bots, kept on the phone (`flipup.campaign`) fr
 
 - **Salary.** The first time you open the Campaign tab on a new day (this phone's calendar), the salary tops your bankroll up to 1,000, counting any chips on the campaign table you're sitting at. Above 1,000 it adds nothing. Days you don't open the app pay nothing: ten days away is one top-up, not ten (product owner's call).
 - **Out of chips.** With no table going and less than the smallest roulette chip (5), you're done until tomorrow's salary. Between 5 and the cheapest buy-in (100), only the roulette wheel is open.
-- **Venues.** Eight, each with a cash table and a sit and go. The Garage and the Back Room are open from the start; each one after opens for good the first time your bankroll reaches its mark, and stays open if the bankroll drops. Bots at each venue come from that venue's styles, loose ones at the Garage and the sharks on the Yacht.
+- **Cash games** are their own ladder of stakes, apart from the tournaments. Six seats. You sit with as much of your bankroll as you can, up to 100 big blinds, and need at least 50. Bots sit with 100 big blinds; a bot that goes bust leaves and a new one sits down before the next deal. **Cash out** from the menu puts your stack back in the bankroll (in a hand, your cards are folded and what you've bet stays in the pot). Go bust and you have the usual rebuy window to buy in again from the bankroll; otherwise the table ends. Each stake opens for good the first time your bankroll reaches its full buy-in.
 
-  | Venue | Blinds | Cash buy-in | Tournament | Opens at |
-  | --- | --- | --- | --- | --- |
-  | The Garage | 1/2 | 100–200 | 100 | start |
-  | The Back Room | 5/10 | 500–1,000 | 250 | start |
-  | The Riverboat | 25/50 | 2,500–5,000 | 1,000 | 5,000 |
-  | Downtown Casino | 100/200 | 10K–20K | 5,000 | 20,000 |
-  | The Strip | 500/1K | 50K–100K | 25,000 | 100,000 |
-  | Monte Carlo | 2.5K/5K | 250K–500K | 100,000 | 500,000 |
-  | The Penthouse | 10K/20K | 1M–2M | 500,000 | 2,000,000 |
-  | The Yacht | 50K/100K | 5M–10M | 2,500,000 | 10,000,000 |
+  | Blinds | Buy-in | Opens at |
+  | --- | --- | --- |
+  | 1/2 | 100–200 | start |
+  | 5/10 | 500–1,000 | start |
+  | 25/50 | 2,500–5,000 | 5,000 |
+  | 100/200 | 10K–20K | 20,000 |
+  | 500/1K | 50K–100K | 100,000 |
+  | 2.5K/5K | 250K–500K | 500,000 |
+  | 10K/20K | 1M–2M | 2,000,000 |
+  | 50K/100K | 5M–10M | 10,000,000 |
 
-- **Cash tables.** Six seats. You sit with as much of your bankroll as you can, up to 100 big blinds, and need at least 50. Bots sit with 100 big blinds; a bot that goes bust leaves and a new one sits down before the next deal, so the table never runs dry. **Cash out** from the menu puts your stack back in the bankroll (in a hand, your cards are folded and what you've bet stays in the pot). Go bust and you have the usual rebuy window to buy in again from the bankroll; otherwise the table ends.
-- **Tournaments (sit and go).** Six players, 1,500 chips each, blinds start at 10/20 and double every six hands, no rebuys. 1st wins four buy-ins and 2nd two, so all six buy-ins are paid out. Your place is settled the moment you go out (or win). Leaving before then gives up the buy-in.
-- **Titles and goals.** Titles go by the best bankroll you've ever had (Rookie up to Billionaire) and never go down. Goals pay a chip reward once, collected with a tap.
+- **Tournaments** are venues, each with one format at one buy-in. Each venue opens for good the first time your bankroll reaches its mark. Bots come from the venue's styles, loose ones at the Garage and the sharks on the Yacht. No rebuys.
+  - **Sit & Go:** six players, 1,500 chips, blinds from 10/20 doubling every six hands. 1st wins 70% of the prize, 2nd 30%.
+  - **Jackpot:** three players, 500 chips, blinds from 10/20 doubling every three hands. The winner takes it all.
+
+  | Venue | Format | Buy-in | Opens at |
+  | --- | --- | --- | --- |
+  | The Garage | Sit & Go | 100 | start |
+  | The Back Room | Jackpot | 250 | start |
+  | The Riverboat | Sit & Go | 1,000 | 2,500 |
+  | Downtown Casino | Jackpot | 5,000 | 10,000 |
+  | The Strip | Sit & Go | 25,000 | 50,000 |
+  | Monte Carlo | Jackpot | 100,000 | 250,000 |
+  | The Penthouse | Sit & Go | 500,000 | 1,000,000 |
+  | The Yacht | Jackpot | 2,500,000 | 5,000,000 |
+
+- **The prize is drawn, not pooled.** It doesn't depend on how many people are at the table: when a tournament opens, its prize is drawn as a multiple of the buy-in, and a reel shows it before the first deal (product owner's call).
+
+  | Sit & Go | 4× | 5× | 8× | 15× | 40× | 200× |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Chance | 60% | 22% | 10% | 6% | 1.8% | 0.2% |
+
+  | Jackpot | 2× | 3× | 5× | 10× | 50× | 250× |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | Chance | 66% | 22% | 7.5% | 3.5% | 0.9% | 0.1% |
+
+  A Sit & Go averages about 6.3 buy-ins and a Jackpot about 3.4: a little more than the seats put in, since the bots are the edge. Your place is settled the moment you go out (or win). Leaving before then gives up the buy-in.
+- **With friends.** "Play with friends" opens a campaign table online: a tournament at a venue, or a cash game where everyone sits with the full 100 big blinds. Friends join with its code. Each phone pays the buy-in from its own bankroll as it sits down (a friend can bring you to a table you haven't opened yet, as long as you can pay), the server draws a tournament's prize, the stakes can't be changed, and empty seats fill with the venue's bots when the host deals. A tournament can't be joined once it's dealt. Leaving the lobby, or a tournament called off before anyone finished, gives the buy-in back. Bankrolls still live on each phone, so this trusts the phones (it's play money).
+- **Friends' progress.** With a friend code, your bankroll, best bankroll and tournament wins go on your friend card a few seconds after they change, and the Campaign tab ranks you and your friends by bankroll.
+- **Titles and goals.** Titles go by the best bankroll you've ever had (Rookie up to Billionaire) and never go down. Goals pay a chip reward once, collected with a tap; "See all" lists every one.
 
 ## Roulette
 

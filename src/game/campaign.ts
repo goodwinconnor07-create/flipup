@@ -1,5 +1,7 @@
-// Campaign: one player's bankroll against the bots, kept from day to day. A daily salary tops it up to 1,000,
-// venues climb from the Garage to the Yacht (each with a cash table and a sit and go), and goals pay chips.
+// Campaign: one player's bankroll against the bots, kept from day to day. A daily salary tops it up to 1,000.
+// Cash games are a ladder of stakes on their own; tournaments are venues from the Garage to the Yacht, each one
+// format (a six-player Sit & Go or a three-player Jackpot) whose prize is drawn at random when you buy in.
+// Goals pay chips, and friends can sit at the same campaign table online.
 // Pure: the phone stores the state (state/campaign.ts) and runs the tables like any bots-only table.
 // Rules are in docs/RULES.md (Campaign).
 
@@ -10,27 +12,100 @@ import type { Game } from './types';
 /** What the daily salary tops a bankroll up to. Days you don't open the app pay nothing. */
 export const SALARY = 1000;
 
-/** Sit and go: six players, everyone starts with 1,500 tournament chips at 10/20, and the blinds double every six hands. */
-export const SNG = { seats: 6, stack: 1500, smallBlind: 10, bigBlind: 20, levelHands: 6 } as const;
-/** What 1st and 2nd win, as a multiple of the buy-in. Six buy-ins in, six out: the house takes nothing. */
-export const SNG_PRIZES = [4, 2] as const;
-
-/** Cash tables: six seats, and you sit with 50 to 100 big blinds. */
+/** Cash games: six seats, and you sit with 50 to 100 big blinds. */
 export const CASH = { seats: 6, minBB: 50, maxBB: 100 } as const;
 
 /** The smallest roulette chip: below this you're out of chips until tomorrow. */
 export const ROULETTE_MIN = 5;
 
+export type FormatId = 'sng' | 'jackpot';
+
+export interface Format {
+  id: FormatId;
+  name: string;
+  /** One line on how it plays. */
+  line: string;
+  seats: number;
+  stack: number;
+  smallBlind: number;
+  bigBlind: number;
+  /** The blinds double every this many hands. */
+  levelHands: number;
+  /** How the prize is shared: 1st, 2nd... */
+  split: number[];
+  /** The prize as a multiple of the buy-in, and how often each comes up (out of 1,000). */
+  draws: [number, number][];
+}
+
+/**
+ * The prize doesn't come from the buy-ins at the table: it's drawn when you buy in, so a 100 chip tournament can pay
+ * 20,000. A Sit & Go pays its prize 70/30 to the top two and averages about six buy-ins, a Jackpot pays the winner
+ * alone and averages about three and a half.
+ */
+export const FORMATS: Record<FormatId, Format> = {
+  sng: {
+    id: 'sng',
+    name: 'Sit & Go',
+    line: 'Six players. 1st and 2nd get paid.',
+    seats: 6,
+    stack: 1500,
+    smallBlind: 10,
+    bigBlind: 20,
+    levelHands: 6,
+    split: [0.7, 0.3],
+    draws: [
+      [4, 600],
+      [5, 220],
+      [8, 100],
+      [15, 60],
+      [40, 18],
+      [200, 2],
+    ],
+  },
+  jackpot: {
+    id: 'jackpot',
+    name: 'Jackpot',
+    line: 'Three players, fast blinds, winner takes it all.',
+    seats: 3,
+    stack: 500,
+    smallBlind: 10,
+    bigBlind: 20,
+    levelHands: 3,
+    split: [1],
+    draws: [
+      [2, 660],
+      [3, 220],
+      [5, 75],
+      [10, 35],
+      [50, 9],
+      [250, 1],
+    ],
+  },
+};
+
+/** The biggest prize a format can draw, as a multiple of the buy-in. */
+export const topDraw = (f: Format): number => Math.max(...f.draws.map(([x]) => x));
+
+/** Draws a prize multiplier, weighted by the format's table. */
+export function drawMultiplier(f: Format, rng: () => number): number {
+  const total = f.draws.reduce((a, [, w]) => a + w, 0);
+  let roll = rng() * total;
+  for (const [x, w] of f.draws) {
+    roll -= w;
+    if (roll < 0) return x;
+  }
+  return f.draws[0][0];
+}
+
+/** A tournament venue: one format at one buy-in. */
 export interface Venue {
   id: string;
   name: string;
   emoji: string;
   /** One line on what it's like. */
   line: string;
-  smallBlind: number;
-  bigBlind: number;
-  /** Sit and go buy-in. */
-  sng: number;
+  format: FormatId;
+  buyIn: number;
   /** The peak bankroll that opens it for good. */
   unlock: number;
   /** The bot styles that sit here: the Garage gets the loose ones, the Yacht the sharks. */
@@ -38,22 +113,48 @@ export interface Venue {
 }
 
 export const VENUES: Venue[] = [
-  { id: 'garage', name: 'The Garage', emoji: '🔧', line: 'A folding table and loose calls.', smallBlind: 1, bigBlind: 2, sng: 100, unlock: 0, styles: ['station', 'gambler', 'nervous', 'maniac'] },
-  { id: 'backroom', name: 'The Back Room', emoji: '🎱', line: 'Regulars who think they’re good.', smallBlind: 5, bigBlind: 10, sng: 250, unlock: 0, styles: ['station', 'gambler', 'nervous', 'rock', 'maniac', 'tag'] },
-  { id: 'riverboat', name: 'The Riverboat', emoji: '🛳️', line: 'Slow river, fast money.', smallBlind: 25, bigBlind: 50, sng: 1000, unlock: 5000, styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
-  { id: 'casino', name: 'Downtown Casino', emoji: '🎰', line: 'Bright lights, sharper players.', smallBlind: 100, bigBlind: 200, sng: 5000, unlock: 20000, styles: ['rock', 'tag', 'lag', 'trapper', 'maniac', 'pro'] },
-  { id: 'strip', name: 'The Strip', emoji: '🌃', line: 'Big stacks under neon.', smallBlind: 500, bigBlind: 1000, sng: 25000, unlock: 100000, styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
-  { id: 'monaco', name: 'Monte Carlo', emoji: '🏎️', line: 'Old money and cold reads.', smallBlind: 2500, bigBlind: 5000, sng: 100000, unlock: 500000, styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
-  { id: 'penthouse', name: 'The Penthouse', emoji: '🏙️', line: 'Invite only. Nobody’s bluffing. Probably.', smallBlind: 10000, bigBlind: 20000, sng: 500000, unlock: 2000000, styles: ['pro', 'shark', 'lag'] },
-  { id: 'yacht', name: 'The Yacht', emoji: '🛥️', line: 'The biggest game on the water.', smallBlind: 50000, bigBlind: 100000, sng: 2500000, unlock: 10000000, styles: ['shark', 'pro'] },
+  { id: 'garage', name: 'The Garage', emoji: '🔧', line: 'A folding table and loose calls.', format: 'sng', buyIn: 100, unlock: 0, styles: ['station', 'gambler', 'nervous', 'maniac'] },
+  { id: 'backroom', name: 'The Back Room', emoji: '🎱', line: 'Three in, one out.', format: 'jackpot', buyIn: 250, unlock: 0, styles: ['station', 'gambler', 'nervous', 'rock', 'maniac'] },
+  { id: 'riverboat', name: 'The Riverboat', emoji: '🛳️', line: 'Slow river, fast money.', format: 'sng', buyIn: 1000, unlock: 2500, styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
+  { id: 'casino', name: 'Downtown Casino', emoji: '🎰', line: 'Bright lights, sharper players.', format: 'jackpot', buyIn: 5000, unlock: 10000, styles: ['rock', 'tag', 'lag', 'trapper', 'maniac'] },
+  { id: 'strip', name: 'The Strip', emoji: '🌃', line: 'Big stacks under neon.', format: 'sng', buyIn: 25000, unlock: 50000, styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
+  { id: 'monaco', name: 'Monte Carlo', emoji: '🏎️', line: 'Old money and cold reads.', format: 'jackpot', buyIn: 100000, unlock: 250000, styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
+  { id: 'penthouse', name: 'The Penthouse', emoji: '🏙️', line: 'Invite only. Nobody’s bluffing. Probably.', format: 'sng', buyIn: 500000, unlock: 1000000, styles: ['pro', 'shark', 'lag'] },
+  { id: 'yacht', name: 'The Yacht', emoji: '🛥️', line: 'The biggest game on the water.', format: 'jackpot', buyIn: 2500000, unlock: 5000000, styles: ['shark', 'pro'] },
 ];
 
 export const venueById = (id: string | undefined): Venue | undefined => VENUES.find((v) => v.id === id);
 
-export const cashMax = (v: Venue): number => v.bigBlind * CASH.maxBB;
-export const cashMin = (v: Venue): number => v.bigBlind * CASH.minBB;
+/** A cash game's stakes. Each opens for good once your bankroll has reached its full buy-in. */
+export interface Stake {
+  id: string;
+  smallBlind: number;
+  bigBlind: number;
+  unlock: number;
+  styles: string[];
+}
 
-export const sngPrize = (v: Venue, place: number): number => (SNG_PRIZES[place - 1] ?? 0) * v.sng;
+export const STAKES: Stake[] = [
+  { id: '1-2', smallBlind: 1, bigBlind: 2, unlock: 0, styles: ['station', 'gambler', 'nervous', 'maniac'] },
+  { id: '5-10', smallBlind: 5, bigBlind: 10, unlock: 0, styles: ['station', 'gambler', 'nervous', 'rock', 'maniac', 'tag'] },
+  { id: '25-50', smallBlind: 25, bigBlind: 50, unlock: 5000, styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
+  { id: '100-200', smallBlind: 100, bigBlind: 200, unlock: 20000, styles: ['rock', 'tag', 'lag', 'trapper', 'maniac', 'pro'] },
+  { id: '500-1k', smallBlind: 500, bigBlind: 1000, unlock: 100000, styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
+  { id: '2.5k-5k', smallBlind: 2500, bigBlind: 5000, unlock: 500000, styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
+  { id: '10k-20k', smallBlind: 10000, bigBlind: 20000, unlock: 2000000, styles: ['pro', 'shark', 'lag'] },
+  { id: '50k-100k', smallBlind: 50000, bigBlind: 100000, unlock: 10000000, styles: ['shark', 'pro'] },
+];
+
+/** Cash tables opened before cash games had their own ladder were named after a venue. */
+const OLD_CASH: Record<string, string> = { garage: '1-2', backroom: '5-10', riverboat: '25-50', casino: '100-200', strip: '500-1k', monaco: '2.5k-5k', penthouse: '10k-20k', yacht: '50k-100k' };
+
+export const stakeById = (id: string | undefined): Stake | undefined => (id ? STAKES.find((s) => s.id === (OLD_CASH[id] ?? id)) : undefined);
+
+export const cashMax = (s: Stake): number => s.bigBlind * CASH.maxBB;
+export const cashMin = (s: Stake): number => s.bigBlind * CASH.minBB;
+
+/** What a finish pays from a drawn prize. */
+export const placePrize = (format: FormatId, prize: number, place: number): number => Math.floor(prize * (FORMATS[format].split[place - 1] ?? 0));
 
 /** Titles by peak bankroll. They never go down. */
 export const TITLES = [
@@ -84,9 +185,15 @@ export function nextTitle(peak: number): Title | undefined {
 export interface CampaignSeat {
   gameId: string;
   kind: 'cash' | 'sng';
+  /** A venue for a tournament, a stake for a cash game. */
   venue: string;
   /** Everything paid in: the buy-in plus any buy-ins after going bust at a cash table. */
   paid: number;
+  /** Tournaments: the prize drawn for this one. Missing on tables from before prizes were drawn. */
+  prize?: number;
+  format?: FormatId;
+  /** An online table with friends at it. */
+  friends?: boolean;
   at: number;
 }
 
@@ -98,20 +205,24 @@ export interface CampaignResult {
   paid: number;
   /** What came back to the bankroll. */
   back: number;
-  /** Sit and go: where you finished (missing if you left before it was over). */
+  /** Tournament: where you finished (missing if you left before it was over). */
   place?: number;
+  prize?: number;
+  format?: FormatId;
+  /** Never got going: the buy-in came back. */
+  refunded?: boolean;
   at: number;
 }
 
 export interface CampaignStats {
   sngs: number;
   sngWins: number;
-  /** Finished 1st or 2nd. */
+  /** Got paid in a tournament. */
   sngCashes: number;
-  /** Sit and go wins in a row, and the best run. */
+  /** Tournament wins in a row, and the best run. */
   winRun: number;
   bestRun: number;
-  /** Venues where you've won a sit and go. */
+  /** Venues where you've won a tournament. */
   wonAt: string[];
   cashSessions: number;
   /** Biggest profit from one cash table. */
@@ -122,13 +233,17 @@ export interface CampaignStats {
   /** Biggest win on one spin (what came back less what was staked). */
   bestSpin: number;
   straightHits: number;
+  /** The biggest prize multiplier you've drawn. */
+  bestDraw: number;
+  /** Tournaments won with a friend at the table. */
+  friendWins: number;
 }
 
 export interface Campaign {
   v: 1;
   /** The bankroll: chips not on a table. */
   chips: number;
-  /** The most the bankroll (plus anything on the table you were at) has ever been. Ranks and venues follow it. */
+  /** The most the bankroll (plus anything on the table you were at) has ever been. Ranks and unlocks follow it. */
   peak: number;
   /** The last day the salary was collected (YYYY-MM-DD, this phone's time). */
   day: string | null;
@@ -155,7 +270,7 @@ export function newCampaign(): Campaign {
     intro: false,
     seat: null,
     last: null,
-    stats: { sngs: 0, sngWins: 0, sngCashes: 0, winRun: 0, bestRun: 0, wonAt: [], cashSessions: 0, bestCash: 0, bestCashX: 0, spins: 0, bestSpin: 0, straightHits: 0 },
+    stats: { sngs: 0, sngWins: 0, sngCashes: 0, winRun: 0, bestRun: 0, wonAt: [], cashSessions: 0, bestCash: 0, bestCashX: 0, spins: 0, bestSpin: 0, straightHits: 0, bestDraw: 0, friendWins: 0 },
     claimed: [],
     spins: [],
   };
@@ -176,20 +291,35 @@ export function collectSalary(c: Campaign, today: string, onTable = 0): Campaign
   return withPeak({ ...c, chips: c.chips + pay, day: today, days: c.days + 1 }, onTable);
 }
 
-/** What you sit down with at a venue's cash table: as much as you can, up to 100 big blinds. Zero if you can't cover 50. */
-export function cashBuyIn(c: Campaign, v: Venue): number {
-  return c.chips >= cashMin(v) ? Math.min(cashMax(v), c.chips) : 0;
+/** What you sit down with at a cash game: as much as you can, up to 100 big blinds. Zero if you can't cover 50. */
+export function cashBuyIn(c: Campaign, s: Stake): number {
+  return c.chips >= cashMin(s) ? Math.min(cashMax(s), c.chips) : 0;
 }
 
-export const isOpen = (c: Campaign, v: Venue): boolean => c.peak >= v.unlock;
+export const isOpen = (c: Campaign, x: { unlock: number }): boolean => c.peak >= x.unlock;
+
+/** What a seat is for: a tournament at a venue with its drawn prize, or a cash game at a stake for `cost` chips. */
+export type SeatFor =
+  | { kind: 'sng'; venue: Venue; prize: number; friends?: boolean }
+  | { kind: 'cash'; stake: Stake; cost: number; friends?: boolean };
 
 /** Takes a table's buy-in out of the bankroll. Returns why not instead when it can't. */
-export function sitDown(c: Campaign, kind: 'cash' | 'sng', v: Venue, gameId: string, now: number): Campaign | string {
+export function sitDown(c: Campaign, seat: SeatFor, gameId: string, now: number): Campaign | string {
   if (c.seat) return 'Finish the table you’re at first.';
-  if (!isOpen(c, v)) return `Reach ${v.unlock.toLocaleString('en-US')} to open ${v.name}.`;
-  const cost = kind === 'cash' ? cashBuyIn(c, v) : v.sng;
+  const place = seat.kind === 'sng' ? seat.venue : seat.stake;
+  // A friend can bring you to a table you haven't reached yet; on your own you climb to it.
+  if (!seat.friends && !isOpen(c, place)) return `Reach ${place.unlock.toLocaleString('en-US')} in your bankroll to open that table.`;
+  const cost = seat.kind === 'cash' ? seat.cost : seat.venue.buyIn;
   if (cost <= 0 || cost > c.chips) return 'Not enough chips for that table.';
-  return { ...c, chips: c.chips - cost, seat: { gameId, kind, venue: v.id, paid: cost, at: now } };
+  const friends = seat.friends ? { friends: true } : {};
+  if (seat.kind === 'cash') return { ...c, chips: c.chips - cost, seat: { gameId, kind: 'cash', venue: seat.stake.id, paid: cost, at: now, ...friends } };
+  const draw = Math.round(seat.prize / seat.venue.buyIn);
+  return {
+    ...c,
+    chips: c.chips - cost,
+    seat: { gameId, kind: 'sng', venue: seat.venue.id, paid: cost, prize: seat.prize, format: seat.venue.format, at: now, ...friends },
+    stats: { ...c.stats, bestDraw: Math.max(c.stats.bestDraw, draw) },
+  };
 }
 
 /** Another buy-in at the cash table you're at, after going bust. */
@@ -197,6 +327,13 @@ export function buyAgain(c: Campaign, gameId: string, amount: number): Campaign 
   if (c.seat?.gameId !== gameId || c.seat.kind !== 'cash') return 'You’re not at that table.';
   if (amount <= 0 || amount > c.chips) return 'Not enough chips.';
   return { ...c, chips: c.chips - amount, seat: { ...c.seat, paid: c.seat.paid + amount } };
+}
+
+/** A table that never got going (you left the lobby, or it closed before the deal): the buy-in comes back. */
+export function refundSeat(c: Campaign, gameId: string, now: number): Campaign {
+  const seat = c.seat;
+  if (seat?.gameId !== gameId) return c;
+  return { ...c, chips: c.chips + seat.paid, seat: null, last: { gameId, kind: seat.kind, venue: seat.venue, paid: seat.paid, back: seat.paid, refunded: true, at: now } };
 }
 
 /** Leaving a cash table: what's in front of you goes back to the bankroll. */
@@ -214,19 +351,25 @@ export function cashOut(c: Campaign, gameId: string, stack: number, now: number)
   });
 }
 
-/** A sit and go is over for you: finished in `place`, or left early (no place, no prize). */
+/** What a tournament seat pays for a finish. Seats from before prizes were drawn pay four and two buy-ins. */
+export function seatPrize(seat: CampaignSeat, place: number | undefined): number {
+  if (!place) return 0;
+  if (seat.prize !== undefined && seat.format) return placePrize(seat.format, seat.prize, place);
+  return ([4, 2][place - 1] ?? 0) * seat.paid;
+}
+
+/** A tournament is over for you: finished in `place`, or left early (no place, no prize). */
 export function finishSng(c: Campaign, gameId: string, place: number | undefined, now: number): Campaign {
   const seat = c.seat;
   if (seat?.gameId !== gameId || seat.kind !== 'sng') return c;
-  const v = venueById(seat.venue);
-  const back = v && place ? sngPrize(v, place) : 0;
+  const back = seatPrize(seat, place);
   const s = c.stats;
   const won = place === 1;
   return withPeak({
     ...c,
     chips: c.chips + back,
     seat: null,
-    last: { gameId, kind: 'sng', venue: seat.venue, paid: seat.paid, back, place, at: now },
+    last: { gameId, kind: 'sng', venue: seat.venue, paid: seat.paid, back, place, prize: seat.prize, format: seat.format, at: now },
     stats: {
       ...s,
       sngs: s.sngs + 1,
@@ -235,13 +378,14 @@ export function finishSng(c: Campaign, gameId: string, place: number | undefined
       winRun: won ? s.winRun + 1 : 0,
       bestRun: Math.max(s.bestRun, won ? s.winRun + 1 : 0),
       wonAt: won && !s.wonAt.includes(seat.venue) ? [...s.wonAt, seat.venue] : s.wonAt,
+      friendWins: s.friendWins + (won && seat.friends ? 1 : 0),
     },
   });
 }
 
-/** Where a person finished a campaign sit and go, once it's settled for them: 1st if they're the last with chips, otherwise by the order they went out. */
+/** Where a person finished a campaign tournament, once it's settled for them: 1st if they're the last with chips, otherwise by the order they went out. */
 export function sngPlace(game: Game, playerId: string): number | undefined {
-  if (game.campaign?.kind !== 'sng') return undefined;
+  if (game.campaign?.kind !== 'sng' || game.status === 'lobby') return undefined;
   const me = game.players.find((p) => p.id === playerId);
   const out = game.busted ?? [];
   const at = out.indexOf(playerId);
@@ -288,19 +432,22 @@ const reach = (id: string, emoji: string, title: string, need: number, reward: n
   need,
 });
 
-/** Goals in the order they're meant to come. Each pays its reward once. */
+/** Goals in the order they're meant to come. Each pays its reward once. Ids never change: they're how a claim is remembered. */
 const GOALS: ((c: Campaign) => Goal)[] = [
   reach('double', '✌️', 'Double up', 2000, 250),
   (c) => ({ id: 'firstWin', emoji: '🏆', title: 'First trophy', line: 'Win a tournament.', reward: 500, have: c.stats.sngWins, need: 1 }),
   (c) => ({ id: 'lucky', emoji: '🍀', title: 'Lucky number', line: 'Hit a straight-up number at roulette.', reward: 250, have: c.stats.straightHits, need: 1 }),
-  (c) => ({ id: 'doubleCash', emoji: '💵', title: 'Double or nothing', line: 'Leave a cash table with twice your buy-in.', reward: 500, have: c.stats.bestCashX >= 2 ? 1 : 0, need: 1 }),
-  reach('riverboat', '🛳️', 'All aboard', 5000, 1000),
-  (c) => ({ id: 'itm5', emoji: '🥈', title: 'In the money', line: 'Finish 1st or 2nd in five tournaments.', reward: 1000, have: c.stats.sngCashes, need: 5 }),
+  (c) => ({ id: 'doubleCash', emoji: '💵', title: 'Double or nothing', line: 'Leave a cash game with twice your buy-in.', reward: 500, have: c.stats.bestCashX >= 2 ? 1 : 0, need: 1 }),
+  (c) => ({ id: 'jackpot10', emoji: '🎰', title: 'Big draw', line: 'Draw a tournament prize of 10× the buy-in or more.', reward: 1000, have: c.stats.bestDraw >= 10 ? 1 : 0, need: 1 }),
+  reach('riverboat', '🃏', 'Moving up', 5000, 1000),
+  (c) => ({ id: 'friendWin', emoji: '🤝', title: 'Bragging rights', line: 'Win a tournament with a friend at the table.', reward: 2500, have: c.stats.friendWins, need: 1 }),
+  (c) => ({ id: 'itm5', emoji: '🥈', title: 'In the money', line: 'Get paid in five tournaments.', reward: 1000, have: c.stats.sngCashes, need: 5 }),
   (c) => ({ id: 'week', emoji: '📅', title: 'Payday regular', line: 'Collect your salary on seven days.', reward: 2000, have: c.days, need: 7 }),
-  reach('casino', '🎰', 'Big time', 20000, 2500),
+  reach('casino', '🎲', 'Big time', 20000, 2500),
   (c) => ({ id: 'run3', emoji: '🔥', title: 'Hot streak', line: 'Win three tournaments in a row.', reward: 5000, have: c.stats.bestRun, need: 3 }),
   (c) => ({ id: 'tour3', emoji: '🗺️', title: 'World tour', line: 'Win a tournament at three different venues.', reward: 5000, have: c.stats.wonAt.length, need: 3 }),
   reach('sixFigures', '💯', 'Six figures', 100000, 10000),
+  (c) => ({ id: 'jackpot50', emoji: '💥', title: 'Jackpot', line: 'Draw a prize of 50× the buy-in or more.', reward: 25000, have: c.stats.bestDraw >= 50 ? 1 : 0, need: 1 }),
   reach('million', '🤑', 'Millionaire', 1000000, 100000),
   (c) => ({ id: 'tour8', emoji: '🌍', title: 'Every table', line: 'Win a tournament at every venue.', reward: 250000, have: c.stats.wonAt.length, need: VENUES.length }),
   (c) => ({ id: 'captain', emoji: '⚓', title: 'Captain', line: 'Win a tournament on the Yacht.', reward: 2500000, have: c.stats.wonAt.includes('yacht') ? 1 : 0, need: 1 }),
@@ -327,13 +474,38 @@ export const broke = (c: Campaign): boolean => !c.seat && c.chips < ROULETTE_MIN
 /** Short colour word for a pocket, for the result line. */
 export const pocketName = (n: number): string => (n === 0 ? '0 Green' : `${n} ${pocketColour(n) === 'red' ? 'Red' : 'Black'}`);
 
+/** What friends see of your campaign: on your friend card, never more. */
+export interface CampaignCard {
+  chips: number;
+  peak: number;
+  wins: number;
+  at: number;
+}
+
+const MAX_CHIPS = 1e15;
+
+/** A campaign card from the network, or undefined if it isn't one. */
+export function parseCampaignCard(raw: unknown): CampaignCard | undefined {
+  if (!raw || typeof raw !== 'object') return undefined;
+  const r = raw as Record<string, unknown>;
+  const n = (x: unknown) => typeof x === 'number' && Number.isFinite(x) && x >= 0 && x <= MAX_CHIPS;
+  if (!n(r.chips) || !n(r.peak) || !n(r.wins) || !n(r.at)) return undefined;
+  return { chips: Math.floor(r.chips as number), peak: Math.floor(r.peak as number), wins: Math.floor(r.wins as number), at: Math.floor(r.at as number) };
+}
+
+export const campaignCard = (c: Campaign, now: number): CampaignCard => ({ chips: c.chips, peak: c.peak, wins: c.stats.sngWins, at: now });
+
 /** Reads a saved campaign, filling in anything an older version didn't have. */
 export function cleanCampaign(raw: unknown): Campaign {
   const base = newCampaign();
   if (!raw || typeof raw !== 'object') return base;
   const r = raw as Partial<Campaign>;
   const num = (x: unknown, d = 0) => (typeof x === 'number' && Number.isFinite(x) && x >= 0 ? Math.floor(x) : d);
-  const seat = r.seat && typeof r.seat.gameId === 'string' && venueById(r.seat.venue) && (r.seat.kind === 'cash' || r.seat.kind === 'sng') ? r.seat : null;
+  const s = r.seat;
+  const seat =
+    s && typeof s.gameId === 'string' && ((s.kind === 'cash' && stakeById(s.venue)) || (s.kind === 'sng' && venueById(s.venue)))
+      ? { ...s, venue: s.kind === 'cash' ? stakeById(s.venue)!.id : s.venue }
+      : null;
   return {
     ...base,
     chips: num(r.chips),
@@ -348,3 +520,25 @@ export function cleanCampaign(raw: unknown): Campaign {
     spins: Array.isArray(r.spins) ? r.spins.filter((x) => Number.isInteger(x) && x >= 0 && x <= 36).slice(0, 12) : [],
   };
 }
+
+/** The settings and campaign tag for a campaign table, shared by the phone (bots-only) and the server (with friends). */
+export function campaignTable(
+  pick: { kind: 'cash'; stake: Stake; stack: number } | { kind: 'sng'; venue: Venue; prize: number },
+  online: boolean,
+): { settings: Game['settings']; campaign: NonNullable<Game['campaign']> } {
+  if (pick.kind === 'cash') {
+    const s = pick.stake;
+    return {
+      settings: { startingStack: pick.stack, smallBlind: s.smallBlind, bigBlind: s.bigBlind, rebuys: true, turnSeconds: online ? 30 : 0 },
+      campaign: { kind: 'cash', venue: s.id, seats: CASH.seats, buyIn: pick.stack },
+    };
+  }
+  const f = FORMATS[pick.venue.format];
+  return {
+    settings: { startingStack: f.stack, smallBlind: f.smallBlind, bigBlind: f.bigBlind, rebuys: false, turnSeconds: online ? 20 : 0, blindHands: f.levelHands },
+    campaign: { kind: 'sng', venue: pick.venue.id, seats: f.seats, format: f.id, prize: pick.prize, buyIn: pick.venue.buyIn },
+  };
+}
+
+/** The bot styles that sit at a campaign table. */
+export const campaignStyles = (c: NonNullable<Game['campaign']>): string[] | undefined => (c.kind === 'cash' ? stakeById(c.venue)?.styles : venueById(c.venue)?.styles);

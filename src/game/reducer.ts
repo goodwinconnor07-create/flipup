@@ -41,7 +41,7 @@ import { variantDecide } from './botVariants';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
-import { venueById } from './campaign';
+import { campaignStyles } from './campaign';
 import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
 
 export const LIMITS = {
@@ -256,7 +256,7 @@ const ANSWER_AFTER = { min: 900, spread: 700 };
 /** Campaign cash tables: bots that went bust get up and new ones sit down with 100 big blinds, so the game never runs dry. */
 function refillCash(game: Game): void {
   if (game.campaign?.kind !== 'cash') return;
-  const styles = venueById(game.campaign.venue)?.styles;
+  const styles = campaignStyles(game.campaign);
   game.players = game.players.filter((p) => !(p.bot && p.stack === 0));
   while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) {
     addBot(game, styles);
@@ -543,6 +543,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         return done();
       }
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
+      if (game.campaign?.kind === 'sng' && game.status !== 'lobby') return fail('This tournament has already started.');
       game.players.push({ ...newPlayer(game, { name: uniqueName(game, name), emoji, deviceId: ctx.deviceId, bot: false }) });
       wakeIfWaiting(game, ctx);
       return done();
@@ -571,7 +572,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         if (!legendById(action.legend)) return fail('No such legend.');
         if (game.players.some((p) => p.legend === action.legend)) return fail('That legend is already at the table.');
         addLegend(game, action.legend);
-      } else addBot(game);
+      } else addBot(game, game.campaign ? campaignStyles(game.campaign) : undefined);
       wakeIfWaiting(game, ctx);
       return done();
     }
@@ -580,7 +581,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const target = playerById(game, action.playerId);
       if (!target) return done(false);
       if (!host && target.deviceId !== ctx.deviceId) return fail('Only the host can remove players.');
-      if (game.party && game.status === 'playing' && !game.busted?.includes(target.id)) game.busted = [...(game.busted ?? []), target.id];
+      if ((game.party || game.campaign?.kind === 'sng') && game.status === 'playing' && !game.busted?.includes(target.id)) game.busted = [...(game.busted ?? []), target.id];
       const seat = seatFor(game.hand, target.id);
       const inHand = game.status === 'playing' && game.hand && !game.hand.result && seat && !seat.folded;
       if (inHand) {
@@ -600,6 +601,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
 
     case 'settings': {
       if (!host) return fail('Only the host can change the table.');
+      // A campaign table's stakes are set when it opens. (On this phone, a rebuy sets the stack it buys.)
+      if (game.campaign && game.code) return fail('A campaign table’s stakes are fixed.');
       const next = { ...game.settings, ...action.settings };
       if (!validSettings(next)) return fail("Those settings don't work together.");
       const stackChanged = next.startingStack !== game.settings.startingStack;
@@ -622,6 +625,11 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'start': {
       if (!host) return fail('Only the host can start.');
       if (game.status !== 'lobby') return done(false);
+      // A campaign tournament fills its empty seats with the venue's bots, and is as big as it is when it deals.
+      if (game.campaign?.kind === 'sng') {
+        while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) addBot(game, campaignStyles(game.campaign));
+        game.campaign.seats = game.players.length;
+      }
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
       game.status = 'playing';
       game.first = { settings: { ...game.settings }, bots: game.players.filter((p) => p.bot).length };

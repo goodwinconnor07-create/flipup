@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
 import { campaignRebuy, closeTable, dispatch, useApp } from '../../state/store';
-import { cashBuyIn, venueById } from '../../game';
+import { cashBuyIn, stakeById } from '../../game';
 import { useCampaign } from '../../state/campaign';
 import { toTableTime } from '../../state/clock';
 import { chips, useNow } from '../../ui/components';
@@ -347,8 +347,9 @@ function RaisePanel({
 /** Out of chips at a campaign cash table: buy back in from the bankroll, or go. */
 function CampaignRebuy({ game }: { game: Game }) {
   const c = useCampaign();
-  const v = venueById(game.campaign?.venue);
-  const amount = v ? cashBuyIn(c, v) : 0;
+  const stake = stakeById(game.campaign?.venue);
+  // Online the table hands out its fixed stack; on this phone you buy as much as you can, up to 100 big blinds.
+  const amount = !stake ? 0 : game.code ? (c.chips >= game.settings.startingStack ? game.settings.startingStack : 0) : cashBuyIn(c, stake);
   return (
     <div className="stack">
       {amount > 0 ? (

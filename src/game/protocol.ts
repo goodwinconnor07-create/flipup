@@ -1,6 +1,7 @@
 // Messages between the app and the table server (a Cloudflare Durable Object).
 
 import type { Action, Game, HandLog, Settings, Status } from './types';
+import type { CampaignCard } from './campaign';
 
 /** What the join screen needs to know about a table. */
 export interface TableInfo {
@@ -10,6 +11,8 @@ export interface TableInfo {
   players: { name: string; emoji: string; bot: boolean }[];
   settings: Settings;
   seatsLeft: number;
+  /** A campaign table with friends: what it costs to sit down, and for a tournament the prize drawn. */
+  campaign?: Game['campaign'];
 }
 
 export interface CreateTableRequest {
@@ -18,6 +21,8 @@ export interface CreateTableRequest {
   emoji: string;
   settings: Settings;
   bots: number;
+  /** A campaign table for friends: the server sets its stakes (and draws a tournament's prize) from this. */
+  campaign?: { kind: 'cash' | 'sng'; id: string };
 }
 
 export interface CreateTableResponse {
@@ -45,6 +50,8 @@ export interface FriendCardInfo {
   code: string;
   name: string;
   emoji: string;
+  /** How their campaign is going, if they've shared it. */
+  campaign?: CampaignCard;
 }
 
 export interface CreateFriendCardResponse {

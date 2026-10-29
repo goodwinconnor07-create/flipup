@@ -15,14 +15,23 @@ import {
   payout,
   salaryDue,
   sitDown,
-  SNG,
   sngPlace,
+  campaignTable,
+  drawMultiplier,
+  FORMATS,
+  parseCampaignCard,
+  placePrize,
+  refundSeat,
+  seatPrize,
+  stakeById,
+  STAKES,
   spinBets,
   spinWheel,
   titleOf,
   venueById,
   VENUES,
   WHEEL,
+  cleanCampaign,
   type Campaign,
   type Game,
 } from '.';
@@ -30,6 +39,8 @@ import {
 const garage = venueById('garage')!;
 const backroom = venueById('backroom')!;
 const riverboat = venueById('riverboat')!;
+const small = stakeById('1-2')!;
+const mid = stakeById('5-10')!;
 
 const ok = (x: Campaign | string): Campaign => {
   if (typeof x === 'string') throw new Error(x);
@@ -92,15 +103,15 @@ describe('campaign bankroll', () => {
     expect(salaryDue({ ...c, chips: 200 }, '2026-10-13', 700)).toBe(100);
   });
 
-  it('buys into a cash table with up to 100 big blinds, and cashes out what is in front of you', () => {
+  it('buys into a cash game with up to 100 big blinds, and cashes out what is in front of you', () => {
     let c = collectSalary(newCampaign(), 'd1');
-    expect(cashBuyIn(c, backroom)).toBe(1000);
-    expect(cashBuyIn({ ...c, chips: 600 }, backroom)).toBe(600);
-    expect(cashBuyIn({ ...c, chips: 400 }, backroom)).toBe(0);
-    expect(cashBuyIn(c, garage)).toBe(200);
-    c = ok(sitDown(c, 'cash', garage, 'g1', 0));
+    expect(cashBuyIn(c, mid)).toBe(1000);
+    expect(cashBuyIn({ ...c, chips: 600 }, mid)).toBe(600);
+    expect(cashBuyIn({ ...c, chips: 400 }, mid)).toBe(0);
+    expect(cashBuyIn(c, small)).toBe(200);
+    c = ok(sitDown(c, { kind: 'cash', stake: small, cost: 200 }, 'g1', 0));
     expect(c.chips).toBe(800);
-    expect(sitDown(c, 'sng', garage, 'g2', 0)).toMatch(/Finish/);
+    expect(sitDown(c, { kind: 'sng', venue: garage, prize: 400 }, 'g2', 0)).toMatch(/Finish/);
     c = ok(buyAgain(c, 'g1', 200));
     expect(c.chips).toBe(600);
     c = cashOut(c, 'g1', 900, 1);
@@ -112,20 +123,65 @@ describe('campaign bankroll', () => {
     expect(c.stats.bestCashX).toBeCloseTo(2.25);
   });
 
-  it('keeps higher venues shut until the bankroll has reached them', () => {
-    const c = { ...collectSalary(newCampaign(), 'd1'), chips: 4000, peak: 4000 };
-    expect(sitDown(c, 'sng', riverboat, 'g', 0)).toMatch(/Reach 5,000/);
-    expect(typeof sitDown({ ...c, peak: 5000 }, 'sng', riverboat, 'g', 0)).toBe('object');
+  it('keeps bigger tables shut until the bankroll has reached them, unless a friend brings you', () => {
+    const c = { ...collectSalary(newCampaign(), 'd1'), chips: 2400, peak: 2400 };
+    expect(sitDown(c, { kind: 'sng', venue: riverboat, prize: 4000 }, 'g', 0)).toMatch(/Reach 2,500/);
+    expect(typeof sitDown({ ...c, chips: 3000, peak: 3000 }, { kind: 'sng', venue: riverboat, prize: 4000 }, 'g', 0)).toBe('object');
+    expect(typeof sitDown({ ...c, chips: 1000 }, { kind: 'sng', venue: riverboat, prize: 4000, friends: true }, 'g', 0)).toBe('object');
+    expect(sitDown(c, { kind: 'cash', stake: stakeById('25-50')!, cost: 2400 }, 'g', 0)).toMatch(/Reach 5,000/);
   });
 
-  it('pays four buy-ins for 1st, two for 2nd and nothing below', () => {
+  it('pays a tournament from the prize drawn for it, not from the buy-ins at the table', () => {
     const start = collectSalary(newCampaign(), 'd1');
-    const play = (place: number | undefined) => finishSng(ok(sitDown(start, 'sng', backroom, 'g', 0)), 'g', place, 1);
-    expect(play(1).chips).toBe(1000 - 250 + 1000);
-    expect(play(2).chips).toBe(1000 - 250 + 500);
-    expect(play(3).chips).toBe(750);
-    expect(play(undefined).chips).toBe(750);
-    expect(play(1).stats).toMatchObject({ sngWins: 1, winRun: 1, wonAt: ['backroom'] });
+    // The Garage is a Sit & Go: 70% to 1st, 30% to 2nd.
+    const play = (place: number | undefined) => finishSng(ok(sitDown(start, { kind: 'sng', venue: garage, prize: 1500 }, 'g', 0)), 'g', place, 1);
+    expect(play(1).chips).toBe(1000 - 100 + 1050);
+    expect(play(2).chips).toBe(1000 - 100 + 450);
+    expect(play(3).chips).toBe(900);
+    expect(play(undefined).chips).toBe(900);
+    expect(play(1).stats).toMatchObject({ sngWins: 1, winRun: 1, wonAt: ['garage'], bestDraw: 15 });
+    // The Back Room is a Jackpot: the winner takes it all.
+    const jack = finishSng(ok(sitDown(start, { kind: 'sng', venue: backroom, prize: 500 }, 'j', 0)), 'j', 2, 1);
+    expect(jack.chips).toBe(750);
+    expect(placePrize('jackpot', 500, 1)).toBe(500);
+  });
+
+  it('draws prizes from each format’s table, with a fair-ish average', () => {
+    for (const f of Object.values(FORMATS)) {
+      const total = f.draws.reduce((a, [, w]) => a + w, 0);
+      expect(total).toBe(1000);
+      const mean = f.draws.reduce((a, [x, w]) => a + x * w, 0) / total;
+      // Around what the seats put in, a little over: the bots are the edge.
+      expect(mean).toBeGreaterThan(f.seats * 0.95);
+      expect(mean).toBeLessThan(f.seats * 1.25);
+      expect(drawMultiplier(f, () => 0)).toBe(f.draws[0][0]);
+      expect(drawMultiplier(f, () => 0.99999)).toBe(f.draws[f.draws.length - 1][0]);
+      expect(f.split.reduce((a, x) => a + x, 0)).toBeCloseTo(1);
+    }
+  });
+
+  it('gives the buy-in back for a table that never dealt, and pays old seats the old way', () => {
+    const start = collectSalary(newCampaign(), 'd1');
+    const sat = ok(sitDown(start, { kind: 'sng', venue: backroom, prize: 750, friends: true }, 'f', 0));
+    const back = refundSeat(sat, 'f', 1);
+    expect(back.chips).toBe(1000);
+    expect(back.seat).toBeNull();
+    expect(back.last).toMatchObject({ refunded: true, back: 250 });
+    expect(seatPrize({ gameId: 'x', kind: 'sng', venue: 'garage', paid: 100, at: 0 }, 1)).toBe(400);
+    // A friend table's win counts towards Bragging rights.
+    expect(finishSng(sat, 'f', 1, 1).stats.friendWins).toBe(1);
+  });
+
+  it('reads a cash seat saved under a venue name as the matching stakes', () => {
+    const c = cleanCampaign({ chips: 5, seat: { gameId: 'g', kind: 'cash', venue: 'backroom', paid: 1000, at: 0 } });
+    expect(c.seat?.venue).toBe('5-10');
+  });
+
+  it('only takes a well-formed campaign card from the network', () => {
+    expect(parseCampaignCard({ chips: 10, peak: 20, wins: 1, at: 5 })).toEqual({ chips: 10, peak: 20, wins: 1, at: 5 });
+    expect(parseCampaignCard({ chips: -1, peak: 20, wins: 1, at: 5 })).toBeUndefined();
+    expect(parseCampaignCard({ chips: 'lots', peak: 20, wins: 1, at: 5 })).toBeUndefined();
+    expect(parseCampaignCard(null)).toBeUndefined();
   });
 
   it('settles a spin against the bankroll', () => {
@@ -149,14 +205,20 @@ describe('campaign bankroll', () => {
     expect(claimGoal(c, 'million')).toBe(c);
   });
 
-  it('climbs titles by peak bankroll, and the venues get dearer', () => {
+  it('climbs titles by peak bankroll, and the tables get dearer', () => {
     expect(titleOf(0).name).toBe('Rookie');
     expect(titleOf(1_000_000).name).toBe('Millionaire');
     for (let i = 1; i < VENUES.length; i++) {
-      expect(VENUES[i].bigBlind).toBeGreaterThan(VENUES[i - 1].bigBlind);
-      expect(VENUES[i].sng).toBeGreaterThan(VENUES[i - 1].sng);
+      expect(VENUES[i].buyIn).toBeGreaterThan(VENUES[i - 1].buyIn);
       expect(VENUES[i].unlock).toBeGreaterThanOrEqual(VENUES[i - 1].unlock);
     }
+    for (let i = 1; i < STAKES.length; i++) {
+      expect(STAKES[i].bigBlind).toBeGreaterThan(STAKES[i - 1].bigBlind);
+      expect(STAKES[i].unlock).toBeGreaterThanOrEqual(STAKES[i - 1].unlock);
+    }
+    // Goal ids are how a claim is remembered: never two the same.
+    const ids = goals(newCampaign()).map((g) => g.id);
+    expect(new Set(ids).size).toBe(ids.length);
   });
 });
 
@@ -184,17 +246,10 @@ describe('campaign tables', () => {
 
   it('plays a sit and go to the end and knows where the person finished', () => {
     for (let round = 0; round < 3; round++) {
-      let game = createTable({
-        hostDeviceId: deviceId,
-        name: 'Me',
-        emoji: '🙂',
-        settings: { startingStack: SNG.stack, smallBlind: SNG.smallBlind, bigBlind: SNG.bigBlind, rebuys: false, turnSeconds: 0, blindHands: SNG.levelHands },
-        bots: SNG.seats - 1,
-        botStyles: backroom.styles,
-        code: null,
-        now: 0,
-      });
-      game.campaign = { kind: 'sng', venue: 'backroom', seats: SNG.seats };
+      const venue = round === 0 ? backroom : garage;
+      const table = campaignTable({ kind: 'sng', venue, prize: venue.buyIn * 4 }, false);
+      let game = createTable({ hostDeviceId: deviceId, name: 'Me', emoji: '🙂', settings: table.settings, bots: table.campaign.seats - 1, botStyles: venue.styles, code: null, now: 0 });
+      game.campaign = table.campaign;
       const total = game.players.reduce((a, p) => a + p.stack, 0);
       const r = applyAction(game, { type: 'start' }, { deviceId, now: 0, rng: cryptoRng });
       if (!r.ok) throw new Error(r.error);
@@ -203,9 +258,9 @@ describe('campaign tables', () => {
       game = playOut(game, deviceId, (g) => sngPlace(g, me.id) !== undefined);
       const place = sngPlace(game, me.id);
       expect(place).toBeGreaterThanOrEqual(1);
-      expect(place).toBeLessThanOrEqual(SNG.seats);
+      expect(place).toBeLessThanOrEqual(table.campaign.seats);
       // Bots only ever come from the venue's styles.
-      expect(game.players.every((p) => !p.bot || backroom.styles.includes(p.style!))).toBe(true);
+      expect(game.players.every((p) => !p.bot || venue.styles.includes(p.style!))).toBe(true);
       if (place === 1) expect(game.players.find((p) => p.id === me.id)!.stack).toBe(total);
     }
   });
@@ -220,7 +275,7 @@ describe('campaign tables', () => {
       code: null,
       now: 0,
     });
-    game.campaign = { kind: 'cash', venue: 'backroom', seats: 6 };
+    game.campaign = { kind: 'cash', venue: '5-10', seats: 6 };
     const r = applyAction(game, { type: 'start' }, { deviceId, now: 0, rng: cryptoRng });
     if (!r.ok) throw new Error(r.error);
     game = r.game;
@@ -235,5 +290,23 @@ describe('campaign tables', () => {
       expect(fresh.length).toBeGreaterThan(0);
       expect(fresh.every((p) => p.bought === 1000)).toBe(true);
     }
+  });
+
+  it('fills an online tournament with bots when it deals, then keeps late arrivals and stake changes out', () => {
+    const table = campaignTable({ kind: 'sng', venue: garage, prize: 600 }, true);
+    let game = createTable({ hostDeviceId: deviceId, name: 'Me', emoji: '🙂', settings: table.settings, bots: 0, code: 'BCDFG', now: 0 });
+    game.campaign = table.campaign;
+    const friend = 'd0000000000000000000b';
+    const joined = applyAction(game, { type: 'join', name: 'Pal', emoji: '🙂' }, { deviceId: friend, now: 0, rng: cryptoRng });
+    if (!joined.ok) throw new Error(joined.error);
+    game = joined.game;
+    expect(applyAction(game, { type: 'settings', settings: { startingStack: 9000 } }, { deviceId, now: 0, rng: cryptoRng }).ok).toBe(false);
+    const r = applyAction(game, { type: 'start' }, { deviceId, now: 0, rng: cryptoRng });
+    if (!r.ok) throw new Error(r.error);
+    game = r.game;
+    expect(game.players).toHaveLength(FORMATS.sng.seats);
+    expect(game.campaign?.seats).toBe(FORMATS.sng.seats);
+    expect(game.players.filter((p) => !p.bot)).toHaveLength(2);
+    expect(applyAction(game, { type: 'join', name: 'Late', emoji: '🙂' }, { deviceId: 'd0000000000000000000c', now: 0, rng: cryptoRng }).ok).toBe(false);
   });
 });

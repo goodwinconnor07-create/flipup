@@ -333,6 +333,11 @@ input {
   outline-offset: 3px;
 }
 
+/* Things focused by code (a sheet that has just opened) are not something to tab to, so no ring. */
+[tabindex='-1']:focus-visible {
+  outline: none;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

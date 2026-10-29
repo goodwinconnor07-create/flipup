@@ -1409,7 +1409,7 @@ html[data-theme='dark'] .tab-capsule {
   }
 }
 
-/* ── AI Legends: bigger cards, each a drawn portrait ─────────────────────────────────────── */
+/* ── AI Legends: bigger cards, each an emoji on its backdrop ─────────────────────────────────────── */
 .legends .quick-card {
   flex-basis: 168px;
 }
@@ -1428,26 +1428,6 @@ html[data-theme='dark'] .tab-capsule {
 
 .legends .quick-card small {
   font-size: 14px;
-}
-
-.portrait {
-  overflow: hidden;
-}
-
-.portrait > .legend-portrait {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.quick-art.legend-locked > .legend-portrait {
-  filter: blur(5px) saturate(0.7);
-}
-
-.legend-art.portrait {
-  width: 168px;
-  height: 189px;
 }
 
 /* ── Swiping the shelves ──────────────────────────────────────────────────────────────────────

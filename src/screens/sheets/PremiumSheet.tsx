@@ -1,11 +1,10 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { BUBBLE_STYLES, LEGENDS, type Legend } from '../../game';
+import { BUBBLE_STYLES, CARD_PACKS, legendById, LEGENDS, type Legend } from '../../game';
 import { PREMIUM_PERKS, PREMIUM_PRICE, type PremiumReason } from '../../state/premium';
 import { buyPremium, closeSheet, openSheet, restorePremium, toast, useApp } from '../../state/store';
-import { Sheet } from '../../ui/components';
+import { PlayingCard, Sheet } from '../../ui/components';
 import { confetti, haptic } from '../../ui/effects';
 import { CheckIcon, CloseIcon, CrownIcon } from '../../ui/Icons';
-import { hasPortrait, LegendPortrait } from '../../ui/LegendPortraits';
 import { CONFETTI_COLORS } from '../../ui/theme';
 import { LEGEND_SCENES } from '../botScenes';
 
@@ -14,7 +13,7 @@ export function BubbleChip({ id, children }: { id: string; children: string }) {
   return <span className={`bubble-chip bubble-fx fx-${id}`}>{children}</span>;
 }
 
-/** A legend's portrait in a round frame. */
+/** A legend's emoji in a round frame, on their backdrop colour. */
 export function LegendFace({ legend, size }: { legend: Legend; size: number }) {
   const scene = LEGEND_SCENES[legend.id];
   return (
@@ -23,11 +22,7 @@ export function LegendFace({ legend, size }: { legend: Legend; size: number }) {
       style={{ width: size, height: size, background: `linear-gradient(180deg, ${scene.bg[0]}, ${scene.bg[1]})` }}
       aria-hidden
     >
-      {hasPortrait(legend.id) ? (
-        <LegendPortrait id={legend.id} className="legend-portrait" />
-      ) : (
-        <span style={{ fontSize: size * 0.6 }}>{legend.emoji}</span>
-      )}
+      <span style={{ fontSize: size * 0.6 }}>{legend.emoji}</span>
     </span>
   );
 }
@@ -87,7 +82,7 @@ function Chest({ open }: { open: boolean }) {
 
 /** Everything the chest throws out: bubble colours, emoji and legends, floating where they land. */
 function Burst() {
-  const legends = LEGENDS.filter((l) => hasPortrait(l.id)).slice(0, 3);
+  const legends = ['brunson', 'ivey', 'dwan'].map((id) => legendById(id)!);
   const at = (x: number, y: number, rot: number, delay: number): CSSProperties => ({
     ['--x' as string]: `${x}%`,
     ['--y' as string]: `${y}px`,
@@ -114,20 +109,20 @@ function Burst() {
       <span className="burst-item burst-emoji" style={at(9, 14, -12, 460)}>
         🦄
       </span>
-      <span className="burst-item burst-emoji" style={at(87, 118, 10, 520)}>
+      <span className="burst-item burst-emoji" style={at(89, 124, 10, 520)}>
         🐉
       </span>
-      <span className="burst-item burst-emoji" style={at(92, 58, 6, 580)}>
-        🪩
+      <span className="burst-item" style={at(91, 52, 9, 580)}>
+        <PlayingCard back size="md" pack="holo" />
       </span>
-      <span className="burst-item burst-emoji" style={at(8, 106, -6, 640)}>
-        👾
+      <span className="burst-item" style={at(9, 78, -9, 640)}>
+        <PlayingCard back size="md" pack="gold" />
       </span>
     </div>
   );
 }
 
-/** The three showcase cards under the chest. The one for what the player tapped comes first. */
+/** The showcase cards under the chest. The one for what the player tapped comes first. */
 function Showcase({ reason }: { reason?: PremiumReason }) {
   const cards: Record<PremiumReason, ReactNode> = {
     bubbles: (
@@ -145,6 +140,13 @@ function Showcase({ reason }: { reason?: PremiumReason }) {
           <span key={e}>{e}</span>
         ))}
         <b>Type any emoji</b>
+      </div>
+    ),
+    packs: (
+      <div className="show-packs">
+        {CARD_PACKS.map((p) => (
+          <PlayingCard key={p.id} back size="md" pack={p.id} />
+        ))}
       </div>
     ),
     legends: (
@@ -175,6 +177,7 @@ function Showcase({ reason }: { reason?: PremiumReason }) {
 const LEAD: Record<PremiumReason | 'none', string> = {
   none: 'Make every table yours.',
   bubbles: 'Colour your bubbles. Everyone at the table sees them.',
+  packs: 'Deal with a card back that shines.',
   emoji: 'Use any emoji as your face, not just the ones in the grid.',
   legends: 'Sit the AI Legends down at your table.',
 };
@@ -247,7 +250,7 @@ export function PremiumSheet({ reason, then }: { reason?: PremiumReason; then?: 
             ? phase === 'done'
               ? 'Everything is unlocked. Thank you for backing FlipUp.'
               : 'All of this is unlocked on your account.'
-            : 'Three upgrades for the table, yours for good.'}
+            : 'Four upgrades for the table, yours for good.'}
         </p>
 
         <Showcase reason={reason} />

@@ -223,11 +223,13 @@
   place-items: center;
 }
 
-.bubble-row .prem-lock {
+.bubble-row .prem-lock,
+.pack-row .prem-lock {
   color: var(--gold-ink);
 }
 
-.bubble-row .prem-on {
+.bubble-row .prem-on,
+.pack-row .prem-on {
   color: var(--blue);
 }
 
@@ -309,13 +311,6 @@
   overflow: hidden;
   border-radius: 50%;
   box-shadow: 0 0 0 2px var(--prem-gold-2);
-}
-
-.legend-face > .legend-portrait {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
 }
 
 /* The locked "type any emoji" row in the emoji picker. */
@@ -931,4 +926,225 @@ html.no-glass .sheet.sheet-premium {
     animation: none;
     transform: rotate(-26deg) translate(-6px, -6px);
   }
+}
+
+/* ── Card packs ──────────────────────────────────────────────────────────────────────────────────
+   A pack is the back of a card: a base colour, two patterns on top, and a bright band that sweeps across in the pack's
+   own colour. It's painted on the card back (.pcard-back) and on the back a card flips from (.flip-in::after).
+   Each pack sets its parts as variables; the shared rule below puts them together. */
+
+.pack-gold {
+  --pk-shine: rgba(255, 255, 255, 0.9);
+  --pk-glow: var(--prem-gold-glow);
+  --pk-dur: 3.2s;
+  --pk-pat-a: repeating-linear-gradient(45deg, rgba(120, 70, 0, 0.32) 0 2px, transparent 2px 7px);
+  --pk-pat-b: repeating-linear-gradient(-45deg, rgba(120, 70, 0, 0.32) 0 2px, transparent 2px 7px);
+  --pk-base: linear-gradient(160deg, var(--prem-gold-1), var(--prem-gold-2) 40%, var(--prem-gold-3) 72%, var(--prem-gold-4));
+}
+
+.pack-neon {
+  --pk-shine: rgba(61, 245, 255, 0.95);
+  --pk-glow: var(--fx-neon-glow);
+  --pk-dur: 2.6s;
+  --pk-pat-a: linear-gradient(90deg, rgba(61, 245, 255, 0.4) 1px, transparent 1px);
+  --pk-pat-b: linear-gradient(0deg, rgba(255, 61, 200, 0.4) 1px, transparent 1px);
+  --pk-base: linear-gradient(160deg, var(--pack-neon-night), var(--fx-neon-bg));
+  --pk-sizes: 260% 100%, 8px 8px, 8px 8px, 100% 100%;
+}
+
+.pack-aurora {
+  --pk-shine: rgba(190, 255, 230, 0.9);
+  --pk-glow: rgba(0, 207, 168, 0.5);
+  --pk-dur: 6s;
+  --pk-pat-a: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.4) 0 1px, transparent 1.6px);
+  --pk-pat-b: linear-gradient(180deg, rgba(10, 26, 51, 0.55), rgba(10, 26, 51, 0.05));
+  --pk-base: linear-gradient(
+    90deg,
+    var(--fx-aurora-a) 0,
+    var(--fx-aurora-b) 16.67%,
+    var(--fx-aurora-c) 33.33%,
+    var(--fx-aurora-a) 50%,
+    var(--fx-aurora-b) 66.67%,
+    var(--fx-aurora-c) 83.33%,
+    var(--fx-aurora-a) 100%
+  );
+  --pk-sizes: 260% 100%, 9px 9px, auto, 200% 100%;
+  --pk-motion: pk-drift;
+}
+
+.pack-holo {
+  --pk-shine: rgba(255, 255, 255, 0.95);
+  --pk-glow: rgba(255, 255, 255, 0.45);
+  --pk-dur: 5s;
+  --pk-pat-a: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.28) 0 1px, transparent 1px 6px);
+  --pk-pat-b: radial-gradient(circle at 50% 45%, rgba(255, 255, 255, 0.4), transparent 62%);
+  --pk-base: linear-gradient(
+    90deg,
+    var(--fx-rainbow-a) 0,
+    var(--fx-rainbow-b) 8.33%,
+    var(--fx-rainbow-c) 16.67%,
+    var(--fx-rainbow-d) 25%,
+    var(--fx-rainbow-e) 33.33%,
+    var(--fx-rainbow-f) 41.67%,
+    var(--fx-rainbow-a) 50%,
+    var(--fx-rainbow-b) 58.33%,
+    var(--fx-rainbow-c) 66.67%,
+    var(--fx-rainbow-d) 75%,
+    var(--fx-rainbow-e) 83.33%,
+    var(--fx-rainbow-f) 91.67%,
+    var(--fx-rainbow-a) 100%
+  );
+  --pk-sizes: 260% 100%, auto, auto, 200% 100%;
+  --pk-motion: pk-drift;
+}
+
+.pack-ruby {
+  --pk-shine: var(--pack-ruby-shine);
+  --pk-glow: rgba(255, 138, 31, 0.5);
+  --pk-dur: 3.6s;
+  --pk-pat-a: repeating-linear-gradient(45deg, rgba(255, 120, 60, 0.28) 0 2px, transparent 2px 8px);
+  --pk-pat-b: radial-gradient(circle at 50% 120%, rgba(255, 138, 31, 0.6), transparent 62%);
+  --pk-base: linear-gradient(160deg, var(--pack-ruby-a), var(--pack-ruby-b));
+}
+
+.pk.pcard-back,
+.pk.flip-in::after {
+  background-image:
+    linear-gradient(115deg, transparent 38%, var(--pk-shine) 50%, transparent 62%), var(--pk-pat-a), var(--pk-pat-b), var(--pk-base);
+  background-size: var(--pk-sizes, 260% 100%, auto, auto, 100% 100%);
+  background-repeat: no-repeat, repeat, repeat, no-repeat;
+  background-position:
+    0 0,
+    0 0,
+    0 0,
+    0 0;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.85),
+    0 0 12px var(--pk-glow);
+  animation: var(--pk-motion, pk-shine) var(--pk-dur) linear infinite;
+}
+
+.pk.pcard-sm.pcard-back {
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.85),
+    0 0 8px var(--pk-glow);
+}
+
+/* A card that is flipping over keeps the glow off its front. */
+.pk.flip-in::after {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.85);
+}
+
+@keyframes pk-shine {
+  0% {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+  55%,
+  100% {
+    background-position:
+      100% 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+}
+
+/* The base colour drifts all the way round, and the band sweeps over it. */
+@keyframes pk-drift {
+  0% {
+    background-position:
+      0 0,
+      0 0,
+      0 0,
+      0 0;
+  }
+  55% {
+    background-position:
+      100% 0,
+      0 0,
+      0 0,
+      55% 0;
+  }
+  100% {
+    background-position:
+      100% 0,
+      0 0,
+      0 0,
+      100% 0;
+  }
+}
+
+.pack-preview {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  padding: 24px 0 28px;
+}
+
+.pack-preview .pcard {
+  --w: 84px;
+}
+
+.tilt-l {
+  rotate: -9deg;
+  margin-right: -10px;
+}
+
+.tilt-r {
+  rotate: 9deg;
+}
+
+.pack-row-pic {
+  flex: none;
+  width: 64px;
+  display: grid;
+  place-items: center;
+}
+
+.show-packs {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.show-packs .pcard {
+  --w: 38px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pk.pcard-back,
+  .pk.flip-in::after {
+    animation: none;
+  }
+}
+
+/* Your deck, in your card pack, on the felt: three backs stacked at the lower left. */
+.felt-deck {
+  position: absolute;
+  left: 19%;
+  bottom: 15%;
+  z-index: 1;
+  display: block;
+  width: 30px;
+  height: 40px;
+  pointer-events: none;
+}
+
+.felt-deck .pcard {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.felt-deck .pcard:nth-child(2) {
+  translate: 2px -2px;
+}
+
+.felt-deck .pcard:nth-child(3) {
+  translate: 4px -4px;
 }

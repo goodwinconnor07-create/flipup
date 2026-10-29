@@ -5,6 +5,7 @@ import { isReactionId } from './reactions';
 import { isCard } from './cards';
 import { isVariant } from './variants';
 import { isBubbleId } from './bubbles';
+import { isPackId } from './cardPacks';
 import { legendById } from './legends';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
@@ -51,7 +52,14 @@ export function parseAction(raw: unknown): Action | null {
     case 'setLook':
       if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
       if (a.bubble !== undefined && !isBubbleId(a.bubble)) return null;
-      return { type: 'setLook', name: a.name, emoji: a.emoji, ...(a.bubble !== undefined ? { bubble: a.bubble as string } : {}) };
+      if (a.cardPack !== undefined && !isPackId(a.cardPack)) return null;
+      return {
+        type: 'setLook',
+        name: a.name,
+        emoji: a.emoji,
+        ...(a.bubble !== undefined ? { bubble: a.bubble as string } : {}),
+        ...(a.cardPack !== undefined ? { cardPack: a.cardPack as string } : {}),
+      };
     case 'addBot':
       if (a.legend === undefined) return { type: 'addBot' };
       return typeof a.legend === 'string' && legendById(a.legend) ? { type: 'addBot', legend: a.legend } : null;

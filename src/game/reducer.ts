@@ -9,6 +9,7 @@ import { BOTS, playerStyle, styleOf } from './botStyles';
 import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { isBubbleId } from './bubbles';
+import { isPackId } from './cardPacks';
 import { dressAsLegend, legendById, LEGENDS } from './legends';
 import {
   botsOnly,
@@ -143,6 +144,8 @@ export function createTable(opts: {
   botNames?: string[];
   /** The host's chat bubble colour (a Premium extra). */
   bubble?: string;
+  /** The host's card back (a Premium extra). */
+  cardPack?: string;
   code: string | null;
   now: number;
 }): Game {
@@ -166,6 +169,7 @@ export function createTable(opts: {
   game.players.push({
     ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }),
     ...(isBubbleId(opts.bubble) ? { bubble: opts.bubble } : {}),
+    ...(isPackId(opts.cardPack) ? { cardPack: opts.cardPack } : {}),
   });
   for (const name of opts.botNames ?? []) {
     const legend = LEGENDS.find((l) => l.short === name);
@@ -529,9 +533,11 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!isEmoji(action.emoji)) return fail('Pick an emoji.');
       me.name = uniqueName(game, name, me.id);
       me.emoji = action.emoji;
-      // The action is the whole look: no bubble in it means the plain blue and grey.
+      // The action is the whole look: no bubble in it means the plain blue and grey, no cardPack the plain back.
       if (isBubbleId(action.bubble)) me.bubble = action.bubble;
       else delete me.bubble;
+      if (isPackId(action.cardPack)) me.cardPack = action.cardPack;
+      else delete me.cardPack;
       return done();
     }
 

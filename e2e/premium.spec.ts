@@ -112,3 +112,37 @@ test('a Premium player seats AI Legends from the bot picker and they sit down at
   await expect(page.locator('.legend-chip').first()).toBeVisible({ timeout: 20_000 });
   await shot(page, 'prem-11-legend-at-table');
 });
+
+test('card packs: pick one without Premium and the offer opens; after buying it is picked and shows on a card back', async ({ page }) => {
+  watchErrors(page);
+  await homeAsSam(page);
+  await page.getByRole('button', { name: 'Settings' }).click();
+  await page.getByRole('button', { name: 'Card packs', exact: true }).click();
+  await shot(page, 'prem-12-packs-locked');
+  await page.getByRole('radio', { name: /Holo/ }).click();
+  await expect(offer(page)).toContainText('card back that shines');
+  await page.waitForTimeout(1800);
+  await shot(page, 'prem-13-offer-packs');
+  await buy(page);
+  await offer(page).getByRole('button', { name: 'Carry on' }).click();
+  await expect(page.getByRole('radio', { name: /Holo/ })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.locator('.pack-preview .pack-holo')).toHaveCount(2);
+  await shot(page, 'prem-14-packs-picked');
+  const saved = await page.evaluate(() => JSON.parse(localStorage.getItem('flipup.profile')!));
+  expect(saved.cardPack).toBe('holo');
+});
+
+test('at a table, my cards flip over from my card pack and the bots show theirs as plain backs', async ({ page }) => {
+  watchErrors(page);
+  await page.addInitScript(() => {
+    localStorage.setItem('flipup.profile', JSON.stringify({ name: 'Sam', emoji: '🦊', cardPack: 'gold' }));
+    localStorage.setItem('flipup.premium', 'true');
+  });
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Play with Bots' }).click();
+  await page.getByRole('button', { name: 'Sit down' }).click();
+  await page.getByRole('button', { name: 'Deal', exact: true }).click();
+  await expect(page.locator('.my-cards .pcard.flip-in.pack-gold').first()).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.pod .pcard-back').first()).toBeVisible();
+  await shot(page, 'prem-15-pack-at-table');
+});

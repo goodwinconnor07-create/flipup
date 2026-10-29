@@ -113,6 +113,8 @@ export type Sheet =
   | { name: 'premium'; reason?: PremiumReason; then?: () => void }
   /** Pick a chat bubble colour. */
   | { name: 'bubbles' }
+  /** Pick a card back. */
+  | { name: 'packs' }
   /** Pick an AI Legend to seat at this table. */
   | { name: 'legends' }
   | { name: 'player'; playerId: string }
@@ -372,15 +374,17 @@ export function setProfile(patch: Partial<Profile>): void {
     return openPremium('emoji');
   }
   if (!state.premium && patch.bubble) return openPremium('bubbles');
+  if (!state.premium && patch.cardPack) return openPremium('packs');
   const profile = { ...state.profile, ...patch };
   if (!profile.bubble) delete profile.bubble;
+  if (!profile.cardPack) delete profile.cardPack;
   saveProfile(profile);
   set({ profile });
   // Already sitting at a table: everyone sees the change.
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
   const name = cleanName(profile.name);
-  if (me && name && (me.name !== name || me.emoji !== profile.emoji || (me.bubble ?? '') !== (profile.bubble ?? '')) && state.game?.status !== 'ended') {
-    dispatch({ type: 'setLook', name, emoji: profile.emoji, ...(profile.bubble ? { bubble: profile.bubble } : {}) });
+  if (me && name && (me.name !== name || me.emoji !== profile.emoji || (me.bubble ?? '') !== (profile.bubble ?? '') || (me.cardPack ?? '') !== (profile.cardPack ?? '')) && state.game?.status !== 'ended') {
+    dispatch({ type: 'setLook', name, emoji: profile.emoji, ...(profile.bubble ? { bubble: profile.bubble } : {}), ...(profile.cardPack ? { cardPack: profile.cardPack } : {}) });
   }
 }
 
@@ -463,7 +467,7 @@ function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Gam
   const name = cleanName(state.profile.name);
   if (!name) return navigate({ name: 'profile', then: 'bots' });
   const settings: Settings = { ...DEFAULT_SETTINGS, turnSeconds: 0 };
-  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: bot ? [bot] : undefined, bubble: state.premium ? state.profile.bubble : undefined, code: null, now: Date.now() });
+  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: bot ? [bot] : undefined, ...premiumLook(), code: null, now: Date.now() });
   const them = game.players.find((p) => p.bot);
   if (state.fast) game.fast = true;
   if (them) prepare(them, game);
@@ -550,7 +554,7 @@ function onServerMessage(msg: ServerMessage): void {
     const mine = msg.game.players.some((p) => p.deviceId === state.deviceId);
     setSession({ ...s, game: msg.game, joining: s.joining && !mine });
     rememberFaces(s.code, msg.game);
-    syncBubble(msg.game);
+    syncLook(msg.game);
     // Arrived from the join screen: take a seat.
     if (s.joining && !mine && msg.game.status !== 'ended') sendJoin();
   } else if (msg.t === 'log') {
@@ -562,15 +566,22 @@ function onServerMessage(msg: ServerMessage): void {
   }
 }
 
-/** A table made or joined online doesn't know this phone's bubble colour yet: say it once per table and colour. */
-let bubbleSent = '';
-function syncBubble(game: Game): void {
+/** The Premium parts of this phone's look (bubble colour, card pack): empty without Premium. */
+function premiumLook(): { bubble?: string; cardPack?: string } {
+  if (!state.premium) return {};
+  const { bubble, cardPack } = state.profile;
+  return { ...(bubble ? { bubble } : {}), ...(cardPack ? { cardPack } : {}) };
+}
+
+/** A table made or joined online doesn't know this phone's bubble colour and card pack yet: say so once per table and look. */
+let lookSent = '';
+function syncLook(game: Game): void {
   const me = game.players.find((p) => p.deviceId === state.deviceId);
-  const want = state.premium ? (state.profile.bubble ?? '') : '';
-  const key = `${game.id}:${want}`;
-  if (!me || game.status === 'ended' || (me.bubble ?? '') === want || bubbleSent === key) return;
-  bubbleSent = key;
-  send({ type: 'setLook', name: me.name, emoji: me.emoji, ...(want ? { bubble: want } : {}) });
+  const want = premiumLook();
+  const key = `${game.id}:${want.bubble ?? ''}:${want.cardPack ?? ''}`;
+  if (!me || game.status === 'ended' || ((me.bubble ?? '') === (want.bubble ?? '') && (me.cardPack ?? '') === (want.cardPack ?? '')) || lookSent === key) return;
+  lookSent = key;
+  send({ type: 'setLook', name: me.name, emoji: me.emoji, ...want });
 }
 
 let joinSent = false;
@@ -657,7 +668,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   const name = cleanName(state.profile.name);
   const emoji = state.profile.emoji;
   if (mode === 'local') {
-    const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, bubble: state.premium ? state.profile.bubble : undefined, code: null, now: Date.now() });
+    const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, ...premiumLook(), code: null, now: Date.now() });
     if (state.fast) game.fast = true;
     closeConnection();
     setSession({ mode: 'local', code: null, game });

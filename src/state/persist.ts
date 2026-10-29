@@ -1,6 +1,6 @@
 // Everything the app keeps on the phone between visits.
 
-import { cleanName, DEFAULT_EMOJI, DEFAULT_SETTINGS, isBubbleId, isDeviceId, isEmoji, newId, type Game, type Settings } from '../game';
+import { cleanName, DEFAULT_EMOJI, DEFAULT_SETTINGS, isBubbleId, isDeviceId, isEmoji, isPackId, newId, type Game, type Settings } from '../game';
 
 const KEYS = {
   device: 'flipup.device',
@@ -14,6 +14,8 @@ export interface Profile {
   emoji: string;
   /** Chat bubble colour from FlipUp Premium; missing is the plain blue and grey. */
   bubble?: string;
+  /** Card back from FlipUp Premium; missing is the plain dark back. */
+  cardPack?: string;
 }
 
 export interface Session {
@@ -60,6 +62,7 @@ export function loadProfile(): Profile {
     name: typeof p?.name === 'string' ? cleanName(p.name) : '',
     emoji: isEmoji(p?.emoji) ? p.emoji : DEFAULT_EMOJI,
     ...(isBubbleId(p?.bubble) ? { bubble: p.bubble } : {}),
+    ...(isPackId(p?.cardPack) ? { cardPack: p.cardPack } : {}),
   };
 }
 

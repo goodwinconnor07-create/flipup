@@ -44,6 +44,7 @@ import {
   PencilIcon,
   PlusIcon,
   SoundIcon,
+  SpadeIcon,
   StopIcon,
   TrophyIcon,
   UsersIcon,
@@ -58,7 +59,7 @@ import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
 import { AddPalSheet, JoinPartySheet } from './CodeSheets';
 import { PremiumSheet } from './PremiumSheet';
-import { BubbleSheet, LegendsSheet } from './PremiumPickers';
+import { BubbleSheet, LegendsSheet, PackSheet } from './PremiumPickers';
 import { MoreGamesSheet, PickSheet, RulesSheet } from '../GamePicker';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
@@ -97,6 +98,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <PremiumSheet reason={sheet.reason} then={sheet.then} />;
     case 'bubbles':
       return <BubbleSheet />;
+    case 'packs':
+      return <PackSheet />;
     case 'legends':
       return <LegendsSheet />;
     case 'player':
@@ -373,6 +376,7 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
     ],
     links: [
       { label: 'Table theme', Icon: PaletteIcon, color: 'var(--pink)', onClick: () => openSheet({ name: 'theme' }) },
+      { label: 'Card packs', Icon: SpadeIcon, color: 'var(--indigo)', onClick: () => openSheet({ name: 'packs' }) },
       { label: 'Chat bubbles', Icon: ChatIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'bubbles' }) },
       { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'rankings' }) },
     ],

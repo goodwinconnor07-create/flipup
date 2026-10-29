@@ -1,6 +1,6 @@
-import { BUBBLE_STYLES, LEGEND_NOTE, LEGENDS, MAX_SEATS } from '../../game';
+import { BUBBLE_STYLES, CARD_PACKS, LEGEND_NOTE, LEGENDS, MAX_SEATS } from '../../game';
 import { closeSheet, dispatch, openPremium, openSheet, setProfile, useApp } from '../../state/store';
-import { Sheet } from '../../ui/components';
+import { PlayingCard, Sheet } from '../../ui/components';
 import { haptic } from '../../ui/effects';
 import { CheckIcon, LockIcon } from '../../ui/Icons';
 import { BubbleChip, LegendFace } from './PremiumSheet';
@@ -106,6 +106,71 @@ export function LegendsSheet() {
         })}
       </div>
       <p className="muted legend-note">{LEGEND_NOTE}</p>
+    </Sheet>
+  );
+}
+
+/** Pick the back of your cards. The five packs are Premium; tapping one without it opens the offer. */
+export function PackSheet() {
+  const premium = useApp((s) => s.premium);
+  const mine = useApp((s) => s.profile.cardPack);
+  const pick = (id: string | undefined) => {
+    haptic('light');
+    if (id && !premium) {
+      // After buying, put the pack on and come back here.
+      openPremium('packs', () => {
+        setProfile({ cardPack: id });
+        openSheet({ name: 'packs' });
+      });
+      return;
+    }
+    setProfile({ cardPack: id });
+  };
+  const rows: { id: string | undefined; name: string; note: string }[] = [
+    { id: undefined, name: 'Classic', note: 'The plain dark back' },
+    ...CARD_PACKS,
+  ];
+  return (
+    <Sheet title="Card packs">
+      <div className="pack-preview" aria-hidden>
+        <PlayingCard back size="lg" pack={mine} className="tilt-l" />
+        <PlayingCard back size="lg" pack={mine} className="tilt-r" />
+      </div>
+      <p className="muted" style={{ margin: '0 0 12px' }}>
+        You see it when your cards turn over. Everyone at an online table sees it on the back of your cards.
+      </p>
+      <div className="group">
+        {rows.map((r) => {
+          const on = (mine ?? undefined) === r.id;
+          const locked = !!r.id && !premium;
+          return (
+            <button
+              key={r.id ?? 'classic'}
+              type="button"
+              className="group-row press pack-row"
+              role="radio"
+              aria-checked={on}
+              onClick={() => pick(r.id)}
+            >
+              <span className="pack-row-pic">
+                <PlayingCard back size="md" pack={r.id} />
+              </span>
+              <span className="gr-text">
+                {r.name}
+                <small>{r.note}</small>
+              </span>
+              {locked ? (
+                <LockIcon className="prem-lock" width={18} height={18} aria-label="Premium" />
+              ) : on ? (
+                <CheckIcon className="prem-on" width={20} height={20} aria-label="Selected" />
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+      <button type="button" className="btn btn-dark" style={{ marginTop: 20 }} onClick={closeSheet}>
+        Done
+      </button>
     </Sheet>
   );
 }

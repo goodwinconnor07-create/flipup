@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   applyAction,
   BUBBLE_STYLES,
+  CARD_PACKS,
   createTable,
   DEFAULT_SETTINGS,
   legendById,
@@ -18,7 +19,7 @@ import {
 const HOST = 'dhost';
 const NOW = 1_700_000_000_000;
 const settings = { ...DEFAULT_SETTINGS, turnSeconds: 0 };
-const table = (opts: { bots?: number; botNames?: string[]; bubble?: string } = {}): Game =>
+const table = (opts: { bots?: number; botNames?: string[]; bubble?: string; cardPack?: string } = {}): Game =>
   createTable({ hostDeviceId: HOST, name: 'Sam', emoji: '😎', settings, bots: 0, code: null, now: NOW, ...opts });
 
 function run(g: Game, action: Action, deviceId = HOST): Game {
@@ -60,6 +61,31 @@ describe('bubble colours', () => {
   it('every other phone gets to see them', () => {
     const g = run(table({ bots: 1 }), { type: 'setLook', name: 'Sam', emoji: '😎', bubble: 'aurora' });
     expect(redactForDevice(g, 'someone-else').players[0].bubble).toBe('aurora');
+  });
+});
+
+describe('card packs', () => {
+  it('are set with the rest of a look, seen by everyone, and cleared by leaving one out', () => {
+    let g = run(table({ bots: 1 }), { type: 'setLook', name: 'Sam', emoji: '😎', cardPack: 'holo', bubble: 'gold' });
+    expect(g.players[0].cardPack).toBe('holo');
+    expect(g.players[0].bubble).toBe('gold');
+    expect(redactForDevice(g, 'someone-else').players[0].cardPack).toBe('holo');
+    g = run(g, { type: 'setLook', name: 'Sam', emoji: '😎', bubble: 'gold' });
+    expect(g.players[0].cardPack).toBeUndefined();
+    expect(table({ cardPack: 'ruby' }).players[0].cardPack).toBe('ruby');
+    expect(table({ cardPack: 'nope' }).players[0].cardPack).toBeUndefined();
+  });
+
+  it('only come over the network when they are one of ours', () => {
+    expect(CARD_PACKS).toHaveLength(5);
+    expect(parseAction({ type: 'setLook', name: 'Sam', emoji: '😎', cardPack: 'neon' })).toEqual({
+      type: 'setLook',
+      name: 'Sam',
+      emoji: '😎',
+      cardPack: 'neon',
+    });
+    expect(parseAction({ type: 'setLook', name: 'Sam', emoji: '😎', cardPack: 'x'.repeat(40) })).toBeNull();
+    expect(parseAction({ type: 'setLook', name: 'Sam', emoji: '😎', cardPack: 5 })).toBeNull();
   });
 });
 

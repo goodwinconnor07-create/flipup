@@ -4,6 +4,7 @@ import {
   EMOJIS,
   firstEmoji,
   isNameBlocked,
+  isPackId,
   LIMITS,
   NAME_BLOCKED,
   rankLabel,
@@ -168,6 +169,7 @@ export function PlayingCard({
   dim = false,
   glow = false,
   back: showBack = false,
+  pack,
   flip = false,
   delay = 0,
   className = '',
@@ -180,19 +182,22 @@ export function PlayingCard({
   /** Part of the winning hand at showdown: lifts and gets a gold edge. */
   glow?: boolean;
   back?: boolean;
+  /** A card pack's id: the back (and the back a card flips from) wears that pack's design and shine. */
+  pack?: string;
   /** Flip over as it appears. */
   flip?: boolean;
   delay?: number;
   className?: string;
 }) {
+  const packClass = isPackId(pack) ? ` pk pack-${pack}` : '';
   if (showBack || !card) {
-    return <span className={`pcard pcard-${size} pcard-back ${className}`} style={style} aria-label="Face-down card" role="img" />;
+    return <span className={`pcard pcard-${size} pcard-back${packClass} ${className}`} style={style} aria-label="Face-down card" role="img" />;
   }
   // A four-colour deck: spades black, hearts red, diamonds blue, clubs green.
   const suit = suitOf(card);
   return (
     <span
-      className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${glow ? ' glow' : ''}${flip ? ' flip-in' : ''} ${className}`}
+      className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${glow ? ' glow' : ''}${flip ? ` flip-in${packClass}` : ''} ${className}`}
       style={flip ? { ...style, animationDelay: `${delay}ms` } : style}
       role="img"
       aria-label={cardName(card)}

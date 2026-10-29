@@ -101,6 +101,13 @@
   --fx-rainbow-d: #30d158;
   --fx-rainbow-e: #0a84ff;
   --fx-rainbow-f: #bf5af2;
+  --pack-neon-pink: #ff3dc8;
+  --pack-neon-night: #1a0b3b;
+  --pack-ruby-a: #8c0f26;
+  --pack-ruby-b: #3d0410;
+  --pack-ruby-ember: #ff8a1f;
+  --pack-ruby-shine: rgba(255, 190, 110, 0.95);
+  --pack-aurora-night: #0a1a33;
 
   /* ── Brand: the ink-black of the logo, with a red "Up" (hearts and diamonds). */
   --brand-ink: #007aff;

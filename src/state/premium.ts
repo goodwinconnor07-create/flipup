@@ -8,10 +8,11 @@
 export const PREMIUM_PRICE = '$9';
 
 /** What the player was doing when the offer opened, so it can lead with that. */
-export type PremiumReason = 'bubbles' | 'emoji' | 'legends';
+export type PremiumReason = 'bubbles' | 'packs' | 'emoji' | 'legends';
 
 export const PREMIUM_PERKS: { id: PremiumReason; title: string; line: string }[] = [
   { id: 'bubbles', title: 'Five bubble colours', line: 'Gradients that shift and shine. Everyone at the table sees them.' },
+  { id: 'packs', title: 'Five card packs', line: 'Shining card backs. Your table sees them on your cards.' },
   { id: 'emoji', title: 'Any emoji as your face', line: 'Not just the grid. Type any emoji there is.' },
   { id: 'legends', title: 'AI Legends at your table', line: 'Seat Brunson, Ivey, Dwan and the rest in any game.' },
 ];

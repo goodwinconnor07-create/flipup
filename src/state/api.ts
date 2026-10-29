@@ -1,6 +1,6 @@
 // HTTP calls to the FlipUp server (the Cloudflare Worker in /worker).
 
-import { type CreateFriendCardResponse, type FriendCardInfo, type PartySettings, type PartyView, type CreateTableRequest, type CreateTableResponse, type TableInfo } from '../game';
+import { type CampaignCard, type CreateFriendCardResponse, type FriendCardInfo, type PartySettings, type PartyView, type CreateTableRequest, type CreateTableResponse, type TableInfo } from '../game';
 import { apiUrl } from './platform';
 
 async function request(path: string, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
@@ -65,7 +65,7 @@ export async function createFriendCard(body: { deviceId: string; name: string; e
 }
 
 /** Sends a new name and picture. Returns false when the code has gone. */
-export async function updateFriendCard(code: string, body: { deviceId: string; name: string; emoji: string }): Promise<boolean> {
+export async function updateFriendCard(code: string, body: { deviceId: string; name: string; emoji: string; campaign?: CampaignCard }): Promise<boolean> {
   const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}`, { method: 'PUT', body: JSON.stringify(body) });
   if (res.status === 404 || res.status === 403) return false;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't update your friend code."));

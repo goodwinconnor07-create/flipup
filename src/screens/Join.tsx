@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { TableInfo } from '../game';
+import { FORMATS, stakeById, venueById, type TableInfo } from '../game';
+import { useCampaign } from '../state/campaign';
 import { joinTable, navigate, openSheet, replace, resetTo, useApp } from '../state/store';
 import { Avatar, BackBar, chips } from '../ui/components';
 import { haptic } from '../ui/effects';
@@ -57,6 +58,13 @@ export function JoinTable({ info }: { info: TableInfo }) {
   const profile = useApp((s) => s.profile);
   const full = info.seatsLeft <= 0;
   const ended = info.status === 'ended';
+  // A campaign table: the buy-in comes out of your own bankroll as you sit down.
+  const c = useCampaign();
+  const tag = info.campaign;
+  const venue = tag?.kind === 'sng' ? venueById(tag.venue) : undefined;
+  const cost = tag ? (tag.buyIn ?? info.settings.startingStack) : 0;
+  const started = tag?.kind === 'sng' && info.status !== 'lobby';
+  const blocked = !tag ? null : started ? 'Already started' : c.seat ? 'Finish your campaign table first' : c.chips < cost ? `You need ${chips(cost)}` : null;
   const sit = () => {
     if (!profile.name.trim()) navigate({ name: 'profile', then: 'join', info });
     else joinTable(info.code);
@@ -75,6 +83,17 @@ export function JoinTable({ info }: { info: TableInfo }) {
                 : 'Waiting to start.'}
           </p>
         </div>
+        {tag && (
+          <p className="camp-join">
+            {venue ? `${venue.emoji} ${venue.name} ${FORMATS[venue.format].name}` : `🃏 ${stakeById(tag.venue) ? 'Campaign cash game' : 'Campaign table'}`}: the buy-in of <b>{chips(cost)}</b> comes out of your bankroll ({chips(c.chips)}).
+            {tag.prize !== undefined && (
+              <>
+                {' '}
+                Prize pool <b>{chips(tag.prize)}</b>.
+              </>
+            )}
+          </p>
+        )}
         <div className="info-chips">
           <span className="info-chip">
             Blinds{' '}
@@ -108,8 +127,8 @@ export function JoinTable({ info }: { info: TableInfo }) {
             <span className="me-row-edit">Change</span>
           </button>
         )}
-        <button type="button" className="btn btn-xl btn-green" disabled={full || ended} onClick={sit}>
-          {ended ? 'Table finished' : full ? 'Table full' : 'Take a seat'}
+        <button type="button" className="btn btn-xl btn-green" disabled={full || ended || !!blocked} onClick={sit}>
+          {ended ? 'Table finished' : full ? 'Table full' : (blocked ?? (tag ? `Buy in for ${chips(cost)}` : 'Take a seat'))}
         </button>
       </div>
     </div>

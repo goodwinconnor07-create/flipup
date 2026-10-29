@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { FriendCardInfo } from '../src/game';
+import type { CampaignCard, FriendCardInfo } from '../src/game';
 
 /** A friend code is forgotten this long after its owner last opened the app. */
 const KEEP_FOR_MS = 120 * 24 * 60 * 60 * 1000;
@@ -10,6 +10,8 @@ interface Stored {
   /** The phone that owns this code. Never sent out. */
   deviceId: string;
   updatedAt: number;
+  /** How their campaign is going, for friends to compare. */
+  campaign?: CampaignCard;
 }
 
 /**
@@ -26,19 +28,19 @@ export class FriendCard extends DurableObject<Env> {
     return true;
   }
 
-  /** RPC: the owner's latest name and picture. */
-  async update(deviceId: string, name: string, emoji: string): Promise<'ok' | 'missing' | 'forbidden'> {
+  /** RPC: the owner's latest name and picture, and their campaign if they send it. */
+  async update(deviceId: string, name: string, emoji: string, campaign?: CampaignCard): Promise<'ok' | 'missing' | 'forbidden'> {
     const data = await this.load();
     if (!data) return 'missing';
     if (data.deviceId !== deviceId) return 'forbidden';
-    await this.save({ ...data, name, emoji, updatedAt: Date.now() });
+    await this.save({ ...data, name, emoji, ...(campaign ? { campaign } : {}), updatedAt: Date.now() });
     return 'ok';
   }
 
   /** RPC: what a friend sees. */
   async get(code: string): Promise<FriendCardInfo | null> {
     const data = await this.load();
-    return data ? { code, name: data.name, emoji: data.emoji } : null;
+    return data ? { code, name: data.name, emoji: data.emoji, ...(data.campaign ? { campaign: data.campaign } : {}) } : null;
   }
 
   /** RPC: whose code this is, so a party can check someone really holds the code they show. */

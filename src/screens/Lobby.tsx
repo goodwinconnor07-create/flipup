@@ -1,4 +1,4 @@
-import { MAX_SEATS, variantInfo, type Game } from '../game';
+import { FORMATS, MAX_SEATS, stakeById, variantInfo, venueById, type Game } from '../game';
 import { joinLinkLabel } from '../state/platform';
 import { closeTable, confirm, dispatch, openSheet, useApp, withPremium } from '../state/store';
 import { Avatar, chips } from '../ui/components';
@@ -14,6 +14,8 @@ export function Lobby({ game }: { game: Game }) {
   const hostName = game.players.find((p) => p.deviceId === game.hostDeviceId)?.name ?? 'the host';
   const humans = game.players.filter((p) => !p.bot).length;
   const s = game.settings;
+  // A campaign table's stakes are fixed when it opens, and its empty seats fill with bots at the deal.
+  const tag = game.campaign;
   const profile = useApp((st) => st.profile);
   const joining = useApp((st) => !!(st.session?.mode === 'online' && st.session.joining));
   const seated = joining || game.players.some((p) => p.deviceId === deviceId);
@@ -69,7 +71,7 @@ export function Lobby({ game }: { game: Game }) {
           <h1 className="h1">{host ? (online ? 'Invite your friends' : 'Your table') : "You're in!"}</h1>
           {!(host && online) && (
             <p className="muted" style={{ margin: '6px 0 0' }}>
-              {host ? 'Add or remove bots, then deal.' : `Waiting for ${hostName} to deal.`}
+              {host ? 'Add or remove bots, then deal.' : tag ? `Your buy-in is paid. Waiting for ${hostName} to deal.` : `Waiting for ${hostName} to deal.`}
             </p>
           )}
         </div>
@@ -126,7 +128,7 @@ export function Lobby({ game }: { game: Game }) {
               </button>
             );
           })}
-          {host && game.players.length < MAX_SEATS && (
+          {host && !tag && game.players.length < MAX_SEATS && (
             <button type="button" className="roster-item add-bot" onClick={() => dispatch({ type: 'addBot' })}>
               <span className="roster-pic">
                 <span className="add-bot-circle">
@@ -136,7 +138,7 @@ export function Lobby({ game }: { game: Game }) {
               <span className="roster-name">Add bot</span>
             </button>
           )}
-          {host && game.players.length < MAX_SEATS && (
+          {host && !tag && game.players.length < MAX_SEATS && (
             <button type="button" className="roster-item add-bot add-legend" onClick={() => withPremium('legends', () => openSheet({ name: 'legends' }))}>
               <span className="roster-pic">
                 <span className="add-bot-circle">
@@ -148,45 +150,49 @@ export function Lobby({ game }: { game: Game }) {
           )}
         </div>
 
-        <button
-          type="button"
-          className="info-chips press-row"
-          disabled={!host}
-          onClick={() => openSheet({ name: 'settings' })}
-          aria-label="Table settings"
-        >
-          <span className="info-chip">
-            Game <b>{variantInfo(s.variant).emoji} {variantInfo(s.variant).name}</b>
-          </span>
-          <span className="info-chip">
-            Blinds{' '}
-            <b>
-              {chips(s.smallBlind)}/{chips(s.bigBlind)}
-            </b>
-          </span>
-          <span className="info-chip">
-            Stack <b>{chips(s.startingStack)}</b>
-          </span>
-          {online && (
+        {tag ? (
+          <CampaignChips game={game} />
+        ) : (
+          <button
+            type="button"
+            className="info-chips press-row"
+            disabled={!host}
+            onClick={() => openSheet({ name: 'settings' })}
+            aria-label="Table settings"
+          >
             <span className="info-chip">
-              Timer <b>{timerLabel(s.turnSeconds)}</b>
+              Game <b>{variantInfo(s.variant).emoji} {variantInfo(s.variant).name}</b>
             </span>
-          )}
-          {!!s.blindMinutes && (
             <span className="info-chip">
-              Blinds double every <b>{s.blindMinutes} min</b>
+              Blinds{' '}
+              <b>
+                {chips(s.smallBlind)}/{chips(s.bigBlind)}
+              </b>
             </span>
-          )}
-          <span className="info-chip">
-            Rebuys <b>{s.rebuys ? 'On' : 'Off'}</b>
-          </span>
-          {s.showToBusted && (
             <span className="info-chip">
-              Busted players <b>peek</b>
+              Stack <b>{chips(s.startingStack)}</b>
             </span>
-          )}
-          {host && <span className="info-chip edit">Change</span>}
-        </button>
+            {online && (
+              <span className="info-chip">
+                Timer <b>{timerLabel(s.turnSeconds)}</b>
+              </span>
+            )}
+            {!!s.blindMinutes && (
+              <span className="info-chip">
+                Blinds double every <b>{s.blindMinutes} min</b>
+              </span>
+            )}
+            <span className="info-chip">
+              Rebuys <b>{s.rebuys ? 'On' : 'Off'}</b>
+            </span>
+            {s.showToBusted && (
+              <span className="info-chip">
+                Busted players <b>peek</b>
+              </span>
+            )}
+            {host && <span className="info-chip edit">Change</span>}
+          </button>
+        )}
       </div>
       <div className="screen-foot">
         {host ? (
@@ -205,5 +211,42 @@ export function Lobby({ game }: { game: Game }) {
         )}
       </div>
     </>
+  );
+}
+
+/** What a campaign table with friends costs and pays, in place of the settings a host could change. */
+function CampaignChips({ game }: { game: Game }) {
+  const tag = game.campaign!;
+  const venue = tag.kind === 'sng' ? venueById(tag.venue) : undefined;
+  const stake = tag.kind === 'cash' ? stakeById(tag.venue) : undefined;
+  const f = venue ? FORMATS[venue.format] : undefined;
+  return (
+    <div className="info-chips">
+      <span className="info-chip">
+        Campaign <b>{venue ? `${venue.emoji} ${venue.name}` : '🃏 Cash game'}</b>
+      </span>
+      {stake && (
+        <span className="info-chip">
+          Blinds{' '}
+          <b>
+            {chips(stake.smallBlind)}/{chips(stake.bigBlind)}
+          </b>
+        </span>
+      )}
+      <span className="info-chip">
+        Buy-in <b>{chips(tag.buyIn ?? game.settings.startingStack)}</b>
+      </span>
+      {f && tag.prize !== undefined && (
+        <span className="info-chip">
+          Prize pool <b>{chips(tag.prize)}</b>
+        </span>
+      )}
+      {f && (
+        <span className="info-chip">
+          {f.name} <b>{f.seats} seats</b>
+        </span>
+      )}
+      <span className="info-chip">From everyone’s own bankroll</span>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { cashBuyIn, sngPrize, venueById, type Game } from '../game';
+import { cashBuyIn, FORMATS, stakeById, venueById, type Game } from '../game';
 import { useCampaign } from '../state/campaign';
 import { closeTable, startCampaign } from '../state/store';
 import { Count } from '../ui/components';
@@ -13,12 +13,15 @@ const ordinal = (n: number) => `${n}${n === 1 ? 'st' : n === 2 ? 'nd' : n === 3 
 export function CampaignResult({ game }: { game: Game }) {
   const c = useCampaign();
   const last = c.last?.gameId === game.id ? c.last : null;
-  const v = venueById(game.campaign?.venue);
+  const tag = game.campaign;
+  const venue = tag?.kind === 'sng' ? venueById(tag.venue) : undefined;
+  const stake = tag?.kind === 'cash' ? stakeById(tag.venue) : undefined;
   const won = last?.place === 1;
-  const paid = !!last && last.back > 0;
+  const paid = !!last && !last.refunded && last.back > 0;
+  const online = !!game.code;
 
   useEffect(() => {
-    if (!last) return;
+    if (!last || last.refunded) return;
     if (won) {
       haptic('success');
       playSound('victory');
@@ -30,20 +33,32 @@ export function CampaignResult({ game }: { game: Game }) {
     // Once, when the page opens.
   }, []);
 
-  if (!v) return null;
-  const kind = game.campaign?.kind ?? 'sng';
-  const again = kind === 'sng' ? (c.chips >= v.sng ? v.sng : 0) : cashBuyIn(c, v);
-  const emoji = kind === 'cash' ? '🪫' : won ? '🏆' : paid ? '🥈' : '💸';
-  const title =
-    kind === 'cash' ? `Out of chips at ${v.name}` : won ? `You won ${v.name}!` : last?.place ? `${ordinal(last.place)} place` : 'Tournament over';
-  const line =
-    kind === 'cash'
-      ? 'The bots took this one. Sit down again or try another table.'
+  if (!tag || (!venue && !stake)) return null;
+  const name = venue?.name ?? `${n0(stake!.smallBlind)}/${n0(stake!.bigBlind)} cash game`;
+  const format = venue ? FORMATS[venue.format] : undefined;
+  // Another go is a bots-only table on this phone; a table with friends is opened again from the Campaign tab.
+  const again = online ? 0 : venue ? (c.chips >= venue.buyIn ? venue.buyIn : 0) : cashBuyIn(c, stake!);
+  const emoji = last?.refunded ? '↩️' : stake ? '🪫' : won ? '🏆' : paid ? '🥈' : '💸';
+  const title = last?.refunded
+    ? 'Called off'
+    : stake
+      ? `Out of chips at the ${name}`
       : won
-        ? `Five bots down. ${n0(sngPrize(v, 1))} goes into your bankroll.`
+        ? `You won ${name}!`
+        : last?.place
+          ? `${ordinal(last.place)} place`
+          : 'Tournament over';
+  const line = last?.refunded
+    ? 'It never got going, so your buy-in is back in your bankroll.'
+    : stake
+      ? 'The table took this one. Sit down again or try other stakes.'
+      : won
+        ? `${n0(last?.back ?? 0)} goes into your bankroll.`
         : paid
-          ? `So close. ${n0(sngPrize(v, 2))} for 2nd place.`
-          : 'Only 1st and 2nd get paid. Have another go.';
+          ? `So close. ${n0(last?.back ?? 0)} for ${ordinal(last?.place ?? 2)} place.`
+          : format && format.split.length > 1
+            ? `Only the top ${format.split.length} get paid. Have another go.`
+            : 'Only the winner gets paid. Have another go.';
 
   return (
     <div className="screen-body camp-result">
@@ -52,14 +67,14 @@ export function CampaignResult({ game }: { game: Game }) {
       </span>
       <h1>{title}</h1>
       <p className="muted">{line}</p>
-      {last && kind === 'sng' && (
+      {last && venue && !last.refunded && (
         <div className="camp-result-sum">
           <div>
             <small>Buy-in</small>
             <b className="num">{n0(last.paid)}</b>
           </div>
           <div className={paid ? 'up' : ''}>
-            <small>Prize</small>
+            <small>{last.prize ? `Prize pool ${n0(last.prize)}` : 'Prize'}</small>
             <b className="num">{paid ? `+${n0(last.back)}` : '0'}</b>
           </div>
         </div>
@@ -77,10 +92,10 @@ export function CampaignResult({ game }: { game: Game }) {
             className="btn btn-xl btn-green"
             onClick={() => {
               closeTable();
-              startCampaign(kind, v.id);
+              startCampaign(tag.kind, tag.venue);
             }}
           >
-            {kind === 'sng' ? `Play again for ${n0(again)}` : `Sit down again with ${n0(again)}`}
+            {venue ? `Play again for ${n0(again)}` : `Sit down again with ${n0(again)}`}
           </button>
         )}
         <button type="button" className={`btn ${again > 0 ? 'btn-ghost' : 'btn-xl btn-green'}`} onClick={closeTable}>

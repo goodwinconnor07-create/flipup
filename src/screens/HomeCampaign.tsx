@@ -1,30 +1,36 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   broke,
   cashBuyIn,
+  cashMax,
   cashMin,
   claimGoal,
   collectSalary,
+  FORMATS,
   goalDone,
   goals,
   isOpen,
   nextTitle,
   ROULETTE_MIN,
   salaryDue,
-  SNG_PRIZES,
+  stakeById,
+  STAKES,
   titleOf,
+  topDraw,
   venueById,
   VENUES,
   type Campaign,
   type Goal,
+  type Stake,
   type Venue,
 } from '../game';
 import { setCampaign, today, untilTomorrow, useCampaign } from '../state/campaign';
+import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, type Pal } from '../state/pals';
 import { confirm, navigate, openSheet, reconcileCampaign, startCampaign, toast, useApp } from '../state/store';
-import { Count, useNow } from '../ui/components';
+import { Avatar, Count, useNow } from '../ui/components';
 import { confetti, haptic } from '../ui/effects';
 import { playSound } from '../ui/sound';
-import { ChevronIcon, HelpIcon, LockIcon } from '../ui/Icons';
+import { BackIcon, ChevronIcon, HelpIcon, LockIcon, PlusIcon, UsersIcon } from '../ui/Icons';
 
 const n0 = (n: number) => n.toLocaleString('en-US');
 
@@ -36,13 +42,18 @@ export function short(n: number): string {
   return n0(n);
 }
 
-/** Even shorter, for blinds in a tight row: 500/1K. */
-const tiny = (n: number): string => (n >= 1000 && n < 1e4 ? `${+(n / 1000).toFixed(1)}K` : short(n));
+/** Even shorter, for blinds: 500/1K. */
+export const tiny = (n: number): string => (n >= 1000 && n < 1e4 ? `${+(n / 1000).toFixed(1)}K` : short(n));
 
-/** What you can buy into with the least: a venue's tournament or its cash table, whichever is cheaper. */
-const cheapest = Math.min(...VENUES.flatMap((v) => [v.sng, cashMin(v)]));
+export const blinds = (s: Stake): string => `${tiny(s.smallBlind)}/${tiny(s.bigBlind)}`;
 
-/** The Campaign tab: your bankroll, the daily salary, the venues to climb, the wheel and the goals. */
+/** What you can buy into with the least: the cheapest tournament or the smallest cash game. */
+const cheapest = Math.min(...VENUES.map((v) => v.buyIn), ...STAKES.map(cashMin));
+
+/** When friends were last looked up, so switching tabs doesn't ask the server every time. */
+let lastSync = 0;
+
+/** The Campaign tab: your bankroll, the daily salary, cash games, tournaments, the wheel, friends and goals. */
 export function CampaignTab() {
   const c = useCampaign();
   const named = useApp((s) => s.profile.name.trim().length > 0);
@@ -78,31 +89,33 @@ export function CampaignTab() {
     return true;
   };
 
-  const sit = (kind: 'cash' | 'sng', v: Venue) => {
+  const sitCash = (s: Stake) => {
     if (needName()) return;
-    if (kind === 'cash') {
-      const buyIn = cashBuyIn(c, v);
-      confirm({
-        title: `Sit down at ${v.name}?`,
-        body: `Cash game, blinds ${n0(v.smallBlind)}/${n0(v.bigBlind)}. You sit with ${n0(buyIn)} from your bankroll and can cash out any time from the table menu.`,
-        confirm: `Sit down with ${n0(buyIn)}`,
-        onConfirm: () => startCampaign('cash', v.id),
-      });
-    } else {
-      confirm({
-        title: `${v.name} tournament`,
-        body: `Buy in for ${n0(v.sng)}. Six players with 1,500 chips each, and the blinds double every six hands. 1st wins ${n0(v.sng * SNG_PRIZES[0])}, 2nd wins ${n0(v.sng * SNG_PRIZES[1])}.`,
-        confirm: `Buy in for ${n0(v.sng)}`,
-        onConfirm: () => startCampaign('sng', v.id),
-      });
-    }
+    const buyIn = cashBuyIn(c, s);
+    confirm({
+      title: `Sit down at ${n0(s.smallBlind)}/${n0(s.bigBlind)}?`,
+      body: `You sit with ${n0(buyIn)} from your bankroll and can cash out any time from the table menu.`,
+      confirm: `Sit down with ${n0(buyIn)}`,
+      onConfirm: () => startCampaign('cash', s.id),
+    });
   };
 
-  const seatVenue = venueById(c.seat?.venue);
+  const playTourney = (v: Venue) => {
+    if (needName()) return;
+    const f = FORMATS[v.format];
+    confirm({
+      title: `${v.name} ${f.name}`,
+      body: `Buy in for ${n0(v.buyIn)}. ${f.line} The prize is drawn as you sit down: anything from ${n0(v.buyIn * f.draws[0][0])} up to ${n0(v.buyIn * topDraw(f))}.`,
+      confirm: `Buy in for ${n0(v.buyIn)}`,
+      onConfirm: () => startCampaign('sng', v.id),
+    });
+  };
+
+  const seatName = !c.seat ? '' : c.seat.kind === 'cash' ? `the ${blindsOf(c.seat.venue)} cash game` : (venueById(c.seat.venue)?.name ?? 'your table');
   const all = goals(c);
   const ready = all.filter((g) => goalDone(g) && !c.claimed.includes(g.id));
-  const next = all.filter((g) => !goalDone(g)).slice(0, 3);
-  const doneCount = c.claimed.length;
+  // Everything ready to collect, then the next few to work on (always at least one).
+  const next = all.filter((g) => !goalDone(g)).slice(0, Math.max(1, 3 - ready.length));
 
   return (
     <>
@@ -121,11 +134,11 @@ export function CampaignTab() {
           </button>
         </section>
       )}
-      {tableOn && seatVenue && (
+      {tableOn && c.seat && (
         <button type="button" className="hero hero-slate press" onClick={() => navigate({ name: 'table' })}>
           <span className="hero-top">
-            <span className="hero-title">Back to {seatVenue.name}</span>
-            <span className="hero-sub">{c.seat?.kind === 'cash' ? `Cash table ${n0(seatVenue.smallBlind)}/${n0(seatVenue.bigBlind)}` : 'Your tournament is on'}</span>
+            <span className="hero-title">Back to {seatName}</span>
+            <span className="hero-sub">{c.seat.friends ? 'Your table with friends' : c.seat.kind === 'cash' ? 'Your seat is waiting' : 'Your tournament is on'}</span>
           </span>
           <span className="hero-foot">
             Back to the table
@@ -135,10 +148,12 @@ export function CampaignTab() {
       )}
       {due === 0 && !c.seat && <OutOfChips c={c} />}
 
-      <h3 className="section-head">Tables</h3>
-      <div className="venues">
+      <CashGame c={c} seated={!!c.seat} onSit={sitCash} />
+
+      <h3 className="section-head">Tournaments</h3>
+      <div className="tourney-row" role="list">
         {VENUES.map((v) => (
-          <VenueCard key={v.id} v={v} c={c} seated={!!c.seat} onSit={sit} />
+          <TourneyCard key={v.id} v={v} c={c} seated={!!c.seat} onPlay={playTourney} />
         ))}
       </div>
 
@@ -153,15 +168,17 @@ export function CampaignTab() {
         <ChevronIcon width={22} height={22} />
       </button>
 
+      <Friends c={c} needName={needName} />
+
       <div className="section-row">
         <h3 className="section-head">Goals</h3>
-        <span className="section-count">
-          {doneCount} of {all.length}
-        </span>
+        <button type="button" className="section-link press" onClick={() => openSheet({ name: 'campaignGoals' })}>
+          See all {all.length}
+        </button>
       </div>
       <div className="goals">
         {[...ready, ...next].map((g) => (
-          <GoalRow key={g.id} g={g} ready={goalDone(g)} onClaim={(e) => claim(c, g, e)} />
+          <GoalRow key={g.id} g={g} c={c} />
         ))}
       </div>
 
@@ -170,7 +187,7 @@ export function CampaignTab() {
         <Stat label="Best bankroll" value={short(c.peak)} />
         <Stat label="Tournaments won" value={n0(c.stats.sngWins)} />
         <Stat label="Best cash-out" value={c.stats.bestCash > 0 ? `+${short(c.stats.bestCash)}` : '–'} />
-        <Stat label="Paydays" value={n0(c.days)} />
+        <Stat label="Best prize draw" value={c.stats.bestDraw ? `${c.stats.bestDraw}×` : '–'} />
       </div>
 
       <div className="group">
@@ -186,7 +203,13 @@ export function CampaignTab() {
   );
 }
 
-function claim(c: Campaign, g: Goal, e: React.MouseEvent): void {
+const blindsOf = (id: string): string => {
+  const s = stakeById(id);
+  return s ? blinds(s) : '';
+};
+
+/** Collects a goal's reward with a burst from the button. */
+export function claim(c: Campaign, g: Goal, e: React.MouseEvent): void {
   const r = e.currentTarget.getBoundingClientRect();
   setCampaign(claimGoal(c, g.id));
   haptic('success');
@@ -194,12 +217,16 @@ function claim(c: Campaign, g: Goal, e: React.MouseEvent): void {
   confetti(undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, 60);
 }
 
-/** The bankroll: the big number, your title, and how far to the next room. */
+/** The bankroll: the big number, your title, and how far to the next table. */
 function Bankroll({ c }: { c: Campaign }) {
   const title = titleOf(c.peak);
   const nextTitleUp = nextTitle(c.peak);
-  const nextVenue = VENUES.find((v) => !isOpen(c, v));
-  const target = nextVenue ? { at: nextVenue.unlock, text: `${nextVenue.emoji} ${nextVenue.name}` } : nextTitleUp ? { at: nextTitleUp.at, text: `${nextTitleUp.emoji} ${nextTitleUp.name}` } : null;
+  // The nearest thing still shut: a tournament or a cash game's stakes.
+  const shut = [
+    ...VENUES.filter((v) => !isOpen(c, v)).map((v) => ({ at: v.unlock, text: `${v.emoji} ${v.name}` })),
+    ...STAKES.filter((s) => !isOpen(c, s)).map((s) => ({ at: s.unlock, text: `${blinds(s)} cash games` })),
+  ].sort((a, b) => a.at - b.at)[0];
+  const target = shut ?? (nextTitleUp ? { at: nextTitleUp.at, text: `${nextTitleUp.emoji} ${nextTitleUp.name}` } : null);
   const pct = target ? Math.min(100, (c.peak / target.at) * 100) : 100;
   return (
     <section className="bankroll" aria-label="Your bankroll">
@@ -248,77 +275,216 @@ function OutOfChips({ c }: { c: Campaign }) {
   );
 }
 
-function VenueCard({ v, c, seated, onSit }: { v: Venue; c: Campaign; seated: boolean; onSit: (kind: 'cash' | 'sng', v: Venue) => void }) {
-  if (!isOpen(c, v)) {
-    const pct = Math.min(100, (c.peak / v.unlock) * 100);
-    return (
-      <article className={`venue venue-${v.id} locked`} aria-label={`${v.name}, locked`}>
-        <span className="venue-emoji" aria-hidden>
-          {v.emoji}
-        </span>
-        <div className="venue-name">
-          <b>{v.name}</b>
-          <small>
-            Opens at {short(v.unlock)} · blinds {tiny(v.smallBlind)}/{tiny(v.bigBlind)}
-          </small>
-          <div className="bar">
-            <i style={{ width: `${pct}%` }} />
-          </div>
-        </div>
-        <LockIcon className="venue-lock" width={22} height={22} />
-      </article>
-    );
-  }
-  const buyIn = cashBuyIn(c, v);
-  const cashOk = !seated && buyIn > 0;
-  const sngOk = !seated && c.chips >= v.sng;
+/** Cash games on their own: pick the blinds, sit down, leave whenever. Starts on the biggest stakes you can cover. */
+function CashGame({ c, seated, onSit }: { c: Campaign; seated: boolean; onSit: (s: Stake) => void }) {
+  const best = Math.max(0, STAKES.findLastIndex((s) => isOpen(c, s) && cashBuyIn(c, s) > 0));
+  // Follows your bankroll until you pick blinds yourself.
+  const [picked, setPicked] = useState<number | null>(null);
+  const at = picked ?? best;
+  const s = STAKES[at];
+  const open = isOpen(c, s);
+  const buyIn = cashBuyIn(c, s);
+  const move = (d: number) => {
+    setPicked(Math.max(0, Math.min(STAKES.length - 1, at + d)));
+    haptic('light');
+  };
   return (
-    <article className={`venue venue-${v.id}`}>
-      <div className="venue-head">
-        <span className="venue-emoji" aria-hidden>
-          {v.emoji}
+    <section className="cash-card" aria-label="Cash game">
+      <div className="cash-head">
+        <span className="cash-chips" aria-hidden>
+          <i />
+          <i />
+          <i />
         </span>
-        <div className="venue-name">
-          <b>{v.name}</b>
-          <small>{v.line}</small>
+        <div>
+          <b>Cash game</b>
+          <small>Sit down with up to 100 big blinds. Cash out whenever you like.</small>
         </div>
       </div>
-      <div className="venue-games">
-        <button type="button" className="venue-btn press" disabled={!cashOk} onClick={() => onSit('cash', v)}>
-          <small>Cash table</small>
-          <b>
-            {short(v.smallBlind)}/{short(v.bigBlind)}
-          </b>
-          <span>{buyIn > 0 ? `Sit with ${short(buyIn)}` : `Need ${short(cashMin(v))}`}</span>
+      <div className="cash-picker">
+        <button type="button" className="cash-step press" aria-label="Smaller blinds" disabled={at === 0} onClick={() => move(-1)}>
+          <BackIcon width={22} height={22} />
         </button>
-        <button type="button" className="venue-btn press" disabled={!sngOk} onClick={() => onSit('sng', v)}>
-          <small>Tournament</small>
-          <b>{short(v.sng)}</b>
-          <span>Win {short(v.sng * SNG_PRIZES[0])}</span>
+        <div className={`cash-stakes${open ? '' : ' locked'}`} aria-live="polite">
+          <b className="num">{blinds(s)}</b>
+          <small>{open ? `Buy-in ${short(cashMin(s))} – ${short(cashMax(s))}` : `Opens at ${short(s.unlock)}`}</small>
+        </div>
+        <button type="button" className="cash-step press flip" aria-label="Bigger blinds" disabled={at === STAKES.length - 1} onClick={() => move(1)}>
+          <BackIcon width={22} height={22} />
         </button>
       </div>
-    </article>
+      <div className="cash-dots" aria-hidden>
+        {STAKES.map((x, i) => (
+          <i key={x.id} className={`${i === at ? 'on' : ''}${isOpen(c, x) ? '' : ' shut'}`} />
+        ))}
+      </div>
+      <button type="button" className="cash-go press" disabled={seated || !open || buyIn === 0} onClick={() => onSit(s)}>
+        {!open ? (
+          <>
+            <LockIcon width={18} height={18} /> Locked
+          </>
+        ) : buyIn === 0 ? (
+          `Need ${short(cashMin(s))}`
+        ) : (
+          `Sit down with ${short(buyIn)}`
+        )}
+      </button>
+    </section>
   );
 }
 
-function GoalRow({ g, ready, onClaim }: { g: Goal; ready: boolean; onClaim: (e: React.MouseEvent) => void }) {
+/** A tournament venue on the shelf: its format, the most its prize can draw, and the buy-in. */
+function TourneyCard({ v, c, seated, onPlay }: { v: Venue; c: Campaign; seated: boolean; onPlay: (v: Venue) => void }) {
+  const f = FORMATS[v.format];
+  const open = isOpen(c, v);
+  const ok = open && !seated && c.chips >= v.buyIn;
+  return (
+    <button type="button" role="listitem" className={`tourney venue-${v.id}${open ? '' : ' locked'} press`} disabled={!ok} onClick={() => onPlay(v)} aria-label={`${v.name} ${f.name}, buy-in ${n0(v.buyIn)}${open ? '' : `, opens at ${n0(v.unlock)}`}`}>
+      <span className="tourney-emoji" aria-hidden>
+        {v.emoji}
+      </span>
+      <b className="tourney-name">{v.name}</b>
+      <span className="tourney-format">
+        {f.name} · {f.seats} players
+      </span>
+      <span className="tourney-prize">
+        <small>Prize up to</small>
+        <b className="num">{short(v.buyIn * topDraw(f))}</b>
+      </span>
+      <span className="tourney-buyin">
+        Buy-in <b>{short(v.buyIn)}</b>
+      </span>
+      <span className="tourney-go">{open ? (c.chips >= v.buyIn ? 'Play' : `Need ${short(v.buyIn)}`) : <><LockIcon width={16} height={16} /> {short(v.unlock)}</>}</span>
+    </button>
+  );
+}
+
+/** You and your friends by bankroll, and the way to play them. */
+function Friends({ c, needName }: { c: Campaign; needName: () => boolean }) {
+  const profile = useApp((s) => s.profile);
+  const [pals, setPals] = useState(loadPals);
+  const [code, setCode] = useState(myPalCode);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    const reload = () => setPals(loadPals());
+    window.addEventListener(PALS_CHANGED, reload);
+    if (Date.now() - lastSync > 60_000) {
+      lastSync = Date.now();
+      void refreshPals();
+      // Your own card gets your latest bankroll too.
+      if (myPalCode() && profile.name.trim()) void ensureMyCode().catch(() => undefined);
+    }
+    return () => window.removeEventListener(PALS_CHANGED, reload);
+  }, []);
+
+  const getCode = async () => {
+    if (busy || needName()) return;
+    setBusy(true);
+    try {
+      setCode(await ensureMyCode());
+      toast('Your friends can see your bankroll now.', 'success');
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Couldn't make your code.", 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const rows: { key: string; name: string; emoji: string; chips: number; peak: number; wins: number; you?: boolean; pal?: Pal }[] = [
+    { key: 'you', name: profile.name.trim() || 'You', emoji: profile.emoji, chips: c.chips, peak: c.peak, wins: c.stats.sngWins, you: true },
+    ...pals.filter((p) => p.campaign).map((p) => ({ key: p.code, name: p.name, emoji: p.emoji, chips: p.campaign!.chips, peak: p.campaign!.peak, wins: p.campaign!.wins, pal: p })),
+  ].sort((a, b) => b.chips - a.chips);
+  const quiet = pals.filter((p) => !p.campaign);
+
+  return (
+    <>
+      <div className="section-row">
+        <h3 className="section-head">Friends</h3>
+        {pals.length > 0 && (
+          <button type="button" className="section-link press" onClick={() => openSheet({ name: 'addPal' })}>
+            Add
+          </button>
+        )}
+      </div>
+      {pals.length > 0 && (
+        <ol className="camp-board" aria-label="You and your friends by bankroll">
+          {rows.map((r, i) => (
+            <li key={r.key} className={r.you ? 'you' : ''}>
+              <span className="camp-rank num">{i + 1}</span>
+              <Avatar emoji={r.emoji} size={40} />
+              <span className="camp-who">
+                <b>{r.you ? 'You' : r.name}</b>
+                <small>
+                  {titleOf(r.peak).emoji} {titleOf(r.peak).name} · {r.wins} {r.wins === 1 ? 'win' : 'wins'}
+                </small>
+              </span>
+              <b className="camp-chips num">{short(r.chips)}</b>
+            </li>
+          ))}
+        </ol>
+      )}
+      {quiet.length > 0 && (
+        <p className="camp-quiet">
+          {quiet.map((p) => p.name).join(', ')} {quiet.length === 1 ? 'hasn’t' : 'haven’t'} started the campaign yet.
+        </p>
+      )}
+      {pals.length === 0 && (
+        <section className="camp-note">
+          <span aria-hidden>🤝</span>
+          <div>
+            <b>Race your friends</b>
+            <small>Add friends by their code to see their bankrolls next to yours, and play them at campaign tables.</small>
+          </div>
+        </section>
+      )}
+      <div className="friend-actions">
+        <button type="button" className="friend-play press" onClick={() => !needName() && openSheet({ name: 'campaignFriends' })}>
+          <UsersIcon width={24} height={24} />
+          Play with friends
+        </button>
+        {pals.length === 0 && (
+          <button type="button" className="friend-add press" onClick={() => openSheet({ name: 'addPal' })}>
+            <PlusIcon width={20} height={20} />
+            Add a friend
+          </button>
+        )}
+      </div>
+      {!code ? (
+        <button type="button" className="camp-share press" disabled={busy} onClick={getCode}>
+          {busy ? 'Making your code…' : 'Get a friend code so friends can see your bankroll'}
+        </button>
+      ) : (
+        <p className="camp-quiet">
+          Your friend code is <b className="num">{code}</b>. Friends add you with it to see your bankroll.
+        </p>
+      )}
+    </>
+  );
+}
+
+/** One goal: its progress, and the button to collect it once it's done. */
+export function GoalRow({ g, c }: { g: Goal; c: Campaign }) {
+  const done = goalDone(g);
+  const collected = c.claimed.includes(g.id);
   const pct = Math.min(100, (g.have / g.need) * 100);
   return (
-    <div className={`goal${ready ? ' ready' : ''}`}>
+    <div className={`goal${done && !collected ? ' ready' : ''}${collected ? ' collected' : ''}`}>
       <span className="goal-emoji" aria-hidden>
         {g.emoji}
       </span>
       <div className="goal-text">
         <b>{g.title}</b>
         <small>{g.line}</small>
-        {!ready && (
+        {!done && (
           <div className="bar">
             <i style={{ width: `${pct}%` }} />
           </div>
         )}
       </div>
-      {ready ? (
-        <button type="button" className="goal-go press" onClick={onClaim}>
+      {collected ? (
+        <span className="goal-reward done">Collected</span>
+      ) : done ? (
+        <button type="button" className="goal-go press" onClick={(e) => claim(c, g, e)}>
           +{short(g.reward)}
         </button>
       ) : (

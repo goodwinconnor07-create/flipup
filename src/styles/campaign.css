@@ -228,35 +228,245 @@
   color: var(--ink-3);
 }
 
-/* ── Venues ───────────────────────────────────────────────────────────────────────── */
+/* ── Section links ("See all", "Add") ─────────────────────────────────────────────── */
 
-.venues {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.section-link {
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-bg);
 }
 
-.venue {
-  --va: var(--venue-garage-a);
-  --vb: var(--venue-garage-b);
+/* ── The cash game card: its own loud card, with the blinds picked by arrows ─────── */
+
+.cash-card {
   position: relative;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
+  padding: 20px;
   border-radius: var(--r-xl);
   overflow: hidden;
   color: var(--on-color);
-  background: linear-gradient(150deg, var(--va), var(--vb));
-  box-shadow: 0 14px 26px -16px var(--vb);
+  background: linear-gradient(150deg, var(--cash-a), var(--cash-b));
+  box-shadow: 0 16px 30px -14px var(--cash-glow);
 }
 
-.venue::after {
+.cash-card::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(80% 60% at 0% 0%, rgba(255, 255, 255, 0.22), transparent 60%);
+  background: radial-gradient(90% 70% at 0% 0%, rgba(255, 255, 255, 0.24), transparent 60%);
+}
+
+.cash-head {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cash-head div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cash-head b {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.cash-head small {
+  font-size: var(--fs-small);
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* A little stack of chips. */
+.cash-chips {
+  position: relative;
+  flex: none;
+  width: 56px;
+  height: 56px;
+}
+
+.cash-chips i {
+  position: absolute;
+  left: 8px;
+  width: 40px;
+  height: 16px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(var(--party-yellow) 0deg 30deg, var(--on-color) 30deg 45deg);
+  box-shadow:
+    inset 0 0 0 4px var(--party-yellow),
+    0 3px 0 var(--party-edge);
+}
+
+.cash-chips i:nth-child(1) {
+  bottom: 6px;
+}
+
+.cash-chips i:nth-child(2) {
+  bottom: 16px;
+}
+
+.cash-chips i:nth-child(3) {
+  bottom: 26px;
+}
+
+.cash-picker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.cash-step {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--on-color);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.cash-step.flip svg {
+  transform: scaleX(-1);
+}
+
+.cash-step:disabled {
+  opacity: 0.35;
+}
+
+.cash-stakes {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.cash-stakes b {
+  font-size: var(--fs-display-2);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.cash-stakes small {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cash-stakes.locked b {
+  opacity: 0.55;
+}
+
+.cash-dots {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cash-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.cash-dots i.shut {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.cash-dots i.on {
+  width: 20px;
+  border-radius: var(--r-pill);
+  background: var(--on-color);
+}
+
+.cash-go {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--r-lg);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--cash-b);
+  background: var(--venue-btn);
+  box-shadow: 0 4px 0 var(--party-edge);
+}
+
+.cash-go:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* ── Tournaments: a shelf of tall cards, each venue in its own colours ──────────────── */
+
+.tourney-row {
+  display: flex;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 4px 16px 16px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding: 0 16px;
+  scrollbar-width: none;
+}
+
+.tourney-row::-webkit-scrollbar {
+  display: none;
+}
+
+.tourney {
+  --va: var(--venue-garage-a);
+  --vb: var(--venue-garage-b);
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 168px;
+  padding: 16px 12px 12px;
+  border: 0;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  font: inherit;
+  text-align: center;
+  color: var(--on-color);
+  background: linear-gradient(170deg, var(--va), var(--vb));
+  box-shadow: 0 14px 24px -16px var(--vb);
+  scroll-snap-align: start;
+}
+
+.tourney::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(90% 50% at 50% 0%, rgba(255, 255, 255, 0.28), transparent 70%);
 }
 
 .venue-backroom {
@@ -294,138 +504,218 @@
   --vb: var(--venue-yacht-b);
 }
 
-.venue-head {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.venue-emoji {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  font-size: 32px;
+.tourney-emoji {
+  font-size: 48px;
   line-height: 1;
-  background: rgba(255, 255, 255, 0.22);
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
 }
 
-.venue-name {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.venue-name b {
-  font-size: 24px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
-}
-
-.venue-name small {
-  font-size: var(--fs-small);
-  line-height: 1.3;
-  color: rgba(255, 255, 255, 0.88);
-}
-
-.venue-games {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.venue-btn {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 2px;
-  min-height: 92px;
-  padding: 12px 16px;
-  border: 0;
-  border-radius: var(--r-lg);
-  font: inherit;
-  text-align: left;
-  color: var(--vb);
-  background: var(--venue-btn);
-  box-shadow: 0 4px 0 var(--party-edge);
-}
-
-.venue-btn small {
-  font-size: var(--fs-caption);
-  font-weight: 700;
-  color: var(--venue-btn-dim);
-}
-
-.venue-btn b {
-  font-size: 26px;
+.tourney-name {
+  margin-top: 4px;
+  font-size: 19px;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
-.venue-btn span {
-  font-size: 14px;
+.tourney-format {
+  font-size: var(--fs-caption);
   font-weight: 700;
-  color: var(--venue-btn-ink);
+  color: rgba(255, 255, 255, 0.88);
 }
 
-.venue-btn:disabled {
-  opacity: 0.55;
-  box-shadow: none;
-}
-
-/* A venue you haven't reached: one grey row with how far there is to go. */
-.venue.locked {
-  flex-direction: row;
+/* The prize, in a dark window like a slot machine's. */
+.tourney-prize {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 16px;
-  padding: 12px 16px;
-  color: var(--ink);
-  background: var(--bg-2);
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 8px 4px;
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.tourney-prize small {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.tourney-prize b {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--party-yellow);
+}
+
+.tourney-buyin {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tourney-go {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border-radius: var(--r-md);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--vb);
+  background: var(--venue-btn);
+  box-shadow: 0 3px 0 var(--party-edge);
+}
+
+.tourney:disabled {
+  opacity: 1;
+}
+
+.tourney:disabled .tourney-go {
+  opacity: 0.7;
   box-shadow: none;
 }
 
-.venue.locked::after {
-  content: none;
+.tourney.locked {
+  filter: grayscale(0.85);
 }
 
-.venue.locked .venue-emoji {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  font-size: 26px;
-  background: var(--bg-3);
-  filter: grayscale(1);
-  opacity: 0.7;
+.tourney.locked .tourney-emoji {
+  opacity: 0.6;
 }
 
-.venue.locked .venue-name {
-  flex: 1;
+/* ── Friends ──────────────────────────────────────────────────────────────────────── */
+
+.camp-board {
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border-radius: var(--r-xl);
+  background: var(--bg-2);
 }
 
-.venue.locked .venue-name b {
-  font-size: 18px;
+.camp-board li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: var(--r-lg);
 }
 
-.venue.locked .venue-name small {
+.camp-board li.you {
+  background: var(--surface);
+}
+
+.camp-rank {
+  width: 20px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.camp-board li:first-child .camp-rank {
+  color: var(--gold-ink);
+}
+
+.camp-who {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.camp-who b {
+  font-size: 17px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.camp-who small {
+  font-size: var(--fs-caption);
   color: var(--ink-3);
 }
 
-.venue.locked .bar {
-  height: 6px;
-  margin-top: 4px;
+.camp-chips {
+  font-size: 19px;
+  font-weight: 800;
 }
 
-.venue-lock {
-  flex: none;
-  color: var(--ink-4);
+.camp-quiet {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-3);
+}
+
+.friend-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.friend-play,
+.friend-add {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--r-lg);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.friend-play {
+  color: var(--on-color);
+  background: linear-gradient(160deg, var(--party-blue), var(--indigo));
+  box-shadow: 0 4px 0 var(--blue-lo);
+}
+
+.friend-add {
+  flex: 0.8;
+  color: var(--ink);
+  background: var(--bg-2);
+}
+
+.camp-share {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--r-lg);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-bg);
+}
+
+.friend-pick-emoji {
+  font-size: 24px;
+  background: var(--bg-2);
+}
+
+.camp-join {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: var(--r-lg);
+  font-size: var(--fs-small);
+  line-height: 1.4;
+  background: var(--gold-bg);
 }
 
 /* ── The roulette card on the tab ─────────────────────────────────────────────────── */
@@ -562,6 +852,18 @@
 
 .goal.ready {
   background: var(--gold-bg);
+}
+
+.goal.collected .goal-emoji {
+  filter: grayscale(0.6);
+}
+
+.goal-reward.done {
+  color: var(--green);
+}
+
+.goal-part + .goal-part {
+  margin-top: 16px;
 }
 
 .goal-go {
@@ -1206,4 +1508,116 @@ html.calm .rl-ball.drop {
 .rl-spin:disabled {
   opacity: 0.45;
   box-shadow: none;
+}
+
+/* ── The prize draw: a slot reel over the table before a tournament's first deal ──── */
+
+.prize-reel {
+  --reel-row: 72px;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  border: 0;
+  font: inherit;
+  background: rgba(0, 0, 0, 0.55);
+  animation: prize-in 0.25s ease-out both;
+}
+
+.prize-reel-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(320px, 100%);
+  padding: 24px 20px;
+  border-radius: var(--r-xl);
+  color: var(--on-color);
+  background: linear-gradient(160deg, var(--rl-wood-a), var(--rl-hub));
+  box-shadow:
+    0 0 0 3px var(--rl-gold),
+    0 24px 48px -16px rgba(0, 0, 0, 0.8);
+}
+
+.prize-reel-card small {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.prize-window {
+  width: 100%;
+  height: var(--reel-row);
+  overflow: hidden;
+  border-radius: var(--r-md);
+  background: var(--rl-black);
+  box-shadow:
+    inset 0 0 0 2px var(--rl-gold),
+    inset 0 10px 14px -6px rgba(0, 0, 0, 0.9),
+    inset 0 -10px 14px -6px rgba(0, 0, 0, 0.9);
+}
+
+.prize-strip {
+  display: flex;
+  flex-direction: column;
+  transition: transform 1.8s cubic-bezier(0.15, 0.7, 0.2, 1);
+}
+
+.prize-strip b {
+  display: grid;
+  place-items: center;
+  height: var(--reel-row);
+  font-size: var(--fs-display-2);
+  font-weight: 800;
+  color: var(--party-yellow);
+}
+
+.prize-total {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.prize-total b {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.prize-reel.stopped .prize-window {
+  animation: prize-flash 0.5s ease-out 2;
+}
+
+.prize-reel.big.stopped .prize-reel-card {
+  animation: party-pop 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+@keyframes prize-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes prize-flash {
+  50% {
+    box-shadow:
+      inset 0 0 0 2px var(--rl-gold),
+      0 0 24px var(--party-yellow);
+  }
+}
+
+html.calm .prize-strip {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prize-strip {
+    transition: none;
+  }
+
+  .prize-reel,
+  .prize-reel.stopped .prize-window,
+  .prize-reel.big.stopped .prize-reel-card {
+    animation: none;
+  }
 }

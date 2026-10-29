@@ -26,3 +26,5 @@ export * from './bubbles';
 export * from './cardPacks';
 export * from './chat';
 export * from './party';
+export * from './campaign';
+export * from './roulette';

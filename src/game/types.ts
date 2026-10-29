@@ -354,8 +354,10 @@ export interface Game {
   ghostPot?: number;
   /** This table is one round of a party tournament (see party.ts). Public. */
   party?: { code: string; round: number; total: number };
-  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. */
+  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. Campaign sit and gos keep it too. */
   busted?: string[];
+  /** A campaign table on this phone (see campaign.ts): a cash table whose empty seats fill with new bots, or a sit and go of `seats` players. */
+  campaign?: { kind: 'cash' | 'sng'; venue: string; seats: number };
 }
 
 export type Action =

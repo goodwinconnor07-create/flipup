@@ -9,6 +9,7 @@ import { SheetHost } from './screens/sheets/SheetHost';
 import { Legend } from './screens/Legend';
 import { PartyScreen } from './screens/Party';
 import { PartySetup } from './screens/PartySetup';
+import { Roulette } from './screens/Roulette';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
@@ -44,6 +45,9 @@ export function App() {
       break;
     case 'legend':
       screen = <Legend key={route.id} id={route.id} />;
+      break;
+    case 'roulette':
+      screen = <Roulette />;
       break;
   }
 

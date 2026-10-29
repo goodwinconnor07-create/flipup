@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { bestHand, boardSize, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
+import { bestHand, venueById, boardSize, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
 import { closeTable, dispatch, navigate, openSheet, useApp } from '../state/store';
 import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -9,6 +9,7 @@ import { playSound } from '../ui/sound';
 import { useTableSounds } from '../ui/useTableSounds';
 import { Final } from './Final';
 import { PartyPanel } from './Party';
+import { CampaignResult } from './CampaignResult';
 import { forgetParty } from '../state/party';
 import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
@@ -99,6 +100,8 @@ export function Table() {
               }}
             />
           </div>
+        ) : game.campaign ? (
+          <CampaignResult game={game} />
         ) : (
           <Final game={game} />
         ))}
@@ -137,6 +140,18 @@ function BlindBanner({ text, onDone }: { text: string; onDone: () => void }) {
   );
 }
 
+/** A campaign table says where it is, and a tournament how many are still in: "🎱 The Back Room · 4 left · ". */
+function CampaignWhere({ game }: { game: Game }) {
+  const v = venueById(game.campaign?.venue);
+  if (!v) return null;
+  const left = game.players.filter((p) => p.stack > 0).length;
+  return (
+    <>
+      {v.emoji} {v.name} · {game.campaign?.kind === 'sng' && game.status === 'playing' ? `${left} left · ` : ''}
+    </>
+  );
+}
+
 /** " · blinds up in 4:32", counting down. When it hits zero the blinds go up as the next hand is dealt. */
 function BlindClock({ game }: { game: Game }) {
   const now = useNow(1000);
@@ -165,6 +180,7 @@ function TableBar({ game }: { game: Game | null }) {
               Blinds {chips(game.settings.smallBlind)}/{chips(game.settings.bigBlind)}
             </b>
             <small className="muted">
+              {game.campaign && <CampaignWhere game={game} />}
               {game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
               {game.status === 'playing' && !!game.settings.blindMinutes && <BlindClock game={game} />}
             </small>

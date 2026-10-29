@@ -60,6 +60,7 @@ import { LogSheet } from './LogSheet';
 import { AddPalSheet, JoinPartySheet } from './CodeSheets';
 import { PremiumSheet } from './PremiumSheet';
 import { BubbleSheet, LegendsSheet, PackSheet } from './PremiumPickers';
+import { CampaignIntroSheet } from './CampaignIntroSheet';
 import { MoreGamesSheet, PickSheet, RulesSheet } from '../GamePicker';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
@@ -110,6 +111,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <JoinPartySheet />;
     case 'confirm':
       return <ConfirmSheet sheet={sheet} />;
+    case 'campaignIntro':
+      return <CampaignIntroSheet />;
   }
 }
 
@@ -416,9 +419,11 @@ function MenuSheet() {
   if (started) table.push({ label: 'Hand log', Icon: ListIcon, color: 'var(--blue)', onClick: openLog });
   if (online && game?.code && !ended)
     table.push({ label: 'Invite friends', Icon: UsersIcon, color: 'var(--green)', onClick: () => openSheet({ name: 'invite' }) });
-  if (host && !ended)
+  // A campaign table's stakes are fixed: no settings, no extra bots, and you leave it rather than end it.
+  const campaign = game?.campaign;
+  if (host && !ended && !campaign)
     table.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
-  if (host && playing && game.players.length < 9)
+  if (host && playing && game.players.length < 9 && !campaign)
     table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--green)', onClick: quick(() => dispatch({ type: 'addBot' })) });
   if (host && !ended && game.players.length < 9)
     table.push({ label: 'Add an AI Legend', Icon: CrownIcon, color: 'var(--gold)', onClick: () => withPremium('legends', () => openSheet({ name: 'legends' })) });
@@ -434,7 +439,32 @@ function MenuSheet() {
   }
 
   const leave: Row[] = [{ label: 'Home', Icon: HomeIcon, color: 'var(--green)', onClick: () => resetTo() }];
-  if (host && game && !ended) {
+  if (campaign && game && !ended) {
+    const stack = me?.stack ?? 0;
+    leave.push({
+      label: campaign.kind === 'cash' ? 'Cash out' : 'Leave the tournament',
+      Icon: ExitIcon,
+      color: 'var(--red)',
+      danger: campaign.kind === 'sng',
+      onClick: () =>
+        confirm(
+          campaign.kind === 'cash'
+            ? {
+                title: `Cash out ${stack.toLocaleString('en-US')}?`,
+                body: 'Your chips go back to your bankroll. If you’re in a hand, your cards are folded and what you’ve bet stays in the pot.',
+                confirm: 'Cash out',
+                onConfirm: leaveTable,
+              }
+            : {
+                title: 'Leave the tournament?',
+                body: 'You give up your seat and your buy-in. Only players who finish 1st or 2nd get paid.',
+                confirm: 'Leave',
+                danger: true,
+                onConfirm: leaveTable,
+              },
+        ),
+    });
+  } else if (host && game && !ended) {
     leave.push({
       label: 'End the game',
       Icon: StopIcon,

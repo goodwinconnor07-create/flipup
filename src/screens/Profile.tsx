@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { loadStreak } from '../state/persist';
 import { cleanName, isNameBlocked, type TableInfo, type Variant } from '../game';
-import { back, joinTable, openSheet, replace, setProfile, useApp } from '../state/store';
+import { PREMIUM_PRICE } from '../state/premium';
+import { back, joinTable, openPremium, openSheet, replace, setProfile, useApp } from '../state/store';
 import { BackBar, NameAndPicture } from '../ui/components';
-import { ChevronIcon, GearIcon } from '../ui/Icons';
+import { ChevronIcon, CrownIcon, GearIcon } from '../ui/Icons';
 
 const TITLES = { host: 'Host a table', bots: 'Play the bots', join: 'Join the table', done: 'Your profile' };
 
 /** Your name and emoji. Asked once, then remembered; also reachable from Home to change them. */
 export function Profile({ then, info, variant }: { then: 'host' | 'bots' | 'join' | 'done'; info?: TableInfo; variant?: Variant }) {
   const profile = useApp((s) => s.profile);
+  const premium = useApp((s) => s.premium);
   const [name, setName] = useState(profile.name);
   const [streak] = useState(loadStreak);
   const clean = cleanName(name);
@@ -58,6 +60,19 @@ export function Profile({ then, info, variant }: { then: 'host' | 'bots' | 'join
               <ChevronIcon className="gr-chev" width={16} height={16} />
             </button>
           </div>
+        )}
+        {then === 'done' && (
+          <button type="button" className="prem-card press" onClick={() => openPremium()}>
+            <span className="prem-card-icon" aria-hidden>
+              <CrownIcon />
+            </span>
+            <span className="gr-text">
+              FlipUp Premium
+              <small>{premium ? "Unlocked. Thank you for backing FlipUp." : 'Bubble colours, any emoji, AI Legends'}</small>
+            </span>
+            {premium ? <span className="prem-pill on">Yours</span> : <span className="prem-pill">{PREMIUM_PRICE}</span>}
+            <ChevronIcon className="gr-chev" width={16} height={16} />
+          </button>
         )}
       </div>
       <div className="screen-foot">

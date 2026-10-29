@@ -8,6 +8,8 @@ import { STRENGTH } from './botRange';
 import { BOTS, playerStyle, styleOf } from './botStyles';
 import { botSays, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
+import { isBubbleId } from './bubbles';
+import { dressAsLegend, legendById, LEGENDS } from './legends';
 import {
   botsOnly,
   canDeal,
@@ -137,8 +139,10 @@ export function createTable(opts: {
   emoji: string;
   settings: Settings;
   bots: number;
-  /** Bots to seat by name first (Home's quick games); the rest are random. */
+  /** Bots to seat by name first (Home's quick games); the rest are random. A legend's short name seats that AI Legend. */
   botNames?: string[];
+  /** The host's chat bubble colour (a Premium extra). */
+  bubble?: string;
   code: string | null;
   now: number;
 }): Game {
@@ -159,8 +163,16 @@ export function createTable(opts: {
     logs: [],
     reactions: {},
   };
-  game.players.push({ ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }) });
+  game.players.push({
+    ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }),
+    ...(isBubbleId(opts.bubble) ? { bubble: opts.bubble } : {}),
+  });
   for (const name of opts.botNames ?? []) {
+    const legend = LEGENDS.find((l) => l.short === name);
+    if (legend) {
+      if (game.players.length < MAX_SEATS && !game.players.some((p) => p.legend === legend.id)) addLegend(game, legend.id);
+      continue;
+    }
     const pick = BOTS.find((b) => b.name === name);
     if (pick && game.players.length < MAX_SEATS && !game.players.some((p) => p.name === pick.name))
       game.players.push({
@@ -171,6 +183,17 @@ export function createTable(opts: {
   }
   while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game);
   return game;
+}
+
+/** Seats an AI Legend: a bot dressed as them, with their style and voice. */
+function addLegend(game: Game, id: string): void {
+  const legend = legendById(id);
+  if (!legend) return;
+  const bot: Player = newPlayer(game, { name: legend.short, emoji: legend.emoji, deviceId: null, bot: true });
+  dressAsLegend(bot, legend);
+  // Names are unique at a table: a person who got there first keeps theirs.
+  bot.name = uniqueName(game, bot.name);
+  game.players.push(bot);
 }
 
 function addBot(game: Game): void {
@@ -506,13 +529,20 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!isEmoji(action.emoji)) return fail('Pick an emoji.');
       me.name = uniqueName(game, name, me.id);
       me.emoji = action.emoji;
+      // The action is the whole look: no bubble in it means the plain blue and grey.
+      if (isBubbleId(action.bubble)) me.bubble = action.bubble;
+      else delete me.bubble;
       return done();
     }
 
     case 'addBot': {
       if (!host) return fail('Only the host can add bots.');
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      addBot(game);
+      if (action.legend !== undefined) {
+        if (!legendById(action.legend)) return fail('No such legend.');
+        if (game.players.some((p) => p.legend === action.legend)) return fail('That legend is already at the table.');
+        addLegend(game, action.legend);
+      } else addBot(game);
       wakeIfWaiting(game, ctx);
       return done();
     }

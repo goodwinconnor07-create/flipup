@@ -206,3 +206,17 @@ export const PersonIcon = (p: P) => (
     <path d="M4.5 20.5c1.2-3.6 4-5.5 7.5-5.5s6.3 1.9 7.5 5.5" />
   </svg>
 );
+
+/** A crown, for FlipUp Premium. */
+export const CrownIcon = (p: P) => (
+  <svg {...solid(p)}>
+    <path d="M3 8.2 7.6 12 12 5l4.4 7L21 8.2 19.2 18.5a1 1 0 0 1-1 .8H5.8a1 1 0 0 1-1-.8L3 8.2Z" />
+    <rect x="5.2" y="20.2" width="13.6" height="2" rx="1" />
+  </svg>
+);
+
+export const LockIcon = (p: P) => (
+  <svg {...solid(p)}>
+    <path d="M7 10V7.5a5 5 0 0 1 10 0V10h.5A2.5 2.5 0 0 1 20 12.5v7a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 19.5v-7A2.5 2.5 0 0 1 6.5 10H7Zm2.2 0h5.6V7.5a2.8 2.8 0 0 0-5.6 0V10Z" />
+  </svg>
+);

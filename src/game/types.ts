@@ -53,6 +53,8 @@ export interface Player {
   style?: string;
   /** Plays in the style of a legend (see legends.ts). Public: the table shows who it is. */
   legend?: string;
+  /** Their chat bubble colour (see bubbles.ts), a FlipUp Premium extra. Public: everyone at the table sees it. */
+  bubble?: string;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
   twin?: TwinBrain;
   /** Stable bot identity, private on online tables. */
@@ -357,8 +359,9 @@ export interface Game {
 export type Action =
   /** This phone takes a seat (or updates its name and picture). */
   | { type: 'join'; name: string; emoji: string }
-  | { type: 'setLook'; name: string; emoji: string }
-  | { type: 'addBot' }
+  | { type: 'setLook'; name: string; emoji: string; bubble?: string }
+  /** `legend` seats that AI Legend instead of a random bot. */
+  | { type: 'addBot'; legend?: string }
   /** Host removes a player or bot; anyone can remove themselves. */
   | { type: 'remove'; playerId: string }
   | { type: 'settings'; settings: Partial<Settings> }

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { BLIND_CAP_CHOICES, BLIND_LEVELS, DEFAULT_SETTINGS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings, type Variant } from '../game';
+import { BLIND_CAP_CHOICES, BLIND_LEVELS, DEFAULT_SETTINGS, LEGENDS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings, type Variant } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
 import { BackBar, Choice, chips, Toggle } from '../ui/components';
@@ -142,7 +142,7 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
     window.scrollTo(0, 0);
   }, [picking]);
   const choosing = mode === 'local' && how === PICK;
-  const faces = new Map(BOTS.map((b) => [b.name, b.emoji]));
+  const faces = new Map<string, string>([...BOTS.map((b) => [b.name, b.emoji] as const), ...LEGENDS.map((l) => [l.short, l.emoji] as const)]);
 
   if (picking) {
     return (
@@ -168,7 +168,7 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
             <span className="picked-faces">
               <b>{picked.length === 0 ? 'Choose your bots' : `${picked.length} ${picked.length === 1 ? 'bot' : 'bots'} picked`}</b>
               <span aria-hidden>{picked.length === 0 ? '🤖' : picked.map((n) => faces.get(n)).join(' ')}</span>
-              <small className="muted">{picked.length === 0 ? 'Browse every bot by playstyle' : picked.join(', ')}</small>
+              <small className="muted">{picked.length === 0 ? 'Browse every bot by playstyle, plus AI Legends' : picked.join(', ')}</small>
             </span>
             <ChevronIcon width={20} height={20} aria-hidden />
           </button>

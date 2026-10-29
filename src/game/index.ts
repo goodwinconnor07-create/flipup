@@ -22,5 +22,6 @@ export * from './ids';
 export * from './raiseSizes';
 export * from './names';
 export * from './emoji';
+export * from './bubbles';
 export * from './chat';
 export * from './party';

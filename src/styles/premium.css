@@ -1,0 +1,934 @@
+/* FlipUp Premium: the five bubble colours, the offer (a chest throwing its prizes), the gold Profile card and the
+   small pieces that say "Premium" elsewhere. Colours are tokens in global.css (--prem-*, --fx-*). */
+
+/* ── Bubble colours ──────────────────────────────────────────────────────────────────────────────
+   A Premium bubble replaces the blue or grey. Moving colour lives on ::after, behind the words (z-index -1 inside
+   the bubble's own stacking context), so it never fights the pop-in animation on the bubble itself.
+   The tail (::before) takes a single colour: --fx-tail. */
+
+.bubble-fx {
+  color: var(--on-color);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  background: var(--fx-tail, var(--fx-sunset-a));
+}
+
+.bubble-fx::before {
+  background: var(--fx-tail);
+}
+
+.bubble-fx::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.fx-sunset {
+  --fx-tail: var(--fx-sunset-a);
+  box-shadow:
+    0 0 12px rgba(255, 61, 139, 0.45),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-sunset::after {
+  background: linear-gradient(135deg, var(--fx-sunset-a), var(--fx-sunset-b));
+}
+
+.fx-gold {
+  --fx-tail: var(--fx-gold-a);
+  color: var(--prem-ink);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 12px var(--prem-gold-glow),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-gold::after {
+  background:
+    linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.85) 50%, transparent 65%) 0 0 / 250% 100% no-repeat,
+    linear-gradient(135deg, var(--fx-gold-a), var(--fx-gold-b) 55%, var(--fx-gold-a));
+  animation: fx-sheen 3.2s ease-in-out infinite;
+}
+
+.fx-aurora {
+  --fx-tail: var(--fx-aurora-b);
+  box-shadow:
+    0 0 14px rgba(107, 91, 255, 0.5),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-aurora::after {
+  background: linear-gradient(
+    90deg,
+    var(--fx-aurora-a) 0,
+    var(--fx-aurora-b) 16.67%,
+    var(--fx-aurora-c) 33.33%,
+    var(--fx-aurora-a) 50%,
+    var(--fx-aurora-b) 66.67%,
+    var(--fx-aurora-c) 83.33%,
+    var(--fx-aurora-a) 100%
+  );
+  background-size: 200% 100%;
+  animation: fx-drift 5s linear infinite;
+}
+
+.fx-neon {
+  --fx-tail: var(--fx-neon-bg);
+  color: var(--fx-neon);
+  text-shadow: 0 0 6px var(--fx-neon-glow);
+  background: var(--fx-neon-bg);
+  box-shadow:
+    inset 0 0 0 1.5px var(--fx-neon),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-neon::after {
+  box-shadow: 0 0 14px 1px var(--fx-neon-glow);
+  animation: fx-pulse 1.8s ease-in-out infinite;
+}
+
+.fx-rainbow {
+  --fx-tail: var(--fx-rainbow-a);
+  box-shadow:
+    0 0 12px rgba(255, 255, 255, 0.25),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-rainbow::before {
+  animation: fx-tail-hue 6s linear infinite;
+}
+
+.fx-rainbow::after {
+  background: linear-gradient(
+    90deg,
+    var(--fx-rainbow-a) 0,
+    var(--fx-rainbow-b) 8.33%,
+    var(--fx-rainbow-c) 16.67%,
+    var(--fx-rainbow-d) 25%,
+    var(--fx-rainbow-e) 33.33%,
+    var(--fx-rainbow-f) 41.67%,
+    var(--fx-rainbow-a) 50%,
+    var(--fx-rainbow-b) 58.33%,
+    var(--fx-rainbow-c) 66.67%,
+    var(--fx-rainbow-d) 75%,
+    var(--fx-rainbow-e) 83.33%,
+    var(--fx-rainbow-f) 91.67%,
+    var(--fx-rainbow-a) 100%
+  );
+  background-size: 200% 100%;
+  animation: fx-drift 6s linear infinite;
+}
+
+@keyframes fx-drift {
+  to {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes fx-sheen {
+  0% {
+    background-position:
+      0 0,
+      0 0;
+  }
+  55%,
+  100% {
+    background-position:
+      100% 0,
+      0 0;
+  }
+}
+
+@keyframes fx-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes fx-tail-hue {
+  0% {
+    background: var(--fx-rainbow-a);
+  }
+  17% {
+    background: var(--fx-rainbow-b);
+  }
+  33% {
+    background: var(--fx-rainbow-c);
+  }
+  50% {
+    background: var(--fx-rainbow-d);
+  }
+  67% {
+    background: var(--fx-rainbow-e);
+  }
+  83% {
+    background: var(--fx-rainbow-f);
+  }
+  100% {
+    background: var(--fx-rainbow-a);
+  }
+}
+
+/* A bubble drawn outside the table (the offer, the picker): in the page, not over a seat. */
+.bubble-chip {
+  position: relative;
+  display: inline-block;
+  z-index: 0;
+  padding: 6px 13px;
+  border-radius: 17px;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.bubble-chip.bubble-blue,
+.bubble-chip.bubble-grey {
+  box-shadow: none;
+}
+
+.bubble-chip.bubble-blue {
+  color: var(--on-color);
+}
+
+.bubble-chip.bubble-grey {
+  color: var(--ink);
+}
+
+/* Not a speech bubble over a seat: no tail. */
+.bubble-chip::before {
+  display: none;
+}
+
+.bubble-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 0 16px;
+}
+
+.bubble-chip-lg .bubble-chip {
+  padding: 9px 18px;
+  font-size: var(--fs-lead);
+  border-radius: 20px;
+}
+
+.bubble-row-pic {
+  flex: none;
+  width: 64px;
+  display: grid;
+  place-items: center;
+}
+
+.bubble-row .prem-lock {
+  color: var(--gold-ink);
+}
+
+.bubble-row .prem-on {
+  color: var(--blue);
+}
+
+/* ── Small "Premium" markers ────────────────────────────────────────────────────────────────── */
+
+.prem-pill {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
+  color: var(--prem-ink);
+  font-size: var(--fs-caption);
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.prem-pill.on {
+  background: var(--gold-bg);
+  color: var(--gold-ink);
+}
+
+.chip-btn.chip-gold {
+  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
+  color: var(--prem-ink);
+  font-weight: 700;
+}
+
+.picker-head h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.picker-legends .picker-head svg {
+  color: var(--gold);
+}
+
+.picker-legend {
+  gap: 6px;
+  padding-top: 10px;
+}
+
+.picker-legend .legend-face {
+  flex: none;
+}
+
+.picker-lock {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
+  color: var(--prem-ink);
+}
+
+.legend-note {
+  margin: 10px 0 0;
+  font-size: var(--fs-caption);
+}
+
+.legend-row .gr-text small {
+  white-space: normal;
+}
+
+.legend-row:disabled {
+  opacity: 0.5;
+}
+
+.legend-face {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px var(--prem-gold-2);
+}
+
+.legend-face > .legend-portrait {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The locked "type any emoji" row in the emoji picker. */
+.emoji-locked {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  text-align: left;
+}
+
+.emoji-locked .emoji-custom-pic {
+  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
+  color: var(--prem-ink);
+}
+
+.emoji-locked-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  font-size: var(--fs-lead);
+  font-weight: 600;
+}
+
+.emoji-locked-text small {
+  color: var(--gold-ink);
+  font-size: var(--fs-caption);
+  font-weight: 600;
+}
+
+.add-legend .add-bot-circle {
+  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
+  color: var(--prem-ink);
+  box-shadow: 0 0 14px var(--prem-gold-glow);
+}
+
+/* ── The gold card on Profile, under Settings ────────────────────────────────────────────────── */
+
+.prem-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  min-height: 68px;
+  padding: 10px 16px 10px 12px;
+  border: 0;
+  border-radius: var(--r-lg);
+  background: linear-gradient(120deg, var(--prem-gold-1), var(--prem-gold-2) 45%, var(--prem-gold-3));
+  color: var(--prem-ink);
+  font: inherit;
+  text-align: left;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 0 0 1.5px var(--prem-gold-2),
+    0 0 22px var(--prem-gold-glow),
+    0 8px 20px -10px var(--prem-gold-3);
+  animation: prem-glow 2.6s ease-in-out infinite;
+}
+
+/* A bright band sweeps across now and then. */
+.prem-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.75) 50%, transparent 62%) 0 0 / 260% 100% no-repeat;
+  animation: fx-sheen 3.6s ease-in-out infinite;
+}
+
+.prem-card .gr-text {
+  flex: 1;
+  min-width: 0;
+  font-weight: 800;
+  color: var(--prem-ink);
+}
+
+.prem-card .gr-text small {
+  display: block;
+  margin-top: 1px;
+  font-weight: 600;
+  color: var(--prem-ink);
+  opacity: 0.75;
+}
+
+.prem-card .gr-chev {
+  flex: none;
+  color: var(--prem-ink);
+}
+
+.prem-card .prem-pill {
+  background: var(--prem-ink);
+  color: var(--prem-gold-1);
+}
+
+.prem-card-icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: var(--prem-ink);
+  color: var(--prem-gold-2);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.25);
+}
+
+.prem-card-icon svg {
+  width: 24px;
+  height: 24px;
+}
+
+@keyframes prem-glow {
+  50% {
+    box-shadow:
+      0 0 0 1.5px var(--prem-gold-1),
+      0 0 34px var(--prem-gold-glow),
+      0 8px 24px -8px var(--prem-gold-3);
+  }
+}
+
+/* ── The offer ───────────────────────────────────────────────────────────────────────────────────
+   A dark purple night with a gold chest at the bottom of it. The chest opens and throws out the prizes (legends,
+   bubble colours, emoji), which then float where they land. Under it: what you get, the price once, the button. */
+
+/* The glass rules in global.css give every sheet a sheen and blur; the offer is its own dark night instead. */
+html .sheet.sheet-premium,
+html:not(.no-glass) .sheet.sheet-premium,
+html.no-glass .sheet.sheet-premium {
+  position: relative;
+  padding: 0;
+  background: linear-gradient(180deg, var(--prem-night-1), var(--prem-night-2) 70%);
+  color: var(--on-color);
+  box-shadow:
+    0 -1px 0 var(--prem-gold-glow),
+    var(--glass-shadow);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.sheet-premium .sheet-grip-zone {
+  margin: 0;
+  padding: 12px 0 0;
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 3;
+}
+
+.sheet-premium .sheet-grip {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.prem-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-color);
+}
+
+.prem-hero {
+  position: relative;
+  height: 284px;
+  overflow: hidden;
+  border-radius: 32px 32px 0 0;
+}
+
+.prem-rays {
+  position: absolute;
+  left: 50%;
+  bottom: -190px;
+  width: 560px;
+  height: 560px;
+  margin-left: -280px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 210, 74, 0.2) 0deg 8deg, rgba(255, 210, 74, 0) 8deg 24deg);
+  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  mask-image: radial-gradient(circle, #000 18%, transparent 68%);
+  animation: prem-spin 40s linear infinite;
+}
+
+.prem-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 20%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 30% 8%, #fff 50%, transparent 51%),
+    radial-gradient(2px 2px at 62% 14%, var(--prem-gold-1) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 88% 30%, #fff 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 44% 34%, var(--prem-gold-1) 50%, transparent 51%),
+    radial-gradient(2px 2px at 6% 52%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 94% 62%, #fff 50%, transparent 51%);
+  opacity: 0.8;
+  animation: prem-twinkle 3.4s ease-in-out infinite;
+}
+
+.chest {
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 168px;
+  margin-left: -84px;
+  z-index: 2;
+}
+
+.chest-art {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: visible;
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
+}
+
+.chest-glow {
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  width: 300px;
+  height: 220px;
+  margin-left: -150px;
+  background: radial-gradient(closest-side, var(--prem-gold-glow), transparent);
+  animation: prem-breathe 2.8s ease-in-out infinite;
+}
+
+.chest-lid {
+  transform-box: view-box;
+  transform-origin: 24px 70px;
+}
+
+.chest.open .chest-lid {
+  animation: chest-lid 0.7s 0.15s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+@keyframes chest-lid {
+  from {
+    transform: rotate(0);
+  }
+  to {
+    transform: rotate(-26deg) translate(-6px, -6px);
+  }
+}
+
+.burst {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.burst-item {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  display: block;
+  translate: -50% 0;
+  rotate: var(--r);
+  animation:
+    burst-out 0.9s var(--d) cubic-bezier(0.2, 1.2, 0.4, 1) both,
+    burst-float 3.6s calc(var(--d) + 0.9s) ease-in-out infinite;
+}
+
+.burst-emoji {
+  font-size: 40px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+}
+
+.burst-item .legend-face {
+  box-shadow:
+    0 0 0 3px var(--prem-gold-2),
+    0 0 20px var(--prem-gold-glow);
+}
+
+.burst-item .bubble-chip {
+  font-size: var(--fs-small);
+}
+
+/* Out of the chest: from its middle, small and unseen, up to its place. */
+@keyframes burst-out {
+  from {
+    left: 50%;
+    top: 220px;
+    opacity: 0;
+    transform: scale(0.2);
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes burst-float {
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes prem-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes prem-twinkle {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes prem-breathe {
+  50% {
+    opacity: 0.6;
+    transform: scale(1.06);
+  }
+}
+
+.prem-body {
+  padding: 8px 20px 0;
+  text-align: center;
+}
+
+.prem-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
+  color: var(--prem-ink);
+  font-size: var(--fs-caption);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.prem-title {
+  margin: 12px 0 6px;
+  font-size: var(--fs-h1);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  text-wrap: balance;
+  color: var(--on-color);
+}
+
+.prem-sub {
+  margin: 0 auto 18px;
+  max-width: 320px;
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.72);
+  text-wrap: balance;
+}
+
+/* What you get: three cards that swipe sideways. The one for what you tapped comes first, in gold. */
+.showcase {
+  display: flex;
+  gap: 12px;
+  margin: 0 -20px;
+  padding: 4px 20px 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 20px;
+  scrollbar-width: none;
+  text-align: left;
+}
+
+.showcase::-webkit-scrollbar {
+  display: none;
+}
+
+.show-card {
+  flex: none;
+  width: 78%;
+  max-width: 300px;
+  scroll-snap-align: start;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.show-card.pick {
+  background: rgba(255, 210, 74, 0.14);
+  box-shadow:
+    inset 0 0 0 1.5px var(--prem-gold-2),
+    0 0 20px rgba(255, 196, 61, 0.22);
+}
+
+.show-card h3 {
+  margin: 14px 0 4px;
+  font-size: var(--fs-lead);
+  font-weight: 800;
+  color: var(--on-color);
+}
+
+.show-card p {
+  margin: 0;
+  font-size: var(--fs-small);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.show-bubbles,
+.show-emoji,
+.show-legends {
+  height: 100px;
+}
+
+.show-bubbles {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: space-between;
+  gap: 8px;
+}
+
+.show-emoji {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  align-content: space-between;
+  font-size: 34px;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.show-emoji b {
+  grid-column: 1 / -1;
+  align-self: end;
+  padding: 7px 12px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.show-legends {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  align-content: space-between;
+  justify-items: center;
+}
+
+.show-legends span {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.show-legends small {
+  font-size: var(--fs-micro);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.prem-checks {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.88);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.prem-checks li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.prem-tick {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--prem-gold-2);
+  color: var(--prem-ink);
+}
+
+/* The button stays at the bottom of the sheet while the rest scrolls. */
+.prem-dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 10px;
+  padding: 22px 20px calc(var(--safe-bottom) + 16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(180deg, transparent, var(--prem-night-2) 32%);
+}
+
+.prem-cta {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 60px;
+  border: 0;
+  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2) 45%, var(--prem-gold-3));
+  color: var(--prem-ink);
+  font: inherit;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 4px 0 var(--prem-gold-4),
+    0 0 28px var(--prem-gold-glow);
+  animation: prem-glow 2.2s ease-in-out infinite;
+  transition:
+    transform 0.12s,
+    box-shadow 0.12s;
+}
+
+.prem-cta b {
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  background: var(--prem-ink);
+  color: var(--prem-gold-1);
+  font-size: var(--fs-small);
+  font-weight: 800;
+}
+
+.prem-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.7) 50%, transparent 62%) 0 0 / 260% 100% no-repeat;
+  animation: fx-sheen 3s ease-in-out infinite;
+}
+
+.prem-cta:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow:
+    0 1px 0 var(--prem-gold-4),
+    0 0 20px var(--prem-gold-glow);
+}
+
+.prem-cta:disabled {
+  opacity: 0.85;
+}
+
+.prem-spin {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 3px solid rgba(61, 34, 0, 0.25);
+  border-top-color: var(--prem-ink);
+  animation: prem-spin 0.7s linear infinite;
+}
+
+.prem-fine {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.prem-link {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 0;
+  background: none;
+  color: var(--prem-gold-1);
+  font: inherit;
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.prem-link:disabled {
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prem-rays,
+  .prem-stars,
+  .chest-glow,
+  .burst-item,
+  .prem-card,
+  .prem-card::after,
+  .prem-cta,
+  .prem-cta::after,
+  .bubble-fx::before,
+  .bubble-fx::after {
+    animation: none;
+  }
+
+  .chest.open .chest-lid {
+    animation: none;
+    transform: rotate(-26deg) translate(-6px, -6px);
+  }
+}

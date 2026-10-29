@@ -4,6 +4,8 @@ import { isEmoji } from './emoji';
 import { isReactionId } from './reactions';
 import { isCard } from './cards';
 import { isVariant } from './variants';
+import { isBubbleId } from './bubbles';
+import { legendById } from './legends';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
 
@@ -48,8 +50,11 @@ export function parseAction(raw: unknown): Action | null {
       return { type: 'join', name: a.name, emoji: a.emoji };
     case 'setLook':
       if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
-      return { type: 'setLook', name: a.name, emoji: a.emoji };
+      if (a.bubble !== undefined && !isBubbleId(a.bubble)) return null;
+      return { type: 'setLook', name: a.name, emoji: a.emoji, ...(a.bubble !== undefined ? { bubble: a.bubble as string } : {}) };
     case 'addBot':
+      if (a.legend === undefined) return { type: 'addBot' };
+      return typeof a.legend === 'string' && legendById(a.legend) ? { type: 'addBot', legend: a.legend } : null;
     case 'start':
     case 'rebuy':
     case 'end':

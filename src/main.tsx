@@ -12,6 +12,7 @@ import './styles/table.css';
 import './styles/desktop.css';
 import './styles/home.css';
 import './styles/party.css';
+import './styles/premium.css';
 
 boot();
 installPressEffects();

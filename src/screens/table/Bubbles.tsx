@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
-import { BEFORE_MOVE, botSay, CHAT, ChatLane, quickSay, REACTIONS, reactionBeats, reactionText, ticker, widestWindow, windowAt, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
+import { BEFORE_MOVE, botSay, CHAT, ChatLane, isBubbleId, quickSay, REACTIONS, reactionBeats, reactionText, ticker, widestWindow, windowAt, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
 import { react, useApp } from '../../state/store';
 import { chips } from '../../ui/components';
 import { haptic } from '../../ui/effects';
@@ -29,15 +29,18 @@ export function bubbleText(last: NonNullable<Seat['last']>): string {
   }
 }
 
-/** An iMessage-style bubble: blue for chips going in, grey for check and fold. */
-export function Bubble({ last, street }: { last: NonNullable<Seat['last']>; street?: string }) {
+/** The colour class for a bubble: a Premium colour if the player has one, else the plain look. */
+const tint = (fx: string | undefined, plain: string) => (isBubbleId(fx) ? `bubble-fx fx-${fx}` : plain);
+
+/** An iMessage-style bubble: blue for chips going in, grey for check and fold. A Premium colour (`fx`) replaces both. */
+export function Bubble({ last, street, fx }: { last: NonNullable<Seat['last']>; street?: string; fx?: string }) {
   const text = bubbleText(last);
   const money = last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   // Keyed on the text, so every new move pops in.
   return (
     <span
       key={text}
-      className={`bubble pop ${money ? 'bubble-blue' : 'bubble-grey'}${street && last.street !== street ? ' bubble-old' : ''}`}
+      className={`bubble pop ${tint(fx, money ? 'bubble-blue' : 'bubble-grey')}${street && last.street !== street ? ' bubble-old' : ''}`}
     >
       {text}
     </span>
@@ -168,7 +171,7 @@ const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
  * sliding in at the end as the oldest slides away, then the last words hold a moment and the bubble goes. The
  * bubble is as wide as the widest few words from the start, so it never changes size or reaches into a neighbour.
  */
-function Ticker({ text, until }: { text: string; until: number }) {
+function Ticker({ text, until, fx }: { text: string; until: number; fx?: string }) {
   const { words, at } = ticker(text);
   const [shown, setShown] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -196,7 +199,7 @@ function Ticker({ text, until }: { text: string; until: number }) {
   }, [room]);
   const [first, last] = windowAt(words, shown, room);
   return (
-    <span ref={bubble} className={`bubble bubble-grey bubble-react bubble-ticker pop${leaving ? ' bubble-leaving' : ''}`} aria-label={text}>
+    <span ref={bubble} className={`bubble ${tint(fx, 'bubble-grey')} bubble-react bubble-ticker pop${leaving ? ' bubble-leaving' : ''}`} aria-label={text}>
       <span ref={sizer} className="tk-size" aria-hidden>
         {widestWindow(words, room)}
       </span>
@@ -215,16 +218,16 @@ function Ticker({ text, until }: { text: string; until: number }) {
  * A seat's table talk, in the same bubble style as a move: the last couple of messages stacked, newest at
  * the bottom nearest the face, and the typing dots under them while the next one is on its way.
  */
-export function Thread({ talk }: { talk: Talk }) {
+export function Thread({ talk, fx }: { talk: Talk; fx?: string }) {
   // One bubble per seat, so nothing stacks or reaches into a neighbour: the newest message (or the dots) is all there is.
   const items: (Message | null)[] = [...talk.shown, ...(talk.typing ? [null] : [])].slice(-1);
   return (
     <span className="thread" role="status" aria-live="polite">
       {items.map((m, i) =>
         m?.rolling ? (
-          <Ticker key={m.key} text={m.text} until={m.until} />
+          <Ticker key={m.key} text={m.text} until={m.until} fx={fx} />
         ) : m ? (
-          <span key={m.key} className={`bubble bubble-grey bubble-react pop${emojiOnly(m.text) ? ' bubble-emoji' : ''}${i < items.length - 1 ? ' bubble-older' : ''}`}>
+          <span key={m.key} className={`bubble ${tint(fx, 'bubble-grey')} bubble-react pop${emojiOnly(m.text) ? ' bubble-emoji' : ''}${i < items.length - 1 ? ' bubble-older' : ''}`}>
             {m.text}
           </span>
         ) : (

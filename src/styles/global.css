@@ -822,6 +822,11 @@ input {
   margin: 4px auto 16px;
 }
 
+/* On a dark sheet the grey handle is hard to see, and it's what you drag down to close. */
+html[data-theme='dark'] .sheet-grip {
+  background: rgba(255, 255, 255, 0.85);
+}
+
 .sheet-head {
   display: flex;
   align-items: center;

@@ -418,6 +418,14 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 </span>
               )}
             </div>
+            {me?.cardPack && (
+              // The deck in your own card pack, so you see it all hand long, not just as a card turns over.
+              <span className="felt-deck" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <PlayingCard key={i} back size="sm" pack={me.cardPack} />
+                ))}
+              </span>
+            )}
             <Ghost game={game} />
             {hand?.dice && (
               <p className="dice-note pop" key={`dice-${hand.number}`}>
@@ -439,6 +447,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                     dim={dim(c)}
                     glow={glow(c)}
                     flip
+                    pack={me?.cardPack}
                     delay={i < streetCards(variant, 'flop') ? i * 160 : 0}
                     style={place(i)}
                   />
@@ -479,6 +488,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 dim={mySeat.folded || dim(c)}
                 glow={glow(c)}
                 flip
+                pack={me?.cardPack}
                 delay={i * 180}
                 className={`my-card my-card-${i}`}
               />
@@ -553,6 +563,7 @@ function Vote({ game, me }: { game: Game; me: Player }) {
 
 /** Ghost Hold'em: the ghost's two cards (face down until a showdown) and what it's holding for the next hand. */
 function Ghost({ game }: { game: Game }) {
+  const mine = useApp((s) => myPlayer(game, s.deviceId))?.cardPack;
   const hand = game.hand;
   const ghost = hand?.result?.ghost;
   const holding = hand && !hand.result ? (hand.carry ?? 0) : (game.ghostPot ?? 0);
@@ -564,7 +575,7 @@ function Ghost({ game }: { game: Game }) {
       </span>
       {hand && variantOf(game) === 'ghost' && (
         <span className="ghost-cards">
-          {(ghost?.cards ?? hand.ghost ?? [null, null]).map((c, i) => (c ? <PlayingCard key={c} card={c} size="sm" flip /> : <PlayingCard key={i} back size="sm" />))}
+          {(ghost?.cards ?? hand.ghost ?? [null, null]).map((c, i) => (c ? <PlayingCard key={c} card={c} size="sm" flip pack={mine} /> : <PlayingCard key={i} back size="sm" pack={mine} />))}
         </span>
       )}
       <small>{ghost ? (ghost.kept ? `Keeps ${chips(ghost.kept)} · ${ghost.name}` : ghost.name) : holding ? `Holding ${chips(holding)}` : 'Ghost'}</small>

@@ -73,6 +73,42 @@
   --party-green: #19c26b;
   --party-edge: rgba(0, 0, 0, 0.24);
 
+  /* FlipUp Premium: the gold of the chest and the upgrade buttons, the night behind the offer, and the five bubble colours. */
+  --prem-gold-1: #fff3b0;
+  --prem-gold-2: #ffd24a;
+  --prem-gold-3: #f59e0b;
+  --prem-gold-4: #a85a00;
+  --prem-gold-glow: rgba(255, 196, 61, 0.55);
+  --prem-ink: #3d2200;
+  --prem-night-1: #2a1659;
+  --prem-night-2: #120a2b;
+  --prem-wood-hi: #9a5b2c;
+  --prem-wood-lo: #5b2f12;
+  --prem-wood-line: #2e1507;
+  --fx-sunset-a: #ff3d8b;
+  --fx-sunset-b: #ff9f43;
+  --fx-gold-a: #f2a900;
+  --fx-gold-b: #ffe27a;
+  --fx-aurora-a: #00cfa8;
+  --fx-aurora-b: #6b5bff;
+  --fx-aurora-c: #ff5cc8;
+  --fx-neon: #3df5ff;
+  --fx-neon-glow: rgba(61, 245, 255, 0.55);
+  --fx-neon-bg: #0a0b1f;
+  --fx-rainbow-a: #ff3b30;
+  --fx-rainbow-b: #ff9f0a;
+  --fx-rainbow-c: #ffd60a;
+  --fx-rainbow-d: #30d158;
+  --fx-rainbow-e: #0a84ff;
+  --fx-rainbow-f: #bf5af2;
+  --pack-neon-pink: #ff3dc8;
+  --pack-neon-night: #1a0b3b;
+  --pack-ruby-a: #8c0f26;
+  --pack-ruby-b: #3d0410;
+  --pack-ruby-ember: #ff8a1f;
+  --pack-ruby-shine: rgba(255, 190, 110, 0.95);
+  --pack-aurora-night: #0a1a33;
+
   /* ── Brand: the ink-black of the logo, with a red "Up" (hearts and diamonds). */
   --brand-ink: #007aff;
   --violet: #af52de;

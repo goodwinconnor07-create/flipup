@@ -14,6 +14,7 @@ import {
   normalizeCode,
   redactForDevice,
   dressAsLegend,
+  EMOJIS,
   LEGENDS_ON,
   legendById,
   redactLogs,
@@ -27,6 +28,7 @@ import {
   type TableInfo,
 } from '../game';
 import { haptic, reducedMotion } from '../ui/effects';
+import { purchasePremium, restorePurchase, type PremiumReason } from './premium';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
@@ -39,6 +41,7 @@ import {
   loadCalm,
   loadAppearance,
   loadGlass,
+  loadPremium,
   loadMuted,
   loadFast,
   loadCam3d,
@@ -55,6 +58,7 @@ import {
   saveCalm,
   saveAppearance,
   saveGlass,
+  savePremium,
   saveMuted,
   saveProfile,
   saveSession,
@@ -105,6 +109,14 @@ export type Sheet =
   | { name: 'log' }
   | { name: 'theme' }
   | { name: 'emoji' }
+  /** The FlipUp Premium offer. `reason` says what was tapped; `then` runs once it's bought. */
+  | { name: 'premium'; reason?: PremiumReason; then?: () => void }
+  /** Pick a chat bubble colour. */
+  | { name: 'bubbles' }
+  /** Pick a card back. */
+  | { name: 'packs' }
+  /** Pick an AI Legend to seat at this table. */
+  | { name: 'legends' }
   | { name: 'player'; playerId: string }
   /** Type a friend code to add them to your friends. */
   | { name: 'addPal' }
@@ -156,6 +168,8 @@ export interface AppState {
   dark: boolean;
   /** Transparency: frosted, see-through glass on what floats. Off gives solid panels. */
   glass: boolean;
+  /** Has FlipUp Premium (a one-time purchase). */
+  premium: boolean;
 }
 
 // ── Store core ──────────────────────────────────────────────────────────────
@@ -198,6 +212,7 @@ let state: AppState = {
   appearance: loadAppearance(),
   dark: false,
   glass: loadGlass(),
+  premium: loadPremium(),
 };
 state.dark = isDark(state.appearance);
 forgetOldLearning();
@@ -354,15 +369,60 @@ export function undoToast(text: string, undo: () => void, ms = 7000): void {
 // ── Profile ─────────────────────────────────────────────────────────────────
 
 export function setProfile(patch: Partial<Profile>): void {
+  // An emoji from outside the picker's grid and a bubble colour are Premium extras.
+  if (!state.premium && patch.emoji !== undefined && patch.emoji !== state.profile.emoji && !(EMOJIS as readonly string[]).includes(patch.emoji)) {
+    return openPremium('emoji');
+  }
+  if (!state.premium && patch.bubble) return openPremium('bubbles');
+  if (!state.premium && patch.cardPack) return openPremium('packs');
   const profile = { ...state.profile, ...patch };
+  if (!profile.bubble) delete profile.bubble;
+  if (!profile.cardPack) delete profile.cardPack;
   saveProfile(profile);
   set({ profile });
   // Already sitting at a table: everyone sees the change.
   const me = state.game?.players.find((p) => p.deviceId === state.deviceId);
   const name = cleanName(profile.name);
-  if (me && name && (me.name !== name || me.emoji !== profile.emoji) && state.game?.status !== 'ended') {
-    dispatch({ type: 'setLook', name, emoji: profile.emoji });
+  if (me && name && (me.name !== name || me.emoji !== profile.emoji || (me.bubble ?? '') !== (profile.bubble ?? '') || (me.cardPack ?? '') !== (profile.cardPack ?? '')) && state.game?.status !== 'ended') {
+    dispatch({ type: 'setLook', name, emoji: profile.emoji, ...(profile.bubble ? { bubble: profile.bubble } : {}), ...(profile.cardPack ? { cardPack: profile.cardPack } : {}) });
   }
+}
+
+// ── FlipUp Premium ──────────────────────────────────────────────────────────
+
+/** Opens the Premium offer. `reason` is what the player just tried; `then` runs after they buy. */
+export function openPremium(reason?: PremiumReason, then?: () => void): void {
+  haptic('light');
+  openSheet({ name: 'premium', reason, then });
+}
+
+/**
+ * Runs `go` if this phone has Premium; otherwise shows the offer, and runs it after a purchase.
+ * Every Premium extra goes through here.
+ */
+export function withPremium(reason: PremiumReason, go: () => void): void {
+  if (state.premium) go();
+  else openPremium(reason, go);
+}
+
+/** Marks this phone as Premium (and keeps it). Called once a purchase or a restore has gone through. */
+export function grantPremium(): void {
+  savePremium(true);
+  set({ premium: true });
+}
+
+/** Buys Premium. Resolves true once it's bought. See `purchasePremium` in premium.ts for the payment step. */
+export async function buyPremium(): Promise<boolean> {
+  const ok = await purchasePremium();
+  if (ok) grantPremium();
+  return ok;
+}
+
+/** Brings back a past purchase (a new phone, a reinstall). */
+export async function restorePremium(): Promise<boolean> {
+  const ok = await restorePurchase();
+  if (ok) grantPremium();
+  return ok;
 }
 
 // ── Session ─────────────────────────────────────────────────────────────────
@@ -407,7 +467,7 @@ function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Gam
   const name = cleanName(state.profile.name);
   if (!name) return navigate({ name: 'profile', then: 'bots' });
   const settings: Settings = { ...DEFAULT_SETTINGS, turnSeconds: 0 };
-  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: bot ? [bot] : undefined, code: null, now: Date.now() });
+  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: bot ? [bot] : undefined, ...premiumLook(), code: null, now: Date.now() });
   const them = game.players.find((p) => p.bot);
   if (state.fast) game.fast = true;
   if (them) prepare(them, game);
@@ -494,6 +554,7 @@ function onServerMessage(msg: ServerMessage): void {
     const mine = msg.game.players.some((p) => p.deviceId === state.deviceId);
     setSession({ ...s, game: msg.game, joining: s.joining && !mine });
     rememberFaces(s.code, msg.game);
+    syncLook(msg.game);
     // Arrived from the join screen: take a seat.
     if (s.joining && !mine && msg.game.status !== 'ended') sendJoin();
   } else if (msg.t === 'log') {
@@ -503,6 +564,24 @@ function onServerMessage(msg: ServerMessage): void {
     toast(msg.error, 'error');
     haptic('error');
   }
+}
+
+/** The Premium parts of this phone's look (bubble colour, card pack): empty without Premium. */
+function premiumLook(): { bubble?: string; cardPack?: string } {
+  if (!state.premium) return {};
+  const { bubble, cardPack } = state.profile;
+  return { ...(bubble ? { bubble } : {}), ...(cardPack ? { cardPack } : {}) };
+}
+
+/** A table made or joined online doesn't know this phone's bubble colour and card pack yet: say so once per table and look. */
+let lookSent = '';
+function syncLook(game: Game): void {
+  const me = game.players.find((p) => p.deviceId === state.deviceId);
+  const want = premiumLook();
+  const key = `${game.id}:${want.bubble ?? ''}:${want.cardPack ?? ''}`;
+  if (!me || game.status === 'ended' || ((me.bubble ?? '') === (want.bubble ?? '') && (me.cardPack ?? '') === (want.cardPack ?? '')) || lookSent === key) return;
+  lookSent = key;
+  send({ type: 'setLook', name: me.name, emoji: me.emoji, ...want });
 }
 
 let joinSent = false;
@@ -589,7 +668,7 @@ export async function openTable(mode: 'online' | 'local', settings: Settings, bo
   const name = cleanName(state.profile.name);
   const emoji = state.profile.emoji;
   if (mode === 'local') {
-    const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, code: null, now: Date.now() });
+    const game = createTable({ hostDeviceId: state.deviceId, name, emoji, settings, bots, botNames, ...premiumLook(), code: null, now: Date.now() });
     if (state.fast) game.fast = true;
     closeConnection();
     setSession({ mode: 'local', code: null, game });

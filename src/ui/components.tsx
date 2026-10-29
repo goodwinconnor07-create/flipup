@@ -4,6 +4,7 @@ import {
   EMOJIS,
   firstEmoji,
   isNameBlocked,
+  isPackId,
   LIMITS,
   NAME_BLOCKED,
   rankLabel,
@@ -14,7 +15,7 @@ import {
 } from '../game';
 import { back, closeSheet, dismissToast, useApp } from '../state/store';
 import { haptic, reducedMotion } from './effects';
-import { BackIcon, CloseIcon, PencilIcon } from './Icons';
+import { BackIcon, CloseIcon, LockIcon, PencilIcon } from './Icons';
 
 /** 1,240 */
 export function chips(n: number): string {
@@ -92,7 +93,7 @@ export function NameAndPicture({
 }
 
 /** A grid of emojis to pick from, plus a box to type any emoji at all. */
-export function EmojiPicker({ value, onChange }: { value: string; onChange: (emoji: string) => void }) {
+export function EmojiPicker({ value, onChange, locked = false, onLocked }: { value: string; onChange: (emoji: string) => void; locked?: boolean; onLocked?: () => void }) {
   const [typed, setTyped] = useState('');
   const custom = !(EMOJIS as readonly string[]).includes(value);
   return (
@@ -115,28 +116,41 @@ export function EmojiPicker({ value, onChange }: { value: string; onChange: (emo
           </button>
         ))}
       </div>
-      <label className="emoji-custom">
-        <span className={`emoji-custom-pic${custom ? ' on' : ''}`} aria-hidden>
-          {custom ? <Emoji emoji={value} size={30} /> : '＋'}
-        </span>
-        <input
-          className="field"
-          value={typed}
-          placeholder="Or type any emoji"
-          aria-label="Type any emoji"
-          autoComplete="off"
-          autoCorrect="off"
-          spellCheck={false}
-          onChange={(e) => {
-            const found = firstEmoji(e.target.value);
-            setTyped(found ?? '');
-            if (found) {
-              haptic('light');
-              onChange(found);
-            }
-          }}
-        />
-      </label>
+      {locked ? (
+        <button type="button" className="emoji-custom emoji-locked press" onClick={onLocked}>
+          <span className="emoji-custom-pic" aria-hidden>
+            <LockIcon width={20} height={20} />
+          </span>
+          <span className="emoji-locked-text">
+            Type any emoji
+            <small>FlipUp Premium</small>
+          </span>
+          <span className="prem-pill">Unlock</span>
+        </button>
+      ) : (
+        <label className="emoji-custom">
+          <span className={`emoji-custom-pic${custom ? ' on' : ''}`} aria-hidden>
+            {custom ? <Emoji emoji={value} size={30} /> : '＋'}
+          </span>
+          <input
+            className="field"
+            value={typed}
+            placeholder="Or type any emoji"
+            aria-label="Type any emoji"
+            autoComplete="off"
+            autoCorrect="off"
+            spellCheck={false}
+            onChange={(e) => {
+              const found = firstEmoji(e.target.value);
+              setTyped(found ?? '');
+              if (found) {
+                haptic('light');
+                onChange(found);
+              }
+            }}
+          />
+        </label>
+      )}
     </div>
   );
 }
@@ -155,6 +169,7 @@ export function PlayingCard({
   dim = false,
   glow = false,
   back: showBack = false,
+  pack,
   flip = false,
   delay = 0,
   className = '',
@@ -167,19 +182,22 @@ export function PlayingCard({
   /** Part of the winning hand at showdown: lifts and gets a gold edge. */
   glow?: boolean;
   back?: boolean;
+  /** A card pack's id: the back (and the back a card flips from) wears that pack's design and shine. */
+  pack?: string;
   /** Flip over as it appears. */
   flip?: boolean;
   delay?: number;
   className?: string;
 }) {
+  const packClass = isPackId(pack) ? ` pk pack-${pack}` : '';
   if (showBack || !card) {
-    return <span className={`pcard pcard-${size} pcard-back ${className}`} style={style} aria-label="Face-down card" role="img" />;
+    return <span className={`pcard pcard-${size} pcard-back${packClass} ${className}`} style={style} aria-label="Face-down card" role="img" />;
   }
   // A four-colour deck: spades black, hearts red, diamonds blue, clubs green.
   const suit = suitOf(card);
   return (
     <span
-      className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${glow ? ' glow' : ''}${flip ? ' flip-in' : ''} ${className}`}
+      className={`pcard pcard-${size} suit-${suit}${dim ? ' dim' : ''}${glow ? ' glow' : ''}${flip ? ` flip-in${packClass}` : ''} ${className}`}
       style={flip ? { ...style, animationDelay: `${delay}ms` } : style}
       role="img"
       aria-label={cardName(card)}
@@ -296,7 +314,7 @@ export function Choice<T extends string | number>({
   );
 }
 
-export function Sheet({ title, children, onClose = closeSheet }: { title?: ReactNode; children: ReactNode; onClose?: () => void }) {
+export function Sheet({ title, children, onClose = closeSheet, className = '', label }: { title?: ReactNode; children: ReactNode; onClose?: () => void; className?: string; label?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const leaving = useApp((s) => s.sheetLeaving);
   const drag = useRef<{ startY: number; dy: number } | null>(null);
@@ -343,10 +361,10 @@ export function Sheet({ title, children, onClose = closeSheet }: { title?: React
   return (
     <div className={`sheet-backdrop${leaving ? ' leaving' : ''}`} onClick={onClose}>
       <div
-        className="sheet"
+        className={`sheet ${className}`.trim()}
         role="dialog"
         aria-modal="true"
-        aria-label={typeof title === 'string' ? title : undefined}
+        aria-label={typeof title === 'string' ? title : label}
         tabIndex={-1}
         ref={ref}
         onClick={(e) => e.stopPropagation()}

@@ -34,7 +34,7 @@ test('pick your own bots from the full roster, grouped by playstyle', async ({ p
   await shot(page, '41-picker-picked');
 
   // A table holds eight bots, no more.
-  const more = page.locator('.picker-bot:not([aria-pressed="true"])');
+  const more = page.locator('.picker-bot:not(.picker-legend):not([aria-pressed="true"])');
   for (let i = 0; i < 6; i++) await more.nth(i + 5).click();
   await expect(page.getByText('8 of 8 picked')).toBeVisible();
   await more.nth(40).click();

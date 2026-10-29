@@ -240,7 +240,7 @@ export function Pod({
         {player.legend ? <span className="ai-chip legend-chip" aria-hidden>★</span> : player.bot && <span className="ai-chip bot-chip" aria-hidden>BOT</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (
-          <Thread talk={reaction} />
+          <Thread talk={reaction} fx={player.bubble} />
         ) : thinking ? (
           <span className="bubble bubble-grey bubble-typing pop" aria-label={`${player.name} is thinking`}>
             <i />
@@ -248,7 +248,7 @@ export function Pod({
             <i />
           </span>
         ) : (
-          seat?.last && quiet !== moveSig(hand!.number, seat.last) && <Bubble last={seat.last} street={hand?.street} />
+          seat?.last && quiet !== moveSig(hand!.number, seat.last) && <Bubble last={seat.last} street={hand?.street} fx={player.bubble} />
         )}
       </span>
       <span className="pod-name">{player.name}</span>
@@ -257,8 +257,8 @@ export function Pod({
         {!self && seat && (!seat.folded || seat.cards.length > 0) && (
           <span className={`pod-cards${turn ? ' shimmer' : ''}`}>
             {seat.cards.length
-              ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip />)
-              : Array.from({ length: variantOf(game) === 'pineapple' && threeCardsLeft(game) ? 3 : 2 }, (_, i) => <PlayingCard key={i} back size="sm" />)}
+              ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip pack={player.cardPack} />)
+              : Array.from({ length: variantOf(game) === 'pineapple' && threeCardsLeft(game) ? 3 : 2 }, (_, i) => <PlayingCard key={i} back size="sm" pack={player.cardPack} />)}
           </span>
         )}
         {won > 0 ? (
@@ -297,9 +297,9 @@ export function MyBox({
   const [inBB, setInBB] = useState(loadBigBlinds);
   // On a computer my seat is on the table (bottom), so the bubble and position are shown there.
   const bubble = desktop ? null : reaction ? (
-    <Thread talk={reaction} />
+    <Thread talk={reaction} fx={me?.bubble} />
   ) : seat?.last && quiet !== moveSig(hand!.number, seat.last) ? (
-    <Bubble last={seat.last} street={hand?.street} />
+    <Bubble last={seat.last} street={hand?.street} fx={me?.bubble} />
   ) : null;
   const pos = me && !desktop && <PositionChips pos={positionOf(hand, me.id)} />;
   if (odds) {

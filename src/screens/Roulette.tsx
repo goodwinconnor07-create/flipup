@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { cryptoRng, payout, pocketColour, pocketName, ROULETTE_MIN, spinBets, spinWheel, totalBet, WHEEL, type Bets, type Spot } from '../game';
-import { setCampaign, useCampaign } from '../state/campaign';
+import { cryptoRng, noteMission, payout, pocketColour, pocketName, rouletteLimit, ROULETTE_MIN, spinBets, spinWheel, totalBet, WHEEL, type Bets, type Spot } from '../game';
+import { setCampaign, today, useCampaign } from '../state/campaign';
 import { toast } from '../state/store';
 import { BackBar } from '../ui/components';
 import { confetti, haptic, reducedMotion } from '../ui/effects';
@@ -75,10 +75,11 @@ export function Roulette() {
   const place = (spot: Spot) => {
     if (spinning) return;
     if (spin?.done) setSpin(null);
-    const room = c.chips - staked;
+    // Up to the table limit, which grows with the rooms you've opened.
+    const room = Math.min(c.chips, rouletteLimit(c)) - staked;
     const amount = Math.min(pick, room);
     if (amount < ROULETTE_MIN) {
-      toast(room < ROULETTE_MIN ? 'That’s all your chips on the table.' : 'Not enough chips left.', 'error');
+      toast(staked >= rouletteLimit(c) ? `That’s the table limit: ${short(rouletteLimit(c))} a spin.` : room < ROULETTE_MIN ? 'That’s all your chips on the table.' : 'Not enough chips left.', 'error');
       haptic('error');
       return;
     }
@@ -108,7 +109,7 @@ export function Roulette() {
     }
     const back = payout(bets, n);
     // The bankroll is settled now, so leaving mid-spin changes nothing; the screen catches up when the ball lands.
-    setCampaign(next);
+    setCampaign(noteMission(next, today(), 'spins'));
     setSpin({ n, staked, back, before: c.chips, done: false });
     setLastBets(bets);
     setStack([]);
@@ -212,7 +213,7 @@ export function Roulette() {
           ))}
         </div>
         <p className="rl-pays">
-          A number pays 35 to 1. Dozens and columns pay 2 to 1. Red, black, odd, even, 1–18 and 19–36 pay even money. The 0 loses every outside bet.
+          A number pays 35 to 1. Dozens and columns pay 2 to 1. Red, black, odd, even, 1–18 and 19–36 pay even money. The 0 loses every outside bet. Table limit {short(rouletteLimit(c))} a spin; it grows as you open bigger rooms.
         </p>
       </div>
 

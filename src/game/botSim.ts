@@ -168,7 +168,7 @@ function used(t: Tally, key: Technique, hit: boolean): void {
 const AGGRESSIVE: Move[] = ['bet', 'raise', 'allin'];
 
 /** What a scripted player does. */
-function scriptMove(script: Script, game: Game, hand: Hand, seat: Seat, rng: () => number): { move: Move; to?: number } {
+export function scriptMove(script: Script, game: Game, hand: Hand, seat: Seat, rng: () => number): { move: Move; to?: number } {
   const o = options(game, hand, seat);
   const pot = potTotal(hand);
   const callOrCheck = (): { move: Move } => (o.canCheck ? { move: 'check' } : o.callIsAllIn ? { move: 'allin' } : { move: 'call' });

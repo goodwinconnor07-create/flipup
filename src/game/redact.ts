@@ -19,7 +19,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   return {
     ...game,
     // Bots' styles and identities (and what an AI twin remembers) and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, ...p }) => p),
+    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, dull: _dull, ...p }) => p),
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,

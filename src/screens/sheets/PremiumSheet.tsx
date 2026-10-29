@@ -144,7 +144,7 @@ function Showcase({ reason }: { reason?: PremiumReason }) {
     ),
     packs: (
       <div className="show-packs">
-        {CARD_PACKS.map((p) => (
+        {CARD_PACKS.filter((p) => !p.venue).map((p) => (
           <PlayingCard key={p.id} back size="md" pack={p.id} />
         ))}
       </div>

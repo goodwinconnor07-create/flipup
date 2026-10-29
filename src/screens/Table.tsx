@@ -149,9 +149,13 @@ function CampaignWhere({ game }: { game: Game }) {
   const v = venueById(tag?.venue);
   if (!v) return null;
   const left = game.players.filter((p) => p.stack > 0).length;
+  // The bounty stays out of the way: a small target by its name while that bot is still in.
+  const mark = game.players.find((p) => p.id === tag?.bounty?.playerId && p.stack > 0);
   return (
     <>
-      {v.emoji} {v.name} · {game.status === 'playing' ? `${left} left · ` : ''}
+      {/* Once it's going, the venue is just its emoji, so the line fits. */}
+      {v.emoji} {game.status === 'playing' ? `${left} left · ` : `${v.name} · `}
+      {mark && game.status === 'playing' ? `🎯 ${mark.name} · ` : ''}
     </>
   );
 }

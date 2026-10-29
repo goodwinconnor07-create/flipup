@@ -1,7 +1,10 @@
-import { useState } from 'react';
-import { cashMax, FORMATS, goalDone, goals, isOpen, STAKES, topDraw, VENUES } from '../../game';
+import { useEffect, useRef, useState } from 'react';
+import { cashMax, DAILY_SPIN, FORMATS, goalDone, goals, isOpen, STAKES, topDraw, VENUES } from '../../game';
 import { useCampaign } from '../../state/campaign';
-import { openCampaignForFriends, useApp } from '../../state/store';
+import { closeSheet, openCampaignForFriends, takeFreeSpin, useApp } from '../../state/store';
+import { today } from '../../state/campaign';
+import { confetti, haptic, reducedMotion } from '../../ui/effects';
+import { playSound } from '../../ui/sound';
 import { Sheet } from '../../ui/components';
 import { ChevronIcon, LockIcon } from '../../ui/Icons';
 import { blinds, GoalRow, short } from '../HomeCampaign';
@@ -97,6 +100,91 @@ export function CampaignFriendsSheet() {
             })}
       </div>
       {seated && <p className="muted">Finish the campaign table you’re at first.</p>}
+    </Sheet>
+  );
+}
+
+/** How long the prize wheel turns (matches .daily-wheel g's transition in campaign.css). */
+const DAILY_MS = 3200;
+const SLICE = 360 / DAILY_SPIN.length;
+
+/** The free daily spin: a prize wheel with what it can pay, spun once a day. */
+export function DailySpinSheet() {
+  const c = useCampaign();
+  const [won, setWon] = useState<number | null>(null);
+  const [turn, setTurn] = useState(0);
+  const [done, setDone] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(timer.current), []);
+  const used = c.spinDay === today() && won === null;
+
+  const spin = () => {
+    if (won !== null) return;
+    const prize = takeFreeSpin();
+    if (prize === null) return;
+    const i = DAILY_SPIN.findIndex(([x]) => x === prize);
+    // Lands the slice under the pointer at the top, a little off its middle so it looks like a real stop.
+    setTurn(360 * 5 - i * SLICE - SLICE / 2 + (Math.random() - 0.5) * SLICE * 0.6);
+    setWon(prize);
+    haptic('medium');
+    playSound('shuffle');
+    timer.current = setTimeout(
+      () => {
+        setDone(true);
+        haptic('success');
+        playSound(prize >= 1000 ? 'victory' : 'collect');
+        confetti(undefined, undefined, prize >= 1000 ? 140 : 60);
+      },
+      reducedMotion() ? 0 : DAILY_MS,
+    );
+  };
+
+  const colours = ['var(--party-pink)', 'var(--party-orange)', 'var(--party-yellow)', 'var(--party-green)', 'var(--party-blue)', 'var(--violet)', 'var(--rl-red)'];
+  return (
+    <Sheet title="Free daily spin">
+      <div className="daily-wheel-wrap">
+        <svg className="daily-wheel" viewBox="-110 -110 220 220" aria-hidden>
+          <g style={{ transform: `rotate(${turn}deg)` }}>
+            {DAILY_SPIN.map(([x], i) => {
+              const a0 = (i * SLICE - 90) * (Math.PI / 180);
+              const a1 = ((i + 1) * SLICE - 90) * (Math.PI / 180);
+              const r = 100;
+              return (
+                <g key={x}>
+                  <path d={`M0 0 L${r * Math.cos(a0)} ${r * Math.sin(a0)} A${r} ${r} 0 0 1 ${r * Math.cos(a1)} ${r * Math.sin(a1)}Z`} style={{ fill: colours[i % colours.length] }} />
+                  <text transform={`rotate(${(i + 0.5) * SLICE}) translate(0 -66)`} className="daily-label">
+                    {short(x)}
+                  </text>
+                </g>
+              );
+            })}
+            <circle r="18" className="daily-hub" />
+          </g>
+          <path d="M0 -92 L-9 -110 L9 -110 Z" className="daily-pointer" />
+        </svg>
+      </div>
+      <p className="daily-result" aria-live="polite">
+        {done && won !== null ? (
+          <>
+            You won <b className="num">+{short(won)}</b>
+          </>
+        ) : used ? (
+          'You’ve had today’s spin. Come back tomorrow for another.'
+        ) : won !== null ? (
+          'Spinning…'
+        ) : (
+          'One free spin every day.'
+        )}
+      </p>
+      {done || used ? (
+        <button type="button" className="btn btn-xl btn-green" onClick={closeSheet}>
+          Done
+        </button>
+      ) : (
+        <button type="button" className="btn btn-xl btn-green" disabled={won !== null} onClick={spin}>
+          Spin
+        </button>
+      )}
     </Sheet>
   );
 }

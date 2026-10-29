@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { cashBuyIn, FORMATS, stakeById, venueById, type Game } from '../game';
+import { cashBuyIn, FORMATS, legendById, stakeById, venueById, type Game } from '../game';
 import { useCampaign } from '../state/campaign';
 import { closeTable, startCampaign } from '../state/store';
 import { Count } from '../ui/components';
@@ -17,7 +17,8 @@ export function CampaignResult({ game }: { game: Game }) {
   const venue = tag?.kind === 'sng' ? venueById(tag.venue) : undefined;
   const stake = tag?.kind === 'cash' ? stakeById(tag.venue) : undefined;
   const won = last?.place === 1;
-  const paid = !!last && !last.refunded && last.back > 0;
+  // Paid by the finish itself (a bounty or the boss can pay on top of nothing).
+  const paid = !!last && !last.refunded && last.back - (last.bounty ?? 0) - (last.bossPay ?? 0) > 0;
   const online = !!game.code;
 
   useEffect(() => {
@@ -75,10 +76,21 @@ export function CampaignResult({ game }: { game: Game }) {
           </div>
           <div className={paid ? 'up' : ''}>
             <small>{last.prize ? `Prize pool ${n0(last.prize)}` : 'Prize'}</small>
-            <b className="num">{paid ? `+${n0(last.back)}` : '0'}</b>
+            <b className="num">{paid ? `+${n0(last.back - (last.bounty ?? 0) - (last.bossPay ?? 0))}` : '0'}</b>
           </div>
         </div>
       )}
+      {last?.bounty ? (
+        <p className="camp-result-extra">
+          🎯 Bounty collected <b className="num">+{n0(last.bounty)}</b>
+        </p>
+      ) : null}
+      {last?.boss ? (
+        <p className="camp-result-extra boss">
+          {legendById(last.boss)?.emoji} You beat {legendById(last.boss)?.short} <b className="num">+{n0(last.bossPay ?? 0)}</b>
+        </p>
+      ) : null}
+      {last?.firstWin && venue && <p className="camp-result-extra">🃏 New card back: {venue.name}. Pick it in Card packs.</p>}
       <div className="camp-result-bank">
         <small>Bankroll</small>
         <b className="num">

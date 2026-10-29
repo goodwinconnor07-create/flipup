@@ -41,7 +41,7 @@ import { variantDecide } from './botVariants';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
-import { campaignStyles } from './campaign';
+import { BOSS_DULL, campaignDull, campaignStyles, venueById } from './campaign';
 import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
 
 export const LIMITS = {
@@ -149,6 +149,8 @@ export function createTable(opts: {
   cardPack?: string;
   /** The random bots come only from these styles (campaign venues). */
   botStyles?: string[];
+  /** A campaign table: set before the bots sit down, so they come from its room (and its boss takes a seat). */
+  campaign?: Game['campaign'];
   code: string | null;
   now: number;
 }): Game {
@@ -168,6 +170,7 @@ export function createTable(opts: {
     wakeAt: null,
     logs: [],
     reactions: {},
+    ...(opts.campaign ? { campaign: structuredClone(opts.campaign) } : {}),
   };
   game.players.push({
     ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }),
@@ -189,6 +192,7 @@ export function createTable(opts: {
       });
   }
   while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles);
+  if (game.campaign) seatBoss(game);
   return game;
 }
 
@@ -208,7 +212,8 @@ function addBot(game: Game, styles?: string[]): void {
   const emojis = new Set(game.players.map((p) => p.emoji));
   // A random bot whose name and picture nobody at the table has yet (so it isn't always the same order).
   // A campaign venue only seats the styles that play there.
-  const fits = styles?.length ? BOTS.filter((b) => styles.includes(b.style)) : BOTS;
+  const room = styles ?? (game.campaign ? campaignStyles(game.campaign) : undefined);
+  const fits = room?.length ? BOTS.filter((b) => room.includes(b.style)) : BOTS;
   const free = (fits.length ? fits : BOTS).filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
   const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
   const pick = pool.length
@@ -218,7 +223,29 @@ function addBot(game: Game, styles?: string[]): void {
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
     style: pick.style,
     botProfile: pick.profile?.id,
+    // A campaign room's bots play below their full strength.
+    ...(game.campaign && campaignDull(game.campaign) > 0 ? { dull: campaignDull(game.campaign) } : {}),
   });
+}
+
+/** A campaign tournament's boss takes a bot seat (or a free one): the venue's legend, sharper than the room. Once per table. */
+export function seatBoss(game: Game): void {
+  const tag = game.campaign;
+  const venue = tag?.kind === 'sng' ? venueById(tag.venue) : undefined;
+  const legend = venue?.boss ? legendById(venue.boss) : undefined;
+  if (!tag || !venue || !legend || tag.boss) return;
+  let seat = game.players.find((p) => p.bot && !p.legend && p.id !== tag.bounty?.playerId);
+  if (!seat) {
+    if (game.players.length >= MAX_SEATS) return;
+    addBot(game);
+    seat = game.players[game.players.length - 1];
+  }
+  dressAsLegend(seat, legend);
+  seat.name = uniqueName(game, seat.name, seat.id);
+  const dull = venue.dull * BOSS_DULL;
+  if (dull > 0) seat.dull = dull;
+  else delete seat.dull;
+  tag.boss = { playerId: seat.id, legend: legend.id };
 }
 
 /** Bot lines that are about a person at the table, so they use their name ({you}). */
@@ -278,6 +305,12 @@ function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
   const fresh = game.players.filter((p) => p.stack === 0 && !out.includes(p.id) && hand.seats.some((s) => s.playerId === p.id));
   fresh.sort((a, b) => (hand.startStacks?.[a.id] ?? 0) - (hand.startStacks?.[b.id] ?? 0));
   game.busted = [...out, ...fresh.map((p) => p.id)];
+  // Who put them out: whoever won a pot they were in.
+  if (game.campaign && fresh.length && hand.result) {
+    const knocked = { ...(game.knocked ?? {}) };
+    for (const p of fresh) knocked[p.id] = [...new Set(hand.result.pots.filter((pot) => pot.eligible.includes(p.id)).flatMap((pot) => pot.winners))].filter((id) => id !== p.id);
+    game.knocked = knocked;
+  }
 }
 
 function afterHand(game: Game, ctx: ActionContext): void {
@@ -628,6 +661,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       // A campaign tournament fills its empty seats with the venue's bots, and is as big as it is when it deals.
       if (game.campaign?.kind === 'sng') {
         while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) addBot(game, campaignStyles(game.campaign));
+        seatBoss(game);
         game.campaign.seats = game.players.length;
       }
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');

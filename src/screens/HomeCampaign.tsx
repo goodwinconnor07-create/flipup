@@ -19,14 +19,27 @@ import {
   topDraw,
   venueById,
   VENUES,
+  bossReward,
+  claimMission,
+  dailyFor,
+  legendById,
+  missionBonus,
+  missionReward,
+  MISSIONS,
+  salaryFor,
+  STREAK_DAYS,
+  streakToday,
+  weekOf,
+  dayBefore,
+  type Brag,
   type Campaign,
   type Goal,
   type Stake,
   type Venue,
 } from '../game';
-import { setCampaign, today, untilTomorrow, useCampaign } from '../state/campaign';
+import { getCampaign, setCampaign, today, untilTomorrow, useCampaign } from '../state/campaign';
 import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, type Pal } from '../state/pals';
-import { confirm, navigate, openSheet, reconcileCampaign, startCampaign, toast, useApp } from '../state/store';
+import { confirm, navigate, openSheet, prepareCampaign, reconcileCampaign, startCampaign, toast, useApp } from '../state/store';
 import { Avatar, Count, useNow } from '../ui/components';
 import { confetti, haptic } from '../ui/effects';
 import { playSound } from '../ui/sound';
@@ -62,6 +75,7 @@ export function CampaignTab() {
   const tableOn = useApp((s) => !!s.game?.campaign && s.game.status !== 'ended' && s.game.id === c.seat?.gameId);
   const day = today();
   const due = salaryDue(c, day, atTable);
+  const streak = streakToday(c, day);
 
   useEffect(() => {
     reconcileCampaign();
@@ -103,9 +117,16 @@ export function CampaignTab() {
   const playTourney = (v: Venue) => {
     if (needName()) return;
     const f = FORMATS[v.format];
+    // The table is set up now, so its bounty (if it has one) can be named before you buy in.
+    const bounty = prepareCampaign('sng', v.id);
+    const boss = v.boss ? legendById(v.boss) : undefined;
+    const extra = [
+      boss ? ` ${boss.emoji} ${boss.short} runs this room${c.stats.bosses.includes(boss.id) ? ' (you’ve beaten them)' : `: knock them out for ${n0(bossReward(v))} the first time`}.` : '',
+      bounty ? ` 🎯 Bounty: knock out ${bounty.emoji} ${bounty.name} for +${n0(bounty.reward)}.` : '',
+    ].join('');
     confirm({
       title: `${v.name} ${f.name}`,
-      body: `Buy in for ${n0(v.buyIn)}. ${f.line} The prize is drawn as you sit down: anything from ${n0(v.buyIn * f.draws[0][0])} up to ${n0(v.buyIn * topDraw(f))}.`,
+      body: `Buy in for ${n0(v.buyIn)}. ${f.line} The prize is drawn as you sit down: anything from ${n0(v.buyIn * f.draws[0][0])} up to ${n0(v.buyIn * topDraw(f))}.${extra}`,
       confirm: `Buy in for ${n0(v.buyIn)}`,
       onConfirm: () => startCampaign('sng', v.id),
     });
@@ -126,8 +147,12 @@ export function CampaignTab() {
             💰
           </span>
           <div className="payday-text">
-            <b>{c.day ? 'Payday' : 'Your first salary'}</b>
-            <small>{c.day ? 'Your salary tops your bankroll back up to 1,000.' : 'Every day you open FlipUp, your bankroll is topped up to 1,000.'}</small>
+            <b>{!c.day ? 'Your first salary' : streak > 1 ? `Payday · day ${streak} in a row` : 'Payday'}</b>
+            <small>
+              {!c.day
+                ? 'Every day you open FlipUp, your bankroll is topped up to 1,000.'
+                : `Your salary tops your bankroll up to ${n0(salaryFor(streak))}.${streak < STREAK_DAYS ? ` Come back tomorrow for ${n0(salaryFor(streak + 1))}.` : ' That’s the most it gets.'}`}
+            </small>
           </div>
           <button type="button" className="payday-go press" onClick={collect}>
             Collect +{n0(due)}
@@ -148,6 +173,8 @@ export function CampaignTab() {
       )}
       {due === 0 && !c.seat && <OutOfChips c={c} />}
 
+      <DailyThings c={c} />
+
       <CashGame c={c} seated={!!c.seat} onSit={sitCash} />
 
       <h3 className="section-head">Tournaments</h3>
@@ -156,6 +183,7 @@ export function CampaignTab() {
           <TourneyCard key={v.id} v={v} c={c} seated={!!c.seat} onPlay={playTourney} />
         ))}
       </div>
+      <p className="camp-quiet">From the Riverboat on, a boss runs each room: a style inspired by a famous player’s public reputation. Not their real hands, and not endorsed by or affiliated with them.</p>
 
       <button type="button" className="wheel-card press" disabled={c.chips < ROULETTE_MIN && due === 0} onClick={() => navigate({ name: 'roulette' })}>
         <span className="wheel-card-art" aria-hidden>
@@ -188,6 +216,8 @@ export function CampaignTab() {
         <Stat label="Tournaments won" value={n0(c.stats.sngWins)} />
         <Stat label="Best cash-out" value={c.stats.bestCash > 0 ? `+${short(c.stats.bestCash)}` : '–'} />
         <Stat label="Best prize draw" value={c.stats.bestDraw ? `${c.stats.bestDraw}×` : '–'} />
+        <Stat label="Bosses beaten" value={`${c.stats.bosses.length} of ${VENUES.filter((v) => v.boss).length}`} />
+        <Stat label="Longest streak" value={`${c.stats.bestStreak} ${c.stats.bestStreak === 1 ? 'day' : 'days'}`} />
       </div>
 
       <div className="group">
@@ -354,6 +384,7 @@ function TourneyCard({ v, c, seated, onPlay }: { v: Venue; c: Campaign; seated: 
       <span className="tourney-buyin">
         Buy-in <b>{short(v.buyIn)}</b>
       </span>
+      {v.boss && <BossTag id={v.boss} beaten={c.stats.bosses.includes(v.boss)} />}
       <span className="tourney-go">{open ? (c.chips >= v.buyIn ? 'Play' : `Need ${short(v.buyIn)}`) : <><LockIcon width={16} height={16} /> {short(v.unlock)}</>}</span>
     </button>
   );
@@ -365,6 +396,7 @@ function Friends({ c, needName }: { c: Campaign; needName: () => boolean }) {
   const [pals, setPals] = useState(loadPals);
   const [code, setCode] = useState(myPalCode);
   const [busy, setBusy] = useState(false);
+  const [board, setBoard] = useState<'week' | 'bankroll'>('week');
   useEffect(() => {
     const reload = () => setPals(loadPals());
     window.addEventListener(PALS_CHANGED, reload);
@@ -390,10 +422,26 @@ function Friends({ c, needName }: { c: Campaign; needName: () => boolean }) {
     }
   };
 
-  const rows: { key: string; name: string; emoji: string; chips: number; peak: number; wins: number; you?: boolean; pal?: Pal }[] = [
-    { key: 'you', name: profile.name.trim() || 'You', emoji: profile.emoji, chips: c.chips, peak: c.peak, wins: c.stats.sngWins, you: true },
-    ...pals.filter((p) => p.campaign).map((p) => ({ key: p.code, name: p.name, emoji: p.emoji, chips: p.campaign!.chips, peak: p.campaign!.peak, wins: p.campaign!.wins, pal: p })),
-  ].sort((a, b) => b.chips - a.chips);
+  // This week's winnings count only if they're from this week; last week's champion gets a crown.
+  const week = weekOf(today());
+  const lastWeek = weekOf(dayBefore(week));
+  const weekWon = (k: string | undefined, won: number | undefined) => (k === week ? (won ?? 0) : 0);
+  const lastWon = (card: { week?: string; weekWon?: number; lastWeek?: string; lastWeekWon?: number } | undefined) =>
+    card?.week === lastWeek ? (card.weekWon ?? 0) : card?.lastWeek === lastWeek ? (card.lastWeekWon ?? 0) : 0;
+  const mine = { week: c.week?.key, weekWon: c.week?.won, lastWeek: c.lastWeek?.key, lastWeekWon: c.lastWeek?.won };
+  const rows: { key: string; name: string; emoji: string; chips: number; peak: number; wins: number; week: number; last: number; you?: boolean; pal?: Pal }[] = [
+    { key: 'you', name: profile.name.trim() || 'You', emoji: profile.emoji, chips: c.chips, peak: c.peak, wins: c.stats.sngWins, week: weekWon(mine.week, mine.weekWon), last: lastWon(mine), you: true },
+    ...pals
+      .filter((p) => p.campaign)
+      .map((p) => ({ key: p.code, name: p.name, emoji: p.emoji, chips: p.campaign!.chips, peak: p.campaign!.peak, wins: p.campaign!.wins, week: weekWon(p.campaign!.week, p.campaign!.weekWon), last: lastWon(p.campaign), pal: p })),
+  ].sort((a, b) => (board === 'week' ? b.week - a.week : b.chips - a.chips));
+  const champ = rows.length > 1 ? rows.reduce((a, b) => (b.last > a.last ? b : a)) : undefined;
+  const crown = champ && champ.last > 0 ? champ.key : null;
+  // What friends have been up to in the last three days.
+  const news = pals
+    .filter((p) => p.campaign?.brag && Date.now() - p.campaign.brag.at < 3 * 86_400_000)
+    .sort((a, b) => b.campaign!.brag!.at - a.campaign!.brag!.at)
+    .slice(0, 3);
   const quiet = pals.filter((p) => !p.campaign);
 
   return (
@@ -406,22 +454,44 @@ function Friends({ c, needName }: { c: Campaign; needName: () => boolean }) {
           </button>
         )}
       </div>
+      {news.map((p) => (
+        <p key={p.code} className="camp-brag">
+          <Avatar emoji={p.emoji} size={28} />
+          <span>
+            <b>{p.name}</b> {bragText(p.campaign!.brag!)}
+          </span>
+        </p>
+      ))}
       {pals.length > 0 && (
-        <ol className="camp-board" aria-label="You and your friends by bankroll">
-          {rows.map((r, i) => (
-            <li key={r.key} className={r.you ? 'you' : ''}>
-              <span className="camp-rank num">{i + 1}</span>
-              <Avatar emoji={r.emoji} size={40} />
-              <span className="camp-who">
-                <b>{r.you ? 'You' : r.name}</b>
-                <small>
-                  {titleOf(r.peak).emoji} {titleOf(r.peak).name} · {r.wins} {r.wins === 1 ? 'win' : 'wins'}
-                </small>
-              </span>
-              <b className="camp-chips num">{short(r.chips)}</b>
-            </li>
-          ))}
-        </ol>
+        <>
+          <div className="segmented camp-board-pick" role="tablist">
+            <button type="button" role="tab" aria-selected={board === 'week'} className={board === 'week' ? 'on' : ''} onClick={() => setBoard('week')}>
+              This week
+            </button>
+            <button type="button" role="tab" aria-selected={board === 'bankroll'} className={board === 'bankroll' ? 'on' : ''} onClick={() => setBoard('bankroll')}>
+              Bankroll
+            </button>
+          </div>
+          <ol className="camp-board" aria-label={board === 'week' ? 'You and your friends by chips won this week' : 'You and your friends by bankroll'}>
+            {rows.map((r, i) => (
+              <li key={r.key} className={r.you ? 'you' : ''}>
+                <span className="camp-rank num">{i + 1}</span>
+                <Avatar emoji={r.emoji} size={40} />
+                <span className="camp-who">
+                  <b>
+                    {r.you ? 'You' : r.name}
+                    {crown === r.key && <span title="Won last week"> 👑</span>}
+                  </b>
+                  <small>
+                    {titleOf(r.peak).emoji} {titleOf(r.peak).name} · {r.wins} {r.wins === 1 ? 'win' : 'wins'}
+                  </small>
+                </span>
+                <b className={`camp-chips num${board === 'week' && r.week < 0 ? ' down' : ''}`}>{board === 'week' ? `${r.week < 0 ? '−' : r.week > 0 ? '+' : ''}${short(Math.abs(r.week))}` : short(r.chips)}</b>
+              </li>
+            ))}
+          </ol>
+          {board === 'week' && <p className="camp-quiet">Chips won at the tables and the wheel since Monday. It starts again every Monday; last week’s winner wears the crown.</p>}
+        </>
       )}
       {quiet.length > 0 && (
         <p className="camp-quiet">
@@ -500,5 +570,94 @@ function Stat({ label, value }: { label: string; value: string }) {
       <b className="num">{value}</b>
       <small>{label}</small>
     </div>
+  );
+}
+
+/** What a friend's card says they did, as a line under their name. */
+function bragText(b: Brag): string {
+  if (b.kind === 'boss') return `knocked out ${legendById(b.where)?.short ?? 'a boss'} 💥`;
+  const where = venueById(b.where)?.name ?? 'a tournament';
+  return b.kind === 'draw' ? `drew a ${b.value}× prize at ${where} 🎰` : `won ${short(b.value)} at ${where} 🏆`;
+}
+
+/** A venue's boss on its card: their face and name, ticked once you've knocked them out. */
+function BossTag({ id, beaten }: { id: string; beaten: boolean }) {
+  const boss = legendById(id);
+  if (!boss) return null;
+  return (
+    <span className={`tourney-boss${beaten ? ' beaten' : ''}`}>
+      {boss.emoji} {boss.short}
+      {beaten ? ' ✓' : ''}
+    </span>
+  );
+}
+
+/** Today's free spin and three missions. */
+function DailyThings({ c }: { c: Campaign }) {
+  const day = today();
+  const daily = dailyFor(c, day);
+  const spun = c.spinDay === day;
+  const reward = missionReward(c);
+  const claim = (id: string, e: React.MouseEvent) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    const before = getCampaign().chips;
+    const next = claimMission(getCampaign(), day, id);
+    setCampaign(next);
+    haptic('success');
+    playSound('chips');
+    confetti(undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, 50);
+    if (next.daily?.bonus) toast(`All three done: +${n0(next.chips - before)}`, 'success');
+  };
+  return (
+    <>
+      <button type="button" className={`spin-card press${spun ? ' spun' : ''}`} disabled={spun} onClick={() => openSheet({ name: 'dailySpin' })}>
+        <span className="spin-card-wheel" aria-hidden>
+          <i />
+        </span>
+        <span className="spin-card-text">
+          <b>{spun ? 'Spun for today' : 'Free daily spin'}</b>
+          <small>{spun ? 'Your next free spin comes tomorrow.' : 'Up to 5,000 chips, once a day.'}</small>
+        </span>
+        {!spun && <ChevronIcon width={22} height={22} />}
+      </button>
+      <section className="missions" aria-label="Today’s missions">
+        <div className="missions-head">
+          <b>Today’s missions</b>
+          <small>
+            +{short(reward)} each · all three +{short(missionBonus(c))} more
+          </small>
+        </div>
+        {daily.picks.map((id) => {
+          const m = MISSIONS.find((x) => x.id === id)!;
+          const have = Math.min(m.need, daily.progress[id] ?? 0);
+          const done = have >= m.need;
+          const got = daily.claimed.includes(id);
+          return (
+            <div key={id} className={`mission${got ? ' got' : done ? ' done' : ''}`}>
+              <span className="mission-emoji" aria-hidden>
+                {m.emoji}
+              </span>
+              <span className="mission-text">
+                <b>{m.line}</b>
+                <span className="bar">
+                  <i style={{ width: `${(have / m.need) * 100}%` }} />
+                </span>
+              </span>
+              {got ? (
+                <span className="mission-state">✓</span>
+              ) : done ? (
+                <button type="button" className="goal-go press" onClick={(e) => claim(id, e)}>
+                  +{short(reward)}
+                </button>
+              ) : (
+                <span className="mission-state num">
+                  {have}/{m.need}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </section>
+    </>
   );
 }

@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import {
   broke,
   cashBuyIn,
-  cashMax,
   cashMin,
+  cashStakeFor,
   claimGoal,
   collectSalary,
   FORMATS,
@@ -31,7 +31,7 @@ import { confirm, navigate, openSheet, reconcileCampaign, startCampaign, toast, 
 import { Avatar, Count, useNow } from '../ui/components';
 import { confetti, flyChips, haptic } from '../ui/effects';
 import { playSound } from '../ui/sound';
-import { BackIcon, ChevronIcon, HelpIcon, LockIcon, PlusIcon, UsersIcon } from '../ui/Icons';
+import { ChevronIcon, HelpIcon, LockIcon, PlusIcon, UsersIcon } from '../ui/Icons';
 
 const n0 = (n: number) => n.toLocaleString('en-US');
 
@@ -92,15 +92,9 @@ export function CampaignTab() {
     return true;
   };
 
-  const sitCash = (s: Stake) => {
+  const openCash = () => {
     if (needName()) return;
-    const buyIn = cashBuyIn(c, s);
-    confirm({
-      title: `Sit down at ${n0(s.smallBlind)}/${n0(s.bigBlind)}?`,
-      body: `You sit with ${n0(buyIn)} from your bankroll and can cash out any time from the table menu.`,
-      confirm: `Sit down with ${n0(buyIn)}`,
-      onConfirm: () => startCampaign('cash', s.id),
-    });
+    navigate({ name: 'cashSeat' });
   };
 
   const playTourney = (v: Venue) => {
@@ -152,10 +146,14 @@ export function CampaignTab() {
       )}
       {due === 0 && !c.seat && <OutOfChips c={c} />}
 
-      <CashGame c={c} seated={!!c.seat} onSit={sitCash} />
-
-      <h3 className="section-head">Tournaments</h3>
+      <h3 className="section-head">Tables</h3>
       <div className="tourney-row" role="list">
+        <CashBox c={c} seated={!!c.seat} onPlay={openCash} />
+        <span className="shelf-split" aria-hidden>
+          <i />
+          <small>Tournaments</small>
+          <i />
+        </span>
         {VENUES.map((v) => (
           <TourneyCard key={v.id} v={v} c={c} seated={!!c.seat} onPlay={playTourney} />
         ))}
@@ -262,7 +260,6 @@ function Bankroll({ c }: { c: Campaign }) {
   // The nearest thing still shut: a tournament or a cash game's stakes.
   const shut = [
     ...VENUES.filter((v) => !isOpen(c, v)).map((v) => ({ at: v.unlock, text: `${v.emoji} ${v.name}` })),
-    ...STAKES.filter((s) => !isOpen(c, s)).map((s) => ({ at: s.unlock, text: `${blinds(s)} cash games` })),
   ].sort((a, b) => a.at - b.at)[0];
   const target = shut ?? (nextTitleUp ? { at: nextTitleUp.at, text: `${nextTitleUp.emoji} ${nextTitleUp.name}` } : null);
   const pct = target ? Math.min(100, (c.peak / target.at) * 100) : 100;
@@ -313,61 +310,29 @@ function OutOfChips({ c }: { c: Campaign }) {
   );
 }
 
-/** Cash games on their own: pick the blinds, sit down, leave whenever. Starts on the biggest stakes you can cover. */
-function CashGame({ c, seated, onSit }: { c: Campaign; seated: boolean; onSit: (s: Stake) => void }) {
-  const best = Math.max(0, STAKES.findLastIndex((s) => isOpen(c, s) && cashBuyIn(c, s) > 0));
-  // Follows your bankroll until you pick blinds yourself.
-  const [picked, setPicked] = useState<number | null>(null);
-  const at = picked ?? best;
-  const s = STAKES[at];
-  const open = isOpen(c, s);
-  const buyIn = cashBuyIn(c, s);
-  const move = (d: number) => {
-    setPicked(Math.max(0, Math.min(STAKES.length - 1, at + d)));
-    haptic('light');
-  };
+/** The cash game, a tall box at the start of the shelf. The blinds are whatever your bankroll plays; the buy-in is picked on the next screen. */
+function CashBox({ c, seated, onPlay }: { c: Campaign; seated: boolean; onPlay: () => void }) {
+  const stake = cashStakeFor(c.chips);
+  const max = stake ? cashBuyIn(c, stake) : 0;
+  const ok = !!stake && max > 0 && !seated;
   return (
-    <section className="cash-card" aria-label="Cash game">
-      <div className="cash-head">
-        <span className="cash-chips" aria-hidden>
-          <i />
-          <i />
-          <i />
-        </span>
-        <div>
-          <b>Cash game</b>
-          <small>Sit down with up to 100 big blinds. Cash out whenever you like.</small>
-        </div>
-      </div>
-      <div className="cash-picker">
-        <button type="button" className="cash-step press" aria-label="Smaller blinds" disabled={at === 0} onClick={() => move(-1)}>
-          <BackIcon width={22} height={22} />
-        </button>
-        <div className={`cash-stakes${open ? '' : ' locked'}`} aria-live="polite">
-          <b key={s.id} className="num">{blinds(s)}</b>
-          <small>{open ? `Buy-in ${short(cashMin(s))} – ${short(cashMax(s))}` : `Opens at ${short(s.unlock)}`}</small>
-        </div>
-        <button type="button" className="cash-step press flip" aria-label="Bigger blinds" disabled={at === STAKES.length - 1} onClick={() => move(1)}>
-          <BackIcon width={22} height={22} />
-        </button>
-      </div>
-      <div className="cash-dots" aria-hidden>
-        {STAKES.map((x, i) => (
-          <i key={x.id} className={`${i === at ? 'on' : ''}${isOpen(c, x) ? '' : ' shut'}`} />
-        ))}
-      </div>
-      <button type="button" className="cash-go press" disabled={seated || !open || buyIn === 0} onClick={() => onSit(s)}>
-        {!open ? (
-          <>
-            <LockIcon width={18} height={18} /> Locked
-          </>
-        ) : buyIn === 0 ? (
-          `Need ${short(cashMin(s))}`
-        ) : (
-          `Sit down with ${short(buyIn)}`
-        )}
-      </button>
-    </section>
+    <button type="button" className="cash-box press" disabled={!ok} onClick={onPlay} aria-label="Cash game">
+      <span className="cash-chips" aria-hidden>
+        <i />
+        <i />
+        <i />
+      </span>
+      <b className="cash-box-title">Cash game</b>
+      <span className="cash-box-sub">Sit down, cash out any time</span>
+      <span className="cash-box-blinds">
+        <small>Blinds</small>
+        <b className="num">{stake ? blinds(stake) : '–'}</b>
+      </span>
+      <span className="tourney-buyin">
+        Buy-in <b>{stake ? `${short(cashMin(stake))} – ${short(max)}` : `from ${short(cashMin(STAKES[0]))}`}</b>
+      </span>
+      <span className="tourney-go">{seated ? 'At a table' : ok ? 'Play now' : `Need ${short(cashMin(STAKES[0]))}`}</span>
+    </button>
   );
 }
 

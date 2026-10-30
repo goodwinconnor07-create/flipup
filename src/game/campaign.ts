@@ -13,7 +13,8 @@ import type { Game } from './types';
 export const SALARY = 1000;
 
 /** Cash games: six seats, and you sit with 50 to 100 big blinds. */
-export const CASH = { seats: 6, minBB: 50, maxBB: 100 } as const;
+/** Cash tables: you sit with 20 to 100 big blinds. The blinds are set by your bankroll, `fitBB` big blinds of it per table (see `cashStakeFor`). */
+export const CASH = { seats: 6, minBB: 20, maxBB: 100, fitBB: 50 } as const;
 
 /** The smallest roulette chip: below this you're out of chips until tomorrow. */
 export const ROULETTE_MIN = 5;
@@ -125,7 +126,7 @@ export const VENUES: Venue[] = [
 
 export const venueById = (id: string | undefined): Venue | undefined => VENUES.find((v) => v.id === id);
 
-/** A cash game's stakes. Each opens for good once your bankroll has reached its full buy-in. */
+/** A cash game's blinds. Which one you play is set by your bankroll (`cashStakeFor`). */
 export interface Stake {
   id: string;
   smallBlind: number;
@@ -136,13 +137,20 @@ export interface Stake {
 
 export const STAKES: Stake[] = [
   { id: '1-2', smallBlind: 1, bigBlind: 2, unlock: 0, styles: ['station', 'gambler', 'nervous', 'maniac'] },
+  { id: '2-4', smallBlind: 2, bigBlind: 4, unlock: 0, styles: ['station', 'gambler', 'nervous', 'maniac'] },
   { id: '5-10', smallBlind: 5, bigBlind: 10, unlock: 0, styles: ['station', 'gambler', 'nervous', 'rock', 'maniac', 'tag'] },
-  { id: '25-50', smallBlind: 25, bigBlind: 50, unlock: 5000, styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
-  { id: '100-200', smallBlind: 100, bigBlind: 200, unlock: 20000, styles: ['rock', 'tag', 'lag', 'trapper', 'maniac', 'pro'] },
-  { id: '500-1k', smallBlind: 500, bigBlind: 1000, unlock: 100000, styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
-  { id: '2.5k-5k', smallBlind: 2500, bigBlind: 5000, unlock: 500000, styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
-  { id: '10k-20k', smallBlind: 10000, bigBlind: 20000, unlock: 2000000, styles: ['pro', 'shark', 'lag'] },
-  { id: '50k-100k', smallBlind: 50000, bigBlind: 100000, unlock: 10000000, styles: ['shark', 'pro'] },
+  { id: '10-20', smallBlind: 10, bigBlind: 20, unlock: 0, styles: ['station', 'gambler', 'nervous', 'rock', 'maniac', 'tag'] },
+  { id: '25-50', smallBlind: 25, bigBlind: 50, unlock: 0, styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
+  { id: '50-100', smallBlind: 50, bigBlind: 100, unlock: 0, styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
+  { id: '100-200', smallBlind: 100, bigBlind: 200, unlock: 0, styles: ['rock', 'tag', 'lag', 'trapper', 'maniac', 'pro'] },
+  { id: '250-500', smallBlind: 250, bigBlind: 500, unlock: 0, styles: ['rock', 'tag', 'lag', 'trapper', 'maniac', 'pro'] },
+  { id: '500-1k', smallBlind: 500, bigBlind: 1000, unlock: 0, styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
+  { id: '1k-2k', smallBlind: 1000, bigBlind: 2000, unlock: 0, styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
+  { id: '2.5k-5k', smallBlind: 2500, bigBlind: 5000, unlock: 0, styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
+  { id: '5k-10k', smallBlind: 5000, bigBlind: 10000, unlock: 0, styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
+  { id: '10k-20k', smallBlind: 10000, bigBlind: 20000, unlock: 0, styles: ['pro', 'shark', 'lag'] },
+  { id: '25k-50k', smallBlind: 25000, bigBlind: 50000, unlock: 0, styles: ['pro', 'shark', 'lag'] },
+  { id: '50k-100k', smallBlind: 50000, bigBlind: 100000, unlock: 0, styles: ['shark', 'pro'] },
 ];
 
 /** Cash tables opened before cash games had their own ladder were named after a venue. */
@@ -294,6 +302,16 @@ export function collectSalary(c: Campaign, today: string, onTable = 0): Campaign
 /** What you sit down with at a cash game: as much as you can, up to 100 big blinds. Zero if you can't cover 50. */
 export function cashBuyIn(c: Campaign, s: Stake): number {
   return c.chips >= cashMin(s) ? Math.min(cashMax(s), c.chips) : 0;
+}
+
+/**
+ * The blinds a bankroll plays: the biggest stake whose big blind is at most 1/50th of it, so a full bankroll is
+ * about 50 big blinds. Below that the smallest stake, as long as it can cover a minimum buy-in. Nothing if it can't.
+ */
+export function cashStakeFor(chips: number): Stake | undefined {
+  const fit = STAKES.findLast((s) => chips >= s.bigBlind * CASH.fitBB);
+  if (fit) return fit;
+  return chips >= cashMin(STAKES[0]) ? STAKES[0] : undefined;
 }
 
 export const isOpen = (c: Campaign, x: { unlock: number }): boolean => c.peak >= x.unlock;

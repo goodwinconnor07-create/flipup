@@ -68,10 +68,16 @@ test('a cash table gives the chips back when you cash out', async ({ page }) => 
     }
   });
   await openCampaign(page);
-  // The cash game starts on the biggest blinds you can cover.
-  await expect(page.locator('.cash-stakes b')).toHaveText('5/10');
-  await page.locator('.cash-go').click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Sit down with 1,000' }).click();
+  // The blinds come from the bankroll: 1,000 plays 10/20.
+  await expect(page.locator('.cash-box-blinds b')).toHaveText('10/20');
+  await shot(page, 'campaign-cash-box');
+  await page.locator('.cash-box').click();
+  // On its own screen you pick how much to sit down with.
+  await expect(page.locator('.cs-table b')).toHaveText('10/20');
+  await expect(page.getByRole('button', { name: 'Sit down with 800' })).toBeVisible();
+  await page.getByRole('button', { name: 'Max' }).click();
+  await shot(page, 'campaign-cash-seat');
+  await page.getByRole('button', { name: 'Sit down with 1,000' }).click();
   await expect(page.locator('.table-screen')).toBeVisible();
   // Out before the first deal, so nothing has gone in a pot yet.
   await page.getByRole('button', { name: 'Menu' }).click();

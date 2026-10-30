@@ -105,7 +105,9 @@ export type Route =
   /** The party this phone is in: lobby, leaderboard and the way to the table. */
   | { name: 'party' }
   /** The campaign's roulette wheel. */
-  | { name: 'roulette' };
+  | { name: 'roulette' }
+  /** Cash game: the blinds your bankroll plays, and how much to sit down with. */
+  | { name: 'cashSeat' };
 
 export type Sheet =
   | { name: 'menu' }
@@ -886,7 +888,8 @@ export function reconcileCampaign(): void {
 }
 
 /** Sits down at a cash game (by stake) or a tournament (by venue), against the bots on this phone. The buy-in comes out of the bankroll, and a tournament draws its prize now. */
-export function startCampaign(kind: 'cash' | 'sng', id: string): void {
+/** `amount` is what a cash game sits down with (between its minimum and what you can cover); by default as much as you can. */
+export function startCampaign(kind: 'cash' | 'sng', id: string, amount?: number): void {
   if (state.busy) return;
   const name = cleanName(state.profile.name);
   if (!name) return navigate({ name: 'profile', then: 'done' });
@@ -896,7 +899,7 @@ export function startCampaign(kind: 'cash' | 'sng', id: string): void {
   const venue = kind === 'sng' ? venueById(id) : undefined;
   if (!stake && !venue) return;
   const table = stake
-    ? campaignTable({ kind: 'cash', stake, stack: Math.max(cashBuyIn(c, stake), cashMin(stake)) }, false)
+    ? campaignTable({ kind: 'cash', stake, stack: Math.max(Math.min(amount ?? Infinity, cashBuyIn(c, stake)), cashMin(stake)) }, false)
     : campaignTable({ kind: 'sng', venue: venue!, prize: venue!.buyIn * drawMultiplier(FORMATS[venue!.format], cryptoRng) }, false);
   const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings: table.settings, bots: table.campaign.seats - 1, botStyles: campaignStyles(table.campaign), ...premiumLook(), code: null, now: Date.now() });
   game.campaign = table.campaign;

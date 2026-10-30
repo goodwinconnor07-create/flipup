@@ -9,6 +9,7 @@ import { SheetHost } from './screens/sheets/SheetHost';
 import { Legend } from './screens/Legend';
 import { PartyScreen } from './screens/Party';
 import { PartySetup } from './screens/PartySetup';
+import { CashSeat } from './screens/CashSeat';
 import { Roulette } from './screens/Roulette';
 
 export function App() {
@@ -48,6 +49,9 @@ export function App() {
       break;
     case 'roulette':
       screen = <Roulette />;
+      break;
+    case 'cashSeat':
+      screen = <CashSeat />;
       break;
   }
 

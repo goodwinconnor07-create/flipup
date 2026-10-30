@@ -55,7 +55,7 @@ test('floor games: roulette and blackjack, and a round against Vincent pays the 
   const bots = await page.locator('.bj-seat .bj-bot').count();
   expect(bots).toBeGreaterThanOrEqual(1);
   expect(bots).toBeLessThanOrEqual(2);
-  await expect(page.getByText(/Evening, Sam|Ah, Sam|Welcome, Sam|Good to see you, Sam/)).toBeVisible();
+  await expect(page.getByLabel(/Evening, Sam|Ah, Sam|Welcome, Sam|Good to see you, Sam/)).toBeVisible();
   await shot(page, 'bj-table-betting');
 
   await page.getByRole('button', { name: 'Add 100', exact: true }).click();

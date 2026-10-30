@@ -717,3 +717,11 @@
     transition: none;
   }
 }
+
+/* Lines use the poker tables' bubble and ticker (Ticker in table/Bubbles.tsx); this only places them. */
+.bj-say.bj-ticker {
+  padding: 0;
+  background: none;
+  box-shadow: none;
+  max-width: none;
+}

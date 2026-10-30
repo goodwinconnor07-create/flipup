@@ -171,7 +171,7 @@ const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
  * sliding in at the end as the oldest slides away, then the last words hold a moment and the bubble goes. The
  * bubble is as wide as the widest few words from the start, so it never changes size or reaches into a neighbour.
  */
-function Ticker({ text, until, fx }: { text: string; until: number; fx?: string }) {
+export function Ticker({ text, until, fx }: { text: string; until: number; fx?: string }) {
   const { words, at } = ticker(text);
   const [shown, setShown] = useState(0);
   const [leaving, setLeaving] = useState(false);

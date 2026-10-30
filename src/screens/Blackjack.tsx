@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { BJ, canMove, DEALER, handValue, rouletteLimit, totalLabel, type BjHand, type BjResult, type BjSeat, type BjTalk, type Blackjack as Table } from '../game';
+import { ticker, BJ, canMove, DEALER, handValue, rouletteLimit, totalLabel, type BjHand, type BjResult, type BjSeat, type BjTalk, type Blackjack as Table } from '../game';
 import { bjAct, leaveBlackjack, mySeat, onBjError, openBlackjack, useBj } from '../state/blackjack';
 import { useCampaign } from '../state/campaign';
 import { back, confirm, openSheet, toast } from '../state/store';
@@ -8,6 +8,7 @@ import { confetti, haptic } from '../ui/effects';
 import { UsersIcon } from '../ui/Icons';
 import { playSound } from '../ui/sound';
 import { short } from './HomeCampaign';
+import { Ticker } from './table/Bubbles';
 import { chipChoices } from './Roulette';
 
 /** How long a line stays up over the person who said it. */
@@ -122,14 +123,17 @@ function TableView({ game }: { game: Table }) {
 
 /** The newest thing this person said, while it's fresh. */
 function Said({ talk, who, now, className = '' }: { talk: BjTalk[]; who: string; now: number; className?: string }) {
-  const line = [...talk].reverse().find((t) => t.who === who && t.at <= now && now < t.at + TALK_MS);
+  const line = [...talk].reverse().find((t) => t.who === who && t.at <= now && now < t.at + sayFor(t.text));
   if (!line) return null;
+  // The same bubble and word-by-word ticker as the bots at the poker tables.
   return (
-    <span key={line.key} className={`bj-say pop ${className}`} role="status">
-      {line.text}
+    <span className={`bj-say bj-ticker ${className}`} role="status">
+      <Ticker key={line.key} text={line.text} until={line.at + sayFor(line.text)} />
     </span>
   );
 }
+
+const sayFor = (text: string) => Math.max(TALK_MS, ticker(text).ms + 1200);
 
 /** The shoe beside the dealer, emptying as the cards go. */
 function Shoe({ left }: { left: number }) {

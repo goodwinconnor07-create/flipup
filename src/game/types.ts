@@ -300,6 +300,8 @@ export interface Game {
   buttonSeat: number | null;
   /** When the next hand deals. */
   nextHandAt: number | null;
+  /** An online table that can't deal (nobody left to play with) closes at this time unless someone adds bots. */
+  emptyAt?: number | null;
   /** Players who tapped Next hand. */
   ready: string[];
   /** Bumped on every change. */

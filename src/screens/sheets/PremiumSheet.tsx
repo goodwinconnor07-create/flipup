@@ -27,60 +27,25 @@ export function LegendFace({ legend, size }: { legend: Legend; size: number }) {
   );
 }
 
-/** The treasure chest: a gold glow behind it, the lid opens, coins show. `open` plays the opening. */
-function Chest({ open }: { open: boolean }) {
+/** Every Premium card back fanned out in an arc that sways, each card bobbing in turn, with a gold glow behind. */
+function CardFan() {
+  const packs = CARD_PACKS.filter((p) => !p.venue);
+  const mid = (packs.length - 1) / 2;
   return (
-    <div className={`chest${open ? ' open' : ''}`} aria-hidden>
-      <span className="chest-glow" />
-      <svg viewBox="0 0 160 130" className="chest-art" focusable="false">
-        <defs>
-          <linearGradient id="chestWood" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--prem-wood-hi)" />
-            <stop offset="1" stopColor="var(--prem-wood-lo)" />
-          </linearGradient>
-          <linearGradient id="chestGold" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stopColor="var(--prem-gold-1)" />
-            <stop offset="0.5" stopColor="var(--prem-gold-2)" />
-            <stop offset="1" stopColor="var(--prem-gold-3)" />
-          </linearGradient>
-        </defs>
-        {/* Gold piled inside, lit from above. */}
-        <ellipse cx="80" cy="64" rx="56" ry="14" fill="url(#chestGold)" />
-        <circle cx="52" cy="58" r="8" fill="url(#chestGold)" stroke="var(--prem-gold-4)" strokeWidth="1.5" />
-        <circle cx="72" cy="52" r="9" fill="url(#chestGold)" stroke="var(--prem-gold-4)" strokeWidth="1.5" />
-        <circle cx="96" cy="54" r="9" fill="url(#chestGold)" stroke="var(--prem-gold-4)" strokeWidth="1.5" />
-        <circle cx="114" cy="60" r="7" fill="url(#chestGold)" stroke="var(--prem-gold-4)" strokeWidth="1.5" />
-        {/* The lid swings up on its back edge. */}
-        <g className="chest-lid">
-          <path
-            d="M24 66c0-22 24-36 56-36s56 14 56 36H24Z"
-            fill="url(#chestWood)"
-            stroke="var(--prem-wood-line)"
-            strokeWidth="3"
-            strokeLinejoin="round"
-          />
-          <path d="M24 66h112v8H24z" fill="url(#chestGold)" />
-          <path d="M60 33v33M100 33v33" stroke="url(#chestGold)" strokeWidth="7" />
-        </g>
-        {/* The body. */}
-        <path
-          d="M22 70h116v44a8 8 0 0 1-8 8H30a8 8 0 0 1-8-8V70Z"
-          fill="url(#chestWood)"
-          stroke="var(--prem-wood-line)"
-          strokeWidth="3"
-          strokeLinejoin="round"
-        />
-        <path d="M22 70h116v10H22z" fill="url(#chestGold)" />
-        <path d="M58 80v42M102 80v42" stroke="url(#chestGold)" strokeWidth="7" />
-        <rect x="68" y="76" width="24" height="26" rx="6" fill="url(#chestGold)" stroke="var(--prem-gold-4)" strokeWidth="2.5" />
-        <circle cx="80" cy="87" r="3.5" fill="var(--prem-wood-line)" />
-        <path d="M80 89v8" stroke="var(--prem-wood-line)" strokeWidth="3" strokeLinecap="round" />
-      </svg>
+    <div className="card-fan" aria-hidden>
+      <span className="card-fan-glow" />
+      <div className="card-fan-arc">
+        {packs.map((p, i) => (
+          <span key={p.id} className="card-fan-slot" style={{ ['--a' as string]: `${(i - mid) * 5.5}deg`, ['--d' as string]: `${i * 140}ms` } as CSSProperties}>
+            <PlayingCard back size="md" pack={p.id} />
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
 
-/** Everything the chest throws out: bubble colours, emoji and legends, floating where they land. */
+/** Bubble colours, emoji and legends floating round the fan of card backs. */
 function Burst() {
   const legends = ['brunson', 'ivey', 'dwan'].map((id) => legendById(id)!);
   const at = (x: number, y: number, rot: number, delay: number): CSSProperties => ({
@@ -122,16 +87,20 @@ function Burst() {
   );
 }
 
-/** The showcase cards under the chest. The one for what the player tapped comes first. */
+/** The showcase cards under the fan. The one for what the player tapped comes first. */
 function Showcase({ reason }: { reason?: PremiumReason }) {
   const cards: Record<PremiumReason, ReactNode> = {
     bubbles: (
       <div className="show-bubbles">
-        {BUBBLE_STYLES.map((b) => (
-          <BubbleChip key={b.id} id={b.id}>
-            {b.name}
-          </BubbleChip>
-        ))}
+        {/* A taste of them: the card would overflow with all eleven. */}
+        {BUBBLE_STYLES.filter((b) => !b.free)
+          .slice(0, 6)
+          .map((b) => (
+            <BubbleChip key={b.id} id={b.id}>
+              {b.name}
+            </BubbleChip>
+          ))}
+        <span className="show-more">+{BUBBLE_STYLES.filter((b) => !b.free).length - 6} more</span>
       </div>
     ),
     emoji: (
@@ -144,9 +113,11 @@ function Showcase({ reason }: { reason?: PremiumReason }) {
     ),
     packs: (
       <div className="show-packs">
-        {CARD_PACKS.filter((p) => !p.venue).map((p) => (
-          <PlayingCard key={p.id} back size="md" pack={p.id} />
-        ))}
+        {CARD_PACKS.filter((p) => !p.venue)
+          .slice(0, 5)
+          .map((p) => (
+            <PlayingCard key={p.id} back size="md" pack={p.id} />
+          ))}
       </div>
     ),
     legends: (
@@ -237,7 +208,7 @@ export function PremiumSheet({ reason, then }: { reason?: PremiumReason; then?: 
         <span className="prem-rays" aria-hidden />
         <span className="prem-stars" aria-hidden />
         <Burst />
-        <Chest open />
+        <CardFan />
       </div>
 
       <div className="prem-body">

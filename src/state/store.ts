@@ -18,6 +18,7 @@ import {
   cashOut,
   cleanName,
   packById,
+  bubbleById,
   drawMultiplier,
   finishSng,
   FORMATS,
@@ -409,7 +410,8 @@ export function setProfile(patch: Partial<Profile>): void {
   if (!state.premium && patch.emoji !== undefined && patch.emoji !== state.profile.emoji && !(EMOJIS as readonly string[]).includes(patch.emoji)) {
     return openPremium('emoji');
   }
-  if (!state.premium && patch.bubble) return openPremium('bubbles');
+  // Green is free; every other colour is Premium's.
+  if (!state.premium && patch.bubble && !bubbleById(patch.bubble)?.free) return openPremium('bubbles');
   // A campaign trophy back is won at its venue; the others are Premium's.
   const pack = patch.cardPack ? packById(patch.cardPack) : undefined;
   if (pack?.venue && !packOpen(pack.id)) return toast(`${pack.note} to get this one.`);
@@ -612,7 +614,7 @@ function onServerMessage(msg: ServerMessage): void {
 /** The Premium parts of this phone's look (bubble colour, card pack): empty without Premium. */
 function premiumLook(): { bubble?: string; cardPack?: string } {
   const { bubble, cardPack } = state.profile;
-  return { ...(state.premium && bubble ? { bubble } : {}), ...(cardPack && packOpen(cardPack) ? { cardPack } : {}) };
+  return { ...(bubble && (state.premium || bubbleById(bubble)?.free) ? { bubble } : {}), ...(cardPack && packOpen(cardPack) ? { cardPack } : {}) };
 }
 
 /** Whether this phone may use a card back: a campaign trophy once its venue is won, the rest with Premium. */

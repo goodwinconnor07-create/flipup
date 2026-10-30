@@ -29,9 +29,10 @@ function run(g: Game, action: Action, deviceId = HOST): Game {
 }
 
 describe('bubble colours', () => {
-  it('there are five, each with a name', () => {
-    expect(BUBBLE_STYLES).toHaveLength(5);
-    expect(new Set(BUBBLE_STYLES.map((b) => b.id)).size).toBe(5);
+  it('there are eleven for Premium and a free green, each with a name', () => {
+    expect(BUBBLE_STYLES.filter((b) => !b.free)).toHaveLength(11);
+    expect(BUBBLE_STYLES.filter((b) => b.free).map((b) => b.id)).toEqual(['green']);
+    expect(new Set(BUBBLE_STYLES.map((b) => b.id)).size).toBe(BUBBLE_STYLES.length);
   });
 
   it('are set with the rest of a player look, and cleared by leaving one out', () => {
@@ -77,7 +78,7 @@ describe('card packs', () => {
   });
 
   it('only come over the network when they are one of ours', () => {
-    expect(CARD_PACKS.filter((p) => !p.venue)).toHaveLength(5);
+    expect(CARD_PACKS.filter((p) => !p.venue)).toHaveLength(11);
     expect(parseAction({ type: 'setLook', name: 'Sam', emoji: '😎', cardPack: 'neon' })).toEqual({
       type: 'setLook',
       name: 'Sam',

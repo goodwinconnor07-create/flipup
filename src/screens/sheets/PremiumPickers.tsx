@@ -1,4 +1,4 @@
-import { BUBBLE_STYLES, CARD_PACKS, LEGEND_NOTE, LEGENDS, MAX_SEATS, packById } from '../../game';
+import { bubbleById, BUBBLE_STYLES, CARD_PACKS, LEGEND_NOTE, LEGENDS, MAX_SEATS, packById } from '../../game';
 import { useCampaign } from '../../state/campaign';
 import { closeSheet, dispatch, openPremium, openSheet, setProfile, useApp } from '../../state/store';
 import { PlayingCard, Sheet } from '../../ui/components';
@@ -12,7 +12,7 @@ export function BubbleSheet() {
   const mine = useApp((s) => s.profile.bubble);
   const pick = (id: string | undefined) => {
     haptic('light');
-    if (id && !premium) {
+    if (id && !premium && !bubbleById(id)?.free) {
       // After buying, put the colour on and come back here.
       openPremium('bubbles', () => {
         setProfile({ bubble: id });
@@ -42,7 +42,7 @@ export function BubbleSheet() {
       <div className="group">
         {rows.map((r) => {
           const on = (mine ?? undefined) === r.id;
-          const locked = !!r.id && !premium;
+          const locked = !!r.id && !premium && !bubbleById(r.id)?.free;
           return (
             <button
               key={r.id ?? 'classic'}

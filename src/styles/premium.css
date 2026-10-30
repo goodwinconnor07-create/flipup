@@ -1,4 +1,4 @@
-/* FlipUp Premium: the five bubble colours, the offer (a chest throwing its prizes), the gold Profile card and the
+/* FlipUp Premium: the five bubble colours, the offer (a fan of card backs with its prizes floating round it), the gold Profile card and the
    small pieces that say "Premium" elsewhere. Colours are tokens in global.css (--prem-*, --fx-*). */
 
 /* ── Bubble colours ──────────────────────────────────────────────────────────────────────────────
@@ -436,7 +436,7 @@
 }
 
 /* ── The offer ───────────────────────────────────────────────────────────────────────────────────
-   A dark purple night with a gold chest at the bottom of it. The chest opens and throws out the prizes (legends,
+   A dark purple night with a fan of every card back swaying at the bottom of it, and the prizes floating round it (legends,
    bubble colours, emoji), which then float where they land. Under it: what you get, the price once, the button. */
 
 /* The glass rules in global.css give every sheet a sheen and blur; the offer is its own dark night instead. */
@@ -515,51 +515,10 @@ html.no-glass .sheet.sheet-premium {
   animation: prem-twinkle 3.4s ease-in-out infinite;
 }
 
-.chest {
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  width: 168px;
-  margin-left: -84px;
-  z-index: 2;
-}
 
-.chest-art {
-  position: relative;
-  display: block;
-  width: 100%;
-  overflow: visible;
-  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.45));
-}
 
-.chest-glow {
-  position: absolute;
-  left: 50%;
-  top: -20px;
-  width: 300px;
-  height: 220px;
-  margin-left: -150px;
-  background: radial-gradient(closest-side, var(--prem-gold-glow), transparent);
-  animation: prem-breathe 2.8s ease-in-out infinite;
-}
 
-.chest-lid {
-  transform-box: view-box;
-  transform-origin: 24px 70px;
-}
 
-.chest.open .chest-lid {
-  animation: chest-lid 0.7s 0.15s cubic-bezier(0.3, 1.5, 0.5, 1) both;
-}
-
-@keyframes chest-lid {
-  from {
-    transform: rotate(0);
-  }
-  to {
-    transform: rotate(-26deg) translate(-6px, -6px);
-  }
-}
 
 .burst {
   position: absolute;
@@ -595,7 +554,7 @@ html.no-glass .sheet.sheet-premium {
   font-size: var(--fs-small);
 }
 
-/* Out of the chest: from its middle, small and unseen, up to its place. */
+/* Floating out from the fan: from its middle, small and unseen, up to its place. */
 @keyframes burst-out {
   from {
     left: 50%;
@@ -911,7 +870,9 @@ html.no-glass .sheet.sheet-premium {
 @media (prefers-reduced-motion: reduce) {
   .prem-rays,
   .prem-stars,
-  .chest-glow,
+  .card-fan-glow,
+  .card-fan-arc,
+  .card-fan-slot,
   .burst-item,
   .prem-card,
   .prem-card::after,
@@ -920,11 +881,6 @@ html.no-glass .sheet.sheet-premium {
   .bubble-fx::before,
   .bubble-fx::after {
     animation: none;
-  }
-
-  .chest.open .chest-lid {
-    animation: none;
-    transform: rotate(-26deg) translate(-6px, -6px);
   }
 }
 
@@ -1172,33 +1128,265 @@ html.no-glass .sheet.sheet-premium {
 }
 
 /* Your deck, in your card pack, on the felt: three backs stacked at the lower left. */
-.felt-deck {
-  position: absolute;
-  left: 19%;
-  bottom: 15%;
-  z-index: 1;
-  display: block;
-  width: 30px;
-  height: 40px;
-  pointer-events: none;
-}
-
-.felt-deck .pcard {
-  position: absolute;
-  left: 0;
-  top: 0;
-}
-
-.felt-deck .pcard:nth-child(2) {
-  translate: 2px -2px;
-}
-
-.felt-deck .pcard:nth-child(3) {
-  translate: 4px -4px;
-}
-
 /* A trophy back not won yet: shown faded in the picker. */
 .pack-row-pic.pack-unwon {
   filter: grayscale(0.9);
   opacity: 0.55;
+}
+
+/* ── The offer's fan of card backs (replaces the chest) ─────────────────────────────────────── */
+
+.card-fan {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  z-index: 0;
+  width: 280px;
+  height: 150px;
+  margin-left: -140px;
+}
+
+.card-fan-glow {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 220px;
+  height: 120px;
+  margin-left: -110px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, var(--prem-gold-glow), transparent);
+  animation: fan-glow 3s ease-in-out infinite;
+}
+
+/* The arc pivots round a point below it, so the cards spread like a hand of cards. */
+.card-fan-arc {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 260%;
+  animation: fan-sway 6s ease-in-out infinite;
+}
+
+.card-fan-slot {
+  position: absolute;
+  left: 50%;
+  top: 24px;
+  margin-left: -21px;
+  transform-origin: 50% 420%;
+  rotate: var(--a);
+  animation: fan-bob 2.4s ease-in-out var(--d) infinite;
+}
+
+@keyframes fan-sway {
+  0%,
+  100% {
+    transform: rotate(-3deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes fan-bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -10px;
+  }
+}
+
+@keyframes fan-glow {
+  50% {
+    opacity: 0.55;
+    transform: scale(1.12);
+  }
+}
+
+/* ── More bubble colours: Green (free) and six more for Premium ───────────────────────────────── */
+
+.fx-green {
+  --fx-tail: var(--fx-green-a);
+  box-shadow: 0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-green::after {
+  background: linear-gradient(135deg, var(--fx-green-a), var(--fx-green-b));
+}
+
+.fx-ocean {
+  --fx-tail: var(--fx-ocean-a);
+  box-shadow:
+    0 0 12px rgba(0, 170, 255, 0.4),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-ocean::after {
+  background: linear-gradient(120deg, var(--fx-ocean-a), var(--fx-ocean-b), var(--fx-ocean-a));
+  background-size: 200% 100%;
+  animation: fx-drift 5s ease-in-out infinite;
+}
+
+.fx-candy {
+  --fx-tail: var(--fx-candy-a);
+  color: var(--prem-ink);
+  box-shadow:
+    0 0 12px rgba(255, 120, 200, 0.4),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-candy::after {
+  background: repeating-linear-gradient(135deg, var(--fx-candy-a) 0 10px, var(--fx-candy-b) 10px 20px);
+}
+
+.fx-fire {
+  --fx-tail: var(--fx-fire-b);
+  text-shadow: 0 1px 2px rgba(120, 20, 0, 0.6);
+  box-shadow:
+    0 0 14px rgba(255, 90, 20, 0.55),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-fire::after {
+  background: linear-gradient(0deg, var(--fx-fire-a), var(--fx-fire-b) 55%, var(--fx-fire-c));
+  animation: fx-flicker 1.4s ease-in-out infinite;
+}
+
+.fx-galaxy {
+  --fx-tail: var(--fx-galaxy-a);
+  box-shadow:
+    0 0 14px rgba(150, 90, 255, 0.5),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-galaxy::after {
+  background:
+    radial-gradient(1px 1px at 20% 30%, var(--on-color), transparent),
+    radial-gradient(1px 1px at 70% 60%, var(--on-color), transparent),
+    radial-gradient(1.5px 1.5px at 45% 80%, var(--on-color), transparent),
+    radial-gradient(1px 1px at 85% 20%, var(--on-color), transparent),
+    linear-gradient(135deg, var(--fx-galaxy-a), var(--fx-galaxy-b));
+  animation: fx-twinkle 3s ease-in-out infinite;
+}
+
+.fx-frost {
+  --fx-tail: var(--fx-frost-a);
+  color: var(--prem-ink);
+  box-shadow:
+    0 0 14px rgba(160, 220, 255, 0.7),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-frost::after {
+  background: linear-gradient(135deg, var(--fx-frost-a), var(--fx-frost-b));
+}
+
+.fx-toxic {
+  --fx-tail: var(--fx-toxic-b);
+  color: var(--prem-ink);
+  box-shadow:
+    0 0 16px rgba(120, 255, 60, 0.6),
+    0 2px 6px -2px rgba(18, 18, 40, 0.35);
+}
+
+.fx-toxic::after {
+  background: linear-gradient(135deg, var(--fx-toxic-a), var(--fx-toxic-b));
+  animation: fx-pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes fx-drift {
+  50% {
+    background-position: 100% 0;
+  }
+}
+
+@keyframes fx-flicker {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  30% {
+    filter: brightness(1.18);
+  }
+  60% {
+    filter: brightness(0.92);
+  }
+}
+
+@keyframes fx-twinkle {
+  50% {
+    filter: brightness(1.25) saturate(1.2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-ocean::after,
+  .fx-fire::after,
+  .fx-galaxy::after,
+  .fx-toxic::after {
+    animation: none;
+  }
+}
+
+/* ── More card packs ──────────────────────────────────────────────────────────────────────────── */
+
+.pack-emerald {
+  --pk-shine: rgba(255, 255, 255, 0.9);
+  --pk-glow: rgba(40, 220, 140, 0.5);
+  --pk-dur: 3s;
+  --pk-pat-a: conic-gradient(from 45deg at 50% 50%, rgba(255, 255, 255, 0.18) 0 25%, transparent 0 50%, rgba(0, 0, 0, 0.12) 0 75%, transparent 0);
+  --pk-pat-b: repeating-linear-gradient(60deg, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px 9px);
+  --pk-base: linear-gradient(160deg, var(--pack-emerald-a), var(--pack-emerald-b));
+}
+
+.pack-sapphire {
+  --pk-shine: rgba(220, 235, 255, 0.95);
+  --pk-glow: rgba(60, 120, 255, 0.5);
+  --pk-dur: 3.4s;
+  --pk-pat-a: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.14) 0 2px, transparent 2px 10px);
+  --pk-pat-b: radial-gradient(circle at 50% 40%, rgba(160, 200, 255, 0.4), transparent 60%);
+  --pk-base: linear-gradient(160deg, var(--pack-sapphire-a), var(--pack-sapphire-b));
+}
+
+.pack-obsidian {
+  --pk-shine: rgba(190, 140, 255, 0.8);
+  --pk-glow: rgba(150, 90, 255, 0.45);
+  --pk-dur: 4s;
+  --pk-pat-a: linear-gradient(135deg, transparent 45%, rgba(190, 140, 255, 0.25) 50%, transparent 55%);
+  --pk-pat-b: radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.12), transparent 50%);
+  --pk-base: linear-gradient(160deg, var(--pack-obsidian-a), var(--pack-obsidian-b));
+}
+
+.pack-sakura {
+  --pk-shine: rgba(255, 255, 255, 0.95);
+  --pk-glow: rgba(255, 150, 200, 0.5);
+  --pk-dur: 3.6s;
+  --pk-pat-a: radial-gradient(circle at 25% 25%, rgba(255, 255, 255, 0.55) 0 3px, transparent 4px), radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.45) 0 2px, transparent 3px);
+  --pk-pat-b: radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.4) 0 2.5px, transparent 3.5px);
+  --pk-base: linear-gradient(160deg, var(--pack-sakura-a), var(--pack-sakura-b));
+}
+
+.pack-galaxy {
+  --pk-shine: rgba(255, 255, 255, 0.85);
+  --pk-glow: rgba(140, 80, 255, 0.55);
+  --pk-dur: 4.4s;
+  --pk-pat-a: radial-gradient(1px 1px at 20% 30%, #fff, transparent), radial-gradient(1px 1px at 70% 20%, #fff, transparent), radial-gradient(1.5px 1.5px at 50% 70%, #fff, transparent), radial-gradient(1px 1px at 80% 80%, #fff, transparent);
+  --pk-pat-b: radial-gradient(ellipse at 60% 40%, rgba(255, 90, 200, 0.45), transparent 60%);
+  --pk-base: linear-gradient(160deg, var(--pack-galaxy-a), var(--pack-galaxy-b));
+}
+
+.pack-circuit {
+  --pk-shine: rgba(80, 255, 160, 0.9);
+  --pk-glow: rgba(40, 255, 140, 0.45);
+  --pk-dur: 2.8s;
+  --pk-pat-a: linear-gradient(90deg, rgba(60, 255, 150, 0.35) 1px, transparent 1px);
+  --pk-pat-b: linear-gradient(0deg, rgba(60, 255, 150, 0.2) 1px, transparent 1px);
+  --pk-base: linear-gradient(160deg, var(--pack-circuit-a), var(--pack-circuit-b));
+}
+
+.show-more {
+  align-self: center;
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--prem-gold-1);
 }

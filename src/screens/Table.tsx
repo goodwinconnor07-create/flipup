@@ -486,14 +486,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 </span>
               )}
             </div>
-            {me?.cardPack && (
-              // The deck in your own card pack, so you see it all hand long, not just as a card turns over.
-              <span className="felt-deck" aria-hidden>
-                {[0, 1, 2].map((i) => (
-                  <PlayingCard key={i} back size="sm" pack={me.cardPack} />
-                ))}
-              </span>
-            )}
             <Ghost game={game} />
             {hand?.dice && (
               <p className="dice-note pop" key={`dice-${hand.number}`}>

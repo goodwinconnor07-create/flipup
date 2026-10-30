@@ -17,6 +17,12 @@ export const CARD_PACKS: CardPack[] = [
   { id: 'aurora', name: 'Aurora', note: 'Green and violet northern lights' },
   { id: 'holo', name: 'Holo', note: 'Rainbow foil that changes colour' },
   { id: 'ruby', name: 'Ruby Ember', note: 'Deep red with a hot orange glint' },
+  { id: 'emerald', name: 'Emerald', note: 'Green gem facets with a white glint' },
+  { id: 'sapphire', name: 'Sapphire', note: 'Deep blue with a silver shine' },
+  { id: 'obsidian', name: 'Obsidian', note: 'Black glass with a purple edge' },
+  { id: 'sakura', name: 'Sakura', note: 'Soft pink petals' },
+  { id: 'galaxy', name: 'Galaxy', note: 'Stars drifting through a nebula' },
+  { id: 'circuit', name: 'Circuit', note: 'Green traces on a dark board' },
   // Campaign trophies, one for each venue, in its colours.
   { id: 'v-garage', name: 'Garage', note: 'Win a tournament at the Garage', venue: 'garage' },
   { id: 'v-backroom', name: 'Back Room', note: 'Win a tournament at the Back Room', venue: 'backroom' },

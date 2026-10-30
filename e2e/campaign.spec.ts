@@ -39,7 +39,7 @@ test('first visit explains the campaign, pays the salary, and a tournament takes
   const spun = await page.evaluate(() => JSON.parse(localStorage.getItem('flipup.campaign')!).chips as number);
   expect(spun).toBeGreaterThan(1000);
   await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
-  await expect(page.getByRole('button', { name: /Spun for today/ })).toBeDisabled();
+  await expect(page.getByRole('button', { name: /Free daily spin/ })).toHaveCount(0);
   await page.locator('.home-sheet').evaluate((el) => el.scrollTo(0, 99999));
 
   // Every goal, in one sheet.

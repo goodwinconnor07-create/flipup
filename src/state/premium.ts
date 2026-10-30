@@ -11,8 +11,8 @@ export const PREMIUM_PRICE = '$9';
 export type PremiumReason = 'bubbles' | 'packs' | 'emoji' | 'legends';
 
 export const PREMIUM_PERKS: { id: PremiumReason; title: string; line: string }[] = [
-  { id: 'bubbles', title: 'Five bubble colours', line: 'Gradients that shift and shine. Everyone at the table sees them.' },
-  { id: 'packs', title: 'Five card packs', line: 'Shining card backs. Your table sees them on your cards.' },
+  { id: 'bubbles', title: 'Eleven bubble effects', line: 'Fire, galaxy, neon and more. Everyone at the table sees them.' },
+  { id: 'packs', title: 'Eleven card packs', line: 'Shining card backs. Your table sees them on your cards.' },
   { id: 'emoji', title: 'Any emoji as your face', line: 'Not just the grid. Type any emoji there is.' },
   { id: 'legends', title: 'AI Legends at your table', line: 'Seat Brunson, Ivey, Dwan and the rest in any game.' },
 ];

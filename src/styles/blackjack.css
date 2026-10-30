@@ -32,7 +32,7 @@
   border-radius: 8px;
   font-style: normal;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--rl-black);
   background: var(--on-color);
   box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.6);
@@ -123,7 +123,7 @@
   height: 56px;
   border-radius: 8px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--rl-black);
   background: var(--on-color);
   box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.6);
@@ -252,7 +252,7 @@
   padding: 2px 12px;
   border-radius: var(--r-pill);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--rl-black);
@@ -326,7 +326,7 @@
   padding: 2px 8px;
   border-radius: var(--r-pill);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 700;
   white-space: nowrap;
   color: var(--bj-ink);
   background: rgba(0, 0, 0, 0.45);
@@ -365,7 +365,7 @@
 }
 
 .bj-tag b {
-  font-weight: 800;
+  font-weight: 700;
 }
 
 /* The shoe, top left, its cards going down as the night goes on. */
@@ -404,7 +404,7 @@
 
 .bj-print b {
   font-size: 14px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .bj-print span {
@@ -463,7 +463,7 @@
   border-radius: 4px;
   font-size: 9px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.04em;
   background: rgba(0, 0, 0, 0.4);
 }
@@ -560,7 +560,7 @@
   align-items: center;
   gap: 4px;
   font-size: 15px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .bj-chip {
@@ -593,7 +593,7 @@
 .bj-status.big {
   padding: 12px 0;
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .bj-status.win {
@@ -613,7 +613,7 @@
   border-radius: var(--r-lg);
   font: inherit;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--on-color);
 }
 
@@ -701,7 +701,7 @@
   border: 0;
   border-radius: var(--r-lg);
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--on-color);
   background: linear-gradient(160deg, var(--party-green), var(--green));
   box-shadow: 0 3px 0 var(--green-lo);

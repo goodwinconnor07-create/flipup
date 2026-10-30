@@ -147,20 +147,10 @@ export function Home() {
                 <GameShelf />
                 <section className="start-row" aria-label="Start a table">
                   <button type="button" className="start-tile start-blue press" onClick={() => go('host')}>
-                    <span className="start-faces" aria-hidden>
-                      <span>🥳</span>
-                      <span>😄</span>
-                      <span>🤓</span>
-                    </span>
                     <b>Play with friends</b>
                     <small>Share a code. They join on their phones.</small>
                   </button>
                   <button type="button" className="start-tile start-green press" onClick={() => go('bots')}>
-                    <span className="start-faces" aria-hidden>
-                      <span>🦁</span>
-                      <span>🤩</span>
-                      <span>🦊</span>
-                    </span>
                     <b>Play with bots</b>
                     <small>On this phone, no timer.</small>
                   </button>

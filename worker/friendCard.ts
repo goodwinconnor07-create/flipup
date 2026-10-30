@@ -1,8 +1,10 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { CampaignCard, FriendCardInfo } from '../src/game';
+import type { BjInvite, CampaignCard, FriendCardInfo } from '../src/game';
 
 /** A friend code is forgotten this long after its owner last opened the app. */
 const KEEP_FOR_MS = 120 * 24 * 60 * 60 * 1000;
+/** An invite to a table is only worth answering for this long. */
+const INVITE_MS = 15 * 60 * 1000;
 
 interface Stored {
   name: string;
@@ -12,6 +14,8 @@ interface Stored {
   updatedAt: number;
   /** How their campaign is going, for friends to compare. */
   campaign?: CampaignCard;
+  /** Friends asking this person to their table, newest last. Only the owner reads them. */
+  invites?: BjInvite[];
 }
 
 /**
@@ -43,6 +47,22 @@ export class FriendCard extends DurableObject<Env> {
     return data ? { code, name: data.name, emoji: data.emoji, ...(data.campaign ? { campaign: data.campaign } : {}) } : null;
   }
 
+  /** RPC: a friend asks this person to their blackjack table. One invite per friend; a new one replaces the old. */
+  async invite(invite: BjInvite): Promise<boolean> {
+    const data = await this.load();
+    if (!data) return false;
+    const kept = (data.invites ?? []).filter((i) => i.from !== invite.from && Date.now() - i.at < INVITE_MS);
+    await this.save({ ...data, invites: [...kept, invite].slice(-8) }, false);
+    return true;
+  }
+
+  /** RPC: the invites waiting for this phone, if it owns the code. */
+  async invites(deviceId: string): Promise<BjInvite[] | null> {
+    const data = await this.load();
+    if (!data || data.deviceId !== deviceId) return null;
+    return (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS);
+  }
+
   /** RPC: whose code this is, so a party can check someone really holds the code they show. */
   async owner(): Promise<string | null> {
     return (await this.load())?.deviceId ?? null;
@@ -60,9 +80,9 @@ export class FriendCard extends DurableObject<Env> {
     return this.data;
   }
 
-  private async save(data: Stored): Promise<void> {
+  private async save(data: Stored, alarm = true): Promise<void> {
     this.data = data;
     await this.ctx.storage.put('card', data);
-    await this.ctx.storage.setAlarm(data.updatedAt + KEEP_FOR_MS);
+    if (alarm) await this.ctx.storage.setAlarm(data.updatedAt + KEEP_FOR_MS);
   }
 }

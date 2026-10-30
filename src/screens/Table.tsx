@@ -19,7 +19,6 @@ import { useWakeLock } from '../ui/useWakeLock';
 import { ActionArea, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { Versus } from './table/Versus';
-import { TableCam } from './table/TableCam';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { soundMoodFor } from '../ui/gameThemes';
 import { setSoundMood } from '../ui/sound';
@@ -398,15 +397,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       </p>
       <div className="stage">
         {(others.length > 0 || desktop) && (
-          // On a phone everyone else sits in 3D; where that can't be drawn, the row of seats.
-          <TableCam
-            game={game}
-            others={others}
-            meId={me?.id}
-            say={reactions}
-            quiet={quiet}
-            odds={odds ?? undefined}
-            fallback={
           <div
             className={`pods${others.length >= 8 ? ' crowded' : ''}`}
             style={{ ['--tile' as string]: others.length >= 8 ? '192px' : '232px' }}
@@ -458,8 +448,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
             )}
             {podSlots.hidden > 0 && <HiddenPlayers game={game} players={others.filter((p) => podSlots.slots.get(p.id)?.away)} />}
           </div>
-            }
-          />
         )}
 
         {/* Each game has its own table; plain Hold'em uses the player's own felt and rail. */}

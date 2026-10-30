@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
+  BJ,
+  bjOnTable,
   broke,
   cashBuyIn,
   cashMin,
@@ -39,6 +41,7 @@ import {
   type Venue,
 } from '../game';
 import { getCampaign, setCampaign, today, untilTomorrow, useCampaign } from '../state/campaign';
+import { hasBjTable, useBj } from '../state/blackjack';
 import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, type Pal } from '../state/pals';
 import { confirm, navigate, openSheet, prepareCampaign, reconcileCampaign, startCampaign, toast, useApp } from '../state/store';
 import { Avatar, Count, useNow } from '../ui/components';
@@ -75,8 +78,9 @@ export function CampaignTab() {
   const atTable = useApp((s) => (s.game?.campaign && s.game.id === c.seat?.gameId ? (s.game.players.find((p) => p.deviceId === s.deviceId)?.stack ?? 0) : 0));
   const tableOn = useApp((s) => !!s.game?.campaign && s.game.status !== 'ended' && s.game.id === c.seat?.gameId);
   const day = today();
-  const due = salaryDue(c, day, atTable);
+  const due = salaryDue(c, day, atTable + bjOnTable(c));
   const streak = streakToday(c, day);
+  const bjWaiting = useBj((s) => !!s.game) || hasBjTable();
 
   useEffect(() => {
     reconcileCampaign();
@@ -86,7 +90,7 @@ export function CampaignTab() {
 
   // Nothing to top up today: the day still counts, without a button to press.
   useEffect(() => {
-    if (c.day !== day && due === 0) setCampaign(collectSalary(c, day, atTable));
+    if (c.day !== day && due === 0) setCampaign(collectSalary(c, day, atTable + bjOnTable(c)));
   }, [c, day, due, atTable]);
 
   const collect = (e: React.MouseEvent) => {
@@ -96,7 +100,7 @@ export function CampaignTab() {
     playSound('collect');
     confetti(undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
     // The chips fly to the bankroll and it ticks up as the first one lands.
-    chipsToBank(btn, () => setCampaign(collectSalary(c, day, atTable)));
+    chipsToBank(btn, () => setCampaign(collectSalary(c, day, atTable + bjOnTable(c))));
   };
 
   const needName = (): boolean => {
@@ -185,16 +189,35 @@ export function CampaignTab() {
         ))}
       </div>
 
-      <button type="button" className="wheel-card press" disabled={c.chips < ROULETTE_MIN && due === 0} onClick={() => navigate({ name: 'roulette' })}>
-        <span className="wheel-card-art" aria-hidden>
-          <i />
-        </span>
-        <span className="wheel-card-text">
-          <b>Roulette</b>
-          <small>Red or black? Put your chips on the wheel and try to win big.</small>
-        </span>
-        <ChevronIcon width={22} height={22} />
-      </button>
+      <h3 className="section-head">Floor games</h3>
+      <div className="floor-games">
+        <button type="button" className="wheel-card press" disabled={c.chips < ROULETTE_MIN && due === 0} onClick={() => navigate({ name: 'roulette' })}>
+          <span className="wheel-card-art" aria-hidden>
+            <i />
+          </span>
+          <span className="wheel-card-text">
+            <b>Roulette</b>
+            <small>Red or black? Put your chips on the wheel and try to win big.</small>
+          </span>
+          <ChevronIcon width={22} height={22} />
+        </button>
+        <button type="button" className="wheel-card bj-card press" disabled={c.chips < BJ.minBet && due === 0 && !bjWaiting} onClick={() => openSheet({ name: 'bjStart' })}>
+          <span className="bj-card-art" aria-hidden>
+            <i>
+              A<small>♠</small>
+            </i>
+            <i>
+              K<small>♥</small>
+            </i>
+            <b>🤵🏻‍♂️</b>
+          </span>
+          <span className="wheel-card-text">
+            <b>Blackjack</b>
+            <small>{bjWaiting ? 'Your seat is waiting. Vincent kept your cards warm.' : 'Beat Vincent to 21. Blackjack pays 3 to 2. Bring a friend or two.'}</small>
+          </span>
+          <ChevronIcon width={22} height={22} />
+        </button>
+      </div>
 
       <Friends c={c} needName={needName} />
 

@@ -207,10 +207,10 @@ export function ticker(text: string): { words: string[]; at: number[]; ms: numbe
 
 /** Which words are on show when word `i` has just come in: the latest few that fit together in a seat's bubble.
  * `maxChars` is how many letters the bubble has room for (the screen narrows it when a seat is tight). */
-export function windowAt(words: string[], i: number, maxChars: number = CHAT.windowChars): [number, number] {
+export function windowAt(words: string[], i: number, maxChars: number = CHAT.windowChars, maxWords: number = CHAT.windowWords): [number, number] {
   let first = i;
   let chars = size(words[i] ?? '');
-  while (first > 0 && i - first + 1 < CHAT.windowWords && chars + 1 + size(words[first - 1]) <= maxChars) {
+  while (first > 0 && i - first + 1 < maxWords && chars + 1 + size(words[first - 1]) <= maxChars) {
     first--;
     chars += 1 + size(words[first]);
   }
@@ -218,10 +218,10 @@ export function windowAt(words: string[], i: number, maxChars: number = CHAT.win
 }
 
 /** The widest window a line ever shows, so its bubble can be as wide as that from the start and never change size. */
-export function widestWindow(words: string[], maxChars: number = CHAT.windowChars): string {
+export function widestWindow(words: string[], maxChars: number = CHAT.windowChars, maxWords: number = CHAT.windowWords): string {
   let best = '';
   for (let i = 0; i < words.length; i++) {
-    const [a, b] = windowAt(words, i, maxChars);
+    const [a, b] = windowAt(words, i, maxChars, maxWords);
     const text = words.slice(a, b + 1).join(' ');
     if (size(text) > size(best)) best = text;
   }

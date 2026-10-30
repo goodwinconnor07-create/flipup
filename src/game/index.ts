@@ -28,3 +28,4 @@ export * from './chat';
 export * from './party';
 export * from './campaign';
 export * from './roulette';
+export * from './blackjack';

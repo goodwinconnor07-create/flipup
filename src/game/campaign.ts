@@ -7,6 +7,7 @@
 
 import type { Bets } from './roulette';
 import { payout, pocketColour, totalBet } from './roulette';
+import type { Blackjack } from './blackjack';
 import type { Game, PlayerRead } from './types';
 
 /** What the daily salary tops a bankroll up to on the first day. Days you don't open the app pay nothing. */
@@ -284,6 +285,18 @@ export interface CampaignStats {
   bounties: number;
   /** Most days in a row you've collected the salary. */
   bestStreak: number;
+  /** Blackjack: rounds played, naturals dealt to you, and the biggest win on one round. */
+  bjRounds: number;
+  bjBlackjacks: number;
+  bestBj: number;
+}
+
+/** What this phone has paid into the blackjack round it's in, so each round is paid for once and settled once. */
+export interface BjLedger {
+  table: string;
+  round: number;
+  paid: number;
+  done: boolean;
 }
 
 /** Something friends hear about: a big prize drawn, a boss beaten, a tournament won. */
@@ -337,6 +350,7 @@ export interface Campaign {
   brag: Brag | null;
   /** What each boss has seen you do, kept between tables so they remember how you play. */
   bossReads: Record<string, PlayerRead>;
+  bj: BjLedger | null;
 }
 
 export function newCampaign(): Campaign {
@@ -349,7 +363,7 @@ export function newCampaign(): Campaign {
     intro: false,
     seat: null,
     last: null,
-    stats: { sngs: 0, sngWins: 0, sngCashes: 0, winRun: 0, bestRun: 0, wonAt: [], cashSessions: 0, bestCash: 0, bestCashX: 0, spins: 0, bestSpin: 0, straightHits: 0, bestDraw: 0, friendWins: 0, bosses: [], bounties: 0, bestStreak: 0 },
+    stats: { sngs: 0, sngWins: 0, sngCashes: 0, winRun: 0, bestRun: 0, wonAt: [], cashSessions: 0, bestCash: 0, bestCashX: 0, spins: 0, bestSpin: 0, straightHits: 0, bestDraw: 0, friendWins: 0, bosses: [], bounties: 0, bestStreak: 0, bjRounds: 0, bjBlackjacks: 0, bestBj: 0 },
     claimed: [],
     spins: [],
     streak: 0,
@@ -359,6 +373,7 @@ export function newCampaign(): Campaign {
     lastWeek: null,
     brag: null,
     bossReads: {},
+    bj: null,
   };
 }
 
@@ -648,6 +663,52 @@ export function spinBets(c: Campaign, bets: Bets, n: number): Campaign | string 
   });
 }
 
+/**
+ * Keeps the bankroll in step with this phone's seat at a blackjack table. The stake leaves the bankroll as the
+ * cards are dealt (and as you double or split); what comes back arrives when the round is in the table's history.
+ * Safe to call on every change: a round is paid for once and settled once. Leaving mid-round forfeits the stake,
+ * as walking away from a real table would.
+ */
+export function bjSettle(c: Campaign, game: Blackjack, seatId: string | undefined, now: number): Campaign {
+  let next = c;
+  let led = c.bj;
+  // A round paid for at another table (or one too old for this table's history) is lost.
+  const lost = (l: BjLedger) => ({ ...tally(next, -l.paid, now), bj: { ...l, done: true } });
+  if (led && !led.done && led.table !== game.id) next = lost(led);
+  if (led?.table !== game.id) led = null;
+  if (!seatId) return next;
+  // Every finished round since the last one settled, oldest first, against what the table says was staked.
+  const from = led ? (led.done ? led.round + 1 : led.round) : game.round;
+  for (const h of [...game.history].reverse()) {
+    const row = h.seats[seatId];
+    if (h.round < from || !row) continue;
+    const paid = led && led.round === h.round && !led.done ? led.paid : 0;
+    const s = next.stats;
+    next = withPeak({
+      ...tally(next, row.back - row.staked, now),
+      chips: Math.max(0, next.chips - (row.staked - paid)) + row.back,
+      stats: { ...s, bjRounds: s.bjRounds + 1, bjBlackjacks: s.bjBlackjacks + row.results.filter((x) => x === 'blackjack').length, bestBj: Math.max(s.bestBj, row.back - row.staked) },
+    });
+    led = { table: game.id, round: h.round, paid: row.staked, done: true };
+    next = { ...next, bj: led };
+  }
+  if (led && !led.done && led.round < game.round) {
+    next = lost(led);
+    led = next.bj;
+  }
+  // The round in play: pay for whatever is on the felt now (a double or a split adds to it).
+  const seat = game.seats.find((x) => x.id === seatId);
+  if (!seat || seat.hands.length === 0 || game.phase === 'betting' || game.phase === 'done') return next;
+  if (led?.round === game.round && led.done) return next;
+  const staked = seat.hands.reduce((sum, h) => sum + h.bet, 0);
+  const owe = staked - (led?.round === game.round ? led.paid : 0);
+  if (owe <= 0 && led?.round === game.round) return next;
+  return { ...next, chips: Math.max(0, next.chips - owe), bj: { table: game.id, round: game.round, paid: staked, done: false } };
+}
+
+/** Chips this phone has on a blackjack table right now (they still count as yours for the salary). */
+export const bjOnTable = (c: Campaign): number => (c.bj && !c.bj.done ? c.bj.paid : 0);
+
 export interface Goal {
   id: string;
   emoji: string;
@@ -787,6 +848,7 @@ export function cleanCampaign(raw: unknown): Campaign {
     lastWeek: r.lastWeek && typeof r.lastWeek.key === 'string' && typeof r.lastWeek.won === 'number' ? r.lastWeek : null,
     brag: r.brag && typeof r.brag.kind === 'string' ? r.brag : null,
     bossReads: r.bossReads && typeof r.bossReads === 'object' ? r.bossReads : {},
+    bj: r.bj && typeof r.bj.table === 'string' && Number.isInteger(r.bj.round) && num(r.bj.paid) === r.bj.paid ? { table: r.bj.table, round: r.bj.round, paid: r.bj.paid, done: !!r.bj.done } : null,
   };
 }
 

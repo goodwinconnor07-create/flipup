@@ -6,8 +6,8 @@ import { socketUrl } from './platform';
 
 export type ConnStatus = 'connecting' | 'open' | 'offline';
 
-export interface ConnectionHandlers {
-  onMessage(msg: ServerMessage): void;
+export interface ConnectionHandlers<M = ServerMessage> {
+  onMessage(msg: M): void;
   onStatus(status: ConnStatus): void;
   /** The socket (re)opened: resend anything the server hasn't confirmed. */
   onOpen(): void;
@@ -19,7 +19,8 @@ const HEARTBEAT_MS = 20_000;
 const STALE_MS = 50_000;
 const MAX_RETRY_MS = 10_000;
 
-export class Connection {
+/** A poker table's socket by default; a blackjack table passes its own path and message types. */
+export class Connection<M = ServerMessage, C = ClientMessage> {
   private ws: WebSocket | null = null;
   private failures = 0;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -28,19 +29,21 @@ export class Connection {
   private closed = false;
   readonly code: string;
   private readonly deviceId: string;
-  private readonly h: ConnectionHandlers;
+  private readonly h: ConnectionHandlers<M>;
+  private readonly path: string;
 
-  constructor(code: string, deviceId: string, handlers: ConnectionHandlers) {
+  constructor(code: string, deviceId: string, handlers: ConnectionHandlers<M>, path = `/api/tables/${code}/ws`) {
     this.code = code;
     this.deviceId = deviceId;
     this.h = handlers;
+    this.path = path;
     window.addEventListener('online', this.reconnectNow);
     window.addEventListener('offline', this.dropNow);
     document.addEventListener('visibilitychange', this.onVisibility);
     this.open();
   }
 
-  send(msg: ClientMessage): boolean {
+  send(msg: C | { t: 'sync' }): boolean {
     if (this.ws?.readyState !== WebSocket.OPEN) return false;
     this.ws.send(JSON.stringify(msg));
     return true;
@@ -59,7 +62,7 @@ export class Connection {
   }
 
   private url(): string {
-    return socketUrl(`/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}`);
+    return socketUrl(`${this.path}?device=${encodeURIComponent(this.deviceId)}`);
   }
 
   private open = (): void => {
@@ -84,7 +87,7 @@ export class Connection {
     ws.onmessage = (event) => {
       this.lastHeard = Date.now();
       try {
-        this.h.onMessage(JSON.parse(String(event.data)) as ServerMessage);
+        this.h.onMessage(JSON.parse(String(event.data)) as M);
       } catch {
         // Ignore anything that isn't JSON.
       }
@@ -107,7 +110,7 @@ export class Connection {
     if (this.closed) return;
     this.failures += 1;
     // A refused upgrade looks like a network drop, so after a few failures check the table still exists.
-    if (this.failures === 3) {
+    if (this.failures === 3 && this.path.startsWith('/api/tables/')) {
       fetchTableInfo(this.code)
         .then((info) => {
           if (!info && !this.closed) {

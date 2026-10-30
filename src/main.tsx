@@ -14,6 +14,7 @@ import './styles/home.css';
 import './styles/party.css';
 import './styles/premium.css';
 import './styles/campaign.css';
+import './styles/blackjack.css';
 
 boot();
 installPressEffects();

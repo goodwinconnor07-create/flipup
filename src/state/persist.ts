@@ -191,16 +191,6 @@ export function saveFast(on: boolean): void {
   write('flipup.fast', on);
 }
 
-/** True if the player turned on the 3D table (the table cam). Off until they do. */
-export function loadCam3d(): boolean {
-  // The 3D table is still in beta, so it stays off until it has a switch in Settings again.
-  return false;
-}
-
-export function saveCam3d(on: boolean): void {
-  write('flipup.cam3d', on);
-}
-
 /** False if the player turned the bots' table talk off. It's on until they do. */
 export function loadTalk(): boolean {
   return read<boolean>('flipup.talk') !== false;

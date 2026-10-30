@@ -116,6 +116,30 @@
   --rl-chip-3: #16a34a;
   --rl-chip-4: #1c1c1e;
   --rl-chip-on: #ffd60a;
+  /* Blackjack (blackjack.css): the felt, its wooden rail and the print on it. The same in light and dark mode. */
+  --bj-felt-a: #15874e;
+  --bj-felt-b: #075030;
+  --bj-felt-c: #043520;
+  --bj-rail-a: #7a4322;
+  --bj-rail-b: #3b1f10;
+  --bj-print: rgba(231, 192, 106, 0.85);
+  --bj-cell: rgba(0, 0, 0, 0.22);
+  --bj-cell-on: rgba(255, 214, 10, 0.18);
+  --bj-ink: rgba(255, 255, 255, 0.94);
+  --bj-ink-2: rgba(255, 255, 255, 0.7);
+  --bj-win: #30d158;
+  --bj-lose: #ff453a;
+  --bj-push: #8e8e93;
+  --bj-chip: #e5322d;
+  --bj-chip-2: #1c1c1e;
+  --bj-hit: #19c26b;
+  --bj-hit-lo: #0d7a42;
+  --bj-stand: #ff453a;
+  --bj-stand-lo: #a8171d;
+  --bj-double: #ffb800;
+  --bj-double-lo: #a66b00;
+  --bj-split: #2f7bff;
+  --bj-split-lo: #1748b0;
 
   /* FlipUp Premium: the gold of the chest and the upgrade buttons, the night behind the offer, and the five bubble colours. */
   --prem-gold-1: #fff3b0;
@@ -222,14 +246,6 @@
   --blue: #007aff;
   --blue-lo: #0062d6;
   --blue-bg: #e5f0ff;
-  /* The table cam is a dark room in either mode (table/TableCam.tsx). */
-  /* The 3D picture's height: about a quarter of the screen, within limits. */
-  --cam-h: clamp(156px, 24dvh, 228px);
-  --cam-bg: #0d0a08;
-  --cam-edge: rgba(255, 255, 255, 0.18);
-  --cam-chip: rgba(0, 0, 0, 0.45);
-  --cam-pill: rgba(120, 120, 128, 0.55);
-  --cam-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   --blue-ink: #0062d6;
   --red: #ff3b30;
   --red-lo: #d70015;
@@ -581,7 +597,7 @@ input {
   justify-content: center;
   gap: 12px;
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   box-shadow: 0 12px 22px -12px rgba(0, 0, 0, 0.5);
   text-decoration: none;
@@ -1481,34 +1497,21 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
   background: var(--red);
 }
 
-.screen:not(.table-screen):not(.home)::before {
-  content: '';
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 320px;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(220px 180px at 10% 0%, rgba(255, 61, 139, 0.2), transparent 70%),
-    radial-gradient(240px 200px at 90% 4%, rgba(47, 123, 255, 0.22), transparent 70%),
-    radial-gradient(200px 160px at 55% 0%, rgba(255, 214, 10, 0.16), transparent 70%);
-}
-
 .screen:not(.table-screen) .h1,
 .status-lobby .h1 {
   font-size: 40px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.035em;
 }
 
 .screen:not(.table-screen) .h2 {
   font-size: 30px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .screen:not(.table-screen) .topbar-title {
   font-size: 22px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -1518,7 +1521,7 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
 
 .screen:not(.table-screen) .section-title {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .sheet {
@@ -1529,7 +1532,7 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
 .sheet .h2,
 .sheet .sheet-title {
   font-size: 26px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
 }
 

@@ -24,6 +24,7 @@
       { "name": "TABLE_ROOM", "class_name": "TableRoom" },
       { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
       { "name": "FRIEND_CARD", "class_name": "FriendCard" },
+      { "name": "BLACKJACK_ROOM", "class_name": "BlackjackRoom" },
     ],
   },
   // Production already recorded v3 without the classes below ever being created, so they are all made in v4.
@@ -35,6 +36,8 @@
     { "tag": "v4", "new_sqlite_classes": ["TwinShare", "PartyRoom", "FriendCard"] },
     // Shared AI twins are gone from the app; this removes their Durable Object class.
     { "tag": "v5", "deleted_classes": ["TwinShare"] },
+    // Blackjack tables with friends, one per table.
+    { "tag": "v6", "new_sqlite_classes": ["BlackjackRoom"] },
   ],
   "observability": { "enabled": true },
 }

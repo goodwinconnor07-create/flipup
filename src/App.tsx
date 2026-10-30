@@ -10,13 +10,19 @@ import { Legend } from './screens/Legend';
 import { PartyScreen } from './screens/Party';
 import { PartySetup } from './screens/PartySetup';
 import { CashSeat } from './screens/CashSeat';
+import { useEffect } from 'react';
 import { Roulette } from './screens/Roulette';
+import { Blackjack } from './screens/Blackjack';
+import { BjInviteBanner } from './screens/sheets/BlackjackSheets';
+import { watchInvites } from './state/blackjack';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
   const depth = useApp((s) => s.stack.length);
   const sheet = useApp((s) => s.sheet);
   const sheetKey = useApp((s) => s.sheetKey);
+  // Friends asking you to their blackjack table.
+  useEffect(watchInvites, []);
 
   let screen;
   switch (route.name) {
@@ -50,6 +56,9 @@ export function App() {
     case 'roulette':
       screen = <Roulette />;
       break;
+    case 'blackjack':
+      screen = <Blackjack />;
+      break;
     case 'cashSeat':
       screen = <CashSeat />;
       break;
@@ -59,6 +68,7 @@ export function App() {
     <>
       <div key={`${depth}-${route.name}`}>{screen}</div>
       {sheet && <SheetHost key={sheetKey} sheet={sheet} />}
+      <BjInviteBanner />
       <Toasts />
     </>
   );

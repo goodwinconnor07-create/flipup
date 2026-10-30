@@ -69,10 +69,8 @@ import {
   loadPremium,
   loadMuted,
   loadFast,
-  loadCam3d,
   loadTalk,
   saveFast,
-  saveCam3d,
   saveTalk,
   loadProfile,
   loadSession,
@@ -112,6 +110,8 @@ export type Route =
   | { name: 'party' }
   /** The campaign's roulette wheel. */
   | { name: 'roulette' }
+  /** The campaign's blackjack table, dealt by Vincent. */
+  | { name: 'blackjack' }
   /** Cash game: the blinds your bankroll plays, and how much to sit down with. */
   | { name: 'cashSeat' };
 
@@ -159,6 +159,10 @@ export type Sheet =
   | { name: 'campaignFriends' }
   /** The campaign's free daily spin. */
   | { name: 'dailySpin' }
+  /** Blackjack: Vincent, the rules, and who to play with. */
+  | { name: 'bjStart' }
+  /** Invite friends from your list to your blackjack table. */
+  | { name: 'bjInvite' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -195,8 +199,6 @@ export interface AppState {
   talk: boolean;
   /** Bot tables on this phone run on a faster clock. */
   fast: boolean;
-  /** Show the other players in the 3D table cam instead of the row of seats. */
-  cam3d: boolean;
   /** Animations switched off. */
   calm: boolean;
   /** What the player picked: light, dark or the same as the phone. */
@@ -244,7 +246,6 @@ let state: AppState = {
   muted: loadMuted(),
   talk: loadTalk(),
   fast: loadFast(),
-  cam3d: loadCam3d(),
   calm: loadCalm(),
   appearance: loadAppearance(),
   dark: false,
@@ -765,12 +766,6 @@ export function toggleFast(): void {
   const fast = !state.fast;
   saveFast(fast);
   set({ fast });
-}
-
-export function toggleCam3d(): void {
-  const cam3d = !state.cam3d;
-  saveCam3d(cam3d);
-  set({ cam3d });
 }
 
 export function toggleTalk(): void {

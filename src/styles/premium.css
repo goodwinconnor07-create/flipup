@@ -242,7 +242,7 @@
   background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
   color: var(--prem-ink);
   font-size: var(--fs-caption);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
@@ -387,7 +387,7 @@
 .prem-card .gr-text {
   flex: 1;
   min-width: 0;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--prem-ink);
 }
 
@@ -610,7 +610,7 @@ html.no-glass .sheet.sheet-premium {
   background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
   color: var(--prem-ink);
   font-size: var(--fs-caption);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -618,7 +618,7 @@ html.no-glass .sheet.sheet-premium {
 .prem-title {
   margin: 12px 0 6px;
   font-size: var(--fs-h1);
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1.12;
   text-wrap: balance;
@@ -671,7 +671,7 @@ html.no-glass .sheet.sheet-premium {
 .show-card h3 {
   margin: 14px 0 4px;
   font-size: var(--fs-lead);
-  font-weight: 800;
+  font-weight: 700;
   color: var(--on-color);
 }
 
@@ -795,7 +795,7 @@ html.no-glass .sheet.sheet-premium {
   color: var(--prem-ink);
   font: inherit;
   font-size: 19px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.01em;
   overflow: hidden;
   isolation: isolate;
@@ -814,7 +814,7 @@ html.no-glass .sheet.sheet-premium {
   background: var(--prem-ink);
   color: var(--prem-gold-1);
   font-size: var(--fs-small);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .prem-cta::after {

@@ -171,7 +171,8 @@ const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
  * sliding in at the end as the oldest slides away, then the last words hold a moment and the bubble goes. The
  * bubble is as wide as the widest few words from the start, so it never changes size or reaches into a neighbour.
  */
-function Ticker({ text, until, fx }: { text: string; until: number; fx?: string }) {
+/** `chars` and `words` widen the window for a speaker with more room (the blackjack dealer). */
+export function Ticker({ text, until, fx, chars = CHAT.windowChars, words: most = CHAT.windowWords }: { text: string; until: number; fx?: string; chars?: number; words?: number }) {
   const { words, at } = ticker(text);
   const [shown, setShown] = useState(0);
   const [leaving, setLeaving] = useState(false);
@@ -187,7 +188,7 @@ function Ticker({ text, until, fx }: { text: string; until: number; fx?: string 
   }, []);
   // The window starts at the usual few words. If the widest of them doesn't fit the room this seat has (a
   // narrow phone, a full row), it shrinks a letter at a time until it does, so nothing is ever cut off.
-  const [room, setRoom] = useState<number>(CHAT.windowChars);
+  const [room, setRoom] = useState<number>(chars);
   const bubble = useRef<HTMLSpanElement>(null);
   const sizer = useRef<HTMLSpanElement>(null);
   useLayoutEffect(() => {
@@ -197,11 +198,11 @@ function Ticker({ text, until, fx }: { text: string; until: number; fx?: string 
     const pad = parseFloat(getComputedStyle(b).paddingLeft) + parseFloat(getComputedStyle(b).paddingRight);
     if (s.getBoundingClientRect().width > b.clientWidth - pad + 0.5 && room > 4) setRoom(room - 1);
   }, [room]);
-  const [first, last] = windowAt(words, shown, room);
+  const [first, last] = windowAt(words, shown, room, most);
   return (
     <span ref={bubble} className={`bubble ${tint(fx, 'bubble-grey')} bubble-react bubble-ticker pop${leaving ? ' bubble-leaving' : ''}`} aria-label={text}>
       <span ref={sizer} className="tk-size" aria-hidden>
-        {widestWindow(words, room)}
+        {widestWindow(words, room, most)}
       </span>
       <span className="tk-words" aria-hidden>
         {words.slice(0, last + 1).map((w, i) => (

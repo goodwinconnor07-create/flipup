@@ -171,7 +171,7 @@ export function CampaignTab() {
       )}
       {due === 0 && !c.seat && <OutOfChips c={c} />}
 
-      <DailyThings c={c} />
+      <DailySpin c={c} />
 
       <h3 className="section-head">Tables</h3>
       <div className="tourney-row" role="list">
@@ -201,11 +201,12 @@ export function CampaignTab() {
       <Friends c={c} needName={needName} />
 
       <div className="section-row">
-        <h3 className="section-head">Goals</h3>
+        <h3 className="section-head">Missions & goals</h3>
         <button type="button" className="section-link press" onClick={() => openSheet({ name: 'campaignGoals' })}>
           See all {all.length}
         </button>
       </div>
+      <Missions c={c} />
       <div className="goals">
         {[...ready, ...next].map((g) => (
           <GoalRow key={g.id} g={g} c={c} />
@@ -602,11 +603,27 @@ function BossTag({ id, beaten }: { id: string; beaten: boolean }) {
   );
 }
 
-/** Today's free spin and three missions. */
-function DailyThings({ c }: { c: Campaign }) {
+/** Today's free spin. */
+function DailySpin({ c }: { c: Campaign }) {
+  const spun = c.spinDay === today();
+  return (
+    <button type="button" className={`spin-card press${spun ? ' spun' : ''}`} disabled={spun} onClick={() => openSheet({ name: 'dailySpin' })}>
+      <span className="spin-card-wheel" aria-hidden>
+        <i />
+      </span>
+      <span className="spin-card-text">
+        <b>{spun ? 'Spun for today' : 'Free daily spin'}</b>
+        <small>{spun ? 'Your next free spin comes tomorrow.' : 'Up to 5,000 chips, once a day.'}</small>
+      </span>
+      {!spun && <ChevronIcon width={22} height={22} />}
+    </button>
+  );
+}
+
+/** Today's three missions, in green at the top of the goals. */
+function Missions({ c }: { c: Campaign }) {
   const day = today();
   const daily = dailyFor(c, day);
-  const spun = c.spinDay === day;
   const reward = missionReward(c);
   const claim = (id: string, e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
@@ -620,16 +637,6 @@ function DailyThings({ c }: { c: Campaign }) {
   };
   return (
     <>
-      <button type="button" className={`spin-card press${spun ? ' spun' : ''}`} disabled={spun} onClick={() => openSheet({ name: 'dailySpin' })}>
-        <span className="spin-card-wheel" aria-hidden>
-          <i />
-        </span>
-        <span className="spin-card-text">
-          <b>{spun ? 'Spun for today' : 'Free daily spin'}</b>
-          <small>{spun ? 'Your next free spin comes tomorrow.' : 'Up to 5,000 chips, once a day.'}</small>
-        </span>
-        {!spun && <ChevronIcon width={22} height={22} />}
-      </button>
       <section className="missions" aria-label="Today’s missions">
         <div className="missions-head">
           <b>Today’s missions</b>

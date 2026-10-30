@@ -2208,3 +2208,29 @@ html.calm .daily-wheel > g {
   color: var(--on-color);
   background: linear-gradient(150deg, var(--gold), var(--gold-lo));
 }
+
+/* Today's missions sit first in the goals, in green: the day's to-do, apart from the long-term goals under it. */
+.missions {
+  background: var(--green-bg);
+}
+
+.missions-head b {
+  color: var(--green-ink);
+}
+
+.missions-head small {
+  color: var(--green);
+}
+
+.missions .bar i {
+  background: var(--green);
+}
+
+.mission.done {
+  box-shadow: inset 0 0 0 2px var(--green-hi);
+}
+
+.missions .goal-go {
+  color: var(--on-color);
+  background: linear-gradient(150deg, var(--green-hi), var(--green));
+}

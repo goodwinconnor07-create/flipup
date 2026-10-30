@@ -12,6 +12,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   // With the host's setting on, someone who has gone broke sees every hole card (no one still in a hand does).
   const peek =
     !!game.settings.showToBusted &&
+    !game.campaign &&
     !!hand &&
     mine.size > 0 &&
     game.players.filter((p) => mine.has(p.id)).every((p) => p.stack === 0) &&

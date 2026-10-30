@@ -701,6 +701,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'revealBots': {
       const hand = game.hand;
       if (!host) return fail('Only the host can reveal the bots.');
+      if (game.campaign) return fail("Campaign games don't show the bots' cards.");
       if (!hand || !hand.result || hand.number !== action.hand) return fail('Wait until the hand is over.');
       const entry = game.logs?.find((l) => l.number === hand.number);
       let changed = false;

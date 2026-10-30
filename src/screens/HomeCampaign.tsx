@@ -306,7 +306,7 @@ function CashGame({ c, seated, onSit }: { c: Campaign; seated: boolean; onSit: (
           <BackIcon width={22} height={22} />
         </button>
         <div className={`cash-stakes${open ? '' : ' locked'}`} aria-live="polite">
-          <b className="num">{blinds(s)}</b>
+          <b key={s.id} className="num">{blinds(s)}</b>
           <small>{open ? `Buy-in ${short(cashMin(s))} – ${short(cashMax(s))}` : `Opens at ${short(s.unlock)}`}</small>
         </div>
         <button type="button" className="cash-step press flip" aria-label="Bigger blinds" disabled={at === STAKES.length - 1} onClick={() => move(1)}>

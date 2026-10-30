@@ -209,7 +209,7 @@ export function Pod({
   const deviceId = useApp((s) => s.deviceId);
   const host = game.hostDeviceId === deviceId;
   const turn = !!hand && !hand.result && hand.toAct === player.id;
-  const canPeek = !!hand?.result && player.bot && !!seat && !seat.shown;
+  const canPeek = !game.campaign && !!hand?.result && player.bot && !!seat && !seat.shown;
   // Before the first hand is dealt nobody is out: they're just waiting for the cards.
   const out = !!hand && (!seat || seat.folded);
   const won = hand?.result?.won[player.id] ?? 0;

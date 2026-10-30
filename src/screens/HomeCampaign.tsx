@@ -28,7 +28,7 @@ import { setCampaign, today, untilTomorrow, useCampaign } from '../state/campaig
 import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, type Pal } from '../state/pals';
 import { confirm, navigate, openSheet, reconcileCampaign, startCampaign, toast, useApp } from '../state/store';
 import { Avatar, Count, useNow } from '../ui/components';
-import { confetti, haptic } from '../ui/effects';
+import { confetti, flyChips, haptic } from '../ui/effects';
 import { playSound } from '../ui/sound';
 import { BackIcon, ChevronIcon, HelpIcon, LockIcon, PlusIcon, UsersIcon } from '../ui/Icons';
 
@@ -76,10 +76,12 @@ export function CampaignTab() {
 
   const collect = (e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
-    setCampaign(collectSalary(c, day, atTable));
+    const btn = e.currentTarget;
     haptic('success');
     playSound('collect');
     confetti(undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    // The chips fly to the bankroll and it ticks up as the first one lands.
+    chipsToBank(btn, () => setCampaign(collectSalary(c, day, atTable)));
   };
 
   const needName = (): boolean => {
@@ -119,6 +121,7 @@ export function CampaignTab() {
 
   return (
     <>
+      <BankBar c={c} />
       <Bankroll c={c} />
       {due > 0 && (
         <section className="payday" aria-label="Payday">
@@ -208,6 +211,17 @@ const blindsOf = (id: string): string => {
   return s ? blinds(s) : '';
 };
 
+/** Chips fly from a button to whichever bankroll is on screen (the card, or the small header once it has scrolled away); `done` runs as the first lands. */
+function chipsToBank(from: Element, done: () => void): void {
+  const to = document.querySelector('.bank-bar.on') ?? document.querySelector('.bankroll');
+  if (!to) return done();
+  let once = false;
+  flyChips(from, to, 10, () => {
+    if (!once) done();
+    once = true;
+  });
+}
+
 /** Collects a goal's reward with a burst from the button. */
 export function claim(c: Campaign, g: Goal, e: React.MouseEvent): void {
   const r = e.currentTarget.getBoundingClientRect();
@@ -215,6 +229,27 @@ export function claim(c: Campaign, g: Goal, e: React.MouseEvent): void {
   haptic('success');
   playSound('chips');
   confetti(undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, 60);
+}
+
+/** A small header that floats at the top once the big bankroll card has scrolled out of sight. */
+function BankBar({ c }: { c: Campaign }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const card = document.querySelector('.bankroll');
+    if (!card || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setOn(!e.isIntersecting), { threshold: 0 });
+    io.observe(card);
+    return () => io.disconnect();
+  }, []);
+  return (
+    <div className={`bank-bar${on ? ' on' : ''}`} aria-hidden={!on}>
+      <i className="chip-dot" aria-hidden />
+      <span>Bankroll</span>
+      <b>
+        <Count value={c.chips} />
+      </b>
+    </div>
+  );
 }
 
 /** The bankroll: the big number, your title, and how far to the next table. */

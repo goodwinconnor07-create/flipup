@@ -1173,14 +1173,19 @@ html.no-glass .sheet.sheet-premium {
 
 /* Your deck, in your card pack, on the felt: three backs stacked at the lower left. */
 .felt-deck {
-  position: absolute;
-  left: 19%;
-  bottom: 15%;
-  z-index: 1;
+  /* In the felt's top row beside the pot, laid out with it rather than placed over the felt. */
+  position: relative;
+  flex: none;
   display: block;
-  width: 30px;
-  height: 40px;
+  margin-left: 8px;
+  width: 24px;
+  height: 32px;
   pointer-events: none;
+}
+
+.felt-deck .pcard {
+  width: 20px;
+  height: 28px;
 }
 
 .felt-deck .pcard {

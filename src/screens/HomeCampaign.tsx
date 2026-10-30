@@ -357,7 +357,14 @@ function TourneyCard({ v, c, seated, onPlay }: { v: Venue; c: Campaign; seated: 
       <span className="tourney-buyin">
         Buy-in <b>{short(v.buyIn)}</b>
       </span>
-      <span className="tourney-go">{open ? (c.chips >= v.buyIn ? 'Play' : `Need ${short(v.buyIn)}`) : <><LockIcon width={16} height={16} /> {short(v.unlock)}</>}</span>
+      <span className="tourney-go">{open ? (c.chips >= v.buyIn ? 'Play' : `Need ${short(v.buyIn)}`) : 'Locked'}</span>
+      {!open && (
+        <span className="tourney-lock" aria-hidden>
+          <LockIcon />
+          <small>Reach</small>
+          <b className="num">{short(v.unlock)}</b>
+        </span>
+      )}
     </button>
   );
 }

@@ -541,11 +541,44 @@
 }
 
 .tourney.locked {
-  filter: grayscale(0.85);
+  box-shadow: none;
 }
 
-.tourney.locked .tourney-emoji {
-  opacity: 0.6;
+/* A shut table: its colours stay, blurred and dimmed, under a big lock. */
+.tourney.locked > :not(.tourney-lock) {
+  filter: blur(3px) saturate(0.6);
+  opacity: 0.55;
+}
+
+.tourney-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--on-color);
+  background: rgba(0, 0, 0, 0.32);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.tourney-lock svg {
+  width: 44px;
+  height: 44px;
+}
+
+.tourney-lock small {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.tourney-lock b {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 /* ── Friends ──────────────────────────────────────────────────────────────────────── */

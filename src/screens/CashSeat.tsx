@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { CASH, cashBuyIn, cashMin, cashStakeFor, STAKES } from '../game';
 import { useCampaign } from '../state/campaign';
 import { startCampaign } from '../state/store';
-import { BackBar, Count } from '../ui/components';
+import { BackBar } from '../ui/components';
 import { haptic } from '../ui/effects';
 import { blinds, short } from './HomeCampaign';
 
@@ -58,7 +58,7 @@ export function CashSeat() {
           <small>Sit down with</small>
           <b className="cs-amount num">
             <i className="chip-dot" aria-hidden />
-            <Count value={amount} />
+            {n0(amount)}
           </b>
           <span className="cs-bb">
             {+bb.toFixed(1)} big blinds · {n0(c.chips - amount)} stays in your bankroll

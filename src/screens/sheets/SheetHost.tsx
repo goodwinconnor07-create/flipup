@@ -61,6 +61,7 @@ import { AddPalSheet, JoinPartySheet } from './CodeSheets';
 import { PremiumSheet } from './PremiumSheet';
 import { BubbleSheet, LegendsSheet, PackSheet } from './PremiumPickers';
 import { CampaignIntroSheet } from './CampaignIntroSheet';
+import { BjInviteSheet, BjStartSheet } from './BlackjackSheets';
 import { CampaignFriendsSheet, CampaignGoalsSheet, DailySpinSheet } from './CampaignSheets';
 import { MoreGamesSheet, PickSheet, RulesSheet } from '../GamePicker';
 
@@ -120,6 +121,10 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <CampaignFriendsSheet />;
     case 'dailySpin':
       return <DailySpinSheet />;
+    case 'bjStart':
+      return <BjStartSheet />;
+    case 'bjInvite':
+      return <BjInviteSheet />;
   }
 }
 

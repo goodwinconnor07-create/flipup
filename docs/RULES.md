@@ -146,3 +146,20 @@ The campaign's wheel: European, one zero, 37 pockets. Bets come out of the bankr
 - **Red, black, odd, even, 1–18 and 19–36**: pay even money.
 - The 0 loses every bet except a straight-up bet on 0. There's no "en prison" or half-back rule.
 - A winning bet gets its stake back on top of what it pays. Every bet has the same house edge of 1 in 37.
+
+## Blackjack
+
+The campaign's second floor game (Campaign tab, "Floor games", beside roulette). Vincent, the dealer bot, deals to you and one or two bots picked at random; friends from your friends list can be invited and play from their own bankrolls. Code: `src/game/blackjack.ts`. Standard Vegas rules, the product owner's pick:
+
+- **Shoe**: six decks, changed for a fresh one once fewer than a quarter of its cards are left (checked before each deal).
+- **The deal**: one card to each player in seat order, one up for the dealer, a second to each player, then the dealer's hole card face down.
+- **Peek**: when the dealer shows an ace or a ten-card, he checks the hole card. A dealer blackjack ends the round at once: a player blackjack pushes, every other hand loses its bet (nobody has doubled or split yet). No insurance and no surrender.
+- **Totals**: number cards count their number, picture cards 10, an ace 11 unless that would go over 21, then 1. A hand with an ace counting 11 is "soft".
+- **Blackjack**: an ace and a ten-card as your first two cards. Pays 3 to 2 (rounded down to a whole chip). Two cards making 21 after a split are not a blackjack and pay even money.
+- **Your moves**: hit (another card), stand, double (on your first two cards only: the bet doubles and you get exactly one more card), split (a pair of the same value, ten-cards included, into two hands with a bet each; once per round). Doubling after a split is allowed. Split aces get one card each and stand. A hand that reaches 21 stands by itself.
+- **The dealer** turns his hole card over after the last player and draws until he has 17 or more. He stands on every 17, soft 17 included. If every player hand has bust or is a blackjack, he just turns the card over.
+- **Payouts**: a bust loses whatever the dealer does. Beat the dealer (or he busts) and you win even money. The same total is a push and the bet comes back.
+- **Bets**: from 5 up to the same table limit as roulette (twice the biggest tournament buy-in open to you) a hand; a double or a split adds the same again and needs those chips in the bankroll. The stake leaves the bankroll as the cards are dealt and what comes back arrives when the round is paid. Leaving in the middle of a round leaves the bet on the felt (it's lost).
+- **On your own**: the cards come as soon as you bet, and there's no clock on your decisions.
+- **With friends**: up to six seats. Each round deals once everyone connected has bet, or 15 seconds after the first person bets (anyone who hasn't bet sits it out). Each decision has 20 seconds (8 if your phone has dropped); running out stands. If a friend joins a full table, a bot gives up its seat.
+- **Bots** play the textbook strategy for these rules, bent by their style: careful bots stand early and rarely double, wild ones hit and double too much.

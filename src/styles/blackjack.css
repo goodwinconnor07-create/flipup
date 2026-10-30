@@ -1,0 +1,719 @@
+/* Blackjack: the card on the Campaign tab, the start sheet, the table (Blackjack.tsx) and a friend's invite
+   (BlackjackSheets.tsx). Colours are the --bj-* tokens in global.css; the bar under the table borrows the
+   roulette table's chips and buttons (.rl-bar, .rl-pick, .rl-small, .rl-spin in campaign.css). */
+
+/* ── Floor games on the Campaign tab ──────────────────────────────────────────────── */
+
+.floor-games {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bj-card {
+  background: linear-gradient(150deg, var(--bj-felt-a), var(--bj-felt-c));
+  box-shadow: 0 14px 26px -14px rgba(7, 80, 48, 0.8);
+}
+
+.bj-card-art {
+  position: relative;
+  flex: none;
+  width: 68px;
+  height: 68px;
+}
+
+.bj-card-art i {
+  position: absolute;
+  top: 8px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 52px;
+  border-radius: 8px;
+  font-style: normal;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--rl-black);
+  background: var(--on-color);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.6);
+}
+
+.bj-card-art i,
+.bj-start-cards i {
+  align-content: start;
+  justify-items: start;
+  gap: 0;
+  padding: 4px 6px;
+  line-height: 1;
+}
+
+.bj-card-art small,
+.bj-start-cards small {
+  font-size: 13px;
+}
+
+.bj-card-art i:first-child {
+  left: 4px;
+  transform: rotate(-12deg);
+}
+
+.bj-card-art i:nth-child(2) {
+  left: 28px;
+  color: var(--rl-red);
+  transform: rotate(10deg);
+}
+
+.bj-card-art b {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  font-size: 32px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bj-card-art i:nth-child(2) {
+    animation: bj-peek 3.2s ease-in-out infinite;
+  }
+}
+
+@keyframes bj-peek {
+  0%,
+  70%,
+  100% {
+    transform: rotate(10deg);
+  }
+  80% {
+    transform: rotate(18deg) translateY(-4px);
+  }
+}
+
+/* ── The start sheet ───────────────────────────────────────────────────────────────── */
+
+.bj-start-head {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 160px;
+  margin: -8px -4px 16px;
+  border-radius: var(--r-xl);
+  background: radial-gradient(120% 90% at 50% 0%, var(--bj-felt-a), var(--bj-felt-c));
+  box-shadow: inset 0 -8px 0 var(--bj-rail-b);
+  overflow: hidden;
+}
+
+.bj-start-face {
+  font-size: 88px;
+  line-height: 1;
+  filter: drop-shadow(0 10px 16px rgba(0, 0, 0, 0.45));
+}
+
+.bj-start-cards {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  display: flex;
+}
+
+.bj-start-cards i {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 56px;
+  border-radius: 8px;
+  font-style: normal;
+  font-weight: 800;
+  color: var(--rl-black);
+  background: var(--on-color);
+  box-shadow: 0 6px 12px -6px rgba(0, 0, 0, 0.6);
+  transform: rotate(-8deg);
+}
+
+.bj-start-cards i + i {
+  margin-left: -12px;
+  color: var(--rl-red);
+  transform: rotate(8deg);
+}
+
+.bj-start-line {
+  margin: 4px 0 20px;
+  font-size: 17px;
+  font-style: italic;
+  text-align: center;
+  color: var(--ink-2, var(--ink));
+}
+
+.bj-start-note {
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+.bj-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+
+.bj-empty p {
+  margin: 0;
+}
+
+.bj-invite-row {
+  gap: 12px;
+}
+
+.bj-invite-row .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ── The table ─────────────────────────────────────────────────────────────────────── */
+
+.screen.bj-screen {
+  height: 100dvh;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.bj-screen .topbar {
+  margin-bottom: 4px;
+}
+
+.bj-conn {
+  margin: 0 0 8px;
+  font-size: var(--fs-small);
+  text-align: center;
+  color: var(--ink-2, var(--ink));
+}
+
+/* The felt: the dealer at the straight edge, the players round the curve, a wooden rail along it. */
+.bj-felt {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin: 0 -16px;
+  padding: 12px 16px 28px;
+  overflow-y: auto;
+  color: var(--bj-ink);
+  background:
+    radial-gradient(140% 70% at 50% 0%, rgba(255, 255, 255, 0.1), transparent 60%),
+    radial-gradient(120% 100% at 50% 30%, var(--bj-felt-a), var(--bj-felt-b) 70%, var(--bj-felt-c));
+  border-radius: 0 0 50% 50% / 0 0 64px 64px;
+  box-shadow:
+    inset 0 -12px 0 var(--bj-rail-a),
+    inset 0 -16px 0 var(--bj-rail-b),
+    inset 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.bj-loading {
+  opacity: 0.6;
+}
+
+.bj-dealer {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.bj-dealer-who {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.bj-dealer-face {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  font-size: 40px;
+  line-height: 1;
+  background: rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 0 3px var(--rl-gold);
+}
+
+.bj-plate {
+  margin-top: -8px;
+  padding: 2px 12px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--rl-black);
+  background: var(--rl-gold);
+}
+
+/* What someone says: a white capsule beside them. Vincent's sits to his right, a player's above their seat. */
+.bj-say {
+  position: absolute;
+  z-index: 3;
+  width: max-content;
+  max-width: 220px;
+  padding: 8px 12px;
+  border-radius: 18px;
+  font-size: 14px;
+  line-height: 1.3;
+  text-align: left;
+  color: var(--rl-black);
+  background: var(--on-color);
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.55);
+}
+
+.bj-say-dealer {
+  top: 4px;
+  left: calc(100% + 8px);
+  max-width: min(200px, calc(50vw - 56px));
+}
+
+.bj-say-seat {
+  bottom: calc(100% + 4px);
+  left: 50%;
+  max-width: 160px;
+  font-size: 13px;
+  transform: translateX(-50%);
+}
+
+.bj-say-seat.pop {
+  animation-name: bj-say-in;
+}
+
+@keyframes bj-say-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.bj-cards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bj-cards > .pcard + .pcard {
+  margin-left: calc(var(--w) * -0.42);
+}
+
+.bj-dealer-cards {
+  min-height: 72px;
+  gap: 0;
+}
+
+.bj-total,
+.bj-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  color: var(--bj-ink);
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.bj-total {
+  margin-left: 8px;
+}
+
+.bj-total.bust,
+.bj-tag.res-bust,
+.bj-tag.res-lose {
+  background: var(--bj-lose);
+}
+
+.bj-tag.res-win {
+  background: var(--bj-win);
+}
+
+.bj-tag.res-blackjack {
+  color: var(--rl-black);
+  background: var(--rl-gold);
+}
+
+.bj-tag.res-push {
+  background: var(--bj-push);
+}
+
+.bj-tag.big {
+  padding: 4px 12px;
+  font-size: 15px;
+}
+
+.bj-tag {
+  gap: 4px;
+}
+
+.bj-tag b {
+  font-weight: 800;
+}
+
+/* The shoe, top left, its cards going down as the night goes on. */
+.bj-shoe {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  display: flex;
+  align-items: flex-end;
+  width: 20px;
+  height: 56px;
+  padding: 2px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
+}
+
+.bj-shoe i {
+  width: 100%;
+  border-radius: 4px;
+  background: repeating-linear-gradient(0deg, var(--on-color) 0 2px, #c7c7cc 2px 3px);
+  transition: height 0.4s ease;
+}
+
+.bj-print {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--bj-print);
+}
+
+.bj-print b {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.bj-print span {
+  opacity: 0.8;
+}
+
+.bj-others {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 16px;
+}
+
+.bj-seat {
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 128px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: var(--r-lg);
+  background: var(--bj-cell);
+  transition: background 0.2s ease;
+}
+
+.bj-seat.on {
+  background: var(--bj-cell-on);
+  box-shadow: inset 0 0 0 2px var(--rl-gold);
+}
+
+.bj-seat.out {
+  opacity: 0.55;
+}
+
+.bj-seat-who {
+  position: relative;
+}
+
+.bj-seat-name {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.bj-bot,
+.bj-off {
+  padding: 0 4px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  background: rgba(0, 0, 0, 0.4);
+}
+
+.bj-off {
+  background: var(--bj-lose);
+}
+
+.bj-seat-hands {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  min-height: 52px;
+}
+
+.bj-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.bj-mini.on .bj-cards {
+  filter: drop-shadow(0 0 6px var(--rl-gold));
+}
+
+.bj-seat-bet {
+  align-self: center;
+  font-size: 12px;
+  color: var(--bj-ink-2);
+}
+
+/* Your spot, nearest you on the curve. */
+.bj-me {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+.bj-my-hands {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+.bj-hand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: var(--r-lg);
+  transition: background 0.2s ease;
+}
+
+.bj-hand.two.on {
+  background: var(--bj-cell-on);
+  box-shadow: inset 0 0 0 2px var(--rl-gold);
+}
+
+.bj-fan {
+  min-height: 96px;
+}
+
+.bj-spot {
+  display: grid;
+  place-items: center;
+  padding: 16px 0;
+}
+
+.bj-circle {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  height: 120px;
+  padding: 16px;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+  color: var(--bj-print);
+  box-shadow: inset 0 0 0 2px var(--bj-print);
+}
+
+.bj-stack {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.bj-chip {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(var(--bj-chip) 0deg 30deg, var(--on-color) 30deg 45deg);
+  box-shadow:
+    inset 0 0 0 4px var(--bj-chip),
+    0 2px 0 rgba(0, 0, 0, 0.35);
+}
+
+.bj-chip + .bj-chip {
+  margin-left: -12px;
+}
+
+/* ── The bar under the table ───────────────────────────────────────────────────────── */
+
+.bj-bar {
+  z-index: 2;
+}
+
+.bj-status {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.bj-status.big {
+  padding: 12px 0;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.bj-status.win {
+  color: var(--green, var(--bj-win));
+}
+
+.bj-moves {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.bj-move {
+  min-height: 60px;
+  padding: 0 4px;
+  border: 0;
+  border-radius: var(--r-lg);
+  font: inherit;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--on-color);
+}
+
+.bj-move.hit {
+  background: linear-gradient(160deg, var(--bj-hit), var(--bj-hit-lo));
+  box-shadow: 0 4px 0 var(--bj-hit-lo);
+}
+
+.bj-move.stand {
+  background: linear-gradient(160deg, var(--bj-stand), var(--bj-stand-lo));
+  box-shadow: 0 4px 0 var(--bj-stand-lo);
+}
+
+.bj-move.double {
+  color: var(--rl-black);
+  background: linear-gradient(160deg, var(--bj-double), var(--bj-double-lo));
+  box-shadow: 0 4px 0 var(--bj-double-lo);
+}
+
+.bj-move.split {
+  background: linear-gradient(160deg, var(--bj-split), var(--bj-split-lo));
+  box-shadow: 0 4px 0 var(--bj-split-lo);
+}
+
+.bj-move:disabled {
+  opacity: 0.35;
+  box-shadow: none;
+}
+
+/* ── A friend's invite ─────────────────────────────────────────────────────────────── */
+
+.bj-banner {
+  position: fixed;
+  top: calc(var(--safe-top) + 8px);
+  left: 50%;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(488px, calc(100vw - 16px));
+  padding: 8px 8px 8px 12px;
+  border-radius: var(--r-lg);
+  background: var(--glass-fill, var(--bg));
+  box-shadow:
+    0 0 0 1px var(--glass-edge, transparent),
+    0 16px 32px -12px rgba(0, 0, 0, 0.45);
+  transform: translateX(-50%);
+  animation: bj-banner-in 0.38s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes bj-banner-in {
+  from {
+    transform: translate(-50%, -120%);
+  }
+}
+
+.bj-banner-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.bj-banner-text b {
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bj-banner-text small {
+  font-size: 13px;
+  color: var(--ink-2, var(--ink));
+}
+
+.bj-banner .rl-small {
+  min-height: 44px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.bj-banner-go {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--r-lg);
+  font: inherit;
+  font-weight: 800;
+  color: var(--on-color);
+  background: linear-gradient(160deg, var(--party-green), var(--green));
+  box-shadow: 0 3px 0 var(--green-lo);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bj-banner {
+    animation: none;
+  }
+  .bj-shoe i,
+  .bj-seat,
+  .bj-hand {
+    transition: none;
+  }
+}

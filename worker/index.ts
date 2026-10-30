@@ -24,11 +24,15 @@ import {
   stakeById,
   venueById,
   type Game,
+  createBlackjack,
+  type BjInvite,
+  type CreateBjResponse,
 } from '../src/game';
 
 export { TableRoom } from './room';
 export { PartyRoom } from './party';
 export { FriendCard } from './friendCard';
+export { BlackjackRoom } from './blackjack';
 
 const MAX_BODY_CHARS = 16 * 1024;
 
@@ -142,10 +146,11 @@ async function ownedCode(env: Env, code: unknown, deviceId: string): Promise<str
 }
 
 /** POST /api/friends claims a friend code. GET and PUT /api/friends/:code look one up and refresh it. */
-async function friendRoute(request: Request, env: Env, pathname: string): Promise<Response> {
-  const match = pathname.match(/^\/api\/friends(?:\/([^/]+))?$/);
+async function friendRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
+  const match = pathname.match(/^\/api\/friends(?:\/([^/]+)(?:\/(invite|invites))?)?$/);
   if (!match) return json({ error: 'Not found.' }, 404);
   const code = match[1]?.toUpperCase();
+  if (code && match[2]) return inviteRoute(request, env, code, match[2], search);
 
   if (!code) {
     if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
@@ -181,6 +186,49 @@ async function friendRoute(request: Request, env: Env, pathname: string): Promis
     return json({ ok: true });
   }
   return json({ error: 'Not found.' }, 405);
+}
+
+/**
+ * POST /api/friends/:code/invite asks that friend to your blackjack table; GET /api/friends/:code/invites?device=
+ * is how the code's owner hears about it. The invite carries the name on the inviter's own card, never one the
+ * phone sends, and only a phone that owns the code it invites from can send one.
+ */
+async function inviteRoute(request: Request, env: Env, code: string, kind: string, search: string): Promise<Response> {
+  if (!isCode(code)) return json({ error: "That code doesn't look right." }, 400);
+  const card = env.FRIEND_CARD.getByName(code);
+  if (kind === 'invites') {
+    if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
+    if (limited(request, 'invites', 120, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+    const device = new URL(`http://x/${search}`).searchParams.get('device');
+    const list = isDeviceId(device) ? await card.invites(device) : null;
+    return list ? json({ invites: list }) : json({ error: 'That code belongs to another phone.' }, 403);
+  }
+  if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
+  if (limited(request, 'invite', 60, 10 * 60_000)) return json({ error: 'Too many invites. Try again later.' }, 429);
+  const body = (await readJson(request)) as Record<string, unknown> | null;
+  if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
+  const from = await ownedCode(env, body.fromCode, body.deviceId);
+  if (!from) return json({ error: 'Get your own friend code first.' }, 403);
+  if (!isCode(body.table) || !(await env.BLACKJACK_ROOM.getByName(body.table).exists())) return json({ error: 'That table has closed.' }, 404);
+  const me = await env.FRIEND_CARD.getByName(from).get(from);
+  if (!me) return json({ error: 'Get your own friend code first.' }, 403);
+  const invite: BjInvite = { from, name: me.name, emoji: me.emoji, table: body.table, at: Date.now() };
+  return (await card.invite(invite)) ? json({ ok: true }) : json({ error: 'No friend with that code.' }, 404);
+}
+
+/** POST /api/blackjack opens a blackjack table with this phone seated, and one or two bots. */
+async function createBlackjackRoute(request: Request, env: Env): Promise<Response> {
+  if (limited(request, 'bj-create', 30, 60 * 60_000)) return json({ error: 'Too many tables opened. Try again later.' }, 429);
+  const body = (await readJson(request)) as Record<string, unknown> | null;
+  if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
+  const look = lookFields(body);
+  if ('error' in look) return json({ error: look.error }, 400);
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const code = newCode();
+    const game = createBlackjack({ code, online: true, host: { deviceId: body.deviceId, ...look }, now: Date.now(), rng: cryptoRng });
+    if (await env.BLACKJACK_ROOM.getByName(code).create(game)) return json({ code } satisfies CreateBjResponse, 201);
+  }
+  return json({ error: "Couldn't find a free code. Try again." }, 503);
 }
 
 /** POST /api/parties opens a party. GET /api/parties/:code?device= reads it; POST /api/parties/:code/join|leave|start|skip changes it. */
@@ -238,7 +286,15 @@ export default {
   async fetch(request, env): Promise<Response> {
     const { pathname, search } = new URL(request.url);
 
-    if (pathname === '/api/friends' || pathname.startsWith('/api/friends/')) return friendRoute(request, env, pathname);
+    if (pathname === '/api/friends' || pathname.startsWith('/api/friends/')) return friendRoute(request, env, pathname, search);
+
+    if (pathname === '/api/blackjack') return request.method === 'POST' ? createBlackjackRoute(request, env) : json({ error: 'Use POST.' }, 405);
+    const bj = pathname.match(/^\/api\/blackjack\/([^/]+)\/ws$/);
+    if (bj) {
+      const code = bj[1].toUpperCase();
+      if (!isCode(code)) return json({ error: "That code doesn't look right." }, 400);
+      return sameSite(request) ? env.BLACKJACK_ROOM.getByName(code).fetch(request) : json({ error: 'Not allowed.' }, 403);
+    }
     if (pathname === '/api/parties' || pathname.startsWith('/api/parties/')) return partyRoute(request, env, pathname, search);
 
     if (pathname === '/api/health') return json({ ok: true });

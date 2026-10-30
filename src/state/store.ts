@@ -112,6 +112,8 @@ export type Route =
   | { name: 'party' }
   /** The campaign's roulette wheel. */
   | { name: 'roulette' }
+  /** The campaign's blackjack table, dealt by Vincent. */
+  | { name: 'blackjack' }
   /** Cash game: the blinds your bankroll plays, and how much to sit down with. */
   | { name: 'cashSeat' };
 
@@ -159,6 +161,10 @@ export type Sheet =
   | { name: 'campaignFriends' }
   /** The campaign's free daily spin. */
   | { name: 'dailySpin' }
+  /** Blackjack: Vincent, the rules, and who to play with. */
+  | { name: 'bjStart' }
+  /** Invite friends from your list to your blackjack table. */
+  | { name: 'bjInvite' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {

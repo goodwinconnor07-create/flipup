@@ -1,6 +1,6 @@
 // HTTP calls to the FlipUp server (the Cloudflare Worker in /worker).
 
-import { type CampaignCard, type CreateFriendCardResponse, type FriendCardInfo, type PartySettings, type PartyView, type CreateTableRequest, type CreateTableResponse, type TableInfo } from '../game';
+import { type BjInvite, type CreateBjResponse, type CampaignCard, type CreateFriendCardResponse, type FriendCardInfo, type PartySettings, type PartyView, type CreateTableRequest, type CreateTableResponse, type TableInfo } from '../game';
 import { apiUrl } from './platform';
 
 async function request(path: string, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
@@ -98,4 +98,26 @@ export async function partyAct(code: string, action: 'join' | 'leave' | 'start' 
   const res = await jsonRequest(`/api/parties/${encodeURIComponent(code)}/${action}`, { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, 'Something went wrong. Try again.'));
   return (await res.json()) as PartyView;
+}
+
+// ── Blackjack with friends ──────────────────────────────────────────────────
+
+/** Opens a blackjack table on the server with this phone seated, and returns its code. */
+export async function createBlackjackTable(body: { deviceId: string; name: string; emoji: string }): Promise<string> {
+  const res = await jsonRequest('/api/blackjack', { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't open a table. Try again."));
+  return ((await res.json()) as CreateBjResponse).code;
+}
+
+/** Asks a friend (by their friend code) to your table. */
+export async function sendBjInvite(friend: string, body: { deviceId: string; fromCode: string; table: string }): Promise<void> {
+  const res = await jsonRequest(`/api/friends/${encodeURIComponent(friend)}/invite`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't send the invite. Try again."));
+}
+
+/** The invites waiting on this phone's friend code. */
+export async function fetchBjInvites(code: string, deviceId: string): Promise<BjInvite[]> {
+  const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}/invites?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
+  if (!res.ok) return [];
+  return ((await res.json()) as { invites: BjInvite[] }).invites ?? [];
 }

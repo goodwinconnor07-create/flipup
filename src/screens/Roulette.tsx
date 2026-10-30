@@ -14,7 +14,7 @@ const STEP = 360 / WHEEL.length;
 /** Chip values, smallest first. The picker shows the five that suit the bankroll. */
 const CHIP_VALUES = [5, 25, 100, 500, 1000, 5000, 25000, 100000, 500000, 1000000, 5000000, 25000000, 100000000];
 
-function chipChoices(bankroll: number): number[] {
+export function chipChoices(bankroll: number): number[] {
   const fit = CHIP_VALUES.filter((v) => v <= Math.max(bankroll, ROULETTE_MIN));
   return fit.slice(-5);
 }

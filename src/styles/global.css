@@ -116,6 +116,30 @@
   --rl-chip-3: #16a34a;
   --rl-chip-4: #1c1c1e;
   --rl-chip-on: #ffd60a;
+  /* Blackjack (blackjack.css): the felt, its wooden rail and the print on it. The same in light and dark mode. */
+  --bj-felt-a: #15874e;
+  --bj-felt-b: #075030;
+  --bj-felt-c: #043520;
+  --bj-rail-a: #7a4322;
+  --bj-rail-b: #3b1f10;
+  --bj-print: rgba(231, 192, 106, 0.85);
+  --bj-cell: rgba(0, 0, 0, 0.22);
+  --bj-cell-on: rgba(255, 214, 10, 0.18);
+  --bj-ink: rgba(255, 255, 255, 0.94);
+  --bj-ink-2: rgba(255, 255, 255, 0.7);
+  --bj-win: #30d158;
+  --bj-lose: #ff453a;
+  --bj-push: #8e8e93;
+  --bj-chip: #e5322d;
+  --bj-chip-2: #1c1c1e;
+  --bj-hit: #19c26b;
+  --bj-hit-lo: #0d7a42;
+  --bj-stand: #ff453a;
+  --bj-stand-lo: #a8171d;
+  --bj-double: #ffb800;
+  --bj-double-lo: #a66b00;
+  --bj-split: #2f7bff;
+  --bj-split-lo: #1748b0;
 
   /* FlipUp Premium: the gold of the chest and the upgrade buttons, the night behind the offer, and the five bubble colours. */
   --prem-gold-1: #fff3b0;

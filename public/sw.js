@@ -5,10 +5,11 @@
 // - Pages: network first (so a new version arrives at once), the last good copy when offline or slow.
 // - Files under /assets (hashed), /sounds and /icons: cached on first use, then served from the cache.
 // Bump VERSION if this file's behaviour changes, so old caches are cleared.
-const VERSION = 'v3';
+const VERSION = 'v4';
 const PAGES = `flipup-pages-${VERSION}`;
 const FILES = `flipup-files-${VERSION}`;
-const SLOW_MS = 4000;
+// A slow page load gives up on the network after this long and opens the saved copy (the loading screen shows meanwhile).
+const SLOW_MS = 2500;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(refreshShell().then(() => self.skipWaiting()));

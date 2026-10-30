@@ -35,3 +35,15 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+
+// The loading screen in index.html covers the wait for this script. Once the app has drawn its first frame,
+// it fades away (at once with Reduce Motion) and is removed.
+const splash = document.getElementById('splash');
+if (splash) {
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      splash.classList.add('gone');
+      setTimeout(() => splash.remove(), matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 400);
+    }),
+  );
+}

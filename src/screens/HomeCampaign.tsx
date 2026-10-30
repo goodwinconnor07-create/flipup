@@ -184,7 +184,6 @@ export function CampaignTab() {
           <TourneyCard key={v.id} v={v} c={c} seated={!!c.seat} onPlay={playTourney} />
         ))}
       </div>
-      <p className="camp-quiet">From the Riverboat on, a boss runs each room: a style inspired by a famous player’s public reputation. Not their real hands, and not endorsed by or affiliated with them.</p>
 
       <button type="button" className="wheel-card press" disabled={c.chips < ROULETTE_MIN && due === 0} onClick={() => navigate({ name: 'roulette' })}>
         <span className="wheel-card-art" aria-hidden>

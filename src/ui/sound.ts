@@ -24,7 +24,10 @@ export type SoundName =
   | 'spook'
   | 'dice'
   | 'sting'
-  | 'splash';
+  | 'splash'
+  /** The roulette wheel and the prize reel spinning, each slowing to a stop. */
+  | 'wheel'
+  | 'reel';
 
 /** Recorded sounds. Anything not listed here is made in code. */
 const SAMPLES: Partial<Record<SoundName, string>> = {
@@ -292,5 +295,34 @@ export function playSound(name: SoundName, offsetMs = 0): void {
       hiss(c, t, 0.5, 1800, 500, 0.3, 0.5);
       tone(c, t, 0.25, 330, 120, 0.14);
       break;
+    case 'wheel': {
+      // The wheel whirring, and the ball knocking over the pockets less often until it drops in.
+      const len = 4.1;
+      hiss(c, t, len, 1400, 300, 0.1, 0.5);
+      const hits = 38;
+      for (let i = 0; i < hits; i++) {
+        const at = t + len * (1 - Math.pow(1 - i / hits, 2.2));
+        const soft = 1 - (i / hits) * 0.4;
+        ring(c, at, 2200 + Math.random() * 500, 0.04, 0.12 * soft);
+        tone(c, at, 0.03, 700, 300, 0.1 * soft);
+      }
+      // Into the pocket: a last clack and a short rattle.
+      const end = t + len + 0.05;
+      ring(c, end, 1800, 0.08, 0.2);
+      tone(c, end, 0.05, 520, 220, 0.18);
+      ring(c, end + 0.09, 2300, 0.05, 0.1);
+      break;
+    }
+    case 'reel': {
+      // Slot-style ticks that stretch out as the reel slows, then a bright stop.
+      const len = 1.7;
+      const hits = 18;
+      for (let i = 0; i < hits; i++) {
+        const at = t + len * (1 - Math.pow(1 - i / hits, 2));
+        tone(c, at, 0.04, 1500 - i * 25, 1100 - i * 20, 0.12);
+      }
+      tone(c, t + len + 0.05, 0.08, 880, 880, 0.14, 'triangle');
+      break;
+    }
   }
 }

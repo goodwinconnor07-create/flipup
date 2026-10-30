@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   broke,
   cashBuyIn,
@@ -241,14 +242,16 @@ function BankBar({ c }: { c: Campaign }) {
     io.observe(card);
     return () => io.disconnect();
   }, []);
-  return (
+  // On the page itself: the tab's own container is transformed, which would make a fixed header scroll away with it.
+  return createPortal(
     <div className={`bank-bar${on ? ' on' : ''}`} aria-hidden={!on}>
       <i className="chip-dot" aria-hidden />
       <span>Bankroll</span>
       <b>
         <Count value={c.chips} />
       </b>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

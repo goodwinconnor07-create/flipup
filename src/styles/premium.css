@@ -1007,6 +1007,54 @@ html.no-glass .sheet.sheet-premium {
   --pk-base: linear-gradient(160deg, var(--pack-ruby-a), var(--pack-ruby-b));
 }
 
+/* Campaign trophy backs: each venue's colours, a diamond weave and a white shine. */
+.pack-v-garage,
+.pack-v-backroom,
+.pack-v-riverboat,
+.pack-v-casino,
+.pack-v-strip,
+.pack-v-monaco,
+.pack-v-penthouse,
+.pack-v-yacht {
+  --pk-shine: rgba(255, 255, 255, 0.85);
+  --pk-glow: rgba(255, 255, 255, 0.3);
+  --pk-dur: 3.4s;
+  --pk-pat-a: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.16) 0 2px, transparent 2px 9px);
+  --pk-pat-b: repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.16) 0 2px, transparent 2px 9px);
+}
+
+.pack-v-garage {
+  --pk-base: linear-gradient(160deg, var(--venue-garage-a), var(--venue-garage-b));
+}
+
+.pack-v-backroom {
+  --pk-base: linear-gradient(160deg, var(--venue-backroom-a), var(--venue-backroom-b));
+}
+
+.pack-v-riverboat {
+  --pk-base: linear-gradient(160deg, var(--venue-riverboat-a), var(--venue-riverboat-b));
+}
+
+.pack-v-casino {
+  --pk-base: linear-gradient(160deg, var(--venue-casino-a), var(--venue-casino-b));
+}
+
+.pack-v-strip {
+  --pk-base: linear-gradient(160deg, var(--venue-strip-a), var(--venue-strip-b));
+}
+
+.pack-v-monaco {
+  --pk-base: linear-gradient(160deg, var(--venue-monaco-a), var(--venue-monaco-b));
+}
+
+.pack-v-penthouse {
+  --pk-base: linear-gradient(160deg, var(--venue-penthouse-a), var(--venue-penthouse-b));
+}
+
+.pack-v-yacht {
+  --pk-base: linear-gradient(160deg, var(--venue-yacht-a), var(--venue-yacht-b));
+}
+
 .pk.pcard-back,
 .pk.flip-in::after {
   background-image:
@@ -1147,4 +1195,10 @@ html.no-glass .sheet.sheet-premium {
 
 .felt-deck .pcard:nth-child(3) {
   translate: 4px -4px;
+}
+
+/* A trophy back not won yet: shown faded in the picker. */
+.pack-row-pic.pack-unwon {
+  filter: grayscale(0.9);
+  opacity: 0.55;
 }

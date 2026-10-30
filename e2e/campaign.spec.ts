@@ -30,22 +30,34 @@ test('first visit explains the campaign, pays the salary, and a tournament takes
   await page.locator('.home-sheet').evaluate((el) => el.scrollTo(0, 99999));
   await shot(page, 'campaign-goals');
 
+  // Today's missions and the free spin: once a day, and it pays into the bankroll.
+  await expect(page.locator('.mission')).toHaveCount(3);
+  await page.getByRole('button', { name: /Free daily spin/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Spin', exact: true }).click();
+  await expect(page.locator('.daily-result b')).toHaveText(/^\+[\d,.K]+$/, { timeout: 6000 });
+  await shot(page, 'campaign-daily-spin');
+  const spun = await page.evaluate(() => JSON.parse(localStorage.getItem('flipup.campaign')!).chips as number);
+  expect(spun).toBeGreaterThan(1000);
+  await page.getByRole('dialog').getByRole('button', { name: 'Done' }).click();
+  await expect(page.getByRole('button', { name: /Spun for today/ })).toBeDisabled();
+  await page.locator('.home-sheet').evaluate((el) => el.scrollTo(0, 99999));
+
   // Every goal, in one sheet.
   await page.getByRole('button', { name: /^See all/ }).click();
   await expect(page.getByRole('dialog').getByRole('heading', { name: 'Goals' })).toBeVisible();
-  await expect(page.getByRole('dialog').locator('.goal')).toHaveCount(19);
+  await expect(page.getByRole('dialog').locator('.goal')).toHaveCount(22);
   await shot(page, 'campaign-all-goals');
   await page.getByRole('button', { name: 'Close' }).click();
 
   // The intro shows once.
   await page.reload();
   await page.getByRole('tab', { name: 'Campaign' }).click();
-  await expect(bankroll(page)).toHaveText(/1,000/);
+  await expect(bankroll(page)).toHaveText(spun.toLocaleString('en-US'));
   await expect(page.getByRole('heading', { name: 'How the campaign works' })).not.toBeVisible();
 
   // The Garage's tournament: 100 to get in, and its prize is drawn as you sit down.
   await page.getByRole('listitem', { name: /^The Garage Sit & Go/ }).click();
-  await page.getByRole('button', { name: 'Buy in for 100' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: 'Buy in for 100' }).click();
   await expect(page.locator('.table-screen')).toBeVisible();
   await expect(page.locator('.prize-reel')).toBeVisible();
   await shot(page, 'campaign-prize-reel');
@@ -56,7 +68,7 @@ test('first visit explains the campaign, pays the salary, and a tournament takes
   await page.getByRole('button', { name: 'Leave the tournament' }).click();
   await page.getByRole('button', { name: 'Leave', exact: true }).click();
   await expect(page.getByRole('tab', { name: 'Campaign' })).toHaveAttribute('aria-selected', 'true');
-  await expect(bankroll(page)).toHaveText(/900/);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('flipup.campaign')!).chips as number)).toBe(spun - 100);
 });
 
 test('a cash table gives the chips back when you cash out', async ({ page }) => {
@@ -68,10 +80,16 @@ test('a cash table gives the chips back when you cash out', async ({ page }) => 
     }
   });
   await openCampaign(page);
-  // The cash game starts on the biggest blinds you can cover.
-  await expect(page.locator('.cash-stakes b')).toHaveText('5/10');
-  await page.locator('.cash-go').click();
-  await page.getByRole('dialog').getByRole('button', { name: 'Sit down with 1,000' }).click();
+  // The blinds come from the bankroll: 1,000 plays 10/20.
+  await expect(page.locator('.cash-box-blinds b')).toHaveText('10/20');
+  await shot(page, 'campaign-cash-box');
+  await page.locator('.cash-box').click();
+  // On its own screen you pick how much to sit down with.
+  await expect(page.locator('.cs-table b')).toHaveText('10/20');
+  await expect(page.getByRole('button', { name: 'Sit down with 800' })).toBeVisible();
+  await page.getByRole('button', { name: 'Max' }).click();
+  await shot(page, 'campaign-cash-seat');
+  await page.getByRole('button', { name: 'Sit down with 1,000' }).click();
   await expect(page.locator('.table-screen')).toBeVisible();
   // Out before the first deal, so nothing has gone in a pot yet.
   await page.getByRole('button', { name: 'Menu' }).click();
@@ -134,6 +152,9 @@ test('friends see each other’s bankroll and play a tournament together', async
   await expect(b.getByText('Ana is your friend now.')).toBeVisible({ timeout: 10_000 });
   await b.reload();
   await b.getByRole('tab', { name: 'Campaign' }).click();
+  // The board opens on this week; the bankroll view ranks by chips.
+  await expect(b.getByRole('list', { name: 'You and your friends by chips won this week' })).toBeVisible({ timeout: 10_000 });
+  await b.getByRole('tab', { name: 'Bankroll' }).click();
   const board = b.getByRole('list', { name: 'You and your friends by bankroll' });
   await expect(board.locator('li').first()).toContainText('Ana', { timeout: 10_000 });
   await expect(board.locator('li').first()).toContainText('4,200');

@@ -1,4 +1,5 @@
-import { BUBBLE_STYLES, CARD_PACKS, LEGEND_NOTE, LEGENDS, MAX_SEATS } from '../../game';
+import { BUBBLE_STYLES, CARD_PACKS, LEGEND_NOTE, LEGENDS, MAX_SEATS, packById } from '../../game';
+import { useCampaign } from '../../state/campaign';
 import { closeSheet, dispatch, openPremium, openSheet, setProfile, useApp } from '../../state/store';
 import { PlayingCard, Sheet } from '../../ui/components';
 import { haptic } from '../../ui/effects';
@@ -110,13 +111,15 @@ export function LegendsSheet() {
   );
 }
 
-/** Pick the back of your cards. The five packs are Premium; tapping one without it opens the offer. */
+/** Pick the back of your cards. Five packs are Premium (tapping one without it opens the offer); the campaign's trophy backs are won at their venues. */
 export function PackSheet() {
   const premium = useApp((s) => s.premium);
   const mine = useApp((s) => s.profile.cardPack);
+  const c = useCampaign();
   const pick = (id: string | undefined) => {
     haptic('light');
-    if (id && !premium) {
+    const pack = id ? packById(id) : undefined;
+    if (id && !pack?.venue && !premium) {
       // After buying, put the pack on and come back here.
       openPremium('packs', () => {
         setProfile({ cardPack: id });
@@ -126,10 +129,29 @@ export function PackSheet() {
     }
     setProfile({ cardPack: id });
   };
-  const rows: { id: string | undefined; name: string; note: string }[] = [
-    { id: undefined, name: 'Classic', note: 'The plain dark back' },
-    ...CARD_PACKS,
-  ];
+  const premiumRows: { id: string | undefined; name: string; note: string; venue?: string }[] = [{ id: undefined, name: 'Classic', note: 'The plain dark back' }, ...CARD_PACKS.filter((p) => !p.venue)];
+  const trophies = CARD_PACKS.filter((p) => p.venue);
+  const row = (r: { id: string | undefined; name: string; note: string; venue?: string }) => {
+    const on = (mine ?? undefined) === r.id;
+    const won = !!r.venue && c.stats.wonAt.includes(r.venue);
+    const locked = r.venue ? !won : !!r.id && !premium;
+    return (
+      <button key={r.id ?? 'classic'} type="button" className="group-row press pack-row" role="radio" aria-checked={on} onClick={() => pick(r.id)}>
+        <span className={`pack-row-pic${r.venue && !won ? ' pack-unwon' : ''}`}>
+          <PlayingCard back size="md" pack={r.id} />
+        </span>
+        <span className="gr-text">
+          {r.name}
+          <small>{r.venue && won ? 'Won in the campaign' : r.note}</small>
+        </span>
+        {locked ? (
+          <LockIcon className="prem-lock" width={18} height={18} aria-label={r.venue ? 'Not won yet' : 'Premium'} />
+        ) : on ? (
+          <CheckIcon className="prem-on" width={20} height={20} aria-label="Selected" />
+        ) : null}
+      </button>
+    );
+  };
   return (
     <Sheet title="Card packs">
       <div className="pack-preview" aria-hidden>
@@ -139,35 +161,9 @@ export function PackSheet() {
       <p className="muted" style={{ margin: '0 0 12px' }}>
         You see it when your cards turn over. Everyone at an online table sees it on the back of your cards.
       </p>
-      <div className="group">
-        {rows.map((r) => {
-          const on = (mine ?? undefined) === r.id;
-          const locked = !!r.id && !premium;
-          return (
-            <button
-              key={r.id ?? 'classic'}
-              type="button"
-              className="group-row press pack-row"
-              role="radio"
-              aria-checked={on}
-              onClick={() => pick(r.id)}
-            >
-              <span className="pack-row-pic">
-                <PlayingCard back size="md" pack={r.id} />
-              </span>
-              <span className="gr-text">
-                {r.name}
-                <small>{r.note}</small>
-              </span>
-              {locked ? (
-                <LockIcon className="prem-lock" width={18} height={18} aria-label="Premium" />
-              ) : on ? (
-                <CheckIcon className="prem-on" width={20} height={20} aria-label="Selected" />
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
+      <div className="group">{premiumRows.map(row)}</div>
+      <p className="menu-section">Campaign trophies</p>
+      <div className="group">{trophies.map(row)}</div>
       <button type="button" className="btn btn-dark" style={{ marginTop: 20 }} onClick={closeSheet}>
         Done
       </button>

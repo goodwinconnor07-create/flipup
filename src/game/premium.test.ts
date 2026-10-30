@@ -77,7 +77,7 @@ describe('card packs', () => {
   });
 
   it('only come over the network when they are one of ours', () => {
-    expect(CARD_PACKS).toHaveLength(5);
+    expect(CARD_PACKS.filter((p) => !p.venue)).toHaveLength(5);
     expect(parseAction({ type: 'setLook', name: 'Sam', emoji: '😎', cardPack: 'neon' })).toEqual({
       type: 'setLook',
       name: 'Sam',

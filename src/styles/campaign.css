@@ -241,52 +241,110 @@
   background: var(--blue-bg);
 }
 
-/* ── The cash game card: its own loud card, with the blinds picked by arrows ─────── */
+/* ── The cash game: a tall box at the start of the shelf ─────────────────────────────── */
 
-.cash-card {
+.cash-box {
+  --cash-pad: 18px;
   position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 20px;
+  align-items: center;
+  gap: 4px;
+  width: 216px;
+  padding: 16px var(--cash-pad) 14px;
+  border: 0;
   border-radius: var(--r-xl);
   overflow: hidden;
+  font: inherit;
+  text-align: center;
   color: var(--on-color);
-  background: linear-gradient(150deg, var(--cash-a), var(--cash-b));
-  box-shadow: 0 16px 30px -14px var(--cash-glow);
+  background: linear-gradient(170deg, var(--cash-a), var(--cash-b));
+  box-shadow: 0 14px 24px -16px var(--cash-glow);
+  scroll-snap-align: start;
 }
 
-.cash-card::after {
+.cash-box::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: radial-gradient(90% 70% at 0% 0%, rgba(255, 255, 255, 0.24), transparent 60%);
+  background: radial-gradient(90% 50% at 50% 0%, rgba(255, 255, 255, 0.28), transparent 70%);
 }
 
-.cash-head {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.cash-box:disabled {
+  opacity: 0.75;
 }
 
-.cash-head div {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.cash-box .tourney-go {
+  color: var(--cash-b);
 }
 
-.cash-head b {
-  font-size: 28px;
+.cash-box-title {
+  font-size: 24px;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.1;
 }
 
-.cash-head small {
-  font-size: var(--fs-small);
-  line-height: 1.35;
-  color: rgba(255, 255, 255, 0.9);
+.cash-box-sub {
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.cash-box-blinds {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  margin: 8px 0 4px;
+  padding: 8px 4px;
+  border-radius: var(--r-md);
+  background: rgba(0, 0, 0, 0.3);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.cash-box-blinds small {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cash-box-blinds b {
+  font-size: 30px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--party-yellow);
+}
+
+/* The line between the cash game and the tournaments. */
+.shelf-split {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  color: var(--ink-3);
+  scroll-snap-align: none;
+}
+
+.shelf-split i {
+  flex: 1;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--line);
+}
+
+.shelf-split small {
+  font-size: var(--fs-micro);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }
 
 /* A little stack of chips. */
@@ -319,107 +377,6 @@
 
 .cash-chips i:nth-child(3) {
   bottom: 26px;
-}
-
-.cash-picker {
-  position: relative;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 12px;
-}
-
-.cash-step {
-  display: grid;
-  place-items: center;
-  width: 52px;
-  height: 52px;
-  border: 0;
-  border-radius: 50%;
-  color: var(--on-color);
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.cash-step.flip svg {
-  transform: scaleX(-1);
-}
-
-.cash-step:disabled {
-  opacity: 0.35;
-}
-
-.cash-stakes {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  text-align: center;
-}
-
-.cash-stakes b {
-  font-size: var(--fs-display-2);
-  font-weight: 800;
-  letter-spacing: -0.03em;
-  line-height: 1.05;
-}
-
-.cash-stakes small {
-  font-size: var(--fs-small);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.cash-stakes.locked b {
-  opacity: 0.55;
-}
-
-.cash-dots {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: center;
-  gap: 8px;
-}
-
-.cash-dots i {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.45);
-}
-
-.cash-dots i.shut {
-  background: rgba(0, 0, 0, 0.25);
-}
-
-.cash-dots i.on {
-  width: 20px;
-  border-radius: var(--r-pill);
-  background: var(--on-color);
-}
-
-.cash-go {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 56px;
-  border: 0;
-  border-radius: var(--r-lg);
-  font: inherit;
-  font-size: 20px;
-  font-weight: 800;
-  color: var(--cash-b);
-  background: var(--venue-btn);
-  box-shadow: 0 4px 0 var(--party-edge);
-}
-
-.cash-go:disabled {
-  opacity: 0.6;
-  box-shadow: none;
 }
 
 /* ── Tournaments: a shelf of tall cards, each venue in its own colours ──────────────── */
@@ -584,11 +541,44 @@
 }
 
 .tourney.locked {
-  filter: grayscale(0.85);
+  box-shadow: none;
 }
 
-.tourney.locked .tourney-emoji {
-  opacity: 0.6;
+/* A shut table: its colours stay, blurred and dimmed, under a big lock. */
+.tourney.locked > :not(.tourney-lock) {
+  filter: blur(3px) saturate(0.6);
+  opacity: 0.55;
+}
+
+.tourney-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--on-color);
+  background: rgba(0, 0, 0, 0.32);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.tourney-lock svg {
+  width: 44px;
+  height: 44px;
+}
+
+.tourney-lock small {
+  font-size: var(--fs-micro);
+  font-weight: 700;
+  opacity: 0.9;
+}
+
+.tourney-lock b {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
 }
 
 /* ── Friends ──────────────────────────────────────────────────────────────────────── */
@@ -1620,4 +1610,601 @@ html.calm .prize-strip {
   .prize-reel.big.stopped .prize-reel-card {
     animation: none;
   }
+}
+
+/* A chip flying into the bankroll (see flyChips). */
+.fly-chip {
+  position: fixed;
+  z-index: 100;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: repeating-conic-gradient(var(--party-yellow) 0deg 30deg, var(--on-color) 30deg 45deg);
+  box-shadow: inset 0 0 0 5px var(--party-yellow), 0 2px 0 var(--party-edge);
+  will-change: transform, opacity;
+}
+
+/* ── Cash game card: a little alive, using only transform and opacity so it stays smooth ── */
+
+.cash-box::before {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 40%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.22), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+  animation: cash-sheen 5s ease-in-out 1s infinite;
+}
+
+.cash-chips i {
+  animation: cash-bob 2.4s ease-in-out infinite;
+}
+
+.cash-chips i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.cash-chips i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes cash-sheen {
+  0%,
+  60% {
+    transform: translateX(-120%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(380%) skewX(-18deg);
+  }
+}
+
+@keyframes cash-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cash-box::before,
+  .cash-chips i {
+    animation: none;
+  }
+}
+
+/* ── Small bankroll header: slides in once the big card has scrolled away ───────────── */
+
+.bank-bar {
+  position: fixed;
+  top: calc(var(--safe-top) + 8px);
+  left: 50%;
+  z-index: 15;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px 6px 8px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--glass-fill-strong);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  box-shadow: 0 0 0 1px var(--glass-edge), 0 8px 20px -10px rgba(0, 0, 0, 0.4);
+  transform: translate(-50%, -160%);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1),
+    opacity 0.2s;
+}
+
+html[data-theme='dark'] .bank-bar {
+  background: var(--glass-tint-dark);
+}
+
+.bank-bar.on {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+.bank-bar .chip-dot {
+  width: 24px;
+  height: 24px;
+  box-shadow: inset 0 0 0 4px var(--party-yellow);
+}
+
+.bank-bar span {
+  color: var(--ink-3);
+}
+
+.bank-bar b {
+  font-size: 17px;
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bank-bar {
+    transition: none;
+  }
+}
+
+/* ── The cash game's own screen: blinds, then how much to sit down with ──────────────── */
+
+.cash-seat .cs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 20px calc(var(--safe-bottom) + 24px);
+}
+
+.cs-table {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 24px 16px 20px;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  color: var(--on-color);
+  background: linear-gradient(150deg, var(--cash-a), var(--cash-b));
+  box-shadow: 0 16px 30px -14px var(--cash-glow);
+}
+
+.cs-table small {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cs-table > b {
+  font-size: 48px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: var(--party-yellow);
+}
+
+.cs-note {
+  font-size: var(--fs-caption);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cs-felt {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  margin-bottom: 4px;
+}
+
+.cs-felt i {
+  position: absolute;
+  left: 8px;
+  width: 40px;
+  height: 16px;
+  border-radius: 50%;
+  background: repeating-conic-gradient(var(--party-yellow) 0deg 30deg, var(--on-color) 30deg 45deg);
+  box-shadow:
+    inset 0 0 0 4px var(--party-yellow),
+    0 3px 0 var(--party-edge);
+}
+
+.cs-felt i:nth-child(1) {
+  bottom: 6px;
+}
+
+.cs-felt i:nth-child(2) {
+  bottom: 16px;
+}
+
+.cs-felt i:nth-child(3) {
+  bottom: 26px;
+}
+
+.cs-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px;
+  border-radius: var(--r-xl);
+  background: var(--bg-2);
+}
+
+.cs-pick small {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.cs-amount {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: var(--fs-display-2);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+
+.cs-bb {
+  font-size: var(--fs-small);
+  color: var(--ink-3);
+  text-align: center;
+}
+
+.cs-slider {
+  width: 100%;
+  height: 28px;
+  margin: 8px 0 0;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+}
+
+.cs-slider::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--cash-b) var(--fill), var(--line) var(--fill));
+}
+
+.cs-slider::-moz-range-track {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--line);
+}
+
+.cs-slider::-moz-range-progress {
+  height: 10px;
+  border-radius: var(--r-pill);
+  background: var(--cash-b);
+}
+
+.cs-slider::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 28px;
+  height: 28px;
+  margin-top: -9px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--on-color);
+  box-shadow: 0 0 0 3px var(--cash-b), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.cs-slider::-moz-range-thumb {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--on-color);
+  box-shadow: 0 0 0 3px var(--cash-b), 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.cs-range {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.cs-quick {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.cs-chip {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--r-pill);
+  font: inherit;
+  font-weight: 800;
+  color: var(--ink);
+  background: var(--bg);
+}
+
+.cs-chip.on {
+  color: var(--on-color);
+  background: var(--cash-b);
+}
+
+.cs-fine {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
+.cs-go {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  border: 0;
+  border-radius: var(--r-lg);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--cash-b);
+  background: linear-gradient(150deg, var(--cash-a), var(--cash-b));
+  color: var(--on-color);
+  box-shadow: 0 4px 0 var(--party-edge);
+}
+
+.cs-go:disabled {
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+/* ── The free daily spin card and sheet ───────────────────────────────────────────── */
+
+.spin-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 16px 20px;
+  border: 0;
+  border-radius: var(--r-xl);
+  font: inherit;
+  text-align: left;
+  color: var(--on-color);
+  background: linear-gradient(150deg, var(--violet), var(--indigo));
+  box-shadow: 0 14px 26px -14px rgba(88, 86, 214, 0.7);
+}
+
+.spin-card.spun {
+  color: var(--ink-2);
+  background: var(--bg-2);
+  box-shadow: none;
+}
+
+.spin-card-wheel {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: conic-gradient(var(--party-pink) 0 14%, var(--party-orange) 0 28%, var(--party-yellow) 0 43%, var(--party-green) 0 57%, var(--party-blue) 0 71%, var(--violet) 0 86%, var(--rl-red) 0);
+  box-shadow: 0 0 0 3px var(--on-color);
+}
+
+.spin-card-wheel i {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--on-color);
+}
+
+.spin-card.spun .spin-card-wheel {
+  filter: grayscale(1);
+  opacity: 0.5;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spin-card:not(.spun) .spin-card-wheel {
+    animation: camp-turn 6s linear infinite;
+  }
+}
+
+.spin-card-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spin-card-text b {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.spin-card-text small {
+  font-size: var(--fs-small);
+  opacity: 0.9;
+}
+
+.daily-wheel-wrap {
+  display: grid;
+  place-items: center;
+  padding: 8px 0 16px;
+}
+
+.daily-wheel {
+  width: min(280px, 72vw);
+  height: auto;
+  overflow: visible;
+}
+
+.daily-wheel > g {
+  transform-origin: 0 0;
+  transition: transform 3.2s cubic-bezier(0.12, 0.72, 0.18, 1);
+}
+
+.daily-label {
+  fill: var(--on-color);
+  font-size: 15px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.daily-hub {
+  fill: var(--on-color);
+  stroke: var(--rl-gold);
+  stroke-width: 3;
+}
+
+.daily-pointer {
+  fill: var(--ink);
+}
+
+.daily-result {
+  margin: 0 0 16px;
+  font-size: 18px;
+  text-align: center;
+}
+
+.daily-result b {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--green);
+}
+
+html.calm .daily-wheel > g {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily-wheel > g {
+    transition: none;
+  }
+}
+
+/* ── Today's missions ─────────────────────────────────────────────────────────────── */
+
+.missions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  border-radius: var(--r-xl);
+  background: var(--bg-2);
+}
+
+.missions-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 4px;
+}
+
+.missions-head b {
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.missions-head small {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.mission {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+}
+
+.mission.done {
+  background: var(--gold-bg);
+}
+
+.mission-emoji {
+  flex: none;
+  font-size: 24px;
+}
+
+.mission-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mission-text b {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.mission-text .bar {
+  height: 6px;
+}
+
+.mission.got .mission-text b {
+  color: var(--ink-3);
+}
+
+.mission-state {
+  flex: none;
+  min-width: 40px;
+  font-size: 15px;
+  font-weight: 800;
+  text-align: right;
+  color: var(--ink-3);
+}
+
+.mission.got .mission-state {
+  color: var(--green);
+}
+
+/* ── Bosses, bounties, brags and the weekly board ─────────────────────────────────── */
+
+.tourney-boss {
+  position: relative;
+  z-index: 1;
+  margin-top: 4px;
+  padding: 4px 8px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-caption);
+  font-weight: 800;
+  color: var(--rl-black);
+  background: var(--gold-hi);
+}
+
+.tourney-boss.beaten {
+  color: var(--on-color);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.camp-brag {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--r-lg);
+  font-size: var(--fs-small);
+  background: var(--gold-bg);
+}
+
+.camp-board-pick {
+  align-self: flex-start;
+}
+
+.camp-chips.down {
+  color: var(--ink-3);
+}
+
+.camp-result-extra {
+  margin: 0;
+  padding: 8px 16px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  background: var(--gold-bg);
+}
+
+.camp-result-extra.boss {
+  color: var(--on-color);
+  background: linear-gradient(150deg, var(--gold), var(--gold-lo));
 }

@@ -5,14 +5,19 @@ import { useSyncExternalStore } from 'react';
 import { flushSync } from 'react-dom';
 import {
   applyAction,
+  bountyChance,
+  bountyReward,
+  noteMission,
+  drawDailySpin,
+  takeDailySpin,
   buyAgain,
-  campaignStyles,
   campaignTable,
   cashBuyIn,
   cashMax,
   cashMin,
   cashOut,
   cleanName,
+  packById,
   drawMultiplier,
   finishSng,
   FORMATS,
@@ -52,7 +57,7 @@ import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
 import { FAST, toTableTime } from './clock';
 import { legendBefore, legendOpen, loadProgress } from './progress';
-import { getCampaign, setCampaign, subscribeCampaign } from './campaign';
+import { getCampaign, setCampaign, subscribeCampaign, today } from './campaign';
 import { shareCampaignSoon } from './pals';
 import {
   forgetOldLearning,
@@ -105,7 +110,9 @@ export type Route =
   /** The party this phone is in: lobby, leaderboard and the way to the table. */
   | { name: 'party' }
   /** The campaign's roulette wheel. */
-  | { name: 'roulette' };
+  | { name: 'roulette' }
+  /** Cash game: the blinds your bankroll plays, and how much to sit down with. */
+  | { name: 'cashSeat' };
 
 export type Sheet =
   | { name: 'menu' }
@@ -149,6 +156,8 @@ export type Sheet =
   | { name: 'campaignGoals' }
   /** Pick a campaign table to open online for friends. */
   | { name: 'campaignFriends' }
+  /** The campaign's free daily spin. */
+  | { name: 'dailySpin' }
   | { name: 'confirm'; title: string; body?: string; confirm: string; danger?: boolean; onConfirm: () => void };
 
 export interface Toast {
@@ -401,7 +410,10 @@ export function setProfile(patch: Partial<Profile>): void {
     return openPremium('emoji');
   }
   if (!state.premium && patch.bubble) return openPremium('bubbles');
-  if (!state.premium && patch.cardPack) return openPremium('packs');
+  // A campaign trophy back is won at its venue; the others are Premium's.
+  const pack = patch.cardPack ? packById(patch.cardPack) : undefined;
+  if (pack?.venue && !packOpen(pack.id)) return toast(`${pack.note} to get this one.`);
+  if (!state.premium && patch.cardPack && !pack?.venue) return openPremium('packs');
   const profile = { ...state.profile, ...patch };
   if (!profile.bubble) delete profile.bubble;
   if (!profile.cardPack) delete profile.cardPack;
@@ -485,6 +497,7 @@ function setSession(session: Session | null): void {
   saveSessionSoon(session);
   payCampaign(session?.game);
   settleCampaign(prev, session?.game);
+  noteCampaignHand(session?.game);
   // A pending online action can't outlive an online table (it would leave the buttons greyed out).
   set({ session, game: viewOf(session, state.deviceId), ...(session?.mode === 'online' ? {} : { sending: null }) });
   captureFinishedHand(state.game, state.deviceId);
@@ -598,9 +611,15 @@ function onServerMessage(msg: ServerMessage): void {
 
 /** The Premium parts of this phone's look (bubble colour, card pack): empty without Premium. */
 function premiumLook(): { bubble?: string; cardPack?: string } {
-  if (!state.premium) return {};
   const { bubble, cardPack } = state.profile;
-  return { ...(bubble ? { bubble } : {}), ...(cardPack ? { cardPack } : {}) };
+  return { ...(state.premium && bubble ? { bubble } : {}), ...(cardPack && packOpen(cardPack) ? { cardPack } : {}) };
+}
+
+/** Whether this phone may use a card back: a campaign trophy once its venue is won, the rest with Premium. */
+export function packOpen(id: string): boolean {
+  const pack = packById(id);
+  if (!pack) return false;
+  return pack.venue ? getCampaign().stats.wonAt.includes(pack.venue) : state.premium;
 }
 
 /** A table made or joined online doesn't know this phone's bubble colour and card pack yet: say so once per table and look. */
@@ -871,11 +890,62 @@ function settleCampaign(prev: Game | null | undefined, next: Game | null | undef
     // A tournament that ended without placing you was called off: the buy-in comes back.
     if (place === undefined && here && game.status === 'ended') return setCampaign(refundSeat(c, seat.gameId, now));
     if (place === undefined && !gone) return;
-    setCampaign(finishSng(c, seat.gameId, place, now));
+    // A bounty or the boss counts if this phone's player won a pot that put them out.
+    const knocked = game.knocked ?? {};
+    const mineOut = (id: string | undefined) => !!me && !!id && (knocked[id] ?? []).includes(me.id);
+    const bounty = game.campaign?.bounty;
+    const boss = game.campaign?.boss;
+    let done = finishSng(c, seat.gameId, place, now, { bounty: mineOut(bounty?.playerId) ? bounty!.reward : 0, boss: mineOut(boss?.playerId) ? boss!.legend : undefined });
+    // The boss remembers how you played them (tables on this phone keep what the bots have seen).
+    const read = boss && me ? game.reads?.[me.id] : undefined;
+    if (read) done = { ...done, bossReads: { ...done.bossReads, [boss!.legend]: read } };
+    if ((done.last?.back ?? 0) > 0 && place) done = noteMission(done, today(), 'itm');
+    setCampaign(done);
+    const last = done.last;
+    if (last?.boss) toast(`You beat ${legendById(last.boss)?.short ?? 'the boss'}! +${n0(last.bossPay ?? 0)}`, 'success');
+    else if (last?.bounty) toast(`Bounty collected: +${n0(last.bounty)}`, 'success');
     // Out of a tournament with friends still playing: say how it went now; the finish page comes when it ends.
     const paid = getCampaign().last;
     if (here && place && game.status !== 'ended' && paid) toast(paid.back > 0 ? `You finished ${ordinal(place)} and won ${n0(paid.back)}.` : `You finished ${ordinal(place)}.`, paid.back > 0 ? 'success' : 'info');
-  } else if (gone || game.status === 'ended') setCampaign(cashOut(c, seat.gameId, (me ?? mine(prev))?.stack ?? 0, now));
+  } else if (gone || game.status === 'ended') {
+    const out = cashOut(c, seat.gameId, (me ?? mine(prev))?.stack ?? 0, now);
+    setCampaign(out.last && out.last.back > out.last.paid ? noteMission(out, today(), 'cashAhead') : out);
+  }
+}
+
+/** Hands that finish at a campaign table count towards today's missions: hands played, pots won, showdowns, a flush or better, big pots, knockouts. Each hand once. */
+function noteCampaignHand(game: Game | null | undefined): void {
+  const hand = game?.hand;
+  const result = hand?.result;
+  if (!game?.campaign || !hand || !result) return;
+  const me = game.players.find((p) => p.deviceId === state.deviceId);
+  if (!me || !hand.seats.some((s) => s.playerId === me.id)) return;
+  const day = today();
+  let c = getCampaign();
+  const key = `${game.id}:${hand.number}`;
+  if (c.daily?.day === day && c.daily.seen === key) return;
+  c = noteMission(c, day, 'hands');
+  const pots = result.pots.filter((p) => p.winners.includes(me.id));
+  if (pots.length) {
+    c = noteMission(c, day, 'pots');
+    if (result.showdown) c = noteMission(c, day, 'showdown');
+    if (/^(flush|full house|four of a kind|straight flush|royal flush|five of a kind)/i.test(result.names[me.id] ?? '')) c = noteMission(c, day, 'flush');
+    if (pots.reduce((a, p) => a + p.amount, 0) >= game.settings.bigBlind * 30) c = noteMission(c, day, 'bigPot');
+    // Players who ran out of chips in a pot this phone's player won.
+    const out = hand.seats.filter((s) => s.playerId !== me.id && (hand.startStacks?.[s.playerId] ?? 0) > 0 && game.players.find((p) => p.id === s.playerId)?.stack === 0 && pots.some((p) => p.eligible.includes(s.playerId)));
+    if (out.length) c = noteMission(c, day, 'knockouts', out.length);
+  }
+  setCampaign({ ...c, daily: { ...c.daily!, seen: key } });
+}
+
+/** Today's free spin: draws what it pays, adds it to the bankroll, and says what it was. Null once it's been used today. */
+export function takeFreeSpin(): number | null {
+  const c = getCampaign();
+  const day = today();
+  if (c.spinDay === day) return null;
+  const won = drawDailySpin(cryptoRng);
+  setCampaign(takeDailySpin(c, day, won));
+  return won;
 }
 
 /** A seat whose table is gone from this phone (it can't be played any more): settled as left, so the bankroll isn't stuck. */
@@ -885,24 +955,65 @@ export function reconcileCampaign(): void {
   setCampaign(c.seat.kind === 'cash' ? cashOut(c, c.seat.gameId, 0, Date.now()) : finishSng(c, c.seat.gameId, undefined, Date.now()));
 }
 
-/** Sits down at a cash game (by stake) or a tournament (by venue), against the bots on this phone. The buy-in comes out of the bankroll, and a tournament draws its prize now. */
-export function startCampaign(kind: 'cash' | 'sng', id: string): void {
+/** A campaign table dealt but not sat at yet: shown on the confirm sheet (its bounty is named there), then played as is. */
+let prepared: { kind: 'cash' | 'sng'; id: string; amount?: number; game: Game } | null = null;
+
+/**
+ * Sets up a campaign table against the bots on this phone: the seats, the venue's boss (who remembers how you've
+ * played them) and sometimes a bounty on one bot. Returns what the confirm sheet should say about the bounty.
+ */
+export function prepareCampaign(kind: 'cash' | 'sng', id: string, amount?: number): { name: string; emoji: string; reward: number } | null {
+  const name = cleanName(state.profile.name);
+  const c = getCampaign();
+  const stake = kind === 'cash' ? stakeById(id) : undefined;
+  const venue = kind === 'sng' ? venueById(id) : undefined;
+  prepared = null;
+  if (!name || (!stake && !venue)) return null;
+  const table = stake
+    ? campaignTable({ kind: 'cash', stake, stack: Math.max(Math.min(amount ?? Infinity, cashBuyIn(c, stake)), cashMin(stake)) }, false)
+    : campaignTable({ kind: 'sng', venue: venue!, prize: venue!.buyIn * drawMultiplier(FORMATS[venue!.format], cryptoRng) }, false);
+  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings: table.settings, bots: table.campaign.seats - 1, campaign: table.campaign, ...premiumLook(), code: null, now: Date.now() });
+  // The bots at a cash table sit with 100 big blinds, whatever you sat down with.
+  if (stake) for (const p of game.players) if (p.bot) p.stack = p.bought = cashMax(stake);
+  const me = game.players.find((p) => p.deviceId === state.deviceId);
+  const boss = game.campaign?.boss;
+  if (boss && me) {
+    // A boss you've met greets you as a rematch, and still knows how you play.
+    if (c.stats.bosses.includes(boss.legend)) game.rematch = 'won';
+    else if (c.bossReads[boss.legend]) game.rematch = 'lost';
+    const read = c.bossReads[boss.legend];
+    if (read) game.reads = { ...(game.reads ?? {}), [me.id]: structuredClone(read) };
+  }
+  let bounty: { name: string; emoji: string; reward: number } | null = null;
+  if (venue && game.campaign && cryptoRng() < bountyChance) {
+    const marks = game.players.filter((p) => p.bot && p.id !== boss?.playerId);
+    const mark = marks[Math.floor(cryptoRng() * marks.length)];
+    if (mark) {
+      const reward = bountyReward(venue, cryptoRng);
+      game.campaign.bounty = { playerId: mark.id, reward };
+      bounty = { name: mark.name, emoji: mark.emoji, reward };
+    }
+  }
+  prepared = { kind, id, amount, game };
+  return bounty;
+}
+
+/**
+ * Sits down at a cash game (by stake) or a tournament (by venue), against the bots on this phone: the table from
+ * `prepareCampaign()` if it was set up, otherwise a fresh one. The buy-in comes out of the bankroll. `amount` is what
+ * a cash game sits down with (between its minimum and what you can cover); by default as much as you can.
+ */
+export function startCampaign(kind: 'cash' | 'sng', id: string, amount?: number): void {
   if (state.busy) return;
   const name = cleanName(state.profile.name);
   if (!name) return navigate({ name: 'profile', then: 'done' });
   reconcileCampaign();
+  if (prepared?.kind !== kind || prepared.id !== id || prepared.amount !== amount) prepareCampaign(kind, id, amount);
+  const game = prepared?.game;
+  prepared = null;
+  if (!game) return;
   const c = getCampaign();
-  const stake = kind === 'cash' ? stakeById(id) : undefined;
-  const venue = kind === 'sng' ? venueById(id) : undefined;
-  if (!stake && !venue) return;
-  const table = stake
-    ? campaignTable({ kind: 'cash', stake, stack: Math.max(cashBuyIn(c, stake), cashMin(stake)) }, false)
-    : campaignTable({ kind: 'sng', venue: venue!, prize: venue!.buyIn * drawMultiplier(FORMATS[venue!.format], cryptoRng) }, false);
-  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings: table.settings, bots: table.campaign.seats - 1, botStyles: campaignStyles(table.campaign), ...premiumLook(), code: null, now: Date.now() });
-  game.campaign = table.campaign;
-  // The bots at a cash table sit with 100 big blinds, whatever you sat down with.
-  if (stake) for (const p of game.players) if (p.bot) p.stack = p.bought = cashMax(stake);
-  const want = seatFor(game, table.settings.startingStack);
+  const want = seatFor(game, game.settings.startingStack);
   const sat = want ? sitDown(c, want, game.id, Date.now()) : 'That table isn’t in the campaign.';
   if (typeof sat === 'string') {
     toast(sat, 'error');
@@ -910,7 +1021,7 @@ export function startCampaign(kind: 'cash' | 'sng', id: string): void {
     return;
   }
   if (state.fast) game.fast = true;
-  setCampaign(sat);
+  setCampaign(kind === 'sng' ? noteMission(sat, today(), 'tourneys') : sat);
   closeConnection();
   setSession({ mode: 'local', code: null, game });
   resetTo({ name: 'table' });

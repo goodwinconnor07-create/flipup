@@ -61,6 +61,8 @@ export interface Player {
   twin?: TwinBrain;
   /** Stable bot identity, private on online tables. */
   botProfile?: string;
+  /** 0 to 1: how much less well this bot plays than its style, at an easy campaign table (see `dulled()`). Stripped before the table is sent to any phone. */
+  dull?: number;
 }
 
 /** What the bots have seen a player do, from public moves only. */
@@ -300,6 +302,8 @@ export interface Game {
   buttonSeat: number | null;
   /** When the next hand deals. */
   nextHandAt: number | null;
+  /** An online table that can't deal (nobody left to play with) closes at this time unless someone adds bots. */
+  emptyAt?: number | null;
   /** Players who tapped Next hand. */
   ready: string[];
   /** Bumped on every change. */
@@ -370,7 +374,13 @@ export interface Game {
     prize?: number;
     /** What it costs to sit down: a tournament's buy-in, or an online cash table's fixed stack. */
     buyIn?: number;
+    /** A tournament's boss: the legend who runs the venue, in this seat. */
+    boss?: { playerId: string; legend: string };
+    /** Sometimes a tournament puts a bounty on one bot: knock it out yourself for the reward. */
+    bounty?: { playerId: string; reward: number };
   };
+  /** Tournaments: who knocked out whom (the winners of the pots the busted player was in), by the busted player's id. */
+  knocked?: Record<string, string[]>;
 }
 
 export type Action =

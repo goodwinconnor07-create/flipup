@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { bestHand, venueById, boardSize, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
-import { closeTable, dispatch, navigate, openSheet, useApp } from '../state/store';
+import { closeTable, dispatch, leaveTable, navigate, openSheet, useApp } from '../state/store';
 import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
 import { confetti, CONFETTI, haptic } from '../ui/effects';
@@ -77,6 +77,7 @@ export function Table() {
         </div>
       )}
       <VersusGate game={game} />
+      <EmptyTablePopup game={game} />
       <PrizeReel game={game} />
       {game.status === 'lobby' && <Lobby game={game} />}
       {game.status === 'playing' &&
@@ -107,6 +108,49 @@ export function Table() {
         ) : (
           <Final game={game} />
         ))}
+    </div>
+  );
+}
+
+/** An online table with nobody left: a minute to add bots or leave, and it can't be dismissed without choosing. */
+function EmptyTablePopup({ game }: { game: Game }) {
+  const deviceId = useApp((s) => s.deviceId);
+  const now = useNow(250);
+  if (!game.emptyAt || game.status !== 'playing') return null;
+  const host = game.hostDeviceId === deviceId;
+  const secs = Math.max(0, Math.ceil((game.emptyAt - now) / 1000));
+  return (
+    <div className="empty-scrim" role="alertdialog" aria-modal="true" aria-labelledby="empty-title">
+      <div className="empty-card">
+        <h2 id="empty-title">Nobody in the lobby</h2>
+        <p className="muted">
+          Closing game in <b className="num">{secs}s</b>
+        </p>
+        {game.code && (
+          <div className="empty-code">
+            <small>Game code</small>
+            <b className="num">{game.code}</b>
+          </div>
+        )}
+        <p className="muted">Friends can still join with the code, or add bots to keep playing.</p>
+        <div className="stack">
+          {host && (
+            <button
+              type="button"
+              className="btn btn-xl btn-green"
+              onClick={() => {
+                dispatch({ type: 'addBot' });
+                dispatch({ type: 'addBot' });
+              }}
+            >
+              Add bots
+            </button>
+          )}
+          <button type="button" className="btn btn-outline" onClick={leaveTable}>
+            Leave
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -149,9 +193,13 @@ function CampaignWhere({ game }: { game: Game }) {
   const v = venueById(tag?.venue);
   if (!v) return null;
   const left = game.players.filter((p) => p.stack > 0).length;
+  // The bounty stays out of the way: a small target by its name while that bot is still in.
+  const mark = game.players.find((p) => p.id === tag?.bounty?.playerId && p.stack > 0);
   return (
     <>
-      {v.emoji} {v.name} · {game.status === 'playing' ? `${left} left · ` : ''}
+      {/* Once it's going, the venue is just its emoji, so the line fits. */}
+      {v.emoji} {game.status === 'playing' ? `${left} left · ` : `${v.name} · `}
+      {mark && game.status === 'playing' ? `🎯 ${mark.name} · ` : ''}
     </>
   );
 }

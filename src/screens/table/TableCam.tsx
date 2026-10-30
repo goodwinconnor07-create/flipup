@@ -174,7 +174,7 @@ function CamCaption({ game, player, reaction, quiet, odds }: { game: Game; playe
   const host = game.hostDeviceId === deviceId;
   const seat = seatFor(hand, player.id);
   const turn = !!hand && !hand.result && hand.toAct === player.id;
-  const canPeek = !!hand?.result && player.bot && !!seat && !seat.shown;
+  const canPeek = !game.campaign && !!hand?.result && player.bot && !!seat && !seat.shown;
   const won = hand?.result?.won[player.id] ?? 0;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   const thinking = turn && player.bot && !hand?.runout;

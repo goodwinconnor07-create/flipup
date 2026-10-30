@@ -86,9 +86,10 @@ At a variant table a bot judges its hand by that game's rules: it deals out the 
 
 One player's bankroll against the bots, kept on the phone (`flipup.campaign`) from day to day. Code: `src/game/campaign.ts`.
 
-- **Salary.** The first time you open the Campaign tab on a new day (this phone's calendar), the salary tops your bankroll up to 1,000, counting any chips on the campaign table you're sitting at. Above 1,000 it adds nothing. Days you don't open the app pay nothing: ten days away is one top-up, not ten (product owner's call).
+- **Salary.** The first time you open the Campaign tab on a new day (this phone's calendar), the salary tops your bankroll up, counting any chips on the campaign table you're sitting at. It tops up to 1,000 on the first day and 100 more for every day in a row you collect, up to 2,000 on the eleventh; miss a day and it's back to 1,000. Above the top-up it adds nothing. Days you don't open the app pay nothing: ten days away is one top-up, not ten (product owner's call).
+- **Daily extras.** One free spin a day on a prize wheel: 100 (30%), 200 (25%), 250 (18%), 500 (15%), 1,000 (8%), 2,500 (3%) or 5,000 (1%). Three missions a day, the same for everyone that day, picked from a fixed list (play 25 hands, win 6 pots, win 3 showdowns, win with a flush or better, win a pot of 30 big blinds, knock out 2 players, play 3 tournaments, get paid in one, leave a cash game ahead, spin the roulette wheel 3 times). Hands count at any campaign table. Each pays 8% of the biggest tournament buy-in you've opened (at least 100), and collecting all three pays twice that again.
 - **Out of chips.** With no table going and less than the smallest roulette chip (5), you're done until tomorrow's salary. Between 5 and the cheapest buy-in (100), only the roulette wheel is open.
-- **Cash games** are their own ladder of stakes, apart from the tournaments. Six seats. You sit with as much of your bankroll as you can, up to 100 big blinds, and need at least 50. Bots sit with 100 big blinds; a bot that goes bust leaves and a new one sits down before the next deal. **Cash out** from the menu puts your stack back in the bankroll (in a hand, your cards are folded and what you've bet stays in the pot). Go bust and you have the usual rebuy window to buy in again from the bankroll; otherwise the table ends. Each stake opens for good the first time your bankroll reaches its full buy-in.
+- **Cash games** are their own table, apart from the tournaments. The blinds come from your bankroll: the biggest stake whose big blind is at most 1/50th of it (`cashStakeFor`), so a full bankroll is about 50 big blinds, and the blinds climb as it grows. The smallest table (1/2) is the floor. You pick how much to sit down with on the cash game's own screen: 20 to 100 big blinds, as much as your bankroll covers (it starts at 40). Six seats. Bots sit with 100 big blinds; a bot that goes bust leaves and a new one sits down before the next deal. **Cash out** from the menu puts your stack back in the bankroll (in a hand, your cards are folded and what you've bet stays in the pot). Go bust and you have the usual rebuy window to buy in again from the bankroll (as much as you can, up to 100 big blinds, at least 20); otherwise the table ends.
 
   | Blinds | Buy-in | Opens at |
   | --- | --- | --- |
@@ -101,34 +102,39 @@ One player's bankroll against the bots, kept on the phone (`flipup.campaign`) fr
   | 10K/20K | 1M–2M | 2,000,000 |
   | 50K/100K | 5M–10M | 10,000,000 |
 
-- **Tournaments** are venues, each with one format at one buy-in. Each venue opens for good the first time your bankroll reaches its mark. Bots come from the venue's styles, loose ones at the Garage and the sharks on the Yacht. No rebuys.
-  - **Sit & Go:** six players, 1,500 chips, blinds from 10/20 doubling every six hands. 1st wins 70% of the prize, 2nd 30%.
-  - **Jackpot:** three players, 500 chips, blinds from 10/20 doubling every three hands. The winner takes it all.
+- **Tournaments** are venues, each with one format at one buy-in. Each venue opens for good the first time your bankroll reaches its mark. Bots come from the venue's styles, loose ones at the Garage and the sharks on the Yacht, and play below their full strength in the easier rooms (more mistakes, less reading of hands and people): the Garage's are 85% dulled, then 75, 60, 45, 30, 20 and 10%, and the Yacht's play at full strength. Cash stakes are dulled the same way, step for step. No rebuys.
+  - **Sit & Go:** six players, 1,500 chips, blinds from 10/20 doubling every ten hands. 1st wins 70% of the prize, 2nd 30%.
+  - **Jackpot:** three players, 1,000 chips, blinds from 10/20 doubling every six hands. The winner takes it all.
+  - **Bosses.** From the Riverboat up, one seat at every tournament is the venue's boss, a legend (Brunson, Hellmuth, Negreanu, Ivey, Dwan, Rampage, in that order), playing half as dulled as the room. Knock a boss out yourself (win a pot that puts them out) and the first time pays three buy-ins and counts towards the goals. A boss remembers you: they greet you as a rematch, and the table starts with what that boss saw you do last time.
+  - **Bounties.** About three tournaments in ten put a bounty on one bot (never the boss), named before you buy in: one, two or three buy-ins if you knock it out yourself. It shows only as a small 🎯 by its name in the table's header.
 
   | Venue | Format | Buy-in | Opens at |
   | --- | --- | --- | --- |
   | The Garage | Sit & Go | 100 | start |
   | The Back Room | Jackpot | 250 | start |
   | The Riverboat | Sit & Go | 1,000 | 2,500 |
-  | Downtown Casino | Jackpot | 5,000 | 10,000 |
-  | The Strip | Sit & Go | 25,000 | 50,000 |
-  | Monte Carlo | Jackpot | 100,000 | 250,000 |
-  | The Penthouse | Sit & Go | 500,000 | 1,000,000 |
-  | The Yacht | Jackpot | 2,500,000 | 5,000,000 |
+  | Downtown Casino | Jackpot | 5,000 | 15,000 |
+  | The Strip | Sit & Go | 25,000 | 75,000 |
+  | Monte Carlo | Jackpot | 100,000 | 400,000 |
+  | The Penthouse | Sit & Go | 500,000 | 2,000,000 |
+  | The Yacht | Jackpot | 2,500,000 | 10,000,000 |
 
 - **The prize is drawn, not pooled.** It doesn't depend on how many people are at the table: when a tournament opens, its prize is drawn as a multiple of the buy-in, and a reel shows it before the first deal (product owner's call).
 
-  | Sit & Go | 4× | 5× | 8× | 15× | 40× | 200× |
+  | Sit & Go | 3× | 4× | 6× | 12× | 30× | 150× |
   | --- | --- | --- | --- | --- | --- | --- |
-  | Chance | 60% | 22% | 10% | 6% | 1.8% | 0.2% |
+  | Chance | 50% | 28% | 13% | 6.5% | 2.2% | 0.3% |
 
   | Jackpot | 2× | 3× | 5× | 10× | 50× | 250× |
   | --- | --- | --- | --- | --- | --- | --- |
-  | Chance | 66% | 22% | 7.5% | 3.5% | 0.9% | 0.1% |
+  | Chance | 80% | 14% | 4% | 1.5% | 0.4% | 0.1% |
 
-  A Sit & Go averages about 6.3 buy-ins and a Jackpot about 3.4: a little more than the seats put in, since the bots are the edge. Your place is settled the moment you go out (or win). Leaving before then gives up the buy-in.
+  A Sit & Go averages about 5.3 buy-ins for its six seats and a Jackpot about 2.8 for its three: a little less than the seats put in, so only playing better than the bots climbs (see `docs/CAMPAIGN.md` for how it was tuned). Your place is settled the moment you go out (or win). Leaving before then gives up the buy-in.
 - **With friends.** "Play with friends" opens a campaign table online: a tournament at a venue, or a cash game where everyone sits with the full 100 big blinds. Friends join with its code. Each phone pays the buy-in from its own bankroll as it sits down (a friend can bring you to a table you haven't opened yet, as long as you can pay), the server draws a tournament's prize, the stakes can't be changed, and empty seats fill with the venue's bots when the host deals. A tournament can't be joined once it's dealt. Leaving the lobby, or a tournament called off before anyone finished, gives the buy-in back. Bankrolls still live on each phone, so this trusts the phones (it's play money).
 - **Friends' progress.** With a friend code, your bankroll, best bankroll and tournament wins go on your friend card a few seconds after they change, and the Campaign tab ranks you and your friends by bankroll.
+- **Weekly board and news.** Your friend card also carries what you've won this week (chips back less chips in, at the tables and the wheel, plus bounties; the week starts on Monday), last week's, and your latest big moment (a boss beaten, a tournament won for 1,000 or more, or a prize of 10× or more). Friends see a "This week" board, a crown on last week's winner, and each other's moments from the last three days.
+- **Trophies.** Winning a tournament at a venue for the first time gives you its card back (in Card packs, beside Premium's, and free).
+- **Roulette limit.** At most twice the biggest tournament buy-in you've opened (at least 500) on the table in one spin, so the wheel can't skip the climb.
 - **Titles and goals.** Titles go by the best bankroll you've ever had (Rookie up to Billionaire) and never go down. Goals pay a chip reward once, collected with a tap; "See all" lists every one.
 
 ## Roulette

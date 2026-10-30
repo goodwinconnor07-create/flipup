@@ -12,6 +12,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   // With the host's setting on, someone who has gone broke sees every hole card (no one still in a hand does).
   const peek =
     !!game.settings.showToBusted &&
+    !game.campaign &&
     !!hand &&
     mine.size > 0 &&
     game.players.filter((p) => mine.has(p.id)).every((p) => p.stack === 0) &&
@@ -19,7 +20,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   return {
     ...game,
     // Bots' styles and identities (and what an AI twin remembers) and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, ...p }) => p),
+    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, dull: _dull, ...p }) => p),
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,

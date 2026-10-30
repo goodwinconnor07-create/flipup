@@ -340,5 +340,32 @@ export const styleOf = (id: string | undefined, profileId?: string): Style => {
   return individual?.id === base.id ? individual : base;
 };
 
-/** How a seat plays: an AI twin's fitted style, or the bot's own (with its individual quirks). */
-export const playerStyle = (p: { style?: string; botProfile?: string; twin?: { style: Style } } | undefined): Style => p?.twin?.style ?? styleOf(p?.style, p?.botProfile);
+const DULLED = new WeakMap<Style, Map<number, Style>>();
+
+/**
+ * A style played less well, for the easier campaign rooms: `d` from 0 (as it is) to 1 (as dull as it gets). Its
+ * choices wobble more, it reads hands and people less, and it leans less on the solved tables. Its personality
+ * (how loose, how aggressive, what it overrates) stays. Kept, so a decision doesn't build a new style each time.
+ */
+export function dulled(style: Style, d: number): Style {
+  const k = Math.max(0, Math.min(1, d));
+  if (k === 0) return style;
+  let byD = DULLED.get(style);
+  if (!byD) DULLED.set(style, (byD = new Map()));
+  const have = byD.get(k);
+  if (have) return have;
+  const out: Style = {
+    ...style,
+    post: { ...style.post, wobble: style.post.wobble + 0.16 * k, sense: style.post.sense * (1 - 0.6 * k), gto: style.post.gto * (1 - 0.6 * k) },
+    adapt: style.adapt * (1 - k),
+    craft: { ...style.craft, exploit: style.craft.exploit * (1 - k), layDown: style.craft.layDown * (1 - 0.7 * k), hero: style.craft.hero * (1 - 0.7 * k) },
+  };
+  byD.set(k, out);
+  return out;
+}
+
+/** How a seat plays: an AI twin's fitted style, or the bot's own (with its individual quirks), dulled at an easy campaign table. */
+export const playerStyle = (p: { style?: string; botProfile?: string; twin?: { style: Style }; dull?: number } | undefined): Style => {
+  const s = p?.twin?.style ?? styleOf(p?.style, p?.botProfile);
+  return p?.dull ? dulled(s, p.dull) : s;
+};

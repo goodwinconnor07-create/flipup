@@ -276,3 +276,38 @@ export function installTapGuard(): void {
     true,
   );
 }
+
+/** Chips that fly from one element to another, one after the other. `onLand` fires as each one arrives. */
+export function flyChips(from: Element, to: Element, count = 10, onLand?: (i: number) => void): void {
+  if (reducedMotion() || typeof document === 'undefined') {
+    onLand?.(0);
+    return;
+  }
+  const a = from.getBoundingClientRect();
+  const b = to.getBoundingClientRect();
+  const x0 = a.left + a.width / 2;
+  const y0 = a.top + a.height / 2;
+  const dx = b.left + b.width / 2 - x0;
+  const dy = b.top + b.height / 2 - y0;
+  for (let i = 0; i < count; i++) {
+    const chip = document.createElement('i');
+    chip.className = 'fly-chip';
+    chip.style.left = `${x0 - 14}px`;
+    chip.style.top = `${y0 - 14}px`;
+    document.body.appendChild(chip);
+    const sway = (Math.random() - 0.5) * 120;
+    const anim = chip.animate(
+      [
+        { transform: 'translate(0, 0) scale(0.4)', opacity: 0 },
+        { transform: `translate(${sway}px, -40px) scale(1.1)`, opacity: 1, offset: 0.25 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.7)`, opacity: 1, offset: 0.95 },
+        { transform: `translate(${dx}px, ${dy}px) scale(0.3)`, opacity: 0 },
+      ],
+      { duration: 800, delay: i * 70, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'backwards' },
+    );
+    anim.onfinish = () => {
+      chip.remove();
+      onLand?.(i);
+    };
+  }
+}

@@ -35,7 +35,7 @@ export function PrizeReel({ game }: { game: Game }) {
       calm ? 0 : SPIN_MS,
     );
     const done = setTimeout(() => setGone(true), (calm ? 0 : SPIN_MS) + HOLD_MS);
-    playSound('shuffle');
+    if (!calm) playSound('reel');
     return () => {
       cancelAnimationFrame(roll);
       clearTimeout(stop);

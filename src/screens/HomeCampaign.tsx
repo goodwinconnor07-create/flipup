@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   broke,
   cashBuyIn,
-  cashMax,
   cashMin,
+  cashStakeFor,
   claimGoal,
   collectSalary,
   FORMATS,
@@ -41,9 +42,9 @@ import { getCampaign, setCampaign, today, untilTomorrow, useCampaign } from '../
 import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, type Pal } from '../state/pals';
 import { confirm, navigate, openSheet, prepareCampaign, reconcileCampaign, startCampaign, toast, useApp } from '../state/store';
 import { Avatar, Count, useNow } from '../ui/components';
-import { confetti, haptic } from '../ui/effects';
+import { confetti, flyChips, haptic } from '../ui/effects';
 import { playSound } from '../ui/sound';
-import { BackIcon, ChevronIcon, HelpIcon, LockIcon, PlusIcon, UsersIcon } from '../ui/Icons';
+import { ChevronIcon, HelpIcon, LockIcon, PlusIcon, UsersIcon } from '../ui/Icons';
 
 const n0 = (n: number) => n.toLocaleString('en-US');
 
@@ -90,10 +91,12 @@ export function CampaignTab() {
 
   const collect = (e: React.MouseEvent) => {
     const r = e.currentTarget.getBoundingClientRect();
-    setCampaign(collectSalary(c, day, atTable));
+    const btn = e.currentTarget;
     haptic('success');
     playSound('collect');
     confetti(undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    // The chips fly to the bankroll and it ticks up as the first one lands.
+    chipsToBank(btn, () => setCampaign(collectSalary(c, day, atTable)));
   };
 
   const needName = (): boolean => {
@@ -103,15 +106,9 @@ export function CampaignTab() {
     return true;
   };
 
-  const sitCash = (s: Stake) => {
+  const openCash = () => {
     if (needName()) return;
-    const buyIn = cashBuyIn(c, s);
-    confirm({
-      title: `Sit down at ${n0(s.smallBlind)}/${n0(s.bigBlind)}?`,
-      body: `You sit with ${n0(buyIn)} from your bankroll and can cash out any time from the table menu.`,
-      confirm: `Sit down with ${n0(buyIn)}`,
-      onConfirm: () => startCampaign('cash', s.id),
-    });
+    navigate({ name: 'cashSeat' });
   };
 
   const playTourney = (v: Venue) => {
@@ -140,6 +137,7 @@ export function CampaignTab() {
 
   return (
     <>
+      <BankBar c={c} />
       <Bankroll c={c} />
       {due > 0 && (
         <section className="payday" aria-label="Payday">
@@ -175,10 +173,14 @@ export function CampaignTab() {
 
       <DailyThings c={c} />
 
-      <CashGame c={c} seated={!!c.seat} onSit={sitCash} />
-
-      <h3 className="section-head">Tournaments</h3>
+      <h3 className="section-head">Tables</h3>
       <div className="tourney-row" role="list">
+        <CashBox c={c} seated={!!c.seat} onPlay={openCash} />
+        <span className="shelf-split" aria-hidden>
+          <i />
+          <small>Tournaments</small>
+          <i />
+        </span>
         {VENUES.map((v) => (
           <TourneyCard key={v.id} v={v} c={c} seated={!!c.seat} onPlay={playTourney} />
         ))}
@@ -238,6 +240,17 @@ const blindsOf = (id: string): string => {
   return s ? blinds(s) : '';
 };
 
+/** Chips fly from a button to whichever bankroll is on screen (the card, or the small header once it has scrolled away); `done` runs as the first lands. */
+function chipsToBank(from: Element, done: () => void): void {
+  const to = document.querySelector('.bank-bar.on') ?? document.querySelector('.bankroll');
+  if (!to) return done();
+  let once = false;
+  flyChips(from, to, 10, () => {
+    if (!once) done();
+    once = true;
+  });
+}
+
 /** Collects a goal's reward with a burst from the button. */
 export function claim(c: Campaign, g: Goal, e: React.MouseEvent): void {
   const r = e.currentTarget.getBoundingClientRect();
@@ -247,6 +260,29 @@ export function claim(c: Campaign, g: Goal, e: React.MouseEvent): void {
   confetti(undefined, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, 60);
 }
 
+/** A small header that floats at the top once the big bankroll card has scrolled out of sight. */
+function BankBar({ c }: { c: Campaign }) {
+  const [on, setOn] = useState(false);
+  useEffect(() => {
+    const card = document.querySelector('.bankroll');
+    if (!card || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([e]) => setOn(!e.isIntersecting), { threshold: 0 });
+    io.observe(card);
+    return () => io.disconnect();
+  }, []);
+  // On the page itself: the tab's own container is transformed, which would make a fixed header scroll away with it.
+  return createPortal(
+    <div className={`bank-bar${on ? ' on' : ''}`} aria-hidden={!on}>
+      <i className="chip-dot" aria-hidden />
+      <span>Bankroll</span>
+      <b>
+        <Count value={c.chips} />
+      </b>
+    </div>,
+    document.body,
+  );
+}
+
 /** The bankroll: the big number, your title, and how far to the next table. */
 function Bankroll({ c }: { c: Campaign }) {
   const title = titleOf(c.peak);
@@ -254,7 +290,6 @@ function Bankroll({ c }: { c: Campaign }) {
   // The nearest thing still shut: a tournament or a cash game's stakes.
   const shut = [
     ...VENUES.filter((v) => !isOpen(c, v)).map((v) => ({ at: v.unlock, text: `${v.emoji} ${v.name}` })),
-    ...STAKES.filter((s) => !isOpen(c, s)).map((s) => ({ at: s.unlock, text: `${blinds(s)} cash games` })),
   ].sort((a, b) => a.at - b.at)[0];
   const target = shut ?? (nextTitleUp ? { at: nextTitleUp.at, text: `${nextTitleUp.emoji} ${nextTitleUp.name}` } : null);
   const pct = target ? Math.min(100, (c.peak / target.at) * 100) : 100;
@@ -305,61 +340,29 @@ function OutOfChips({ c }: { c: Campaign }) {
   );
 }
 
-/** Cash games on their own: pick the blinds, sit down, leave whenever. Starts on the biggest stakes you can cover. */
-function CashGame({ c, seated, onSit }: { c: Campaign; seated: boolean; onSit: (s: Stake) => void }) {
-  const best = Math.max(0, STAKES.findLastIndex((s) => isOpen(c, s) && cashBuyIn(c, s) > 0));
-  // Follows your bankroll until you pick blinds yourself.
-  const [picked, setPicked] = useState<number | null>(null);
-  const at = picked ?? best;
-  const s = STAKES[at];
-  const open = isOpen(c, s);
-  const buyIn = cashBuyIn(c, s);
-  const move = (d: number) => {
-    setPicked(Math.max(0, Math.min(STAKES.length - 1, at + d)));
-    haptic('light');
-  };
+/** The cash game, a tall box at the start of the shelf. The blinds are whatever your bankroll plays; the buy-in is picked on the next screen. */
+function CashBox({ c, seated, onPlay }: { c: Campaign; seated: boolean; onPlay: () => void }) {
+  const stake = cashStakeFor(c.chips);
+  const max = stake ? cashBuyIn(c, stake) : 0;
+  const ok = !!stake && max > 0 && !seated;
   return (
-    <section className="cash-card" aria-label="Cash game">
-      <div className="cash-head">
-        <span className="cash-chips" aria-hidden>
-          <i />
-          <i />
-          <i />
-        </span>
-        <div>
-          <b>Cash game</b>
-          <small>Sit down with up to 100 big blinds. Cash out whenever you like.</small>
-        </div>
-      </div>
-      <div className="cash-picker">
-        <button type="button" className="cash-step press" aria-label="Smaller blinds" disabled={at === 0} onClick={() => move(-1)}>
-          <BackIcon width={22} height={22} />
-        </button>
-        <div className={`cash-stakes${open ? '' : ' locked'}`} aria-live="polite">
-          <b className="num">{blinds(s)}</b>
-          <small>{open ? `Buy-in ${short(cashMin(s))} – ${short(cashMax(s))}` : `Opens at ${short(s.unlock)}`}</small>
-        </div>
-        <button type="button" className="cash-step press flip" aria-label="Bigger blinds" disabled={at === STAKES.length - 1} onClick={() => move(1)}>
-          <BackIcon width={22} height={22} />
-        </button>
-      </div>
-      <div className="cash-dots" aria-hidden>
-        {STAKES.map((x, i) => (
-          <i key={x.id} className={`${i === at ? 'on' : ''}${isOpen(c, x) ? '' : ' shut'}`} />
-        ))}
-      </div>
-      <button type="button" className="cash-go press" disabled={seated || !open || buyIn === 0} onClick={() => onSit(s)}>
-        {!open ? (
-          <>
-            <LockIcon width={18} height={18} /> Locked
-          </>
-        ) : buyIn === 0 ? (
-          `Need ${short(cashMin(s))}`
-        ) : (
-          `Sit down with ${short(buyIn)}`
-        )}
-      </button>
-    </section>
+    <button type="button" className="cash-box press" disabled={!ok} onClick={onPlay} aria-label="Cash game">
+      <span className="cash-chips" aria-hidden>
+        <i />
+        <i />
+        <i />
+      </span>
+      <b className="cash-box-title">Cash game</b>
+      <span className="cash-box-sub">Sit down, cash out any time</span>
+      <span className="cash-box-blinds">
+        <small>Blinds</small>
+        <b className="num">{stake ? blinds(stake) : '–'}</b>
+      </span>
+      <span className="tourney-buyin">
+        Buy-in <b>{stake ? `${short(cashMin(stake))} – ${short(max)}` : `from ${short(cashMin(STAKES[0]))}`}</b>
+      </span>
+      <span className="tourney-go">{seated ? 'At a table' : ok ? 'Play now' : `Need ${short(cashMin(STAKES[0]))}`}</span>
+    </button>
   );
 }
 
@@ -385,7 +388,14 @@ function TourneyCard({ v, c, seated, onPlay }: { v: Venue; c: Campaign; seated: 
         Buy-in <b>{short(v.buyIn)}</b>
       </span>
       {v.boss && <BossTag id={v.boss} beaten={c.stats.bosses.includes(v.boss)} />}
-      <span className="tourney-go">{open ? (c.chips >= v.buyIn ? 'Play' : `Need ${short(v.buyIn)}`) : <><LockIcon width={16} height={16} /> {short(v.unlock)}</>}</span>
+      <span className="tourney-go">{open ? (c.chips >= v.buyIn ? 'Play' : `Need ${short(v.buyIn)}`) : 'Locked'}</span>
+      {!open && (
+        <span className="tourney-lock" aria-hidden>
+          <LockIcon />
+          <small>Reach</small>
+          <b className="num">{short(v.unlock)}</b>
+        </span>
+      )}
     </button>
   );
 }

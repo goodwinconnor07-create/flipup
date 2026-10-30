@@ -110,7 +110,9 @@ export type Route =
   /** The party this phone is in: lobby, leaderboard and the way to the table. */
   | { name: 'party' }
   /** The campaign's roulette wheel. */
-  | { name: 'roulette' };
+  | { name: 'roulette' }
+  /** Cash game: the blinds your bankroll plays, and how much to sit down with. */
+  | { name: 'cashSeat' };
 
 export type Sheet =
   | { name: 'menu' }
@@ -954,13 +956,13 @@ export function reconcileCampaign(): void {
 }
 
 /** A campaign table dealt but not sat at yet: shown on the confirm sheet (its bounty is named there), then played as is. */
-let prepared: { kind: 'cash' | 'sng'; id: string; game: Game } | null = null;
+let prepared: { kind: 'cash' | 'sng'; id: string; amount?: number; game: Game } | null = null;
 
 /**
  * Sets up a campaign table against the bots on this phone: the seats, the venue's boss (who remembers how you've
  * played them) and sometimes a bounty on one bot. Returns what the confirm sheet should say about the bounty.
  */
-export function prepareCampaign(kind: 'cash' | 'sng', id: string): { name: string; emoji: string; reward: number } | null {
+export function prepareCampaign(kind: 'cash' | 'sng', id: string, amount?: number): { name: string; emoji: string; reward: number } | null {
   const name = cleanName(state.profile.name);
   const c = getCampaign();
   const stake = kind === 'cash' ? stakeById(id) : undefined;
@@ -968,7 +970,7 @@ export function prepareCampaign(kind: 'cash' | 'sng', id: string): { name: strin
   prepared = null;
   if (!name || (!stake && !venue)) return null;
   const table = stake
-    ? campaignTable({ kind: 'cash', stake, stack: Math.max(cashBuyIn(c, stake), cashMin(stake)) }, false)
+    ? campaignTable({ kind: 'cash', stake, stack: Math.max(Math.min(amount ?? Infinity, cashBuyIn(c, stake)), cashMin(stake)) }, false)
     : campaignTable({ kind: 'sng', venue: venue!, prize: venue!.buyIn * drawMultiplier(FORMATS[venue!.format], cryptoRng) }, false);
   const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings: table.settings, bots: table.campaign.seats - 1, campaign: table.campaign, ...premiumLook(), code: null, now: Date.now() });
   // The bots at a cash table sit with 100 big blinds, whatever you sat down with.
@@ -992,17 +994,21 @@ export function prepareCampaign(kind: 'cash' | 'sng', id: string): { name: strin
       bounty = { name: mark.name, emoji: mark.emoji, reward };
     }
   }
-  prepared = { kind, id, game };
+  prepared = { kind, id, amount, game };
   return bounty;
 }
 
-/** Sits down at a cash game (by stake) or a tournament (by venue), against the bots on this phone: the table from `prepareCampaign()` if it was set up, otherwise a fresh one. The buy-in comes out of the bankroll. */
-export function startCampaign(kind: 'cash' | 'sng', id: string): void {
+/**
+ * Sits down at a cash game (by stake) or a tournament (by venue), against the bots on this phone: the table from
+ * `prepareCampaign()` if it was set up, otherwise a fresh one. The buy-in comes out of the bankroll. `amount` is what
+ * a cash game sits down with (between its minimum and what you can cover); by default as much as you can.
+ */
+export function startCampaign(kind: 'cash' | 'sng', id: string, amount?: number): void {
   if (state.busy) return;
   const name = cleanName(state.profile.name);
   if (!name) return navigate({ name: 'profile', then: 'done' });
   reconcileCampaign();
-  if (prepared?.kind !== kind || prepared.id !== id) prepareCampaign(kind, id);
+  if (prepared?.kind !== kind || prepared.id !== id || prepared.amount !== amount) prepareCampaign(kind, id, amount);
   const game = prepared?.game;
   prepared = null;
   if (!game) return;

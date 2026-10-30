@@ -82,7 +82,8 @@ export function CampaignFriendsSheet() {
                 </button>
               );
             })
-          : STAKES.map((s) => {
+          : // Every stake you can cover in full, and the next one up.
+            STAKES.slice(0, Math.max(2, STAKES.filter((s) => c.chips >= cashMax(s)).length + 1)).map((s) => {
               const open = isOpen(c, s);
               const ok = open && !seated && c.chips >= cashMax(s);
               return (

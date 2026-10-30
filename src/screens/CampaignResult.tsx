@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cashBuyIn, FORMATS, legendById, stakeById, venueById, type Game } from '../game';
 import { useCampaign } from '../state/campaign';
 import { closeTable, startCampaign } from '../state/store';
 import { Count } from '../ui/components';
-import { confetti, haptic } from '../ui/effects';
+import { confetti, flyChips, haptic } from '../ui/effects';
 import { playSound } from '../ui/sound';
 
 const n0 = (n: number) => n.toLocaleString('en-US');
@@ -20,6 +20,11 @@ export function CampaignResult({ game }: { game: Game }) {
   // Paid by the finish itself (a bounty or the boss can pay on top of nothing).
   const paid = !!last && !last.refunded && last.back - (last.bounty ?? 0) - (last.bossPay ?? 0) > 0;
   const online = !!game.code;
+  // On a win the bankroll starts where it was, chips fly in from the prize and it ticks up to what it is now.
+  const gain = paid ? last!.back : 0;
+  const [bank, setBank] = useState(c.chips - gain);
+  const prizeRef = useRef<HTMLSpanElement>(null);
+  const bankRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!last || last.refunded) return;
@@ -32,6 +37,20 @@ export function CampaignResult({ game }: { game: Game }) {
       confetti(undefined, undefined, 70);
     }
     // Once, when the page opens.
+  }, []);
+
+  useEffect(() => {
+    if (!gain) return;
+    const t = setTimeout(() => {
+      if (prizeRef.current && bankRef.current) {
+        flyChips(prizeRef.current, bankRef.current, 12, (i) => {
+          if (i === 0) setBank(c.chips);
+          haptic('light');
+        });
+      }
+      setTimeout(() => setBank(c.chips), 1400);
+    }, 700);
+    return () => clearTimeout(t);
   }, []);
 
   if (!tag || (!venue && !stake)) return null;
@@ -63,7 +82,7 @@ export function CampaignResult({ game }: { game: Game }) {
 
   return (
     <div className="screen-body camp-result">
-      <span className={`camp-result-emoji${won ? ' won' : ''}`} aria-hidden>
+      <span ref={prizeRef} className={`camp-result-emoji${won ? ' won' : ''}`} aria-hidden>
         {emoji}
       </span>
       <h1>{title}</h1>
@@ -91,10 +110,10 @@ export function CampaignResult({ game }: { game: Game }) {
         </p>
       ) : null}
       {last?.firstWin && venue && <p className="camp-result-extra">🃏 New card back: {venue.name}. Pick it in Card packs.</p>}
-      <div className="camp-result-bank">
+      <div ref={bankRef} className="camp-result-bank">
         <small>Bankroll</small>
         <b className="num">
-          <Count value={c.chips} />
+          <Count value={bank} />
         </b>
       </div>
       <div className="stack">

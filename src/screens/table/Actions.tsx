@@ -143,6 +143,8 @@ export function ActionArea({
     );
   }
   if (!hand?.result || game.nextHandAt === null) {
+    // An online table with nobody left shows its own popup; the layout stays as it was.
+    if (game.emptyAt) return <div className="stack" />;
     return (
       <div className="stack">
         <p className="table-note">Waiting for more players…</p>

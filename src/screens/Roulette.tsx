@@ -119,7 +119,7 @@ export function Roulette() {
     setBallTurn((t) => t - 360 * 5);
     page.current?.scrollTo({ top: 0, behavior: reducedMotion() ? 'auto' : 'smooth' });
     haptic('medium');
-    playSound('shuffle');
+    playSound(reducedMotion() ? 'shuffle' : 'wheel');
     clearTimeout(timer.current);
     timer.current = setTimeout(
       () => {

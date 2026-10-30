@@ -2918,3 +2918,61 @@ html.calm .mood-mark {
 .bubble {
   border-radius: 999px !important;
 }
+
+/* Nobody left at an online table: a popup that stays until they choose. */
+.empty-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.empty-card {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  border-radius: var(--r-xl);
+  background: var(--bg);
+  animation: empty-in 0.3s cubic-bezier(0.2, 1.2, 0.4, 1);
+}
+
+.empty-card h2,
+.empty-card p {
+  margin: 0;
+}
+
+.empty-code {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+
+.empty-code b {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+@keyframes empty-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .empty-card {
+    animation: none;
+  }
+}

@@ -547,6 +547,15 @@ function wakeIfWaiting(game: Game, ctx: ActionContext): void {
   }
 }
 
+/** An online table that's between hands with nobody to play against gets a minute before it closes. */
+function watchEmpty(game: Game, ctx: ActionContext): void {
+  const waiting = !!game.code && game.status === 'playing' && (!game.hand || !!game.hand.result) && game.nextHandAt === null && !canDeal(game);
+  const next = waiting ? (game.emptyAt ?? ctx.now + TIMING.emptyClose) : null;
+  if ((game.emptyAt ?? null) === next) return;
+  game.emptyAt = next;
+  schedule(game);
+}
+
 const fail = (error: string): ActionResult => ({ ok: false, error });
 
 export function applyAction(input: Game, action: Action, ctx: ActionContext): ActionResult {
@@ -556,6 +565,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
   const done = (changed = true): ActionResult => {
     if (!changed) return { ok: true, game: input, changed: false };
     if (game.hand?.result && game.readHand !== game.hand.number) afterHand(game, ctx);
+    watchEmpty(game, ctx);
     game.version += 1;
     return { ok: true, game, changed: true };
   };
@@ -735,6 +745,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'revealBots': {
       const hand = game.hand;
       if (!host) return fail('Only the host can reveal the bots.');
+      if (game.campaign) return fail("Campaign games don't show the bots' cards.");
       if (!hand || !hand.result || hand.number !== action.hand) return fail('Wait until the hand is over.');
       const entry = game.logs?.find((l) => l.number === hand.number);
       let changed = false;
@@ -878,6 +889,16 @@ function tick(game: Game, ctx: ActionContext): boolean {
   const hand = game.hand;
   // Timers can fire a hair early; that's close enough.
   const due = (at: number | null) => at !== null && ctx.now >= at - 20;
+
+  // Nobody joined or came back in time: the table closes.
+  if (game.emptyAt && due(game.emptyAt)) {
+    game.emptyAt = null;
+    game.players = game.players.filter((p) => !p.leaving);
+    game.status = 'ended';
+    game.nextHandAt = null;
+    schedule(game);
+    return true;
+  }
 
   // A bot answering what was just said.
   if (game.pendingTalk && due(game.pendingTalk.at)) {

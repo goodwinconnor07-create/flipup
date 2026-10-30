@@ -24,6 +24,8 @@ export const TIMING = {
   /** Pause after a hand before the next one deals (unless everyone taps Next hand). */
   afterFold: 5000,
   afterShowdown: 9000,
+  /** An online table with nobody left to play against closes this long after it stopped. */
+  emptyClose: 60000,
   /** The clock for someone whose phone has lost the table, when the table has a clock at all. */
   offlineClock: 15000,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
@@ -958,6 +960,7 @@ export function schedule(game: Game): void {
   if (game.status !== 'playing') game.wakeAt = null;
   else if (hand && !hand.result) game.wakeAt = hand.actAt;
   else game.wakeAt = game.nextHandAt;
+  if (game.status === 'playing' && game.emptyAt && (game.wakeAt === null || game.emptyAt < game.wakeAt)) game.wakeAt = game.emptyAt;
   // A bot's reply that's due before anything else.
   if (game.status === 'playing' && game.pendingTalk && (game.wakeAt === null || game.pendingTalk.at < game.wakeAt)) game.wakeAt = game.pendingTalk.at;
 }

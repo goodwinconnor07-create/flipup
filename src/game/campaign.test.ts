@@ -4,6 +4,8 @@ import {
   applyAction,
   buyAgain,
   cashBuyIn,
+  cashMin,
+  cashStakeFor,
   cashOut,
   claimGoal,
   collectSalary,
@@ -125,7 +127,7 @@ describe('campaign bankroll', () => {
     let c = collectSalary(newCampaign(), '2026-10-01');
     expect(cashBuyIn(c, mid)).toBe(1000);
     expect(cashBuyIn({ ...c, chips: 600 }, mid)).toBe(600);
-    expect(cashBuyIn({ ...c, chips: 400 }, mid)).toBe(0);
+    expect(cashBuyIn({ ...c, chips: 150 }, mid)).toBe(0);
     expect(cashBuyIn(c, small)).toBe(200);
     c = ok(sitDown(c, { kind: 'cash', stake: small, cost: 200 }, 'g1', 0));
     expect(c.chips).toBe(800);
@@ -146,7 +148,24 @@ describe('campaign bankroll', () => {
     expect(sitDown(c, { kind: 'sng', venue: riverboat, prize: 4000 }, 'g', 0)).toMatch(/Reach 2,500/);
     expect(typeof sitDown({ ...c, chips: 3000, peak: 3000 }, { kind: 'sng', venue: riverboat, prize: 4000 }, 'g', 0)).toBe('object');
     expect(typeof sitDown({ ...c, chips: 1000 }, { kind: 'sng', venue: riverboat, prize: 4000, friends: true }, 'g', 0)).toBe('object');
-    expect(sitDown(c, { kind: 'cash', stake: stakeById('25-50')!, cost: 2400 }, 'g', 0)).toMatch(/Reach 5,000/);
+  });
+
+  it('sets the blinds from the bankroll: about 50 big blinds of it, and never above what it can cover', () => {
+    const at = (chips: number) => cashStakeFor(chips)?.id;
+    // The daily 1,000 plays 10/20, and the blinds climb as the bankroll does.
+    expect(at(1000)).toBe('10-20');
+    expect(at(2500)).toBe('25-50');
+    expect(at(60000)).toBe('500-1k');
+    expect(at(1e9)).toBe('50k-100k');
+    // Too little for the table's minimum, then the smallest table; below that, none.
+    expect(at(60)).toBe('1-2');
+    expect(at(39)).toBeUndefined();
+    // Whatever the bankroll, the stake it lands on can be bought into (20 big blinds at least).
+    for (const chips of [40, 99, 100, 777, 1000, 4999, 123456, 7e6]) {
+      const s = cashStakeFor(chips)!;
+      expect(cashBuyIn({ ...newCampaign(), chips }, s)).toBeGreaterThanOrEqual(cashMin(s));
+      expect(cashMin(s)).toBe(s.bigBlind * 20);
+    }
   });
 
   it('pays a tournament from the prize drawn for it, not from the buy-ins at the table', () => {

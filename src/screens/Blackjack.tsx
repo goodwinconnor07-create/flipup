@@ -89,6 +89,8 @@ function TableView({ game }: { game: Table }) {
               {DEALER.emoji}
             </span>
             <span className="bj-plate">{DEALER.name}</span>
+          </div>
+          <div className="bj-dealer-say">
             <Said talk={game.talk} who="dealer" now={now} className="bj-say-dealer" />
           </div>
           <div className="bj-cards bj-dealer-cards">
@@ -128,7 +130,7 @@ function Said({ talk, who, now, className = '' }: { talk: BjTalk[]; who: string;
   // The same bubble and word-by-word ticker as the bots at the poker tables.
   return (
     <span className={`bj-say bj-ticker ${className}`} role="status">
-      <Ticker key={line.key} text={line.text} until={line.at + sayFor(line.text)} />
+      <Ticker key={line.key} text={line.text} until={line.at + sayFor(line.text)} {...(who === 'dealer' ? { chars: 34, words: 7 } : {})} />
     </span>
   );
 }

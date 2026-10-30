@@ -138,6 +138,7 @@ export function CampaignTab() {
   return (
     <>
       <BankBar c={c} />
+      <DailySpin c={c} />
       <Bankroll c={c} />
       {due > 0 && (
         <section className="payday" aria-label="Payday">
@@ -170,8 +171,6 @@ export function CampaignTab() {
         </button>
       )}
       {due === 0 && !c.seat && <OutOfChips c={c} />}
-
-      <DailySpin c={c} />
 
       <h3 className="section-head">Tables</h3>
       <div className="tourney-row" role="list">
@@ -603,19 +602,15 @@ function BossTag({ id, beaten }: { id: string; beaten: boolean }) {
   );
 }
 
-/** Today's free spin. */
+/** Today's free spin: a small bar above the bankroll, only while it's there to take. */
 function DailySpin({ c }: { c: Campaign }) {
-  const spun = c.spinDay === today();
+  if (c.spinDay === today()) return null;
   return (
-    <button type="button" className={`spin-card press${spun ? ' spun' : ''}`} disabled={spun} onClick={() => openSheet({ name: 'dailySpin' })}>
-      <span className="spin-card-wheel" aria-hidden>
-        <i />
-      </span>
-      <span className="spin-card-text">
-        <b>{spun ? 'Spun for today' : 'Free daily spin'}</b>
-        <small>{spun ? 'Your next free spin comes tomorrow.' : 'Up to 5,000 chips, once a day.'}</small>
-      </span>
-      {!spun && <ChevronIcon width={22} height={22} />}
+    <button type="button" className="spin-bar press" onClick={() => openSheet({ name: 'dailySpin' })}>
+      <span className="spin-bar-wheel" aria-hidden />
+      <b>Free daily spin</b>
+      <small>Up to 5,000</small>
+      <ChevronIcon width={18} height={18} />
     </button>
   );
 }

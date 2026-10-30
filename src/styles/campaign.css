@@ -2234,3 +2234,46 @@ html.calm .daily-wheel > g {
   color: var(--on-color);
   background: linear-gradient(150deg, var(--green-hi), var(--green));
 }
+
+/* The free daily spin, as a slim bar above the bankroll; gone once it's been used today. */
+.spin-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: var(--r-pill);
+  font: inherit;
+  text-align: left;
+  color: var(--on-color);
+  background: linear-gradient(150deg, var(--violet), var(--indigo));
+  box-shadow: 0 8px 18px -10px rgba(88, 86, 214, 0.7);
+}
+
+.spin-bar b {
+  flex: 1;
+  font-size: var(--fs-body);
+  font-weight: 800;
+}
+
+.spin-bar small {
+  font-size: var(--fs-small);
+  opacity: 0.9;
+}
+
+.spin-bar-wheel {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: conic-gradient(var(--party-pink) 0 14%, var(--party-orange) 0 28%, var(--party-yellow) 0 43%, var(--party-green) 0 57%, var(--party-blue) 0 71%, var(--violet) 0 86%, var(--rl-red) 0);
+  box-shadow: 0 0 0 2px var(--on-color);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spin-bar-wheel {
+    animation: camp-turn 6s linear infinite;
+  }
+}

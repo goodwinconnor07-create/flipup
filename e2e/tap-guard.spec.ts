@@ -15,7 +15,8 @@ test('a drag across a button does not press it, a tap does', async ({ page }) =>
   await page.mouse.move(x, y + 30, { steps: 4 });
   await page.mouse.up();
   await page.waitForTimeout(400);
-  await expect(page.getByText('Deal yourself in.')).toBeVisible();
+  await expect(tile).toBeVisible();
+  await expect(page.getByRole('textbox', { name: 'Your name' })).toHaveCount(0);
 
   // A plain tap still works.
   await tile.click();

@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { fetchTableInfo } from '../state/api';
-import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
+import { loadLastTable, saveLastTable } from '../state/persist';
 import { homeView, navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
@@ -10,8 +10,7 @@ import { PartyTab } from './HomeParty';
 import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { ChevronIcon, CloseIcon, ChipIcon, PencilIcon, PersonIcon, KeypadIcon, PlusIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
-import { variantInfo } from '../game';
+import { ChevronIcon, CloseIcon, ChipIcon, KeypadIcon, PencilIcon, PersonIcon, PlusIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 
 function ago(at: number): string {
   const mins = Math.max(1, Math.round((Date.now() - at) / 60_000));
@@ -24,20 +23,9 @@ function ago(at: number): string {
 type Tab = typeof homeView.tab;
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
-  { id: 'campaign', label: 'Campaign', Icon: ChipIcon, title: 'Campaign' },
   { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
+  { id: 'campaign', label: 'Campaign', Icon: ChipIcon, title: 'Campaign' },
 ];
-
-/** One line under the greeting: your table, or how your last game went. Chips reset every game, so they're never the measure. */
-function statusLine(active: boolean): string {
-  if (active) return 'Your table is waiting.';
-  const last = loadStats().games.at(-1);
-  if (last) {
-    const info = variantInfo(last.variant as never);
-    return `Last time: ${info.emoji} ${info.name}${last.place ? `, ${last.place === 1 ? 'you won' : `finished ${last.place === 2 ? '2nd' : last.place === 3 ? '3rd' : `${last.place}th`}`}` : ''}.`;
-  }
-  return 'Pick a game and deal yourself in.';
-}
 
 export function Home() {
   // Coming back from another screen lands on the same tab, at the same place on the page.
@@ -118,12 +106,6 @@ export function Home() {
       : null;
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
-  const subtitle =
-    tab === 'party'
-        ? 'Mini game tournaments with your friends.'
-        : tab === 'campaign'
-          ? 'Your bankroll against the bots. Climb from the Garage to the Yacht.'
-          : `${named ? `Hi ${profile.name}. ` : ''}${statusLine(!!active)}`;
 
   return (
     <div className="screen home">
@@ -150,7 +132,6 @@ export function Home() {
                 </span>
               </button>
             </div>
-            <p>{subtitle}</p>
           </header>
           <div key={tab} className="home-pane">
             {tab === 'play' && (
@@ -181,20 +162,10 @@ export function Home() {
                 <GameShelf />
                 <section className="start-row" aria-label="Start a table">
                   <button type="button" className="start-tile start-blue press" onClick={() => go('host')}>
-                    <span className="start-faces" aria-hidden>
-                      <span>🥳</span>
-                      <span>😄</span>
-                      <span>🤓</span>
-                    </span>
                     <b>Play with friends</b>
                     <small>Share a code. They join on their phones.</small>
                   </button>
                   <button type="button" className="start-tile start-green press" onClick={() => go('bots')}>
-                    <span className="start-faces" aria-hidden>
-                      <span>🦁</span>
-                      <span>🤩</span>
-                      <span>🦊</span>
-                    </span>
                     <b>Play with bots</b>
                     <small>On this phone, no timer.</small>
                   </button>

@@ -69,10 +69,8 @@ import {
   loadPremium,
   loadMuted,
   loadFast,
-  loadCam3d,
   loadTalk,
   saveFast,
-  saveCam3d,
   saveTalk,
   loadProfile,
   loadSession,
@@ -201,8 +199,6 @@ export interface AppState {
   talk: boolean;
   /** Bot tables on this phone run on a faster clock. */
   fast: boolean;
-  /** Show the other players in the 3D table cam instead of the row of seats. */
-  cam3d: boolean;
   /** Animations switched off. */
   calm: boolean;
   /** What the player picked: light, dark or the same as the phone. */
@@ -250,7 +246,6 @@ let state: AppState = {
   muted: loadMuted(),
   talk: loadTalk(),
   fast: loadFast(),
-  cam3d: loadCam3d(),
   calm: loadCalm(),
   appearance: loadAppearance(),
   dark: false,
@@ -771,12 +766,6 @@ export function toggleFast(): void {
   const fast = !state.fast;
   saveFast(fast);
   set({ fast });
-}
-
-export function toggleCam3d(): void {
-  const cam3d = !state.cam3d;
-  saveCam3d(cam3d);
-  set({ cam3d });
 }
 
 export function toggleTalk(): void {

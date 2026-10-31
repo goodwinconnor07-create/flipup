@@ -120,7 +120,9 @@ html:not(.no-glass) .glass-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  animation: pane-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  /* `backwards`, not `both`: once the fade-in is over the pane must stop being an animated layer. Kept alive,
+     the whole tall Home page is one GPU layer and iPhone Safari drops the top of it (a black screen). */
+  animation: pane-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
 }
 
 @keyframes pane-in {

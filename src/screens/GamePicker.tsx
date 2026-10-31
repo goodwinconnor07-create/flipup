@@ -7,7 +7,6 @@ import { Sheet } from '../ui/components';
 import { CheckIcon, ChevronIcon } from '../ui/Icons';
 import { GameIllustration, GameThumb } from '../ui/GameIllustrations';
 import { cardArt } from '../ui/gameThemes';
-import { SHELF_GAMES } from './HomeGames';
 
 /** Ghost Hold'em plays best deep: picking it gives everyone at least this many big blinds. */
 const GHOST_DEPTH = 500;
@@ -87,36 +86,6 @@ export function PickSheet({ current, onPick }: { current: Variant; onPick: (vari
         })}
       </div>
       <p className="muted game-more">More games are on the way.</p>
-    </Sheet>
-  );
-}
-
-/** The games that aren't on Home's shelf: each opens its rules and who to play it with. */
-export function MoreGamesSheet() {
-  return (
-    <Sheet title="More game modes">
-      <div className="pick-list">
-        {VARIANTS.slice(SHELF_GAMES).map((v) => {
-          const art = cardArt(v.id);
-          return (
-            <button
-              key={v.id}
-              type="button"
-              className="pick-card press"
-              style={{ background: `linear-gradient(160deg, ${art.card[0]}, ${art.card[1]})` }}
-              onClick={() => openSheet({ name: 'game', variant: v.id })}
-            >
-              <span className="pick-scene game-live">
-                <GameIllustration variant={v.id} />
-              </span>
-              <span className="pick-text">
-                <b>{v.name}</b>
-                <small>{v.tagline}</small>
-              </span>
-            </button>
-          );
-        })}
-      </div>
     </Sheet>
   );
 }

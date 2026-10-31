@@ -63,7 +63,7 @@ import { BubbleSheet, LegendsSheet, PackSheet } from './PremiumPickers';
 import { CampaignIntroSheet } from './CampaignIntroSheet';
 import { BjInviteSheet, BjStartSheet } from './BlackjackSheets';
 import { CampaignFriendsSheet, CampaignGoalsSheet, DailySpinSheet } from './CampaignSheets';
-import { MoreGamesSheet, PickSheet, RulesSheet } from '../GamePicker';
+import { PickSheet, RulesSheet } from '../GamePicker';
 
 export function SheetHost({ sheet }: { sheet: SheetSpec }) {
   switch (sheet.name) {
@@ -75,8 +75,6 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <StreakSheet />;
     case 'game':
       return <GameStartSheet variant={sheet.variant} />;
-    case 'more':
-      return <MoreGamesSheet />;
     case 'join':
       return <JoinSheet />;
     case 'rules':

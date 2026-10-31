@@ -4,8 +4,7 @@ import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, removePal
 import { loadPartyRef } from '../state/party';
 import { navigate, openSheet, toast, undoToast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
-import { ChevronIcon, PlusIcon, ShareIcon, UsersIcon } from '../ui/Icons';
-import { QrIcon, TrophyIcon } from '../ui/Icons';
+import { ChevronIcon, KeypadIcon, PlusIcon, ShareIcon, UsersIcon } from '../ui/Icons';
 import { copy } from './sheets/InviteSheet';
 
 const SHOWCASE = VARIANTS.slice(0, 6);
@@ -75,12 +74,9 @@ export function PartyTab() {
             </span>
           ))}
         </span>
-        <span className="party-host-trophy" aria-hidden>
-          <TrophyIcon width={30} height={30} />
-        </span>
         <b>Host a party</b>
         <small>
-          Pick {PARTY_MIN_GAMES} to {PARTY_MAX_GAMES} mini games. Blinds climb fast, and the best finisher wins the night.
+          Play {PARTY_MIN_GAMES} to {PARTY_MAX_GAMES} mini games in a row. The best finisher wins.
         </small>
         <span className="party-host-cta">
           Set it up
@@ -88,28 +84,32 @@ export function PartyTab() {
         </span>
       </button>
 
-      <div className={`party-row${party ? ' two' : ''}`}>
-        <button type="button" className="party-tile party-join press" onClick={() => !needName() && openSheet({ name: 'joinParty' })}>
-          <span className="party-tile-icon" aria-hidden>
-            <QrIcon width={26} height={26} />
-          </span>
-          <b>Join a party</b>
-          <small>Type the code from your host</small>
-        </button>
+      <div className="group">
         {party && (
-          <button type="button" className="party-tile party-mine press" onClick={() => navigate({ name: 'party' })}>
-            <span className="party-tile-icon" aria-hidden>
-              <UsersIcon width={26} height={26} />
+          <button type="button" className="group-row press" onClick={() => navigate({ name: 'party' })}>
+            <span className="gr-icon" style={{ background: 'var(--gold)' }}>
+              <UsersIcon />
             </span>
-            <b>Your party</b>
-            <small>Code {party.code}</small>
+            <span className="gr-text">
+              Your party
+              <small>Code {party.code}</small>
+            </span>
+            <ChevronIcon className="gr-chev" width={16} height={16} />
           </button>
         )}
+        <button type="button" className="group-row press" onClick={() => !needName() && openSheet({ name: 'joinParty' })}>
+          <span className="gr-icon" style={{ background: 'var(--green)' }}>
+            <KeypadIcon />
+          </span>
+          <span className="gr-text">
+            Join a party
+            <small>Type the code from your host</small>
+          </span>
+          <ChevronIcon className="gr-chev" width={16} height={16} />
+        </button>
       </div>
 
-      <div className="section-row">
-        <p className="section-title">Friends</p>
-      </div>
+      <h3 className="section-head">Friends</h3>
       <div className="friend-code">
         {code ? (
           <>
@@ -161,7 +161,7 @@ export function PartyTab() {
           </div>
         ))}
       </div>
-      {pals.length === 0 && <p className="muted center">Friends you add show up here. You can also add people from a party's leaderboard.</p>}
+      {pals.length === 0 && <p className="muted center party-empty">No friends yet. Add one with their code.</p>}
     </>
   );
 }

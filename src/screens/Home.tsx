@@ -1,11 +1,11 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { fetchTableInfo } from '../state/api';
-import { loadLastTable, saveLastTable } from '../state/persist';
+import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { homeView, navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
 import { LegendShelf } from './HomeLegends';
-import { LEGENDS_ON } from '../game';
+import { LEGENDS_ON, variantInfo } from '../game';
 import { PartyTab } from './HomeParty';
 import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
@@ -104,6 +104,9 @@ export function Home() {
       : last
       ? { title: `Table ${last.code}`, sub: `Left ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate', dismiss: dismissLast }
       : null;
+  // Your last finished game, a tap away from playing it again.
+  const lastGame = loadStats().games.at(-1);
+  const again = lastGame ? variantInfo(lastGame.variant as never) : null;
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
 
@@ -158,18 +161,38 @@ export function Home() {
                     )}
                   </div>
                 )}
-                <h3 className="section-head">Quick start</h3>
-                <GameShelf />
+                {!banner && lastGame && again && (
+                  <div className="group">
+                    <button type="button" className="group-row press" onClick={() => openSheet({ name: 'game', variant: lastGame.variant as never })}>
+                      <span className="gr-icon again-icon" aria-hidden>
+                        {again.emoji}
+                      </span>
+                      <span className="gr-text">
+                        Play {again.name} again
+                        <small>{lastGame.place === 1 ? 'You won last time' : lastGame.place ? `You finished ${lastGame.place === 2 ? '2nd' : lastGame.place === 3 ? '3rd' : `${lastGame.place}th`} last time` : 'Your last game'}</small>
+                      </span>
+                      <ChevronIcon className="gr-chev" width={16} height={16} />
+                    </button>
+                  </div>
+                )}
                 <section className="start-row" aria-label="Start a table">
                   <button type="button" className="start-tile start-blue press" onClick={() => go('host')}>
+                    <span className="start-face" aria-hidden>
+                      🥳
+                    </span>
                     <b>Play with friends</b>
-                    <small>Share a code. They join on their phones.</small>
+                    <small>Share a code</small>
                   </button>
                   <button type="button" className="start-tile start-green press" onClick={() => go('bots')}>
+                    <span className="start-face" aria-hidden>
+                      🦊
+                    </span>
                     <b>Play with bots</b>
-                    <small>On this phone, no timer.</small>
+                    <small>On this phone</small>
                   </button>
                 </section>
+                <h3 className="section-head">Games</h3>
+                <GameShelf />
                 {LEGENDS_ON && <LegendShelf />}
               </>
             )}

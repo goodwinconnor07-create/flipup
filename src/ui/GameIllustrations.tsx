@@ -165,6 +165,27 @@ const SCENES: Record<Variant, () => ReactNode> = {
       <Label x={100} y={106}>WHO'S BLUFFING</Label>
     </>
   ),
+  memory: () => (
+    <>
+      <Mark suit="♦" x={44} />
+      {Array.from({ length: 10 }, (_, i) => (
+        <Deal key={i} i={i}>
+          <Pc x={42 + (i % 5) * 29} y={36 + Math.floor(i / 5) * 46} rank={['A', 'K', '7', '2', 'Q', '9', 'J', '4', 'A', '5'][i]} suit={['♠', '♥', '♦', '♣'][i % 4]} s={0.62} faded={i % 3 === 1} />
+        </Deal>
+      ))}
+      <text x={170} y={70} fontSize={40} textAnchor="middle" fontFamily="system-ui, sans-serif">🧠</text>
+    </>
+  ),
+  beanstalk: () => (
+    <>
+      <Mark suit="♣" x={150} />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <Deal key={i} i={i}>
+          <Pc x={60 + i * 14} y={96 - i * 16} r={-10 + i * 5} rank={['9', '9', 'K', '9', 'K'][i]} suit={['♣', '♥', '♠', '♦', '♥'][i]} s={0.72} glow={i === 4} />
+        </Deal>
+      ))}
+    </>
+  ),
   crucifix: () => (
     <>
       <Mark suit="♠" x={44} />

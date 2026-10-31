@@ -148,3 +148,41 @@ test("Circle Hold'em: six cards round a clock that fit the felt", async ({ page 
   await shot(page, 'variant-circle');
   await boardFits(page);
 });
+
+test('Memory Poker: 20 cards on show before the deal, then gone', async ({ page }) => {
+  await sitDown(page, 'Memory Poker');
+  const peek = page.locator('.memory-peek .pcard');
+  await expect(peek).toHaveCount(20, { timeout: 15_000 });
+  await expect(page.getByText(/Remember these 20/)).toBeVisible();
+  const removed = await peek.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')));
+  await shot(page, 'variant-memory-peek');
+  // The look ends, the cards go and the hand is dealt from what's left.
+  await expect(page.locator('.memory-peek')).toHaveCount(0, { timeout: 15_000 });
+  const mine = page.locator('.my-cards .pcard:not(.pcard-slot)');
+  await expect(mine).toHaveCount(2, { timeout: 10_000 });
+  for (const label of await mine.evaluateAll((els) => els.map((e) => e.getAttribute('aria-label')))) expect(removed).not.toContain(label);
+  await shot(page, 'variant-memory-hand');
+});
+
+test('Bean Stalk: a new card of your own on every street', async ({ page }) => {
+  await sitDown(page, 'Bean Stalk');
+  const mine = page.locator('.my-cards .pcard:not(.pcard-slot)');
+  await expect(mine).toHaveCount(2, { timeout: 30_000 });
+  const board = page.locator('.board .pcard:not(.pcard-slot)');
+  let five = false;
+  const grew = await playUntil(page, async () => {
+    const [b, m] = [await board.count(), await mine.count()];
+    // Never more board cards than the hole cards say (2 + one per street), unless we folded.
+    if (b >= 3 && m > 0) expect(m).toBe(b === 3 ? 3 : b === 4 ? 4 : 5);
+    if (b === 5 && m === 5) five = true;
+    return five;
+  });
+  expect(grew).toBe(true);
+  await page.waitForTimeout(800);
+  await shot(page, 'variant-beanstalk');
+  // Five cards of your own still fit beside your box on a phone.
+  const cards = (await page.locator('.my-cards').boundingBox())!;
+  expect(cards.x).toBeGreaterThanOrEqual(0);
+  const box = (await page.locator('.my-box').boundingBox())!;
+  expect(cards.x + cards.width).toBeLessThanOrEqual(box.x + 1);
+});

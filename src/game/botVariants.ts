@@ -10,7 +10,7 @@ import { fullDeck, isRed, type Card } from './cards';
 import { potTotal } from './holdem';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
-import { boardSize, handSets, holeCount, isWild, keepTwo, variantOf, wildHand, type Variant } from './variants';
+import { boardSize, handSets, holeCountAt, isWild, keepTwo, variantOf, wildHand, type Variant } from './variants';
 
 /** Run-outs played per decision: enough to tell a strong hand from a weak one, quick enough on the server. Fewer at a
  * big table, where each run-out deals more hands. */
@@ -18,7 +18,7 @@ const SAMPLES = 150;
 const samplesFor = (others: number) => Math.max(50, Math.min(SAMPLES, Math.round((SAMPLES * 3) / (others + 1))));
 
 /** The cards a bot plays with: its best two of three in Crazy Pineapple. */
-const myCards = (cards: Card[], board: Card[]) => (cards.length > 2 ? keepTwo(cards, board.slice(0, 3)) : cards);
+const myCards = (v: Variant, cards: Card[], board: Card[]) => (v === 'pineapple' && cards.length > 2 ? keepTwo(cards, board.slice(0, 3)) : cards);
 
 /** The same number bestHand() scores, without naming the hand: the bots' fast evaluator, wild deuces aside. */
 export function variantScore(v: Variant, hole: Card[], board: Card[]): number {
@@ -54,7 +54,11 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
   if (!others) return 1;
   // Wild deuces take longest to score, so a rougher estimate there.
   const samples = runs ?? Math.round(samplesFor(others) * (v === 'deuces' ? 0.5 : 1));
-  const known = new Set([...seat.cards, ...hand.board]);
+  // Memory Poker: the bots remember every card that was taken out.
+  const known = new Set([...seat.cards, ...hand.board, ...(hand.removed ?? [])]);
+  // Bean Stalk: the cards everyone still gets on the streets to come.
+  const full = holeCountAt(v, 5);
+  const more = v === 'beanstalk' ? full - seat.cards.length : 0;
   const pool = fullDeck().filter((c) => !known.has(c));
   const ghost = v === 'ghost';
   let won = 0;
@@ -66,14 +70,15 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
     const hands: Card[][] = [];
-    for (let k = 0; k < others; k++) hands.push(Array.from({ length: holeCount(v) }, () => deck.pop()!));
+    for (let k = 0; k < others; k++) hands.push(Array.from({ length: v === 'beanstalk' ? full : holeCountAt(v, 0) }, () => deck.pop()!));
+    const own = more > 0 ? [...seat.cards, ...Array.from({ length: more }, () => deck.pop()!)] : seat.cards;
     const ghostHand = ghost ? [deck.pop()!, deck.pop()!] : null;
     const board = finishBoard(v, hand.board, deck, rng);
-    const mine = variantScore(v, myCards(seat.cards, board), board);
+    const mine = variantScore(v, myCards(v, own, board), board);
     let best = 0;
     let ties = 0;
     for (const h of hands) {
-      const s = variantScore(v, myCards(h, board), board);
+      const s = variantScore(v, myCards(v, h, board), board);
       if (s > best) [best, ties] = [s, 1];
       else if (s === best) ties++;
     }

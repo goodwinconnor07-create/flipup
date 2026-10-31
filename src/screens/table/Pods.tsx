@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { pot, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
+import { holeCountAt, pot, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
 import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
@@ -255,10 +255,10 @@ export function Pod({
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
       <span className="pod-under">
         {!self && seat && (!seat.folded || seat.cards.length > 0) && (
-          <span className={`pod-cards${turn ? ' shimmer' : ''}`}>
+          <span className={`pod-cards${turn ? ' shimmer' : ''}${Math.max(seat.cards.length, faceDown(game)) > 3 ? ' pod-cards-many' : ''}`}>
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip pack={player.cardPack} />)
-              : Array.from({ length: variantOf(game) === 'pineapple' && threeCardsLeft(game) ? 3 : 2 }, (_, i) => <PlayingCard key={i} back size="sm" pack={player.cardPack} />)}
+              : Array.from({ length: faceDown(game) }, (_, i) => <PlayingCard key={i} back size="sm" pack={player.cardPack} />)}
           </span>
         )}
         {won > 0 ? (
@@ -349,6 +349,13 @@ export function MyBox({
 }
 
 /** Crazy Pineapple: everyone still holds three cards (before the flop, and during the flop betting; bots throw theirs away as soon as it ends). */
+/** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk. */
+const faceDown = (game: Game) => {
+  const v = variantOf(game);
+  if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
+  return v === 'pineapple' && threeCardsLeft(game) ? 3 : 2;
+};
+
 const threeCardsLeft = (game: Game) => {
   const hand = game.hand;
   return !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && !hand.result));

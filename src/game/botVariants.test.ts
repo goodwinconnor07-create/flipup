@@ -3,7 +3,7 @@ import { variantDecide, variantEquity, variantScore } from './botVariants';
 import { applyAction, bestHand, createTable, DEFAULT_SETTINGS, fullDeck, makeMove, seededRng, type Game, type Variant } from './index';
 
 const HOST = 'host-device';
-const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle'];
+const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle', 'memory', 'beanstalk'];
 
 /** A bots-only table (the host sits out of the way by calling) with the first hand dealt. */
 function dealt(variant: Variant, bots = 4, seed = 1): Game {

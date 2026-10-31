@@ -299,6 +299,14 @@
   --theme-circle-rail-a: #d9ab52;
   --theme-circle-rail-b: #5c3f0b;
   --theme-circle-glow: rgba(100, 210, 255, 0.2);
+  --theme-memory-felt: #2b1f5c;
+  --theme-memory-rail-a: #b9a7ff;
+  --theme-memory-rail-b: #3b2a86;
+  --theme-memory-glow: rgba(180, 160, 255, 0.22);
+  --theme-beanstalk-felt: #1f5f2e;
+  --theme-beanstalk-rail-a: #9c6b3c;
+  --theme-beanstalk-rail-b: #3d2410;
+  --theme-beanstalk-glow: rgba(140, 230, 120, 0.22);
   --gold: #ff9f0a;
   --gold-lo: #d97706;
   --gold-hi: #fde68a;

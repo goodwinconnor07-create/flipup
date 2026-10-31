@@ -4,6 +4,7 @@ import {
   bestHand,
   createTable,
   DEFAULT_SETTINGS,
+  holeCountAt,
   keepTwo,
   options,
   parseAction,
@@ -110,7 +111,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
 }
 
 describe('variant tables', { timeout: TABLE_MS }, () => {
-  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle'] as Variant[]) {
+  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle', 'memory', 'beanstalk'] as Variant[]) {
     it(`plays ${v} hands with bots and keeps every chip`, () => {
       play(v, 40);
     });
@@ -269,6 +270,72 @@ describe('Crucifix and Circle', { timeout: TABLE_MS }, () => {
       });
       expect(seen.has(sizes[3])).toBe(true);
     }
+  });
+});
+
+describe('Memory Poker and Bean Stalk', { timeout: TABLE_MS }, () => {
+  it('Memory Poker shows 20 cards before every hand, then deals without them and hides them until the end', () => {
+    const sets: string[] = [];
+    let peeks = 0;
+    let lastPeek = -1;
+    play('memory', 12, (g) => {
+      if (g.memory) {
+        expect(g.memory.cards).toHaveLength(20);
+        expect(new Set(g.memory.cards).size).toBe(20);
+        // Everyone sees them during the look.
+        expect(redactForDevice(g, HOST).memory?.cards).toEqual(g.memory.cards);
+        if (g.memory.until !== lastPeek) [lastPeek, peeks] = [g.memory.until, peeks + 1];
+      }
+      const hand = g.hand;
+      if (!hand?.removed) return;
+      expect(hand.removed).toHaveLength(20);
+      const used = [...hand.board, ...hand.seats.flatMap((s) => s.cards), ...hand.deck];
+      for (const c of used) expect(hand.removed).not.toContain(c);
+      // 32 cards in play, less one burned before each street.
+      const burned = hand.board.length === 0 ? 0 : hand.board.length - 2;
+      expect(used.length + burned).toBe(32);
+      expect(redactForDevice(g, HOST).hand!.removed).toEqual(hand.result ? hand.removed : undefined);
+      if (!sets.includes(hand.removed.join())) sets.push(hand.removed.join());
+    });
+    expect(peeks).toBeGreaterThan(5);
+    // A new 20 every hand.
+    expect(sets.length).toBeGreaterThan(5);
+  });
+
+  it('Bean Stalk deals everyone still in a card of their own on every street', () => {
+    let rivers = 0;
+    play('beanstalk', 30, (g) => {
+      const hand = g.hand;
+      if (!hand) return;
+      for (const s of hand.seats) if (!s.folded) expect(s.cards).toHaveLength(holeCountAt('beanstalk', hand.board.length));
+      if (hand.board.length === 5) rivers++;
+    });
+    expect(rivers).toBeGreaterThan(0);
+    // The best five of all ten: a flush from five hole cards alone.
+    expect(bestHand('beanstalk', h('2h 5h 9h Jh Kh'), h('Ac Ad 3s 4c 7d')).name).toBe('Flush');
+  });
+
+  it('Bean Stalk has cards for nine players right through the river', () => {
+    let g = table('beanstalk', 8);
+    const rng = seededRng(5);
+    let clock = 0;
+    let rivers = 0;
+    for (let i = 0; i < 4000 && (g.hands ?? 0) < 6 && g.status === 'playing'; i++) {
+      const hand = g.hand;
+      const host = g.players.find((p) => p.deviceId === HOST)!;
+      const mine = hand?.seats.find((s) => s.playerId === host.id);
+      const r =
+        hand && !hand.result && hand.toAct === host.id && mine
+          ? applyAction(g, { type: 'act', hand: hand.number, seq: hand.seq, move: options(g, hand, mine).canCheck ? 'check' : 'call' }, { deviceId: HOST, now: clock, rng })
+          : applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+      if (g.hand && g.hand.board.length === 5) {
+        for (const s of g.hand.seats) if (!s.folded) expect(s.cards).toHaveLength(5);
+        if (g.hand.seats.filter((s) => !s.folded).length >= 5) rivers++;
+      }
+    }
+    expect(rivers).toBeGreaterThan(0);
   });
 });
 

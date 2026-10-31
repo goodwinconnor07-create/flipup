@@ -3,7 +3,7 @@
 
 import { handRecord } from './record';
 import { fullDeck, isRed, shuffle, type Card } from './cards';
-import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, keepTwo, potLimit, streetCards, variantOf, type Variant } from './variants';
+import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
 
 export const TIMING = {
@@ -30,6 +30,8 @@ export const TIMING = {
   offlineClock: 15000,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
   startDelay: 3000,
+  /** Memory Poker: how long everyone sees the 20 cards taken out before the hand is dealt. */
+  memoryPeek: 9000,
   /** A heads-up game opens with the full-screen VS intro, which takes this long. The bot stays quiet until it's over. */
   versusDelay: 2600,
   /** After the intro, how long before the bot says hello. */
@@ -204,6 +206,16 @@ export function startHand(game: Game, ctx: ActionContext): void {
   // Bots that ran out of chips leave now (not straight after the hand, so their cards can still be seen).
   // People stay, and can buy back in if the table allows it.
   game.players = game.players.filter((p) => !p.leaving && !(p.bot && p.stack === 0));
+  // Memory Poker: first 20 cards come out and everyone gets a look; the hand is dealt when the look is over.
+  const picked = game.settings.variant ?? 'holdem';
+  if (picked === 'memory' && !game.memory) {
+    game.memory = { cards: shuffle(fullDeck(), ctx.rng).slice(0, MEMORY_REMOVED), until: ctx.now + TIMING.memoryPeek };
+    game.nextHandAt = game.memory.until;
+    schedule(game);
+    return;
+  }
+  const removed = picked === 'memory' ? game.memory?.cards : undefined;
+  game.memory = undefined;
   const players = dealable(game);
   const raised = raiseBlindsIfDue(game, ctx.now);
 
@@ -234,7 +246,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
   const sb = n === 2 ? b : (b + 1) % n;
   const bb = (sb + 1) % n;
 
-  const fixed = scene && person ? [...scene.hero, ...scene.board] : [];
+  const fixed = scene && person ? [...scene.hero, ...scene.board] : removed ?? [];
   const deck = shuffle(
     fullDeck().filter((c) => !fixed.includes(c)),
     ctx.rng,
@@ -289,6 +301,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     startStacks: Object.fromEntries(players.map((p) => [p.id, p.stack])),
     ...(variant !== 'holdem' ? { variant } : {}),
     ...(imposter ? { imposter } : {}),
+    ...(removed ? { removed } : {}),
     ...(ghost ? { ghost } : {}),
     ...(carry ? { carry } : {}),
   };
@@ -523,10 +536,19 @@ function dealStreet(game: Game, hand: Hand, rng: () => number): void {
   const next = NEXT_STREET[hand.street]!;
   const variant = variantOf(game);
   // Crazy Pineapple: anyone who still has three cards when the turn comes (all in, out of time) keeps their best two.
-  if (next === 'turn') for (const s of hand.seats) if (!s.folded && s.cards.length > 2) throwAway(game, s, null);
-  hand.deck.shift(); // burn
+  if (next === 'turn' && variant === 'pineapple') for (const s of hand.seats) if (!s.folded && s.cards.length > 2) throwAway(game, s, null);
+  if (burns(variant)) hand.deck.shift(); // burn
   const count = streetCards(variant, next as 'flop' | 'turn' | 'river');
   for (let i = 0; i < count; i++) hand.board.push(hand.deck.shift()!);
+  // Bean Stalk: everyone still in gets another card of their own, starting left of the button.
+  if (variant === 'beanstalk') {
+    const n = hand.seats.length;
+    const from = hand.seats.findIndex((s) => s.playerId === hand.buttonId);
+    for (let i = 1; i <= n; i++) {
+      const s = hand.seats[(from + i) % n];
+      if (!s.folded && hand.deck.length) s.cards.push(hand.deck.shift()!);
+    }
+  }
   hand.street = next;
   const label = next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';
   // Like Poker Now: the new card on its own after the ones already out.
@@ -594,7 +616,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
   }
 
   // Crazy Pineapple: after the flop betting everyone still in throws a card away. Bots do it at once.
-  if (hand.street === 'flop' && hand.seats.some((s) => !s.folded && s.cards.length > 2)) {
+  if (hand.street === 'flop' && variantOf(game) === 'pineapple' && hand.seats.some((s) => !s.folded && s.cards.length > 2)) {
     for (const s of hand.seats) if (!s.folded && s.cards.length > 2 && playerById(game, s.playerId)?.bot) throwAway(game, s, null);
     if (pendingDiscards(game).length) {
       hand.discarding = true;
@@ -622,7 +644,8 @@ function pauseBeforeNextStreet(game: Game, ctx: ActionContext): void {
 
 /** Seats still holding three cards while the table waits for discards. */
 export function pendingDiscards(game: Game): Seat[] {
-  return game.hand?.seats.filter((s) => !s.folded && s.cards.length > 2) ?? [];
+  if (!game.hand || variantOf(game) !== 'pineapple') return [];
+  return game.hand.seats.filter((s) => !s.folded && s.cards.length > 2);
 }
 
 /** Throws one card away: the one given, or (null) the one that leaves the best two. */

@@ -341,6 +341,10 @@
     --w: 120px;
   }
 
+  .my-cards.my-cards-many .pcard {
+    --w: 100px;
+  }
+
   .my-cards .pcard + .pcard {
     margin-left: -28px;
   }

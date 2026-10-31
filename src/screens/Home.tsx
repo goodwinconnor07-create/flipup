@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { fetchTableInfo } from '../state/api';
 import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { homeView, navigate, openSheet, toast, useApp } from '../state/store';
@@ -10,7 +10,7 @@ import { PartyTab } from './HomeParty';
 import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
-import { ChevronIcon, ChipIcon, PencilIcon, PersonIcon, PlusIcon, QrIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
+import { ChevronIcon, CloseIcon, ChipIcon, PencilIcon, PersonIcon, KeypadIcon, PlusIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 import { variantInfo } from '../game';
 
 function ago(at: number): string {
@@ -62,6 +62,25 @@ export function Home() {
   const named = profile.name.trim().length > 0;
   const [last, setLast] = useState(() => (active ? null : loadLastTable()));
   const [looking, setLooking] = useState(false);
+  // A table you left may have closed since. Look quietly and drop the banner if it has.
+  useEffect(() => {
+    if (!last) return;
+    let live = true;
+    fetchTableInfo(last.code)
+      .then((info) => {
+        if (!live || (info && info.status !== 'ended')) return;
+        saveLastTable(null);
+        setLast(null);
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [last?.code]);
+  const dismissLast = () => {
+    saveLastTable(null);
+    setLast(null);
+  };
   const [party] = useState(loadPartyRef);
   // The last online table, if it's still open, is one tap away.
   const rejoin = async () => {
@@ -90,12 +109,12 @@ export function Home() {
   };
 
   // The banner only shows when there's one clear next step: your open table, or the online table you left.
-  const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string } | null = active
+  const banner: { title: string; sub: string; cta: string; run: () => void; faces: string[]; tone: string; dismiss?: () => void } | null = active
     ? { title: 'Back to your table', sub: session.mode === 'online' ? `Table ${session.code}` : 'You vs the bots', cta: 'Back to the table', run: () => navigate({ name: 'table' }), faces: gameFaces ? gameFaces.split('|') : [], tone: 'slate' }
     : party
       ? { title: 'Your party', sub: `Code ${party.code}`, cta: 'Open the party', run: () => navigate({ name: 'party' }), faces: [], tone: 'slate' }
       : last
-      ? { title: 'Rejoin Lobby', sub: `Table ${last.code} · last played ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate' }
+      ? { title: `Table ${last.code}`, sub: `Left ${ago(last.at)}`, cta: looking ? 'Looking…' : 'Rejoin', run: () => void rejoin(), faces: last.faces ?? [], tone: 'slate', dismiss: dismissLast }
       : null;
   const index = TABS.findIndex((t) => t.id === tab);
   const current = TABS[index];
@@ -137,31 +156,27 @@ export function Home() {
             {tab === 'play' && (
               <>
                 {banner && (
-                  <button type="button" className={`hero hero-${banner.tone} press`} disabled={looking} onClick={(e) => colourWipe(e, banner.run)} aria-label={`${banner.title}. ${banner.sub}`}>
-                    <span className="hero-top">
-                      {banner.faces.length > 0 && (
-                        <span className="hero-faces" aria-hidden>
-                          {banner.faces.slice(0, 6).map((emoji, i) => (
-                            <Avatar key={i} emoji={emoji} size={36} />
-                          ))}
-                        </span>
-                      )}
-                      <span className="hero-title">{banner.title}</span>
-                      <span className="hero-sub">{banner.sub}</span>
-                    </span>
-                    <span className="hero-foot">
-                      {banner.cta}
-                      <ChevronIcon width={18} height={18} />
-                    </span>
-                  </button>
+                  <div className={`hero hero-row hero-${banner.tone}`}>
+                    <button type="button" className="hero-main press" disabled={looking} onClick={(e) => colourWipe(e, banner.run)} aria-label={`${banner.title}. ${banner.sub}. ${banner.cta}`}>
+                      <span className="hero-badge" aria-hidden>
+                        {banner.faces.length > 0 ? <Avatar emoji={banner.faces[0]} size={36} /> : <UsersIcon width={22} height={22} />}
+                      </span>
+                      <span className="hero-text">
+                        <span className="hero-title">{banner.title}</span>
+                        <span className="hero-sub">{banner.sub}</span>
+                      </span>
+                      <span className="hero-go">
+                        {banner.cta}
+                        <ChevronIcon width={16} height={16} />
+                      </span>
+                    </button>
+                    {banner.dismiss && (
+                      <button type="button" className="hero-x press" aria-label="Forget this table" onClick={banner.dismiss}>
+                        <CloseIcon width={16} height={16} />
+                      </button>
+                    )}
+                  </div>
                 )}
-                <button type="button" className="join-bar press" onClick={() => openSheet({ name: 'join' })} aria-label="Join a game with a code">
-                  <span className="join-bar-go" aria-hidden>
-                    <QrIcon width={26} height={26} />
-                  </span>
-                  <b>Join a game</b>
-                  <small>Got a code from a friend?</small>
-                </button>
                 <h3 className="section-head">Quick start</h3>
                 <GameShelf />
                 <section className="start-row" aria-label="Start a table">
@@ -210,7 +225,7 @@ export function Home() {
           ))}
         </div>
         <button type="button" className="tab-round glass press" aria-label="Join with a code" onClick={() => openSheet({ name: 'join' })}>
-          <QrIcon width={26} height={26} />
+          <KeypadIcon width={26} height={26} />
         </button>
       </nav>
     </div>

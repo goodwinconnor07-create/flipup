@@ -5,7 +5,7 @@ import { rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 
-export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter' | 'crucifix' | 'circle';
+export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter' | 'crucifix' | 'circle' | 'memory' | 'beanstalk';
 
 export interface VariantInfo {
   id: Variant;
@@ -134,6 +134,29 @@ export const VARIANTS: VariantInfo[] = [
       'You must use both of your cards. The app picks the best three in a row for you.',
     ],
   },
+  {
+    id: 'memory',
+    name: 'Memory Poker',
+    emoji: '🧠',
+    tagline: '20 cards come out of the deck. Remember which.',
+    rules: [
+      'Before every hand, 20 random cards are taken out of the deck and shown to everyone for a few seconds.',
+      'Then they\'re hidden and the hand is dealt from the 32 cards left. Nobody can have them and they can\'t come on the board.',
+      'Remember what\'s gone to work out your odds: if three aces are out, nobody has a set of aces.',
+      'Everything else is normal Texas Hold\'em.',
+    ],
+  },
+  {
+    id: 'beanstalk',
+    name: 'Bean Stalk',
+    emoji: '🌱',
+    tagline: 'Your hand grows: a new card for you on every street.',
+    rules: [
+      'You start with two cards, like normal Hold\'em.',
+      'When the flop comes, everyone still in gets another card of their own. The same again on the turn and on the river.',
+      'By the river you have five cards of your own and five on the board. Make your best five from all ten.',
+    ],
+  },
 ];
 
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
@@ -143,6 +166,15 @@ export const isVariant = (v: unknown): v is Variant => VARIANTS.some((x) => x.id
 
 /** Hole cards dealt to each player. */
 export const holeCount = (v: Variant) => (v === 'pineapple' ? 3 : 2);
+/** Hole cards each player has once the board has this many cards: Bean Stalk adds one on every street. */
+export function holeCountAt(v: Variant, boardLength: number): number {
+  if (v !== 'beanstalk') return holeCount(v);
+  return 2 + (boardLength >= 5 ? 3 : boardLength === 4 ? 2 : boardLength === 3 ? 1 : 0);
+}
+/** Memory Poker: cards taken out of the deck before each hand. */
+export const MEMORY_REMOVED = 20;
+/** A card is burned before each street (not in Bean Stalk, which needs them: nine players use up 50 cards). */
+export const burns = (v: Variant) => v !== 'beanstalk';
 /** Board cards dealt on each street. */
 export function streetCards(v: Variant, street: 'flop' | 'turn' | 'river'): number {
   if (v === 'crucifix') return street === 'flop' ? 5 : 2;
@@ -308,12 +340,17 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
 
 /**
  * The bots think in plain Hold'em: two hole cards and up to five board cards. In Crazy Pineapple a bot looks at the
- * two of its three cards it would keep; with a bigger board, at the five board cards its best hand uses. All public
+ * two of its three cards it would keep (in Bean Stalk, the two its best hand uses most); with a bigger board, at the five board cards its best hand uses. All public
  * (or its own) cards, so it never learns anything a player in its seat couldn't.
  */
 export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand: Hand; seat: Seat } {
   const v = variantOf(game);
-  const cards = seat.cards.length > 2 ? keepTwo(seat.cards, hand.board.slice(0, 3)) : seat.cards;
+  let cards = v === 'pineapple' && seat.cards.length > 2 ? keepTwo(seat.cards, hand.board.slice(0, 3)) : seat.cards;
+  if (cards.length > 2) {
+    // Bean Stalk: the two of its own cards its best hand leans on most.
+    const used = new Set(bestHand(v, cards, hand.board).best);
+    cards = [...cards.filter((c) => used.has(c)), ...cards.filter((c) => !used.has(c))].slice(0, 2);
+  }
   let board = hand.board;
   if (board.length > 5) {
     // Three rivers, a cross, a circle or a long red river: the five board cards that matter most to its hand (the

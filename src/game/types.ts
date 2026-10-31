@@ -258,6 +258,8 @@ export interface Hand {
   variant?: Variant;
   /** Die on the River: what the die rolled, and the board card it swapped (out) for a new one (in). A 6 swaps nothing. */
   dice?: { roll: number; out?: Card; in?: Card };
+  /** Memory Poker: the 20 cards taken out of the deck before this hand. Phones only get them once the hand is over. */
+  removed?: Card[];
   /** Imposter: the imposter's id. Phones only get it if it's them, or once the hand is over. */
   imposter?: string;
   /** Imposter: everyone dealt in is voting for who the imposter is. */
@@ -356,6 +358,8 @@ export interface Game {
   card?: CardScene;
   /** Ghost Hold'em: chips the ghost is holding, which go into the next hand's pot. */
   ghostPot?: number;
+  /** Memory Poker: the cards being taken out for the next hand, shown to everyone until it's dealt at `until`. Public. */
+  memory?: { cards: Card[]; until: number };
   /** This table is one round of a party tournament (see party.ts). Public. */
   party?: { code: string; round: number; total: number };
   /** Party rounds: player ids in the order they ran out of chips (or left), first out first. Campaign sit and gos keep it too. */

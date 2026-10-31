@@ -95,6 +95,12 @@ export const QrIcon = (p: P) => (
   </svg>
 );
 
+export const KeypadIcon = (p: P) => (
+  <svg {...stroke(p)}>
+    <path d="M6 5v.01M12 5v.01M18 5v.01M6 10.5v.01M12 10.5v.01M18 10.5v.01M6 16v.01M12 16v.01M18 16v.01M12 21v.01" strokeWidth="3.6" />
+  </svg>
+);
+
 export const UsersIcon = (p: P) => (
   <svg {...stroke(p)}>
     <circle cx="9" cy="8" r="3.5" />

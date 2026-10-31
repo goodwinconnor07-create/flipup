@@ -26,6 +26,8 @@ const ART: Record<Variant, GameArt> = {
   redriver: { card: ['#d92b2b', '#2a0606'], mood: 'The river runs red. Keep going until it stops.', pitch: 0.9, sting: 'splash' },
   crucifix: { card: ['#5a4691', '#1a1230'], mood: 'Five cards in a cross. Read the arms.', pitch: 0.92, sting: null },
   circle: { card: ['#1d7fb8', '#0a2a45'], mood: 'Six cards round a clock. Hours matter.', pitch: 1.05, sting: null },
+  memory: { card: ['#7b5cff', '#2a1670'], mood: 'Twenty cards gone. Do you remember which?', pitch: 1.08, sting: null },
+  beanstalk: { card: ['#4caf50', '#14532d'], mood: 'Your hand keeps growing. How high can it climb?', pitch: 1.1, sting: null },
   imposter: { card: ['#2f3441', '#0a0b10'], mood: 'Trust nobody. Watch the bets.', pitch: 0.88, sting: 'sting' },
 };
 

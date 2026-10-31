@@ -11,6 +11,7 @@ import { Final } from './Final';
 import { PartyPanel } from './Party';
 import { CampaignResult } from './CampaignResult';
 import { PrizeReel } from './table/PrizeReel';
+import { MemoryCountdown, MemoryPeek } from './table/MemoryPeek';
 import { forgetParty } from '../state/party';
 import { SidePanel } from './SidePanel';
 import { useDesktop } from '../ui/useDesktop';
@@ -467,7 +468,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                   {role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
                 </button>
               )}
-              {hand && (
+              {hand && !game.memory && (
                 <span className="pot-pill" aria-label={`Pot ${chips(pot(hand))}`}>
                   <i className="pot-chip" aria-hidden />
                   <small>Pot</small> <Count value={potNow} />
@@ -480,32 +481,38 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 🎲 {hand.dice.out ? <CardText text={`Rolled ${hand.dice.roll}: [${hand.dice.out}] → [${hand.dice.in}]`} /> : `Rolled ${hand.dice.roll}: the board stays`}
               </p>
             )}
-            <div
-              className={`board${shape ? ` board-${shape}` : boardSlots > 5 ? ' board-wide' : ''}${variant === 'pittsburgh' ? ' board-rivers' : ''}`}
-              aria-label="Board"
-            >
-              {Array.from({ length: boardSlots }, (_, i) => i).map((i) => {
-                const c = hand?.board[i];
-                const size = boardSlots > 5 || shape ? 'md' : 'lg';
-                return c ? (
-                  <PlayingCard
-                    key={`${hand!.number}-${c}`}
-                    card={c}
-                    size={size}
-                    dim={dim(c)}
-                    glow={glow(c)}
-                    flip
-                    pack={me?.cardPack}
-                    delay={i < streetCards(variant, 'flop') ? i * 160 : 0}
-                    style={place(i)}
-                  />
-                ) : (
-                  <CardSlot key={`slot-${i}`} size={size} style={place(i)} />
-                );
-              })}
-            </div>
+            {game.memory ? (
+              <MemoryPeek game={game} pack={me?.cardPack} />
+            ) : (
+              <div
+                className={`board${shape ? ` board-${shape}` : boardSlots > 5 ? ' board-wide' : ''}${variant === 'pittsburgh' ? ' board-rivers' : ''}`}
+                aria-label="Board"
+              >
+                {Array.from({ length: boardSlots }, (_, i) => i).map((i) => {
+                  const c = hand?.board[i];
+                  const size = boardSlots > 5 || shape ? 'md' : 'lg';
+                  return c ? (
+                    <PlayingCard
+                      key={`${hand!.number}-${c}`}
+                      card={c}
+                      size={size}
+                      dim={dim(c)}
+                      glow={glow(c)}
+                      flip
+                      pack={me?.cardPack}
+                      delay={i < streetCards(variant, 'flop') ? i * 160 : 0}
+                      style={place(i)}
+                    />
+                  ) : (
+                    <CardSlot key={`slot-${i}`} size={size} style={place(i)} />
+                  );
+                })}
+              </div>
+            )}
             <div className="table-foot">
-              {hand?.result ? (
+              {game.memory ? (
+                <MemoryCountdown game={game} />
+              ) : hand?.result ? (
                 <WinBanner game={game} />
               ) : pillName ? (
                 <span key={pillName} className="hand-pill pop">
@@ -526,7 +533,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       </div>
 
       <div className={`me-area${canShow ? ' has-show' : ''}`}>
-        <div className="my-cards">
+        <div className={`my-cards${(mySeat?.cards.length ?? 0) > 3 ? ' my-cards-many' : ''}`}>
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
               <PlayingCard

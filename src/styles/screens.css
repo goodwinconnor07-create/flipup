@@ -1849,6 +1849,56 @@ html[data-theme='dark'] .btn-dark {
   --theme-glow: var(--theme-circle-glow);
 }
 
+.theme-memory {
+  --theme-felt: var(--theme-memory-felt);
+  --theme-rail-a: var(--theme-memory-rail-a);
+  --theme-rail-b: var(--theme-memory-rail-b);
+  --theme-glow: var(--theme-memory-glow);
+}
+
+.theme-beanstalk {
+  --theme-felt: var(--theme-beanstalk-felt);
+  --theme-rail-a: var(--theme-beanstalk-rail-a);
+  --theme-rail-b: var(--theme-beanstalk-rail-b);
+  --theme-glow: var(--theme-beanstalk-glow);
+}
+
+/* Memory Poker: the 20 cards taken out, ten to a row where the board goes, until the hand is dealt. */
+.memory-peek {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(10, auto);
+  gap: 4px;
+  justify-content: center;
+}
+
+/* Bean Stalk: up to five cards of your own, a little smaller and tucked closer so they fit beside your box. */
+.my-cards.my-cards-many .pcard {
+  --w: 76px;
+}
+
+.my-cards.my-cards-many .pcard + .pcard {
+  margin-left: calc(var(--w) * -0.5);
+}
+
+@media (max-height: 690px) and (max-width: 959px) {
+  .my-cards.my-cards-many .pcard {
+    --w: 64px;
+  }
+}
+
+@media (max-height: 650px) and (max-width: 959px) {
+  .my-cards.my-cards-many .pcard {
+    --w: 58px;
+  }
+}
+
+/* ...and everyone else's five fanned tight, so the seats don't run into each other. */
+.pod-cards.pod-cards-many .pcard + .pcard {
+  margin-left: calc(var(--w) * -0.62);
+}
+
 /* Crucifix: nine cards in a cross on a 5×5 grid (the card spots come from CROSS_CELLS). */
 .board.board-cross {
   --cw: 30px;

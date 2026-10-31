@@ -1621,11 +1621,16 @@ html[data-theme='dark'] .tab-capsule {
 }
 
 /* Play: the two start tiles come first and are short. A face sits at the right with a small speech bubble
-   over it, both inside the tile. The bubble says a different line every few seconds. */
+   over it that pokes out past the top edge of the tile. The bubble says a different line every few seconds. */
+.start-row {
+  margin-top: 8px;
+}
+
 .start-tile {
-  min-height: 140px;
-  padding-top: 46px;
+  min-height: 132px;
+  padding-top: 28px;
   justify-content: flex-start;
+  overflow: visible;
 }
 
 .start-tile b,
@@ -1635,8 +1640,8 @@ html[data-theme='dark'] .tab-capsule {
 
 .start-face {
   position: absolute;
-  top: 42px;
-  right: 12px;
+  top: 24px;
+  right: 8px;
   font-size: 44px;
   line-height: 1;
   transform: rotate(8deg);
@@ -1646,8 +1651,8 @@ html[data-theme='dark'] .tab-capsule {
 /* Every line sits in the same grid cell, so the bubble is as wide as the longest one and never changes size. */
 .start-bubble {
   position: absolute;
-  top: 10px;
-  right: 8px;
+  top: -12px;
+  right: 2px;
   z-index: 1;
   display: grid;
   padding: 5px 10px;

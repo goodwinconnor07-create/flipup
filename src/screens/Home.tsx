@@ -177,6 +177,12 @@ export function Home() {
                 )}
                 <section className="start-row" aria-label="Start a table">
                   <button type="button" className="start-tile start-blue press" onClick={() => go('host')}>
+                    <span className="start-bubble" aria-hidden style={{ ['--d' as string]: '0s' }}>
+                        <span style={{ ['--i' as string]: 0 }}>Who's in?</span>
+                        <span style={{ ['--i' as string]: 1 }}>Deal me in</span>
+                        <span style={{ ['--i' as string]: 2 }}>Loser deals</span>
+                        <span style={{ ['--i' as string]: 3 }}>Snacks?</span>
+                    </span>
                     <span className="start-face" aria-hidden>
                       🥳
                     </span>
@@ -184,6 +190,12 @@ export function Home() {
                     <small>Share a code</small>
                   </button>
                   <button type="button" className="start-tile start-green press" onClick={() => go('bots')}>
+                    <span className="start-bubble" aria-hidden style={{ ['--d' as string]: '2s' }}>
+                        <span style={{ ['--i' as string]: 0 }}>Try me</span>
+                        <span style={{ ['--i' as string]: 1 }}>Beep boop</span>
+                        <span style={{ ['--i' as string]: 2 }}>Easy win?</span>
+                        <span style={{ ['--i' as string]: 3 }}>Bring it</span>
+                    </span>
                     <span className="start-face" aria-hidden>
                       🦊
                     </span>

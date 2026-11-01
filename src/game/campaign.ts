@@ -344,6 +344,8 @@ export interface Campaign {
   daily: Daily | null;
   /** The last day the free daily spin was used. */
   spinDay: string | null;
+  /** What today's spin landed on but hasn't paid yet: it's paid when the wheel stops, not when it starts turning. */
+  spinOwed: number;
   /** Chips won at the tables, the wheel and from bounties this week (less what was lost), and last week's. */
   week: { key: string; won: number } | null;
   lastWeek: { key: string; won: number } | null;
@@ -369,6 +371,7 @@ export function newCampaign(): Campaign {
     streak: 0,
     daily: null,
     spinDay: null,
+    spinOwed: 0,
     week: null,
     lastWeek: null,
     brag: null,
@@ -438,10 +441,21 @@ export function drawDailySpin(rng: () => number): number {
   return DAILY_SPIN[0][0];
 }
 
-/** Takes today's free spin (once a day). */
-export function takeDailySpin(c: Campaign, today: string, won: number): Campaign {
+/** Starts today's free spin (once a day): the day is used and the prize is held until the wheel stops. */
+export function startDailySpin(c: Campaign, today: string, won: number): Campaign {
   if (c.spinDay === today) return c;
-  return withPeak({ ...c, chips: c.chips + won, spinDay: today });
+  return { ...c, spinDay: today, spinOwed: c.spinOwed + won };
+}
+
+/** Pays what the spin landed on into the bankroll. Paying twice does nothing. */
+export function payDailySpin(c: Campaign): Campaign {
+  if (!c.spinOwed) return c;
+  return withPeak({ ...c, chips: c.chips + c.spinOwed, spinOwed: 0 });
+}
+
+/** Takes today's free spin in one go (start and pay). */
+export function takeDailySpin(c: Campaign, today: string, won: number): Campaign {
+  return payDailySpin(startDailySpin(c, today, won));
 }
 
 /** How often a tournament comes with a bounty on one of its bots, and what it pays (a few buy-ins). */
@@ -844,6 +858,7 @@ export function cleanCampaign(raw: unknown): Campaign {
     streak: num(r.streak),
     daily: r.daily && typeof r.daily.day === 'string' && Array.isArray(r.daily.picks) ? { day: r.daily.day, picks: r.daily.picks, progress: r.daily.progress ?? {}, claimed: r.daily.claimed ?? [], bonus: !!r.daily.bonus } : null,
     spinDay: typeof r.spinDay === 'string' ? r.spinDay : null,
+    spinOwed: num(r.spinOwed),
     week: r.week && typeof r.week.key === 'string' && typeof r.week.won === 'number' ? r.week : null,
     lastWeek: r.lastWeek && typeof r.lastWeek.key === 'string' && typeof r.lastWeek.won === 'number' ? r.lastWeek : null,
     brag: r.brag && typeof r.brag.kind === 'string' ? r.brag : null,

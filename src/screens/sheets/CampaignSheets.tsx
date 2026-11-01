@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cashMax, DAILY_SPIN, FORMATS, goalDone, goals, isOpen, STAKES, topDraw, VENUES } from '../../game';
 import { useCampaign } from '../../state/campaign';
-import { closeSheet, openCampaignForFriends, takeFreeSpin, useApp } from '../../state/store';
+import { closeSheet, openCampaignForFriends, payFreeSpin, takeFreeSpin, useApp } from '../../state/store';
 import { today } from '../../state/campaign';
 import { confetti, haptic, reducedMotion } from '../../ui/effects';
 import { playSound } from '../../ui/sound';
@@ -116,7 +116,14 @@ export function DailySpinSheet() {
   const [turn, setTurn] = useState(0);
   const [done, setDone] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
+  // Closed before the wheel stopped: the prize is still paid.
+  useEffect(
+    () => () => {
+      clearTimeout(timer.current);
+      payFreeSpin();
+    },
+    [],
+  );
   const used = c.spinDay === today() && won === null;
 
   const spin = () => {
@@ -131,6 +138,7 @@ export function DailySpinSheet() {
     playSound('shuffle');
     timer.current = setTimeout(
       () => {
+        payFreeSpin();
         setDone(true);
         haptic('success');
         playSound(prize >= 1000 ? 'victory' : 'collect');

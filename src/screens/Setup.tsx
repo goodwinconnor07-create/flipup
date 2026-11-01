@@ -2,13 +2,13 @@ import { useEffect, useState } from 'react';
 import { BLIND_CAP_CHOICES, BLIND_LEVELS, DEFAULT_SETTINGS, LEGENDS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings, type Variant } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
-import { BackBar, Choice, chips, Toggle } from '../ui/components';
-import { ChevronIcon, MinusIcon, PlusIcon } from '../ui/Icons';
+import { BackBar, Choice, chips, Group, StepRow, SwitchRow } from '../ui/components';
+import { ChevronIcon } from '../ui/Icons';
 import { BOTS } from '../game/botStyles';
 import { BotPicker } from './BotPicker';
 import { GameRow, withVariant } from './GamePicker';
 
-const RANDOM = 'Random table (recommended)';
+const RANDOM = 'Random table';
 const PICK = 'Pick your bots';
 
 /** The longest wait between blind rises on the slider (0 is never). */
@@ -33,87 +33,66 @@ export function SettingsFields({
 }) {
   const levels = levelsFor(settings.startingStack);
   const blindKey = blindsLabel([settings.smallBlind, settings.bigBlind]);
+  const blindsFoot = settings.blindMinutes
+    ? `Blinds rise every ${settings.blindMinutes} min${settings.blindCap ? `, up to ${blindsLabel([settings.blindCap / 2, settings.blindCap])}` : ''}.`
+    : 'The blinds stay the same all game.';
   return (
     <>
       <GameRow settings={settings} onChange={onChange} />
-      <Choice
-        label="Starting chips"
-        value={settings.startingStack}
-        options={STACK_CHOICES}
-        format={chips}
-        onChange={(startingStack) => {
-          // Keep the blinds sensible for the new stack (at least 10 big blinds deep).
-          const fits = levelsFor(startingStack);
-          const keep = fits.some(([sb, bb]) => sb === settings.smallBlind && bb === settings.bigBlind);
-          const [smallBlind, bigBlind] = keep ? [settings.smallBlind, settings.bigBlind] : fits[fits.length - 1];
-          onChange({ ...settings, startingStack, smallBlind, bigBlind });
-        }}
-      />
-      <Choice
-        label="Blinds"
-        columns={levels.length <= 5 ? levels.length : 3}
-        value={blindKey}
-        options={levels.map(blindsLabel)}
-        onChange={(label) => {
-          const [smallBlind, bigBlind] = levels.find((l) => blindsLabel(l) === label)!;
-          onChange({ ...settings, smallBlind, bigBlind });
-        }}
-      />
-      <div className="choice">
-        <p className="section-title slider-title">
-          <span>Blinds go up every</span>
-          <b className="num">{settings.blindMinutes ? `${settings.blindMinutes} min` : 'Never'}</b>
-        </p>
-        <input
-          type="range"
-          className="raise-slider"
-          aria-label="Blinds go up every"
-          min={0}
-          max={BLIND_MINUTE_MAX}
-          step={1}
+      <Group title="Chips and blinds" footer={blindsFoot}>
+        <StepRow
+          label="Starting chips"
+          value={settings.startingStack}
+          options={STACK_CHOICES}
+          format={chips}
+          onChange={(startingStack) => {
+            // Keep the blinds sensible for the new stack (at least 10 big blinds deep).
+            const fits = levelsFor(startingStack);
+            const keep = fits.some(([sb, bb]) => sb === settings.smallBlind && bb === settings.bigBlind);
+            const [smallBlind, bigBlind] = keep ? [settings.smallBlind, settings.bigBlind] : fits[fits.length - 1];
+            onChange({ ...settings, startingStack, smallBlind, bigBlind });
+          }}
+        />
+        <StepRow
+          label="Blinds"
+          value={blindKey}
+          options={levels.map(blindsLabel)}
+          onChange={(label) => {
+            const [smallBlind, bigBlind] = levels.find((l) => blindsLabel(l) === label)!;
+            onChange({ ...settings, smallBlind, bigBlind });
+          }}
+        />
+        <StepRow
+          label="Blinds go up every"
           value={settings.blindMinutes ?? 0}
-          onChange={(e) => onChange({ ...settings, blindMinutes: Number(e.target.value) })}
+          options={Array.from({ length: BLIND_MINUTE_MAX + 1 }, (_, i) => i)}
+          format={(m) => (m ? `${m} min` : 'Never')}
+          onChange={(blindMinutes) => onChange({ ...settings, blindMinutes })}
         />
-        <div className="slider-ends" aria-hidden>
-          <span>Never</span>
-          <span>{BLIND_MINUTE_MAX} min</span>
-        </div>
-      </div>
-      {!!settings.blindMinutes && (
-        <Choice
-          label="Blinds stop increasing at"
-          columns={3}
-          value={settings.blindCap ?? 0}
-          options={[0, ...BLIND_CAP_CHOICES.filter((c) => c > 0 && (c > settings.bigBlind || c === settings.blindCap))]}
-          format={(c) => (c === 0 ? 'No limit' : blindsLabel([c / 2, c]))}
-          onChange={(blindCap) => onChange({ ...settings, blindCap })}
-        />
-      )}
-      {timer && (
-        <Choice
-          label="Time to act"
-          value={settings.turnSeconds}
-          options={TIMER_CHOICES}
-          format={timerLabel}
-          onChange={(turnSeconds) => onChange({ ...settings, turnSeconds })}
-        />
-      )}
-      <div className="tile-flat toggles">
-        <Toggle
-          label="Rebuys"
-          hint="Busted players can buy back in"
-          on={settings.rebuys}
-          onChange={(rebuys) => onChange({ ...settings, rebuys })}
-        />
+        {!!settings.blindMinutes && (
+          <StepRow
+            label="Blinds stop at"
+            value={settings.blindCap ?? 0}
+            options={[0, ...BLIND_CAP_CHOICES.filter((c) => c > 0 && (c > settings.bigBlind || c === settings.blindCap))]}
+            format={(c) => (c === 0 ? 'No limit' : blindsLabel([c / 2, c]))}
+            onChange={(blindCap) => onChange({ ...settings, blindCap })}
+          />
+        )}
+      </Group>
+      <Group title="House rules">
         {timer && (
-          <Toggle
+          <StepRow label="Time to act" value={settings.turnSeconds} options={TIMER_CHOICES} format={timerLabel} onChange={(turnSeconds) => onChange({ ...settings, turnSeconds })} />
+        )}
+        <SwitchRow label="Rebuys" hint="Busted players can buy back in" on={settings.rebuys} onChange={(rebuys) => onChange({ ...settings, rebuys })} />
+        {timer && (
+          <SwitchRow
             label="Busted players peek"
             hint="Once you're out of chips, you see everyone's cards"
             on={!!settings.showToBusted}
             onChange={(showToBusted) => onChange({ ...settings, showToBusted })}
           />
         )}
-      </div>
+      </Group>
     </>
   );
 }
@@ -162,7 +141,7 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
       <BackBar title={mode === 'online' ? 'Host a table' : 'Play the bots'} />
       <div className="screen-body">
         <h1 className="h1">{mode === 'online' ? 'Set up the table' : 'You vs the bots'}</h1>
-        {mode === 'local' && <Choice label="Who plays" value={how} options={[RANDOM, PICK]} onChange={setHow} columns={1} />}
+        {mode === 'local' && <Choice label="Who plays" value={how} options={[RANDOM, PICK]} onChange={setHow} />}
         {choosing ? (
           <button type="button" className="picked-row press" onClick={() => setPicking(true)}>
             <span className="picked-faces">
@@ -173,37 +152,9 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
             <ChevronIcon width={20} height={20} aria-hidden />
           </button>
         ) : (
-          <div className="bots-row">
-            <div>
-              <b>Bots</b>
-              <small className="muted">
-                {mode === 'online' ? 'Fill seats your friends leave empty' : 'Computer players at your table'}
-              </small>
-            </div>
-            <div className="mini-stepper">
-              <button
-                type="button"
-                className="icon-btn press"
-                aria-label="One less bot"
-                disabled={bots <= minBots}
-                onClick={() => setBots(bots - 1)}
-              >
-                <MinusIcon />
-              </button>
-              <b className="num" aria-live="polite" aria-label={`${bots} bots`}>
-                {bots}
-              </b>
-              <button
-                type="button"
-                className="icon-btn press"
-                aria-label="One more bot"
-                disabled={bots >= MAX_SEATS - 1}
-                onClick={() => setBots(bots + 1)}
-              >
-                <PlusIcon />
-              </button>
-            </div>
-          </div>
+          <Group footer={mode === 'online' ? 'Bots fill seats your friends leave empty.' : 'Computer players at your table.'}>
+            <StepRow label="Bots" value={bots} options={Array.from({ length: MAX_SEATS - 1 - minBots }, (_, i) => i + minBots)} onChange={setBots} buttons={['One less bot', 'One more bot']} />
+          </Group>
         )}
         <SettingsFields settings={settings} onChange={setSettings} timer={mode === 'online'} />
       </div>

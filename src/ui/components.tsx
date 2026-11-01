@@ -15,7 +15,7 @@ import {
 } from '../game';
 import { back, closeSheet, dismissToast, useApp } from '../state/store';
 import { haptic, reducedMotion } from './effects';
-import { BackIcon, CloseIcon, LockIcon, PencilIcon } from './Icons';
+import { BackIcon, CloseIcon, LockIcon, MinusIcon, PencilIcon, PlusIcon } from './Icons';
 
 /** 1,240 */
 export function chips(n: number): string {
@@ -262,6 +262,86 @@ export function Toggle({ label, hint, on, onChange }: { label: string; hint?: st
       <span className="toggle-text">
         <b>{label}</b>
         {hint && <small className="muted">{hint}</small>}
+      </span>
+      <span className={`toggle${on ? ' on' : ''}`} aria-hidden />
+    </button>
+  );
+}
+
+/** An iPhone-style settings group: a small grey title above, rounded rows with hairlines, a grey footnote below. */
+export function Group({ title, footer, children }: { title?: string; footer?: ReactNode; children: ReactNode }) {
+  return (
+    <section className="set-group">
+      {title && <h2 className="set-title">{title}</h2>}
+      <div className="set-rows">{children}</div>
+      {footer && <p className="set-foot">{footer}</p>}
+    </section>
+  );
+}
+
+/** A label on the left, the value and a small − | + on the right. Steps through `options` in order. */
+export function StepRow<T extends string | number>({
+  label,
+  hint,
+  value,
+  options,
+  onChange,
+  format = String,
+  buttons,
+}: {
+  label: string;
+  hint?: string;
+  value: T;
+  options: T[];
+  onChange: (value: T) => void;
+  format?: (value: T) => string;
+  /** What a screen reader calls the two buttons (less, more). */
+  buttons?: [string, string];
+}) {
+  const at = Math.max(0, options.indexOf(value));
+  const step = (d: number) => {
+    const next = options[at + d];
+    if (next === undefined) return;
+    haptic('light');
+    onChange(next);
+  };
+  return (
+    <div className="set-row">
+      <span className="set-text">
+        <span className="set-label">{label}</span>
+        {hint && <small className="set-hint">{hint}</small>}
+      </span>
+      <span className="set-value num" aria-live="polite">
+        {format(value)}
+      </span>
+      <span className="set-step" role="group" aria-label={label}>
+        <button type="button" className="press" aria-label={buttons?.[0] ?? `Less ${label}`} disabled={at <= 0} onClick={() => step(-1)}>
+          <MinusIcon width={18} height={18} />
+        </button>
+        <button type="button" className="press" aria-label={buttons?.[1] ?? `More ${label}`} disabled={at >= options.length - 1} onClick={() => step(1)}>
+          <PlusIcon width={18} height={18} />
+        </button>
+      </span>
+    </div>
+  );
+}
+
+/** A label (with a grey line under it if you give a hint) and an iPhone switch. */
+export function SwitchRow({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (on: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      className="set-row set-switch"
+      onClick={() => {
+        haptic('light');
+        onChange(!on);
+      }}
+    >
+      <span className="set-text">
+        <span className="set-label">{label}</span>
+        {hint && <small className="set-hint">{hint}</small>}
       </span>
       <span className={`toggle${on ? ' on' : ''}`} aria-hidden />
     </button>

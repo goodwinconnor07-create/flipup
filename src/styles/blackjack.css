@@ -175,10 +175,13 @@
 
 /* ── The table ─────────────────────────────────────────────────────────────────────── */
 
+/* The whole table fits the screen: nothing on it ever scrolls. The felt is a size container, so the cards and
+   seats on it shrink to the room it has (a short phone, Safari's bars showing) instead of spilling off the end. */
 .screen.bj-screen {
   height: 100dvh;
   min-height: 0;
   padding-bottom: 0;
+  overflow: hidden;
 }
 
 .bj-screen .topbar {
@@ -197,21 +200,23 @@
   position: relative;
   flex: 1;
   min-height: 0;
+  container-type: size;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
+  gap: clamp(4px, 2cqh, 12px);
   margin: 0 -16px;
-  padding: 12px 16px 28px;
-  overflow-y: auto;
+  padding: 8px 16px clamp(20px, 5cqh, 28px);
+  overflow: hidden;
   color: var(--bj-ink);
   background:
     radial-gradient(140% 70% at 50% 0%, rgba(255, 255, 255, 0.1), transparent 60%),
     radial-gradient(120% 100% at 50% 30%, var(--bj-felt-a), var(--bj-felt-b) 70%, var(--bj-felt-c));
-  border-radius: 0 0 50% 50% / 0 0 64px 64px;
+  border-radius: 0 0 50% 50% / 0 0 48px 48px;
   box-shadow:
-    inset 0 -12px 0 var(--bj-rail-a),
-    inset 0 -16px 0 var(--bj-rail-b),
+    inset 0 -10px 0 var(--bj-rail-a),
+    inset 0 -14px 0 var(--bj-rail-b),
     inset 0 2px 12px rgba(0, 0, 0, 0.35);
 }
 
@@ -219,17 +224,41 @@
   opacity: 0.6;
 }
 
+/* Card sizes follow the felt's height: big on a tall phone, smaller on a short one. */
+.bj-felt .bj-dealer-cards .pcard {
+  --w: clamp(36px, 10cqh, 56px);
+}
+
+.bj-felt .bj-fan .pcard {
+  --w: clamp(42px, 13cqh, 76px);
+}
+
+.bj-felt .bj-hand.two .bj-fan .pcard {
+  --w: clamp(36px, 10cqh, 56px);
+}
+
 .bj-dealer {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: clamp(4px, 1.5cqh, 10px);
   width: 100%;
+  flex: none;
+}
+
+/* Vincent, what he's saying and the shoe share one row, so his lines never push the table down. */
+.bj-dealer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
 }
 
 .bj-dealer-who {
   position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -238,28 +267,29 @@
 .bj-dealer-face {
   display: grid;
   place-items: center;
-  width: 64px;
-  height: 64px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
-  font-size: 40px;
+  font-size: 28px;
   line-height: 1;
   background: rgba(0, 0, 0, 0.25);
-  box-shadow: 0 0 0 3px var(--rl-gold);
+  box-shadow: 0 0 0 2px var(--rl-gold);
 }
 
 .bj-plate {
+  position: relative;
   margin-top: -8px;
-  padding: 2px 12px;
+  padding: 1px 8px;
   border-radius: var(--r-pill);
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--rl-black);
   background: var(--rl-gold);
 }
 
-/* What someone says: a white capsule beside them. Vincent's sits to his right, a player's above their seat. */
+/* What someone says: a white capsule. Vincent's fills his row; a player's floats above their seat. */
 .bj-say {
   position: absolute;
   z-index: 3;
@@ -273,12 +303,6 @@
   color: var(--rl-black);
   background: var(--on-color);
   box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.55);
-}
-
-.bj-say-dealer {
-  top: 4px;
-  left: calc(100% + 8px);
-  max-width: min(200px, calc(50vw - 56px));
 }
 
 .bj-say-seat {
@@ -314,8 +338,9 @@
   margin-left: calc(var(--w) * -0.42);
 }
 
+/* Room for two cards before they're dealt, so the table doesn't jump when they land. */
 .bj-dealer-cards {
-  min-height: 72px;
+  min-height: calc(clamp(36px, 10cqh, 56px) * 1.4);
   gap: 0;
 }
 
@@ -368,42 +393,42 @@
   font-weight: 700;
 }
 
-/* The shoe, top left, its cards going down as the night goes on. */
+/* The shoe, at the end of Vincent's row, its cards going down as the night goes on. */
 .bj-shoe {
-  position: absolute;
-  top: 8px;
-  left: 0;
+  flex: none;
   display: flex;
   align-items: flex-end;
-  width: 20px;
-  height: 56px;
+  width: 16px;
+  height: 40px;
+  margin-left: auto;
   padding: 2px;
-  border-radius: 6px;
+  border-radius: 5px;
   background: rgba(0, 0, 0, 0.35);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.15);
 }
 
 .bj-shoe i {
   width: 100%;
-  border-radius: 4px;
+  border-radius: 3px;
   background: repeating-linear-gradient(0deg, var(--on-color) 0 2px, #c7c7cc 2px 3px);
   transition: height 0.4s ease;
 }
 
 .bj-print {
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2px;
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--bj-print);
 }
 
 .bj-print b {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -411,23 +436,36 @@
   opacity: 0.8;
 }
 
+/* A short felt keeps only the headline, and a very short one drops it too. */
+@container (max-height: 520px) {
+  .bj-print span {
+    display: none;
+  }
+}
+
+@container (max-height: 430px) {
+  .bj-print {
+    display: none;
+  }
+}
+
 .bj-others {
+  flex: none;
   display: flex;
   justify-content: center;
   gap: 8px;
   width: 100%;
-  margin-top: 16px;
 }
 
 .bj-seat {
   flex: 1 1 0;
   min-width: 0;
-  max-width: 128px;
+  max-width: 150px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 8px 4px;
+  gap: 6px;
+  padding: 6px 6px 8px;
   border-radius: var(--r-lg);
   background: var(--bj-cell);
   transition: background 0.2s ease;
@@ -442,23 +480,39 @@
   opacity: 0.55;
 }
 
-.bj-seat-who {
+/* Face and name side by side: half the height of stacking them. */
+.bj-seat-top {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.bj-seat-who {
+  flex: none;
 }
 
 .bj-seat-name {
   display: flex;
   align-items: center;
   gap: 4px;
-  max-width: 100%;
-  overflow: hidden;
+  min-width: 0;
   font-size: 13px;
   font-weight: 600;
   white-space: nowrap;
 }
 
+.bj-seat-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .bj-bot,
 .bj-off {
+  flex: none;
   padding: 0 4px;
   border-radius: 4px;
   font-size: 9px;
@@ -476,7 +530,7 @@
   display: flex;
   justify-content: center;
   gap: 4px;
-  min-height: 52px;
+  min-height: 60px;
 }
 
 .bj-mini {
@@ -496,30 +550,36 @@
   color: var(--bj-ink-2);
 }
 
+@container (max-height: 430px) {
+  .bj-seat-hands {
+    min-height: 0;
+  }
+}
+
 /* Your spot, nearest you on the curve. */
 .bj-me {
   position: relative;
+  flex: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   width: 100%;
-  margin-top: auto;
-  padding-top: 24px;
 }
 
 .bj-my-hands {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: 8px;
   width: 100%;
 }
 
 .bj-hand {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 8px;
+  padding: 6px;
   border-radius: var(--r-lg);
   transition: background 0.2s ease;
 }
@@ -529,24 +589,36 @@
   box-shadow: inset 0 0 0 2px var(--rl-gold);
 }
 
+/* The total and your chips on one line under the cards. */
+.bj-hand-foot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .bj-fan {
-  min-height: 96px;
+  min-height: calc(clamp(42px, 13cqh, 76px) * 1.4);
+}
+
+.bj-hand.two .bj-fan {
+  min-height: calc(clamp(36px, 10cqh, 56px) * 1.4);
 }
 
 .bj-spot {
   display: grid;
   place-items: center;
-  padding: 16px 0;
 }
 
 .bj-circle {
   display: grid;
   place-items: center;
-  width: 120px;
-  height: 120px;
-  padding: 16px;
+  width: clamp(88px, 24cqh, 120px);
+  height: clamp(88px, 24cqh, 120px);
+  padding: 12px;
   border-radius: 50%;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-align: center;
@@ -579,8 +651,12 @@
 
 /* ── The bar under the table ───────────────────────────────────────────────────────── */
 
+/* Every state of the bar is the betting bar's height, so the felt above it never changes size mid-round. */
 .bj-bar {
   z-index: 2;
+  flex: none;
+  justify-content: center;
+  min-height: calc(140px + var(--safe-bottom, 0px));
 }
 
 .bj-status {
@@ -726,13 +802,13 @@
   max-width: none;
 }
 
-/* Vincent's line gets its own row under his name, the width of the table, so it can show more words at once. */
+/* Vincent's line fills the rest of his row, between him and the shoe. */
 .bj-dealer-say {
   position: relative;
+  flex: 1;
+  min-width: 0;
   display: flex;
-  justify-content: center;
-  width: 100%;
-  min-height: 44px;
+  align-items: center;
 }
 
 .bj-say-dealer.bj-ticker {
@@ -743,6 +819,6 @@
 .bj-say-dealer.bj-ticker .bubble {
   position: static;
   translate: none;
-  max-width: calc(100vw - 48px);
-  font-size: 16px;
+  max-width: 100%;
+  font-size: 15px;
 }

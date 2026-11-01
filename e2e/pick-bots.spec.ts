@@ -9,7 +9,7 @@ test('pick your own bots from the full roster, grouped by playstyle', async ({ p
   await page.getByRole('button', { name: 'Next' }).click();
 
   // Random is the default, and it's the recommended one.
-  await expect(page.getByRole('radio', { name: 'Random table (recommended)' })).toHaveAttribute('aria-checked', 'true');
+  await expect(page.getByRole('radio', { name: 'Random table' })).toHaveAttribute('aria-checked', 'true');
   await page.getByRole('radio', { name: 'Pick your bots' }).click();
   await expect(page.getByRole('button', { name: 'Pick your bots first' })).toBeDisabled();
   await page.getByRole('button', { name: /Choose your bots/ }).click();

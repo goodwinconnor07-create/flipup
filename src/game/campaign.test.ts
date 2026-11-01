@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { dulled } from './botStyles';
 import {
   applyAction,
+  payDailySpin,
+  startDailySpin,
+  takeDailySpin,
   buyAgain,
   cashBuyIn,
   cashMin,
@@ -442,5 +445,22 @@ describe('campaign extras', () => {
     // No boss in the warm-up rooms.
     const g2 = campaignTable({ kind: 'sng', venue: garage, prize: 300 }, false);
     expect(createTable({ hostDeviceId: 'x', name: 'Me', emoji: '🙂', settings: g2.settings, bots: 5, campaign: g2.campaign, code: null, now: 0 }).campaign?.boss).toBeUndefined();
+  });
+});
+
+describe('the free daily spin', () => {
+  it('uses up the day at the start but pays only when the wheel stops, and only once', () => {
+    const c0 = newCampaign();
+    const started = startDailySpin(c0, '2026-11-01', 500);
+    expect(started.chips).toBe(c0.chips);
+    expect(started.spinDay).toBe('2026-11-01');
+    expect(started.spinOwed).toBe(500);
+    // Another spin the same day (a reload) changes nothing.
+    expect(startDailySpin(started, '2026-11-01', 9999)).toBe(started);
+    const paid = payDailySpin(started);
+    expect(paid.chips).toBe(c0.chips + 500);
+    expect(paid.spinOwed).toBe(0);
+    expect(payDailySpin(paid).chips).toBe(paid.chips);
+    expect(takeDailySpin(c0, '2026-11-01', 500).chips).toBe(c0.chips + 500);
   });
 });

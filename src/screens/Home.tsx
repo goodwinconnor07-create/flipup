@@ -33,12 +33,11 @@ export function Home() {
   const sheet = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (sheet.current) sheet.current.scrollTop = homeView.scroll;
-  }, []);
+  }, [tab]);
   const setTab = (t: Tab) => {
     if (t === homeView.tab) return;
     homeView.tab = t;
     homeView.scroll = 0;
-    if (sheet.current) sheet.current.scrollTop = 0;
     setTabState(t);
   };
   // Only these are read from the table, as plain values, so a bot's move at a table you're not looking at doesn't redraw Home.
@@ -112,7 +111,8 @@ export function Home() {
 
   return (
     <div className="screen home">
-      <div className="home-sheet" ref={sheet} onScroll={(e) => (homeView.scroll = e.currentTarget.scrollTop)}>
+      {/* A fresh scroller stops the previous tab's momentum and scroll anchoring carrying over. */}
+      <div key={tab} className="home-sheet" ref={sheet} onScroll={(e) => (homeView.scroll = e.currentTarget.scrollTop)}>
         <div className="home-scroll">
           <header className="home-title">
             <div className="title-row">
@@ -136,7 +136,7 @@ export function Home() {
               </button>
             </div>
           </header>
-          <div key={tab} className="home-pane">
+          <div className="home-pane">
             {tab === 'play' && (
               <>
                 {banner && (

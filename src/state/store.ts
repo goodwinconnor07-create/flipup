@@ -9,7 +9,8 @@ import {
   bountyReward,
   noteMission,
   drawDailySpin,
-  takeDailySpin,
+  startDailySpin,
+  payDailySpin,
   buyAgain,
   campaignTable,
   cashBuyIn,
@@ -934,18 +935,28 @@ function noteCampaignHand(game: Game | null | undefined): void {
   setCampaign({ ...c, daily: { ...c.daily!, seen: key } });
 }
 
-/** Today's free spin: draws what it pays, adds it to the bankroll, and says what it was. Null once it's been used today. */
+/**
+ * Today's free spin: draws what it pays and uses up the day, but holds the chips back until the wheel has stopped
+ * (`payFreeSpin()`). Null once it's been used today.
+ */
 export function takeFreeSpin(): number | null {
   const c = getCampaign();
   const day = today();
   if (c.spinDay === day) return null;
   const won = drawDailySpin(cryptoRng);
-  setCampaign(takeDailySpin(c, day, won));
+  setCampaign(startDailySpin(c, day, won));
   return won;
+}
+
+/** Pays the spin's prize into the bankroll once the wheel has stopped (or the sheet was closed, or the app reopened mid-spin). */
+export function payFreeSpin(): void {
+  const c = getCampaign();
+  if (c.spinOwed) setCampaign(payDailySpin(c));
 }
 
 /** A seat whose table is gone from this phone (it can't be played any more): settled as left, so the bankroll isn't stuck. */
 export function reconcileCampaign(): void {
+  payFreeSpin();
   const c = getCampaign();
   if (!c.seat || state.session?.game?.id === c.seat.gameId) return;
   setCampaign(c.seat.kind === 'cash' ? cashOut(c, c.seat.gameId, 0, Date.now()) : finishSng(c, c.seat.gameId, undefined, Date.now()));

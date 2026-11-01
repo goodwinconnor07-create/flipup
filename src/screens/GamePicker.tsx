@@ -33,7 +33,7 @@ export function GameRow({ settings, onChange }: { settings: Settings; onChange: 
   const info = variantInfo(settings.variant);
   return (
     <div className="choice">
-      <p className="section-title">Game</p>
+      <p className="set-title">Game</p>
       <button
         type="button"
         className="game-row press"

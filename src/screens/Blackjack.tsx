@@ -84,14 +84,17 @@ function TableView({ game }: { game: Table }) {
     <>
       <div className="bj-felt">
         <section className="bj-dealer" aria-label="Dealer">
-          <div className="bj-dealer-who">
-            <span className="bj-dealer-face" aria-hidden>
-              {DEALER.emoji}
-            </span>
-            <span className="bj-plate">{DEALER.name}</span>
-          </div>
-          <div className="bj-dealer-say">
-            <Said talk={game.talk} who="dealer" now={now} className="bj-say-dealer" />
+          <div className="bj-dealer-head">
+            <div className="bj-dealer-who">
+              <span className="bj-dealer-face" aria-hidden>
+                {DEALER.emoji}
+              </span>
+              <span className="bj-plate">{DEALER.name}</span>
+            </div>
+            <div className="bj-dealer-say">
+              <Said talk={game.talk} who="dealer" now={now} className="bj-say-dealer" />
+            </div>
+            <Shoe left={game.shoeLeft} />
           </div>
           <div className="bj-cards bj-dealer-cards">
             {dealer.cards.map((c, i) => (
@@ -100,7 +103,6 @@ function TableView({ game }: { game: Table }) {
             {dealer.hole && <PlayingCard key={`${game.round}-hole`} back size="md" className="bj-hole" />}
             {showTotal && <span className={`bj-total${handValue(dealer.cards).total > 21 ? ' bust' : ''}`}>{totalLabel({ cards: dealer.cards })}</span>}
           </div>
-          <Shoe left={game.shoeLeft} />
         </section>
 
         <p className="bj-print" aria-hidden>
@@ -151,15 +153,17 @@ function OtherSeat({ seat, game, now, delay }: { seat: BjSeat; game: Table; now:
   const onClock = game.turn?.seat === seat.id;
   return (
     <div className={`bj-seat${onClock ? ' on' : ''}${seat.hands.length === 0 && game.phase !== 'betting' ? ' out' : ''}`} role="listitem" aria-label={seat.name}>
-      <div className="bj-seat-who">
-        <Avatar emoji={seat.emoji} size={36} />
+      <div className="bj-seat-top">
+        <div className="bj-seat-who">
+          <Avatar emoji={seat.emoji} size={28} />
+        </div>
+        <span className="bj-seat-name">
+          <span className="bj-seat-text">{seat.name}</span>
+          {seat.bot && <i className="bj-bot">BOT</i>}
+          {seat.offline && <i className="bj-off">Offline</i>}
+        </span>
         <Said talk={game.talk} who={seat.id} now={now} className="bj-say-seat" />
       </div>
-      <span className="bj-seat-name">
-        {seat.name}
-        {seat.bot && <i className="bj-bot">BOT</i>}
-        {seat.offline && <i className="bj-off">Offline</i>}
-      </span>
       <div className="bj-seat-hands">
         {seat.hands.map((h, i) => (
           <div key={i} className={`bj-mini${onClock && game.turn?.hand === i ? ' on' : ''}`}>
@@ -207,8 +211,10 @@ function MySpot({ me, game, now, delay }: { me: BjSeat; game: Table; now: number
                   <PlayingCard key={`${game.round}-${i}-${j}`} card={c} size={me.hands.length > 1 ? 'md' : 'lg'} flip delay={i === 0 && j < 2 ? delay(j) : 0} glow={h.result === 'blackjack'} />
                 ))}
               </div>
-              <HandTag hand={h} big />
-              <Stack amount={h.bet} doubled={h.doubled} />
+              <div className="bj-hand-foot">
+                <HandTag hand={h} big />
+                <Stack amount={h.bet} doubled={h.doubled} />
+              </div>
             </div>
           ))}
         </div>

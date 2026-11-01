@@ -136,8 +136,8 @@ export function CampaignTab() {
   const seatName = !c.seat ? '' : c.seat.kind === 'cash' ? `the ${blindsOf(c.seat.venue)} cash game` : (venueById(c.seat.venue)?.name ?? 'your table');
   const all = goals(c);
   const ready = all.filter((g) => goalDone(g) && !c.claimed.includes(g.id));
-  // Everything ready to collect, then the next few to work on (always at least one).
-  const next = all.filter((g) => !goalDone(g)).slice(0, Math.max(1, 3 - ready.length));
+  // Only a couple of goals on the tab (the ones to collect first); the rest are behind "See all".
+  const next = all.filter((g) => !goalDone(g)).slice(0, Math.max(0, 2 - ready.length));
 
   return (
     <>
@@ -658,7 +658,7 @@ function Missions({ c }: { c: Campaign }) {
         <div className="missions-head">
           <b>Today’s missions</b>
           <small>
-            +{short(reward)} each · all three +{short(missionBonus(c))} more
+            +{short(reward)} each · +{short(missionBonus(c))} for all 3
           </small>
         </div>
         {daily.picks.map((id) => {

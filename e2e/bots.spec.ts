@@ -443,8 +443,8 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One less bot' }).click();
   await page.getByRole('switch', { name: /Rebuys/ }).click();
   // A short stack with big blinds, so the game is decided in a handful of hands.
-  await page.getByRole('radio', { name: '500' }).click();
-  await page.getByRole('radio', { name: '25/50' }).click();
+  await page.getByRole('button', { name: 'Less Starting chips' }).click();
+  for (let i = 0; i < 10 && !(await page.getByText('25/50', { exact: true }).isVisible()); i++) await page.getByRole('button', { name: 'More Blinds', exact: true }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
 
@@ -549,9 +549,10 @@ test('rising blinds: a setting, a countdown on the table', async ({ page }) => {
   await page.getByRole('button', { name: 'Play with Bots' }).click();
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByRole('radiogroup', { name: 'Blinds stop increasing at' })).toHaveCount(0);
-  await page.getByRole('slider', { name: 'Blinds go up every' }).fill('5');
-  await expect(page.getByRole('radiogroup', { name: 'Blinds stop increasing at' }).getByRole('radio', { name: 'No limit' })).toBeVisible();
+  await expect(page.getByText('Blinds stop at')).toHaveCount(0);
+  for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'More Blinds go up every' }).click();
+  await expect(page.getByText('5 min', { exact: true })).toBeVisible();
+  await expect(page.getByText('Blinds stop at')).toBeVisible();
   await page.getByRole('button', { name: 'Sit down' }).click();
   await expect(page.getByText('Blinds double every 5 min')).toBeVisible();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();

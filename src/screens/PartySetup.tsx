@@ -13,7 +13,7 @@ import {
 } from '../game';
 import { createParty } from '../state/party';
 import { back, replace, toast } from '../state/store';
-import { Choice, chips } from '../ui/components';
+import { chips, Group, StepRow } from '../ui/components';
 import { haptic } from '../ui/effects';
 import { BackIcon, PlusIcon } from '../ui/Icons';
 
@@ -103,9 +103,11 @@ export function PartySetup() {
           ))}
         </div>
 
-        <Choice label="Chips each game" value={stack} options={PARTY_STACKS} onChange={setStack} format={chips} />
-        <Choice label="Blinds double every" value={blindHands} options={PARTY_BLIND_HANDS} onChange={setBlindHands} format={(n) => `${n} hands`} />
-        <Choice label="Bots fill empty seats up to" value={fill} options={PARTY_FILL} onChange={setFill} format={(n) => (n === 0 ? 'None' : String(n))} />
+        <Group title="House rules">
+          <StepRow label="Chips each game" value={stack} options={PARTY_STACKS} onChange={setStack} format={chips} />
+          <StepRow label="Blinds double every" value={blindHands} options={PARTY_BLIND_HANDS} onChange={setBlindHands} format={(n) => `${n} hands`} />
+          <StepRow label="Bots fill up to" value={fill} options={PARTY_FILL} onChange={setFill} format={(n) => (n === 0 ? 'None' : String(n))} />
+        </Group>
 
         <button type="button" className="btn btn-xl btn-blue" disabled={!ok || busy} onClick={() => void open()}>
           {busy ? 'Opening…' : 'Open the party'}

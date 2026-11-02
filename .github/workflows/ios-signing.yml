@@ -2,7 +2,9 @@
 # iOS build workflow can sign without anyone at a keyboard. EAS only makes these in interactive mode, so
 # this runs it in a pseudo-terminal and presses Enter at each question. Every EAS yes/no question here
 # defaults to yes ("generate a new certificate", "reuse this certificate"); nothing is revoked unless
-# picked, and Enter alone never picks anything. Run it again only if signing breaks (an expired certificate).
+# picked, and Enter alone never picks anything. A list question takes its first choice on Enter, so
+# anything EAS would ask as a list (the team type) is answered up front with an environment variable.
+# Run it again only if signing breaks (an expired certificate).
 name: iOS signing setup
 
 on:
@@ -48,6 +50,8 @@ jobs:
       - name: Make the certificate and profile on EAS
         env:
           EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Normal App Store signing. (Only IN_HOUSE changes anything: it means an Enterprise in-house team.)
+          EXPO_APPLE_TEAM_TYPE: COMPANY_OR_ORGANIZATION
           EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
           EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}

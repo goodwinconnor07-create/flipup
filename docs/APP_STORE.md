@@ -27,7 +27,7 @@ Sources:
 | `native/` app | iPhone only for the first release (`supportsTablet: false`). Made with `create-expo-app` (Expo SDK 58, React Native 0.88, Expo Router). The template's demo screens are gone; one shell screen proves the engine loads. The engine is shared, not copied: `@game/*` points at `../src/game` (`native/tsconfig.json`, `native/metro.config.js`) and `native/src/engine` is the app's one door to it. `npx tsc --noEmit` passes and `npx expo export --platform ios` bundles it. |
 | Names, ids, links | One file: `native/appInfo.ts` (store name, product ID, API origin, privacy and support URLs, support email). `native/app.config.ts` reads it. |
 | Build workflow | `.github/workflows/ios-build.yml`: run by hand only, inputs `submit` (default false) and `profile` (default production), pinned actions and Node, one build at a time, the `.p8` key written to `$RUNNER_TEMP` and deleted in an `always()` step. |
-| Test build | Run 1 stopped at the secrets check (the token is named `EXPO_API_TOKEN`; fixed). Run 2 made the EAS project (`55f84d03-0b82-48a2-9fa8-a4f76a7d112a`) and stopped at signing, since EAS only makes the Apple certificate and profile in interactive mode. `ios-signing.yml` (run 1) then made the Apple distribution certificate and stored it on EAS, but **Apple refused the App Store provisioning profile**: "403 ... The selected team does not have a program membership that is eligible for this feature." That's the Apple Developer Program membership on the account, not the code. Once the owner has fixed it, rerun `ios-signing.yml` (it reuses the certificate), then `ios-build.yml`. |
+| Test build | Run 1 stopped at the secrets check (the token is named `EXPO_API_TOKEN`; fixed). Run 2 made the EAS project (`55f84d03-0b82-48a2-9fa8-a4f76a7d112a`) and stopped at signing, since EAS only makes the Apple certificate and profile in interactive mode. `ios-signing.yml` made the distribution certificate, but its pressed Enter answered EAS's "Apple Team Type" list with its first choice, Enterprise, so EAS asked Apple for an in-house profile and Apple answered 403. Fixed by setting `EXPO_APPLE_TEAM_TYPE=COMPANY_OR_ORGANIZATION` in both workflows. |
 | Snapshot | Branch `native-rebuild` made from `claude/main` (417c33a) before any change. `main` is one fix ahead of it (#49, blank Home while scrolling on iPhone). |
 
 ---
@@ -310,7 +310,6 @@ the iPad release.
 | 1 | GitHub secrets: done. The Expo token is `EXPO_API_TOKEN` | Done |
 | 2 | Bundle ID `com.goodwin.flipup`, in `native/appInfo.ts` | Done |
 | 3 | EAS project ID `55f84d03-0b82-48a2-9fa8-a4f76a7d112a`, in `native/appInfo.ts` | Done |
-| 3a | **Apple Developer Program membership:** Apple says the team behind the API key isn't eligible to make App Store profiles. Check developer.apple.com > Account > Membership is active and paid (not pending or expired), and accept any new agreements there and in App Store Connect > Business | Owner |
 | 4 | **Support email `goodwinconnor007@gmail.com` is a placeholder** (`TODO(before launch)` in `native/appInfo.ts`). Replace it before submitting | Owner |
 | 5 | Real static pages at `/privacy` and `/support` (today both return the web app) | Claude, Phase 2 |
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |

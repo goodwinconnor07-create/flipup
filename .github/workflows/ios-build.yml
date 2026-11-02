@@ -109,6 +109,8 @@ jobs:
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Normal App Store signing. (Only IN_HOUSE changes anything: it means an Enterprise in-house team.)
+          EXPO_APPLE_TEAM_TYPE: COMPANY_OR_ORGANIZATION
           # Lets EAS make or refresh the signing certificate and profile without a person at the keyboard.
           EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
@@ -127,6 +129,8 @@ jobs:
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
           EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
           EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Normal App Store signing. (Only IN_HOUSE changes anything: it means an Enterprise in-house team.)
+          EXPO_APPLE_TEAM_TYPE: COMPANY_OR_ORGANIZATION
         run: eas submit --platform ios --latest --non-interactive
 
       - name: Delete the App Store Connect key

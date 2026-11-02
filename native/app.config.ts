@@ -16,7 +16,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     icon: './assets/expo.icon',
     ...(APP_INFO.bundleId ? { bundleIdentifier: APP_INFO.bundleId } : {}),
-    supportsTablet: true,
+    // iPhone first: the iPad layout comes after the iPhone version is approved. Until then iPads run it in iPhone mode.
+    supportsTablet: false,
     config: {
       // Only standard HTTPS (system networking), so the app is exempt from export documentation.
       usesNonExemptEncryption: false,

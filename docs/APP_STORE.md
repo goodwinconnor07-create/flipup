@@ -21,13 +21,13 @@ Sources:
 
 | Step | State |
 |---|---|
-| Repository secrets `APPLE_KEY`, `APPLE_KEY_ID`, `APPLE_ISSUER_ID`, `APPLE_TEAM_ID`, `EXPO_TOKEN` | **Not confirmed.** A Claude Code session can't list GitHub secrets. The first step of `.github/workflows/ios-build.yml` checks all five and names any that are missing, without printing a value. Running that workflow once is the check. |
+| Repository secrets | **`EXPO_TOKEN` is missing or empty** (first run, 2 November 2026). `APPLE_KEY`, `APPLE_KEY_ID`, `APPLE_ISSUER_ID` and `APPLE_TEAM_ID` are set. Make the token at expo.dev > Account settings > Access tokens and add it under the repository's Settings > Secrets and variables > Actions as a *repository* secret named exactly `EXPO_TOKEN` (an environment or Dependabot secret isn't seen by this workflow). |
 | Expo skills | Installed (`expo` plugin, 24 skills including `expo-design-system`, `expo-native-ui`, `expo-animation`, `expo-ui`). The plugin came from the `anthropic-plugin-directory` marketplace; `claude-plugins-official` didn't list it. Cloud sessions start fresh, so each new session reinstalls it with `claude plugin install expo@anthropic-plugin-directory`. |
 | Impeccable | Installed for this project (`npx impeccable install`): the skill in `.claude/skills/impeccable`, its agents in `.claude/agents`. Its engine binary (21 MB) isn't committed; it downloads itself on first use. Its design hook is in `.claude/settings.local.json`, which stays on the machine, so a new session reruns the installer to get the hook back. |
-| `native/` app | Made with `create-expo-app` (Expo SDK 58, React Native 0.88, Expo Router). The template's demo screens are gone; one shell screen proves the engine loads. The engine is shared, not copied: `@game/*` points at `../src/game` (`native/tsconfig.json`, `native/metro.config.js`) and `native/src/engine` is the app's one door to it. `npx tsc --noEmit` passes and `npx expo export --platform ios` bundles it. |
+| `native/` app | iPhone only for the first release (`supportsTablet: false`). Made with `create-expo-app` (Expo SDK 58, React Native 0.88, Expo Router). The template's demo screens are gone; one shell screen proves the engine loads. The engine is shared, not copied: `@game/*` points at `../src/game` (`native/tsconfig.json`, `native/metro.config.js`) and `native/src/engine` is the app's one door to it. `npx tsc --noEmit` passes and `npx expo export --platform ios` bundles it. |
 | Names, ids, links | One file: `native/appInfo.ts` (store name, product ID, API origin, privacy and support URLs, support email). `native/app.config.ts` reads it. |
 | Build workflow | `.github/workflows/ios-build.yml`: run by hand only, inputs `submit` (default false) and `profile` (default production), pinned actions and Node, one build at a time, the `.p8` key written to `$RUNNER_TEMP` and deleted in an `always()` step. |
-| Test build | **Not run yet.** GitHub only lets you start a hand-run workflow that's on the repository's default branch, which is `claude/main`; the workflow is on `main`, so starting it returned 404. Once it's on the default branch, it still stops at "Check the app config" until the bundle ID and EAS project ID are filled in (see Open items). |
+| Test build | Run 1 (`submit: false`, from `claude/main` after `main` was merged in) stopped at the secrets check because `EXPO_TOKEN` is missing. Nothing was built or sent. Once the token is there, it will stop at "Check the app config" until the bundle ID and EAS project ID are filled in. |
 | Snapshot | Branch `native-rebuild` made from `claude/main` (417c33a) before any change. `main` is one fix ahead of it (#49, blank Home while scrolling on iPhone). |
 
 ---
@@ -159,8 +159,9 @@ and a host can remove a player (`remove`).
 **Apple says:** "You must receive explicit permission from users via the App Tracking Transparency APIs to track
 their activity."
 
-**What we'll do:** no tracking, no ads, no advertising ID, no third-party analytics. No ATT prompt.
-`NSPrivacyTracking` is `false` in the privacy manifest.
+**What we'll do:** no tracking, no advertising ID, no third-party analytics. No ATT prompt.
+`NSPrivacyTracking` is `false` in the privacy manifest. The rewarded ads the owner asked for (see "Rewarded ads"
+at the end) run without the advertising ID, so they don't change this.
 
 ### 5.3 Gaming, gambling and lotteries
 
@@ -225,8 +226,11 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 | User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted 3 days after it goes quiet) |
 | User Content > Other User Content | The emoji picture on a friend card and at tables |
 
-Not collected: contact info, location, health, financial info, contacts, browsing, search, diagnostics, usage
-data, purchases (Apple handles the purchase; if the server later checks StoreKit transactions and keeps them, add
+Once rewarded ads are in, add whatever the ad SDK collects (see "Rewarded ads" at the end), with the purposes
+Third-Party Advertising and Analytics.
+
+Not collected by FlipUp itself: contact info, location, health, financial info, contacts, browsing, search,
+diagnostics, usage data, purchases (Apple handles the purchase; if the server later checks StoreKit transactions and keeps them, add
 **Purchases > Purchase History**). Bots-only games never leave the phone.
 
 `native/app.config.ts` writes the same four types into the privacy manifest. Keep the two in step.
@@ -257,7 +261,8 @@ after upload when a reason is missing.
 >
 > Premium is a one-time in-app purchase (`flipup.premium.unlock`). Open it from Settings > FlipUp Premium, or by
 > tapping any locked card back, bubble colour or game. Buy it with a sandbox account; **Restore Purchases** is on
-> the same sheet. To check account deletion: Settings > Delete my data.
+> the same sheet. Five game modes are free. The other seven unlock with Premium, or for free by watching a short
+> ad (test ads are on in the review build); only the host of a table needs the unlock. To check account deletion: Settings > Delete my data.
 >
 > Reporting and blocking: tap a player's seat at an online table, then Report or Block.
 
@@ -281,10 +286,11 @@ PNG or JPEG, no transparency, 1 to 10 per size.
 | iPhone, Dynamic Island, medium (6.1" class) | 1179 × 2556 or 1206 × 2622 | **Required** (at least one) |
 | iPhone, Dynamic Island, large (6.9" class) | 1320 × 2868, 1290 × 2796 or 1260 × 2736 | Optional, but give these: the store shows them on the biggest phones |
 | iPhone, Face ID, large (6.5" class) | 1284 × 2778 or 1242 × 2688 | Only if the 6.9" set is missing |
-| iPad 13" | 2064 × 2752 or 2048 × 2732 | **Required** while the app runs on iPad |
+| iPad 13" | 2064 × 2752 or 2048 × 2732 | Required only when the app supports iPad. Not for the first release (`supportsTablet` is off) |
 | iPhone Duo | 1398 × 2034 outer, 2007 × 2853 inner | Optional now; required from April 2027 for apps built with the iOS 27.1 SDK or later |
 
-Smaller sizes fall back to these, so one 6.9" set, one 6.1" set and one 13" iPad set cover every device.
+Smaller sizes fall back to these, so a 6.9" set and a 6.1" set cover every iPhone. The 13" iPad set comes with
+the iPad release.
 
 ### App icon
 
@@ -309,7 +315,9 @@ Smaller sizes fall back to these, so one 6.9" set, one 6.1" set and one 13" iPad
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |
 | 7 | `eas submit` may need the App Store Connect app ID (the number in the app's URL) if it can't find the app from the bundle ID | Owner, if asked |
 | 8 | App icon and splash made for FlipUp (Expo's placeholders are in now) | Design pass |
-| 9 | Availability: leave out **South Korea** (needs an RCN for frequent simulated gambling). Also leave out **China mainland**, where games need a government approval number (not checked today; confirm in App Store Connect when setting availability) | Owner decides |
+| 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
+| 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
+| 11 | Ad network account (AdMob or another) and its app ID, plus a server-side verification URL pointing at the Worker | Owner makes the account |
 
 ---
 
@@ -321,59 +329,98 @@ Native build:
 2. Premium through StoreKit only, the price from StoreKit, a working Restore Purchases button on the Premium
    sheet and in Settings, no stand-in purchase code.
 3. Never sell or give chips for money; Premium unlocks looks and modes only.
+3a. Game modes: the first five free, the other seven unlocked by Premium or by watching a rewarded ad. Only the
+   host needs the unlock; people joining by code don't. The ad unlock is checked by the server.
+3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
 5. Settings: Privacy Policy and Support links (from `native/appInfo.ts`), the support email, and "Delete my data".
 6. Report and Block on a player's seat and on party leaderboard rows.
 7. Camera permission text for the QR scanner (done in `app.config.ts`), and a clear message if it's denied.
 8. No web views of the web app, native navigation and sheets, haptics (4.2).
 9. No `expo-updates` in version 1; nothing downloaded that changes features.
-10. No ad, analytics or tracking SDK; no ATT prompt.
+10. No analytics or tracking SDK and no ATT prompt. The one ad SDK (for rewarded ads) runs without the
+    advertising ID, asks for consent in the EU, UK and Switzerland, and its data goes on the App Privacy label and
+    in the privacy policy.
 11. Privacy manifest and `ITSAppUsesNonExemptEncryption` (done in `app.config.ts`); recheck the manifest in the
     built `.ipa`.
 12. Replace Expo's placeholder icon, splash and shell screen.
-13. If the iPad layout isn't ready at launch, decide between a real iPad layout and turning `supportsTablet` off
-    (see question 3). With it on, iPad screenshots are required and review tests on iPad.
+13. iPad support off for the first release (done in `app.config.ts`); the app still has to work in iPhone mode
+    on an iPad.
 
 Server (Cloudflare Worker):
 14. `DELETE /api/friends/:code` for the owning device.
 15. `POST /api/reports`, stored and emailed to the support address.
-16. Recommended: check a signed StoreKit transaction before honouring Premium looks, modes or anything else
-    Premium at an online table.
+16. Check a signed StoreKit transaction before honouring Premium looks or modes at an online table, and accept
+    an ad unlock only from the ad network's server-side verification call.
 17. Static `/privacy` and `/support` pages, written in plain language.
 
 Store listing:
 18. Age rating questionnaire as above (18+).
 19. App Privacy answers as above.
-20. Screenshots at 6.9", 6.1" and iPad 13" from the real app.
+20. Screenshots at 6.9" and 6.1" from the real app (iPad later).
 21. Review notes as drafted above.
 22. Category Games, with Card as the subcategory.
 
 ---
 
-## Questions for the owner (answer before Phase 2)
+## Questions for the owner (answered 2 November 2026)
 
-Answers get written here.
-
-1. Should Premium include the variants as paid modes, or only cosmetics? (If the variants are paid, each locked
-   one opens the Premium sheet, and the review notes say so.)
-   **Answer:** _waiting_
+1. Should Premium include the variants as paid modes, or only cosmetics?
+   **Answer:** Yes. The first five game modes are free; the rest are Premium, and anyone without Premium can
+   watch an ad to unlock one. When someone joins a Premium game with a code, only the host has to have unlocked
+   it (Premium or an ad) to host it; the people joining don't.
+   - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Ghost Hold'em, Pittsburgh.
+   - Premium or an ad: Die on the River, Red River, Imposter, Crucifix, Circle Hold'em, Memory Poker, Bean
+     Stalk.
+   - See "Rewarded ads" below for what this adds to the review work.
 2. Does the desktop version need its own layout changes beyond sharing the new tokens?
-   **Answer:** _waiting_
-3. Do you want the iPad layout at launch, or after the iPhone version is approved? (If after, we can ship with
-   iPad support off, and the app runs in iPhone mode on iPads.)
-   **Answer:** _waiting_
-4. Which table improvements from Phase 5 should be built? (Asked again with mock images in Phase 5.)
-   **Answer:** _waiting_
+   **Answer:** Yes. Parts of it are laid out like the phone app and don't use the whole screen. The board is good,
+   but some things don't line up or look bad. It should feel as easy as the phone app, but made for a desktop.
+   This is Phase 6 work.
+3. Do you want the iPad layout at launch, or after the iPhone version is approved?
+   **Answer:** After. `supportsTablet` is now `false` in `native/app.config.ts`, so iPads run the iPhone app in
+   iPhone mode and no iPad screenshots are needed for the first release. App Review can still test on an iPad in
+   that mode, so it must work there.
+4. Which table improvements from Phase 5 should be built?
+   **Answer:** None for now. The table changes only as far as the app-wide changes reach it (tokens, sheets,
+   motion, safe areas). Its core stays the same.
 5. Is there anything in the current app that must not change for the first release?
-   **Answer:** _waiting_
-
-Found during the research:
-
-6. The plan says the profile's "Type any emoji" box is for everyone, but today it's one of Premium's four
-   unlocks. Which is it in the native app?
-   **Answer:** _waiting_
-7. The web app's Premium "purchase" is still a stand-in that always succeeds, so web players get Premium free.
-   Should the web keep that, hide Premium, or wait for a web payment later? (It doesn't block App Review.)
-   **Answer:** _waiting_
+   **Answer:** The table's feel, the emoji faces and their reactions, the text bubbles, the game modes, and the
+   work on the bots and the game rules. Changes should keep the app's core feel and goal.
+6. Is "Type any emoji" for everyone or a Premium unlock?
+   **Answer:** For everyone. Premium no longer lists it.
+7. What happens to Premium on the web, where the stand-in purchase always succeeds?
+   **Answer:** The web waits for real payments. Fixing web payments is an open item before launch (below).
 8. Leave South Korea and China mainland out of the first release's availability?
-   **Answer:** _waiting_
+   **Answer:** Yes.
+
+### What Premium unlocks now
+
+Card packs, chat bubble effects, and the seven Premium game modes (with no ads for them). AI Legends and "Type any
+emoji" are no longer Premium unlocks (Legends aren't in the native app; any emoji is free).
+
+### Rewarded ads (from answer 1)
+
+Watching an ad to unlock a game mode means adding an ad network's SDK, which reverses parts of the research
+above. What changes:
+
+- **Tracking and ATT (5.1.2).** Keep the rule "don't track, don't ask for ATT": the ad SDK runs without the
+  advertising ID (IDFA), so it serves ads that aren't personalised. No ATT prompt.
+- **App Privacy.** The ad SDK's own data goes on the label. Google's list for its Mobile Ads SDK, for example:
+  IP address (rough location), crash logs, performance data, a device ID, advertising data (ads seen) and product
+  interaction (taps, video views), for third-party advertising and analytics. We copy the chosen SDK's list
+  exactly and add its privacy manifest (Google's SDK ships one from version 11.2.0).
+- **Consent.** People in the EU, UK and Switzerland must be asked before ads are shown (Google's User Messaging
+  Platform does this). Someone who says no still gets an ad, just a limited one.
+- **Privacy policy.** Name the ad network as a third party and link its policy.
+- **3.1.1.** Premium stays the only paid way to unlock. An ad is a free way to unlock, which doesn't use payment,
+  so it doesn't replace in-app purchase. The Premium sheet still shows the price and Restore.
+- **Review.** The review notes explain the ad unlock, and the reviewer must be able to see a test ad.
+- **Server check.** The server can't know a host watched an ad unless the ad network tells it. Use the network's
+  server-side verification (AdMob calls a URL we choose when an ad finishes) so the Worker marks that host's table
+  as unlocked, instead of trusting the phone.
+
+Still to decide (asked in chat, not blocking Phase 2):
+- How long does one ad unlock last: one table (including Play again), or longer?
+- A party whose rounds include Premium games: one ad for the whole party?
+- Which ad network: Google AdMob is the usual choice and works with Expo through a config plugin.

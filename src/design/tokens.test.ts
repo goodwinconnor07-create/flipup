@@ -39,6 +39,7 @@ const PALETTE_VARS = {
   indigo: 'indigo',
   slate: 'slate-hi',
   switchOn: 'switch-on',
+  segmentOn: 'segment-on',
   scrim: 'scrim',
 } as const satisfies Record<keyof (typeof palette)['light'], string>;
 

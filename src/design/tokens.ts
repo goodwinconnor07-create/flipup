@@ -30,6 +30,8 @@ export const palette = {
     indigo: '#5856d6',
     slate: '#64748b',
     switchOn: '#34c759',
+    /** The chosen segment in a segmented control: raised white, or lifted grey in dark mode. */
+    segmentOn: '#ffffff',
     /** The dim behind a sheet or an alert. */
     scrim: 'rgba(255, 255, 255, 0.86)',
   },
@@ -52,6 +54,7 @@ export const palette = {
     indigo: '#5e5ce6',
     slate: '#64748b',
     switchOn: '#30d158',
+    segmentOn: '#636366',
     scrim: 'rgba(0, 0, 0, 0.86)',
   },
 } as const;

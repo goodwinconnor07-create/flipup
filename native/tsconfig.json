@@ -7,9 +7,10 @@
     "paths": {
       "@/*": ["./src/*"],
       "@/assets/*": ["./assets/*"],
-      "@game/*": ["../src/game/*"]
+      "@game/*": ["../src/game/*"],
+      "@design/*": ["../src/design/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["node_modules", "../src/game/**/*.test.ts"]
+  "exclude": ["node_modules", "../src/game/**/*.test.ts", "../src/design/**/*.test.ts"]
 }

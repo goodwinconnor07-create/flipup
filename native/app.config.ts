@@ -51,7 +51,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   web: {
-    output: 'static',
+    // A single-page app: the static pre-render would fix every colour to light mode before the page loads.
+    output: 'single',
     favicon: './assets/images/favicon.png',
   },
   plugins: [

@@ -131,8 +131,15 @@ jobs:
           EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           # Normal App Store signing. (Only IN_HOUSE changes anything: it means an Enterprise in-house team.)
           EXPO_APPLE_TEAM_TYPE: COMPANY_OR_ORGANIZATION
-        # The App Store Connect app ID is in native/eas.json (submit.production.ios.ascAppId).
-        run: eas submit --platform ios --latest --non-interactive
+        # The App Store Connect app ID is in native/eas.json. EAS won't set the API key up by itself in CI, so this
+        # run's copy of eas.json points at the key file (never committed, never printed).
+        run: |
+          node -e '
+            const fs = require("fs"); const j = JSON.parse(fs.readFileSync("eas.json", "utf8"));
+            Object.assign(j.submit.production.ios, { ascApiKeyPath: process.env.ASC_KEY_PATH, ascApiKeyId: process.env.ASC_KEY_ID, ascApiKeyIssuerId: process.env.ASC_ISSUER_ID });
+            fs.writeFileSync("eas.json", JSON.stringify(j, null, 2));
+          '
+          eas submit --platform ios --latest --non-interactive
 
       - name: Delete the App Store Connect key
         if: always()

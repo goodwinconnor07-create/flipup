@@ -32,10 +32,6 @@ export const TIMING = {
   startDelay: 3000,
   /** Memory Poker: how long everyone sees the 20 cards taken out before the hand is dealt. */
   memoryPeek: 9000,
-  /** A heads-up game opens with the full-screen VS intro, which takes this long. The bot stays quiet until it's over. */
-  versusDelay: 2600,
-  /** After the intro, how long before the bot says hello. */
-  versusHello: 250,
   /** Once the opening hello has been said and read, this long before the first cards. */
   afterHello: 700,
   /** ...and a bot says hello this long into it. */
@@ -60,12 +56,11 @@ export const TIMING = {
 /** Games that end as soon as one player has all the chips: no rebuys, a legend, or an online table. Other tables (bots-only on one phone, rebuys on) wait the rebuy window. */
 export const endsAtOnce = (game: Game): boolean => !game.settings.rebuys || !!game.legendGame || !!game.code;
 
-/** How long a new game waits before its first greeting. A heads-up table plays the VS intro first (the clock of a fast table runs at twice the speed, so its intro is twice as long in table time). */
-export const greetWait = (game: Game): number =>
-  game.players.length === 2 ? (TIMING.versusDelay + TIMING.versusHello) * (game.fast ? 2 : 1) : TIMING.greeting;
+/** How long a new game waits before its first greeting. */
+export const greetWait = (_game: Game): number => TIMING.greeting;
 
-/** The first deal is pencilled in just after the greeting; saying it moves the deal to after it has been read. */
-export const startWait = (game: Game): number => (game.players.length === 2 ? greetWait(game) + TIMING.afterHello : TIMING.startDelay);
+/** The first deal comes after the countdown; saying the greeting can move it to after the greeting has been read. */
+export const startWait = (_game: Game): number => TIMING.startDelay;
 
 /** Hands kept in the hand log. */
 export const MAX_LOGS = 150;

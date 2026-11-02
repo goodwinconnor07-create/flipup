@@ -222,7 +222,7 @@ describe('bots', () => {
     expect(kept).toBeGreaterThanOrEqual(5);
   }, 60_000);
 
-  it('a new game waits (the VS intro heads-up, three seconds otherwise), and a bot greets first: by name heads-up, the table otherwise', () => {
+  it('a new game waits three seconds, and a bot greets first: by name heads-up, the table otherwise', () => {
     for (const bots of [1, 3]) {
       let now = 5000;
       const rng = seededRng(5);
@@ -230,17 +230,16 @@ describe('bots', () => {
       const r = applyAction(g, { type: 'start' }, { deviceId: 'h', now, rng });
       if (!r.ok) throw new Error(r.error);
       g = r.game;
-      // No cards yet; heads-up they come after the VS intro, otherwise three seconds later.
+      // No cards yet: they come three seconds later.
       const wait = startWait(g);
       expect(g.hand).toBeNull();
       expect(g.nextHandAt).toBe(now + wait);
       const me = g.players[0];
       expect(g.pendingTalk?.event).toBe(bots === 1 ? 'hello' : 'welcome');
       expect(g.pendingTalk?.forId).toBe(bots === 1 ? me.id : undefined);
-      // The greeting comes first, well inside the wait (heads-up, only once the VS intro is over).
+      // The greeting comes first, well inside the wait.
       now = g.wakeAt!;
       expect(now).toBeLessThan(5000 + wait);
-      if (bots === 1) expect(now - 5000).toBeGreaterThanOrEqual(TIMING.versusDelay);
       const t = applyAction(g, { type: 'tick' }, { deviceId: 'server', now, rng });
       if (!t.ok) throw new Error(t.error);
       g = t.game;

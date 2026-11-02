@@ -5,6 +5,9 @@ import { gameLook, gameScene, GLOW, PIPS, SUIT_COLOUR, type CardShape, type Shap
 import type { Variant } from '@/engine';
 import { gradient, radius } from '@/theme';
 
+/** The system font (SF Pro on iPhone); SVG text falls back to a serif without it. */
+const FONT = process.env.EXPO_OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System';
+
 // A game's picture, the same shapes the web draws (src/design/gameArt.ts), on the game's card gradient.
 
 function Card({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, glow, faded }: CardShape) {
@@ -21,10 +24,10 @@ function Card({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, glow, faded }
       ) : (
         <>
           <Rect x={-21} y={-30} width={42} height={60} rx={6} fill="#fff" />
-          <Text x={-15} y={-13} fontSize={15} fontWeight="800" fill={colour}>
+          <Text fontFamily={FONT} x={-15} y={-13} fontSize={15} fontWeight="800" fill={colour}>
             {rank}
           </Text>
-          <Text x={0} y={17} fontSize={28} textAnchor="middle" fill={colour}>
+          <Text fontFamily={FONT} x={0} y={17} fontSize={28} textAnchor="middle" fill={colour}>
             {suit}
           </Text>
         </>
@@ -40,7 +43,7 @@ function draw(shape: Shape, key: number) {
       return (
         <G key={key}>
           <Rect width={200} height={120} fill="#000" opacity={0.18} />
-          <Text x={shape.x} y={shape.y} fontSize={shape.size} textAnchor="middle" fill="#fff" opacity={0.14}>
+          <Text fontFamily={FONT} x={shape.x} y={shape.y} fontSize={shape.size} textAnchor="middle" fill="#fff" opacity={0.14}>
             {shape.suit}
           </Text>
         </G>
@@ -59,13 +62,13 @@ function draw(shape: Shape, key: number) {
       );
     case 'label':
       return (
-        <Text key={key} x={shape.x} y={shape.y} fontSize={11} fontWeight="800" textAnchor="middle" fill="#fff" letterSpacing={1.5}>
+        <Text key={key} fontFamily={FONT} x={shape.x} y={shape.y} fontSize={11} fontWeight="800" textAnchor="middle" fill="#fff" letterSpacing={1.5}>
           {shape.text}
         </Text>
       );
     case 'glyph':
       return (
-        <Text key={key} x={shape.x} y={shape.y} fontSize={shape.size} fontWeight={shape.bold ? '800' : undefined} textAnchor="middle" fill={shape.ink}>
+        <Text key={key} fontFamily={FONT} x={shape.x} y={shape.y} fontSize={shape.size} fontWeight={shape.bold ? '800' : undefined} textAnchor="middle" fill={shape.ink}>
           {shape.text}
         </Text>
       );

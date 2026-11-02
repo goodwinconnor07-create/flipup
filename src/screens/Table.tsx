@@ -19,7 +19,6 @@ import { Lobby } from './Lobby';
 import { useWakeLock } from '../ui/useWakeLock';
 import { ActionArea, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
-import { Versus } from './table/Versus';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { soundMoodFor } from '../ui/gameThemes';
 import { setSoundMood } from '../ui/sound';
@@ -76,7 +75,6 @@ export function Table() {
           <i /> Reconnecting…
         </div>
       )}
-      <VersusGate game={game} />
       <EmptyTablePopup game={game} />
       <PrizeReel game={game} />
       {game.status === 'lobby' && <Lobby game={game} />}
@@ -153,16 +151,6 @@ function EmptyTablePopup({ game }: { game: Game }) {
       </div>
     </div>
   );
-}
-
-/** The VS intro, while a heads-up game waits for its first deal. */
-function VersusGate({ game }: { game: Game }) {
-  const deviceId = useApp((s) => s.deviceId);
-  const me = myPlayer(game, deviceId);
-  if (game.status !== 'playing' || game.hand || game.nextHandAt === null || game.card || game.players.length !== 2 || !me) return null;
-  const foe = game.players.find((p) => p.id !== me.id);
-  if (!foe) return null;
-  return <Versus key={game.id} game={game} me={me} foe={foe} />;
 }
 
 /** An announcement bar that slides down from the top, stays for five seconds, then slides back out. */

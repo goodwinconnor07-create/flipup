@@ -35,6 +35,7 @@ const WEB = {
   'eye.fill': 'visibility',
   'cpu.fill': 'smart_toy',
   'flag.checkered': 'sports_score',
+  'line.3.horizontal': 'menu',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

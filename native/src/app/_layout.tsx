@@ -1,3 +1,4 @@
+import '@/polyfills';
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useColorScheme } from 'react-native';
 
@@ -27,6 +28,8 @@ export default function RootLayout() {
     <ThemeProvider value={theme}>
       <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background }, animation: reduce ? 'fade' : 'default' }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
+        <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: reduce ? 'fade' : 'slide_from_bottom' }} />
         <Stack.Screen name="game/[id]" options={{ ...sheet, title: 'Game' }} />
         <Stack.Screen name="premium" options={{ ...sheet, title: 'FlipUp Premium' }} />
         <Stack.Screen name="sample-sheet" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'A sheet' }} />

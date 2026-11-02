@@ -103,3 +103,26 @@ export function standings(game: Game): Player[] {
 export function handLive(game: Game): boolean {
   return game.status === 'playing' && !!game.hand && !game.hand.result;
 }
+
+/** What a player's last move says in their speech bubble: "Call 150", "Fold". */
+export function moveLabel(last: NonNullable<Seat['last']>): string {
+  const n = Math.round(last.amount).toLocaleString('en-US');
+  switch (last.move) {
+    case 'fold':
+      return 'Fold';
+    case 'check':
+      return 'Check';
+    case 'call':
+      return `Call ${n}`;
+    case 'bet':
+      return `Bet ${n}`;
+    case 'raise':
+      return `Raise ${n}`;
+    case 'allin':
+      return `All in ${n}`;
+    case 'sb':
+      return `SB ${n}`;
+    default:
+      return `BB ${n}`;
+  }
+}

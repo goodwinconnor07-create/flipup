@@ -1,33 +1,12 @@
 import { useEffect, useLayoutEffect, useReducer, useRef, useState } from 'react';
-import { BEFORE_MOVE, botSay, CHAT, ChatLane, isBubbleId, quickSay, REACTIONS, reactionBeats, reactionText, ticker, widestWindow, windowAt, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
+import { BEFORE_MOVE, botSay, moveLabel, CHAT, ChatLane, isBubbleId, quickSay, REACTIONS, reactionBeats, reactionText, ticker, widestWindow, windowAt, worthKeeping, worthSaying, type Game, type Message, type Seat, type Talk } from '../../game';
 import { react, useApp } from '../../state/store';
-import { chips } from '../../ui/components';
 import { haptic } from '../../ui/effects';
 import { ChatIcon } from '../../ui/Icons';
 import { playSound } from '../../ui/sound';
 
-/** What a player's last move says in their speech bubble: "Call 150", "Fold". */
-export function bubbleText(last: NonNullable<Seat['last']>): string {
-  const n = chips(last.amount);
-  switch (last.move) {
-    case 'fold':
-      return 'Fold';
-    case 'check':
-      return 'Check';
-    case 'call':
-      return `Call ${n}`;
-    case 'bet':
-      return `Bet ${n}`;
-    case 'raise':
-      return `Raise ${n}`;
-    case 'allin':
-      return `All in ${n}`;
-    case 'sb':
-      return `SB ${n}`;
-    default:
-      return `BB ${n}`;
-  }
-}
+/** What a player's last move says in their speech bubble (shared with the iPhone app). */
+export const bubbleText = moveLabel;
 
 /** The colour class for a bubble: a Premium colour if the player has one, else the plain look. */
 const tint = (fx: string | undefined, plain: string) => (isBubbleId(fx) ? `bubble-fx fx-${fx}` : plain);

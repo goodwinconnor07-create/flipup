@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { Alert, ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { GamePicture } from '@/components/game-picture';
@@ -23,6 +23,8 @@ import {
   withStack,
   type Settings,
 } from '@/engine';
+import { useProfile } from '@/state/profile';
+import { openLocalTable } from '@/state/session';
 import { saveSettings, setDraft, startDraft, useDraft, useSavedSettings } from '@/state/setup-draft';
 import { party, spacing, useColors } from '@/theme';
 
@@ -54,9 +56,16 @@ export default function SetupScreen() {
     ? `Blinds rise every ${s.blindMinutes} min${s.blindCap ? `, up to ${blindsLabel([s.blindCap / 2, s.blindCap])}` : ''}.`
     : 'The blinds stay the same all game.';
 
+  const profile = useProfile();
   const open = () => {
     saveSettings(s);
-    router.push({ pathname: '/table', params: { mode, bots: String(bots) } });
+    if (mode === 'friends') {
+      // Online tables come in step 3b.
+      Alert.alert('Coming next', 'Tables with friends arrive in the next update. Try one with bots.');
+      return;
+    }
+    openLocalTable(s, bots, profile.name, profile.emoji);
+    router.push('/table');
   };
 
   return (

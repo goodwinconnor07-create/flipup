@@ -131,7 +131,22 @@ jobs:
           EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           # Normal App Store signing. (Only IN_HOUSE changes anything: it means an Enterprise in-house team.)
           EXPO_APPLE_TEAM_TYPE: COMPANY_OR_ORGANIZATION
-        run: eas submit --platform ios --latest --non-interactive
+          BUNDLE_ID: com.goodwin.flipup
+        run: |
+          # EAS needs the App Store Connect app's numeric ID in CI. Look it up from the bundle ID with the API key.
+          ASC_APP_ID=$(node -e '
+            const crypto = require("crypto"), fs = require("fs");
+            const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
+            const now = Math.floor(Date.now() / 1000);
+            const head = b64({ alg: "ES256", kid: process.env.ASC_KEY_ID, typ: "JWT" });
+            const body = b64({ iss: process.env.ASC_ISSUER_ID, iat: now, exp: now + 600, aud: "appstoreconnect-v1" });
+            const sig = crypto.sign("sha256", Buffer.from(head + "." + body), { key: fs.readFileSync(process.env.ASC_KEY_PATH), dsaEncoding: "ieee-p1363" }).toString("base64url");
+            fetch("https://api.appstoreconnect.apple.com/v1/apps?filter[bundleId]=" + process.env.BUNDLE_ID, { headers: { Authorization: "Bearer " + head + "." + body + "." + sig } })
+              .then((r) => r.json()).then((j) => { if (!j.data?.[0]) { console.error(JSON.stringify(j.errors ?? j)); process.exit(1); } console.log(j.data[0].id); });
+          ')
+          echo "App Store Connect app $ASC_APP_ID"
+          node -e 'const f="eas.json",j=require("./"+f);j.submit.production.ascAppId=process.argv[1];require("fs").writeFileSync(f,JSON.stringify(j,null,2))' "$ASC_APP_ID"
+          eas submit --platform ios --latest --non-interactive
 
       - name: Delete the App Store Connect key
         if: always()

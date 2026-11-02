@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { LEGEND_NOTE, LEGENDS, MAX_SEATS } from '../game';
+import { LEGEND_NOTE, LEGENDS, MAX_SEATS, LEGENDS_ON } from '../game';
 import { BOTS, type StyleId } from '../game/botStyles';
 import { openPremium, toast, useApp } from '../state/store';
 import { BackBar } from '../ui/components';
@@ -44,7 +44,7 @@ export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave
     [q],
   );
 
-  const legends = useMemo(() => LEGENDS.filter((l) => !q || l.short.toLowerCase().includes(q) || l.name.toLowerCase().includes(q)), [q]);
+  const legends = useMemo(() => (LEGENDS_ON ? LEGENDS : []).filter((l) => !q || l.short.toLowerCase().includes(q) || l.name.toLowerCase().includes(q)), [q]);
 
   // AI Legends are Premium: without it, a tap opens the offer, and the legend sits down once it's bought.
   const toggleLegend = (name: string) => {
@@ -103,9 +103,11 @@ export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave
           onChange={(e) => setQuery(e.target.value)}
         />
         <nav className="picker-jump" aria-label="Jump to a playstyle">
-          <button type="button" className="chip-btn chip-gold press" onClick={() => jump('legends')}>
-            AI Legends
-          </button>
+          {LEGENDS_ON && (
+            <button type="button" className="chip-btn chip-gold press" onClick={() => jump('legends')}>
+              AI Legends
+            </button>
+          )}
           {GROUPS.map((g) => (
             <button key={g.id} type="button" className="chip-btn press" onClick={() => jump(g.id)}>
               {g.title}

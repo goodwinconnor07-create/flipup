@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { BUBBLE_STYLES, CARD_PACKS, legendById, LEGENDS, type Legend } from '../../game';
-import { PREMIUM_PERKS, PREMIUM_PRICE, type PremiumReason } from '../../state/premium';
-import { buyPremium, closeSheet, openSheet, restorePremium, toast, useApp } from '../../state/store';
+import { type CSSProperties, type ReactNode } from 'react';
+import { BUBBLE_STYLES, CARD_PACKS, legendById, LEGENDS, LEGENDS_ON, type Legend } from '../../game';
+import { PREMIUM_ON_SALE, PREMIUM_PERKS, PREMIUM_PRICE, type PremiumReason } from '../../state/premium';
+import { closeSheet, openSheet, useApp } from '../../state/store';
 import { PlayingCard, Sheet } from '../../ui/components';
-import { confetti, haptic } from '../../ui/effects';
 import { CheckIcon, CloseIcon, CrownIcon } from '../../ui/Icons';
-import { CONFETTI_COLORS } from '../../ui/theme';
 import { LEGEND_SCENES } from '../botScenes';
 
 /** A sample chat bubble in one of the Premium colours. */
@@ -45,9 +43,9 @@ function CardFan() {
   );
 }
 
-/** Bubble colours, emoji and legends floating round the fan of card backs. */
+/** Bubble colours, emoji and (when they're on) legends floating round the fan of card backs. */
 function Burst() {
-  const legends = ['brunson', 'ivey', 'dwan'].map((id) => legendById(id)!);
+  const legends = LEGENDS_ON ? ['brunson', 'ivey', 'dwan'].map((id) => legendById(id)!) : [];
   const at = (x: number, y: number, rot: number, delay: number): CSSProperties => ({
     ['--x' as string]: `${x}%`,
     ['--y' as string]: `${y}px`,
@@ -103,14 +101,6 @@ function Showcase({ reason }: { reason?: PremiumReason }) {
         <span className="show-more">+{BUBBLE_STYLES.filter((b) => !b.free).length - 6} more</span>
       </div>
     ),
-    emoji: (
-      <div className="show-emoji">
-        {['🦄', '🐉', '🥷', '🛸', '🧛', '🪩', '🦖', '👽'].map((e) => (
-          <span key={e}>{e}</span>
-        ))}
-        <b>Type any emoji</b>
-      </div>
-    ),
     packs: (
       <div className="show-packs">
         {CARD_PACKS.filter((p) => !p.venue)
@@ -149,54 +139,18 @@ const LEAD: Record<PremiumReason | 'none', string> = {
   none: 'Make every table yours.',
   bubbles: 'Colour your bubbles. Everyone at the table sees them.',
   packs: 'Deal with a card back that shines.',
-  emoji: 'Use any emoji as your face, not just the ones in the grid.',
   legends: 'Sit the AI Legends down at your table.',
 };
 
 /** FlipUp Premium: opens when someone taps a Premium extra, or from Profile. One payment of $9. */
 export function PremiumSheet({ reason, then }: { reason?: PremiumReason; then?: () => void }) {
-  const owned = useApp((s) => s.premium);
-  const [phase, setPhase] = useState<'offer' | 'paying' | 'done'>('offer');
-  const alive = useRef(true);
-  useEffect(() => {
-    alive.current = true;
-    return () => {
-      alive.current = false;
-    };
-  }, []);
-
-  const buy = async () => {
-    if (phase !== 'offer') return;
-    haptic('medium');
-    setPhase('paying');
-    const ok = await buyPremium();
-    if (!alive.current) return;
-    if (!ok) {
-      setPhase('offer');
-      return toast("The payment didn't go through. You haven't been charged.", 'error');
-    }
-    setPhase('done');
-    haptic('success');
-    confetti(CONFETTI_COLORS.gold, undefined, 140);
-  };
-
-  const restore = async () => {
-    haptic('light');
-    const ok = await restorePremium();
-    if (!alive.current) return;
-    if (ok) {
-      setPhase('done');
-      haptic('success');
-    } else toast('No earlier purchase found on this account.');
-  };
+  const has = useApp((s) => s.premium);
 
   // Done with the offer: close it, then carry on with what the player was doing.
   const carryOn = () => {
     closeSheet();
     then?.();
   };
-
-  const has = owned || phase === 'done';
 
   return (
     <Sheet className="sheet-premium" label="FlipUp Premium">
@@ -215,14 +169,8 @@ export function PremiumSheet({ reason, then }: { reason?: PremiumReason; then?: 
         <span className="prem-badge">
           <CrownIcon width={14} height={14} /> FlipUp Premium
         </span>
-        <h1 className="prem-title">{has ? (phase === 'done' ? "It's yours!" : "You're Premium") : LEAD[reason ?? 'none']}</h1>
-        <p className="prem-sub">
-          {has
-            ? phase === 'done'
-              ? 'Everything is unlocked. Thank you for backing FlipUp.'
-              : 'All of this is unlocked on your account.'
-            : 'Four upgrades for the table, yours for good.'}
-        </p>
+        <h1 className="prem-title">{has ? "You're Premium" : LEAD[reason ?? 'none']}</h1>
+        <p className="prem-sub">{has ? 'All of this is unlocked on your account.' : 'Upgrades for the table, yours for good.'}</p>
 
         <Showcase reason={reason} />
 
@@ -250,21 +198,16 @@ export function PremiumSheet({ reason, then }: { reason?: PremiumReason; then?: 
           </>
         ) : (
           <>
-            <button type="button" className="prem-cta" disabled={phase === 'paying'} onClick={() => void buy()}>
-              {phase === 'paying' ? (
-                <>
-                  <span className="prem-spin" aria-hidden /> Unlocking…
-                </>
-              ) : (
+            <button type="button" className="prem-cta" disabled={!PREMIUM_ON_SALE}>
+              {PREMIUM_ON_SALE ? (
                 <>
                   Get FlipUp Premium <b>{PREMIUM_PRICE}</b>
                 </>
+              ) : (
+                'Coming soon on the web'
               )}
             </button>
             <p className="prem-fine">One-time payment of {PREMIUM_PRICE}. Not a subscription.</p>
-            <button type="button" className="prem-link" disabled={phase === 'paying'} onClick={() => void restore()}>
-              Restore purchase
-            </button>
           </>
         )}
       </div>

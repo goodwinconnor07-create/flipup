@@ -1,5 +1,5 @@
 import { useState, type ComponentType, type SVGProps } from 'react';
-import { myPlayer, seatFor, type Settings } from '../../game';
+import { myPlayer, seatFor, type Settings, LEGENDS_ON } from '../../game';
 import {
   closeSheet,
   closeTable,
@@ -9,7 +9,6 @@ import {
   leaveTable,
   navigate,
   openLog,
-  openPremium,
   openSheet,
   resetTo,
   setProfile,
@@ -152,7 +151,6 @@ function ConfirmSheet({ sheet }: { sheet: Extract<SheetSpec, { name: 'confirm' }
 
 function EmojiSheet() {
   const profile = useApp((s) => s.profile);
-  const premium = useApp((s) => s.premium);
   return (
     <Sheet title="Your emoji">
       <div className="look-preview">
@@ -161,12 +159,7 @@ function EmojiSheet() {
         </span>
         <b>{profile.name.trim() || 'You'}</b>
       </div>
-      <EmojiPicker
-        value={profile.emoji}
-        onChange={(emoji) => setProfile({ emoji })}
-        locked={!premium}
-        onLocked={() => openPremium('emoji', () => openSheet({ name: 'emoji' }))}
-      />
+      <EmojiPicker value={profile.emoji} onChange={(emoji) => setProfile({ emoji })} />
       <button type="button" className="btn btn-dark" style={{ marginTop: 20 }} onClick={closeSheet}>
         Done
       </button>
@@ -435,7 +428,7 @@ function MenuSheet() {
     table.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
   if (host && playing && game.players.length < 9 && !campaign)
     table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--green)', onClick: quick(() => dispatch({ type: 'addBot' })) });
-  if (host && !ended && game.players.length < 9)
+  if (LEGENDS_ON && host && !ended && game.players.length < 9)
     table.push({ label: 'Add an AI Legend', Icon: CrownIcon, color: 'var(--gold)', onClick: () => withPremium('legends', () => openSheet({ name: 'legends' })) });
 
   const { switches, links } = useYouRows();

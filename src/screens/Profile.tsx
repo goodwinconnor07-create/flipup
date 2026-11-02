@@ -68,7 +68,7 @@ export function Profile({ then, info, variant }: { then: 'host' | 'bots' | 'join
             </span>
             <span className="gr-text">
               FlipUp Premium
-              <small>{premium ? "Unlocked. Thank you for backing FlipUp." : 'Card packs, bubble colours, any emoji, AI Legends'}</small>
+              <small>{premium ? "Unlocked. Thank you for backing FlipUp." : 'Card packs and bubble colours'}</small>
             </span>
             {premium ? <span className="prem-pill on">Yours</span> : <span className="prem-pill">{PREMIUM_PRICE}</span>}
             <ChevronIcon className="gr-chev" width={16} height={16} />

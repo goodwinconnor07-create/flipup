@@ -1,4 +1,4 @@
-import { FORMATS, MAX_SEATS, stakeById, variantInfo, venueById, type Game } from '../game';
+import { FORMATS, MAX_SEATS, stakeById, variantInfo, venueById, LEGENDS_ON, type Game } from '../game';
 import { joinLinkLabel } from '../state/platform';
 import { closeTable, confirm, dispatch, openSheet, useApp, withPremium } from '../state/store';
 import { Avatar, chips } from '../ui/components';
@@ -138,7 +138,7 @@ export function Lobby({ game }: { game: Game }) {
               <span className="roster-name">Add bot</span>
             </button>
           )}
-          {host && !tag && game.players.length < MAX_SEATS && (
+          {LEGENDS_ON && host && !tag && game.players.length < MAX_SEATS && (
             <button type="button" className="roster-item add-bot add-legend" onClick={() => withPremium('legends', () => openSheet({ name: 'legends' }))}>
               <span className="roster-pic">
                 <span className="add-bot-circle">

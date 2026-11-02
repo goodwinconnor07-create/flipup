@@ -5,7 +5,7 @@ import { homeView, navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
 import { LegendShelf } from './HomeLegends';
-import { LEGENDS_ON, variantInfo } from '../game';
+import { CAMPAIGN_ON, LEGENDS_ON, variantInfo } from '../game';
 import { PartyTab } from './HomeParty';
 import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
@@ -24,12 +24,12 @@ type Tab = typeof homeView.tab;
 const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] = [
   { id: 'play', label: 'Play', Icon: SpadeIcon, title: 'Play' },
   { id: 'party', label: 'Party', Icon: UsersIcon, title: 'Party' },
-  { id: 'campaign', label: 'Campaign', Icon: ChipIcon, title: 'Campaign' },
+  ...(CAMPAIGN_ON ? [{ id: 'campaign' as const, label: 'Campaign', Icon: ChipIcon, title: 'Campaign' }] : []),
 ];
 
 export function Home() {
   // Coming back from another screen lands on the same tab, at the same place on the page.
-  const [tab, setTabState] = useState<Tab>(homeView.tab);
+  const [tab, setTabState] = useState<Tab>(TABS.some((t) => t.id === homeView.tab) ? homeView.tab : 'play');
   const sheet = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (sheet.current) sheet.current.scrollTop = homeView.scroll;
@@ -196,7 +196,7 @@ export function Home() {
                 {LEGENDS_ON && <LegendShelf />}
               </>
             )}
-            {tab === 'campaign' && <CampaignTab />}
+            {CAMPAIGN_ON && tab === 'campaign' && <CampaignTab />}
             {tab === 'party' && <PartyTab />}
           </div>
         </div>

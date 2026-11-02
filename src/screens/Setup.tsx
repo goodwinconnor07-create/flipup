@@ -147,7 +147,7 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
             <span className="picked-faces">
               <b>{picked.length === 0 ? 'Choose your bots' : `${picked.length} ${picked.length === 1 ? 'bot' : 'bots'} picked`}</b>
               <span aria-hidden>{picked.length === 0 ? '🤖' : picked.map((n) => faces.get(n)).join(' ')}</span>
-              <small className="muted">{picked.length === 0 ? 'Browse every bot by playstyle, plus AI Legends' : picked.join(', ')}</small>
+              <small className="muted">{picked.length === 0 ? 'Browse every bot by playstyle' : picked.join(', ')}</small>
             </span>
             <ChevronIcon width={20} height={20} aria-hidden />
           </button>

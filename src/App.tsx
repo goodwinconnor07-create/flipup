@@ -15,14 +15,15 @@ import { Roulette } from './screens/Roulette';
 import { Blackjack } from './screens/Blackjack';
 import { BjInviteBanner } from './screens/sheets/BlackjackSheets';
 import { watchInvites } from './state/blackjack';
+import { CAMPAIGN_ON, LEGENDS_ON } from './game';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
   const depth = useApp((s) => s.stack.length);
   const sheet = useApp((s) => s.sheet);
   const sheetKey = useApp((s) => s.sheetKey);
-  // Friends asking you to their blackjack table.
-  useEffect(watchInvites, []);
+  // Friends asking you to their blackjack table (a Campaign floor game).
+  useEffect(() => (CAMPAIGN_ON ? watchInvites() : undefined), []);
 
   let screen;
   switch (route.name) {
@@ -51,16 +52,16 @@ export function App() {
       screen = <PartyScreen />;
       break;
     case 'legend':
-      screen = <Legend key={route.id} id={route.id} />;
+      screen = LEGENDS_ON ? <Legend key={route.id} id={route.id} /> : <Home />;
       break;
     case 'roulette':
-      screen = <Roulette />;
+      screen = CAMPAIGN_ON ? <Roulette /> : <Home />;
       break;
     case 'blackjack':
-      screen = <Blackjack />;
+      screen = CAMPAIGN_ON ? <Blackjack /> : <Home />;
       break;
     case 'cashSeat':
-      screen = <CashSeat />;
+      screen = CAMPAIGN_ON ? <CashSeat /> : <Home />;
       break;
   }
 
@@ -68,7 +69,7 @@ export function App() {
     <>
       <div key={`${depth}-${route.name}`}>{screen}</div>
       {sheet && <SheetHost key={sheetKey} sheet={sheet} />}
-      <BjInviteBanner />
+      {CAMPAIGN_ON && <BjInviteBanner />}
       <Toasts />
     </>
   );

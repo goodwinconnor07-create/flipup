@@ -7,6 +7,7 @@
 // hands of theirs. Every screen that names one says so (`LEGEND_NOTE`). No photos, and nothing here is
 // a quote: what they say lives in legendTalk.ts and is original.
 
+import { EXTRAS_ON } from './scope';
 import type { Player, PlayerRead } from './types';
 import type { Style } from './botStyles';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
@@ -38,10 +39,10 @@ export interface Legend {
 
 type DeepPartial<T> = { [K in keyof T]?: T[K] extends (infer U)[] ? U[] : T[K] extends object ? DeepPartial<T[K]> : T[K] };
 
-/** Said on every screen that shows a legend by name. */
-/** Legends are held back for launch. The code stays; this one switch hides every way in. */
-export const LEGENDS_ON = false;
+/** Legends are held back for launch (`EXTRAS_ON` in scope.ts). The code stays; the switch hides every way in. */
+export const LEGENDS_ON = EXTRAS_ON;
 
+/** Said on every screen that shows a legend by name. */
 export const LEGEND_NOTE = "A style inspired by this player's public reputation. Not their real hands, and not endorsed by or affiliated with them.";
 
 export const LEGENDS: Legend[] = [

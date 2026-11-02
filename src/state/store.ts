@@ -38,7 +38,6 @@ import {
   normalizeCode,
   redactForDevice,
   dressAsLegend,
-  EMOJIS,
   LEGENDS_ON,
   legendById,
   redactLogs,
@@ -52,7 +51,7 @@ import {
   type TableInfo,
 } from '../game';
 import { haptic, reducedMotion } from '../ui/effects';
-import { purchasePremium, restorePurchase, type PremiumReason } from './premium';
+import { type PremiumReason } from './premium';
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
@@ -82,7 +81,6 @@ import {
   saveCalm,
   saveAppearance,
   saveGlass,
-  savePremium,
   saveMuted,
   saveProfile,
   saveSession,
@@ -407,11 +405,7 @@ export function undoToast(text: string, undo: () => void, ms = 7000): void {
 // ── Profile ─────────────────────────────────────────────────────────────────
 
 export function setProfile(patch: Partial<Profile>): void {
-  // An emoji from outside the picker's grid and a bubble colour are Premium extras.
-  if (!state.premium && patch.emoji !== undefined && patch.emoji !== state.profile.emoji && !(EMOJIS as readonly string[]).includes(patch.emoji)) {
-    return openPremium('emoji');
-  }
-  // Green is free; every other colour is Premium's.
+  // Any emoji is free. Green bubbles are free; every other colour is Premium's.
   if (!state.premium && patch.bubble && !bubbleById(patch.bubble)?.free) return openPremium('bubbles');
   // A campaign trophy back is won at its venue; the others are Premium's.
   const pack = patch.cardPack ? packById(patch.cardPack) : undefined;
@@ -447,25 +441,6 @@ export function withPremium(reason: PremiumReason, go: () => void): void {
   else openPremium(reason, go);
 }
 
-/** Marks this phone as Premium (and keeps it). Called once a purchase or a restore has gone through. */
-export function grantPremium(): void {
-  savePremium(true);
-  set({ premium: true });
-}
-
-/** Buys Premium. Resolves true once it's bought. See `purchasePremium` in premium.ts for the payment step. */
-export async function buyPremium(): Promise<boolean> {
-  const ok = await purchasePremium();
-  if (ok) grantPremium();
-  return ok;
-}
-
-/** Brings back a past purchase (a new phone, a reinstall). */
-export async function restorePremium(): Promise<boolean> {
-  const ok = await restorePurchase();
-  if (ok) grantPremium();
-  return ok;
-}
 
 // ── Session ─────────────────────────────────────────────────────────────────
 

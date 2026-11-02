@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { applyAction, cryptoRng, finishOrder, buildPartyGame, liveOf, placePoints, rankMembers, shufflePlaylist, partyStandings, VARIANTS, type Game, type PartySettings, type PartyView } from '.';
+import { applyAction, seededRng, finishOrder, buildPartyGame, liveOf, placePoints, rankMembers, shufflePlaylist, partyStandings, VARIANTS, type Game, type PartySettings, type PartyView } from '.';
 
 const settings: PartySettings = { games: ['holdem', 'pineapple', 'deuces', 'ghost'], startingStack: 500, blindHands: 2, fillTo: 4 };
 const people = ['a', 'b', 'c'].map((n) => ({ deviceId: `device-${n}-0000000000`, name: n.toUpperCase(), emoji: '🙂' }));
 
-function build(): Game {
-  const game = buildPartyGame({ tableCode: 'BCDFG', partyCode: 'HJKLM', round: 1, settings, people, now: 1000 });
+// Seeded, so every run deals the same cards and seats the same bots.
+function build(rng: () => number = seededRng(7)): Game {
+  const game = buildPartyGame({ tableCode: 'BCDFG', partyCode: 'HJKLM', round: 1, settings, people, now: 1000, rng });
   if (!game) throw new Error('no game');
   return game;
 }
@@ -61,7 +62,8 @@ describe('a party round', () => {
   });
 
   it('raises the blinds every few hands, plays to a winner and keeps every chip', () => {
-    let game = build();
+    const rng = seededRng(7);
+    let game = build(rng);
     const total = game.players.reduce((a, p) => a + p.stack, 0);
     let now = 1000;
     let blindsWent = false;
@@ -72,18 +74,20 @@ describe('a party round', () => {
       const mover = hand && !hand.result && hand.toAct ? game.players.find((p) => p.id === hand.toAct && !p.bot) : undefined;
       if (mover?.deviceId && hand) {
         const seat = hand.seats.find((s) => s.playerId === mover.id)!;
-        const move = hand.currentBet > seat.bet ? 'allin' : 'check';
-        const r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move }, { deviceId: mover.deviceId, now, rng: cryptoRng });
+        const move = hand.currentBet > seat.bet ? 'call' : 'check';
+        const r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move }, { deviceId: mover.deviceId, now, rng });
         if (r.ok) game = r.game;
         continue;
       }
-      const t = applyAction(game, { type: 'tick' }, { deviceId: 'server', now, rng: cryptoRng });
+      const t = applyAction(game, { type: 'tick' }, { deviceId: 'server', now, rng });
       if (t.ok) game = t.game;
       if (game.settings.bigBlind > settings.startingStack / 50) blindsWent = true;
       expect(game.players.reduce((a, p) => a + p.stack, 0) + (game.hand && !game.hand.result ? game.hand.seats.reduce((a, s) => a + s.total, 0) : 0)).toBeGreaterThan(0);
     }
     expect(game.status).toBe('ended');
-    expect(blindsWent || (game.hands ?? 0) < 2).toBe(true);
+    // Seed 7 plays well past the first rise (the blinds double as hand 3 is dealt), so it has to show.
+    expect(game.hands ?? 0).toBeGreaterThan(settings.blindHands);
+    expect(blindsWent).toBe(true);
     const order = finishOrder(game);
     // Busted bots leave the table, but every person stays in the order.
     expect(order.filter((p) => !p.bot)).toHaveLength(3);

@@ -827,12 +827,6 @@ input {
   padding: 20px;
 }
 
-.tile-flat {
-  background: var(--bg-2);
-  border-radius: var(--radius);
-  padding: 20px;
-}
-
 /* ── Inputs ──────────────────────────────────────────────────────────────── */
 
 .field {
@@ -859,24 +853,6 @@ input {
 }
 
 /* ── Toggle ──────────────────────────────────────────────────────────────── */
-
-.toggle-row {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 0;
-  border-bottom: 2px solid var(--line);
-  text-align: left;
-  background: none;
-  border-left: 0;
-  border-right: 0;
-  border-top: 0;
-  width: 100%;
-}
-
-.toggle-row:last-child {
-  border-bottom: 0;
-}
 
 /* The iPhone switch: a grey track when off, green when on, with a white knob that springs across. */
 .toggle {
@@ -910,15 +886,6 @@ input {
 
 .toggle.on::after {
   transform: translateX(20px);
-}
-
-/* ── Stepper ─────────────────────────────────────────────────────────────── */
-
-.stepper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
 }
 
 /* ── Sheets ──────────────────────────────────────────────────────────────── */
@@ -1132,19 +1099,6 @@ body:has(.sheet-backdrop) .toasts {
 @keyframes pulse {
   50% {
     opacity: 0.35;
-  }
-}
-
-/* A slow wander, so the background never sits still. */
-@keyframes drift {
-  33% {
-    transform: translate(70px, -50px) scale(1.15);
-  }
-  66% {
-    transform: translate(-50px, 60px) scale(0.92);
-  }
-  100% {
-    transform: translate(40px, 30px) scale(1.08);
   }
 }
 
@@ -1537,8 +1491,7 @@ html:not(.no-glass) .toast:not(.error):not(.success) {
 }
 
 .sheet h2,
-.sheet .h2,
-.sheet .sheet-title {
+.sheet .h2 {
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.03em;

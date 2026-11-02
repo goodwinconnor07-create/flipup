@@ -153,6 +153,8 @@ export function createTable(opts: {
   campaign?: Game['campaign'];
   code: string | null;
   now: number;
+  /** Picks the random bots. Tests pass a seeded one so every run seats the same bots. */
+  rng?: () => number;
 }): Game {
   const game: Game = {
     id: newId(16),
@@ -191,7 +193,7 @@ export function createTable(opts: {
         botProfile: pick.profile?.id,
       });
   }
-  while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles);
+  while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles, opts.rng);
   if (game.campaign) seatBoss(game);
   return game;
 }
@@ -207,7 +209,7 @@ function addLegend(game: Game, id: string): void {
   game.players.push(bot);
 }
 
-function addBot(game: Game, styles?: string[]): void {
+function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): void {
   const names = new Set(game.players.map((p) => p.name.toLowerCase()));
   const emojis = new Set(game.players.map((p) => p.emoji));
   // A random bot whose name and picture nobody at the table has yet (so it isn't always the same order).
@@ -217,7 +219,7 @@ function addBot(game: Game, styles?: string[]): void {
   const free = (fits.length ? fits : BOTS).filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
   const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
   const pick = pool.length
-    ? pool[Math.floor(cryptoRng() * pool.length)]
+    ? pool[Math.floor(rng() * pool.length)]
     : { name: `Bot ${game.players.length}`, emoji: '🦾', style: 'pro', profile: undefined };
   game.players.push({
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
@@ -444,7 +446,7 @@ function openAgain(game: Game, ctx: ActionContext): void {
     p.offline = undefined;
   }
   // Bots that busted out of the last game left the table: bring the count back.
-  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS) addBot(game);
+  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS) addBot(game, undefined, ctx.rng);
   game.id = newId(16);
   game.createdAt = ctx.now;
   game.status = 'lobby';
@@ -615,7 +617,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         if (!legendById(action.legend)) return fail('No such legend.');
         if (game.players.some((p) => p.legend === action.legend)) return fail('That legend is already at the table.');
         addLegend(game, action.legend);
-      } else addBot(game, game.campaign ? campaignStyles(game.campaign) : undefined);
+      } else addBot(game, game.campaign ? campaignStyles(game.campaign) : undefined, ctx.rng);
       wakeIfWaiting(game, ctx);
       return done();
     }
@@ -670,7 +672,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status !== 'lobby') return done(false);
       // A campaign tournament fills its empty seats with the venue's bots, and is as big as it is when it deals.
       if (game.campaign?.kind === 'sng') {
-        while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) addBot(game, campaignStyles(game.campaign));
+        while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) addBot(game, campaignStyles(game.campaign), ctx.rng);
         seatBoss(game);
         game.campaign.seats = game.players.length;
       }

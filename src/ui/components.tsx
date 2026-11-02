@@ -15,7 +15,7 @@ import {
 } from '../game';
 import { back, closeSheet, dismissToast, useApp } from '../state/store';
 import { haptic, reducedMotion } from './effects';
-import { BackIcon, CloseIcon, LockIcon, MinusIcon, PencilIcon, PlusIcon } from './Icons';
+import { BackIcon, CloseIcon, MinusIcon, PencilIcon, PlusIcon } from './Icons';
 
 /** 1,240 */
 export function chips(n: number): string {
@@ -93,7 +93,7 @@ export function NameAndPicture({
 }
 
 /** A grid of emojis to pick from, plus a box to type any emoji at all. */
-export function EmojiPicker({ value, onChange, locked = false, onLocked }: { value: string; onChange: (emoji: string) => void; locked?: boolean; onLocked?: () => void }) {
+export function EmojiPicker({ value, onChange }: { value: string; onChange: (emoji: string) => void }) {
   const [typed, setTyped] = useState('');
   const custom = !(EMOJIS as readonly string[]).includes(value);
   return (
@@ -116,19 +116,7 @@ export function EmojiPicker({ value, onChange, locked = false, onLocked }: { val
           </button>
         ))}
       </div>
-      {locked ? (
-        <button type="button" className="emoji-custom emoji-locked press" onClick={onLocked}>
-          <span className="emoji-custom-pic" aria-hidden>
-            <LockIcon width={20} height={20} />
-          </span>
-          <span className="emoji-locked-text">
-            Type any emoji
-            <small>FlipUp Premium</small>
-          </span>
-          <span className="prem-pill">Unlock</span>
-        </button>
-      ) : (
-        <label className="emoji-custom">
+      <label className="emoji-custom">
           <span className={`emoji-custom-pic${custom ? ' on' : ''}`} aria-hidden>
             {custom ? <Emoji emoji={value} size={30} /> : '＋'}
           </span>
@@ -150,7 +138,6 @@ export function EmojiPicker({ value, onChange, locked = false, onLocked }: { val
             }}
           />
         </label>
-      )}
     </div>
   );
 }
@@ -244,27 +231,6 @@ export function BackBar({ title, right, onBack = back }: { title?: ReactNode; ri
       <div className="topbar-title h3">{title}</div>
       {right}
     </div>
-  );
-}
-
-export function Toggle({ label, hint, on, onChange }: { label: string; hint?: string; on: boolean; onChange: (on: boolean) => void }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      className="toggle-row"
-      onClick={() => {
-        haptic('light');
-        onChange(!on);
-      }}
-    >
-      <span className="toggle-text">
-        <b>{label}</b>
-        {hint && <small className="muted">{hint}</small>}
-      </span>
-      <span className={`toggle${on ? ' on' : ''}`} aria-hidden />
-    </button>
   );
 }
 

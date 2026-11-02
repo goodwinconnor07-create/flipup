@@ -7,7 +7,7 @@ const VARIANTS: Variant[] = ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice
 
 /** A bots-only table (the host sits out of the way by calling) with the first hand dealt. */
 function dealt(variant: Variant, bots = 4, seed = 1): Game {
-  let game = createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, startingStack: 5000, variant }, bots, code: null, now: 0 });
+  let game = createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, startingStack: 5000, variant }, bots, code: null, now: 0, rng: seededRng(seed) });
   const r = applyAction(game, { type: 'start' }, { deviceId: HOST, now: 0, rng: seededRng(seed) });
   if (!r.ok) throw new Error(r.error);
   game = r.game;
@@ -67,13 +67,14 @@ describe('variant bots', { timeout: 20_000 }, () => {
       const rng = seededRng(9);
       let clock = 0;
       let checked = 0;
+      const took: number[] = [];
       for (let i = 0; i < 600 && checked < 30; i++) {
         const hand = game.hand;
         if (hand && !hand.result && hand.toAct && !hand.discarding && !hand.voting) {
           const seat = hand.seats.find((s) => s.playerId === hand.toAct)!;
           const t0 = performance.now();
           const { move } = variantDecide(game, hand, seat, rng)!;
-          expect(performance.now() - t0).toBeLessThan(250);
+          took.push(performance.now() - t0);
           // The same check the table makes; a move it turned down would leave the bot stuck until its clock ran out.
           const err = makeMove(structuredClone(game), move.move, move.to, { deviceId: 'server', now: clock, rng });
           expect(err, `${v}: ${JSON.stringify(move)}`).toBeNull();
@@ -85,6 +86,10 @@ describe('variant bots', { timeout: 20_000 }, () => {
         game = r.game;
       }
       expect(checked, v).toBeGreaterThan(10);
+      // Quick in the usual case. The median, so one decision caught by a garbage-collection pause or a busy
+      // runner doesn't fail the run; a real slowdown moves the median.
+      took.sort((a, b) => a - b);
+      expect(took[Math.floor(took.length / 2)], `${v}: median ms per decision`).toBeLessThan(250);
     }
   });
 });

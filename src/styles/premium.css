@@ -313,35 +313,7 @@
   box-shadow: 0 0 0 2px var(--prem-gold-2);
 }
 
-/* The locked "type any emoji" row in the emoji picker. */
-.emoji-locked {
-  width: 100%;
-  padding: 0;
-  border: 0;
-  background: none;
-  font: inherit;
-  color: var(--ink);
-  text-align: left;
-}
-
-.emoji-locked .emoji-custom-pic {
-  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
-  color: var(--prem-ink);
-}
-
-.emoji-locked-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  font-size: var(--fs-lead);
-  font-weight: 600;
-}
-
-.emoji-locked-text small {
-  color: var(--gold-ink);
-  font-size: var(--fs-caption);
-  font-weight: 600;
-}
+/* The gold "Add legend" button in the lobby. */
 
 .add-legend .add-bot-circle {
   background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
@@ -515,11 +487,6 @@ html.no-glass .sheet.sheet-premium {
   animation: prem-twinkle 3.4s ease-in-out infinite;
 }
 
-
-
-
-
-
 .burst {
   position: absolute;
   inset: 0;
@@ -586,13 +553,6 @@ html.no-glass .sheet.sheet-premium {
 @keyframes prem-twinkle {
   50% {
     opacity: 0.4;
-  }
-}
-
-@keyframes prem-breathe {
-  50% {
-    opacity: 0.6;
-    transform: scale(1.06);
   }
 }
 
@@ -682,7 +642,6 @@ html.no-glass .sheet.sheet-premium {
 }
 
 .show-bubbles,
-.show-emoji,
 .show-legends {
   height: 100px;
 }
@@ -692,27 +651,6 @@ html.no-glass .sheet.sheet-premium {
   flex-wrap: wrap;
   align-content: space-between;
   gap: 8px;
-}
-
-.show-emoji {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  align-content: space-between;
-  font-size: 34px;
-  line-height: 1.1;
-  text-align: center;
-}
-
-.show-emoji b {
-  grid-column: 1 / -1;
-  align-self: end;
-  padding: 7px 12px;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.12);
-  font-size: var(--fs-small);
-  font-weight: 600;
-  text-align: left;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .show-legends {
@@ -835,15 +773,6 @@ html.no-glass .sheet.sheet-premium {
 
 .prem-cta:disabled {
   opacity: 0.85;
-}
-
-.prem-spin {
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  border: 3px solid rgba(61, 34, 0, 0.25);
-  border-top-color: var(--prem-ink);
-  animation: prem-spin 0.7s linear infinite;
 }
 
 .prem-fine {

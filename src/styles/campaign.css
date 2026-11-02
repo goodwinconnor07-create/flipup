@@ -214,12 +214,6 @@
   gap: 12px;
 }
 
-.section-count {
-  font-size: var(--fs-small);
-  font-weight: 700;
-  color: var(--ink-3);
-}
-
 /* ── Section links ("See all", "Add") ─────────────────────────────────────────────── */
 
 .section-link {
@@ -1938,74 +1932,6 @@ html[data-theme='dark'] .bank-bar {
 }
 
 /* ── The free daily spin card and sheet ───────────────────────────────────────────── */
-
-.spin-card {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  width: 100%;
-  padding: 16px 20px;
-  border: 0;
-  border-radius: var(--r-xl);
-  font: inherit;
-  text-align: left;
-  color: var(--on-color);
-  background: linear-gradient(150deg, var(--violet), var(--indigo));
-  box-shadow: var(--shadow-soft);
-}
-
-.spin-card.spun {
-  color: var(--ink-2);
-  background: var(--bg-2);
-  box-shadow: none;
-}
-
-.spin-card-wheel {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: conic-gradient(var(--party-pink) 0 14%, var(--party-orange) 0 28%, var(--party-yellow) 0 43%, var(--party-green) 0 57%, var(--party-blue) 0 71%, var(--violet) 0 86%, var(--rl-red) 0);
-  box-shadow: 0 0 0 3px var(--on-color);
-}
-
-.spin-card-wheel i {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--on-color);
-}
-
-.spin-card.spun .spin-card-wheel {
-  filter: grayscale(1);
-  opacity: 0.5;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .spin-card:not(.spun) .spin-card-wheel {
-    animation: camp-turn 6s linear infinite;
-  }
-}
-
-.spin-card-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.spin-card-text b {
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
-
-.spin-card-text small {
-  font-size: var(--fs-small);
-  opacity: 0.9;
-}
 
 .daily-wheel-wrap {
   display: grid;

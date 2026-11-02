@@ -16,6 +16,7 @@ export * from './record';
 export * from './twin';
 export * from './twinFit';
 export * from './legends';
+export * from './scope';
 export * from './handText';
 export * from './reactions';
 export * from './ids';

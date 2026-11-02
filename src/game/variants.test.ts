@@ -61,7 +61,7 @@ describe('Crazy Pineapple', () => {
 // ── Whole tables ────────────────────────────────────────────────────────────
 
 function table(variant: Variant, bots = 3, stack = 1000): Game {
-  const game = createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, startingStack: stack, turnSeconds: 5, variant }, bots, code: null, now: 0 });
+  const game = createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, startingStack: stack, turnSeconds: 5, variant }, bots, code: null, now: 0, rng: seededRng(1) });
   const r = applyAction(game, { type: 'start' }, { deviceId: HOST, now: 0, rng: seededRng(1) });
   if (!r.ok) throw new Error(r.error);
   return r.game;

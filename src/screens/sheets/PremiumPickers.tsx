@@ -1,4 +1,4 @@
-import { bubbleById, BUBBLE_STYLES, CARD_PACKS, LEGEND_NOTE, LEGENDS, MAX_SEATS, packById } from '../../game';
+import { bubbleById, BUBBLE_STYLES, CAMPAIGN_ON, CARD_PACKS, LEGEND_NOTE, LEGENDS, MAX_SEATS, packById } from '../../game';
 import { useCampaign } from '../../state/campaign';
 import { closeSheet, dispatch, openPremium, openSheet, setProfile, useApp } from '../../state/store';
 import { PlayingCard, Sheet } from '../../ui/components';
@@ -162,8 +162,12 @@ export function PackSheet() {
         You see it when your cards turn over. Everyone at an online table sees it on the back of your cards.
       </p>
       <div className="group">{premiumRows.map(row)}</div>
-      <p className="menu-section">Campaign trophies</p>
-      <div className="group">{trophies.map(row)}</div>
+      {CAMPAIGN_ON && (
+        <>
+          <p className="menu-section">Campaign trophies</p>
+          <div className="group">{trophies.map(row)}</div>
+        </>
+      )}
       <button type="button" className="btn btn-dark" style={{ marginTop: 20 }} onClick={closeSheet}>
         Done
       </button>

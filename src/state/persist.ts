@@ -97,10 +97,6 @@ export function loadPremium(): boolean {
   return read<boolean>('flipup.premium') === true;
 }
 
-export function savePremium(on: boolean): void {
-  write('flipup.premium', on ? true : null);
-}
-
 // ── Table look, sound, and the Home screen's memory ─────────────────────────
 
 export type Rail = 'dark' | 'wood' | 'light';

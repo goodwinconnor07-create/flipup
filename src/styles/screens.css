@@ -209,66 +209,6 @@
   color: var(--on-contrast);
 }
 
-.toggles {
-  padding: 0 16px;
-}
-
-.toggle-text {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.toggle-text small {
-  font-size: var(--fs-small);
-  font-weight: 500;
-}
-
-.bots-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: var(--r-md);
-  background: var(--bg-2);
-}
-
-.bots-row > div:first-child {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.bots-row small {
-  font-size: var(--fs-small);
-  font-weight: 500;
-}
-
-.mini-stepper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.mini-stepper b {
-  min-width: 28px;
-  text-align: center;
-  font-size: var(--fs-h2);
-  font-weight: 700;
-}
-
-.mini-stepper .icon-btn {
-  width: 44px;
-  height: 44px;
-  background: var(--surface);
-}
-
-.mini-stepper .icon-btn:disabled {
-  opacity: 0.35;
-}
-
 /* ── Join ────────────────────────────────────────────────────────────────── */
 
 .me-row {
@@ -772,18 +712,6 @@ html.calm .dots i {
   line-height: 1;
 }
 
-.podium-q {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  background: var(--bg-2);
-  color: var(--ink-3);
-  font-size: var(--fs-h2);
-  font-weight: 700;
-}
-
 .podium-block {
   width: 100%;
   margin-top: 4px;
@@ -855,31 +783,8 @@ html.calm .dots i {
   font-weight: 700;
 }
 
-/* Blinds go up every: a slider with the value beside the title. */
-.slider-title {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-}
-
-.slider-title b {
-  text-transform: none;
-  letter-spacing: 0;
-  font-size: var(--fs-body);
-  font-weight: 700;
-  color: var(--ink);
-}
-
 .choice .raise-slider {
   width: 100%;
-}
-
-.slider-ends {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--fs-caption);
-  font-weight: 600;
-  color: var(--ink-3);
 }
 
 /* ── Apple-style controls ───────────────────────────────────────────────────── */
@@ -2143,17 +2048,6 @@ html[data-theme='dark'] .sheet .code-key-delete {
     animation-delay: calc(var(--i, 0) * 0.35s);
   }
 
-  .game-live .bob {
-    transform-box: fill-box;
-    transform-origin: 50% 100%;
-    animation: scene-bob 2.4s ease-in-out infinite;
-    animation-delay: calc(var(--b, 0) * -0.8s);
-  }
-
-  .game-live .twinkle {
-    animation: scene-twinkle 1.8s ease-in-out infinite;
-  }
-
   .game-live .roll {
     transform-box: fill-box;
     transform-origin: center;
@@ -2180,26 +2074,6 @@ html[data-theme='dark'] .sheet .code-key-delete {
   100% {
     opacity: 0;
     transform: translateY(6px) scale(0.9);
-  }
-}
-
-@keyframes scene-bob {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-2.5px) rotate(-1.5deg);
-  }
-}
-
-@keyframes scene-twinkle {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 1;
   }
 }
 

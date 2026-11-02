@@ -5,11 +5,13 @@ import {
   createTable,
   DEFAULT_SETTINGS,
   holeCountAt,
+  isPremiumVariant,
   keepTwo,
   options,
   parseAction,
   redactForDevice,
   seededRng,
+  VARIANTS,
   wildHand,
   type Game,
   type Variant,
@@ -347,5 +349,12 @@ describe('network input', () => {
     expect(parseAction({ type: 'settings', settings: { variant: 'omaha' } })).toBeNull();
     expect(parseAction({ type: 'vote', hand: 2, playerId: 'abc123' })).toEqual({ type: 'vote', hand: 2, playerId: 'abc123' });
     expect(parseAction({ type: 'vote', hand: 2, playerId: '../x' })).toBeNull();
+  });
+});
+
+describe('free and Premium games', () => {
+  it("the first five are free: Hold'em, Pineapple, Deuces, Ghost, Pittsburgh", () => {
+    expect(VARIANTS.filter((v) => !isPremiumVariant(v.id)).map((v) => v.id)).toEqual(['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh']);
+    expect(VARIANTS.filter((v) => isPremiumVariant(v.id))).toHaveLength(7);
   });
 });

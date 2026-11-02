@@ -162,6 +162,13 @@ export const VARIANTS: VariantInfo[] = [
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
 export const variantOf = (game: Game): Variant => game.hand?.variant ?? game.settings.variant ?? 'holdem';
 export const variantInfo = (v: Variant | undefined): VariantInfo => VARIANTS.find((x) => x.id === v) ?? VARIANTS[0];
+
+/**
+ * In the iPhone app the first five games in VARIANTS are free; the rest unlock with Premium or a rewarded ad, and
+ * only the host of a table needs the unlock (docs/APP_STORE.md). The web doesn't lock any game yet.
+ */
+export const FREE_VARIANTS = 5;
+export const isPremiumVariant = (v: Variant): boolean => VARIANTS.findIndex((x) => x.id === v) >= FREE_VARIANTS;
 export const isVariant = (v: unknown): v is Variant => VARIANTS.some((x) => x.id === v);
 
 /** Hole cards dealt to each player. */

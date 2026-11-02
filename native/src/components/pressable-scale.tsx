@@ -20,8 +20,16 @@ export function PressableScale({
   onPress,
   disabled,
   haptics = true,
+  outerStyle,
   ...props
-}: Omit<PressableProps, 'style' | 'children'> & { children: ReactNode; style?: StyleProp<ViewStyle>; haptics?: boolean }) {
+}: Omit<PressableProps, 'style' | 'children'> & {
+  children: ReactNode;
+  /** The look: it scales and dims with the press. */
+  style?: StyleProp<ViewStyle>;
+  /** Layout around it (flex, width, margins), which doesn't scale. */
+  outerStyle?: StyleProp<ViewStyle>;
+  haptics?: boolean;
+}) {
   const reduce = useReduceMotion();
   const down = useSharedValue(0);
   const rest = disabled ? 0.4 : 1;
@@ -36,6 +44,7 @@ export function PressableScale({
     <Pressable
       {...props}
       disabled={disabled}
+      style={outerStyle}
       hitSlop={8}
       pressRetentionOffset={16}
       onPressIn={(e) => {
@@ -51,7 +60,7 @@ export function PressableScale({
         onPress?.(e);
       }}
     >
-      <Animated.View style={[style, look]}>{children}</Animated.View>
+      <Animated.View style={[{ flexGrow: 1 }, style, look]}>{children}</Animated.View>
     </Pressable>
   );
 }

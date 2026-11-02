@@ -42,8 +42,9 @@ device, the back end must be on, and 2.1(b) says in-app purchases must be "compl
 reviewer and functional."
 
 **What we'll do:**
-- Replace every Expo placeholder: the icon (`assets/expo.icon`, `assets/images/icon.png`), the splash image and
-  the Phase 0 shell screen.
+- Replace every Expo placeholder: the icon (`assets/expo.icon`, `assets/images/icon.png`) and the splash image.
+- Remove every `ComingNext` screen (`native/src/components/coming-next.tsx`): Phase 5 uses them as stand-ins for
+  steps it hasn't built yet. `grep -r ComingNext native/src` must find nothing but the file itself, then delete it.
 - `/privacy` and `/support` on gtoduel.online answer today, but only with the web app's page (the single-page
   fallback), not a policy. Make them real static pages before submitting.
 - Premium must be buyable in the review build with a sandbox account, and the review notes say where it is.

@@ -22,6 +22,7 @@ export function PlayTile({
   emoji: string;
   tint: keyof typeof gradients;
   onPress: () => void;
+  /** Layout around the tile (flex, width). */
   style?: StyleProp<ViewStyle>;
 }) {
   const shadow = useShadows();
@@ -31,6 +32,7 @@ export function PlayTile({
       accessibilityRole="button"
       accessibilityLabel={`${title}. ${subtitle}`}
       onPress={onPress}
+      outerStyle={style}
       style={[
         {
           minHeight: 132,
@@ -45,7 +47,6 @@ export function PlayTile({
           ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`),
           boxShadow: shadow.soft,
         },
-        style,
       ]}
     >
       <View style={{ position: 'absolute', top: spacing.sm, right: spacing.sm }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">

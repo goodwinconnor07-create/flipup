@@ -22,7 +22,13 @@ const WEB = {
   'hand.tap.fill': 'touch_app',
   'checkmark.circle.fill': 'check_circle',
   'xmark.circle.fill': 'cancel',
-  'sparkles': 'auto_awesome',
+  sparkles: 'auto_awesome',
+  'person.fill': 'person',
+  'crown.fill': 'workspace_premium',
+  'circle.grid.3x3.fill': 'dialpad',
+  'person.3.fill': 'groups',
+  'lock.fill': 'lock',
+  'paintbrush.fill': 'palette',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, View } from 'react-native';
+import { Stack } from 'expo-router';
 import Animated from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
@@ -36,6 +37,7 @@ export default function MotionScreen() {
 
   return (
     <View style={{ flex: 1 }}>
+      <Stack.Screen options={{ title: 'Motion' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, gap: spacing.xxl }}>
         <Section header="Reduce Motion" footer="Follows Settings › Accessibility › Motion live. When it's on, nothing scales or slides: presses only dim, toasts and screens fade.">
           <Row title="Reduce Motion" detail={reduce ? 'On' : 'Off'} />

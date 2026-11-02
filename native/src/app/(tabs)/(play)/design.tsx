@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -13,8 +13,8 @@ import { ThemedText } from '@/components/themed-text';
 import { describeHand } from '@/engine';
 import { gradient, gradients, party, radius, spacing, typography, useColors, type TypeStyle } from '@/theme';
 
-// Phase 3: the design system on one page, so it can be checked on a phone (light, dark, large text) before any
-// real screen is built on it. Phase 5 replaces this screen with Home.
+// The design system on one page, to check on a phone (light, dark, large text). Development builds only: Home
+// links here under __DEV__.
 
 const RAMP: TypeStyle[] = ['largeTitle', 'title1', 'title2', 'title3', 'headline', 'body', 'callout', 'subhead', 'footnote', 'caption1', 'caption2'];
 const sample = describeHand(['As', 'Ks', 'Qs', 'Js', 'Ts']);
@@ -28,6 +28,7 @@ export default function DesignSystem() {
 
   return (
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, gap: spacing.xxl }}>
+      <Stack.Screen options={{ title: 'Design system' }} />
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <PlayTile title="Play with friends" subtitle="Share a code" emoji="🥳" tint="blue" onPress={() => {}} style={{ flex: 1 }} />
         <PlayTile title="Play with bots" subtitle="On this phone" emoji="🦊" tint="green" onPress={() => {}} style={{ flex: 1 }} />

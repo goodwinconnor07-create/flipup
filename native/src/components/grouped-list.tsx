@@ -12,7 +12,7 @@ import { ThemedText } from './themed-text';
  * A Settings-style group: a small uppercase grey header above, flat rounded cells with hairlines between them,
  * and a grey footnote under it. White page and #f2f2f7 cells in light mode; black page and #1c1c1e in dark.
  */
-export function Section({ header, footer, children }: { header?: string; footer?: string; children: ReactNode }) {
+export function Section({ header, footer, children, inset = 60 }: { header?: string; footer?: string; children: ReactNode; /** Where the hairlines between rows start. */ inset?: number }) {
   const colors = useColors();
   const rows = Children.toArray(children).filter(isValidElement);
   return (
@@ -26,7 +26,7 @@ export function Section({ header, footer, children }: { header?: string; footer?
         {rows.map((row, i) => (
           <View key={row.key ?? i}>
             {row}
-            {i < rows.length - 1 && <View style={{ height: 0.5, marginLeft: 60, backgroundColor: colors.separator }} />}
+            {i < rows.length - 1 && <View style={{ height: 0.5, marginLeft: inset, backgroundColor: colors.separator }} />}
           </View>
         ))}
       </View>
@@ -47,19 +47,24 @@ type RowProps = {
   detail?: string;
   /** An SF Symbol on a coloured square. */
   icon?: { symbol: IconName; color: string };
+  /** Anything else at the start of the row instead of an icon (a game's picture). */
+  leading?: ReactNode;
   /** A control at the end of the row (a Switch, a Stepper). When it's there the row itself isn't tappable. */
   accessory?: ReactNode;
+  /** Something small before the chevron that doesn't take the tap (a Premium mark). */
+  trailing?: ReactNode;
   /** Makes the row tappable, with a chevron. */
   onPress?: () => void;
   destructive?: boolean;
 };
 
 /** One row in a Section: an optional icon square, the title, then a detail and chevron, or a control. */
-export function Row({ title, subtitle, detail, icon, accessory, onPress, destructive }: RowProps) {
+export function Row({ title, subtitle, detail, icon, leading, trailing, accessory, onPress, destructive }: RowProps) {
   const colors = useColors();
   const body = (
     <View style={{ minHeight: minTap + 6, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
       {icon && <IconSquare {...icon} />}
+      {leading}
       <View style={{ flex: 1, gap: 2 }}>
         <ThemedText tone={destructive ? 'red' : 'label'}>{title}</ThemedText>
         {subtitle && (
@@ -69,6 +74,7 @@ export function Row({ title, subtitle, detail, icon, accessory, onPress, destruc
         )}
       </View>
       {detail && <ThemedText tone="tertiaryLabel">{detail}</ThemedText>}
+      {trailing}
       {accessory}
       {onPress && !accessory && <Icon name="chevron.right" size={14} color={colors.quaternaryLabel} />}
     </View>

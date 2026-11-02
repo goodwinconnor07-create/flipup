@@ -27,7 +27,7 @@ Sources:
 | `native/` app | Made with `create-expo-app` (Expo SDK 58, React Native 0.88, Expo Router). The template's demo screens are gone; one shell screen proves the engine loads. The engine is shared, not copied: `@game/*` points at `../src/game` (`native/tsconfig.json`, `native/metro.config.js`) and `native/src/engine` is the app's one door to it. `npx tsc --noEmit` passes and `npx expo export --platform ios` bundles it. |
 | Names, ids, links | One file: `native/appInfo.ts` (store name, product ID, API origin, privacy and support URLs, support email). `native/app.config.ts` reads it. |
 | Build workflow | `.github/workflows/ios-build.yml`: run by hand only, inputs `submit` (default false) and `profile` (default production), pinned actions and Node, one build at a time, the `.p8` key written to `$RUNNER_TEMP` and deleted in an `always()` step. |
-| Test build | **Blocked** until the bundle ID and EAS project ID are filled in (see Open items). The workflow stops with a clear message while either is empty. |
+| Test build | **Not run yet.** GitHub only lets you start a hand-run workflow that's on the repository's default branch, which is `claude/main`; the workflow is on `main`, so starting it returned 404. Once it's on the default branch, it still stops at "Check the app config" until the bundle ID and EAS project ID are filled in (see Open items). |
 | Snapshot | Branch `native-rebuild` made from `claude/main` (417c33a) before any change. `main` is one fix ahead of it (#49, blank Home while scrolling on iPhone). |
 
 ---

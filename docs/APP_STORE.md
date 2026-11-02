@@ -27,7 +27,7 @@ Sources:
 | `native/` app | iPhone only for the first release (`supportsTablet: false`). Made with `create-expo-app` (Expo SDK 58, React Native 0.88, Expo Router). The template's demo screens are gone; one shell screen proves the engine loads. The engine is shared, not copied: `@game/*` points at `../src/game` (`native/tsconfig.json`, `native/metro.config.js`) and `native/src/engine` is the app's one door to it. `npx tsc --noEmit` passes and `npx expo export --platform ios` bundles it. |
 | Names, ids, links | One file: `native/appInfo.ts` (store name, product ID, API origin, privacy and support URLs, support email). `native/app.config.ts` reads it. |
 | Build workflow | `.github/workflows/ios-build.yml`: run by hand only, inputs `submit` (default false) and `profile` (default production), pinned actions and Node, one build at a time, the `.p8` key written to `$RUNNER_TEMP` and deleted in an `always()` step. |
-| Test build | Run 1 (`submit: false`, from `claude/main` after `main` was merged in) stopped at the secrets check because `EXPO_TOKEN` is missing. Nothing was built or sent. Once the token is there, it will stop at "Check the app config" until the bundle ID and EAS project ID are filled in. |
+| Test build | Run 1 stopped at the secrets check (the token is named `EXPO_API_TOKEN`; fixed). Run 2 made the EAS project (`55f84d03-0b82-48a2-9fa8-a4f76a7d112a`, now in `native/appInfo.ts`) and stopped at signing: EAS only makes the Apple certificate and profile in interactive mode. `.github/workflows/ios-signing.yml` does that once (see the file), then the build runs on its own. |
 | Snapshot | Branch `native-rebuild` made from `claude/main` (417c33a) before any change. `main` is one fix ahead of it (#49, blank Home while scrolling on iPhone). |
 
 ---
@@ -309,7 +309,7 @@ the iPad release.
 |---|---|---|
 | 1 | GitHub secrets: done. The Expo token is `EXPO_API_TOKEN` | Done |
 | 2 | Bundle ID `com.goodwin.flipup`, in `native/appInfo.ts` | Done |
-| 3 | EAS project ID: the build workflow creates or links the project with the token and prints the ID; copy it into `easProjectId` in `native/appInfo.ts` | Claude, after the first run |
+| 3 | EAS project ID `55f84d03-0b82-48a2-9fa8-a4f76a7d112a`, in `native/appInfo.ts` | Done |
 | 4 | **Support email `goodwinconnor007@gmail.com` is a placeholder** (`TODO(before launch)` in `native/appInfo.ts`). Replace it before submitting | Owner |
 | 5 | Real static pages at `/privacy` and `/support` (today both return the web app) | Claude, Phase 2 |
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |

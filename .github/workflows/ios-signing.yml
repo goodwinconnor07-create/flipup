@@ -1,0 +1,62 @@
+# One-time setup of the iOS signing certificate and App Store provisioning profile, stored on EAS so the
+# iOS build workflow can sign without anyone at a keyboard. EAS only makes these in interactive mode, so
+# this runs it in a pseudo-terminal and presses Enter at each question. Every EAS yes/no question here
+# defaults to yes ("generate a new certificate", "reuse this certificate"); nothing is revoked unless
+# picked, and Enter alone never picks anything. Run it again only if signing breaks (an expired certificate).
+name: iOS signing setup
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  credentials:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+
+      - uses: expo/expo-github-action@9da89d3617bb88139671bad31b09c65714c2ee06 # v9
+        with:
+          eas-version: 27.2.0
+          token: ${{ secrets.EXPO_API_TOKEN }}
+
+      - run: npm ci
+
+      - name: Write the App Store Connect key
+        env:
+          KEY: ${{ secrets.APPLE_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Make the certificate and profile on EAS
+        env:
+          EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          TERM: xterm
+        run: |
+          (while true; do printf '\r'; sleep 4; done) | timeout 900 \
+            script -qefc "eas credentials:configure-build --platform ios --profile production" /dev/null
+
+      - name: Delete the App Store Connect key
+        if: always()
+        working-directory: .
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

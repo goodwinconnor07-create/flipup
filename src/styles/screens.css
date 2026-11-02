@@ -1037,18 +1037,6 @@ html[data-theme='dark'] .btn-dark {
   color: var(--ink-2);
 }
 
-.fin-hint {
-  margin-top: 24px;
-  font-size: var(--fs-small);
-  color: var(--ink-3);
-  animation: fin-bob 1.6s infinite ease-in-out;
-}
-
-@keyframes fin-bob {
-  50% {
-    transform: translateY(6px);
-  }
-}
 
 .fin-section {
   display: flex;
@@ -1320,7 +1308,6 @@ html[data-theme='dark'] .btn-dark {
     stroke-dashoffset: 0;
   }
 
-  .fin-hint,
   .fin-crown,
   .fin-title,
   .announce.in .announce-icon {

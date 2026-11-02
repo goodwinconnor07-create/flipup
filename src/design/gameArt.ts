@@ -163,3 +163,53 @@ const SCENES: Record<Variant, () => Shape[]> = {
 
 /** The shapes of a game's picture, back to front. */
 export const gameScene = (v: Variant): Shape[] => (SCENES[v] ?? SCENES.holdem)();
+
+/**
+ * The small square version of each game's picture, for lists (a 100 × 100 box): one to three big cards that say
+ * what the game is about, no caption, so it still reads at 30 to 52 points.
+ */
+const THUMBS: Record<Variant, () => Shape[]> = {
+  holdem: () => [card({ x: 38, y: 54, r: -10, rank: 'A', suit: '♠', s: 1.05 }), card({ x: 63, y: 50, r: 10, rank: 'K', suit: '♥', s: 1.05 })],
+  pineapple: () => [
+    card({ x: 29, y: 56, r: -16, rank: 'Q', suit: '♦', s: 0.9 }),
+    card({ x: 50, y: 50, rank: 'J', suit: '♣', s: 0.9 }),
+    card({ x: 72, y: 57, r: 16, rank: '3', suit: '♠', s: 0.9, faded: true }),
+  ],
+  deuces: () => [card({ x: 50, y: 52, rank: '2', suit: '♥', s: 1.2, glow: true })],
+  ghost: () => [card({ x: 37, y: 53, r: -8, rank: 'A', suit: '♠', s: 1 }), card({ x: 64, y: 50, r: 8, s: 1, back: true, faded: true })],
+  pittsburgh: () => [
+    card({ x: 22, y: 50, rank: 'Q', suit: '♥', s: 0.62 }),
+    card({ x: 50, y: 50, rank: 'K', suit: '♠', s: 0.62, glow: true }),
+    card({ x: 78, y: 50, rank: '7', suit: '♦', s: 0.62 }),
+  ],
+  dice: () => [card({ x: 38, y: 48, r: -8, rank: 'J', suit: '♥', s: 1 }), { kind: 'die', x: 70, y: 68, r: 12, pips: 5 }],
+  redriver: () => [card({ x: 38, y: 53, r: -10, rank: 'K', suit: '♥', s: 1 }), card({ x: 63, y: 50, r: 10, rank: '9', suit: '♥', s: 1, glow: true })],
+  imposter: () => [card({ x: 50, y: 50, s: 1.15, back: true }), { kind: 'glyph', x: 50, y: 63, text: '?', size: 36, bold: true, ink: '#fff' }],
+  memory: () => [
+    card({ x: 34, y: 30, rank: 'A', suit: '♠', s: 0.6 }),
+    card({ x: 66, y: 30, rank: 'K', suit: '♥', s: 0.6, faded: true }),
+    card({ x: 34, y: 72, rank: '7', suit: '♦', s: 0.6, faded: true }),
+    card({ x: 66, y: 72, rank: '2', suit: '♣', s: 0.6 }),
+  ],
+  beanstalk: () => [
+    card({ x: 30, y: 68, r: -10, rank: '9', suit: '♣', s: 0.75 }),
+    card({ x: 50, y: 52, rank: '9', suit: '♥', s: 0.75 }),
+    card({ x: 70, y: 36, r: 10, rank: 'K', suit: '♥', s: 0.75, glow: true }),
+  ],
+  crucifix: () =>
+    [
+      [50, 50],
+      [50, 20],
+      [50, 80],
+      [22, 50],
+      [78, 50],
+    ].map(([x, y], i) => card({ x, y, rank: ['A', 'K', 'Q', 'J', 'T'][i], suit: ['♠', '♥', '♦', '♣', '♠'][i], s: 0.42, glow: i === 0 })),
+  circle: () =>
+    CIRCLE_HOURS.map((h, i) => {
+      const a = (h / 12) * 2 * Math.PI;
+      return card({ x: 50 + Math.sin(a) * 30, y: 50 - Math.cos(a) * 30, rank: ['A', 'K', 'Q', 'J', 'T', '9'][i], suit: ['♠', '♥', '♦', '♣', '♠', '♥'][i], s: 0.42, glow: i < 2 });
+    }),
+};
+
+/** The shapes of a game's square thumbnail, back to front, on a 100 × 100 box. */
+export const gameThumb = (v: Variant): Shape[] => (THUMBS[v] ?? THUMBS.holdem)();

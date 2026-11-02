@@ -1,7 +1,7 @@
 import { View } from 'react-native';
 import Svg, { Circle, G, Path, Rect, Text } from 'react-native-svg';
 
-import { gameLook, gameScene, GLOW, PIPS, SUIT_COLOUR, type CardShape, type Shape } from '@design/gameArt';
+import { gameLook, gameScene, gameThumb, GLOW, PIPS, SUIT_COLOUR, type CardShape, type Shape } from '@design/gameArt';
 import type { Variant } from '@/engine';
 import { gradient, radius } from '@/theme';
 
@@ -86,6 +86,25 @@ export function GamePicture({ variant, width, height, rounded = radius.md }: { v
     >
       <Svg width={width} height={height} viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice">
         {gameScene(variant).map(draw)}
+      </Svg>
+    </View>
+  );
+}
+
+/**
+ * A game's small square picture, for lists: its own layout of one to three big cards (gameThumb in gameArt.ts) on
+ * the game's gradient, made to read at 30 to 52 points. The wide picture is for the big cards and sheets.
+ */
+export function GameThumb({ variant, size, rounded = size * 0.24 }: { variant: Variant; size: number; rounded?: number }) {
+  const [top, bottom] = gameLook(variant).card;
+  return (
+    <View
+      style={{ width: size, height: size, borderRadius: rounded, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+    >
+      <Svg width={size} height={size} viewBox="0 0 100 100">
+        {gameThumb(variant).map(draw)}
       </Svg>
     </View>
   );

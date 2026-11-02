@@ -1,5 +1,5 @@
 import { type CSSProperties, type ReactNode } from 'react';
-import { BUBBLE_STYLES, CARD_PACKS, legendById, LEGENDS, LEGENDS_ON, type Legend } from '../../game';
+import { BUBBLE_STYLES, CARD_PACKS, LEGENDS, type Legend } from '../../game';
 import { PREMIUM_ON_SALE, PREMIUM_PERKS, PREMIUM_PRICE, type PremiumReason } from '../../state/premium';
 import { closeSheet, openSheet, useApp } from '../../state/store';
 import { PlayingCard, Sheet } from '../../ui/components';
@@ -43,49 +43,7 @@ function CardFan() {
   );
 }
 
-/** Bubble colours, emoji and (when they're on) legends floating round the fan of card backs. */
-function Burst() {
-  const legends = LEGENDS_ON ? ['brunson', 'ivey', 'dwan'].map((id) => legendById(id)!) : [];
-  const at = (x: number, y: number, rot: number, delay: number): CSSProperties => ({
-    ['--x' as string]: `${x}%`,
-    ['--y' as string]: `${y}px`,
-    ['--r' as string]: `${rot}deg`,
-    ['--d' as string]: `${delay}ms`,
-  });
-  return (
-    <div className="burst" aria-hidden>
-      <span className="burst-item" style={at(50, 22, 0, 120)}>
-        {legends[1] && <LegendFace legend={legends[1]} size={84} />}
-      </span>
-      <span className="burst-item" style={at(24, 62, -8, 220)}>
-        {legends[0] && <LegendFace legend={legends[0]} size={58} />}
-      </span>
-      <span className="burst-item" style={at(76, 62, 8, 280)}>
-        {legends[2] && <LegendFace legend={legends[2]} size={58} />}
-      </span>
-      <span className="burst-item" style={at(21, 150, -10, 340)}>
-        <BubbleChip id="rainbow">Nice hand</BubbleChip>
-      </span>
-      <span className="burst-item" style={at(80, 168, 7, 400)}>
-        <BubbleChip id="gold">All in</BubbleChip>
-      </span>
-      <span className="burst-item burst-emoji" style={at(9, 14, -12, 460)}>
-        🦄
-      </span>
-      <span className="burst-item burst-emoji" style={at(89, 124, 10, 520)}>
-        🐉
-      </span>
-      <span className="burst-item" style={at(91, 52, 9, 580)}>
-        <PlayingCard back size="md" pack="holo" />
-      </span>
-      <span className="burst-item" style={at(9, 78, -9, 640)}>
-        <PlayingCard back size="md" pack="gold" />
-      </span>
-    </div>
-  );
-}
-
-/** The showcase cards under the fan. The one for what the player tapped comes first. */
+/** What Premium unlocks, as a plain list under the fan. The one the player tapped comes first. */
 function Showcase({ reason }: { reason?: PremiumReason }) {
   const cards: Record<PremiumReason, ReactNode> = {
     bubbles: (
@@ -159,9 +117,6 @@ export function PremiumSheet({ reason, then }: { reason?: PremiumReason; then?: 
       </button>
 
       <div className="prem-hero">
-        <span className="prem-rays" aria-hidden />
-        <span className="prem-stars" aria-hidden />
-        <Burst />
         <CardFan />
       </div>
 

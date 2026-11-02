@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactNode } from 'react';
-import { GLOW, PIPS, SUIT_COLOUR, gameScene, type CardShape, type Shape } from '../design/gameArt';
+import { GLOW, PIPS, SUIT_COLOUR, gameLook, gameScene, gameThumb, type CardShape, type Shape } from '../design/gameArt';
 import type { Variant } from '../game';
 
 // One picture per game, built from playing cards in the same four-colour deck the table uses. The shapes come
@@ -97,11 +97,17 @@ export function GameIllustration({ variant, className }: { variant: Variant; cla
   );
 }
 
-/** A game's picture as a small rounded square, for lists (a party's playlist, the game row in setup). */
+/**
+ * A game's small square picture, for lists (a party's playlist, the game row in setup): its own layout of one to
+ * three big cards (gameThumb in gameArt.ts) on the game's gradient, made to read at this size.
+ */
 export function GameThumb({ variant, size = 40 }: { variant: Variant; size?: number }) {
+  const [top, bottom] = gameLook(variant).card;
   return (
-    <span className="game-thumb" style={{ width: size, height: size }} aria-hidden>
-      <GameIllustration variant={variant} />
+    <span className="game-thumb" style={{ width: size, height: size, background: `linear-gradient(160deg, ${top}, ${bottom})` }} aria-hidden>
+      <svg viewBox="0 0 100 100" aria-hidden focusable="false">
+        {gameThumb(variant).map(draw)}
+      </svg>
     </span>
   );
 }

@@ -4,6 +4,7 @@ import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, removePal
 import { loadPartyRef } from '../state/party';
 import { navigate, openSheet, toast, undoToast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
+import { GameThumb } from '../ui/GameIllustrations';
 import { ChevronIcon, KeypadIcon, PlusIcon, ShareIcon, UsersIcon } from '../ui/Icons';
 import { copy } from './sheets/InviteSheet';
 
@@ -70,7 +71,7 @@ export function PartyTab() {
         <span className="party-host-games" aria-hidden>
           {SHOWCASE.map((v, i) => (
             <span key={v.id} style={{ ['--i' as string]: i }}>
-              {v.emoji}
+              <GameThumb variant={v.id} size={38} />
             </span>
           ))}
         </span>

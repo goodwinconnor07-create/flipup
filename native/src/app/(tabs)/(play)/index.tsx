@@ -2,7 +2,7 @@ import { router, Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
-import { GamePicture } from '@/components/game-picture';
+import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
@@ -35,7 +35,7 @@ export default function Home() {
               key={v.id}
               title={v.name}
               subtitle={v.tagline}
-              leading={<GamePicture variant={v.id} width={THUMB} height={THUMB} rounded={radius.sm + 2} />}
+              leading={<GameThumb variant={v.id} size={THUMB} />}
               trailing={!premium && isPremiumVariant(v.id) ? <Icon name="crown.fill" size={15} color={colors.gold} /> : undefined}
               onPress={() => router.push(`/game/${v.id}`)}
             />

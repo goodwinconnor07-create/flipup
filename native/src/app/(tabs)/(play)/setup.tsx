@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { GamePicture } from '@/components/game-picture';
+import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
 import { Stepper } from '@/components/stepper';
 import { SettingsFields } from '@/components/settings-fields';
@@ -67,7 +67,7 @@ export default function SetupScreen() {
           <Row
             title={variantInfo(variant).name}
             subtitle={variantInfo(variant).tagline}
-            leading={<GamePicture variant={variant} width={44} height={44} rounded={10} />}
+            leading={<GameThumb variant={variant} size={44} />}
             onPress={() => router.push('/choose-game')}
           />
         </Section>

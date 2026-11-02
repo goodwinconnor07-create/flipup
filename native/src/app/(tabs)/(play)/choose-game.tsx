@@ -1,7 +1,7 @@
 import { router, Stack } from 'expo-router';
 import { ScrollView } from 'react-native';
 
-import { GamePicture } from '@/components/game-picture';
+import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
@@ -28,7 +28,7 @@ export default function ChooseGame() {
               key={v.id}
               title={v.name}
               subtitle={v.tagline}
-              leading={<GamePicture variant={v.id} width={THUMB} height={THUMB} rounded={10} />}
+              leading={<GameThumb variant={v.id} size={THUMB} />}
               trailing={
                 v.id === current ? (
                   <Icon name="checkmark" size={17} color={colors.accent} />

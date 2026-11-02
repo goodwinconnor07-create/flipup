@@ -325,6 +325,8 @@
      A clear fill that blurs and brightens what's behind it, a bright rim and a top shine. */
   --glass-fill: rgba(255, 255, 255, 0.72);
   --glass-fill-strong: rgba(255, 255, 255, 0.86);
+  /* Sheets: nearly solid, so the colours of the cards behind don't bleed through between rows. */
+  --glass-fill-sheet: rgba(255, 255, 255, 0.96);
   --glass-tint-dark: rgba(20, 20, 32, 0.72);
   --glass-rim: rgba(255, 255, 255, 0.7);
   --glass-edge: rgba(18, 18, 40, 0.08);
@@ -344,6 +346,7 @@ html[data-theme='dark'] {
   color-scheme: dark;
   --glass-fill: rgba(30, 30, 32, 0.72);
   --glass-fill-strong: rgba(30, 30, 32, 0.86);
+  --glass-fill-sheet: rgba(30, 30, 32, 0.96);
   --glass-tint-dark: rgba(30, 30, 32, 0.8);
   --glass-rim: rgba(255, 255, 255, 0.16);
   --glass-edge: rgba(0, 0, 0, 0.3);
@@ -1277,7 +1280,7 @@ html.calm *::after {
 }
 
 .sheet {
-  background: var(--glass-fill-strong);
+  background: var(--glass-fill-sheet);
   box-shadow: var(--glass-shine), var(--glass-shadow);
 }
 
@@ -1368,6 +1371,7 @@ html:not(.no-glass) .pot-pill {
 html.no-glass {
   --glass-fill: var(--surface);
   --glass-fill-strong: var(--surface);
+  --glass-fill-sheet: var(--surface);
   --glass-tint-dark: var(--contrast);
   --glass-blur: none;
   --lg-blur: none;

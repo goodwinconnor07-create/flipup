@@ -460,102 +460,6 @@ html.no-glass .sheet.sheet-premium {
   border-radius: 32px 32px 0 0;
 }
 
-.prem-rays {
-  position: absolute;
-  left: 50%;
-  bottom: -190px;
-  width: 560px;
-  height: 560px;
-  margin-left: -280px;
-  border-radius: 50%;
-  background: repeating-conic-gradient(from 0deg, rgba(255, 210, 74, 0.2) 0deg 8deg, rgba(255, 210, 74, 0) 8deg 24deg);
-  -webkit-mask-image: radial-gradient(circle, #000 18%, transparent 68%);
-  mask-image: radial-gradient(circle, #000 18%, transparent 68%);
-  animation: prem-spin 40s linear infinite;
-}
-
-.prem-stars {
-  position: absolute;
-  inset: 0;
-  background-image:
-    radial-gradient(1.5px 1.5px at 12% 20%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 30% 8%, #fff 50%, transparent 51%),
-    radial-gradient(2px 2px at 62% 14%, var(--prem-gold-1) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 88% 30%, #fff 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 44% 34%, var(--prem-gold-1) 50%, transparent 51%),
-    radial-gradient(2px 2px at 6% 52%, #fff 50%, transparent 51%), radial-gradient(1.5px 1.5px at 94% 62%, #fff 50%, transparent 51%);
-  opacity: 0.8;
-  animation: prem-twinkle 3.4s ease-in-out infinite;
-}
-
-.burst {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-}
-
-.burst-item {
-  position: absolute;
-  left: var(--x);
-  top: var(--y);
-  display: block;
-  translate: -50% 0;
-  rotate: var(--r);
-  animation:
-    burst-out 0.9s var(--d) cubic-bezier(0.2, 1.2, 0.4, 1) both,
-    burst-float 3.6s calc(var(--d) + 0.9s) ease-in-out infinite;
-}
-
-.burst-emoji {
-  font-size: 40px;
-  line-height: 1;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
-}
-
-.burst-item .legend-face {
-  box-shadow:
-    0 0 0 3px var(--prem-gold-2),
-    0 0 20px var(--prem-gold-glow);
-}
-
-.burst-item .bubble-chip {
-  font-size: var(--fs-small);
-}
-
-/* Floating out from the fan: from its middle, small and unseen, up to its place. */
-@keyframes burst-out {
-  from {
-    left: 50%;
-    top: 220px;
-    opacity: 0;
-    transform: scale(0.2);
-  }
-  60% {
-    opacity: 1;
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes burst-float {
-  50% {
-    transform: translateY(-7px);
-  }
-}
-
-@keyframes prem-spin {
-  to {
-    transform: rotate(1turn);
-  }
-}
-
-@keyframes prem-twinkle {
-  50% {
-    opacity: 0.4;
-  }
-}
-
 .prem-body {
   padding: 8px 20px 0;
   text-align: center;
@@ -596,13 +500,9 @@ html.no-glass .sheet.sheet-premium {
 /* What you get: three cards that swipe sideways. The one for what you tapped comes first, in gold. */
 .showcase {
   display: flex;
-  gap: 12px;
-  margin: 0 -20px;
-  padding: 4px 20px 14px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: 20px;
-  scrollbar-width: none;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 0 14px;
   text-align: left;
 }
 
@@ -612,9 +512,6 @@ html.no-glass .sheet.sheet-premium {
 
 .show-card {
   flex: none;
-  width: 78%;
-  max-width: 300px;
-  scroll-snap-align: start;
   padding: 16px;
   border-radius: var(--r-lg);
   background: rgba(255, 255, 255, 0.08);
@@ -797,12 +694,9 @@ html.no-glass .sheet.sheet-premium {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .prem-rays,
-  .prem-stars,
   .card-fan-glow,
   .card-fan-arc,
   .card-fan-slot,
-  .burst-item,
   .prem-card,
   .prem-card::after,
   .prem-cta,

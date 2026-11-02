@@ -240,7 +240,6 @@ export function Final({ game }: { game: Game }) {
               <b>{legend.short}:</b> “{line}”
             </p>
           )}
-          <span className="fin-hint" aria-hidden>Scroll ↓</span>
         </section>
 
         {announced && report && (

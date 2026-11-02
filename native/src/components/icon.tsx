@@ -13,6 +13,7 @@ const WEB = {
   'person.2.fill': 'group',
   'suit.spade.fill': 'playing_cards',
   'bubble.left.fill': 'chat_bubble',
+  'bubble.left': 'chat_bubble_outline',
   'chevron.right': 'chevron_right',
   minus: 'remove',
   plus: 'add',
@@ -43,6 +44,12 @@ const WEB = {
   'stop.circle.fill': 'stop_circle',
   'rectangle.portrait.and.arrow.right': 'logout',
   'square.and.arrow.up': 'ios_share',
+  'gearshape.fill': 'settings',
+  'moon.fill': 'dark_mode',
+  'bolt.fill': 'bolt',
+  'paintpalette.fill': 'palette',
+  'questionmark.circle.fill': 'help',
+  'house.fill': 'home',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

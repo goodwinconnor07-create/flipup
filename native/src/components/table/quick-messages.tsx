@@ -33,9 +33,9 @@ export function QuickMessages() {
           haptic.tap();
           setOpen(true);
         }}
-        style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell }}
+        style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell }}
       >
-        <Icon name="bubble.left.fill" size={17} color={colors.accent} />
+        <Icon name="bubble.left" size={17} color={colors.tertiaryLabel} />
       </PressableScale>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'flex-end', padding: spacing.md, paddingBottom: 180 }} onPress={() => setOpen(false)}>

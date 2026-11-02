@@ -41,6 +41,20 @@ const PALETTE_VARS = {
   switchOn: 'switch-on',
   segmentOn: 'segment-on',
   scrim: 'scrim',
+  bubbleGrey: 'bubble-grey',
+  bubbleBlue: 'bubble-blue',
+  bubbleBlueHi: 'bubble-blue-hi',
+  redBg: 'red-bg',
+  redInk: 'red-ink',
+  goldBg: 'gold-bg',
+  goldInk: 'gold-ink',
+  contrast: 'contrast',
+  onContrast: 'on-contrast',
+  surface: 'surface',
+  blueBg: 'blue-bg',
+  blueInk: 'blue-ink',
+  cardBack1: 'card-back-1',
+  cardBack2: 'card-back-2',
 } as const satisfies Record<keyof (typeof palette)['light'], string>;
 
 describe('design tokens match global.css', () => {

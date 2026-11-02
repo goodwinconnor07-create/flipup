@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { Pressable, ScrollView } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { GamePicture } from '@/components/game-picture';
@@ -7,7 +7,8 @@ import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { PlayCard } from '@/components/play-card';
-import { isPremiumVariant, VARIANTS } from '@/engine';
+import { isPremiumVariant, variantInfo, variantOf, VARIANTS } from '@/engine';
+import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
 import { minTap, radius, spacing, useColors } from '@/theme';
@@ -25,6 +26,7 @@ export default function Home() {
     <>
       <Stack.Screen options={{ title: 'FlipUp', headerLargeTitleEnabled: true, headerRight: () => <ProfileButton /> }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
+        <TableBanner />
         <PlayCard onFriends={() => router.push({ pathname: '/setup', params: { mode: 'friends' } })} onBots={() => router.push({ pathname: '/setup', params: { mode: 'bots' } })} />
 
         <Section header="Games" footer={premium ? undefined : 'The first five are free. The rest come with Premium, or watch a short ad to host one.'} inset={spacing.md + THUMB + spacing.sm}>
@@ -56,6 +58,45 @@ export default function Home() {
         )}
       </ScrollView>
     </>
+  );
+}
+
+/** The one clear next step, as on the web: a table you're still at (bots-only or online), with a Rejoin button. */
+function TableBanner() {
+  const colors = useColors();
+  const t = useTable();
+  const game = t.game;
+  if (!t.mode || (game && game.status === 'ended')) return null;
+  const info = game ? variantInfo(variantOf(game)) : null;
+  const what = t.mode === 'online' ? `Online table${t.code ? ` · ${t.code}` : ''}` : 'You vs the bots';
+  const where = game?.hand ? `Hand ${game.hand.number}` : game?.status === 'lobby' ? 'In the lobby' : 'Your table';
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`${what}. ${where}. Rejoin`}
+      onPress={() => {
+        haptic.tap();
+        router.push('/table');
+      }}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: pressed ? colors.cellPressed : colors.cell })}
+    >
+      <Text style={{ fontSize: 26 }} maxFontSizeMultiplier={1} accessible={false}>
+        {info?.emoji ?? '🃏'}
+      </Text>
+      <View style={{ flex: 1 }}>
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 17, fontWeight: '700', color: colors.label }}>
+          {what}
+        </Text>
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, color: colors.tertiaryLabel }}>
+          {where}
+        </Text>
+      </View>
+      <View style={{ paddingHorizontal: spacing.md, minHeight: 36, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+          Rejoin
+        </Text>
+      </View>
+    </Pressable>
   );
 }
 

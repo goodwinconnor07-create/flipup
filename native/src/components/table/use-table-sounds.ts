@@ -4,7 +4,7 @@
 import { useEffect, useRef } from 'react';
 
 import { gameLook } from '@design/gameArt';
-import { variantOf, type Game, type Seat } from '@/engine';
+import { toTableTime, variantOf, type Game, type Seat } from '@/engine';
 
 import { playSound, setSoundMood, type SoundName } from './sounds';
 
@@ -91,11 +91,11 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     if (!deadline) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let s = 5; s >= 1; s--) {
-      const at = deadline - s * 1000 - Date.now();
+      const at = (deadline - s * 1000 - toTableTime(Date.now(), game.fast)) / (game.fast ? 2 : 1);
       if (at > 0) timers.push(setTimeout(() => playSound('tick'), at));
     }
     return () => timers.forEach(clearTimeout);
-  }, [deadline]);
+  }, [deadline]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /** Your turn's deadline, when it's your turn on a clock. */

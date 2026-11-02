@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import { AccessibilityInfo } from 'react-native';
 
+import { useCalm } from '@/state/prefs';
+
 /**
  * True while the phone's Reduce Motion setting is on. Follows the setting live, so turning it on in Settings
- * while the app is open takes effect at once. With it on, springs and slides become fades.
+ * while the app is open takes effect at once. With it on, springs and slides become fades. Turning Animations off
+ * in FlipUp's own Settings does the same.
  */
 export function useReduceMotion(): boolean {
+  const calm = useCalm();
   const [reduce, setReduce] = useState(false);
   useEffect(() => {
     let live = true;
@@ -16,5 +20,5 @@ export function useReduceMotion(): boolean {
       sub.remove();
     };
   }, []);
-  return reduce;
+  return reduce || calm;
 }

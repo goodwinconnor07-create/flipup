@@ -13,6 +13,7 @@ import {
   newId,
   redactForDevice,
   redactLogs,
+  toTableTime,
   type Action,
   type Game,
   type HandLog,
@@ -23,6 +24,7 @@ import {
 import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
+import { isFast } from './prefs';
 import { save } from './storage';
 
 const KEY = 'flipup.session';
@@ -85,13 +87,18 @@ export function useTable(): TableState {
 function schedule(): void {
   clearTimeout(timer);
   const wakeAt = session?.mode === 'local' ? session.game.wakeAt : null;
-  if (wakeAt == null) return;
-  timer = setTimeout(() => {
-    if (session?.mode !== 'local') return;
-    const r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now: Date.now(), rng: cryptoRng });
-    if (r.ok && r.changed) set({ ...session, game: r.game });
-    else schedule();
-  }, Math.max(0, wakeAt - Date.now()));
+  if (wakeAt == null || session?.mode !== 'local') return;
+  // A fast table's clock runs twice as fast: its waits are half as long in real time.
+  const fast = !!session.game.fast;
+  timer = setTimeout(
+    () => {
+      if (session?.mode !== 'local') return;
+      const r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now: toTableTime(Date.now(), session.game.fast), rng: cryptoRng });
+      if (r.ok && r.changed) set({ ...session, game: r.game });
+      else schedule();
+    },
+    Math.max(0, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
+  );
 }
 
 function notify(text: string): void {
@@ -118,7 +125,7 @@ export function dispatch(action: Action): string | null {
     }, 5000);
     return null;
   }
-  const r = applyAction(session.game, action, { deviceId: me, now: Date.now(), rng: cryptoRng });
+  const r = applyAction(session.game, action, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: cryptoRng });
   if (!r.ok) {
     notify(r.error);
     return r.error;
@@ -195,7 +202,9 @@ export function requestLogs(): void {
 /** Opens a bots-only table on this phone and seats you at it. */
 export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string): void {
   closeConnection();
-  const game = createTable({ hostDeviceId: me, name: cleanName(name) || 'You', emoji, settings, bots, code: null, now: Date.now() });
+  const fast = isFast();
+  const game = createTable({ hostDeviceId: me, name: cleanName(name) || 'You', emoji, settings, bots, code: null, now: toTableTime(Date.now(), fast) });
+  if (fast) game.fast = true;
   set({ mode: 'local', code: null, game });
 }
 

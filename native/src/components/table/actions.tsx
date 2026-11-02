@@ -5,14 +5,15 @@ import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-nati
 
 import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { dispatch } from '@/state/session';
-import { minTap, radius, spacing, useColors, useShadows } from '@/theme';
+import { dispatch, me as myDevice } from '@/state/session';
+import { minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
-import { useNow } from './use-now';
+import { Dot } from './bubbles';
+import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -22,10 +23,11 @@ export type PreAction = { kind: 'checkfold' | 'callany' | 'current'; bet: number
 type Tone = 'fold' | 'green' | 'blue' | 'dark' | 'pre' | 'preOn';
 
 /** One of the big table buttons: at least 60pt tall, in the three slots Fold, Check/Call and Raise share. */
-function TableButton({ label, sub, tone, onPress, disabled }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean }) {
+function TableButton({ label, sub, tone, onPress, disabled, fill }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean; fill?: number }) {
   const colors = useColors();
+  const c = usePlainColors();
   const look: Record<Tone, { bg: string; ink: string }> = {
-    fold: { bg: 'rgba(255,59,48,0.14)', ink: colors.red as string },
+    fold: { bg: c.redBg, ink: c.redInk },
     green: { bg: colors.green as string, ink: '#ffffff' },
     blue: { bg: colors.accent as string, ink: '#ffffff' },
     dark: { bg: colors.label as string, ink: colors.background as string },
@@ -39,9 +41,10 @@ function TableButton({ label, sub, tone, onPress, disabled }: { label: string; s
       accessibilityState={{ disabled: !!disabled, selected: tone === 'preOn' }}
       disabled={disabled}
       onPress={onPress}
-      style={{ minHeight: 60, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, backgroundColor: look[tone].bg }}
+      style={{ minHeight: 60, borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, backgroundColor: look[tone].bg }}
     >
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ color: look[tone].ink, fontSize: tone === 'pre' || tone === 'preOn' ? 15 : 19, fontWeight: '700', fontVariant: ['tabular-nums'] }}>
+      {fill !== undefined && <View style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: `${fill * 100}%`, backgroundColor: 'rgba(255,255,255,0.85)' }} />}
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: 17, lineHeight: 20, textAlign: 'center', fontWeight: tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
         {label}
         {sub ? ` ${sub}` : ''}
       </Text>
@@ -49,11 +52,32 @@ function TableButton({ label, sub, tone, onPress, disabled }: { label: string; s
   );
 }
 
-function Note({ children }: { children: ReactNode }) {
+/** The line over the buttons, as on the web: 17pt semibold in grey, names in full colour, at least 44pt tall. */
+function Note({ children, strong }: { children: ReactNode; strong?: boolean }) {
+  const c = usePlainColors();
   return (
-    <ThemedText variant="headline" style={{ textAlign: 'center' }}>
-      {children}
-    </ThemedText>
+    <View accessibilityLiveRegion="polite" style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 4 }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: strong ? '700' : '600', color: strong ? c.label : c.tertiaryLabel, textAlign: 'center' }}>
+        {children}
+      </Text>
+    </View>
+  );
+}
+
+/** "Remi is thinking" with three dots that lift and brighten in turn. */
+function Thinking({ name, what }: { name: string; what: string }) {
+  const c = usePlainColors();
+  return (
+    <View accessibilityLiveRegion="polite" accessibilityLabel={`${name} ${what}`} style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '600', color: c.tertiaryLabel }}>
+        <Text style={{ color: c.label, fontWeight: '700' }}>{name}</Text> {what}
+      </Text>
+      <View style={{ flexDirection: 'row', gap: 4, marginLeft: 6, paddingTop: 4 }}>
+        {[0, 1, 2].map((i) => (
+          <Dot key={i} delay={i * 150} color={c.tertiaryLabel} size={6} lift={4} />
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -72,7 +96,7 @@ const Row = ({ children }: { children: ReactNode }) => (
 export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
-  const now = useNow(waiting ? 200 : 60_000);
+  const now = useTableNow(game.fast, waiting ? 200 : 60_000);
 
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
@@ -88,9 +112,12 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
     };
     return (
       <View style={{ gap: spacing.sm }}>
-        <Note>
-          {who ? `${who.name} ${who.bot ? 'is thinking…' : who.offline ? 'is offline…' : 'to act…'}` : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}
-        </Note>
+        {who ? (
+          <Thinking name={who.name} what={who.bot ? 'is thinking' : who.offline ? 'is offline' : 'to act'} />
+        ) : (
+          <Note>{hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
+        )}
+        {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
           <Row>
             {o.canFold && <TableButton label="Check / Fold" tone={pre?.kind === 'checkfold' ? 'preOn' : 'pre'} onPress={() => set('checkfold')} />}
@@ -116,12 +143,29 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   }
   if (me.sittingOut) return <TableButton label="I'm back. Deal me in" tone="green" onPress={() => dispatch({ type: 'sitOut', out: false })} />;
   if (!hand && game.status === 'playing' && game.nextHandAt !== null) {
-    if (game.players.length === 2) return <View />;
     return <Note>Dealing in {Math.max(1, Math.ceil((game.nextHandAt - now) / 1000))}…</Note>;
   }
-  if (!hand?.result || game.nextHandAt === null) return <Note>Waiting for more players…</Note>;
+  if (!hand?.result || game.nextHandAt === null) {
+    if (game.emptyAt) return <View />;
+    return (
+      <View style={{ gap: spacing.sm }}>
+        <Note>Waiting for more players…</Note>
+        {game.hostDeviceId === myDevice && <TableButton label="Add a bot" tone="pre" onPress={() => dispatch({ type: 'addBot' })} />}
+      </View>
+    );
+  }
   const ready = game.ready.includes(me.id);
-  return <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  // The next hand deals itself when the bar along the bottom of the button runs out.
+  const total = waitFor(hand.number, game.nextHandAt - now);
+  const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
+  return <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+}
+
+/** How long this pause was when it began, so the bar drains from full whatever extra time was added. */
+let pause = { hand: -1, ms: 0 };
+function waitFor(hand: number, remaining: number): number {
+  if (pause.hand !== hand || remaining > pause.ms) pause = { hand, ms: Math.max(remaining, 1) };
+  return pause.ms;
 }
 
 /** Your turn: Fold, Check or Call, and Raise (which opens the sizer over the bottom of the table). */
@@ -130,7 +174,7 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
   const act = (move: 'fold' | 'check' | 'call') => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move });
   return (
     <View style={{ gap: spacing.sm }}>
-      <Note>Your turn</Note>
+      <Note strong>Your turn</Note>
       <Row>
         {o.canFold && <TableButton label="Fold" tone="fold" disabled={sending} onPress={() => act('fold')} />}
         {o.canCheck ? (

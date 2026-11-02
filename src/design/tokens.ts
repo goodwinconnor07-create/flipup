@@ -34,6 +34,26 @@ export const palette = {
     segmentOn: '#ffffff',
     /** The dim behind a sheet or an alert. */
     scrim: 'rgba(255, 255, 255, 0.86)',
+    /** The table: speech bubbles (grey for check and fold and talk, blue to top for chips going in). */
+    bubbleGrey: '#e9e9eb',
+    bubbleBlue: '#0a7aff',
+    bubbleBlueHi: '#3b9bff',
+    /** The Fold button, and the bet tags under the seats. */
+    redBg: '#ffecf0',
+    redInk: '#b91c1c',
+    goldBg: '#fff6df',
+    goldInk: '#b45309',
+    /** The odds tag during a run-out. */
+    contrast: '#0b0b12',
+    onContrast: '#ffffff',
+    /** The win banner on the felt. */
+    surface: '#ffffff',
+    /** The table code chip. */
+    blueBg: '#e5f0ff',
+    blueInk: '#0062d6',
+    /** The plain card back, top-left to bottom-right. */
+    cardBack1: '#1f2937',
+    cardBack2: '#0b0b12',
   },
   dark: {
     background: '#000000',
@@ -56,6 +76,20 @@ export const palette = {
     switchOn: '#30d158',
     segmentOn: '#636366',
     scrim: 'rgba(0, 0, 0, 0.86)',
+    bubbleGrey: '#262628',
+    bubbleBlue: '#0a7aff',
+    bubbleBlueHi: '#3b9bff',
+    redBg: 'rgba(255, 69, 58, 0.16)',
+    redInk: '#ff6961',
+    goldBg: 'rgba(255, 159, 10, 0.15)',
+    goldInk: '#ffd60a',
+    contrast: '#f4f4f8',
+    onContrast: '#0b0b12',
+    surface: '#1c1c1e',
+    blueBg: 'rgba(10, 132, 255, 0.18)',
+    blueInk: '#409cff',
+    cardBack1: '#3b4256',
+    cardBack2: '#161821',
   },
 } as const;
 

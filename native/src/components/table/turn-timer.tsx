@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedProps, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 
-import type { Game } from '@/engine';
+import { toTableTime, type Game } from '@/engine';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
@@ -28,10 +28,12 @@ export function TurnTimer({ game, mine }: { game: Game; mine: boolean }) {
   useEffect(() => {
     setLow(false);
     if (!live || !w) return;
-    const remaining = Math.max(0, deadline - Date.now());
+    // A fast table's clock runs at twice the speed: its time drains twice as fast in real time.
+    const speed = game.fast ? 2 : 1;
+    const remaining = Math.max(0, deadline - toTableTime(Date.now(), game.fast));
     left.set(Math.max(0, Math.min(1, remaining / total)));
-    left.set(withTiming(0, { duration: remaining, easing: Easing.linear }));
-    const lowAt = remaining - 5000;
+    left.set(withTiming(0, { duration: remaining / speed, easing: Easing.linear }));
+    const lowAt = (remaining - 5000) / speed;
     if (lowAt <= 0) {
       setLow(true);
       return () => cancelAnimation(left);
@@ -50,7 +52,7 @@ export function TurnTimer({ game, mine }: { game: Game; mine: boolean }) {
     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}>
       {live && w > 0 && (
         <Svg width={w} height={h} accessibilityLabel={`${game.settings.turnSeconds} seconds a turn`}>
-          <Path d={d} stroke="rgba(255,255,255,0.12)" strokeWidth={5} fill="none" />
+          <Path d={d} stroke="rgba(255,255,255,0.22)" strokeWidth={4} fill="none" />
           <AnimatedPath d={d} stroke={colour} strokeWidth={5} strokeLinecap="round" fill="none" strokeDasharray={`${length} ${length}`} animatedProps={props} />
         </Svg>
       )}

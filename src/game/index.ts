@@ -31,3 +31,4 @@ export * from './party';
 export * from './campaign';
 export * from './roulette';
 export * from './blackjack';
+export * from './clock';

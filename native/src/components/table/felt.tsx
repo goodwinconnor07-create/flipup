@@ -1,16 +1,21 @@
 import { router } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, Text, useWindowDimensions, View, type ViewStyle } from 'react-native';
-import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
+import { Pressable, Text, useColorScheme, useWindowDimensions, View, type ViewStyle } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { RAILS } from '@design/tableLooks';
 import { tableThemes } from '@design/tokens';
+import { useTableLook } from '@/state/prefs';
 import { bestHand, boardSize, CIRCLE_HOURS, CROSS_CELLS, pot, rankLabel, rankOf, seatFor, streetCards, suitOf, variantInfo, variantOf, type Card, type Game, type Player } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { gradient, radius, spacing } from '@/theme';
+import { gradient, radius, spacing, usePlainColors } from '@/theme';
 
+import { Avatar } from '../avatar';
+import { bubblePop } from './bubbles';
+import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { TurnTimer } from './turn-timer';
-import { useNow } from './use-now';
+import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -23,9 +28,7 @@ function shade(hex: string, amount: number): string {
   return `#${c.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 }
 
-/** The table look: the player's felt and rail for Hold'em (the defaults for now; the picker comes with Settings), each mini game's own. */
-const FELT = '#1f7a4d';
-const RAIL: readonly [string, string] = ['#4a4a55', '#1b1b22'];
+/** The table look: the player's own felt and rail for Hold'em (Table theme), each mini game's own. */
 const SYMBOL = { s: '♠', h: '♥', d: '♦', c: '♣' } as const;
 const short = (c: Card) => `${rankLabel(c)}${SYMBOL[suitOf(c)]}`;
 
@@ -49,7 +52,7 @@ export function useHighlight(game: Game, me: Player | undefined) {
 /** The oval: a rail round the felt, the pot at the top, the board in the middle, the hand or the winner at the bottom. */
 export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
   const reduce = useReduceMotion();
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const hand = game.hand;
   const variant = variantOf(game);
   const mySeat = seatFor(hand, me?.id);
@@ -59,8 +62,9 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
   const dim = (c: Card) => showdown && !lit.has(c);
   const glow = (c: Card) => showdown && lit.has(c);
   const theme = variant === 'holdem' ? null : tableThemes[variant];
-  const felt = theme?.felt ?? FELT;
-  const rail = theme?.rail ?? RAIL;
+  const look = useTableLook();
+  const felt = theme?.felt ?? look.felt;
+  const rail = theme?.rail ?? RAILS.find((r) => r.id === look.rail)!.colors;
   const info = variantInfo(variant);
   // Imposter: you only learn it's you; everyone else in the hand is innocent.
   const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
@@ -77,7 +81,11 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
         marginHorizontal: spacing.md,
         padding: 11,
         borderRadius: radius.full,
-        minHeight: 210,
+        // A wide stadium, as on the web at a phone's size: it takes the room there is, from 196pt to 240.
+        flex: 1,
+        minHeight: 196,
+        // The cross, the clock and the Memory peek need more height.
+        maxHeight: variant === 'crucifix' || variant === 'circle' || game.memory ? 330 : variant === 'ghost' || variant === 'dice' ? 290 : Math.min(240, height * 0.3),
         boxShadow: '0 12px 26px -14px rgba(18,18,40,0.55), inset 0 1px 0 rgba(255,255,255,0.28)',
         ...gradient(`linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
       }}
@@ -113,15 +121,17 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
               accessibilityLabel={`${info.name}: how it plays`}
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
             >
-              <FeltPill text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${info.emoji} ${info.name}`} hot={role === 'imposter'} />
+              <VariantPill text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${info.emoji} ${info.name}`} hot={role === 'imposter'} />
             </Pressable>
           )}
-          {hand && !hand.result && !game.memory && <FeltPill text={`Pot ${chips(potNow)}`} chip />}
+          {hand && !game.memory && <PotPill value={potNow} />}
         </View>
         <Ghost game={game} pack={pack} />
         {hand?.dice && (
-          <Animated.View key={`dice-${hand.number}`} entering={reduce ? FadeIn : ZoomIn.springify().damping(14)}>
-            <FeltPill text={hand.dice.out && hand.dice.in ? `🎲 Rolled ${hand.dice.roll}: ${short(hand.dice.out)} → ${short(hand.dice.in)}` : `🎲 Rolled ${hand.dice.roll}: the board stays`} small />
+          <Animated.View key={`dice-${hand.number}`} entering={reduce ? FadeIn : bubblePop}>
+            <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
+              {hand.dice.out && hand.dice.in ? `🎲 Rolled ${hand.dice.roll}: ${short(hand.dice.out)} → ${short(hand.dice.in)}` : `🎲 Rolled ${hand.dice.roll}: the board stays`}
+            </Text>
           </Animated.View>
         )}
         {game.memory ? <MemoryPeek game={game} width={width} pack={pack} /> : <Board game={game} width={width} dim={dim} glow={glow} pack={pack} />}
@@ -131,8 +141,8 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
           ) : hand?.result ? (
             <WinBanner game={game} me={me} />
           ) : pillName ? (
-            <Animated.View key={pillName} entering={reduce ? FadeIn : ZoomIn.springify().damping(14)}>
-              <FeltPill text={pillName} />
+            <Animated.View key={pillName} entering={reduce ? FadeIn : bubblePop}>
+              <HandPill text={pillName} />
             </Animated.View>
           ) : null}
         </View>
@@ -190,7 +200,7 @@ function Board({ game, width, dim, glow, pack }: { game: Game; width: number; di
   const gap = wide ? 4 : 6;
   // Five cards across the felt, smaller on a narrow phone; boards with more cards use the smaller size and wrap.
   const room = width - spacing.md * 2 - 22 - spacing.lg * 2 - (variant === 'pittsburgh' ? 8 : 0);
-  const w = Math.min(wide ? 44 : 60, Math.floor((room - (perRow - 1) * gap) / perRow));
+  const w = Math.min(wide ? 44 : 56, Math.floor((room - (perRow - 1) * gap) / perRow));
   return (
     <View accessibilityLabel="Board" style={{ flexDirection: 'row', gap, rowGap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
       {Array.from({ length: slots }, (_, i) => card(i, w, variant === 'pittsburgh' && i === 4 ? { marginLeft: 8 } : undefined))}
@@ -239,16 +249,43 @@ function MemoryPeek({ game, width, pack }: { game: Game; width: number; pack?: s
 
 /** "Remember these 20 · 6s" under the cards. */
 function MemoryCountdown({ game }: { game: Game }) {
-  const now = useNow(250);
+  const now = useTableNow(game.fast, 250);
   const secs = Math.max(0, Math.ceil(((game.memory?.until ?? now) - now) / 1000));
-  return <FeltPill text={`🧠 Remember these 20 · ${secs}s`} />;
+  return <HandPill text={`🧠 Remember these 20 · ${secs}s`} />;
 }
 
-function FeltPill({ text, chip, hot, small }: { text: string; chip?: boolean; hot?: boolean; small?: boolean }) {
+/** Your hand's name, under the board: a white pill, as on the web. */
+function HandPill({ text }: { text: string }) {
+  const c = usePlainColors();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.sm, paddingVertical: small ? 3 : 4, borderRadius: radius.full, backgroundColor: hot ? '#c4123a' : 'rgba(0,0,0,0.32)' }}>
-      {chip && <View style={{ width: 16, height: 16, borderRadius: 8, borderWidth: 3, borderColor: '#ffffff', backgroundColor: '#e5322d' }} />}
-      <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontWeight: '700', fontSize: small ? 13 : 15, fontVariant: ['tabular-nums'] }}>
+    <View style={{ paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, backgroundColor: c.surface, boxShadow: '0 1px 2px rgba(18,18,40,0.12)' }}>
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.label, fontWeight: '600', fontSize: 15 }}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/** "Pot 340" with a chip in front: the number counts down to nothing as the pot is pushed to the winner. */
+function PotPill({ value }: { value: number }) {
+  return (
+    <View accessibilityLabel={`Pot ${chips(value)}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 8, paddingRight: 14, paddingVertical: 3, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.34)' }}>
+      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: '#e5322d', borderWidth: 3, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.9)', boxShadow: '0 1px 2px rgba(0,0,0,0.35)' }} />
+      <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255,255,255,0.78)', fontWeight: '600', fontSize: 13 }}>
+        Pot
+      </Text>
+      <Count value={value} up="#bbf7d0" down="#fecaca" style={{ color: '#ffffff', fontWeight: '700', fontSize: 17 }} />
+    </View>
+  );
+}
+
+/** The game's name (or your Imposter role), a tap away from how it plays. */
+function VariantPill({ text, hot }: { text: string; hot?: boolean }) {
+  const c = usePlainColors();
+  const dark = useColorScheme() === 'dark';
+  return (
+    <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: hot ? c.redBg : dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.75)' }}>
+      <Text maxFontSizeMultiplier={1.2} style={{ color: hot ? c.redInk : c.label, fontWeight: '600', fontSize: 13 }}>
         {text}
       </Text>
     </View>
@@ -258,6 +295,8 @@ function FeltPill({ text, chip, hot, small }: { text: string; chip?: boolean; ho
 /** "Remi wins 340 · Two pair", on the felt when a hand finishes. */
 function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   const reduce = useReduceMotion();
+  const c = usePlainColors();
+  const { width } = useWindowDimensions();
   const hand = game.hand!;
   const result = hand.result!;
   const winners = Object.entries(result.won)
@@ -297,18 +336,16 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
       key={hand.number}
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
-      entering={reduce ? FadeIn : ZoomIn.springify().damping(14)}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full, backgroundColor: 'rgba(0,0,0,0.4)' }}
+      entering={reduce ? FadeIn : bubblePop}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 6, paddingRight: 16, paddingVertical: 4, borderRadius: 999, backgroundColor: c.surface, boxShadow: '0 0 0 3px rgba(245,158,11,0.7), 0 6px 16px -6px rgba(0,0,0,0.5)' }}
     >
-      <Text style={{ fontSize: 22 }} maxFontSizeMultiplier={1}>
-        {face}
-      </Text>
-      <View>
-        <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontWeight: '800', fontSize: 15 }}>
+      <Avatar emoji={face} size={34} />
+      <View style={{ maxWidth: width - 150 }}>
+        <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.label, fontWeight: '700', fontSize: 15 }}>
           {title}
         </Text>
         {how && (
-          <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255,255,255,0.8)', fontSize: 12 }}>
+          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.tertiaryLabel, fontWeight: '600', fontSize: 13 }}>
             {how}
           </Text>
         )}

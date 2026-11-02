@@ -1,109 +1,155 @@
-import { Text, View } from 'react-native';
+// The bottom of the table, as on the web (MyBox in Pods.tsx, .me-area and .my-box in table.css): your cards, big and
+// overlapping, with "Show cards" under them after a hand you didn't have to show; and your box beside them, outlined
+// in the separator colour: your move or what you said on its top edge, the quick messages button in its corner, your
+// name, your stack (counting as it changes; tap it to see it in big blinds), and what you've put in or won. During an
+// all-in run-out the box shows your odds instead.
+import { useState } from 'react';
+import { Pressable, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { holeCount, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
+import { holeCount, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
 import { dispatch } from '@/state/session';
-import { radius, spacing, useColors } from '@/theme';
+import { save, useStored } from '@/state/storage';
+import { usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
-import { PressableScale } from '../pressable-scale';
-import { ThemedText } from '../themed-text';
-import { Thread } from './bubbles';
-import { useHighlight } from './felt';
+import { haptic } from '../haptics';
+import { bubblePop, MoveBubble, Thread } from './bubbles';
+import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { QuickMessages } from './quick-messages';
-import { PositionChip } from './seats';
+import { pct, PositionChip } from './seats';
+import { moveSig } from './use-reactions';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
+/** 98.5 BB, or 120 BB: one decimal only while it's small. */
+const bigBlinds = (n: number) => (n >= 100 ? Math.round(n) : Math.round(n * 10) / 10).toLocaleString('en-US');
 
-/** The bottom of the table: your cards, big, and your box (name, stack, what you've put in, your position, your quick messages). */
-export function MyArea({ game, me, talk }: { game: Game; me: Player | undefined; talk?: Talk }) {
-  const colors = useColors();
+export function MyArea({
+  game,
+  me,
+  talk,
+  quiet,
+  dim,
+  glow,
+  odds,
+}: {
+  game: Game;
+  me: Player | undefined;
+  talk?: Talk;
+  quiet?: string;
+  dim: (c: Card) => boolean;
+  glow: (c: Card) => boolean;
+  odds?: { win: number; tie: number };
+}) {
+  const c = usePlainColors();
   const hand = game.hand;
   const seat = seatFor(hand, me?.id);
-  const highlight = useHighlight(game, me);
-  const lit = new Set(highlight?.best ?? []);
-  const showdown = !!hand?.result?.showdown && !!highlight;
-  const dim = (c: Card) => !!seat?.folded || (showdown && !lit.has(c));
-  const glow = (c: Card) => showdown && lit.has(c);
+  const inBB = useStored<boolean>('flipup.bb', false) === true;
   const canShow = !!hand?.result && !!seat && !seat.shown && seat.cards.length === 2;
   const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
-  const many = (seat?.cards.length ?? holeCount(variantOf(game))) > 2;
-  const w = many ? 64 : 100;
+  const count = seat?.cards.length || holeCount(variantOf(game));
+  // Two cards at full size; three or more step down so they still fit beside the box.
+  const w = count > 2 ? 72 : 100;
+  const last = seat?.last;
+  const money = !!last && last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
+  const bb = Math.max(game.settings.bigBlind, 1);
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm, paddingHorizontal: spacing.md }}>
-      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: canShow ? 28 : 0 }}>
+      <View style={{ flexDirection: 'row' }}>
         {seat?.cards.length
-          ? seat.cards.map((c, i) => (
-              <View key={`${hand!.number}-${c}`} style={{ marginLeft: i === 0 ? 0 : many ? -16 : -14, transform: [{ rotate: `${(i - (seat.cards.length - 1) / 2) * 4}deg` }] }}>
-                <PlayingCard card={c} width={w} flip delay={i * 180} dim={dim(c)} glow={glow(c)} pack={me?.cardPack} />
+          ? seat.cards.map((card, i) => (
+              <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : count > 2 ? -30 : -22 }}>
+                <PlayingCard card={card} width={w} flip delay={i * 180} dim={seat.folded || dim(card)} glow={glow(card)} pack={me?.cardPack} />
               </View>
             ))
-          : Array.from({ length: holeCount(variantOf(game)) }, (_, i) => (
-              <View key={i} style={{ marginLeft: i === 0 ? 0 : -14 }}>
+          : Array.from({ length: count }, (_, i) => (
+              <View key={i} style={{ marginLeft: i === 0 ? 0 : -22 }}>
                 <CardSlot width={w} />
               </View>
             ))}
         {canShow && (
-          <PressableScale
-            accessibilityRole="button"
-            accessibilityLabel="Show my cards"
-            onPress={() => dispatch({ type: 'show', hand: hand!.number })}
-            outerStyle={{ position: 'absolute', bottom: -6, alignSelf: 'center' }}
-            style={{ paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full, backgroundColor: colors.label }}
-          >
-            <Text style={{ color: colors.background as string, fontWeight: '700', fontSize: 13 }}>Show cards</Text>
-          </PressableScale>
+          <Animated.View entering={bubblePop} style={{ position: 'absolute', top: '100%', marginTop: 5, left: 0, right: 0, alignItems: 'center' }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Show my cards"
+              onPress={() => {
+                haptic.tap();
+                if (hand) dispatch({ type: 'show', hand: hand.number });
+              }}
+              style={{ height: 22, paddingHorizontal: 10, borderRadius: 11, justifyContent: 'center', backgroundColor: c.cell }}
+            >
+              <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, fontWeight: '600', color: c.secondaryLabel }}>
+                Show cards
+              </Text>
+            </Pressable>
+          </Animated.View>
         )}
       </View>
-      <View
-        style={{
-          width: 150,
-          minHeight: 132,
-          padding: spacing.sm,
-          borderRadius: radius.lg,
-          borderCurve: 'continuous',
-          backgroundColor: colors.background,
-          borderWidth: 2,
-          borderColor: colors.cellPressed,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-        }}
-      >
-        {me && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Avatar emoji={me.emoji} size={22} />
-            <ThemedText variant="footnote" tone="tertiaryLabel" numberOfLines={1}>
-              {me.name}
-            </ThemedText>
-          </View>
+      <View style={{ flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 2, padding: 8, borderRadius: 24, borderCurve: 'continuous', borderWidth: 3, borderColor: c.separator }}>
+        {odds ? (
+          <>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}>Win</Text>
+            <Text style={{ fontSize: 28, fontWeight: '700', color: c.gold, fontVariant: ['tabular-nums'] }}>{pct(odds.win)}</Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}>Tie</Text>
+            <Text style={{ fontSize: 24, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{pct(odds.tie)}</Text>
+          </>
+        ) : (
+          <>
+            {me && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '100%' }}>
+                <Avatar emoji={me.emoji} size={22} />
+                <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}>
+                  {me.name}
+                </Text>
+              </View>
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`${inBB ? 'Stack in big blinds' : 'Stack in chips'}, tap to switch`}
+              onPress={() => {
+                haptic.select();
+                save('flipup.bb', !inBB);
+              }}
+            >
+              {!me ? (
+                <Text style={{ fontSize: 28, fontWeight: '700', color: c.label }}>–</Text>
+              ) : me.stack === 0 && (!hand || hand.result) ? (
+                <Text style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label }}>Out</Text>
+              ) : inBB ? (
+                <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>
+                  {bigBlinds(me.stack / bb)}
+                  <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}> BB</Text>
+                </Text>
+              ) : (
+                <Count value={me.stack} style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label }} />
+              )}
+            </Pressable>
+            {won > 0 ? (
+              <Text style={{ fontSize: 15, fontWeight: '600', color: c.green }}>+{chips(won)}</Text>
+            ) : seat && seat.bet > 0 && !hand?.result ? (
+              <Text style={{ fontSize: 15, fontWeight: '600', color: c.goldInk }}>In: {chips(seat.bet)}</Text>
+            ) : null}
+          </>
         )}
-        <ThemedText variant="title1" style={{ fontWeight: '800', fontVariant: ['tabular-nums'] }} maxFontSizeMultiplier={1.2}>
-          {!me ? '–' : me.stack === 0 && (!hand || hand.result) ? 'Out' : chips(me.stack)}
-        </ThemedText>
-        {won > 0 ? (
-          <ThemedText variant="subhead" style={{ color: colors.green, fontWeight: '700' }}>
-            +{chips(won)}
-          </ThemedText>
-        ) : seat && seat.bet > 0 && !hand?.result ? (
-          <ThemedText variant="subhead" style={{ color: colors.gold, fontWeight: '700' }}>
-            In: {chips(seat.bet)}
-          </ThemedText>
-        ) : null}
         <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
           <PositionChip pos={me ? positionOf(hand, me.id) : null} />
         </View>
         {me && (
-          <View style={{ position: 'absolute', right: -6, top: -14 }}>
+          <View style={{ position: 'absolute', top: 6, left: 6 }}>
             <QuickMessages />
           </View>
         )}
-        {/* What you just said, over your box. */}
-        {talk && (
-          <View pointerEvents="none" style={{ position: 'absolute', bottom: '100%', marginBottom: 6, alignSelf: 'center' }}>
-            <Thread talk={talk} fx={me?.bubble} />
-          </View>
-        )}
+        {/* What you just did or said, on the top edge of the box. */}
+        <View pointerEvents="none" style={{ position: 'absolute', right: 12, bottom: '100%', marginBottom: -16, alignItems: 'flex-end' }}>
+          {talk ? (
+            <Thread talk={talk} fx={me?.bubble} room={220} />
+          ) : last && hand && quiet !== moveSig(hand.number, last) ? (
+            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop}>
+              <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={me?.bubble} old={last.street !== hand.street} big />
+            </Animated.View>
+          ) : null}
+        </View>
       </View>
     </View>
   );

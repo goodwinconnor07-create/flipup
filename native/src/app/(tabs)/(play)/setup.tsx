@@ -5,30 +5,13 @@ import { Alert, ScrollView, View } from 'react-native';
 import { Button } from '@/components/button';
 import { GamePicture } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
-import { SegmentedControl } from '@/components/segmented-control';
 import { Stepper } from '@/components/stepper';
-import { Switch } from '@/components/switch';
-import { ThemedText } from '@/components/themed-text';
-import {
-  BLIND_CAP_CHOICES,
-  BLIND_MINUTE_MAX,
-  blindsLabel,
-  isVariant,
-  levelsFor,
-  MAX_SEATS,
-  STACK_CHOICES,
-  TIMER_CHOICES,
-  timerLabel,
-  variantInfo,
-  withStack,
-  type Settings,
-} from '@/engine';
+import { SettingsFields } from '@/components/settings-fields';
+import { isVariant, MAX_SEATS, variantInfo, type Settings } from '@/engine';
 import { useProfile } from '@/state/profile';
 import { openLocalTable, openOnlineTable } from '@/state/session';
 import { saveSettings, setDraft, startDraft, useDraft, useSavedSettings } from '@/state/setup-draft';
-import { party, spacing, useColors } from '@/theme';
-
-const chips = (n: number) => Math.round(n).toLocaleString('en-US');
+import { party, spacing } from '@/theme';
 
 /**
  * Setting up a table, as a native grouped form: who plays, the game, chips and blinds, and the house rules, each
@@ -42,20 +25,10 @@ export default function SetupScreen() {
   // A fresh draft each time the screen opens, from the last table's settings and any game picked on Home.
   useEffect(() => startDraft(saved, mode, isVariant(params.variant) ? params.variant : undefined), []); // eslint-disable-line react-hooks/exhaustive-deps
   const s = useDraft();
-  const colors = useColors();
   const [bots, setBots] = useState(mode === 'bots' ? 4 : 0);
   const set = (patch: Partial<Settings>) => setDraft({ ...s, ...patch });
   const variant = s.variant ?? 'holdem';
-  const levels = levelsFor(s.startingStack);
-  const blindIndex = Math.max(0, levels.findIndex(([sb, bb]) => sb === s.smallBlind && bb === s.bigBlind));
-  const stackIndex = Math.max(0, STACK_CHOICES.indexOf(s.startingStack));
-  const caps = [0, ...BLIND_CAP_CHOICES.filter((c) => c > 0 && (c > s.bigBlind || c === s.blindCap))];
-  const capIndex = Math.max(0, caps.indexOf(s.blindCap ?? 0));
   const minBots = mode === 'bots' ? 1 : 0;
-  const blindsFoot = s.blindMinutes
-    ? `Blinds rise every ${s.blindMinutes} min${s.blindCap ? `, up to ${blindsLabel([s.blindCap / 2, s.blindCap])}` : ''}.`
-    : 'The blinds stay the same all game.';
-
   const profile = useProfile();
   const [busy, setBusy] = useState(false);
   const open = async () => {
@@ -99,64 +72,7 @@ export default function SetupScreen() {
           />
         </Section>
 
-        <Section header="Chips and blinds" footer={blindsFoot}>
-          <Row
-            title="Starting chips"
-            detail={chips(s.startingStack)}
-            icon={{ symbol: 'dollarsign.circle.fill', color: party.blue }}
-            accessory={<Stepper label="Starting chips" value={stackIndex} min={0} max={STACK_CHOICES.length - 1} onChange={(i) => setDraft(withStack(s, STACK_CHOICES[i]))} />}
-          />
-          <Row
-            title="Blinds"
-            detail={blindsLabel([s.smallBlind, s.bigBlind])}
-            icon={{ symbol: 'suit.spade.fill', color: colors.indigo as string }}
-            accessory={
-              <Stepper label="Blinds" value={blindIndex} min={0} max={levels.length - 1} onChange={(i) => set({ smallBlind: levels[i][0], bigBlind: levels[i][1] })} />
-            }
-          />
-          <Row
-            title="Blinds go up"
-            detail={s.blindMinutes ? `${s.blindMinutes} min` : 'Never'}
-            icon={{ symbol: 'chart.line.uptrend.xyaxis', color: party.orange }}
-            accessory={<Stepper label="Minutes between blind rises" value={s.blindMinutes ?? 0} min={0} max={BLIND_MINUTE_MAX} onChange={(blindMinutes) => set({ blindMinutes })} />}
-          />
-          {!!s.blindMinutes && (
-            <Row
-              title="Blinds stop at"
-              detail={caps[capIndex] ? blindsLabel([caps[capIndex] / 2, caps[capIndex]]) : 'No limit'}
-              icon={{ symbol: 'flag.checkered', color: colors.slate as string }}
-              accessory={<Stepper label="Blinds stop at" value={capIndex} min={0} max={caps.length - 1} onChange={(i) => set({ blindCap: caps[i] })} />}
-            />
-          )}
-        </Section>
-
-        <Section header="House rules" footer={mode === 'friends' ? 'Time to act is how long each person gets before they check or fold.' : undefined}>
-          {mode === 'friends' && (
-            <View style={{ padding: spacing.md, paddingBottom: spacing.sm, gap: spacing.xs }}>
-              <ThemedText>Time to act</ThemedText>
-              <SegmentedControl
-                label="Time to act"
-                value={String(s.turnSeconds)}
-                onChange={(v) => set({ turnSeconds: Number(v) })}
-                options={TIMER_CHOICES.map((t) => ({ value: String(t), label: timerLabel(t) }))}
-              />
-            </View>
-          )}
-          <Row
-            title="Rebuys"
-            subtitle="Busted players can buy back in"
-            icon={{ symbol: 'arrow.clockwise', color: party.green }}
-            accessory={<Switch label="Rebuys" value={s.rebuys} onValueChange={(rebuys) => set({ rebuys })} />}
-          />
-          {mode === 'friends' && (
-            <Row
-              title="Busted players peek"
-              subtitle="Once you're out, you see everyone's cards"
-              icon={{ symbol: 'eye.fill', color: party.pink }}
-              accessory={<Switch label="Busted players peek" value={!!s.showToBusted} onValueChange={(showToBusted) => set({ showToBusted })} />}
-            />
-          )}
-        </Section>
+        <SettingsFields settings={s} onChange={setDraft} online={mode === 'friends'} />
 
         <Button variant="party" tint={mode === 'friends' ? 'blue' : 'green'} size="lg" title={mode === 'friends' ? 'Open the table' : 'Sit down'} loading={busy} onPress={() => void open()} />
       </ScrollView>

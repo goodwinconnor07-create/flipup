@@ -1,17 +1,20 @@
 import { router, Stack } from 'expo-router';
-import { Alert, ScrollView, Share } from 'react-native';
+import { Alert, ScrollView, Share, View } from 'react-native';
 
 import { Row, Section } from '@/components/grouped-list';
+import { SegmentedControl } from '@/components/segmented-control';
 import { Switch } from '@/components/switch';
+import { ThemedText } from '@/components/themed-text';
 import { myPlayer } from '@/engine';
 import { joinLink } from '@/state/api';
-import { setMuted, setTalkOn, useMuted, useTalkOn } from '@/state/prefs';
+import { setAppearance, setCalm, setFast, setMuted, setTalkOn, useAppearance, useCalm, useFast, useMuted, useTalkOn, type AppearancePref } from '@/state/prefs';
 import { dispatch, leaveTable, me as myDevice, requestLogs, useTable } from '@/state/session';
 import { spacing, useColors } from '@/theme';
 
 /**
- * The table's menu, as on the web: the table (standings, hand log, invite, add a bot, sit out), you (sound and
- * the bots' talk), then leaving. The host can also end the game for everyone and go to the standings.
+ * The table's menu, as on the web: the table (standings, hand log, invite, table settings, add a bot, sit out), you
+ * (appearance, sound, animations, the bots' talk, fast bot games, the table theme, hand rankings), then Home (the
+ * table keeps going), ending the game for everyone (the host) and leaving.
  */
 export default function TableMenu() {
   const colors = useColors();
@@ -20,6 +23,9 @@ export default function TableMenu() {
   const online = t.mode === 'online';
   const muted = useMuted();
   const talk = useTalkOn();
+  const calm = useCalm();
+  const fast = useFast();
+  const appearance = useAppearance();
   if (!game) return null;
   const me = myPlayer(game, myDevice);
   const host = game.hostDeviceId === myDevice;
@@ -68,6 +74,7 @@ export default function TableMenu() {
             onPress={() => void Share.share({ message: `Come play poker with me on FlipUp. Code ${t.code}: ${joinLink(t.code!)}`, url: joinLink(t.code!) })}
           />
         )}
+        {host && !ended && <Row title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}
         {host && playing && game.players.length < 9 && <Row title="Add a bot" icon={{ symbol: 'person.badge.plus', color: colors.green as string }} chevron={false} onPress={quick(() => dispatch({ type: 'addBot' }))} />}
         {me && playing && (
           <Row
@@ -79,10 +86,41 @@ export default function TableMenu() {
         )}
       </Section>
       <Section header="You">
+        <Row
+          title="Appearance"
+          icon={{ symbol: 'moon.fill', color: colors.indigo as string }}
+          chevron={false}
+          trailing={
+            <View style={{ width: 170 }}>
+              <SegmentedControl<AppearancePref>
+                label="Appearance"
+                value={appearance}
+                onChange={setAppearance}
+                options={[
+                  { value: 'auto', label: 'Auto' },
+                  { value: 'light', label: 'Light' },
+                  { value: 'dark', label: 'Dark' },
+                ]}
+              />
+            </View>
+          }
+        />
         <Row title="Sound" icon={{ symbol: 'speaker.wave.2.fill', color: colors.red as string }} chevron={false} trailing={<Switch label="Sound" value={!muted} onValueChange={(on) => setMuted(!on)} />} />
+        <Row title="Animations" icon={{ symbol: 'bolt.fill', color: colors.gold as string }} chevron={false} trailing={<Switch label="Animations" value={!calm} onValueChange={(on) => setCalm(!on)} />} />
         <Row title="Bot talk" icon={{ symbol: 'bubble.left.fill', color: colors.green as string }} chevron={false} trailing={<Switch label="Bot talk" value={talk} onValueChange={setTalkOn} />} />
+        <Row title="Fast bot games" icon={{ symbol: 'clock.fill', color: colors.gold as string }} chevron={false} trailing={<Switch label="Fast bot games" value={fast} onValueChange={setFast} />} />
+      </Section>
+      {fast && !online && (
+        <ThemedText variant="footnote" tone="tertiaryLabel" style={{ marginTop: -spacing.md, paddingHorizontal: spacing.xl }}>
+          Fast bot games start with your next bots-only table.
+        </ThemedText>
+      )}
+      <Section>
+        <Row title="Table theme" icon={{ symbol: 'paintpalette.fill', color: colors.pink as string }} onPress={() => router.push('/table-theme')} />
+        <Row title="Hand rankings" icon={{ symbol: 'questionmark.circle.fill', color: colors.slate as string }} onPress={() => router.push('/hand-rankings')} />
       </Section>
       <Section>
+        {!ended && <Row title="Home" icon={{ symbol: 'house.fill', color: colors.green as string }} chevron={false} onPress={goHome} />}
         {host && !ended && (online || playing) && (
           <Row
             title="End the game"

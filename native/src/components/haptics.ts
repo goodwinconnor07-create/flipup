@@ -6,6 +6,8 @@ const on = process.env.EXPO_OS === 'ios';
 
 export const haptic = {
   tap: () => void (on && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
+  /** Your turn: a firmer tap, as the web's medium buzz. */
+  turn: () => void (on && Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
   select: () => void (on && Haptics.selectionAsync()),
   success: () => void (on && Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)),
   failure: () => void (on && Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)),

@@ -120,16 +120,9 @@ html:not(.no-glass) .glass-card {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  /* `backwards`, not `both`: once the fade-in is over the pane must stop being an animated layer. Kept alive,
-     the whole tall Home page is one GPU layer and iPhone Safari drops the top of it (a black screen). */
-  animation: pane-in 0.22s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
-}
-
-@keyframes pane-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
+  /* Keep long content in Safari's normal scrolling paint path. Even a temporary transform/opacity
+     animation can leave its tiles blank on iPhone; backwards fill alone doesn't prevent it.
+     The viewport-sized screen entrance and the tab capsule still animate. */
 }
 
 /* ── Tab bar: a glass pill with a capsule that slides to the chosen tab, and a round join button ── */

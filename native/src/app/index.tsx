@@ -49,11 +49,15 @@ export default function DesignSystem() {
       </Section>
 
       <Section header="You" footer="Switches, steppers and rows that open another screen.">
-        <Row title="Sound" icon={{ symbol: 'speaker.wave.2.fill', color: party.pink, fallback: '🔊' }} accessory={<Switch label="Sound" value={sound} onValueChange={setSound} />} />
-        <Row title="Rebuys" subtitle="Buy back in when you run out" icon={{ symbol: 'arrow.clockwise', color: party.green, fallback: '↻' }} accessory={<Switch label="Rebuys" value={rebuys} onValueChange={setRebuys} />} />
-        <Row title="Bots" detail={String(bots)} icon={{ symbol: 'person.2.fill', color: party.blue, fallback: '🤖' }} accessory={<Stepper label="Bots" value={bots} min={1} max={8} onChange={setBots} />} />
-        <Row title="Card packs" detail="Classic" icon={{ symbol: 'suit.spade.fill', color: '#5856d6', fallback: '♠' }} onPress={() => router.push('/sample-sheet')} />
-        <Row title="Chat bubbles" detail="Green" icon={{ symbol: 'bubble.left.fill', color: '#af52de', fallback: '💬' }} onPress={() => router.push('/sample-sheet')} />
+        <Row title="Sound" icon={{ symbol: 'speaker.wave.2.fill', color: party.pink }} accessory={<Switch label="Sound" value={sound} onValueChange={setSound} />} />
+        <Row title="Rebuys" subtitle="Buy back in when you run out" icon={{ symbol: 'arrow.clockwise', color: party.green }} accessory={<Switch label="Rebuys" value={rebuys} onValueChange={setRebuys} />} />
+        <Row title="Bots" detail={String(bots)} icon={{ symbol: 'person.2.fill', color: party.blue }} accessory={<Stepper label="Bots" value={bots} min={1} max={8} onChange={setBots} />} />
+        <Row title="Card packs" detail="Classic" icon={{ symbol: 'suit.spade.fill', color: colors.indigo as string }} onPress={() => router.push('/sample-sheet')} />
+        <Row title="Chat bubbles" detail="Green" icon={{ symbol: 'bubble.left.fill', color: colors.violet as string }} onPress={() => router.push('/sample-sheet')} />
+      </Section>
+
+      <Section header="Motion and touch" footer="Opens a pushed screen: inline title, swipe back from the left edge.">
+        <Row title="Motion and haptics" icon={{ symbol: 'hand.tap.fill', color: party.orange }} onPress={() => router.push('/motion')} />
       </Section>
 
       <Section>

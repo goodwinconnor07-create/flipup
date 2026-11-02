@@ -1,11 +1,10 @@
 import { Children, isValidElement, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
-import { SymbolView } from 'expo-symbols';
-import type { SFSymbol } from 'sf-symbols-typescript';
 
 import { minTap, radius, spacing, useColors } from '@/theme';
 
 import { haptic } from './haptics';
+import { Icon, type IconName } from './icon';
 import { IconSquare } from './icon-square';
 import { ThemedText } from './themed-text';
 
@@ -46,7 +45,8 @@ type RowProps = {
   subtitle?: string;
   /** Grey text at the end, before the chevron (the current value: "Auto", "20s"). */
   detail?: string;
-  icon?: { symbol: SFSymbol; color: string; fallback: string };
+  /** An SF Symbol on a coloured square. */
+  icon?: { symbol: IconName; color: string };
   /** A control at the end of the row (a Switch, a Stepper). When it's there the row itself isn't tappable. */
   accessory?: ReactNode;
   /** Makes the row tappable, with a chevron. */
@@ -70,7 +70,7 @@ export function Row({ title, subtitle, detail, icon, accessory, onPress, destruc
       </View>
       {detail && <ThemedText tone="tertiaryLabel">{detail}</ThemedText>}
       {accessory}
-      {onPress && !accessory && <SymbolView name="chevron.right" size={14} weight="semibold" tintColor={colors.quaternaryLabel} fallback={<ThemedText tone="tertiaryLabel">›</ThemedText>} />}
+      {onPress && !accessory && <Icon name="chevron.right" size={14} color={colors.quaternaryLabel} />}
     </View>
   );
   if (!onPress || accessory) return body;

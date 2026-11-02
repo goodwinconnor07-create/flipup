@@ -27,6 +27,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
+      // Lets animations run at 120fps on ProMotion iPhones (Expo's template sets it too; this keeps it explicit).
+      CADisableMinimumFrameDurationOnPhone: true,
       // The QR scanner on the join sheet.
       NSCameraUsageDescription: 'FlipUp uses the camera to scan a table or party QR code so you can join it.',
     },

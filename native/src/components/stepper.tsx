@@ -3,8 +3,8 @@ import { Pressable, View } from 'react-native';
 import { radius, useColors } from '@/theme';
 
 import { haptic } from './haptics';
+import { Icon } from './icon';
 import type { StepperProps } from './stepper.types';
-import { ThemedText } from './themed-text';
 
 /** The − / + stepper where there's no SwiftUI (the web build). */
 export function Stepper({ label, value, min, max, step = 1, onChange }: StepperProps) {
@@ -24,7 +24,7 @@ export function Stepper({ label, value, min, max, step = 1, onChange }: StepperP
         }}
         style={({ pressed }) => ({ width: 47, height: 32, alignItems: 'center', justifyContent: 'center', opacity: off ? 0.3 : pressed ? 0.5 : 1 })}
       >
-        <ThemedText variant="title3">{sign < 0 ? '−' : '+'}</ThemedText>
+        <Icon name={sign < 0 ? 'minus' : 'plus'} size={18} color={colors.label} />
       </Pressable>
     );
   };

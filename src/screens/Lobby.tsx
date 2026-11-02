@@ -1,11 +1,10 @@
-import { FORMATS, MAX_SEATS, stakeById, variantInfo, venueById, LEGENDS_ON, type Game } from '../game';
+import { FORMATS, MAX_SEATS, stakeById, variantInfo, venueById, LEGENDS_ON, timerLabel, type Game } from '../game';
 import { joinLinkLabel } from '../state/platform';
 import { closeTable, confirm, dispatch, openSheet, useApp, withPremium } from '../state/store';
 import { Avatar, chips } from '../ui/components';
 import { colourWipe } from '../ui/effects';
 import { CrownIcon, PlusIcon, QrIcon, ShareIcon } from '../ui/Icons';
 import { CodeTiles, shareInvite } from './sheets/InviteSheet';
-import { timerLabel } from './Setup';
 
 export function Lobby({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);

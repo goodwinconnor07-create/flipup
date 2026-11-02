@@ -1,4 +1,4 @@
-import { variantInfo, type Variant } from '../../game';
+import { variantInfo, variantNote, type Variant } from '../../game';
 import { closeSheet, navigate, useApp } from '../../state/store';
 import { Sheet } from '../../ui/components';
 import { cardArt } from '../../ui/gameThemes';
@@ -36,7 +36,7 @@ export function GameStartSheet({ variant }: { variant: Variant }) {
           ))}
         </ul>
         <p className="muted game-start-note">
-          {variant === 'imposter' ? "Needs three or more players, so it's best with friends." : variant === 'holdem' ? 'Bots here play full-strength Hold\'em.' : "Bots play this the best they can, but it's most fun with friends."}
+          {variantNote(variant)}
         </p>
       </div>
     </Sheet>

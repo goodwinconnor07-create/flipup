@@ -56,10 +56,12 @@ type RowProps = {
   /** Makes the row tappable, with a chevron. */
   onPress?: () => void;
   destructive?: boolean;
+  /** Hide the chevron (pick lists show only a check). */
+  chevron?: boolean;
 };
 
 /** One row in a Section: an optional icon square, the title, then a detail and chevron, or a control. */
-export function Row({ title, subtitle, detail, icon, leading, trailing, accessory, onPress, destructive }: RowProps) {
+export function Row({ title, subtitle, detail, icon, leading, trailing, accessory, onPress, destructive, chevron = true }: RowProps) {
   const colors = useColors();
   const body = (
     <View style={{ minHeight: minTap + 6, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.xs }}>
@@ -76,7 +78,7 @@ export function Row({ title, subtitle, detail, icon, leading, trailing, accessor
       {detail && <ThemedText tone="tertiaryLabel">{detail}</ThemedText>}
       {trailing}
       {accessory}
-      {onPress && !accessory && <Icon name="chevron.right" size={14} color={colors.quaternaryLabel} />}
+      {onPress && !accessory && chevron && <Icon name="chevron.right" size={14} color={colors.quaternaryLabel} />}
     </View>
   );
   if (!onPress || accessory) return body;

@@ -1,25 +1,15 @@
 import { useEffect, useState } from 'react';
-import { BLIND_CAP_CHOICES, BLIND_LEVELS, DEFAULT_SETTINGS, LEGENDS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings, type Variant } from '../game';
+import { BLIND_CAP_CHOICES, BLIND_MINUTE_MAX, blindsLabel, DEFAULT_SETTINGS, levelsFor, timerLabel, withStack, withVariant, LEGENDS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings, type Variant } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
 import { BackBar, Choice, chips, Group, StepRow, SwitchRow } from '../ui/components';
 import { ChevronIcon } from '../ui/Icons';
 import { BOTS } from '../game/botStyles';
 import { BotPicker } from './BotPicker';
-import { GameRow, withVariant } from './GamePicker';
+import { GameRow } from './GamePicker';
 
 const RANDOM = 'Random table';
 const PICK = 'Pick your bots';
-
-/** The longest wait between blind rises on the slider (0 is never). */
-export const BLIND_MINUTE_MAX = 20;
-
-/** Blinds offered for a starting stack: at least 10 big blinds deep, with no tiny blinds on big stacks (no 1/2 at 5,000, no 5/10 either at 10,000). */
-const smallestBigBlind = (stack: number) => (stack >= 10_000 ? 20 : stack >= 5_000 ? 10 : 0);
-const levelsFor = (stack: number) => BLIND_LEVELS.filter(([, bb]) => bb <= stack / 10 && bb >= smallestBigBlind(stack));
-
-export const blindsLabel = ([sb, bb]: [number, number]) => `${chips(sb)}/${chips(bb)}`;
-export const timerLabel = (s: number) => (s === 0 ? 'Off' : `${s}s`);
 
 /** The host's table settings: stack, blinds, rebuys, turn timer, and how many bots. */
 export function SettingsFields({
@@ -45,13 +35,8 @@ export function SettingsFields({
           value={settings.startingStack}
           options={STACK_CHOICES}
           format={chips}
-          onChange={(startingStack) => {
-            // Keep the blinds sensible for the new stack (at least 10 big blinds deep).
-            const fits = levelsFor(startingStack);
-            const keep = fits.some(([sb, bb]) => sb === settings.smallBlind && bb === settings.bigBlind);
-            const [smallBlind, bigBlind] = keep ? [settings.smallBlind, settings.bigBlind] : fits[fits.length - 1];
-            onChange({ ...settings, startingStack, smallBlind, bigBlind });
-          }}
+          // Keep the blinds sensible for the new stack (at least 10 big blinds deep).
+          onChange={(startingStack) => onChange(withStack(settings, startingStack))}
         />
         <StepRow
           label="Blinds"

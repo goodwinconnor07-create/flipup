@@ -12,6 +12,13 @@ Poker night on your phones: no-limit Texas Hold'em for play chips. A host opens 
 - `npm run deploy`: build and `wrangler deploy` (needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the environment; never commit them).
 - After editing `wrangler.jsonc`, run `npm run cf-typegen` and commit `worker-configuration.d.ts`.
 
+## Native app (iPhone and iPad)
+
+- `native/`: Expo (SDK 58) and Expo Router, a new client for the same Worker. It imports the engine as `@game/*` (`native/tsconfig.json`, `native/metro.config.js`) through `native/src/engine`; never copy `src/game` into it. Every name, id and link is in `native/appInfo.ts`, read by `native/app.config.ts`. Campaign and AI Legends never ship in it.
+- Builds: `.github/workflows/ios-build.yml`, started by hand (`submit` defaults to false; submitting needs the owner's yes). Secrets stay in GitHub and EAS.
+- App Store rules, the change list and open questions: `docs/APP_STORE.md`. In `native/`: `npm run typecheck`, `npx expo export --platform ios` to check it bundles.
+- Expo skills: `claude plugin install expo@anthropic-plugin-directory` in a fresh cloud session. Impeccable's skill is in `.claude/skills/impeccable`; rerun `npx impeccable install --providers=claude --scope=project` to get its hook back.
+
 ## Layout
 
 - `src/game/`: the pure TypeScript poker engine, shared by the app and the server. No DOM or Node APIs here.

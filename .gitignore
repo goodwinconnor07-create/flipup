@@ -10,3 +10,7 @@ playwright-report
 *.log
 .DS_Store
 render-refs/
+
+# Impeccable: the engine binary downloads on first use, and its hooks are per machine.
+.claude/skills/impeccable/scripts/bin/
+.claude/settings.local.json

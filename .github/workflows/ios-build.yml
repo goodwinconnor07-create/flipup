@@ -1,0 +1,117 @@
+# Builds the iPhone and iPad app with EAS, and sends it to App Store Connect only when asked.
+# Runs by hand only (Actions tab > iOS build > Run workflow). Nothing builds or submits on push.
+# Secret values never go into the repository or the logs: the App Store Connect key is written to a temp
+# file outside the checkout, with `printf`, and the last step deletes it whatever happened before.
+name: iOS build
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit:
+        description: Send the finished build to App Store Connect (needs the owner's approval first)
+        type: boolean
+        default: false
+      profile:
+        description: EAS build profile from native/eas.json
+        type: string
+        default: production
+
+# One iOS build at a time. A second run waits for the first instead of cancelling it.
+concurrency:
+  group: ios-build
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - name: Check the secrets are set
+        # Prints only the names of missing secrets, never a value.
+        working-directory: .
+        env:
+          APPLE_KEY: ${{ secrets.APPLE_KEY }}
+          APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          missing=""
+          for name in APPLE_KEY APPLE_KEY_ID APPLE_ISSUER_ID APPLE_TEAM_ID EXPO_TOKEN; do
+            if [ -z "${!name}" ]; then missing="$missing $name"; fi
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing (Settings > Secrets and variables > Actions)"
+            exit 1
+          fi
+          echo "All five secrets are set."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+
+      - uses: expo/expo-github-action@9da89d3617bb88139671bad31b09c65714c2ee06 # v9
+        with:
+          eas-version: 27.2.0
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - run: npm ci
+
+      - name: Check the app config
+        # The bundle ID and EAS project ID live in native/appInfo.ts. Stop early with a clear message if either is empty.
+        run: |
+          npx expo config --type public --json > "$RUNNER_TEMP/expo-config.json"
+          node -e '
+            const c = require(process.argv[1]);
+            const gaps = [];
+            if (!c.ios?.bundleIdentifier) gaps.push("bundleId");
+            if (!c.extra?.eas?.projectId) gaps.push("easProjectId");
+            if (gaps.length) { console.log(`::error::Fill in ${gaps.join(" and ")} in native/appInfo.ts`); process.exit(1); }
+            console.log(`Building ${c.name} (${c.ios.bundleIdentifier})`);
+          ' "$RUNNER_TEMP/expo-config.json"
+
+      - name: Write the App Store Connect key
+        env:
+          KEY: ${{ secrets.APPLE_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Build
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Lets EAS make or refresh the signing certificate and profile without a person at the keyboard.
+          EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          PROFILE: ${{ inputs.profile }}
+        run: eas build --platform ios --profile "$PROFILE" --non-interactive
+
+      - name: Submit to App Store Connect
+        if: ${{ inputs.submit == true }}
+        env:
+          ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          # The names EAS CLI itself reads.
+          EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: eas submit --platform ios --latest --non-interactive
+
+      - name: Delete the App Store Connect key
+        if: always()
+        working-directory: .
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

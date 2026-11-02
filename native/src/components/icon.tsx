@@ -36,6 +36,13 @@ const WEB = {
   'cpu.fill': 'smart_toy',
   'flag.checkered': 'sports_score',
   'line.3.horizontal': 'menu',
+  'trophy.fill': 'emoji_events',
+  'list.bullet': 'list',
+  'person.badge.plus': 'person_add',
+  'clock.fill': 'schedule',
+  'stop.circle.fill': 'stop_circle',
+  'rectangle.portrait.and.arrow.right': 'logout',
+  'square.and.arrow.up': 'ios_share',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

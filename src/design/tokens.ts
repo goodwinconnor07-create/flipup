@@ -84,6 +84,31 @@ export const gradients = {
   gold: ['#ffd24a', '#f59e0b'],
 } as const satisfies Record<string, readonly [string, string]>;
 
+/** Confetti: the party mix, gold for Premium, and greens and gold for a win. */
+export const confettiColors = {
+  party: ['#f97316', '#ec4899', '#ef4444', '#22c55e', '#facc15', '#3b82f6'],
+  gold: ['#fff3b0', '#ffd24a', '#f59e0b', '#ffffff', '#ff8a1f', '#ff3d8b'],
+  win: ['#16a34a', '#22c55e', '#facc15', '#fde68a', '#3b82f6'],
+};
+
+/**
+ * Each mini game's own table: the felt, and the rail's gradient (top colour to bottom). Texas Hold'em keeps the
+ * player's felt and rail, so it isn't here. The web's `--theme-<game>-*` tokens in global.css.
+ */
+export const tableThemes = {
+  ghost: { felt: '#2e2650', rail: ['#5b4d8a', '#120d22'] },
+  imposter: { felt: '#5b1e22', rail: ['#c9a46a', '#4a3518'] },
+  pineapple: { felt: '#0e8577', rail: ['#ffd34d', '#a8740c'] },
+  deuces: { felt: '#6b2bd6', rail: ['#ff5fae', '#6e1650'] },
+  pittsburgh: { felt: '#1d1d20', rail: ['#ffbf2e', '#6b4c00'] },
+  dice: { felt: '#a8182f', rail: ['#efe7d4', '#8f8469'] },
+  redriver: { felt: '#7c1414', rail: ['#3a3a44', '#0d0d12'] },
+  crucifix: { felt: '#2a1f3d', rail: ['#d7d4de', '#4b4757'] },
+  circle: { felt: '#0f3a57', rail: ['#d9ab52', '#5c3f0b'] },
+  memory: { felt: '#2b1f5c', rail: ['#b9a7ff', '#3b2a86'] },
+  beanstalk: { felt: '#1f5f2e', rail: ['#9c6b3c', '#3d2410'] },
+} as const satisfies Record<string, { felt: string; rail: readonly [string, string] }>;
+
 /**
  * The type ramp: Apple's text styles at the default Dynamic Type size, with FlipUp's weights (heavy large titles
  * and main tap targets, bold card headers, regular body). `leading` is the line height.

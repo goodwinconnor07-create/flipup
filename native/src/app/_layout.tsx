@@ -32,6 +32,9 @@ export default function RootLayout() {
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: reduce ? 'fade' : 'slide_from_bottom' }} />
         <Stack.Screen name="game/[id]" options={{ ...sheet, title: 'Game' }} />
         <Stack.Screen name="premium" options={{ ...sheet, title: 'FlipUp Premium' }} />
+        <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />
+        <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />
+        <Stack.Screen name="table-log" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand log' }} />
         <Stack.Screen name="sample-sheet" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'A sheet' }} />
       </Stack>
     </ThemeProvider>

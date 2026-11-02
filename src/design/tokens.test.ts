@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { gradients, palette, party, radius, shadows, type } from './tokens';
+import { gradients, palette, party, radius, shadows, tableThemes, type } from './tokens';
 
 // The web keeps its tokens as CSS custom properties in global.css. These checks keep them and tokens.ts the same.
 // (Read from disk: Vitest turns CSS imports into empty strings.)
@@ -56,6 +56,13 @@ describe('design tokens match global.css', () => {
     for (const c of ['pink', 'orange', 'yellow', 'blue', 'green', 'edge'] as const) expect(party[c], c).toBe(root[`party-${c}`]);
     expect(gradients.blue).toEqual([root['party-blue'], root['blue-lo']]);
     expect(gradients.green).toEqual([root['party-green'], root.green]);
+  });
+
+  it("each mini game's table", () => {
+    for (const [game, t] of Object.entries(tableThemes)) {
+      expect(t.felt, game).toBe(root[`theme-${game}-felt`]);
+      expect(t.rail, game).toEqual([root[`theme-${game}-rail-a`], root[`theme-${game}-rail-b`]]);
+    }
   });
 
   it('radii', () => {

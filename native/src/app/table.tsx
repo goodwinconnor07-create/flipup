@@ -1,17 +1,21 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, Share, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Pressable, Share, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
+import { Confetti } from '@/components/table/confetti';
 import { Ended } from '@/components/table/ended';
 import { FeltOval } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
 import { MyArea } from '@/components/table/my-area';
 import { SeatRow } from '@/components/table/seats';
+import { useReactions } from '@/components/table/use-reactions';
+import { useTableSounds } from '@/components/table/use-table-sounds';
+import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { myPlayer, options, seatFor, type Game } from '@/engine';
 import { joinLink } from '@/state/api';
@@ -36,7 +40,7 @@ export default function TableScreen() {
   };
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}>
-      <TableBar game={game} online={online} code={t.code} onLeave={leave} />
+      <TableBar game={game} online={online} code={t.code} />
       {online && t.conn === 'offline' && <Pill text="Reconnecting…" />}
       <Notice notice={t.notice} />
       {!game ? (
@@ -83,17 +87,11 @@ function Notice({ notice }: { notice: { id: number; text: string } | null }) {
   );
 }
 
-function TableBar({ game, online, code, onLeave }: { game: Game | null; online: boolean; code: string | null; onLeave: () => void }) {
+function TableBar({ game, online, code }: { game: Game | null; online: boolean; code: string | null }) {
   const colors = useColors();
   const menu = () => {
     haptic.tap();
-    const ask = () =>
-      Alert.alert('Leave the table?', online ? 'You can come back with the code while it lasts.' : 'This bots-only table ends when you leave.', [
-        { text: 'Stay', style: 'cancel' },
-        { text: 'Leave', style: 'destructive', onPress: onLeave },
-      ]);
-    if (Platform.OS === 'ios') ActionSheetIOS.showActionSheetWithOptions({ options: ['Leave table', 'Cancel'], destructiveButtonIndex: 0, cancelButtonIndex: 1 }, (i) => i === 0 && ask());
-    else ask();
+    router.push('/table-menu');
   };
   return (
     <View style={{ height: 52, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md }}>
@@ -161,23 +159,38 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
     }, 400);
     return () => clearTimeout(t);
   }, [pre, myTurn, hand?.number, hand?.seq, hand?.currentBet]); // eslint-disable-line react-hooks/exhaustive-deps
-  // A win worth celebrating gets the success haptic.
+  // A win worth celebrating gets the success haptic and confetti. Getting your own blind back when everyone folds
+  // isn't worth a party; a real win is.
   const won = hand?.result && me ? (hand.result.won[me.id] ?? 0) : 0;
-  const winKey = won - (mySeat?.total ?? 0) > 0 ? hand!.number : 0;
+  const gained = won - (mySeat?.total ?? 0);
+  const winKey = won > 0 && (hand?.result?.showdown ? gained > 0 : gained >= game.settings.bigBlind) ? hand!.number : 0;
   useEffect(() => {
     if (winKey) haptic.success();
   }, [winKey]);
+  const { width, height } = useWindowDimensions();
+
+  // Table talk, and the sounds.
+  const shownRef = useRef<Set<string>>(new Set());
+  const { say, quiet } = useReactions(game, (id) => id === me?.id || shownRef.current.has(id));
+  useTableSounds(game, me?.id);
 
   return (
     <View style={{ flex: 1, justifyContent: 'space-between' }}>
-      <SeatRow game={game} me={me} />
+      <SeatRow game={game} me={me} say={say} quiet={quiet} shownRef={shownRef} />
       <FeltOval game={game} me={me} />
       <View style={{ gap: spacing.md }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: 100, justifyContent: 'flex-end' }}>
-          <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={sending} pre={pre} setPre={setPre} onRaise={() => setRaising(true)} />
+          {hand?.voting && mySeat && me ? (
+            <Vote game={game} me={me} />
+          ) : hand?.discarding && mySeat && !mySeat.folded ? (
+            <Discard game={game} seat={mySeat} pack={me?.cardPack} />
+          ) : (
+            <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={sending} pre={pre} setPre={setPre} onRaise={() => setRaising(true)} />
+          )}
         </View>
-        <MyArea game={game} me={me} />
+        <MyArea game={game} me={me} talk={me ? say[me.id] : undefined} />
       </View>
+      <Confetti burst={winKey} origin={{ x: width / 2, y: height * 0.7 }} />
       {raising && myTurn && hand && mySeat && <RaisePanel game={game} hand={hand} seat={mySeat} onClose={() => setRaising(false)} />}
     </View>
   );

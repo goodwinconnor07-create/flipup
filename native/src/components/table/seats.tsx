@@ -1,13 +1,17 @@
-import { useRef } from 'react';
-import { Text, View } from 'react-native';
+import { useEffect, useRef, useState, type RefObject } from 'react';
+import { Modal, Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn, LinearTransition, ZoomIn } from 'react-native-reanimated';
 
-import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Game, type Player, type Position, type Seat } from '@/engine';
+import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { radius, spacing, useColors } from '@/theme';
 
+import { haptic } from '../haptics';
 import { ThemedText } from '../themed-text';
+import { Capsule, Thread } from './bubbles';
+import { MoodFace } from './mood-face';
 import { PlayingCard } from './playing-card';
+import { moveSig } from './use-reactions';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 const MAX_SEATS_SHOWN = 4;
@@ -45,29 +49,76 @@ function useWindow(game: Game, others: Player[]): Player[] {
   return live.slice(s, s + n);
 }
 
-/** The row of other players across the top of the table. */
-export function SeatRow({ game, me }: { game: Game; me: Player | undefined }) {
+/**
+ * The row of other players across the top of the table. `say` and `quiet` are the table talk (useReactions);
+ * `shownRef` is told who's in view, so nobody out of it holds up the talk.
+ */
+export function SeatRow({ game, me, say, quiet, shownRef }: { game: Game; me: Player | undefined; say: Record<string, Talk>; quiet: Record<string, string>; shownRef: RefObject<Set<string>> }) {
   const others = othersInOrder(game, me);
   const shown = useWindow(game, others);
-  const hidden = others.length - shown.length;
+  const ids = shown.map((p) => p.id).join(',');
+  useEffect(() => {
+    shownRef.current = new Set(ids.split(','));
+  }, [ids, shownRef]);
+  const hidden = others.filter((p) => !shown.includes(p));
   return (
-    <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: spacing.xs, minHeight: 150 }}>
+    <View style={{ flexDirection: 'row', justifyContent: 'center', paddingHorizontal: spacing.xs, minHeight: 156 }}>
       {shown.map((p) => (
         <Animated.View key={p.id} layout={LinearTransition.duration(250)} entering={FadeIn.duration(200)} style={{ flex: 1, maxWidth: 96 }}>
-          <SeatPod game={game} player={p} seat={seatFor(game.hand, p.id)} />
+          <SeatPod game={game} player={p} seat={seatFor(game.hand, p.id)} talk={say[p.id]} quiet={quiet[p.id]} />
         </Animated.View>
       ))}
-      {hidden > 0 && (
-        <View style={{ position: 'absolute', right: spacing.xs, top: 0 }} accessibilityLabel={`${hidden} more players not shown`}>
-          <Capsule text={`+${hidden}`} tone="grey" />
-        </View>
-      )}
+      {hidden.length > 0 && <HiddenPlayers game={game} players={hidden} />}
     </View>
   );
 }
 
+/** "+3": the players out of the row. A tap lists them with their chips. */
+function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
+  const colors = useColors();
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${players.length} more players`}
+        hitSlop={8}
+        onPress={() => {
+          haptic.tap();
+          setOpen(true);
+        }}
+        style={{ position: 'absolute', right: spacing.xs, top: 0 }}
+      >
+        <Capsule text={`+${players.length}`} tone="grey" />
+      </Pressable>
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }} onPress={() => setOpen(false)}>
+          <View style={{ position: 'absolute', top: 110, right: spacing.md, minWidth: 220, padding: spacing.xs, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: '0 12px 30px rgba(0,0,0,0.25)' }}>
+            {players.map((p) => {
+              const seat = seatFor(game.hand, p.id);
+              return (
+                <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.xs, minHeight: 44, opacity: game.hand && (!seat || seat.folded) ? 0.5 : 1 }}>
+                  <Text style={{ fontSize: 24 }} maxFontSizeMultiplier={1}>
+                    {p.emoji}
+                  </Text>
+                  <ThemedText variant="body" numberOfLines={1} style={{ flex: 1, fontWeight: '600' }}>
+                    {p.name}
+                  </ThemedText>
+                  <ThemedText variant="body" style={{ fontWeight: '800', fontVariant: ['tabular-nums'] }}>
+                    {p.stack === 0 && !seat ? 'Out' : chips(p.stack)}
+                  </ThemedText>
+                </View>
+              );
+            })}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
+  );
+}
+
 /** One player: their speech bubble (last move, or dots while a bot thinks), face, BOT chip, position, name, chips, cards and bet. */
-function SeatPod({ game, player, seat }: { game: Game; player: Player; seat: Seat | undefined }) {
+function SeatPod({ game, player, seat, talk, quiet }: { game: Game; player: Player; seat: Seat | undefined; talk?: Talk; quiet?: string }) {
   const colors = useColors();
   const reduce = useReduceMotion();
   const hand = game.hand;
@@ -79,26 +130,28 @@ function SeatPod({ game, player, seat }: { game: Game; player: Player; seat: Sea
   const last = seat?.last;
   const money = !!last && last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   const stale = !!last && !!hand && last.street !== hand.street;
+  // A move whose talk has run its course stays hidden, so it doesn't look like they moved again.
+  const hush = !!hand && !!quiet && quiet === moveSig(hand.number, last);
   const faceDown = holeCountAt(variantOf(game), hand?.board.length ?? 0);
   return (
     <View
       accessible
       accessibilityLabel={`${player.name}${player.bot ? ', a bot' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}`}
-      style={{ alignItems: 'center', opacity: out ? 0.45 : 1 }}
+      style={{ alignItems: 'center', opacity: out ? 0.5 : 1 }}
     >
       <View style={{ height: 30, justifyContent: 'flex-end' }}>
-        {thinking ? (
+        {talk ? (
+          <Thread talk={talk} fx={player.bubble} room={92} />
+        ) : thinking ? (
           <Capsule text="•••" tone="grey" />
-        ) : last ? (
+        ) : last && !hush ? (
           <Animated.View key={`${hand?.number}-${moveLabel(last)}`} entering={reduce ? FadeIn : ZoomIn.springify().damping(14)} style={{ opacity: stale ? 0.55 : 1 }}>
-            <Capsule text={moveLabel(last)} tone={money ? 'blue' : 'grey'} />
+            <Capsule text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={player.bubble} />
           </Animated.View>
         ) : null}
       </View>
       <View style={{ width: 56, height: 56, alignItems: 'center', justifyContent: 'center', marginTop: 2 }}>
-        <Text style={{ fontSize: 44, lineHeight: 52 }} maxFontSizeMultiplier={1}>
-          {player.emoji}
-        </Text>
+        <MoodFace game={game} player={player} seat={seat} size={52} />
         {player.bot && (
           <View style={{ position: 'absolute', left: -6, bottom: 2, paddingHorizontal: 4, borderRadius: 4, backgroundColor: colors.slate }}>
             <Text style={{ color: '#fff', fontSize: 9, fontWeight: '800' }} maxFontSizeMultiplier={1}>
@@ -116,11 +169,14 @@ function SeatPod({ game, player, seat }: { game: Game; player: Player; seat: Sea
       <ThemedText variant="subhead" style={{ fontWeight: '800', fontVariant: ['tabular-nums'], lineHeight: 18 }} maxFontSizeMultiplier={1.2}>
         {status ?? chips(player.stack)}
       </ThemedText>
-      <View style={{ height: 40, marginTop: 4, flexDirection: 'row', gap: 2 }}>
+      <View style={{ height: 40, marginTop: 4, flexDirection: 'row' }}>
         {seat && (!seat.folded || seat.cards.length > 0) &&
-          (seat.cards.length
-            ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" flip />)
-            : Array.from({ length: faceDown }, (_, i) => <PlayingCard key={i} back size="sm" />))}
+          (seat.cards.length ? seat.cards : Array.from({ length: faceDown }, () => null)).map((c, i, all) => (
+            // Two cards sit side by side; more (Pineapple, Bean Stalk) fan over each other to stay inside the seat.
+            <View key={c ?? i} style={{ marginLeft: i === 0 ? 0 : all.length > 2 ? -Math.ceil(26 - 54 / (all.length - 1)) : 2 }}>
+              {c ? <PlayingCard card={c} size="sm" flip pack={player.cardPack} /> : <PlayingCard back size="sm" pack={player.cardPack} />}
+            </View>
+          ))}
       </View>
       <View style={{ height: 22, justifyContent: 'center' }}>
         {won > 0 ? (
@@ -129,18 +185,6 @@ function SeatPod({ game, player, seat }: { game: Game; player: Player; seat: Sea
           <Tag text={`● ${chips(seat.bet)}`} color={colors.gold as string} />
         ) : null}
       </View>
-    </View>
-  );
-}
-
-/** A plain speech capsule: blue for chips going in, grey for check, fold and thinking. */
-export function Capsule({ text, tone }: { text: string; tone: 'blue' | 'grey' }) {
-  const colors = useColors();
-  return (
-    <View style={{ paddingHorizontal: spacing.xs + 2, paddingVertical: 3, borderRadius: radius.full, backgroundColor: tone === 'blue' ? colors.accent : colors.cellPressed }}>
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', color: tone === 'blue' ? '#ffffff' : colors.label }}>
-        {text}
-      </Text>
     </View>
   );
 }

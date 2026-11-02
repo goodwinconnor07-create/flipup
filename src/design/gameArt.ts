@@ -9,21 +9,23 @@ export interface GameLook {
   card: readonly [string, string];
   /** A line that sets the mood. Shown on the game's start sheet. */
   mood: string;
+  /** Table sounds are pitched by this (1 is normal): low and heavy for the ghost, bright for the pineapple. */
+  pitch: number;
 }
 
 export const GAME_LOOK: Record<Variant, GameLook> = {
-  holdem: { card: ['#1f8a57', '#0a3b25'], mood: 'The classic. Your felt, your rules.' },
-  pineapple: { card: ['#f9b233', '#e8641b'], mood: 'Sunny, juicy and a bit silly.' },
-  deuces: { card: ['#ff4fa0', '#7a2cff'], mood: 'Wild cards, loud colours.' },
-  ghost: { card: ['#1b2a3a', '#050a10'], mood: 'Cold air. Something is watching the pot.' },
-  pittsburgh: { card: ['#32465c', '#0e151d'], mood: 'Steel, rivers and a bridge in the dark.' },
-  dice: { card: ['#c0283f', '#4a0a16'], mood: 'Craps table energy. Everything is one roll from changing.' },
-  redriver: { card: ['#d92b2b', '#2a0606'], mood: 'The river runs red. Keep going until it stops.' },
-  crucifix: { card: ['#5a4691', '#1a1230'], mood: 'Five cards in a cross. Read the arms.' },
-  circle: { card: ['#1d7fb8', '#0a2a45'], mood: 'Six cards round a clock. Hours matter.' },
-  memory: { card: ['#7b5cff', '#2a1670'], mood: 'Twenty cards gone. Do you remember which?' },
-  beanstalk: { card: ['#4caf50', '#14532d'], mood: 'Your hand keeps growing. How high can it climb?' },
-  imposter: { card: ['#2f3441', '#0a0b10'], mood: 'Trust nobody. Watch the bets.' },
+  holdem: { card: ['#1f8a57', '#0a3b25'], mood: 'The classic. Your felt, your rules.', pitch: 1 },
+  pineapple: { card: ['#f9b233', '#e8641b'], mood: 'Sunny, juicy and a bit silly.', pitch: 1.12 },
+  deuces: { card: ['#ff4fa0', '#7a2cff'], mood: 'Wild cards, loud colours.', pitch: 1.2 },
+  ghost: { card: ['#1b2a3a', '#050a10'], mood: 'Cold air. Something is watching the pot.', pitch: 0.82 },
+  pittsburgh: { card: ['#32465c', '#0e151d'], mood: 'Steel, rivers and a bridge in the dark.', pitch: 0.94 },
+  dice: { card: ['#c0283f', '#4a0a16'], mood: 'Craps table energy. Everything is one roll from changing.', pitch: 1 },
+  redriver: { card: ['#d92b2b', '#2a0606'], mood: 'The river runs red. Keep going until it stops.', pitch: 0.9 },
+  crucifix: { card: ['#5a4691', '#1a1230'], mood: 'Five cards in a cross. Read the arms.', pitch: 0.92 },
+  circle: { card: ['#1d7fb8', '#0a2a45'], mood: 'Six cards round a clock. Hours matter.', pitch: 1.05 },
+  memory: { card: ['#7b5cff', '#2a1670'], mood: 'Twenty cards gone. Do you remember which?', pitch: 1.08 },
+  beanstalk: { card: ['#4caf50', '#14532d'], mood: 'Your hand keeps growing. How high can it climb?', pitch: 1.1 },
+  imposter: { card: ['#2f3441', '#0a0b10'], mood: 'Trust nobody. Watch the bets.', pitch: 0.88 },
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;

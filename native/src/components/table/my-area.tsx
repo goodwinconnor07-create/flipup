@@ -1,20 +1,22 @@
 import { Text, View } from 'react-native';
 
-import { holeCount, positionOf, seatFor, variantOf, type Card, type Game, type Player } from '@/engine';
+import { holeCount, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
 import { dispatch } from '@/state/session';
 import { radius, spacing, useColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
+import { Thread } from './bubbles';
 import { useHighlight } from './felt';
 import { CardSlot, PlayingCard } from './playing-card';
+import { QuickMessages } from './quick-messages';
 import { PositionChip } from './seats';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
-/** The bottom of the table: your cards, big, and your box (name, stack, what you've put in, your position). */
-export function MyArea({ game, me }: { game: Game; me: Player | undefined }) {
+/** The bottom of the table: your cards, big, and your box (name, stack, what you've put in, your position, your quick messages). */
+export function MyArea({ game, me, talk }: { game: Game; me: Player | undefined; talk?: Talk }) {
   const colors = useColors();
   const hand = game.hand;
   const seat = seatFor(hand, me?.id);
@@ -33,7 +35,7 @@ export function MyArea({ game, me }: { game: Game; me: Player | undefined }) {
         {seat?.cards.length
           ? seat.cards.map((c, i) => (
               <View key={`${hand!.number}-${c}`} style={{ marginLeft: i === 0 ? 0 : many ? -16 : -14, transform: [{ rotate: `${(i - (seat.cards.length - 1) / 2) * 4}deg` }] }}>
-                <PlayingCard card={c} width={w} flip delay={i * 180} dim={dim(c)} glow={glow(c)} />
+                <PlayingCard card={c} width={w} flip delay={i * 180} dim={dim(c)} glow={glow(c)} pack={me?.cardPack} />
               </View>
             ))
           : Array.from({ length: holeCount(variantOf(game)) }, (_, i) => (
@@ -91,6 +93,17 @@ export function MyArea({ game, me }: { game: Game; me: Player | undefined }) {
         <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
           <PositionChip pos={me ? positionOf(hand, me.id) : null} />
         </View>
+        {me && (
+          <View style={{ position: 'absolute', right: -6, top: -14 }}>
+            <QuickMessages />
+          </View>
+        )}
+        {/* What you just said, over your box. */}
+        {talk && (
+          <View pointerEvents="none" style={{ position: 'absolute', bottom: '100%', marginBottom: 6, alignSelf: 'center' }}>
+            <Thread talk={talk} fx={me?.bubble} />
+          </View>
+        )}
       </View>
     </View>
   );

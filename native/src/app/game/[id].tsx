@@ -10,7 +10,7 @@ import { radius, spacing } from '@/theme';
 
 /** A game's sheet from Home: its picture and mood, the two ways to start it, then how it plays. */
 export default function GameSheet() {
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, rules } = useLocalSearchParams<{ id: string; rules?: string }>();
   const variant: Variant = isVariant(id) ? id : 'holdem';
   const info = variantInfo(variant);
   const { width } = useWindowDimensions();
@@ -30,10 +30,13 @@ export default function GameSheet() {
           {gameLook(variant).mood}
         </ThemedText>
       </View>
+      {/* Opened from a table's game pill: only how it plays. */}
+      {!rules && (
       <View style={{ gap: spacing.sm }}>
         <Button variant="party" tint="blue" size="lg" title="Play with friends" onPress={() => go('friends')} />
         <Button variant="party" tint="green" size="lg" title="Play with bots" onPress={() => go('bots')} />
       </View>
+      )}
       <View style={{ gap: spacing.xs }}>
         <ThemedText variant="headline">How it plays</ThemedText>
         {info.rules.map((r) => (

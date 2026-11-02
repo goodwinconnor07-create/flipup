@@ -2,6 +2,7 @@ import { Text, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn, FlipInEasyY } from 'react-native-reanimated';
 
 import { SUIT_COLOUR } from '@design/gameArt';
+import { cardBack } from '@design/premiumLooks';
 import { cardName, rankLabel, suitOf, type Card } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { gradient } from '@/theme';
@@ -25,6 +26,7 @@ export function PlayingCard({
   dim = false,
   glow = false,
   width,
+  pack,
 }: {
   card?: Card;
   size?: CardSize;
@@ -35,6 +37,8 @@ export function PlayingCard({
   glow?: boolean;
   /** Overrides the size's width (the board shrinks to fit narrow phones). */
   width?: number;
+  /** The card pack painted on the back: the owner's, so everyone at the table sees it. */
+  pack?: string;
 }) {
   const reduce = useReduceMotion();
   const w = width ?? CARD_W[size];
@@ -42,13 +46,17 @@ export function PlayingCard({
   const small = size === 'sm';
   const frame: ViewStyle = { width: w, height: h, borderRadius: small ? 5 : Math.round(w * 0.12), borderCurve: 'continuous', overflow: 'hidden' };
   if (back || !card) {
+    const look = cardBack(pack);
+    // iOS draws linear and radial gradients only, so the web's woven patterns become a sheen and a soft light.
     return (
       <View
         accessibilityLabel="Face-down card"
         style={[
           frame,
-          { borderWidth: small ? 1.5 : 2, borderColor: 'rgba(255,255,255,0.85)' },
-          gradient('repeating-linear-gradient(45deg, rgba(255,255,255,0.12) 0px, rgba(255,255,255,0.12) 4px, transparent 4px, transparent 8px), linear-gradient(160deg, #1f2937, #0b0b12)'),
+          { borderWidth: small ? 1.5 : 2, borderColor: 'rgba(255,255,255,0.85)', boxShadow: look.glow === 'transparent' ? undefined : `0 0 ${small ? 6 : 10}px ${look.glow}` },
+          gradient(
+            `linear-gradient(115deg, transparent 30%, ${look.ink} 44%, transparent 46%, transparent 54%, ${look.ink} 56%, transparent 70%), radial-gradient(circle at 50% 35%, rgba(255,255,255,0.22), transparent 65%), linear-gradient(160deg, ${look.base.join(', ')})`,
+          ),
         ]}
       />
     );

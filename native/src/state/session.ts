@@ -12,8 +12,10 @@ import {
   cryptoRng,
   newId,
   redactForDevice,
+  redactLogs,
   type Action,
   type Game,
+  type HandLog,
   type ServerMessage,
   type Settings,
 } from '@/engine';
@@ -36,12 +38,14 @@ export interface TableState {
   /** An online move sent and not yet confirmed: the buttons wait for it. */
   sending: boolean;
   notice: { id: number; text: string } | null;
+  /** The hand log, once asked for (null while it's on its way from the server). */
+  logs: HandLog[] | null;
 }
 
 export const me = deviceId();
 
 let session: Session | null = null;
-let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null };
+let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null };
 let conn: Connection | null = null;
 let sendingId: string | null = null;
 let profile = { name: '', emoji: '' };
@@ -135,6 +139,8 @@ function onServerMessage(msg: ServerMessage): void {
     set({ ...session, game: msg.game, joining });
     // Arrived from the join screen: take a seat.
     if (joining && msg.game.status !== 'ended') sendJoin();
+  } else if (msg.t === 'log') {
+    publish({ logs: msg.logs });
   } else if (msg.t === 'reject') {
     if (msg.id && msg.id === sendingId) {
       sendingId = null;
@@ -175,6 +181,15 @@ function closeConnection(): void {
   conn = null;
   sendingId = null;
   publish({ conn: 'none', sending: false });
+}
+
+/** Asks for the hand log: straight from the table on a bots-only one, from the server online. */
+export function requestLogs(): void {
+  if (session?.mode === 'local') publish({ logs: redactLogs(session.game, me) });
+  else {
+    publish({ logs: null });
+    if (!conn?.send({ t: 'log' })) notify("You're offline. The hand log needs a connection.");
+  }
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */

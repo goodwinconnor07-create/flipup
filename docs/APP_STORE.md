@@ -426,3 +426,5 @@ Decided 2 November 2026:
 - A party needs one ad from the host, however many Premium games its rounds use. Anyone without Premium can still
   pick any game mode while setting up a party; the ad comes when they host it.
 - Ad network: Google AdMob.
+- Where the gate goes: `unlockToHost()` in `native/src/state/unlock.ts`. Party setup calls it before opening a party
+  (one unlock covers every round). Until AdMob is in, it lets every host through.

@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, Share, Text, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, Share, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +8,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
 import { Confetti } from '@/components/table/confetti';
+import { PartyPanel } from '@/components/party/panel';
 import { Ended } from '@/components/table/ended';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
@@ -19,9 +20,10 @@ import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
-import { equity, myPlayer, options, seatFor, showsOdds, variantOf, type Card, type Game, type Hand } from '@/engine';
+import { equity, myPlayer, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { joinLink } from '@/state/api';
+import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, useTable } from '@/state/session';
 import { gradient, radius, spacing, useColors, usePlainColors } from '@/theme';
 
@@ -57,10 +59,26 @@ export default function TableScreen() {
         <>
           {game.status === 'lobby' && <Lobby game={game} online={online} />}
           {game.status === 'playing' && <Playing game={game} sending={t.sending} />}
-          {game.status === 'ended' && <Ended game={game} onLeave={leave} />}
+          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>
       )}
     </View>
+  );
+}
+
+/** A party table's finish screen is the party's leaderboard, which follows the party to the next round's table. */
+function PartyEnded({ code, onLeave }: { code: string; onLeave: () => void }) {
+  return (
+    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl }}>
+      <PartyPanel
+        code={code}
+        place="table"
+        onGone={() => {
+          forgetParty();
+          onLeave();
+        }}
+      />
+    </ScrollView>
   );
 }
 
@@ -125,7 +143,24 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
           </>
         )}
       </View>
-      {online && code ? (
+      {game?.party ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Party standings. Game ${game.party.round + 1} of ${game.party.total}`}
+          onPress={() => {
+            haptic.tap();
+            router.push('/party-sheet');
+          }}
+          style={{ height: 40, paddingHorizontal: 12, borderRadius: 12, borderCurve: 'continuous', backgroundColor: c.blueBg, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+        >
+          <Text maxFontSizeMultiplier={1} style={{ fontSize: 17 }}>
+            {variantInfo(game.settings.variant ?? 'holdem').emoji}
+          </Text>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'], color: c.blueInk }}>
+            {game.party.round + 1}/{game.party.total}
+          </Text>
+        </Pressable>
+      ) : online && code ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Invite: code ${code}`}

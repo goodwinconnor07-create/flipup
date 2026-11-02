@@ -7,7 +7,8 @@ type Listener = () => void;
 const listeners = new Map<string, Set<Listener>>();
 const cache = new Map<string, unknown>();
 
-function read<T>(key: string, fallback: T): T {
+/** A stored value read once, outside a component. */
+export function read<T>(key: string, fallback: T): T {
   if (cache.has(key)) return cache.get(key) as T;
   let value = fallback;
   try {

@@ -8,6 +8,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { PlayCard } from '@/components/play-card';
 import { isPremiumVariant, variantInfo, variantOf, VARIANTS } from '@/engine';
+import { usePartyRef } from '@/state/party';
 import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
@@ -61,27 +62,29 @@ export default function Home() {
   );
 }
 
-/** The one clear next step, as on the web: a table you're still at (bots-only or online), with a Rejoin button. */
+/** The one clear next step, as on the web: a table you're still at (bots-only or online) with Rejoin, or your open party. */
 function TableBanner() {
   const colors = useColors();
   const t = useTable();
   const game = t.game;
-  if (!t.mode || (game && game.status === 'ended')) return null;
-  const info = game ? variantInfo(variantOf(game)) : null;
-  const what = t.mode === 'online' ? `Online table${t.code ? ` · ${t.code}` : ''}` : 'You vs the bots';
-  const where = game?.hand ? `Hand ${game.hand.number}` : game?.status === 'lobby' ? 'In the lobby' : 'Your table';
+  const partyRef = usePartyRef();
+  const atTable = !!t.mode && !(game && game.status === 'ended' && !game.party);
+  if (!atTable && !partyRef) return null;
+  const info = atTable && game ? variantInfo(variantOf(game)) : null;
+  const what = !atTable ? 'Your party' : game?.party ? `Party · game ${game.party.round + 1} of ${game.party.total}` : t.mode === 'online' ? `Online table${t.code ? ` · ${t.code}` : ''}` : 'You vs the bots';
+  const where = !atTable ? `Code ${partyRef?.code}` : game?.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : game?.status === 'lobby' ? 'In the lobby' : 'Your table';
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${what}. ${where}. Rejoin`}
+      accessibilityLabel={`${what}. ${where}. ${atTable ? 'Rejoin' : 'Open'}`}
       onPress={() => {
         haptic.tap();
-        router.push('/table');
+        router.push(atTable ? '/table' : '/party-room');
       }}
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: pressed ? colors.cellPressed : colors.cell })}
     >
       <Text style={{ fontSize: 26 }} maxFontSizeMultiplier={1} accessible={false}>
-        {info?.emoji ?? '🃏'}
+        {info?.emoji ?? (atTable ? '🃏' : '🥳')}
       </Text>
       <View style={{ flex: 1 }}>
         <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 17, fontWeight: '700', color: colors.label }}>
@@ -93,7 +96,7 @@ function TableBanner() {
       </View>
       <View style={{ paddingHorizontal: spacing.md, minHeight: 36, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
-          Rejoin
+          {atTable ? 'Rejoin' : 'Open'}
         </Text>
       </View>
     </Pressable>

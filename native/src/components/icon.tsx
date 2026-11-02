@@ -50,6 +50,13 @@ const WEB = {
   'paintpalette.fill': 'palette',
   'questionmark.circle.fill': 'help',
   'house.fill': 'home',
+  'arrowtriangle.up.fill': 'arrow_drop_up',
+  'arrowtriangle.down.fill': 'arrow_drop_down',
+  shuffle: 'shuffle',
+  'minus.circle.fill': 'do_not_disturb_on',
+  'plus.circle.fill': 'add_circle',
+  'delete.left': 'backspace',
+  'person.crop.circle.badge.plus': 'person_add',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

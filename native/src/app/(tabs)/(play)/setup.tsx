@@ -24,7 +24,7 @@ import {
   type Settings,
 } from '@/engine';
 import { useProfile } from '@/state/profile';
-import { openLocalTable } from '@/state/session';
+import { openLocalTable, openOnlineTable } from '@/state/session';
 import { saveSettings, setDraft, startDraft, useDraft, useSavedSettings } from '@/state/setup-draft';
 import { party, spacing, useColors } from '@/theme';
 
@@ -57,15 +57,24 @@ export default function SetupScreen() {
     : 'The blinds stay the same all game.';
 
   const profile = useProfile();
-  const open = () => {
+  const [busy, setBusy] = useState(false);
+  const open = async () => {
+    if (busy) return;
     saveSettings(s);
-    if (mode === 'friends') {
-      // Online tables come in step 3b.
-      Alert.alert('Coming next', 'Tables with friends arrive in the next update. Try one with bots.');
+    if (mode === 'bots') {
+      openLocalTable(s, bots, profile.name, profile.emoji);
+      router.push('/table');
       return;
     }
-    openLocalTable(s, bots, profile.name, profile.emoji);
-    router.push('/table');
+    setBusy(true);
+    try {
+      await openOnlineTable(s, bots, profile.name, profile.emoji);
+      router.push('/table');
+    } catch (e) {
+      Alert.alert("Couldn't open a table", e instanceof Error ? e.message : 'Try again.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -149,7 +158,7 @@ export default function SetupScreen() {
           )}
         </Section>
 
-        <Button variant="party" tint={mode === 'friends' ? 'blue' : 'green'} size="lg" title={mode === 'friends' ? 'Open the table' : 'Sit down'} onPress={open} />
+        <Button variant="party" tint={mode === 'friends' ? 'blue' : 'green'} size="lg" title={mode === 'friends' ? 'Open the table' : 'Sit down'} loading={busy} onPress={() => void open()} />
       </ScrollView>
     </>
   );

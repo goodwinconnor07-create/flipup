@@ -69,7 +69,7 @@ const Row = ({ children }: { children: ReactNode }) => (
 );
 
 /** Everything under the felt: whose turn it is, your buttons, pre-actions, and what happens between hands. */
-export function ActionArea({ game, me, seat, myTurn, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
+export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
   const now = useNow(waiting ? 200 : 60_000);
@@ -77,7 +77,7 @@ export function ActionArea({ game, me, seat, myTurn, pre, setPre, onRaise }: { g
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
   if (hand && !hand.result) {
-    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} onRaise={onRaise} />;
+    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <Note>Running it out…</Note>;
     const canPre = !!seat && !seat.folded && !seat.allIn && !me.sittingOut;
@@ -89,7 +89,7 @@ export function ActionArea({ game, me, seat, myTurn, pre, setPre, onRaise }: { g
     return (
       <View style={{ gap: spacing.sm }}>
         <Note>
-          {who ? `${who.name} ${who.bot ? 'is thinking…' : 'to act…'}` : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}
+          {who ? `${who.name} ${who.bot ? 'is thinking…' : who.offline ? 'is offline…' : 'to act…'}` : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}
         </Note>
         {o && (
           <Row>
@@ -125,20 +125,20 @@ export function ActionArea({ game, me, seat, myTurn, pre, setPre, onRaise }: { g
 }
 
 /** Your turn: Fold, Check or Call, and Raise (which opens the sizer over the bottom of the table). */
-function MyTurn({ game, hand, seat, onRaise }: { game: Game; hand: Hand; seat: Seat; onRaise: () => void }) {
+function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand; seat: Seat; sending: boolean; onRaise: () => void }) {
   const o = options(game, hand, seat);
   const act = (move: 'fold' | 'check' | 'call') => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move });
   return (
     <View style={{ gap: spacing.sm }}>
       <Note>Your turn</Note>
       <Row>
-        {o.canFold && <TableButton label="Fold" tone="fold" onPress={() => act('fold')} />}
+        {o.canFold && <TableButton label="Fold" tone="fold" disabled={sending} onPress={() => act('fold')} />}
         {o.canCheck ? (
-          <TableButton label="Check" tone="green" onPress={() => act('check')} />
+          <TableButton label="Check" tone="green" disabled={sending} onPress={() => act('check')} />
         ) : (
-          <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="green" onPress={() => act('call')} />
+          <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="green" disabled={sending} onPress={() => act('call')} />
         )}
-        {o.canRaise && <TableButton label={o.word} tone="blue" onPress={onRaise} />}
+        {o.canRaise && <TableButton label={o.word} tone="blue" disabled={sending} onPress={onRaise} />}
       </Row>
     </View>
   );

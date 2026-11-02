@@ -7,6 +7,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { gradient, radius, spacing } from '@/theme';
 
 import { CardSlot, PlayingCard } from './playing-card';
+import { TurnTimer } from './turn-timer';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -72,6 +73,7 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
         ...gradient(`linear-gradient(165deg, ${RAIL[0]}, ${RAIL[1]})`),
       }}
     >
+      <TurnTimer game={game} mine={!!hand && !hand.result && !!me && hand.toAct === me.id} />
       <View
         style={{
           flex: 1,

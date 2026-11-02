@@ -10,15 +10,12 @@ export const APP_INFO = {
   /** The App Store subtitle (30 characters at most). */
   storeSubtitle: 'Variants and party nights',
 
-  /**
-   * The bundle ID made in the Apple Developer portal under the name FlipUp.
-   * TODO(before launch): fill in the exact string from the portal. The build workflow stops while it's empty.
-   */
-  bundleId: '',
+  /** The bundle ID made in the Apple Developer portal under the name FlipUp. */
+  bundleId: 'com.goodwin.flipup',
 
   /**
-   * The EAS project ID, written by `eas init` (run once inside native/ with the owner's Expo login).
-   * TODO(before launch): fill in. The build workflow stops while it's empty.
+   * The EAS project ID. `eas init` can't write into this file, so the build workflow creates or links the project
+   * and passes the ID in as EAS_PROJECT_ID; copy the ID it prints here so every build uses it.
    */
   easProjectId: '',
 

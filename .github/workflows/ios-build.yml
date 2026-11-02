@@ -40,10 +40,10 @@ jobs:
           APPLE_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
           APPLE_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_API_TOKEN: ${{ secrets.EXPO_API_TOKEN }}
         run: |
           missing=""
-          for name in APPLE_KEY APPLE_KEY_ID APPLE_ISSUER_ID APPLE_TEAM_ID EXPO_TOKEN; do
+          for name in APPLE_KEY APPLE_KEY_ID APPLE_ISSUER_ID APPLE_TEAM_ID EXPO_API_TOKEN; do
             if [ -z "${!name}" ]; then missing="$missing $name"; fi
           done
           if [ -n "$missing" ]; then
@@ -63,12 +63,30 @@ jobs:
       - uses: expo/expo-github-action@9da89d3617bb88139671bad31b09c65714c2ee06 # v9
         with:
           eas-version: 27.2.0
-          token: ${{ secrets.EXPO_TOKEN }}
+          token: ${{ secrets.EXPO_API_TOKEN }}
 
       - run: npm ci
 
+      - name: Check the Expo account
+        # Prints the account name the token belongs to (not a secret), or fails if the token doesn't work.
+        run: eas whoami
+
+      - name: Create or link the EAS project
+        # eas init can't edit a TypeScript app config, but it creates (or finds) the project first and prints its ID.
+        # The ID isn't a secret: copy it into easProjectId in native/appInfo.ts so later runs skip this step.
+        run: |
+          id=$(npx expo config --type public --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).extra?.eas?.projectId ?? ""))')
+          if [ -z "$id" ]; then
+            eas init --non-interactive --force > "$RUNNER_TEMP/eas-init.log" 2>&1 || true
+            id=$(grep -oE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' "$RUNNER_TEMP/eas-init.log" | head -1)
+            if [ -z "$id" ]; then cat "$RUNNER_TEMP/eas-init.log"; echo "::error::eas init didn't give a project ID"; exit 1; fi
+            echo "::notice::EAS project ID $id. Copy it into easProjectId in native/appInfo.ts."
+          fi
+          echo "EAS_PROJECT_ID=$id" >> "$GITHUB_ENV"
+          # EAS's own builders read the app config too, so put the ID in this run's copy of appInfo.ts.
+          sed -i "s/easProjectId: '',/easProjectId: '$id',/" appInfo.ts
+
       - name: Check the app config
-        # The bundle ID and EAS project ID live in native/appInfo.ts. Stop early with a clear message if either is empty.
         run: |
           npx expo config --type public --json > "$RUNNER_TEMP/expo-config.json"
           node -e '
@@ -77,7 +95,7 @@ jobs:
             if (!c.ios?.bundleIdentifier) gaps.push("bundleId");
             if (!c.extra?.eas?.projectId) gaps.push("easProjectId");
             if (gaps.length) { console.log(`::error::Fill in ${gaps.join(" and ")} in native/appInfo.ts`); process.exit(1); }
-            console.log(`Building ${c.name} (${c.ios.bundleIdentifier})`);
+            console.log(`Building ${c.name} (${c.ios.bundleIdentifier}), EAS project ${c.extra.eas.projectId}`);
           ' "$RUNNER_TEMP/expo-config.json"
 
       - name: Write the App Store Connect key

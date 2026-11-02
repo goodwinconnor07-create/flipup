@@ -2,6 +2,9 @@ import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 import { APP_INFO } from './appInfo.ts';
 
+// The EAS project: from appInfo.ts, or from the build workflow until the ID has been copied there.
+const projectId = APP_INFO.easProjectId || process.env.EAS_PROJECT_ID || '';
+
 // The iPhone and iPad app. iOS only: there's no Google Play release.
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
@@ -68,7 +71,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     reactCompiler: true,
   },
   extra: {
-    ...(APP_INFO.easProjectId ? { eas: { projectId: APP_INFO.easProjectId } } : {}),
+    ...(projectId ? { eas: { projectId } } : {}),
   },
 });
 

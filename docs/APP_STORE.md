@@ -21,7 +21,7 @@ Sources:
 
 | Step | State |
 |---|---|
-| Repository secrets | **`EXPO_TOKEN` is missing or empty** (first run, 2 November 2026). `APPLE_KEY`, `APPLE_KEY_ID`, `APPLE_ISSUER_ID` and `APPLE_TEAM_ID` are set. Make the token at expo.dev > Account settings > Access tokens and add it under the repository's Settings > Secrets and variables > Actions as a *repository* secret named exactly `EXPO_TOKEN` (an environment or Dependabot secret isn't seen by this workflow). |
+| Repository secrets | All five are set. The Expo token is stored as `EXPO_API_TOKEN` (not `EXPO_TOKEN`), and the workflow reads that name. |
 | Expo skills | Installed (`expo` plugin, 24 skills including `expo-design-system`, `expo-native-ui`, `expo-animation`, `expo-ui`). The plugin came from the `anthropic-plugin-directory` marketplace; `claude-plugins-official` didn't list it. Cloud sessions start fresh, so each new session reinstalls it with `claude plugin install expo@anthropic-plugin-directory`. |
 | Impeccable | Installed for this project (`npx impeccable install`): the skill in `.claude/skills/impeccable`, its agents in `.claude/agents`. Its engine binary (21 MB) isn't committed; it downloads itself on first use. Its design hook is in `.claude/settings.local.json`, which stays on the machine, so a new session reruns the installer to get the hook back. |
 | `native/` app | iPhone only for the first release (`supportsTablet: false`). Made with `create-expo-app` (Expo SDK 58, React Native 0.88, Expo Router). The template's demo screens are gone; one shell screen proves the engine loads. The engine is shared, not copied: `@game/*` points at `../src/game` (`native/tsconfig.json`, `native/metro.config.js`) and `native/src/engine` is the app's one door to it. `npx tsc --noEmit` passes and `npx expo export --platform ios` bundles it. |
@@ -307,9 +307,9 @@ the iPad release.
 
 | # | Item | Who |
 |---|---|---|
-| 1 | Confirm the five GitHub secrets by running the iOS build workflow once (it names any that are missing) | Owner runs it, or asks Claude to |
-| 2 | The exact bundle ID from the Apple Developer portal, into `bundleId` in `native/appInfo.ts` | Owner |
-| 3 | The EAS project ID: run `eas init` inside `native/` with the owner's Expo login, then put the ID in `easProjectId` in `native/appInfo.ts` | Owner |
+| 1 | GitHub secrets: done. The Expo token is `EXPO_API_TOKEN` | Done |
+| 2 | Bundle ID `com.goodwin.flipup`, in `native/appInfo.ts` | Done |
+| 3 | EAS project ID: the build workflow creates or links the project with the token and prints the ID; copy it into `easProjectId` in `native/appInfo.ts` | Claude, after the first run |
 | 4 | **Support email `goodwinconnor007@gmail.com` is a placeholder** (`TODO(before launch)` in `native/appInfo.ts`). Replace it before submitting | Owner |
 | 5 | Real static pages at `/privacy` and `/support` (today both return the web app) | Claude, Phase 2 |
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |
@@ -317,7 +317,7 @@ the iPad release.
 | 8 | App icon and splash made for FlipUp (Expo's placeholders are in now) | Design pass |
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
-| 11 | Ad network account (AdMob or another) and its app ID, plus a server-side verification URL pointing at the Worker | Owner makes the account |
+| 11 | Google AdMob account, the app's AdMob app ID and rewarded ad unit ID, and its server-side verification URL pointing at the Worker | Owner makes the account |
 
 ---
 
@@ -420,7 +420,8 @@ above. What changes:
   server-side verification (AdMob calls a URL we choose when an ad finishes) so the Worker marks that host's table
   as unlocked, instead of trusting the phone.
 
-Still to decide (asked in chat, not blocking Phase 2):
-- How long does one ad unlock last: one table (including Play again), or longer?
-- A party whose rounds include Premium games: one ad for the whole party?
-- Which ad network: Google AdMob is the usual choice and works with Expo through a config plugin.
+Decided 2 November 2026:
+- One ad unlocks one table. Play again on that table needs another ad.
+- A party needs one ad from the host, however many Premium games its rounds use. Anyone without Premium can still
+  pick any game mode while setting up a party; the ad comes when they host it.
+- Ad network: Google AdMob.

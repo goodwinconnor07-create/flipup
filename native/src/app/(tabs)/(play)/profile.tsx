@@ -11,7 +11,7 @@ import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { cleanName, isNameBlocked, LIMITS, NAME_BLOCKED } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { ensureMyCode, myPalCode } from '@/state/pals';
+import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
 import { useStreak } from '@/state/streak';
@@ -28,6 +28,7 @@ export default function ProfileScreen() {
   const reduce = useReduceMotion();
   const profile = useProfile();
   const premium = usePremium();
+  const { username } = useMyUsername();
   const streak = useStreak();
   const [name, setName] = useState(profile.name);
   const clean = cleanName(name);
@@ -105,6 +106,13 @@ export default function ProfileScreen() {
         </View>
 
         <Section>
+          <Row
+            title="Username"
+            subtitle="Friends add you by it"
+            detail={username ? `@${username}` : 'Choose'}
+            icon={{ symbol: 'person.badge.plus', color: colors.pink as string }}
+            onPress={() => router.push('/username')}
+          />
           <Row
             title="Streak"
             subtitle={streak.today ? 'You played today.' : 'Play a hand today to keep it.'}

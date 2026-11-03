@@ -1,6 +1,6 @@
 // HTTP calls to the FlipUp server (the same Cloudflare Worker as the web app). The address is APP_INFO.apiOrigin;
 // EXPO_PUBLIC_API_ORIGIN points a development build at a local server instead.
-import type { CreateFriendCardResponse, CreateTableRequest, CreateTableResponse, FriendCardInfo, PartySettings, PartyView, ReportRequest, TableInfo } from '@/engine';
+import type { BjInvite, FriendRequest, CreateFriendCardResponse, CreateTableRequest, CreateTableResponse, FriendCardInfo, PartySettings, PartyView, ReportRequest, TableInfo } from '@/engine';
 
 import { APP_INFO } from '../../appInfo';
 
@@ -79,6 +79,59 @@ export async function fetchFriendCard(code: string): Promise<FriendCardInfo | nu
 export async function deleteFriendCard(code: string, deviceId: string): Promise<void> {
   const res = await json(`/api/friends/${encodeURIComponent(code)}`, { method: 'DELETE', body: JSON.stringify({ deviceId }) });
   if (!res.ok && res.status !== 404) throw new Error(await errorText(res, "Couldn't delete your friend code. Try again."));
+}
+
+/** Friend requests, invites and the friends list, as the server keeps them for this phone's code. */
+export interface Inbox {
+  requests: FriendRequest[];
+  invites: BjInvite[];
+  friends: FriendCardInfo[];
+}
+
+/** What's waiting for this phone's friend code. Null when the code isn't this phone's (or has gone). */
+export async function fetchInbox(code: string, deviceId: string): Promise<Inbox | null> {
+  const res = await json(`/api/friends/${encodeURIComponent(code)}/inbox?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
+  if (res.status === 403 || res.status === 404 || res.status === 400) return null;
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't check for friend requests."));
+  return (await res.json()) as Inbox;
+}
+
+/** Sets this phone's username. Throws with the server's sentence (taken, too soon, not allowed). */
+export async function setUsernameOnServer(code: string, body: { deviceId: string; username: string }): Promise<string> {
+  const res = await json(`/api/friends/${encodeURIComponent(code)}/username`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't save your username. Try again."));
+  return ((await res.json()) as { username: string }).username;
+}
+
+/** The person with this username, or null. */
+export async function findUsername(username: string): Promise<FriendCardInfo | null> {
+  const res = await json(`/api/usernames/${encodeURIComponent(username)}`, { method: 'GET' });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't look that up. Try again."));
+  return (await res.json()) as FriendCardInfo;
+}
+
+/** Asks `code` to be friends. 'friends' when you already are (or they'd asked you). */
+export async function requestFriend(code: string, body: { deviceId: string; fromCode: string }): Promise<'sent' | 'friends'> {
+  const res = await json(`/api/friends/${encodeURIComponent(code)}/request`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't send the request. Try again."));
+  return ((await res.json()) as { status: 'sent' | 'friends' }).status;
+}
+
+export async function answerFriend(myCode: string, body: { deviceId: string; from: string; accept: boolean }): Promise<void> {
+  const res = await json(`/api/friends/${encodeURIComponent(myCode)}/answer`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok && res.status !== 404) throw new Error(await errorText(res, "Couldn't answer. Try again."));
+}
+
+export async function unfriendOnServer(myCode: string, body: { deviceId: string; other: string }): Promise<void> {
+  const res = await json(`/api/friends/${encodeURIComponent(myCode)}/unfriend`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't remove them. Try again."));
+}
+
+/** Asks a friend to your poker table. */
+export async function inviteToTable(friend: string, body: { deviceId: string; fromCode: string; table: string }): Promise<void> {
+  const res = await json(`/api/friends/${encodeURIComponent(friend)}/invite`, { method: 'POST', body: JSON.stringify({ ...body, kind: 'table' }) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't send the invite."));
 }
 
 export async function createPartyOnServer(body: { deviceId: string; name: string; emoji: string; friendCode?: string; settings: PartySettings }): Promise<string> {

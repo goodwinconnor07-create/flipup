@@ -5,7 +5,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import type { PartyRow } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { BLOCKED_EMOJI, BLOCKED_NAME, memberKey, useBlocked } from '@/state/blocks';
-import { addPal, usePals } from '@/state/pals';
+import { sendFriendRequest, usePals } from '@/state/pals';
 import { radius, spacing, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
@@ -123,7 +123,7 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
   );
 }
 
-/** "+ Friend" on someone else's row, once the server has checked their phone owns that friend code. */
+/** "+ Friend" on someone else's row, once the server has checked their phone owns that friend code. It sends a friend request. */
 function AddFriend({ code, name }: { code: string; name: string }) {
   const c = usePlainColors();
   const [busy, setBusy] = useState(false);
@@ -131,8 +131,9 @@ function AddFriend({ code, name }: { code: string; name: string }) {
     if (busy) return;
     setBusy(true);
     try {
-      await addPal(code);
+      const status = await sendFriendRequest(code);
       haptic.success();
+      if (status === 'sent') Alert.alert('Friend request sent', `${name} will see it in their Friends tab.`);
     } catch (e) {
       haptic.failure();
       Alert.alert("Couldn't add them", e instanceof Error ? e.message : 'Try again.');

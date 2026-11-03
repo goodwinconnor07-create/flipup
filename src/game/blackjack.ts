@@ -742,6 +742,19 @@ export interface BjInvite {
   /** The table's code. */
   table: string;
   at: number;
+  /** What it's an invite to: a blackjack table (when missing) or a poker table. */
+  kind?: 'blackjack' | 'table';
+  /** A poker table's game, for the invite's line. */
+  game?: string;
+}
+
+/** Someone asking to be your friend. Accepted, you're both on each other's list. */
+export interface FriendRequest {
+  from: string;
+  name: string;
+  emoji: string;
+  username?: string;
+  at: number;
 }
 
 export interface CreateBjResponse {

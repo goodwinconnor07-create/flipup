@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { MAX_SEATS, variantInfo, type Game } from '@/engine';
 import { joinLink } from '@/state/api';
+import { inviteFriends, usePals } from '@/state/pals';
 import { dispatch, me as myDevice } from '@/state/session';
-import { radius, spacing, useColors } from '@/theme';
+import { party, radius, spacing, useColors } from '@/theme';
 
 import { Button } from '../button';
 import { haptic } from '../haptics';
@@ -41,6 +43,7 @@ export function Lobby({ game, online }: { game: Game; online: boolean }) {
           <ThemedText tone="tertiaryLabel">{host ? (online ? 'Friends scan this from the Join tab, or type the code.' : 'Add or remove bots, then deal.') : 'Waiting for the host to deal.'}</ThemedText>
         </View>
         {online && game.code && host && <InviteTicket code={game.code} link={joinLink(game.code)} share="Come play poker with me on FlipUp." />}
+        {online && game.code && host && <InviteRow table={game.code} seated={game.players.map((p) => p.name)} />}
         <View style={{ gap: spacing.sm }}>
           <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textTransform: 'uppercase' }}>
             At the table · {game.players.length}/{MAX_SEATS}
@@ -106,6 +109,58 @@ export function Lobby({ game, online }: { game: Game; online: boolean }) {
           <Button variant="party" tint="green" size="lg" title="Deal" onPress={deal} />
         </View>
       )}
+    </View>
+  );
+}
+
+/** Your friends with an Invite button each: an invite lands in their Friends tab. Hidden when you have none. */
+function InviteRow({ table, seated }: { table: string; seated: string[] }) {
+  const colors = useColors();
+  const pals = usePals();
+  const [sent, setSent] = useState<string[]>([]);
+  const [busy, setBusy] = useState<string | null>(null);
+  if (!pals.length) return null;
+  const invite = async (code: string) => {
+    if (busy) return;
+    setBusy(code);
+    const ok = (await inviteFriends([code], table).catch(() => 0)) > 0;
+    setBusy(null);
+    haptic[ok ? 'success' : 'failure']();
+    if (ok) setSent((s) => [...s, code]);
+    else Alert.alert("Couldn't send the invite", 'Check your connection and try again.');
+  };
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textTransform: 'uppercase' }}>
+        Invite friends
+      </ThemedText>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
+        {pals.map((p) => {
+          const here = seated.includes(p.name);
+          const done = sent.includes(p.code);
+          return (
+            <View key={p.code} style={{ width: 92, alignItems: 'center', gap: spacing.xxs, padding: spacing.xs, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.cell }}>
+              <Text style={{ fontSize: 34, lineHeight: 42 }} maxFontSizeMultiplier={1}>
+                {p.emoji}
+              </Text>
+              <ThemedText variant="footnote" numberOfLines={1} style={{ fontWeight: '600' }}>
+                {p.name}
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={here ? `${p.name} is here` : done ? `${p.name} is invited` : `Invite ${p.name}`}
+                disabled={here || done || busy === p.code}
+                onPress={() => void invite(p.code)}
+                style={({ pressed }) => ({ alignSelf: 'stretch', minHeight: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: here || done ? colors.cellPressed : party.blue, opacity: pressed ? 0.7 : 1 })}
+              >
+                <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', color: here || done ? (colors.secondaryLabel as string) : '#ffffff' }}>
+                  {here ? 'Here' : done ? 'Invited' : busy === p.code ? '…' : 'Invite'}
+                </Text>
+              </Pressable>
+            </View>
+          );
+        })}
+      </ScrollView>
     </View>
   );
 }

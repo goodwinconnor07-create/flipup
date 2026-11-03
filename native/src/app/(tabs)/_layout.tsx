@@ -1,9 +1,15 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-// Apple's own tab bar (Liquid Glass on iOS 26). Tabs are peers, so switching never slides. Join is the search-role
+import { useFriendBox, useFriendWatch } from '@/state/pals';
+
+// Apple's own tab bar (Liquid Glass on iOS 26): Play, Party, Friends and Join. Tabs are peers, so switching never slides. Join is the search-role
 // tab, which iOS 26 sets apart from the bar as its own round button: the round "Join with a code" button the plan
 // asks for. Below iOS 26 it's the last tab.
 export default function TabsLayout() {
+  // Friend requests and table invites arrive while the app is open; the Friends tab shows how many are waiting.
+  useFriendWatch();
+  const box = useFriendBox();
+  const waiting = box.requests.length + box.invites.length;
   return (
     <NativeTabs minimizeBehavior="onScrollDown">
       <NativeTabs.Trigger name="(play)">
@@ -13,6 +19,11 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="(party)">
         <NativeTabs.Trigger.Icon sf="person.3.fill" md="groups" />
         <NativeTabs.Trigger.Label>Party</NativeTabs.Trigger.Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="(friends)">
+        <NativeTabs.Trigger.Icon sf="person.2.fill" md="group" />
+        <NativeTabs.Trigger.Label>Friends</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Badge hidden={waiting === 0}>{String(waiting)}</NativeTabs.Trigger.Badge>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(join)" role="search">
         <NativeTabs.Trigger.Icon sf="circle.grid.3x3.fill" md="dialpad" />

@@ -1,5 +1,5 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { BjInvite, CampaignCard, FriendCardInfo } from '../src/game';
+import type { BjInvite, CampaignCard, FriendCardInfo, FriendRequest } from '../src/game';
 
 /** A friend code is forgotten this long after its owner last opened the app. */
 const KEEP_FOR_MS = 120 * 24 * 60 * 60 * 1000;
@@ -16,7 +16,20 @@ interface Stored {
   campaign?: CampaignCard;
   /** Friends asking this person to their table, newest last. Only the owner reads them. */
   invites?: BjInvite[];
+  /** People asking to be friends, waiting for an answer. Only the owner reads them. */
+  requests?: FriendRequest[];
+  /** Friend codes this person has accepted, or who accepted them. Kept on both cards. */
+  friends?: string[];
+  /** Their username (lowercase), and when they last set it: it can change once a month. */
+  username?: string;
+  usernameAt?: number;
+  /** This card's own friend code, so it can free its username when it goes. */
+  code?: string;
 }
+
+/** At most this many friends, and this many requests waiting. */
+const MAX_FRIENDS = 200;
+const MAX_REQUESTS = 50;
 
 /**
  * One person's friend code: a name and a picture that friends can look up by a five letter code.
@@ -26,9 +39,9 @@ export class FriendCard extends DurableObject<Env> {
   private data: Stored | null | undefined;
 
   /** RPC: claim this code. Returns false if it's taken. */
-  async create(deviceId: string, name: string, emoji: string): Promise<boolean> {
+  async create(deviceId: string, name: string, emoji: string, code?: string): Promise<boolean> {
     if (await this.load()) return false;
-    await this.save({ name, emoji, deviceId, updatedAt: Date.now() });
+    await this.save({ name, emoji, deviceId, updatedAt: Date.now(), ...(code ? { code } : {}) });
     return true;
   }
 
@@ -44,7 +57,7 @@ export class FriendCard extends DurableObject<Env> {
   /** RPC: what a friend sees. */
   async get(code: string): Promise<FriendCardInfo | null> {
     const data = await this.load();
-    return data ? { code, name: data.name, emoji: data.emoji, ...(data.campaign ? { campaign: data.campaign } : {}) } : null;
+    return data ? { code, name: data.name, emoji: data.emoji, ...(data.username ? { username: data.username } : {}), ...(data.campaign ? { campaign: data.campaign } : {}) } : null;
   }
 
   /** RPC: a friend asks this person to their blackjack table. One invite per friend; a new one replaces the old. */
@@ -63,11 +76,114 @@ export class FriendCard extends DurableObject<Env> {
     return (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS);
   }
 
+  /** RPC: someone asks to be friends. Already friends, or a repeat ask, changes nothing. */
+  async request(from: FriendRequest): Promise<'sent' | 'friends' | 'missing'> {
+    const data = await this.load();
+    if (!data) return 'missing';
+    if (data.friends?.includes(from.from)) return 'friends';
+    const kept = (data.requests ?? []).filter((r) => r.from !== from.from);
+    await this.save({ ...data, requests: [...kept, from].slice(-MAX_REQUESTS) }, false);
+    return 'sent';
+  }
+
+  /** RPC: whether `code` has asked this person and is still waiting. */
+  async asked(code: string): Promise<boolean> {
+    return !!(await this.load())?.requests?.some((r) => r.from === code);
+  }
+
+  /** RPC: the owner says yes or no to a request. */
+  async answer(deviceId: string, from: string, accept: boolean): Promise<'ok' | 'missing' | 'forbidden'> {
+    const data = await this.load();
+    if (!data) return 'missing';
+    if (data.deviceId !== deviceId) return 'forbidden';
+    if (!data.requests?.some((r) => r.from === from)) return 'missing';
+    const requests = data.requests.filter((r) => r.from !== from);
+    const friends = accept ? [...(data.friends ?? []).filter((f) => f !== from), from].slice(-MAX_FRIENDS) : data.friends;
+    await this.save({ ...data, requests, ...(friends ? { friends } : {}) }, false);
+    return 'ok';
+  }
+
+  /** RPC (server only): the other side of a friendship that was just accepted. */
+  async befriend(code: string): Promise<void> {
+    const data = await this.load();
+    if (!data || data.friends?.includes(code)) return;
+    await this.save({ ...data, friends: [...(data.friends ?? []), code].slice(-MAX_FRIENDS), requests: data.requests?.filter((r) => r.from !== code) }, false);
+  }
+
+  /** RPC: the owner removes a friend. */
+  async unfriend(deviceId: string, code: string): Promise<'ok' | 'missing' | 'forbidden'> {
+    const data = await this.load();
+    if (!data) return 'missing';
+    if (data.deviceId !== deviceId) return 'forbidden';
+    await this.drop(code);
+    return 'ok';
+  }
+
+  /** RPC (server only): forgets a friendship from this side. */
+  async drop(code: string): Promise<void> {
+    const data = await this.load();
+    if (!data?.friends?.includes(code)) return;
+    await this.save({ ...data, friends: data.friends.filter((f) => f !== code) }, false);
+  }
+
+  /** RPC: whether `code` is a friend. Only friends can invite each other to a table. */
+  async isFriend(code: string): Promise<boolean> {
+    return !!(await this.load())?.friends?.includes(code);
+  }
+
+  /** RPC: everything waiting for the owner: friend requests, table invites, and the friend codes on the list. */
+  async inbox(deviceId: string): Promise<{ requests: FriendRequest[]; invites: BjInvite[]; friends: string[] } | null> {
+    const data = await this.load();
+    if (!data || data.deviceId !== deviceId) return null;
+    return { requests: data.requests ?? [], invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS), friends: data.friends ?? [] };
+  }
+
+  /**
+   * RPC: the owner sets their username, after the route has reserved it (`claimAlias`). Returns the username it
+   * replaced (to free it), 'wait' with the time a change is allowed again, or 'forbidden'.
+   */
+  async setUsername(deviceId: string, username: string, gap: number): Promise<{ ok: true; old?: string } | { ok: false; wait?: number; forbidden?: boolean }> {
+    const data = await this.load();
+    if (!data || data.deviceId !== deviceId) return { ok: false, forbidden: true };
+    if (data.username === username) return { ok: true };
+    if (data.username && data.usernameAt && Date.now() < data.usernameAt + gap) return { ok: false, wait: data.usernameAt + gap };
+    await this.save({ ...data, username, usernameAt: Date.now() }, false);
+    return { ok: true, ...(data.username ? { old: data.username } : {}) };
+  }
+
+  /** RPC: when the owner may change their username next (0 once they may). */
+  async usernameFree(gap: number): Promise<number> {
+    const data = await this.load();
+    return data?.username && data.usernameAt ? Math.max(0, data.usernameAt + gap - Date.now()) : 0;
+  }
+
+  // A username's own record: one of these objects, named "@<username>", says which friend code holds it. It never
+  // stores a card, so it can't be looked up as one.
+
+  /** RPC: reserve this username for `code`. False if someone else holds it. */
+  async claimAlias(code: string): Promise<boolean> {
+    const have = await this.ctx.storage.get<string>('alias');
+    if (have && have !== code) return false;
+    await this.ctx.storage.put('alias', code);
+    return true;
+  }
+
+  /** RPC: let the username go, if `code` holds it. */
+  async releaseAlias(code: string): Promise<void> {
+    if ((await this.ctx.storage.get<string>('alias')) === code) await this.ctx.storage.delete('alias');
+  }
+
+  /** RPC: the friend code that holds this username. */
+  async aliasOf(): Promise<string | null> {
+    return (await this.ctx.storage.get<string>('alias')) ?? null;
+  }
+
   /** RPC: the owner deletes their code and everything on it ("Delete my data"). */
   async remove(deviceId: string): Promise<'ok' | 'missing' | 'forbidden'> {
     const data = await this.load();
     if (!data) return 'missing';
     if (data.deviceId !== deviceId) return 'forbidden';
+    await this.freeUsername(data);
     await this.ctx.storage.deleteAlarm();
     await this.ctx.storage.deleteAll();
     this.data = null;
@@ -82,8 +198,15 @@ export class FriendCard extends DurableObject<Env> {
   async alarm(): Promise<void> {
     const data = await this.load();
     if (data && Date.now() < data.updatedAt + KEEP_FOR_MS) return this.ctx.storage.setAlarm(data.updatedAt + KEEP_FOR_MS);
+    if (data) await this.freeUsername(data);
     await this.ctx.storage.deleteAll();
     this.data = null;
+  }
+
+  /** A card that goes lets its username go too, so someone else can have it. */
+  private async freeUsername(data: Stored): Promise<void> {
+    const code = data.code ?? this.ctx.id.name;
+    if (data.username && code) await this.env.FRIEND_CARD.getByName(`@${data.username}`).releaseAlias(code);
   }
 
   private async load(): Promise<Stored | null> {

@@ -50,6 +50,8 @@ export interface FriendCardInfo {
   code: string;
   name: string;
   emoji: string;
+  /** Their username, once they've chosen one. Friends find each other by it. */
+  username?: string;
   /** How their campaign is going, if they've shared it. */
   campaign?: CampaignCard;
 }

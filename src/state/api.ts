@@ -119,5 +119,6 @@ export async function sendBjInvite(friend: string, body: { deviceId: string; fro
 export async function fetchBjInvites(code: string, deviceId: string): Promise<BjInvite[]> {
   const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}/invites?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
   if (!res.ok) return [];
-  return ((await res.json()) as { invites: BjInvite[] }).invites ?? [];
+  // Poker table invites are for the iPhone app's Friends tab; the web's banner is for blackjack.
+  return (((await res.json()) as { invites: BjInvite[] }).invites ?? []).filter((i) => !i.kind || i.kind === 'blackjack');
 }

@@ -47,6 +47,37 @@ export function isCode(value: unknown): value is string {
   return typeof value === 'string' && value.length === CODE_LENGTH && normalizeCode(value) === value;
 }
 
+/** Friend codes are numbers, so they never look like a table or party code. */
+export const FRIEND_CODE_LENGTH = 6;
+
+export function newFriendCode(): string {
+  return randomIndexes(FRIEND_CODE_LENGTH, 10).join('');
+}
+
+/** Keeps only digits, at most six. */
+export function normalizeFriendCode(input: string): string {
+  return input.replace(/\D/g, '').slice(0, FRIEND_CODE_LENGTH);
+}
+
+/** A friend code: six digits, or one of the five-letter codes made before friend codes were numbers. */
+export function isFriendCode(value: unknown): value is string {
+  return (typeof value === 'string' && value.length === FRIEND_CODE_LENGTH && normalizeFriendCode(value) === value) || isCode(value);
+}
+
+/** Usernames: 3 to 20 lowercase letters, digits, dots or underscores, starting with a letter. How friends find you. */
+export const USERNAME_MIN = 3;
+export const USERNAME_MAX = 20;
+/** A username can change once in this long. */
+export const USERNAME_CHANGE_MS = 30 * 24 * 60 * 60 * 1000;
+
+export function normalizeUsername(input: string): string {
+  return input.trim().replace(/^@/, '').toLowerCase();
+}
+
+export function isUsername(value: unknown): value is string {
+  return typeof value === 'string' && new RegExp(`^[a-z][a-z0-9._]{${USERNAME_MIN - 1},${USERNAME_MAX - 1}}$`).test(value) && !/[._]{2}/.test(value) && !/[._]$/.test(value);
+}
+
 export function isDeviceId(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(value);
 }

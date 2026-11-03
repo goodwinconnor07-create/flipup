@@ -986,3 +986,11 @@ describe('a phone that drops off the table', () => {
     expect(parseAction({ type: 'presence', online: [] })).toBeNull();
   });
 });
+
+describe('actions from a phone', () => {
+  it('reads Next hand as next, not as a request to show the bots', () => {
+    expect(parseAction({ type: 'next', hand: 4 })).toEqual({ type: 'next', hand: 4 });
+    expect(parseAction({ type: 'next', hand: 'x' })).toBeNull();
+    expect(parseAction({ type: 'revealBots', hand: 4 })).toEqual({ type: 'revealBots', hand: 4 });
+  });
+});

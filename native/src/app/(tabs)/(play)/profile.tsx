@@ -1,6 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/avatar';
@@ -41,7 +41,8 @@ export default function ProfileScreen() {
     haptic.success();
     // Friends see the new name on your friend code.
     if (myPalCode()) void ensureMyCode().catch(() => undefined);
-    router.back();
+    // Stay here: a new player still has their emoji to pick, and Back is one tap away.
+    Keyboard.dismiss();
   };
 
   return (
@@ -99,7 +100,7 @@ export default function ProfileScreen() {
             </ThemedText>
           </View>
           <View style={{ alignSelf: 'stretch' }}>
-            <Button variant="party" tint="blue" size="lg" title={first ? 'Done' : 'Save'} disabled={!ok || (clean === profile.name && !first)} onPress={save} />
+            <Button variant="party" tint="blue" size="lg" title="Save" disabled={!ok || clean === profile.name} onPress={save} />
           </View>
         </View>
 

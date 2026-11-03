@@ -6,6 +6,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { SegmentedControl } from '@/components/segmented-control';
 import { PlayingCard } from '@/components/table/playing-card';
+import { FELT_WEAVE, WOOD_GRAIN } from '@/components/table/textures';
 import { ThemedText } from '@/components/themed-text';
 import { setTableLook, useTableLook } from '@/state/prefs';
 import { gradient, spacing, useColors } from '@/theme';
@@ -16,10 +17,10 @@ export default function TableTheme() {
   const look = useTableLook();
   const rail = RAILS.find((r) => r.id === look.rail)!.colors;
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.lg, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Table theme' }} />
-      <View style={{ height: 120, padding: 9, borderRadius: 999, ...gradient(`linear-gradient(165deg, ${rail[0]}, ${rail[1]})`) }}>
-        <View style={{ flex: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4, backgroundColor: look.felt, boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)' }}>
+      <View style={{ height: 120, padding: 9, borderRadius: 999, ...gradient(`${look.rail === 'wood' ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`) }}>
+        <View style={{ flex: 1, borderRadius: 999, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 4, ...gradient(`${FELT_WEAVE}, linear-gradient(${look.felt}, ${look.felt})`), boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)' }}>
           {['As', 'Kh', '7d', 'Tc', '2s'].map((c) => (
             <PlayingCard key={c} card={c} width={34} />
           ))}

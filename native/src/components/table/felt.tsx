@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import { Pressable, Text, useColorScheme, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+
 import { RAILS } from '@design/tableLooks';
 import { tableThemes } from '@design/tokens';
 import { useTableLook } from '@/state/prefs';
@@ -14,6 +15,7 @@ import { Avatar } from '../avatar';
 import { bubblePop } from './bubbles';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
+import { FELT_WEAVE, WOOD_GRAIN } from './textures';
 import { TurnTimer } from './turn-timer';
 import { useTableNow } from './use-now';
 
@@ -87,7 +89,7 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
         // The cross, the clock and the Memory peek need more height.
         maxHeight: variant === 'crucifix' || variant === 'circle' || game.memory ? 330 : variant === 'ghost' || variant === 'dice' ? 290 : Math.min(240, height * 0.3),
         boxShadow: '0 12px 26px -14px rgba(18,18,40,0.55), inset 0 1px 0 rgba(255,255,255,0.28)',
-        ...gradient(`linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
+        ...gradient(`${look.rail === 'wood' && !theme ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
       }}
     >
       <TurnTimer game={game} mine={!!hand && !hand.result && !!me && hand.toAct === me.id} />
@@ -102,14 +104,14 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
           paddingVertical: spacing.sm,
           paddingHorizontal: spacing.lg,
           boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)',
-          ...gradient(`radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`),
+          ...gradient(`${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`),
         }}
       >
         <View pointerEvents="none" style={{ position: 'absolute', top: 9, left: 9, right: 9, bottom: 9, borderRadius: radius.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.16)' }} />
         {theme && (
           // The game's emoji, faded into the felt.
           <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 120, opacity: 0.07 }} maxFontSizeMultiplier={1} accessible={false}>
+            <Text style={{ fontSize: 120, opacity: 0.16 }} maxFontSizeMultiplier={1} accessible={false}>
               {info.emoji}
             </Text>
           </View>

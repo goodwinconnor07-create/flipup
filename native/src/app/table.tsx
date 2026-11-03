@@ -342,7 +342,10 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   return (
     <View style={{ flex: 1, gap: 12 }}>
       <SeatRow game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
+      {/* The give on this screen: when cards turn up under the seats or on your box, this gap shrinks, not the felt. */}
+      <View style={{ flex: 1, minHeight: 0 }} />
       <FeltOval game={game} me={me} />
+      <View style={{ flex: 1, minHeight: 0 }} />
       <View style={{ gap: 4 }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: 112, justifyContent: 'flex-end' }}>
           {hand?.voting && mySeat && me ? (

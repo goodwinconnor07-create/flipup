@@ -8,7 +8,8 @@
       "@/*": ["./src/*"],
       "@/assets/*": ["./assets/*"],
       "@game/*": ["../src/game/*"],
-      "@design/*": ["../src/design/*"]
+      "@design/*": ["../src/design/*"],
+      "@train/*": ["../src/train/*"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],

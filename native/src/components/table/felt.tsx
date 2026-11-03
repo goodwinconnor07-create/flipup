@@ -51,6 +51,13 @@ export function useHighlight(game: Game, me: Player | undefined) {
   }, [hand?.number, hand?.board.length, hand?.result, mySeat?.folded, mySeat?.cards.length]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
+/** The felt's height for a game on this phone. It depends only on the game and the screen, never on what's shown. */
+export function feltHeight(variant: string, screen: number): number {
+  if (variant === 'crucifix' || variant === 'circle' || variant === 'memory') return 330;
+  if (variant === 'ghost' || variant === 'dice') return 290;
+  return Math.max(196, Math.min(240, Math.round(screen * 0.3)));
+}
+
 /** The oval: a rail round the felt, the pot at the top, the board in the middle, the hand or the winner at the bottom. */
 export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
   const reduce = useReduceMotion();
@@ -83,11 +90,10 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
         marginHorizontal: spacing.md,
         padding: 11,
         borderRadius: radius.full,
-        // A wide stadium, as on the web at a phone's size: it takes the room there is, from 196pt to 240.
-        flex: 1,
-        minHeight: 196,
-        // The cross, the clock and the Memory peek need more height.
-        maxHeight: variant === 'crucifix' || variant === 'circle' || game.memory ? 330 : variant === 'ghost' || variant === 'dice' ? 290 : Math.min(240, height * 0.3),
+        // A fixed size for the whole game, so nothing on the table (cards shown under seats, the win banner) can
+        // squeeze it: a wide stadium from 196pt to 240 by the phone's height; the cross, the clock and the Memory
+        // peek take more. Memory Poker plays at that size too, so the board doesn't jump when the peek ends.
+        height: feltHeight(variant, height),
         boxShadow: '0 12px 26px -14px rgba(18,18,40,0.55), inset 0 1px 0 rgba(255,255,255,0.28)',
         ...gradient(`${look.rail === 'wood' && !theme ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
       }}
@@ -101,13 +107,23 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: spacing.xs,
-          paddingVertical: spacing.sm,
+          // Clear of the inner line (9pt in), so the pot and the hand pill sit with room round them.
+          paddingTop: spacing.lg,
+          paddingBottom: spacing.md,
           paddingHorizontal: spacing.lg,
           boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)',
           ...gradient(`${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`),
         }}
       >
         <View pointerEvents="none" style={{ position: 'absolute', top: 9, left: 9, right: 9, bottom: 9, borderRadius: radius.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.16)' }} />
+        {!theme && look.logo && (
+          // Texas Hold'em's own mark: the FlipUp wordmark, faded into the felt like the mini games' emoji.
+          <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 64, fontWeight: '800', letterSpacing: -1.5, color: '#ffffff', opacity: 0.09 }} maxFontSizeMultiplier={1} accessible={false}>
+              FlipUp
+            </Text>
+          </View>
+        )}
         {theme && (
           // The game's emoji, faded into the felt.
           <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>

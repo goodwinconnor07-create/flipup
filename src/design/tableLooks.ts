@@ -25,14 +25,17 @@ export interface TableLook {
   /** Felt colour, "#rrggbb". */
   felt: string;
   rail: Rail;
+  /** A faded FlipUp wordmark on the Texas Hold'em felt (the mini games show their emoji there). On by default. */
+  logo: boolean;
 }
 
-export const DEFAULT_LOOK: TableLook = { felt: FELTS[0].felt, rail: 'dark' };
+export const DEFAULT_LOOK: TableLook = { felt: FELTS[0].felt, rail: 'dark', logo: true };
 
 /** A stored look, checked: anything broken falls back to the default. */
 export function cleanLook(l: Partial<TableLook> | null | undefined): TableLook {
   return {
     felt: typeof l?.felt === 'string' && /^#[0-9a-f]{6}$/i.test(l.felt) ? l.felt : DEFAULT_LOOK.felt,
     rail: l?.rail === 'wood' || l?.rail === 'light' || l?.rail === 'dark' ? l.rail : DEFAULT_LOOK.rail,
+    logo: l?.logo !== false,
   };
 }

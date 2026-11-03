@@ -1,5 +1,5 @@
 // The other players along the top of the table, drawn to the web's measurements (Pods.tsx and the pod rules in
-// table.css): the speech bubble over the face, the reacting face with its BOT chip and position, the name in grey
+// table.css): the speech bubble over the face, the reacting face with its position (a bot's card backs carry a small robot), the name in grey
 // (full colour on their turn), the stack counting as it changes, their cards (with an orange shimmer sweeping over
 // them while it's their turn), and a tag under them: what they've put in this round, a win, their odds during a
 // run-out, or Offline.
@@ -12,6 +12,7 @@ import { me as myDevice, dispatch } from '@/state/session';
 import { usePlainColors, brand } from '@/theme';
 
 import { haptic } from '../haptics';
+import { Icon } from '../icon';
 import { openPlayerMenu } from '../player-menu';
 import { seatKey } from '@/state/blocks';
 import { ThemedText } from '../themed-text';
@@ -242,13 +243,6 @@ function SeatPod({
         <View style={{ opacity: out ? 0.35 : player.offline ? 0.55 : 1 }}>
           <MoodFace game={game} player={player} seat={seat} size={50} />
         </View>
-        {player.bot && (
-          <View style={{ position: 'absolute', left: -8, bottom: 2, paddingHorizontal: 6, borderRadius: 999, backgroundColor: c.slate }}>
-            <Text style={{ color: '#fff', fontSize: 10, lineHeight: 14, fontWeight: '600', letterSpacing: 0.4 }} maxFontSizeMultiplier={1}>
-              BOT
-            </Text>
-          </View>
-        )}
         <View style={{ position: 'absolute', right: -15, bottom: 8 }}>
           <PositionChip pos={positionOf(hand, player.id)} />
         </View>
@@ -285,7 +279,19 @@ function SeatPod({
               {cards.map((card, i) => (
                 // Two cards overlap a little; more (Pineapple, Bean Stalk) fan tighter to stay inside the seat.
                 <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length > 3 ? -12 : -6 }}>
-                  {card ? <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} /> : <PlayingCard back size="sm" pack={player.cardPack} />}
+                  {card ? (
+                    <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} />
+                  ) : (
+                    <View>
+                      <PlayingCard back size="sm" pack={player.cardPack} />
+                      {/* A bot's cards say so on the back: a small robot, in place of a BOT pill on the face. */}
+                      {player.bot && (
+                        <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon name="cpu.fill" size={13} color="rgba(255, 255, 255, 0.7)" />
+                        </View>
+                      )}
+                    </View>
+                  )}
                 </View>
               ))}
           </View>

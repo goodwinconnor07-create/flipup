@@ -66,7 +66,7 @@ export default function SetupScreen() {
     <>
       <Stack.Screen options={{ title: mode === 'friends' ? 'Play with friends' : 'Play with bots' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
-        <SeatPreview settings={s} bots={bots} friends={mode === 'friends'} />
+        <SeatPreview settings={s} bots={bots} friends={mode === 'friends'} guests={pals.filter((p) => invited.includes(p.code))} />
         <Section footer={mode === 'friends' ? 'Bots fill seats your friends leave empty.' : 'Computer players at your table.'}>
           <Row
             title="Bots"

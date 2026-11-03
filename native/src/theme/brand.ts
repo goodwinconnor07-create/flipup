@@ -20,6 +20,9 @@ export const brand = {
   goldDeep: '#d48a00',
   /** Ink on gold. */
   goldInk: '#3b2600',
+  /** Raise at the table, and only there (the owner's call): the one green in the app. */
+  raise: '#22b35e',
+  raiseDeep: '#14843f',
 } as const;
 
 /** The party colours the app's components ask for, each one now violet or gold. */

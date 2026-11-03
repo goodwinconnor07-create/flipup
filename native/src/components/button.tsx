@@ -1,7 +1,8 @@
 import { ActivityIndicator, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { gradient, gradients, minTap, party, radius, spacing, useColors, useShadows } from '@/theme';
+import { gradients, minTap, radius, spacing, useColors } from '@/theme';
 
+import { LivingCard } from './living-card';
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';
 
@@ -12,7 +13,7 @@ const SIZES = {
 
 /**
  * The app's buttons.
- * - `party`: the loud one for what you tap to play: a gradient, a darker bottom edge, heavy text.
+ * - `party`: the loud one for what you tap to play: a living gradient with a faint grain (LivingCard), heavy text.
  * - `primary`: system blue. `secondary`: a flat grey cell. `destructive`: red text on a grey cell.
  * Every size is at least 44pt tall. States: pressed (PressableScale), disabled, loading.
  */
@@ -37,20 +38,23 @@ export function Button({
   style?: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
-  const shadow = useShadows();
   const s = SIZES[size];
   const fill: ViewStyle =
     variant === 'party'
-      ? {
-          ...gradient(`linear-gradient(180deg, ${gradients[tint][0]} 0%, ${gradients[tint][1]} 100%)`),
-          borderBottomWidth: 4,
-          borderBottomColor: party.edge,
-          boxShadow: shadow.soft,
-        }
+      ? {}
       : variant === 'primary'
         ? { backgroundColor: colors.accent }
         : { backgroundColor: colors.cell };
   const ink = variant === 'party' || variant === 'primary' ? 'onColor' : variant === 'destructive' ? 'red' : 'accent';
+  const label = loading ? (
+    <ActivityIndicator color={variant === 'party' || variant === 'primary' ? '#ffffff' : undefined} />
+  ) : (
+    <View>
+      <ThemedText variant={s.text} tone={ink} style={variant === 'party' ? { fontWeight: '800' } : undefined}>
+        {title}
+      </ThemedText>
+    </View>
+  );
   return (
     <PressableScale
       accessibilityRole="button"
@@ -59,7 +63,9 @@ export function Button({
       disabled={disabled}
       onPress={loading ? undefined : onPress}
       style={[
-        {
+        variant === 'party'
+          ? { borderRadius: radius.md }
+          : {
           minHeight: s.height,
           paddingHorizontal: s.paddingHorizontal,
           borderRadius: radius.md,
@@ -71,14 +77,19 @@ export function Button({
         style,
       ]}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'party' || variant === 'primary' ? '#ffffff' : undefined} />
+      {variant === 'party' ? (
+        <LivingCard
+          colors={[gradients[tint][0], gradients[tint][1], gradients[tint][1]]}
+          radius={radius.md}
+          shadow="soft"
+          grain={0.07}
+          outerStyle={{ alignSelf: 'stretch' }}
+          style={{ minHeight: s.height, paddingHorizontal: s.paddingHorizontal, alignItems: 'center', justifyContent: 'center' }}
+        >
+          {label}
+        </LivingCard>
       ) : (
-        <View>
-          <ThemedText variant={s.text} tone={ink} style={variant === 'party' ? { fontWeight: '800' } : undefined}>
-            {title}
-          </ThemedText>
-        </View>
+        label
       )}
     </PressableScale>
   );

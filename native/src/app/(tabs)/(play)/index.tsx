@@ -12,6 +12,7 @@ import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
+import { SwipeAway } from '@/components/swipe-away';
 import { TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo, variantOf } from '@/engine';
@@ -20,6 +21,7 @@ import { usePartyRef } from '@/state/party';
 import { usePokerRecord } from '@/state/record';
 import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
+import { save, useStored } from '@/state/storage';
 import { radius, spacing, useColors, useShadows } from '@/theme';
 
 /**
@@ -35,6 +37,8 @@ export default function Home() {
   const box = useFriendBox();
   const banner = useHasBanner();
   const last = record.games.at(-1);
+  // Play again can be swiped away; it comes back with the next game you finish.
+  const hidden = useStored<number>(HIDDEN, 0);
   return (
     <>
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
@@ -48,7 +52,11 @@ export default function Home() {
           </View>
         )}
         <StartTiles />
-        {!banner && last && <LastGame line={last} />}
+        {!banner && last && hidden !== last.at && (
+          <SwipeAway label="Remove" onDismiss={() => save(HIDDEN, last.at)}>
+            <LastGame line={last} />
+          </SwipeAway>
+        )}
         <GameRow />
         <FriendsStrip />
         {record.hands > 0 ? <PassportCard /> : <FirstHand />}
@@ -67,6 +75,8 @@ export default function Home() {
     </>
   );
 }
+
+const HIDDEN = 'flipup.lastgamehidden';
 
 /** Whether Home has a table or party to get back to (the banner shows). */
 function useHasBanner(): boolean {

@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { cancelAnimation, Easing, FadeIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
-import { stepsFor } from '@/components/how-to/steps';
+import { stepsFor, ZOOMS } from '@/components/how-to/steps';
 import { Icon } from '@/components/icon';
 import { isVariant, variantInfo, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -19,11 +19,11 @@ const ASPECT = 390 / 844;
 const STEP_MS = 6500;
 
 /**
- * How to Play: one real hand of the game on FlipUp's own table, a picture for each moment that matters, with a
- * title and a line under it. Bars along the top fill like stories and move on by themselves; tap the right of the
- * picture for the next step, the left for the one before, and hold to pause. The layout is measured, not guessed:
- * the bars and the close button have their own row, the picture takes the room that's left, and the words and
- * Play sit under it.
+ * How to Play, like a story: one real hand of the game on FlipUp's own table, a picture for each moment that
+ * matters, zoomed in on what the step is about, with a title and a line under it. Bars along the very top fill and
+ * move on by themselves; tap anywhere on the right for the next step, on the left for the one before, and hold to
+ * pause. Full screen, so the bars and the close button sit at the top edge. The layout is measured: the picture takes
+ * the room between the bars and the words.
  */
 export default function HowToPlay() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
@@ -31,6 +31,7 @@ export default function HowToPlay() {
   const info = variantInfo(variant);
   const steps = stepsFor(variant);
   const insets = useSafeAreaInsets();
+  const { width: screenW } = useWindowDimensions();
   const reduce = useReduceMotion();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -64,6 +65,13 @@ export default function HowToPlay() {
   }, [index, paused, last, steps.length, progress]);
   const filling = useAnimatedStyle(() => ({ width: `${progress.get() * 100}%` }));
 
+  // The zoom: the frame takes the shape of the step's strip of the picture, as big as the room allows.
+  const zoom = useSharedValue<{ top: number; height: number }>({ top: 0, height: 1 });
+  useEffect(() => {
+    const z = ZOOMS[steps[index]?.zoom ?? 'full'];
+    zoom.set(reduce ? z : withTiming(z, { duration: 520, easing: Easing.inOut(Easing.cubic) }));
+  }, [index, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const play = () => {
     haptic.tap();
     router.back();
@@ -73,14 +81,28 @@ export default function HowToPlay() {
 
   // The picture: as big as the room under the bars allows, at the phone's own shape.
   const measure = (e: LayoutChangeEvent) => setRoom({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height });
-  const pictureH = room ? Math.min(room.height, room.width / ASPECT) : 0;
-  const pictureW = pictureH * ASPECT;
+  const roomW = room?.width ?? 0;
+  const roomH = room?.height ?? 0;
+  const frame = useAnimatedStyle(() => {
+    const { height } = zoom.get();
+    const aspect = ASPECT / height;
+    const w = Math.min(roomW, roomH * aspect);
+    return { width: w, height: w / aspect };
+  });
+  const strip = useAnimatedStyle(() => {
+    const { top, height } = zoom.get();
+    const w = Math.min(roomW, roomH * (ASPECT / height));
+    const full = w / ASPECT;
+    return { width: w, height: full, transform: [{ translateY: -top * full }] };
+  });
+  // Tap anywhere: the left third goes back, the rest goes on.
+  const tap = (pageX: number) => go(pageX < screenW / 3 ? index - 1 : index + 1);
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000', paddingTop: insets.top + spacing.sm, paddingBottom: insets.bottom + spacing.md, gap: spacing.md }}>
+    <View style={{ flex: 1, backgroundColor: '#000000', paddingTop: insets.top + spacing.xxs, paddingBottom: insets.bottom + spacing.md, gap: spacing.sm }}>
       <Stack.Screen options={{ title: `How to play ${info.name}`, headerShown: false }} />
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, height: 44 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.sm, height: 40 }}>
         <View style={{ flex: 1, flexDirection: 'row', gap: 4 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {steps.map((s, i) => (
             <View key={s.shot + i} style={{ flex: 1, height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.25)' }}>
@@ -102,34 +124,41 @@ export default function HowToPlay() {
         </Pressable>
       </View>
 
-      <View onLayout={measure} style={{ flex: 1, minHeight: 0, marginHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center' }}>
-        {step && pictureH > 0 && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={`${step.title}. Picture of the table. Tap for the next step`}
-            onPressIn={() => setPaused(true)}
-            onPressOut={() => setPaused(false)}
-            onPress={(e) => go(e.nativeEvent.locationX < pictureW / 3 ? index - 1 : index + 1)}
-            style={{ width: pictureW, height: pictureH, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: '#111114', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.16)' }}
-          >
-            <Image source={step.image} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={reduce ? 0 : 180} accessible={false} />
-          </Pressable>
-        )}
-      </View>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${step?.title ?? info.name}. Tap for the next step`}
+        onPressIn={() => setPaused(true)}
+        onPressOut={() => setPaused(false)}
+        onPress={(e) => tap(e.nativeEvent.pageX)}
+        style={{ flex: 1, gap: spacing.lg }}
+      >
+        <View onLayout={measure} style={{ flex: 1, minHeight: 0, marginHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center' }}>
+          {step && roomW > 0 && (
+            <Animated.View style={[{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: '#111114', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.16)' }, frame]}>
+              <Animated.View style={strip}>
+                <Image source={step.image} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={reduce ? 0 : 180} accessible={false} />
+              </Animated.View>
+            </Animated.View>
+          )}
+        </View>
 
-      <View style={{ paddingHorizontal: spacing.lg, gap: spacing.lg }}>
-        <Animated.View key={index} entering={reduce ? undefined : FadeIn.duration(220)} accessibilityLiveRegion="polite" style={{ minHeight: 118, gap: spacing.xs }}>
-          <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: 13, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
-            {info.name}
-            {steps.length ? ` · ${index + 1} of ${steps.length}` : ''}
-          </Text>
-          <Text maxFontSizeMultiplier={1.3} accessibilityRole="header" style={{ color: '#ffffff', fontFamily: ROUNDED, fontSize: 28, lineHeight: 34, fontWeight: '700' }}>
-            {step?.title ?? info.name}
-          </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255, 255, 255, 0.78)', fontSize: 17, lineHeight: 24 }}>
-            {step?.text ?? info.rules[0]}
-          </Text>
-        </Animated.View>
+        <View style={{ paddingHorizontal: spacing.lg }}>
+          <Animated.View key={index} entering={reduce ? undefined : FadeIn.duration(220)} accessibilityLiveRegion="polite" style={{ minHeight: 118, gap: spacing.xs }}>
+            <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: 13, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
+              {info.name}
+              {steps.length ? ` · ${index + 1} of ${steps.length}` : ''}
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} accessibilityRole="header" style={{ color: '#ffffff', fontFamily: ROUNDED, fontSize: 28, lineHeight: 34, fontWeight: '700' }}>
+              {step?.title ?? info.name}
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255, 255, 255, 0.78)', fontSize: 17, lineHeight: 24 }}>
+              {step?.text ?? info.rules[0]}
+            </Text>
+          </Animated.View>
+        </View>
+      </Pressable>
+
+      <View style={{ paddingHorizontal: spacing.lg }}>
         <Button variant="party" tint="green" size="lg" title={`Play ${info.name}`} onPress={play} />
       </View>
     </View>

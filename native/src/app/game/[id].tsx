@@ -2,9 +2,9 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Text, useWindowDimensions, View } from 'react-native';
 
 import { SheetScroll } from '@/components/sheet-scroll';
-import { Button } from '@/components/button';
 import { GamePicture } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
+import { StartTiles } from '@/components/home/start-tiles';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
@@ -55,10 +55,7 @@ export default function GameSheet() {
       </View>
       {/* Opened from a table's game pill: only how it plays. */}
       {!rules && (
-      <View style={{ gap: spacing.sm }}>
-        <Button variant="party" tint="blue" size="lg" title="Play with friends" onPress={() => go('friends')} />
-        <Button variant="party" tint="green" size="lg" title="Play with bots" onPress={() => go('bots')} />
-      </View>
+      <StartTiles onGo={go} height={150} />
       )}
       <View style={{ gap: spacing.xs }}>
         <ThemedText variant="headline">How it plays</ThemedText>

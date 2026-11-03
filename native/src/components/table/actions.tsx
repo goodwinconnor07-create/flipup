@@ -1,4 +1,3 @@
-import { Host, Slider } from '@expo/ui';
 import { Children, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
@@ -6,14 +5,14 @@ import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-nati
 import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { dispatch, me as myDevice } from '@/state/session';
-import { minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
+import { brand, minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
-import { brandTint } from '../brand-tint';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
+import { RaiseSlider } from './raise-slider';
 import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -21,7 +20,7 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 /** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
 export type PreAction = { kind: 'checkfold' | 'callany' | 'current'; bet: number } | null;
 
-type Tone = 'fold' | 'green' | 'blue' | 'dark' | 'pre' | 'preOn' | 'quietFold' | 'quietCall';
+type Tone = 'fold' | 'green' | 'blue' | 'raise' | 'dark' | 'pre' | 'preOn' | 'quietFold' | 'quietCall';
 
 /** One of the big table buttons: at least 60pt tall, in the three slots Fold, Check/Call and Raise share. */
 function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, big }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean; fill?: number; height?: number; big?: boolean }) {
@@ -33,6 +32,7 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
     // brand violet and Fold stays red: the palette has two colours, and the table spends them on these.
     green: { bg: colors.label as string, ink: colors.background as string },
     blue: { bg: colors.accent as string, ink: '#ffffff' },
+    raise: { bg: brand.raise, ink: '#ffffff' },
     dark: { bg: colors.label as string, ink: colors.background as string },
     pre: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
     preOn: { bg: colors.accent as string, ink: '#ffffff' },
@@ -187,7 +187,7 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
         ) : (
           <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="green" disabled={sending} onPress={() => act('call')} />
         )}
-        {o.canRaise && <TableButton label={o.word} tone="blue" disabled={sending} onPress={onRaise} />}
+        {o.canRaise && <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />}
       </Row>
     </View>
   );
@@ -274,9 +274,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
           <Icon name="minus" size={22} color={colors.label} />
         </Pressable>
         <View style={{ flex: 1 }}>
-          <Host matchContents={{ vertical: true }} style={{ alignSelf: 'stretch' }}>
-            <Slider value={to} min={o.minTo} max={o.maxTo} step={step} onValueChange={(v) => setTo(v + step > o.maxTo ? o.maxTo : Math.round(v))} modifiers={brandTint} />
-          </Host>
+          <RaiseSlider value={to} min={o.minTo} max={o.maxTo} step={step} tint={brand.raise} onChange={setTo} />
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="More" disabled={to >= o.maxTo} onPress={() => nudge(1)} hitSlop={10} style={{ opacity: to >= o.maxTo ? 0.3 : 1 }}>
           <Icon name="plus" size={22} color={colors.label} />
@@ -287,7 +285,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
           <TableButton label="Fold" tone="quietFold" height={52} onPress={onFold} />
         </View>
         <View style={{ flex: 2 }}>
-          <TableButton big height={76} label={to >= o.maxTo ? 'All in' : o.word} sub={to >= o.maxTo ? undefined : chips(to)} tone="blue" onPress={() => onRaise(to)} />
+          <TableButton big height={76} label={to >= o.maxTo ? 'All in' : o.word} sub={to >= o.maxTo ? undefined : chips(to)} tone="raise" onPress={() => onRaise(to)} />
         </View>
         <View style={{ flex: 1 }}>
           <TableButton label={o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'} sub={!o.canCheck && !o.callIsAllIn ? chips(o.toCall) : undefined} tone="quietCall" height={52} onPress={onCall} />

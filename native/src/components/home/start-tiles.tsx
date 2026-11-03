@@ -17,24 +17,25 @@ const BOT_FACES = ['🦊', '🐼', '🦉'];
  * The two ways to sit down, side by side and big, the first thing under the title: Play with friends (your face
  * and your friends', on the party pink) and Play with bots (three bot faces, on blue). Each opens Setup.
  */
-export function StartTiles() {
+/** `onGo` replaces opening Setup (a game's sheet closes itself first and passes its game); `height` for a smaller pair. */
+export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | 'bots') => void; height?: number } = {}) {
   const profile = useProfile();
   const pals = usePals();
   const friends = [profile.emoji || '🙂', ...pals.slice(0, 2).map((p) => p.emoji)];
   while (friends.length < 3) friends.push('');
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-      <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} mode="friends" />
-      <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} mode="bots" />
+      <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push({ pathname: '/setup', params: { mode: 'friends' } }))} />
+      <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} height={height} go={() => (onGo ? onGo('bots') : router.push({ pathname: '/setup', params: { mode: 'bots' } }))} />
     </View>
   );
 }
 
-function Tile({ title, line, faces, colors, mode }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; mode: 'friends' | 'bots' }) {
+function Tile({ title, line, faces, colors, height, go }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; height: number; go: () => void }) {
   return (
     <View style={{ flex: 1 }}>
-      <PressableTile label={`${title}. ${line}`} onPress={() => router.push({ pathname: '/setup', params: { mode } })}>
-        <LivingCard colors={colors} outerStyle={{ height: 184 }} style={{ flex: 1, padding: spacing.md, justifyContent: 'space-between' }}>
+      <PressableTile label={`${title}. ${line}`} onPress={go}>
+        <LivingCard colors={colors} outerStyle={{ height }} style={{ flex: 1, padding: spacing.md, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {faces.map((f, i) => (
             <View

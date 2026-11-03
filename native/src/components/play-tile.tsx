@@ -1,6 +1,6 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { gradient, gradients, party, radius, spacing, useShadows } from '@/theme';
+import { gradient, gradients, radius, spacing, useShadows } from '@/theme';
 
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';
@@ -41,8 +41,6 @@ export function PlayTile({
           gap: 2,
           borderRadius: radius.lg,
           borderCurve: 'continuous',
-          borderBottomWidth: 4,
-          borderBottomColor: party.edge,
           overflow: 'hidden',
           ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`),
           boxShadow: shadow.soft,

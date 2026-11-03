@@ -48,9 +48,10 @@ export default function RootLayout() {
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* The fade is short because the table's own DealWipe does the moving. */}
-        <Stack.Screen name="game/[id]" options={{ ...sheet, title: 'Game' }} />
-        {/* How to Play: a recorded hand on black, as a full-height modal you swipe down to close. */}
-        <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'modal', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
+        {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
+        <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
+        {/* How to Play: a story on black, full screen so its bars sit at the top edge; the X closes it. */}
+        <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         <Stack.Screen name="premium" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'FlipUp Premium' }} />
         <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />

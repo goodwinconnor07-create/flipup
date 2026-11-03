@@ -21,6 +21,7 @@ export function LivingCard({
   glow2 = 'rgba(150, 120, 255, 0.38)',
   radius = radii.xl,
   shadow = true,
+  grain = 0.16,
   still,
   style,
   outerStyle,
@@ -32,7 +33,10 @@ export function LivingCard({
   /** The second glow, which drifts the other way. */
   glow2?: string;
   radius?: number;
-  shadow?: boolean;
+  /** true for the coloured-card shadow, 'soft' for a button's, false for none. */
+  shadow?: boolean | 'soft';
+  /** How strong the film grain is: 0.16 on cards, less on small buttons so it stays a texture, not noise. */
+  grain?: number;
   /** No drift: for a picture taken of the card (sharing). */
   still?: boolean;
   /** Padding and layout of the content. */
@@ -54,12 +58,12 @@ export function LivingCard({
   const drift1 = useAnimatedStyle(() => ({ transform: [{ translateX: `${-20 + 40 * t.get()}%` }, { translateY: `${-15 + 30 * u.get()}%` }, { scale: 1 + 0.15 * u.get() }] }));
   const drift2 = useAnimatedStyle(() => ({ transform: [{ translateX: `${20 - 40 * u.get()}%` }, { translateY: `${15 - 30 * t.get()}%` }] }));
   return (
-    <View style={[{ borderRadius: radius, borderCurve: 'continuous', boxShadow: shadow ? shadows.raised : undefined }, outerStyle]}>
+    <View style={[{ borderRadius: radius, borderCurve: 'continuous', boxShadow: shadow === 'soft' ? shadows.soft : shadow ? shadows.raised : undefined }, outerStyle]}>
       <View style={[{ flexGrow: 1, borderRadius: radius, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(150deg, ${a} 0%, ${b} 55%, ${c} 100%)`) }]}>
         <View pointerEvents="none" style={{ position: 'absolute', inset: 0 }}>
           <Animated.View style={[{ position: 'absolute', left: '-40%', top: '-60%', width: '120%', aspectRatio: 1, ...gradient(`radial-gradient(circle at center, ${glow} 0%, transparent 65%)`) }, moving ? drift1 : null]} />
           <Animated.View style={[{ position: 'absolute', right: '-45%', bottom: '-70%', width: '130%', aspectRatio: 1, ...gradient(`radial-gradient(circle at center, ${glow2} 0%, transparent 65%)`) }, moving ? drift2 : null]} />
-          <Image source={GRAIN} resizeMode="repeat" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: 0.16, mixBlendMode: 'overlay' }} />
+          <Image source={GRAIN} resizeMode="repeat" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: grain, mixBlendMode: 'overlay' }} />
         </View>
         <View style={style}>{children}</View>
       </View>

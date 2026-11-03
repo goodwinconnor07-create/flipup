@@ -16,7 +16,7 @@ import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
 import { answerRequest, useFriendBox, useMyUsername, usePals, type Pal } from '@/state/pals';
 import { useProfile } from '@/state/profile';
-import { brand, cardColors, party, radius, spacing, useColors, useShadows } from '@/theme';
+import { brand, cardColors, radius, spacing, useColors, useShadows } from '@/theme';
 
 
 /**
@@ -184,7 +184,7 @@ function Pill({ icon, label, onPress }: { icon: 'square.and.arrow.up' | 'pencil'
         haptic.tap();
         onPress();
       }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#ffffff', borderBottomWidth: 3, borderBottomColor: party.edge }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#ffffff' }}
     >
       <Icon name={icon} size={16} color={brand.violet} />
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: brand.violet }}>

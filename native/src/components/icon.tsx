@@ -57,6 +57,12 @@ const WEB = {
   'plus.circle.fill': 'add_circle',
   'delete.left': 'backspace',
   'person.crop.circle.badge.plus': 'person_add',
+  pencil: 'edit',
+  'flame.fill': 'local_fire_department',
+  'hand.raised.fill': 'privacy_tip',
+  'lifepreserver.fill': 'support',
+  'envelope.fill': 'mail',
+  'trash.fill': 'delete',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

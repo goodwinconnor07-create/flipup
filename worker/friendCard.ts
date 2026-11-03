@@ -63,6 +63,17 @@ export class FriendCard extends DurableObject<Env> {
     return (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS);
   }
 
+  /** RPC: the owner deletes their code and everything on it ("Delete my data"). */
+  async remove(deviceId: string): Promise<'ok' | 'missing' | 'forbidden'> {
+    const data = await this.load();
+    if (!data) return 'missing';
+    if (data.deviceId !== deviceId) return 'forbidden';
+    await this.ctx.storage.deleteAlarm();
+    await this.ctx.storage.deleteAll();
+    this.data = null;
+    return 'ok';
+  }
+
   /** RPC: whose code this is, so a party can check someone really holds the code they show. */
   async owner(): Promise<string | null> {
     return (await this.load())?.deviceId ?? null;

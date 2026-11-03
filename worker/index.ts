@@ -145,7 +145,7 @@ async function ownedCode(env: Env, code: unknown, deviceId: string): Promise<str
   return owner === deviceId ? code : undefined;
 }
 
-/** POST /api/friends claims a friend code. GET and PUT /api/friends/:code look one up and refresh it. */
+/** POST /api/friends claims a friend code. GET and PUT /api/friends/:code look one up and refresh it; DELETE removes it (its owner only). */
 async function friendRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
   const match = pathname.match(/^\/api\/friends(?:\/([^/]+)(?:\/(invite|invites))?)?$/);
   if (!match) return json({ error: 'Not found.' }, 404);
@@ -182,6 +182,15 @@ async function friendRoute(request: Request, env: Env, pathname: string, search:
     if ('error' in look) return json({ error: look.error }, 400);
     const result = await card.update(body.deviceId, look.name, look.emoji, parseCampaignCard(body.campaign));
     if (result === 'missing') return json({ error: 'No friend with that code.' }, 404);
+    if (result === 'forbidden') return json({ error: 'That code belongs to another phone.' }, 403);
+    return json({ ok: true });
+  }
+  if (request.method === 'DELETE') {
+    if (limited(request, 'friend-change', 120, 60 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+    const body = (await readJson(request)) as Record<string, unknown> | null;
+    if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
+    const result = await card.remove(body.deviceId);
+    // Already gone counts as done: the phone wanted it deleted.
     if (result === 'forbidden') return json({ error: 'That code belongs to another phone.' }, 403);
     return json({ ok: true });
   }

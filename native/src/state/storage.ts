@@ -44,3 +44,20 @@ export function useStored<T>(key: string, fallback: T): T {
     () => read(key, fallback),
   );
 }
+
+/**
+ * Deletes every `flipup.*` value on this phone except the ones named ("Delete my data"). Anyone reading one of them
+ * redraws with its default.
+ */
+export function wipeAll(keep: readonly string[]): void {
+  const keys: string[] = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('flipup.') && !keep.includes(k)) keys.push(k);
+    }
+  } catch {
+    // Storage blocked: nothing to delete.
+  }
+  for (const k of new Set([...keys, ...[...cache.keys()].filter((k) => k.startsWith('flipup.') && !keep.includes(k))])) save(k, null);
+}

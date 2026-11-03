@@ -2,6 +2,7 @@
 
 import { cleanName, DEFAULT_EMOJI, DEFAULT_SETTINGS, isBubbleId, isDeviceId, isEmoji, isPackId, newId, type Game, type Settings } from '../game';
 import { cleanLook, type TableLook } from '../design/tableLooks';
+import { cleanDays, streakInfo, streakOf, withToday, type StreakInfo } from '../game/streak';
 
 const KEYS = {
   device: 'flipup.device',
@@ -238,14 +239,11 @@ export function saveLastTable(table: LastTable | null): void {
   write('flipup.last', table);
 }
 
-// ── Daily streak ────────────────────────────────────────────────────────────
+// ── Daily streak (the counting is shared with the iPhone app: src/game/streak.ts) ─────────────
 
-export const dayKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export { dayKey, type StreakInfo } from '../game/streak';
 
-function loadDays(): string[] {
-  const d = read<string[]>('flipup.days');
-  return Array.isArray(d) ? d.filter((x) => typeof x === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(x)) : [];
-}
+const loadDays = (): string[] => cleanDays(read<unknown>('flipup.days'));
 
 /** Everything the learning features kept (GTO reviews, drills, Scroll, odds, AI twins and friends' twins): gone with them. */
 export function forgetOldLearning(): void {
@@ -254,64 +252,13 @@ export function forgetOldLearning(): void {
 
 /** Marks today as a day this phone played a hand. */
 export function markPlayedToday(): void {
-  const today = dayKey(new Date());
   const days = loadDays();
-  if (days.includes(today)) return;
-  write('flipup.days', [...days, today].slice(-730));
+  const next = withToday(days, new Date());
+  if (next !== days) write('flipup.days', next);
 }
 
 /** Days in a row with a hand played, counting back from today (or from yesterday, so the streak survives until tonight). */
-export function loadStreak(): { days: number; today: boolean } {
-  const have = new Set(loadDays());
-  const d = new Date();
-  const today = have.has(dayKey(d));
-  if (!today) d.setDate(d.getDate() - 1);
-  let days = 0;
-  while (have.has(dayKey(d))) {
-    days++;
-    d.setDate(d.getDate() - 1);
-  }
-  return { days, today };
-}
-
-export interface StreakInfo {
-  days: number;
-  today: boolean;
-  /** The first day of the current streak, as a local date at midnight. */
-  start: Date | null;
-  best: number;
-  total: number;
-  /** The last seven days, oldest first. */
-  week: { label: string; played: boolean; today: boolean }[];
-}
+export const loadStreak = (): { days: number; today: boolean } => streakOf(loadDays(), new Date());
 
 /** Everything the streak sheet shows. */
-export function loadStreakInfo(): StreakInfo {
-  const all = loadDays();
-  const have = new Set(all);
-  const { days, today } = loadStreak();
-  let start: Date | null = null;
-  if (days > 0) {
-    start = new Date();
-    start.setHours(0, 0, 0, 0);
-    start.setDate(start.getDate() - (today ? 0 : 1) - (days - 1));
-  }
-  // Longest run of consecutive days.
-  let best = 0;
-  let run = 0;
-  let prev: Date | null = null;
-  for (const key of [...all].sort()) {
-    const [y, m, d] = key.split('-').map(Number);
-    const at = new Date(y, m - 1, d);
-    const next = prev ? new Date(prev.getFullYear(), prev.getMonth(), prev.getDate() + 1) : null;
-    run = next && dayKey(next) === key ? run + 1 : 1;
-    best = Math.max(best, run);
-    prev = at;
-  }
-  const week = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (6 - i));
-    return { label: d.toLocaleDateString(undefined, { weekday: 'narrow' }), played: have.has(dayKey(d)), today: i === 6 };
-  });
-  return { days, today, start, best: Math.max(best, days), total: all.length, week };
-}
+export const loadStreakInfo = (): StreakInfo => streakInfo(loadDays(), new Date());

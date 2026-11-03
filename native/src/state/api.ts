@@ -73,6 +73,12 @@ export async function fetchFriendCard(code: string): Promise<FriendCardInfo | nu
   return (await res.json()) as FriendCardInfo;
 }
 
+/** Deletes this phone's friend code on the server ("Delete my data"). A code that's already gone counts as deleted. */
+export async function deleteFriendCard(code: string, deviceId: string): Promise<void> {
+  const res = await json(`/api/friends/${encodeURIComponent(code)}`, { method: 'DELETE', body: JSON.stringify({ deviceId }) });
+  if (!res.ok && res.status !== 404) throw new Error(await errorText(res, "Couldn't delete your friend code. Try again."));
+}
+
 export async function createPartyOnServer(body: { deviceId: string; name: string; emoji: string; friendCode?: string; settings: PartySettings }): Promise<string> {
   const res = await json('/api/parties', { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a party. Try again."));

@@ -334,7 +334,7 @@ Native build:
    host needs the unlock; people joining by code don't. The ad unlock is checked by the server.
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
-5. Settings: Privacy Policy and Support links (from `native/appInfo.ts`), the support email, and "Delete my data".
+5. Settings: Privacy Policy and Support links (from `native/appInfo.ts`), the support email, and "Delete my data". Done in the app (Phase 5, step 5); Restore Purchases joins it in step 6.
 6. Report and Block on a player's seat and on party leaderboard rows.
 7. Camera permission text for the QR scanner (done in `app.config.ts`), and a clear message if it's denied.
 8. No web views of the web app, native navigation and sheets, haptics (4.2).
@@ -349,7 +349,7 @@ Native build:
     on an iPad.
 
 Server (Cloudflare Worker):
-14. `DELETE /api/friends/:code` for the owning device.
+14. `DELETE /api/friends/:code` for the owning device. Done (Phase 5, step 5), with Delete my data in the app's Settings.
 15. `POST /api/reports`, stored and emailed to the support address.
 16. Check a signed StoreKit transaction before honouring Premium looks or modes at an online table, and accept
     an ad unlock only from the ad network's server-side verification call.

@@ -25,6 +25,7 @@ import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
 import { isFast } from './prefs';
+import { markPlayedToday } from './streak';
 import { save } from './storage';
 
 const KEY = 'flipup.session';
@@ -68,9 +69,22 @@ function set(next: Session | null): void {
     game: !next?.game ? null : next.mode === 'local' ? redactForDevice(next.game, me) : next.game,
   });
   schedule();
+  noteDay(state.game);
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => save(KEY, session), next ? 600 : 0);
+}
+
+/** A finished hand you were dealt into counts today toward the daily streak (once per hand, as on the web). */
+let lastCounted = '';
+function noteDay(game: Game | null): void {
+  const hand = game?.hand;
+  if (!game || !hand?.result) return;
+  const mine = game.players.find((p) => p.deviceId === me);
+  const key = `${game.id}/${hand.number}`;
+  if (!mine || key === lastCounted || !hand.seats.some((s) => s.playerId === mine.id && s.cards.length > 0)) return;
+  lastCounted = key;
+  markPlayedToday();
 }
 
 export function useTable(): TableState {

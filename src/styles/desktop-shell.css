@@ -118,9 +118,49 @@
     position: static;
     margin-top: 8px;
     padding: 16px 0 32px;
+    border: 0;
+    box-shadow: none;
     background: none;
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
+  }
+
+  /* ── The host's lobby: the invite on the left, who's sitting and the settings on the right ── */
+
+  .screen.status-lobby:has(.invite-panel) {
+    max-width: 1040px;
+  }
+
+  .screen.status-lobby .screen-body:has(> .invite-panel) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-auto-rows: min-content;
+    column-gap: 32px;
+    row-gap: 16px;
+    align-items: start;
+  }
+
+  .screen.status-lobby .screen-body:has(> .invite-panel) > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .screen.status-lobby .screen-body > .invite-panel {
+    grid-column: 1;
+    grid-row: 2 / span 3;
+  }
+
+  .screen.status-lobby .screen-body:has(> .invite-panel) > :not(:first-child):not(.invite-panel) {
+    grid-column: 2;
+  }
+
+  .screen.status-lobby .screen-body:has(> .invite-panel) .roster {
+    justify-content: flex-start;
+  }
+
+  /* Deal sits under the right-hand column, by the players it deals to. */
+  .screen.status-lobby:has(.invite-panel) .screen-foot {
+    width: calc(50% - 16px);
+    margin-left: auto;
   }
 
   /* ── The table: your cards, the buttons and your chips centred under the felt ─────── */

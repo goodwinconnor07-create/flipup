@@ -4,7 +4,7 @@
 // face up, in 0.65s. Under Reduce Motion it fades in instead.
 import { useEffect, type ReactNode } from 'react';
 import { Text, useColorScheme, View, type ViewStyle } from 'react-native';
-import Animated, { Easing, FadeIn, interpolate, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 
 import { cardBack } from '@design/premiumLooks';
 import { cardName, rankLabel, suitOf, type Card } from '@/engine';
@@ -142,21 +142,27 @@ function Flip({ w, delay, pack, small, children }: { w: number; delay: number; p
     'worklet';
     return Math.sin(Math.PI * v);
   };
+  // A flat flip: the card narrows to an edge and opens out the other side. No 3D transform, which on iPhone could
+  // project the card many times its size for a few frames as it turned.
+  const turn = (v: number) => {
+    'worklet';
+    return Math.max(0.001, Math.abs(Math.cos(Math.PI * v)));
+  };
   const faceStyle = useAnimatedStyle(() => ({
     opacity: p.get() >= 0.5 ? 1 : 0,
-    transform: [{ perspective: 700 }, { translateY: -10 * lift(p.get()) }, { scale: 1 + 0.06 * lift(p.get()) }, { rotateY: `${interpolate(p.get(), [0, 1], [180, 0])}deg` }],
+    transform: [{ translateY: -10 * lift(p.get()) }, { scale: 1 + 0.06 * lift(p.get()) }, { scaleX: turn(p.get()) }],
   }));
   const backStyle = useAnimatedStyle(() => ({
     opacity: p.get() < 0.5 ? 1 : 0,
-    transform: [{ perspective: 700 }, { translateY: -10 * lift(p.get()) }, { scale: 1 + 0.06 * lift(p.get()) }, { rotateY: `${interpolate(p.get(), [0, 1], [0, -180])}deg` }],
+    transform: [{ translateY: -10 * lift(p.get()) }, { scale: 1 + 0.06 * lift(p.get()) }, { scaleX: turn(p.get()) }],
   }));
   if (reduce) return <Animated.View entering={FadeIn.delay(delay).duration(200)}>{children}</Animated.View>;
   return (
     <View style={{ width: w, height: Math.round(w * 1.4) }}>
-      <Animated.View style={[{ position: 'absolute', top: 0, left: 0, backfaceVisibility: 'hidden' }, backStyle]}>
+      <Animated.View style={[{ position: 'absolute', top: 0, left: 0 }, backStyle]}>
         <CardBack w={w} pack={pack} small={small} />
       </Animated.View>
-      <Animated.View style={[{ backfaceVisibility: 'hidden' }, faceStyle]}>{children}</Animated.View>
+      <Animated.View style={faceStyle}>{children}</Animated.View>
     </View>
   );
 }

@@ -335,7 +335,7 @@ Native build:
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
 5. Settings: Privacy Policy and Support links (from `native/appInfo.ts`), the support email, and "Delete my data". Done in the app (Phase 5, step 5); Restore Purchases joined it in step 6.
-6. Report and Block on a player's seat and on party leaderboard rows.
+6. Report and Block on a player's seat and on party leaderboard rows. Done in the app (`components/player-menu.ts`, `state/blocks.ts`, Settings > Blocked players).
 7. Camera permission text for the QR scanner (done in `app.config.ts`), and a clear message if it's denied.
 8. No web views of the web app, native navigation and sheets, haptics (4.2).
 9. No `expo-updates` in version 1; nothing downloaded that changes features.
@@ -350,7 +350,7 @@ Native build:
 
 Server (Cloudflare Worker):
 14. `DELETE /api/friends/:code` for the owning device. Done (Phase 5, step 5), with Delete my data in the app's Settings.
-15. `POST /api/reports`, stored and emailed to the support address.
+15. `POST /api/reports`, stored and emailed to the support address. Done (`worker/reports.ts`, the `ReportBox` Durable Object, kept 180 days). Email needs the Worker secrets `RESEND_API_KEY` and `REPORT_TO` (and `REPORT_FROM` on a domain verified in Resend); without them reports are only stored.
 16. Check a signed StoreKit transaction before honouring Premium looks or modes at an online table, and accept
     an ad unlock only from the ad network's server-side verification call.
 17. Static `/privacy` and `/support` pages, written in plain language.

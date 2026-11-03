@@ -1,6 +1,6 @@
 // HTTP calls to the FlipUp server (the same Cloudflare Worker as the web app). The address is APP_INFO.apiOrigin;
 // EXPO_PUBLIC_API_ORIGIN points a development build at a local server instead.
-import type { CreateFriendCardResponse, CreateTableRequest, CreateTableResponse, FriendCardInfo, PartySettings, PartyView, TableInfo } from '@/engine';
+import type { CreateFriendCardResponse, CreateTableRequest, CreateTableResponse, FriendCardInfo, PartySettings, PartyView, ReportRequest, TableInfo } from '@/engine';
 
 import { APP_INFO } from '../../appInfo';
 
@@ -97,4 +97,10 @@ export async function partyAct(code: string, action: 'join' | 'leave' | 'start' 
   const res = await json(`/api/parties/${encodeURIComponent(code)}/${action}`, { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, 'Something went wrong. Try again.'));
   return (await res.json()) as PartyView;
+}
+
+/** Reports a player at your table or party (App Store guideline 1.2). Throws with a sentence to show. */
+export async function sendReport(body: ReportRequest): Promise<void> {
+  const res = await request('/api/reports', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't send the report. Try again."));
 }

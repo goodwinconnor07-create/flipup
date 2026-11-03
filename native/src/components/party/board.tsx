@@ -4,12 +4,14 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 
 import type { PartyRow } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { BLOCKED_EMOJI, BLOCKED_NAME, memberKey, useBlocked } from '@/state/blocks';
 import { addPal, usePals } from '@/state/pals';
 import { radius, spacing, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { openPlayerMenu } from '../player-menu';
 
 /** One row's height plus the gap under it, as on the web (56 + 4). */
 const ROW = 60;
@@ -20,19 +22,22 @@ const SLIDE = { duration: 700, easing: Easing.bezier(0.2, 0.9, 0.3, 1) };
  * The party leaderboard. Rows are drawn in a fixed order and placed by rank, so when the ranking changes each row
  * slides to its new place instead of the list jumping.
  */
-export function PartyBoard({ rows, you, running }: { rows: PartyRow[]; you: string | null; running: boolean }) {
+export function PartyBoard({ rows: raw, you, running, code }: { rows: PartyRow[]; you: string | null; running: boolean; code?: string }) {
   const pals = usePals();
+  // A blocked member's name and picture are hidden here too.
+  const blocked = new Set(useBlocked().map((b) => b.key));
+  const rows = raw.map((r) => (blocked.has(memberKey(r.id)) ? { ...r, name: BLOCKED_NAME, emoji: BLOCKED_EMOJI, friendCode: undefined } : r));
   const stable = [...rows].sort((a, b) => (a.id < b.id ? -1 : 1));
   return (
     <View accessibilityRole="list" accessibilityLabel="Leaderboard" style={{ height: rows.length * ROW - 4 }}>
       {stable.map((r) => (
-        <BoardRow key={r.id} row={r} me={r.id === you} running={running} canAdd={r.id !== you && !!r.friendCode && !pals.some((p) => p.code === r.friendCode)} />
+        <BoardRow key={r.id} row={r} me={r.id === you} running={running} canAdd={r.id !== you && !!r.friendCode && !pals.some((p) => p.code === r.friendCode)} code={code} />
       ))}
     </View>
   );
 }
 
-function BoardRow({ row: r, me, running, canAdd }: { row: PartyRow; me: boolean; running: boolean; canAdd: boolean }) {
+function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: boolean; running: boolean; canAdd: boolean; code?: string }) {
   const c = usePlainColors();
   const reduce = useReduceMotion();
   const target = (r.rank - 1) * ROW;
@@ -44,8 +49,6 @@ function BoardRow({ row: r, me, running, canAdd }: { row: PartyRow; me: boolean;
   const line = r.stack !== null ? (r.out ? 'Out' : `${r.stack.toLocaleString('en-US')} chips`) : r.points.length > 0 ? `Last game +${r.points[r.points.length - 1]}` : 'Ready';
   return (
     <Animated.View
-      accessible
-      accessibilityRole="text"
       accessibilityLabel={`${r.rank}. ${r.name}${me ? ', you' : ''}. ${r.total} points${running ? `, plus ${r.provisional} if this game ended now` : ''}. ${line}.`}
       style={[
         {
@@ -70,6 +73,14 @@ function BoardRow({ row: r, me, running, canAdd }: { row: PartyRow; me: boolean;
       <Text maxFontSizeMultiplier={1.2} style={{ width: 20, textAlign: 'center', fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'], color: r.rank === 1 ? c.goldInk : c.tertiaryLabel }}>
         {r.rank}
       </Text>
+      {/* Another member's face and name open Report and Block (App Store guideline 1.2). */}
+      <Pressable
+        disabled={me || !code}
+        accessibilityRole="button"
+        accessibilityLabel={`${r.name}: report or block`}
+        onPress={() => code && openPlayerMenu({ key: memberKey(r.id), name: r.name, emoji: r.emoji, where: 'party', code, playerId: r.id }, r.name)}
+        style={{ flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}
+      >
       <Avatar emoji={r.emoji} size={36} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
@@ -88,6 +99,7 @@ function BoardRow({ row: r, me, running, canAdd }: { row: PartyRow; me: boolean;
           {line}
         </Text>
       </View>
+      </Pressable>
       {r.move !== 0 && (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <Icon name={r.move > 0 ? 'arrowtriangle.up.fill' : 'arrowtriangle.down.fill'} size={10} color={r.move > 0 ? c.green : c.red} />

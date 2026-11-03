@@ -25,6 +25,7 @@
       { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
       { "name": "FRIEND_CARD", "class_name": "FriendCard" },
       { "name": "BLACKJACK_ROOM", "class_name": "BlackjackRoom" },
+      { "name": "REPORT_BOX", "class_name": "ReportBox" },
     ],
   },
   // Production already recorded v3 without the classes below ever being created, so they are all made in v4.
@@ -38,6 +39,8 @@
     { "tag": "v5", "deleted_classes": ["TwinShare"] },
     // Blackjack tables with friends, one per table.
     { "tag": "v6", "new_sqlite_classes": ["BlackjackRoom"] },
+    // Player reports (App Store guideline 1.2), one instance named "reports".
+    { "tag": "v7", "new_sqlite_classes": ["ReportBox"] },
   ],
   "observability": { "enabled": true },
 }

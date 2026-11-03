@@ -27,7 +27,8 @@ import { deviceId } from './device';
 import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { markPlayedToday } from './streak';
-import { save } from './storage';
+import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
+import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
 
@@ -67,7 +68,7 @@ function set(next: Session | null): void {
   publish({
     mode: next?.mode ?? null,
     code: next?.code ?? null,
-    game: !next?.game ? null : next.mode === 'local' ? redactForDevice(next.game, me) : next.game,
+    game: !next?.game ? null : maskBlocked(next.mode === 'local' ? redactForDevice(next.game, me) : next.game),
   });
   schedule();
   noteDay(state.game);
@@ -76,6 +77,11 @@ function set(next: Session | null): void {
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => save(KEY, session), next ? 600 : 0);
 }
+
+// Blocking or unblocking someone redraws the table at once.
+subscribe(BLOCKED_KEY, () => {
+  if (session?.game) publish({ game: maskBlocked(session.mode === 'local' ? redactForDevice(session.game, me) : session.game) });
+});
 
 /**
  * Keeps your bubble effect and card back on your seat (the web's `syncLook()`): a table you just opened or joined
@@ -176,6 +182,13 @@ function onServerMessage(msg: ServerMessage): void {
     }
     const seated = msg.game.players.some((p) => p.deviceId === me);
     const joining = !!session.joining && !seated;
+    // You blocked this table's host: you aren't seated at their table.
+    const host = msg.game.players.find((p) => p.deviceId === msg.game.hostDeviceId);
+    if (joining && host && isBlocked(seatKey(host))) {
+      leaveTable();
+      notify("You've blocked this table's host, so you can't join their table.");
+      return;
+    }
     set({ ...session, game: msg.game, joining });
     // Arrived from the join screen: take a seat.
     if (joining && msg.game.status !== 'ended') sendJoin();

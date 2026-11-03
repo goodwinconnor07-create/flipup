@@ -12,6 +12,8 @@ import { me as myDevice, dispatch } from '@/state/session';
 import { usePlainColors } from '@/theme';
 
 import { haptic } from '../haptics';
+import { openPlayerMenu } from '../player-menu';
+import { seatKey } from '@/state/blocks';
 import { ThemedText } from '../themed-text';
 import { bubblePop, MoveBubble, Thread, TypingBubble } from './bubbles';
 import { Count } from './count';
@@ -199,6 +201,8 @@ function SeatPod({
   // A move whose talk has run its course stays hidden, so it doesn't look like they moved again.
   const hush = !!hand && !!quiet && quiet === moveSig(hand.number, last);
   // Once the hand is over, the host can tap a bot's face-down cards to turn them over.
+  // Another person (not a bot, not you) at an online table can be reported or blocked.
+  const other = !player.bot && !!game.code && !!player.deviceId && player.deviceId !== myDevice;
   const canPeek = host && !!hand?.result && player.bot && !!seat && !seat.shown && seat.cards.length === 0;
   const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) }, () => null)) : [];
   // A seat's share of the row, for wrapping its talk.
@@ -206,25 +210,31 @@ function SeatPod({
   return (
     <Pressable
       accessibilityLabel={`${player.name}${player.bot ? ', a bot' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
-      accessibilityHint={canPeek ? 'Shows their cards' : host ? 'Options for this player' : undefined}
-      disabled={!host}
+      accessibilityHint={canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
+      disabled={!host && !other}
       onPress={() => {
         haptic.tap();
-        // After a hand, the host's tap turns a bot's cards over; otherwise it offers to remove the player.
+        // After a hand, the host's tap turns a bot's cards over.
         if (canPeek && hand) return dispatch({ type: 'revealBots', hand: hand.number, playerId: player.id });
         const inHand = !!seat && !!hand && !hand.result;
-        Alert.alert(player.name, `${chips(player.stack)} chips${player.bot ? ' · Bot' : ''}`, [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove from table',
-            style: 'destructive',
-            onPress: () =>
-              Alert.alert(`Remove ${player.name}?`, inHand ? 'Their hand is folded and they leave the table.' : 'They leave the table with their chips.', [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'remove', playerId: player.id }) },
-              ]),
-          },
-        ]);
+        const remove = host
+          ? [
+              {
+                text: 'Remove from table',
+                style: 'destructive' as const,
+                onPress: () =>
+                  Alert.alert(`Remove ${player.name}?`, inHand ? 'Their hand is folded and they leave the table.' : 'They leave the table with their chips.', [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'remove', playerId: player.id }) },
+                  ]),
+              },
+            ]
+          : [];
+        const info = `${chips(player.stack)} chips${player.bot ? ' · Bot' : ''}`;
+        const key = seatKey(player);
+        // Another person at an online table: Report and Block (App Store guideline 1.2), and the host's Remove.
+        if (other && key && game.code) return openPlayerMenu({ key, name: player.name, emoji: player.emoji, where: 'table', code: game.code, playerId: player.id }, player.name, info, remove);
+        Alert.alert(player.name, info, [{ text: 'Cancel', style: 'cancel' }, ...remove]);
       }}
       style={{ alignItems: 'center' }}
     >

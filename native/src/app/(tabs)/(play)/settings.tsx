@@ -7,6 +7,7 @@ import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { YouSettings } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
+import { useBlocked } from '@/state/blocks';
 import { usePremium } from '@/state/premium';
 import { ON_SALE, restorePremium, useStore } from '@/state/purchase';
 import { spacing, useColors } from '@/theme';
@@ -22,6 +23,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
+  const blocked = useBlocked();
   const store = useStore();
   const restore = async () => {
     if (await restorePremium()) {
@@ -74,6 +76,10 @@ export default function SettingsScreen() {
           />
         </Section>
       )}
+
+      <Section footer="To report or block someone, tap their seat at a table or their row on a party board.">
+        <Row title="Blocked players" detail={blocked.length ? String(blocked.length) : undefined} icon={{ symbol: 'hand.raised.slash.fill', color: colors.red as string }} onPress={() => router.push('/blocked')} />
+      </Section>
 
       <Section header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
         <Row title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />

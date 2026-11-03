@@ -27,12 +27,16 @@ import {
   createBlackjack,
   type BjInvite,
   type CreateBjResponse,
+  newId,
+  parseReport,
 } from '../src/game';
+import { emailReport, type StoredReport } from './reports';
 
 export { TableRoom } from './room';
 export { PartyRoom } from './party';
 export { FriendCard } from './friendCard';
 export { BlackjackRoom } from './blackjack';
+export { ReportBox } from './reports';
 
 const MAX_BODY_CHARS = 16 * 1024;
 
@@ -291,8 +295,24 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
   return result.ok ? json(result.view) : json({ error: result.error }, result.error.startsWith('No party') ? 404 : 400);
 }
 
+/** POST /api/reports: a player reports someone at their table or party. Stored, then emailed to support. */
+async function reportRoute(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  if (limited(request, 'report', 10, 60 * 60_000)) return json({ error: 'Too many reports. Try again later.' }, 429);
+  const report = parseReport(await readJson(request));
+  if (!report) return json({ error: "That report isn't complete." }, 400);
+  const found =
+    report.where === 'table'
+      ? await env.TABLE_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId)
+      : await env.PARTY_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId);
+  if (!found) return json({ error: "We couldn't find that player at your table." }, 404);
+  const stored: StoredReport = { ...report, id: newId(10), at: Date.now(), found };
+  if (!(await env.REPORT_BOX.getByName('reports').add(stored))) return json({ error: "You've sent a lot of reports today. We'll look at those first." }, 429);
+  ctx.waitUntil(emailReport(env, stored));
+  return json({ ok: true }, 201);
+}
+
 export default {
-  async fetch(request, env): Promise<Response> {
+  async fetch(request, env, ctx): Promise<Response> {
     const { pathname, search } = new URL(request.url);
 
     if (pathname === '/api/friends' || pathname.startsWith('/api/friends/')) return friendRoute(request, env, pathname, search);
@@ -306,6 +326,7 @@ export default {
     }
     if (pathname === '/api/parties' || pathname.startsWith('/api/parties/')) return partyRoute(request, env, pathname, search);
 
+    if (pathname === '/api/reports') return request.method === 'POST' ? reportRoute(request, env, ctx) : json({ error: 'Use POST.' }, 405);
     if (pathname === '/api/health') return json({ ok: true });
     if (pathname === '/api/tables') {
       return request.method === 'POST' ? createTableRoute(request, env) : json({ error: 'Use POST.' }, 405);

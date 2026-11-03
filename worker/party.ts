@@ -65,6 +65,14 @@ export class PartyRoom extends DurableObject<Env> {
     return true;
   }
 
+  /** RPC: who a report is about (a member of this party, reported by another member). Never sent to a phone. */
+  async reportee(memberId: string, reporter: string): Promise<{ name: string; emoji: string; deviceId: string } | null> {
+    const data = await this.load();
+    const m = data?.members.find((x) => x.id === memberId);
+    if (!data || !m || !data.members.some((x) => x.deviceId === reporter)) return null;
+    return { name: m.name, emoji: m.emoji, deviceId: m.deviceId };
+  }
+
   /** RPC: what this phone sees of the party. */
   async view(code: string, deviceId: string | null): Promise<PartyView | null> {
     const data = await this.load();

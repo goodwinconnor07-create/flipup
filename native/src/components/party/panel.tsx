@@ -164,7 +164,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
           <CodeTiles code={view.code} />
           <PlaylistChips games={view.settings.games} round={-1} />
           <SectionTitle text={`In the party · ${view.members.length}`} />
-          <PartyBoard rows={rows} you={view.you} running={false} />
+          <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           {host && <Button variant="party" tint="green" size="lg" title="Start the party" loading={busy} onPress={() => void act(() => startParty(view.code))} />}
         </>
       )}
@@ -172,7 +172,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
       {view.status === 'playing' && (
         <>
           <GameHeader eyebrow={`Game ${view.round + 1} of ${total}`} variant={current} line="Standings update after every hand." />
-          <PartyBoard rows={rows} you={view.you} running={!!view.live} />
+          <PartyBoard rows={rows} you={view.you} running={!!view.live} code={code} />
           {view.table && view.you && <Button variant="party" tint="blue" size="lg" title={place === 'sheet' ? 'Back to the table' : 'Go to the table'} onPress={goToTable} />}
         </>
       )}
@@ -180,7 +180,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
       {view.status === 'between' && (
         <>
           <GameHeader eyebrow={`Up next · game ${view.round + 2} of ${total}`} variant={next} line={`Game ${view.round + 1} is done. The next one starts in ${seconds ?? PARTY_BREAK_SECONDS}s.`} />
-          <PartyBoard rows={rows} you={view.you} running={false} />
+          <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           {host && <Button variant="party" tint="blue" size="lg" title="Start next game now" loading={busy} onPress={() => void act(() => skipBreak(view.code))} />}
         </>
       )}
@@ -196,7 +196,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
             </ThemedText>
             <ThemedText tone="tertiaryLabel">After {total} games.</ThemedText>
           </View>
-          <PartyBoard rows={rows} you={view.you} running={false} />
+          <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           <PlaylistChips games={view.settings.games} round={total} />
           <Button variant="party" tint="blue" size="lg" title="Back to the Party tab" onPress={home} />
         </>

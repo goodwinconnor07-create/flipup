@@ -33,3 +33,4 @@ export * from './roulette';
 export * from './blackjack';
 export * from './clock';
 export * from './streak';
+export * from './reports';

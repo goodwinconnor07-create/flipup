@@ -65,6 +65,17 @@ export class TableRoom extends DurableObject<Env> {
     };
   }
 
+  /**
+   * RPC: who a report is about, checked against the table: their seat, and whether the reporter sits here too.
+   * Never sent to a phone; it goes only into the stored report.
+   */
+  async reportee(playerId: string, reporter: string): Promise<{ name: string; emoji: string; deviceId: string | null; bot: boolean } | null> {
+    const game = await this.load();
+    const p = game?.players.find((x) => x.id === playerId);
+    if (!game || !p || !game.players.some((x) => x.deviceId === reporter)) return null;
+    return { name: p.name, emoji: p.emoji, deviceId: p.deviceId, bot: p.bot };
+  }
+
   /** WebSocket upgrade, forwarded by the Worker from /api/tables/:code/ws?device=… */
   async fetch(request: Request): Promise<Response> {
     if (request.headers.get('Upgrade') !== 'websocket') return new Response('Expected a WebSocket', { status: 426 });

@@ -33,6 +33,13 @@ export function save<T>(key: string, value: T | null): void {
   listeners.get(key)?.forEach((fn) => fn());
 }
 
+/** Calls `fn` whenever `key` is saved. Returns the way to stop. */
+export function subscribe(key: string, fn: Listener): () => void {
+  if (!listeners.has(key)) listeners.set(key, new Set());
+  listeners.get(key)!.add(fn);
+  return () => listeners.get(key)?.delete(fn);
+}
+
 /** A stored value that redraws whoever reads it when it changes. */
 export function useStored<T>(key: string, fallback: T): T {
   return useSyncExternalStore(

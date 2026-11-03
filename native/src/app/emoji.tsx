@@ -24,7 +24,7 @@ export default function EmojiSheet() {
   const custom = !(EMOJIS as readonly string[]).includes(profile.emoji);
   const pick = (emoji: string) => {
     haptic.select();
-    saveProfile({ name: profile.name, emoji });
+    saveProfile({ emoji });
   };
   return (
     <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.lg }}>

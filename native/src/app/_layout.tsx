@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { useColors, usePlainColors } from '@/theme';
 
@@ -16,6 +17,8 @@ const applyAppearance = (a: AppearancePref) => {
   }
 };
 applyAppearance(loadAppearance());
+// Connect to the App Store at launch: purchases that finish later still land, and Premium comes back on its own.
+void startStore();
 
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
 // grab handle, dismissed by a swipe down. Each tab has its own stack inside (see (tabs)/*/_layout.tsx).
@@ -46,13 +49,15 @@ export default function RootLayout() {
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* The fade is short because the table's own DealWipe does the moving. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, title: 'Game' }} />
-        <Stack.Screen name="premium" options={{ ...sheet, title: 'FlipUp Premium' }} />
+        <Stack.Screen name="premium" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'FlipUp Premium' }} />
         <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />
         <Stack.Screen name="table-theme" options={{ ...sheet, title: 'Table theme' }} />
         <Stack.Screen name="table-settings" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Table settings' }} />
         <Stack.Screen name="hand-rankings" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand rankings' }} />
         <Stack.Screen name="table-log" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand log' }} />
+        <Stack.Screen name="card-packs" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Card packs' }} />
+        <Stack.Screen name="chat-bubbles" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Chat bubbles' }} />
         <Stack.Screen name="emoji" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Your emoji' }} />
         <Stack.Screen name="streak" options={{ ...sheet, title: 'Daily streak' }} />
         <Stack.Screen name="code-entry" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Code' }} />

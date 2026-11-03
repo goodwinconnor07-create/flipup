@@ -7,6 +7,8 @@ import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { YouSettings } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
+import { usePremium } from '@/state/premium';
+import { ON_SALE, restorePremium, useStore } from '@/state/purchase';
 import { spacing, useColors } from '@/theme';
 
 import { APP_INFO } from '../../../../appInfo';
@@ -19,6 +21,14 @@ import { APP_INFO } from '../../../../appInfo';
 export default function SettingsScreen() {
   const colors = useColors();
   const [deleting, setDeleting] = useState(false);
+  const premium = usePremium();
+  const store = useStore();
+  const restore = async () => {
+    if (await restorePremium()) {
+      haptic.success();
+      Alert.alert('Premium is back', 'Thanks for backing FlipUp.');
+    } else Alert.alert(store.error ? "Couldn't reach the App Store" : 'Nothing to restore', store.error ?? 'This Apple Account hasn’t bought FlipUp Premium.');
+  };
   const open = (url: string) => void openBrowserAsync(url).catch(() => Linking.openURL(url));
 
   const run = async () => {
@@ -52,6 +62,18 @@ export default function SettingsScreen() {
     <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }}>
       <Stack.Screen options={{ title: 'Settings' }} />
       <YouSettings />
+
+      {ON_SALE && (
+        <Section header="FlipUp Premium" footer={premium ? 'Unlocked on this phone.' : 'Bought Premium before, or on another iPhone? Restore brings it back.'}>
+          <Row
+            title={store.busy ? 'Restoring…' : 'Restore Purchases'}
+            icon={{ symbol: 'arrow.clockwise', color: colors.gold as string }}
+            chevron={false}
+            trailing={store.busy ? <ActivityIndicator /> : undefined}
+            onPress={store.busy ? undefined : () => void restore()}
+          />
+        </Section>
+      )}
 
       <Section header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
         <Row title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />

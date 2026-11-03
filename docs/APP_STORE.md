@@ -79,7 +79,7 @@ you have a restore mechanism for any restorable in-app purchases."
 - Premium is the non-consumable `flipup.premium.unlock`, sold through StoreKit (`react-native-iap` or
   `expo-iap`, whichever supports SDK 58 when we get there). The price shown comes from StoreKit, never a
   hard-coded "$9".
-- A Restore Purchases button on the Premium sheet and in Settings.
+- A Restore Purchases button on the Premium sheet and in Settings. Done in the app (Phase 5, step 6, `expo-iap`, `native/src/state/purchase.ts`).
 - The stand-in `purchasePremium()` (always succeeds) and `restorePurchase()` never ship in the native build.
 - Premium never buys chips. Chips can't be bought at all (also 5.3.3).
 - Recommended: the server checks a signed StoreKit 2 transaction before honouring a Premium bubble, card pack or
@@ -334,7 +334,7 @@ Native build:
    host needs the unlock; people joining by code don't. The ad unlock is checked by the server.
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
-5. Settings: Privacy Policy and Support links (from `native/appInfo.ts`), the support email, and "Delete my data". Done in the app (Phase 5, step 5); Restore Purchases joins it in step 6.
+5. Settings: Privacy Policy and Support links (from `native/appInfo.ts`), the support email, and "Delete my data". Done in the app (Phase 5, step 5); Restore Purchases joined it in step 6.
 6. Report and Block on a player's seat and on party leaderboard rows.
 7. Camera permission text for the QR scanner (done in `app.config.ts`), and a clear message if it's denied.
 8. No web views of the web app, native navigation and sheets, haptics (4.2).

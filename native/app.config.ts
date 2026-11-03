@@ -59,6 +59,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    'expo-iap',
     ['expo-build-properties', { ios: { deploymentTarget: APP_INFO.iosDeploymentTarget } }],
     [
       'expo-splash-screen',

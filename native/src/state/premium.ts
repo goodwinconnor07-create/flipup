@@ -1,13 +1,17 @@
-import { save, useStored } from './storage';
+import { read, save, useStored } from './storage';
 
 const KEY = 'flipup.premium';
 
 /**
- * Whether this phone has FlipUp Premium. Phase 5 step 6 sets it from a StoreKit purchase or restore
- * (APP_INFO.premiumProductId); until then nothing sets it.
+ * Whether this phone has FlipUp Premium. Set only from a StoreKit purchase or restore of
+ * `APP_INFO.premiumProductId` (`state/purchase.ts`); Delete my data keeps it, since Apple keeps the record.
  */
 export function usePremium(): boolean {
   return useStored<boolean>(KEY, false) === true;
+}
+
+export function hasPremium(): boolean {
+  return read<boolean>(KEY, false) === true;
 }
 
 export function setPremium(on: boolean): void {

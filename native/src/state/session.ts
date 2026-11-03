@@ -25,6 +25,7 @@ import { createOnlineTable } from './api';
 import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
 import { isFast } from './prefs';
+import { wornLook } from './profile';
 import { markPlayedToday } from './streak';
 import { save } from './storage';
 
@@ -70,9 +71,27 @@ function set(next: Session | null): void {
   });
   schedule();
   noteDay(state.game);
+  syncLook();
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => save(KEY, session), next ? 600 : 0);
+}
+
+/**
+ * Keeps your bubble effect and card back on your seat (the web's `syncLook()`): a table you just opened or joined
+ * doesn't know them yet, and picking a new one mid-game should show at once. Sent once per table and look.
+ */
+let lookSent = '';
+export function syncLook(): void {
+  const game = session?.game;
+  const mine = game?.players.find((p) => p.deviceId === me);
+  if (!game || !mine || game.status === 'ended') return;
+  const want = wornLook();
+  const key = `${game.id}:${want.bubble ?? ''}:${want.cardPack ?? ''}`;
+  if (((mine.bubble ?? '') === (want.bubble ?? '') && (mine.cardPack ?? '') === (want.cardPack ?? '')) || lookSent === key) return;
+  lookSent = key;
+  // After this update has gone out, so a bots-only table doesn't change inside its own set().
+  setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
 }
 
 /** A finished hand you were dealt into counts today toward the daily streak (once per hand, as on the web). */

@@ -16,7 +16,7 @@ import { fetchTableInfo } from '@/state/api';
 import { joinParty, readParty } from '@/state/party';
 import { useProfile } from '@/state/profile';
 import { joinOnlineTable } from '@/state/session';
-import { radius, spacing, useColors } from '@/theme';
+import { radius, spacing, useColors, useShadows } from '@/theme';
 
 /** The code inside a scanned QR: the join link ends in it (a table's or a party's), or the text is just the code (the web's `codeFromScan`). */
 function codeFromScan(text: string): string | null {
@@ -150,6 +150,7 @@ export default function JoinTab() {
 /** The table a code found: its game, the host, who's sitting there, and Sit down (or why you can't). */
 function TableCard({ info, onSit, onBack }: { info: TableInfo; onSit: () => void; onBack: () => void }) {
   const colors = useColors();
+  const shadows = useShadows();
   const game = variantInfo(info.settings.variant);
   const people = info.players.filter((p) => !p.bot).length;
   const bots = info.players.length - people;
@@ -157,7 +158,7 @@ function TableCard({ info, onSit, onBack }: { info: TableInfo; onSit: () => void
   const over = info.status === 'ended';
   return (
     <View style={{ gap: spacing.md }}>
-      <View style={{ padding: spacing.md, gap: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}>
+      <View style={{ padding: spacing.md, gap: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <GameThumb variant={game.id} size={56} />
           <View style={{ flex: 1, gap: 2 }}>

@@ -8,6 +8,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { dispatch, me as myDevice } from '@/state/session';
 import { minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
+import { brandTint } from '../brand-tint';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
@@ -28,13 +29,15 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
   const c = usePlainColors();
   const look: Record<Tone, { bg: string; ink: string }> = {
     fold: { bg: c.redBg, ink: c.redInk },
-    green: { bg: colors.green as string, ink: '#ffffff' },
+    // Call and Check: the plain high-contrast button (white on a dark page, black on a light one). Raise is the
+    // brand violet and Fold stays red: the palette has two colours, and the table spends them on these.
+    green: { bg: colors.label as string, ink: colors.background as string },
     blue: { bg: colors.accent as string, ink: '#ffffff' },
     dark: { bg: colors.label as string, ink: colors.background as string },
     pre: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
     preOn: { bg: colors.accent as string, ink: '#ffffff' },
     quietFold: { bg: colors.cell as string, ink: c.redInk },
-    quietCall: { bg: colors.cell as string, ink: colors.green as string },
+    quietCall: { bg: colors.cell as string, ink: colors.label as string },
   };
   return (
     <PressableScale
@@ -272,7 +275,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         </Pressable>
         <View style={{ flex: 1 }}>
           <Host matchContents={{ vertical: true }} style={{ alignSelf: 'stretch' }}>
-            <Slider value={to} min={o.minTo} max={o.maxTo} step={step} onValueChange={(v) => setTo(v + step > o.maxTo ? o.maxTo : Math.round(v))} />
+            <Slider value={to} min={o.minTo} max={o.maxTo} step={step} onValueChange={(v) => setTo(v + step > o.maxTo ? o.maxTo : Math.round(v))} modifiers={brandTint} />
           </Host>
         </View>
         <Pressable accessibilityRole="button" accessibilityLabel="More" disabled={to >= o.maxTo} onPress={() => nudge(1)} hitSlop={10} style={{ opacity: to >= o.maxTo ? 0.3 : 1 }}>

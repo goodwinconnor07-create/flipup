@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
 import { RANKINGS } from '@design/handRankings';
+import { SheetScroll } from '@/components/sheet-scroll';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { spacing, useColors } from '@/theme';
@@ -10,7 +11,7 @@ import { spacing, useColors } from '@/theme';
 export default function HandRankings() {
   const colors = useColors();
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Hand rankings' }} />
       <ThemedText variant="subhead" tone="tertiaryLabel" style={{ marginBottom: spacing.xs }}>
         Best at the top. You make the best five-card hand from your two cards and the five on the board.
@@ -32,6 +33,6 @@ export default function HandRankings() {
           </View>
         </View>
       ))}
-    </ScrollView>
+    </SheetScroll>
   );
 }

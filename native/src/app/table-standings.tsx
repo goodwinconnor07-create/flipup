@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Avatar } from '@/components/avatar';
 import { ThemedText } from '@/components/themed-text';
 import { net, standings } from '@/engine';
@@ -16,7 +17,7 @@ export default function TableStandings() {
   const game = useTable().game;
   if (!game) return null;
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Standings' }} />
       <ThemedText variant="subhead" tone="tertiaryLabel" style={{ marginBottom: spacing.xs }}>
         Chips now, minus everything bought in for.
@@ -50,6 +51,6 @@ export default function TableStandings() {
           </View>
         );
       })}
-    </ScrollView>
+    </SheetScroll>
   );
 }

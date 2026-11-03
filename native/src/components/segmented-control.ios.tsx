@@ -2,6 +2,7 @@ import { Host } from '@expo/ui';
 import { Picker, Text } from '@expo/ui/swift-ui';
 import { pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';
 
+import { brandTint } from './brand-tint';
 import { haptic } from './haptics';
 import type { SegmentedControlProps } from './segmented-control.types';
 
@@ -16,7 +17,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange, l
           haptic.select();
           onChange(next);
         }}
-        modifiers={[pickerStyle('segmented')]}
+        modifiers={[pickerStyle('segmented'), ...brandTint]}
       >
         {options.map((o) => (
           <Text key={o.value} modifiers={[tag(o.value)]}>

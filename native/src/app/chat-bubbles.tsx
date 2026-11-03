@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { ScrollView } from 'react-native';
 
+
+import { SheetScroll } from '@/components/sheet-scroll';
 import { LookGrid } from '@/components/premium/look-grid';
 import { MoveBubble } from '@/components/table/bubbles';
 import { ThemedText } from '@/components/themed-text';
@@ -21,7 +22,7 @@ export default function ChatBubbles() {
     ...BUBBLE_STYLES.map((b) => ({ id: b.id, name: b.name, note: b.note, locked: !premium && !b.free, preview: <MoveBubble text="Raise 40" tone="blue" fx={b.id} big /> })),
   ];
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Chat bubbles' }} />
       <ThemedText tone="tertiaryLabel">Your moves and messages show in this colour for everyone at the table.</ThemedText>
       <LookGrid
@@ -32,6 +33,6 @@ export default function ChatBubbles() {
           syncLook();
         }}
       />
-    </ScrollView>
+    </SheetScroll>
   );
 }

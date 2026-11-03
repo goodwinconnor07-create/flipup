@@ -1,6 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Button } from '@/components/button';
 import { GamePicture } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
@@ -22,7 +23,7 @@ export default function GameSheet() {
     router.push({ pathname: '/setup', params: { mode, variant } });
   };
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, gap: spacing.lg }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, gap: spacing.lg }}>
       <Stack.Screen options={{ title: info.name, headerShown: false }} />
       {/* The game's picture, with How to Play on it: a real hand of this game, recorded at the table. */}
       <PressableScale
@@ -71,6 +72,6 @@ export default function GameSheet() {
           {variantNote(variant)}
         </ThemedText>
       </View>
-    </ScrollView>
+    </SheetScroll>
   );
 }

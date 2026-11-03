@@ -1,14 +1,14 @@
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
-import { gameLook } from '@design/gameArt';
 import { variantInfo } from '@/engine';
 import type { GameLine } from '@/state/record';
-import { gradient, radius, spacing, useColors } from '@/theme';
+import { brand, cardColors, radius, spacing, useColors, useShadows } from '@/theme';
 
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 
@@ -25,6 +25,7 @@ function ago(at: number): string {
 /** Your last game: the game, where you finished and when, and a tap back into it. */
 export function LastGame({ line }: { line: GameLine }) {
   const colors = useColors();
+  const shadows = useShadows();
   const info = variantInfo(line.variant);
   return (
     <PressableScale
@@ -34,7 +35,7 @@ export function LastGame({ line }: { line: GameLine }) {
         haptic.tap();
         router.push(`/game/${line.variant}`);
       }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.cell }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}
     >
       <GameThumb variant={line.variant} size={48} />
       <View style={{ flex: 1 }}>
@@ -56,7 +57,6 @@ export function LastGame({ line }: { line: GameLine }) {
 
 /** Before your first hand: Texas Hold'em's How to Play, step by step on the app's own table. */
 export function FirstHand() {
-  const [top, bottom] = gameLook('holdem').card;
   return (
     <PressableScale
       accessibilityRole="button"
@@ -65,10 +65,10 @@ export function FirstHand() {
         haptic.tap();
         router.push('/how-to-play/holdem');
       }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', ...gradient(`linear-gradient(150deg, ${top} 0%, ${bottom} 100%)`) }}
     >
+      <LivingCard colors={cardColors.violet} radius={radius.lg} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md }}>
       <View style={{ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
-        <Icon name="play.fill" size={22} color={bottom} />
+        <Icon name="play.fill" size={22} color={brand.violet} />
       </View>
       <View style={{ flex: 1 }}>
         <ThemedText variant="title3" tone="onColor">
@@ -79,6 +79,7 @@ export function FirstHand() {
         </ThemedText>
       </View>
       <Icon name="chevron.right" size={16} color="#ffffff" />
+      </LivingCard>
     </PressableScale>
   );
 }

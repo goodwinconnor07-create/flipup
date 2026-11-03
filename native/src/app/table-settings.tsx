@@ -1,7 +1,8 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
 
+
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Button } from '@/components/button';
 import { SettingsFields } from '@/components/settings-fields';
 import { ThemedText } from '@/components/themed-text';
@@ -19,7 +20,7 @@ export default function TableSettings() {
     if (dispatch({ type: 'settings', settings }) === null) router.back();
   };
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Table settings' }} />
       {t.game.status === 'playing' && (
         <ThemedText variant="subhead" tone="tertiaryLabel">
@@ -28,6 +29,6 @@ export default function TableSettings() {
       )}
       <SettingsFields settings={settings} onChange={setSettings} online={t.mode === 'online'} />
       <Button variant="primary" size="lg" title="Save" onPress={save} />
-    </ScrollView>
+    </SheetScroll>
   );
 }

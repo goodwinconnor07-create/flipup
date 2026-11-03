@@ -1,7 +1,7 @@
 import { Children, isValidElement, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { minTap, radius, spacing, useColors } from '@/theme';
+import { minTap, radius, spacing, useColors, useShadows } from '@/theme';
 
 import { haptic } from './haptics';
 import { Icon, type IconName } from './icon';
@@ -14,6 +14,7 @@ import { ThemedText } from './themed-text';
  */
 export function Section({ header, footer, children, inset = 60 }: { header?: string; footer?: string; children: ReactNode; /** Where the hairlines between rows start. */ inset?: number }) {
   const colors = useColors();
+  const shadows = useShadows();
   const rows = Children.toArray(children).filter(isValidElement);
   return (
     <View style={{ gap: spacing.xs }}>
@@ -22,6 +23,8 @@ export function Section({ header, footer, children, inset = 60 }: { header?: str
           {header}
         </ThemedText>
       )}
+      {/* The shadow on the outside, the clipping inside: iOS drops the shadow of a view that clips. */}
+      <View style={{ borderRadius: radius.sm, borderCurve: 'continuous', boxShadow: shadows.card }}>
       <View style={{ backgroundColor: colors.cell, borderRadius: radius.sm, borderCurve: 'continuous', overflow: 'hidden' }}>
         {rows.map((row, i) => (
           <View key={row.key ?? i}>
@@ -29,6 +32,7 @@ export function Section({ header, footer, children, inset = 60 }: { header?: str
             {i < rows.length - 1 && <View style={{ height: 0.5, marginLeft: inset, backgroundColor: colors.separator }} />}
           </View>
         ))}
+      </View>
       </View>
       {footer && (
         <ThemedText variant="footnote" tone="tertiaryLabel" style={{ paddingHorizontal: spacing.md }}>

@@ -5,7 +5,7 @@ import Svg, { Line, Path } from 'react-native-svg';
 import { tableStats, type TableStats } from '@train/tableStats';
 import { standings, type Game } from '@/engine';
 import { dispatch, me as myDevice, requestLogs, useTable } from '@/state/session';
-import { radius, spacing, useColors, usePlainColors } from '@/theme';
+import { radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { Button } from '../button';
@@ -109,10 +109,11 @@ export function Ended({ game, onLeave }: { game: Game; onLeave: () => void }) {
 /** A big number that counts up, on a flat cell. */
 function Tile({ label, value, suffix }: { label: string; value: number; suffix?: string }) {
   const colors = useColors();
+  const shadows = useShadows();
   const { width } = useWindowDimensions();
   const w = Math.floor((Math.min(width, 700) - spacing.md * 2 - spacing.sm) / 2);
   return (
-    <View accessible accessibilityLabel={`${label}: ${value}${suffix ?? ''}`} style={{ width: w, padding: spacing.md, gap: spacing.xxs, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.cell }}>
+    <View accessible accessibilityLabel={`${label}: ${value}${suffix ?? ''}`} style={{ width: w, padding: spacing.md, gap: spacing.xxs, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
         <Count value={value} style={{ fontSize: 40, lineHeight: 46, fontWeight: '800', color: colors.label }} />
         {suffix && (

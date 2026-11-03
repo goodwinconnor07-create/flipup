@@ -1,6 +1,7 @@
 import { Host, Switch as NativeSwitch } from '@expo/ui';
 import { labelsHidden } from '@expo/ui/swift-ui/modifiers';
 
+import { brandTint } from './brand-tint';
 import { haptic } from './haptics';
 
 /**
@@ -17,7 +18,7 @@ export function Switch({ value, onValueChange, label }: { value: boolean; onValu
           onValueChange(on);
         }}
         label={label}
-        modifiers={[labelsHidden()]}
+        modifiers={[labelsHidden(), ...brandTint]}
       />
     </Host>
   );

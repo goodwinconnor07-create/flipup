@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { LookGrid } from '@/components/premium/look-grid';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
@@ -31,7 +32,7 @@ export default function CardPacks() {
     ...CARD_PACKS.filter((p) => !p.venue).map((p) => ({ id: p.id, name: p.name, note: p.note, locked: !premium, preview: preview(p.id) })),
   ];
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Card packs' }} />
       <ThemedText tone="tertiaryLabel">Everyone at your table sees your pack on the back of your cards.</ThemedText>
       <LookGrid
@@ -42,6 +43,6 @@ export default function CardPacks() {
           syncLook();
         }}
       />
-    </ScrollView>
+    </SheetScroll>
   );
 }

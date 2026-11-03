@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
-import { party, radius, spacing, useColors } from '@/theme';
+import { party, radius, spacing, useColors, useShadows } from '@/theme';
 
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
@@ -33,6 +33,7 @@ export function GameRow() {
 
 function Tile({ variant, name, locked }: { variant: Variant; name: string; locked: boolean }) {
   const colors = useColors();
+  const shadows = useShadows();
   return (
     <PressableScale
       accessibilityRole="button"
@@ -44,7 +45,7 @@ function Tile({ variant, name, locked }: { variant: Variant; name: string; locke
       haptics={false}
       style={{ width: TILE, gap: spacing.xs }}
     >
-      <View>
+      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
         <GameThumb variant={variant} size={TILE} rounded={radius.lg} />
         {locked && (
           <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>

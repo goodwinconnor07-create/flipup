@@ -4,6 +4,7 @@ import { Alert, Text, View } from 'react-native';
 import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
 import { Icon } from '@/components/icon';
+import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
 import { TabScreen } from '@/components/tab-screen';
@@ -11,11 +12,9 @@ import { ThemedText } from '@/components/themed-text';
 import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, VARIANTS } from '@/engine';
 import { usePartyRef } from '@/state/party';
 import { useProfile } from '@/state/profile';
-import { gradient, party, radius, spacing, useColors, useShadows } from '@/theme';
+import { cardColors, party, ROUNDED, spacing, useColors } from '@/theme';
 
 const SHOWCASE = VARIANTS.slice(0, 6);
-/** The web's host card: blue to violet. */
-const HOST = `linear-gradient(150deg, #4aa3ff 0%, ${party.blue} 50%, #7b3df0 100%)`;
 
 /** The Party tab: one loud "Host a party" card and flat rows (your party, join one). Friends have their own tab. */
 export default function PartyTab() {
@@ -56,14 +55,13 @@ export default function PartyTab() {
 
 /** The one loud card: the first six games fanned over a blue-violet gradient, a heavy heading, and a darker action bar. */
 function HostCard({ onPress }: { onPress: () => void }) {
-  const shadow = useShadows();
   return (
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`Host a party. Play ${PARTY_MIN_GAMES} to ${PARTY_MAX_GAMES} mini games in a row. Set it up`}
       onPress={onPress}
-      style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', boxShadow: shadow.soft, ...gradient(HOST) }}
     >
+      <LivingCard colors={cardColors.violet}>
       <View style={{ padding: spacing.lg, paddingBottom: 0, gap: 6 }}>
         <View style={{ flexDirection: 'row', gap: 6 }}>
           {SHOWCASE.map((v, i) => (
@@ -72,7 +70,7 @@ function HostCard({ onPress }: { onPress: () => void }) {
             </View>
           ))}
         </View>
-        <Text maxFontSizeMultiplier={1.4} style={{ marginTop: spacing.sm, fontSize: 28, lineHeight: 31, fontWeight: '800', letterSpacing: -0.5, color: '#ffffff' }}>
+        <Text maxFontSizeMultiplier={1.4} style={{ marginTop: spacing.sm, fontFamily: ROUNDED, fontSize: 28, lineHeight: 32, fontWeight: '800', color: '#ffffff' }}>
           Host a party
         </Text>
         <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>
@@ -85,6 +83,7 @@ function HostCard({ onPress }: { onPress: () => void }) {
         </ThemedText>
         <Icon name="chevron.right" size={16} color="#ffffff" />
       </View>
+      </LivingCard>
     </PressableScale>
   );
 }

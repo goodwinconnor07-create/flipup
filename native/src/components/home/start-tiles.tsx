@@ -1,12 +1,13 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Text, View, type ViewStyle } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { usePals } from '@/state/pals';
 import { useProfile } from '@/state/profile';
-import { gradient, party, radius, ROUNDED, spacing, useShadows } from '@/theme';
+import { cardColors, ROUNDED, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
+import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
 
 /** Faces a bots table might seat (bots never wear a face from the profile picker). */
@@ -23,21 +24,17 @@ export function StartTiles() {
   while (friends.length < 3) friends.push('');
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-      <Tile title="Play with friends" line="Online table" faces={friends} colors={[party.pink, '#8b2cf5']} mode="friends" />
-      <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={[party.blue, '#3a2fd6']} mode="bots" />
+      <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} mode="friends" />
+      <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} mode="bots" />
     </View>
   );
 }
 
-function Tile({ title, line, faces, colors: [top, bottom], mode }: { title: string; line: string; faces: string[]; colors: [string, string]; mode: 'friends' | 'bots' }) {
-  const shadow = useShadows();
+function Tile({ title, line, faces, colors, mode }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; mode: 'friends' | 'bots' }) {
   return (
     <View style={{ flex: 1 }}>
-      <PressableTile
-        label={`${title}. ${line}`}
-        onPress={() => router.push({ pathname: '/setup', params: { mode } })}
-        style={{ height: 184, padding: spacing.md, justifyContent: 'space-between', borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', boxShadow: shadow.soft, borderBottomWidth: 4, borderBottomColor: party.edge, ...gradient(`linear-gradient(155deg, ${top} 0%, ${bottom} 100%)`) }}
-      >
+      <PressableTile label={`${title}. ${line}`} onPress={() => router.push({ pathname: '/setup', params: { mode } })}>
+        <LivingCard colors={colors} outerStyle={{ height: 184 }} style={{ flex: 1, padding: spacing.md, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {faces.map((f, i) => (
             <View
@@ -64,12 +61,13 @@ function Tile({ title, line, faces, colors: [top, bottom], mode }: { title: stri
             {line}
           </Text>
         </View>
+        </LivingCard>
       </PressableTile>
     </View>
   );
 }
 
-function PressableTile({ label, onPress, style, children }: { label: string; onPress: () => void; style: ViewStyle; children: ReactNode }) {
+function PressableTile({ label, onPress, children }: { label: string; onPress: () => void; children: ReactNode }) {
   return (
     <PressableScale
       accessibilityRole="button"
@@ -79,7 +77,6 @@ function PressableTile({ label, onPress, style, children }: { label: string; onP
         onPress();
       }}
       haptics={false}
-      style={style}
     >
       {children}
     </PressableScale>

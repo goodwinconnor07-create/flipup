@@ -2,6 +2,7 @@ import { Host } from '@expo/ui';
 import { Stepper as NativeStepper } from '@expo/ui/swift-ui';
 import { labelsHidden } from '@expo/ui/swift-ui/modifiers';
 
+import { brandTint } from './brand-tint';
 import { haptic } from './haptics';
 import type { StepperProps } from './stepper.types';
 
@@ -19,7 +20,7 @@ export function Stepper({ label, value, min, max, step = 1, onChange }: StepperP
           haptic.select();
           onChange(next);
         }}
-        modifiers={[labelsHidden()]}
+        modifiers={[labelsHidden(), ...brandTint]}
       />
     </Host>
   );

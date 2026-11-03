@@ -60,7 +60,9 @@ export function PressableScale({
         onPress?.(e);
       }}
     >
-      <Animated.View style={[{ flexGrow: 1 }, style, look]}>{children}</Animated.View>
+      {/* It fills the press area only when the caller lays that out (outerStyle). Growing always let iOS stretch a
+          capsule in a column that doesn't stretch it to the height of the whole scroll view (the invite ticket). */}
+      <Animated.View style={[outerStyle ? { flexGrow: 1 } : null, style, look]}>{children}</Animated.View>
     </Pressable>
   );
 }

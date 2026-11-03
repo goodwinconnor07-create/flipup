@@ -1,13 +1,14 @@
 import { Stack } from 'expo-router';
-import { ActivityIndicator, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, Share, Text, View } from 'react-native';
 
 import { SUIT_COLOUR } from '@design/gameArt';
+import { SheetScroll } from '@/components/sheet-scroll';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { cardsText, handLogText, rankLabel, suitOf, type Card } from '@/engine';
 import { me as myDevice, useTable } from '@/state/session';
-import { radius, spacing, useColors } from '@/theme';
+import { radius, spacing, useColors, useShadows } from '@/theme';
 
 const SYMBOL = { s: '♠', h: '♥', d: '♦', c: '♣' } as const;
 
@@ -33,8 +34,9 @@ function CardLine({ text, bold, tone }: { text: string; bold?: boolean; tone?: s
 
 function HandBlock({ title, lines, mine, share }: { title: string; lines: string[]; mine?: string[]; share?: number }) {
   const colors = useColors();
+  const shadows = useShadows();
   return (
-    <View style={{ gap: 4, padding: spacing.sm, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}>
+    <View style={{ gap: 4, padding: spacing.sm, borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card, backgroundColor: colors.cell }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32 }}>
         <ThemedText variant="headline" accessibilityRole="header" style={{ flex: 1 }}>
           {title}
@@ -69,7 +71,7 @@ export default function TableLog() {
   const live = game?.hand && !game.hand.result ? game.hand : null;
   const myLive = live?.seats.find((s) => s.playerId === me?.id)?.cards ?? [];
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Hand log' }} />
       {live && <HandBlock title={`Hand #${live.number} · now`} lines={live.log} mine={myLive} />}
       {logs === null ? (
@@ -79,6 +81,6 @@ export default function TableLog() {
       ) : (
         [...logs].reverse().map((l) => <HandBlock key={l.number} title={`Hand #${l.number}`} lines={l.lines} mine={me ? l.holes[me.id] : undefined} share={l.number} />)
       )}
-    </ScrollView>
+    </SheetScroll>
   );
 }

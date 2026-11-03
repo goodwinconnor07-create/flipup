@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { ScrollView, Text } from 'react-native';
+import { Text } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { ThemedText } from '@/components/themed-text';
@@ -12,7 +13,7 @@ export default function BlockedSheet() {
   const colors = useColors();
   const list = [...useBlocked()].sort((a, b) => b.at - a.at);
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Blocked players' }} />
       {list.length === 0 ? (
         <ThemedText tone="tertiaryLabel" style={{ textAlign: 'center', paddingTop: spacing.xl }}>
@@ -47,6 +48,6 @@ export default function BlockedSheet() {
           ))}
         </Section>
       )}
-    </ScrollView>
+    </SheetScroll>
   );
 }

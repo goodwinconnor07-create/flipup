@@ -1,6 +1,7 @@
 import { router, Stack } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { CodePad, useCode } from '@/components/code-pad';
 import { ThemedText } from '@/components/themed-text';
 import { joinParty } from '@/state/party';
@@ -24,7 +25,7 @@ export default function CodeEntry() {
     }
   });
   return (
-    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xxl, gap: spacing.lg }} bounces={false}>
+    <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xxl, gap: spacing.lg }} bounces={false}>
       {/* No nav bar: its title sat over this one and blurred it. The sheet's own title is the big one below. */}
       <Stack.Screen options={{ title: k.title, headerShown: false }} />
       <View style={{ gap: spacing.xxs }}>
@@ -36,6 +37,6 @@ export default function CodeEntry() {
         </ThemedText>
       </View>
       <CodePad state={state} label={k.label} />
-    </ScrollView>
+    </SheetScroll>
   );
 }

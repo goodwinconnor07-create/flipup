@@ -8,6 +8,7 @@ import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
+import { LivingCard } from '@/components/living-card';
 import { Menu } from '@/components/menu';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
@@ -15,9 +16,8 @@ import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
 import { answerRequest, useFriendBox, useMyUsername, usePals, type Pal } from '@/state/pals';
 import { useProfile } from '@/state/profile';
-import { gradient, party, radius, spacing, useColors, useShadows } from '@/theme';
+import { brand, cardColors, party, radius, spacing, useColors, useShadows } from '@/theme';
 
-const CARD = `linear-gradient(150deg, ${party.pink} 0%, #a23cf0 100%)`;
 
 /**
  * Friends: your username (how friends add you), the table invites and friend requests waiting for you, and your
@@ -25,6 +25,7 @@ const CARD = `linear-gradient(150deg, ${party.pink} 0%, #a23cf0 100%)`;
  */
 export default function FriendsTab() {
   const colors = useColors();
+  const shadows = useShadows();
   const profile = useProfile();
   const named = profile.name.trim().length > 0;
   const pals = usePals();
@@ -86,6 +87,7 @@ export default function FriendsTab() {
         <View style={{ gap: spacing.sm }}>
           <Heading text={pals.length ? `Your friends · ${pals.length}` : 'Your friends'} />
           {pals.length > 0 ? (
+            <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
             <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.cell }}>
               {pals.map((pal, i) => (
                 <Menu key={pal.code} fill label={`${pal.name}. Invite, profile`} title={pal.username ? `${pal.name} · @${pal.username}` : pal.name} sections={actions.sections(pal)}>
@@ -93,12 +95,13 @@ export default function FriendsTab() {
                 </Menu>
               ))}
             </View>
+            </View>
           ) : (
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel="Add a friend by their username"
               onPress={addFriend}
-              style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}
+              style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}
             >
               <View style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
                 <Icon name="person.badge.plus" size={28} color="#ffffff" />
@@ -150,9 +153,8 @@ function Heading({ text }: { text: string }) {
 
 /** Your username on a loud card with Share, or the button to choose one. */
 function UsernameCard({ username, onPress }: { username: string | null; onPress: () => void }) {
-  const shadow = useShadows();
   return (
-    <View style={{ padding: spacing.lg, gap: spacing.sm, borderRadius: radius.xl, borderCurve: 'continuous', boxShadow: shadow.soft, ...gradient(CARD) }}>
+    <LivingCard colors={cardColors.violet} style={{ padding: spacing.lg, gap: spacing.sm }}>
       <ThemedText variant="footnote" tone="onColor" style={{ textTransform: 'uppercase', fontWeight: '700', letterSpacing: 0.6, opacity: 0.85 }}>
         {username ? 'Your username' : 'Get found by friends'}
       </ThemedText>
@@ -169,7 +171,7 @@ function UsernameCard({ username, onPress }: { username: string | null; onPress:
         )}
         <Pill icon={username ? 'pencil' : 'plus'} label={username ? 'Change' : 'Choose'} onPress={onPress} />
       </View>
-    </View>
+    </LivingCard>
   );
 }
 
@@ -184,8 +186,8 @@ function Pill({ icon, label, onPress }: { icon: 'square.and.arrow.up' | 'pencil'
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#ffffff', borderBottomWidth: 3, borderBottomColor: party.edge }}
     >
-      <Icon name={icon} size={16} color="#a23cf0" />
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: '#a23cf0' }}>
+      <Icon name={icon} size={16} color={brand.violet} />
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: brand.violet }}>
         {label}
       </Text>
     </PressableScale>

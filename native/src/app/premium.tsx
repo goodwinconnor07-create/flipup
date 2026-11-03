@@ -1,9 +1,10 @@
 import { router, Stack } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect } from 'react';
-import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Linking, Pressable, View } from 'react-native';
 
 import { CARD_BACKS } from '@design/premiumLooks';
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { Icon, type IconName } from '@/components/icon';
@@ -50,7 +51,7 @@ export default function PremiumSheet() {
   };
 
   return (
-    <ScrollView style={gradient(`linear-gradient(180deg, ${night[0]}, ${night[1]})`)} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg }}>
+    <SheetScroll style={gradient(`linear-gradient(180deg, ${night[0]}, ${night[1]})`)} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg }}>
       <Stack.Screen options={{ title: 'FlipUp Premium' }} />
       <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()} style={({ pressed }) => ({ position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1, width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: pressed ? 0.6 : 1 })}>
         <Icon name="xmark" size={14} color="white" />
@@ -108,6 +109,6 @@ export default function PremiumSheet() {
       <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8, textDecorationLine: 'underline' }} onPress={() => open(APP_INFO.privacyUrl)}>
         Privacy policy
       </ThemedText>
-    </ScrollView>
+    </SheetScroll>
   );
 }

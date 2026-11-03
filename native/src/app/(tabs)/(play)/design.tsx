@@ -4,6 +4,7 @@ import { ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { GlassSurface } from '@/components/glass-surface';
+import { StatsPicture } from '@/components/home/share-card';
 import { InviteTicket } from '@/components/invite-ticket';
 import { Row, Section } from '@/components/grouped-list';
 import { PlayTile } from '@/components/play-tile';
@@ -36,6 +37,10 @@ export default function DesignSystem() {
       </View>
 
       <InviteTicket code="TZZWJ" link="https://gtoduel.online/party/TZZWJ" kind="party" share="Join my FlipUp party." />
+      {/* The picture Your poker shares (1080 × 1350 when saved). */}
+      <View style={{ width: 360, height: 450, alignSelf: 'center' }}>
+        <StatsPicture />
+      </View>
 
       <Section header="Appearance" footer="Auto follows the phone's light or dark setting.">
         <View style={{ padding: spacing.sm }}>

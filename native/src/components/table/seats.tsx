@@ -9,7 +9,7 @@ import Animated from 'react-native-reanimated';
 
 import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { me as myDevice, dispatch } from '@/state/session';
-import { usePlainColors } from '@/theme';
+import { usePlainColors, brand } from '@/theme';
 
 import { haptic } from '../haptics';
 import { openPlayerMenu } from '../player-menu';
@@ -309,7 +309,7 @@ function SeatTag({ c, won, odds, offline }: { c: ReturnType<typeof usePlainColor
       </Text>
     </Animated.View>
   );
-  if (won > 0) return tag(`w${won}`, `+${chips(won)}`, c.green, '#ffffff');
+  if (won > 0) return tag(`w${won}`, `+${chips(won)}`, c.gold, brand.goldInk);
   if (odds) return tag('o', pct(odds.win), c.contrast, c.onContrast);
   if (offline) return tag('off', 'Offline', c.goldBg, c.goldInk);
   return null;

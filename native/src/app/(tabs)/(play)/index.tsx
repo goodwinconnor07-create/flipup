@@ -20,7 +20,7 @@ import { usePartyRef } from '@/state/party';
 import { usePokerRecord } from '@/state/record';
 import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
-import { radius, spacing, useColors } from '@/theme';
+import { radius, spacing, useColors, useShadows } from '@/theme';
 
 /**
  * Home. Built the way game apps that feel native do it (Apple's Games app, Chess.com, Flighty): the big title with
@@ -49,9 +49,9 @@ export default function Home() {
         )}
         <StartTiles />
         {!banner && last && <LastGame line={last} />}
+        <GameRow />
         <FriendsStrip />
         {record.hands > 0 ? <PassportCard /> : <FirstHand />}
-        <GameRow />
         {!premium && <PremiumBanner />}
 
         {__DEV__ && (
@@ -79,6 +79,7 @@ function useHasBanner(): boolean {
 /** Premium, the way Flighty asks for Pro: a slim outlined banner, a badge, what it adds and a chevron. */
 function PremiumBanner() {
   const colors = useColors();
+  const shadows = useShadows();
   return (
     <PressableScale
       accessibilityRole="button"
@@ -87,7 +88,7 @@ function PremiumBanner() {
         haptic.tap();
         router.push('/premium');
       }}
-      style={{ gap: spacing.xxs, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 1.5, borderColor: colors.gold, backgroundColor: colors.goldBg }}
+      style={{ gap: spacing.xxs, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 1.5, borderColor: colors.gold, backgroundColor: colors.goldBg, boxShadow: shadows.card }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <View style={{ paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.gold }}>
@@ -110,6 +111,7 @@ function PremiumBanner() {
 /** The one clear next step, as on the web: a table you're still at (bots-only or online) with Rejoin, or your open party. */
 function TableBanner() {
   const colors = useColors();
+  const shadows = useShadows();
   const t = useTable();
   const game = t.game;
   const partyRef = usePartyRef();
@@ -126,7 +128,7 @@ function TableBanner() {
         haptic.tap();
         router.push(atTable ? '/table' : '/party-room');
       }}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: pressed ? colors.cellPressed : colors.cell })}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: pressed ? colors.cellPressed : colors.cell, boxShadow: shadows.card })}
     >
       <Text style={{ fontSize: 26 }} maxFontSizeMultiplier={1} accessible={false}>
         {info?.emoji ?? (atTable ? '🃏' : '🥳')}

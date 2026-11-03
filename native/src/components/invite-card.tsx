@@ -7,7 +7,7 @@ import { fetchTableInfo } from '@/state/api';
 import { dismissInvite } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { joinOnlineTable } from '@/state/session';
-import { party, radius, spacing, useColors } from '@/theme';
+import { party, radius, spacing, useColors, useShadows } from '@/theme';
 
 import { Avatar } from './avatar';
 import { Icon } from './icon';
@@ -17,6 +17,7 @@ import { ThemedText } from './themed-text';
 /** "Sam invited you to Crazy Pineapple", with Join (sits you down at their table) and a way to say no. */
 export function InviteCard({ invite }: { invite: BjInvite }) {
   const colors = useColors();
+  const shadows = useShadows();
   const profile = useProfile();
   const [busy, setBusy] = useState(false);
   const game = variantInfo(isVariant(invite.game) ? invite.game : 'holdem');
@@ -44,7 +45,7 @@ export function InviteCard({ invite }: { invite: BjInvite }) {
     }
   };
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}>
       <Avatar emoji={invite.emoji} size={44} />
       <View style={{ flex: 1 }}>
         <ThemedText variant="headline" numberOfLines={1}>

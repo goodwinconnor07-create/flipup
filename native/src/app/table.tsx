@@ -256,7 +256,7 @@ function EmptyTablePopup({ game, onLeave }: { game: Game; onLeave: () => void })
                 dispatch({ type: 'addBot' });
                 dispatch({ type: 'addBot' });
               }}
-              style={{ minHeight: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: c.green }}
+              style={{ minHeight: 56, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: c.accent }}
             >
               <Text style={{ fontSize: 17, fontWeight: '800', color: '#ffffff' }}>Add bots</Text>
             </Pressable>

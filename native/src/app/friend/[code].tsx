@@ -1,6 +1,7 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { useFriendActions } from '@/components/friend-menu';
@@ -26,7 +27,7 @@ export default function FriendProfile() {
     );
   }
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, gap: spacing.xl }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, gap: spacing.xl }}>
       <Stack.Screen options={{ title: pal.name, headerShown: false }} />
       <View style={{ alignItems: 'center', gap: spacing.sm }}>
         <Avatar emoji={pal.emoji} size={120} />
@@ -57,6 +58,6 @@ export default function FriendProfile() {
       <Section>
         <Row title="Remove friend" destructive chevron={false} onPress={() => remove(pal, () => router.back())} />
       </Section>
-    </ScrollView>
+    </SheetScroll>
   );
 }

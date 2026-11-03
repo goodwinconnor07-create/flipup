@@ -1,6 +1,7 @@
 import { Stack } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Row, Section } from '@/components/grouped-list';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -15,7 +16,7 @@ export default function StreakSheet() {
   const info = useStreakInfo();
   const started = info.start?.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.lg }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.lg }}>
       <Stack.Screen options={{ title: 'Daily streak' }} />
       <View accessible accessibilityLabel={`${plural(info.days, 'day')} in a row`} style={{ alignItems: 'center', gap: spacing.xxs }}>
         <Icon name="flame.fill" size={48} color={party.orange} />
@@ -55,6 +56,6 @@ export default function StreakSheet() {
         <Row title="Longest streak" detail={plural(info.best, 'day')} />
         <Row title="Days played" detail={String(info.total)} />
       </Section>
-    </ScrollView>
+    </SheetScroll>
   );
 }

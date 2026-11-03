@@ -49,7 +49,8 @@ function MainCard({ variant, name, width }: { variant: Variant; name: string; wi
       accessibilityRole="button"
       accessibilityLabel={name}
       onPress={() => open(variant)}
-      style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', boxShadow: shadow.soft, ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
+      outerStyle={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadow.card }}
+      style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
     >
       <GamePicture variant={variant} width={width} height={height} rounded={0} />
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, paddingTop: spacing.sm }}>
@@ -83,8 +84,8 @@ function Tile({ variant, name, width, picture, locked }: { variant: Variant; nam
       accessibilityRole="button"
       accessibilityLabel={`${name}${locked ? ', Premium' : ''}`}
       onPress={() => open(variant)}
-      outerStyle={{ width }}
-      style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', boxShadow: shadow.soft, ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
+      outerStyle={{ width, borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadow.card }}
+      style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
     >
       <GamePicture variant={variant} width={width} height={picture} rounded={0} />
       <View style={{ paddingHorizontal: spacing.sm, paddingTop: spacing.xxs, paddingBottom: spacing.sm, minHeight: 44, justifyContent: 'center' }}>

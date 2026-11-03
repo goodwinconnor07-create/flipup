@@ -4,6 +4,7 @@ import { ScrollView, Share, Text, View } from 'react-native';
 import { haptic } from '@/components/haptics';
 import { PassportCard } from '@/components/home/passport';
 import { Icon } from '@/components/icon';
+import { LivingCard } from '@/components/living-card';
 import { GameThumb } from '@/components/game-picture';
 import { PressableScale } from '@/components/pressable-scale';
 import { PlayingCard } from '@/components/table/playing-card';
@@ -11,7 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { variantInfo, type Variant } from '@/engine';
 import { usePokerRecord, type PokerRecord } from '@/state/record';
 import { useStreakInfo } from '@/state/streak';
-import { gradient, radius, ROUNDED, spacing, useColors } from '@/theme';
+import { brand, cardColors, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 const n = (v: number) => v.toLocaleString('en-US');
 const place = (p: number) => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd' : `${p}th`);
@@ -32,7 +33,7 @@ export default function StatsScreen() {
         <PassportCard full />
 
         {record.best && (
-          <Card colors={['#7a1f1f', '#3d0b0b']} label="Best hand" onShare={() => share(`My best hand on FlipUp: ${record.best?.name}.`)}>
+          <Card colors={cardColors.violet} label="Best hand" onShare={() => share(`My best hand on FlipUp: ${record.best?.name}.`)}>
             <View style={{ flexDirection: 'row', gap: spacing.xs }}>
               {record.best.cards.map((c) => (
                 <PlayingCard key={c} card={c} size="md" width={52} />
@@ -44,8 +45,8 @@ export default function StatsScreen() {
         )}
 
         {streak.total > 0 && (
-        <Card colors={['#b4500c', '#5a2002']} label="Streak" onShare={() => share(`I'm on a ${streak.days}-day poker streak on FlipUp.`)}>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 64, lineHeight: 70, fontWeight: '800', color: '#ffffff' }}>
+        <Card colors={cardColors.night} label="Streak" onShare={() => share(`I'm on a ${streak.days}-day poker streak on FlipUp.`)}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 64, lineHeight: 70, fontWeight: '800', color: brand.gold }}>
             {streak.days}
           </Text>
           <Big>{streak.days === 1 ? 'day in a row' : 'days in a row'}</Big>
@@ -71,9 +72,9 @@ function share(message: string) {
 }
 
 /** A big gradient card with a small caps label and a share button, like each of Flighty's report cards. */
-function Card({ colors: [top, bottom], label, onShare, children }: { colors: [string, string]; label: string; onShare?: () => void; children: React.ReactNode }) {
+function Card({ colors, label, onShare, children }: { colors: readonly [string, string, string]; label: string; onShare?: () => void; children: React.ReactNode }) {
   return (
-    <View style={{ padding: spacing.lg, gap: spacing.sm, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}>
+    <LivingCard colors={colors} style={{ padding: spacing.lg, gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32 }}>
         <Text maxFontSizeMultiplier={1.2} style={{ flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase' }}>
           {label}
@@ -85,7 +86,7 @@ function Card({ colors: [top, bottom], label, onShare, children }: { colors: [st
         )}
       </View>
       {children}
-    </View>
+    </LivingCard>
   );
 }
 
@@ -103,6 +104,7 @@ const Faint = ({ children }: { children: React.ReactNode }) => (
 /** Which games you've played lately, most played first, and where you finished in each. */
 function GamesYouPlay({ record }: { record: PokerRecord }) {
   const colors = useColors();
+  const shadows = useShadows();
   if (!record.games.length) return null;
   const by = new Map<Variant, { games: number; wins: number; bestPlace: number }>();
   for (const g of record.games) {
@@ -115,6 +117,7 @@ function GamesYouPlay({ record }: { record: PokerRecord }) {
       <ThemedText variant="title2" accessibilityRole="header">
         Games you play
       </ThemedText>
+      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
       <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.cell }}>
         {rows.map(([v, r], i) => (
           <View key={v} accessible accessibilityLabel={`${variantInfo(v).name}: ${r.games} games, ${r.wins} won`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderTopWidth: i ? 0.5 : 0, borderTopColor: colors.separator }}>
@@ -135,6 +138,7 @@ function GamesYouPlay({ record }: { record: PokerRecord }) {
             )}
           </View>
         ))}
+      </View>
       </View>
       <ThemedText variant="footnote" tone="tertiaryLabel">
         Your last {record.games.length} {record.games.length === 1 ? 'game' : 'games'}.

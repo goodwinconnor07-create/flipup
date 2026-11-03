@@ -1,6 +1,7 @@
 import { router, Stack } from 'expo-router';
-import { Alert, ScrollView, Share } from 'react-native';
+import { Alert, Share } from 'react-native';
 
+import { SheetScroll } from '@/components/sheet-scroll';
 import { Row, Section } from '@/components/grouped-list';
 import { YouSettings } from '@/components/you-settings';
 import { myPlayer } from '@/engine';
@@ -44,7 +45,7 @@ export default function TableMenu() {
     ]);
 
   return (
-    <ScrollView contentContainerStyle={{ paddingVertical: spacing.lg, gap: spacing.lg }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ paddingVertical: spacing.lg, gap: spacing.lg }} style={{ backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Menu' }} />
       <Section header="Table">
         {started && <Row title="Standings" icon={{ symbol: 'trophy.fill', color: colors.gold as string }} onPress={() => router.push('/table-standings')} />}
@@ -108,6 +109,6 @@ export default function TableMenu() {
           />
         )}
       </Section>
-    </ScrollView>
+    </SheetScroll>
   );
 }

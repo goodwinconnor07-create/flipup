@@ -6,6 +6,8 @@ import { Platform, useColorScheme, type ColorValue } from 'react-native';
 
 import { palette, type PaletteColor } from '@design/tokens';
 
+import { brand } from './brand';
+
 export type Colors = Record<PaletteColor, ColorValue>;
 
 const ios = process.env.EXPO_OS === 'ios';
@@ -21,27 +23,39 @@ const SYSTEM: Partial<Colors> = ios
       secondaryLabel: Color.ios.secondaryLabel,
       tertiaryLabel: Color.ios.tertiaryLabel,
       quaternaryLabel: Color.ios.quaternaryLabel,
-      accent: Color.ios.systemBlue,
-      green: Color.ios.systemGreen,
       red: Color.ios.systemRed,
-      pink: Color.ios.systemPink,
-      indigo: Color.ios.systemIndigo,
-      switchOn: Color.ios.systemGreen,
     }
   : {};
+
+/** The palette (theme/brand.ts) over the tokens: violet for actions, gold for wins and highlights. */
+function branded(dark: boolean): Partial<Colors> {
+  const violet = dark ? brand.violetDark : brand.violet;
+  return {
+    accent: violet,
+    switchOn: violet,
+    pink: violet,
+    indigo: violet,
+    violet,
+    green: brand.gold,
+    gold: brand.gold,
+    blueBg: dark ? 'rgba(139, 109, 255, 0.18)' : '#efeaff',
+    blueInk: violet,
+  };
+}
 
 /** Today's colours. Call it inside a component so a switch between light and dark redraws. */
 export function useColors(): Colors {
   const scheme = useColorScheme() === 'dark' ? 'dark' : 'light';
-  return { ...palette[scheme], ...SYSTEM };
+  return { ...palette[scheme], ...SYSTEM, ...branded(scheme === 'dark') };
 }
 
 /**
  * Static hex values for places that can't take a system colour object: Reanimated styles, CSS gradients, and
  * third-party props that only accept strings.
  */
-export function usePlainColors(): (typeof palette)['light' | 'dark'] {
-  return palette[useColorScheme() === 'dark' ? 'dark' : 'light'];
+export function usePlainColors(): Record<keyof (typeof palette)['light'], string> {
+  const dark = useColorScheme() === 'dark';
+  return { ...palette[dark ? 'dark' : 'light'], ...(branded(dark) as Partial<(typeof palette)['light']>) };
 }
 
 export const isIOS = Platform.OS === 'ios';

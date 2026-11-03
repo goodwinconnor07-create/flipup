@@ -1,13 +1,15 @@
 import { router } from 'expo-router';
-import { Share, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { usePokerRecord } from '@/state/record';
 import { useStreak } from '@/state/streak';
-import { gradient, radius, ROUNDED, spacing } from '@/theme';
+import { cardColors, radius, ROUNDED, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
+import { LivingCard } from '../living-card';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
+import { useStatsShare } from './share-card';
 
 const n = (v: number) => v.toLocaleString('en-US');
 const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : 0);
@@ -20,12 +22,10 @@ export function PassportCard({ full }: { full?: boolean }) {
   const record = usePokerRecord();
   const streak = useStreak();
   const wins = record.games.filter((g) => g.place === 1).length;
-  const share = () => {
-    haptic.tap();
-    void Share.share({ message: `My FlipUp poker: ${n(record.hands)} hands, ${n(record.won)} pots won (${pct(record.won, record.hands)}%), biggest pot ${n(record.biggestPot)}.` });
-  };
+  const { share, card, busy } = useStatsShare();
   return (
-    <View style={{ padding: spacing.lg, gap: spacing.lg, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', ...gradient('linear-gradient(160deg, #1b1f6b 0%, #120f3d 55%, #1d3a8a 100%)') }}>
+    <LivingCard colors={cardColors.night} style={{ padding: spacing.lg, gap: spacing.lg }}>
+      {card}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
         <View style={{ flex: 1, gap: 2 }}>
           <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: 1.5, color: '#ffffff' }}>
@@ -35,8 +35,8 @@ export function PassportCard({ full }: { full?: boolean }) {
             ALL-TIME · ON THIS PHONE
           </Text>
         </View>
-        <PressableScale accessibilityRole="button" accessibilityLabel="Share your stats" onPress={share} style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
-          <Icon name="square.and.arrow.up" size={20} color="#ffffff" />
+        <PressableScale accessibilityRole="button" accessibilityLabel="Share your stats as a picture" haptics={false} onPress={() => void share()} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: busy ? 0.5 : 1 }}>
+          <Icon name="square.and.arrow.up" size={19} color="#ffffff" />
         </PressableScale>
       </View>
 
@@ -66,7 +66,7 @@ export function PassportCard({ full }: { full?: boolean }) {
           <Icon name="chevron.right" size={15} color="#ffffff" />
         </PressableScale>
       )}
-    </View>
+    </LivingCard>
   );
 }
 

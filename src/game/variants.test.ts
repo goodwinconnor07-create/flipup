@@ -3,6 +3,7 @@ import {
   applyAction,
   bestHand,
   createTable,
+  count21,
   DEFAULT_SETTINGS,
   holeCountAt,
   isPremiumVariant,
@@ -113,7 +114,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
 }
 
 describe('variant tables', { timeout: TABLE_MS }, () => {
-  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle', 'memory', 'beanstalk'] as Variant[]) {
+  for (const v of ['pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem'] as Variant[]) {
     it(`plays ${v} hands with bots and keeps every chip`, () => {
       play(v, 40);
     });
@@ -341,6 +342,89 @@ describe('Memory Poker and Bean Stalk', { timeout: TABLE_MS }, () => {
   });
 });
 
+describe("Blackjack Hold'em", { timeout: TABLE_MS }, () => {
+  it('counts like blackjack: aces 1 or 11, picture cards 10', () => {
+    expect(count21(h('Ah Kd'))).toBe(21);
+    expect(count21(h('Ah Ad'))).toBe(12);
+    expect(count21(h('Ah 9c Kd'))).toBe(20);
+    expect(count21(h('Qh 9c 5d'))).toBe(24);
+  });
+
+  it('lets the player to act hit on the flop only, and a bust folds them', () => {
+    let g = table('bjholdem', 3, 50_000);
+    const rng = seededRng(4);
+    let clock = 0;
+    let hitPreflop = false;
+    let busts = 0;
+    let hits = 0;
+    for (let i = 0; i < 12000 && (g.hands ?? 0) < 80 && g.status === 'playing'; i++) {
+      const hand = g.hand;
+      const host = g.players.find((p) => p.deviceId === HOST)!;
+      const mine = hand?.seats.find((s) => s.playerId === host.id);
+      let r;
+      if (hand && !hand.result && hand.toAct === host.id && mine) {
+        if (hand.street === 'preflop' && !hitPreflop) {
+          // Not on the flop: turned down.
+          expect(applyAction(g, { type: 'hit', hand: hand.number, seq: hand.seq }, { deviceId: HOST, now: clock, rng }).ok).toBe(false);
+          hitPreflop = true;
+        }
+        if (hand.street === 'flop' && count21(mine.cards) < 19) {
+          const before = mine.cards.length;
+          r = applyAction(g, { type: 'hit', hand: hand.number, seq: hand.seq }, { deviceId: HOST, now: clock, rng });
+          if (!r.ok) throw new Error(r.error);
+          const after = r.game.hand!.seats.find((s) => s.playerId === host.id)!;
+          expect(after.cards).toHaveLength(before + 1);
+          expect(r.game.hand!.hits![host.id]).toBeGreaterThan(0);
+          // Everyone else sees how many cards they took, never which.
+          const seen = redactForDevice(r.game, 'someone-else').hand!;
+          expect(seen.hits).toEqual(r.game.hand!.hits);
+          expect(seen.seats.find((s) => s.playerId === host.id)!.cards).toEqual(after.shown ? after.cards : []);
+          hits++;
+          if (count21(after.cards) > 21) {
+            busts++;
+            expect(after.folded).toBe(true);
+            expect(r.game.hand!.busted).toContain(host.id);
+          }
+        } else {
+          const o = options(g, hand, mine);
+          const move = o.canCheck ? 'check' : o.toCall <= g.settings.bigBlind * 3 ? 'call' : 'fold';
+          r = applyAction(g, { type: 'act', hand: hand.number, seq: hand.seq, move }, { deviceId: HOST, now: clock, rng });
+        }
+      } else r = applyAction(g, { type: 'tick' }, { deviceId: 'server', now: (clock = (g.wakeAt ?? clock) + 1), rng });
+      if (!r.ok) throw new Error(r.error);
+      g = r.game;
+    }
+    expect(hits).toBeGreaterThan(3);
+    expect(busts).toBeGreaterThan(0);
+  });
+
+  it('splits each pot: half to the best poker hand, half to closest to 21 (best hand breaks a tie)', () => {
+    let settled = 0;
+    let botHits = 0;
+    play('bjholdem', 40, (g) => {
+      const hand = g.hand;
+      if (hand && !hand.result) for (const s of hand.seats) if (!s.folded) expect(count21(s.cards)).toBeLessThanOrEqual(21);
+      botHits += Object.keys(hand?.hits ?? {}).length;
+      const bj = hand?.result?.blackjack;
+      if (!hand || !bj) return;
+      settled++;
+      const live = hand.seats.filter((s) => !s.folded);
+      hand.result!.pots.forEach((pot, i) => {
+        const score = (id: string) => bestHand('bjholdem', live.find((s) => s.playerId === id)!.cards, hand.board).score;
+        const count = (id: string) => count21(live.find((s) => s.playerId === id)!.cards);
+        const top = Math.max(...pot.eligible.map(score));
+        expect(bj.poker[i]).toEqual(pot.eligible.filter((id) => score(id) === top));
+        const closest = Math.max(...pot.eligible.map(count));
+        const tied = pot.eligible.filter((id) => count(id) === closest);
+        const tiedTop = Math.max(...tied.map(score));
+        expect(bj.winners[i]).toEqual(tied.filter((id) => score(id) === tiedTop));
+      });
+    });
+    expect(settled).toBeGreaterThan(0);
+    expect(botHits).toBeGreaterThan(0);
+  });
+});
+
 describe('network input', () => {
   it('accepts a discard and a variant, and nothing else', () => {
     expect(parseAction({ type: 'discard', hand: 3, card: 'Ah' })).toEqual({ type: 'discard', hand: 3, card: 'Ah' });
@@ -349,12 +433,14 @@ describe('network input', () => {
     expect(parseAction({ type: 'settings', settings: { variant: 'omaha' } })).toBeNull();
     expect(parseAction({ type: 'vote', hand: 2, playerId: 'abc123' })).toEqual({ type: 'vote', hand: 2, playerId: 'abc123' });
     expect(parseAction({ type: 'vote', hand: 2, playerId: '../x' })).toBeNull();
+    expect(parseAction({ type: 'hit', hand: 2, seq: 7 })).toEqual({ type: 'hit', hand: 2, seq: 7 });
+    expect(parseAction({ type: 'hit', hand: 2 })).toBeNull();
   });
 });
 
 describe('free and Premium games', () => {
   it("the first five are free: Hold'em, Pineapple, Deuces, Ghost, Pittsburgh", () => {
     expect(VARIANTS.filter((v) => !isPremiumVariant(v.id)).map((v) => v.id)).toEqual(['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh']);
-    expect(VARIANTS.filter((v) => isPremiumVariant(v.id))).toHaveLength(7);
+    expect(VARIANTS.filter((v) => isPremiumVariant(v.id))).toHaveLength(8);
   });
 });

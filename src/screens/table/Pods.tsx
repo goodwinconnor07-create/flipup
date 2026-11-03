@@ -221,10 +221,10 @@ export function Pod({
       <span className="pod-stack num">{status ?? <Count value={player.stack} />}</span>
       <span className="pod-under">
         {!self && seat && (!seat.folded || seat.cards.length > 0) && (
-          <span className={`pod-cards${turn ? ' shimmer' : ''}${Math.max(seat.cards.length, faceDown(game)) > 3 ? ' pod-cards-many' : ''}`}>
+          <span className={`pod-cards${turn ? ' shimmer' : ''}${Math.max(seat.cards.length, cardsHeld(game, seat.playerId)) > 3 ? ' pod-cards-many' : ''}`}>
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip pack={player.cardPack} />)
-              : Array.from({ length: faceDown(game) }, (_, i) => <PlayingCard key={i} back size="sm" pack={player.cardPack} />)}
+              : Array.from({ length: cardsHeld(game, seat.playerId) }, (_, i) => <PlayingCard key={i} back size="sm" pack={player.cardPack} />)}
           </span>
         )}
         {won > 0 ? (
@@ -321,6 +321,9 @@ const faceDown = (game: Game) => {
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
   return v === 'pineapple' && threeCardsLeft(game) ? 3 : 2;
 };
+
+/** Blackjack Hold'em: two cards plus however many this player has hit. */
+const cardsHeld = (game: Game, playerId: string) => faceDown(game) + (game.hand?.hits?.[playerId] ?? 0);
 
 const threeCardsLeft = (game: Game) => {
   const hand = game.hand;

@@ -12,7 +12,7 @@ const KINDS = {
   friend: { title: 'Add a friend', line: 'Type their 5-letter friend code. They find it on their Party tab.', label: 'Friend code' },
 } as const;
 
-/** A sheet for typing a party code or a friend code with the code pad. Five letters in, it looks the code up. */
+/** A sheet for typing a party code or a friend code with the iPhone keyboard. Five letters in, it looks the code up. */
 export default function CodeEntry() {
   const { kind: raw } = useLocalSearchParams<{ kind?: string }>();
   const kind = raw === 'friend' ? 'friend' : 'party';
@@ -33,8 +33,9 @@ export default function CodeEntry() {
     }
   });
   return (
-    <ScrollView contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.lg, gap: spacing.lg }} bounces={false}>
-      <Stack.Screen options={{ title: k.title }} />
+    <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xxl, gap: spacing.lg }} bounces={false}>
+      {/* No nav bar: its title sat over this one and blurred it. The sheet's own title is the big one below. */}
+      <Stack.Screen options={{ title: k.title, headerShown: false }} />
       <View style={{ gap: spacing.xxs }}>
         <ThemedText variant="title1" accessibilityRole="header" style={{ textAlign: 'center' }}>
           {k.title}

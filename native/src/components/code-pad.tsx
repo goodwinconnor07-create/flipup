@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, TextInput, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, ZoomIn } from 'react-native-reanimated';
 
 import { CODE_ALPHABET, CODE_LENGTH } from '@/engine';
@@ -7,14 +7,11 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { radius, spacing, usePlainColors } from '@/theme';
 
 import { haptic } from './haptics';
-import { Icon } from './icon';
 import { ThemedText } from './themed-text';
 
-// Typing a 5-letter code (a table, a party or a friend), as the web's CodePad: five boxes and a keyboard laid out
-// like the phone's own, so every letter is where you'd expect it. Codes never use vowels or Y, so those keys are
-// greyed out. The phone's keyboard never opens.
-
-const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+// Typing a 5-letter code (a table, a party or a friend): five boxes over the iPhone's own keyboard. A hidden text
+// field takes the typing (and a pasted code); the boxes show it. Codes never use vowels or Y, so those letters are
+// dropped as you type, with a word under the boxes saying why.
 
 export interface CodeState {
   code: string;
@@ -26,6 +23,9 @@ export interface CodeState {
   erase: () => void;
   /** Puts a whole code in (from a QR scan) and looks it up. */
   fill: (code: string) => void;
+  /** Takes whatever is in the text field: upper-cased, only code letters, at most five. */
+  setText: (text: string) => void;
+  setError: (error: string) => void;
 }
 
 /** The code typed so far. `run` is called once all five letters are in, and returns an error sentence, or null when it worked. */
@@ -80,11 +80,20 @@ export function useCode(run: (code: string) => Promise<string | null>): CodeStat
     void submit(value);
   };
 
-  return { code, busy, error, misses, type, erase, fill };
+  const setText = (text: string) => {
+    if (busy) return;
+    const upper = text.toUpperCase();
+    const next = upper.split('').filter((ch) => CODE_ALPHABET.includes(ch)).join('').slice(0, CODE_LENGTH);
+    setError(/[A-Z]/.test(upper) && upper.length > next.length && next.length < CODE_LENGTH ? 'Codes have no vowels or Y.' : '');
+    setCode(next);
+    if (next.length === CODE_LENGTH && next !== code) void submit(next);
+  };
+
+  return { code, busy, error, misses, type, erase, fill, setText, setError };
 }
 
-/** The five boxes, the spinner or error under them, and the keyboard. */
-export function CodePad({ state, label }: { state: CodeState; label: string }) {
+/** The five boxes over a hidden text field, so the iPhone keyboard types into them, and the spinner or error under them. */
+export function CodePad({ state, label, focus = true }: { state: CodeState; label: string; focus?: boolean }) {
   const { code, busy, error, misses } = state;
   const c = usePlainColors();
   const reduce = useReduceMotion();
@@ -96,15 +105,18 @@ export function CodePad({ state, label }: { state: CodeState; label: string }) {
     shake.set(withSequence(withTiming(-8, step), withTiming(8, step), withTiming(-6, step), withTiming(6, step), withTiming(-3, step), withTiming(0, step)));
   }, [misses]); // eslint-disable-line react-hooks/exhaustive-deps
   const shaking = useAnimatedStyle(() => ({ transform: [{ translateX: shake.get() }] }));
+  const input = useRef<React.ComponentRef<typeof TextInput>>(null);
+  useEffect(() => {
+    if (focus) {
+      const t = setTimeout(() => input.current?.focus(), 350);
+      return () => clearTimeout(t);
+    }
+    input.current?.blur();
+  }, [focus]);
 
   return (
     <View style={{ gap: spacing.md }}>
-      <Animated.View
-        accessible
-        accessibilityRole="text"
-        accessibilityLabel={`${label}: ${code.split('').join(' ') || 'empty'}`}
-        style={[{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs }, shaking]}
-      >
+      <Animated.View style={[{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs }, shaking]}>
         {Array.from({ length: CODE_LENGTH }, (_, i) => {
           const letter = code[i];
           const next = i === code.length && !busy;
@@ -134,6 +146,25 @@ export function CodePad({ state, label }: { state: CodeState; label: string }) {
             </View>
           );
         })}
+        {/* The field that takes the typing, laid over the boxes so a tap on them brings the keyboard back. */}
+        <TextInput
+          ref={input}
+          value={code}
+          onChangeText={state.setText}
+          editable={!busy}
+          accessibilityLabel={label}
+          accessibilityHint="Five letters"
+          autoCapitalize="characters"
+          autoCorrect={false}
+          spellCheck={false}
+          autoComplete="off"
+          textContentType="none"
+          keyboardType="ascii-capable"
+          returnKeyType="done"
+          caretHidden
+          maxLength={CODE_LENGTH + 4}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.02, color: 'transparent', fontSize: 1, borderWidth: 0, backgroundColor: 'transparent', outlineWidth: 0 }}
+        />
       </Animated.View>
 
       <View accessibilityLiveRegion="polite" style={{ minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
@@ -145,32 +176,11 @@ export function CodePad({ state, label }: { state: CodeState; label: string }) {
           </ThemedText>
         ) : (
           <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-            Codes have no vowels, so those keys are off.
+            Five letters, no vowels.
           </ThemedText>
         )}
       </View>
 
-      <View accessibilityLabel={`${label} letters`} style={{ gap: spacing.xs }}>
-        {ROWS.map((row, r) => (
-          <View key={row} style={{ flexDirection: 'row', justifyContent: 'center', gap: 6 }}>
-            {row.split('').map((letter) => {
-              const usable = CODE_ALPHABET.includes(letter);
-              return (
-                <Key key={letter} label={letter} disabled={busy || !usable} hidden={!usable} onPress={() => state.type(letter)}>
-                  <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 22, fontWeight: '600', color: c.label }}>
-                    {letter}
-                  </Text>
-                </Key>
-              );
-            })}
-            {r === ROWS.length - 1 && (
-              <Key label="Delete" wide disabled={busy || code.length === 0} onPress={state.erase}>
-                <Icon name="delete.left" size={20} color={c.label} />
-              </Key>
-            )}
-          </View>
-        ))}
-      </View>
     </View>
   );
 }
@@ -184,36 +194,4 @@ function Caret({ color, still }: { color: string; still: boolean }) {
   }, [still]); // eslint-disable-line react-hooks/exhaustive-deps
   const look = useAnimatedStyle(() => ({ opacity: on.get() }));
   return <Animated.View style={[{ width: 3, height: 34, borderRadius: 2, backgroundColor: color }, look]} />;
-}
-
-/** One key: a grey tile that darkens while pressed, with a light tap. Unusable letters are faded and skipped by VoiceOver. */
-function Key({ label, children, disabled, hidden, wide, onPress }: { label: string; children: React.ReactNode; disabled?: boolean; hidden?: boolean; wide?: boolean; onPress: () => void }) {
-  const c = usePlainColors();
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityState={{ disabled: !!disabled }}
-      accessibilityElementsHidden={hidden}
-      importantForAccessibility={hidden ? 'no-hide-descendants' : 'auto'}
-      disabled={disabled}
-      onPress={() => {
-        haptic.tap();
-        onPress();
-      }}
-      style={({ pressed }) => ({
-        flex: wide ? 1.5 : 1,
-        maxWidth: wide ? 66 : 44,
-        height: 52,
-        borderRadius: radius.sm,
-        borderCurve: 'continuous',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: pressed ? c.separator : c.cell,
-        opacity: hidden ? 0.3 : disabled ? 0.5 : 1,
-      })}
-    >
-      {children}
-    </Pressable>
-  );
 }

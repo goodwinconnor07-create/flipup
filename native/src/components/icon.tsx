@@ -15,6 +15,8 @@ const WEB = {
   'suit.heart.fill': 'favorite',
   'suit.diamond.fill': 'diamond',
   'suit.club.fill': 'park',
+  'qrcode.viewfinder': 'qr_code_scanner',
+  keyboard: 'keyboard',
   'bubble.left.fill': 'chat_bubble',
   'bubble.left': 'chat_bubble_outline',
   'chevron.right': 'chevron_right',

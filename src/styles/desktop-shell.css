@@ -1,0 +1,154 @@
+/* Phase 6: the desktop layout. Loaded last, inside the same media query as desktop.css and useDesktop(), so
+   phones never see any of it. A sidebar on the left with the name, the tabs and Join; Home's games in a wider
+   grid; pushed screens with their button right under the content; the table's bottom row centred under the felt. */
+
+@media (min-width: 960px) and (min-height: 600px) {
+  /* ── Home: a sidebar and a wide page ───────────────────────────────────── */
+
+  .screen.home {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .home-sheet {
+    margin-left: var(--desk-side, 216px);
+  }
+
+  .home-scroll {
+    width: 100%;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 40px 48px 56px;
+  }
+
+  .home-tabs {
+    --desk-tab: 48px;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: var(--desk-side, 216px);
+    transform: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+    padding: 32px 16px;
+    background: var(--bg-2);
+  }
+
+  /* The name at the top of the sidebar, in the large-title weight. */
+  .home-tabs::before {
+    content: 'FlipUp';
+    padding: 0 14px 8px;
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  /* (html… outranks the no-glass fallback, which paints every .glass a solid surface.) */
+  html .home-tabs .tabbar,
+  html .home-tabs .tabbar.glass {
+    flex: none;
+    width: 100%;
+    gap: 4px;
+    padding: 0;
+    border-radius: 0;
+    border: 0;
+    background: none;
+    box-shadow: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .home-tabs .tab {
+    min-height: var(--desk-tab);
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+    padding: 0 14px;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .home-tabs .tab-capsule {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: var(--desk-tab);
+    transform: translateY(calc(var(--i, 0) * (var(--desk-tab) + 4px)));
+  }
+
+  /* Join is a full-width hot-pink pill under the tabs, with its words beside the keypad. */
+  .home-tabs .tab-round {
+    order: 2;
+    width: 100%;
+    height: 52px;
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    border-radius: var(--r-pill);
+  }
+
+  .home-tabs .tab-round::after {
+    content: 'Join with a code';
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* Texas Hold'em stays the one wide card, but as a banner rather than a whole screen of felt. */
+  .game-shelf .game-card-main .game-scene {
+    aspect-ratio: auto;
+    height: 180px;
+  }
+
+  .game-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* ── Pushed screens (Setup, Profile, the lobby…): the button sits right under what it confirms ── */
+
+  .screen:not(.home):not(.status-playing) .screen-body {
+    flex: none;
+    padding-bottom: 0;
+  }
+
+  .screen:not(.home):not(.status-playing) .screen-foot {
+    position: static;
+    margin-top: 8px;
+    padding: 16px 0 32px;
+    background: none;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  /* ── The table: your cards, the buttons and your chips centred under the felt ─────── */
+
+  .felt {
+    grid-template-columns: minmax(0, 1fr) auto minmax(320px, 520px) auto minmax(0, 1fr);
+  }
+
+  .my-cards {
+    grid-column: 2;
+  }
+
+  .action-area {
+    grid-column: 3;
+  }
+
+  .my-box {
+    grid-column: 4;
+  }
+
+  /* The hand log fills what's left of the side panel and scrolls inside it, never past the screen. */
+  .desk-side .desk-log {
+    flex: 1;
+  }
+}
+
+@media (min-width: 1320px) and (min-height: 600px) {
+  .game-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}

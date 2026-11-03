@@ -1,5 +1,4 @@
 import { router, Stack, useIsFocused } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Alert, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -7,7 +6,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
-import { GlassSurface } from '@/components/glass-surface';
 import { Icon } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
@@ -16,7 +14,7 @@ import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, VARIANTS, type Variant } from '@/engi
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePartyRef } from '@/state/party';
 import { useProfile } from '@/state/profile';
-import { brand, cardColors, radius, ROUNDED, spacing } from '@/theme';
+import { brand, cardColors, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 const TILE = 76;
 const GAP = 12;
@@ -28,10 +26,10 @@ const ALL = VARIANTS.map((v) => v.id);
 const BELTS: Variant[][] = [ALL, [...ALL.slice(4), ...ALL.slice(0, 4)], [...ALL.slice(8), ...ALL.slice(0, 8)]];
 
 /**
- * The Party tab is one big game-night poster, always night violet with grain whatever the phone's appearance: three
+ * The Party tab is one big game-night poster on the app's own page colour: three
  * belts of game tiles drifting across the top in turn (tilted a little, alternating directions, still under Reduce
  * Motion and while another tab is showing), the pitch in big rounded type, your open party if you have one, then two
- * big buttons: Host a party in solid white and Join a party in frosted glass with a little code field.
+ * buttons: Host a party, big, in the brand violet with grain, and Join a party, smaller, in night violet with a little code field.
  */
 export default function PartyTab() {
   const profile = useProfile();
@@ -39,6 +37,8 @@ export default function PartyTab() {
   const partyRef = usePartyRef();
   const insets = useSafeAreaInsets();
   const focused = useIsFocused();
+  const colors = useColors();
+  const shadows = useShadows();
 
   // Hosting and joining need a name first.
   const needName = (): boolean => {
@@ -51,14 +51,12 @@ export default function PartyTab() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: brand.violetNight }}>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: 'Party', headerShown: false }} />
-      {focused && <StatusBar style="light" />}
-      <LivingCard colors={cardColors.night} radius={0} shadow={false} outerStyle={{ position: 'absolute', inset: 0 }} style={{ flex: 1 }} />
 
       <View style={{ flex: 1, paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + 84 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingHorizontal: spacing.md }}>
-          <Text accessibilityRole="header" maxFontSizeMultiplier={1.3} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 34, lineHeight: 41, fontWeight: '700', color: '#ffffff' }}>
+          <Text accessibilityRole="header" maxFontSizeMultiplier={1.3} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 34, lineHeight: 41, fontWeight: '700', color: colors.label }}>
             Party
           </Text>
           <ProfileMenu />
@@ -74,13 +72,13 @@ export default function PartyTab() {
         </View>
 
         <View style={{ paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.lg }}>
-          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 2, color: brand.gold }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 2, color: colors.accent }}>
             GAME NIGHT
           </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 36, lineHeight: 40, fontWeight: '800', color: '#ffffff' }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 36, lineHeight: 40, fontWeight: '800', color: colors.label }}>
             {PARTY_MIN_GAMES} to {PARTY_MAX_GAMES} games.{'\n'}One winner.
           </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, lineHeight: 23, color: 'rgba(255, 255, 255, 0.72)' }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, lineHeight: 23, color: colors.secondaryLabel }}>
             Every game is a round. Points for where you finish, and bots fill the empty seats.
           </Text>
         </View>
@@ -91,13 +89,13 @@ export default function PartyTab() {
               accessibilityRole="button"
               accessibilityLabel={`Back to your party, code ${partyRef.code}`}
               onPress={() => router.push('/party-room')}
-              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 52, paddingHorizontal: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 52, paddingHorizontal: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}
             >
               <Icon name="person.3.fill" size={18} color={brand.gold} />
-              <Text maxFontSizeMultiplier={1.3} style={{ flex: 1, fontSize: 17, fontWeight: '700', color: '#ffffff' }}>
+              <Text maxFontSizeMultiplier={1.3} style={{ flex: 1, fontSize: 17, fontWeight: '700', color: colors.label }}>
                 Your party · {partyRef.code}
               </Text>
-              <Icon name="chevron.right" size={14} color="rgba(255, 255, 255, 0.7)" />
+              <Icon name="chevron.right" size={14} color={colors.tertiaryLabel} />
             </PressableScale>
           )}
           <HostButton onPress={() => !needName() && router.push('/party-setup')} />
@@ -143,35 +141,31 @@ const press = (go: () => void) => () => {
   go();
 };
 
-/** Host a party: solid white, the boldest thing on the poster, violet type and a violet party popper. */
+/** Host a party: the big one, the brand violet as a living card with grain, a party popper and a line on what you do. */
 function HostButton({ onPress }: { onPress: () => void }) {
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel="Host a party. Pick the games, invite friends"
-      haptics={false}
-      onPress={press(onPress)}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 84, paddingHorizontal: spacing.md, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: '#ffffff', boxShadow: '0 14px 30px -12px rgba(0, 0, 0, 0.7)' }}
-    >
-      <View style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}>
-        <Icon name="party.popper.fill" size={22} color="#ffffff" />
-      </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', color: brand.violetNight }}>
-          Host a party
-        </Text>
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: brand.violet }}>
-          Pick the games, invite friends
-        </Text>
-      </View>
-      <Icon name="chevron.right" size={16} color={brand.violet} />
+    <PressableScale accessibilityRole="button" accessibilityLabel="Host a party. Pick the games, invite friends" haptics={false} onPress={press(onPress)}>
+      <LivingCard colors={cardColors.violet} radius={radius.xl} grain={0.12} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 104, paddingHorizontal: spacing.lg }}>
+        <View style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
+          <Icon name="party.popper.fill" size={26} color="#ffffff" />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 26, lineHeight: 30, fontWeight: '800', color: '#ffffff' }}>
+            Host a party
+          </Text>
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: 'rgba(255, 255, 255, 0.82)' }}>
+            Pick games, invite friends
+          </Text>
+        </View>
+        <Icon name="chevron.right" size={18} color="#ffffff" />
+      </LivingCard>
     </PressableScale>
   );
 }
 
 /**
- * Join a party, as frosted glass with a white edge: "Got a code?" over the title on the left, and on the right a
- * little code field, five slots with a cursor blinking in the first, so it reads as "type your code here".
+ * Join a party: smaller and darker than Host (the night violet, with grain), "Got a code?" and the title on the left
+ * and a little five-slot code field on the right with a cursor blinking in the first slot.
  */
 function JoinButton({ onPress }: { onPress: () => void }) {
   const reduce = useReduceMotion();
@@ -182,31 +176,24 @@ function JoinButton({ onPress }: { onPress: () => void }) {
   }, [reduce, blink]);
   const cursor = useAnimatedStyle(() => ({ opacity: blink.get() > 0.5 ? 1 : 0 }));
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel="Join a party. Type the code from your host"
-      haptics={false}
-      onPress={press(onPress)}
-      outerStyle={{ borderRadius: radius.xl }}
-      style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.5)' }}
-    >
-      <GlassSurface style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 84, paddingHorizontal: spacing.md, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.6, color: brand.gold }}>
+    <PressableScale accessibilityRole="button" accessibilityLabel="Join a party. Type the code from your host" haptics={false} onPress={press(onPress)}>
+      <LivingCard colors={cardColors.night} radius={radius.lg} grain={0.1} shadow="soft" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 64, paddingHorizontal: spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1.4, color: brand.gold }}>
             GOT A CODE?
           </Text>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', color: '#ffffff' }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 18, lineHeight: 22, fontWeight: '700', color: '#ffffff' }}>
             Join a party
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 4 }}>
           {Array.from({ length: 5 }, (_, i) => (
-            <View key={i} style={{ width: 24, height: 32, borderRadius: 7, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.14)', borderWidth: i === 0 ? 1.5 : 0, borderColor: '#ffffff' }}>
-              {i === 0 && <Animated.View style={[{ width: 2, height: 16, borderRadius: 1, backgroundColor: '#ffffff' }, cursor]} />}
+            <View key={i} style={{ width: 20, height: 28, borderRadius: 6, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.14)', borderWidth: i === 0 ? 1.5 : 0, borderColor: '#ffffff' }}>
+              {i === 0 && <Animated.View style={[{ width: 2, height: 14, borderRadius: 1, backgroundColor: '#ffffff' }, cursor]} />}
             </View>
           ))}
         </View>
-      </GlassSurface>
+      </LivingCard>
     </PressableScale>
   );
 }

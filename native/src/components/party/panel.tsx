@@ -1,18 +1,18 @@
 import { router, useIsFocused } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, AppState, Share, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, AppState, Text, View } from 'react-native';
 
 import { PARTY_BREAK_SECONDS, partyStandings, variantInfo, type PartyView, type Variant } from '@/engine';
+import { partyLink } from '@/state/api';
 import { readParty, skipBreak, startParty, leaveParty } from '@/state/party';
 import { useProfile } from '@/state/profile';
 import { joinOnlineTable, leaveTable, useTable } from '@/state/session';
-import { radius, spacing, usePlainColors } from '@/theme';
+import { spacing, usePlainColors } from '@/theme';
 
 import { Button } from '../button';
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
-import { Icon } from '../icon';
-import { PressableScale } from '../pressable-scale';
+import { InviteTicket } from '../invite-ticket';
 import { ThemedText } from '../themed-text';
 import { PartyBoard } from './board';
 
@@ -161,7 +161,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
             </ThemedText>
             <ThemedText tone="tertiaryLabel">{host ? `${total} games. Start when everyone's here.` : `Waiting for the host to start. ${total} games to play.`}</ThemedText>
           </View>
-          <CodeTiles code={view.code} />
+          <InviteTicket code={view.code} link={partyLink(view.code)} kind="party" share="Join my FlipUp party." />
           <PlaylistChips games={view.settings.games} round={-1} />
           <SectionTitle text={`In the party · ${view.members.length}`} />
           <PartyBoard rows={rows} you={view.you} running={false} code={code} />
@@ -215,39 +215,6 @@ function SectionTitle({ text }: { text: string }) {
     <ThemedText variant="footnote" tone="tertiaryLabel" accessibilityRole="header" style={{ textTransform: 'uppercase', paddingHorizontal: spacing.md, marginBottom: -spacing.sm }}>
       {text}
     </ThemedText>
-  );
-}
-
-/** The party code as five big tiles, and a capsule that shares it. */
-function CodeTiles({ code }: { code: string }) {
-  const c = usePlainColors();
-  return (
-    <View style={{ gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: c.cell }}>
-      <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-        Party code
-      </ThemedText>
-      <View accessible accessibilityLabel={`Party code ${code.split('').join(' ')}`} style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs }}>
-        {code.split('').map((letter, i) => (
-          <View key={i} style={{ flex: 1, maxWidth: 56, height: 64, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: c.background }}>
-            <Text maxFontSizeMultiplier={1} style={{ fontSize: 32, fontWeight: '800', color: c.label }}>
-              {letter}
-            </Text>
-          </View>
-        ))}
-      </View>
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel={`Share the party code ${code}`}
-        onPress={() => void Share.share({ message: `Join my FlipUp party. Open the Party tab, tap Join a party and type ${code}.` })}
-        outerStyle={{ alignSelf: 'center' }}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.md, minHeight: 44, borderRadius: radius.full, backgroundColor: c.blueBg }}
-      >
-        <Icon name="square.and.arrow.up" size={17} color={c.blueInk} />
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '600', color: c.blueInk }}>
-          Share the code
-        </Text>
-      </PressableScale>
-    </View>
   );
 }
 

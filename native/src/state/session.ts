@@ -26,6 +26,7 @@ import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
 import { isFast } from './prefs';
 import { wornLook } from './profile';
+import { noteGame, noteHand } from './record';
 import { markPlayedToday } from './streak';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
 import { save, subscribe } from './storage';
@@ -104,12 +105,22 @@ export function syncLook(): void {
 let lastCounted = '';
 function noteDay(game: Game | null): void {
   const hand = game?.hand;
-  if (!game || !hand?.result) return;
-  const mine = game.players.find((p) => p.deviceId === me);
-  const key = `${game.id}/${hand.number}`;
-  if (!mine || key === lastCounted || !hand.seats.some((s) => s.playerId === mine.id && s.cards.length > 0)) return;
-  lastCounted = key;
-  markPlayedToday();
+  const mine = game?.players.find((p) => p.deviceId === me);
+  if (!game || !mine) return;
+  const key = `${game.id}/${hand?.number}`;
+  if (hand?.result && key !== lastCounted && hand.seats.some((s) => s.playerId === mine.id && s.cards.length > 0)) {
+    lastCounted = key;
+    markPlayedToday();
+    noteHand(game, mine.id);
+  }
+  // Home's record of your games: where you finished, once the table is over.
+  if (game.status === 'ended') noteGame(game, mine.id);
+}
+
+// The How to Play recorder (scripts/recordHowTo.mjs) reads the bots table it films through this. It only exists in
+// a web build exported with EXPO_PUBLIC_RECORDER=1; every other build compiles it away.
+if (process.env.EXPO_PUBLIC_RECORDER === '1' && typeof window !== 'undefined') {
+  (window as unknown as { __flipupTable: () => Game | null }).__flipupTable = () => session?.game ?? null;
 }
 
 export function useTable(): TableState {

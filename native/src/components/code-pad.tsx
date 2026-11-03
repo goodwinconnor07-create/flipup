@@ -26,6 +26,8 @@ export interface CodeState {
   /** Takes whatever is in the text field: upper-cased, only code letters, at most five. */
   setText: (text: string) => void;
   setError: (error: string) => void;
+  /** Empties the boxes and stops looking, for a screen that's shown again after a code took you somewhere. */
+  reset: () => void;
 }
 
 /** The code typed so far. `run` is called once all five letters are in, and returns an error sentence, or null when it worked. */
@@ -89,7 +91,14 @@ export function useCode(run: (code: string) => Promise<string | null>): CodeStat
     if (next.length === CODE_LENGTH && next !== code) void submit(next);
   };
 
-  return { code, busy, error, misses, type, erase, fill, setText, setError };
+  const reset = () => {
+    looking.current = false;
+    setBusy(false);
+    setCode('');
+    setError('');
+  };
+
+  return { code, busy, error, misses, type, erase, fill, setText, setError, reset };
 }
 
 /** The five boxes over a hidden text field, so the iPhone keyboard types into them, and the spinner or error under them. */
@@ -106,12 +115,19 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
   }, [misses]); // eslint-disable-line react-hooks/exhaustive-deps
   const shaking = useAnimatedStyle(() => ({ transform: [{ translateX: shake.get() }] }));
   const input = useRef<React.ComponentRef<typeof TextInput>>(null);
+  // The keyboard comes up with the screen, the way the phone's own code fields do: the field asks for focus as
+  // it mounts (autoFocus) and whenever the tab comes back. If iOS ignored that ask mid-transition, one retry
+  // follows once the transition has settled, but only when the field still isn't focused.
   useEffect(() => {
-    if (focus) {
-      const t = setTimeout(() => input.current?.focus(), 350);
-      return () => clearTimeout(t);
+    if (!focus) {
+      input.current?.blur();
+      return;
     }
-    input.current?.blur();
+    input.current?.focus();
+    const t = setTimeout(() => {
+      if (!input.current?.isFocused()) input.current?.focus();
+    }, 300);
+    return () => clearTimeout(t);
   }, [focus]);
 
   return (
@@ -149,6 +165,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
         {/* The field that takes the typing, laid over the boxes so a tap on them brings the keyboard back. */}
         <TextInput
           ref={input}
+          autoFocus={focus}
           value={code}
           onChangeText={state.setText}
           editable={!busy}

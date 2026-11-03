@@ -10,6 +10,8 @@ export const socketUrl = (path: string) => API_ORIGIN.replace(/^http/, 'ws') + p
 
 /** The link a friend opens to join (the web app at the same address). */
 export const joinLink = (code: string) => `${APP_INFO.apiOrigin}/${code}`;
+/** A party's link, for its QR code: the Join tab reads the /party/ in it. */
+export const partyLink = (code: string) => `${APP_INFO.apiOrigin}/party/${code}`;
 
 async function request(path: string, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
   const controller = new AbortController();

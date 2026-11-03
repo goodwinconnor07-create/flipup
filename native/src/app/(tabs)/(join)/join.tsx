@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, Stack, useIsFocused } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Linking, ScrollView, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
@@ -11,17 +11,24 @@ import { haptic } from '@/components/haptics';
 import { ThemedText } from '@/components/themed-text';
 import { isCode, normalizeCode, variantInfo, type TableInfo } from '@/engine';
 import { fetchTableInfo } from '@/state/api';
+import { joinParty, readParty } from '@/state/party';
 import { useProfile } from '@/state/profile';
 import { joinOnlineTable } from '@/state/session';
 import { radius, spacing, useColors } from '@/theme';
 
-/** The code inside a scanned QR: the join link ends in it, or the text is just the code (the web's `codeFromScan`). */
+/** The code inside a scanned QR: the join link ends in it (a table's or a party's), or the text is just the code (the web's `codeFromScan`). */
 function codeFromScan(text: string): string | null {
   let tail = text.trim();
   const m = /^[a-z]+:\/\/[^/]+(\/.*)?$/i.exec(tail);
   if (m) tail = m[1] ?? '';
   const code = normalizeCode(tail.split(/[/?#]/).filter(Boolean).pop() ?? '');
   return isCode(code) ? code : null;
+}
+
+/** Sits you down in a party, and opens it. */
+async function intoParty(code: string): Promise<void> {
+  await joinParty(code);
+  router.navigate('/party-room');
 }
 
 /**
@@ -39,13 +46,26 @@ export default function JoinTab() {
   const state = useCode(async (value) => {
     try {
       const info = await fetchTableInfo(value);
-      if (!info) return "There's no table with that code. Check it and try again.";
-      setFound(info);
-      return null;
+      if (info) {
+        setFound(info);
+        return null;
+      }
+      // One place to join anything: a party code works here too.
+      if (await readParty(value).catch(() => null)) {
+        await intoParty(value);
+        return null;
+      }
+      return "There's no table or party with that code. Check it and try again.";
     } catch (e) {
       return e instanceof Error ? e.message : 'Something went wrong. Try again.';
     }
   });
+
+  // Back on the tab after a party code took you to the party: empty boxes, ready for the next code.
+  const { reset } = state;
+  useEffect(() => {
+    if (focused && !found) reset();
+  }, [focused]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scan = async () => {
     state.setError('');

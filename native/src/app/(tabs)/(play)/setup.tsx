@@ -5,6 +5,7 @@ import { Alert, ScrollView, View } from 'react-native';
 import { Button } from '@/components/button';
 import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
+import { SeatPreview } from '@/components/seat-preview';
 import { Stepper } from '@/components/stepper';
 import { SettingsFields } from '@/components/settings-fields';
 import { isVariant, MAX_SEATS, variantInfo, type Settings } from '@/engine';
@@ -14,7 +15,8 @@ import { saveSettings, setDraft, startDraft, useDraft, useSavedSettings } from '
 import { party, spacing } from '@/theme';
 
 /**
- * Setting up a table, as a native grouped form: who plays, the game, chips and blinds, and the house rules, each
+ * Setting up a table: the table itself at the top (the game's felt, you and a face for each bot, open seats for
+ * friends), then a native grouped form: who plays, the game, chips and blinds, and the house rules, each
  * section with a footer that says what it does. Steppers, a segmented control and switches; the Game row opens
  * the list of games.
  */
@@ -54,6 +56,7 @@ export default function SetupScreen() {
     <>
       <Stack.Screen options={{ title: mode === 'friends' ? 'Play with friends' : 'Play with bots' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
+        <SeatPreview settings={s} bots={bots} friends={mode === 'friends'} />
         <Section footer={mode === 'friends' ? 'Bots fill seats your friends leave empty.' : 'Computer players at your table.'}>
           <Row
             title="Bots"

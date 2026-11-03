@@ -69,6 +69,9 @@ const WEB = {
   'lifepreserver.fill': 'support',
   'envelope.fill': 'mail',
   'trash.fill': 'delete',
+  'play.fill': 'play_arrow',
+  'pause.fill': 'pause',
+  'play.rectangle.fill': 'smart_display',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

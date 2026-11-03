@@ -2,63 +2,79 @@ import { router, Stack } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
-import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
+import { GameShelf } from '@/components/home/game-shelf';
+import { TableHero } from '@/components/home/table-hero';
+import { YourPoker } from '@/components/home/your-poker';
 import { Icon } from '@/components/icon';
-import { PlayCard } from '@/components/play-card';
-import { isPremiumVariant, variantInfo, variantOf, VARIANTS } from '@/engine';
+import { PressableScale } from '@/components/pressable-scale';
+import { ThemedText } from '@/components/themed-text';
+import { variantInfo, variantOf } from '@/engine';
 import { usePartyRef } from '@/state/party';
 import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
-import { minTap, radius, spacing, useColors } from '@/theme';
-
-const THUMB = 52;
+import { gradient, gradients, minTap, radius, spacing, useColors } from '@/theme';
 
 /**
- * Home: a large "FlipUp" title with your avatar in the nav bar, the Play card, every game as a grouped row with
- * its picture, Premium as one row near the bottom, and the play-chips line the App Store asks for.
+ * Home, a card room: the table you're at (if any), a live table with the two ways to sit down, your poker so far (or
+ * How to Play before your first hand), every game as a picture, and Premium. No app name and no explainer lines.
  */
 export default function Home() {
   const colors = useColors();
   const premium = usePremium();
   return (
     <>
-      <Stack.Screen options={{ title: 'FlipUp', headerLargeTitleEnabled: true, headerRight: () => <ProfileButton /> }} />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
-        <TableBanner />
-        <PlayCard onFriends={() => router.push({ pathname: '/setup', params: { mode: 'friends' } })} onBots={() => router.push({ pathname: '/setup', params: { mode: 'bots' } })} />
-
-        <Section header="Games" footer={premium ? undefined : 'The first five are free. The rest come with Premium, or watch a short ad to host one.'} inset={spacing.md + THUMB + spacing.sm}>
-          {VARIANTS.map((v) => (
-            <Row
-              key={v.id}
-              title={v.name}
-              subtitle={v.tagline}
-              leading={<GameThumb variant={v.id} size={THUMB} />}
-              trailing={!premium && isPremiumVariant(v.id) ? <Icon name="crown.fill" size={15} color={colors.gold} /> : undefined}
-              onPress={() => router.push(`/game/${v.id}`)}
-            />
-          ))}
-        </Section>
-
-        <Section footer="Play chips only. They have no cash value and can't be bought or won.">
-          <Row
-            title="FlipUp Premium"
-            subtitle={premium ? 'Unlocked. Thank you for backing FlipUp.' : 'Card packs, bubble effects and seven more games'}
-            icon={{ symbol: 'crown.fill', color: colors.gold as string }}
-            onPress={() => router.push('/premium')}
-          />
-        </Section>
+      <Stack.Screen options={{ title: 'Play', headerLargeTitleEnabled: true, headerRight: () => <ProfileButton /> }} />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center' }}>
+        <View style={{ gap: spacing.md }}>
+          <TableBanner />
+          <TableHero onFriends={() => router.push({ pathname: '/setup', params: { mode: 'friends' } })} onBots={() => router.push({ pathname: '/setup', params: { mode: 'bots' } })} />
+        </View>
+        <YourPoker />
+        <GameShelf />
+        {!premium && <PremiumCard />}
 
         {__DEV__ && (
           <Section header="Development">
             <Row title="Design system" icon={{ symbol: 'paintbrush.fill', color: colors.indigo as string }} onPress={() => router.push('/design')} />
           </Section>
         )}
+
+        <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
+          Play chips only. They have no cash value and can&apos;t be bought or won.
+        </ThemedText>
       </ScrollView>
     </>
+  );
+}
+
+/** Premium, as a gold card: the crown, what it adds, and a tap to the offer. */
+function PremiumCard() {
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel="Premium. Card packs, bubble effects and seven more games"
+      onPress={() => {
+        haptic.tap();
+        router.push('/premium');
+      }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', ...gradient(`linear-gradient(150deg, ${gradients.gold[0]} 0%, ${gradients.gold[1]} 100%)`) }}
+    >
+      <View style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+        <Icon name="crown.fill" size={24} color={gradients.gold[1]} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <ThemedText variant="title3" style={{ fontWeight: '800', color: '#3b2300' }}>
+          Premium
+        </ThemedText>
+        <ThemedText variant="subhead" style={{ color: '#5a3a00' }}>
+          Card packs, bubble effects and seven more games
+        </ThemedText>
+      </View>
+      <Icon name="chevron.right" size={16} color="#5a3a00" />
+    </PressableScale>
   );
 }
 

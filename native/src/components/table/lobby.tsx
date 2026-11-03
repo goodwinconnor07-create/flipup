@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { MAX_SEATS, variantInfo, type Game } from '@/engine';
 import { joinLink } from '@/state/api';
@@ -8,6 +8,7 @@ import { radius, spacing, useColors } from '@/theme';
 import { Button } from '../button';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { InviteTicket } from '../invite-ticket';
 import { ThemedText } from '../themed-text';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -37,9 +38,9 @@ export function Lobby({ game, online }: { game: Game; online: boolean }) {
           <ThemedText variant="largeTitle" accessibilityRole="header">
             {host ? (online ? 'Invite your friends' : 'Your table') : "You're in!"}
           </ThemedText>
-          <ThemedText tone="tertiaryLabel">{host ? (online ? 'They join with this code, on their own phones.' : 'Add or remove bots, then deal.') : 'Waiting for the host to deal.'}</ThemedText>
+          <ThemedText tone="tertiaryLabel">{host ? (online ? 'Friends scan this from the Join tab, or type the code.' : 'Add or remove bots, then deal.') : 'Waiting for the host to deal.'}</ThemedText>
         </View>
-        {online && game.code && host && <Invite code={game.code} />}
+        {online && game.code && host && <InviteTicket code={game.code} link={joinLink(game.code)} share="Come play poker with me on FlipUp." />}
         <View style={{ gap: spacing.sm }}>
           <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textTransform: 'uppercase' }}>
             At the table · {game.players.length}/{MAX_SEATS}
@@ -105,32 +106,6 @@ export function Lobby({ game, online }: { game: Game; online: boolean }) {
           <Button variant="party" tint="green" size="lg" title="Deal" onPress={deal} />
         </View>
       )}
-    </View>
-  );
-}
-
-/** The join code in five big tiles, and the phone's share sheet with a link to it. */
-function Invite({ code }: { code: string }) {
-  const colors = useColors();
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <View accessible accessibilityLabel={`Table code ${code.split('').join(' ')}`} style={{ flexDirection: 'row', gap: spacing.xs, justifyContent: 'center' }}>
-        {code.split('').map((ch, i) => (
-          <View key={i} style={{ width: 56, height: 68, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.cell, alignItems: 'center', justifyContent: 'center' }}>
-            <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 34, fontWeight: '800', color: colors.label }}>
-              {ch}
-            </Text>
-          </View>
-        ))}
-      </View>
-      <Button
-        variant="secondary"
-        title="Share the link"
-        onPress={() => {
-          haptic.tap();
-          void Share.share({ message: `Come play poker with me on FlipUp. Code ${code}: ${joinLink(code)}`, url: joinLink(code) });
-        }}
-      />
     </View>
   );
 }

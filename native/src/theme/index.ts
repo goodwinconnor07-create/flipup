@@ -3,4 +3,4 @@ export { gradients, minTap, motion, party, radius, spacing } from '@design/token
 export { isIOS, useColors, usePlainColors, type Colors } from './colors';
 export { gradient } from './gradient';
 export { useShadows } from './shadows';
-export { maxScale, typography, type TypeStyle } from './typography';
+export { maxScale, ROUNDED, typography, type TypeStyle } from './typography';

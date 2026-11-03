@@ -15,7 +15,7 @@ import { haptic } from '../haptics';
 import { openPlayerMenu } from '../player-menu';
 import { seatKey } from '@/state/blocks';
 import { ThemedText } from '../themed-text';
-import { bubblePop, MoveBubble, Thread, TypingBubble } from './bubbles';
+import { bubbleOut, bubblePop, MoveBubble, pinned, Thread, TypingBubble } from './bubbles';
 import { Count } from './count';
 import { MoodFace } from './mood-face';
 import { PlayingCard } from './playing-card';
@@ -253,15 +253,15 @@ function SeatPod({
           <PositionChip pos={positionOf(hand, player.id)} />
         </View>
         {/* The bubble sits over the top of the face, as on the web. */}
-        <View pointerEvents="none" style={{ position: 'absolute', bottom: 48, left: -40, right: -40, alignItems: 'center' }}>
+        <View pointerEvents="none" style={{ position: 'absolute', bottom: 48, left: -40, right: -40, height: 0 }}>
           {talk ? (
-            <Thread talk={talk} fx={player.bubble} room={room} />
+            <Thread talk={talk} fx={player.bubble} room={room} place={pinned('center')} />
           ) : thinking ? (
-            <Animated.View key="thinking" entering={bubblePop}>
+            <Animated.View key="thinking" entering={bubblePop} exiting={bubbleOut} style={pinned('center')}>
               <TypingBubble label={`${player.name} is thinking`} />
             </Animated.View>
           ) : last && !hush ? (
-            <Animated.View key={`${hand?.number}-${moveLabel(last)}`} entering={bubblePop}>
+            <Animated.View key={`${hand?.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('center')}>
               <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={player.bubble} old={!!hand && last.street !== hand.street} />
             </Animated.View>
           ) : null}

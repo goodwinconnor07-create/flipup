@@ -20,10 +20,10 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 /** Set before your turn. `current` only plays while the bet is still the `bet` it was set against. */
 export type PreAction = { kind: 'checkfold' | 'callany' | 'current'; bet: number } | null;
 
-type Tone = 'fold' | 'green' | 'blue' | 'dark' | 'pre' | 'preOn';
+type Tone = 'fold' | 'green' | 'blue' | 'dark' | 'pre' | 'preOn' | 'quietFold' | 'quietCall';
 
 /** One of the big table buttons: at least 60pt tall, in the three slots Fold, Check/Call and Raise share. */
-function TableButton({ label, sub, tone, onPress, disabled, fill }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean; fill?: number }) {
+function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, big }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean; fill?: number; height?: number; big?: boolean }) {
   const colors = useColors();
   const c = usePlainColors();
   const look: Record<Tone, { bg: string; ink: string }> = {
@@ -33,6 +33,8 @@ function TableButton({ label, sub, tone, onPress, disabled, fill }: { label: str
     dark: { bg: colors.label as string, ink: colors.background as string },
     pre: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
     preOn: { bg: colors.accent as string, ink: '#ffffff' },
+    quietFold: { bg: colors.cell as string, ink: c.redInk },
+    quietCall: { bg: colors.cell as string, ink: colors.green as string },
   };
   return (
     <PressableScale
@@ -41,10 +43,10 @@ function TableButton({ label, sub, tone, onPress, disabled, fill }: { label: str
       accessibilityState={{ disabled: !!disabled, selected: tone === 'preOn' }}
       disabled={disabled}
       onPress={onPress}
-      style={{ minHeight: 60, borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, backgroundColor: look[tone].bg }}
+      style={{ minHeight: height, borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, backgroundColor: look[tone].bg }}
     >
       {fill !== undefined && <View style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: `${fill * 100}%`, backgroundColor: 'rgba(255,255,255,0.85)' }} />}
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: 17, lineHeight: 20, textAlign: 'center', fontWeight: tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
         {label}
         {sub ? ` ${sub}` : ''}
       </Text>
@@ -188,8 +190,12 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
   );
 }
 
-/** The bet sizer, pinned over the bottom of the table as on the web: presets, a slider with − and +, and the same three slots. */
-export function RaisePanel({ game, hand, seat, onClose }: { game: Game; hand: Hand; seat: Seat; onClose: () => void }) {
+/**
+ * The bet sizer, pinned to the bottom edge of the screen (`inset` is the table screen's bottom padding, which the
+ * panel reaches down over): presets, a slider with − and +, then Raise as the big middle button with Fold and Call
+ * small and quiet either side, so a thumb that slid the amount lands on Raise and never calls by habit.
+ */
+export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; hand: Hand; seat: Seat; inset: number; onClose: () => void }) {
   const colors = useColors();
   const shadow = useShadows();
   const reduce = useReduceMotion();
@@ -223,7 +229,7 @@ export function RaisePanel({ game, hand, seat, onClose }: { game: Game; hand: Ha
       entering={reduce ? FadeIn.duration(150) : SlideInDown.duration(250)}
       exiting={reduce ? FadeOut.duration(120) : SlideOutDown.duration(160)}
       accessibilityViewIsModal
-      style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.sm, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
+      style={{ position: 'absolute', left: 0, right: 0, bottom: -inset, padding: spacing.md, paddingBottom: inset + spacing.sm, gap: spacing.md, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: spacing.xs }}>
         <ThemedText tone="tertiaryLabel">{o.word} to</ThemedText>
@@ -273,11 +279,17 @@ export function RaisePanel({ game, hand, seat, onClose }: { game: Game; hand: Ha
           <Icon name="plus" size={22} color={colors.label} />
         </Pressable>
       </View>
-      <Row>
-        <TableButton label="Fold" tone="fold" onPress={onFold} />
-        <TableButton label={o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'} sub={!o.canCheck && !o.callIsAllIn ? chips(o.toCall) : undefined} tone="green" onPress={onCall} />
-        <TableButton label={to >= o.maxTo ? 'All in' : o.word} tone="blue" onPress={() => onRaise(to)} />
-      </Row>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+        <View style={{ flex: 1 }}>
+          <TableButton label="Fold" tone="quietFold" height={52} onPress={onFold} />
+        </View>
+        <View style={{ flex: 2 }}>
+          <TableButton big height={76} label={to >= o.maxTo ? 'All in' : o.word} sub={to >= o.maxTo ? undefined : chips(to)} tone="blue" onPress={() => onRaise(to)} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <TableButton label={o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'} sub={!o.canCheck && !o.callIsAllIn ? chips(o.toCall) : undefined} tone="quietCall" height={52} onPress={onCall} />
+        </View>
+      </View>
     </Animated.View>
   );
 }

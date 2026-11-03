@@ -45,7 +45,7 @@ export default function GameSheet() {
         </View>
       </PressableScale>
       <View style={{ gap: spacing.xxs }}>
-        <ThemedText variant="title1" accessibilityRole="header" style={{ fontWeight: '800' }}>
+        <ThemedText variant="title1" accessibilityRole="header">
           {info.name}
         </ThemedText>
         <ThemedText variant="callout" tone="tertiaryLabel">

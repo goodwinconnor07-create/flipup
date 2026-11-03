@@ -1,10 +1,12 @@
 import { router, Stack } from 'expo-router';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, Text, View } from 'react-native';
 
 import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
+import { ProfileMenu } from '@/components/profile-menu';
+import { TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
 import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, VARIANTS } from '@/engine';
 import { usePartyRef } from '@/state/party';
@@ -34,8 +36,8 @@ export default function PartyTab() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Party', headerLargeTitleEnabled: true }} />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
+      <Stack.Screen options={{ title: 'Party', headerShown: false }} />
+      <TabScreen title="Party" accessory={<ProfileMenu />}>
         <HostCard onPress={() => !needName() && router.push('/party-setup')} />
 
         <Section>
@@ -47,8 +49,7 @@ export default function PartyTab() {
             onPress={() => !needName() && router.push({ pathname: '/code-entry', params: { kind: 'party' } })}
           />
         </Section>
-
-      </ScrollView>
+      </TabScreen>
     </>
   );
 }

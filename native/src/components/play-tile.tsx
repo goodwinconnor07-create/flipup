@@ -54,7 +54,7 @@ export function PlayTile({
           {emoji}
         </ThemedText>
       </View>
-      <ThemedText variant="title3" tone="onColor" style={{ fontWeight: '800' }}>
+      <ThemedText variant="title3" tone="onColor">
         {title}
       </ThemedText>
       <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>

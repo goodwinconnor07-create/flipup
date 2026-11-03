@@ -61,15 +61,25 @@ export const useMyPalCode = (): string | null => useStored<string | null>(MINE, 
 const profile = () => read<{ name?: string; emoji?: string } | null>('flipup.profile', null) ?? {};
 const numeric = (code: string) => /^\d+$/.test(code);
 
+/** When this phone last asked for a new code to replace an old five-letter one. */
+const SWAPPED = 'flipup.palcodeswap';
+const SWAP_EVERY = 24 * 60 * 60 * 1000;
+
 /**
  * Makes sure this phone has a friend code (and that the server has its latest name and picture). A phone with one
- * of the old five-letter codes gets a number instead, so friend codes never look like game codes.
+ * of the old five-letter codes asks for a number instead, so friend codes never look like game codes, but at most
+ * once a day: a server that still hands out letters would otherwise get a new code on every call, and a phone soon
+ * hits the limit on new codes ("Too many codes made").
  */
 export async function ensureMyCode(): Promise<string> {
   const { name = '', emoji = '' } = profile();
   const body = { deviceId: deviceId(), name, emoji };
   const have = myPalCode();
-  if (have && numeric(have) && (await updateFriendCard(have, body))) return have;
+  if (have) {
+    const swapDue = !numeric(have) && Date.now() - read<number>(SWAPPED, 0) > SWAP_EVERY;
+    if (!swapDue && (await updateFriendCard(have, body))) return have;
+    if (swapDue) save(SWAPPED, Date.now());
+  }
   const code = await createFriendCard(body);
   save(MINE, code);
   return code;
@@ -187,7 +197,7 @@ export function useFriendWatch(): void {
     const start = () => {
       void (async () => {
         // An old five-letter code becomes a number before anything else.
-        if (!numeric(code) && profile().name) await ensureMyCode().catch(() => undefined);
+        if (!numeric(code) && profile().name && Date.now() - read<number>(SWAPPED, 0) > SWAP_EVERY) await ensureMyCode().catch(() => undefined);
         await syncFriends();
         await moveOldPals().catch(() => undefined);
       })();

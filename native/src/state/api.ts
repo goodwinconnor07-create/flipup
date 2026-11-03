@@ -99,7 +99,11 @@ export async function fetchInbox(code: string, deviceId: string): Promise<Inbox 
 /** Sets this phone's username. Throws with the server's sentence (taken, too soon, not allowed). */
 export async function setUsernameOnServer(code: string, body: { deviceId: string; username: string }): Promise<string> {
   const res = await json(`/api/friends/${encodeURIComponent(code)}/username`, { method: 'POST', body: JSON.stringify(body) });
-  if (!res.ok) throw new Error(await errorText(res, "Couldn't save your username. Try again."));
+  if (!res.ok) {
+    const text = await errorText(res, "Couldn't save your username. Try again.");
+    // A server from before usernames answers the route itself with a bare "Not found."
+    throw new Error(text === 'Not found.' ? "Usernames aren't open yet. Try again soon." : text);
+  }
   return ((await res.json()) as { username: string }).username;
 }
 

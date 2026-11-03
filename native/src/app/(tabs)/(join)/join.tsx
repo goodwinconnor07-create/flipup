@@ -1,7 +1,9 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router, Stack, useIsFocused } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, ScrollView, View } from 'react-native';
+import { Alert, Linking, View } from 'react-native';
+
+import { TabScreen } from '@/components/tab-screen';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
@@ -108,8 +110,8 @@ export default function JoinTab() {
   };
 
   return (
-    <ScrollView keyboardShouldPersistTaps="handled" contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.lg }}>
-      <Stack.Screen options={{ title: 'Join', headerLargeTitleEnabled: true }} />
+    <TabScreen title="Join" keyboardShouldPersistTaps="handled" contentStyle={{ gap: spacing.lg }}>
+      <Stack.Screen options={{ title: 'Join', headerShown: false }} />
       {found ? (
         <TableCard
           info={found}
@@ -141,7 +143,7 @@ export default function JoinTab() {
           <Button title="Scan a QR code" variant="party" tint="pink" onPress={() => void scan()} />
         </>
       )}
-    </ScrollView>
+    </TabScreen>
   );
 }
 

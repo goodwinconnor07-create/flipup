@@ -117,7 +117,7 @@ function noteDay(game: Game | null): void {
   if (game.status === 'ended') noteGame(game, mine.id);
 }
 
-// The How to Play recorder (scripts/recordHowTo.mjs) reads the bots table it films through this. It only exists in
+// The How to Play shooter (scripts/shootHowTo.mjs) reads the bots table it photographs through this. It only exists in
 // a web build exported with EXPO_PUBLIC_RECORDER=1; every other build compiles it away.
 if (process.env.EXPO_PUBLIC_RECORDER === '1' && typeof window !== 'undefined') {
   (window as unknown as { __flipupTable: () => Game | null }).__flipupTable = () => session?.game ?? null;

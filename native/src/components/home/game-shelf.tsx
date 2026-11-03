@@ -18,7 +18,7 @@ const open = (v: Variant) => {
 };
 
 /**
- * Every game: Texas Hold'em as one big card with its How to Play a tap away, then the rest two to a row, each its
+ * Every game (Home's "See all"): Texas Hold'em as one big card with its How to Play a tap away, then the rest two to a row, each its
  * drawn scene over its own colours, with a crown on the Premium ones.
  */
 export function GameShelf() {
@@ -29,9 +29,6 @@ export function GameShelf() {
   const tile = (width - spacing.sm) / 2;
   return (
     <View style={{ gap: spacing.sm }}>
-      <ThemedText variant="title2" accessibilityRole="header" style={{ fontWeight: '800' }}>
-        Games
-      </ThemedText>
       <MainCard variant={main.id} name={main.name} width={width} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
         {rest.map((v, i) => (

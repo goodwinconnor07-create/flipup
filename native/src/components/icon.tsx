@@ -72,6 +72,8 @@ const WEB = {
   'play.fill': 'play_arrow',
   'pause.fill': 'pause',
   'play.rectangle.fill': 'smart_display',
+  ellipsis: 'more_horiz',
+  'chart.bar.xaxis': 'bar_chart',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

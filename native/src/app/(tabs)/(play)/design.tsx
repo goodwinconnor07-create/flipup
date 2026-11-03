@@ -4,6 +4,7 @@ import { ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { GlassSurface } from '@/components/glass-surface';
+import { InviteTicket } from '@/components/invite-ticket';
 import { Row, Section } from '@/components/grouped-list';
 import { PlayTile } from '@/components/play-tile';
 import { SegmentedControl } from '@/components/segmented-control';
@@ -33,6 +34,8 @@ export default function DesignSystem() {
         <PlayTile title="Play with friends" subtitle="Share a code" emoji="🥳" tint="blue" onPress={() => {}} style={{ flex: 1 }} />
         <PlayTile title="Play with bots" subtitle="On this phone" emoji="🦊" tint="green" onPress={() => {}} style={{ flex: 1 }} />
       </View>
+
+      <InviteTicket code="TZZWJ" link="https://gtoduel.online/party/TZZWJ" kind="party" share="Join my FlipUp party." />
 
       <Section header="Appearance" footer="Auto follows the phone's light or dark setting.">
         <View style={{ padding: spacing.sm }}>

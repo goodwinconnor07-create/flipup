@@ -323,6 +323,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
     if (winKey) haptic.success();
   }, [winKey]);
   const { width, height } = useWindowDimensions();
+  // The screen's own bottom padding (see TableScreen), which the raise panel covers to reach the edge.
+  const bottomInset = Math.max(useSafeAreaInsets().bottom, spacing.sm);
 
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
   const speakerOk = useRef<(id: string) => boolean>(() => true);
@@ -363,7 +365,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
         <>
           {/* A tap anywhere else closes the sizer, as on the web. */}
           <Pressable accessibilityLabel="Close the raise panel" onPress={() => setRaising(false)} style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }} />
-          <RaisePanel game={game} hand={hand} seat={mySeat} onClose={() => setRaising(false)} />
+          <RaisePanel game={game} hand={hand} seat={mySeat} inset={bottomInset} onClose={() => setRaising(false)} />
         </>
       )}
     </View>

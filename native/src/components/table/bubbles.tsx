@@ -164,12 +164,21 @@ function Word({ text, ink, gone, lead }: { text: string; ink: string; gone: bool
   );
 }
 
+/**
+ * Where a bubble sits: pinned by its bottom edge to an anchor of no height. A bubble that leaves fades where it
+ * stood; in a box that grew and shrank with its content the leaving bubble lost its place and dropped as it faded.
+ */
+export const pinned = (align: 'center' | 'flex-end'): ViewStyle => ({ position: 'absolute', bottom: 0, left: align === 'center' ? 0 : undefined, right: 0, alignItems: align });
+
+/** How every bubble leaves: a quick fade in place. */
+export const bubbleOut = FadeOut.duration(220).easing(Easing.out(Easing.quad));
+
 /** A seat's talk: its newest message, or the typing dots while the next one comes. One bubble a seat. */
-export function Thread({ talk, fx, room }: { talk: Talk; fx?: string; room?: number }) {
+export function Thread({ talk, fx, room, place }: { talk: Talk; fx?: string; room?: number; place: ViewStyle }) {
   const reduce = useReduceMotion();
   const item: Message | null = talk.typing ? null : (talk.shown.at(-1) ?? null);
   return (
-    <Animated.View key={item?.key ?? 'typing'} accessibilityLiveRegion="polite" entering={reduce ? FadeIn.duration(150) : bubblePop} exiting={FadeOut.duration(250)}>
+    <Animated.View key={item?.key ?? 'typing'} accessibilityLiveRegion="polite" entering={reduce ? FadeIn.duration(150) : bubblePop} exiting={bubbleOut} style={place}>
       {!item ? <TypingBubble /> : item.rolling ? <Ticker text={item.text} fx={fx} room={room} /> : <TalkBubble text={item.text} fx={fx} room={room} />}
     </Animated.View>
   );

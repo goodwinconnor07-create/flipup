@@ -3,14 +3,13 @@
 // (full colour on their turn), the stack counting as it changes, their cards (with an orange shimmer sweeping over
 // them while it's their turn), and a tag under them: what they've put in this round, a win, their odds during a
 // run-out, or Offline.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { Easing, FadeIn, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
-import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { me as myDevice, dispatch } from '@/state/session';
-import { gradient, usePlainColors } from '@/theme';
+import { usePlainColors } from '@/theme';
 
 import { haptic } from '../haptics';
 import { ThemedText } from '../themed-text';
@@ -100,9 +99,9 @@ export function SeatRow({
     // The row reaches a little into the side margins, so each seat (and its bubble) gets more room.
     <View style={{ flexDirection: 'row', justifyContent: 'center', marginHorizontal: 4, paddingTop: 30, minHeight: 166 }}>
       {shown.map((p) => (
-        <Animated.View key={p.id} layout={LinearTransition.duration(550).easing(Easing.bezier(0.3, 0.9, 0.25, 1))} entering={FadeIn.duration(300)} style={{ flex: 1, maxWidth: 110 }}>
+        <View key={p.id} style={{ flex: 1, maxWidth: 110 }}>
           <SeatPod game={game} player={p} seat={seatFor(game.hand, p.id)} talk={say[p.id]} quiet={quiet[p.id]} dimCard={dimCard} glowCard={glowCard} odds={odds?.get(p.id)} n={shown.length} />
-        </Animated.View>
+        </View>
       ))}
       {hidden.length > 0 && <HiddenPlayers game={game} players={hidden} />}
     </View>
@@ -272,25 +271,26 @@ function SeatPod({
       </View>
       <View style={{ alignItems: 'center', gap: 4, minHeight: 52, paddingTop: 4 }}>
         {cards.length > 0 && (
-          <Shimmer on={turn}>
-            <View style={{ flexDirection: 'row' }}>
+          <View style={{ flexDirection: 'row' }}>
               {cards.map((card, i) => (
                 // Two cards overlap a little; more (Pineapple, Bean Stalk) fan tighter to stay inside the seat.
                 <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length > 3 ? -12 : -6 }}>
                   {card ? <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} /> : <PlayingCard back size="sm" pack={player.cardPack} />}
                 </View>
               ))}
-            </View>
-          </Shimmer>
+          </View>
         )}
-        <SeatTag c={c} won={won} odds={odds} bet={seat && seat.bet > 0 && hand && !hand.result ? seat.bet : 0} offline={!!player.offline} />
+        {/* A fixed slot, so a tag coming or going never changes the row's height and moves the table. */}
+        <View style={{ height: 20, justifyContent: 'center' }}>
+          <SeatTag c={c} won={won} odds={odds} offline={!!player.offline} />
+        </View>
       </View>
     </Pressable>
   );
 }
 
-/** Under a seat: a win, odds in a run-out, the chips put in this round (with a little chip in front), or Offline. */
-function SeatTag({ c, won, odds, bet, offline }: { c: ReturnType<typeof usePlainColors>; won: number; odds?: { win: number }; bet: number; offline: boolean }) {
+/** Under a seat: a win, odds in a run-out, or Offline. */
+function SeatTag({ c, won, odds, offline }: { c: ReturnType<typeof usePlainColors>; won: number; odds?: { win: number }; offline: boolean }) {
   const tag = (key: string, text: string, bg: string, ink: string, chip = false) => (
     <Animated.View key={key} entering={bubblePop} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: bg }}>
       {chip && <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.red, borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)' }} />}
@@ -301,38 +301,9 @@ function SeatTag({ c, won, odds, bet, offline }: { c: ReturnType<typeof usePlain
   );
   if (won > 0) return tag(`w${won}`, `+${chips(won)}`, c.green, '#ffffff');
   if (odds) return tag('o', pct(odds.win), c.contrast, c.onContrast);
-  if (bet > 0) return tag(`b${bet}`, chips(bet), c.goldBg, c.goldInk, true);
   if (offline) return tag('off', 'Offline', c.goldBg, c.goldInk);
   return null;
 }
-
-/** Whose turn it is: an orange shine sweeps over their cards, again and again (still under Reduce Motion). */
-function Shimmer({ on, children }: { on: boolean; children: ReactNode }) {
-  const reduce = useReduceMotion();
-  const [w, setW] = useState(0);
-  const x = useSharedValue(0);
-  useEffect(() => {
-    x.set(0);
-    if (on && !reduce) x.set(withRepeat(withTiming(1, { duration: 1100, easing: Easing.inOut(Easing.quad) }), -1));
-  }, [on, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
-  const style = useAnimatedStyle(() => ({ transform: [{ translateX: (-1.2 + 3.8 * x.get()) * w * 0.6 }, { skewX: '-18deg' }] }));
-  return (
-    <View onLayout={(e) => setW(e.nativeEvent.layout.width)} style={{ borderRadius: 5, overflow: 'hidden' }}>
-      {children}
-      {on && w > 0 && (
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            { position: 'absolute', top: '-10%', bottom: '-10%', left: 0, width: w * 0.6, opacity: reduce ? 0.35 : 1, ...SHINE },
-            style,
-          ]}
-        />
-      )}
-    </View>
-  );
-}
-
-const SHINE = gradient('linear-gradient(100deg, transparent 0%, rgba(255,149,0,0.15) 30%, rgba(255,149,0,0.75) 50%, rgba(255,149,0,0.15) 70%, transparent 100%)');
 
 const POS_LOOK: Record<Position['kind'], { bg: string; ink: string; edge?: string }> = {
   btn: { bg: '#ffffff', ink: '#000000', edge: '#000000' },

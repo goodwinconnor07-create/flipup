@@ -125,11 +125,10 @@ export function MyArea({
                 <Count value={me.stack} style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label }} />
               )}
             </Pressable>
-            {won > 0 ? (
-              <Text style={{ fontSize: 15, fontWeight: '600', color: c.green }}>+{chips(won)}</Text>
-            ) : seat && seat.bet > 0 && !hand?.result ? (
-              <Text style={{ fontSize: 15, fontWeight: '600', color: c.goldInk }}>In: {chips(seat.bet)}</Text>
-            ) : null}
+            {/* A fixed slot, so the win line coming or going never changes the box's height and moves the table. */}
+            <View style={{ height: 20, justifyContent: 'center' }}>
+              {won > 0 && <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: c.green }}>+{chips(won)}</Text>}
+            </View>
           </>
         )}
         <View style={{ position: 'absolute', left: 8, bottom: 8 }}>

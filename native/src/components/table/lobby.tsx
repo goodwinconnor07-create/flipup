@@ -1,8 +1,6 @@
 import { Alert, Pressable, ScrollView, Share, Text, View } from 'react-native';
-import Animated, { FadeIn, ZoomIn } from 'react-native-reanimated';
 
 import { MAX_SEATS, variantInfo, type Game } from '@/engine';
-import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { joinLink } from '@/state/api';
 import { dispatch, me as myDevice } from '@/state/session';
 import { radius, spacing, useColors } from '@/theme';
@@ -17,7 +15,6 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 /** Before the first deal: who's at the table (add or take away bots), what it plays, and Deal. */
 export function Lobby({ game, online }: { game: Game; online: boolean }) {
   const colors = useColors();
-  const reduce = useReduceMotion();
   const host = game.hostDeviceId === myDevice;
   const s = game.settings;
   const humans = game.players.filter((p) => !p.bot).length;
@@ -59,11 +56,9 @@ export function Lobby({ game, online }: { game: Game; online: boolean }) {
                   onPress={() => remove(p.id, p.name)}
                   style={{ width: '33.3%', alignItems: 'center', gap: 2 }}
                 >
-                  <Animated.View entering={reduce ? FadeIn : ZoomIn.delay(i * 60).springify().damping(14)}>
-                    <Text style={{ fontSize: 54, lineHeight: 64 }} maxFontSizeMultiplier={1}>
-                      {p.emoji}
-                    </Text>
-                  </Animated.View>
+                  <Text style={{ fontSize: 54, lineHeight: 64 }} maxFontSizeMultiplier={1}>
+                    {p.emoji}
+                  </Text>
                   <ThemedText variant="headline" numberOfLines={1}>
                     {p.name}
                   </ThemedText>

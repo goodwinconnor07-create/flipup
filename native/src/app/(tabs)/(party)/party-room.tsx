@@ -1,12 +1,13 @@
 import { router, Stack } from 'expo-router';
 import { Alert, Pressable, ScrollView } from 'react-native';
 
+import { DealWipe } from '@/components/deal-wipe';
 import { haptic } from '@/components/haptics';
 import { PartyPanel } from '@/components/party/panel';
 import { ThemedText } from '@/components/themed-text';
 import { forgetParty, leaveParty, usePartyRef } from '@/state/party';
 import { leaveTable, useTable } from '@/state/session';
-import { spacing } from '@/theme';
+import { gradients, spacing } from '@/theme';
 
 /** The party screen: the lobby, the leaderboard between games and the podium. Opened from the Party tab and Home. */
 export default function PartyRoom() {
@@ -57,6 +58,7 @@ export default function PartyRoom() {
           </ThemedText>
         )}
       </ScrollView>
+      <DealWipe colors={gradients.pink} />
     </>
   );
 }

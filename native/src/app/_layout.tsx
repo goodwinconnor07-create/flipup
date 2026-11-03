@@ -43,7 +43,8 @@ export default function RootLayout() {
       <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background }, animation: reduce ? 'fade' : 'default' }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
-        <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: reduce ? 'fade' : 'slide_from_bottom' }} />
+        <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
+        {/* The fade is short because the table's own DealWipe does the moving. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, title: 'Game' }} />
         <Stack.Screen name="premium" options={{ ...sheet, title: 'FlipUp Premium' }} />
         <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />

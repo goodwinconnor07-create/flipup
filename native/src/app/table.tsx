@@ -18,6 +18,7 @@ import { playSound } from '@/components/table/sounds';
 import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
+import { DealWipe } from '@/components/deal-wipe';
 import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { equity, myPlayer, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand } from '@/engine';
@@ -25,6 +26,9 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { joinLink } from '@/state/api';
 import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, useTable } from '@/state/session';
+import { RAILS } from '@design/tableLooks';
+import { tableThemes } from '@design/tokens';
+import { useTableLook } from '@/state/prefs';
 import { gradient, radius, spacing, useColors, usePlainColors } from '@/theme';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -39,6 +43,10 @@ export default function TableScreen() {
   const online = t.mode === 'online';
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const look = useTableLook();
+  const variant = game ? variantOf(game) : 'holdem';
+  const theme = variant === 'holdem' ? null : tableThemes[variant];
+  const wipe = [theme?.felt ?? look.felt, (theme?.rail ?? RAILS.find((r) => r.id === look.rail)?.colors ?? [look.felt, look.felt])[1]] as const;
   const leave = () => {
     leaveTable();
     router.dismissAll();
@@ -50,6 +58,7 @@ export default function TableScreen() {
       {online && t.conn === 'offline' && <Pill text="Reconnecting…" />}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       <Notice notice={t.notice} />
+      <DealWipe colors={wipe} />
       {!game ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
           {t.mode ? <ActivityIndicator /> : null}

@@ -46,7 +46,7 @@ export class BlackjackRoom extends DurableObject<Env> {
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server, [deviceId]);
     server.serializeAttachment({ deviceId } satisfies SocketMeta);
-    this.send(server, { t: 'state', game: redactBj(game) });
+    this.send(server, { t: 'state', game: redactBj(game, deviceId) });
     await this.syncPresence();
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -68,7 +68,7 @@ export class BlackjackRoom extends DurableObject<Env> {
       ws.close(4404, 'Table not found');
       return;
     }
-    if (t === 'sync') return this.send(ws, { t: 'state', game: redactBj(game) });
+    if (t === 'sync') return this.send(ws, { t: 'state', game: redactBj(game, deviceId) });
     if (t !== 'act') return;
     const id = typeof rawId === 'string' && rawId.length <= 40 ? rawId : undefined;
     if (this.overLimit(ws)) return this.send(ws, { t: 'reject', id, error: 'Easy there. Try again in a moment.' });
@@ -86,12 +86,14 @@ export class BlackjackRoom extends DurableObject<Env> {
       return;
     }
     if (!result.changed) {
-      if (from) this.send(from, { t: 'state', game: redactBj(game), ack: id });
+      if (from) this.send(from, { t: 'state', game: redactBj(game, deviceId), ack: id });
       return;
     }
     await this.save(result.game);
-    const seen = redactBj(result.game);
-    for (const socket of this.ctx.getWebSockets()) this.send(socket, { t: 'state', game: seen, ack: socket === from ? id : undefined });
+    for (const socket of this.ctx.getWebSockets()) {
+      const meta = socket.deserializeAttachment() as SocketMeta;
+      this.send(socket, { t: 'state', game: redactBj(result.game, meta.deviceId), ack: socket === from ? id : undefined });
+    }
   }
 
   async alarm(): Promise<void> {

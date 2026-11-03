@@ -1,3 +1,4 @@
+import { publicId } from './ids';
 // What each phone is allowed to see. The deck never leaves the server, and other players'
 // hole cards stay hidden until they're turned face up.
 
@@ -17,10 +18,13 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     mine.size > 0 &&
     game.players.filter((p) => mine.has(p.id)).every((p) => p.stack === 0) &&
     hand.seats.filter((s) => mine.has(s.playerId)).every((s) => s.folded);
+  // Other phones' device ids are secrets (they prove who owns a seat): each phone sees only its own.
+  const shown = (id: string): string => (id === deviceId ? id : publicId(id));
   return {
     ...game,
+    hostDeviceId: shown(game.hostDeviceId),
     // Bots' styles and identities (and what an AI twin remembers) and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, dull: _dull, ...p }) => p),
+    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, dull: _dull, ...p }) => (p.deviceId ? { ...p, deviceId: shown(p.deviceId) } : p)),
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,

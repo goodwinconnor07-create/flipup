@@ -1,6 +1,7 @@
 // Blocking a player (App Store guideline 1.2), kept on this phone only (`flipup.blocked`). A blocked player's name
 // and emoji are hidden on your screen and their quick messages are muted, and you aren't seated at a table they
-// host. A table seat is known by its phone's id; a party leaderboard row by its member id.
+// host. A table seat is known by its phone's public id (`publicId()`, the same at every table; the real device id
+// never reaches other phones); a party leaderboard row by its member id.
 import type { Game, Player } from '@/engine';
 
 import { read, save, useStored } from './storage';

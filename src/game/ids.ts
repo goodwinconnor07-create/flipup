@@ -50,3 +50,25 @@ export function isCode(value: unknown): value is string {
 export function isDeviceId(value: unknown): value is string {
   return typeof value === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(value);
 }
+
+/**
+ * The id other phones see for a device. A device id is a secret: it's what proves a phone owns its seat, its
+ * friend code and its party place, so it never leaves the server except to its own phone. Everyone else gets this
+ * one-way hash of it instead (about 106 bits, two 53-bit hashes), which stays the same across tables, so a block
+ * still sticks to the person. It starts with `u:` so it can never pass `isDeviceId()`.
+ */
+export function publicId(deviceId: string): string {
+  const h = (seed: number) => {
+    let a = 0xdeadbeef ^ seed;
+    let b = 0x41c6ce57 ^ seed;
+    for (let i = 0; i < deviceId.length; i++) {
+      const c = deviceId.charCodeAt(i);
+      a = Math.imul(a ^ c, 2654435761);
+      b = Math.imul(b ^ c, 1597334677);
+    }
+    a = Math.imul(a ^ (a >>> 16), 2246822507) ^ Math.imul(b ^ (b >>> 13), 3266489909);
+    b = Math.imul(b ^ (b >>> 16), 2246822507) ^ Math.imul(a ^ (a >>> 13), 3266489909);
+    return (4294967296 * (2097151 & b) + (a >>> 0)).toString(36);
+  };
+  return `u:${h(1)}${h(7919)}`;
+}

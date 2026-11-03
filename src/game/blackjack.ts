@@ -7,7 +7,7 @@
 import { fullDeck, isCard, shuffle, type Card } from './cards';
 import { BOTS } from './botStyles';
 import { isEmoji } from './emoji';
-import { newId } from './ids';
+import { newId, publicId } from './ids';
 
 export const BJ = {
   decks: 6,
@@ -693,8 +693,14 @@ function uniqueBjName(game: Blackjack, name: string): string {
 }
 
 /** What a phone may see: no shoe, and the dealer's hole card stays face down until it's turned. */
-export function redactBj(game: Blackjack): Blackjack {
-  return { ...game, shoe: [], dealer: game.dealer.hole ? { cards: game.dealer.cards.slice(0, 1), hole: true } : game.dealer };
+export function redactBj(game: Blackjack, deviceId: string): Blackjack {
+  // Other phones' device ids stay secret: each phone sees only its own (see publicId()).
+  const shown = (id: string): string => (id === deviceId ? id : publicId(id));
+  return {
+    ...game,
+    hostDeviceId: shown(game.hostDeviceId),
+    seats: game.seats.map((s) => (s.deviceId ? { ...s, deviceId: shown(s.deviceId) } : s)),
+    shoe: [], dealer: game.dealer.hole ? { cards: game.dealer.cards.slice(0, 1), hole: true } : game.dealer };
 }
 
 /** The table's chips across every seat this round, for the chip-accounting test. */

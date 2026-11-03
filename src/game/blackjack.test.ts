@@ -72,7 +72,7 @@ describe('blackjack table', () => {
     g = act(g, { type: 'bet', amount: 25 }, ME, 1);
     g = act(g, { type: 'tick' }, 'server', 1);
     expect(g.phase === 'playing' || g.phase === 'done' || g.phase === 'dealer').toBe(true);
-    const seen = redactBj(g);
+    const seen = redactBj(g, 'nobody-here');
     expect(seen.shoe).toEqual([]);
     if (g.dealer.hole) expect(seen.dealer.cards).toHaveLength(1);
   });

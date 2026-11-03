@@ -87,7 +87,7 @@ export const hasBjTable = (): boolean => !!state.game || !!saved();
 function runLocal(next: Blackjack): void {
   local = next;
   write(KEY, { mode: 'local', game: next } satisfies Saved);
-  show(redactBj(next));
+  show(redactBj(next, loadDeviceId()));
   clearTimeout(clock);
   if (next.wakeAt !== null) clock = setTimeout(() => local && localAct({ type: 'tick' }, 'server'), Math.max(0, next.wakeAt - Date.now()));
 }

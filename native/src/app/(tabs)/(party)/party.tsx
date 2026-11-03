@@ -14,7 +14,7 @@ import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, VARIANTS, type Variant } from '@/engi
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePartyRef } from '@/state/party';
 import { useProfile } from '@/state/profile';
-import { brand, cardColors, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
+import { brand, cardColors, gradient, radius, ROUNDED, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
 const TILE = 76;
 const GAP = 12;
@@ -38,6 +38,9 @@ export default function PartyTab() {
   const insets = useSafeAreaInsets();
   const focused = useIsFocused();
   const colors = useColors();
+  const page = usePlainColors().background;
+  const clear = `${page}00`;
+  const { height } = useWindowDimensions();
   const shadows = useShadows();
 
   // Hosting and joining need a name first.
@@ -51,8 +54,19 @@ export default function PartyTab() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background }}>
+    <View style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
       <Stack.Screen options={{ title: 'Party', headerShown: false }} />
+      {/* The belts, behind the whole top of the screen and edge to edge, melting into the page above the words and
+          under the title, so the poster reads as one screen rather than a picture in a box. */}
+      <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', top: insets.top + 40, left: 0, right: 0, height: height * 0.46, justifyContent: 'center' }}>
+        <View style={{ gap: GAP, transform: [{ rotate: '-7deg' }, { scale: 1.15 }] }}>
+          {BELTS.map((games, i) => (
+            <Belt key={i} games={games} reverse={i % 2 === 1} running={focused} offset={i * 37} />
+          ))}
+        </View>
+        <View style={{ position: 'absolute', left: 0, right: 0, top: -insets.top - 40, height: insets.top + 110, ...gradient(`linear-gradient(180deg, ${page} 0%, ${page} 45%, ${clear} 100%)`) }} />
+        <View style={{ position: 'absolute', left: 0, right: 0, bottom: -2, height: 140, ...gradient(`linear-gradient(180deg, ${clear} 0%, ${page} 85%)`) }} />
+      </View>
 
       <View style={{ flex: 1, paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + 84 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingHorizontal: spacing.md }}>
@@ -62,14 +76,8 @@ export default function PartyTab() {
           <ProfileMenu />
         </View>
 
-        {/* The belts take whatever room is left, and fade out at both sides. */}
-        <View style={{ flex: 1, minHeight: TILE * 2 + GAP, justifyContent: 'center', overflow: 'hidden' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          <View style={{ gap: GAP, transform: [{ rotate: '-7deg' }, { scale: 1.12 }] }}>
-            {BELTS.map((games, i) => (
-              <Belt key={i} games={games} reverse={i % 2 === 1} running={focused} offset={i * 37} />
-            ))}
-          </View>
-        </View>
+        {/* Room for the belts, which are drawn behind everything (below) so they run to the screen's edges. */}
+        <View style={{ flex: 1, minHeight: TILE * 2 + GAP }} />
 
         <View style={{ paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.lg }}>
           <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 2, color: colors.accent }}>
@@ -164,17 +172,10 @@ function HostButton({ onPress }: { onPress: () => void }) {
 }
 
 /**
- * Join a party: smaller and darker than Host (the night violet, with grain), "Got a code?" and the title on the left
- * and a little five-slot code field on the right with a cursor blinking in the first slot.
+ * Join a party: smaller and darker than Host (the night violet, with grain), "Got a code?" over the title and a
+ * chevron. No decorative code boxes: they read as a field you can type in, and you can't.
  */
 function JoinButton({ onPress }: { onPress: () => void }) {
-  const reduce = useReduceMotion();
-  const blink = useSharedValue(1);
-  useEffect(() => {
-    if (reduce) return;
-    blink.set(withRepeat(withTiming(0, { duration: 530, easing: Easing.linear }), -1, true));
-  }, [reduce, blink]);
-  const cursor = useAnimatedStyle(() => ({ opacity: blink.get() > 0.5 ? 1 : 0 }));
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel="Join a party. Type the code from your host" haptics={false} onPress={press(onPress)}>
       <LivingCard colors={cardColors.night} radius={radius.lg} grain={0.1} shadow="soft" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 64, paddingHorizontal: spacing.md }}>
@@ -186,13 +187,7 @@ function JoinButton({ onPress }: { onPress: () => void }) {
             Join a party
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: 4 }}>
-          {Array.from({ length: 5 }, (_, i) => (
-            <View key={i} style={{ width: 20, height: 28, borderRadius: 6, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.14)', borderWidth: i === 0 ? 1.5 : 0, borderColor: '#ffffff' }}>
-              {i === 0 && <Animated.View style={[{ width: 2, height: 14, borderRadius: 1, backgroundColor: '#ffffff' }, cursor]} />}
-            </View>
-          ))}
-        </View>
+        <Icon name="chevron.right" size={16} color="#ffffff" />
       </LivingCard>
     </PressableScale>
   );

@@ -73,6 +73,7 @@ const WEB = {
   'pause.fill': 'pause',
   'play.rectangle.fill': 'smart_display',
   ellipsis: 'more_horiz',
+  'party.popper.fill': 'celebration',
   'chart.bar.xaxis': 'bar_chart',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 

@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
-import { Icon, type IconName } from '@/components/icon';
+import { GlassSurface } from '@/components/glass-surface';
+import { Icon } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
@@ -30,7 +31,7 @@ const BELTS: Variant[][] = [ALL, [...ALL.slice(4), ...ALL.slice(0, 4)], [...ALL.
  * The Party tab is one big game-night poster, always night violet with grain whatever the phone's appearance: three
  * belts of game tiles drifting across the top in turn (tilted a little, alternating directions, still under Reduce
  * Motion and while another tab is showing), the pitch in big rounded type, your open party if you have one, then two
- * big buttons: Host a party in gold and Join with a code in violet with its five empty code boxes.
+ * big buttons: Host a party in solid white and Join a party in frosted glass with a little code field.
  */
 export default function PartyTab() {
   const profile = useProfile();
@@ -99,23 +100,8 @@ export default function PartyTab() {
               <Icon name="chevron.right" size={14} color="rgba(255, 255, 255, 0.7)" />
             </PressableScale>
           )}
-          <BigButton
-            label="Host a party"
-            line="Pick the games, invite friends"
-            icon="party.popper.fill"
-            colors={cardColors.gold}
-            ink={brand.goldInk}
-            onPress={() => !needName() && router.push('/party-setup')}
-          />
-          <BigButton
-            label="Join a party"
-            line="Type the code from your host"
-            icon="circle.grid.3x3.fill"
-            colors={cardColors.violet}
-            ink="#ffffff"
-            boxes
-            onPress={() => !needName() && router.push({ pathname: '/code-entry', params: { kind: 'party' } })}
-          />
+          <HostButton onPress={() => !needName() && router.push('/party-setup')} />
+          <JoinButton onPress={() => !needName() && router.push({ pathname: '/code-entry', params: { kind: 'party' } })} />
         </View>
       </View>
     </View>
@@ -152,40 +138,75 @@ function Belt({ games, reverse, running, offset }: { games: Variant[]; reverse: 
   );
 }
 
-/** A big decorated button: a living gradient, an icon in a round badge, a bold label and a line. Join adds five empty code boxes. */
-function BigButton({ label, line, icon, colors, ink, boxes, onPress }: { label: string; line: string; icon: IconName; colors: readonly [string, string, string]; ink: string; boxes?: boolean; onPress: () => void }) {
+const press = (go: () => void) => () => {
+  haptic.tap();
+  go();
+};
+
+/** Host a party: solid white, the boldest thing on the poster, violet type and a violet party popper. */
+function HostButton({ onPress }: { onPress: () => void }) {
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${label}. ${line}`}
+      accessibilityLabel="Host a party. Pick the games, invite friends"
       haptics={false}
-      onPress={() => {
-        haptic.tap();
-        onPress();
-      }}
+      onPress={press(onPress)}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 84, paddingHorizontal: spacing.md, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: '#ffffff', boxShadow: '0 14px 30px -12px rgba(0, 0, 0, 0.7)' }}
     >
-      <LivingCard colors={colors} radius={radius.xl} grain={0.1} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 84, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}>
-        <View style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: ink === '#ffffff' ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.45)' }}>
-          <Icon name={icon} size={22} color={ink} />
-        </View>
+      <View style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}>
+        <Icon name="party.popper.fill" size={22} color="#ffffff" />
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', color: brand.violetNight }}>
+          Host a party
+        </Text>
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: brand.violet }}>
+          Pick the games, invite friends
+        </Text>
+      </View>
+      <Icon name="chevron.right" size={16} color={brand.violet} />
+    </PressableScale>
+  );
+}
+
+/**
+ * Join a party, as frosted glass with a white edge: "Got a code?" over the title on the left, and on the right a
+ * little code field, five slots with a cursor blinking in the first, so it reads as "type your code here".
+ */
+function JoinButton({ onPress }: { onPress: () => void }) {
+  const reduce = useReduceMotion();
+  const blink = useSharedValue(1);
+  useEffect(() => {
+    if (reduce) return;
+    blink.set(withRepeat(withTiming(0, { duration: 530, easing: Easing.linear }), -1, true));
+  }, [reduce, blink]);
+  const cursor = useAnimatedStyle(() => ({ opacity: blink.get() > 0.5 ? 1 : 0 }));
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel="Join a party. Type the code from your host"
+      haptics={false}
+      onPress={press(onPress)}
+      outerStyle={{ borderRadius: radius.xl }}
+      style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.5)' }}
+    >
+      <GlassSurface style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 84, paddingHorizontal: spacing.md, backgroundColor: 'rgba(255, 255, 255, 0.08)' }}>
         <View style={{ flex: 1, gap: 2 }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', color: ink }}>
-            {label}
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.6, color: brand.gold }}>
+            GOT A CODE?
           </Text>
-          {boxes ? (
-            <View style={{ flexDirection: 'row', gap: 5, paddingTop: 4 }}>
-              {Array.from({ length: 5 }, (_, i) => (
-                <View key={i} style={{ width: 22, height: 26, borderRadius: 6, borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.55)', backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
-              ))}
-            </View>
-          ) : (
-            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: ink, opacity: 0.8 }}>
-              {line}
-            </Text>
-          )}
+          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', color: '#ffffff' }}>
+            Join a party
+          </Text>
         </View>
-        <Icon name="chevron.right" size={16} color={ink} />
-      </LivingCard>
+        <View style={{ flexDirection: 'row', gap: 4 }}>
+          {Array.from({ length: 5 }, (_, i) => (
+            <View key={i} style={{ width: 24, height: 32, borderRadius: 7, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.14)', borderWidth: i === 0 ? 1.5 : 0, borderColor: '#ffffff' }}>
+              {i === 0 && <Animated.View style={[{ width: 2, height: 16, borderRadius: 1, backgroundColor: '#ffffff' }, cursor]} />}
+            </View>
+          ))}
+        </View>
+      </GlassSurface>
     </PressableScale>
   );
 }

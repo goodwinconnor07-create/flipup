@@ -37,7 +37,9 @@ export function Ended({ game, onLeave }: { game: Game; onLeave: () => void }) {
   }, [t.logs, mine?.id, game.id]); // eslint-disable-line react-hooks/exhaustive-deps
   const again = !!mine && (game.again ?? []).includes(mine.id);
 
-  const title = !mine ? (top ? `${top.name} wins!` : 'Game over') : rank === 1 ? 'You win!' : `You came ${place(rank)}`;
+  // A table ended before any hand finished has no winner: nobody won a chip.
+  const played = !!game.hand && (game.hand.number > 1 || !!game.hand.result);
+  const title = !played ? 'No hands played' : !mine ? (top ? `${top.name} wins!` : 'Game over') : rank === 1 ? 'You win!' : `You came ${place(rank)}`;
   const share = () => {
     const lines = [mine ? (rank === 1 ? `I won a FlipUp table of ${rows.length}!` : `I came ${place(rank)} of ${rows.length} at FlipUp.`) : `${title} at FlipUp.`];
     if (stats) lines.push(`${stats.won} hands won${stats.bestMade ? `, best hand ${stats.bestMade.name.toLowerCase()}` : ''}.`);
@@ -48,12 +50,17 @@ export function Ended({ game, onLeave }: { game: Game; onLeave: () => void }) {
     <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }}>
       <View style={{ alignItems: 'center', gap: spacing.xs, paddingTop: spacing.md }}>
         <Text style={{ fontSize: 80 }} maxFontSizeMultiplier={1} accessible={false}>
-          {rank === 1 ? '🏆' : (mine?.emoji ?? top?.emoji ?? '🏆')}
+          {played && rank === 1 ? '🏆' : (mine?.emoji ?? top?.emoji ?? '🏆')}
         </Text>
         <ThemedText variant="largeTitle" accessibilityRole="header" style={{ textAlign: 'center', fontWeight: '800' }}>
           {title}
         </ThemedText>
-        {mine && stats && (
+        {!played && (
+          <ThemedText tone="secondaryLabel" style={{ textAlign: 'center' }}>
+            The table closed before the first hand finished.
+          </ThemedText>
+        )}
+        {played && mine && stats && (
           <ThemedText tone="secondaryLabel" style={{ textAlign: 'center' }}>
             {stats.net >= 0 ? `Up ${chips(stats.net)}` : `Down ${chips(-stats.net)}`} over {stats.hands} {stats.hands === 1 ? 'hand' : 'hands'}
           </ThemedText>

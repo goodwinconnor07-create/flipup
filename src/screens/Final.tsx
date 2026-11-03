@@ -168,7 +168,6 @@ export function Final({ game }: { game: Game }) {
   const deviceId = useApp((s) => s.deviceId);
   const rows = standings(game);
   const top = rows[0];
-  const iWon = top?.deviceId === deviceId;
   const me = game.players.find((p) => p.deviceId === deviceId);
   const host = game.hostDeviceId === deviceId;
   const hostName = game.players.find((p) => p.deviceId === game.hostDeviceId)?.name ?? 'the host';
@@ -179,6 +178,9 @@ export function Final({ game }: { game: Game }) {
   // Counted once; if this page opens again for the same table it gives back the same report.
   const [report] = useState<TableReport | null>(() => settleTable(game, deviceId));
   const stats = report?.stats ?? null;
+  // A table ended before any hand finished has no winner: nobody won a chip.
+  const played = (stats?.hands ?? 0) > 0 || !!game.hand?.result;
+  const iWon = played && top?.deviceId === deviceId;
   const progress = useMemo(() => loadProgress(), [report]);
   const legend = game.legendGame ? legendById(game.legendGame) : undefined;
   const next = report && LEGENDS_ON ? nextLegend(progress) : null;
@@ -198,7 +200,7 @@ export function Final({ game }: { game: Game }) {
     confetti(CONFETTI.win, { x: innerWidth / 2, y: innerHeight * 0.25 }, 150);
   }, [iWon, game.id]);
 
-  const headline = !top ? 'Table closed' : iWon ? 'You win!' : `${top.name} wins!`;
+  const headline = !top ? 'Table closed' : !played ? 'No hands played' : iWon ? 'You win!' : `${top.name} wins!`;
   const hands = stats?.hands ?? game.hand?.number ?? 0;
   const announced = report && (report.newBadges.length > 0 || report.firstBeat || report.unlocked || report.comeback || report.rival);
 
@@ -232,9 +234,10 @@ export function Final({ game }: { game: Game }) {
             <Avatar emoji={top?.emoji ?? '🏆'} size={112} className="pop" />
           </div>
           <h1 className="fin-title" aria-live="polite">{headline}</h1>
-          {me && !iWon && place > 0 && <p className="fin-place">{`You finished ${ordinal(place)}`}</p>}
-          <Big value={Math.abs(myNet)} format={(n) => `${myNet < 0 ? '−' : myNet > 0 ? '+' : ''}${chips(n)}`} className={`fin-big ${myNet > 0 ? 'good' : myNet < 0 ? 'bad' : ''}`} />
-          <p className="fin-sub">{`chips after ${hands} hand${hands === 1 ? '' : 's'}`}</p>
+          {!played && <p className="fin-sub">The table closed before the first hand finished.</p>}
+          {played && me && !iWon && place > 0 && <p className="fin-place">{`You finished ${ordinal(place)}`}</p>}
+          {played && <Big value={Math.abs(myNet)} format={(n) => `${myNet < 0 ? '−' : myNet > 0 ? '+' : ''}${chips(n)}`} className={`fin-big ${myNet > 0 ? 'good' : myNet < 0 ? 'bad' : ''}`} />}
+          {played && <p className="fin-sub">{`chips after ${hands} hand${hands === 1 ? '' : 's'}`}</p>}
           {line && legend && (
             <p className="fin-quote">
               <b>{legend.short}:</b> “{line}”

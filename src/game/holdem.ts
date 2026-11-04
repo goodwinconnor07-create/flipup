@@ -1,6 +1,7 @@
 // No-limit Texas Hold'em: dealing, blinds, betting rounds, side pots and the showdown.
 // Everything here works on a copy of the game that applyAction() already made, so it changes it in place.
 
+import { dramaPause } from './botTalk';
 import { handRecord } from './record';
 import { fullDeck, isRed, shuffle, type Card } from './cards';
 import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
@@ -583,7 +584,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
   hand.actAt = null;
 
   if (hand.street === 'river') {
-    showdown(game, ctx);
+    startShowdown(game, ctx);
     return;
   }
 
@@ -630,9 +631,37 @@ function pauseBeforeNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.toAct = null;
   hand.deadline = null;
-  hand.nextStreetAt = ctx.now + (botsOnly(game) ? TIMING.fastStreet : TIMING.streetPause);
+  const next = hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river';
+  hand.nextStreetAt = ctx.now + (botsOnly(game) ? TIMING.fastStreet : TIMING.streetPause) + drama(game, ctx, next);
   hand.actAt = hand.nextStreetAt;
   schedule(game);
+}
+
+/**
+ * A bot that has something to say before the next card (or the showdown) turns holds it back while the line is said
+ * and read. Only on a phone's own table, and only while a person is still in the hand to watch (see `dramaPause`).
+ */
+function drama(game: Game, ctx: ActionContext, upcoming: 'flop' | 'turn' | 'river' | 'showdown'): number {
+  const hand = game.hand!;
+  if (game.code || botsOnly(game)) return 0;
+  const bots = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
+  if (!bots.length) return 0;
+  return dramaPause(game, bots[Math.floor(ctx.rng() * bots.length)].playerId, upcoming, ctx.rng, ctx.now);
+}
+
+/** The river betting is over: the hands turn over, after a word from a bot if it has one (a phone's own table). */
+export function startShowdown(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  const wait = drama(game, ctx, 'showdown');
+  if (wait > 0) {
+    hand.toAct = null;
+    hand.deadline = null;
+    hand.showdownAt = ctx.now + wait;
+    hand.actAt = hand.showdownAt;
+    schedule(game);
+    return;
+  }
+  showdown(game, ctx);
 }
 
 // ── Blackjack Hold'em hits ──────────────────────────────────────────────────
@@ -711,7 +740,7 @@ export function dealNextStreet(game: Game, ctx: ActionContext): void {
 export function runoutStep(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   if (hand.street === 'river') {
-    showdown(game, ctx);
+    startShowdown(game, ctx);
     return;
   }
   dealStreet(game, hand, ctx.rng);
@@ -739,7 +768,7 @@ export function buildPots(seats: Seat[]): PotResult[] {
   return pots.filter((p) => p.amount > 0);
 }
 
-function showdown(game: Game, ctx: ActionContext): void {
+export function showdown(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.toAct = null;
   hand.actAt = null;

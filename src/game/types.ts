@@ -246,6 +246,8 @@ export interface Hand {
   actions?: HandAction[];
   /** Betting on this street is done and the next card is coming at this time. */
   nextStreetAt?: number | null;
+  /** A bot is saying something before the showdown turns over (a phone's own table): the cards turn at this time. */
+  showdownAt?: number | null;
   /** The board ran out with everyone all in (for the bots' sweating). */
   ranOut?: boolean;
   /** Each player's chips before the blinds. */

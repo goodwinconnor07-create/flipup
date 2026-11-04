@@ -271,7 +271,7 @@ export const sayAndReadMs = (beats: Beat[]): number => spokenMs(beats) + Math.ma
 export const BEFORE_MOVE: ReadonlySet<string> = new Set(['thinkHard', 'thinkEasy', 'raise', 'foldBig', 'callLight', 'yourBigBet', 'allin', 'tank']);
 
 /** Lines said before a hand's outcome is known ("c'mon!"). They're dropped when the next card lands or the pot goes. */
-export const PRE_OUTCOME: ReadonlySet<string> = new Set(['allin', 'sweat', 'sweatWatch']);
+export const PRE_OUTCOME: ReadonlySet<string> = new Set(['allin', 'sweat', 'sweatWatch', 'flop', 'turn', 'river', 'bigPot', 'longHand', 'beforeFlop', 'beforeTurn', 'beforeRiver', 'beforeShowdown']);
 
 /** Lines that react to how a hand ended: they come a beat after the cards turn, and may wait a little longer for a turn. */
 export const POST_OUTCOME: ReadonlySet<string> = new Set([

@@ -6,7 +6,7 @@ import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
 import { BOTS, playerStyle, styleOf } from './botStyles';
-import { botSays, type TalkEvent } from './botTalk';
+import { botSays, dealTalk, streetTalk, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
@@ -17,6 +17,7 @@ import {
   cardsText,
   castVote,
   dealNextStreet,
+  showdown,
   endsAtOnce,
   discardCard,
   endVote,
@@ -961,8 +962,15 @@ function tick(game: Game, ctx: ActionContext): boolean {
       endVote(game, ctx);
       return true;
     }
+    // A bot's word before the showdown is over: the hands turn over.
+    if (hand.showdownAt != null) {
+      hand.showdownAt = null;
+      showdown(game, ctx);
+      return true;
+    }
     if (hand.nextStreetAt != null) {
       dealNextStreet(game, ctx);
+      streetTalk(game, ctx.rng, ctx.now);
       return true;
     }
     if (hand.runout) {
@@ -1052,5 +1060,6 @@ function tick(game: Game, ctx: ActionContext): boolean {
   // A word from a random bot between deals, now and then.
   const chatty = game.players.filter((p) => p.bot && !p.sittingOut);
   if (sleepy && chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
+  else dealTalk(game, ctx.rng, ctx.now);
   return true;
 }

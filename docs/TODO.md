@@ -163,3 +163,7 @@ Files: `Table.tsx`, `table/Pods.tsx`, `table.css`, `table/Versus.tsx`, `store.ts
 - [ ] **Z2 Full run.** `npm run check`, `npm run e2e`, then a manual pass through Home, Party, Play with friends, Play with bots, a bot hand, a heads-up hand, and campaign tables.
 - [ ] **Z3 Docs.** `CLAUDE.md` matches the app (removed reactions, new setup, new shelf, friends requests).
 - [ ] **Z4 Desktop sanity.** Open at desktop size once: nothing crashes or overflows. No redesign.
+
+## Extra: Range training card
+
+- [x] **R1 Range training in the iPhone app.** A free solo card at the end of Home's Challenges row (its own picture: a hand chart's grid and A♠ J♦), a start sheet, and the trainer screen over the shared `src/train/ranges` model, with grades in `flipup.ranges` and the why page's numbers worked out ahead (`native/src/data/range-numbers.json`).

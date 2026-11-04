@@ -173,6 +173,14 @@ notice matter most to how a table feels:
   folds a lot, and bet more after it (`EXPLOIT` in `botPlay.ts`: `steal`, `fold`, `stealCap`). With
   the settings used now the strong styles win about +34 bb/100 from a player who folds to every
   bet, up from about +22 before.
+- **Someone who calls a lot.** How often a player folds is already in `continueChance()` (and the
+  c-bet read), so on the calling side `EXPLOIT.call` and `EXPLOIT.callFloor` (`foldLean()` in
+  `botPlay.ts`) only nudge the fold chance down, to no less than 60% of what the hand alone says.
+  Before, the same stickiness was counted three times and a bot that had seen a few calls stopped
+  betting anything but its best hands: it raised before the flop and checked the rest of the hand
+  down, which players called fake. Heads-up after raising, against a player who always calls, the
+  good styles now c-bet about 65% (was 56%) and check every street to the showdown 14% of the time
+  (was 23%); against a player who folds air and calls with pairs, 77% and 4% (was 68% and 8%).
 
 The nervous bot is meant to be the soft one: it folds to pressure more than anyone (60% of bets),
 bets small, and has a base `adapt` of 0 (individual profiles now add a small amount of adaptation). It used to win the table (+127 bb/100)

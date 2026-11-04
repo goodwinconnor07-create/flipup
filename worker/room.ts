@@ -36,6 +36,9 @@ interface SocketMeta {
  * applies actions with the same reducer the app uses, and sends each phone only what it may see.
  * Its alarm moves the game along: bots acting, turn timers, all-in run-outs and the next deal.
  */
+/** Sockets one table accepts at once. */
+const MAX_SOCKETS = 64;
+
 export class TableRoom extends DurableObject<Env> {
   private game: Game | null | undefined;
   private rate = new WeakMap<WebSocket, { start: number; count: number }>();
@@ -87,6 +90,9 @@ export class TableRoom extends DurableObject<Env> {
     if (!isDeviceId(deviceId)) return new Response('Missing device id', { status: 400 });
     const game = await this.load();
     if (!game) return new Response('Table not found', { status: 404 });
+    // A table seats at most MAX_SEATS; a few sockets each for reconnects is plenty. A script opening thousands of
+    // sockets to one table would make every move fan out to all of them.
+    if (this.ctx.getWebSockets().length >= MAX_SOCKETS) return new Response('Table is busy', { status: 503 });
 
     const premium = await mayHostPremium(this.env, deviceId);
     const [client, server] = Object.values(new WebSocketPair());

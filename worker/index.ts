@@ -67,6 +67,31 @@ function limited(request: Request, bucket: string, max: number, windowMs: number
   return recent.length > max;
 }
 
+/**
+ * Looking up codes that don't exist, per address: a phone typing a code misses a few times, a script scanning for open
+ * tables or parties misses thousands. Only misses count, so a whole party on one Wi-Fi polling every 2 seconds is
+ * never slowed down.
+ */
+const misses = new Map<string, number[]>();
+const MISS_MAX = 40;
+const MISS_WINDOW = 10 * 60_000;
+function missKey(request: Request): string {
+  return request.headers.get('cf-connecting-ip') ?? 'unknown';
+}
+function tooManyMisses(request: Request): boolean {
+  const now = Date.now();
+  const recent = (misses.get(missKey(request)) ?? []).filter((t) => now - t < MISS_WINDOW);
+  return recent.length >= MISS_MAX;
+}
+function noteMiss(request: Request): void {
+  const now = Date.now();
+  const key = missKey(request);
+  const recent = (misses.get(key) ?? []).filter((t) => now - t < MISS_WINDOW);
+  recent.push(now);
+  misses.set(key, recent);
+  if (misses.size > 5000) for (const [k, v] of misses) if (now - v[v.length - 1] > MISS_WINDOW) misses.delete(k);
+}
+
 /** A browser opening a socket says which site it's on. Anything but this app (or a local copy) is turned away. */
 function sameSite(request: Request): boolean {
   const origin = request.headers.get('origin');
@@ -425,8 +450,10 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
 
   if (!action) {
     if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
+    if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
     const device = new URL(`http://x/${search}`).searchParams.get('device');
     const view = await room.view(code, isDeviceId(device) ? device : null);
+    if (!view) noteMiss(request);
     return view ? json(view) : json({ error: 'No party with that code.' }, 404);
   }
 
@@ -509,7 +536,9 @@ export default {
       const room = env.TABLE_ROOM.getByName(code);
       if (match[2]) return sameSite(request) ? room.fetch(request) : json({ error: 'Not allowed.' }, 403);
       if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
+      if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
       const info = await room.info();
+      if (!info) noteMiss(request);
       return info ? json(info) : json({ error: 'No table with that code.' }, 404);
     }
 

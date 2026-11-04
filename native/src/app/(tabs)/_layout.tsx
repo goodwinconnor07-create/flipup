@@ -1,4 +1,5 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
+import { Platform } from 'react-native';
 
 import { useFriendBox } from '@/state/pals';
 
@@ -23,7 +24,8 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="(friends)">
         <NativeTabs.Trigger.Icon sf="person.2.fill" md="group" />
         <NativeTabs.Trigger.Label>Friends</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Badge hidden={waiting === 0}>{String(waiting)}</NativeTabs.Trigger.Badge>
+        {/* The web build's tab bar ignores `hidden` and showed a red 0, so there the badge is left out at zero. */}
+        {(Platform.OS !== 'web' || waiting > 0) && <NativeTabs.Trigger.Badge hidden={waiting === 0}>{String(waiting)}</NativeTabs.Trigger.Badge>}
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(join)" role="search">
         <NativeTabs.Trigger.Icon sf="circle.grid.3x3.fill" md="dialpad" />

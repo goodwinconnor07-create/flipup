@@ -1,4 +1,4 @@
-// Hosting a Premium game. The first five games are free for everyone. The other seven need FlipUp Premium on the
+// Hosting a Premium game. The first five games are free for everyone. The other eight need FlipUp Premium on the
 // phone that hosts; people who join by code never need it, and anyone can pick any game while setting one up.
 // The server checks this too (worker/index.ts), so this is the polite version: it asks before trying.
 import { router } from 'expo-router';

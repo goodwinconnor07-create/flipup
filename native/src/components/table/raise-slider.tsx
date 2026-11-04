@@ -25,7 +25,8 @@ export function RaiseSlider({ value, min, max, step, tint, onChange }: { value: 
   const track = useRef<{ measureInWindow: (cb: (x: number, y: number, w: number) => void) => void } | null>(null);
   const [box, setBox] = useState({ left: 0, width: 0 });
   const span = Math.max(1, max - min);
-  const frac = (v: number) => Math.min(1, Math.max(0, (v - min) / span));
+  // When the smallest raise is already all in there's nothing to slide: the thumb sits at the all-in end.
+  const frac = (v: number) => (max <= min ? 1 : Math.min(1, Math.max(0, (v - min) / span)));
   const pos = useSharedValue(frac(value));
   const held = useSharedValue(0);
   const notch = useRef(Math.round(frac(value) * NOTCHES));

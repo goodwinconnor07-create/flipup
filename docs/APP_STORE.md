@@ -263,7 +263,7 @@ after upload when a reason is missing.
 >
 > Premium is a one-time in-app purchase (`flipup.premium.unlock`). Open it from Settings > FlipUp Premium, or by
 > tapping any locked card back, bubble colour or game. Buy it with a sandbox account; **Restore Purchases** is on
-> the same sheet. Five game modes are free. The other seven need Premium to host; anyone can join one with a code
+> the same sheet. Five game modes are free. The other eight need Premium to host; anyone can join one with a code
 > for free, so only the host needs it. There are no ads and no referral rewards. To check account deletion: Settings > Delete my data.
 >
 > Reporting and blocking: tap a player's seat at an online table, then Report or Block.
@@ -331,7 +331,7 @@ Native build:
 2. Premium through StoreKit only, the price from StoreKit, a working Restore Purchases button on the Premium
    sheet and in Settings, no stand-in purchase code.
 3. Never sell or give chips for money; Premium unlocks looks and modes only.
-3a. Game modes: the first five free, the other seven need Premium to host. Only the host needs it; people joining
+3a. Game modes: the first five free, the other eight need Premium to host. Only the host needs it; people joining
    by code don't. The server checks it (see "Premium, checked on the server"). No ads.
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.

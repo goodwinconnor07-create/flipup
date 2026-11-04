@@ -46,10 +46,14 @@ export default function RootLayout() {
       <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background }, animation: reduce ? 'fade' : 'default' }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
+        {/* Play with friends: its own dark grain page, over the tabs so the tab bar never covers Open table. */}
+        <Stack.Screen name="play-friends" options={{ headerShown: false, title: 'Play with friends', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* The fade is short because the table's own DealWipe does the moving. */}
         {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
+        {/* Play with friends: a game's popup with Select and Close. */}
+        <Stack.Screen name="setup-game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Game' }} />
         {/* How to Play: a story on black, full screen so its bars sit at the top edge; the X closes it. */}
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Challenges: the start sheet, a seat's tag, Detective's check, and Rewind's two sheets. */}

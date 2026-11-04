@@ -8,7 +8,7 @@ import { gradient } from '@/theme';
 const GRAIN = require('../../assets/images/grain.png');
 
 /** Dark on purpose: white text and emoji have to stay clear on every part of it, whatever the glow is doing. */
-const NIGHT = ['#0d0a24', '#150f3a', '#07051a'] as const;
+export const GRAIN_NIGHT = ['#0d0a24', '#150f3a', '#07051a'] as const;
 
 /**
  * A dark, slowly moving, grainy field for whole pages (Play with friends, Play with bots). Cheap by design:
@@ -19,7 +19,7 @@ const NIGHT = ['#0d0a24', '#150f3a', '#07051a'] as const;
  * The colours stay far darker than the cards': glows are at most about a fifth as bright as the base.
  */
 export function GrainBackground({
-  colors = NIGHT,
+  colors = GRAIN_NIGHT,
   glow = 'rgba(120, 90, 255, 0.22)',
   glow2 = 'rgba(245, 183, 0, 0.07)',
   grain = 0.1,

@@ -131,7 +131,10 @@ Files: `Setup.tsx`, `Lobby.tsx`, `src/state/pals.ts`, `worker/` table routes, `s
 - [x] **N2 Confirm popup.** Instead of an open table step, a small confirm popup shows all the chosen game settings (game, bots, chips, blinds, house rules) with one button. Pressing it deals and starts straight away (keeps the existing start delay or VS intro behaviour).
 - [x] **N3 Cleanup.** Remove the old Setup code paths, "Pick your bots" screen, "Random table" toggle or fold them into the new bots row. Make sure Play again, Home banners and `openTable('local', …)` still work. Update the Setup, Lobby and Picking bots notes in `CLAUDE.md`.
 
-## Stage 7: Center of attention and fold shelf
+## Stage 7: Center of attention and fold shelf: DROPPED
+
+The owner looked at the current table in screenshots and decided it is already clean and good, so this stage was scrapped before it was built. Nothing from it is in the code. The notes below are kept only as a record of what was planned.
+
 
 Files: `Table.tsx`, `table/Pods.tsx`, `table.css`, `table/Versus.tsx`, `store.ts` (nothing new needed), possibly a new `table/Shelf.tsx`. SHOT: needs screenshots at 2, 3, 6 and 9 players on an iPhone size, and a quick look at a small iPhone (SE size).
 
@@ -144,15 +147,15 @@ Files: `Table.tsx`, `table/Pods.tsx`, `table.css`, `table/Versus.tsx`, `store.ts
 - 3 players: stay round the table as normal. Only 1 or 2 left trigger the move to the middle and the enlarged heads-up look. Folded players still leave for the shelf.
 - Applies to bots-only games, online tables with friends and party tournament tables. Challenges are left out.
 
-- [ ] **A1 Active players are the focus.** Players who haven't folded become the focus as the hand goes on. With 3 or more still in, they stay arranged round the table; folded players leave the table.
-- [ ] **A2 Heads-up focus.** With 1 to 2 players left, move them toward the middle and enlarge them (bigger emoji, bigger chip count, name), so a heads-up hand feels personal, the bot or your friend noticeably bigger than normal because there's room. Smooth transition between layouts (no jumping); handles the board cards and the pot staying visible and not overlapped.
-- [ ] **A3 Fold shelf.** A small horizontal shelf at the very top of the table screen, above the menu button and blinds info. It holds small pills: the player's emoji and chip amount, greyed out but still readable.
-- [ ] **A4 Fold animation.** When a player folds: hold a second so their "Fold" can be seen and heard, then shrink them and fly them into the shelf. The remaining players shift slightly down to make room for the shelf. Sound unchanged.
-- [ ] **A5 Shelf behaviour.** Pills stay in fold order, update chips live, handle many folds (compress or scroll), handle a folded player who's out of chips and a player who leaves. A new hand clears the shelf, with a short reverse animation as they fly back (or a quiet fade).
-- [ ] **A6 Layout fit.** Everything fits on small iPhones: shelf, header, the other players, the board, the pot, your box and actions. No overlap with bubbles or the VS intro. Desktop layout is untouched (it may simply not show the shelf).
-- [ ] **A7 Reduced motion.** No flying; pills just appear.
-- [ ] **A8 Test.** Play bot hands at 2, 3, 6 and 9 players, folding at every street, check the screenshots, and iterate until it feels effortless. Check bubbles still land above the right seat when the seat has moved.
-- [ ] **A9 Docs.** Update the table screen notes in `CLAUDE.md`.
+- [-] **A1 Active players are the focus.** Players who haven't folded become the focus as the hand goes on. With 3 or more still in, they stay arranged round the table; folded players leave the table.
+- [-] **A2 Heads-up focus.** With 1 to 2 players left, move them toward the middle and enlarge them (bigger emoji, bigger chip count, name), so a heads-up hand feels personal, the bot or your friend noticeably bigger than normal because there's room. Smooth transition between layouts (no jumping); handles the board cards and the pot staying visible and not overlapped.
+- [-] **A3 Fold shelf.** A small horizontal shelf at the very top of the table screen, above the menu button and blinds info. It holds small pills: the player's emoji and chip amount, greyed out but still readable.
+- [-] **A4 Fold animation.** When a player folds: hold a second so their "Fold" can be seen and heard, then shrink them and fly them into the shelf. The remaining players shift slightly down to make room for the shelf. Sound unchanged.
+- [-] **A5 Shelf behaviour.** Pills stay in fold order, update chips live, handle many folds (compress or scroll), handle a folded player who's out of chips and a player who leaves. A new hand clears the shelf, with a short reverse animation as they fly back (or a quiet fade).
+- [-] **A6 Layout fit.** Everything fits on small iPhones: shelf, header, the other players, the board, the pot, your box and actions. No overlap with bubbles or the VS intro. Desktop layout is untouched (it may simply not show the shelf).
+- [-] **A7 Reduced motion.** No flying; pills just appear.
+- [-] **A8 Test.** Play bot hands at 2, 3, 6 and 9 players, folding at every street, check the screenshots, and iterate until it feels effortless. Check bubbles still land above the right seat when the seat has moved.
+- [-] **A9 Docs.** Update the table screen notes in `CLAUDE.md`.
 
 ## Stage 8: Final sweep
 

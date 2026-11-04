@@ -259,6 +259,92 @@
   background: var(--green-hi);
 }
 
+/* Everyone in the hand, under the title. */
+.rt-players {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+}
+
+.rt-players b {
+  color: var(--ink);
+}
+
+.rt-out {
+  opacity: 0.6;
+}
+
+/* What each play wins on average. */
+.rt-ev-title {
+  margin: 8px 0 0;
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+
+.rt-evs {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.rt-evs li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+}
+
+.rt-ev-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rt-ev-best {
+  background: var(--green-bg);
+  color: var(--green-ink);
+}
+
+.rt-ev-pick:not(.rt-ev-best) {
+  background: var(--bg-3);
+}
+
+.rt-ev-bar {
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--bg-3);
+  overflow: hidden;
+}
+
+.rt-ev-bar i {
+  display: block;
+  height: 100%;
+}
+
+.rt-ev-bar .up {
+  background: var(--green-hi);
+}
+
+.rt-ev-bar .down {
+  background: var(--red);
+}
+
+.rt-opp .rt-h small {
+  font-size: var(--fs-caption);
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
 .rt-next {
   margin-top: 8px;
   width: 100%;

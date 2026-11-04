@@ -405,7 +405,7 @@ export type Action =
   | { type: 'join'; name: string; emoji: string }
   | { type: 'setLook'; name: string; emoji: string; bubble?: string; cardPack?: string }
   /** `legend` seats that AI Legend instead of a random bot. */
-  | { type: 'addBot'; legend?: string }
+  | { type: 'addBot'; legend?: string; /** A bot from `BOTS` by name (the setup page's picks). */ name?: string }
   /** Host removes a player or bot; anyone can remove themselves. */
   | { type: 'remove'; playerId: string }
   | { type: 'settings'; settings: Partial<Settings> }

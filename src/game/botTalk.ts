@@ -6,7 +6,7 @@
 import { composeDialogue, DIALOGUE, dialogueText, type FixedLineEvent } from './botDialogue';
 import { reactionText } from './reactions';
 import { playerStyle, styleOf, type StyleId } from './botStyles';
-import { EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
+import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
 import { lineBeats, sayAndReadMs } from './chat';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
@@ -114,7 +114,9 @@ export type TalkEvent =
   | 'beforeFlop'
   | 'beforeTurn'
   | 'beforeRiver'
-  | 'beforeShowdown';
+  | 'beforeShowdown'
+  /** A person has just picked this bot for their table on the setup page: its first word, before any cards. */
+  | 'addedToTable';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -186,6 +188,7 @@ const TRASH: Lines = {
   beforeTurn: [],
   beforeRiver: [],
   beforeShowdown: [],
+  addedToTable: [],
 };
 
 const FRIENDLY: Lines = {
@@ -255,6 +258,7 @@ const FRIENDLY: Lines = {
   beforeTurn: [],
   beforeRiver: [],
   beforeShowdown: [],
+  addedToTable: [],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -429,7 +433,9 @@ grow(TRASH, MORE_TRASH);
 grow(FRIENDLY, MORE_FRIENDLY);
 grow(TRASH, EXTRA_TRASH);
 grow(FRIENDLY, EXTRA_FRIENDLY);
-for (const passes of [MORE_VOICES, EXTRA_VOICES]) {
+grow(TRASH, ADDED_TRASH);
+grow(FRIENDLY, ADDED_FRIENDLY);
+for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
   for (const [style, more] of Object.entries(passes) as [StyleId, Partial<Lines>][]) {
     for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
   }
@@ -443,6 +449,17 @@ export function botLineText(lineId: string): string {
   const [b, tone, event, i] = lineId.split(':');
   if (b !== 'b' || lineId.split(':').length !== 4 || !Object.hasOwn(TRASH, event) || !/^(0|[1-9]\d{0,3})$/.test(i ?? '')) return '';
   return pool(tone, event as TalkEvent)[Number(i)] ?? '';
+}
+
+/**
+ * What a bot says when a person picks it for their table on the setup page (`addedToTable`), in its style's voice:
+ * the line's id and its text with `{you}` filled in (or left out when there's no name). Never said at a table.
+ */
+export function addedLine(style: StyleId, you: string | undefined, rng: () => number): { id: string; text: string } {
+  const lines = pool(style, 'addedToTable');
+  const i = Math.floor(rng() * lines.length);
+  const lineId = id(style, 'addedToTable', i);
+  return { id: lineId, text: reactionText(lineId, you) };
 }
 
 /** A line a legend says when the game is over (null for anyone else). `name` is who they played. */
@@ -534,6 +551,7 @@ const CHANCE: Record<TalkEvent, number> = {
   beforeTurn: 0.25,
   beforeRiver: 0.3,
   beforeShowdown: 0.35,
+  addedToTable: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */

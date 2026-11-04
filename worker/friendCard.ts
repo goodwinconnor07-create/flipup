@@ -1,10 +1,8 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { BjInvite, CampaignCard, FriendCardInfo, FriendRequest } from '../src/game';
+import { INVITE_MS, type BjInvite, type CampaignCard, type FriendCardInfo, type FriendRequest, type InviteDeclined } from '../src/game';
 
 /** A friend code is forgotten this long after its owner last opened the app. */
 const KEEP_FOR_MS = 120 * 24 * 60 * 60 * 1000;
-/** An invite to a table is only worth answering for this long. */
-const INVITE_MS = 15 * 60 * 1000;
 
 interface Stored {
   name: string;
@@ -16,6 +14,8 @@ interface Stored {
   campaign?: CampaignCard;
   /** Friends asking this person to their table, newest last. Only the owner reads them. */
   invites?: BjInvite[];
+  /** Friends who said no to this person's poker-table invites, newest last. Only the owner reads them. */
+  declined?: InviteDeclined[];
   /** People asking to be friends, waiting for an answer. Only the owner reads them. */
   requests?: FriendRequest[];
   /** Friend codes this person has accepted, or who accepted them. Kept on both cards. */
@@ -118,6 +118,31 @@ export class FriendCard extends DurableObject<Env> {
     return true;
   }
 
+  /** RPC: a friend takes back their invite to `table` (they left the setup page without opening it). */
+  async uninvite(from: string, table: string): Promise<void> {
+    const data = await this.load();
+    if (!data?.invites?.some((i) => i.from === from && i.table === table)) return;
+    await this.save({ ...data, invites: data.invites.filter((i) => !(i.from === from && i.table === table)) }, false);
+  }
+
+  /** RPC: the owner says no to `from`'s invite to `table`. True when there was one to turn down. */
+  async decline(deviceId: string, from: string, table: string): Promise<'ok' | 'missing' | 'forbidden'> {
+    const data = await this.load();
+    if (!data) return 'missing';
+    if (data.deviceId !== deviceId) return 'forbidden';
+    if (!data.invites?.some((i) => i.from === from && i.table === table)) return 'missing';
+    await this.save({ ...data, invites: data.invites.filter((i) => !(i.from === from && i.table === table)) }, false);
+    return 'ok';
+  }
+
+  /** RPC: `by` turned down this person's invite to `table`; their next check hears about it. */
+  async noteDeclined(by: string, table: string): Promise<void> {
+    const data = await this.load();
+    if (!data) return;
+    const kept = (data.declined ?? []).filter((d) => !(d.by === by && d.table === table) && Date.now() - d.at < INVITE_MS);
+    await this.save({ ...data, declined: [...kept, { by, table, at: Date.now() }].slice(-12) }, false);
+  }
+
   /** RPC: the invites waiting for this phone, if it owns the code. */
   async invites(deviceId: string): Promise<BjInvite[] | null> {
     const data = await this.load();
@@ -165,10 +190,16 @@ export class FriendCard extends DurableObject<Env> {
    * RPC: the owner's waiting requests, who they've asked, their friends' codes and the table invites waiting. One
    * cheap read of one card, for polling every few seconds.
    */
-  async pending(deviceId: string): Promise<{ requests: FriendRequest[]; sent: string[]; friends: string[]; invites: BjInvite[] } | null> {
+  async pending(deviceId: string): Promise<{ requests: FriendRequest[]; sent: string[]; friends: string[]; invites: BjInvite[]; declined: InviteDeclined[] } | null> {
     const data = await this.load();
     if (!data || data.deviceId !== deviceId) return null;
-    return { requests: data.requests ?? [], sent: data.sent ?? [], friends: data.friends ?? [], invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS) };
+    return {
+      requests: data.requests ?? [],
+      sent: data.sent ?? [],
+      friends: data.friends ?? [],
+      invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS),
+      declined: (data.declined ?? []).filter((d) => Date.now() - d.at < INVITE_MS),
+    };
   }
 
   /** RPC: whether `code` has asked this person and is still waiting. */

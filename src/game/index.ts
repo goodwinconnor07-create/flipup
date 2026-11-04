@@ -37,3 +37,4 @@ export * from './reports';
 export * from './premiumGate';
 export * from './challenges';
 export * from './rewind';
+export { addedLine } from './botTalk';

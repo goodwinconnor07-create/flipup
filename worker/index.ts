@@ -36,6 +36,7 @@ import {
   newId,
   parseReport,
   gamesNeedPremium,
+  BOTS,
 } from '../src/game';
 import { emailReport, type StoredReport } from './reports';
 import { forgetDevice, handleNotification, mayHostPremium, verifyPurchase, type VerifyResult } from './premium';
@@ -112,6 +113,10 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     return json({ error: 'Hosting this game needs FlipUp Premium.', premium: true }, 402);
   }
   let bots = typeof body.bots === 'number' && Number.isInteger(body.bots) ? Math.max(0, Math.min(MAX_SEATS - 1, body.bots)) : 0;
+  // Bots the host picked by name (the setup page's bots row): only names from the roster, one seat each.
+  let botNames = Array.isArray(body.botNames)
+    ? [...new Set(body.botNames.filter((n): n is string => typeof n === 'string' && BOTS.some((b) => b.name === n)))].slice(0, MAX_SEATS - 1)
+    : [];
   // A campaign table with friends: the stakes come from the campaign, never from the phone, and the prize is drawn here.
   let campaign: Game['campaign'];
   const pick = body.campaign as { kind?: unknown; id?: unknown } | undefined;
@@ -125,6 +130,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     settings = table.settings;
     campaign = table.campaign;
     bots = 0;
+    botNames = [];
   }
 
   // Codes are random, so a clash is rare. Try a few before giving up.
@@ -136,6 +142,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
       emoji: body.emoji,
       settings: { ...DEFAULT_SETTINGS, ...settings } as Settings,
       bots,
+      botNames,
       code,
       now: Date.now(),
     });
@@ -167,10 +174,10 @@ async function ownedCode(env: Env, code: unknown, deviceId: string): Promise<str
  * DELETE removes it (its owner only). /request, /answer, /unfriend and /inbox are friend requests and the list.
  */
 async function friendRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
-  const match = pathname.match(/^\/api\/friends(?:\/([^/]+)(?:\/(invite|invites|request|requests|answer|unfriend|inbox|username))?)?$/);
+  const match = pathname.match(/^\/api\/friends(?:\/([^/]+)(?:\/(invite|invites|uninvite|decline|request|requests|answer|unfriend|inbox|username))?)?$/);
   if (!match) return json({ error: 'Not found.' }, 404);
   const code = match[1]?.toUpperCase();
-  if (code && (match[2] === 'invite' || match[2] === 'invites')) return inviteRoute(request, env, code, match[2], search);
+  if (code && (match[2] === 'invite' || match[2] === 'invites' || match[2] === 'uninvite' || match[2] === 'decline')) return inviteRoute(request, env, code, match[2], search);
   if (code && match[2]) return friendshipRoute(request, env, code, match[2], search);
 
   if (!code) {
@@ -234,6 +241,25 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
     return list ? json({ invites: list }) : json({ error: 'That code belongs to another phone.' }, 403);
   }
   if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
+  if (kind === 'decline' || kind === 'uninvite') {
+    if (limited(request, 'invite-answer', 120, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+    const body = (await readJson(request)) as Record<string, unknown> | null;
+    if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
+    if (!isCode(body.table)) return json({ error: 'That table has closed.' }, 404);
+    if (kind === 'decline') {
+      // `code` is the person saying no, who proves it with their device id; the inviter hears on their next check.
+      if (!isFriendCode(body.from)) return json({ error: "That code doesn't look right." }, 400);
+      const said = await card.decline(body.deviceId, body.from, body.table);
+      if (said === 'forbidden') return json({ error: 'That code belongs to another phone.' }, 403);
+      if (said === 'ok') await env.FRIEND_CARD.getByName(body.from).noteDeclined(code, body.table);
+      return json({ ok: true });
+    }
+    // The inviter takes an invite back: only from a code their phone owns.
+    const from = await ownedCode(env, body.fromCode, body.deviceId);
+    if (!from) return json({ error: 'Get your own friend code first.' }, 403);
+    await card.uninvite(from, body.table);
+    return json({ ok: true });
+  }
   if (limited(request, 'invite', 60, 10 * 60_000)) return json({ error: 'Too many invites. Try again later.' }, 429);
   const body = (await readJson(request)) as Record<string, unknown> | null;
   if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
@@ -248,7 +274,7 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
     if (!(await card.isFriend(from))) return json({ error: "You can only invite friends. Send them a friend request first." }, 403);
     const info = await env.TABLE_ROOM.getByName(body.table).info();
     if (!info || info.status === 'ended') return json({ error: 'That table has closed.' }, 404);
-    invite = { from, name: me.name, emoji: me.emoji, table: body.table, at: Date.now(), kind: 'table', game: info.settings.variant ?? 'holdem' };
+    invite = { from, name: me.name, emoji: me.emoji, table: body.table, at: Date.now(), kind: 'table', game: info.settings.variant ?? 'holdem', ...(info.status === 'lobby' ? { lobby: true } : {}) };
   } else {
     if (!(await env.BLACKJACK_ROOM.getByName(body.table).exists())) return json({ error: 'That table has closed.' }, 404);
     invite = { from, name: me.name, emoji: me.emoji, table: body.table, at: Date.now() };

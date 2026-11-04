@@ -565,3 +565,50 @@ export const EXTRA_VOICES: Record<StyleId, Lines> = {
     beforeShowdown: ['Show me.', 'Whatever, show.', 'Let’s see.'],
   },
 };
+
+// ── Picked for a table ───────────────────────────────────────────────────────────────────────
+// Said once, on the Play with friends page, when a person adds the bot to their table (`addedToTable`).
+// Nothing at the table says these. A new pass at the end, so no earlier id moves.
+
+export const ADDED_TRASH: Lines = {
+  addedToTable: [
+    'This was a mistake.',
+    'Bad idea, {you}.',
+    'Oh, you picked me?|Brave.',
+    'Hope you brought chips.',
+    'I’ll be gentle.|Not really.',
+    'Bold choice.',
+    'Your funeral.',
+    'Clear your evening.',
+    'You’ll regret this.',
+    'Finally, a challenge.||For you.',
+  ],
+};
+
+export const ADDED_FRIENDLY: Lines = {
+  addedToTable: [
+    'Hi, thanks for adding me!',
+    'Yay, I’m in!',
+    'Thanks, {you}!',
+    'Ooh, a table!',
+    'Count me in!',
+    'Happy to be here!',
+    'Let’s have fun!',
+    'I’ll bring snacks.',
+    'Oh! Me? Thanks!',
+    'Good choice 😄',
+  ],
+};
+
+export const ADDED_VOICES: Record<StyleId, Lines> = {
+  pro: { addedToTable: ['Good pick.|I’m solid.', 'I’ll play it by the book.'] },
+  shark: { addedToTable: ['Fresh chips.|Lovely.', 'You invited the shark.'] },
+  tag: { addedToTable: ['Tight and ready.', 'I’ll wait for a hand.'] },
+  lag: { addedToTable: ['Buckle up, {you}.', 'No brakes tonight.'] },
+  maniac: { addedToTable: ['ALL IN ALREADY!', 'Chaos has arrived!'] },
+  rock: { addedToTable: ['I’ll fold a lot.|Sorry.', 'Wake me for aces.'] },
+  station: { addedToTable: ['I’ll call anything.', 'Just here to call.'] },
+  gambler: { addedToTable: ['Feeling lucky!', 'Lucky seat, this.'] },
+  trapper: { addedToTable: ['Don’t mind me.', 'I’m harmless.||Promise.'] },
+  nervous: { addedToTable: ['Oh no, me?', 'Please be nice…'] },
+};

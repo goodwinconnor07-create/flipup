@@ -23,6 +23,9 @@ export const brand = {
   /** Raise at the table, and only there (the owner's call): the one green in the app. */
   raise: '#22b35e',
   raiseDeep: '#14843f',
+  /** The solid light button on the dark grain pages (Open table), and its chunky edge: a pale violet. */
+  paper: '#ffffff',
+  paperEdge: '#bfb2ff',
 } as const;
 
 /** The party colours the app's components ask for, each one now violet or gold. */

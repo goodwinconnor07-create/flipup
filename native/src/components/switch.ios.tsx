@@ -2,6 +2,8 @@ import { Host, Switch as NativeSwitch } from '@expo/ui';
 import { labelsHidden } from '@expo/ui/swift-ui/modifiers';
 
 import { brandTint } from './brand-tint';
+import { useForcedScheme } from '@/theme';
+
 import { haptic } from './haptics';
 
 /**
@@ -9,8 +11,10 @@ import { haptic } from './haptics';
  * title, so the switch's own label is hidden on screen but still read by VoiceOver.
  */
 export function Switch({ value, onValueChange, label }: { value: boolean; onValueChange: (on: boolean) => void; label: string }) {
+  // A page that forces its scheme (the dark grain pages) gets a control drawn to match.
+  const forced = useForcedScheme();
   return (
-    <Host matchContents>
+    <Host colorScheme={forced ?? undefined} matchContents>
       <NativeSwitch
         value={value}
         onValueChange={(on) => {

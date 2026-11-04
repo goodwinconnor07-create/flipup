@@ -4,7 +4,7 @@ import { Platform, useColorScheme, View, type ScrollViewProps } from 'react-nati
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { spacing } from '@/theme';
+import { spacing, useScheme } from '@/theme';
 
 import { GlassSurface } from './glass-surface';
 import { Icon, type IconName } from './icon';
@@ -62,6 +62,6 @@ export function RoundButton({ icon, label, onPress }: { icon: IconName; label: s
 }
 
 function IconInk({ name }: { name: IconName }) {
-  const dark = useColorScheme() === 'dark';
+  const dark = useScheme() === 'dark';
   return <Icon name={name} size={19} color={dark ? '#ffffff' : '#000000'} />;
 }

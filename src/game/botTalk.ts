@@ -424,26 +424,26 @@ export function allLines(): { voice: string; event: TalkEvent; text: string }[] 
 
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
-  thinkHard: 0.15,
-  thinkEasy: 0.06,
+  thinkHard: 0.22,
+  thinkEasy: 0.1,
   allin: 0.55,
-  raise: 0.14,
-  foldBig: 0.18,
+  raise: 0.22,
+  foldBig: 0.28,
   callLight: 0.35,
-  yourBigBet: 0.25,
+  yourBigBet: 0.35,
   sweat: 0.6,
-  sweatWatch: 0.3,
+  sweatWatch: 0.4,
   sweatWin: 1,
   sweatLose: 1,
   bluffWon: 0.6,
-  bigWin: 0.45,
-  win: 0.25,
+  bigWin: 0.6,
+  win: 0.4,
   badBeat: 0.8,
-  lostToYou: 0.5,
+  lostToYou: 0.6,
   reply: 0.7,
   tiltJab: 0.35,
   bluffCaught: 0.6,
-  idle: 0.08,
+  idle: 0.15,
   tank: 0.8,
   showBluff: 0.9,
   showStrong: 0.7,
@@ -470,7 +470,26 @@ const CHANCE: Record<TalkEvent, number> = {
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
-const COOLDOWN = 2200;
+const COOLDOWN = 2600;
+
+/** Everyone talks a bit more than their style alone says; a bot that has already said more than its share gets quieter (see `share`). */
+const TALKATIVE = 1.3;
+
+/** How many lines a bot may be ahead of the table's average before it is asked to hold back. */
+const SHARE_SLACK = 2;
+
+/**
+ * 1 for a bot that has said no more than its share, down to 0.35 for one far ahead of the rest of the table, so
+ * the loudest style can't take over the conversation. The count is `reactions[id].n`, every line a bot has said.
+ */
+function share(game: Game, playerId: string): number {
+  const bots = game.players.filter((p) => p.bot);
+  if (bots.length < 2) return 1;
+  const count = (id: string) => game.reactions?.[id]?.n ?? 0;
+  const others = bots.filter((p) => p.id !== playerId).map((p) => count(p.id));
+  const ahead = count(playerId) - others.reduce((a, b) => a + b, 0) / others.length - SHARE_SLACK;
+  return ahead <= 0 ? 1 : Math.max(0.35, 1 - ahead * 0.15);
+}
 
 /**
  * Maybe has a bot say something. Returns how long it takes to say and read (ms), or 0 if it stayed quiet.
@@ -490,7 +509,7 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   const style = playerStyle(player);
   // A legend speaks in its own voice; everyone else in their style's.
   const voice = player.legend ?? style.id;
-  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return 0;
+  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId))) return 0;
   // A table-wide pause keeps nine seats from shouting over an ordinary decision.
   const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
   if (!owed && now - tableLast < 700) return 0;

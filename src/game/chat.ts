@@ -23,39 +23,42 @@ export const CHAT = {
   /** Follow-up messages in a burst are typed quicker than the first. */
   burst: 0.7,
   /** The gap between one message landing and the next one's dots. */
-  settle: 80,
+  settle: 150,
   /** The pause before a `||` second thought. */
   afterthought: 650,
   /** How long a message stays up: a base plus a little per letter, within a floor and a ceiling. */
   holdBase: 700,
   holdPerChar: 30,
   holdMin: 1200,
-  holdMax: 4200,
+  holdMax: 7000,
   /** A line's words come through its bubble one at a time (see `ticker`): a base and a little per letter for each word. */
-  wordBase: 120,
-  wordPerChar: 32,
+  wordBase: 150,
+  wordPerChar: 44,
   /** A little longer on the word that ends a phrase, longer still on one that ends a sentence. */
-  wordComma: 90,
-  wordStop: 190,
+  wordComma: 150,
+  wordStop: 300,
   /** A long line speeds up so the words still finish within this long. */
-  tickerMax: 3400,
+  tickerMax: 4800,
   /** The last words stay up this long before the bubble goes. */
-  tail: 800,
+  tail: 1300,
   /** Words on show at once, and the most letters they may take together (the narrowest seat on a phone fits about 15). */
   windowWords: 3,
   windowChars: ONE_LINE_CHARS,
   /** A person's quick message stays up this long. */
-  quickHold: 2600,
+  quickHold: 3200,
+  /** Reading speed the timings are built on (letters a second, an easy pace), and the time to spare after it. */
+  readCps: 15,
+  spare: 1000,
   /** Another bot may start typing this long after the last message of whoever's talking lands. */
-  replyGap: 260,
+  replyGap: 750,
   /** A seat shows this many messages at once; a third pushes the oldest out. */
   maxShown: 1,
   /** How long a bot waits after its last message lands before it moves, so the table can read it: at least this, and long enough for the message itself. */
-  readTime: 900,
+  readTime: 1200,
   /** A line that waited this long to start is stale and dropped. */
-  staleAfter: 2600,
+  staleAfter: 3200,
   /** Lines the table is waiting on (a reaction to how a hand ended) wait longer. */
-  staleAfterOwed: 4500,
+  staleAfterOwed: 5200,
   /** At most this many lines wait their turn. */
   maxQueued: 3,
 } as const;
@@ -229,10 +232,10 @@ export function widestWindow(words: string[], maxChars: number = CHAT.windowChar
 }
 
 /** How long a message stays up once it has landed: its words coming through, then a moment on the last of them. */
-export const holdMs = (text: string): number => Math.round(Math.min(CHAT.holdMax, Math.max(CHAT.holdMin, ticker(text).ms + wordMs(wordsOf(text).at(-1) ?? '') + CHAT.tail)));
+export const holdMs = (text: string): number => Math.round(Math.min(CHAT.holdMax, Math.max(CHAT.holdMin, ticker(text).ms + wordMs(wordsOf(text).at(-1) ?? '') + CHAT.tail, readMs(text) + CHAT.spare)));
 
-/** The least a message of this size needs on screen to be read: a moment to notice it, then fast reading. */
-export const readMs = (text: string): number => Math.round(300 + (size(text) / 25) * 1000);
+/** What a message of this size takes to read at an easy pace: a moment to notice it, then `readCps` letters a second. */
+export const readMs = (text: string): number => Math.round(300 + (size(text) / CHAT.readCps) * 1000);
 
 /**
  * When each message of a line lands, counted from the moment its speaker starts typing: the dots start at

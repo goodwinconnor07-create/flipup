@@ -7,6 +7,7 @@
 import { writeFileSync } from 'node:fs';
 import { decide } from '../src/game/botPlay';
 import { seededRng } from '../src/game/cards';
+import { longest } from './chatLongest';
 import { BEFORE_MOVE, botSay, CHAT, ChatLane, readMs, worthSaying, type Say } from '../src/game/chat';
 import { applyAction, createTable, DEFAULT_SETTINGS } from '../src/game/reducer';
 import { reactionBeats } from '../src/game/reactions';
@@ -41,11 +42,14 @@ interface Sample {
   handSeconds: number;
   /** Gaps between a bot's move and its own earlier line landing (positive = it waited). */
   slack: number[];
-  /** What the lines were about. */
+  /** What the lines were about, and how many lines each speaker said. */
   events: Map<string, number>;
+  /** Per table: the share of its lines said by its busiest bot. */
+  topShare: number[];
+  hands: number;
 }
 
-const blank = (): Sample => ({ latency: [], visible: [], tooShort: 0, messages: 0, lines: 0, cutOff: 0, botMoves: 0, unsaid: 0, seconds: 0, anyUp: 0, typing: 0, seats: [0, 0, 0, 0], handSeconds: 0, slack: [], events: new Map() });
+const blank = (): Sample => ({ latency: [], visible: [], tooShort: 0, messages: 0, lines: 0, cutOff: 0, botMoves: 0, unsaid: 0, seconds: 0, anyUp: 0, typing: 0, seats: [0, 0, 0, 0], handSeconds: 0, slack: [], events: new Map(), topShare: [], hands: 0 });
 
 function playTable(seed: number, bots: number, hands: number, fast: boolean): Sample {
   const s = blank();
@@ -62,6 +66,7 @@ function playTable(seed: number, bots: number, hands: number, fast: boolean): Sa
 
   const lane = new ChatLane();
   const seen: Record<string, number> = {};
+  const byWho = new Map<string, number>();
   const pushedAt = new Map<string, number>();
   const firstLand = new Map<string, number>();
   const up = new Map<string, { from: number; to: number; text: string }>();
@@ -112,6 +117,7 @@ function playTable(seed: number, bots: number, hands: number, fast: boolean): Sa
       lane.push(say);
       pushedAt.set(say.key, clock);
       s.lines++;
+      byWho.set(who, (byWho.get(who) ?? 0) + 1);
       const kind = r.id.split(':')[2];
       s.events.set(kind, (s.events.get(kind) ?? 0) + 1);
     }
@@ -198,6 +204,8 @@ function playTable(seed: number, bots: number, hands: number, fast: boolean): Sa
     if (m.to - m.from < need) s.tooShort++;
   }
   s.unsaid = Math.max(0, s.lines - firstLand.size);
+  s.hands = handsDone;
+  if (s.lines) s.topShare.push(Math.max(...byWho.values()) / s.lines);
   return s;
 }
 
@@ -207,6 +215,7 @@ const pctile = (xs: number[], p: number) => {
   return a[Math.min(a.length - 1, Math.floor((p / 100) * a.length))];
 };
 const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
+const pc = (x: number) => `${(x * 100).toFixed(0)}%`;
 const lines: string[] = [];
 const out = (t = '') => {
   lines.push(t);
@@ -225,8 +234,8 @@ out('# Chat lab');
 out();
 out(`${TABLES} tables a setting, ${HANDS} hands each. Times in milliseconds unless noted.`);
 out();
-out('| Table | lines/min | messages/line | start p50 | start p95 | up p5 | up p50 | too short | talk time | typing | 2+ talking | cut off | unsaid |');
-out('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+out('| Table | lines/hand | lines/min | busiest bot | messages/line | start p50 | start p95 | up p5 | up p50 | too short | talk time | typing | 2+ talking | cut off | unsaid |');
+out('| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |');
 const totals = blank();
 let mix = new Map<string, number>();
 for (const c of configs) {
@@ -245,13 +254,14 @@ for (const c of configs) {
     all.anyUp += r.anyUp;
     all.typing += r.typing;
     all.handSeconds += r.handSeconds;
+    all.hands += r.hands;
+    all.topShare.push(...r.topShare);
     r.seats.forEach((x, i) => (all.seats[i] += x));
     for (const [k, v] of r.events) all.events.set(k, (all.events.get(k) ?? 0) + v);
   }
   if (c.label === '5 bots') mix = all.events;
-  const pc = (x: number) => `${(x * 100).toFixed(0)}%`;
   out(
-    `| ${c.label} | ${((all.lines / all.seconds) * 60).toFixed(1)} | ${(all.messages / Math.max(1, all.lines - all.unsaid)).toFixed(2)} | ${pctile(all.latency, 50)} | ${pctile(all.latency, 95)} | ${pctile(all.visible, 5)} | ${pctile(all.visible, 50)} | ${all.tooShort} | ${pc(all.anyUp / all.seconds)} | ${pc(all.typing / all.seconds)} | ${pc((all.seats[2] + all.seats[3]) / all.seconds)} | ${all.cutOff}/${all.botMoves} | ${all.unsaid}/${all.lines} |`,
+    `| ${c.label} | ${(all.lines / Math.max(1, all.hands)).toFixed(2)} | ${((all.lines / all.seconds) * 60).toFixed(1)} | ${pc(mean(all.topShare))} | ${(all.messages / Math.max(1, all.lines - all.unsaid)).toFixed(2)} | ${pctile(all.latency, 50)} | ${pctile(all.latency, 95)} | ${pctile(all.visible, 5)} | ${pctile(all.visible, 50)} | ${all.tooShort} | ${pc(all.anyUp / all.seconds)} | ${pc(all.typing / all.seconds)} | ${pc((all.seats[2] + all.seats[3]) / all.seconds)} | ${all.cutOff}/${all.botMoves} | ${all.unsaid}/${all.lines} |`,
   );
   totals.tooShort += all.tooShort;
   totals.messages += all.messages;
@@ -260,6 +270,9 @@ for (const c of configs) {
   totals.unsaid += all.unsaid;
   totals.lines += all.lines;
 }
+const L = longest();
+out();
+out(`Longest line in the game: ${(L.longestSayAndRead / 1000).toFixed(1)} s to say and read (a bot waits that long before it moves), ${(L.longestUp / 1000).toFixed(1)} s from the first dots to the bubble going ("${L.worst}"). ${L.lines} lines, ${L.avgChars} letters on average.`);
 out();
 out('What the lines were about at the 5 bot table (per 100 hands):');
 out([...mix].sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k} ${((v / (TABLES * HANDS)) * 100).toFixed(1)}`).join(', '));

@@ -110,7 +110,9 @@ describe('how long things take', () => {
   });
 
   it('holds a message long enough to read at a comfortable pace, within bounds', () => {
-    expect(holdMs('Hi')).toBe(CHAT.holdMin);
+    expect(holdMs('Hi')).toBeGreaterThanOrEqual(CHAT.holdMin);
+    // Any message can be read at an easy pace with a second to spare.
+    for (const t of ['Hi', 'Nice hand, Connor!', 'You got me last time, Connor. Round two!']) expect(holdMs(t), t).toBeGreaterThanOrEqual(readMs(t) + CHAT.spare);
     expect(holdMs('a'.repeat(200))).toBe(CHAT.holdMax);
     for (const len of [1, 5, 10, 15, 20]) {
       // 300 ms to notice it, then 20 letters a second (a relaxed pace: most people read faster).
@@ -140,9 +142,9 @@ describe('how long things take', () => {
   it('says every line in the game quickly enough to feel like texting', () => {
     for (const { text } of allLines()) {
       const beats = splitBeats(text.replaceAll('{you}', 'Connor'));
-      // Whole line out in under two seconds, so a bot never makes you wait for its words.
-      expect(spokenMs(beats), text).toBeLessThanOrEqual(2600);
-      expect(sayAndReadMs(beats), text).toBeLessThanOrEqual(3200);
+      // Whole line out in under three seconds, and the bot moves within four, so nobody waits long for its words.
+      expect(spokenMs(beats), text).toBeLessThanOrEqual(3000);
+      expect(sayAndReadMs(beats), text).toBeLessThanOrEqual(4200);
     }
   });
 
@@ -320,15 +322,15 @@ describe('the conversation', () => {
     const lane = new ChatLane();
     lane.push(say('a', 'C’mon!', 0, { event: 'sweat', moment: '3-3-live' }));
     lane.push(say('b', 'Thanks.', 0, { event: 'win', moment: '3-3-live' }));
-    // Both are up together at one second.
+    // Both are up together by now (the second starts typing a reply gap after the first lands).
     lane.advance(0);
-    for (let t = 1; t <= 1000; t += 1) lane.advance(t);
-    expect(lane.talk('a', 1000)?.shown.map((m) => m.text)).toEqual(['C’mon!']);
-    expect(lane.talk('b', 1000)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
+    for (let t = 1; t <= 1700; t += 1) lane.advance(t);
+    expect(lane.talk('a', 1700)?.shown.map((m) => m.text)).toEqual(['C’mon!']);
+    expect(lane.talk('b', 1700)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
     // The river came: the "c'mon" is about a moment that's over, a plain message goes on to finish its time.
     lane.retain(worthSaying('3-4-live'), worthKeeping('3-4-live'));
-    expect(lane.talk('a', 1000)).toBeUndefined();
-    expect(lane.talk('b', 1000)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
+    expect(lane.talk('a', 1700)).toBeUndefined();
+    expect(lane.talk('b', 1700)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
     expect(lane.takeRetired()).toContain('a');
   });
 

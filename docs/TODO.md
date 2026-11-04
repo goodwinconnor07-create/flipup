@@ -137,6 +137,13 @@ Files: `Table.tsx`, `table/Pods.tsx`, `table.css`, `table/Versus.tsx`, `store.ts
 
 **Open questions to ask before building:** (a) How does the shelf sit with the header (menu button, blinds info)? Above it, as the brief says, and what is the total vertical budget? (b) Max pills before the shelf scrolls or compresses at 8 folded. (c) Does "centre of attention" apply to bots-only games and campaign tables the same way? (d) At 3 players, what is the layout? (e) What happens in a multiway all-in run-out with the board cards?
 
+
+**Owner's answers (Stage 7 is the NATIVE iPhone app; the web and desktop are out of scope):**
+- Shelf position: between the header (menu button and blinds info) and the other players, NOT above the header. The other players and the board move down slightly to make room, and the gap between the bots' cards and the table can get a little smaller. Play with spacing until it looks nice and not crowded.
+- Many folds: pills keep full size and the shelf scrolls sideways (newest fold in view).
+- 3 players: stay round the table as normal. Only 1 or 2 left trigger the move to the middle and the enlarged heads-up look. Folded players still leave for the shelf.
+- Applies to bots-only games, online tables with friends and party tournament tables. Challenges are left out.
+
 - [ ] **A1 Active players are the focus.** Players who haven't folded become the focus as the hand goes on. With 3 or more still in, they stay arranged round the table; folded players leave the table.
 - [ ] **A2 Heads-up focus.** With 1 to 2 players left, move them toward the middle and enlarge them (bigger emoji, bigger chip count, name), so a heads-up hand feels personal, the bot or your friend noticeably bigger than normal because there's room. Smooth transition between layouts (no jumping); handles the board cards and the pot staying visible and not overlapped.
 - [ ] **A3 Fold shelf.** A small horizontal shelf at the very top of the table screen, above the menu button and blinds info. It holds small pills: the player's emoji and chip amount, greyed out but still readable.

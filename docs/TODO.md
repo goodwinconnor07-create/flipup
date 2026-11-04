@@ -60,6 +60,8 @@ Files: `table/Pods.tsx`, `src/ui/` playing card component, `src/styles/premium.c
 - [x] **C2 Remove old BTN badge usage where replaced.** Once the chip is on the card back, make sure the dealer button isn't drawn twice (keep one clear marker). Check this at 2 players, 6 players and 9 players.
 - [x] **C3 Check the flip.** The chip is on the back only. When cards flip to the face, nothing is left behind.
 
+Native version (the iPhone app in `native/`, done after the web one): all of P1 to P5 and C1 to C3 are also built in `native/src/components/table/` (`my-area.tsx`, `seats.tsx`, `playing-card.tsx`, `bubbles.tsx`, `quick-messages.tsx`). P2 was read as the quick-message button moving to the top-right corner, straddling the box's edge. Heads-up the button's seat shows BTN on its card back (its own box shows B/SB). Checked with phone-sized screenshots at 2, 6 and 9 players and with the Premium packs on every seat.
+
 ## Stage 3: Bot chat
 
 Files: `src/game/chat.ts`, `botTalk.ts`, `botLines.ts`, `legendTalk.ts`, `table/Bubbles.tsx`, `scripts/chatLab.ts`, `e2e/chat-timing.spec.ts`, `docs/CHAT.md`.

@@ -10,6 +10,7 @@ import { Legend } from './screens/Legend';
 import { PartyScreen } from './screens/Party';
 import { PartySetup } from './screens/PartySetup';
 import { CashSeat } from './screens/CashSeat';
+import { RangeTrainer } from './screens/RangeTrainer';
 import { useEffect } from 'react';
 import { Roulette } from './screens/Roulette';
 import { Blackjack } from './screens/Blackjack';
@@ -62,6 +63,9 @@ export function App() {
       break;
     case 'cashSeat':
       screen = CAMPAIGN_ON ? <CashSeat /> : <Home />;
+      break;
+    case 'ranges':
+      screen = <RangeTrainer />;
       break;
   }
 

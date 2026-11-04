@@ -112,7 +112,9 @@ export type Route =
   /** The campaign's blackjack table, dealt by Vincent. */
   | { name: 'blackjack' }
   /** Cash game: the blinds your bankroll plays, and how much to sit down with. */
-  | { name: 'cashSeat' };
+  | { name: 'cashSeat' }
+  /** Range training: read the opponent's hand from the action and make the decision. */
+  | { name: 'ranges' };
 
 export type Sheet =
   | { name: 'menu' }

@@ -26,7 +26,7 @@ export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | '
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
       <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
-      <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} height={height} go={() => (onGo ? onGo('bots') : router.push({ pathname: '/setup', params: { mode: 'bots' } }))} />
+      <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
     </View>
   );
 }

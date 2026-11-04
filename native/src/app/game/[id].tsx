@@ -17,7 +17,7 @@ export default function GameSheet() {
   const { width } = useWindowDimensions();
   const go = (mode: 'friends' | 'bots') => {
     router.back();
-    router.push(mode === 'friends' ? { pathname: '/play-friends', params: { variant } } : { pathname: '/setup', params: { mode, variant } });
+    router.push({ pathname: mode === 'friends' ? '/play-friends' : '/play-bots', params: { variant } });
   };
   return (
     <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, gap: spacing.lg }}>

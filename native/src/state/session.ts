@@ -339,7 +339,7 @@ export function requestLogs(): void {
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */
-export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string): void {
+export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): void {
   closeConnection();
   const fast = isFast();
   const game = createTable({
@@ -348,6 +348,7 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     emoji,
     settings,
     bots,
+    ...(botNames?.length ? { botNames } : {}),
     code: null,
     now: toTableTime(Date.now(), fast),
   });

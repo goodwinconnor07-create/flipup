@@ -7,7 +7,7 @@ The single record of the big batch of fixes and changes. Every item has an ID. A
 - **Target: the native iPhone app in `native/` (Expo, SDK 58).** Read the "Native app" section of `CLAUDE.md` first. All UI work goes in `native/src/...`; shared engine code stays in `src/game/` (import as `@game/*`) and design tokens in `src/design/`. Do NOT change the web UI (`src/screens`, `src/styles`) or `desktop.css`. The web versions of T1 to T8 and P/C items that were built by mistake in `src/` (commits a925e99 and 82ec5be) stay where they are; port the ideas, reuse the CSS values and logic, but write native components.
 - Native rules to follow: SF Symbols through `Icon` (no emoji as icons), `PressableScale`, `ThemedText`, `useColors()`, Reduce Motion via `useReduceMotion()`, Reanimated shared values with `.get()`/`.set()`, `LivingCard` for coloured cards, no repeating or conic gradients, never import `@expo/ui/swift-ui` outside `.ios.tsx`. Check with `cd native && npm run typecheck` and `npx expo export --platform ios`, plus the root `npm run check` if shared code changed.
 - Palette: `CLAUDE.md` says Call/Check is a plain high-contrast button, Raise green (`brand.raise`) and Fold red. The owner has now asked outright for T1 (raise panel all green) and T2 (Call blue, use the system blue) in the app, so do them; this overrides the older palette note. In the app bots carry no BOT pill; a small robot (`cpu.fill`) sits on the back of their cards, so C1 adds the position chip next to it.
-- Native files: table is `native/src/app/table.tsx` and `native/src/components/table/` (`seats.tsx`, `my-area.tsx`, `actions.tsx`, `raise-slider.tsx`, `playing-card.tsx`, `bubbles.tsx`, `mood-face.tsx`, `felt.tsx`, `count.tsx`, `use-reactions.ts`), the table menu is the `table-menu` sheet, setup is the Setup screen with `SeatPreview`, friends are `(friends)/friends.tsx` with `state/pals.ts`.
+- Native files: table is `native/src/app/table.tsx` and `native/src/components/table/` (`seats.tsx`, `my-area.tsx`, `actions.tsx`, `raise-slider.tsx`, `playing-card.tsx`, `bubbles.tsx`, `mood-face.tsx`, `felt.tsx`, `count.tsx`, `use-reactions.ts`), the table menu is the `table-menu` sheet, setup is `app/play-friends.tsx` and `app/play-bots.tsx`, friends are `(friends)/friends.tsx` with `state/pals.ts`.
 - Native already has mutual friend requests, usernames, a badge and an inbox check every 15s (see Friends in `CLAUDE.md`). Stage 4 is therefore a gap check (see below), not a rebuild.
 - The server (`worker/`) is still in scope where a feature needs it (friend requests, table invites). Those are the only server changes.
 - Friend requests: the sender is taken to have agreed. The receiver must accept. Friends already on a list stay as they are.
@@ -127,9 +127,9 @@ Files: `Setup.tsx`, `Lobby.tsx`, `src/state/pals.ts`, `worker/` table routes, `s
 
 ## Stage 6c: Play with bots
 
-- [ ] **N1 Bots page.** Same page as friends but without the Invite friends row. Rows: bots, game, settings.
-- [ ] **N2 Confirm popup.** Instead of an open table step, a small confirm popup shows all the chosen game settings (game, bots, chips, blinds, house rules) with one button. Pressing it deals and starts straight away (keeps the existing start delay or VS intro behaviour).
-- [ ] **N3 Cleanup.** Remove the old Setup code paths, "Pick your bots" screen, "Random table" toggle or fold them into the new bots row. Make sure Play again, Home banners and `openTable('local', …)` still work. Update the Setup, Lobby and Picking bots notes in `CLAUDE.md`.
+- [x] **N1 Bots page.** Same page as friends but without the Invite friends row. Rows: bots, game, settings.
+- [x] **N2 Confirm popup.** Instead of an open table step, a small confirm popup shows all the chosen game settings (game, bots, chips, blinds, house rules) with one button. Pressing it deals and starts straight away (keeps the existing start delay or VS intro behaviour).
+- [x] **N3 Cleanup.** Remove the old Setup code paths, "Pick your bots" screen, "Random table" toggle or fold them into the new bots row. Make sure Play again, Home banners and `openTable('local', …)` still work. Update the Setup, Lobby and Picking bots notes in `CLAUDE.md`.
 
 ## Stage 7: Center of attention and fold shelf
 

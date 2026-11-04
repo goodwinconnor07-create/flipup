@@ -1,68 +1,88 @@
-import { router, Stack } from 'expo-router';
-import { useState } from 'react';
-import { ScrollView } from 'react-native';
+import { router } from 'expo-router';
+import { useRef, useState } from 'react';
+import { ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Button } from '@/components/button';
-import { GameThumb } from '@/components/game-picture';
-import { Row, Section } from '@/components/grouped-list';
-import { SeatPreview } from '@/components/seat-preview';
-import { SettingsFields } from '@/components/settings-fields';
-import { Stepper } from '@/components/stepper';
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
-import { usePremium } from '@/state/premium';
+import { setPickedBots } from '@/state/bots-pick';
 import { useProfile } from '@/state/profile';
-import { openLocalTable } from '@/state/session';
-import { saveSettings, setDraft } from '@/state/setup-draft';
-import { unlockToHost } from '@/state/unlock';
-import { party, spacing } from '@/theme';
+import { setDraft } from '@/state/setup-draft';
+import { ForceScheme, spacing, useColors } from '@/theme';
+
+import { GrainBackground } from '../grain-background';
+import { BotsRow, randomBot, type RowBot } from './bots-row';
+import { SetupGameRow } from './game-row';
+import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
+import { SettingsTable } from './settings-table';
+import { SetupHeader, SetupRowTitle } from './setup-header';
+
+/** Bots already sitting when the page opens, so Deal works at once. */
+const START_BOTS = 4;
 
 /**
- * Play with bots, as Setup has drawn it since Phase 5 (Stage 6c rebuilds it on the grain page): the table itself at
- * the top (the game's felt, you and a face for each bot), then a native grouped form: bots, the game (its row opens
- * `choose-game`), chips and blinds, and the house rules. Sit down deals at once on the phone.
+ * Play with bots: Play with friends without the Invite friends row, on the same dark grain page. Top to bottom:
+ * the bots (`BotsRow`), the game (`SetupGameRow`, whose popup sets the draft), and the settings table. Deal is
+ * pinned at the bottom (`OpenTableButton`) and opens the `deal-confirm` sheet, which lists what you chose and deals.
+ * `settings` is the draft the route started (app/play-bots.tsx).
  */
-export function BotsSetup({ settings: s }: { settings: Settings }) {
-  const [bots, setBots] = useState(4);
-  const variant = s.variant ?? 'holdem';
+export function BotsSetup({ settings }: { settings: Settings }) {
+  return (
+    <ForceScheme scheme="dark">
+      <BotsSetupPage settings={settings} />
+    </ForceScheme>
+  );
+}
+
+function BotsSetupPage({ settings: s }: { settings: Settings }) {
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
   const profile = useProfile();
-  const premium = usePremium();
-  const open = () => {
-    if (!unlockToHost([variant], premium)) return;
-    saveSettings(s);
-    openLocalTable(s, bots, profile.name, profile.emoji);
-    router.push('/table');
+  const variant = s.variant ?? 'holdem';
+  const [bots, setBots] = useState<RowBot[]>(() => {
+    const out: RowBot[] = [];
+    for (let i = 0; i < START_BOTS; i++) {
+      const b = randomBot(out, undefined);
+      if (b) out.push({ ...b, greet: undefined });
+    }
+    return out;
+  });
+  const full = 1 + bots.length >= MAX_SEATS;
+  const you = useRef(profile.name);
+  you.current = profile.name;
+
+  const deal = () => {
+    if (!bots.length) return;
+    setPickedBots(bots.map(({ key, name, emoji }) => ({ key, name, emoji })));
+    router.push('/deal-confirm');
   };
 
   return (
-    <>
-      <Stack.Screen options={{ title: 'Play with bots' }} />
+    <GrainBackground>
       <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: OPEN_BUTTON_ROOM + insets.bottom, gap: spacing.xl }}
       >
-        <SeatPreview settings={s} bots={bots} friends={false} guests={[]} />
-        <Section footer="Computer players at your table.">
-          <Row
-            title="Bots"
-            detail={String(bots)}
-            icon={{ symbol: 'cpu.fill', color: party.green }}
-            accessory={<Stepper label="Bots" value={bots} min={1} max={MAX_SEATS - 1} onChange={setBots} />}
-          />
-        </Section>
+        <SetupHeader title="Play with bots" line="Pick your bots and a game." />
 
-        <Section header="Game">
-          <Row
-            title={variantInfo(variant).name}
-            subtitle={variantInfo(variant).tagline}
-            leading={<GameThumb variant={variant} size={44} />}
-            onPress={() => router.push('/choose-game')}
-          />
-        </Section>
+        <BotsRow
+          bots={bots}
+          canAdd={!full}
+          onAdd={() => {
+            const bot = randomBot(bots, you.current || undefined);
+            if (bot && !full) setBots((have) => [...have, bot]);
+          }}
+          onRemove={(b) => setBots((have) => have.filter((x) => x.key !== b.key))}
+          detail={full ? `Table full · ${MAX_SEATS} seats` : bots.length ? undefined : 'Add at least one bot'}
+        />
 
-        <SettingsFields settings={s} onChange={setDraft} online={false} />
+        <View style={{ gap: spacing.xs }}>
+          <SetupRowTitle title="Game" detail={variantInfo(variant).name} />
+          <SetupGameRow selected={variant} />
+        </View>
 
-        <Button variant="party" tint="green" size="lg" title="Sit down" onPress={open} />
+        <SettingsTable settings={s} onChange={setDraft} tint={colors.accent as string} online={false} />
       </ScrollView>
-    </>
+      <OpenTableButton title="Deal" line={bots.length ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}` : 'Add a bot first'} onPress={deal} />
+    </GrainBackground>
   );
 }

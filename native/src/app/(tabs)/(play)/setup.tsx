@@ -1,19 +1,11 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
-import { BotsSetup } from '@/components/setup/bots-setup';
-import { isVariant } from '@/engine';
-import { useFreshDraft } from '@/state/setup-draft';
-
 /**
- * Play with bots: the Phase 5 form (components/setup/bots-setup.tsx) until Stage 6c, from Home's start tile or a
- * game's sheet (`variant`). An old link with `mode=friends` goes on to the Play with friends page.
+ * An old link to Setup: `mode=friends` goes on to the Play with friends page, anything else to Play with bots.
  */
-export default function SetupScreen() {
+export default function SetupRedirect() {
   const params = useLocalSearchParams<{ mode?: string; variant?: string; invite?: string }>();
-  const friends = params.mode === 'friends';
-  const s = useFreshDraft('bots', isVariant(params.variant) ? params.variant : undefined);
-  if (friends) {
-    return <Redirect href={{ pathname: '/play-friends', params: { ...(params.variant ? { variant: params.variant } : {}), ...(params.invite ? { invite: params.invite } : {}) } }} />;
-  }
-  return <BotsSetup settings={s} />;
+  const extra = { ...(params.variant ? { variant: params.variant } : {}) };
+  if (params.mode === 'friends') return <Redirect href={{ pathname: '/play-friends', params: { ...extra, ...(params.invite ? { invite: params.invite } : {}) } }} />;
+  return <Redirect href={{ pathname: '/play-bots', params: extra }} />;
 }

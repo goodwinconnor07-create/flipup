@@ -1,6 +1,6 @@
 // "Delete my data" (docs/APP_STORE.md, 5.1.1(v)): FlipUp has no accounts, but a friend code is a record on the
 // server that others can look up, so the person can delete it and everything this phone keeps.
-import { deleteFriendCard } from './api';
+import { deleteFriendCard, premiumForget } from './api';
 import { deviceId } from './device';
 import { myPalCode } from './pals';
 import { leaveParty, loadPartyRef } from './party';
@@ -19,5 +19,8 @@ export async function deleteMyData(): Promise<void> {
   const party = loadPartyRef();
   if (party) await leaveParty(party.code);
   leaveTable();
+  // The server forgets this phone's Premium pass. If it can't be reached the pass just runs out in a week, and the
+  // phone gets a new device id below, so nothing stays linked to it.
+  await premiumForget().catch(() => 0);
   wipeAll(['flipup.premium']);
 }

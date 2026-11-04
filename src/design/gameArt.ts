@@ -25,6 +25,7 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   circle: { card: ['#1d7fb8', '#0a2a45'], mood: 'Six cards round a clock. Hours matter.', pitch: 1.05 },
   memory: { card: ['#7b5cff', '#2a1670'], mood: 'Twenty cards gone. Do you remember which?', pitch: 1.08 },
   beanstalk: { card: ['#4caf50', '#14532d'], mood: 'Your hand keeps growing. How high can it climb?', pitch: 1.1 },
+  bjholdem: { card: ['#0f6b45', '#06281a'], mood: 'Hit or stand. Half for the best hand, half for 21.', pitch: 0.97 },
   imposter: { card: ['#2f3441', '#0a0b10'], mood: 'Trust nobody. Watch the bets.', pitch: 0.88 },
 };
 
@@ -137,6 +138,12 @@ const SCENES: Record<Variant, () => Shape[]> = {
     { kind: 'glyph', x: 120, y: 70, text: '?', size: 34, bold: true, ink: '#fff' },
     label(100, 106, "WHO'S BLUFFING"),
   ],
+  bjholdem: () => [
+    mark('♠', 150),
+    card({ x: 52, y: 62, r: -10, rank: 'K', suit: '♠', deal: 0 }),
+    card({ x: 84, y: 58, r: 4, rank: 'A', suit: '♥', glow: true, deal: 1 }),
+    label(150, 64, '21'),
+  ],
   memory: () => [
     mark('♦', 44),
     ...Array.from({ length: 10 }, (_, i) =>
@@ -185,6 +192,7 @@ const THUMBS: Record<Variant, () => Shape[]> = {
   dice: () => [card({ x: 38, y: 48, r: -8, rank: 'J', suit: '♥', s: 1 }), { kind: 'die', x: 70, y: 68, r: 12, pips: 5 }],
   redriver: () => [card({ x: 38, y: 53, r: -10, rank: 'K', suit: '♥', s: 1 }), card({ x: 63, y: 50, r: 10, rank: '9', suit: '♥', s: 1, glow: true })],
   imposter: () => [card({ x: 50, y: 50, s: 1.15, back: true }), { kind: 'glyph', x: 50, y: 63, text: '?', size: 36, bold: true, ink: '#fff' }],
+  bjholdem: () => [card({ x: 38, y: 54, r: -10, rank: 'K', suit: '♠', s: 1.05 }), card({ x: 63, y: 50, r: 10, rank: 'A', suit: '♥', s: 1.05, glow: true })],
   memory: () => [
     card({ x: 34, y: 30, rank: 'A', suit: '♠', s: 0.6 }),
     card({ x: 66, y: 30, rank: 'K', suit: '♥', s: 0.6, faded: true }),

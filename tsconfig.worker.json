@@ -16,5 +16,5 @@
     "noFallthroughCasesInSwitch": true
   },
   "include": ["worker", "src/game"],
-  "exclude": ["src/game/**/*.test.ts"]
+  "exclude": ["src/game/**/*.test.ts", "worker/**/*.test.ts"]
 }

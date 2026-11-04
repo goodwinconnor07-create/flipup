@@ -36,6 +36,7 @@ export default function CardPacks() {
       <Stack.Screen options={{ title: 'Card packs' }} />
       <ThemedText tone="tertiaryLabel">Everyone at your table sees your pack on the back of your cards.</ThemedText>
       <LookGrid
+        reason="pack"
         choices={choices}
         value={value}
         onPick={(id) => {

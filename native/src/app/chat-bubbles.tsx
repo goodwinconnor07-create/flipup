@@ -26,6 +26,7 @@ export default function ChatBubbles() {
       <Stack.Screen options={{ title: 'Chat bubbles' }} />
       <ThemedText tone="tertiaryLabel">Your moves and messages show in this colour for everyone at the table.</ThemedText>
       <LookGrid
+        reason="bubble"
         choices={choices}
         value={value}
         onPick={(id) => {

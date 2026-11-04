@@ -47,8 +47,8 @@ export default function PartySetup() {
     if (!ok || busy) return;
     setBusy(true);
     try {
-      // The Premium gate for hosting: one ad (or Premium) from the host covers every round.
-      if (!(await unlockToHost(games, premium))) return setBusy(false);
+      // The Premium gate for hosting: the host needs Premium for any Premium game in the playlist.
+      if (!unlockToHost(games, premium)) return setBusy(false);
       await createParty({ games, startingStack: stack, blindHands, fillTo: fill });
       router.replace('/party-room');
     } catch (e) {

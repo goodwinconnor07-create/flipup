@@ -1,6 +1,6 @@
 // Read-only questions about a table, shared by the screens and the bots.
 
-import { canRaise, maxRaiseTo, playerById, potTotal } from './holdem';
+import { canHit, canRaise, maxRaiseTo, playerById, potTotal } from './holdem';
 import type { Game, Hand, Player, Seat } from './types';
 
 export interface Options {
@@ -16,6 +16,8 @@ export interface Options {
   word: 'Bet' | 'Raise';
   /** False in Imposter, where nobody folds. */
   canFold: boolean;
+  /** Blackjack Hold'em: on the flop they can take another card before moving. */
+  canHit: boolean;
 }
 
 /** What the player whose turn it is can do. */
@@ -35,6 +37,7 @@ export function options(game: Game, hand: Hand, seat: Seat): Options {
     maxTo,
     word: hand.currentBet > 0 ? 'Raise' : 'Bet',
     canFold: !hand.imposter,
+    canHit: canHit(game, hand, seat),
   };
 }
 

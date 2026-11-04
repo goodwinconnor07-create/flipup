@@ -14,9 +14,11 @@ import { Stepper } from '@/components/stepper';
 import { SettingsFields } from '@/components/settings-fields';
 import { isVariant, MAX_SEATS, variantInfo, type Settings } from '@/engine';
 import { inviteFriends, usePals, type Pal } from '@/state/pals';
+import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
 import { openLocalTable, openOnlineTable } from '@/state/session';
 import { saveSettings, setDraft, startDraft, useDraft, useSavedSettings } from '@/state/setup-draft';
+import { unlockToHost } from '@/state/unlock';
 import { party, spacing, useColors } from '@/theme';
 
 /**
@@ -41,8 +43,10 @@ export default function SetupScreen() {
   // Friends to invite as soon as the table opens (with friends only). A friend you came from is already ticked.
   const pals = usePals();
   const [invited, setInvited] = useState<string[]>(() => (params.invite ? [params.invite] : []));
+  const premium = usePremium();
   const open = async () => {
     if (busy) return;
+    if (!unlockToHost([variant], premium)) return;
     saveSettings(s);
     if (mode === 'bots') {
       openLocalTable(s, bots, profile.name, profile.emoji);

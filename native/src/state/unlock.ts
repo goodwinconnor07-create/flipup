@@ -1,19 +1,20 @@
-// Hosting a Premium game mode (docs/APP_STORE.md, "Rewarded ads"). The first five games are free. The other seven
-// need Premium or one rewarded ad, and only the host needs it: people who join by code never do. A party needs one
-// ad from the host however many Premium games its rounds use, and anyone can pick any game while setting one up.
-import { isPremiumVariant, type Variant } from '@/engine';
+// Hosting a Premium game. The first five games are free for everyone. The other seven need FlipUp Premium on the
+// phone that hosts; people who join by code never need it, and anyone can pick any game while setting one up.
+// The server checks this too (worker/index.ts), so this is the polite version: it asks before trying.
+import { router } from 'expo-router';
 
-/** Whether hosting these games needs an unlock on this phone. */
-export const needsUnlock = (games: readonly Variant[], premium: boolean): boolean => !premium && games.some(isPremiumVariant);
+import { gamesNeedPremium, isPremiumVariant, type Variant } from '@/engine';
+
+/** Whether hosting these games needs Premium that this phone doesn't have. */
+export const needsUnlock = (games: readonly Variant[], premium: boolean): boolean => !premium && gamesNeedPremium(games);
 
 /**
- * The one gate before a host opens a table or a party with Premium games. Resolves true when hosting may go ahead.
- *
- * TODO(ads): AdMob rewarded ads aren't built yet, so this lets everyone through. When they are: show the ad here,
- * and have the server mark the table or party unlocked from AdMob's server-side verification call, never from the
- * phone. Premium itself comes from StoreKit (Phase 5, step 6).
+ * The one gate before a host opens a table or a party. Returns true when hosting may go ahead. Otherwise it opens
+ * the Premium offer with the first Premium game in the list, and returns false.
  */
-export async function unlockToHost(games: readonly Variant[], premium: boolean): Promise<boolean> {
+export function unlockToHost(games: readonly Variant[], premium: boolean): boolean {
   if (!needsUnlock(games, premium)) return true;
-  return true;
+  const game = games.find(isPremiumVariant);
+  router.push({ pathname: '/premium', params: { reason: 'game', ...(game ? { game } : {}) } });
+  return false;
 }

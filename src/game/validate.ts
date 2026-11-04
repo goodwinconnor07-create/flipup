@@ -81,6 +81,8 @@ export function parseAction(raw: unknown): Action | null {
       return { type: 'act', hand: a.hand, seq: a.seq, move: a.move as Move, ...(a.to !== undefined ? { to: a.to as number } : {}) };
     case 'next':
       return isInt(a.hand) ? { type: 'next', hand: a.hand } : null;
+    case 'hit':
+      return isInt(a.hand) && isInt(a.seq) ? { type: 'hit', hand: a.hand, seq: a.seq } : null;
     case 'revealBots':
       if (a.playerId !== undefined && !isId(a.playerId)) return null;
       return isInt(a.hand) ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) } : null;

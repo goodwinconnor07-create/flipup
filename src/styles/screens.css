@@ -1748,6 +1748,24 @@ html[data-theme='dark'] .btn-dark {
   --theme-glow: var(--theme-memory-glow);
 }
 
+.theme-bjholdem {
+  --theme-felt: var(--theme-bjholdem-felt);
+  --theme-rail-a: var(--theme-bjholdem-rail-a);
+  --theme-rail-b: var(--theme-bjholdem-rail-b);
+  --theme-glow: var(--theme-bjholdem-glow);
+}
+
+/* Blackjack Hold'em: Hit sits over the move buttons on the flop, with your count beside it. */
+.hit-btn {
+  width: 100%;
+  min-height: 48px;
+}
+
+.hit-btn .num {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
 .theme-beanstalk {
   --theme-felt: var(--theme-beanstalk-felt);
   --theme-rail-a: var(--theme-beanstalk-rail-a);

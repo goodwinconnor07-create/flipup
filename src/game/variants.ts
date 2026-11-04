@@ -5,7 +5,7 @@ import { rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 
-export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter' | 'crucifix' | 'circle' | 'memory' | 'beanstalk';
+export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter' | 'crucifix' | 'circle' | 'memory' | 'beanstalk' | 'bjholdem';
 
 export interface VariantInfo {
   id: Variant;
@@ -157,6 +157,20 @@ export const VARIANTS: VariantInfo[] = [
       'By the river you have five cards of your own and five on the board. Make your best five from all ten.',
     ],
   },
+  {
+    id: 'bjholdem',
+    name: "Blackjack Hold'em",
+    emoji: '♠️',
+    tagline: 'Hit on the flop. Half the pot to the best hand, half to closest to 21.',
+    rules: [
+      'Normal Hold\'em: two cards each, then the flop, the turn and the river.',
+      'On the flop, on your turn, you can Hit as many times as you like to take another card, face down, before you check, bet or call.',
+      'Your 21 count is your own cards: your two plus your hits (not the board). Aces are 1 or 11, picture cards 10.',
+      'Go over 21 and you bust: your hand is folded straight away.',
+      'Hit cards count in your poker hand too: make your best five from your cards, your hits and the board.',
+      'At the showdown half the pot goes to the best poker hand and half to whoever is closest to 21. If players tie on 21, that half goes to the best poker hand among them.',
+    ],
+  },
 ];
 
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
@@ -164,7 +178,7 @@ export const variantOf = (game: Game): Variant => game.hand?.variant ?? game.set
 export const variantInfo = (v: Variant | undefined): VariantInfo => VARIANTS.find((x) => x.id === v) ?? VARIANTS[0];
 
 /**
- * In the iPhone app the first five games in VARIANTS are free; the rest unlock with Premium or a rewarded ad, and
+ * In the iPhone app the first five games in VARIANTS are free; the rest need Premium to host, and
  * only the host of a table needs the unlock (docs/APP_STORE.md). The web doesn't lock any game yet.
  */
 export const FREE_VARIANTS = 5;
@@ -177,6 +191,18 @@ export const holeCount = (v: Variant) => (v === 'pineapple' ? 3 : 2);
 export function holeCountAt(v: Variant, boardLength: number): number {
   if (v !== 'beanstalk') return holeCount(v);
   return 2 + (boardLength >= 5 ? 3 : boardLength === 4 ? 2 : boardLength === 3 ? 1 : 0);
+}
+/** Blackjack Hold'em: your own cards counted like blackjack (aces 1 or 11, picture cards 10). */
+export function count21(cards: Card[]): number {
+  let total = 0;
+  let aces = 0;
+  for (const c of cards) {
+    const r = rankOf(c);
+    if (r === 14) aces++;
+    total += r === 14 ? 11 : Math.min(10, r);
+  }
+  while (total > 21 && aces--) total -= 10;
+  return total;
 }
 /** Memory Poker: cards taken out of the deck before each hand. */
 export const MEMORY_REMOVED = 20;

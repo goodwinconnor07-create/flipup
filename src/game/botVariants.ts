@@ -10,7 +10,7 @@ import { fullDeck, isRed, type Card } from './cards';
 import { potTotal } from './holdem';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
-import { boardSize, handSets, holeCountAt, isWild, keepTwo, variantOf, wildHand, type Variant } from './variants';
+import { boardSize, count21, handSets, holeCountAt, isWild, keepTwo, variantOf, wildHand, type Variant } from './variants';
 
 /** Run-outs played per decision: enough to tell a strong hand from a weak one, quick enough on the server. Fewer at a
  * big table, where each run-out deals more hands. */
@@ -52,6 +52,7 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
   const v = variantOf(game);
   const others = hand.seats.filter((s) => s.playerId !== seat.playerId && !s.folded).length;
   if (!others) return 1;
+  if (v === 'bjholdem') return blackjackEquity(game, hand, seat, rng, runs ?? samplesFor(others));
   // Wild deuces take longest to score, so a rougher estimate there.
   const samples = runs ?? Math.round(samplesFor(others) * (v === 'deuces' ? 0.5 : 1));
   // Memory Poker: the bots remember every card that was taken out.
@@ -88,6 +89,70 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
     else if (mine === best) won += 1 / (ties + 1);
   }
   return won / samples;
+}
+
+/** How the bots expect a player to hit when they can: take cards up to 12, stand from 13. */
+const STAND_ON = 13;
+const hitUp = (cards: Card[], deck: Card[]) => {
+  while (count21(cards) < STAND_ON && deck.length) cards.push(deck.pop()!);
+  return cards;
+};
+
+/**
+ * Blackjack Hold'em: half of each pot goes to the best poker hand and half to whoever is closest to 21 (a tie on the
+ * count goes to the best poker hand among them). Each run-out deals the others their cards (and as many hits as
+ * they've taken, or would take if the flop is still to come), plays it out and counts what this hand would win.
+ */
+function blackjackEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, samples: number): number {
+  const v = variantOf(game);
+  const others = hand.seats.filter((s) => s.playerId !== seat.playerId && !s.folded);
+  const known = new Set([...seat.cards, ...hand.board]);
+  const pool = fullDeck().filter((c) => !known.has(c));
+  // The hitting is still to come before (and during) the flop betting; after it, everyone's cards are set.
+  const stillHitting = hand.street === 'preflop' || hand.street === 'flop';
+  let won = 0;
+  for (let n = 0; n < samples; n++) {
+    const deck = pool.slice();
+    for (let i = deck.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+    const own = hand.street === 'preflop' ? hitUp([...seat.cards], deck) : seat.cards;
+    const theirs: Card[][] = [];
+    for (const s of others) {
+      const cards = [deck.pop()!, deck.pop()!];
+      for (let k = 0; k < (hand.hits?.[s.playerId] ?? 0); k++) cards.push(deck.pop()!);
+      if (stillHitting && !hand.hits?.[s.playerId]) hitUp(cards, deck);
+      // Over 21 they'd have busted and folded.
+      if (count21(cards) <= 21) theirs.push(cards);
+    }
+    const board = finishBoard(v, hand.board, deck, rng);
+    const mine = { poker: variantScore(v, own, board), count: count21(own) };
+    const field = theirs.map((h) => ({ poker: variantScore(v, h, board), count: count21(h) }));
+    const all = [mine, ...field];
+    const bestPoker = Math.max(...all.map((x) => x.poker));
+    const pokerWinners = all.filter((x) => x.poker === bestPoker);
+    const closest = Math.max(...all.map((x) => x.count));
+    const tied = all.filter((x) => x.count === closest);
+    const tiedBest = Math.max(...tied.map((x) => x.poker));
+    const countWinners = tied.filter((x) => x.poker === tiedBest);
+    if (pokerWinners.includes(mine)) won += 0.5 / pokerWinners.length;
+    if (countWinners.includes(mine)) won += 0.5 / countWinners.length;
+  }
+  return won / samples;
+}
+
+/**
+ * Blackjack Hold'em: whether a bot takes another card on the flop. Always under 12 (it can't bust), never from 17;
+ * in between it's a gamble, more likely the lower the count and the bolder the bot.
+ */
+export function botHits(game: Game, seat: Seat, rng: () => number): boolean {
+  const total = count21(seat.cards);
+  if (total <= 11) return true;
+  if (total >= 17) return false;
+  const style = playerStyle(game.players.find((p) => p.id === seat.playerId));
+  const chance = ((17 - total) / 6) * (0.55 + Math.max(-0.15, Math.min(0.2, style.post.bluff)));
+  return rng() < chance;
 }
 
 /** Thinking time in the bot's own tempo: longer for big decisions. */

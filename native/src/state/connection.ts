@@ -6,6 +6,7 @@ import { AppState, type AppStateStatus, type NativeEventSubscription } from 'rea
 import { PING, type ClientMessage, type ServerMessage } from '@/engine';
 
 import { fetchTableInfo, socketUrl } from './api';
+import { currentPass } from './pass';
 
 export type ConnStatus = 'connecting' | 'open' | 'offline';
 
@@ -61,8 +62,9 @@ export class Connection {
     clearTimeout(this.retryTimer);
     this.h.onStatus('connecting');
     let ws: WebSocket;
+    const pass = currentPass();
     try {
-      ws = new WebSocket(socketUrl(`/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}`));
+      ws = new WebSocket(socketUrl(`/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}${pass ? `&token=${encodeURIComponent(pass)}` : ''}`));
     } catch {
       this.retryLater();
       return;

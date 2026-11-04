@@ -20,7 +20,7 @@ export interface LookChoice {
  * A two-column grid of looks to pick from (card backs, bubble effects): the preview, the name and a line. The one
  * you wear has a blue ring and a tick; a locked one has a crown and opens the Premium offer instead.
  */
-export function LookGrid({ choices, value, onPick }: { choices: LookChoice[]; value: string | null; onPick: (id: string | null) => void }) {
+export function LookGrid({ choices, value, onPick, reason }: { choices: LookChoice[]; value: string | null; onPick: (id: string | null) => void; reason: 'pack' | 'bubble' }) {
   const colors = useColors();
   // Two columns inside the sheet's padding. A percentage width doesn't reach through PressableScale.
   const tile = Math.floor((Math.min(useWindowDimensions().width, 700) - spacing.md * 2 - spacing.sm) / 2);
@@ -37,7 +37,7 @@ export function LookGrid({ choices, value, onPick }: { choices: LookChoice[]; va
             onPress={() => {
               if (c.locked) {
                 haptic.tap();
-                router.push('/premium');
+                router.push({ pathname: '/premium', params: { reason } });
                 return;
               }
               haptic.select();

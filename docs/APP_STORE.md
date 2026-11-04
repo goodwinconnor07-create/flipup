@@ -161,8 +161,8 @@ and a host can remove a player (`remove`).
 their activity."
 
 **What we'll do:** no tracking, no advertising ID, no third-party analytics. No ATT prompt.
-`NSPrivacyTracking` is `false` in the privacy manifest. The rewarded ads the owner asked for (see "Rewarded ads"
-at the end) run without the advertising ID, so they don't change this.
+`NSPrivacyTracking` is `false` in the privacy manifest. There are no ads (the owner dropped rewarded ads on
+4 November 2026).
 
 ### 5.3 Gaming, gambling and lotteries
 
@@ -227,8 +227,9 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 | User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted 3 days after it goes quiet) |
 | User Content > Other User Content | The emoji picture on a friend card and at tables |
 
-Once rewarded ads are in, add whatever the ad SDK collects (see "Rewarded ads" at the end), with the purposes
-Third-Party Advertising and Analytics.
+Premium: the server keeps Apple's original transaction id and the device ids it was shown on (Purchases, linked to
+the device id, for App Functionality). It keeps no name, email or card details. "Delete my data" removes the device
+link. Add Purchases to the label when the server check ships (see "Premium, checked on the server").
 
 Not collected by FlipUp itself: contact info, location, health, financial info, contacts, browsing, search,
 diagnostics, usage data, purchases (Apple handles the purchase; if the server later checks StoreKit transactions and keeps them, add
@@ -262,8 +263,8 @@ after upload when a reason is missing.
 >
 > Premium is a one-time in-app purchase (`flipup.premium.unlock`). Open it from Settings > FlipUp Premium, or by
 > tapping any locked card back, bubble colour or game. Buy it with a sandbox account; **Restore Purchases** is on
-> the same sheet. Five game modes are free. The other seven unlock with Premium, or for free by watching a short
-> ad (test ads are on in the review build); only the host of a table needs the unlock. To check account deletion: Settings > Delete my data.
+> the same sheet. Five game modes are free. The other seven need Premium to host; anyone can join one with a code
+> for free, so only the host needs it. There are no ads and no referral rewards. To check account deletion: Settings > Delete my data.
 >
 > Reporting and blocking: tap a player's seat at an online table, then Report or Block.
 
@@ -318,7 +319,7 @@ the iPad release.
 | 8 | App icon and splash made for FlipUp (Expo's placeholders are in now) | Design pass |
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
-| 11 | Google AdMob account, the app's AdMob app ID and rewarded ad unit ID, and its server-side verification URL pointing at the Worker | Owner makes the account |
+| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the Worker secret `ENTITLEMENT_SECRET` (`wrangler secret put`), set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy | Owner |
 
 ---
 
@@ -330,8 +331,8 @@ Native build:
 2. Premium through StoreKit only, the price from StoreKit, a working Restore Purchases button on the Premium
    sheet and in Settings, no stand-in purchase code.
 3. Never sell or give chips for money; Premium unlocks looks and modes only.
-3a. Game modes: the first five free, the other seven unlocked by Premium or by watching a rewarded ad. Only the
-   host needs the unlock; people joining by code don't. The ad unlock is checked by the server.
+3a. Game modes: the first five free, the other seven need Premium to host. Only the host needs it; people joining
+   by code don't. The server checks it (see "Premium, checked on the server"). No ads.
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
 5. Settings: Privacy Policy and Support links (from `native/appInfo.ts`), the support email, and "Delete my data". Done in the app (Phase 5, step 5); Restore Purchases joined it in step 6.
@@ -339,9 +340,7 @@ Native build:
 7. Camera permission text for the QR scanner (done in `app.config.ts`), and a clear message if it's denied.
 8. No web views of the web app, native navigation and sheets, haptics (4.2).
 9. No `expo-updates` in version 1; nothing downloaded that changes features.
-10. No analytics or tracking SDK and no ATT prompt. The one ad SDK (for rewarded ads) runs without the
-    advertising ID, asks for consent in the EU, UK and Switzerland, and its data goes on the App Privacy label and
-    in the privacy policy.
+10. No analytics, tracking or ad SDK, and no ATT prompt.
 11. Privacy manifest and `ITSAppUsesNonExemptEncryption` (done in `app.config.ts`); recheck the manifest in the
     built `.ipa`.
 12. Replace Expo's placeholder icon, splash and shell screen.
@@ -351,8 +350,9 @@ Native build:
 Server (Cloudflare Worker):
 14. `DELETE /api/friends/:code` for the owning device. Done (Phase 5, step 5), with Delete my data in the app's Settings.
 15. `POST /api/reports`, stored and emailed to the support address. Done (`worker/reports.ts`, the `ReportBox` Durable Object, kept 180 days). Email needs the Worker secrets `RESEND_API_KEY` and `REPORT_TO` (and `REPORT_FROM` on a domain verified in Resend); without them reports are only stored.
-16. Check a signed StoreKit transaction before honouring Premium looks or modes at an online table, and accept
-    an ad unlock only from the ad network's server-side verification call.
+16. Check a signed StoreKit transaction before honouring Premium looks or modes at an online table. Done in code
+    (`worker/appleJws.ts`, `worker/premium.ts`, `worker/entitlement.ts`, enforced by `worker/index.ts` and
+    `worker/room.ts`); switched on by `PREMIUM_ENFORCED` once the owner's steps in row 11 are done.
 17. Static `/privacy` and `/support` pages, written in plain language.
 
 Store listing:
@@ -368,12 +368,11 @@ Store listing:
 
 1. Should Premium include the variants as paid modes, or only cosmetics?
    **Answer:** Yes. The first five game modes are free; the rest are Premium, and anyone without Premium can
-   watch an ad to unlock one. When someone joins a Premium game with a code, only the host has to have unlocked
-   it (Premium or an ad) to host it; the people joining don't.
+   (changed 4 November 2026: no ads) host a Premium game without Premium. When someone joins a Premium game with a
+   code, only the host needs Premium; the people joining don't.
    - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Ghost Hold'em, Pittsburgh.
-   - Premium or an ad: Die on the River, Red River, Imposter, Crucifix, Circle Hold'em, Memory Poker, Bean
+   - Premium: Die on the River, Red River, Imposter, Crucifix, Circle Hold'em, Memory Poker, Bean
      Stalk.
-   - See "Rewarded ads" below for what this adds to the review work.
 2. Does the desktop version need its own layout changes beyond sharing the new tokens?
    **Answer:** Yes. Parts of it are laid out like the phone app and don't use the whole screen. The board is good,
    but some things don't line up or look bad. It should feel as easy as the phone app, but made for a desktop.
@@ -397,34 +396,33 @@ Store listing:
 
 ### What Premium unlocks now
 
-Card packs, chat bubble effects, and the seven Premium game modes (with no ads for them). AI Legends and "Type any
+Card packs, chat bubble effects, and hosting the seven Premium game modes. AI Legends and "Type any
 emoji" are no longer Premium unlocks (Legends aren't in the native app; any emoji is free).
 
-### Rewarded ads (from answer 1)
+### Rewarded ads: dropped (4 November 2026)
 
-Watching an ad to unlock a game mode means adding an ad network's SDK, which reverses parts of the research
-above. What changes:
+The owner dropped rewarded ads completely. There's no ad SDK, no AdMob account, no ATT prompt, no consent form and
+nothing ad-related on the privacy label. A free player who wants to host a Premium game buys Premium; everyone can
+still join one for free. `unlockToHost()` in `native/src/state/unlock.ts` opens the Premium offer for the game.
 
-- **Tracking and ATT (5.1.2).** Keep the rule "don't track, don't ask for ATT": the ad SDK runs without the
-  advertising ID (IDFA), so it serves ads that aren't personalised. No ATT prompt.
-- **App Privacy.** The ad SDK's own data goes on the label. Google's list for its Mobile Ads SDK, for example:
-  IP address (rough location), crash logs, performance data, a device ID, advertising data (ads seen) and product
-  interaction (taps, video views), for third-party advertising and analytics. We copy the chosen SDK's list
-  exactly and add its privacy manifest (Google's SDK ships one from version 11.2.0).
-- **Consent.** People in the EU, UK and Switzerland must be asked before ads are shown (Google's User Messaging
-  Platform does this). Someone who says no still gets an ad, just a limited one.
-- **Privacy policy.** Name the ad network as a third party and link its policy.
-- **3.1.1.** Premium stays the only paid way to unlock. An ad is a free way to unlock, which doesn't use payment,
-  so it doesn't replace in-app purchase. The Premium sheet still shows the price and Restore.
-- **Review.** The review notes explain the ad unlock, and the reviewer must be able to see a test ad.
-- **Server check.** The server can't know a host watched an ad unless the ad network tells it. Use the network's
-  server-side verification (AdMob calls a URL we choose when an ad finishes) so the Worker marks that host's table
-  as unlocked, instead of trusting the phone.
+### Premium, checked on the server
 
-Decided 2 November 2026:
-- One ad unlocks one table. Play again on that table needs another ad.
-- A party needs one ad from the host, however many Premium games its rounds use. Anyone without Premium can still
-  pick any game mode while setting up a party; the ad comes when they host it.
-- Ad network: Google AdMob.
-- Where the gate goes: `unlockToHost()` in `native/src/state/unlock.ts`. Party setup calls it before opening a party
-  (one unlock covers every round). Until AdMob is in, it lets every host through.
+- **What the phone sends.** After a purchase or a restore, StoreKit 2's signed transaction goes to
+  `POST /api/premium/verify`. The Worker checks Apple's signature itself (`worker/appleJws.ts`: the certificate chain
+  must end in Apple Root CA G3, whose SHA-256 fingerprint is pinned in the file; every link must be signed by the
+  next; the chain's dates are checked at the transaction's own `signedDate`), then that the bundle id and product id
+  are ours, the environment is Production or Sandbox, it isn't revoked and isn't Family Shared.
+- **What comes back.** A pass (`worker/entitlementToken.ts`): `{ device, expires }` signed with `ENTITLEMENT_SECRET`,
+  good for 7 days. The phone keeps it (`flipup.pass`) and renews it at launch while the App Store says the Apple
+  Account owns Premium.
+- **Where it's checked.** `POST /api/tables` and `POST /api/parties` (header `x-entitlement`) refuse a Premium game
+  without a pass (HTTP 402). A table's WebSocket takes `&token=`; without a pass the table drops the Premium bubble
+  and card back from that phone's `setLook` (the name and emoji stay). Joining is never gated.
+- **Refunds.** The `Entitlements` Durable Object (`worker/entitlement.ts`, one instance named `premium`) stores
+  Apple's original transaction id and the device ids bound to it (at most 6). Apple's Server Notifications V2
+  (`POST /api/apple/notifications`, REFUND, REVOKE, REFUND_REVERSED) mark a purchase revoked, so its pass is not
+  renewed. On the phone, `startStore()` turns Premium off when the App Store answers and the account owns nothing.
+- **Off by default.** `PREMIUM_ENFORCED` is `"0"` in `wrangler.jsonc` because the web app has no payment and would be
+  locked out of Premium games and looks. Switch it to `"1"` when the iPhone app is the client that sells them.
+- **Family Sharing** is off for the purchase (a shared purchase is refused by the check).
+- **Not done:** Apple offer codes (unconfirmed for non-consumables), a referral reward (see `docs/PREMIUM_PLAN.md`).

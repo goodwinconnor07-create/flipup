@@ -168,3 +168,12 @@ Files: `Table.tsx`, `table/Pods.tsx`, `table.css`, `table/Versus.tsx`, `store.ts
 
 - [x] **R1 Range training in the iPhone app.** A free solo card at the end of Home's Challenges row (its own picture: a hand chart's grid and A♠ J♦), a start sheet, and the trainer screen over the shared `src/train/ranges` model, with grades in `flipup.ranges` and the why page's numbers worked out ahead (`native/src/data/range-numbers.json`).
 - [x] **R2 Range training as a game.** Full-screen night room with the table (felt, board dealt street by street as a one-line story, opponents as bots with a thought bubble), fanned cards you swipe, grain answer buttons, the answer rising as a card (verdict ceremony, odds ring, count-up, range as three piles, their cards flipping up), Show me why, poker words, tricks to collect, rounds of 5 with stars, Today's three (shared as squares), Blitz, Easy/Pro (Lock it in, guess your odds), a live Home card, and its own flame that also counts for the daily streak. UI only: the shared model and its numbers are unchanged.
+
+## Audit (November): left for a plan
+
+Found during the full-app audit and left alone because each touches a lot at once:
+
+- [ ] **Q1 Bot brain rebuild.** The bots were checked hand by hand in the sim against a person who calls a lot and one who plays like a casual player. The "raise, then check the rest of the hand down" feeling came from reads being counted three times against callers (fixed: `foldLean()` in `botPlay.ts`, see `docs/BOTS.md`). The rest plays sensibly (c-bets 65 to 77% heads-up, normal raising hands). A fresh brain (new solver charts for the flop, which the trained table never reached and falls back to `defaults()`) is a big change to every table and needs the owner's yes and a full `botLab`/`craftLab` pass.
+- [ ] **Q2 Pictures for every game tile.** The Party tab now shows saved pictures of its tiles (`components/thumb-snaps.tsx`). Home's game shelf, the setup game row and See all still draw every tile as SVG at launch; moving them to the same pictures would make launch lighter. Check on a real iPhone first that the Party pictures look identical.
+- [ ] **Q3 Web build's tab bar.** On the web build the tab bar sits over the large titles (Play, Party). The iPhone app is fine; only the web fallback is off.
+- [ ] **Q4 Raise panel when the smallest raise is all in.** The slider is fixed (its thumb now sits at the all-in end), but the panel still shows a slider and a "Min" preset with nothing to choose. It could skip straight to an "All in" button.

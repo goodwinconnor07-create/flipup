@@ -295,11 +295,16 @@ function BlindNews({ game }: { game: Game }) {
 
 /** An online table with nobody left: a minute to add bots or leave, and it can't be dismissed without choosing. */
 function EmptyTablePopup({ game, onLeave }: { game: Game; onLeave: () => void }) {
+  // The clock only ticks while the popup shows: a table with people at it never re-draws for it.
+  if (!game.emptyAt || game.status !== 'playing') return null;
+  return <EmptyTableCountdown game={game} emptyAt={game.emptyAt} onLeave={onLeave} />;
+}
+
+function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: number; onLeave: () => void }) {
   const c = usePlainColors();
   const now = useTableNow(game.fast, 250);
-  if (!game.emptyAt || game.status !== 'playing') return null;
   const host = game.hostDeviceId === myDevice;
-  const secs = Math.max(0, Math.ceil((game.emptyAt - now) / 1000));
+  const secs = Math.max(0, Math.ceil((emptyAt - now) / 1000));
   return (
     <Modal visible transparent animationType="fade">
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.55)' }}>

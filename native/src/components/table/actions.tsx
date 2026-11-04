@@ -310,9 +310,12 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         </Pressable>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-        <View style={{ flex: 1 }}>
-          <TableButton label="Fold" tone="quietFold" height={52} onPress={onFold} />
-        </View>
+        {/* Imposter has no folding: the panel follows the action row and leaves Fold out. */}
+        {o.canFold && (
+          <View style={{ flex: 1 }}>
+            <TableButton label="Fold" tone="quietFold" height={52} onPress={onFold} />
+          </View>
+        )}
         <View style={{ flex: 2 }}>
           <TableButton big height={76} label={to >= o.maxTo ? 'All in' : o.word} sub={to >= o.maxTo ? undefined : chips(to)} tone="raise" onPress={() => onRaise(to)} />
         </View>

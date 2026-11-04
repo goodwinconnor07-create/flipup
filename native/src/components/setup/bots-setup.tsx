@@ -1,12 +1,12 @@
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
-import { openLocalTable } from '@/state/session';
+import { dispatch, openLocalTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
 import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing, useColors } from '@/theme';
@@ -50,14 +50,14 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
     return out;
   });
   const full = 1 + bots.length >= MAX_SEATS;
-  const you = useRef(profile.name);
-  you.current = profile.name;
 
   const deal = () => {
     if (!bots.length) return;
     if (!unlockToHost([variant], premium)) return;
     saveSettings(s);
     openLocalTable(s, bots.length, profile.name, profile.emoji, bots.map((b) => b.name));
+    // Straight to the deal ("Dealing in 3…"): the bots are already picked here, so no second lobby.
+    dispatch({ type: 'start' });
     router.push('/table');
   };
 
@@ -73,7 +73,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           bots={bots}
           canAdd={!full}
           onAdd={() => {
-            const bot = randomBot(bots, you.current || undefined);
+            const bot = randomBot(bots, profile.name || undefined);
             if (bot && !full) setBots((have) => [...have, bot]);
           }}
           onRemove={(b) => setBots((have) => have.filter((x) => x.key !== b.key))}

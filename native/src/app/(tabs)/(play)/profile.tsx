@@ -9,7 +9,7 @@ import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
-import { cleanName, isNameBlocked, LIMITS, NAME_BLOCKED } from '@/engine';
+import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
 import { usePremium } from '@/state/premium';
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
         <Section>
           <Row
             title="FlipUp Premium"
-            subtitle={premium ? 'Unlocked. Thank you for backing FlipUp.' : 'Card packs, bubble effects and seven more games'}
+            subtitle={premium ? 'Unlocked. Thank you for backing FlipUp.' : `Card packs, bubble effects and ${VARIANTS.length - FREE_VARIANTS} more games`}
             icon={{ symbol: 'crown.fill', color: colors.gold as string }}
             onPress={() => router.push('/premium')}
           />

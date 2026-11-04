@@ -68,7 +68,7 @@ afterAll(() => {
   if (dir) rmSync(dir, { recursive: true, force: true });
 });
 
-const tx = { bundleId: 'com.goodwin.flipup', productId: 'flipup.premium.unlock', originalTransactionId: '2000000123456789', environment: 'Production', signedDate: Date.now() };
+const tx = { bundleId: 'com.goodwin.flipup', productId: 'flipup.premium.unlock', originalTransactionId: '2000000123456789', environment: 'Production', signedDate: Date.now() + 10 * 60_000 }; // After the test certificates are made (in beforeAll, later than this line runs).
 
 describe.skipIf(!hasOpenssl)('verifyAppleJws', () => {
   const opts = () => ({ roots: [rootFingerprint] });

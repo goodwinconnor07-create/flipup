@@ -30,7 +30,7 @@ const glass = 'rgba(255,255,255,0.1)';
 
 /**
  * FlipUp Premium (docs/APP_STORE.md, 3.1.1; docs/PREMIUM_PLAN.md). A night-purple sheet that shows what you get
- * before it asks for money: the seven games, every card back (tap to see it big), every bubble effect, and what's
+ * before it asks for money: the eight games, every card back (tap to see it big), every bubble effect, and what's
  * free against what's not. It opens with whatever you tapped first (a locked game, a card back or a bubble). The price
  * comes from the App Store and sits in a bar pinned to the bottom, with Restore Purchases.
  */
@@ -192,7 +192,7 @@ function Heading({ children, note }: { children: string; note?: string }) {
   );
 }
 
-/** The seven Premium games, with the one you tapped first. A tap shows how it plays. */
+/** The eight Premium games, with the one you tapped first. A tap shows how it plays. */
 function Games({ first }: { first?: string }) {
   const colors = useColors();
   const games = VARIANTS.slice(FREE_VARIANTS);

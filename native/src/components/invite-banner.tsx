@@ -37,7 +37,7 @@ export function InviteBanner() {
   useEffect(() => {
     if (current) {
       // The invite went (answered elsewhere, taken back, expired): so does the banner.
-      if (!box.invites.some((i) => inviteKey(i) === inviteKey(current))) setCurrent(null);
+      if (!box.invites.some((i) => inviteKey(i) === inviteKey(current))) setCurrent(null); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
     const next = box.invites.find((i) => !shown.has(inviteKey(i)) && i.table !== code && Date.now() - i.at < FRESH_MS);

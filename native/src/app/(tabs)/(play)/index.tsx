@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
@@ -16,8 +16,9 @@ import { RequestsPill } from '@/components/friend-requests';
 import { ProfileMenu } from '@/components/profile-menu';
 import { SwipeAway } from '@/components/swipe-away';
 import { TabScreen } from '@/components/tab-screen';
+import { partyTile, ThumbSnapper } from '@/components/thumb-snaps';
 import { ThemedText } from '@/components/themed-text';
-import { challengeById, variantInfo, variantOf } from '@/engine';
+import { challengeById, FREE_VARIANTS, VARIANTS, variantInfo, variantOf } from '@/engine';
 import { useFriendBox } from '@/state/pals';
 import { usePartyRef } from '@/state/party';
 import { usePokerRecord } from '@/state/record';
@@ -41,9 +42,12 @@ export default function Home() {
   const last = record.games.at(-1);
   // Play again can be swiped away; it comes back with the next game you finish.
   const hidden = useStored<number>(HIDDEN, 0);
+  const { height } = useWindowDimensions();
   return (
     <>
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
+      {/* Saves the Party tab's game tiles as pictures while you're here, so that tab opens without a stutter. */}
+      <ThumbSnapper size={partyTile(height)} />
       <TabScreen
         title="Play"
         accessory={
@@ -88,6 +92,8 @@ export default function Home() {
 }
 
 const HIDDEN = 'flipup.lastgamehidden';
+/** How many games Premium adds (every game after the free ones). */
+const PREMIUM_GAMES = VARIANTS.length - FREE_VARIANTS;
 
 /** Whether Home has a table or party to get back to (the banner shows). */
 function useHasBanner(): boolean {
@@ -104,7 +110,7 @@ function PremiumBanner() {
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel="FlipUp Premium. Seven more games, card packs and bubble effects"
+      accessibilityLabel={`FlipUp Premium. ${PREMIUM_GAMES} more games, card packs and bubble effects`}
       onPress={() => {
         haptic.tap();
         router.push('/premium');
@@ -118,7 +124,7 @@ function PremiumBanner() {
           </Text>
         </View>
         <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: 17, fontWeight: '700', color: colors.goldInk }}>
-          Seven more games
+          {PREMIUM_GAMES} more games
         </Text>
         <Icon name="chevron.right" size={15} color={colors.goldInk} />
       </View>

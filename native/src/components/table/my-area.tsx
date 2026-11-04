@@ -101,7 +101,7 @@ export function MyArea({
           // Your turn: the whole box glows gold. A shadow and a border colour, so nothing moves; it's still under
           // Reduce Motion because it doesn't move at all.
           borderColor: myTurn ? 'rgba(245,183,0,0.9)' : c.separator,
-          boxShadow: myTurn ? '0 0 18px 3px rgba(245,183,0,0.5)' : '0 0 0 0 rgba(245,183,0,0)',
+          boxShadow: myTurn ? '0 0 18px 3px rgba(245,183,0,0.5)' : undefined,
         }}
       >
         {odds ? (

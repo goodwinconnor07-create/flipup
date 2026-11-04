@@ -705,7 +705,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
       const f = amount / pot;
       const out = betOutcome(im, oppsBet, f, river, false, committed, streetKey);
       // Folds from a player who folds too much (or too little), as the bot has seen.
-      const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.35) * (1 + foldy * EXPLOIT.fold)));
+      const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.35) * foldLean(foldy, EXPLOIT.fold)));
       // When it's called it's up against the hands that call, whatever it thinks of its own.
       const eqCalled = Math.min(1, out.eqCalled + (1 - sense) * 0.05 + bias);
       let v = fold * pot + (1 - fold) * (eqCalled * (pot + 2 * amount) * realise - amount);
@@ -758,7 +758,7 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
         const put = Math.min(behind, to - seat.bet);
         const f = (to - hand.currentBet) / Math.max(1, bigPot);
         const out = betOutcome(im, opps, f, river, true, committed, streetKey);
-        const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.2) * (1 + foldy)));
+        const fold = Math.max(0, Math.min(1, (sense * out.fold + (1 - sense) * 0.2) * foldLean(foldy, 1)));
         const eqCalled = Math.min(1, out.eqCalled + (1 - sense) * 0.05 + bias);
         let v = fold * pot + (1 - fold) * (eqCalled * (pot + put + (to - hand.currentBet)) * (put >= behind ? 1 : realise) - put);
         const best = Math.max(0, vCall);
@@ -845,8 +845,19 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   };
 }
 
+/**
+ * How much more (or less) often a player is expected to fold than the hand's own numbers say, from how often they've
+ * folded to bets. A player who folds too much is punished hard (`k`). A player who calls a lot is already counted in
+ * `continueChance()` (and the c-bet read), so on that side it's a gentle nudge with a floor: without it a bot that had
+ * seen a few calls counted the same stickiness three times, stopped betting anything but its best hands, and raised
+ * before the flop only to check the rest of the hand down, which felt fake.
+ */
+function foldLean(foldy: number, k: number): number {
+  return foldy >= 0 ? 1 + foldy * k : Math.max(EXPLOIT.callFloor, 1 + foldy * EXPLOIT.call);
+}
+
 /** How hard bots punish players who fold too much, before the flop (`steal`) and after it (`fold`). The lab turns these. */
-export const EXPLOIT = { steal: 3, fold: 3, stealCap: 0.5 };
+export const EXPLOIT = { steal: 3, fold: 3, stealCap: 0.5, call: 1, callFloor: 0.6 };
 
 /**
  * How much lighter to call (in pots, per point of bet frequency above the usual) a player who bets nearly every

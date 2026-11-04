@@ -1,5 +1,6 @@
 import { router, Stack, useIsFocused } from 'expo-router';
-import { useEffect } from 'react';
+import { Image } from 'expo-image';
+import { useEffect, useState } from 'react';
 import { Alert, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,13 +11,13 @@ import { Icon } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
+import { partyTile, useThumbSnaps } from '@/components/thumb-snaps';
 import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, seededRng, shuffle, VARIANTS, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePartyRef } from '@/state/party';
 import { useProfile } from '@/state/profile';
 import { brand, cardColors, gradient, radius, ROUNDED, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
-const TILE = 76;
 const GAP = 12;
 /** Points a second each belt moves. */
 const SPEED = 22;
@@ -43,7 +44,14 @@ export default function PartyTab() {
   const shadows = useShadows();
   // Bigger tiles on taller phones, so the three belts fill the poster instead of leaving a band of empty page.
   const { height } = useWindowDimensions();
-  const tile = Math.round(Math.max(TILE, Math.min(112, (height * 0.4 - GAP * 2) / 3)));
+  const tile = partyTile(height, GAP);
+  // The tiles as pictures once Home has saved them (see thumb-snaps.tsx), so the first visit doesn't stutter. The
+  // switch from drawn tiles to pictures only happens while the tab is hidden, so nothing flickers on screen.
+  const ready = useThumbSnaps(tile);
+  const [snaps, setSnaps] = useState(ready);
+  useEffect(() => {
+    if (!focused && snaps !== ready) setSnaps(ready); // eslint-disable-line react-hooks/set-state-in-effect
+  }, [focused, ready, snaps]);
 
   // Hosting and joining need a name first.
   const needName = (): boolean => {
@@ -71,7 +79,7 @@ export default function PartyTab() {
         <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ flex: 1, minHeight: tile * 2 + GAP, overflow: 'hidden', justifyContent: 'center' }}>
           <View style={{ gap: GAP, transform: [{ rotate: '-7deg' }, { scale: 1.12 }] }}>
             {BELTS.map((games, i) => (
-              <Belt key={i} games={games} reverse={i % 2 === 1} running={focused} offset={i * 37} tile={tile} />
+              <Belt key={i} games={games} reverse={i % 2 === 1} running={focused} offset={i * 37} tile={tile} snaps={snaps} />
             ))}
           </View>
           <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 36, ...gradient(`linear-gradient(180deg, ${page} 0%, ${clear} 100%)`) }} />
@@ -114,10 +122,13 @@ export default function PartyTab() {
 }
 
 /** One belt of game tiles, twice over so it can loop without a seam, moving left (or right) for ever. */
-function Belt({ games, reverse, running, offset, tile }: { games: Variant[]; reverse: boolean; running: boolean; offset: number; tile: number }) {
+function Belt({ games, reverse, running, offset, tile, snaps }: { games: Variant[]; reverse: boolean; running: boolean; offset: number; tile: number; snaps: Partial<Record<Variant, string>> }) {
   const reduce = useReduceMotion();
   const { width } = useWindowDimensions();
   const span = games.length * (tile + GAP);
+  // Only as many tiles as the loop needs: one full belt plus enough to cover the (tilted, enlarged) screen behind it.
+  const count = games.length + Math.ceil((width * 1.3 + offset) / (tile + GAP)) + 1;
+  const tiles = Array.from({ length: count }, (_, i) => games[i % games.length]);
   const x = useSharedValue(0);
   useEffect(() => {
     if (reduce || !running) {
@@ -133,10 +144,14 @@ function Belt({ games, reverse, running, offset, tile }: { games: Variant[]; rev
     return { transform: [{ translateX: reverse ? -span + t * span : -t * span }] };
   });
   return (
-    <Animated.View style={[{ flexDirection: 'row', gap: GAP, marginLeft: -offset, width: Math.max(span * 2, width * 2) }, move]}>
-      {[...games, ...games].map((v, i) => (
+    <Animated.View style={[{ flexDirection: 'row', gap: GAP, marginLeft: -offset, width: count * (tile + GAP) }, move]}>
+      {tiles.map((v, i) => (
         <View key={`${v}-${i}`} style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: '0 8px 18px -8px rgba(0, 0, 0, 0.6)' }}>
-          <GameThumb variant={v} size={tile} rounded={radius.lg} />
+          {snaps[v] ? (
+            <Image source={{ uri: snaps[v] }} style={{ width: tile, height: tile, borderRadius: radius.lg }} cachePolicy="memory" transition={null} />
+          ) : (
+            <GameThumb variant={v} size={tile} rounded={radius.lg} />
+          )}
         </View>
       ))}
     </Animated.View>

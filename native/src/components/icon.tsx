@@ -80,6 +80,7 @@ const WEB = {
   magnifyingglass: 'search',
   'tag.fill': 'sell',
   'star.fill': 'star',
+  'hand.thumbsup.fill': 'thumb_up',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

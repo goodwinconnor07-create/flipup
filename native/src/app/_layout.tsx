@@ -64,6 +64,7 @@ export default function RootLayout() {
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Challenges: the start sheet, a seat's tag, Detective's check, and Rewind's two sheets. */}
         <Stack.Screen name="challenge/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Challenge', headerShown: false }} />
+        <Stack.Screen name="range-training" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Range training', headerShown: false }} />
         <Stack.Screen name="challenge-tag" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], title: 'Tag a style' }} />
         <Stack.Screen name="challenge-check" options={{ ...sheet, sheetAllowedDetents: [1], gestureEnabled: false, headerShown: false, title: 'Read the table' }} />
         <Stack.Screen name="rewind" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Rewind' }} />

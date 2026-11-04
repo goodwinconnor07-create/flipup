@@ -12,6 +12,7 @@ import { FirstHand, LastGame } from '@/components/home/your-poker';
 import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
 import { PressableScale } from '@/components/pressable-scale';
+import { RequestsPill } from '@/components/friend-requests';
 import { ProfileMenu } from '@/components/profile-menu';
 import { SwipeAway } from '@/components/swipe-away';
 import { TabScreen } from '@/components/tab-screen';
@@ -43,7 +44,15 @@ export default function Home() {
   return (
     <>
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
-      <TabScreen title="Play" accessory={<ProfileMenu />}>
+      <TabScreen
+        title="Play"
+        accessory={
+          <>
+            <RequestsPill />
+            <ProfileMenu />
+          </>
+        }
+      >
         {(banner || box.invites.length > 0) && (
           <View style={{ gap: spacing.sm }}>
             <TableBanner />

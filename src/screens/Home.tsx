@@ -7,6 +7,8 @@ import { GameShelf } from './HomeGames';
 import { LegendShelf } from './HomeLegends';
 import { CAMPAIGN_ON, LEGENDS_ON, variantInfo } from '../game';
 import { PartyTab } from './HomeParty';
+import { RequestPill } from './FriendRequests';
+import { usePals } from '../state/pals';
 import { loadRangeProgress } from './RangeTrainer';
 import { SCENARIOS } from '../train/ranges/scenarios';
 import { CampaignTab } from './HomeCampaign';
@@ -38,6 +40,7 @@ const TABS: { id: Tab; label: string; Icon: typeof SpadeIcon; title: string }[] 
 export function Home() {
   // Coming back from another screen lands on the same tab, at the same place on the page.
   const [tab, setTabState] = useState<Tab>(TABS.some((t) => t.id === homeView.tab) ? homeView.tab : 'play');
+  const requestCount = usePals().requests.length;
   const sheet = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (sheet.current) sheet.current.scrollTop = homeView.scroll;
@@ -231,11 +234,25 @@ export function Home() {
               type="button"
               role="tab"
               aria-selected={tab === id}
+              aria-label={id === 'party' && requestCount > 0 ? `${label}, ${requestCount} friend ${requestCount === 1 ? 'request' : 'requests'}` : undefined}
               className={`tab press${tab === id ? ' on' : ''}`}
               onClick={() => setTab(id)}
             >
               <Icon width={24} height={24} />
               <span>{label}</span>
+              {id === 'party' && requestCount > 0 && (
+                // The pill answers requests in a small sheet, wherever you are; the rest of the tab still switches tabs.
+                <span
+                  className="tab-badge"
+                  data-testid="tab-requests"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openSheet({ name: 'palRequests' });
+                  }}
+                >
+                  <RequestPill count={requestCount} />
+                </span>
+              )}
             </button>
           ))}
         </div>

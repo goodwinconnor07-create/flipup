@@ -16,6 +16,7 @@ import { Roulette } from './screens/Roulette';
 import { Blackjack } from './screens/Blackjack';
 import { BjInviteBanner } from './screens/sheets/BlackjackSheets';
 import { watchInvites } from './state/blackjack';
+import { watchRequests } from './state/pals';
 import { CAMPAIGN_ON, LEGENDS_ON } from './game';
 
 export function App() {
@@ -25,6 +26,8 @@ export function App() {
   const sheetKey = useApp((s) => s.sheetKey);
   // Friends asking you to their blackjack table (a Campaign floor game).
   useEffect(() => (CAMPAIGN_ON ? watchInvites() : undefined), []);
+  // Friend requests arrive on their own, every few seconds while the app is open.
+  useEffect(() => watchRequests(), []);
 
   let screen;
   switch (route.name) {

@@ -149,6 +149,8 @@ export type Sheet =
   | { name: 'player'; playerId: string }
   /** Type a friend code to add them to your friends. */
   | { name: 'addPal' }
+  /** Friend requests waiting for an answer, from the red pill on the Party tab. */
+  | { name: 'palRequests' }
   /** Type a party code to join it. */
   | { name: 'joinParty' }
   /** How the campaign works: shown the first time the tab opens. */

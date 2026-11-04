@@ -1,15 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
-import { CODE_ALPHABET, CODE_LENGTH } from '../game';
+import { CODE_ALPHABET, CODE_LENGTH, FRIEND_CODE_LENGTH } from '../game';
 import { haptic } from './effects';
 
 // Typing a 5-letter code (a table, a party or a friend): five boxes and a keyboard laid out like the phone's
 // own, so every letter is where you'd expect it. Codes never use vowels or Y, so those keys are shown greyed
-// out. The phone's keyboard never opens; on a computer the real keyboard types into it too.
+// out. The phone's keyboard never opens; on a computer the real keyboard types into it too. Friend codes are six
+// digits (`mode: 'digits'`), typed on a number pad laid out like the phone's.
 
 const ROWS = ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'];
+const DIGIT_ROWS = ['123', '456', '789', '0'];
+const DIGITS = '0123456789';
+
+export type CodeMode = 'letters' | 'digits';
 
 export interface CodeState {
   code: string;
+  mode: CodeMode;
   busy: boolean;
   error: string;
   type: (letter: string) => void;
@@ -20,10 +26,19 @@ export interface CodeState {
 }
 
 /** The code typed so far. `run` is called once all five letters are in, and returns an error sentence, or null when it worked. */
-export function useCode(run: (code: string) => Promise<string | null>, listening = true): CodeState {
+export function useCode(run: (code: string) => Promise<string | null>, listening = true, mode: CodeMode = 'letters'): CodeState {
   const [code, setCode] = useState('');
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const length = mode === 'digits' ? FRIEND_CODE_LENGTH : CODE_LENGTH;
+  const alphabet = mode === 'digits' ? DIGITS : CODE_ALPHABET;
+  // Switching between letters and numbers starts the code over.
+  const [was, setWas] = useState(mode);
+  if (was !== mode) {
+    setWas(mode);
+    setCode('');
+    setError('');
+  }
+  const [busy, setBusy] = useState(false);
   const looking = useRef(false);
 
   const submit = async (value: string) => {
@@ -50,11 +65,11 @@ export function useCode(run: (code: string) => Promise<string | null>, listening
   };
 
   const type = (letter: string) => {
-    if (busy || code.length >= CODE_LENGTH || !CODE_ALPHABET.includes(letter)) return;
+    if (busy || code.length >= length || !alphabet.includes(letter)) return;
     const next = code + letter;
     setCode(next);
     setError('');
-    if (next.length === CODE_LENGTH) void submit(next);
+    if (next.length === length) void submit(next);
   };
 
   const erase = () => {
@@ -86,16 +101,20 @@ export function useCode(run: (code: string) => Promise<string | null>, listening
     return () => window.removeEventListener('keydown', onKey);
   });
 
-  return { code, busy, error, type, erase, fill, setError };
+  return { code, mode, busy, error, type, erase, fill, setError };
 }
 
 /** The five boxes, the spinner or error under them, and the keyboard. */
 export function CodePad({ state, label }: { state: CodeState; label: string }) {
   const { code, busy, error } = state;
+  const digits = state.mode === 'digits';
+  const length = digits ? FRIEND_CODE_LENGTH : CODE_LENGTH;
+  const rows = digits ? DIGIT_ROWS : ROWS;
+  const alphabet = digits ? DIGITS : CODE_ALPHABET;
   return (
     <>
-      <div className={`join-code${error ? ' err' : ''}${busy ? ' busy' : ''}`} role="status" aria-label={`${label}: ${code.split('').join(' ') || 'empty'}`}>
-        {Array.from({ length: CODE_LENGTH }, (_, i) => (
+      <div className={`join-code${digits ? ' digits' : ''}${error ? ' err' : ''}${busy ? ' busy' : ''}`} role="status" aria-label={`${label}: ${code.split('').join(' ') || 'empty'}`}>
+        {Array.from({ length }, (_, i) => (
           <span key={`${i}-${code[i] ?? ''}`} className={`join-cell${i === code.length && !busy ? ' next' : ''}${code[i] ? ' filled' : ''}`}>
             {code[i] ?? ''}
           </span>
@@ -109,14 +128,15 @@ export function CodePad({ state, label }: { state: CodeState; label: string }) {
             {error}
           </p>
         ) : (
-          <small className="muted">Codes have no vowels, so those keys are off.</small>
+          <small className="muted">{digits ? 'Friend codes are six numbers.' : 'Codes have no vowels, so those keys are off.'}</small>
         )}
       </div>
-      <div className="code-kb" role="group" aria-label={`${label} letters`}>
-        {ROWS.map((row, r) => (
+      <div className={`code-kb${digits ? ' digits' : ''}`} role="group" aria-label={`${label} ${digits ? 'numbers' : 'letters'}`}>
+        {rows.map((row, r) => (
           <div key={row} className="code-kb-row">
+            {digits && r === rows.length - 1 && <span className="code-key code-key-gap" aria-hidden />}
             {row.split('').map((letter) => {
-              const usable = CODE_ALPHABET.includes(letter);
+              const usable = alphabet.includes(letter);
               return (
                 <button
                   key={letter}
@@ -134,7 +154,7 @@ export function CodePad({ state, label }: { state: CodeState; label: string }) {
                 </button>
               );
             })}
-            {r === ROWS.length - 1 && (
+            {r === rows.length - 1 && (
               <button
                 type="button"
                 className="code-key code-key-delete press"

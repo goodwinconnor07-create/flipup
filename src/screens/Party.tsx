@@ -87,7 +87,7 @@ function PartyBoard({ rows, you, running }: { rows: PartyRow[]; you: string | nu
   const befriend = async (code: string) => {
     try {
       const pal = await addPal(code);
-      toast(`${pal.name} is your friend now.`, 'success');
+      toast(pal.pending ? `Friend request sent to ${pal.name}.` : `${pal.name} is your friend now.`, 'success');
     } catch (e) {
       toast(e instanceof Error ? e.message : "Couldn't add them.", 'error');
     }

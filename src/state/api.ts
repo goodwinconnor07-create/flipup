@@ -1,6 +1,6 @@
 // HTTP calls to the FlipUp server (the Cloudflare Worker in /worker).
 
-import { type BjInvite, type CreateBjResponse, type CampaignCard, type CreateFriendCardResponse, type FriendCardInfo, type PartySettings, type PartyView, type CreateTableRequest, type CreateTableResponse, type TableInfo } from '../game';
+import { type BjInvite, type CreateBjResponse, type CampaignCard, type CreateFriendCardResponse, type FriendCardInfo, type FriendRequest, type PartySettings, type PartyView, type CreateTableRequest, type CreateTableResponse, type TableInfo } from '../game';
 import { apiUrl } from './platform';
 
 async function request(path: string, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
@@ -107,6 +107,50 @@ export async function createBlackjackTable(body: { deviceId: string; name: strin
   const res = await jsonRequest('/api/blackjack', { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a table. Try again."));
   return ((await res.json()) as CreateBjResponse).code;
+}
+
+// ── Friend requests ─────────────────────────────────────────────────────────
+
+/** Asks `code` to be friends from this phone's own code. 'friends' when they'd asked you too. Throws a plain sentence. */
+export async function sendFriendRequest(code: string, body: { deviceId: string; fromCode: string }): Promise<'sent' | 'friends'> {
+  const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}/request`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't send the request. Try again."));
+  return ((await res.json()) as { status: 'sent' | 'friends' }).status;
+}
+
+/** Says yes or no to a request waiting on this phone's code. A request that's already gone counts as answered. */
+export async function answerFriendRequest(code: string, body: { deviceId: string; from: string; accept: boolean }): Promise<void> {
+  const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}/answer`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok && res.status !== 404) throw new Error(await errorText(res, "Couldn't answer. Try again."));
+}
+
+/** Ends a friendship, or an ask either way, on both cards. */
+export async function unfriendOnServer(code: string, body: { deviceId: string; other: string }): Promise<void> {
+  const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}/unfriend`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't remove them. Try again."));
+}
+
+export interface FriendRequests {
+  requests: FriendRequest[];
+  /** Codes this phone has asked that haven't answered. */
+  sent: string[];
+  /** Codes on this phone's server-side friends list. */
+  friends: string[];
+}
+
+/** The requests waiting on this phone's code, and where its own asks stand. Null if the server says no. */
+export async function fetchFriendRequests(code: string, deviceId: string): Promise<FriendRequests | null> {
+  const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}/requests?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
+  if (!res.ok) return null;
+  return (await res.json()) as FriendRequests;
+}
+
+/** The same, with each friend's card (name, picture, campaign) in one call: for a pull to refresh. */
+export async function fetchFriendInbox(code: string, deviceId: string): Promise<{ requests: FriendRequest[]; sent: string[]; friends: FriendCardInfo[] } | null> {
+  const res = await jsonRequest(`/api/friends/${encodeURIComponent(code)}/inbox?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
+  if (!res.ok) return null;
+  const body = (await res.json()) as { requests?: FriendRequest[]; sent?: string[]; friends?: FriendCardInfo[] };
+  return { requests: body.requests ?? [], sent: body.sent ?? [], friends: body.friends ?? [] };
 }
 
 /** Asks a friend (by their friend code) to your table. */

@@ -56,7 +56,7 @@ import { StreakSheet } from './StreakSheet';
 import { GameStartSheet } from './GameStartSheet';
 import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
-import { AddPalSheet, JoinPartySheet } from './CodeSheets';
+import { AddPalSheet, FriendRequestsSheet, JoinPartySheet } from './CodeSheets';
 import { PremiumSheet } from './PremiumSheet';
 import { BubbleSheet, LegendsSheet, PackSheet } from './PremiumPickers';
 import { CampaignIntroSheet } from './CampaignIntroSheet';
@@ -106,6 +106,8 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <PlayerSheet playerId={sheet.playerId} />;
     case 'addPal':
       return <AddPalSheet />;
+    case 'palRequests':
+      return <FriendRequestsSheet />;
     case 'joinParty':
       return <JoinPartySheet />;
     case 'confirm':

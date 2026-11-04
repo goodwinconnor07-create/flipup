@@ -215,10 +215,10 @@ export class FriendCard extends DurableObject<Env> {
   }
 
   /** RPC: everything waiting for the owner: friend requests, table invites, and the friend codes on the list. */
-  async inbox(deviceId: string): Promise<{ requests: FriendRequest[]; invites: BjInvite[]; friends: string[] } | null> {
+  async inbox(deviceId: string): Promise<{ requests: FriendRequest[]; invites: BjInvite[]; friends: string[]; sent: string[] } | null> {
     const data = await this.load();
     if (!data || data.deviceId !== deviceId) return null;
-    return { requests: data.requests ?? [], invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS), friends: data.friends ?? [] };
+    return { requests: data.requests ?? [], invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS), friends: data.friends ?? [], sent: data.sent ?? [] };
   }
 
   /**

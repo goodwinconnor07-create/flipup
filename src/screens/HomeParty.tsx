@@ -1,39 +1,43 @@
 import { useEffect, useState } from 'react';
 import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, VARIANTS } from '../game';
-import { ensureMyCode, loadPals, myPalCode, PALS_CHANGED, refreshPals, removePal, restorePal, type Pal } from '../state/pals';
+import { checkRequests, ensureMyCode, myPalCode, refreshPals, removePal, restorePal, usePals, type Pal } from '../state/pals';
 import { loadPartyRef } from '../state/party';
 import { navigate, openSheet, toast, undoToast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameThumb } from '../ui/GameIllustrations';
 import { ChevronIcon, KeypadIcon, PlusIcon, ShareIcon, UsersIcon } from '../ui/Icons';
+import { usePullToRefresh } from '../ui/usePullToRefresh';
+import { RequestPill, RequestRow } from './FriendRequests';
 import { copy } from './sheets/InviteSheet';
 
 const SHOWCASE = VARIANTS.slice(0, 6);
 
-/** The Party tab: host or join a tournament of mini games, and your friends. */
-/** When friends and the friend card were last checked with the server, and how long to wait before the next time. */
+/** When your own friend card was last refreshed on the server, and how long to wait before the next time. */
 let lastSync = 0;
 const SYNC_EVERY = 60_000;
+/** A new friend row lights up for this long after it lands on the list. */
+const FRESH_MS = 1500;
 
+/** The Party tab: host or join a tournament of mini games, and your friends. */
 export function PartyTab() {
   const profile = useApp((s) => s.profile);
   const named = profile.name.trim().length > 0;
-  const [pals, setPals] = useState(loadPals);
+  // One shared list: an add, an accept or a poll shows here at once, whichever screen did it.
+  const { pals, requests, refreshing } = usePals();
   const [code, setCode] = useState(myPalCode);
   const [busy, setBusy] = useState(false);
   const party = loadPartyRef();
+  const pullMarker = usePullToRefresh(() => void refreshPals());
 
   useEffect(() => {
-    const reload = () => setPals(loadPals());
-    window.addEventListener(PALS_CHANGED, reload);
-    // Switching tabs back and forth shouldn't ask the server every time.
+    // Opening the tab looks for requests and answers straight away, quietly (the placeholders are for a pull).
+    void checkRequests();
+    // Switching tabs back and forth shouldn't rewrite your own card every time.
     if (Date.now() - lastSync > SYNC_EVERY) {
       lastSync = Date.now();
-      void refreshPals();
       // A phone that already has a code keeps its name and picture fresh on the server.
       if (myPalCode() && named) void ensureMyCode().catch(() => undefined);
     }
-    return () => window.removeEventListener(PALS_CHANGED, reload);
   }, []);
 
   // Hosting and joining need a name first.
@@ -58,15 +62,14 @@ export function PartyTab() {
 
   const remove = (pal: Pal) => {
     removePal(pal.code);
-    setPals(loadPals());
-    undoToast(`Removed ${pal.name}.`, () => {
-      restorePal(pal);
-      setPals(loadPals());
-    });
+    undoToast(pal.pending ? `Cancelled your request to ${pal.name}.` : `Removed ${pal.name}.`, () => restorePal(pal));
   };
 
   return (
     <>
+      <div ref={pullMarker} className="pull-refresh" aria-hidden>
+        <span className="pull-spinner" />
+      </div>
       <button type="button" className="party-host press" onClick={() => !needName() && navigate({ name: 'partySetup' })}>
         <span className="party-host-games" aria-hidden>
           {SHOWCASE.map((v, i) => (
@@ -110,7 +113,25 @@ export function PartyTab() {
         </button>
       </div>
 
-      <h3 className="section-head">Friends</h3>
+      {requests.length > 0 && (
+        <>
+          <h3 className="section-head">Incoming Friend Requests</h3>
+          <div className="group">
+            {requests.map((req) => (
+              <RequestRow key={req.from} req={req} />
+            ))}
+          </div>
+        </>
+      )}
+
+      <h3 className="section-head friends-head">
+        Friends
+        {requests.length > 0 && (
+          <button type="button" className="count-pill-btn press" aria-label={`${requests.length} friend ${requests.length === 1 ? 'request' : 'requests'}`} onClick={() => openSheet({ name: 'palRequests' })}>
+            <RequestPill count={requests.length} />
+          </button>
+        )}
+      </h3>
       <div className="friend-code">
         {code ? (
           <>
@@ -147,22 +168,33 @@ export function PartyTab() {
           <span className="gr-text">Add a friend</span>
           <ChevronIcon className="gr-chev" width={16} height={16} />
         </button>
-        {pals.map((pal) => (
-          <div key={pal.code} className="group-row friend-row">
-            <span className="gr-face">
-              <Avatar emoji={pal.emoji} size={36} />
-            </span>
-            <span className="gr-text">
-              {pal.name}
-              <small>{pal.code}</small>
-            </span>
-            <button type="button" className="link-btn press" aria-label={`Remove ${pal.name}`} onClick={() => remove(pal)}>
-              Remove
-            </button>
-          </div>
-        ))}
+        {refreshing
+          ? Array.from({ length: Math.min(6, Math.max(2, pals.length)) }, (_, i) => (
+              <div key={i} className="group-row friend-row skeleton-row" aria-hidden>
+                <span className="skeleton skeleton-face" />
+                <span className="skeleton-lines">
+                  <span className="skeleton skeleton-line" />
+                  <span className="skeleton skeleton-line short" />
+                </span>
+              </div>
+            ))
+          : pals.map((pal) => (
+              <div key={pal.code} className={`group-row friend-row${Date.now() - pal.addedAt < FRESH_MS ? ' friend-in' : ''}`}>
+                <span className="gr-face">
+                  <Avatar emoji={pal.emoji} size={36} />
+                </span>
+                <span className="gr-text">
+                  {pal.name}
+                  <small>{pal.pending ? <span className="pending-tag">Pending</span> : pal.code}</small>
+                </span>
+                <button type="button" className="link-btn press" aria-label={pal.pending ? `Cancel request to ${pal.name}` : `Remove ${pal.name}`} onClick={() => remove(pal)}>
+                  {pal.pending ? 'Cancel' : 'Remove'}
+                </button>
+              </div>
+            ))}
       </div>
-      {pals.length === 0 && <p className="muted center party-empty">No friends yet. Add one with their code.</p>}
+      {refreshing && <span className="sr-only" role="status">Refreshing friends</span>}
+      {!refreshing && pals.length === 0 && <p className="muted center party-empty">No friends yet. Add one with their code.</p>}
     </>
   );
 }

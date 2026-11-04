@@ -1606,3 +1606,182 @@ html[data-theme='dark'] .tab-capsule {
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
+
+/* ── Friends on the Party tab: pull to refresh, requests, Pending, placeholders, the red count pill ── */
+
+/* The pull spinner row (ui/usePullToRefresh.ts sets its height and --pull while you drag). */
+.pull-refresh {
+  height: 0;
+  margin-bottom: -12px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  transition: height 0.25s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.pull-refresh.pulling {
+  transition: none;
+}
+
+.pull-spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--ink-3);
+  border-right-color: transparent;
+  opacity: var(--pull, 0);
+  transform: rotate(calc(var(--pull, 0) * 270deg));
+}
+
+/* The count pill: red, white number, on the Party tab and beside the Friends heading. */
+.count-pill {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--r-pill);
+  background: var(--red);
+  color: var(--on-color);
+  font-size: var(--fs-caption);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.tab-badge {
+  position: absolute;
+  top: 4px;
+  left: calc(50% + 6px);
+  cursor: pointer;
+}
+
+/* A bigger area to tap than the pill shows. */
+.tab-badge::before {
+  content: '';
+  position: absolute;
+  inset: -12px;
+}
+
+.friends-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.count-pill-btn {
+  display: inline-grid;
+  place-items: center;
+  min-width: 44px;
+  min-height: 44px;
+  margin: -12px 0;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* A request: face, name, then Deny and Accept. Accept turns it green for a moment before it moves into Friends. */
+.request-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.request-deny {
+  background: var(--bg-3);
+  color: var(--ink);
+}
+
+.request-row {
+  transition: background-color 0.3s ease;
+}
+
+.request-row.added {
+  background: var(--green-bg);
+}
+
+.request-row.added .gr-text small {
+  color: var(--green-ink);
+  font-weight: 600;
+}
+
+.pending-tag {
+  color: var(--gold-ink);
+  font-weight: 600;
+}
+
+/* A friend who's just landed on the list lights up and fades back (a paint, so long lists stay drawn in Safari). */
+.friend-in {
+  animation: friend-in 1.2s ease-out;
+}
+
+@keyframes friend-in {
+  from {
+    background-color: var(--green-bg);
+  }
+}
+
+/* Placeholders while a pull to refresh runs: the friend boxes only, with a soft sweep of light. */
+.skeleton-row {
+  pointer-events: none;
+}
+
+.skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--bg-3);
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--on-color) 45%, transparent), transparent);
+  transform: translateX(-100%);
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+html[data-theme='dark'] .skeleton::after {
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--on-color) 8%, transparent), transparent);
+}
+
+@keyframes skeleton-sweep {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+html.calm .skeleton::after {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    display: none;
+  }
+}
+
+.skeleton-face {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-lines {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+}
+
+.skeleton-line {
+  width: 60%;
+  height: 12px;
+  border-radius: var(--r-xs);
+}
+
+.skeleton-line.short {
+  width: 32%;
+}

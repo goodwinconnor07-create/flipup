@@ -273,7 +273,7 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
     const box = isDeviceId(device) ? await card.inbox(device) : null;
     if (!box) return json({ error: 'That code belongs to another phone.' }, 403);
     const friends = (await Promise.all(box.friends.map((f) => env.FRIEND_CARD.getByName(f).get(f)))).filter((f): f is FriendCardInfo => !!f);
-    return json({ requests: box.requests, invites: box.invites, friends });
+    return json({ requests: box.requests, invites: box.invites, friends, sent: box.sent });
   }
   if (kind === 'requests') {
     // Polled every few seconds while the app is open, so it's one read of one card with nothing fanned out.

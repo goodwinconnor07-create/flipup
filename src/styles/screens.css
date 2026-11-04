@@ -899,6 +899,7 @@ html[data-theme='dark'] .btn-dark {
 .join-code.busy .join-cell:nth-child(3) { animation-delay: 0.16s; }
 .join-code.busy .join-cell:nth-child(4) { animation-delay: 0.24s; }
 .join-code.busy .join-cell:nth-child(5) { animation-delay: 0.32s; }
+.join-code.busy .join-cell:nth-child(6) { animation-delay: 0.4s; }
 
 @keyframes code-wave {
   50% {
@@ -1936,6 +1937,25 @@ html[data-theme='dark'] .btn-dark {
   font-weight: 700;
   box-shadow: 0 6px 12px -8px rgba(0, 0, 0, 0.45);
   touch-action: manipulation;
+}
+
+/* Friend codes: a number pad like the phone's, three wide keys a row, 0 in the middle of the last. */
+.code-kb.digits .code-key {
+  max-width: 112px;
+  height: 56px;
+}
+
+.code-kb.digits .code-key-delete {
+  flex-grow: 1;
+}
+
+.code-key-gap {
+  visibility: hidden;
+}
+
+.join-code.digits .join-cell {
+  max-width: 52px;
+  height: 64px;
 }
 
 .code-key.off {

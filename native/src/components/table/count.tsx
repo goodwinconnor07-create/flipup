@@ -17,17 +17,16 @@ export function useCountUp(target: number, ms = 600): { value: number; dir: 'up'
     if (shown.current === target) return;
     if (reduce) {
       shown.current = target;
-      setValue(target);
       return;
     }
     const from = shown.current;
     const start = performance.now();
-    setDir(target > from ? 'up' : 'down');
     let raf = 0;
     const frame = (now: number) => {
       const t = Math.min(1, (now - start) / ms);
       const eased = 1 - Math.pow(1 - t, 3);
       shown.current = t >= 1 ? target : Math.round(from + (target - from) * eased);
+      setDir(t < 1 ? (target > from ? 'up' : 'down') : null);
       setValue(shown.current);
       if (t < 1) raf = requestAnimationFrame(frame);
       else setDir(null);
@@ -35,7 +34,7 @@ export function useCountUp(target: number, ms = 600): { value: number; dir: 'up'
     raf = requestAnimationFrame(frame);
     return () => cancelAnimationFrame(raf);
   }, [target, ms, reduce]);
-  return { value, dir };
+  return reduce ? { value: target, dir: null } : { value, dir };
 }
 
 /** `up`/`down` override the rising and falling colours (the pot pill uses paler ones on the felt). */

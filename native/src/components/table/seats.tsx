@@ -3,11 +3,23 @@
 // (full colour on their turn), the stack counting as it changes, their cards (with an orange shimmer sweeping over
 // them while it's their turn), and a tag under them: what they've put in this round, a win, their odds during a
 // run-out, or Offline.
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
-import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
+import {
+  holeCountAt,
+  moveLabel,
+  positionOf,
+  seatFor,
+  variantOf,
+  type Card,
+  type Game,
+  type Player,
+  type Position,
+  type Seat,
+  type Talk,
+} from '@/engine';
 import { me as myDevice, dispatch } from '@/state/session';
 import { usePlainColors, brand } from '@/theme';
 
@@ -40,8 +52,12 @@ export function othersInOrder(game: Game, me: Player | undefined): Player[] {
  * the winner) in view, or to bring a speaker in when the one in focus can stay. `canShow(id)` says whether someone
  * could be seen talking, so a line from someone out of view isn't queued.
  */
-export function usePodSlots(game: Game, others: Player[], talking: Record<string, unknown>): { shown: Player[]; hidden: Player[]; canShow: (id: string) => boolean } {
-  const start = useRef(0);
+export function usePodSlots(
+  game: Game,
+  others: Player[],
+  talking: Record<string, unknown>,
+): { shown: Player[]; hidden: Player[]; canShow: (id: string) => boolean } {
+  const [start, setStart] = useState(0);
   if (others.length <= MAX_PODS) return { shown: others, hidden: [], canShow: () => true };
   const hand = game.hand;
   const liveFor = (speaking: ReadonlySet<string>) =>
@@ -54,7 +70,7 @@ export function usePodSlots(game: Game, others: Player[], talking: Record<string
   const plan = (speaking: ReadonlySet<string>) => {
     const live = liveFor(speaking);
     const n = Math.min(MAX_PODS, live.length);
-    let s = Math.max(0, Math.min(start.current, live.length - n));
+    let s = Math.max(0, Math.min(start, live.length - n));
     const at = live.findIndex((p) => p.id === focus);
     if (at >= 0) {
       if (at < s) s = at;
@@ -69,7 +85,7 @@ export function usePodSlots(game: Game, others: Player[], talking: Record<string
   };
   const now = new Set(Object.keys(talking));
   const { live, n, s } = plan(now);
-  start.current = s;
+  if (s !== start) setStart(s);
   const shown = live.slice(s, s + n);
   const canShow = (id: string) => {
     const p = plan(new Set([...now, id]));
@@ -81,6 +97,7 @@ export function usePodSlots(game: Game, others: Player[], talking: Record<string
 /** The row of other players across the top. */
 export function SeatRow({
   game,
+  compact = false,
   shown,
   hidden,
   say,
@@ -90,6 +107,7 @@ export function SeatRow({
   odds,
 }: {
   game: Game;
+  compact?: boolean;
   shown: Player[];
   hidden: Player[];
   say: Record<string, Talk>;
@@ -100,10 +118,21 @@ export function SeatRow({
 }) {
   return (
     // The row reaches a little into the side margins, so each seat (and its bubble) gets more room.
-    <View style={{ flexDirection: 'row', justifyContent: 'center', marginHorizontal: 4, paddingTop: 30, minHeight: 166 }}>
+    <View style={{ flexDirection: 'row', justifyContent: 'center', marginHorizontal: 4, paddingTop: compact ? 24 : 30, minHeight: compact ? 140 : 166 }}>
       {shown.map((p) => (
         <View key={p.id} style={{ flex: 1, maxWidth: 110 }}>
-          <SeatPod game={game} player={p} seat={seatFor(game.hand, p.id)} talk={say[p.id]} quiet={quiet[p.id]} dimCard={dimCard} glowCard={glowCard} odds={odds?.get(p.id)} n={shown.length} />
+          <SeatPod
+            game={game}
+            compact={compact}
+            player={p}
+            seat={seatFor(game.hand, p.id)}
+            talk={say[p.id]}
+            quiet={quiet[p.id]}
+            dimCard={dimCard}
+            glowCard={glowCard}
+            odds={odds?.get(p.id)}
+            n={shown.length}
+          />
         </View>
       ))}
       {hidden.length > 0 && <HiddenPlayers game={game} players={hidden} />}
@@ -125,7 +154,15 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
           haptic.tap();
           setOpen(true);
         }}
-        style={{ position: 'absolute', right: -2, bottom: 0, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: c.cell }}
+        style={{
+          position: 'absolute',
+          right: -2,
+          bottom: 0,
+          paddingHorizontal: 10,
+          paddingVertical: 4,
+          borderRadius: 999,
+          backgroundColor: c.cell,
+        }}
       >
         <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}>
           +{players.length}
@@ -133,11 +170,33 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }} onPress={() => setOpen(false)}>
-          <View style={{ position: 'absolute', top: 120, right: 16, minWidth: 220, padding: 8, borderRadius: 16, borderCurve: 'continuous', backgroundColor: c.surface, boxShadow: '0 12px 30px rgba(0,0,0,0.25)' }}>
+          <View
+            style={{
+              position: 'absolute',
+              top: 120,
+              right: 16,
+              minWidth: 220,
+              padding: 8,
+              borderRadius: 16,
+              borderCurve: 'continuous',
+              backgroundColor: c.surface,
+              boxShadow: '0 12px 30px rgba(0,0,0,0.25)',
+            }}
+          >
             {players.map((p) => {
               const seat = seatFor(game.hand, p.id);
               return (
-                <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 8, minHeight: 44, opacity: game.hand && (!seat || seat.folded) ? 0.5 : 1 }}>
+                <View
+                  key={p.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    paddingHorizontal: 8,
+                    minHeight: 44,
+                    opacity: game.hand && (!seat || seat.folded) ? 0.5 : 1,
+                  }}
+                >
                   <Text style={{ fontSize: 24 }} maxFontSizeMultiplier={1}>
                     {p.emoji}
                   </Text>
@@ -162,13 +221,15 @@ function faceDown(game: Game): number {
   const v = variantOf(game);
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
   const hand = game.hand;
-  const three = !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && !hand.result));
+  const three =
+    !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && !hand.result));
   return v === 'pineapple' && three ? 3 : 2;
 }
 
 function SeatPod({
   game,
   player,
+  compact = false,
   seat,
   talk,
   quiet,
@@ -179,6 +240,7 @@ function SeatPod({
 }: {
   game: Game;
   player: Player;
+  compact?: boolean;
   seat: Seat | undefined;
   talk?: Talk;
   quiet?: string;
@@ -205,7 +267,12 @@ function SeatPod({
   // Another person (not a bot, not you) at an online table can be reported or blocked.
   const other = !player.bot && !!game.code && !!player.deviceId && player.deviceId !== myDevice;
   const canPeek = host && !!hand?.result && player.bot && !!seat && !seat.shown && seat.cards.length === 0;
-  const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) }, () => null)) : [];
+  const cards =
+    seat && (!seat.folded || seat.cards.length > 0)
+      ? seat.cards.length
+        ? seat.cards
+        : Array.from({ length: faceDown(game) }, () => null)
+      : [];
   // A seat's share of the row, for wrapping its talk.
   const room = Math.floor((width + 8) / Math.max(n, 1)) - 4;
   return (
@@ -224,30 +291,40 @@ function SeatPod({
                 text: 'Remove from table',
                 style: 'destructive' as const,
                 onPress: () =>
-                  Alert.alert(`Remove ${player.name}?`, inHand ? 'Their hand is folded and they leave the table.' : 'They leave the table with their chips.', [
-                    { text: 'Cancel', style: 'cancel' },
-                    { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'remove', playerId: player.id }) },
-                  ]),
+                  Alert.alert(
+                    `Remove ${player.name}?`,
+                    inHand ? 'Their hand is folded and they leave the table.' : 'They leave the table with their chips.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'remove', playerId: player.id }) },
+                    ],
+                  ),
               },
             ]
           : [];
         const info = `${chips(player.stack)} chips${player.bot ? ' · Bot' : ''}`;
         const key = seatKey(player);
         // Another person at an online table: Report and Block (App Store guideline 1.2), and the host's Remove.
-        if (other && key && game.code) return openPlayerMenu({ key, name: player.name, emoji: player.emoji, where: 'table', code: game.code, playerId: player.id }, player.name, info, remove);
+        if (other && key && game.code)
+          return openPlayerMenu(
+            { key, name: player.name, emoji: player.emoji, where: 'table', code: game.code, playerId: player.id },
+            player.name,
+            info,
+            remove,
+          );
         Alert.alert(player.name, info, [{ text: 'Cancel', style: 'cancel' }, ...remove]);
       }}
       style={{ alignItems: 'center' }}
     >
-      <View style={{ width: 56, height: 54, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: compact ? 48 : 56, height: compact ? 40 : 54, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ opacity: out ? 0.35 : player.offline ? 0.55 : 1 }}>
-          <MoodFace game={game} player={player} seat={seat} size={50} />
+          <MoodFace game={game} player={player} seat={seat} size={compact ? 36 : 50} />
         </View>
         <View style={{ position: 'absolute', right: -15, bottom: 8 }}>
           <PositionChip pos={positionOf(hand, player.id)} />
         </View>
         {/* The bubble sits over the top of the face, as on the web. */}
-        <View pointerEvents="none" style={{ position: 'absolute', bottom: 48, left: -40, right: -40, height: 0 }}>
+        <View pointerEvents="none" style={{ position: 'absolute', bottom: compact ? 34 : 48, left: -40, right: -40, height: 0 }}>
           {talk ? (
             <Thread talk={talk} fx={player.bubble} room={room} place={pinned('center')} />
           ) : thinking ? (
@@ -256,44 +333,60 @@ function SeatPod({
             </Animated.View>
           ) : last && !hush ? (
             <Animated.View key={`${hand?.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('center')}>
-              <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={player.bubble} old={!!hand && last.street !== hand.street} />
+              <MoveBubble
+                text={moveLabel(last)}
+                tone={money ? 'blue' : 'grey'}
+                fx={player.bubble}
+                old={!!hand && last.street !== hand.street}
+              />
             </Animated.View>
           ) : null}
         </View>
       </View>
-      <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ maxWidth: '100%', fontSize: 15, lineHeight: 17, fontWeight: '700', color: turn ? c.label : c.tertiaryLabel, opacity: out ? 0.35 : 1 }}>
+      <Text
+        numberOfLines={1}
+        maxFontSizeMultiplier={1.2}
+        style={{
+          maxWidth: '100%',
+          fontSize: compact ? 13 : 15,
+          lineHeight: compact ? 15 : 17,
+          fontWeight: '700',
+          color: turn ? c.label : c.tertiaryLabel,
+          opacity: out ? 0.35 : 1,
+        }}
+      >
         {player.name}
       </Text>
       <View style={{ opacity: out ? 0.35 : 1 }}>
         {status ? (
-          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 17, lineHeight: 18, fontWeight: '700', color: c.label }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: compact ? 15 : 17, lineHeight: compact ? 16 : 18, fontWeight: '700', color: c.label }}>
             {status}
           </Text>
         ) : (
-          <Count value={player.stack} style={{ fontSize: 17, lineHeight: 18, fontWeight: '700', color: c.label }} />
+          <Count value={player.stack} style={{ fontSize: compact ? 15 : 17, lineHeight: compact ? 16 : 18, fontWeight: '700', color: c.label }} />
         )}
       </View>
       <View style={{ alignItems: 'center', gap: 4, minHeight: 52, paddingTop: 4 }}>
         {cards.length > 0 && (
           <View style={{ flexDirection: 'row' }}>
-              {cards.map((card, i) => (
-                // Two cards overlap a little; more (Pineapple, Bean Stalk) fan tighter to stay inside the seat.
-                <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length > 3 ? -12 : -6 }}>
-                  {card ? (
-                    <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} />
-                  ) : (
-                    <View>
-                      <PlayingCard back size="sm" pack={player.cardPack} />
-                      {/* A bot's cards say so on the back: a small robot, in place of a BOT pill on the face. */}
-                      {player.bot && (
-                        <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
-                          <Icon name="cpu.fill" size={13} color="rgba(255, 255, 255, 0.7)" />
-                        </View>
-                      )}
-                    </View>
-                  )}
-                </View>
-              ))}
+            {cards.map((card, i) => (
+              // Two cards overlap a little; more (Pineapple, Bean Stalk) fan tighter to stay inside the seat.
+              <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length > 3 ? -12 : -6 }}>
+                {card ? (
+                  <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} />
+                ) : (
+                  <View>
+                    <PlayingCard back size="sm" pack={player.cardPack} />
+                    {/* A bot's cards say so on the back: a small robot, in place of a BOT pill on the face. */}
+                    {player.bot && (
+                      <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
+                        <Icon name="cpu.fill" size={13} color="rgba(255, 255, 255, 0.7)" />
+                      </View>
+                    )}
+                  </View>
+                )}
+              </View>
+            ))}
           </View>
         )}
         {/* A fixed slot, so a tag coming or going never changes the row's height and moves the table. */}
@@ -306,11 +399,40 @@ function SeatPod({
 }
 
 /** Under a seat: a win, odds in a run-out, or Offline. */
-function SeatTag({ c, won, odds, offline }: { c: ReturnType<typeof usePlainColors>; won: number; odds?: { win: number }; offline: boolean }) {
+function SeatTag({
+  c,
+  won,
+  odds,
+  offline,
+}: {
+  c: ReturnType<typeof usePlainColors>;
+  won: number;
+  odds?: { win: number };
+  offline: boolean;
+}) {
   const tag = (key: string, text: string, bg: string, ink: string, chip = false) => (
-    <Animated.View key={key} entering={bubblePop} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 2, borderRadius: 999, backgroundColor: bg }}>
-      {chip && <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.red, borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)' }} />}
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, lineHeight: 16, fontWeight: '700', color: ink, fontVariant: ['tabular-nums'] }}>
+    <Animated.View
+      key={key}
+      entering={bubblePop}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 999,
+        backgroundColor: bg,
+      }}
+    >
+      {chip && (
+        <View
+          style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: c.red, borderWidth: 2, borderColor: 'rgba(255,255,255,0.85)' }}
+        />
+      )}
+      <Text
+        maxFontSizeMultiplier={1.2}
+        style={{ fontSize: 12, lineHeight: 16, fontWeight: '700', color: ink, fontVariant: ['tabular-nums'] }}
+      >
         {text}
       </Text>
     </Animated.View>
@@ -335,7 +457,17 @@ export function PositionChip({ pos }: { pos: Position | null }) {
   return (
     <View
       accessibilityLabel={`Position ${pos.label}`}
-      style={{ minWidth: 20, height: 18, paddingHorizontal: 4, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: look.bg, borderWidth: look.edge ? 1.5 : 0, borderColor: look.edge }}
+      style={{
+        minWidth: 20,
+        height: 18,
+        paddingHorizontal: 4,
+        borderRadius: 9,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: look.bg,
+        borderWidth: look.edge ? 1.5 : 0,
+        borderColor: look.edge,
+      }}
     >
       <Text maxFontSizeMultiplier={1} style={{ fontSize: 9, fontWeight: '800', color: look.ink }}>
         {pos.label}
@@ -343,4 +475,3 @@ export function PositionChip({ pos }: { pos: Position | null }) {
     </View>
   );
 }
-

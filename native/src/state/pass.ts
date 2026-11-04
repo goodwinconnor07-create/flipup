@@ -1,6 +1,7 @@
 // The Premium pass: a short-lived token the server gave this phone after it checked Apple's signed purchase. Tables
 // and the host calls show it, so the server knows this phone really has Premium (see worker/premium.ts).
 import { read, save, useStored } from './storage';
+import { useNow } from '@/components/table/use-now';
 
 const KEY = 'flipup.pass';
 
@@ -27,5 +28,6 @@ export const clearPass = (): void => save(KEY, null);
 /** Whether this phone holds a pass right now, for screens that show it. */
 export function usePassReady(): boolean {
   const p = useStored<Pass | null>(KEY, null);
-  return !!p && p.expiresAt > Date.now();
+  const now = useNow(1000);
+  return !!p && p.expiresAt > now;
 }

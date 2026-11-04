@@ -2,9 +2,10 @@
 // server that others can look up, so the person can delete it and everything this phone keeps.
 import { deleteFriendCard, premiumForget } from './api';
 import { deviceId } from './device';
+import { resetEntitlement } from './entitlement';
 import { myPalCode } from './pals';
 import { leaveParty, loadPartyRef } from './party';
-import { leaveTable } from './session';
+import { leaveTable, resetSessionIdentity } from './session';
 import { wipeAll } from './storage';
 
 /**
@@ -22,5 +23,7 @@ export async function deleteMyData(): Promise<void> {
   // The server forgets this phone's Premium pass. If it can't be reached the pass just runs out in a week, and the
   // phone gets a new device id below, so nothing stays linked to it.
   await premiumForget().catch(() => 0);
+  resetEntitlement();
   wipeAll(['flipup.premium']);
+  resetSessionIdentity();
 }

@@ -3,11 +3,26 @@ import { useMemo } from 'react';
 import { Pressable, Text, useColorScheme, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
-
 import { RAILS } from '@design/tableLooks';
 import { tableThemes } from '@design/tokens';
 import { useTableLook } from '@/state/prefs';
-import { bestHand, boardSize, CIRCLE_HOURS, CROSS_CELLS, pot, rankLabel, rankOf, seatFor, streetCards, suitOf, variantInfo, variantOf, type Card, type Game, type Player } from '@/engine';
+import {
+  bestHand,
+  boardSize,
+  CIRCLE_HOURS,
+  CROSS_CELLS,
+  pot,
+  rankLabel,
+  rankOf,
+  seatFor,
+  streetCards,
+  suitOf,
+  variantInfo,
+  variantOf,
+  type Card,
+  type Game,
+  type Player,
+} from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { gradient, radius, spacing, usePlainColors } from '@/theme';
 
@@ -59,7 +74,7 @@ export function feltHeight(variant: string, screen: number): number {
 }
 
 /** The oval: a rail round the felt, the pot at the top, the board in the middle, the hand or the winner at the bottom. */
-export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
+export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | undefined; heightLimit?: number }) {
   const reduce = useReduceMotion();
   const { width, height } = useWindowDimensions();
   const hand = game.hand;
@@ -77,7 +92,10 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
   const info = variantInfo(variant);
   // Imposter: you only learn it's you; everyone else in the hand is innocent.
   const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
-  const myValue = mySeat && !mySeat.folded && mySeat.cards.length && hand?.variant !== 'imposter' ? bestHand(variant, mySeat.cards, hand?.board ?? []) : null;
+  const myValue =
+    mySeat && !mySeat.folded && mySeat.cards.length && hand?.variant !== 'imposter'
+      ? bestHand(variant, mySeat.cards, hand?.board ?? [])
+      : null;
   const named = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? named(myValue) : null;
   const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
@@ -93,7 +111,8 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
         // A fixed size for the whole game, so nothing on the table (cards shown under seats, the win banner) can
         // squeeze it: a wide stadium from 196pt to 240 by the phone's height; the cross, the clock and the Memory
         // peek take more. Memory Poker plays at that size too, so the board doesn't jump when the peek ends.
-        height: feltHeight(variant, height),
+        height: Math.min(feltHeight(variant, height), Math.max(feltHeight(variant, 0), heightLimit ?? Infinity)),
+        flexShrink: 0,
         boxShadow: '0 12px 26px -14px rgba(18,18,40,0.55), inset 0 1px 0 rgba(255,255,255,0.28)',
         ...gradient(`${look.rail === 'wood' && !theme ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
       }}
@@ -112,21 +131,45 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
           paddingBottom: spacing.md,
           paddingHorizontal: spacing.lg,
           boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)',
-          ...gradient(`${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`),
+          ...gradient(
+            `${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`,
+          ),
         }}
       >
-        <View pointerEvents="none" style={{ position: 'absolute', top: 9, left: 9, right: 9, bottom: 9, borderRadius: radius.full, borderWidth: 2, borderColor: 'rgba(255,255,255,0.16)' }} />
+        <View
+          pointerEvents="none"
+          style={{
+            position: 'absolute',
+            top: 9,
+            left: 9,
+            right: 9,
+            bottom: 9,
+            borderRadius: radius.full,
+            borderWidth: 2,
+            borderColor: 'rgba(255,255,255,0.16)',
+          }}
+        />
         {!theme && look.logo && (
           // Texas Hold'em's own mark: the FlipUp wordmark, faded into the felt like the mini games' emoji.
-          <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 64, fontWeight: '800', letterSpacing: -1.5, color: '#ffffff', opacity: 0.09 }} maxFontSizeMultiplier={1} accessible={false}>
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
+          >
+            <Text
+              style={{ fontSize: 64, fontWeight: '800', letterSpacing: -1.5, color: '#ffffff', opacity: 0.09 }}
+              maxFontSizeMultiplier={1}
+              accessible={false}
+            >
               FlipUp
             </Text>
           </View>
         )}
         {theme && (
           // The game's emoji, faded into the felt.
-          <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <View
+            pointerEvents="none"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
+          >
             <Text style={{ fontSize: 120, opacity: 0.16 }} maxFontSizeMultiplier={1} accessible={false}>
               {info.emoji}
             </Text>
@@ -139,7 +182,10 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
               accessibilityLabel={`${info.name}: how it plays`}
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
             >
-              <VariantPill text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${info.emoji} ${info.name}`} hot={role === 'imposter'} />
+              <VariantPill
+                text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${info.emoji} ${info.name}`}
+                hot={role === 'imposter'}
+              />
             </Pressable>
           )}
           {hand && !game.memory && <PotPill value={potNow} />}
@@ -148,11 +194,17 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
         {hand?.dice && (
           <Animated.View key={`dice-${hand.number}`} entering={reduce ? FadeIn : bubblePop}>
             <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
-              {hand.dice.out && hand.dice.in ? `🎲 Rolled ${hand.dice.roll}: ${short(hand.dice.out)} → ${short(hand.dice.in)}` : `🎲 Rolled ${hand.dice.roll}: the board stays`}
+              {hand.dice.out && hand.dice.in
+                ? `🎲 Rolled ${hand.dice.roll}: ${short(hand.dice.out)} → ${short(hand.dice.in)}`
+                : `🎲 Rolled ${hand.dice.roll}: the board stays`}
             </Text>
           </Animated.View>
         )}
-        {game.memory ? <MemoryPeek game={game} width={width} pack={pack} /> : <Board game={game} width={width} dim={dim} glow={glow} pack={pack} />}
+        {game.memory ? (
+          <MemoryPeek game={game} width={width} pack={pack} />
+        ) : (
+          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} />
+        )}
         <View style={{ minHeight: 32, justifyContent: 'center' }}>
           {game.memory ? (
             <MemoryCountdown game={game} />
@@ -173,7 +225,19 @@ export function FeltOval({ game, me }: { game: Game; me: Player | undefined }) {
  * The board: a row of five (smaller and wrapping when a game deals more, with a gap before Pittsburgh's three
  * rivers), the Crucifix's cross of nine, or the Circle's six cards round a clock face.
  */
-function Board({ game, width, dim, glow, pack }: { game: Game; width: number; dim: (c: Card) => boolean; glow: (c: Card) => boolean; pack?: string }) {
+function Board({
+  game,
+  width,
+  dim,
+  glow,
+  pack,
+}: {
+  game: Game;
+  width: number;
+  dim: (c: Card) => boolean;
+  glow: (c: Card) => boolean;
+  pack?: string;
+}) {
   const hand = game.hand;
   const variant = variantOf(game);
   const slots = Math.max(boardSize(variant), hand?.board.length ?? 0);
@@ -181,7 +245,19 @@ function Board({ game, width, dim, glow, pack }: { game: Game; width: number; di
     const c = hand?.board[i];
     return (
       <View key={c ? `${hand!.number}-${c}` : `slot-${i}`} style={style}>
-        {c ? <PlayingCard card={c} width={w} flip dim={dim(c)} glow={glow(c)} pack={pack} delay={i < streetCards(variant, 'flop') ? i * 160 : 0} /> : <CardSlot width={w} />}
+        {c ? (
+          <PlayingCard
+            card={c}
+            width={w}
+            flip
+            dim={dim(c)}
+            glow={glow(c)}
+            pack={pack}
+            delay={i < streetCards(variant, 'flop') ? i * 160 : 0}
+          />
+        ) : (
+          <CardSlot width={w} />
+        )}
       </View>
     );
   };
@@ -192,7 +268,9 @@ function Board({ game, width, dim, glow, pack }: { game: Game; width: number; di
     const h = Math.round(w * 1.4);
     return (
       <View accessibilityLabel="Board, laid out in a cross" style={{ width: w * 5 + gap * 4, height: h * 5 + gap * 4 }}>
-        {Array.from({ length: slots }, (_, i) => card(i, w, { position: 'absolute', top: (CROSS_CELLS[i][0] - 1) * (h + gap), left: (CROSS_CELLS[i][1] - 1) * (w + gap) }))}
+        {Array.from({ length: slots }, (_, i) =>
+          card(i, w, { position: 'absolute', top: (CROSS_CELLS[i][0] - 1) * (h + gap), left: (CROSS_CELLS[i][1] - 1) * (w + gap) }),
+        )}
       </View>
     );
   }
@@ -235,13 +313,26 @@ function Ghost({ game, pack }: { game: Game; pack?: string }) {
   if (!isGhost && !holding) return null;
   const cards = ghost?.cards ?? hand?.ghost ?? [null, null];
   return (
-    <View accessibilityLabel="The ghost" style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: radius.full, backgroundColor: ghost?.kept ? 'rgba(124,92,255,0.45)' : 'rgba(0,0,0,0.28)' }}>
+    <View
+      accessibilityLabel="The ghost"
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingHorizontal: spacing.xs,
+        paddingVertical: 2,
+        borderRadius: radius.full,
+        backgroundColor: ghost?.kept ? 'rgba(124,92,255,0.45)' : 'rgba(0,0,0,0.28)',
+      }}
+    >
       <Text style={{ fontSize: 20 }} maxFontSizeMultiplier={1} accessible={false}>
         👻
       </Text>
       {hand && isGhost && (
         <View style={{ flexDirection: 'row', gap: 2 }}>
-          {cards.map((c, i) => (c ? <PlayingCard key={c} card={c} size="sm" flip pack={pack} /> : <PlayingCard key={i} back size="sm" pack={pack} />))}
+          {cards.map((c, i) =>
+            c ? <PlayingCard key={c} card={c} size="sm" flip pack={pack} /> : <PlayingCard key={i} back size="sm" pack={pack} />,
+          )}
         </View>
       )}
       <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>
@@ -254,10 +345,15 @@ function Ghost({ game, pack }: { game: Game; pack?: string }) {
 const SUIT_ORDER = 'shdc';
 /** Memory Poker: the 20 cards taken out of the deck, sorted by suit then high to low, until the hand is dealt. */
 function MemoryPeek({ game, width, pack }: { game: Game; width: number; pack?: string }) {
-  const cards = [...(game.memory?.cards ?? [])].sort((a, b) => SUIT_ORDER.indexOf(suitOf(a)) - SUIT_ORDER.indexOf(suitOf(b)) || rankOf(b) - rankOf(a));
+  const cards = [...(game.memory?.cards ?? [])].sort(
+    (a, b) => SUIT_ORDER.indexOf(suitOf(a)) - SUIT_ORDER.indexOf(suitOf(b)) || rankOf(b) - rankOf(a),
+  );
   const w = Math.min(30, Math.floor((width - spacing.md * 2 - 22 - spacing.lg * 2 - 9 * 3) / 10));
   return (
-    <View accessibilityLabel={`Cards taken out: ${cards.map(short).join(' ')}`} style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center', maxWidth: w * 10 + 27 }}>
+    <View
+      accessibilityLabel={`Cards taken out: ${cards.map(short).join(' ')}`}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center', maxWidth: w * 10 + 27 }}
+    >
       {cards.map((c, i) => (
         <PlayingCard key={c} card={c} size="sm" width={w} flip delay={i * 25} pack={pack} />
       ))}
@@ -276,7 +372,15 @@ function MemoryCountdown({ game }: { game: Game }) {
 function HandPill({ text }: { text: string }) {
   const c = usePlainColors();
   return (
-    <View style={{ paddingHorizontal: 14, paddingVertical: 5, borderRadius: 999, backgroundColor: c.surface, boxShadow: '0 1px 2px rgba(18,18,40,0.12)' }}>
+    <View
+      style={{
+        paddingHorizontal: 14,
+        paddingVertical: 5,
+        borderRadius: 999,
+        backgroundColor: c.surface,
+        boxShadow: '0 1px 2px rgba(18,18,40,0.12)',
+      }}
+    >
       <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.label, fontWeight: '600', fontSize: 15 }}>
         {text}
       </Text>
@@ -287,8 +391,31 @@ function HandPill({ text }: { text: string }) {
 /** "Pot 340" with a chip in front: the number counts down to nothing as the pot is pushed to the winner. */
 function PotPill({ value }: { value: number }) {
   return (
-    <View accessibilityLabel={`Pot ${chips(value)}`} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 8, paddingRight: 14, paddingVertical: 3, borderRadius: 999, backgroundColor: 'rgba(0,0,0,0.34)' }}>
-      <View style={{ width: 18, height: 18, borderRadius: 9, backgroundColor: '#e5322d', borderWidth: 3, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.9)', boxShadow: '0 1px 2px rgba(0,0,0,0.35)' }} />
+    <View
+      accessibilityLabel={`Pot ${chips(value)}`}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingLeft: 8,
+        paddingRight: 14,
+        paddingVertical: 3,
+        borderRadius: 999,
+        backgroundColor: 'rgba(0,0,0,0.34)',
+      }}
+    >
+      <View
+        style={{
+          width: 18,
+          height: 18,
+          borderRadius: 9,
+          backgroundColor: '#e5322d',
+          borderWidth: 3,
+          borderStyle: 'dashed',
+          borderColor: 'rgba(255,255,255,0.9)',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.35)',
+        }}
+      />
       <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255,255,255,0.78)', fontWeight: '600', fontSize: 13 }}>
         Pot
       </Text>
@@ -302,7 +429,14 @@ function VariantPill({ text, hot }: { text: string; hot?: boolean }) {
   const c = usePlainColors();
   const dark = useColorScheme() === 'dark';
   return (
-    <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, backgroundColor: hot ? c.redBg : dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.75)' }}>
+    <View
+      style={{
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: hot ? c.redBg : dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.75)',
+      }}
+    >
       <Text maxFontSizeMultiplier={1.2} style={{ color: hot ? c.redInk : c.label, fontWeight: '600', fontSize: 13 }}>
         {text}
       </Text>
@@ -345,7 +479,9 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   } else {
     const top = winners[0];
     const split = winners.length > 1;
-    title = split ? `Split pot · ${winners.map((w) => w.p!.name).join(' & ')}` : `${top.p!.id === me?.id ? 'You win' : `${top.p!.name} wins`} ${chips(top.amount)}`;
+    title = split
+      ? `Split pot · ${winners.map((w) => w.p!.name).join(' & ')}`
+      : `${top.p!.id === me?.id ? 'You win' : `${top.p!.name} wins`} ${chips(top.amount)}`;
     how = result.showdown ? result.names[top.id] : 'Everyone else folded';
     face = top.p!.emoji;
   }
@@ -355,7 +491,17 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
       entering={reduce ? FadeIn : bubblePop}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingLeft: 6, paddingRight: 16, paddingVertical: 4, borderRadius: 999, backgroundColor: c.surface, boxShadow: '0 0 0 3px rgba(245,158,11,0.7), 0 6px 16px -6px rgba(0,0,0,0.5)' }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        paddingLeft: 6,
+        paddingRight: 16,
+        paddingVertical: 4,
+        borderRadius: 999,
+        backgroundColor: c.surface,
+        boxShadow: '0 0 0 3px rgba(245,158,11,0.7), 0 6px 16px -6px rgba(0,0,0,0.5)',
+      }}
     >
       <Avatar emoji={face} size={34} />
       <View style={{ maxWidth: width - 150 }}>

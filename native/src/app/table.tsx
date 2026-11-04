@@ -4,6 +4,7 @@ import { ActivityIndicator, Modal, Pressable, ScrollView, Share, Text, useWindow
 import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
@@ -42,26 +43,33 @@ export default function TableScreen() {
   const insets = useSafeAreaInsets();
   const leave = () => {
     leaveTable();
-    router.dismissAll();
+    router.dismissTo('/');
   };
   return (
-    <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}>
+    <View
+      style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
+    >
       <TableBar game={game} online={online} code={t.code} />
       {game && <BlindNews game={game} />}
       {online && t.conn === 'offline' && <Pill text="Reconnecting…" />}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
-      <Notice notice={t.notice} />
+      {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
       <DealWipe />
       {!game ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
           {t.mode ? <ActivityIndicator /> : null}
-          <ThemedText tone="tertiaryLabel">{!t.mode ? 'No table open.' : t.conn === 'offline' ? 'No connection. Trying again…' : 'Finding your table…'}</ThemedText>
+          <ThemedText tone="tertiaryLabel">
+            {!t.mode ? (t.notice?.text ?? 'No table open.') : t.conn === 'offline' ? 'No connection. Trying again…' : 'Finding your table…'}
+          </ThemedText>
+          <Button title="Back to Home" onPress={leave} />
+          {!t.mode && <Button title="Join another table" variant="secondary" onPress={() => router.dismissTo('/join')} />}
         </View>
       ) : (
         <>
           {game.status === 'lobby' && <Lobby game={game} online={online} />}
           {game.status === 'playing' && <Playing game={game} sending={t.sending} />}
-          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
+          {game.status === 'ended' &&
+            (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>
       )}
     </View>
@@ -88,26 +96,39 @@ function PartyEnded({ code, onLeave }: { code: string; onLeave: () => void }) {
 function Pill({ text }: { text: string }) {
   const colors = useColors();
   return (
-    <View accessibilityRole="text" accessibilityLiveRegion="polite" style={{ alignSelf: 'center', paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full, backgroundColor: colors.cellPressed }}>
+    <View
+      accessibilityRole="text"
+      accessibilityLiveRegion="polite"
+      style={{
+        alignSelf: 'center',
+        paddingHorizontal: spacing.sm,
+        paddingVertical: 4,
+        borderRadius: radius.full,
+        backgroundColor: colors.cellPressed,
+      }}
+    >
       <Text style={{ fontSize: 13, fontWeight: '700', color: colors.label }}>{text}</Text>
     </View>
   );
 }
 
 /** A refused move or a lost table, for four seconds, with the failure haptic. */
-function Notice({ notice }: { notice: { id: number; text: string } | null }) {
-  const [shown, setShown] = useState<{ id: number; text: string } | null>(null);
+function Notice({ notice }: { notice: { id: number; text: string } }) {
+  const [visible, setVisible] = useState(true);
   useEffect(() => {
-    if (!notice) return;
     haptic.failure();
-    setShown(notice);
-    const t = setTimeout(() => setShown((s) => (s?.id === notice.id ? null : s)), 4000);
+    const t = setTimeout(() => setVisible(false), 4000);
     return () => clearTimeout(t);
-  }, [notice?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-  if (!shown) return null;
+  }, [notice.id]);
+  if (!visible) return null;
   return (
-    <Animated.View key={shown.id} entering={FadeIn} exiting={FadeOut} style={{ position: 'absolute', top: 110, left: spacing.md, right: spacing.md, zIndex: 10, alignItems: 'center' }}>
-      <Pill text={shown.text} />
+    <Animated.View
+      key={notice.id}
+      entering={FadeIn}
+      exiting={FadeOut}
+      style={{ position: 'absolute', top: 110, left: spacing.md, right: spacing.md, zIndex: 10, alignItems: 'center' }}
+    >
+      <Pill text={notice.text} />
     </Animated.View>
   );
 }
@@ -117,7 +138,12 @@ function BlindClock({ at, fast }: { at: number; fast?: boolean }) {
   const now = useTableNow(fast, 1000);
   const left = Math.max(0, Math.ceil((at - now) / 1000));
   if (left === 0) return <> · blinds up next hand</>;
-  return <> · blinds up in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}</>;
+  return (
+    <>
+      {' '}
+      · blinds up in {Math.floor(left / 60)}:{String(left % 60).padStart(2, '0')}
+    </>
+  );
 }
 
 function TableBar({ game, online, code }: { game: Game | null; online: boolean; code: string | null }) {
@@ -125,11 +151,17 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
   const c = usePlainColors();
   const menu = () => {
     haptic.tap();
-    router.push('/table-menu');
+    router.push(game ? '/table-menu' : '/');
   };
   return (
     <View style={{ height: 56, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Menu" onPress={menu} hitSlop={6} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cell, alignItems: 'center', justifyContent: 'center' }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Menu"
+        onPress={menu}
+        hitSlop={6}
+        style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cell, alignItems: 'center', justifyContent: 'center' }}
+      >
         <Icon name="line.3.horizontal" size={18} color={colors.label} />
       </Pressable>
       <View style={{ flex: 1, alignItems: 'center' }}>
@@ -138,9 +170,15 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
             <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 17, lineHeight: 20, fontWeight: '700', color: colors.label }}>
               Blinds {chips(game.settings.smallBlind)}/{chips(game.settings.bigBlind)}
             </Text>
-            <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, lineHeight: 15, fontWeight: '600', color: colors.tertiaryLabel }}>
+            <Text
+              maxFontSizeMultiplier={1.2}
+              numberOfLines={1}
+              style={{ fontSize: 13, lineHeight: 15, fontWeight: '600', color: colors.tertiaryLabel }}
+            >
               {game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
-              {game.status === 'playing' && !!game.settings.blindMinutes && game.blindsRaiseAt != null && <BlindClock at={game.blindsRaiseAt} fast={game.fast} />}
+              {game.status === 'playing' && !!game.settings.blindMinutes && game.blindsRaiseAt != null && (
+                <BlindClock at={game.blindsRaiseAt} fast={game.fast} />
+              )}
             </Text>
           </>
         )}
@@ -153,7 +191,16 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
             haptic.tap();
             router.push('/party-sheet');
           }}
-          style={{ height: 40, paddingHorizontal: 12, borderRadius: 12, borderCurve: 'continuous', backgroundColor: c.blueBg, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+          style={{
+            height: 40,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            borderCurve: 'continuous',
+            backgroundColor: c.blueBg,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+          }}
         >
           <Text maxFontSizeMultiplier={1} style={{ fontSize: 17 }}>
             {variantInfo(game.settings.variant ?? 'holdem').emoji}
@@ -170,7 +217,16 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
             haptic.tap();
             void Share.share({ message: `Come play poker with me on FlipUp. Code ${code}: ${joinLink(code)}`, url: joinLink(code) });
           }}
-          style={{ minWidth: 48, height: 40, paddingHorizontal: 12, borderRadius: 12, borderCurve: 'continuous', backgroundColor: c.blueBg, alignItems: 'center', justifyContent: 'center' }}
+          style={{
+            minWidth: 48,
+            height: 40,
+            paddingHorizontal: 12,
+            borderRadius: 12,
+            borderCurve: 'continuous',
+            backgroundColor: c.blueBg,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
         >
           <Text style={{ fontSize: 17, fontWeight: '700', letterSpacing: 1.4, color: c.blueInk }}>{code}</Text>
         </Pressable>
@@ -211,7 +267,18 @@ function BlindNews({ game }: { game: Game }) {
       entering={reduce ? FadeIn : SlideInUp.duration(380)}
       exiting={reduce ? FadeOut : SlideOutUp.duration(320)}
       pointerEvents="none"
-      style={{ position: 'absolute', top: 0, left: 0, right: 0, zIndex: 60, paddingTop: insets.top + 12, paddingBottom: 12, paddingHorizontal: 16, boxShadow: '0 10px 30px -10px rgba(0,0,0,0.4)', ...gradient(`linear-gradient(180deg, ${c.red}, #d70015)`) }}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 60,
+        paddingTop: insets.top + 12,
+        paddingBottom: 12,
+        paddingHorizontal: 16,
+        boxShadow: '0 10px 30px -10px rgba(0,0,0,0.4)',
+        ...gradient(`linear-gradient(180deg, ${c.red}, #d70015)`),
+      }}
     >
       <Text maxFontSizeMultiplier={1.3} style={{ color: '#ffffff', fontSize: 17, fontWeight: '700', textAlign: 'center' }}>
         {news.text}
@@ -230,7 +297,18 @@ function EmptyTablePopup({ game, onLeave }: { game: Game; onLeave: () => void })
   return (
     <Modal visible transparent animationType="fade">
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, backgroundColor: 'rgba(0,0,0,0.55)' }}>
-        <View accessibilityRole="alert" style={{ width: '100%', maxWidth: 360, gap: 12, padding: 24, borderRadius: 24, borderCurve: 'continuous', backgroundColor: c.surface }}>
+        <View
+          accessibilityRole="alert"
+          style={{
+            width: '100%',
+            maxWidth: 360,
+            gap: 12,
+            padding: 24,
+            borderRadius: 24,
+            borderCurve: 'continuous',
+            backgroundColor: c.surface,
+          }}
+        >
           <Text style={{ fontSize: 22, fontWeight: '800', color: c.label, textAlign: 'center' }}>Nobody in the lobby</Text>
           <Text style={{ fontSize: 15, color: c.tertiaryLabel, textAlign: 'center' }}>
             Closing game in <Text style={{ fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{secs}s</Text>
@@ -241,7 +319,9 @@ function EmptyTablePopup({ game, onLeave }: { game: Game; onLeave: () => void })
               <Text style={{ fontSize: 28, fontWeight: '800', letterSpacing: 2, color: c.label }}>{game.code}</Text>
             </View>
           )}
-          <Text style={{ fontSize: 15, color: c.tertiaryLabel, textAlign: 'center' }}>Friends can still join with the code, or add bots to keep playing.</Text>
+          <Text style={{ fontSize: 15, color: c.tertiaryLabel, textAlign: 'center' }}>
+            Friends can still join with the code, or add bots to keep playing.
+          </Text>
           {host && (
             <Pressable
               accessibilityRole="button"
@@ -254,7 +334,18 @@ function EmptyTablePopup({ game, onLeave }: { game: Game; onLeave: () => void })
               <Text style={{ fontSize: 17, fontWeight: '800', color: '#ffffff' }}>Add bots</Text>
             </Pressable>
           )}
-          <Pressable accessibilityRole="button" onPress={onLeave} style={{ minHeight: 50, borderRadius: 16, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: c.separator }}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={onLeave}
+            style={{
+              minHeight: 50,
+              borderRadius: 16,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderWidth: 2,
+              borderColor: c.separator,
+            }}
+          >
             <Text style={{ fontSize: 17, fontWeight: '700', color: c.label }}>Leave</Text>
           </Pressable>
         </View>
@@ -283,21 +374,24 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const hand = game.hand;
   const mySeat = seatFor(hand, me?.id);
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
-  const [raising, setRaising] = useState(false);
-  const [pre, setPre] = useState<PreAction>(null);
+  const [raiseTurn, setRaiseTurn] = useState('');
+  const [selection, setSelection] = useState<{ street: string; action: PreAction } | null>(null);
 
   // A buzz when it's your turn; the raise panel closes when it isn't.
-  const turnKey = myTurn ? `${hand!.number}-${hand!.seq}` : '';
+  const turnKey = myTurn ? `${game.id}-${hand!.number}-${hand!.seq}` : '';
+  const raising = !!turnKey && raiseTurn === turnKey;
   useEffect(() => {
     if (turnKey) haptic.turn();
-    else setRaising(false);
   }, [turnKey]);
   // Pre-actions clear each street; Call current also clears the moment the bet changes.
-  const streetKey = hand ? `${hand.number}-${hand.street}` : '';
-  useEffect(() => setPre(null), [streetKey]);
+  const streetKey = hand ? `${game.id}-${hand.number}-${hand.street}` : '';
+  const pre =
+    selection?.street === streetKey && !(selection.action?.kind === 'current' && selection.action.bet !== hand?.currentBet)
+      ? selection.action
+      : null;
+  const setPre = (action: PreAction) => setSelection(action ? { street: streetKey, action } : null);
   useEffect(() => {
     if (!pre || !hand || !mySeat) return;
-    if (pre.kind === 'current' && hand.currentBet !== pre.bet) return setPre(null);
     if (!myTurn) return;
     const o = options(game, hand, mySeat);
     const move = o.canCheck ? 'check' : pre.kind === 'checkfold' ? 'fold' : 'call';
@@ -319,12 +413,20 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   // The screen's own bottom padding (see TableScreen), which the raise panel covers to reach the edge.
   const bottomInset = Math.max(useSafeAreaInsets().bottom, spacing.sm);
 
+  const [available, setAvailable] = useState(0);
+  const compact = available > 0 && available < 700;
+  // Reserve the action area and hole cards before sizing the felt. Detailed boards retain a readable minimum;
+  // when the rest cannot fit, only the opponents/board scroll while betting and your hand stay in reach.
+  const feltBudget = available > 0 ? available - (compact ? 260 : 310) - 180 : undefined;
+
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
   const speakerOk = useRef<(id: string) => boolean>(() => true);
   const { say, quiet } = useReactions(game, (id) => id === me?.id || speakerOk.current(id));
   const others = othersInOrder(game, me);
   const slots = usePodSlots(game, others, say);
-  speakerOk.current = slots.canShow;
+  useEffect(() => {
+    speakerOk.current = slots.canShow;
+  }, [slots.canShow]);
   useTableSounds(game, me?.id);
   const odds = useOdds(hand, showsOdds(variantOf(game)));
   // At a showdown the winning five lift and glow and the rest grey out. Never while the hand is being played.
@@ -335,30 +437,55 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const glow = (card: Card) => showdown && lit.has(card);
 
   return (
-    <View style={{ flex: 1, gap: 12 }}>
-      <SeatRow game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
-      {/* The give on this screen: when cards turn up under the seats or on your box, this gap shrinks, not the felt. */}
-      <View style={{ flex: 1, minHeight: 0 }} />
-      <FeltOval game={game} me={me} />
-      <View style={{ flex: 1, minHeight: 0 }} />
-      <View style={{ gap: 4 }}>
+    <View style={{ flex: 1 }} onLayout={(e) => setAvailable(e.nativeEvent.layout.height)}>
+      <ScrollView
+        style={{ flex: 1, minHeight: 0 }}
+        contentContainerStyle={{ flexGrow: 1, gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 8 }}
+      >
+        <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
+        {/* Detailed boards keep their readable size; the table scrolls when it cannot fit above the fixed actions. */}
+        <FeltOval game={game} me={me} heightLimit={feltBudget} />
+      </ScrollView>
+      <View style={{ gap: 4, paddingTop: 4 }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: 112, justifyContent: 'flex-end' }}>
           {hand?.voting && mySeat && me ? (
             <Vote game={game} me={me} />
           ) : hand?.discarding && mySeat && !mySeat.folded ? (
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />
           ) : (
-            <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={sending} pre={pre} setPre={setPre} onRaise={() => setRaising(true)} />
+            <ActionArea
+              game={game}
+              me={me}
+              seat={mySeat}
+              myTurn={myTurn}
+              sending={sending}
+              pre={pre}
+              setPre={setPre}
+              onRaise={() => setRaiseTurn(turnKey)}
+            />
           )}
         </View>
-        <MyArea game={game} me={me} talk={me ? say[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} dim={dim} glow={glow} odds={me ? odds?.get(me.id) : undefined} />
+        <MyArea
+          compact={compact}
+          game={game}
+          me={me}
+          talk={me ? say[me.id] : undefined}
+          quiet={me ? quiet[me.id] : undefined}
+          dim={dim}
+          glow={glow}
+          odds={me ? odds?.get(me.id) : undefined}
+        />
       </View>
       <Confetti burst={winKey} origin={{ x: width / 2, y: height * 0.7 }} />
       {raising && myTurn && hand && mySeat && (
         <>
           {/* A tap anywhere else closes the sizer, as on the web. */}
-          <Pressable accessibilityLabel="Close the raise panel" onPress={() => setRaising(false)} style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }} />
-          <RaisePanel game={game} hand={hand} seat={mySeat} inset={bottomInset} onClose={() => setRaising(false)} />
+          <Pressable
+            accessibilityLabel="Close the raise panel"
+            onPress={() => setRaiseTurn('')}
+            style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }}
+          />
+          <RaisePanel game={game} hand={hand} seat={mySeat} inset={bottomInset} onClose={() => setRaiseTurn('')} />
         </>
       )}
     </View>

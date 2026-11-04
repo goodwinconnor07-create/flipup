@@ -64,13 +64,18 @@ export class Connection {
     let ws: WebSocket;
     const pass = currentPass();
     try {
-      ws = new WebSocket(socketUrl(`/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}${pass ? `&token=${encodeURIComponent(pass)}` : ''}`));
+      ws = new WebSocket(
+        socketUrl(
+          `/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}${pass ? `&token=${encodeURIComponent(pass)}` : ''}`,
+        ),
+      );
     } catch {
       this.retryLater();
       return;
     }
     this.ws = ws;
     ws.onopen = () => {
+      if (this.closed || this.ws !== ws) return;
       this.failures = 0;
       this.lastHeard = Date.now();
       this.h.onStatus('open');
@@ -78,6 +83,7 @@ export class Connection {
       this.startHeartbeat();
     };
     ws.onmessage = (event) => {
+      if (this.closed || this.ws !== ws) return;
       this.lastHeard = Date.now();
       try {
         this.h.onMessage(JSON.parse(String(event.data)) as ServerMessage);

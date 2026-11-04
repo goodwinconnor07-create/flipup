@@ -51,9 +51,10 @@ export interface TableState {
   logs: HandLog[] | null;
 }
 
-export const me = deviceId();
+export let me = deviceId();
 
 let session: Session | null = null;
+let identityVersion = 0;
 let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null };
 let conn: Connection | null = null;
 let sendingId: string | null = null;
@@ -146,7 +147,11 @@ function schedule(): void {
   timer = setTimeout(
     () => {
       if (session?.mode !== 'local') return;
-      const r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now: toTableTime(Date.now(), session.game.fast), rng: cryptoRng });
+      const r = applyAction(
+        session.game,
+        { type: 'tick' },
+        { deviceId: 'clock', now: toTableTime(Date.now(), session.game.fast), rng: cryptoRng },
+      );
       if (r.ok && r.changed) set({ ...session, game: r.game });
       else schedule();
     },
@@ -263,13 +268,22 @@ export function requestLogs(): void {
 export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string): void {
   closeConnection();
   const fast = isFast();
-  const game = createTable({ hostDeviceId: me, name: cleanName(name) || 'You', emoji, settings, bots, code: null, now: toTableTime(Date.now(), fast) });
+  const game = createTable({
+    hostDeviceId: me,
+    name: cleanName(name) || 'You',
+    emoji,
+    settings,
+    bots,
+    code: null,
+    now: toTableTime(Date.now(), fast),
+  });
   if (fast) game.fast = true;
   set({ mode: 'local', code: null, game });
 }
 
 /** Opens a table on the server for friends to join with its code, seated as the host. Throws with a message. */
 export async function openOnlineTable(settings: Settings, bots: number, name: string, emoji: string): Promise<string> {
+  const version = identityVersion;
   profile = { name, emoji };
   const body = { deviceId: me, name: cleanName(name) || 'Host', emoji, settings, bots };
   let code: string;
@@ -283,6 +297,7 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
     if (!(await ensurePass(null))) throw e;
     code = await createOnlineTable(body);
   }
+  if (version !== identityVersion) throw new Error('Your data was reset. Open a new table to continue.');
   set({ mode: 'online', code, game: null });
   connect(code);
   return code;
@@ -305,10 +320,25 @@ export function leaveTable(): void {
   if (mine && session?.game?.status !== 'ended') conn?.send({ t: 'act', id: newId(8), a: { type: 'remove', playerId: mine.id } });
   const old = conn;
   conn = null;
-  setTimeout(() => old?.close(), 300);
+  old?.close();
   sendingId = null;
   publish({ conn: 'none', sending: false });
   set(null);
+}
+
+/** After deletion, all table consumers and API calls must share the new identity. */
+export function resetSessionIdentity(): void {
+  identityVersion++;
+  closeConnection();
+  clearTimeout(timer);
+  clearTimeout(saveTimer);
+  session = null;
+  profile = { name: '', emoji: '' };
+  lookSent = '';
+  lastCounted = '';
+  joinSent = false;
+  me = deviceId();
+  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null });
 }
 
 // A table you were at comes back after the app is closed: a bots-only one as it was, an online one by reconnecting.

@@ -4,7 +4,15 @@
 // face up, in 0.65s. Under Reduce Motion it fades in instead.
 import { useEffect, type ReactNode } from 'react';
 import { Text, useColorScheme, View, type ViewStyle } from 'react-native';
-import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  FadeIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 
 import { cardBack } from '@design/premiumLooks';
 import { cardName, rankLabel, suitOf, type Card } from '@/engine';
@@ -22,7 +30,9 @@ function useCardLook() {
   const c = usePlainColors();
   return {
     edge: dark ? 'rgba(255,255,255,0.14)' : 'rgba(18,18,40,0.1)',
-    shadow: dark ? '0 1px 2px rgba(0,0,0,0.4), 0 6px 16px -8px rgba(0,0,0,0.7)' : '0 1px 2px rgba(18,18,40,0.08), 0 6px 16px -8px rgba(18,18,40,0.28)',
+    shadow: dark
+      ? '0 1px 2px rgba(0,0,0,0.4), 0 6px 16px -8px rgba(0,0,0,0.7)'
+      : '0 1px 2px rgba(18,18,40,0.08), 0 6px 16px -8px rgba(18,18,40,0.28)',
     dimBg: dark ? '#565868' : (c.cellPressed as string),
     dark,
     c,
@@ -43,16 +53,29 @@ export function CardBack({ w, pack, small }: { w: number; pack?: string; small?:
         {
           borderWidth: small ? 1.5 : 2,
           borderColor: 'rgba(255,255,255,0.85)',
-          boxShadow: look && look.glow !== 'transparent' ? `0 0 ${small ? 8 : 12}px ${look.glow}` : small ? '0 2px 4px -2px rgba(18,18,40,0.3)' : shadow,
+          boxShadow:
+            look && look.glow !== 'transparent'
+              ? `0 0 ${small ? 8 : 12}px ${look.glow}`
+              : small
+                ? '0 2px 4px -2px rgba(18,18,40,0.3)'
+                : shadow,
         },
         // iOS draws linear and radial gradients only: the web's woven pattern becomes a fine sheen.
-        gradient(`linear-gradient(115deg, transparent 30%, ${ink} 44%, transparent 46%, transparent 54%, ${ink} 56%, transparent 70%), linear-gradient(160deg, ${base})`),
+        gradient(
+          `linear-gradient(115deg, transparent 30%, ${ink} 44%, transparent 46%, transparent 54%, ${ink} 56%, transparent 70%), linear-gradient(160deg, ${base})`,
+        ),
       ]}
     />
   );
 }
 
-const frame = (w: number, small?: boolean): ViewStyle => ({ width: w, height: Math.round(w * 1.4), borderRadius: small ? 5 : w * 0.2, borderCurve: 'continuous', overflow: 'hidden' });
+const frame = (w: number, small?: boolean): ViewStyle => ({
+  width: w,
+  height: Math.round(w * 1.4),
+  borderRadius: small ? 5 : w * 0.2,
+  borderCurve: 'continuous',
+  overflow: 'hidden',
+});
 
 /**
  * `back` shows it face down. `flip` turns it over as it lands (after `delay` ms). `dim` greys a card that isn't part
@@ -121,10 +144,23 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
         },
       ]}
     >
-      <Text maxFontSizeMultiplier={1} style={{ color: INK[suit], opacity: fade, fontSize: small ? 14 : w * 0.54, lineHeight: small ? 15 : w * 0.56, fontWeight: small ? '600' : '500', letterSpacing: small ? 0 : -0.04 * w * 0.54 }}>
+      <Text
+        maxFontSizeMultiplier={1}
+        style={{
+          color: INK[suit],
+          opacity: fade,
+          fontSize: small ? 14 : w * 0.54,
+          lineHeight: small ? 15 : w * 0.56,
+          fontWeight: small ? '600' : '500',
+          letterSpacing: small ? 0 : -0.04 * w * 0.54,
+        }}
+      >
         {rankLabel(card)}
       </Text>
-      <Text maxFontSizeMultiplier={1} style={{ color: INK[suit], opacity: fade, fontSize: small ? 11 : w * 0.4, lineHeight: small ? 12 : w * 0.42 }}>
+      <Text
+        maxFontSizeMultiplier={1}
+        style={{ color: INK[suit], opacity: fade, fontSize: small ? 11 : w * 0.4, lineHeight: small ? 12 : w * 0.42 }}
+      >
         {SYMBOL[suit]}
       </Text>
     </View>
@@ -134,10 +170,16 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
 /** Face down, lifting a little and growing 6% as it turns, face up: the web's flip-in, 0.65s. */
 function Flip({ w, delay, pack, small, children }: { w: number; delay: number; pack?: string; small: boolean; children: ReactNode }) {
   const reduce = useReduceMotion();
-  const p = useSharedValue(0);
+  const p = useSharedValue(reduce ? 1 : 0);
   useEffect(() => {
-    if (!reduce) p.set(withDelay(delay, withTiming(1, { duration: 650, easing: Easing.bezier(0.3, 0.7, 0.3, 1) })));
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (reduce) {
+      cancelAnimation(p);
+      p.set(1);
+    } else if (p.get() < 1) {
+      p.set(withDelay(delay, withTiming(1, { duration: 650, easing: Easing.bezier(0.3, 0.7, 0.3, 1) })));
+    }
+    return () => cancelAnimation(p);
+  }, [reduce, delay, p]);
   const lift = (v: number) => {
     'worklet';
     return Math.sin(Math.PI * v);
@@ -170,5 +212,16 @@ function Flip({ w, delay, pack, small, children }: { w: number; delay: number; p
 /** Where a card will land: a faint outline on the felt. */
 export function CardSlot({ size = 'lg', width }: { size?: CardSize; width?: number }) {
   const w = width ?? CARD_W[size];
-  return <View style={{ width: w, height: Math.round(w * 1.4), borderRadius: w * 0.2, borderCurve: 'continuous', borderWidth: 2, borderColor: 'rgba(255,255,255,0.2)' }} />;
+  return (
+    <View
+      style={{
+        width: w,
+        height: Math.round(w * 1.4),
+        borderRadius: w * 0.2,
+        borderCurve: 'continuous',
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.2)',
+      }}
+    />
+  );
 }

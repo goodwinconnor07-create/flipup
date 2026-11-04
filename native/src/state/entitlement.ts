@@ -5,6 +5,7 @@ import { premiumVerify } from './api';
 import { clearPass, passLasts, savePass } from './pass';
 
 let inFlight: Promise<boolean> | null = null;
+let identityVersion = 0;
 
 /**
  * Makes sure this phone holds a pass with at least a day left. `signedTransaction` is the purchase's JWS from
@@ -14,17 +15,25 @@ export function ensurePass(signedTransaction: string | null | undefined): Promis
   if (passLasts(24 * 60 * 60 * 1000)) return Promise.resolve(true);
   // No purchase in hand: wait for one that's already being checked, if any.
   if (!signedTransaction) return inFlight ?? Promise.resolve(false);
+  const version = identityVersion;
   inFlight ??= premiumVerify(signedTransaction)
     .then((p) => {
-      if (!p) return false;
+      if (!p || version !== identityVersion) return false;
       savePass(p);
       return true;
     })
     .catch(() => false)
     .finally(() => {
-      inFlight = null;
+      if (version === identityVersion) inFlight = null;
     });
   return inFlight;
 }
 
 export { clearPass };
+
+/** Prevent verification for a deleted identity from writing its old pass back to storage. */
+export function resetEntitlement(): void {
+  identityVersion++;
+  inFlight = null;
+  clearPass();
+}

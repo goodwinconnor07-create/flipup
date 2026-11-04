@@ -14,7 +14,8 @@
     "e2e": "playwright test",
     "check": "npm run typecheck && npm run test && npm run build",
     "deploy": "npm run build && wrangler deploy",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "test:native": "vitest run --config native/vitest.config.mts"
   },
   "engines": {
     "node": ">=20"

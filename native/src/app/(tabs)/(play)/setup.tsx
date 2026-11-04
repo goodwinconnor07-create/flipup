@@ -12,7 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { SeatPreview } from '@/components/seat-preview';
 import { Stepper } from '@/components/stepper';
 import { SettingsFields } from '@/components/settings-fields';
-import { isVariant, MAX_SEATS, variantInfo, type Settings } from '@/engine';
+import { isVariant, MAX_SEATS, variantInfo } from '@/engine';
 import { inviteFriends, usePals, type Pal } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
@@ -35,7 +35,6 @@ export default function SetupScreen() {
   useEffect(() => startDraft(saved, mode, isVariant(params.variant) ? params.variant : undefined), []); // eslint-disable-line react-hooks/exhaustive-deps
   const s = useDraft();
   const [bots, setBots] = useState(mode === 'bots' ? 4 : 0);
-  const set = (patch: Partial<Settings>) => setDraft({ ...s, ...patch });
   const variant = s.variant ?? 'holdem';
   const minBots = mode === 'bots' ? 1 : 0;
   const profile = useProfile();

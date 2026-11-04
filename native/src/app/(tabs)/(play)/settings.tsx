@@ -38,7 +38,7 @@ export default function SettingsScreen() {
     try {
       await deleteMyData();
       haptic.success();
-      Alert.alert('Your data is deleted', 'FlipUp starts fresh the next time you open it.');
+      Alert.alert('Your data is deleted', 'Your profile, settings and device identity have been reset.');
       router.dismissTo('/');
     } catch (e) {
       haptic.failure();

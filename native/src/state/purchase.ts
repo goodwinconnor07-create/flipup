@@ -36,6 +36,9 @@ export interface StoreState {
 let state: StoreState = { price: null, busy: false, error: null, pending: false };
 const listeners = new Set<() => void>();
 let ready: Promise<boolean> | null = null;
+let subscriptions: { remove(): void }[] = [];
+const granting = new Map<string, Promise<void>>();
+const finished = new Set<string>();
 let waiting: { done: (ok: boolean) => void } | null = null;
 
 function publish(patch: Partial<StoreState>): void {
@@ -53,18 +56,26 @@ export function useStore(): StoreState {
   );
 }
 
-const ours = (p: Purchase) => p.productId === SKU && p.purchaseState !== 'pending';
+const ours = (p: Purchase) => p.productId === SKU && p.purchaseState === 'purchased';
 
-async function grant(p: Purchase): Promise<void> {
-  setPremium(true);
-  // Show the server Apple's signed transaction so it can give this phone a pass (see state/entitlement.ts). Premium
-  // works on this phone either way; the pass is for what other people see and for hosting online.
+function grant(p: Purchase): Promise<void> {
+  const key = p.transactionId || p.id;
+  const existing = granting.get(key);
+  if (existing) return existing;
+  if (!hasPremium()) setPremium(true);
+  // Restores can refresh an expired pass even for an already-finished transaction.
   void ensurePass(p.purchaseToken);
-  try {
-    await finishTransaction({ purchase: p, isConsumable: false });
-  } catch {
-    // Finishing again later is harmless; StoreKit hands it back until then.
-  }
+  const task = (async () => {
+    if (finished.has(key)) return;
+    try {
+      await finishTransaction({ purchase: p, isConsumable: false });
+      finished.add(key);
+    } catch {
+      // Leave it retryable: StoreKit hands unfinished transactions back.
+    }
+  })().finally(() => granting.delete(key));
+  granting.set(key, task);
+  return task;
 }
 
 /**
@@ -73,26 +84,29 @@ async function grant(p: Purchase): Promise<void> {
  */
 export function startStore(): Promise<boolean> {
   if (ready) return ready;
-  purchaseUpdatedListener((p) => {
-    if (p.productId === SKU && p.purchaseState === 'pending') {
-      publish({ busy: false, pending: true });
-      waiting?.done(false);
-      waiting = null;
-      return;
-    }
-    if (!ours(p)) return;
-    void grant(p).then(() => {
-      publish({ busy: false, pending: false });
-      waiting?.done(true);
-      waiting = null;
-    });
-  });
-  purchaseErrorListener((e) => {
-    publish({ busy: false });
-    waiting?.done(false);
-    waiting = null;
-    if (!isUserCancelledError(e)) publish({ error: e.message || "The App Store couldn't finish the purchase." });
-  });
+  if (!subscriptions.length)
+    subscriptions = [
+      purchaseUpdatedListener((p) => {
+        if (p.productId === SKU && p.purchaseState === 'pending') {
+          publish({ busy: false, pending: true });
+          waiting?.done(false);
+          waiting = null;
+          return;
+        }
+        if (!ours(p)) return;
+        void grant(p).then(() => {
+          publish({ busy: false, pending: false });
+          waiting?.done(true);
+          waiting = null;
+        });
+      }),
+      purchaseErrorListener((e) => {
+        publish({ busy: false });
+        waiting?.done(false);
+        waiting = null;
+        if (!isUserCancelledError(e)) publish({ error: e.message || "The App Store couldn't finish the purchase." });
+      }),
+    ];
   ready = (async () => {
     try {
       await initConnection();
@@ -157,6 +171,11 @@ export async function restorePremium(): Promise<boolean> {
 }
 
 export function stopStore(): void {
+  subscriptions.forEach((s) => s.remove());
+  subscriptions = [];
+  waiting?.done(false);
+  waiting = null;
+  publish({ busy: false });
   void endConnection();
   ready = null;
 }

@@ -3,7 +3,6 @@
 // in the separator colour: your move or what you said on its top edge, the quick messages button in its corner, your
 // name, your stack (counting as it changes; tap it to see it in big blinds), and what you've put in or won. During an
 // all-in run-out the box shows your odds instead.
-import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -27,6 +26,7 @@ const bigBlinds = (n: number) => (n >= 100 ? Math.round(n) : Math.round(n * 10) 
 
 export function MyArea({
   game,
+  compact = false,
   me,
   talk,
   quiet,
@@ -35,6 +35,7 @@ export function MyArea({
   odds,
 }: {
   game: Game;
+  compact?: boolean;
   me: Player | undefined;
   talk?: Talk;
   quiet?: string;
@@ -50,17 +51,34 @@ export function MyArea({
   const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
   const count = seat?.cards.length || holeCount(variantOf(game));
   // Two cards at full size; three or more step down so they still fit beside the box.
-  const w = count > 2 ? 72 : 100;
+  const w = count > 2 || compact ? 72 : 100;
   const last = seat?.last;
   const money = !!last && last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   const bb = Math.max(game.settings.bigBlind, 1);
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'stretch', gap: 12, paddingHorizontal: 16, paddingTop: 12, paddingBottom: canShow ? 28 : 0 }}>
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'stretch',
+        gap: 12,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: canShow ? 28 : 0,
+      }}
+    >
       <View style={{ flexDirection: 'row' }}>
         {seat?.cards.length
           ? seat.cards.map((card, i) => (
               <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : count > 2 ? -30 : -22 }}>
-                <PlayingCard card={card} width={w} flip delay={i * 180} dim={seat.folded || dim(card)} glow={glow(card)} pack={me?.cardPack} />
+                <PlayingCard
+                  card={card}
+                  width={w}
+                  flip
+                  delay={i * 180}
+                  dim={seat.folded || dim(card)}
+                  glow={glow(card)}
+                  pack={me?.cardPack}
+                />
               </View>
             ))
           : Array.from({ length: count }, (_, i) => (
@@ -69,7 +87,10 @@ export function MyArea({
               </View>
             ))}
         {canShow && (
-          <Animated.View entering={bubblePop} style={{ position: 'absolute', top: '100%', marginTop: 5, left: 0, right: 0, alignItems: 'center' }}>
+          <Animated.View
+            entering={bubblePop}
+            style={{ position: 'absolute', top: '100%', marginTop: 5, left: 0, right: 0, alignItems: 'center' }}
+          >
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Show my cards"
@@ -86,7 +107,20 @@ export function MyArea({
           </Animated.View>
         )}
       </View>
-      <View style={{ flex: 1, minWidth: 0, alignItems: 'center', justifyContent: 'center', gap: 2, padding: 8, borderRadius: 24, borderCurve: 'continuous', borderWidth: 3, borderColor: c.separator }}>
+      <View
+        style={{
+          flex: 1,
+          minWidth: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 2,
+          padding: 8,
+          borderRadius: 24,
+          borderCurve: 'continuous',
+          borderWidth: 3,
+          borderColor: c.separator,
+        }}
+      >
         {odds ? (
           <>
             <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}>Win</Text>
@@ -99,7 +133,11 @@ export function MyArea({
             {me && (
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '100%' }}>
                 <Avatar emoji={me.emoji} size={22} />
-                <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}>
+                <Text
+                  numberOfLines={1}
+                  maxFontSizeMultiplier={1.2}
+                  style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}
+                >
                   {me.name}
                 </Text>
               </View>
@@ -117,7 +155,10 @@ export function MyArea({
               ) : me.stack === 0 && (!hand || hand.result) ? (
                 <Text style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label }}>Out</Text>
               ) : inBB ? (
-                <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>
+                <Text
+                  maxFontSizeMultiplier={1.2}
+                  style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}
+                >
                   {bigBlinds(me.stack / bb)}
                   <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}> BB</Text>
                 </Text>

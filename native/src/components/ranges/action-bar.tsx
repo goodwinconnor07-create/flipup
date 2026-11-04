@@ -29,7 +29,7 @@ export const ACTION_BAR_ROOM = 150;
 /**
  * Your answer, pinned to the bottom over a fade into the night. Facing a bet: Fold, Call and Raise. Otherwise:
  * Check and Bet, with the bet's size picked from three pills above (tap one, or slide a thumb across them; a tick
- * for each). Each button is a grainy living card with a soft shadow that dips as you press. Pro adds Lock it in:
+ * for each). Each button is a living card (no grain: the room has it) with a soft shadow that dips as you press. Pro adds Lock it in:
  * double points for a best play, a loss for a miss, with a firm thud as it locks.
  */
 export function ActionBar({
@@ -104,7 +104,7 @@ function Answer({ kind, title, sub, wide, onPress }: { kind: Kind; title: string
   const look = LOOK[kind];
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={sub ? `${title}, ${sub}` : title} onPress={onPress} outerStyle={{ flex: wide ? 2 : 1 }}>
-      <LivingCard colors={look.colors} glow={look.glow} glow2="rgba(255,255,255,0.08)" grain={0.07} shadow="soft" radius={radius.md} style={{ minHeight: 60, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, paddingVertical: 6 }}>
+      <LivingCard colors={look.colors} glow={look.glow} glow2="rgba(255,255,255,0.08)" grain={0} shadow="soft" radius={radius.md} style={{ minHeight: 60, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, paddingVertical: 6 }}>
         <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 19, lineHeight: 23, fontWeight: '800', color: look.ink }}>
           {title}
         </Text>

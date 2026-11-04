@@ -61,7 +61,7 @@ export function Reveal(p: RevealProps) {
       entering={reduce ? FadeIn.duration(200) : SlideInDown.springify().mass(0.9).damping(19).stiffness(170)}
       style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.xs, paddingBottom: Math.max(insets.bottom - spacing.xs, spacing.xs) }}
     >
-      <LivingCard colors={head.colors} glow={head.glow} glow2="rgba(110, 75, 255, 0.22)" radius={radius.xl} grain={0.12} style={{ maxHeight: p.maxHeight }}>
+      <LivingCard colors={head.colors} glow={head.glow} glow2="rgba(110, 75, 255, 0.22)" radius={radius.xl} grain={0} style={{ maxHeight: p.maxHeight }}>
         {p.grade === 'best' && <Burst />}
         <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={{ flexShrink: 1, flexGrow: 0 }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }} accessible accessibilityLiveRegion="assertive" accessibilityLabel={`${head.title} ${p.pick === p.best ? '' : `Best: ${p.labelOf(p.best)}.`} ${total >= 0 ? 'plus' : 'minus'} ${Math.abs(total)} points`}>

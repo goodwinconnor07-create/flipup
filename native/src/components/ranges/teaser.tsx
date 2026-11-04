@@ -23,7 +23,7 @@ export function RangeTeaser({ width, height, rounded = 0 }: { width: number; hei
   const cardW = Math.round(height * 0.36);
   const back = Math.round(height * 0.2);
   return (
-    <LivingCard colors={[a, '#3a20b8', b]} radius={rounded} shadow={false} grain={0.12} outerStyle={{ width, height }} style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
+    <LivingCard colors={[a, '#3a20b8', b]} radius={rounded} shadow={false} grain={0} outerStyle={{ width, height }} style={{ width, height, alignItems: 'center', justifyContent: 'center' }}>
       <View accessible accessibilityLabel={today.done ? 'Today’s three are done' : 'Today’s hand is waiting'} style={{ flexDirection: 'row', alignItems: 'center', gap: height * 0.1 }}>
         {first && (
           <View style={{ flexDirection: 'row' }}>

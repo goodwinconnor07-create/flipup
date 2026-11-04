@@ -21,6 +21,8 @@ export interface CreateTableRequest {
   emoji: string;
   settings: Settings;
   bots: number;
+  /** Bots from `BOTS` to seat by name first (the setup page's bots row). */
+  botNames?: string[];
   /** A campaign table for friends: the server sets its stakes (and draws a tournament's prize) from this. */
   campaign?: { kind: 'cash' | 'sng'; id: string };
 }

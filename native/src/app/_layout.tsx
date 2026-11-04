@@ -3,7 +3,9 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
+import { InviteBanner } from '@/components/invite-banner';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { useFriendWatch } from '@/state/pals';
 import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { useColors, usePlainColors } from '@/theme';
@@ -23,6 +25,9 @@ void startStore();
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
 // grab handle, dismissed by a swipe down. Each tab has its own stack inside (see (tabs)/*/_layout.tsx).
 export default function RootLayout() {
+  // Friends, requests and table invites stay fresh on every screen, so an invite's banner and a host's
+  // "Invited…" pills move on wherever you are.
+  useFriendWatch();
   const appearance = useAppearance();
   useEffect(() => applyAppearance(appearance), [appearance]);
   const dark = useColorScheme() === 'dark';
@@ -82,6 +87,8 @@ export default function RootLayout() {
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
         <Stack.Screen name="sample-sheet" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'A sheet' }} />
       </Stack>
+      {/* A friend's table invite drops in over any screen. */}
+      <InviteBanner />
     </ThemeProvider>
   );
 }

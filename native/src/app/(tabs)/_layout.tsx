@@ -1,13 +1,13 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-import { useFriendBox, useFriendWatch } from '@/state/pals';
+import { useFriendBox } from '@/state/pals';
 
 // Apple's own tab bar (Liquid Glass on iOS 26): Play, Party, Friends and Join. Tabs are peers, so switching never slides. Join is the search-role
 // tab, which iOS 26 sets apart from the bar as its own round button: the round "Join with a code" button the plan
 // asks for. Below iOS 26 it's the last tab.
 export default function TabsLayout() {
-  // Friend requests and table invites arrive while the app is open; the Friends tab shows how many are waiting.
-  useFriendWatch();
+  // Friend requests and table invites arrive while the app is open (the check runs in the root layout); the
+  // Friends tab shows how many are waiting.
   const box = useFriendBox();
   const waiting = box.requests.length + box.invites.length;
   return (

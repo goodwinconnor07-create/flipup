@@ -8,11 +8,11 @@
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
-import type { BjInvite, FriendRequest } from '@/engine';
+import type { BjInvite, FriendRequest, InviteDeclined } from '@/engine';
 
 import { normalizeUsername, USERNAME_CHANGE_MS } from '@/engine';
 
-import { answerFriend, createFriendCard, fetchInbox, findUsername, inviteToTable, pollFriendCard, requestFriend, setUsernameOnServer, unfriendOnServer, updateFriendCard, type FriendPoll } from './api';
+import { answerFriend, createFriendCard, declineTableInvite, fetchInbox, uninviteFromTable, findUsername, inviteToTable, pollFriendCard, requestFriend, setUsernameOnServer, unfriendOnServer, updateFriendCard, type FriendPoll } from './api';
 import { deviceId } from './device';
 import { read, save, useStored } from './storage';
 
@@ -169,6 +169,32 @@ export async function inviteFriends(codes: string[], table: string): Promise<num
   return sent.filter((r) => r.status === 'fulfilled').length;
 }
 
+/** Takes back invites to a table you're not opening after all, so the banner leaves your friends' phones. */
+export async function takeBackInvites(codes: string[], table: string): Promise<void> {
+  const mine = myPalCode();
+  if (!mine || !codes.length) return;
+  await Promise.allSettled(codes.map((c) => uninviteFromTable(c, { deviceId: deviceId(), fromCode: mine, table })));
+}
+
+/** Says no to an invite: it leaves this phone at once, and the host's "Invited…" clears on their next check. */
+export function declineInvite(invite: BjInvite): void {
+  dismissInvite(invite);
+  const mine = myPalCode();
+  if (mine && invite.kind === 'table') void declineTableInvite(mine, { deviceId: deviceId(), from: invite.from, table: invite.table }).catch(() => undefined);
+}
+
+const DECLINED = 'flipup.invitesdeclined';
+const NO_DECLINED: InviteDeclined[] = [];
+
+/** The same list, read once. */
+export const loadDeclined = (): InviteDeclined[] => read<InviteDeclined[] | null>(DECLINED, null) ?? NO_DECLINED;
+
+/** Friends who said no to your table invites lately, from the 5-second check. */
+export function useDeclined(): InviteDeclined[] {
+  const list = useStored<InviteDeclined[] | null>(DECLINED, null);
+  return Array.isArray(list) ? list : NO_DECLINED;
+}
+
 /** An invite you've joined or turned down leaves the list on this phone. */
 export function dismissInvite(invite: BjInvite): void {
   const box = read<FriendBox | null>(BOX, null) ?? NO_BOX;
@@ -244,6 +270,7 @@ export async function pollFriends(): Promise<void> {
       return syncFriends();
     }
     saveBox(poll.requests, poll.invites);
+    saveIfChanged(DECLINED, poll.declined, read<InviteDeclined[] | null>(DECLINED, null) ?? NO_DECLINED);
     if (listChanged(poll, loadPals(), loadSent())) await syncFriends();
   } catch {
     // Offline: try again next time.

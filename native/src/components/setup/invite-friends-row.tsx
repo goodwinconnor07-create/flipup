@@ -1,74 +1,73 @@
-import { Pressable, ScrollView, View } from 'react-native';
+import { router } from 'expo-router';
+import { View } from 'react-native';
 
 import { type Pal } from '@/state/pals';
-import { spacing, useColors } from '@/theme';
+import { type TableInvite } from '@/state/table-invites';
+import { useColors } from '@/theme';
 
-import { Avatar } from '../avatar';
-import { haptic } from '../haptics';
-import { Icon } from '../icon';
-import { ThemedText } from '../themed-text';
+import { AddFace, Face, FaceRow, Ripples, RING, StatusPill } from './faces';
 import { SetupRowTitle } from './setup-header';
 
 /**
- * SLOT 1 of Play with friends: the Invite friends row, first on the page.
- *
- * Stage 6b rebuilds this row (big faces, an invite sent on tap with ripple rings and an "Invited…" pill, then
- * "Joined"). Until then it's the old picker so nothing is lost: friends to tick, each ticked one invited the
- * moment the table opens (`FriendsSetup.open()` sends them). The page owns `picked`; keep these props.
+ * Slot 1 of Play with friends, and the lobby's first row: Invite friends. Your friends as big faces; a tap sends
+ * one an invite at once (purple rings ripple out and the face says "Invited…"), a second tap takes it back. When
+ * they sit down the rings come again in green and it says "Joined". A no, or no answer in time, shows for a moment
+ * and the face goes back to normal. `full` stops new invites once every seat is spoken for.
  */
-export function InviteFriendsRow({ pals, picked, onToggle }: { pals: Pal[]; picked: string[]; onToggle: (code: string) => void }) {
+export function InviteFriendsRow({
+  pals,
+  invites,
+  full,
+  onInvite,
+  onUninvite,
+}: {
+  pals: Pal[];
+  invites: Record<string, TableInvite>;
+  full: boolean;
+  onInvite: (pal: Pal) => void;
+  onUninvite: (pal: Pal) => void;
+}) {
   const colors = useColors();
-  if (!pals.length) return null;
+  const tint = colors.accent as string;
+  const out = pals.filter((p) => invites[p.code]?.status === 'invited').length;
+  const joined = pals.filter((p) => invites[p.code]?.status === 'joined').length;
+  const detail = [joined ? `${joined} joined` : '', out ? `${out} invited` : ''].filter(Boolean).join(' · ') || (pals.length ? 'Tap to invite' : undefined);
   return (
-    <View style={{ gap: spacing.xs }}>
-      <SetupRowTitle title="Invite friends" detail={picked.length ? `${picked.length} invited` : undefined} />
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ marginHorizontal: -spacing.md }}
-        contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.xxs }}
-      >
+    <View style={{ gap: 4 }}>
+      <SetupRowTitle big title="Invite friends" detail={full && !out && !joined ? 'Table full' : detail} />
+      <FaceRow>
         {pals.map((p) => {
-          const on = picked.includes(p.code);
+          const inv = invites[p.code];
+          const status = inv?.status;
+          const pill =
+            status === 'invited' ? (
+              <StatusPill text="Invited" dots color={RING.invited} />
+            ) : status === 'joined' ? (
+              <StatusPill text="Joined" color={RING.joined} />
+            ) : status === 'declined' ? (
+              <StatusPill text="Declined" color={colors.cellPressed as string} />
+            ) : status === 'expired' ? (
+              <StatusPill text="No answer" color={colors.cellPressed as string} />
+            ) : undefined;
+          const canInvite = !status || status === 'declined' || status === 'expired';
           return (
-            <Pressable
+            <Face
               key={p.code}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: on }}
-              accessibilityLabel={`Invite ${p.name}`}
-              onPress={() => {
-                haptic.tap();
-                onToggle(p.code);
-              }}
-              style={({ pressed }) => ({ width: 72, alignItems: 'center', gap: spacing.xxs, opacity: pressed ? 0.7 : 1 })}
-            >
-              <View style={{ borderRadius: 32, padding: 3, borderWidth: 3, borderColor: on ? colors.accent : 'transparent' }}>
-                <Avatar emoji={p.emoji} size={52} />
-                {on && (
-                  <View
-                    style={{
-                      position: 'absolute',
-                      right: -4,
-                      bottom: -4,
-                      width: 24,
-                      height: 24,
-                      borderRadius: 12,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: colors.accent,
-                    }}
-                  >
-                    <Icon name="checkmark" size={12} color={colors.onColor} />
-                  </View>
-                )}
-              </View>
-              <ThemedText variant="footnote" numberOfLines={1} style={{ fontWeight: on ? '700' : '400' }}>
-                {p.name}
-              </ThemedText>
-            </Pressable>
+              emoji={p.emoji}
+              name={p.name}
+              label={
+                status === 'joined' ? `${p.name} has joined` : status === 'invited' ? `${p.name} is invited. Tap to take it back` : full ? `${p.name}. The table is full` : `Invite ${p.name}`
+              }
+              onPress={status === 'joined' ? undefined : status === 'invited' ? () => onUninvite(p) : canInvite && !full ? () => onInvite(p) : undefined}
+              dim={canInvite && full}
+              selected={status === 'joined' ? RING.joined : status === 'invited' ? RING.invited : undefined}
+              ring={inv ? <Ripples play={inv.ring} color={status === 'joined' ? RING.joined : RING.invited} /> : undefined}
+              pill={pill}
+            />
           );
         })}
-      </ScrollView>
+        <AddFace label="Add a friend" name={pals.length ? 'Add' : 'Add a friend'} tint={tint} onPress={() => router.push('/add-friend')} />
+      </FaceRow>
     </View>
   );
 }

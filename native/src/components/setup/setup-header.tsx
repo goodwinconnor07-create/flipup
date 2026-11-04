@@ -31,10 +31,10 @@ export function SetupHeader({ title, line }: { title: string; line?: string }) {
 }
 
 /** A small heading over one of the page's rows, white on the grain. */
-export function SetupRowTitle({ title, detail }: { title: string; detail?: string }) {
+export function SetupRowTitle({ title, detail, big }: { title: string; detail?: string; big?: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: spacing.sm }}>
-      <ThemedText variant="title3" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '700' }}>
+      <ThemedText variant={big ? 'title2' : 'title3'} accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: big ? '800' : '700' }}>
         {title}
       </ThemedText>
       {detail && (

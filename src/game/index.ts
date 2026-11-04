@@ -38,3 +38,4 @@ export * from './premiumGate';
 export * from './challenges';
 export * from './rewind';
 export { addedLine } from './botTalk';
+export { botFace } from './botProfiles';

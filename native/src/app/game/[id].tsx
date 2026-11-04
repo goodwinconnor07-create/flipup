@@ -1,16 +1,13 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 
 import { SheetScroll } from '@/components/sheet-scroll';
-import { GamePicture } from '@/components/game-picture';
-import { haptic } from '@/components/haptics';
+import { HowToPicture } from '@/components/how-to-picture';
 import { StartTiles } from '@/components/home/start-tiles';
-import { Icon } from '@/components/icon';
-import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
 import { isVariant, variantInfo, variantNote, type Variant } from '@/engine';
-import { radius, spacing } from '@/theme';
+import { spacing } from '@/theme';
 
 /** A game's sheet from Home: its picture and mood, the two ways to start it, then how it plays. */
 export default function GameSheet() {
@@ -20,31 +17,13 @@ export default function GameSheet() {
   const { width } = useWindowDimensions();
   const go = (mode: 'friends' | 'bots') => {
     router.back();
-    router.push({ pathname: '/setup', params: { mode, variant } });
+    router.push(mode === 'friends' ? { pathname: '/play-friends', params: { variant } } : { pathname: '/setup', params: { mode, variant } });
   };
   return (
     <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, gap: spacing.lg }}>
       <Stack.Screen options={{ title: info.name, headerShown: false }} />
       {/* The game's picture, with How to Play on it: a real hand of this game, recorded at the table. */}
-      <PressableScale
-        accessibilityRole="button"
-        accessibilityLabel={`How to play ${info.name}`}
-        onPress={() => {
-          haptic.tap();
-          router.push({ pathname: '/how-to-play/[id]', params: { id: variant, from: 'game' } });
-        }}
-        style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden' }}
-      >
-        <GamePicture variant={variant} width={width - spacing.md * 2} height={((width - spacing.md * 2) * 120) / 200} rounded={radius.lg} />
-        <View style={{ position: 'absolute', left: spacing.sm, bottom: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 40, paddingLeft: spacing.xxs, paddingRight: spacing.md, borderRadius: radius.full, backgroundColor: 'rgba(0, 0, 0, 0.55)' }}>
-          <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
-            <Icon name="play.fill" size={14} color="#000000" />
-          </View>
-          <Text maxFontSizeMultiplier={1.3} style={{ color: '#ffffff', fontSize: 16, fontWeight: '700' }}>
-            How to play
-          </Text>
-        </View>
-      </PressableScale>
+      <HowToPicture variant={variant} name={info.name} width={width - spacing.md * 2} />
       <View style={{ gap: spacing.xxs }}>
         <ThemedText variant="title1" accessibilityRole="header">
           {info.name}

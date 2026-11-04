@@ -46,14 +46,14 @@ Files to start from: `src/screens/table/Actions.tsx`, `table/Pods.tsx`, `Table.t
 
 Files: `table/Pods.tsx`, `src/ui/` playing card component, `src/styles/premium.css` (card packs), `table.css`, `global.css` tokens.
 
-- [ ] **P1 Chat bubble position.** Your own text bubble stops sitting inside your box. It sits on the outside of the box, slightly overlapping the top-left corner, as a real pill (the same look as the text bubble, scaled down, not the same size). Must not cover your cards or your chip count.
-- [ ] **P2 Quick message / bubble on the right.** The existing bubble that is inside the box now moves to the top-right corner, sitting between the outside edge of the box and the card (as described: "top right hand corner between the outside of the card"). Confirm during the build which element this is (the quick-message / reaction pill vs the speech bubble) and keep one on each corner without them colliding. If unclear, ask.
-- [ ] **P3 Chip number bigger.** Your chip count is the largest text in the box.
-- [ ] **P4 Name and emoji at the bottom.** Name and emoji sit under the chip number, right at the bottom of the box.
-- [ ] **P5 Your turn glow.** On your turn the whole box glows gold. Soft, no layout shift, ends the moment the turn ends. Static under reduced motion.
-- [ ] **C1 Position chips on card backs.** Players' card backs carry their table position. Applies to bots especially, and to every seat. Example for the small blind: one of the two cards shows the normal bot or pack design, the other shows a subtle "SB" chip on its back. Do the same for BB, BTN (and UTG or other positions only if it reads clearly; at minimum SB, BB, BTN). Heads-up: BTN is also the SB, so decide and note which chip shows. It must work with the Premium card packs (`.pk.pack-<id>`) and with campaign trophy backs. The chip stays subtle: small, low contrast, readable at the size of an opponent's cards.
-- [ ] **C2 Remove old BTN badge usage where replaced.** Once the chip is on the card back, make sure the dealer button isn't drawn twice (keep one clear marker). Check this at 2 players, 6 players and 9 players.
-- [ ] **C3 Check the flip.** The chip is on the back only. When cards flip to the face, nothing is left behind.
+- [x] **P1 Chat bubble position.** Your own text bubble stops sitting inside your box. It sits on the outside of the box, slightly overlapping the top-left corner, as a real pill (the same look as the text bubble, scaled down, not the same size). Must not cover your cards or your chip count.
+- [x] **P2 Quick message / bubble on the right.** The existing bubble that is inside the box now moves to the top-right corner, sitting between the outside edge of the box and the card (as described: "top right hand corner between the outside of the card"). Confirm during the build which element this is (the quick-message / reaction pill vs the speech bubble) and keep one on each corner without them colliding. If unclear, ask.
+- [x] **P3 Chip number bigger.** Your chip count is the largest text in the box.
+- [x] **P4 Name and emoji at the bottom.** Name and emoji sit under the chip number, right at the bottom of the box.
+- [x] **P5 Your turn glow.** On your turn the whole box glows gold. Soft, no layout shift, ends the moment the turn ends. Static under reduced motion.
+- [x] **C1 Position chips on card backs.** Players' card backs carry their table position. Applies to bots especially, and to every seat. Example for the small blind: one of the two cards shows the normal bot or pack design, the other shows a subtle "SB" chip on its back. Do the same for BB, BTN (and UTG or other positions only if it reads clearly; at minimum SB, BB, BTN). Heads-up: BTN is also the SB, so decide and note which chip shows. It must work with the Premium card packs (`.pk.pack-<id>`) and with campaign trophy backs. The chip stays subtle: small, low contrast, readable at the size of an opponent's cards.
+- [x] **C2 Remove old BTN badge usage where replaced.** Once the chip is on the card back, make sure the dealer button isn't drawn twice (keep one clear marker). Check this at 2 players, 6 players and 9 players.
+- [x] **C3 Check the flip.** The chip is on the back only. When cards flip to the face, nothing is left behind.
 
 ## Stage 3: Bot chat
 

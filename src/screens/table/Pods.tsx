@@ -163,6 +163,10 @@ export function Pod({
   const canPeek = !game.campaign && !!hand?.result && player.bot && !!seat && !seat.shown;
   // Before the first hand is dealt nobody is out: they're just waiting for the cards.
   const out = !!hand && (!seat || seat.folded);
+  // The dealer button and blinds sit on the back of one of their cards (SB, BB, BTN).
+  const pos = positionOf(hand, player.id);
+  const held = cardsHeld(game, player.id);
+  const chipKind = pos && pos.kind !== 'other' ? pos : null;
   const won = hand?.result?.won[player.id] ?? 0;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   // A bot on the clock shows typing dots until it speaks or moves.
@@ -189,7 +193,6 @@ export function Pod({
       <span className="pod-pic">
         <Avatar emoji={player.emoji} size={50} />
         {player.legend ? <span className="ai-chip legend-chip" aria-hidden>★</span> : player.bot && <span className="ai-chip bot-chip" aria-hidden>BOT</span>}
-        <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (
           <Thread talk={reaction} fx={player.bubble} />
         ) : thinking ? (
@@ -209,7 +212,9 @@ export function Pod({
           <span className={`pod-cards${turn ? ' shimmer' : ''}${Math.max(seat.cards.length, cardsHeld(game, seat.playerId)) > 3 ? ' pod-cards-many' : ''}`}>
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip pack={player.cardPack} />)
-              : Array.from({ length: cardsHeld(game, seat.playerId) }, (_, i) => <PlayingCard key={i} back size="sm" pack={player.cardPack} />)}
+              : Array.from({ length: held }, (_, i) => (
+                  <PlayingCard key={i} back size="sm" pack={player.cardPack} mark={i === held - 1 && chipKind ? (chipKind.kind === 'btn' ? 'BTN' : chipKind.label) : undefined} />
+                ))}
           </span>
         )}
         {won > 0 ? (
@@ -267,16 +272,11 @@ export function MyBox({
     );
   }
   const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
+  const myTurn = !!me && !!hand && !hand.result && hand.toAct === me.id;
   const bb = Math.max(game.settings.bigBlind, 1);
   return (
-    <div className="my-box">
+    <div className={`my-box${myTurn ? ' turn' : ''}`}>
       {bubble}
-      {me && (
-        <span className="my-name">
-          <Avatar emoji={me.emoji} size={22} />
-          <small>{me.name}</small>
-        </span>
-      )}
       <button
         type="button"
         className="my-stack press"
@@ -294,6 +294,12 @@ export function MyBox({
         <span className="my-box-note">In: {chips(seat.bet)}</span>
       ) : null}
       {pos}
+      {me && (
+        <span className="my-name">
+          <Avatar emoji={me.emoji} size={22} />
+          <small>{me.name}</small>
+        </span>
+      )}
       {me && <ReactMenu />}
     </div>
   );

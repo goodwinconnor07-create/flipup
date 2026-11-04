@@ -157,6 +157,7 @@ export function PlayingCard({
   glow = false,
   back: showBack = false,
   pack,
+  mark,
   flip = false,
   delay = 0,
   className = '',
@@ -171,6 +172,8 @@ export function PlayingCard({
   back?: boolean;
   /** A card pack's id: the back (and the back a card flips from) wears that pack's design and shine. */
   pack?: string;
+  /** A small position chip (SB, BB, BTN) on a card back. Never drawn on a face. */
+  mark?: string;
   /** Flip over as it appears. */
   flip?: boolean;
   delay?: number;
@@ -178,7 +181,11 @@ export function PlayingCard({
 }) {
   const packClass = isPackId(pack) ? ` pk pack-${pack}` : '';
   if (showBack || !card) {
-    return <span className={`pcard pcard-${size} pcard-back${packClass} ${className}`} style={style} aria-label="Face-down card" role="img" />;
+    return (
+      <span className={`pcard pcard-${size} pcard-back${packClass} ${className}`} style={style} aria-label="Face-down card" role="img">
+        {mark && <i className="back-mark" data-mark={mark.length > 2 ? 'long' : undefined}>{mark}</i>}
+      </span>
+    );
   }
   // A four-colour deck: spades black, hearts red, diamonds blue, clubs green.
   const suit = suitOf(card);

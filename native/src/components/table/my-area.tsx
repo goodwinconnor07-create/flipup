@@ -1,7 +1,7 @@
 // The bottom of the table: your cards, big and overlapping, with "Show cards" under them after a hand you didn't have to
 // show; and your box beside them, outlined in the separator colour (gold glow on your turn): your chip count biggest,
-// your position, emoji and name at the very bottom, the quick messages button half over the top-right corner, and what
-// you said as a small pill over the top-left corner. During an all-in run-out the box shows your odds instead.
+// your position, emoji and name at the very bottom, the quick messages button half over the top-left corner, and what
+// you said as a small pill over the top-right corner. During an all-in run-out the box shows your odds instead.
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -154,18 +154,18 @@ export function MyArea({
             </Text>
           )}
         </View>
-        {/* Quick messages: top-right corner, half over the box's edge. */}
+        {/* Quick messages: top-left corner, half over the box's edge. */}
         {me && (
-          <View style={{ position: 'absolute', top: -15, right: -9 }}>
+          <View style={{ position: 'absolute', top: -15, left: -9 }}>
             <QuickMessages />
           </View>
         )}
-        {/* What you just did or said: a small pill outside the box, over its top-left corner. */}
-        <View pointerEvents="none" style={{ position: 'absolute', left: 6, bottom: '100%', marginBottom: -10, width: 170, height: 0 }}>
+        {/* What you just did or said: a small pill outside the box, over its top-right corner. */}
+        <View pointerEvents="none" style={{ position: 'absolute', right: -4, bottom: '100%', marginBottom: -10, width: 150, height: 0 }}>
           {talk ? (
-            <Thread talk={talk} fx={me?.bubble} room={160} place={pinned('flex-start')} />
+            <Thread talk={talk} fx={me?.bubble} room={140} place={pinned('flex-end')} />
           ) : last && hand && quiet !== moveSig(hand.number, last) ? (
-            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('flex-start')}>
+            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('flex-end')}>
               <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={me?.bubble} old={last.street !== hand.street} />
             </Animated.View>
           ) : null}

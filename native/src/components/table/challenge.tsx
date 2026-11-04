@@ -137,14 +137,14 @@ export function ShoveTurn({ game, hand, seat, sending }: { game: Game; hand: Han
         </View>
         <PressableScale
           accessibilityRole="button"
-          accessibilityLabel={`Shove, all in for ${shoveBb} big blinds`}
+          accessibilityLabel={o.canRaise ? `Shove, all in for ${shoveBb} big blinds` : `Call all in, ${shoveBb} big blinds`}
           disabled={sending}
           onPress={() => act(o.canRaise ? 'allin' : 'call')}
           outerStyle={{ flex: 2 }}
           style={{ flex: 1, minHeight: 76, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: brand.raise, paddingHorizontal: spacing.sm }}
         >
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 24, lineHeight: 28, fontWeight: '800', color: '#ffffff' }}>
-            Shove
+            {o.canRaise ? 'Shove' : 'Call all in'}
           </Text>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, lineHeight: 20, fontWeight: '700', fontVariant: ['tabular-nums'], color: '#ffffff' }}>
             {shoveBb} bb

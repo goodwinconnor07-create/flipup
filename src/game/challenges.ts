@@ -9,6 +9,7 @@ import { BOTS, type StyleId } from './botStyles';
 import { hashString, seededRng, shuffle } from './cards';
 import { MAX_SEATS } from './holdem';
 import { newId } from './ids';
+import { recordNet } from './record';
 import { createTable } from './reducer';
 import type { Game, HandRecord, Player, Settings } from './types';
 
@@ -419,36 +420,9 @@ function stacksAfter(records: HandRecord[], heroId: string): { number: number; s
   for (const r of records) {
     const me = r.players.find((p) => p.id === heroId);
     if (!me) continue;
-    out.push({ number: r.number, start: me.stack, stack: me.stack + net(r, heroId), bb: r.bigBlind });
+    out.push({ number: r.number, start: me.stack, stack: me.stack + recordNet(r, heroId), bb: r.bigBlind });
   }
   return out;
-}
-
-/** Chips won or lost in a hand (everything that went in, less what came back). */
-function net(r: HandRecord, id: string): number {
-  const start = r.players.find((p) => p.id === id)?.stack ?? 0;
-  let put = 0;
-  for (const street of ['preflop', 'flop', 'turn', 'river'] as const) {
-    let mine = street === 'preflop' ? blindPosted(r, id) : 0;
-    for (const a of r.actions) if (a.playerId === id && a.street === street && a.move !== 'fold' && a.move !== 'check') mine = Math.max(mine, a.to);
-    put += mine;
-  }
-  return (r.won[id] ?? 0) - Math.min(put, start);
-}
-
-/** The blind this player posted in a recorded hand: the small blind left of the button, the big blind after it (heads-up, the button posts the small). */
-function blindPosted(r: HandRecord, id: string): number {
-  const order = [...r.players].sort((a, b) => a.seat - b.seat);
-  const b = order.findIndex((p) => p.id === r.buttonId);
-  const n = order.length;
-  if (b < 0 || n < 2) return 0;
-  const sb = n === 2 ? b : (b + 1) % n;
-  const bb = (sb + 1) % n;
-  const me = order.findIndex((p) => p.id === id);
-  const stack = order[me]?.stack ?? 0;
-  if (me === sb) return Math.min(stack, r.smallBlind);
-  if (me === bb) return Math.min(stack, r.bigBlind);
-  return 0;
 }
 
 /** Short Stack's score: hands you were dealt into and came out of with chips, up to 100. */
@@ -489,7 +463,7 @@ export function shortStackStats(records: HandRecord[], heroId: string): ShortSta
     }
     if (!shoved) continue;
     shoves++;
-    if (net(r, heroId) > 0) shovesWon++;
+    if (recordNet(r, heroId) > 0) shovesWon++;
     if (!r.showdown && (r.won[heroId] ?? 0) > 0) foldedTo++;
   }
   return { survived: shortStackScore(records, heroId), shoves, shovesWon, foldedTo, peakBb: Math.round(peakBb * 10) / 10 };

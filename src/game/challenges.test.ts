@@ -219,7 +219,7 @@ describe('Short Stack', () => {
     ];
     const recs: HandRecord[] = [
       // A shove from the big blind over a raise, everyone folds.
-      { ...base, number: 1, players, actions: [{ street: 'preflop', playerId: 'b', move: 'raise', to: 250 }, { street: 'preflop', playerId: 's', move: 'fold', to: 0 }, { street: 'preflop', playerId: 'me', move: 'allin', to: 1000 }, { street: 'preflop', playerId: 'b', move: 'fold', to: 0 }], won: { me: 1300 }, showdown: false },
+      { ...base, number: 1, players, actions: [{ street: 'preflop', playerId: 'b', move: 'raise', to: 250 }, { street: 'preflop', playerId: 's', move: 'fold', to: 0 }, { street: 'preflop', playerId: 'me', move: 'allin', to: 1000 }, { street: 'preflop', playerId: 'b', move: 'fold', to: 0 }], won: { me: 550 }, showdown: false },
       // Calling someone else's all-in isn't a shove.
       { ...base, number: 2, players: players.map((p) => (p.id === 'me' ? { ...p, stack: 1300 } : p)), actions: [{ street: 'preflop', playerId: 'b', move: 'allin', to: 1000 }, { street: 'preflop', playerId: 's', move: 'fold', to: 0 }, { street: 'preflop', playerId: 'me', move: 'call', to: 1000 }], won: { b: 2050 }, showdown: true },
     ];

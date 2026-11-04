@@ -96,7 +96,9 @@ export default function ChallengeCheck() {
           <ThemedText tone="secondaryLabel" style={{ textAlign: 'center' }}>
             {last ? 'That was the last check. Time to see who was who.' : 'Keep watching. You can change your tags any time before the next check.'}
           </ThemedText>
-          <Button title={last ? 'See who was who' : 'Keep playing'} variant="party" size="lg" onPress={close} style={{ alignSelf: 'stretch' }} />
+          <View style={{ alignSelf: 'stretch' }}>
+            <Button title={last ? 'See who was who' : 'Keep playing'} variant="party" size="lg" onPress={close} />
+          </View>
         </View>
       )}
     </SheetScroll>

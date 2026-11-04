@@ -252,7 +252,7 @@ function SeatPod({
           <PositionChip pos={positionOf(hand, player.id)} />
         </View>
         {tag && (
-          <View pointerEvents="none" style={{ position: 'absolute', top: -4, left: -18, right: -18, alignItems: 'center' }}>
+          <View pointerEvents="none" style={{ position: 'absolute', left: -22, bottom: 6 }}>
             <TagChip label={tag} />
           </View>
         )}

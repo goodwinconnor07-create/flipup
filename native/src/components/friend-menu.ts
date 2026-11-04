@@ -35,7 +35,7 @@ export function useFriendActions() {
       Alert.alert(sent ? `${pal.name} is invited` : "Couldn't send the invite", sent ? `They can join table ${openTable} from their Friends tab.` : 'Check your connection and try again.');
       return;
     }
-    router.push({ pathname: '/setup', params: { mode: 'friends', invite: pal.code } });
+    router.push({ pathname: '/play-friends', params: { invite: pal.code } });
   };
   const remove = (pal: Pal, then?: () => void) =>
     Alert.alert(`Remove ${pal.name}?`, 'You’ll both drop off each other’s list. You can send a new request any time.', [

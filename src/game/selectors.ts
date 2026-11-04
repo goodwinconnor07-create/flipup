@@ -129,37 +129,3 @@ export function moveLabel(last: NonNullable<Seat['last']>): string {
       return `BB ${n}`;
   }
 }
-
-export type Mood = 'win' | 'beat' | 'bust' | 'out' | 'sweat' | 'shove' | 'fold' | null;
-
-/**
- * How a player's emoji reacts to the hand, from public moves only: a bounce when they win, a shake when an all-in
- * loses at showdown, a droop when they're knocked out, a pop when they shove, a sink when they fold, and a sweat
- * drop while they think over a big bet.
- */
-export function moodOf(game: Game, player: Player, seat: Seat | undefined): Mood {
-  const hand = game.hand;
-  if (!hand) return null;
-  if (player.stack === 0 && !seat) return 'out';
-  if (!seat) return null;
-  if (hand.result) {
-    const won = hand.result.won[player.id] ?? 0;
-    if (won > 0) return 'win';
-    if (player.stack === 0) return 'bust';
-    if (seat.allIn && !seat.folded && hand.result.showdown) return 'beat';
-    return seat.folded ? 'fold' : null;
-  }
-  if (hand.toAct === player.id && !hand.runout) {
-    // A big bet to face (half the pot or 40% of their stack, and at least three big blinds), or an all-in.
-    const toCall = hand.currentBet - seat.bet;
-    const shove = hand.seats.some((x) => x.allIn && !x.folded && x.playerId !== player.id && x.bet > 0 && x.bet >= hand.currentBet);
-    const big = toCall >= game.settings.bigBlind * 3 && (toCall >= pot(hand) * 0.5 || toCall >= player.stack * 0.4);
-    if (toCall > 0 && (big || shove)) return 'sweat';
-  }
-  if (seat.last?.move === 'allin' && seat.last.street === hand.street) return 'shove';
-  if (seat.folded) return 'fold';
-  return null;
-}
-
-/** The little extra that floats by a face: sweat over a big bet, stars when knocked out, sparkles for a win. */
-export const MOOD_MARK: Partial<Record<NonNullable<Mood>, string>> = { sweat: '💦', bust: '💫', out: '💫', win: '✨', beat: '💔', shove: '🔥' };

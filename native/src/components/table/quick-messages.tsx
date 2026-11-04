@@ -33,7 +33,7 @@ export function QuickMessages() {
           haptic.tap();
           setOpen(true);
         }}
-        style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell }}
+        style={{ width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell, borderWidth: 2, borderColor: colors.separator }}
       >
         <Icon name="bubble.left" size={17} color={colors.tertiaryLabel} />
       </PressableScale>

@@ -1,6 +1,6 @@
 // HTTP calls to the FlipUp server (the same Cloudflare Worker as the web app). The address is APP_INFO.apiOrigin;
 // EXPO_PUBLIC_API_ORIGIN points a development build at a local server instead.
-import type { BjInvite, FriendRequest, CreateFriendCardResponse, CreateTableRequest, CreateTableResponse, FriendCardInfo, PartySettings, PartyView, ReportRequest, TableInfo } from '@/engine';
+import type { BjInvite, FriendRequest, InviteDeclined, CreateFriendCardResponse, CreateTableRequest, CreateTableResponse, FriendCardInfo, PartySettings, PartyView, ReportRequest, TableInfo } from '@/engine';
 
 import { APP_INFO } from '../../appInfo';
 import { deviceId } from './device';
@@ -91,6 +91,18 @@ export interface Inbox {
   requests: FriendRequest[];
   invites: BjInvite[];
   friends: FriendCardInfo[];
+  /** Who you've asked and are still waiting on. A server from before Pending leaves it out. */
+  sent?: FriendCardInfo[];
+}
+
+/** The cheap check polled every few seconds: one read of your own card, codes only. */
+export interface FriendPoll {
+  requests: FriendRequest[];
+  invites: BjInvite[];
+  friends: string[];
+  sent: string[];
+  /** Friends who said no to your table invites (an older server leaves it out). */
+  declined: InviteDeclined[];
 }
 
 /** What's waiting for this phone's friend code. Null when the code isn't this phone's (or has gone). */
@@ -99,6 +111,19 @@ export async function fetchInbox(code: string, deviceId: string): Promise<Inbox 
   if (res.status === 403 || res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't check for friend requests."));
   return (await res.json()) as Inbox;
+}
+
+/**
+ * The cheap check: requests and invites waiting, your friends' codes and who you've asked. Null when the code isn't
+ * this phone's; 'old' when the server is from before this route (it then answers with the full inbox instead).
+ */
+export async function pollFriendCard(code: string, deviceId: string): Promise<FriendPoll | null | 'old'> {
+  const res = await json(`/api/friends/${encodeURIComponent(code)}/requests?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
+  if (res.status === 404) return 'old';
+  if (res.status === 403 || res.status === 400) return null;
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't check for friend requests."));
+  const box = (await res.json()) as Partial<FriendPoll>;
+  return { requests: box.requests ?? [], invites: box.invites ?? [], friends: box.friends ?? [], sent: box.sent ?? [], declined: box.declined ?? [] };
 }
 
 /** Sets this phone's username. Throws with the server's sentence (taken, too soon, not allowed). */
@@ -135,6 +160,18 @@ export async function answerFriend(myCode: string, body: { deviceId: string; fro
 export async function unfriendOnServer(myCode: string, body: { deviceId: string; other: string }): Promise<void> {
   const res = await json(`/api/friends/${encodeURIComponent(myCode)}/unfriend`, { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, "Couldn't remove them. Try again."));
+}
+
+/** Says no to a friend's table invite: it leaves your card and they hear on their next check. */
+export async function declineTableInvite(mine: string, body: { deviceId: string; from: string; table: string }): Promise<void> {
+  const res = await json(`/api/friends/${encodeURIComponent(mine)}/decline`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't answer the invite."));
+}
+
+/** Takes back your invite to a table you didn't open after all. */
+export async function uninviteFromTable(friend: string, body: { deviceId: string; fromCode: string; table: string }): Promise<void> {
+  const res = await json(`/api/friends/${encodeURIComponent(friend)}/uninvite`, { method: 'POST', body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't take the invite back."));
 }
 
 /** Asks a friend to your poker table. */

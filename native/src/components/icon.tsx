@@ -21,6 +21,7 @@ const WEB = {
   'bubble.left.fill': 'chat_bubble',
   'bubble.left': 'chat_bubble_outline',
   'chevron.right': 'chevron_right',
+  'chevron.left': 'chevron_left',
   minus: 'remove',
   plus: 'add',
   checkmark: 'check',
@@ -79,6 +80,7 @@ const WEB = {
   magnifyingglass: 'search',
   'tag.fill': 'sell',
   'star.fill': 'star',
+  'hand.thumbsup.fill': 'thumb_up',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

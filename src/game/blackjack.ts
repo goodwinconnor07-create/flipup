@@ -746,6 +746,20 @@ export interface BjInvite {
   kind?: 'blackjack' | 'table';
   /** A poker table's game, for the invite's line. */
   game?: string;
+  /** Sent while the poker table was still in its lobby: it can't be joined once the table has dealt. */
+  lobby?: boolean;
+}
+
+/** An invite to a table is only worth answering for this long; the host's "Invited…" clears after it too. */
+export const INVITE_MS = 15 * 60 * 1000;
+
+/** A friend said no to a poker-table invite: kept on the host's card for their next check. */
+export interface InviteDeclined {
+  /** The friend code that said no. */
+  by: string;
+  /** The table's code. */
+  table: string;
+  at: number;
 }
 
 /** Someone asking to be your friend. Accepted, you're both on each other's list. */

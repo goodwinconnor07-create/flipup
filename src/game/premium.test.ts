@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyAction,
+  addedLine,
+  BOTS,
   BUBBLE_STYLES,
   CARD_PACKS,
   createTable,
@@ -114,6 +116,9 @@ describe('AI Legends at the table', () => {
   it('are checked against the list when they come over the network', () => {
     expect(parseAction({ type: 'addBot' })).toEqual({ type: 'addBot' });
     expect(parseAction({ type: 'addBot', legend: 'ivey' })).toEqual({ type: 'addBot', legend: 'ivey' });
+    expect(parseAction({ type: 'addBot', name: BOTS[0].name })).toEqual({ type: 'addBot', name: BOTS[0].name });
+    expect(parseAction({ type: 'addBot', name: 'Nobody At All' })).toBeNull();
+    expect(parseAction({ type: 'addBot', name: 7 })).toBeNull();
     expect(parseAction({ type: 'addBot', legend: 'nobody' })).toBeNull();
     expect(parseAction({ type: 'addBot', legend: 7 })).toBeNull();
   });
@@ -139,5 +144,26 @@ describe('AI Legends at the table', () => {
     }
     expect(g.hand?.number ?? 0).toBeGreaterThan(1);
     expect(total()).toBe(before);
+  });
+});
+
+describe('bots picked by name on the setup page', () => {
+  it('sit down by name, once each, only for the host', () => {
+    const name = BOTS[3].name;
+    const g = run(table(), { type: 'addBot', name });
+    const bot = g.players.find((p) => p.name === name)!;
+    expect(bot.bot).toBe(true);
+    expect(bot.style).toBe(BOTS[3].style);
+    expect(applyAction(g, { type: 'addBot', name }, { deviceId: HOST, now: NOW, rng: seededRng(5) }).ok).toBe(false);
+    expect(applyAction(g, { type: 'addBot', name: BOTS[4].name }, { deviceId: 'dother', now: NOW, rng: seededRng(5) }).ok).toBe(false);
+  });
+
+  it('say a line of their own when picked, with the person named', () => {
+    for (const b of BOTS.slice(0, 12)) {
+      const line = addedLine(b.style, 'Sam', seededRng(b.name.length));
+      expect(line.id).toMatch(/^b:[a-z]+:addedToTable:\d+$/);
+      expect(line.text).not.toBe('');
+      expect(line.text).not.toContain('{you}');
+    }
   });
 });

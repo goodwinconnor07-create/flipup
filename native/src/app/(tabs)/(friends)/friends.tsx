@@ -1,10 +1,11 @@
-import { router, Stack } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Share, Text, View } from 'react-native';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
+import { Alert, RefreshControl, Share, Text, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { useFriendActions } from '@/components/friend-menu';
-import { Row, Section } from '@/components/grouped-list';
+import { RequestList, RequestsPill } from '@/components/friend-requests';
+import { FriendSkeleton } from '@/components/friend-skeleton';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
@@ -14,14 +15,20 @@ import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
 import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
-import { answerRequest, useFriendBox, useMyUsername, usePals, type Pal } from '@/state/pals';
+import { removePal, syncFriends, useFriendBox, useMyUsername, usePals, useSentRequests, type Pal } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { brand, cardColors, radius, spacing, useColors, useShadows } from '@/theme';
 
 
+/** The skeleton stays up at least this long, so a quick refresh doesn't flash. */
+const MIN_REFRESH_MS = 600;
+const wait = (ms: number) => new Promise<void>((done) => setTimeout(done, ms));
+
 /**
- * Friends: your username (how friends add you), the table invites and friend requests waiting for you, and your
- * friends, big, each a tap from Apple's menu: invite them to a game, see their profile, or remove them.
+ * Friends: your username (how friends add you), the friend requests and table invites waiting for you, and your
+ * friends, big, each a tap from Apple's menu: invite them to a game, see their profile, or remove them. People
+ * you've asked show under them as Pending until they answer. Pull down to refresh: only the friend boxes turn into
+ * placeholders while it loads.
  */
 export default function FriendsTab() {
   const colors = useColors();
@@ -29,7 +36,25 @@ export default function FriendsTab() {
   const profile = useProfile();
   const named = profile.name.trim().length > 0;
   const pals = usePals();
+  const sent = useSentRequests();
   const box = useFriendBox();
+  const [refreshing, setRefreshing] = useState(false);
+  // The pull spinner lets go at once (so the page springs back and nothing else moves); the skeleton does the waiting.
+  const [pulled, setPulled] = useState(false);
+  const refresh = async () => {
+    haptic.select();
+    setPulled(true);
+    setTimeout(() => setPulled(false), 0);
+    setRefreshing(true);
+    await Promise.all([syncFriends(), wait(MIN_REFRESH_MS)]);
+    setRefreshing(false);
+  };
+  // Coming back to the tab fetches the list too, quietly.
+  useFocusEffect(
+    useCallback(() => {
+      void syncFriends();
+    }, []),
+  );
   const { username } = useMyUsername();
   const actions = useFriendActions();
 
@@ -51,13 +76,22 @@ export default function FriendsTab() {
       <Stack.Screen options={{ title: 'Friends', headerShown: false }} />
       <TabScreen
         title="Friends"
+        refreshControl={<RefreshControl refreshing={pulled} onRefresh={() => void refresh()} tintColor={colors.secondaryLabel} />}
         accessory={
           <>
+            <RequestsPill />
             <RoundButton icon="person.badge.plus" label="Add a friend" onPress={addFriend} />
             <ProfileMenu />
           </>
         }
       >
+        {box.requests.length > 0 && (
+          <View style={{ gap: spacing.sm }}>
+            <Heading text="Incoming Friend Requests" />
+            <RequestList requests={box.requests} />
+          </View>
+        )}
+
         <UsernameCard username={username} onPress={() => !needName() && router.push('/username')} />
 
         {box.invites.length > 0 && (
@@ -69,30 +103,20 @@ export default function FriendsTab() {
           </View>
         )}
 
-        {box.requests.length > 0 && (
-          <Section header="Friend requests" inset={spacing.md + 40 + spacing.sm}>
-            {box.requests.map((r) => (
-              <Row
-                key={r.from}
-                title={r.name}
-                subtitle={r.username ? `@${r.username}` : 'Wants to be friends'}
-                leading={<Avatar emoji={r.emoji} size={40} />}
-                chevron={false}
-                accessory={<Answer name={r.name} onAnswer={(yes) => answerRequest(r.from, yes)} />}
-              />
-            ))}
-          </Section>
-        )}
-
         <View style={{ gap: spacing.sm }}>
           <Heading text={pals.length ? `Your friends · ${pals.length}` : 'Your friends'} />
-          {pals.length > 0 ? (
+          {refreshing ? (
+            <FriendSkeleton rows={Math.min(6, Math.max(2, pals.length + sent.length))} />
+          ) : pals.length + sent.length > 0 ? (
             <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
             <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.cell }}>
               {pals.map((pal, i) => (
                 <Menu key={pal.code} fill label={`${pal.name}. Invite, profile`} title={pal.username ? `${pal.name} · @${pal.username}` : pal.name} sections={actions.sections(pal)}>
                   <FriendRow pal={pal} first={i === 0} />
                 </Menu>
+              ))}
+              {sent.map((pal, i) => (
+                <PendingRow key={pal.code} pal={pal} first={pals.length + i === 0} />
               ))}
             </View>
             </View>
@@ -194,28 +218,40 @@ function Pill({ icon, label, onPress }: { icon: 'square.and.arrow.up' | 'pencil'
   );
 }
 
-/** Accept or decline, with a spinner while it's sent. */
-function Answer({ name, onAnswer }: { name: string; onAnswer: (yes: boolean) => Promise<void> }) {
+/**
+ * Someone you've asked who hasn't answered: their face, name and a Pending tag. A tap offers to take the request
+ * back. If they deny it, the row just goes at the next check; nothing tells you.
+ */
+function PendingRow({ pal, first }: { pal: Pal; first: boolean }) {
   const colors = useColors();
-  const [busy, setBusy] = useState(false);
-  const go = async (yes: boolean) => {
-    if (busy) return;
-    setBusy(true);
-    haptic[yes ? 'success' : 'tap']();
-    await onAnswer(yes).catch(() => Alert.alert("Couldn't answer", 'Check your connection and try again.'));
-    setBusy(false);
-  };
-  if (busy) return <ActivityIndicator />;
+  const takeBack = () =>
+    Alert.alert(`Cancel your request to ${pal.name}?`, undefined, [
+      { text: 'Keep', style: 'cancel' },
+      { text: 'Cancel Request', style: 'destructive', onPress: () => void removePal(pal.code).catch(() => Alert.alert("Couldn't cancel it", 'Check your connection and try again.')) },
+    ]);
   return (
-    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-      <PressableScale accessibilityRole="button" accessibilityLabel={`Decline ${name}`} onPress={() => void go(false)} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed }}>
-        <Icon name="xmark" size={15} color={colors.secondaryLabel} />
-      </PressableScale>
-      <PressableScale accessibilityRole="button" accessibilityLabel={`Accept ${name}`} onPress={() => void go(true)} style={{ minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
-          Accept
-        </Text>
-      </PressableScale>
-    </View>
+    <PressableScale accessibilityRole="button" accessibilityLabel={`${pal.name}, pending`} accessibilityHint="Waiting for them to accept" onPress={takeBack}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 84, paddingHorizontal: spacing.md }}>
+        <View style={{ opacity: 0.6 }}>
+          <Avatar emoji={pal.emoji} size={56} />
+        </View>
+        <View style={{ flex: 1, alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderTopWidth: first ? 0 : 0.5, borderTopColor: colors.separator }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <ThemedText variant="title3" tone="secondaryLabel" numberOfLines={1}>
+              {pal.name}
+            </ThemedText>
+            <ThemedText variant="subhead" tone="tertiaryLabel" numberOfLines={1}>
+              {pal.username ? `@${pal.username}` : 'Friend request sent'}
+            </ThemedText>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 28, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: colors.cellPressed }}>
+            <Icon name="clock.fill" size={12} color={colors.secondaryLabel} />
+            <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
+              Pending
+            </ThemedText>
+          </View>
+        </View>
+      </View>
+    </PressableScale>
   );
 }

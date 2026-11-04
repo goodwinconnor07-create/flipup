@@ -50,7 +50,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "doctor": "expo-doctor"
+    "doctor": "expo-doctor",
+    "test": "cd .. && vitest run --config native/vitest.config.mts"
   },
   "private": true
 }

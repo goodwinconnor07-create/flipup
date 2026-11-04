@@ -191,6 +191,9 @@ if (process.env.EXPO_PUBLIC_RECORDER === '1' && typeof window !== 'undefined') {
   (window as unknown as { __flipupTable: () => Game | null }).__flipupTable = () => session?.game ?? null;
 }
 
+/** The table as it is right now, outside a component (the setup page waits on its new lobby with it). */
+export const currentTable = (): TableState => state;
+
 export function useTable(): TableState {
   return useSyncExternalStore(
     (fn) => {
@@ -336,7 +339,7 @@ export function requestLogs(): void {
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */
-export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string): void {
+export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): void {
   closeConnection();
   const fast = isFast();
   const game = createTable({
@@ -345,6 +348,7 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     emoji,
     settings,
     bots,
+    ...(botNames?.length ? { botNames } : {}),
     code: null,
     now: toTableTime(Date.now(), fast),
   });
@@ -353,10 +357,10 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
 }
 
 /** Opens a table on the server for friends to join with its code, seated as the host. Throws with a message. */
-export async function openOnlineTable(settings: Settings, bots: number, name: string, emoji: string): Promise<string> {
+export async function openOnlineTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): Promise<string> {
   const version = identityVersion;
   profile = { name, emoji };
-  const body = { deviceId: me, name: cleanName(name) || 'Host', emoji, settings, bots };
+  const body = { deviceId: me, name: cleanName(name) || 'Host', emoji, settings, bots, ...(botNames?.length ? { botNames } : {}) };
   let code: string;
   try {
     code = await createOnlineTable(body);
@@ -400,6 +404,17 @@ export function leaveTable(): void {
   paused = false;
   checkWaiting = -1;
   set(null);
+}
+
+/**
+ * The setup page opened an online lobby early (so invited friends have a table to join) and the host went back
+ * without opening it: end that table, so anyone who sat down sees it close, and leave it. Any other table is left alone.
+ */
+export function abandonLobby(code: string): void {
+  if (session?.mode !== 'online' || session.code !== code) return;
+  const game = session.game;
+  if (!game || (game.status === 'lobby' && game.hostDeviceId === me)) conn?.send({ t: 'act', id: newId(8), a: { type: 'end' } });
+  leaveTable();
 }
 
 /** After deletion, all table consumers and API calls must share the new identity. */

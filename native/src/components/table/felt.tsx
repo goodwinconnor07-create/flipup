@@ -28,6 +28,7 @@ import { gradient, radius, spacing, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { bubblePop } from './bubbles';
+import { PotChips } from './pot-chips';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { FELT_WEAVE, WOOD_GRAIN } from './textures';
@@ -188,7 +189,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
               />
             </Pressable>
           )}
-          {hand && !game.memory && <PotPill value={potNow} />}
+          {hand && !game.memory && <PotPill value={potNow} bigBlind={game.settings.bigBlind} />}
         </View>
         <Ghost game={game} pack={pack} />
         {hand?.dice && (
@@ -389,7 +390,7 @@ function HandPill({ text }: { text: string }) {
 }
 
 /** "Pot 340" with a chip in front: the number counts down to nothing as the pot is pushed to the winner. */
-function PotPill({ value }: { value: number }) {
+function PotPill({ value, bigBlind }: { value: number; bigBlind: number }) {
   return (
     <View
       accessibilityLabel={`Pot ${chips(value)}`}
@@ -404,18 +405,7 @@ function PotPill({ value }: { value: number }) {
         backgroundColor: 'rgba(0,0,0,0.34)',
       }}
     >
-      <View
-        style={{
-          width: 18,
-          height: 18,
-          borderRadius: 9,
-          backgroundColor: '#e5322d',
-          borderWidth: 3,
-          borderStyle: 'dashed',
-          borderColor: 'rgba(255,255,255,0.9)',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.35)',
-        }}
-      />
+      <PotChips pot={value} bigBlind={bigBlind} />
       <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255,255,255,0.78)', fontWeight: '600', fontSize: 13 }}>
         Pot
       </Text>

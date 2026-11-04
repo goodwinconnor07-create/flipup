@@ -3,7 +3,9 @@ import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
+import { InviteBanner } from '@/components/invite-banner';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { useFriendWatch } from '@/state/pals';
 import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { useColors, usePlainColors } from '@/theme';
@@ -23,6 +25,9 @@ void startStore();
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
 // grab handle, dismissed by a swipe down. Each tab has its own stack inside (see (tabs)/*/_layout.tsx).
 export default function RootLayout() {
+  // Friends, requests and table invites stay fresh on every screen, so an invite's banner and a host's
+  // "Invited…" pills move on wherever you are.
+  useFriendWatch();
   const appearance = useAppearance();
   useEffect(() => applyAppearance(appearance), [appearance]);
   const dark = useColorScheme() === 'dark';
@@ -46,14 +51,20 @@ export default function RootLayout() {
       <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background }, animation: reduce ? 'fade' : 'default' }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
+        {/* Play with friends: its own dark grain page, over the tabs so the tab bar never covers Open table. */}
+        <Stack.Screen name="play-friends" options={{ headerShown: false, title: 'Play with friends', statusBarStyle: 'light' }} />
+        <Stack.Screen name="play-bots" options={{ headerShown: false, title: 'Play with bots', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* The fade is short because the table's own DealWipe does the moving. */}
         {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
+        {/* Play with friends: a game's popup with Select and Close. */}
+        <Stack.Screen name="setup-game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Game' }} />
         {/* How to Play: a story on black, full screen so its bars sit at the top edge; the X closes it. */}
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Challenges: the start sheet, a seat's tag, Detective's check, and Rewind's two sheets. */}
         <Stack.Screen name="challenge/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Challenge', headerShown: false }} />
+        <Stack.Screen name="range-training" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Range training', headerShown: false }} />
         <Stack.Screen name="challenge-tag" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], title: 'Tag a style' }} />
         <Stack.Screen name="challenge-check" options={{ ...sheet, sheetAllowedDetents: [1], gestureEnabled: false, headerShown: false, title: 'Read the table' }} />
         <Stack.Screen name="rewind" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Rewind' }} />
@@ -72,11 +83,14 @@ export default function RootLayout() {
         <Stack.Screen name="streak" options={{ ...sheet, title: 'Daily streak' }} />
         <Stack.Screen name="username" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Username' }} />
         <Stack.Screen name="friend/[code]" options={{ ...sheet, sheetAllowedDetents: [0.7, 1], title: 'Friend' }} />
+        <Stack.Screen name="friend-requests" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'Friend requests' }} />
         <Stack.Screen name="add-friend" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Add a friend' }} />
         <Stack.Screen name="code-entry" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Code' }} />
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
         <Stack.Screen name="sample-sheet" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'A sheet' }} />
       </Stack>
+      {/* A friend's table invite drops in over any screen. */}
+      <InviteBanner />
     </ThemeProvider>
   );
 }

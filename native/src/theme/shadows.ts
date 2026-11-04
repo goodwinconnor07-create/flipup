@@ -1,4 +1,4 @@
-import { useColorScheme } from 'react-native';
+import { useScheme } from './scheme';
 
 /**
  * Shadows in the app, stronger than the web's so they read on a phone: `sm` for small things, `soft` and `card` for
@@ -25,5 +25,5 @@ const SHADOWS = {
 
 /** Today's shadow levels, as boxShadow strings. */
 export function useShadows(): Record<keyof (typeof SHADOWS)['light'], string> {
-  return SHADOWS[useColorScheme() === 'dark' ? 'dark' : 'light'];
+  return SHADOWS[useScheme()];
 }

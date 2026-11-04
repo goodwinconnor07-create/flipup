@@ -1,7 +1,7 @@
 // The table being set up: shared by the Setup screen and the game list it pushes, so a game picked there shows up
 // back on Setup. It starts from the last settings used (`flipup.settings`, the same key as the web) and is saved
 // back when the table opens.
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 import { DEFAULT_SETTINGS, levelsFor, STACK_CHOICES, withVariant, type Settings, type Variant } from '@/engine';
 
@@ -40,3 +40,13 @@ export function useDraft(): Settings {
 
 export const useSavedSettings = () => useStored<Settings | null>(KEY, null);
 export const saveSettings = (s: Settings) => save(KEY, s);
+
+/**
+ * A fresh draft each time a setup page opens, from the last table's settings and the game passed in (Texas
+ * Hold'em when there's none), then the draft as it changes.
+ */
+export function useFreshDraft(mode: 'friends' | 'bots', variant: Variant | undefined): Settings {
+  const saved = useSavedSettings();
+  useEffect(() => startDraft(saved, mode, variant ?? 'holdem'), []); // eslint-disable-line react-hooks/exhaustive-deps
+  return useDraft();
+}

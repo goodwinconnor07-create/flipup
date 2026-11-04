@@ -6,7 +6,7 @@
 import { composeDialogue, DIALOGUE, dialogueText, type FixedLineEvent } from './botDialogue';
 import { reactionText } from './reactions';
 import { playerStyle, styleOf, type StyleId } from './botStyles';
-import { MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
+import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
 import { lineBeats, sayAndReadMs } from './chat';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
@@ -93,7 +93,30 @@ export type TalkEvent =
   /** The first bot has greeted the table: another says hi. */
   | 'greetBack'
   /** Won a pot with its signature hand (see `Craft.pets`). */
-  | 'signature';
+  | 'signature'
+  /** The flop, turn or river has just come down. */
+  | 'flop'
+  | 'turn'
+  | 'river'
+  /** The pot is big. */
+  | 'bigPot'
+  /** The hand has gone on for a long time. */
+  | 'longHand'
+  /** A bot's own stack: nearly out, or well ahead. */
+  | 'shortStack'
+  | 'chipLead'
+  /** Where a bot sits this hand. */
+  | 'button'
+  | 'bigBlind'
+  /** A round number of hands has been played. */
+  | 'handMilestone'
+  /** Said just before a card or the showdown turns, on a phone's own table (see `dramaPause`). */
+  | 'beforeFlop'
+  | 'beforeTurn'
+  | 'beforeRiver'
+  | 'beforeShowdown'
+  /** A person has just picked this bot for their table on the setup page: its first word, before any cards. */
+  | 'addedToTable';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -151,6 +174,21 @@ const TRASH: Lines = {
   commiserate: [],
   greetBack: [],
   signature: [],
+  flop: [],
+  turn: [],
+  river: [],
+  bigPot: [],
+  longHand: [],
+  shortStack: [],
+  chipLead: [],
+  button: [],
+  bigBlind: [],
+  handMilestone: [],
+  beforeFlop: [],
+  beforeTurn: [],
+  beforeRiver: [],
+  beforeShowdown: [],
+  addedToTable: [],
 };
 
 const FRIENDLY: Lines = {
@@ -206,6 +244,21 @@ const FRIENDLY: Lines = {
   commiserate: [],
   greetBack: [],
   signature: [],
+  flop: [],
+  turn: [],
+  river: [],
+  bigPot: [],
+  longHand: [],
+  shortStack: [],
+  chipLead: [],
+  button: [],
+  bigBlind: [],
+  handMilestone: [],
+  beforeFlop: [],
+  beforeTurn: [],
+  beforeRiver: [],
+  beforeShowdown: [],
+  addedToTable: [],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -378,8 +431,14 @@ grow(TRASH, NEW_TRASH);
 grow(FRIENDLY, NEW_FRIENDLY);
 grow(TRASH, MORE_TRASH);
 grow(FRIENDLY, MORE_FRIENDLY);
-for (const [style, more] of Object.entries(MORE_VOICES) as [StyleId, Partial<Lines>][]) {
-  for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
+grow(TRASH, EXTRA_TRASH);
+grow(FRIENDLY, EXTRA_FRIENDLY);
+grow(TRASH, ADDED_TRASH);
+grow(FRIENDLY, ADDED_FRIENDLY);
+for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
+  for (const [style, more] of Object.entries(passes) as [StyleId, Partial<Lines>][]) {
+    for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
+  }
 }
 
 const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
@@ -390,6 +449,17 @@ export function botLineText(lineId: string): string {
   const [b, tone, event, i] = lineId.split(':');
   if (b !== 'b' || lineId.split(':').length !== 4 || !Object.hasOwn(TRASH, event) || !/^(0|[1-9]\d{0,3})$/.test(i ?? '')) return '';
   return pool(tone, event as TalkEvent)[Number(i)] ?? '';
+}
+
+/**
+ * What a bot says when a person picks it for their table on the setup page (`addedToTable`), in its style's voice:
+ * the line's id and its text with `{you}` filled in (or left out when there's no name). Never said at a table.
+ */
+export function addedLine(style: StyleId, you: string | undefined, rng: () => number): { id: string; text: string } {
+  const lines = pool(style, 'addedToTable');
+  const i = Math.floor(rng() * lines.length);
+  const lineId = id(style, 'addedToTable', i);
+  return { id: lineId, text: reactionText(lineId, you) };
 }
 
 /** A line a legend says when the game is over (null for anyone else). `name` is who they played. */
@@ -424,26 +494,26 @@ export function allLines(): { voice: string; event: TalkEvent; text: string }[] 
 
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
-  thinkHard: 0.15,
-  thinkEasy: 0.06,
+  thinkHard: 0.22,
+  thinkEasy: 0.1,
   allin: 0.55,
-  raise: 0.14,
-  foldBig: 0.18,
+  raise: 0.22,
+  foldBig: 0.28,
   callLight: 0.35,
-  yourBigBet: 0.25,
+  yourBigBet: 0.35,
   sweat: 0.6,
-  sweatWatch: 0.3,
+  sweatWatch: 0.4,
   sweatWin: 1,
   sweatLose: 1,
   bluffWon: 0.6,
-  bigWin: 0.45,
-  win: 0.25,
+  bigWin: 0.6,
+  win: 0.4,
   badBeat: 0.8,
-  lostToYou: 0.5,
+  lostToYou: 0.6,
   reply: 0.7,
   tiltJab: 0.35,
   bluffCaught: 0.6,
-  idle: 0.08,
+  idle: 0.15,
   tank: 0.8,
   showBluff: 0.9,
   showStrong: 0.7,
@@ -467,10 +537,45 @@ const CHANCE: Record<TalkEvent, number> = {
   commiserate: 0.8,
   greetBack: 1,
   signature: 1,
+  flop: 0.22,
+  turn: 0.2,
+  river: 0.25,
+  bigPot: 0.5,
+  longHand: 0.4,
+  shortStack: 0.45,
+  chipLead: 0.35,
+  button: 0.15,
+  bigBlind: 0.1,
+  handMilestone: 0.5,
+  beforeFlop: 0.3,
+  beforeTurn: 0.25,
+  beforeRiver: 0.3,
+  beforeShowdown: 0.35,
+  addedToTable: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */
-const COOLDOWN = 2200;
+const COOLDOWN = 2600;
+
+/** Everyone talks a bit more than their style alone says; a bot that has already said more than its share gets quieter (see `share`). */
+const TALKATIVE = 1.3;
+
+/** How many lines a bot may be ahead of the table's average before it is asked to hold back. */
+const SHARE_SLACK = 2;
+
+/**
+ * 1 for a bot that has said no more than its share, down to 0.35 for one far ahead of the rest of the table, so
+ * the loudest style can't take over the conversation. The count is `reactions[id].n`, every line a bot has said.
+ */
+function share(game: Game, playerId: string): number {
+  const bots = game.players.filter((p) => p.bot);
+  // Heads-up the one bot is the whole conversation, so it eases off a little instead of talking all the time.
+  if (bots.length < 2) return 0.6;
+  const count = (id: string) => game.reactions?.[id]?.n ?? 0;
+  const others = bots.filter((p) => p.id !== playerId).map((p) => count(p.id));
+  const ahead = count(playerId) - others.reduce((a, b) => a + b, 0) / others.length - SHARE_SLACK;
+  return ahead <= 0 ? 1 : Math.max(0.35, 1 - ahead * 0.15);
+}
 
 /**
  * Maybe has a bot say something. Returns how long it takes to say and read (ms), or 0 if it stayed quiet.
@@ -490,7 +595,7 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   const style = playerStyle(player);
   // A legend speaks in its own voice; everyone else in their style's.
   const voice = player.legend ?? style.id;
-  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty))) return 0;
+  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId))) return 0;
   // A table-wide pause keeps nine seats from shouting over an ordinary decision.
   const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
   if (!owed && now - tableLast < 700) return 0;
@@ -512,4 +617,66 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   const ms = sayAndReadMs(lineBeats(reactionText(line, game.players.find((p) => p.id === target)?.name), game.players.find((p) => p.id === target)?.name));
   game.talkDone = { ...game.talkDone, [playerId]: now + ms };
   return ms;
+}
+
+// ── Moments the table gives a bot a reason to talk about ────────────────────────────────────
+
+const pick = <T>(xs: T[], rng: () => number): T => xs[Math.floor(rng() * xs.length)];
+const botsIn = (game: Game) => (game.hand?.seats ?? []).filter((s) => !s.folded && game.players.find((p) => p.id === s.playerId)?.bot);
+
+/**
+ * A word about the card that has just come down: the street, the size of the pot, or how long the hand has run.
+ * One bot still in the hand, at most. Nothing when every person has folded (nobody is watching).
+ */
+export function streetTalk(game: Game, rng: () => number, now: number): void {
+  const hand = game.hand;
+  if (!hand || hand.result || hand.street === 'preflop') return;
+  if (hand.seats.every((s) => s.folded || game.players.find((p) => p.id === s.playerId)?.bot)) return;
+  const bots = botsIn(game);
+  if (!bots.length) return;
+  const pot = hand.seats.reduce((a, s) => a + s.total, 0);
+  const bb = game.settings.bigBlind;
+  let event: TalkEvent = hand.street;
+  if (hand.street === 'river' && hand.seq >= 14) event = 'longHand';
+  else if (hand.street !== 'flop' && pot >= bb * 30) event = 'bigPot';
+  botSays(game, pick(bots, rng).playerId, event, rng, now);
+}
+
+/**
+ * A word as a hand is dealt: a round number of hands, a stack that is nearly gone or well ahead, the button, the big blind.
+ * The first that applies; the dice and each bot's chattiness do the rest.
+ */
+export function dealTalk(game: Game, rng: () => number, now: number): void {
+  const hand = game.hand;
+  if (!hand || hand.result) return;
+  const bots = game.players.filter((p) => p.bot && !p.sittingOut && hand.seats.some((s) => s.playerId === p.id));
+  if (!bots.length) return;
+  const bb = game.settings.bigBlind;
+  if (hand.number >= 10 && hand.number % 10 === 0) return void botSays(game, pick(bots, rng).id, 'handMilestone', rng, now);
+  const startOf = (id: string) => hand.startStacks?.[id] ?? game.players.find((p) => p.id === id)?.stack ?? 0;
+  const stacks = hand.seats.map((s) => startOf(s.playerId));
+  const short = bots.filter((p) => startOf(p.id) > 0 && startOf(p.id) <= bb * 10);
+  if (short.length && rng() < 0.6) return void botSays(game, pick(short, rng).id, 'shortStack', rng, now);
+  const avg = stacks.reduce((a, b) => a + b, 0) / Math.max(1, stacks.length);
+  const rich = bots.filter((p) => stacks.length >= 3 && startOf(p.id) >= avg * 1.8);
+  if (rich.length && rng() < 0.5) return void botSays(game, pick(rich, rng).id, 'chipLead', rng, now);
+  const onButton = bots.find((p) => p.id === hand.buttonId);
+  if (onButton && rng() < 0.5) return void botSays(game, onButton.id, 'button', rng, now);
+  const inBlind = bots.find((p) => p.id === hand.bbId);
+  if (inBlind) botSays(game, inBlind.id, 'bigBlind', rng, now);
+}
+
+/** The most a bot's word may hold up a card or the showdown, on a phone's own table. */
+export const DRAMA_MAX = 3200;
+
+/**
+ * A bot with something to say before the next card (or the showdown) turns over holds it back while the line is said
+ * and read, so the moment has some weight. Returns how long to wait (0 for nothing to say). Never more than `DRAMA_MAX`,
+ * half of it at a fast bot game. Only for a table on one phone: an online table (it has a code) is left as it was.
+ */
+export function dramaPause(game: Game, playerId: string, upcoming: 'flop' | 'turn' | 'river' | 'showdown', rng: () => number, now: number): number {
+  if (game.code) return 0;
+  const event: TalkEvent = upcoming === 'flop' ? 'beforeFlop' : upcoming === 'turn' ? 'beforeTurn' : upcoming === 'river' ? 'beforeRiver' : 'beforeShowdown';
+  const ms = botSays(game, playerId, event, rng, now);
+  return ms ? Math.round(Math.min(DRAMA_MAX, ms) * (game.fast ? 0.5 : 1)) : 0;
 }

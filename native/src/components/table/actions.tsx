@@ -1,5 +1,5 @@
 import { Children, useState, type ReactNode } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, useColorScheme, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
 import { count21, lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
@@ -27,18 +27,19 @@ type Tone = 'fold' | 'green' | 'blue' | 'raise' | 'dark' | 'pre' | 'preOn' | 'qu
 function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, big }: { label: string; sub?: string; tone: Tone; onPress: () => void; disabled?: boolean; fill?: number; height?: number; big?: boolean }) {
   const colors = useColors();
   const c = usePlainColors();
+  // Apple's system blue (the owner's call for Call and Check; the rest of the app's actions stay violet).
+  const blue = useColorScheme() === 'dark' ? '#0a84ff' : '#007aff';
   const look: Record<Tone, { bg: string; ink: string }> = {
     fold: { bg: c.redBg, ink: c.redInk },
-    // Call and Check: the plain high-contrast button (white on a dark page, black on a light one). Raise is the
-    // brand violet and Fold stays red: the palette has two colours, and the table spends them on these.
+    // Call and Check are system blue, Raise the app's one green and Fold red.
     green: { bg: colors.label as string, ink: colors.background as string },
-    blue: { bg: colors.accent as string, ink: '#ffffff' },
+    blue: { bg: blue, ink: '#ffffff' },
     raise: { bg: brand.raise, ink: '#ffffff' },
     dark: { bg: colors.label as string, ink: colors.background as string },
     pre: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
-    preOn: { bg: colors.accent as string, ink: '#ffffff' },
+    preOn: { bg: blue, ink: '#ffffff' },
     quietFold: { bg: colors.cell as string, ink: c.redInk },
-    quietCall: { bg: colors.cell as string, ink: colors.label as string },
+    quietCall: { bg: colors.cell as string, ink: blue },
   };
   return (
     <PressableScale
@@ -123,7 +124,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         {who ? (
           <Thinking name={who.name} what={who.bot ? 'is thinking' : who.offline ? 'is offline' : 'to act'} />
         ) : (
-          <Note>{hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
+          <Note>{hand.showdownAt != null ? 'Showdown…' : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
@@ -166,7 +167,26 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   // The next hand deals itself when the bar along the bottom of the button runs out.
   const total = waitFor(hand.number, game.nextHandAt - now);
   const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
-  return <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  const next = <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn
+  // them over. Tapping sends the `show` action; the greyed cards turn white as the answer. Never during play.
+  const canShow = !!seat && !seat.shown && seat.cards.length === 2;
+  if (!canShow) return next;
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+      <View>
+        <TableButton
+          label="Show cards"
+          tone="pre"
+          onPress={() => {
+            haptic.tap();
+            dispatch({ type: 'show', hand: hand.number });
+          }}
+        />
+      </View>
+      <View style={{ flex: 1 }}>{next}</View>
+    </View>
+  );
 }
 
 /** How long this pause was when it began, so the bar drains from full whatever extra time was added. */
@@ -192,9 +212,9 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
       <Row>
         {o.canFold && <TableButton label="Fold" tone="fold" disabled={sending} onPress={() => act('fold')} />}
         {o.canCheck ? (
-          <TableButton label="Check" tone="green" disabled={sending} onPress={() => act('check')} />
+          <TableButton label="Check" tone="blue" disabled={sending} onPress={() => act('check')} />
         ) : (
-          <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="green" disabled={sending} onPress={() => act('call')} />
+          <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="blue" disabled={sending} onPress={() => act('call')} />
         )}
         {o.canRaise && <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />}
       </Row>
@@ -266,7 +286,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
                 haptic.select();
                 setTo(p.to);
               }}
-              style={{ flex: 1, minHeight: minTap + 8, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? colors.accent : colors.cell }}
+              style={{ flex: 1, minHeight: minTap + 8, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: on ? brand.raise : colors.cell }}
             >
               <Text maxFontSizeMultiplier={1.2} style={{ fontWeight: '700', fontSize: 14, color: on ? '#fff' : colors.label }}>
                 {p.label}

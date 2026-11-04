@@ -7,6 +7,7 @@ import { isVariant } from './variants';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
 import { legendById } from './legends';
+import { BOTS } from './botStyles';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
 
@@ -61,6 +62,7 @@ export function parseAction(raw: unknown): Action | null {
         ...(a.cardPack !== undefined ? { cardPack: a.cardPack as string } : {}),
       };
     case 'addBot':
+      if (a.name !== undefined) return a.legend === undefined && typeof a.name === 'string' && BOTS.some((b) => b.name === a.name) ? { type: 'addBot', name: a.name } : null;
       if (a.legend === undefined) return { type: 'addBot' };
       return typeof a.legend === 'string' && legendById(a.legend) ? { type: 'addBot', legend: a.legend } : null;
     case 'start':

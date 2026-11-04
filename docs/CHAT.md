@@ -17,14 +17,16 @@ as long as its own line takes, and a person's quick message is up the moment it'
   is cut at its sentences, then at a comma or a dash, then between two words near the middle. At most three
   messages. The cutting is done on the template, so a person's name in `{you}` can't add a break.
 - **Typing, then the message.** Dots for `220 ms + 13 ms a letter` (at most 520), follow-ups 30% quicker, a
-  80 ms settle between messages, 650 ms before a `||`.
-- **Up long enough to read.** Each message stays `700 ms + 30 ms a letter` (1.2 s to 2.4 s). A seat shows one
-  message at a time: the next replaces it, but not before it has had `readMs()` (a moment to notice it, then 25
-  letters a second). Nothing stacks, and a bubble is never wider than its seat, so neighbours can't overlap.
-- **One speaker types at a time.** The next bot starts typing 260 ms after the last message of the one before has
+  150 ms settle between messages, 650 ms before a `||`.
+- **Up long enough to read.** The words of a bot's line come through its bubble one at a time (`150 ms + 44 ms a
+  letter` a word, a little longer at a comma, 300 ms at a full stop, never more than 4.8 s for the whole line), the
+  last words hold for 1.3 s, and the bubble is up at least `readMs()` (a moment to notice it, then an easy 15 letters
+  a second) plus a second to spare, so any line can be read at a normal pace with time left over. A seat shows one
+  message at a time: the next replaces it, but not before it has had `readMs()`. Nothing stacks, and a bubble is never wider than its seat, so neighbours can't overlap.
+- **One speaker types at a time.** The next bot starts typing 750 ms after the last message of the one before has
   landed, so they answer each other, but a message still up while the next bot types is fine, like a group chat.
 - **Stale lines go.** A "c'mon!" is dropped when the next card lands; a remark about a move is dropped once the move
-  is made; a line that waited more than 2.6 s (4.5 s for a reaction to a hand) never starts. A person's quick message
+  is made; a line that waited more than 3.2 s (5.2 s for a reaction to a hand) never starts. A person's quick message
   skips the queue.
 
 `ChatLane` (in `chat.ts`) does all of that with the time passed in, so it is tested with no clock and no screen.
@@ -45,6 +47,30 @@ as long as its own line takes, and a person's quick message is up the moment it'
 - On a phone, a seat out of the row slides in when its player talks, as long as whoever is on turn stays in view;
   if it can't, the line is dropped instead of drawn off screen (`canShow` in `Pods.tsx`).
 
+## Talking more, without one bot taking over
+
+`botSays()` rolls the dice for each moment: the moment's chance (`CHANCE`) times the style's chattiness times
+`TALKATIVE` (1.3), times `share()`. `share()` is 1 for a bot that has said no more than the table's average plus two
+lines and falls to 0.35 for one far ahead of it, so the loudest style can't take over. Heads-up the one bot is
+the whole conversation, so it eases to 0.6. The per-bot cooldown is 2.6 s.
+
+New moments (the pools start empty in `botTalk.ts` and grow in `botLines.ts`, in the legends' file for them):
+
+- `flop`, `turn`, `river`, `bigPot` (30 big blinds or more), `longHand` (a river after 14 moves): `streetTalk()` after a street
+  comes down, one bot still in the hand, only while a person is in it. They are dropped when the next card lands.
+- `shortStack` (10 big blinds or less), `chipLead` (1.8 times the table's average), `button`, `bigBlind`,
+  `handMilestone` (every tenth hand): `dealTalk()` at the deal.
+- `beforeFlop`, `beforeTurn`, `beforeRiver`, `beforeShowdown`: see the next part.
+
+## A word before the card turns (phone tables only)
+
+On a table that runs on one phone (no table code), a bot that still has cards in the hand may say something just
+before the flop, turn, river or showdown turns over. `dramaPause()` returns how long the line takes to say and read, and
+the card waits for it: `pauseBeforeNextStreet()` adds it to the street pause, and the showdown waits in
+`hand.showdownAt`. It never holds the card longer than `DRAMA_MAX` (3.2 s), halves under Fast bot games, and is
+skipped once every person has folded. An online table (it has a code) is left as it was. These lines are dropped
+with the other "c'mon" kind when the card lands.
+
 ## Writing lines
 
 - Every message should fit one line in a seat: about 15 letters. Use `|` to say where it breaks.
@@ -58,17 +84,23 @@ as long as its own line takes, and a person's quick message is up the moment it'
 ## The lab
 
 `npx tsx scripts/chatLab.ts [tables] [hands]` plays whole tables with a person at them on a simulated clock, feeds
-what the bots say through the same lane, and reports how it would feel. From 24 tables of 60 hands in each setting:
+what the bots say through the same lane, and reports how it would feel (it also prints the longest line in the game).
+Stage 3 numbers, from 12 tables of 40 hands in each setting, before and after:
 
-| Table | lines a minute | messages a line | start p50 | up p5 | talk on screen | two seats talking | moves before the line landed |
-|---|---|---|---|---|---|---|---|
-| heads-up | 2 | 1.3 | 0.36 s | 1.2 s | 5% | 0% | 0 |
-| 3 bots | 4 | 1.3 | 0.4 s | 1.2 s | 8% | 1% | 0 |
-| 5 bots | 4 | 1.3 | 0.6 s | 1.2 s | 8% | 1% | 0 |
-| 8 bots | 5.5 | 1.4 | 0.4 s | 1.2 s | 10% | 2% | 0 |
+| Table | lines a hand | busiest bot's share | bubble up p5 | bubble up p50 | talk on screen | moves before the line landed |
+|---|---|---|---|---|---|---|
+| heads-up | 0.52 → 0.85 | one bot | 1.4 → 2.2 s | 2.0 → 2.8 s | 8% → 16% | 0 → 0 |
+| 3 bots | 0.85 → 1.45 | 39% | 1.5 → 2.2 s | 2.0 → 2.8 s | 11% → 23% | 0 → 0 |
+| 5 bots | 0.71 → 1.27 | 31% | 1.4 → 2.2 s | 2.0 → 2.8 s | 9% → 19% | 0 → 0 |
+| 8 bots | 1.21 → 1.82 | 23% | 1.5 → 2.2 s | 2.0 → 2.8 s | 10% → 20% | 0 → 0 |
 
-`e2e/chat-timing.spec.ts` plays 110 seconds of a seven-bot table in a real browser and records every bubble frame
-by frame: messages up for a median 1.2 s (never under 0.9 s), follow-ups 300 to 350 ms apart, typing dots about
+The longest line in the game (an answer by name, 41 letters) takes 2.4 s → 3.5 s to say and read, which is how long
+its bot waits before it moves, and its bubble is up 3.8 s → 5.2 s from the first dots. Every bubble is up at least its
+read time plus a second. There are about 2,800 different lines now, up from about 1,300. The earlier table
+(24 tables of 60 hands) is in git history.
+
+`e2e/chat-timing.spec.ts` (dropped in Phase 2, in git history; it was not re-run for Stage 3) played 110 seconds of a seven-bot table in a real browser and records every bubble frame
+by frame: messages were up for a median 1.2 s (never under 0.9 s), follow-ups 300 to 350 ms apart, typing dots about
 330 ms, nothing off the screen or under the header, no two seats' bubbles overlapping.
 
 Two things the browser test found that the unit tests didn't: a bot moved only 0.6 s after speaking, so its message

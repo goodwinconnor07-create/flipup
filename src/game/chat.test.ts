@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { allLines } from './botTalk';
+import { allLines, DRAMA_MAX } from './botTalk';
+import { seededRng } from './cards';
+import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
+import { options } from './selectors';
+import type { Game } from './types';
 import { BEFORE_MOVE, botSay, beatTimes, CHAT, ChatLane, holdMs, ticker, windowAt, widestWindow, wordsOf, lineBeats, lineText, ONE_LINE, quickSay, readMs, sayAndReadMs, spokenMs, splitBeats, splitSentences, typeMs, worthKeeping, worthSaying, type Say } from './chat';
 
 const texts = (t: string) => splitBeats(t).map((b) => b.text);
@@ -110,7 +114,9 @@ describe('how long things take', () => {
   });
 
   it('holds a message long enough to read at a comfortable pace, within bounds', () => {
-    expect(holdMs('Hi')).toBe(CHAT.holdMin);
+    expect(holdMs('Hi')).toBeGreaterThanOrEqual(CHAT.holdMin);
+    // Any message can be read at an easy pace with a second to spare.
+    for (const t of ['Hi', 'Nice hand, Connor!', 'You got me last time, Connor. Round two!']) expect(holdMs(t), t).toBeGreaterThanOrEqual(readMs(t) + CHAT.spare);
     expect(holdMs('a'.repeat(200))).toBe(CHAT.holdMax);
     for (const len of [1, 5, 10, 15, 20]) {
       // 300 ms to notice it, then 20 letters a second (a relaxed pace: most people read faster).
@@ -140,9 +146,9 @@ describe('how long things take', () => {
   it('says every line in the game quickly enough to feel like texting', () => {
     for (const { text } of allLines()) {
       const beats = splitBeats(text.replaceAll('{you}', 'Connor'));
-      // Whole line out in under two seconds, so a bot never makes you wait for its words.
-      expect(spokenMs(beats), text).toBeLessThanOrEqual(2600);
-      expect(sayAndReadMs(beats), text).toBeLessThanOrEqual(3200);
+      // Whole line out in under three seconds, and the bot moves within four, so nobody waits long for its words.
+      expect(spokenMs(beats), text).toBeLessThanOrEqual(3000);
+      expect(sayAndReadMs(beats), text).toBeLessThanOrEqual(4200);
     }
   });
 
@@ -320,15 +326,15 @@ describe('the conversation', () => {
     const lane = new ChatLane();
     lane.push(say('a', 'C’mon!', 0, { event: 'sweat', moment: '3-3-live' }));
     lane.push(say('b', 'Thanks.', 0, { event: 'win', moment: '3-3-live' }));
-    // Both are up together at one second.
+    // Both are up together by now (the second starts typing a reply gap after the first lands).
     lane.advance(0);
-    for (let t = 1; t <= 1000; t += 1) lane.advance(t);
-    expect(lane.talk('a', 1000)?.shown.map((m) => m.text)).toEqual(['C’mon!']);
-    expect(lane.talk('b', 1000)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
+    for (let t = 1; t <= 1700; t += 1) lane.advance(t);
+    expect(lane.talk('a', 1700)?.shown.map((m) => m.text)).toEqual(['C’mon!']);
+    expect(lane.talk('b', 1700)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
     // The river came: the "c'mon" is about a moment that's over, a plain message goes on to finish its time.
     lane.retain(worthSaying('3-4-live'), worthKeeping('3-4-live'));
-    expect(lane.talk('a', 1000)).toBeUndefined();
-    expect(lane.talk('b', 1000)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
+    expect(lane.talk('a', 1700)).toBeUndefined();
+    expect(lane.talk('b', 1700)?.shown.map((m) => m.text)).toEqual(['Thanks.']);
     expect(lane.takeRetired()).toContain('a');
   });
 
@@ -477,4 +483,69 @@ describe('words coming through a bubble', () => {
     expect(holdMs('Hi')).toBeGreaterThanOrEqual(CHAT.holdMin);
     expect(holdMs('Hello, Connor. How are you?')).toBeGreaterThan(ticker('Hello, Connor. How are you?').ms + CHAT.tail - 1);
   });
+});
+
+describe('more to say', () => {
+  it('has many more lines than before, with the new moments covered', () => {
+    const all = allLines();
+    expect(new Set(all.map((l) => l.text)).size).toBeGreaterThan(2400);
+    for (const event of ['flop', 'turn', 'river', 'bigPot', 'longHand', 'shortStack', 'chipLead', 'button', 'bigBlind', 'handMilestone', 'beforeFlop', 'beforeTurn', 'beforeRiver', 'beforeShowdown'])
+      expect(all.filter((l) => l.event === event).length, event).toBeGreaterThan(20);
+  });
+
+  /** A person who always calls plays `hands` hands against bots; reports every pause a bot put before the showdown. */
+  function drama(code: string | null, fast: boolean, seed: number, hands = 25) {
+    const rng = seededRng(seed);
+    let clock = 1_000_000;
+    let game: Game = createTable({ hostDeviceId: 'me', name: 'Sam', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0 }, bots: 4, code, now: clock });
+    if (fast) game.fast = true;
+    const act = (a: Parameters<typeof applyAction>[1], deviceId = 'me') => {
+      const r = applyAction(game, a, { deviceId, now: clock, rng });
+      if (r.ok) game = r.game;
+    };
+    act({ type: 'start' });
+    const waits: number[] = [];
+    let streetWaits = 0;
+    let lastHand = 0;
+    let done = 0;
+    for (let i = 0; i < 20000 && done < hands; i++) {
+      const hand = game.hand;
+      if (hand && hand.number !== lastHand) {
+        lastHand = hand.number;
+        done++;
+      }
+      const me = game.players.find((p) => p.deviceId === 'me')!;
+      if (hand && !hand.result && hand.toAct === me.id && !hand.runout) {
+        const seat = hand.seats.find((x) => x.playerId === me.id)!;
+        const o = options(game, hand, seat);
+        act({ type: 'act', hand: hand.number, seq: hand.seq, move: o.canCheck ? 'check' : 'call' });
+      } else {
+        clock = Math.max(clock + 1, game.wakeAt ?? clock + 1000);
+        act({ type: 'tick' }, 'clock');
+      }
+      if (game.hand?.showdownAt != null) waits.push(game.hand.showdownAt - clock);
+      if (game.hand?.nextStreetAt != null) streetWaits = Math.max(streetWaits, game.hand.nextStreetAt - clock);
+      for (const p of game.players) if (p.stack === 0 && (!game.hand || game.hand.result)) p.stack = DEFAULT_SETTINGS.startingStack;
+    }
+    return { waits, streetWaits };
+  }
+
+  it('lets a bot hold the showdown for a few seconds on a phone table, never longer', () => {
+    let total = 0;
+    for (let seed = 1; seed <= 8; seed++) {
+      const { waits, streetWaits } = drama(null, false, seed);
+      total += waits.length;
+      for (const w of waits) expect(w).toBeLessThanOrEqual(DRAMA_MAX + 50);
+      expect(streetWaits).toBeLessThanOrEqual(DRAMA_MAX + 1100 + 50);
+    }
+    expect(total).toBeGreaterThan(0);
+  }, 60000);
+
+  it('halves the pause at a fast bot game', () => {
+    for (let seed = 1; seed <= 4; seed++) for (const w of drama(null, true, seed).waits) expect(w).toBeLessThanOrEqual(DRAMA_MAX / 2 + 50);
+  }, 60000);
+
+  it('leaves an online table as it was', () => {
+    for (let seed = 1; seed <= 3; seed++) expect(drama('ABCDE', false, seed, 25).waits).toEqual([]);
+  }, 60000);
 });

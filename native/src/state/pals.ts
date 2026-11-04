@@ -1,22 +1,26 @@
 // Friends. Each phone has a username it chooses (unique, changeable once a month) over a hidden six-digit friend
 // code (a name and a picture on the server, no account). Typing someone's username sends them a friend request;
 // once they accept, you're on each other's list. Friendships are kept by code, so a new username keeps them. The server keeps the
-// list, the requests and the table invites; this phone keeps a copy (`flipup.pals`, `flipup.friendbox`) and checks
-// for news every 15 seconds while the app is open (`useFriendWatch()`). Friends can invite each other to a table.
+// list, the requests and the table invites; this phone keeps a copy (`flipup.pals`, `flipup.friendbox`, and the people
+// you've asked in `flipup.palsent`, shown as Pending) and checks for news every 5 seconds while the app is open
+// (`useFriendWatch()`: one cheap read of your own card, and the full list only when something changed). Friends can
+// invite each other to a table.
 import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
-import type { BjInvite, FriendRequest } from '@/engine';
+import type { BjInvite, FriendRequest, InviteDeclined } from '@/engine';
 
 import { normalizeUsername, USERNAME_CHANGE_MS } from '@/engine';
 
-import { answerFriend, createFriendCard, fetchInbox, findUsername, inviteToTable, requestFriend, setUsernameOnServer, unfriendOnServer, updateFriendCard } from './api';
+import { answerFriend, createFriendCard, declineTableInvite, fetchInbox, uninviteFromTable, findUsername, inviteToTable, pollFriendCard, requestFriend, setUsernameOnServer, unfriendOnServer, updateFriendCard, type FriendPoll } from './api';
 import { deviceId } from './device';
 import { read, save, useStored } from './storage';
 
 const KEY = 'flipup.pals';
 const MINE = 'flipup.palcode';
 const BOX = 'flipup.friendbox';
+/** People you've asked to be friends who haven't answered yet. */
+const SENT = 'flipup.palsent';
 /** Set once the friends kept on this phone before requests existed have been asked again. */
 const MOVED = 'flipup.palsmoved';
 
@@ -39,11 +43,23 @@ const clean = (all: unknown): Pal[] =>
 const EMPTY: Pal[] = [];
 const NO_BOX: FriendBox = { requests: [], invites: [] };
 export const loadPals = (): Pal[] => clean(read<unknown>(KEY, EMPTY));
-const savePals = (pals: Pal[]): void => save(KEY, pals.slice(-200));
+/** Saves only when the list really changed, so a poll that finds nothing new redraws nothing. */
+const savePals = (pals: Pal[]): void => saveIfChanged(KEY, pals.slice(-200), loadPals());
+export const loadSent = (): Pal[] => clean(read<unknown>(SENT, EMPTY));
+const saveSent = (sent: Pal[]): void => saveIfChanged(SENT, sent.slice(-50), loadSent());
+
+function saveIfChanged<T>(key: string, next: T, now: unknown): void {
+  if (JSON.stringify(next) !== JSON.stringify(now)) save(key, next);
+}
 
 /** Your friends, oldest first. Redraws when the list changes. */
 export function usePals(): Pal[] {
   return clean(useStored<unknown>(KEY, EMPTY));
+}
+
+/** People you've asked who haven't answered yet, oldest first: your list shows them as Pending. */
+export function useSentRequests(): Pal[] {
+  return clean(useStored<unknown>(SENT, EMPTY));
 }
 
 /** Friend requests and table invites waiting for you. */
@@ -108,16 +124,22 @@ export async function requestByUsername(input: string): Promise<{ status: 'sent'
   if (username === read<{ username: string } | null>(USERNAME, null)?.username) throw new Error("That's your own username.");
   const card = await findUsername(username);
   if (!card) throw new Error('No one has that username. Check it with them.');
-  return { status: await sendFriendRequest(card.code), name: card.name };
+  return { status: await sendFriendRequest(card.code, card), name: card.name };
 }
 
-/** Sends a friend request to a friend code (a party board's + Friend). Throws with a plain sentence when it can't. */
-export async function sendFriendRequest(code: string): Promise<'sent' | 'friends'> {
+/**
+ * Sends a friend request to a friend code (a party board's + Friend). The person shows on your list as Pending at
+ * once (with `who`'s name and picture when known), then the list is fetched. Throws with a plain sentence when it can't.
+ */
+export async function sendFriendRequest(code: string, who?: { name: string; emoji: string; username?: string }): Promise<'sent' | 'friends'> {
   const mine = await ensureMyCode();
   if (code === mine) throw new Error("That's your own code.");
   if (isPal(code)) return 'friends';
   const status = await requestFriend(code, { deviceId: deviceId(), fromCode: mine });
-  if (status === 'friends') await syncFriends();
+  if (status === 'sent' && who && !loadSent().some((p) => p.code === code)) {
+    saveSent([...loadSent(), { code, name: who.name, emoji: who.emoji, ...(who.username ? { username: who.username } : {}), addedAt: Date.now() }]);
+  }
+  await syncFriends();
   return status;
 }
 
@@ -131,10 +153,11 @@ export async function answerRequest(from: string, accept: boolean): Promise<void
   await syncFriends();
 }
 
-/** Ends a friendship, for both of you. */
+/** Ends a friendship, or takes back a request still waiting, for both of you. */
 export async function removePal(code: string): Promise<void> {
   const mine = myPalCode();
   savePals(loadPals().filter((p) => p.code !== code));
+  saveSent(loadSent().filter((p) => p.code !== code));
   if (mine) await unfriendOnServer(mine, { deviceId: deviceId(), other: code });
 }
 
@@ -144,6 +167,32 @@ export async function inviteFriends(codes: string[], table: string): Promise<num
   const mine = await ensureMyCode();
   const sent = await Promise.allSettled(codes.map((c) => inviteToTable(c, { deviceId: deviceId(), fromCode: mine, table })));
   return sent.filter((r) => r.status === 'fulfilled').length;
+}
+
+/** Takes back invites to a table you're not opening after all, so the banner leaves your friends' phones. */
+export async function takeBackInvites(codes: string[], table: string): Promise<void> {
+  const mine = myPalCode();
+  if (!mine || !codes.length) return;
+  await Promise.allSettled(codes.map((c) => uninviteFromTable(c, { deviceId: deviceId(), fromCode: mine, table })));
+}
+
+/** Says no to an invite: it leaves this phone at once, and the host's "Invited…" clears on their next check. */
+export function declineInvite(invite: BjInvite): void {
+  dismissInvite(invite);
+  const mine = myPalCode();
+  if (mine && invite.kind === 'table') void declineTableInvite(mine, { deviceId: deviceId(), from: invite.from, table: invite.table }).catch(() => undefined);
+}
+
+const DECLINED = 'flipup.invitesdeclined';
+const NO_DECLINED: InviteDeclined[] = [];
+
+/** The same list, read once. */
+export const loadDeclined = (): InviteDeclined[] => read<InviteDeclined[] | null>(DECLINED, null) ?? NO_DECLINED;
+
+/** Friends who said no to your table invites lately, from the 5-second check. */
+export function useDeclined(): InviteDeclined[] {
+  const list = useStored<InviteDeclined[] | null>(DECLINED, null);
+  return Array.isArray(list) ? list : NO_DECLINED;
 }
 
 /** An invite you've joined or turned down leaves the list on this phone. */
@@ -157,7 +206,22 @@ export function dismissInvite(invite: BjInvite): void {
 const DISMISSED = 'flipup.invitesdone';
 export const inviteKey = (i: BjInvite) => `${i.from}:${i.at}`;
 
-/** Fetches the list, the requests and the invites. Never throws. */
+const asPal = (f: { code: string; name: string; emoji: string; username?: string }, before: Pal[]): Pal => ({
+  code: f.code,
+  name: f.name,
+  emoji: f.emoji,
+  ...(f.username ? { username: f.username } : {}),
+  addedAt: before.find((p) => p.code === f.code)?.addedAt ?? Date.now(),
+});
+
+/** Keeps the requests and the poker-table invites you haven't joined or turned down. */
+function saveBox(requests: FriendRequest[], invites: BjInvite[]): void {
+  const done = new Set(read<string[]>(DISMISSED, []));
+  const next: FriendBox = { requests, invites: invites.filter((i) => i.kind === 'table' && !done.has(inviteKey(i))) };
+  saveIfChanged(BOX, next, read<FriendBox | null>(BOX, null));
+}
+
+/** Fetches the list, who you're waiting on, the requests and the invites. Never throws. */
 export async function syncFriends(): Promise<void> {
   const mine = myPalCode();
   if (!mine || !numeric(mine)) return;
@@ -165,11 +229,53 @@ export async function syncFriends(): Promise<void> {
     const box = await fetchInbox(mine, deviceId());
     if (!box) return;
     const before = loadPals();
-    savePals(box.friends.map((f) => ({ code: f.code, name: f.name, emoji: f.emoji, ...(f.username ? { username: f.username } : {}), addedAt: before.find((p) => p.code === f.code)?.addedAt ?? Date.now() })));
-    const done = new Set(read<string[]>(DISMISSED, []));
-    save(BOX, { requests: box.requests, invites: box.invites.filter((i) => i.kind === 'table' && !done.has(inviteKey(i))) });
+    savePals(box.friends.map((f) => asPal(f, before)));
+    const friends = new Set(box.friends.map((f) => f.code));
+    // A server that knows who you've asked says so; an older one doesn't, so keep this phone's own list until
+    // they turn up as friends. A denied request just isn't there any more: it goes quietly.
+    const sentBefore = loadSent();
+    saveSent(box.sent ? box.sent.filter((f) => !friends.has(f.code)).map((f) => asPal(f, sentBefore)) : sentBefore.filter((p) => !friends.has(p.code)));
+    saveBox(box.requests, box.invites);
   } catch {
     // Offline: keep what we had.
+  }
+}
+
+/** Whether the cheap check found friends or asks this phone doesn't show yet (or shows and are gone). */
+export function listChanged(poll: Pick<FriendPoll, 'friends' | 'sent'>, pals: Pal[], sent: Pal[]): boolean {
+  const same = (a: string[], b: string[]) => a.length === b.length && [...a].sort().join() === [...b].sort().join();
+  const friends = new Set(poll.friends);
+  return !same(poll.friends, pals.map((p) => p.code)) || !same(poll.sent.filter((c) => !friends.has(c)), sent.map((p) => p.code));
+}
+
+/** When the last full fetch ran, so an older server without the cheap check isn't asked for everything every 5s. */
+let lastFull = 0;
+const FULL_EVERY = 15_000;
+
+/**
+ * The 5-second check: one cheap read of your own card. Requests and invites are saved straight from it; the full
+ * list (every friend's card) is fetched only when someone was added, accepted, denied or removed. Never throws.
+ */
+let polling = false;
+export async function pollFriends(): Promise<void> {
+  const mine = myPalCode();
+  if (!mine || !numeric(mine) || polling) return;
+  polling = true;
+  try {
+    const poll = await pollFriendCard(mine, deviceId());
+    if (poll === null) return;
+    if (poll === 'old') {
+      if (Date.now() - lastFull < FULL_EVERY) return;
+      lastFull = Date.now();
+      return syncFriends();
+    }
+    saveBox(poll.requests, poll.invites);
+    saveIfChanged(DECLINED, poll.declined, read<InviteDeclined[] | null>(DECLINED, null) ?? NO_DECLINED);
+    if (listChanged(poll, loadPals(), loadSent())) await syncFriends();
+  } catch {
+    // Offline: try again next time.
+  } finally {
+    polling = false;
   }
 }
 
@@ -186,9 +292,12 @@ async function moveOldPals(): Promise<void> {
   await Promise.allSettled(old.map((p) => requestFriend(p.code, { deviceId: deviceId(), fromCode: mine })));
 }
 
-const WATCH_EVERY = 15_000;
+const WATCH_EVERY = 5_000;
 
-/** Keeps friends, requests and invites fresh while the app is open: now, every 15 seconds and on coming back. */
+/**
+ * Keeps friends, requests and invites fresh while the app is open: the full list now and on coming back to the
+ * foreground, then the cheap check every 5 seconds. Stops while the app is in the background.
+ */
 export function useFriendWatch(): void {
   const code = useMyPalCode();
   useEffect(() => {
@@ -202,7 +311,7 @@ export function useFriendWatch(): void {
         await moveOldPals().catch(() => undefined);
       })();
       clearInterval(timer);
-      timer = setInterval(() => void syncFriends(), WATCH_EVERY);
+      timer = setInterval(() => void pollFriends(), WATCH_EVERY);
     };
     const stop = () => clearInterval(timer);
     start();

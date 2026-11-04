@@ -48,6 +48,16 @@ export default function TableScreen() {
   };
   // A challenge's own sheets (Detective's check, Rewind's result) open by themselves when they're due.
   useChallengeSheets(t.challenge);
+  // Before the first deal the lobby is the whole screen, on the same grain page as Play with friends.
+  if (game?.status === 'lobby') {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background }}>
+        <Lobby game={game} online={online} conn={t.conn} />
+        {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
+        <DealWipe />
+      </View>
+    );
+  }
   return (
     <View
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
@@ -70,7 +80,6 @@ export default function TableScreen() {
         </View>
       ) : (
         <>
-          {game.status === 'lobby' && <Lobby game={game} online={online} />}
           {game.status === 'playing' && <Playing game={game} sending={t.sending} />}
           {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>

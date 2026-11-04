@@ -6,7 +6,7 @@ import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
 import { BOTS, playerStyle, styleOf } from './botStyles';
-import { botSays, type TalkEvent } from './botTalk';
+import { botSays, dealTalk, streetTalk, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
@@ -17,6 +17,7 @@ import {
   cardsText,
   castVote,
   dealNextStreet,
+  showdown,
   endsAtOnce,
   discardCard,
   endVote,
@@ -187,13 +188,7 @@ export function createTable(opts: {
       if (game.players.length < MAX_SEATS && !game.players.some((p) => p.legend === legend.id)) addLegend(game, legend.id);
       continue;
     }
-    const pick = BOTS.find((b) => b.name === name);
-    if (pick && game.players.length < MAX_SEATS && !game.players.some((p) => p.name === pick.name))
-      game.players.push({
-        ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
-        style: pick.style,
-        botProfile: pick.profile?.id,
-      });
+    seatBotNamed(game, name);
   }
   while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles, opts.rng);
   if (game.campaign) seatBoss(game);
@@ -209,6 +204,18 @@ function addLegend(game: Game, id: string): void {
   // Names are unique at a table: a person who got there first keeps theirs.
   bot.name = uniqueName(game, bot.name);
   game.players.push(bot);
+}
+
+/** Seats the bot from `BOTS` with this name, if it's free and there's a seat. Returns whether it sat down. */
+function seatBotNamed(game: Game, name: string): boolean {
+  const pick = BOTS.find((b) => b.name === name);
+  if (!pick || game.players.length >= MAX_SEATS || game.players.some((p) => p.name === pick.name)) return false;
+  game.players.push({
+    ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
+    style: pick.style,
+    botProfile: pick.profile?.id,
+  });
+  return true;
 }
 
 function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): void {
@@ -619,6 +626,10 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         if (!legendById(action.legend)) return fail('No such legend.');
         if (game.players.some((p) => p.legend === action.legend)) return fail('That legend is already at the table.');
         addLegend(game, action.legend);
+      } else if (action.name !== undefined) {
+        // A bot picked by name on the setup page. A campaign table seats only its room's bots.
+        if (game.campaign) return fail('A campaign table picks its own bots.');
+        if (!seatBotNamed(game, action.name)) return fail('That bot is already at the table.');
       } else addBot(game, game.campaign ? campaignStyles(game.campaign) : undefined, ctx.rng);
       wakeIfWaiting(game, ctx);
       return done();
@@ -961,8 +972,15 @@ function tick(game: Game, ctx: ActionContext): boolean {
       endVote(game, ctx);
       return true;
     }
+    // A bot's word before the showdown is over: the hands turn over.
+    if (hand.showdownAt != null) {
+      hand.showdownAt = null;
+      showdown(game, ctx);
+      return true;
+    }
     if (hand.nextStreetAt != null) {
       dealNextStreet(game, ctx);
+      streetTalk(game, ctx.rng, ctx.now);
       return true;
     }
     if (hand.runout) {
@@ -1052,5 +1070,6 @@ function tick(game: Game, ctx: ActionContext): boolean {
   // A word from a random bot between deals, now and then.
   const chatty = game.players.filter((p) => p.bot && !p.sittingOut);
   if (sleepy && chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
+  else dealTalk(game, ctx.rng, ctx.now);
   return true;
 }

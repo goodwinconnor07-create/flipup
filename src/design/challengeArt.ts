@@ -1,6 +1,6 @@
 // How each challenge looks on its card: a picture drawn the same way as the games' (src/design/gameArt.ts), from
-// playing cards in the four-colour deck on a 200 × 120 box, plus three shapes only the challenges use: a stack of
-// chips, a magnifying glass and a rewind arrow. The colours stay in the app's palette (violet, night and gold).
+// playing cards in the four-colour deck on a 200 × 120 box, plus four shapes only the solo cards use: a stack of
+// chips, a magnifying glass, a rewind arrow and Range training's grid of hands. The colours stay in the app's palette (violet, night and gold).
 // Drawn by native/src/components/challenge-picture.tsx.
 import type { ChallengeId } from '../game/challenges';
 import type { CardShape, LabelShape, MarkShape, Shape } from './gameArt';
@@ -30,7 +30,23 @@ export interface ArcShape {
   from: number;
   to: number;
 }
-export type ChallengeShape = Shape | ChipsShape | LensShape | ArcShape;
+/**
+ * A range grid, the way a hand chart is drawn: `cols` by `rows` little squares from (x, y), each `cell` wide.
+ * The ones in `on` (row by row, left to right) are filled gold; the rest are faint.
+ */
+export interface GridShape {
+  kind: 'grid';
+  x: number;
+  y: number;
+  cols: number;
+  rows: number;
+  cell: number;
+  on: number[];
+}
+export type ChallengeShape = Shape | ChipsShape | LensShape | ArcShape | GridShape;
+
+/** The solo cards on Home: the three challenges, then Range training (not a challenge: no table, no score). */
+export type SoloId = ChallengeId | 'ranges';
 
 export const CHIP = { gold: '#f5b700', violet: '#6e4bff', white: '#f4f1ff', night: '#2b1a80' } as const;
 export const ART_GOLD = '#ffc933';
@@ -40,17 +56,18 @@ export interface ChallengeLook {
   card: readonly [string, string];
 }
 
-export const CHALLENGE_LOOK: Record<ChallengeId, ChallengeLook> = {
+export const CHALLENGE_LOOK: Record<SoloId, ChallengeLook> = {
   shortStack: { card: ['#8263ff', '#2a1290'] },
   detective: { card: ['#2b1a80', '#0b0626'] },
   rewind: { card: ['#4a26d9', '#160b45'] },
+  ranges: { card: ['#5a35f0', '#1d0f5c'] },
 };
 
 const mark = (suit: string, x: number, y = 100, size = 150): MarkShape => ({ kind: 'mark', suit, x, y, size });
 const label = (x: number, y: number, text: string): LabelShape => ({ kind: 'label', x, y, text });
 const card = (c: Omit<CardShape, 'kind'>): CardShape => ({ kind: 'card', ...c });
 
-const SCENES: Record<ChallengeId, () => ChallengeShape[]> = {
+const SCENES: Record<SoloId, () => ChallengeShape[]> = {
   // A short stack in front of the hand you'd shove with: five chips is all there is.
   shortStack: () => [
     mark('♦', 150),
@@ -77,8 +94,17 @@ const SCENES: Record<ChallengeId, () => ChallengeShape[]> = {
     { kind: 'arc', x: 100, y: 52, r: 44, from: 60, to: -235 },
     label(100, 113, 'PLAY IT AGAIN'),
   ],
+  // Your hand in front of the chart of what they could have: which of their hands is it up against?
+  ranges: () => [
+    mark('♠', 150),
+    // A hand chart's corner: pairs down the diagonal, the strong hands round the top left, the rest left out.
+    { kind: 'grid', x: 26, y: 18, cols: 6, rows: 6, cell: 13, on: [0, 1, 2, 3, 4, 6, 7, 8, 9, 12, 13, 14, 18, 19, 21, 28] },
+    card({ x: 124, y: 54, r: -10, rank: 'A', suit: '♠', s: 1.05 }),
+    card({ x: 156, y: 58, r: 10, rank: 'J', suit: '♦', s: 1.05 }),
+    label(100, 113, 'READ THE RANGE'),
+  ],
 };
 
 /** The shapes of a challenge's picture, back to front. */
-export const challengeScene = (id: ChallengeId): ChallengeShape[] => SCENES[id]();
-export const challengeLook = (id: ChallengeId): ChallengeLook => CHALLENGE_LOOK[id];
+export const challengeScene = (id: SoloId): ChallengeShape[] => SCENES[id]();
+export const challengeLook = (id: SoloId): ChallengeLook => CHALLENGE_LOOK[id];

@@ -4,6 +4,7 @@ import { ScrollView, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { GlassSurface } from '@/components/glass-surface';
+import { GrainBackground } from '@/components/grain-background';
 import { StatsPicture } from '@/components/home/share-card';
 import { InviteTicket } from '@/components/invite-ticket';
 import { Row, Section } from '@/components/grouped-list';
@@ -107,6 +108,18 @@ export default function DesignSystem() {
             </ThemedText>
           </View>
         ))}
+      </View>
+
+      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden' }}>
+        <GrainBackground style={{ minHeight: 160, padding: spacing.lg, justifyContent: 'center', alignItems: 'center', gap: spacing.xs }}>
+          <ThemedText style={{ fontSize: 40, lineHeight: 48 }}>🃏</ThemedText>
+          <ThemedText variant="headline" tone="onColor">
+            Grain background
+          </ThemedText>
+          <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.75, textAlign: 'center' }}>
+            Dark base, one slow glow layer, still grain. For the Play pages.
+          </ThemedText>
+        </GrainBackground>
       </View>
 
       <GlassSurface style={{ borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg, alignSelf: 'center' }}>

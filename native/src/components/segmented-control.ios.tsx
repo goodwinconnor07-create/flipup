@@ -3,13 +3,17 @@ import { Picker, Text } from '@expo/ui/swift-ui';
 import { pickerStyle, tag } from '@expo/ui/swift-ui/modifiers';
 
 import { brandTint } from './brand-tint';
+import { useForcedScheme } from '@/theme';
+
 import { haptic } from './haptics';
 import type { SegmentedControlProps } from './segmented-control.types';
 
 /** Apple's segmented control (a SwiftUI Picker in segmented style). */
 export function SegmentedControl<T extends string>({ options, value, onChange, label }: SegmentedControlProps<T>) {
+  // A page that forces its scheme (the dark grain pages) gets a control drawn to match.
+  const forced = useForcedScheme();
   return (
-    <Host matchContents={{ vertical: true }} style={{ alignSelf: 'stretch' }}>
+    <Host colorScheme={forced ?? undefined} matchContents={{ vertical: true }} style={{ alignSelf: 'stretch' }}>
       <Picker
         label={label}
         selection={value}

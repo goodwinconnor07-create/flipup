@@ -7,6 +7,7 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
       '@game': fileURLToPath(new URL('../src/game', import.meta.url)),
       '@design': fileURLToPath(new URL('../src/design', import.meta.url)),
+      '@train': fileURLToPath(new URL('../src/train', import.meta.url)),
     },
   },
   test: { include: ['native/tests/**/*.test.ts'], environment: 'node' },

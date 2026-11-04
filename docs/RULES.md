@@ -165,3 +165,7 @@ The campaign's second floor game (Campaign tab, "Floor games", beside roulette).
 - **On your own**: the cards come as soon as you bet, and there's no clock on your decisions.
 - **With friends**: up to six seats. Each round deals once everyone connected has bet, or 15 seconds after the first person bets (anyone who hasn't bet sits it out). Each decision has 20 seconds (8 if your phone has dropped); running out stands. If a friend joins a full table, a bot gives up its seat.
 - **Bots** play the textbook strategy for these rules, bent by their style: careful bots stand early and rarely double, wild ones hit and double too much.
+
+## Challenges
+
+The iPhone app's solo challenges (Short Stack, Style Detective, Rewind) play these same rules at a bots-only table, with a few of their own on top: rising blinds and fresh bots in Short Stack, top-ups and quiet bots in Style Detective, and replaying one of your decisions in Rewind. Those are written up, with the scoring, in `docs/CHALLENGES.md`. No poker rule changes for them.

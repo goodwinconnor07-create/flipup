@@ -212,7 +212,7 @@ function faceDown(game: Game): number {
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
   const hand = game.hand;
   const three =
-    !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && !hand.result));
+    !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && hand.showdownAt == null && !hand.result));
   return v === 'pineapple' && three ? 3 : 2;
 }
 

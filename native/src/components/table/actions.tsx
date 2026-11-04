@@ -124,7 +124,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         {who ? (
           <Thinking name={who.name} what={who.bot ? 'is thinking' : who.offline ? 'is offline' : 'to act'} />
         ) : (
-          <Note>{hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
+          <Note>{hand.showdownAt != null ? 'Showdown…' : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (

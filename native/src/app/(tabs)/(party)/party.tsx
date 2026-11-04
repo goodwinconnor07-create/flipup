@@ -10,7 +10,7 @@ import { Icon } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
-import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, VARIANTS, type Variant } from '@/engine';
+import { PARTY_MAX_GAMES, PARTY_MIN_GAMES, seededRng, shuffle, VARIANTS, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePartyRef } from '@/state/party';
 import { useProfile } from '@/state/profile';
@@ -21,13 +21,13 @@ const GAP = 12;
 /** Points a second each belt moves. */
 const SPEED = 22;
 
-/** The three belts: every game, in a different order on each, so no column lines up. */
+/** The three belts: every game, each belt shuffled its own way (fixed seeds), so no two run in the same order. */
 const ALL = VARIANTS.map((v) => v.id);
-const BELTS: Variant[][] = [ALL, [...ALL.slice(4), ...ALL.slice(0, 4)], [...ALL.slice(8), ...ALL.slice(0, 8)]];
+const BELTS: Variant[][] = [11, 29, 47].map((seed) => shuffle(ALL, seededRng(seed)));
 
 /**
  * The Party tab is one big game-night poster on the app's own page colour: three
- * belts of game tiles drifting across the top in turn (tilted a little, alternating directions, still under Reduce
+ * belts of game tiles (each in its own order) filling the space between the title and the words (tilted a little, alternating directions, still under Reduce
  * Motion and while another tab is showing), the pitch in big rounded type, your open party if you have one, then two
  * buttons: Host a party, big, in the brand violet with grain, and Join a party, smaller, in night violet with a little code field.
  */
@@ -40,8 +40,10 @@ export default function PartyTab() {
   const colors = useColors();
   const page = usePlainColors().background;
   const clear = `${page}00`;
-  const { height } = useWindowDimensions();
   const shadows = useShadows();
+  // Bigger tiles on taller phones, so the three belts fill the poster instead of leaving a band of empty page.
+  const { height } = useWindowDimensions();
+  const tile = Math.round(Math.max(TILE, Math.min(112, (height * 0.4 - GAP * 2) / 3)));
 
   // Hosting and joining need a name first.
   const needName = (): boolean => {
@@ -56,18 +58,6 @@ export default function PartyTab() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.background, overflow: 'hidden' }}>
       <Stack.Screen options={{ title: 'Party', headerShown: false }} />
-      {/* The belts, behind the whole top of the screen and edge to edge, melting into the page above the words and
-          under the title, so the poster reads as one screen rather than a picture in a box. */}
-      <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ position: 'absolute', top: insets.top + 40, left: 0, right: 0, height: height * 0.46, justifyContent: 'center' }}>
-        <View style={{ gap: GAP, transform: [{ rotate: '-7deg' }, { scale: 1.15 }] }}>
-          {BELTS.map((games, i) => (
-            <Belt key={i} games={games} reverse={i % 2 === 1} running={focused} offset={i * 37} />
-          ))}
-        </View>
-        <View style={{ position: 'absolute', left: 0, right: 0, top: -insets.top - 40, height: insets.top + 110, ...gradient(`linear-gradient(180deg, ${page} 0%, ${page} 45%, ${clear} 100%)`) }} />
-        <View style={{ position: 'absolute', left: 0, right: 0, bottom: -2, height: 140, ...gradient(`linear-gradient(180deg, ${clear} 0%, ${page} 85%)`) }} />
-      </View>
-
       <View style={{ flex: 1, paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + 84 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingHorizontal: spacing.md }}>
           <Text accessibilityRole="header" maxFontSizeMultiplier={1.3} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 34, lineHeight: 41, fontWeight: '700', color: colors.label }}>
@@ -76,10 +66,19 @@ export default function PartyTab() {
           <ProfileMenu />
         </View>
 
-        {/* Room for the belts, which are drawn behind everything (below) so they run to the screen's edges. */}
-        <View style={{ flex: 1, minHeight: TILE * 2 + GAP }} />
+        {/* The belts take whatever room there is between the title and the words, edge to edge, and fade into the
+            page at the top and bottom, so they never run under the text and leave no gap below it. */}
+        <View pointerEvents="none" accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ flex: 1, minHeight: tile * 2 + GAP, overflow: 'hidden', justifyContent: 'center' }}>
+          <View style={{ gap: GAP, transform: [{ rotate: '-7deg' }, { scale: 1.12 }] }}>
+            {BELTS.map((games, i) => (
+              <Belt key={i} games={games} reverse={i % 2 === 1} running={focused} offset={i * 37} tile={tile} />
+            ))}
+          </View>
+          <View style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 36, ...gradient(`linear-gradient(180deg, ${page} 0%, ${clear} 100%)`) }} />
+          <View style={{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 36, ...gradient(`linear-gradient(180deg, ${clear} 0%, ${page} 100%)`) }} />
+        </View>
 
-        <View style={{ paddingHorizontal: spacing.lg, gap: spacing.xs, paddingBottom: spacing.lg }}>
+        <View style={{ paddingHorizontal: spacing.lg, gap: spacing.xs, paddingTop: spacing.sm, paddingBottom: spacing.lg }}>
           <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 2, color: colors.accent }}>
             GAME NIGHT
           </Text>
@@ -115,10 +114,10 @@ export default function PartyTab() {
 }
 
 /** One belt of game tiles, twice over so it can loop without a seam, moving left (or right) for ever. */
-function Belt({ games, reverse, running, offset }: { games: Variant[]; reverse: boolean; running: boolean; offset: number }) {
+function Belt({ games, reverse, running, offset, tile }: { games: Variant[]; reverse: boolean; running: boolean; offset: number; tile: number }) {
   const reduce = useReduceMotion();
   const { width } = useWindowDimensions();
-  const span = games.length * (TILE + GAP);
+  const span = games.length * (tile + GAP);
   const x = useSharedValue(0);
   useEffect(() => {
     if (reduce || !running) {
@@ -137,7 +136,7 @@ function Belt({ games, reverse, running, offset }: { games: Variant[]; reverse: 
     <Animated.View style={[{ flexDirection: 'row', gap: GAP, marginLeft: -offset, width: Math.max(span * 2, width * 2) }, move]}>
       {[...games, ...games].map((v, i) => (
         <View key={`${v}-${i}`} style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: '0 8px 18px -8px rgba(0, 0, 0, 0.6)' }}>
-          <GameThumb variant={v} size={TILE} rounded={radius.lg} />
+          <GameThumb variant={v} size={tile} rounded={radius.lg} />
         </View>
       ))}
     </Animated.View>

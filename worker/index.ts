@@ -43,6 +43,7 @@ import { forgetDevice, handleNotification, mayHostPremium, verifyPurchase, type 
 export { TableRoom } from './room';
 export { PartyRoom } from './party';
 export { FriendCard } from './friendCard';
+import { askToBeFriends, type FriendCardApi } from './friendCard';
 export { BlackjackRoom } from './blackjack';
 export { ReportBox } from './reports';
 export { Entitlements } from './entitlement';
@@ -166,7 +167,7 @@ async function ownedCode(env: Env, code: unknown, deviceId: string): Promise<str
  * DELETE removes it (its owner only). /request, /answer, /unfriend and /inbox are friend requests and the list.
  */
 async function friendRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
-  const match = pathname.match(/^\/api\/friends(?:\/([^/]+)(?:\/(invite|invites|request|answer|unfriend|inbox|username))?)?$/);
+  const match = pathname.match(/^\/api\/friends(?:\/([^/]+)(?:\/(invite|invites|request|requests|answer|unfriend|inbox|username))?)?$/);
   if (!match) return json({ error: 'Not found.' }, 404);
   const code = match[1]?.toUpperCase();
   if (code && (match[2] === 'invite' || match[2] === 'invites')) return inviteRoute(request, env, code, match[2], search);
@@ -259,7 +260,8 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
  * Friend requests, for the code's owner (who proves it with their device id):
  * POST /request {deviceId, fromCode} asks `code` to be friends (if they'd already asked you, you're friends at once);
  * POST /answer {deviceId, from, accept} says yes or no; POST /unfriend {deviceId, other} ends a friendship on both
- * sides; GET /inbox?device= is the requests, the table invites and the friends list (their cards).
+ * sides; GET /inbox?device= is the requests, the table invites and the friends list (their cards); GET /requests?device=
+ * is the cheap one the web polls: requests waiting, who you've asked, and your friends' codes.
  */
 async function friendshipRoute(request: Request, env: Env, code: string, kind: string, search: string): Promise<Response> {
   if (!isFriendCode(code)) return json({ error: "That code doesn't look right." }, 400);
@@ -272,6 +274,15 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
     if (!box) return json({ error: 'That code belongs to another phone.' }, 403);
     const friends = (await Promise.all(box.friends.map((f) => env.FRIEND_CARD.getByName(f).get(f)))).filter((f): f is FriendCardInfo => !!f);
     return json({ requests: box.requests, invites: box.invites, friends });
+  }
+  if (kind === 'requests') {
+    // Polled every few seconds while the app is open, so it's one read of one card with nothing fanned out.
+    // Phones at the same party share an address, so the limit is loose.
+    if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
+    if (limited(request, 'requests', 1200, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+    const device = new URL(`http://x/${search}`).searchParams.get('device');
+    const box = isDeviceId(device) ? await card.pending(device) : null;
+    return box ? json(box) : json({ error: 'That code belongs to another phone.' }, 403);
   }
   if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
   if (limited(request, 'friend-ask', 60, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
@@ -298,29 +309,21 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
     return json({ ok: true, username });
   }
   if (kind === 'request') {
+    // One phone can't keep asking the same code: a handful of asks an hour per person asked.
+    if (limited(request, `friend-ask:${code}`, 6, 60 * 60_000)) return json({ error: "You've asked them a few times already. Give them a while." }, 429);
     const from = await ownedCode(env, body.fromCode, body.deviceId);
     if (!from) return json({ error: 'Get your own friend code first.' }, 403);
-    if (from === code) return json({ error: "That's your own code." }, 400);
-    const mine = env.FRIEND_CARD.getByName(from);
-    const me = await mine.get(from);
-    if (!me) return json({ error: 'Get your own friend code first.' }, 403);
-    // They'd already asked you: that's a yes from both of you.
-    if (await mine.asked(code)) {
-      await mine.answer(body.deviceId, code, true);
-      await card.befriend(from);
-      return json({ status: 'friends' });
-    }
-    const result = await card.request({ from, name: me.name, emoji: me.emoji, ...(me.username ? { username: me.username } : {}), at: Date.now() });
-    if (result === 'missing') return json({ error: 'No one has that friend code. Check it with them.' }, 404);
-    if (result === 'friends') await mine.befriend(code);
-    return json({ status: result });
+    const result = await askToBeFriends((c) => env.FRIEND_CARD.getByName(c) as unknown as FriendCardApi, body.deviceId, from, code);
+    return 'error' in result ? json({ error: result.error }, result.httpStatus) : json({ status: result.status });
   }
   if (kind === 'answer') {
     if (!isFriendCode(body.from)) return json({ error: "That code doesn't look right." }, 400);
     const result = await card.answer(body.deviceId, body.from, body.accept === true);
     if (result === 'forbidden') return json({ error: 'That code belongs to another phone.' }, 403);
     if (result === 'missing') return json({ error: 'That request has gone.' }, 404);
+    // A yes makes them friends on both cards; a no just ends the sender's ask, with nothing sent to tell them.
     if (body.accept === true) await env.FRIEND_CARD.getByName(body.from).befriend(code);
+    else await env.FRIEND_CARD.getByName(body.from).forget(code);
     return json({ ok: true });
   }
   if (kind === 'unfriend') {

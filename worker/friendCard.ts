@@ -161,11 +161,14 @@ export class FriendCard extends DurableObject<Env> {
     await this.save({ ...data, sent: data.sent.filter((c) => c !== code) }, false);
   }
 
-  /** RPC: the owner's waiting requests, who they've asked, and their friends' codes. One cheap read, for polling. */
-  async pending(deviceId: string): Promise<{ requests: FriendRequest[]; sent: string[]; friends: string[] } | null> {
+  /**
+   * RPC: the owner's waiting requests, who they've asked, their friends' codes and the table invites waiting. One
+   * cheap read of one card, for polling every few seconds.
+   */
+  async pending(deviceId: string): Promise<{ requests: FriendRequest[]; sent: string[]; friends: string[]; invites: BjInvite[] } | null> {
     const data = await this.load();
     if (!data || data.deviceId !== deviceId) return null;
-    return { requests: data.requests ?? [], sent: data.sent ?? [], friends: data.friends ?? [] };
+    return { requests: data.requests ?? [], sent: data.sent ?? [], friends: data.friends ?? [], invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS) };
   }
 
   /** RPC: whether `code` has asked this person and is still waiting. */
@@ -214,11 +217,11 @@ export class FriendCard extends DurableObject<Env> {
     return !!(await this.load())?.friends?.includes(code);
   }
 
-  /** RPC: everything waiting for the owner: friend requests, table invites, and the friend codes on the list. */
-  async inbox(deviceId: string): Promise<{ requests: FriendRequest[]; invites: BjInvite[]; friends: string[] } | null> {
+  /** RPC: everything waiting for the owner: friend requests, table invites, the friend codes on the list and who they've asked. */
+  async inbox(deviceId: string): Promise<{ requests: FriendRequest[]; invites: BjInvite[]; friends: string[]; sent: string[] } | null> {
     const data = await this.load();
     if (!data || data.deviceId !== deviceId) return null;
-    return { requests: data.requests ?? [], invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS), friends: data.friends ?? [] };
+    return { requests: data.requests ?? [], invites: (data.invites ?? []).filter((i) => Date.now() - i.at < INVITE_MS), friends: data.friends ?? [], sent: data.sent ?? [] };
   }
 
   /**

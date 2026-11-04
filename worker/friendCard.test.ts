@@ -58,7 +58,7 @@ describe('friend requests', () => {
     const ben = await card('222222').pending('dev-222222');
     expect(ben?.requests.map((r) => [r.from, r.name])).toEqual([['111111', 'Ann']]);
     const ann = await card('111111').pending('dev-111111');
-    expect(ann).toEqual({ requests: [], sent: ['222222'], friends: [] });
+    expect(ann).toEqual({ requests: [], sent: ['222222'], friends: [], invites: [] });
   });
 
   it('only the owner reads a card’s requests', async () => {
@@ -71,16 +71,16 @@ describe('friend requests', () => {
     await ask('111111', '222222');
     expect(await card('222222').answer('dev-222222', '111111', true)).toBe('ok');
     await card('111111').befriend('222222');
-    expect(await card('222222').pending('dev-222222')).toEqual({ requests: [], sent: [], friends: ['111111'] });
-    expect(await card('111111').pending('dev-111111')).toEqual({ requests: [], sent: [], friends: ['222222'] });
+    expect(await card('222222').pending('dev-222222')).toEqual({ requests: [], sent: [], friends: ['111111'], invites: [] });
+    expect(await card('111111').pending('dev-111111')).toEqual({ requests: [], sent: [], friends: ['222222'], invites: [] });
   });
 
   it('deny: the request goes quietly and the sender’s ask ends', async () => {
     await ask('111111', '222222');
     expect(await card('222222').answer('dev-222222', '111111', false)).toBe('ok');
     await card('111111').forget('222222');
-    expect(await card('222222').pending('dev-222222')).toEqual({ requests: [], sent: [], friends: [] });
-    expect(await card('111111').pending('dev-111111')).toEqual({ requests: [], sent: [], friends: [] });
+    expect(await card('222222').pending('dev-222222')).toEqual({ requests: [], sent: [], friends: [], invites: [] });
+    expect(await card('111111').pending('dev-111111')).toEqual({ requests: [], sent: [], friends: [], invites: [] });
   });
 
   it('a stranger can’t answer someone else’s request', async () => {
@@ -100,7 +100,7 @@ describe('friend requests', () => {
     await ask('111111', '222222');
     expect(await ask('222222', '111111')).toEqual({ status: 'friends' });
     for (const [code, other] of [['111111', '222222'], ['222222', '111111']]) {
-      expect(await card(code).pending(`dev-${code}`)).toEqual({ requests: [], sent: [], friends: [other] });
+      expect(await card(code).pending(`dev-${code}`)).toEqual({ requests: [], sent: [], friends: [other], invites: [] });
     }
   });
 
@@ -108,7 +108,7 @@ describe('friend requests', () => {
     const [a, b] = await Promise.all([ask('111111', '222222'), ask('222222', '111111')]);
     expect([a, b].some((r) => 'status' in r && r.status === 'friends')).toBe(true);
     for (const [code, other] of [['111111', '222222'], ['222222', '111111']]) {
-      expect(await card(code).pending(`dev-${code}`)).toEqual({ requests: [], sent: [], friends: [other] });
+      expect(await card(code).pending(`dev-${code}`)).toEqual({ requests: [], sent: [], friends: [other], invites: [] });
     }
   });
 
@@ -132,5 +132,12 @@ describe('friend requests', () => {
     await card('222222').drop('111111');
     expect((await card('111111').pending('dev-111111'))?.sent).toEqual([]);
     expect((await card('222222').pending('dev-222222'))?.requests).toEqual([]);
+  });
+
+  it('the cheap poll carries table invites that are still fresh', async () => {
+    await card('222222').invite({ from: '111111', name: 'Ann', emoji: '🙂', table: 'BCDFG', kind: 'table', at: Date.now() });
+    await card('222222').invite({ from: '333333', name: 'Cat', emoji: '🙂', table: 'HJKLM', kind: 'table', at: Date.now() - 60 * 60_000 });
+    expect((await card('222222').pending('dev-222222'))?.invites.map((i) => i.from)).toEqual(['111111']);
+    expect(await card('222222').pending('dev-111111')).toBeNull();
   });
 });

@@ -260,8 +260,9 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
  * Friend requests, for the code's owner (who proves it with their device id):
  * POST /request {deviceId, fromCode} asks `code` to be friends (if they'd already asked you, you're friends at once);
  * POST /answer {deviceId, from, accept} says yes or no; POST /unfriend {deviceId, other} ends a friendship on both
- * sides; GET /inbox?device= is the requests, the table invites and the friends list (their cards); GET /requests?device=
- * is the cheap one the web polls: requests waiting, who you've asked, and your friends' codes.
+ * sides; GET /inbox?device= is the requests, the table invites, the friends list and who you've asked (their cards);
+ * GET /requests?device= is the cheap one the phones poll every few seconds: requests and table invites waiting, who
+ * you've asked and your friends' codes, from one read of one card.
  */
 async function friendshipRoute(request: Request, env: Env, code: string, kind: string, search: string): Promise<Response> {
   if (!isFriendCode(code)) return json({ error: "That code doesn't look right." }, 400);
@@ -273,7 +274,9 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
     const box = isDeviceId(device) ? await card.inbox(device) : null;
     if (!box) return json({ error: 'That code belongs to another phone.' }, 403);
     const friends = (await Promise.all(box.friends.map((f) => env.FRIEND_CARD.getByName(f).get(f)))).filter((f): f is FriendCardInfo => !!f);
-    return json({ requests: box.requests, invites: box.invites, friends });
+    // Who you've asked and are still waiting on, as cards, so the app can show them as Pending.
+    const sent = (await Promise.all(box.sent.map((f) => env.FRIEND_CARD.getByName(f).get(f)))).filter((f): f is FriendCardInfo => !!f);
+    return json({ requests: box.requests, invites: box.invites, friends, sent });
   }
   if (kind === 'requests') {
     // Polled every few seconds while the app is open, so it's one read of one card with nothing fanned out.

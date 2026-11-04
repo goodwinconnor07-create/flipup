@@ -85,6 +85,13 @@ export const SHOTS: Partial<Record<Variant, Partial<Record<Shot, number>>>> = {
     showdown: require('../../../assets/howto/beanstalk/showdown.webp'),
     turn: require('../../../assets/howto/beanstalk/turn.webp'),
   },
+  bjholdem: {
+    deal: require('../../../assets/howto/bjholdem/deal.webp'),
+    flop: require('../../../assets/howto/bjholdem/flop.webp'),
+    river: require('../../../assets/howto/bjholdem/river.webp'),
+    showdown: require('../../../assets/howto/bjholdem/showdown.webp'),
+    turn: require('../../../assets/howto/bjholdem/turn.webp'),
+  },
   imposter: {
     deal: require('../../../assets/howto/imposter/deal.webp'),
     flop: require('../../../assets/howto/imposter/flop.webp'),

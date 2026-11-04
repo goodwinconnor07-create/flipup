@@ -8,6 +8,7 @@ import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
+import { ChallengeEnded, ChallengeStrip, useChallengeSheets } from '@/components/table/challenge';
 import { Confetti } from '@/components/table/confetti';
 import { PartyPanel } from '@/components/party/panel';
 import { Ended } from '@/components/table/ended';
@@ -22,7 +23,7 @@ import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
 import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
-import { equity, myPlayer, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand } from '@/engine';
+import { challengeById, equity, myPlayer, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { joinLink } from '@/state/api';
 import { forgetParty } from '@/state/party';
@@ -45,12 +46,15 @@ export default function TableScreen() {
     leaveTable();
     router.dismissTo('/');
   };
+  // A challenge's own sheets (Detective's check, Rewind's result) open by themselves when they're due.
+  useChallengeSheets(t.challenge);
   return (
     <View
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
       <TableBar game={game} online={online} code={t.code} />
       {game && <BlindNews game={game} />}
+      {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
       {online && t.conn === 'offline' && <Pill text="Reconnecting…" />}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
@@ -68,8 +72,7 @@ export default function TableScreen() {
         <>
           {game.status === 'lobby' && <Lobby game={game} online={online} />}
           {game.status === 'playing' && <Playing game={game} sending={t.sending} />}
-          {game.status === 'ended' &&
-            (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
+          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>
       )}
     </View>
@@ -170,15 +173,9 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
             <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 17, lineHeight: 20, fontWeight: '700', color: colors.label }}>
               Blinds {chips(game.settings.smallBlind)}/{chips(game.settings.bigBlind)}
             </Text>
-            <Text
-              maxFontSizeMultiplier={1.2}
-              numberOfLines={1}
-              style={{ fontSize: 13, lineHeight: 15, fontWeight: '600', color: colors.tertiaryLabel }}
-            >
-              {game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
-              {game.status === 'playing' && !!game.settings.blindMinutes && game.blindsRaiseAt != null && (
-                <BlindClock at={game.blindsRaiseAt} fast={game.fast} />
-              )}
+            <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, lineHeight: 15, fontWeight: '600', color: colors.tertiaryLabel }}>
+              {game.challenge ? challengeById(game.challenge.id)?.name : game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
+              {game.status === 'playing' && !!game.settings.blindMinutes && game.blindsRaiseAt != null && <BlindClock at={game.blindsRaiseAt} fast={game.fast} />}
             </Text>
           </>
         )}

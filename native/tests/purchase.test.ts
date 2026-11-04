@@ -37,7 +37,7 @@ vi.mock('../src/state/premium', () => ({
     store.grant(on);
   },
 }));
-vi.mock('../src/state/entitlement', () => ({ ensurePass: store.pass }));
+vi.mock('../src/state/entitlement', () => ({ bindPurchase: store.pass }));
 
 beforeEach(() => {
   vi.resetModules();

@@ -25,6 +25,8 @@ export default function TableMenu() {
   const playing = game.status === 'playing';
   const started = game.status !== 'lobby';
   const ended = game.status === 'ended';
+  // A challenge plays by its own rules: no settings, extra bots, sitting out or ending it early.
+  const challenge = !!game.challenge;
   const close = () => router.back();
   const quick = (fn: () => void) => () => {
     fn();
@@ -67,9 +69,9 @@ export default function TableMenu() {
             onPress={() => void Share.share({ message: `Come play poker with me on FlipUp. Code ${t.code}: ${joinLink(t.code!)}`, url: joinLink(t.code!) })}
           />
         )}
-        {host && !ended && <Row title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}
-        {host && playing && game.players.length < 9 && <Row title="Add a bot" icon={{ symbol: 'person.badge.plus', color: colors.green as string }} chevron={false} onPress={quick(() => dispatch({ type: 'addBot' }))} />}
-        {me && playing && (
+        {host && !ended && !challenge && <Row title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}
+        {host && playing && !challenge && game.players.length < 9 && <Row title="Add a bot" icon={{ symbol: 'person.badge.plus', color: colors.green as string }} chevron={false} onPress={quick(() => dispatch({ type: 'addBot' }))} />}
+        {me && playing && !challenge && (
           <Row
             title={me.sittingOut ? "I'm back" : 'Sit out'}
             icon={{ symbol: 'clock.fill', color: (me.sittingOut ? colors.accent : colors.slate) as string }}
@@ -81,7 +83,7 @@ export default function TableMenu() {
       <YouSettings header="You" online={online} />
       <Section>
         {!ended && <Row title="Home" icon={{ symbol: 'house.fill', color: colors.green as string }} chevron={false} onPress={goHome} />}
-        {host && !ended && (online || playing) && (
+        {host && !ended && !challenge && (online || playing) && (
           <Row
             title="End the game"
             icon={{ symbol: 'stop.circle.fill', color: colors.red as string }}
@@ -104,7 +106,7 @@ export default function TableMenu() {
             destructive
             chevron={false}
             onPress={() =>
-              ask('Leave the table?', online ? (host ? 'The table stays open for the others while it lasts.' : 'Your seat goes to someone else. If a hand is on, your cards are folded.') : 'This ends your game against the bots.', 'Leave', leave)
+              ask('Leave the table?', online ? (host ? 'The table stays open for the others while it lasts.' : 'Your seat goes to someone else. If a hand is on, your cards are folded.') : challenge ? "This run won't get a score." : 'This ends your game against the bots.', 'Leave', leave)
             }
           />
         )}

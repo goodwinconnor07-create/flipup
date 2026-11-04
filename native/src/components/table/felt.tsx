@@ -471,6 +471,15 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
         : `Innocents split ${chips(all)}`;
     how = `Imposter: ${imp?.name ?? '?'} · ${tally} of ${total} votes`;
     face = '🕵️';
+  } else if (result.blackjack) {
+    // Blackjack Hold'em: who took the poker half and who took the 21 half of the main pot.
+    const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+    const poker = result.blackjack.poker[0] ?? [];
+    const count = result.blackjack.winners[0] ?? [];
+    const both = poker.length === 1 && count.length === 1 && poker[0] === count[0];
+    title = both ? `${name(poker[0])} ${poker[0] === me?.id ? 'win' : 'wins'} both halves` : `Hand: ${poker.map(name).join(' & ')} · 21: ${count.map(name).join(' & ')}`;
+    how = `${result.names[poker[0]] ?? ''} · closest to 21: ${result.blackjack.counts[count[0]] ?? '?'}`;
+    face = game.players.find((p) => p.id === (poker[0] ?? count[0]))?.emoji ?? '♠️';
   } else if (!winners.length) {
     if (!result.ghost?.kept) return null;
     title = `The ghost keeps ${chips(result.ghost.kept)}`;

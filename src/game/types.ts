@@ -391,6 +391,11 @@ export interface Game {
   };
   /** Tournaments: who knocked out whom (the winners of the pots the busted player was in), by the busted player's id. */
   knocked?: Record<string, string[]>;
+  /**
+   * A solo challenge on this phone (see challenges.ts). Public: it holds only which challenge it is, never an
+   * answer. `quiet` keeps the bots from talking, since each style has its own lines (Style Detective).
+   */
+  challenge?: { id: 'shortStack' | 'detective' | 'rewind'; quiet?: boolean };
 }
 
 export type Action =

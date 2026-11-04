@@ -75,6 +75,10 @@ const WEB = {
   ellipsis: 'more_horiz',
   'party.popper.fill': 'celebration',
   'chart.bar.xaxis': 'bar_chart',
+  'arrow.uturn.backward': 'undo',
+  magnifyingglass: 'search',
+  'tag.fill': 'sell',
+  'star.fill': 'star',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

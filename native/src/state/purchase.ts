@@ -17,7 +17,7 @@ import {
 import { useSyncExternalStore } from 'react';
 
 import { APP_INFO } from '../../appInfo';
-import { ensurePass } from './entitlement';
+import { bindPurchase } from './entitlement';
 import { hasPremium, setPremium } from './premium';
 
 const SKU = APP_INFO.premiumProductId;
@@ -63,8 +63,8 @@ function grant(p: Purchase): Promise<void> {
   const existing = granting.get(key);
   if (existing) return existing;
   if (!hasPremium()) setPremium(true);
-  // Restores can refresh an expired pass even for an already-finished transaction.
-  void ensurePass(p.purchaseToken);
+  // Restores can rebind a new device even for an already-finished transaction.
+  void bindPurchase(p.purchaseToken);
   const task = (async () => {
     if (finished.has(key)) return;
     try {

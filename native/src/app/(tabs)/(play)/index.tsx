@@ -3,6 +3,7 @@ import { Pressable, Text, View } from 'react-native';
 
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
+import { ChallengeRow } from '@/components/home/challenge-row';
 import { FriendsStrip } from '@/components/home/friends-strip';
 import { GameRow } from '@/components/home/game-row';
 import { PassportCard } from '@/components/home/passport';
@@ -15,7 +16,7 @@ import { ProfileMenu } from '@/components/profile-menu';
 import { SwipeAway } from '@/components/swipe-away';
 import { TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
-import { variantInfo, variantOf } from '@/engine';
+import { challengeById, variantInfo, variantOf } from '@/engine';
 import { useFriendBox } from '@/state/pals';
 import { usePartyRef } from '@/state/party';
 import { usePokerRecord } from '@/state/record';
@@ -58,6 +59,7 @@ export default function Home() {
           </SwipeAway>
         )}
         <GameRow />
+        <ChallengeRow />
         <FriendsStrip />
         {record.hands > 0 ? <PassportCard /> : <FirstHand />}
         {!premium && <PremiumBanner />}
@@ -128,7 +130,8 @@ function TableBanner() {
   const atTable = !!t.mode && !(game && game.status === 'ended' && !game.party);
   if (!atTable && !partyRef) return null;
   const info = atTable && game ? variantInfo(variantOf(game)) : null;
-  const what = !atTable ? 'Your party' : game?.party ? `Party · game ${game.party.round + 1} of ${game.party.total}` : t.mode === 'online' ? `Online table${t.code ? ` · ${t.code}` : ''}` : 'You vs the bots';
+  const challenge = game?.challenge ? challengeById(game.challenge.id) : undefined;
+  const what = !atTable ? 'Your party' : challenge ? challenge.name : game?.party ? `Party · game ${game.party.round + 1} of ${game.party.total}` : t.mode === 'online' ? `Online table${t.code ? ` · ${t.code}` : ''}` : 'You vs the bots';
   const where = !atTable ? `Code ${partyRef?.code}` : game?.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : game?.status === 'lobby' ? 'In the lobby' : 'Your table';
   return (
     <Pressable

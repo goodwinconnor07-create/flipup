@@ -3,12 +3,13 @@
 // (full colour on their turn), the stack counting as it changes, their cards (with an orange shimmer sweeping over
 // them while it's their turn), and a tag under them: what they've put in this round, a win, their odds during a
 // run-out, or Offline.
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
-import { me as myDevice, dispatch } from '@/state/session';
+import { me as myDevice, dispatch, useTable } from '@/state/session';
 import { usePlainColors, brand } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -17,6 +18,7 @@ import { openPlayerMenu } from '../player-menu';
 import { seatKey } from '@/state/blocks';
 import { ThemedText } from '../themed-text';
 import { bubbleOut, bubblePop, MoveBubble, pinned, Thread, TypingBubble } from './bubbles';
+import { TagChip } from './challenge';
 import { Count } from './count';
 import { MoodFace } from './mood-face';
 import { PlayingCard } from './playing-card';
@@ -189,6 +191,7 @@ function SeatPod({
 }) {
   const c = usePlainColors();
   const { width } = useWindowDimensions();
+  const tag = useTable().challenge?.tags[player.id];
   const hand = game.hand;
   const host = game.hostDeviceId === myDevice;
   const turn = !!hand && !hand.result && hand.toAct === player.id;
@@ -211,10 +214,12 @@ function SeatPod({
   return (
     <Pressable
       accessibilityLabel={`${player.name}${player.bot ? ', a bot' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
-      accessibilityHint={canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
+      accessibilityHint={game.challenge?.id === 'detective' && player.bot ? 'Tag it with a style' : canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
       disabled={!host && !other}
       onPress={() => {
         haptic.tap();
+        // Style Detective: a bot's seat takes a tag.
+        if (game.challenge?.id === 'detective' && player.bot) return router.push({ pathname: '/challenge-tag', params: { id: player.id } });
         // After a hand, the host's tap turns a bot's cards over.
         if (canPeek && hand) return dispatch({ type: 'revealBots', hand: hand.number, playerId: player.id });
         const inHand = !!seat && !!hand && !hand.result;
@@ -246,6 +251,11 @@ function SeatPod({
         <View style={{ position: 'absolute', right: -15, bottom: 8 }}>
           <PositionChip pos={positionOf(hand, player.id)} />
         </View>
+        {tag && (
+          <View pointerEvents="none" style={{ position: 'absolute', top: -4, left: -18, right: -18, alignItems: 'center' }}>
+            <TagChip label={tag} />
+          </View>
+        )}
         {/* The bubble sits over the top of the face, as on the web. */}
         <View pointerEvents="none" style={{ position: 'absolute', bottom: 48, left: -40, right: -40, height: 0 }}>
           {talk ? (

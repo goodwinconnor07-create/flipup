@@ -12,6 +12,7 @@ import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
+import { shoveTime, ShoveTurn } from './challenge';
 import { RaiseSlider } from './raise-slider';
 import { useTableNow } from './use-now';
 
@@ -106,6 +107,8 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
   if (hand && !hand.result) {
+    // Short Stack, at 12 big blinds or less: Fold, Call and a big Shove in place of the raise panel.
+    if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
     if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <Note>Running it out…</Note>;

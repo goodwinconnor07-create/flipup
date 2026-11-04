@@ -17,7 +17,7 @@ import {
 import { useSyncExternalStore } from 'react';
 
 import { APP_INFO } from '../../appInfo';
-import { ensurePass } from './entitlement';
+import { bindPurchase } from './entitlement';
 import { hasPremium, setPremium } from './premium';
 
 const SKU = APP_INFO.premiumProductId;
@@ -57,9 +57,9 @@ const ours = (p: Purchase) => p.productId === SKU && p.purchaseState !== 'pendin
 
 async function grant(p: Purchase): Promise<void> {
   setPremium(true);
-  // Show the server Apple's signed transaction so it can give this phone a pass (see state/entitlement.ts). Premium
-  // works on this phone either way; the pass is for what other people see and for hosting online.
-  void ensurePass(p.purchaseToken);
+  // Show the server Apple's signed transaction so it ties this phone to the purchase (see state/entitlement.ts).
+  // Premium works on this phone either way; this is for what other people see and for hosting online.
+  void bindPurchase(p.purchaseToken);
   try {
     await finishTransaction({ purchase: p, isConsumable: false });
   } catch {

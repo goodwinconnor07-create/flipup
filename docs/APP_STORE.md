@@ -319,7 +319,7 @@ the iPad release.
 | 8 | App icon and splash made for FlipUp (Expo's placeholders are in now) | Design pass |
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
-| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the Worker secret `ENTITLEMENT_SECRET` (`wrangler secret put`), set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy | Owner |
+| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy | Owner |
 
 ---
 
@@ -412,16 +412,17 @@ still join one for free. `unlockToHost()` in `native/src/state/unlock.ts` opens 
   must end in Apple Root CA G3, whose SHA-256 fingerprint is pinned in the file; every link must be signed by the
   next; the chain's dates are checked at the transaction's own `signedDate`), then that the bundle id and product id
   are ours, the environment is Production or Sandbox, it isn't revoked and isn't Family Shared.
-- **What comes back.** A pass (`worker/entitlementToken.ts`): `{ device, expires }` signed with `ENTITLEMENT_SECRET`,
-  good for 7 days. The phone keeps it (`flipup.pass`) and renews it at launch while the App Store says the Apple
-  Account owns Premium.
-- **Where it's checked.** `POST /api/tables` and `POST /api/parties` (header `x-entitlement`) refuse a Premium game
-  without a pass (HTTP 402). A table's WebSocket takes `&token=`; without a pass the table drops the Premium bubble
-  and card back from that phone's `setLook` (the name and emoji stay). Joining is never gated.
+- **What comes back.** Nothing but `ok`. The Worker ties that device id to the purchase in the `Entitlements`
+  Durable Object and remembers it. There's no pass, no expiry, no renewal and no secret: the phone sends its device id
+  and the server looks it up.
+- **Where it's checked.** `POST /api/tables` and `POST /api/parties` refuse a Premium game when the host's device isn't
+  tied to a live purchase (HTTP 402). A table's WebSocket checks the same thing when a phone connects; without
+  Premium the table drops the Premium bubble and card back from that phone's `setLook` (the name and emoji stay).
+  Joining is never gated.
 - **Refunds.** The `Entitlements` Durable Object (`worker/entitlement.ts`, one instance named `premium`) stores
   Apple's original transaction id and the device ids bound to it (at most 6). Apple's Server Notifications V2
-  (`POST /api/apple/notifications`, REFUND, REVOKE, REFUND_REVERSED) mark a purchase revoked, so its pass is not
-  renewed. On the phone, `startStore()` turns Premium off when the App Store answers and the account owns nothing.
+  (`POST /api/apple/notifications`, REFUND, REVOKE, REFUND_REVERSED) mark a purchase revoked, so every phone
+  tied to it loses Premium on the server at once. On the phone, `startStore()` turns Premium off when the App Store answers and the account owns nothing.
 - **Off by default.** `PREMIUM_ENFORCED` is `"0"` in `wrangler.jsonc` because the web app has no payment and would be
   locked out of Premium games and looks. Switch it to `"1"` when the iPhone app is the client that sells them.
 - **Family Sharing** is off for the purchase (a shared purchase is refused by the check).

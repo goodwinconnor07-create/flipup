@@ -15,7 +15,6 @@ import { MoveBubble } from '@/components/table/bubbles';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { BUBBLE_STYLES, CARD_PACKS, FREE_VARIANTS, isVariant, VARIANTS, variantInfo } from '@/engine';
-import { usePassReady } from '@/state/pass';
 import { usePremium } from '@/state/premium';
 import { buyPremium, ON_SALE, restorePremium, startStore, useStore } from '@/state/purchase';
 import { gradient, party, radius, spacing, useColors } from '@/theme';
@@ -39,7 +38,6 @@ export default function PremiumSheet() {
   const reason: Reason | undefined = params.reason === 'game' || params.reason === 'pack' || params.reason === 'bubble' ? params.reason : undefined;
   const wanted = params.game && isVariant(params.game) ? params.game : undefined;
   const has = usePremium();
-  const passReady = usePassReady();
   const store = useStore();
   const insets = useSafeAreaInsets();
   useEffect(() => void startStore(), []);
@@ -120,15 +118,6 @@ export default function PremiumSheet() {
         {order.map((p) => parts[p])}
 
         <Compare />
-
-        {has && !passReady && (
-          <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.75 }}>
-            Online hosting isn’t set up on this phone yet. It needs a connection.{' '}
-            <ThemedText variant="footnote" tone="onColor" style={{ textDecorationLine: 'underline' }} onPress={() => void restorePremium()}>
-              Try again
-            </ThemedText>
-          </ThemedText>
-        )}
       </SheetScroll>
 
       <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md), gap: spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(10,6,24,0.92)' }}>

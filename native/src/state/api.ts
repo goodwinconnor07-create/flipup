@@ -4,7 +4,6 @@ import type { BjInvite, FriendRequest, CreateFriendCardResponse, CreateTableRequ
 
 import { APP_INFO } from '../../appInfo';
 import { deviceId } from './device';
-import { currentPass } from './pass';
 
 export const API_ORIGIN = process.env.EXPO_PUBLIC_API_ORIGIN || APP_INFO.apiOrigin;
 
@@ -38,15 +37,9 @@ async function errorText(res: Response, fallback: string): Promise<string> {
 /** The server turned a host away because the game needs FlipUp Premium (HTTP 402). */
 export class PremiumRequiredError extends Error {}
 
-/** The headers for a call that may host a Premium game: the pass, if this phone has one. */
-const passHeaders = (): Record<string, string> => {
-  const pass = currentPass();
-  return pass ? { 'x-entitlement': pass } : {};
-};
-
 /** Opens a table on the server and returns its join code. */
 export async function createOnlineTable(body: CreateTableRequest): Promise<string> {
-  const res = await request('/api/tables', { method: 'POST', headers: { 'content-type': 'application/json', ...passHeaders() }, body: JSON.stringify(body) });
+  const res = await request('/api/tables', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting this game needs FlipUp Premium.'));
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a table. Try again."));
   return ((await res.json()) as CreateTableResponse).code;
@@ -151,7 +144,7 @@ export async function inviteToTable(friend: string, body: { deviceId: string; fr
 }
 
 export async function createPartyOnServer(body: { deviceId: string; name: string; emoji: string; friendCode?: string; settings: PartySettings }): Promise<string> {
-  const res = await request('/api/parties', { method: 'POST', headers: { 'content-type': 'application/json', ...passHeaders() }, body: JSON.stringify(body) }, 12_000);
+  const res = await request('/api/parties', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, 12_000);
   if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting these games needs FlipUp Premium.'));
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a party. Try again."));
   return ((await res.json()) as { code: string }).code;
@@ -177,15 +170,13 @@ export async function sendReport(body: ReportRequest): Promise<void> {
   if (!res.ok) throw new Error(await errorText(res, "Couldn't send the report. Try again."));
 }
 
-/** Shows the server Apple's signed purchase and gets a Premium pass back. Null when the server won't give one. */
-export async function premiumVerify(signedTransaction: string): Promise<{ token: string; expiresAt: number } | null> {
+/** Shows the server Apple's signed purchase so it ties this phone to it. False when the server won't. */
+export async function premiumVerify(signedTransaction: string): Promise<boolean> {
   const res = await json('/api/premium/verify', { method: 'POST', body: JSON.stringify({ deviceId: deviceId(), signedTransaction }) });
-  if (!res.ok) return null;
-  const body = (await res.json()) as { token?: unknown; expiresAt?: unknown };
-  return typeof body.token === 'string' && typeof body.expiresAt === 'number' ? { token: body.token, expiresAt: body.expiresAt } : null;
+  return res.ok;
 }
 
-/** Delete my data: the server forgets this phone's Premium pass. The purchase stays with Apple. */
+/** Delete my data: the server forgets which purchase this phone is tied to. The purchase stays with Apple. */
 export async function premiumForget(): Promise<void> {
   const res = await json('/api/premium/forget', { method: 'POST', body: JSON.stringify({ deviceId: deviceId() }) });
   if (!res.ok) throw new Error(await errorText(res, "Couldn't reach the server."));

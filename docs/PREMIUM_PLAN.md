@@ -47,7 +47,8 @@ Two things to confirm before we rely on them (I haven't verified either from App
    game buys Premium; everyone can still join any game for free.
 2. **Family Sharing: off.** The server refuses a transaction whose ownership type isn't `PURCHASED`.
 3. **No launch-price message.** The price is whatever the App Store says.
-4. **Secret.** The owner sets `ENTITLEMENT_SECRET` with `wrangler secret put`.
+4. **No pass, no secret.** The server remembers which devices are tied to a purchase and looks the device id up. No token
+   and no expiry (changed 4 November 2026).
 5. Referral reward: still open, after launch (phase 6).
 
 ## 4. Build plan
@@ -62,23 +63,21 @@ Goal: a phone proves it owns Premium once, and tables can check that cheaply.
   to it (cap about 6), the first-seen time, and a `revoked` flag.
 - `POST /api/premium/verify` with `{ device, signedTransaction }`. The Worker verifies the StoreKit 2 JWS on its own:
   signature, the certificate chain up to Apple's root, bundle id, product id, environment, and no `revocationDate`. It
-  needs no Apple key for this, only WebCrypto. On success it binds the device and returns a **token**.
-- The token is `{ d: deviceId, exp }` signed with HMAC (`ENTITLEMENT_SECRET`), valid 7 days. The phone keeps it as
-  `flipup.entitlement` and renews it at launch while online (`POST /api/premium/refresh`).
+  needs no Apple key for this, only WebCrypto. On success it binds the device to the purchase and answers `ok`. There is no token: the 7 day
+  pass was removed on 4 November 2026, and so was the secret.
 - `POST /api/apple/notifications`: App Store Server Notifications V2 (the webhook). Verified the same way. REFUND and
-  REVOKE mark the entitlement revoked, so the next refresh fails. The URL is set in App Store Connect by the owner.
-- Table rooms don't call anywhere for this. The phone sends the token on the same WebSocket URL that already carries
-  `?device=` (`worker/room.ts` line 82), and `TableRoom` checks the HMAC locally. Parties and table creation take it as
-  a header.
+  REVOKE mark the entitlement revoked, so the device stops counting as Premium straight away. The URL is set in App Store Connect by the owner.
+- `TableRoom` asks the `Entitlements` object about the `?device=` id when a socket connects. Parties and table creation
+  ask it about the host's device id.
 - Tests (Vitest, with a throwaway CA built in the test so nothing real is needed): good transaction, wrong bundle id,
-  wrong product, revoked, expired chain, tampered payload, token expiry and token for a different device.
+  wrong product, revoked, expired chain and tampered payload.
 
 ### Phase 2: enforce it where it matters
 
-- **Looks.** `TableRoom` drops `bubble` and `cardPack` from a `setLook` unless the socket's token is valid. A bad or
-  expired token mid-table keeps the look for that hand, then falls back to plain at the next deal (no jarring mid-hand
+- **Looks.** `TableRoom` drops `bubble` and `cardPack` from a `setLook` unless the socket's device owns Premium. A
+  refund mid-table keeps the look for that hand, then falls back to plain at the next deal (no jarring mid-hand
   change).
-- **Games.** `/api/tables` and `/api/parties` refuse a Premium game unless the host sends a valid token. Joining is
+- **Games.** `/api/tables` and `/api/parties` refuse a Premium game unless the host's device owns Premium. Joining is
   never gated: guests play any game.
 - **The phone side of the gate.** `unlockToHost()` is real and every host path calls it, including the plain
   table in Setup, not just `party-setup.tsx`. On "no", it opens the Premium sheet with a reason (see phase 3).
@@ -161,24 +160,23 @@ work, and phases 4 and 5 are small but easy to forget. Use Opus 5.5 at high for 
 
 ## 7. What's built, and what's left
 
-Built (all typechecked; unit tests for the Apple signature check, the pass and the gate):
-- Phase 1: `worker/appleJws.ts`, `entitlementToken.ts`, `entitlement.ts` (the `Entitlements` Durable Object, migration
-  v8), `premium.ts`, the routes `/api/premium/verify|refresh|forget` and `/api/apple/notifications`.
+Built (all typechecked; unit tests for the Apple signature check and the gate):
+- Phase 1: `worker/appleJws.ts`, `entitlement.ts` (the `Entitlements` Durable Object, migration
+  v8), `premium.ts`, the routes `/api/premium/verify|forget` and `/api/apple/notifications`.
 - Phase 2: `src/game/premiumGate.ts`, the gate in `createTableRoute`, the party route and `TableRoom`, and
   `unlockToHost()` called from Setup and party setup.
 - Phase 3: the rebuilt `native/src/app/premium.tsx`, with Ask to Buy and error states.
 - Phase 4: refund turns Premium off at launch (when the App Store answers), Delete my data forgets the device.
 
 Left for the owner (nothing here can be done from the code):
-1. `wrangler secret put ENTITLEMENT_SECRET` (any long random string).
-2. In App Store Connect, set the Server Notifications V2 URL (production and sandbox) to
+1. In App Store Connect, set the Server Notifications V2 URL (production and sandbox) to
    `https://gtoduel.online/api/apple/notifications`.
-3. Deploy, then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy again. Do this only when the iPhone app is
+2. Deploy, then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy again. Do this only when the iPhone app is
    live, because the web app has no payment and would lose Premium games and looks.
-4. Test on a real phone with a sandbox account: buy, cancel, Ask to Buy, restore on a second phone, refund, and
+3. Test on a real phone with a sandbox account: buy, cancel, Ask to Buy, restore on a second phone, refund, and
    airplane mode. I couldn't run StoreKit here.
-5. Confirm Apple's root fingerprint in `appleJws.ts` against https://www.apple.com/certificateauthority/ and that
+4. Confirm Apple's root fingerprint in `appleJws.ts` against https://www.apple.com/certificateauthority/ and that
    `expo-iap` returns the signed transaction in `purchase.purchaseToken` (the code assumes both).
-6. Add Purchases to the App Privacy answers (see `docs/APP_STORE.md`) and the privacy page.
+5. Add Purchases to the App Privacy answers (see `docs/APP_STORE.md`) and the privacy page.
 
 Not built: Apple offer codes (unconfirmed for non-consumables) and the referral reward (phase 6).

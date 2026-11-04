@@ -48,7 +48,7 @@ import {
 } from '@/engine';
 
 import { createOnlineTable, PremiumRequiredError } from './api';
-import { ensurePass } from './entitlement';
+import { bindPurchase } from './entitlement';
 import { hasPremium } from './premium';
 import { restorePremium } from './purchase';
 import { Connection, type ConnStatus } from './connection';
@@ -351,11 +351,12 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
   try {
     code = await createOnlineTable(body);
   } catch (e) {
-    // Bought Premium but the server hasn't seen the purchase yet (offline at the time, or the pass ran out): ask the
-    // App Store for it once more, then try again. Someone with no Premium at all just gets the server's answer.
+    // Bought Premium but the server hasn't seen the purchase yet (offline at the time): ask the App Store for it
+    // once more, wait for the server to take it, then try again. Someone with no Premium at all just gets the
+    // server's answer.
     if (!(e instanceof PremiumRequiredError) || !hasPremium()) throw e;
     await restorePremium();
-    if (!(await ensurePass(null))) throw e;
+    if (!(await bindPurchase(null))) throw e;
     code = await createOnlineTable(body);
   }
   set({ mode: 'online', code, game: null });

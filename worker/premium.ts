@@ -1,27 +1,24 @@
 import { isDeviceId } from '../src/game';
 import { premiumTransactionId, verifyAppleJws, type TransactionPayload } from './appleJws';
-import { mintToken, tokenValid } from './entitlementToken';
 
-// The secret is set with `wrangler secret put ENTITLEMENT_SECRET`, so it isn't in the generated Env type.
-const vars = (env: Env) => env as unknown as { ENTITLEMENT_SECRET?: string; PREMIUM_ENFORCED?: string; APPLE_BUNDLE_ID: string; APPLE_PREMIUM_PRODUCT_ID: string };
+const vars = (env: Env) => env as unknown as { PREMIUM_ENFORCED?: string; APPLE_BUNDLE_ID: string; APPLE_PREMIUM_PRODUCT_ID: string };
 
-/** Whether this server refuses Premium games and looks to phones without a pass. Off until the owner turns it on. */
+/** Whether this server refuses Premium games and looks to phones that haven't shown a purchase. Off until the owner turns it on. */
 export const premiumEnforced = (env: Env): boolean => vars(env).PREMIUM_ENFORCED === '1';
 
-/** True when this phone shows a genuine, current Premium pass. With no secret set nothing can be genuine. */
-export const hasPass = (env: Env, token: unknown, deviceId: string): Promise<boolean> => tokenValid(vars(env).ENTITLEMENT_SECRET, token, deviceId, Date.now());
+/** True when this phone is tied to a Premium purchase that Apple hasn't refunded. There's no expiry: a refund is what ends it. */
+export const hasPremium = async (env: Env, deviceId: string): Promise<boolean> => (await env.ENTITLEMENTS.getByName('premium').status(deviceId)) === 'ok';
 
-/** What a host needs to open a table or party with Premium games: true if enforcement is off or the pass is good. */
-export async function mayHostPremium(env: Env, token: unknown, deviceId: string): Promise<boolean> {
-  return !premiumEnforced(env) || (await hasPass(env, token, deviceId));
+/** What a host needs to open a table or party with Premium games: true if enforcement is off or the phone owns Premium. */
+export async function mayHostPremium(env: Env, deviceId: string): Promise<boolean> {
+  return !premiumEnforced(env) || (await hasPremium(env, deviceId));
 }
 
-export type PassResult = { ok: true; token: string; expiresAt: number } | { ok: false; status: number; error: string; revoked?: boolean };
+export type VerifyResult = { ok: true } | { ok: false; status: number; error: string; revoked?: boolean };
 
-/** POST /api/premium/verify: a phone shows Apple's signed transaction and gets a pass. */
-export async function verifyPurchase(env: Env, body: Record<string, unknown>): Promise<PassResult> {
+/** POST /api/premium/verify: a phone shows Apple's signed transaction once, and the server ties the phone to that purchase. */
+export async function verifyPurchase(env: Env, body: Record<string, unknown>): Promise<VerifyResult> {
   const v = vars(env);
-  if (!v.ENTITLEMENT_SECRET) return { ok: false, status: 503, error: 'Premium checks aren’t set up on the server yet.' };
   if (!isDeviceId(body.deviceId)) return { ok: false, status: 400, error: 'Missing device id.' };
   const payload = await verifyAppleJws<TransactionPayload>(body.signedTransaction);
   const originalId = premiumTransactionId(payload, v.APPLE_BUNDLE_ID, v.APPLE_PREMIUM_PRODUCT_ID);
@@ -29,18 +26,7 @@ export async function verifyPurchase(env: Env, body: Record<string, unknown>): P
   if (!(await env.ENTITLEMENTS.getByName('premium').bind(originalId, body.deviceId, Date.now()))) {
     return { ok: false, status: 403, error: 'That purchase can’t be used on this phone.', revoked: true };
   }
-  return { ok: true, ...(await mintToken(v.ENTITLEMENT_SECRET, body.deviceId, Date.now())) };
-}
-
-/** POST /api/premium/refresh: a phone that already proved its purchase gets a fresh pass, unless Apple refunded it. */
-export async function refreshPass(env: Env, body: Record<string, unknown>): Promise<PassResult> {
-  const v = vars(env);
-  if (!v.ENTITLEMENT_SECRET) return { ok: false, status: 503, error: 'Premium checks aren’t set up on the server yet.' };
-  if (!isDeviceId(body.deviceId)) return { ok: false, status: 400, error: 'Missing device id.' };
-  const status = await env.ENTITLEMENTS.getByName('premium').status(body.deviceId);
-  if (status === 'revoked') return { ok: false, status: 403, error: 'That purchase was refunded.', revoked: true };
-  if (status === 'unknown') return { ok: false, status: 404, error: 'This phone hasn’t shown a purchase yet.' };
-  return { ok: true, ...(await mintToken(v.ENTITLEMENT_SECRET, body.deviceId, Date.now())) };
+  return { ok: true };
 }
 
 interface NotificationPayload {

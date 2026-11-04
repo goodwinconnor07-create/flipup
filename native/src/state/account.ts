@@ -19,8 +19,8 @@ export async function deleteMyData(): Promise<void> {
   const party = loadPartyRef();
   if (party) await leaveParty(party.code);
   leaveTable();
-  // The server forgets this phone's Premium pass. If it can't be reached the pass just runs out in a week, and the
-  // phone gets a new device id below, so nothing stays linked to it.
+  // The server forgets which purchase this phone is tied to. If it can't be reached, the phone still gets a new
+  // device id below, so nothing stays linked to it.
   await premiumForget().catch(() => 0);
   wipeAll(['flipup.premium']);
 }

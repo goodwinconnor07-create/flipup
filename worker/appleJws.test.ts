@@ -6,7 +6,6 @@ import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { premiumTransactionId, verifyAppleJws } from './appleJws';
-import { mintToken, tokenValid, TOKEN_LIFETIME_MS } from './entitlementToken';
 
 // Builds a throwaway root, intermediate and leaf with openssl (so no private keys are committed), signs messages
 // the way Apple does, and checks the verifier accepts good ones and turns away every kind of bad one.
@@ -132,31 +131,5 @@ describe('premiumTransactionId', () => {
     expect(id({ ...ok, environment: 'Xcode' })).toBeNull();
     expect(id({ ...ok, originalTransactionId: 'abc' })).toBeNull();
     expect(id({ ...ok, originalTransactionId: undefined })).toBeNull();
-  });
-});
-
-describe('Premium pass', () => {
-  const secret = 'test-secret-0123456789abcdef0123456789';
-  const device = 'd' + 'a'.repeat(20);
-  it('is valid for its own device until it runs out', async () => {
-    const now = 1_000_000;
-    const { token, expiresAt } = await mintToken(secret, device, now);
-    expect(expiresAt).toBe(now + TOKEN_LIFETIME_MS);
-    expect(await tokenValid(secret, token, device, now + 1000)).toBe(true);
-    expect(await tokenValid(secret, token, device, expiresAt)).toBe(false);
-  });
-  it('is no good for another device, another secret, or after tampering', async () => {
-    const { token } = await mintToken(secret, device, Date.now());
-    expect(await tokenValid(secret, token, 'd' + 'b'.repeat(20), Date.now())).toBe(false);
-    expect(await tokenValid('another-secret-another-secret-0000', token, device, Date.now())).toBe(false);
-    const [body, sig] = token.split('.');
-    const forged = b64u(JSON.stringify({ d: device, exp: Date.now() + 10 * TOKEN_LIFETIME_MS }));
-    expect(await tokenValid(secret, `${forged}.${sig}`, device, Date.now())).toBe(false);
-    expect(await tokenValid(secret, `${body}.${sig.slice(0, -2)}AA`, device, Date.now())).toBe(false);
-  });
-  it('never passes without a secret or with junk', async () => {
-    const { token } = await mintToken(secret, device, Date.now());
-    expect(await tokenValid(undefined, token, device, Date.now())).toBe(false);
-    for (const bad of [null, undefined, 7, '', 'a', 'a.b.c', 'x'.repeat(500)]) expect(await tokenValid(secret, bad, device, Date.now())).toBe(false);
   });
 });

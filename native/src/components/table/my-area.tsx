@@ -1,8 +1,7 @@
-// The bottom of the table, as on the web (MyBox in Pods.tsx, .me-area and .my-box in table.css): your cards, big and
-// overlapping, with "Show cards" under them after a hand you didn't have to show; and your box beside them, outlined
-// in the separator colour: your move or what you said on its top edge, the quick messages button in its corner, your
-// name, your stack (counting as it changes; tap it to see it in big blinds), and what you've put in or won. During an
-// all-in run-out the box shows your odds instead.
+// The bottom of the table: your cards, big and overlapping, with "Show cards" under them after a hand you didn't have to
+// show; and your box beside them, outlined in the separator colour (gold glow on your turn): your chip count biggest,
+// your position, emoji and name at the very bottom, the quick messages button half over the top-right corner, and what
+// you said as a small pill over the top-left corner. During an all-in run-out the box shows your odds instead.
 import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -53,6 +52,8 @@ export function MyArea({
   const last = seat?.last;
   const money = !!last && last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   const bb = Math.max(game.settings.bigBlind, 1);
+  const myTurn = !!me && !!hand && !hand.result && hand.toAct === me.id;
+  const big = compact ? 32 : 38;
   return (
     <View
       style={{
@@ -90,36 +91,29 @@ export function MyArea({
           flex: 1,
           minWidth: 0,
           alignItems: 'center',
-          justifyContent: 'center',
-          gap: 2,
-          padding: 8,
+          justifyContent: 'space-between',
+          paddingHorizontal: 8,
+          paddingTop: compact ? 10 : 14,
+          paddingBottom: 8,
           borderRadius: 24,
           borderCurve: 'continuous',
           borderWidth: 3,
-          borderColor: c.separator,
+          // Your turn: the whole box glows gold. A shadow and a border colour, so nothing moves; it's still under
+          // Reduce Motion because it doesn't move at all.
+          borderColor: myTurn ? 'rgba(245,183,0,0.9)' : c.separator,
+          boxShadow: myTurn ? '0 0 18px 3px rgba(245,183,0,0.5)' : '0 0 0 0 rgba(245,183,0,0)',
         }}
       >
         {odds ? (
-          <>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}>Win</Text>
             <Text style={{ fontSize: 28, fontWeight: '700', color: c.gold, fontVariant: ['tabular-nums'] }}>{pct(odds.win)}</Text>
             <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}>Tie</Text>
             <Text style={{ fontSize: 24, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{pct(odds.tie)}</Text>
-          </>
+          </View>
         ) : (
-          <>
-            {me && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, maxWidth: '100%' }}>
-                <Avatar emoji={me.emoji} size={22} />
-                <Text
-                  numberOfLines={1}
-                  maxFontSizeMultiplier={1.2}
-                  style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}
-                >
-                  {me.name}
-                </Text>
-              </View>
-            )}
+          // The chip count is the biggest thing in the box.
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${inBB ? 'Stack in big blinds' : 'Stack in chips'}, tap to switch`}
@@ -129,42 +123,50 @@ export function MyArea({
               }}
             >
               {!me ? (
-                <Text style={{ fontSize: 28, fontWeight: '700', color: c.label }}>–</Text>
+                <Text style={{ fontSize: big, fontWeight: '800', color: c.label }}>–</Text>
               ) : me.stack === 0 && (!hand || hand.result) ? (
-                <Text style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label }}>Out</Text>
+                <Text style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label }}>Out</Text>
               ) : inBB ? (
                 <Text
                   maxFontSizeMultiplier={1.2}
-                  style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}
+                  style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label, fontVariant: ['tabular-nums'] }}
                 >
                   {bigBlinds(me.stack / bb)}
                   <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}> BB</Text>
                 </Text>
               ) : (
-                <Count value={me.stack} style={{ fontSize: 28, lineHeight: 31, fontWeight: '700', color: c.label }} />
+                <Count value={me.stack} style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label }} />
               )}
             </Pressable>
             {/* A fixed slot, so the win line coming or going never changes the box's height and moves the table. */}
-            <View style={{ height: 20, justifyContent: 'center' }}>
+            <View style={{ height: compact ? 16 : 20, justifyContent: 'center' }}>
               {won > 0 && <Text style={{ fontSize: 15, lineHeight: 20, fontWeight: '600', color: c.green }}>+{chips(won)}</Text>}
             </View>
-          </>
+          </View>
         )}
-        <View style={{ position: 'absolute', left: 8, bottom: 8 }}>
+        {/* Name and emoji at the very bottom, with your position beside them. */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, maxWidth: '100%' }}>
           <PositionChip pos={me ? positionOf(hand, me.id) : null} />
+          {me && <Avatar emoji={me.emoji} size={22} />}
+          {me && (
+            <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}>
+              {me.name}
+            </Text>
+          )}
         </View>
+        {/* Quick messages: top-right corner, half over the box's edge. */}
         {me && (
-          <View style={{ position: 'absolute', top: 6, left: 6 }}>
+          <View style={{ position: 'absolute', top: -15, right: -9 }}>
             <QuickMessages />
           </View>
         )}
-        {/* What you just did or said, on the top edge of the box. */}
-        <View pointerEvents="none" style={{ position: 'absolute', right: 12, bottom: '100%', marginBottom: -16, width: 240, height: 0 }}>
+        {/* What you just did or said: a small pill outside the box, over its top-left corner. */}
+        <View pointerEvents="none" style={{ position: 'absolute', left: 6, bottom: '100%', marginBottom: -10, width: 170, height: 0 }}>
           {talk ? (
-            <Thread talk={talk} fx={me?.bubble} room={220} place={pinned('flex-end')} />
+            <Thread talk={talk} fx={me?.bubble} room={160} place={pinned('flex-start')} />
           ) : last && hand && quiet !== moveSig(hand.number, last) ? (
-            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('flex-end')}>
-              <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={me?.bubble} old={last.street !== hand.street} big />
+            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('flex-start')}>
+              <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={me?.bubble} old={last.street !== hand.street} />
             </Animated.View>
           ) : null}
         </View>

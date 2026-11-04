@@ -168,7 +168,13 @@ function Word({ text, ink, gone, lead }: { text: string; ink: string; gone: bool
  * Where a bubble sits: pinned by its bottom edge to an anchor of no height. A bubble that leaves fades where it
  * stood; in a box that grew and shrank with its content the leaving bubble lost its place and dropped as it faded.
  */
-export const pinned = (align: 'center' | 'flex-end'): ViewStyle => ({ position: 'absolute', bottom: 0, left: align === 'center' ? 0 : undefined, right: 0, alignItems: align });
+export const pinned = (align: 'center' | 'flex-end' | 'flex-start'): ViewStyle => ({
+  position: 'absolute',
+  bottom: 0,
+  left: align === 'flex-end' ? undefined : 0,
+  right: align === 'flex-start' ? undefined : 0,
+  alignItems: align,
+});
 
 /** How every bubble leaves: a quick fade in place. */
 export const bubbleOut = FadeOut.duration(220).easing(Easing.out(Easing.quad));

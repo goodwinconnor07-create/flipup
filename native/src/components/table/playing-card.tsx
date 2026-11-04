@@ -40,7 +40,7 @@ function useCardLook() {
 }
 
 /** The back of a card: the owner's card pack, or the plain back in the page's own shade. */
-export function CardBack({ w, pack, small }: { w: number; pack?: string; small?: boolean }) {
+export function CardBack({ w, pack, small, mark }: { w: number; pack?: string; small?: boolean; mark?: string }) {
   const { c, shadow } = useCardLook();
   const look = pack ? cardBack(pack) : null;
   const base = look ? look.base.join(', ') : `${c.cardBack1}, ${c.cardBack2}`;
@@ -65,7 +65,38 @@ export function CardBack({ w, pack, small }: { w: number; pack?: string; small?:
           `linear-gradient(115deg, transparent 30%, ${ink} 44%, transparent 46%, transparent 54%, ${ink} 56%, transparent 70%), linear-gradient(160deg, ${base})`,
         ),
       ]}
-    />
+    >
+      {mark ? <BackMark mark={mark} small={small} w={w} /> : null}
+    </View>
+  );
+}
+
+/**
+ * A position chip (SB, BB, BTN) on a card's back: a small dark pill with soft white letters, so it reads on every
+ * card pack. It lives on the back only; a face never draws it, so nothing is left after the flip.
+ */
+function BackMark({ mark, small, w }: { mark: string; small?: boolean; w: number }) {
+  const size = small ? 7 : Math.max(9, w * 0.14);
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
+      <View
+        accessibilityLabel={`Position ${mark}`}
+        style={{
+          paddingHorizontal: small ? 3 : 5,
+          height: small ? 11 : size + 8,
+          borderRadius: 999,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(0,0,0,0.42)',
+          borderWidth: 0.5,
+          borderColor: 'rgba(255,255,255,0.35)',
+        }}
+      >
+        <Text maxFontSizeMultiplier={1} style={{ fontSize: size, lineHeight: size + 2, fontWeight: '800', letterSpacing: 0.2, color: 'rgba(255,255,255,0.88)' }}>
+          {mark}
+        </Text>
+      </View>
+    </View>
   );
 }
 
@@ -91,6 +122,7 @@ export function PlayingCard({
   glow = false,
   width,
   pack,
+  mark,
 }: {
   card?: Card;
   size?: CardSize;
@@ -102,10 +134,12 @@ export function PlayingCard({
   /** Overrides the size's width (the board shrinks to fit narrow phones). */
   width?: number;
   pack?: string;
+  /** A position chip (SB, BB, BTN) for a face-down card. Never drawn on a face. */
+  mark?: string;
 }) {
   const w = width ?? CARD_W[size];
   const small = size === 'sm';
-  if (back || !card) return <CardBack w={w} pack={pack} small={small} />;
+  if (back || !card) return <CardBack w={w} pack={pack} small={small} mark={mark} />;
   const face = <Face card={card} w={w} small={small} dim={dim} glow={glow} />;
   if (!flip) return face;
   return (

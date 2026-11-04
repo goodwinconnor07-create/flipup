@@ -259,6 +259,9 @@ function SeatPod({
   const other = !player.bot && !!game.code && !!player.deviceId && player.deviceId !== myDevice;
   const canPeek = host && !!hand?.result && player.bot && !!seat && !seat.shown && seat.cards.length === 0;
   const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) + (hand?.hits?.[player.id] ?? 0) }, () => null)) : [];
+  // The dealer button and blinds sit on the back of the last face-down card (BTN, SB, BB); heads-up the button shows BTN.
+  const pos = positionOf(hand, player.id);
+  const mark = pos && pos.kind !== 'other' ? (pos.kind === 'btn' ? 'BTN' : pos.label) : undefined;
   // A seat's share of the row, for wrapping its talk.
   const room = Math.floor((width + 8) / Math.max(n, 1)) - 4;
   return (
@@ -307,9 +310,6 @@ function SeatPod({
       <View style={{ width: compact ? 48 : 56, height: compact ? 40 : 54, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ opacity: out ? 0.35 : player.offline ? 0.55 : 1 }}>
           <SeatFace emoji={player.emoji} size={compact ? 36 : 50} turn={turn} />
-        </View>
-        <View style={{ position: 'absolute', right: -15, bottom: 8 }}>
-          <PositionChip pos={positionOf(hand, player.id)} />
         </View>
         {tag && (
           <View pointerEvents="none" style={{ position: 'absolute', left: -22, bottom: 6 }}>
@@ -369,9 +369,9 @@ function SeatPod({
                   <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} />
                 ) : (
                   <View>
-                    <PlayingCard back size="sm" pack={player.cardPack} />
-                    {/* A bot's cards say so on the back: a small robot, in place of a BOT pill on the face. */}
-                    {player.bot && (
+                    <PlayingCard back size="sm" pack={player.cardPack} mark={i === cards.length - 1 ? mark : undefined} />
+                    {/* A bot's cards say so on the back: a small robot, in place of a BOT pill on the face. The card with the position chip keeps the chip alone. */}
+                    {player.bot && !(i === cards.length - 1 && mark) && (
                       <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
                         <Icon name="cpu.fill" size={13} color="rgba(255, 255, 255, 0.7)" />
                       </View>

@@ -1,9 +1,10 @@
-// Range training: a hand played to the turn or river with the whole action log, one decision, then why, with the
-// opponent's range broken down and how your hand does against each part of it.
+// Range training: a hand played to the turn or river with the whole action log, one decision, then why: what each
+// street told you, every opponent's range broken down with how your hand does against each part of it, and what
+// each play wins on average.
 
 import { useMemo, useState } from 'react';
 import { read, write } from '../state/persist';
-import { analyse, bb, breakEven, equityAgainst, gradeOf, optionsFor, priceToCall, replay, shareOf, type Grade, type OptionId, type Role, type Scenario, type Street } from '../train/ranges/model';
+import { analyse, bb, gradeOf, optionsFor, replay, spotOf, type Grade, type OptionId, type RangeGroup, type Scenario, type Street } from '../train/ranges/model';
 import { SCENARIOS } from '../train/ranges/scenarios';
 import { BackBar, PlayingCard } from '../ui/components';
 import { haptic } from '../ui/effects';
@@ -31,16 +32,35 @@ function nextHand(after: string | null): Scenario {
 }
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
-const ROLE: Record<Role, string> = { value: 'Value', bluff: 'Bluff', calls: 'Calls', folds: 'Folds', raises: 'Raises' };
 const GRADE: Record<Grade, string> = { best: 'Best play', ok: 'Also good', mistake: 'Not this time' };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
+const signed = (n: number) => `${n >= 0 ? '+' : '−'}${bb(Math.abs(Math.round(n * 10) / 10))}`;
+
+/** What a group does, in a few words: "Value", or "Folds · calls ⅓" when a small bet changes its mind. */
+function respond(g: RangeGroup, facing: boolean): string {
+  if (facing) return g.role === 'value' ? 'Value' : g.role === 'bluff' ? 'Bluff' : 'Called';
+  const word = { calls: 'Calls', folds: 'Folds', raises: 'Raises', value: 'Value', bluff: 'Bluff' };
+  const extra = [g.small && g.small !== g.role ? `${word[g.small].toLowerCase()} ⅓` : '', g.big && g.big !== g.role ? `${word[g.big].toLowerCase()} to an overbet` : ''].filter(Boolean);
+  return [word[g.role], ...extra].join(' · ');
+}
 
 export function RangeTrainer() {
   const [scenario, setScenario] = useState(() => nextHand(null));
   const [pick, setPick] = useState<OptionId | null>(null);
   const r = useMemo(() => replay(scenario), [scenario]);
   const options = useMemo(() => optionsFor(scenario, r), [scenario, r]);
-  const views = useMemo(() => (pick ? analyse(scenario) : []), [scenario, pick]);
+  const views = useMemo(() => (pick ? analyse(scenario, r) : []), [scenario, r, pick]);
+  // What each play wins on average (worked out once you've answered).
+  const evs = useMemo(() => {
+    if (!pick) return null;
+    if (r.toCall > 0) {
+      const spot = spotOf(scenario, r);
+      return { equity: spot.equity, price: spot.price!, rows: [{ id: 'fold' as OptionId, ev: 0 }, { id: 'call' as OptionId, ev: spot.evCall! }] };
+    }
+    const spot = spotOf(scenario, r);
+    const rows = [{ id: 'check' as OptionId, ev: spot.evCheck! }, ...(['bet33', 'bet75', 'bet125'] as const).map((id) => ({ id: id as OptionId, ev: spotOf(scenario, r, id).bet!.ev }))];
+    return { equity: spot.equity, price: 0, rows };
+  }, [scenario, r, pick]);
   const done = loadRangeProgress();
   const solved = SCENARIOS.filter((s) => done[s.id] === 'best').length;
   const decision = scenario.board.length === 4 ? 'turn' : 'river';
@@ -61,9 +81,12 @@ export function RangeTrainer() {
   const grade = pick ? gradeOf(scenario, pick) : null;
   const best = options.find((o) => o.id === scenario.best)!;
   const facing = r.toCall > 0;
+  const label = (id: OptionId) => options.find((o) => o.id === id)?.label ?? id;
   // The board as it came, street by street.
   const boardAt: Record<Street, string[]> = { preflop: [], flop: scenario.board.slice(0, 3), turn: scenario.board.slice(3, 4), river: scenario.board.slice(4, 5) };
   const streets: Street[] = ['preflop', 'flop', 'turn', 'river'].slice(0, scenario.board.length - 1) as Street[];
+  const inPot = scenario.opponents.filter((o) => r.live.includes(o.pos));
+  const topEv = evs ? Math.max(...evs.rows.map((x) => Math.abs(x.ev)), 0.1) : 1;
 
   return (
     <div className="screen ranges">
@@ -73,8 +96,16 @@ export function RangeTrainer() {
           <span className="rt-concept">{scenario.concept}</span>
           <h1 className="rt-title">{scenario.title}</h1>
           <p className="rt-sub">
-            You’re {scenario.hero.pos}, they’re {scenario.villain.pos} ({scenario.villainType.toLowerCase()}) · {scenario.stack}bb deep
+            You’re {scenario.hero.pos} · {scenario.table === 9 ? '9-handed live' : '6-handed'} · {scenario.stack}bb deep
           </p>
+          <ul className="rt-players">
+            {scenario.opponents.map((o) => (
+              <li key={o.pos} className={r.live.includes(o.pos) ? '' : 'rt-out'}>
+                <b>{o.pos}</b> {o.type.toLowerCase()}
+                {r.live.includes(o.pos) ? '' : ' (folded)'}
+              </li>
+            ))}
+          </ul>
         </header>
 
         <section className="rt-table" aria-label="The hand">
@@ -137,36 +168,37 @@ export function RangeTrainer() {
               <span>{pick === scenario.best ? best.label : `Best: ${best.label}`}</span>
             </div>
             <p className="rt-why">{scenario.why}</p>
-            <div className="rt-numbers">
-              {facing ? (
-                <>
+
+            {evs && (
+              <div className="rt-numbers">
+                {facing ? (
+                  <>
+                    <span>
+                      You need <b>{pct(evs.price)}</b> to call
+                    </span>
+                    <span>
+                      You win <b>{pct(evs.equity)}</b> against {inPot.length > 1 ? 'everyone still in' : 'their range'}
+                    </span>
+                  </>
+                ) : (
                   <span>
-                    You need <b>{pct(priceToCall(r))}</b> to call
+                    At a showdown now you’d win <b>{pct(evs.equity)}</b> of the pot{inPot.length > 1 ? ' against everyone still in' : ''}
                   </span>
-                  <span>
-                    You win <b>{pct(equityAgainst(views, ['value', 'bluff']))}</b> against their range
-                  </span>
-                </>
-              ) : scenario.bluff ? (
-                <>
-                  <span>
-                    A {best.label.toLowerCase()} needs <b>{pct(breakEven(r, best.amount))}</b> folds
-                  </span>
-                  <span>
-                    They fold <b>{pct(shareOf(views, ['folds']))}</b> of the time
-                  </span>
-                </>
-              ) : (
-                <>
-                  <span>
-                    Against the hands that would call a bet you win <b>{pct(equityAgainst(views, ['calls', 'raises']))}</b>
-                  </span>
-                  <span>
-                    They’d fold <b>{pct(shareOf(views, ['folds']))}</b>
-                  </span>
-                </>
-              )}
-            </div>
+                )}
+                <h3 className="rt-ev-title">What each play wins on average</h3>
+                <ul className="rt-evs">
+                  {evs.rows.map((row) => (
+                    <li key={row.id} className={`${row.id === scenario.best ? 'rt-ev-best' : ''}${row.id === pick ? ' rt-ev-pick' : ''}`}>
+                      <span className="rt-ev-name">{label(row.id)}</span>
+                      <span className="rt-ev-bar">
+                        <i className={row.ev >= 0 ? 'up' : 'down'} style={{ width: `${Math.round((Math.abs(row.ev) / topEv) * 100)}%` }} />
+                      </span>
+                      <b className="num">{signed(row.ev)}</b>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             <h2 className="rt-h">What each street told you</h2>
             <ol className="rt-clues">
@@ -177,27 +209,34 @@ export function RangeTrainer() {
               ))}
             </ol>
 
-            <h2 className="rt-h">Their range now</h2>
-            <ul className="rt-range">
-              {views.map((v) => {
-                const share = v.weight / views.reduce((n, x) => n + x.weight, 0);
-                return (
-                  <li key={v.group.label} className={`rt-group${v.equity >= 0.5 ? ' rt-ahead' : ''}`}>
-                    <span className="rt-group-top">
-                      <span className="rt-role">{ROLE[v.group.role]}</span>
-                      <span className="rt-group-name">{v.group.label}</span>
-                      <span className="rt-share num">{pct(share)}</span>
-                    </span>
-                    <span className="rt-bar" aria-label={`You win ${pct(v.equity)} against these`}>
-                      <i style={{ width: `${Math.round(v.equity * 100)}%` }} />
-                    </span>
-                    <small className="muted">
-                      {v.combos} combo{v.combos === 1 ? '' : 's'} · you win {pct(v.equity)}
-                    </small>
-                  </li>
-                );
-              })}
-            </ul>
+            {views.map((v) => {
+              const total = v.groups.reduce((n, g) => n + g.weight, 0);
+              return (
+                <div key={v.opponent.pos} className="rt-opp">
+                  <h2 className="rt-h">
+                    {views.length > 1 ? `${v.opponent.pos}’s range now` : 'Their range now'}
+                    <small> {v.opponent.type.toLowerCase()}</small>
+                  </h2>
+                  <ul className="rt-range">
+                    {v.groups.map((g) => (
+                      <li key={g.group.label + g.group.role} className={`rt-group${g.equity >= 0.5 ? ' rt-ahead' : ''}`}>
+                        <span className="rt-group-top">
+                          <span className="rt-role">{respond(g.group, facing)}</span>
+                          <span className="rt-group-name">{g.group.label}</span>
+                          <span className="rt-share num">{pct(g.weight / total)}</span>
+                        </span>
+                        <span className="rt-bar" aria-label={`You win ${pct(g.equity)} against these`}>
+                          <i style={{ width: `${Math.round(g.equity * 100)}%` }} />
+                        </span>
+                        <small className="muted">
+                          {g.combos} combo{g.combos === 1 ? '' : 's'} · you win {pct(g.equity)} against these
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
             <button type="button" className="btn btn-dark rt-next press" onClick={next}>
               Next hand
             </button>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isCard } from '../../game/cards';
-import { analyse, breakEven, combosOf, equityAgainst, expandHand, optionsFor, priceToCall, replay, shareOf, streetOfBoard, type Scenario } from './model';
+import { CHARTS, inChart } from './charts';
+import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, replay, spotOf, streetOfBoard, type OptionId, type Scenario } from './model';
 import { SCENARIOS } from './scenarios';
 
 describe('hands', () => {
@@ -13,32 +14,60 @@ describe('hands', () => {
     expect(expandHand('AKs@d')).toEqual([['Ad', 'Kd']]);
   });
 
+  it('reads chart shorthand: 22+, ATs+, A2s-A5s, 66-99', () => {
+    expect(expandRange('22+')).toHaveLength(13 * 6);
+    expect(expandRange('ATs+')).toHaveLength(4 * 4);
+    expect(expandRange('A2s-A5s')).toHaveLength(4 * 4);
+    expect(expandRange('66-99')).toHaveLength(4 * 6);
+    expect(expandRange('KTo+')).toHaveLength(3 * 12);
+    expect(expandRange('Any two cards' in CHARTS ? CHARTS['Any two cards'] : '')).toHaveLength(1326);
+  });
+
   it('leaves out combos that use a card you can see', () => {
     expect(combosOf({ label: '', hands: 'AK', role: 'value' }, ['Ah', 'Kd'])).toHaveLength(9);
   });
+
+  it('has charts that get wider from early to late position', () => {
+    const size = (k: string) => expandRange(CHARTS[k]).length;
+    expect(size('EP open (9-handed)')).toBeLessThan(size('UTG open'));
+    expect(size('UTG open')).toBeLessThan(size('HJ open'));
+    expect(size('HJ open')).toBeLessThan(size('CO open'));
+    expect(size('CO open')).toBeLessThan(size('BTN open'));
+    expect(size('BB vs early open')).toBeLessThan(size('BB vs late open'));
+  });
 });
 
-/** Who acts first after the flop: the blinds, then round to the button. */
-const POSTFLOP = ['SB', 'BB', 'UTG', 'HJ', 'CO', 'BTN'];
+/** The best play has to beat the alternative by at least this much: 3% of the pot, or 3 points of equity. */
+const MARGIN = 0.03;
 
 /** The numbers each answer has to agree with. */
 function check(s: Scenario) {
   const r = replay(s);
-  const views = analyse(s);
-  const opts = optionsFor(s, r);
-  const pick = opts.find((o) => o.id === s.best)!;
+  const spot = spotOf(s, r);
   if (r.toCall > 0) {
-    const eq = equityAgainst(views, ['value', 'bluff']);
-    if (s.best === 'call') expect(eq, `${s.id}: equity ${eq.toFixed(3)} vs price ${priceToCall(r).toFixed(3)}`).toBeGreaterThanOrEqual(priceToCall(r));
-    if (s.best === 'fold') expect(eq, `${s.id}: equity ${eq.toFixed(3)} vs price ${priceToCall(r).toFixed(3)}`).toBeLessThan(priceToCall(r));
-    // A value raise has to beat most of what they bet for value.
-    if (s.best === 'raise') expect(equityAgainst(views, ['value']), s.id).toBeGreaterThan(0.5);
+    const gap = spot.equity - spot.price!;
+    const msg = `${s.id}: equity ${spot.equity.toFixed(3)} vs price ${spot.price!.toFixed(3)}`;
+    if (s.best === 'call') expect(gap, msg).toBeGreaterThanOrEqual(MARGIN);
+    if (s.best === 'fold') expect(-gap, msg).toBeGreaterThanOrEqual(MARGIN);
+    if (s.best === 'raise') {
+      // A value raise: calling is already profitable, and the hand beats most of what they bet for value.
+      expect(gap, msg).toBeGreaterThanOrEqual(MARGIN);
+      const value = analyse(s, r).flatMap((o) => o.groups.filter((g) => g.group.role === 'value'));
+      const w = value.reduce((n, g) => n + g.weight, 0);
+      expect(value.reduce((n, g) => n + g.weight * g.equity, 0) / w, s.id).toBeGreaterThan(0.5);
+    }
     return;
   }
-  const vsCallers = equityAgainst(views, ['calls', 'raises']);
-  if (s.best === 'check') expect(vsCallers, `${s.id}: a bet would get called by better (${vsCallers.toFixed(3)})`).toBeLessThan(0.5);
-  else if (s.bluff) expect(shareOf(views, ['folds']), `${s.id}: folds vs break-even ${breakEven(r, pick.amount).toFixed(3)}`).toBeGreaterThan(breakEven(r, pick.amount));
-  else expect(vsCallers, `${s.id}: a value bet has to beat most of the hands that continue`).toBeGreaterThan(0.5);
+  // Check, and every bet size with each hand's response to that size: the best play has the highest EV, and every
+  // play that isn't marked as also fine is clearly worse.
+  const ev: Partial<Record<OptionId, number>> = { check: spot.evCheck! };
+  for (const id of ['bet33', 'bet75', 'bet125'] as const) ev[id] = spotOf(s, r, id).bet!.ev;
+  const text = Object.entries(ev).map(([k, v]) => `${k} ${v!.toFixed(2)}`).join(', ');
+  for (const [id, v] of Object.entries(ev) as [OptionId, number][]) {
+    if (id === s.best) continue;
+    if (s.alsoOk?.includes(id)) expect(v, `${s.id}: ${id} beats the best play (${text})`).toBeLessThanOrEqual(ev[s.best]! + 1e-9);
+    else expect((ev[s.best]! - v) / r.pot, `${s.id}: ${s.best} isn't clearly better than ${id} (${text}; pot ${r.pot})`).toBeGreaterThanOrEqual(MARGIN);
+  }
 }
 
 describe('every scenario', () => {
@@ -48,49 +77,56 @@ describe('every scenario', () => {
         const cards = [...s.hero.cards, ...s.board];
         for (const c of cards) expect(isCard(c), c).toBe(true);
         expect(new Set(cards).size).toBe(cards.length);
-        expect([3, 4, 5]).toContain(s.board.length);
+        expect([4, 5]).toContain(s.board.length);
       });
 
-      it('plays out legally to the decision', () => {
+      it('plays out in turn order to your decision', () => {
         const r = replay(s);
-        const street = streetOfBoard(s.board);
-        const last = s.actions[s.actions.length - 1];
-        // The hero acts next: facing their bet, after their check, or first on a new street.
-        if (r.toCall > 0) expect(last.who).toBe('villain');
-        else if (last.street === street) expect(last).toMatchObject({ who: 'villain', move: 'check' });
-        // First to act on a new street: only out of position.
-        else expect(POSTFLOP.indexOf(s.hero.pos)).toBeLessThan(POSTFLOP.indexOf(s.villain.pos));
-        expect(r.stacks.hero).toBeGreaterThan(0);
-        expect(r.stacks.villain).toBeGreaterThanOrEqual(0);
+        expect(r.next, `${s.id}: it should be your turn`).toBe(s.hero.pos);
+        expect(r.stacks[s.hero.pos]).toBeGreaterThan(0);
+        // Facing a bet, nobody acts after you: calling closes the action, so the numbers are exact.
+        if (r.toCall > 0) expect(r.behind, `${s.id}: players still to act behind you`).toEqual([]);
+        expect(r.live.length).toBeGreaterThan(0);
+        for (const o of s.opponents) {
+          if (r.live.includes(o.pos)) expect(o.range.length, `${s.id}: ${o.pos} is in the hand with no range`).toBeGreaterThan(0);
+          else expect(o.range, `${s.id}: ${o.pos} folded but has a range`).toEqual([]);
+        }
       });
 
-      it('has a sensible range: every group live, no combo counted more than once', () => {
+      it('only gives each player hands they’d have played that way before the flop', () => {
+        expect(CHARTS[s.hero.pre], s.hero.pre).toBeDefined();
+        expect(inChart(s.hero.pre, s.hero.cards), `${s.id}: your hand isn't in "${s.hero.pre}"`).toBe(true);
         const dead = [...s.hero.cards, ...s.board];
-        const share = new Map<string, number>();
-        for (const g of s.range) {
-          const combos = combosOf(g, dead);
-          expect(combos.length, g.label).toBeGreaterThan(0);
-          for (const c of combos) {
-            const key = [...c].sort().join();
-            share.set(key, (share.get(key) ?? 0) + (g.weight ?? 1));
+        for (const o of s.opponents) {
+          expect(CHARTS[o.pre], `${s.id}: chart ${o.pre}`).toBeDefined();
+          const share = new Map<string, number>();
+          for (const g of o.range) {
+            const combos = combosOf(g, dead);
+            expect(combos.length, `${s.id}: ${g.label}`).toBeGreaterThan(0);
+            for (const c of combos) {
+              expect(inChart(o.pre, c), `${s.id}: ${o.pos} wouldn't have ${c.join('')} ("${g.label}", chart "${o.pre}")`).toBe(true);
+              share.set(comboKey(c), (share.get(comboKey(c)) ?? 0) + (g.weight ?? 1));
+            }
           }
+          for (const [combo, w] of share) expect(w, `${s.id}: ${o.pos} has ${combo} more than once`).toBeLessThanOrEqual(1.0001);
         }
-        for (const [combo, w] of share) expect(w, `${s.id}: ${combo} is in the range more than once`).toBeLessThanOrEqual(1.0001);
       });
 
       it('offers the answers it grades', () => {
         const ids = optionsFor(s).map((o) => o.id);
         expect(ids).toContain(s.best);
         for (const ok of s.alsoOk ?? []) expect(ids).toContain(ok);
+        if (s.compare) expect(ids).toContain(s.compare);
       });
 
       it('explains every street up to the decision', () => {
         const streets = ['preflop', 'flop', 'turn', 'river'].slice(0, s.board.length - 1);
         for (const st of streets) expect(s.clues.some((c) => c.street === st), `${s.id}: no clue for the ${st}`).toBe(true);
         expect(s.why.length).toBeGreaterThan(80);
+        expect(streetOfBoard(s.board)).not.toBe('flop');
       });
 
-      it('gives the answer the numbers back up', () => {
+      it('gives the answer the numbers back up, by a clear margin', () => {
         check(s);
       });
     });
@@ -99,14 +135,26 @@ describe('every scenario', () => {
   it('has unique ids', () => {
     expect(new Set(SCENARIOS.map((s) => s.id)).size).toBe(SCENARIOS.length);
   });
+
+  it('mixes positions and multiway pots', () => {
+    const seats = new Set(SCENARIOS.flatMap((s) => [s.hero.pos, ...s.opponents.map((o) => o.pos)]));
+    expect(seats.size).toBeGreaterThanOrEqual(7);
+    expect(SCENARIOS.filter((s) => s.opponents.length >= 2).length).toBeGreaterThanOrEqual(6);
+  });
 });
 
 describe('the hand log', () => {
   it('reads like a hand history, with the pot right on every street', () => {
     const r = replay(SCENARIOS.find((s) => s.id === 'ace-overbet')!);
-    expect(r.lines.map((l) => l.text).slice(0, 5)).toEqual(['CO raises to 2.5bb', 'You call 2.5bb', 'You check', 'CO bets 1.8bb', 'You call 1.8bb']);
+    expect(r.lines.map((l) => l.text).slice(0, 7)).toEqual(['UTG folds', 'HJ folds', 'CO raises to 2.5bb', 'BTN folds', 'SB folds', 'You call 2.5bb', 'You check']);
     expect(r.potAt).toEqual({ flop: 5.5, turn: 9.1, river: 22.7 });
     expect(r.pot).toBeCloseTo(50.7);
     expect(r.toCall).toBe(28);
+  });
+
+  it('refuses a move out of turn', () => {
+    const s = SCENARIOS.find((x) => x.id === 'ace-overbet')!;
+    const bad: Scenario = { ...s, actions: [s.actions[1], s.actions[0], ...s.actions.slice(2)] };
+    expect(() => replay(bad)).toThrow(/turn/);
   });
 });

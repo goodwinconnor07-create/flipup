@@ -1,6 +1,6 @@
 # FlipUp Premium: plan to make it real
 
-Status: plan only, nothing built yet. Written after reading `native/src/state/purchase.ts`, `native/src/app/premium.tsx`,
+Status (4 November 2026): phases 1 to 3 and most of 4 are built; what's left is in "What's left" below. Written after reading `native/src/state/purchase.ts`, `native/src/app/premium.tsx`,
 `native/src/state/unlock.ts`, `worker/room.ts`, `worker/index.ts`, `src/game/validate.ts` and `docs/APP_STORE.md`.
 
 ## 1. Where Premium stands today
@@ -41,20 +41,14 @@ Two things to confirm before we rely on them (I haven't verified either from App
 - Whether `expo-iap` hands back the signed StoreKit 2 transaction in `purchase.purchaseToken` on iOS. The server design
   below depends on it.
 
-## 3. Decisions the owner needs to make
+## 3. Decisions (made 4 November 2026)
 
-1. **Free hosts and the Premium games.** The notes say a free player unlocks a Premium game by watching a rewarded
-   ad. AdMob isn't built. Recommended for launch: a **Game of the Day**. One Premium game, rotating daily, is open to
-   every host for free. No SDK, no tracking prompt, no privacy-label change, and it shows what Premium offers. Ads
-   can come later. Needs a yes or a different answer.
-2. **Family Sharing** for the purchase: on or off. On is friendlier and costs nothing, but it means revocations can
-   come from a family member leaving.
-3. **Launch price.** Keep $9 for launch. If you want the "goes up later" message, schedule the real price change in App
-   Store Connect first, and only then show text about it. A crossed-out price must have been a real price.
-4. **Referral reward**: go or no-go for after launch (phase 6).
-5. **Secrets.** One new Worker secret, `ENTITLEMENT_SECRET` (random, 32 bytes), set with `wrangler secret put`. Optional,
-   only if we choose to look up transactions at Apple: an App Store Connect In-App Purchase key (`.p8`, key id, issuer
-   id). Never committed.
+1. **No ads, and no Game of the Day.** Rewarded ads are dropped completely. A free player who wants to host a Premium
+   game buys Premium; everyone can still join any game for free.
+2. **Family Sharing: off.** The server refuses a transaction whose ownership type isn't `PURCHASED`.
+3. **No launch-price message.** The price is whatever the App Store says.
+4. **Secret.** The owner sets `ENTITLEMENT_SECRET` with `wrangler secret put`.
+5. Referral reward: still open, after launch (phase 6).
 
 ## 4. Build plan
 
@@ -84,11 +78,10 @@ Goal: a phone proves it owns Premium once, and tables can check that cheaply.
 - **Looks.** `TableRoom` drops `bubble` and `cardPack` from a `setLook` unless the socket's token is valid. A bad or
   expired token mid-table keeps the look for that hand, then falls back to plain at the next deal (no jarring mid-hand
   change).
-- **Games.** `/api/tables` and `/api/parties` refuse a Premium game unless the host sends a valid token or the game is
-  today's free Game of the Day. Joining is never gated: guests play any game.
-- **The phone side of the gate.** `unlockToHost()` becomes real and every host path calls it, including the plain
+- **Games.** `/api/tables` and `/api/parties` refuse a Premium game unless the host sends a valid token. Joining is
+  never gated: guests play any game.
+- **The phone side of the gate.** `unlockToHost()` is real and every host path calls it, including the plain
   table in Setup, not just `party-setup.tsx`. On "no", it opens the Premium sheet with a reason (see phase 3).
-- **Game of the Day.** One pure function in `src/game/`, `freeGameOfTheDay(date)`, so the app and the Worker agree.
 - Bots-only tables stay as they are: nobody else sees them, so the local flag is enough there and works offline.
 - Tests: the reducer is untouched. Add Worker-level tests for each refusal and a `unlockToHost` unit test. The
   "keeps every chip accounted for" test must still pass.
@@ -133,8 +126,8 @@ Reduce Motion, haptics per `docs/MOTION.md`, SF Symbols only. Nothing says "limi
 ### Phase 5: App Store Connect and review
 
 - The IAP's name, description, price, screenshot of the new screen, and review notes (where Premium lives, the sandbox
-  account, how Game of the Day works, and any referral mechanic).
-- Family Sharing choice from section 3.
+  account, that there are no ads, and any referral mechanic).
+- Family Sharing is off (section 3).
 - A local StoreKit configuration file for testing, then a TestFlight pass with a sandbox account covering: buy, cancel,
   Ask to Buy, restore on a second phone, refund, airplane mode.
 - Update `docs/APP_STORE.md` (the server-check recommendation becomes "done" and describes how) and `CLAUDE.md`.
@@ -165,3 +158,27 @@ work, and phases 4 and 5 are small but easy to forget. Use Opus 5.5 at high for 
 - Don't hard-code the price. Don't show a price we don't sell.
 - Don't touch the poker rules or `redactForDevice()`.
 - Don't commit secrets. Don't ship the web stand-in purchase.
+
+## 7. What's built, and what's left
+
+Built (all typechecked; unit tests for the Apple signature check, the pass and the gate):
+- Phase 1: `worker/appleJws.ts`, `entitlementToken.ts`, `entitlement.ts` (the `Entitlements` Durable Object, migration
+  v8), `premium.ts`, the routes `/api/premium/verify|refresh|forget` and `/api/apple/notifications`.
+- Phase 2: `src/game/premiumGate.ts`, the gate in `createTableRoute`, the party route and `TableRoom`, and
+  `unlockToHost()` called from Setup and party setup.
+- Phase 3: the rebuilt `native/src/app/premium.tsx`, with Ask to Buy and error states.
+- Phase 4: refund turns Premium off at launch (when the App Store answers), Delete my data forgets the device.
+
+Left for the owner (nothing here can be done from the code):
+1. `wrangler secret put ENTITLEMENT_SECRET` (any long random string).
+2. In App Store Connect, set the Server Notifications V2 URL (production and sandbox) to
+   `https://gtoduel.online/api/apple/notifications`.
+3. Deploy, then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy again. Do this only when the iPhone app is
+   live, because the web app has no payment and would lose Premium games and looks.
+4. Test on a real phone with a sandbox account: buy, cancel, Ask to Buy, restore on a second phone, refund, and
+   airplane mode. I couldn't run StoreKit here.
+5. Confirm Apple's root fingerprint in `appleJws.ts` against https://www.apple.com/certificateauthority/ and that
+   `expo-iap` returns the signed transaction in `purchase.purchaseToken` (the code assumes both).
+6. Add Purchases to the App Privacy answers (see `docs/APP_STORE.md`) and the privacy page.
+
+Not built: Apple offer codes (unconfirmed for non-consumables) and the referral reward (phase 6).

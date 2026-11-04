@@ -22,7 +22,7 @@ export default function ChooseGame() {
     <>
       <Stack.Screen options={{ title: 'Game' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl }}>
-        <Section inset={spacing.md + THUMB + spacing.sm} footer={premium ? undefined : 'Games with a crown come with Premium, or watch a short ad to host one.'}>
+        <Section inset={spacing.md + THUMB + spacing.sm} footer={premium ? undefined : 'Games with a crown need Premium to host. Anyone can still join one for free.'}>
           {VARIANTS.map((v) => (
             <Row
               key={v.id}

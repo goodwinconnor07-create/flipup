@@ -178,7 +178,7 @@ export const variantOf = (game: Game): Variant => game.hand?.variant ?? game.set
 export const variantInfo = (v: Variant | undefined): VariantInfo => VARIANTS.find((x) => x.id === v) ?? VARIANTS[0];
 
 /**
- * In the iPhone app the first five games in VARIANTS are free; the rest unlock with Premium or a rewarded ad, and
+ * In the iPhone app the first five games in VARIANTS are free; the rest need Premium to host, and
  * only the host of a table needs the unlock (docs/APP_STORE.md). The web doesn't lock any game yet.
  */
 export const FREE_VARIANTS = 5;

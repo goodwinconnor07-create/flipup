@@ -35,14 +35,17 @@ import {
   type CreateBjResponse,
   newId,
   parseReport,
+  gamesNeedPremium,
 } from '../src/game';
 import { emailReport, type StoredReport } from './reports';
+import { forgetDevice, handleNotification, mayHostPremium, refreshPass, verifyPurchase, type PassResult } from './premium';
 
 export { TableRoom } from './room';
 export { PartyRoom } from './party';
 export { FriendCard } from './friendCard';
 export { BlackjackRoom } from './blackjack';
 export { ReportBox } from './reports';
+export { Entitlements } from './entitlement';
 
 const MAX_BODY_CHARS = 16 * 1024;
 
@@ -104,6 +107,9 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   if (!isEmoji(body.emoji)) return json({ error: 'Pick an emoji.' }, 400);
   let settings = parseSettings(body.settings, false);
   if (!settings) return json({ error: "Those table settings don't work." }, 400);
+  if (gamesNeedPremium([settings.variant ?? 'holdem']) && !(await mayHostPremium(env, request.headers.get('x-entitlement'), body.deviceId))) {
+    return json({ error: 'Hosting this game needs FlipUp Premium.', premium: true }, 402);
+  }
   let bots = typeof body.bots === 'number' && Number.isInteger(body.bots) ? Math.max(0, Math.min(MAX_SEATS - 1, body.bots)) : 0;
   // A campaign table with friends: the stakes come from the campaign, never from the phone, and the prize is drawn here.
   let campaign: Game['campaign'];
@@ -369,6 +375,9 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     if ('error' in look) return json({ error: look.error }, 400);
     const settings = body.settings as PartySettings | undefined;
     if (!settings || !validPartySettings(settings, isVariant)) return json({ error: "Those party settings don't work." }, 400);
+    if (gamesNeedPremium(settings.games) && !(await mayHostPremium(env, request.headers.get('x-entitlement'), body.deviceId))) {
+      return json({ error: 'Hosting these games needs FlipUp Premium.', premium: true }, 402);
+    }
     const person = { ...look, friendCode: await ownedCode(env, body.friendCode, body.deviceId) };
     for (let attempt = 0; attempt < 6; attempt++) {
       const fresh = newCode();
@@ -420,9 +429,29 @@ async function reportRoute(request: Request, env: Env, ctx: ExecutionContext): P
   return json({ ok: true }, 201);
 }
 
+const passJson = (r: PassResult): Response => (r.ok ? json({ token: r.token, expiresAt: r.expiresAt }) : json({ error: r.error, ...(r.revoked ? { revoked: true } : {}) }, r.status));
+
+/** POST /api/premium/verify and /refresh (a phone's pass), /forget (Delete my data); POST /api/apple/notifications is Apple's own webhook. */
+async function premiumRoute(request: Request, env: Env, pathname: string): Promise<Response> {
+  if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
+  if (limited(request, 'premium', 60, 60 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+  const body = (await readJson(request, 24 * 1024)) as Record<string, unknown> | null;
+  if (!body) return json({ error: 'Bad request.' }, 400);
+  if (pathname === '/api/apple/notifications') return (await handleNotification(env, body)) ? json({ ok: true }) : json({ error: 'Not from Apple.' }, 400);
+  if (pathname === '/api/premium/verify') return passJson(await verifyPurchase(env, body));
+  if (pathname === '/api/premium/refresh') return passJson(await refreshPass(env, body));
+  if (pathname === '/api/premium/forget' && isDeviceId(body.deviceId)) {
+    await forgetDevice(env, body.deviceId);
+    return json({ ok: true });
+  }
+  return json({ error: 'Not found.' }, 404);
+}
+
 export default {
   async fetch(request, env, ctx): Promise<Response> {
     const { pathname, search } = new URL(request.url);
+
+    if (pathname.startsWith('/api/premium/') || pathname === '/api/apple/notifications') return premiumRoute(request, env, pathname);
 
     if (pathname === '/api/friends' || pathname.startsWith('/api/friends/')) return friendRoute(request, env, pathname, search);
     if (pathname.startsWith('/api/usernames/')) return usernameRoute(request, env, pathname);

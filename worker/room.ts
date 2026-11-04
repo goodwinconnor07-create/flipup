@@ -11,11 +11,13 @@ import {
   redactLogs,
   finishOrder,
   liveOf,
+  withoutPremiumLook,
   type Action,
   type Game,
   type ServerMessage,
   type TableInfo,
 } from '../src/game';
+import { mayHostPremium } from './premium';
 
 /** Tables are deleted this long after the last change. */
 const KEEP_FOR_MS = 3 * 24 * 60 * 60 * 1000;
@@ -25,6 +27,8 @@ const RATE_LIMIT = { count: 30, windowMs: 10_000 };
 
 interface SocketMeta {
   deviceId: string;
+  /** This phone showed a genuine Premium pass when it connected (or the server isn't enforcing Premium). */
+  premium: boolean;
 }
 
 /**
@@ -84,9 +88,10 @@ export class TableRoom extends DurableObject<Env> {
     const game = await this.load();
     if (!game) return new Response('Table not found', { status: 404 });
 
+    const premium = await mayHostPremium(this.env, new URL(request.url).searchParams.get('token'), deviceId);
     const [client, server] = Object.values(new WebSocketPair());
     this.ctx.acceptWebSocket(server, [deviceId]);
-    server.serializeAttachment({ deviceId } satisfies SocketMeta);
+    server.serializeAttachment({ deviceId, premium } satisfies SocketMeta);
     this.send(server, { t: 'state', game: redactForDevice(game, deviceId) });
     await this.syncPresence();
     return new Response(null, { status: 101, webSocket: client });
@@ -102,7 +107,7 @@ export class TableRoom extends DurableObject<Env> {
     }
     if (typeof msg !== 'object' || msg === null) return;
     const { t, id: rawId, a } = msg as { t?: unknown; id?: unknown; a?: unknown };
-    const { deviceId } = ws.deserializeAttachment() as SocketMeta;
+    const { deviceId, premium } = ws.deserializeAttachment() as SocketMeta;
 
     if (t === 'ping') return this.send(ws, { t: 'pong' });
 
@@ -120,7 +125,8 @@ export class TableRoom extends DurableObject<Env> {
 
     const action = parseAction(a);
     if (!action) return this.send(ws, { t: 'reject', id, error: "The server didn't understand that." });
-    await this.apply(action, deviceId, ws, id);
+    // A phone with no Premium pass gets the plain look: the Premium bubble and card back are dropped, the name and emoji kept.
+    await this.apply(premium !== false ? action : withoutPremiumLook(action), deviceId, ws, id);
   }
 
   /** Applies an action, saves, and sends everyone their view of the result. */

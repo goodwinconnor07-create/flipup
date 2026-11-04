@@ -21,7 +21,10 @@ import {
   type Settings,
 } from '@/engine';
 
-import { createOnlineTable } from './api';
+import { createOnlineTable, PremiumRequiredError } from './api';
+import { ensurePass } from './entitlement';
+import { hasPremium } from './premium';
+import { restorePremium } from './purchase';
 import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
 import { isFast } from './prefs';
@@ -268,7 +271,18 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
 /** Opens a table on the server for friends to join with its code, seated as the host. Throws with a message. */
 export async function openOnlineTable(settings: Settings, bots: number, name: string, emoji: string): Promise<string> {
   profile = { name, emoji };
-  const code = await createOnlineTable({ deviceId: me, name: cleanName(name) || 'Host', emoji, settings, bots });
+  const body = { deviceId: me, name: cleanName(name) || 'Host', emoji, settings, bots };
+  let code: string;
+  try {
+    code = await createOnlineTable(body);
+  } catch (e) {
+    // Bought Premium but the server hasn't seen the purchase yet (offline at the time, or the pass ran out): ask the
+    // App Store for it once more, then try again. Someone with no Premium at all just gets the server's answer.
+    if (!(e instanceof PremiumRequiredError) || !hasPremium()) throw e;
+    await restorePremium();
+    if (!(await ensurePass(null))) throw e;
+    code = await createOnlineTable(body);
+  }
   set({ mode: 'online', code, game: null });
   connect(code);
   return code;

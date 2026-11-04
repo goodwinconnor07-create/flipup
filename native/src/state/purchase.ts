@@ -17,7 +17,8 @@ import {
 import { useSyncExternalStore } from 'react';
 
 import { APP_INFO } from '../../appInfo';
-import { setPremium } from './premium';
+import { ensurePass } from './entitlement';
+import { hasPremium, setPremium } from './premium';
 
 const SKU = APP_INFO.premiumProductId;
 
@@ -28,9 +29,11 @@ export interface StoreState {
   busy: boolean;
   /** Why the store couldn't be reached, if it couldn't. */
   error: string | null;
+  /** Ask to Buy: a parent has to approve the purchase. Premium turns on by itself once they do. */
+  pending: boolean;
 }
 
-let state: StoreState = { price: null, busy: false, error: null };
+let state: StoreState = { price: null, busy: false, error: null, pending: false };
 const listeners = new Set<() => void>();
 let ready: Promise<boolean> | null = null;
 let waiting: { done: (ok: boolean) => void } | null = null;
@@ -54,6 +57,9 @@ const ours = (p: Purchase) => p.productId === SKU && p.purchaseState !== 'pendin
 
 async function grant(p: Purchase): Promise<void> {
   setPremium(true);
+  // Show the server Apple's signed transaction so it can give this phone a pass (see state/entitlement.ts). Premium
+  // works on this phone either way; the pass is for what other people see and for hosting online.
+  void ensurePass(p.purchaseToken);
   try {
     await finishTransaction({ purchase: p, isConsumable: false });
   } catch {
@@ -68,9 +74,15 @@ async function grant(p: Purchase): Promise<void> {
 export function startStore(): Promise<boolean> {
   if (ready) return ready;
   purchaseUpdatedListener((p) => {
+    if (p.productId === SKU && p.purchaseState === 'pending') {
+      publish({ busy: false, pending: true });
+      waiting?.done(false);
+      waiting = null;
+      return;
+    }
     if (!ours(p)) return;
     void grant(p).then(() => {
-      publish({ busy: false });
+      publish({ busy: false, pending: false });
       waiting?.done(true);
       waiting = null;
     });
@@ -84,7 +96,9 @@ export function startStore(): Promise<boolean> {
   ready = (async () => {
     try {
       await initConnection();
-      await Promise.all([loadPrice(), checkOwned()]);
+      const [, owned] = await Promise.all([loadPrice(), checkOwned()]);
+      // The App Store answered and this Apple Account owns nothing: the purchase was refunded. Only when it answered.
+      if (!owned && hasPremium()) setPremium(false);
       return true;
     } catch {
       publish({ error: "Couldn't reach the App Store." });

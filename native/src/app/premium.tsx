@@ -1,46 +1,53 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
-import { useEffect } from 'react';
-import { Alert, Linking, Pressable, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CARD_BACKS } from '@design/premiumLooks';
-import { SheetScroll } from '@/components/sheet-scroll';
 import { Button } from '@/components/button';
+import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
-import { Icon, type IconName } from '@/components/icon';
+import { Icon } from '@/components/icon';
+import { PressableScale } from '@/components/pressable-scale';
+import { SheetScroll } from '@/components/sheet-scroll';
+import { MoveBubble } from '@/components/table/bubbles';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { CARD_PACKS } from '@/engine';
+import { BUBBLE_STYLES, CARD_PACKS, FREE_VARIANTS, isVariant, VARIANTS, variantInfo } from '@/engine';
+import { usePassReady } from '@/state/pass';
 import { usePremium } from '@/state/premium';
 import { buyPremium, ON_SALE, restorePremium, startStore, useStore } from '@/state/purchase';
-import { gradient, party, radius, spacing } from '@/theme';
+import { gradient, party, radius, spacing, useColors } from '@/theme';
 
 import { APP_INFO } from '../../appInfo';
 
-const PERKS: { icon: IconName; title: string; line: string }[] = [
-  { icon: 'crown.fill', title: 'Seven more games', line: 'Host Red River, Imposter, Memory Poker and the rest, with no ads.' },
-  { icon: 'suit.spade.fill', title: 'Eleven card packs', line: 'Shining card backs. Your table sees them on your cards.' },
-  { icon: 'bubble.left.fill', title: 'Eleven bubble effects', line: 'Fire, galaxy, neon and more. Everyone at the table sees them.' },
-];
+type Reason = 'game' | 'pack' | 'bubble';
+type Part = 'games' | 'packs' | 'bubbles';
+
+const FIRST: Record<Reason, Part> = { game: 'games', pack: 'packs', bubble: 'bubbles' };
+const glass = 'rgba(255,255,255,0.1)';
 
 /**
- * FlipUp Premium: a night-purple sheet with a fan of every Premium card back, what it unlocks, the App Store's
- * price, Buy and Restore Purchases (docs/APP_STORE.md, 3.1.1). One payment, never chips.
+ * FlipUp Premium (docs/APP_STORE.md, 3.1.1; docs/PREMIUM_PLAN.md). A night-purple sheet that shows what you get
+ * before it asks for money: the seven games, every card back (tap to see it big), every bubble effect, and what's
+ * free against what's not. It opens with whatever you tapped first (a locked game, a card back or a bubble). The price
+ * comes from the App Store and sits in a bar pinned to the bottom, with Restore Purchases.
  */
 export default function PremiumSheet() {
+  const params = useLocalSearchParams<{ reason?: string; game?: string }>();
+  const reason: Reason | undefined = params.reason === 'game' || params.reason === 'pack' || params.reason === 'bubble' ? params.reason : undefined;
+  const wanted = params.game && isVariant(params.game) ? params.game : undefined;
   const has = usePremium();
+  const passReady = usePassReady();
   const store = useStore();
+  const insets = useSafeAreaInsets();
   useEffect(() => void startStore(), []);
-  const packs = CARD_PACKS.filter((p) => !p.venue);
-  const mid = (packs.length - 1) / 2;
   const night = CARD_BACKS.obsidian.base;
   const open = (url: string) => void openBrowserAsync(url).catch(() => Linking.openURL(url));
 
   const buy = async () => {
-    if (await buyPremium()) {
-      haptic.success();
-      router.back();
-    }
+    if (await buyPremium()) haptic.success();
   };
   const restore = async () => {
     const ok = await restorePremium();
@@ -50,65 +57,291 @@ export default function PremiumSheet() {
     } else if (!store.error) Alert.alert('Nothing to restore', 'This Apple Account hasn’t bought FlipUp Premium.');
   };
 
+  const title = has ? 'You have Premium' : reason === 'game' && wanted ? `Host ${variantInfo(wanted).name}` : reason === 'pack' ? 'Get the card packs' : reason === 'bubble' ? 'Get the chat bubbles' : 'FlipUp Premium';
+  const line = has
+    ? 'Thank you for backing FlipUp. Everything below is yours.'
+    : reason === 'game'
+      ? 'This game needs Premium to host. Your friends can join it for free.'
+      : reason === 'pack' || reason === 'bubble'
+        ? 'Everyone at your table sees your look. One payment, yours for good.'
+        : 'Make every table yours. One payment, yours for good.';
+
+  const parts: Record<Part, React.ReactNode> = {
+    games: <Games key="games" first={wanted} />,
+    packs: <Packs key="packs" />,
+    bubbles: <Bubbles key="bubbles" />,
+  };
+  const order: Part[] = ['games', 'packs', 'bubbles'];
+  if (reason) order.sort((a, b) => (a === FIRST[reason] ? -1 : b === FIRST[reason] ? 1 : 0));
+
   return (
-    <SheetScroll style={gradient(`linear-gradient(180deg, ${night[0]}, ${night[1]})`)} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg }}>
+    <View style={[{ flex: 1 }, gradient(`linear-gradient(180deg, ${night[0]}, ${night[1]})`)]}>
       <Stack.Screen options={{ title: 'FlipUp Premium' }} />
-      <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()} style={({ pressed }) => ({ position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1, width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: pressed ? 0.6 : 1 })}>
-        <Icon name="xmark" size={14} color="white" />
-      </Pressable>
-      <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ height: 120, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end' }}>
-        {packs.map((p, i) => (
-          <View key={p.id} style={{ marginHorizontal: -14, transform: [{ rotate: `${(i - mid) * 6}deg` }, { translateY: Math.abs(i - mid) * 3 }] }}>
+      <SheetScroll style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: spacing.xl }}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()} style={({ pressed }) => ({ position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1, width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: pressed ? 0.6 : 1 })}>
+          <Icon name="xmark" size={14} color="white" />
+        </Pressable>
+
+        <Fan />
+        <View style={{ gap: spacing.xs, alignItems: 'center' }}>
+          <ThemedText variant="largeTitle" tone="onColor" accessibilityRole="header" style={{ textAlign: 'center' }}>
+            {title}
+          </ThemedText>
+          <ThemedText tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
+            {line}
+          </ThemedText>
+        </View>
+
+        {has && (
+          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+            <View style={{ flex: 1 }}>
+              <Button title="Card packs" variant="secondary" onPress={() => router.push('/card-packs')} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Button title="Chat bubbles" variant="secondary" onPress={() => router.push('/chat-bubbles')} />
+            </View>
+          </View>
+        )}
+
+        <View accessible accessibilityLabel="Friends play free. Only the host needs Premium. Everyone else joins by code for free." style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', padding: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
+          <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', ...gradient(`linear-gradient(180deg, ${party.yellow}, ${party.orange})`) }}>
+            <Icon name="person.2.fill" size={18} color="white" />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <ThemedText variant="headline" tone="onColor">
+              Friends play free
+            </ThemedText>
+            <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.75 }}>
+              Only the host needs Premium. Everyone else joins by code, with no payment.
+            </ThemedText>
+          </View>
+        </View>
+
+        {order.map((p) => parts[p])}
+
+        <Compare />
+
+        {has && !passReady && (
+          <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.75 }}>
+            Online hosting isn’t set up on this phone yet. It needs a connection.{' '}
+            <ThemedText variant="footnote" tone="onColor" style={{ textDecorationLine: 'underline' }} onPress={() => void restorePremium()}>
+              Try again
+            </ThemedText>
+          </ThemedText>
+        )}
+      </SheetScroll>
+
+      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md), gap: spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.12)', backgroundColor: 'rgba(10,6,24,0.92)' }}>
+        {has ? (
+          <Button title="Done" variant="party" tint="gold" size="lg" onPress={() => router.back()} />
+        ) : !ON_SALE ? (
+          <Button title="On the iPhone app" variant="secondary" size="lg" disabled />
+        ) : store.pending ? (
+          <>
+            <Button title="Waiting for approval" variant="secondary" size="lg" disabled />
+            <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
+              Someone has to approve this purchase. Premium turns on by itself when they do.
+            </ThemedText>
+          </>
+        ) : store.error && !store.price ? (
+          <>
+            <Button title="Try again" variant="party" tint="gold" size="lg" loading={store.busy} onPress={() => void startStore()} />
+            <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
+              {store.error}
+            </ThemedText>
+          </>
+        ) : (
+          <Button title={store.price ? `Unlock for ${store.price}` : 'Loading price…'} variant="party" tint="gold" size="lg" loading={store.busy} disabled={!store.price} onPress={() => void buy()} />
+        )}
+        {!has && store.error && store.price && (
+          <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
+            {store.error}
+          </ThemedText>
+        )}
+        {ON_SALE && !has && (
+          <Button title="Restore Purchases" variant="secondary" onPress={() => void restore()} disabled={store.busy} />
+        )}
+        <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.6 }}>
+          One payment through the App Store. It never buys chips: they’re play chips with no cash value.{' '}
+          <ThemedText variant="footnote" tone="onColor" style={{ textDecorationLine: 'underline' }} onPress={() => open(APP_INFO.privacyUrl)}>
+            Privacy policy
+          </ThemedText>
+        </ThemedText>
+      </View>
+    </View>
+  );
+}
+
+/** The fan of every Premium card back at the top. */
+function Fan() {
+  const packs = CARD_PACKS.filter((p) => !p.venue);
+  const mid = (packs.length - 1) / 2;
+  return (
+    <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ height: 120, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end' }}>
+      {packs.map((p, i) => (
+        <View key={p.id} style={{ marginHorizontal: -14, transform: [{ rotate: `${(i - mid) * 6}deg` }, { translateY: Math.abs(i - mid) * 3 }] }}>
+          <PlayingCard back size="md" pack={p.id} />
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Heading({ children, note }: { children: string; note?: string }) {
+  return (
+    <View style={{ gap: 2 }}>
+      <ThemedText variant="title2" tone="onColor" accessibilityRole="header">
+        {children}
+      </ThemedText>
+      {note && (
+        <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.7 }}>
+          {note}
+        </ThemedText>
+      )}
+    </View>
+  );
+}
+
+/** The seven Premium games, with the one you tapped first. A tap shows how it plays. */
+function Games({ first }: { first?: string }) {
+  const colors = useColors();
+  const games = VARIANTS.slice(FREE_VARIANTS);
+  if (first) games.sort((a, b) => (a.id === first ? -1 : b.id === first ? 1 : 0));
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Heading note="Tap one to see how it plays.">{`${games.length} more games`}</Heading>
+      <View style={{ borderRadius: radius.md, backgroundColor: glass, overflow: 'hidden' }}>
+        {games.map((g, i) => (
+          <PressableScale
+            key={g.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${g.name}. ${g.tagline}. See how it plays.`}
+            onPress={() => {
+              haptic.select();
+              router.push(`/how-to-play/${g.id}`);
+            }}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderTopWidth: i ? 1 : 0, borderTopColor: 'rgba(255,255,255,0.1)', backgroundColor: g.id === first ? 'rgba(255,255,255,0.08)' : undefined }}
+          >
+            <GameThumb variant={g.id} size={44} />
+            <View style={{ flex: 1 }}>
+              <ThemedText variant="headline" tone="onColor" numberOfLines={1}>
+                {g.name}
+              </ThemedText>
+              <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.7 }} numberOfLines={2}>
+                {g.tagline}
+              </ThemedText>
+            </View>
+            <Icon name="crown.fill" size={15} color={colors.gold} />
+          </PressableScale>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** Every card back in a strip, with the chosen one shown large. */
+function Packs() {
+  const packs = CARD_PACKS.filter((p) => !p.venue);
+  const [pick, setPick] = useState(packs[0].id);
+  const chosen = packs.find((p) => p.id === pick) ?? packs[0];
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Heading note="Everyone at your table sees the back of your cards.">{`${packs.length} card packs`}</Heading>
+      <View accessible accessibilityLabel={`${chosen.name}. ${chosen.note}`} style={{ alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
+        <View style={{ flexDirection: 'row' }}>
+          <View style={{ transform: [{ rotate: '-7deg' }, { translateX: 10 }] }}>
+            <PlayingCard back size="xl" pack={chosen.id} />
+          </View>
+          <View style={{ transform: [{ rotate: '7deg' }, { translateX: -10 }] }}>
+            <PlayingCard back size="xl" pack={chosen.id} />
+          </View>
+        </View>
+        <ThemedText variant="headline" tone="onColor">
+          {chosen.name}
+        </ThemedText>
+        <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.7 }}>
+          {chosen.note}
+        </ThemedText>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingVertical: spacing.xs }}>
+        {packs.map((p) => (
+          <PressableScale
+            key={p.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${p.name} card pack`}
+            accessibilityState={{ selected: p.id === pick }}
+            onPress={() => {
+              haptic.select();
+              setPick(p.id);
+            }}
+            style={{ alignItems: 'center', gap: 4, padding: 6, borderRadius: radius.md, borderWidth: 2, borderColor: p.id === pick ? 'white' : 'transparent' }}
+          >
             <PlayingCard back size="md" pack={p.id} />
+            <ThemedText variant="caption1" tone="onColor" style={{ opacity: p.id === pick ? 1 : 0.7 }} numberOfLines={1}>
+              {p.name}
+            </ThemedText>
+          </PressableScale>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+/** Every Premium bubble effect as a live bubble. */
+function Bubbles() {
+  const fx = BUBBLE_STYLES.filter((b) => !b.free);
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Heading note="Your moves and messages show in this colour for the whole table.">{`${fx.length} bubble effects`}</Heading>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {fx.map((b) => (
+          <View key={b.id} accessible accessibilityLabel={`${b.name}. ${b.note}`} style={{ width: '48%', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
+            <MoveBubble text="Raise 40" tone="blue" fx={b.id} big />
+            <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.8 }}>
+              {b.name}
+            </ThemedText>
           </View>
         ))}
       </View>
-      <View style={{ gap: spacing.xs, alignItems: 'center' }}>
-        <ThemedText variant="largeTitle" tone="onColor" style={{ textAlign: 'center' }}>
-          FlipUp Premium
-        </ThemedText>
-        <ThemedText tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
-          {has ? 'Unlocked. Thank you for backing FlipUp.' : 'Make every table yours. One payment, yours for good.'}
-        </ThemedText>
-      </View>
-      <View style={{ gap: spacing.md }}>
-        {PERKS.map((p) => (
-          <View key={p.title} style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' }}>
-            <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', ...gradient(`linear-gradient(180deg, ${party.yellow}, ${party.orange})`) }}>
-              <Icon name={p.icon} size={18} color="white" />
-            </View>
-            <View style={{ flex: 1, gap: 2 }}>
-              <ThemedText variant="headline" tone="onColor">
-                {p.title}
-              </ThemedText>
-              <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.75 }}>
-                {p.line}
-              </ThemedText>
-            </View>
+    </View>
+  );
+}
+
+/** Free against Premium, from the real counts. */
+function Compare() {
+  const rows = [
+    { what: 'Games to host', free: String(FREE_VARIANTS), premium: String(VARIANTS.length) },
+    { what: 'Card backs', free: '1', premium: String(1 + CARD_PACKS.filter((p) => !p.venue).length) },
+    { what: 'Bubble looks', free: String(1 + BUBBLE_STYLES.filter((b) => b.free).length), premium: String(1 + BUBBLE_STYLES.length) },
+    { what: 'Joining any game', free: 'Yes', premium: 'Yes' },
+  ];
+  return (
+    <View style={{ gap: spacing.sm }}>
+      <Heading>Free and Premium</Heading>
+      <View style={{ borderRadius: radius.md, backgroundColor: glass, overflow: 'hidden' }}>
+        <View style={{ flexDirection: 'row', padding: spacing.sm }}>
+          <View style={{ flex: 1 }} />
+          <ThemedText variant="footnote" tone="onColor" style={{ width: 64, textAlign: 'center', opacity: 0.7 }}>
+            Free
+          </ThemedText>
+          <ThemedText variant="footnote" tone="onColor" style={{ width: 80, textAlign: 'center', fontWeight: '700' }}>
+            Premium
+          </ThemedText>
+        </View>
+        {rows.map((r) => (
+          <View key={r.what} accessible accessibilityLabel={`${r.what}: ${r.free} free, ${r.premium} with Premium`} style={{ flexDirection: 'row', alignItems: 'center', padding: spacing.sm, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)' }}>
+            <ThemedText tone="onColor" style={{ flex: 1 }}>
+              {r.what}
+            </ThemedText>
+            <ThemedText tone="onColor" style={{ width: 64, textAlign: 'center', opacity: 0.7 }}>
+              {r.free}
+            </ThemedText>
+            <ThemedText tone="onColor" style={{ width: 80, textAlign: 'center', fontWeight: '700' }}>
+              {r.premium}
+            </ThemedText>
           </View>
         ))}
       </View>
-      {has ? (
-        <Button title="Done" variant="party" tint="gold" size="lg" onPress={() => router.back()} />
-      ) : ON_SALE ? (
-        <Button title={store.price ? `Unlock for ${store.price}` : 'Loading price…'} variant="party" tint="gold" size="lg" loading={store.busy} disabled={!store.price} onPress={() => void buy()} />
-      ) : (
-        <Button title="On the iPhone app" variant="secondary" size="lg" disabled />
-      )}
-      {store.error && (
-        <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
-          {store.error}
-        </ThemedText>
-      )}
-      {ON_SALE && !has && (
-        <Button title="Restore Purchases" variant="secondary" onPress={() => void restore()} disabled={store.busy} />
-      )}
-      <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.6 }}>
-        A one-time purchase through the App Store. It never buys chips: they&apos;re play chips with no cash value.
-      </ThemedText>
-      <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8, textDecorationLine: 'underline' }} onPress={() => open(APP_INFO.privacyUrl)}>
-        Privacy policy
-      </ThemedText>
-    </SheetScroll>
+    </View>
   );
 }

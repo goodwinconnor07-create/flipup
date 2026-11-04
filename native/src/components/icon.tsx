@@ -81,6 +81,24 @@ const WEB = {
   'tag.fill': 'sell',
   'star.fill': 'star',
   'hand.thumbsup.fill': 'thumb_up',
+  // Range training.
+  scope: 'adjust',
+  'exclamationmark.triangle.fill': 'warning',
+  'shield.fill': 'shield',
+  'arrow.down.right.and.arrow.up.left': 'compress',
+  'lightbulb.fill': 'lightbulb',
+  'book.fill': 'menu_book',
+  'square.grid.2x2.fill': 'grid_view',
+  'forward.fill': 'fast_forward',
+  'arrow.counterclockwise': 'replay',
+  calendar: 'calendar_today',
+  'checkmark.seal.fill': 'verified',
+  'chevron.down': 'expand_more',
+  'chevron.up': 'expand_less',
+  'arrow.up': 'arrow_upward',
+  'arrow.down': 'arrow_downward',
+  'lock.open.fill': 'lock_open',
+  'gauge.with.needle.fill': 'speed',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

@@ -1,17 +1,19 @@
 import { router, type Href } from 'expo-router';
+import type { ReactNode } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 
 import type { SoloId } from '@design/challengeArt';
 
 import { CHALLENGES, type ChallengeDef } from '@/engine';
 import { useChallengeBests, type ChallengeBest } from '@/state/challenges';
-import { SCENARIOS, solvedCount, useRangeGrades } from '@/state/ranges';
+import { flameOf, SCENARIOS, solvedCount, useRangeGrades, useRangePlay } from '@/state/ranges';
 import { radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 import { ChallengePicture } from '../challenge-picture';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
+import { RangeTeaser } from '../ranges/teaser';
 import { SectionTitle } from './section-title';
 
 const CARD = 184;
@@ -52,23 +54,29 @@ function ChallengeCard({ challenge, best }: { challenge: ChallengeDef; best?: Ch
   );
 }
 
-/** Range training: one card more in the row, its number how many hands you've played the best way. */
+/**
+ * Range training: one card more in the row. Its picture is live (today's hand, or today's three squares once
+ * played, and the flame), its number how many hands you've played the best way.
+ */
 function RangeCard() {
   const grades = useRangeGrades();
+  const play = useRangePlay();
   const solved = solvedCount(grades);
   const played = Object.keys(grades).length > 0;
+  const flame = flameOf(play).days;
   return (
     <SoloCard
       picture="ranges"
+      art={<RangeTeaser width={CARD} height={PICTURE} />}
       name="Range training"
       score={played ? { value: solved, unit: `of ${SCENARIOS.length} best` } : undefined}
-      accessibilityLabel={`Range training: read what they could have, then make one call. ${played ? `${solved} of ${SCENARIOS.length} hands played the best way` : 'Not played yet'}`}
+      accessibilityLabel={`Range training: read what they could have, then make one call. ${played ? `${solved} of ${SCENARIOS.length} hands played the best way` : 'Not played yet'}${flame ? `. ${flame}-day streak` : ''}`}
       href="/range-training"
     />
   );
 }
 
-function SoloCard({ picture, name, score, accessibilityLabel, href }: { picture: SoloId; name: string; score?: { value: number; unit: string }; accessibilityLabel: string; href: Href }) {
+function SoloCard({ picture, art, name, score, accessibilityLabel, href }: { picture: SoloId; art?: ReactNode; name: string; score?: { value: number; unit: string }; accessibilityLabel: string; href: Href }) {
   const colors = useColors();
   const shadows = useShadows();
   return (
@@ -85,7 +93,7 @@ function SoloCard({ picture, name, score, accessibilityLabel, href }: { picture:
     >
       {/* The shadow sits on the press area; the picture and text are clipped to the rounded card inside it. */}
       <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden' }}>
-        <ChallengePicture id={picture} width={CARD} height={PICTURE} rounded={0} />
+        {art ?? <ChallengePicture id={picture} width={CARD} height={PICTURE} rounded={0} />}
         <View style={{ padding: spacing.sm, paddingTop: spacing.xs, gap: 2 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs }}>
             <Icon name="person.fill" size={11} color={colors.secondaryLabel} />

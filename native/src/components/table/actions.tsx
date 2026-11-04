@@ -167,7 +167,26 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   // The next hand deals itself when the bar along the bottom of the button runs out.
   const total = waitFor(hand.number, game.nextHandAt - now);
   const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
-  return <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  const next = <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn
+  // them over. Tapping sends the `show` action; the greyed cards turn white as the answer. Never during play.
+  const canShow = !!seat && !seat.shown && seat.cards.length === 2;
+  if (!canShow) return next;
+  return (
+    <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+      <View>
+        <TableButton
+          label="Show cards"
+          tone="pre"
+          onPress={() => {
+            haptic.tap();
+            dispatch({ type: 'show', hand: hand.number });
+          }}
+        />
+      </View>
+      <View style={{ flex: 1 }}>{next}</View>
+    </View>
+  );
 }
 
 /** How long this pause was when it began, so the bar drains from full whatever extra time was added. */

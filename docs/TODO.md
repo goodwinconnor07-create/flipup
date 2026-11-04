@@ -34,6 +34,8 @@ The single record of the big batch of fixes and changes. Every item has an ID. A
 
 ## Stage 1: Table quick wins
 
+_T1 to T8 are done twice: first in the web UI (commit a925e99), then in the iPhone app (`native/`, the version that ships): `raise-slider`/`actions`, `seats` (`PositionChip`, `SeatFace`), `pot-chips`, `felt`, `table-menu`. Call/Check is system blue in the app by the owner's call._
+
 Files to start from: `src/screens/table/Actions.tsx`, `table/Pods.tsx`, `Table.tsx`, `src/styles/table.css`, `src/ui/components.tsx`.
 
 - [x] **T1 Raise panel all green.** The raise slider and its quick-bet buttons use purple on some and green on others. Make every one of them green (same token). Check the slider thumb, the track fill, the preset chips (1/2 pot, pot, all-in and whatever else is there), the confirm button and the pressed and disabled states.

@@ -7,7 +7,6 @@ import { Pressable, Text, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { holeCount, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
-import { dispatch } from '@/state/session';
 import { save, useStored } from '@/state/storage';
 import { usePlainColors } from '@/theme';
 
@@ -47,7 +46,6 @@ export function MyArea({
   const hand = game.hand;
   const seat = seatFor(hand, me?.id);
   const inBB = useStored<boolean>('flipup.bb', false) === true;
-  const canShow = !!hand?.result && !!seat && !seat.shown && seat.cards.length === 2;
   const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
   const count = seat?.cards.length || holeCount(variantOf(game));
   // Two cards at full size; three or more step down so they still fit beside the box.
@@ -63,7 +61,7 @@ export function MyArea({
         gap: 12,
         paddingHorizontal: 16,
         paddingTop: 12,
-        paddingBottom: canShow ? 28 : 0,
+        paddingBottom: 0,
       }}
     >
       <View style={{ flexDirection: 'row' }}>
@@ -75,7 +73,7 @@ export function MyArea({
                   width={w}
                   flip
                   delay={i * 180}
-                  dim={seat.folded || dim(card)}
+                  dim={(seat.folded && !seat.shown) || dim(card)}
                   glow={glow(card)}
                   pack={me?.cardPack}
                 />
@@ -86,26 +84,6 @@ export function MyArea({
                 <CardSlot width={w} />
               </View>
             ))}
-        {canShow && (
-          <Animated.View
-            entering={bubblePop}
-            style={{ position: 'absolute', top: '100%', marginTop: 5, left: 0, right: 0, alignItems: 'center' }}
-          >
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Show my cards"
-              onPress={() => {
-                haptic.tap();
-                if (hand) dispatch({ type: 'show', hand: hand.number });
-              }}
-              style={{ height: 22, paddingHorizontal: 10, borderRadius: 11, justifyContent: 'center', backgroundColor: c.cell }}
-            >
-              <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, fontWeight: '600', color: c.secondaryLabel }}>
-                Show cards
-              </Text>
-            </Pressable>
-          </Animated.View>
-        )}
       </View>
       <View
         style={{

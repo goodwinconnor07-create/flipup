@@ -91,6 +91,16 @@ export interface Inbox {
   requests: FriendRequest[];
   invites: BjInvite[];
   friends: FriendCardInfo[];
+  /** Who you've asked and are still waiting on. A server from before Pending leaves it out. */
+  sent?: FriendCardInfo[];
+}
+
+/** The cheap check polled every few seconds: one read of your own card, codes only. */
+export interface FriendPoll {
+  requests: FriendRequest[];
+  invites: BjInvite[];
+  friends: string[];
+  sent: string[];
 }
 
 /** What's waiting for this phone's friend code. Null when the code isn't this phone's (or has gone). */
@@ -99,6 +109,19 @@ export async function fetchInbox(code: string, deviceId: string): Promise<Inbox 
   if (res.status === 403 || res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't check for friend requests."));
   return (await res.json()) as Inbox;
+}
+
+/**
+ * The cheap check: requests and invites waiting, your friends' codes and who you've asked. Null when the code isn't
+ * this phone's; 'old' when the server is from before this route (it then answers with the full inbox instead).
+ */
+export async function pollFriendCard(code: string, deviceId: string): Promise<FriendPoll | null | 'old'> {
+  const res = await json(`/api/friends/${encodeURIComponent(code)}/requests?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
+  if (res.status === 404) return 'old';
+  if (res.status === 403 || res.status === 400) return null;
+  if (!res.ok) throw new Error(await errorText(res, "Couldn't check for friend requests."));
+  const box = (await res.json()) as Partial<FriendPoll>;
+  return { requests: box.requests ?? [], invites: box.invites ?? [], friends: box.friends ?? [], sent: box.sent ?? [] };
 }
 
 /** Sets this phone's username. Throws with the server's sentence (taken, too soon, not allowed). */

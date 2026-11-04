@@ -118,20 +118,20 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
           </Text>
         )}
       </View>
-      {canAdd && r.friendCode && <AddFriend code={r.friendCode} name={r.name} />}
+      {canAdd && r.friendCode && <AddFriend code={r.friendCode} name={r.name} emoji={r.emoji} />}
     </Animated.View>
   );
 }
 
 /** "+ Friend" on someone else's row, once the server has checked their phone owns that friend code. It sends a friend request. */
-function AddFriend({ code, name }: { code: string; name: string }) {
+function AddFriend({ code, name, emoji }: { code: string; name: string; emoji: string }) {
   const c = usePlainColors();
   const [busy, setBusy] = useState(false);
   const add = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const status = await sendFriendRequest(code);
+      const status = await sendFriendRequest(code, { name, emoji });
       haptic.success();
       if (status === 'sent') Alert.alert('Friend request sent', `${name} will see it in their Friends tab.`);
     } catch (e) {

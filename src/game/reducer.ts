@@ -22,6 +22,8 @@ import {
   endVote,
   endDiscards,
   foldOutOfTurn,
+  canHit,
+  hitCard,
   lastStanding,
   makeMove,
   MAX_SEATS,
@@ -37,7 +39,7 @@ import {
 } from './holdem';
 import { cryptoRng, newId } from './ids';
 import { botView, isVariant } from './variants';
-import { variantDecide } from './botVariants';
+import { botHits, variantDecide } from './botVariants';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
@@ -716,6 +718,17 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return done();
     }
 
+    case 'hit': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
+      if (hand.seq !== action.seq) return fail('That turn has passed.');
+      const error = hitCard(game, ctx);
+      if (error) return fail(error);
+      me.timeouts = 0;
+      return done();
+    }
+
     case 'discard': {
       const hand = game.hand;
       if (!me) return fail("You're not at this table.");
@@ -986,6 +999,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
         hand.actAt = talking;
         schedule(game);
         return true;
+      }
+      // Blackjack Hold'em: on the flop it takes its hits first. Going over 21 folds it, and that's its turn.
+      while (canHit(game, hand, seat) && botHits(game, seat, ctx.rng)) {
+        hitCard(game, ctx);
+        if (seat.folded) return true;
       }
       const before = options(game, hand, seat);
       // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.

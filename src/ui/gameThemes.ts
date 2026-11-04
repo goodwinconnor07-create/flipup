@@ -23,6 +23,7 @@ const ART: Record<Variant, GameArt> = {
   circle: { ...GAME_LOOK.circle, sting: null },
   memory: { ...GAME_LOOK.memory, sting: null },
   beanstalk: { ...GAME_LOOK.beanstalk, sting: null },
+  bjholdem: { ...GAME_LOOK.bjholdem, sting: null },
   imposter: { ...GAME_LOOK.imposter, sting: 'sting' },
 };
 

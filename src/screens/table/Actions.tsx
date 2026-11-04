@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
+import { count21, lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '../../game';
 import { campaignRebuy, closeTable, dispatch, useApp } from '../../state/store';
 import { cashBuyIn, stakeById } from '../../game';
 import { useCampaign } from '../../state/campaign';
@@ -213,6 +213,12 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
       <p className={`table-note your-turn${raising ? ' raise-hidden' : ''}`} aria-hidden={raising || undefined}>
         Your turn
       </p>
+      {o.canHit && !raising && (
+        // Blackjack Hold'em: take another card before your move. Over 21 folds your hand.
+        <button type="button" className="btn btn-outline hit-btn" disabled={sending} onClick={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })}>
+          Hit <span className="num">· you're on {count21(seat.cards)}</span>
+        </button>
+      )}
       <div className={`action-buttons${raising ? ' raise-hidden' : ''}`} aria-hidden={raising || undefined}>
         {o.canFold && (
           <button type="button" className="btn btn-fold" disabled={sending} onClick={() => act('fold')}>

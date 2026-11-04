@@ -1,7 +1,8 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, View } from 'react-native';
+import { Alert, useWindowDimensions, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { ChallengePicture } from '@/components/challenge-picture';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { SheetScroll } from '@/components/sheet-scroll';
@@ -10,7 +11,7 @@ import { challengeById, isChallengeId } from '@/engine';
 import { useChallengeBests } from '@/state/challenges';
 import { useProfile } from '@/state/profile';
 import { openChallengeTable, useTable } from '@/state/session';
-import { spacing, useColors } from '@/theme';
+import { radius, spacing, useColors } from '@/theme';
 
 /** A challenge's sheet from Home: what it is in a few plain lines, your best, and Start. There's no setup. */
 export default function ChallengeSheet() {
@@ -19,6 +20,7 @@ export default function ChallengeSheet() {
   const profile = useProfile();
   const bests = useChallengeBests();
   const t = useTable();
+  const { width } = useWindowDimensions();
   if (!isChallengeId(id)) return null;
   const c = challengeById(id)!;
   const best = bests[id];
@@ -41,6 +43,7 @@ export default function ChallengeSheet() {
   return (
     <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.lg }}>
       <Stack.Screen options={{ title: c.name, headerShown: false }} />
+      <ChallengePicture id={id} width={width - spacing.md * 2} height={((width - spacing.md * 2) * 120) / 200} rounded={radius.lg} />
       <View style={{ gap: spacing.xxs }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs }}>
           <Icon name="person.fill" size={13} color={colors.secondaryLabel} />

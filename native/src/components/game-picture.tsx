@@ -6,11 +6,11 @@ import type { Variant } from '@/engine';
 import { gradient, radius } from '@/theme';
 
 /** The system font (SF Pro on iPhone); SVG text falls back to a serif without it. */
-const FONT = process.env.EXPO_OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System';
+export const FONT = process.env.EXPO_OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System';
 
 // A game's picture, the same shapes the web draws (src/design/gameArt.ts), on the game's card gradient.
 
-function Card({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, glow, faded }: CardShape) {
+export function Card({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, glow, faded }: CardShape) {
   const colour = SUIT_COLOUR[suit] ?? SUIT_COLOUR['♠'];
   return (
     <G transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`} opacity={faded ? 0.45 : 1}>
@@ -37,7 +37,7 @@ function Card({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, glow, faded }
   );
 }
 
-function draw(shape: Shape, key: number) {
+export function draw(shape: Shape, key: number) {
   switch (shape.kind) {
     case 'mark':
       return (

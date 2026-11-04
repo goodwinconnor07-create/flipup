@@ -90,10 +90,10 @@ Files: `src/state/pals.ts`, `worker/friendCard.ts`, `/api/friends` routes in the
 
 Files: `src/styles/global.css` (`--party-*` tokens), `home.css`, `campaign.css`, `premium.css`, `src/ui/theme.ts`, plus a shared background component.
 
-- [ ] **G1 Audit every gradient.** List all gradients in the CSS (tokens and one-offs), and soften each: lower saturation and contrast a bit. Keep text contrast passing on light and dark. Keep the loud-gradient-on-what-you-tap rule, just less harsh. Record the before and after token values.
-- [ ] **G2 Slow movement.** Gradients drift slowly and dynamically, done cheaply: animate `transform` or `opacity` of one oversized gradient layer (compositor only), never `background-position` or repainting gradients. Long duration (20s or more), no JavaScript per frame. Pause with `animation-play-state` when the page is hidden, and off under `prefers-reduced-motion`. Test on a throttled CPU in Chromium for jank. **If a gradient can't be moved cheaply (for example small buttons), leave it still.** Report which ones moved and which didn't.
-- [ ] **G3 Grain.** A shared "grain background" used by the new Play pages: a dark, moving, grainy field. Static noise tile (small PNG or SVG filter baked to an image, no live filter) that drifts slowly by transform, over a dark gradient. Much darker colours so text and emojis stay clear. Reusable as a component so Stage 6 can use it.
-- [ ] **G4 Check battery.** Note in the commit how it was kept light (one layer, transform only, paused when hidden). No `filter: blur` on moving layers.
+- [x] **G1 Audit every gradient.** List all gradients in the CSS (tokens and one-offs), and soften each: lower saturation and contrast a bit. Keep text contrast passing on light and dark. Keep the loud-gradient-on-what-you-tap rule, just less harsh. Record the before and after token values.
+- [x] **G2 Slow movement.** Gradients drift slowly and dynamically, done cheaply: animate `transform` or `opacity` of one oversized gradient layer (compositor only), never `background-position` or repainting gradients. Long duration (20s or more), no JavaScript per frame. Pause with `animation-play-state` when the page is hidden, and off under `prefers-reduced-motion`. Test on a throttled CPU in Chromium for jank. **If a gradient can't be moved cheaply (for example small buttons), leave it still.** Report which ones moved and which didn't.
+- [x] **G3 Grain.** A shared "grain background" used by the new Play pages: a dark, moving, grainy field. Static noise tile (small PNG or SVG filter baked to an image, no live filter) that drifts slowly by transform, over a dark gradient. Much darker colours so text and emojis stay clear. Reusable as a component so Stage 6 can use it.
+- [x] **G4 Check battery.** Note in the commit how it was kept light (one layer, transform only, paused when hidden). No `filter: blur` on moving layers.
 
 ## Stage 6a: Play with friends page: games and settings
 

@@ -39,15 +39,15 @@ export const party = {
 
 /** The big tap targets' gradients: violet for everything you tap to play, gold for Premium. */
 export const gradients = {
-  blue: ['#7d5cff', brand.violetDeep],
-  green: ['#7d5cff', brand.violetDeep],
-  pink: ['#7d5cff', brand.violetDeep],
-  gold: ['#ffcf3f', brand.goldDeep],
+  blue: ['#8468ee', '#4a32b4'],
+  green: ['#8468ee', '#4a32b4'],
+  pink: ['#8468ee', '#4a32b4'],
+  gold: ['#f8d062', '#d49a1a'],
 } as const satisfies Record<string, readonly [string, string]>;
 
 /** The colour pairs behind the big cards (top-left to bottom-right): the brand violet, and night for stats. */
 export const cardColors = {
-  violet: ['#8263ff', '#4a26d9', '#2a1290'],
-  night: ['#2b1a80', '#170c4a', '#0b0626'],
-  gold: ['#ffd65a', '#f5b700', '#c77d00'],
+  violet: ['#8468ee', '#5a40cc', '#3a2796'],
+  night: ['#2d2078', '#1b1250', '#0e0a2c'],
+  gold: ['#fbd872', '#eebb2a', '#c98a14'],
 } as const satisfies Record<string, readonly [string, string, string]>;

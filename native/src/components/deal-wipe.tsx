@@ -38,7 +38,7 @@ export function DealWipe() {
         {!reduce && SUITS.map((s, i) => <Suit key={s} name={s} delay={i * 50} red={i % 2 === 1} />)}
       </LivingCard>
       {/* The leading edge of the sweep: a soft lighter band at the bottom. */}
-      <View style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 24 }, gradient('linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.18))')]} />
+      <View style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 24 }, gradient('linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.12))')]} />
     </Animated.View>
   );
 }

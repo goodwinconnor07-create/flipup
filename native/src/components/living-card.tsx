@@ -1,8 +1,8 @@
-import { useEffect, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { Image, View, type StyleProp, type ViewStyle } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 
-import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { useDrift } from '@/motion/use-drift';
 import { gradient, radius as radii, useShadows } from '@/theme';
 
 const GRAIN = require('../../assets/images/grain.png');
@@ -17,8 +17,8 @@ const GRAIN = require('../../assets/images/grain.png');
  */
 export function LivingCard({
   colors: [a, b, c],
-  glow = 'rgba(255, 255, 255, 0.28)',
-  glow2 = 'rgba(150, 120, 255, 0.38)',
+  glow = 'rgba(255, 255, 255, 0.2)',
+  glow2 = 'rgba(150, 120, 255, 0.26)',
   radius = radii.xl,
   shadow = true,
   grain = 0.16,
@@ -46,23 +46,17 @@ export function LivingCard({
   children?: ReactNode;
 }) {
   const shadows = useShadows();
-  const reduce = useReduceMotion();
-  const t = useSharedValue(0);
-  const u = useSharedValue(0);
-  const moving = !reduce && !still;
-  useEffect(() => {
-    if (!moving) return;
-    t.set(withRepeat(withTiming(1, { duration: 9000, easing: Easing.inOut(Easing.sin) }), -1, true));
-    u.set(withRepeat(withTiming(1, { duration: 13000, easing: Easing.inOut(Easing.sin) }), -1, true));
-  }, [moving, t, u]);
+  // Two slow clocks (24s and 34s each way) so the glows never line up twice; paused off screen and in the background.
+  const { t } = useDrift(24000, !still);
+  const { t: u } = useDrift(34000, !still);
   const drift1 = useAnimatedStyle(() => ({ transform: [{ translateX: `${-20 + 40 * t.get()}%` }, { translateY: `${-15 + 30 * u.get()}%` }, { scale: 1 + 0.15 * u.get() }] }));
   const drift2 = useAnimatedStyle(() => ({ transform: [{ translateX: `${20 - 40 * u.get()}%` }, { translateY: `${15 - 30 * t.get()}%` }] }));
   return (
     <View style={[{ borderRadius: radius, borderCurve: 'continuous', boxShadow: shadow === 'soft' ? shadows.soft : shadow ? shadows.raised : undefined }, outerStyle]}>
       <View style={[{ flexGrow: 1, borderRadius: radius, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(150deg, ${a} 0%, ${b} 55%, ${c} 100%)`) }]}>
         <View pointerEvents="none" style={{ position: 'absolute', inset: 0 }}>
-          <Animated.View style={[{ position: 'absolute', left: '-40%', top: '-60%', width: '120%', aspectRatio: 1, ...gradient(`radial-gradient(circle at center, ${glow} 0%, transparent 65%)`) }, moving ? drift1 : null]} />
-          <Animated.View style={[{ position: 'absolute', right: '-45%', bottom: '-70%', width: '130%', aspectRatio: 1, ...gradient(`radial-gradient(circle at center, ${glow2} 0%, transparent 65%)`) }, moving ? drift2 : null]} />
+          <Animated.View style={[{ position: 'absolute', left: '-40%', top: '-60%', width: '120%', aspectRatio: 1, ...gradient(`radial-gradient(circle at center, ${glow} 0%, transparent 65%)`) }, drift1]} />
+          <Animated.View style={[{ position: 'absolute', right: '-45%', bottom: '-70%', width: '130%', aspectRatio: 1, ...gradient(`radial-gradient(circle at center, ${glow2} 0%, transparent 65%)`) }, drift2]} />
           <Image source={GRAIN} resizeMode="repeat" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', opacity: grain, mixBlendMode: 'overlay' }} />
         </View>
         <View style={style}>{children}</View>

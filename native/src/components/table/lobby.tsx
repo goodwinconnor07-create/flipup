@@ -80,7 +80,8 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
       const style = BOTS.find((x) => x.name === b.name)?.style;
       if (style) fresh[b.id] = addedLine(style, profile.name || undefined, Math.random).text;
     }
-    if (Object.keys(fresh).length) setGreets((g) => ({ ...g, ...fresh }));
+    // Bots that just sat down say hello: new arrivals come from the table, so this follows it rather than a tap.
+    if (Object.keys(fresh).length) setGreets((g) => ({ ...g, ...fresh })); // eslint-disable-line react-hooks/set-state-in-effect
   }, [botIds]); // eslint-disable-line react-hooks/exhaustive-deps
   const rowBots: RowBot[] = bots.map((b) => ({ key: b.id, name: b.name, emoji: b.emoji, greet: greets[b.id] }));
 

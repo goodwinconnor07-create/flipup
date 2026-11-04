@@ -97,15 +97,17 @@ Files: `src/styles/global.css` (`--party-*` tokens), `home.css`, `campaign.css`,
 
 ## Stage 6a: Play with friends page: games and settings
 
+Done in the iPhone app (`native/`): the page is `app/play-friends.tsx` and `components/setup/`, the popup `app/setup-game/[id].tsx`. Slots for 6b, in page order in `friends-setup.tsx`: `InviteFriendsRow` (slot 1, `setup/invite-friends-row.tsx`) and `BotsRow` (slot 2, `setup/bots-row.tsx`), both still the old pickers so nothing is lost meanwhile. S7's campaign line doesn't apply in the app (no campaign). Play with bots keeps the old form until 6c.
+
 Files: `src/screens/Setup.tsx`, `GamePicker.tsx`, `HomeGames.tsx`, `src/ui/gameThemes.ts`, `GameIllustrations.tsx`, `sheets/GameStartSheet.tsx`, `Lobby.tsx`.
 
-- [ ] **S1 New page shell.** Tapping "Play with Friends" opens a new page on the grain dynamic background (G3), much darker colours so text and characters stay readable, with a clean white header. The old seating table is removed.
-- [ ] **S2 Game row (third row).** A horizontally scrolling row of app-icon style tiles for every game mode (Texas Hold'em and every entry in `VARIANTS`), name underneath each like an iOS home screen. Scroll snap, no scrollbar, momentum.
-- [ ] **S3 Game popup.** Tapping an icon opens a popup (sheet) with what the game is (rules summary and the game's scene) and two choices: Select, or Close. Reuse text from `docs/RULES.md` and `GameStartSheet` where it fits.
-- [ ] **S4 Selected outline.** The chosen game's icon gets a themed outline/glow around it in its own theme colour so it's obvious.
-- [ ] **S5 Merged settings table.** Combine chips, blinds and house rules into one grouped table (one rounded block with rows), same content as before. Row icons all use the same themed colour background (one colour for all, not a rainbow).
-- [ ] **S6 Open table button.** A good-looking Open table button that doesn't clash with the grain/gradient background: if the background is dark enough, a solid light or accent button works; avoid two same-coloured layers on top of each other. Chunky bottom edge per the party tokens.
-- [ ] **S7 Table behaviour kept.** Everything the old setup did still works: variants, blinds, rebuys, house rules, clock, campaign tables (`openCampaignForFriends()` must still reach its own path).
+- [x] **S1 New page shell.** Tapping "Play with Friends" opens a new page on the grain dynamic background (G3), much darker colours so text and characters stay readable, with a clean white header. The old seating table is removed.
+- [x] **S2 Game row (third row).** A horizontally scrolling row of app-icon style tiles for every game mode (Texas Hold'em and every entry in `VARIANTS`), name underneath each like an iOS home screen. Scroll snap, no scrollbar, momentum.
+- [x] **S3 Game popup.** Tapping an icon opens a popup (sheet) with what the game is (rules summary and the game's scene) and two choices: Select, or Close. Reuse text from `docs/RULES.md` and `GameStartSheet` where it fits.
+- [x] **S4 Selected outline.** The chosen game's icon gets a themed outline/glow around it in its own theme colour so it's obvious.
+- [x] **S5 Merged settings table.** Combine chips, blinds and house rules into one grouped table (one rounded block with rows), same content as before. Row icons all use the same themed colour background (one colour for all, not a rainbow).
+- [x] **S6 Open table button.** A good-looking Open table button that doesn't clash with the grain/gradient background: if the background is dark enough, a solid light or accent button works; avoid two same-coloured layers on top of each other. Chunky bottom edge per the party tokens.
+- [x] **S7 Table behaviour kept.** Everything the old setup did still works: variants, blinds, rebuys, house rules, clock, campaign tables (`openCampaignForFriends()` must still reach its own path).
 
 ## Stage 6b: Invite friends and bots rows
 

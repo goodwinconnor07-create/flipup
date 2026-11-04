@@ -159,7 +159,7 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
   );
 }
 
-/** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk. */
+/** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk (Blackjack Hold'em's hits are added per seat). */
 function faceDown(game: Game): number {
   const v = variantOf(game);
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
@@ -208,7 +208,7 @@ function SeatPod({
   // Another person (not a bot, not you) at an online table can be reported or blocked.
   const other = !player.bot && !!game.code && !!player.deviceId && player.deviceId !== myDevice;
   const canPeek = host && !!hand?.result && player.bot && !!seat && !seat.shown && seat.cards.length === 0;
-  const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) }, () => null)) : [];
+  const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) + (hand?.hits?.[player.id] ?? 0) }, () => null)) : [];
   // A seat's share of the row, for wrapping its talk.
   const room = Math.floor((width + 8) / Math.max(n, 1)) - 4;
   return (

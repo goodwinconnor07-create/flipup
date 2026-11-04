@@ -3,7 +3,7 @@
 
 import { handRecord } from './record';
 import { fullDeck, isRed, shuffle, type Card } from './cards';
-import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
+import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
 
 export const TIMING = {
@@ -635,6 +635,31 @@ function pauseBeforeNextStreet(game: Game, ctx: ActionContext): void {
   schedule(game);
 }
 
+// ── Blackjack Hold'em hits ──────────────────────────────────────────────────
+
+/** Whether the player to act can take another card: Blackjack Hold'em, on the flop, before their move. */
+export function canHit(game: Game, hand: Hand, seat: Seat): boolean {
+  return variantOf(game) === 'bjholdem' && hand.street === 'flop' && !hand.result && !hand.runout && hand.toAct === seat.playerId && !seat.folded && !seat.allIn;
+}
+
+/** The player to act hits: another card of their own, face down. Over 21 and they bust, which folds them. */
+export function hitCard(game: Game, ctx: ActionContext): string | null {
+  const hand = game.hand!;
+  const seat = hand.seats.find((s) => s.playerId === hand.toAct);
+  if (!seat || !canHit(game, hand, seat)) return 'You can only hit on the flop, on your turn.';
+  if (!hand.deck.length) return 'There are no cards left to hit.';
+  seat.cards.push(hand.deck.shift()!);
+  hand.hits = { ...hand.hits, [seat.playerId]: (hand.hits?.[seat.playerId] ?? 0) + 1 };
+  hand.seq += 1;
+  log(game, `${nameOf(game, seat.playerId)} hits`);
+  if (count21(seat.cards) > 21) {
+    hand.busted = [...(hand.busted ?? []), seat.playerId];
+    log(game, `${nameOf(game, seat.playerId)} busts with ${count21(seat.cards)}`);
+    return makeMove(game, 'fold', undefined, ctx);
+  }
+  return null;
+}
+
 // ── Crazy Pineapple discards ────────────────────────────────────────────────
 
 /** Seats still holding three cards while the table waits for discards. */
@@ -736,8 +761,38 @@ function showdown(game: Game, ctx: ActionContext): void {
   const ghost = hand.ghost ? bestHand(variant, hand.ghost, hand.board) : null;
   let kept = 0;
   const won: Record<string, number> = {};
+  /** Shares chips out between winners; odd chips go to the winners closest to the left of the button. */
+  const pay = (amount: number, winners: string[]) => {
+    const share = Math.floor(amount / winners.length);
+    let odd = amount - share * winners.length;
+    for (let i = 1; i <= n; i++) {
+      const id = hand.seats[(button + i) % n].playerId;
+      if (!winners.includes(id)) continue;
+      won[id] = (won[id] ?? 0) + share + (odd > 0 ? 1 : 0);
+      if (odd > 0) odd--;
+    }
+  };
+  // Blackjack Hold'em: each pot is split, half to the best poker hand and half to whoever is closest to 21.
+  const counts = variant === 'bjholdem' ? new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, count21(s.cards)])) : null;
+  const bjWinners: string[][] = [];
+  const bjPoker: string[][] = [];
   for (const pot of pots) {
     const best = Math.max(...pot.eligible.map((id) => values.get(id)!.score));
+    if (counts) {
+      const pokerWinners = pot.eligible.filter((id) => values.get(id)!.score === best);
+      const closest = Math.max(...pot.eligible.map((id) => counts.get(id)!));
+      // A tie on the count goes to the best poker hand among the tied players.
+      const tied = pot.eligible.filter((id) => counts.get(id) === closest);
+      const tiedBest = Math.max(...tied.map((id) => values.get(id)!.score));
+      const countWinners = tied.filter((id) => values.get(id)!.score === tiedBest);
+      const pokerHalf = Math.ceil(pot.amount / 2);
+      pay(pokerHalf, pokerWinners);
+      pay(pot.amount - pokerHalf, countWinners);
+      pot.winners = [...new Set([...pokerWinners, ...countWinners])];
+      bjWinners.push(countWinners);
+      bjPoker.push(pokerWinners);
+      continue;
+    }
     // The winner has to beat the ghost too. If they can't (a tie isn't enough), the ghost keeps this pot for the next hand.
     if (ghost && best <= ghost.score) {
       kept += pot.amount;
@@ -745,15 +800,7 @@ function showdown(game: Game, ctx: ActionContext): void {
       continue;
     }
     pot.winners = pot.eligible.filter((id) => values.get(id)!.score === best);
-    const share = Math.floor(pot.amount / pot.winners.length);
-    let odd = pot.amount - share * pot.winners.length;
-    // Odd chips go to the winners closest to the left of the button.
-    for (let i = 1; i <= n; i++) {
-      const id = hand.seats[(button + i) % n].playerId;
-      if (!pot.winners.includes(id)) continue;
-      won[id] = (won[id] ?? 0) + share + (odd > 0 ? 1 : 0);
-      if (odd > 0) odd--;
-    }
+    pay(pot.amount, pot.winners);
   }
 
   // Showing down: the last bettor on the river shows first (or the first player left of the button).
@@ -786,7 +833,7 @@ function showdown(game: Game, ctx: ActionContext): void {
     game.ghostPot = (game.ghostPot ?? 0) + kept;
   }
   pots.forEach((pot, i) => {
-    if (!pot.winners.length) return;
+    if (!pot.winners.length || counts) return;
     const which = pots.length > 1 ? (i === 0 ? ' from the main pot' : ' from a side pot') : '';
     const each = Math.floor(pot.amount / pot.winners.length);
     for (const id of pot.winners)
@@ -795,7 +842,20 @@ function showdown(game: Game, ctx: ActionContext): void {
         `${nameOf(game, id)} wins ${n0(each)}${which}${names[id] ? ` with ${names[id].charAt(0).toLowerCase()}${names[id].slice(1)}` : ''}`,
       );
   });
-  hand.result = { pots, won, names, showdown: true, ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept } } : {}) };
+  if (counts) {
+    for (const [id, chips] of Object.entries(won)) {
+      const count = bjWinners.some((w) => w.includes(id)) ? ` (closest to 21 with ${counts.get(id)})` : '';
+      log(game, `${nameOf(game, id)} wins ${n0(chips)}${names[id] ? ` with ${names[id].charAt(0).toLowerCase()}${names[id].slice(1)}` : ''}${count}`);
+    }
+  }
+  hand.result = {
+    pots,
+    won,
+    names,
+    showdown: true,
+    ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept } } : {}),
+    ...(counts ? { blackjack: { counts: Object.fromEntries([...counts].filter(([id]) => names[id])), poker: bjPoker, winners: bjWinners } } : {}),
+  };
   finishHand(game, ctx, TIMING.afterShowdown);
 }
 

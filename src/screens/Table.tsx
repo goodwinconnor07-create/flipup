@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { bestHand, venueById, boardSize, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
+import { bestHand, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
 import { closeTable, dispatch, leaveTable, navigate, openSheet, useApp } from '../state/store';
 import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -373,7 +373,9 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   // "Pair of kings" says more than "Pair"; the longer ones ("Two pair, kings and fives") would crowd the pill.
   const short = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? short(myValue) : null;
-  const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
+  // Blackjack Hold'em: your 21 count rides along with your hand's name.
+  const myCount = variant === 'bjholdem' && mySeat && !mySeat.folded && mySeat.cards.length && !hand?.result ? count21(mySeat.cards) : null;
+  const pillName = hand?.result?.showdown ? highlight?.name : myCount !== null ? `${myHandName ? `${myHandName} · ` : ''}${myCount} to 21` : myHandName;
   // The pot counts down to nothing as it's pushed to the winner.
   const potNow = hand && !hand.result ? pot(hand) : 0;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
@@ -738,6 +740,22 @@ function WinBanner({ game }: { game: Game }) {
         <span className="win-text">
           <b>{title}</b>
           <small>{`Imposter: ${imp?.name ?? '?'} · ${tally} of ${total} votes`}</small>
+        </span>
+      </div>
+    );
+  }
+  // Blackjack Hold'em: who took the poker half and who took the 21 half of the main pot.
+  if (result.blackjack) {
+    const name = (id: string) => (game.players.find((p) => p.id === id)?.deviceId === deviceId ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+    const [poker, count] = [result.blackjack.poker[0] ?? [], result.blackjack.winners[0] ?? []];
+    const both = poker.length === 1 && count.length === 1 && poker[0] === count[0];
+    const top = winners[0];
+    return (
+      <div key={hand.number} className="win-banner pop" role="status">
+        <Avatar emoji={top?.p?.emoji ?? '♠️'} size={34} />
+        <span className="win-text">
+          <b>{both ? `${name(poker[0])} ${name(poker[0]) === 'You' ? 'win' : 'wins'} both halves` : `Hand: ${poker.map(name).join(' & ')} · 21: ${count.map(name).join(' & ')}`}</b>
+          <small>{`${result.names[poker[0]] ?? ''} · closest to 21: ${result.blackjack.counts[count[0]] ?? '?'}`}</small>
         </span>
       </div>
     );

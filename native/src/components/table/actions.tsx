@@ -2,7 +2,7 @@ import { Children, useState, type ReactNode } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 
-import { lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
+import { count21, lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { dispatch, me as myDevice } from '@/state/session';
 import { brand, minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
@@ -183,6 +183,12 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
   return (
     <View style={{ gap: spacing.sm }}>
       <Note strong>Your turn</Note>
+      {o.canHit && (
+        // Blackjack Hold'em: take another card before your move. Over 21 folds your hand.
+        <Row>
+          <TableButton label={`Hit · you're on ${count21(seat.cards)}`} tone="pre" height={48} disabled={sending} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
+        </Row>
+      )}
       <Row>
         {o.canFold && <TableButton label="Fold" tone="fold" disabled={sending} onPress={() => act('fold')} />}
         {o.canCheck ? (

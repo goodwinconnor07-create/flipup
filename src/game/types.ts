@@ -162,6 +162,8 @@ export interface HandResult {
   showdown: boolean;
   /** Ghost Hold'em: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
   ghost?: { cards: Card[]; name: string; kept: number };
+  /** Blackjack Hold'em: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
+  blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
   /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
   imposter?: { id: string; votes: Record<string, string>; caught: boolean };
 }
@@ -258,6 +260,10 @@ export interface Hand {
   variant?: Variant;
   /** Die on the River: what the die rolled, and the board card it swapped (out) for a new one (in). A 6 swaps nothing. */
   dice?: { roll: number; out?: Card; in?: Card };
+  /** Blackjack Hold'em: how many cards each player has hit (public; the cards themselves are face down). */
+  hits?: Record<string, number>;
+  /** Blackjack Hold'em: players who went over 21 and were folded. */
+  busted?: string[];
   /** Memory Poker: the 20 cards taken out of the deck before this hand. Phones only get them once the hand is over. */
   removed?: Card[];
   /** Imposter: the imposter's id. Phones only get it if it's them, or once the hand is over. */
@@ -404,6 +410,8 @@ export type Action =
   | { type: 'start' }
   | { type: 'act'; hand: number; seq: number; move: Move; to?: number }
   | { type: 'next'; hand: number }
+  /** Blackjack Hold'em: on your turn on the flop, take another card. */
+  | { type: 'hit'; hand: number; seq: number }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
   /** Imposter: who you think the imposter is. */

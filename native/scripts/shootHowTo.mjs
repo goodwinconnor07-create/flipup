@@ -23,7 +23,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 const { chromium } = require(require.resolve('playwright', { paths: [root, join(root, '..')] }));
 
-const ALL = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'imposter'];
+const ALL = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'imposter'];
 const [site, ...asked] = process.argv.slice(2);
 if (!site || !existsSync(join(site, 'index.html'))) {
   console.error('Usage: node scripts/shootHowTo.mjs <web export dir> [game ...]');

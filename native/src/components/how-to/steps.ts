@@ -111,6 +111,12 @@ const STEPS: Record<Variant, Step[]> = {
     { ...river, zoom: 'full', text: 'By the river you hold five cards.' },
     { ...showdown, text: 'Best five from all ten: yours and the board.' },
   ],
+  bjholdem: [
+    cards,
+    { ...flop, zoom: 'hand', title: 'Hit on the flop', text: 'On your turn on the flop, tap Hit for another card of your own. Over 21 and your hand is folded.' },
+    { ...river, text: 'The turn and the river come as normal. Your hits count in your poker hand too.' },
+    { ...showdown, text: 'Half the pot to the best poker hand, half to whoever is closest to 21.' },
+  ],
   imposter: [
     { ...cards, title: 'One imposter', text: 'Everyone gets the same two cards, except one secret imposter.' },
     { ...flop, zoom: 'seats', title: 'No folding', text: 'Nobody can fold. Watch how everyone bets to work out who’s different.' },

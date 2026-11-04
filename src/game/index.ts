@@ -35,3 +35,5 @@ export * from './clock';
 export * from './streak';
 export * from './reports';
 export * from './premiumGate';
+export * from './challenges';
+export * from './rewind';

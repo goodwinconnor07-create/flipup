@@ -483,6 +483,8 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   if (!player?.bot) return 0;
   // Scroll cards are quiet, so nothing muddies the lesson.
   if (game.card) return 0;
+  // A Style Detective table is quiet too: every style has lines of its own, which would give the answer away.
+  if (game.challenge?.quiet) return 0;
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return 0;
   const style = playerStyle(player);

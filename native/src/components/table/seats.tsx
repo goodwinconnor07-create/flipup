@@ -3,12 +3,13 @@
 // (full colour on their turn), the stack counting as it changes, their cards (with an orange shimmer sweeping over
 // them while it's their turn), and a tag under them: what they've put in this round, a win, their odds during a
 // run-out, or Offline.
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
-import { me as myDevice, dispatch } from '@/state/session';
+import { me as myDevice, dispatch, useTable } from '@/state/session';
 import { usePlainColors, brand } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -17,6 +18,7 @@ import { openPlayerMenu } from '../player-menu';
 import { seatKey } from '@/state/blocks';
 import { ThemedText } from '../themed-text';
 import { bubbleOut, bubblePop, MoveBubble, pinned, Thread, TypingBubble } from './bubbles';
+import { TagChip } from './challenge';
 import { Count } from './count';
 import { MoodFace } from './mood-face';
 import { PlayingCard } from './playing-card';
@@ -157,7 +159,7 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
   );
 }
 
-/** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk. */
+/** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk (Blackjack Hold'em's hits are added per seat). */
 function faceDown(game: Game): number {
   const v = variantOf(game);
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
@@ -189,6 +191,7 @@ function SeatPod({
 }) {
   const c = usePlainColors();
   const { width } = useWindowDimensions();
+  const tag = useTable().challenge?.tags[player.id];
   const hand = game.hand;
   const host = game.hostDeviceId === myDevice;
   const turn = !!hand && !hand.result && hand.toAct === player.id;
@@ -205,16 +208,18 @@ function SeatPod({
   // Another person (not a bot, not you) at an online table can be reported or blocked.
   const other = !player.bot && !!game.code && !!player.deviceId && player.deviceId !== myDevice;
   const canPeek = host && !!hand?.result && player.bot && !!seat && !seat.shown && seat.cards.length === 0;
-  const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) }, () => null)) : [];
+  const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) + (hand?.hits?.[player.id] ?? 0) }, () => null)) : [];
   // A seat's share of the row, for wrapping its talk.
   const room = Math.floor((width + 8) / Math.max(n, 1)) - 4;
   return (
     <Pressable
       accessibilityLabel={`${player.name}${player.bot ? ', a bot' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
-      accessibilityHint={canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
+      accessibilityHint={game.challenge?.id === 'detective' && player.bot ? 'Tag it with a style' : canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
       disabled={!host && !other}
       onPress={() => {
         haptic.tap();
+        // Style Detective: a bot's seat takes a tag.
+        if (game.challenge?.id === 'detective' && player.bot) return router.push({ pathname: '/challenge-tag', params: { id: player.id } });
         // After a hand, the host's tap turns a bot's cards over.
         if (canPeek && hand) return dispatch({ type: 'revealBots', hand: hand.number, playerId: player.id });
         const inHand = !!seat && !!hand && !hand.result;
@@ -246,6 +251,11 @@ function SeatPod({
         <View style={{ position: 'absolute', right: -15, bottom: 8 }}>
           <PositionChip pos={positionOf(hand, player.id)} />
         </View>
+        {tag && (
+          <View pointerEvents="none" style={{ position: 'absolute', left: -22, bottom: 6 }}>
+            <TagChip label={tag} />
+          </View>
+        )}
         {/* The bubble sits over the top of the face, as on the web. */}
         <View pointerEvents="none" style={{ position: 'absolute', bottom: 48, left: -40, right: -40, height: 0 }}>
           {talk ? (

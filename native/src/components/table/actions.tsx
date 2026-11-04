@@ -12,6 +12,7 @@ import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
+import { shoveTime, ShoveTurn } from './challenge';
 import { RaiseSlider } from './raise-slider';
 import { useTableNow } from './use-now';
 
@@ -106,6 +107,8 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
   if (hand && !hand.result) {
+    // Short Stack, at 12 big blinds or less: Fold, Call and a big Shove in place of the raise panel.
+    if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
     if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <Note>Running it out…</Note>;
@@ -183,7 +186,7 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
       {o.canHit && (
         // Blackjack Hold'em: take another card before your move. Over 21 folds your hand.
         <Row>
-          <TableButton label="Hit" sub={`you're on ${count21(seat.cards)}`} tone="pre" height={48} disabled={sending} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
+          <TableButton label={`Hit · you're on ${count21(seat.cards)}`} tone="pre" height={48} disabled={sending} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
         </Row>
       )}
       <Row>

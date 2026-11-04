@@ -44,7 +44,7 @@ export function InviteBanner() {
     if (!next) return;
     shown.add(inviteKey(next));
     haptic.success();
-    setCurrent(next); // eslint-disable-line react-hooks/set-state-in-effect
+    setCurrent(next);
   }, [box.invites, code, current]);
   useEffect(() => {
     if (!current) return;

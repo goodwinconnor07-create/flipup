@@ -137,7 +137,7 @@ export default function RangeTrainingSheet() {
 function ModeCard({ colors, ink = '#ffffff', icon, title, line, onPress, big, extra }: { colors: readonly [string, string, string]; ink?: string; icon: IconName; title: string; line: string; onPress: () => void; big?: boolean; extra?: ReactNode }) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={`${title}. ${line}`} haptics={false} onPress={onPress} outerStyle={{ flex: 1 }}>
-      <LivingCard colors={colors} radius={radius.lg} grain={0.1} shadow="soft" style={{ padding: spacing.md, gap: spacing.xs, minHeight: big ? 104 : 132, justifyContent: 'space-between' }}>
+      <LivingCard colors={colors} radius={radius.lg} grain={0} shadow="soft" style={{ padding: spacing.md, gap: spacing.xs, minHeight: big ? 104 : 132, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ width: big ? 40 : 34, height: big ? 40 : 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: ink === '#ffffff' ? 'rgba(255,255,255,0.18)' : 'rgba(59,38,0,0.12)' }}>
             <Icon name={icon} size={big ? 19 : 16} color={ink} />

@@ -48,7 +48,7 @@ export function StudyRoom({ mood, energy = 0, children }: { mood: Mood; energy?:
   const glow = mood === 'idle' ? MOOD_GLOW.ok : MOOD_GLOW[mood];
 
   return (
-    <GrainBackground>
+    <GrainBackground grain={0.04}>
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         {/* The spotlight: a pool of light over where the table sits. */}
         <View style={{ position: 'absolute', left: '-30%', right: '-30%', top: '4%', height: '58%', ...gradient('radial-gradient(ellipse at 50% 45%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 38%, transparent 66%)') }} />

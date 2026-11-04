@@ -62,7 +62,7 @@ test('party: host picks games, a friend joins, the table opens for both, and the
 
   // The host ends the game early: both phones see the leaderboard with points for game 1.
   await host.getByRole('button', { name: 'Menu' }).click();
-  await host.getByRole('button', { name: 'End the game' }).click();
+  await host.getByRole('button', { name: 'End game' }).click();
   await host.getByRole('button', { name: 'End game', exact: true }).click();
   for (const page of [host, friend]) {
     await expect(page.getByText('Game 1 is done')).toBeVisible({ timeout: 20_000 });

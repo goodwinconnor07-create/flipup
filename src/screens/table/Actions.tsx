@@ -18,6 +18,7 @@ export function ActionArea({
   sending,
   pre,
   setPre,
+  canShow,
 }: {
   game: Game;
   me?: Player;
@@ -26,6 +27,8 @@ export function ActionArea({
   sending: boolean;
   pre: PreAction;
   setPre: (p: PreAction) => void;
+  /** After the hand, your cards are still hidden and you may turn them over. */
+  canShow?: boolean;
 }) {
   const hand = game.hand;
   const deviceId = useApp((s) => s.deviceId);
@@ -159,7 +162,12 @@ export function ActionArea({
   const total = waitFor(hand.number, game.nextHandAt - now);
   const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
   return (
-    <div className="stack">
+    <div className={`stack${canShow ? ' next-row' : ''}`}>
+      {canShow && (
+        <button type="button" className="btn btn-outline show-btn" aria-label="Show my cards" onClick={() => dispatch({ type: 'show', hand: hand.number })}>
+          Show cards
+        </button>
+      )}
       <button
         type="button"
         className="btn btn-dark next-btn"
@@ -226,16 +234,16 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
           </button>
         )}
         {o.canCheck ? (
-          <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('check')}>
+          <button type="button" className="btn btn-blue" disabled={sending} onClick={() => act('check')}>
             Check
           </button>
         ) : (
-          <button type="button" className="btn btn-green" disabled={sending} onClick={() => act('call')}>
+          <button type="button" className="btn btn-blue" disabled={sending} onClick={() => act('call')}>
             {o.callIsAllIn ? 'All in' : 'Call'} <span className="num">{chips(o.toCall)}</span>
           </button>
         )}
         {o.canRaise && (
-          <button type="button" className="btn btn-blue" disabled={sending} onClick={() => setRaising(true)}>
+          <button type="button" className="btn btn-green" disabled={sending} onClick={() => setRaising(true)}>
             {o.word}
           </button>
         )}
@@ -337,11 +345,11 @@ function RaisePanel({
           <button type="button" className="btn btn-fold" onClick={onFold}>
             Fold
           </button>
-          <button type="button" className="btn btn-green" onClick={onCall}>
+          <button type="button" className="btn btn-blue" onClick={onCall}>
             {o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'}
             {!o.canCheck && !o.callIsAllIn && <span className="num">{chips(o.toCall)}</span>}
           </button>
-          <button type="button" className="btn btn-blue" onClick={() => onRaise(to)}>
+          <button type="button" className="btn btn-green" onClick={() => onRaise(to)}>
             {to >= o.maxTo ? 'All in' : o.word}
           </button>
         </div>

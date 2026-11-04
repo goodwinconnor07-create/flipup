@@ -20,6 +20,7 @@ import { useWakeLock } from '../ui/useWakeLock';
 import { ActionArea, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
+import { PotChips } from './table/PotChips';
 import { soundMoodFor } from '../ui/gameThemes';
 import { setSoundMood } from '../ui/sound';
 import { useThemeMoments } from '../ui/useTableSounds';
@@ -460,7 +461,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
               )}
               {hand && !game.memory && (
                 <span className="pot-pill" aria-label={`Pot ${chips(pot(hand))}`}>
-                  <i className="pot-chip" aria-hidden />
+                  <PotChips pot={potNow} bigBlind={game.settings.bigBlind} />
                   <small>Pot</small> <Count value={potNow} />
                 </span>
               )}
@@ -519,10 +520,10 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <Vote game={game} me={me} />
         ) : hand?.discarding && mySeat && !mySeat.folded ? (
           <Discard game={game} seat={mySeat} />
-        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} pre={pre} setPre={setPre} />}
+        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} pre={pre} setPre={setPre} canShow={canShow} />}
       </div>
 
-      <div className={`me-area${canShow ? ' has-show' : ''}`}>
+      <div className="me-area">
         <div className={`my-cards${(mySeat?.cards.length ?? 0) > 3 ? ' my-cards-many' : ''}`}>
           {mySeat?.cards.length ? (
             mySeat.cards.map((c, i) => (
@@ -530,7 +531,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 key={`${hand!.number}-${c}`}
                 card={c}
                 size="xl"
-                dim={mySeat.folded || dim(c)}
+                dim={!mySeat.shown && (mySeat.folded || dim(c))}
                 glow={glow(c)}
                 flip
                 pack={me?.cardPack}
@@ -540,20 +541,6 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
             ))
           ) : (
             Array.from({ length: holeCount(variant) }, (_, i) => <CardSlot key={i} size="xl" />)
-          )}
-          {canShow && (
-            <span className="show-row">
-              {canShow && (
-                <button
-                  type="button"
-                  className="show-small press"
-                  aria-label="Show my cards"
-                  onClick={() => dispatch({ type: 'show', hand: hand!.number })}
-                >
-                  Show cards
-                </button>
-              )}
-            </span>
           )}
         </div>
         <MyBox game={game} me={me} seat={mySeat} odds={me ? odds?.get(me.id) : undefined} reaction={me ? reactions[me.id] : undefined} quiet={me ? quiet[me.id] : undefined} />

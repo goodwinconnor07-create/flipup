@@ -750,6 +750,48 @@ html.calm .dots i {
 
 /* ── Menu: section titles ─────────────────────────────────────────────────── */
 
+/* Leave, End and Home as big app-style icons in one row; two, three or four share the width evenly. */
+.menu-tiles {
+  display: grid;
+  grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.menu-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 4px;
+  border: 0;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+  color: var(--ink);
+}
+
+.menu-tile-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+}
+
+.menu-tile-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.menu-tile-label {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  line-height: 1.15;
+  text-align: center;
+  text-wrap: balance;
+}
+
 .menu-section {
   margin: 8px 0 8px;
   font-size: var(--fs-small);

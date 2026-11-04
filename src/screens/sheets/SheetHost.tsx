@@ -433,13 +433,12 @@ function MenuSheet() {
 
   const { switches, links } = useYouRows();
   links.splice(1, 0, { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--pink)', onClick: () => navigate({ name: 'profile', then: 'done' }) });
-  if (me && playing) {
-    table.push(
-      me.sittingOut
+  const sitOut: Row | null =
+    me && playing
+      ? me.sittingOut
         ? { label: "I'm back", Icon: ClockIcon, color: 'var(--blue)', onClick: quick(() => dispatch({ type: 'sitOut', out: false })) }
-        : { label: 'Sit out', Icon: ClockIcon, color: 'var(--slate-hi)', onClick: quick(() => dispatch({ type: 'sitOut', out: true })) },
-    );
-  }
+        : { label: 'Sit out', Icon: ClockIcon, color: 'var(--slate-hi)', onClick: quick(() => dispatch({ type: 'sitOut', out: true })) }
+      : null;
 
   const leave: Row[] = [{ label: 'Home', Icon: HomeIcon, color: 'var(--green)', onClick: () => resetTo() }];
   if (campaign && game && !ended) {
@@ -469,7 +468,7 @@ function MenuSheet() {
     });
   } else if (host && game && !ended) {
     leave.push({
-      label: 'End the game',
+      label: 'End game',
       Icon: StopIcon,
       color: 'var(--red)',
       danger: true,
@@ -487,7 +486,7 @@ function MenuSheet() {
     leave.push({ label: 'Close table', Icon: ExitIcon, color: 'var(--red)', danger: true, onClick: closeTable });
   } else if (game && (!host || online)) {
     leave.push({
-      label: 'Leave table',
+      label: 'Leave game',
       Icon: ExitIcon,
       color: 'var(--red)',
       danger: true,
@@ -504,8 +503,23 @@ function MenuSheet() {
     });
   }
 
+  // End game, Leave game and Home as big icons in one row on top, with Sit out beside them.
+  const tiles: Row[] = [...leave.slice(1), leave[0], ...(sitOut ? [sitOut] : [])];
+
   return (
     <Sheet title="Menu">
+      <div className="menu-tiles" style={{ ['--n' as string]: tiles.length }}>
+        {tiles.map((r) => (
+          <button key={r.label} type="button" className="menu-tile press" onClick={'onClick' in r ? r.onClick : undefined}>
+            <span className="menu-tile-icon" style={{ background: r.color }}>
+              <r.Icon />
+            </span>
+            <span className="menu-tile-label" style={r.danger ? { color: 'var(--red-ink)' } : undefined}>
+              {r.label}
+            </span>
+          </button>
+        ))}
+      </div>
       {table.length > 0 && (
         <>
           <p className="menu-section">Table</p>
@@ -519,9 +533,6 @@ function MenuSheet() {
         <AppearanceRow />
         <Rows rows={switches} />
         <Rows rows={links} />
-      </div>
-      <div className="settings-list">
-        <Rows rows={leave} />
       </div>
     </Sheet>
   );

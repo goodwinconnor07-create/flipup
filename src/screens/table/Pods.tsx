@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { holeCountAt, MOOD_MARK, moodOf, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
+import { holeCountAt, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
 import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
@@ -125,21 +125,6 @@ export function HiddenPlayers({ game, players }: { game: Game; players: Player[]
   );
 }
 
-/** A seat's emoji, reacting. Keyed on the hand and the mood, so each new reaction plays from the start. */
-export function MoodFace({ game, player, seat, size }: { game: Game; player: Player; seat: Seat | undefined; size: number }) {
-  const mood = moodOf(game, player, seat);
-  return (
-    <span key={`${game.hand?.number ?? 0}:${mood}`} className={`mood${mood ? ` mood-${mood}` : ''}`}>
-      <Avatar emoji={player.emoji} size={size} />
-      {mood && MOOD_MARK[mood] && (
-        <span className={`mood-mark mark-${mood}`} aria-hidden>
-          {MOOD_MARK[mood]}
-        </span>
-      )}
-    </span>
-  );
-}
-
 export function Pod({
   game,
   player,
@@ -202,7 +187,7 @@ export function Pod({
       }}
     >
       <span className="pod-pic">
-        <MoodFace game={game} player={player} seat={seat} size={50} />
+        <Avatar emoji={player.emoji} size={50} />
         {player.legend ? <span className="ai-chip legend-chip" aria-hidden>★</span> : player.bot && <span className="ai-chip bot-chip" aria-hidden>BOT</span>}
         <PositionChips pos={positionOf(hand, player.id)} />
         {reaction ? (

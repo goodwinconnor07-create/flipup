@@ -1,14 +1,15 @@
 // The other players along the top of the table, drawn to the web's measurements (Pods.tsx and the pod rules in
-// table.css): the speech bubble over the face, the reacting face with its position (a bot's card backs carry a small robot), the name in grey
+// table.css): the speech bubble over the face, the plain emoji face with its position (a bot's card backs carry a small robot), the name in grey
 // (full colour on their turn), the stack counting as it changes, their cards (with an orange shimmer sweeping over
 // them while it's their turn), and a tag under them: what they've put in this round, a win, their odds during a
 // run-out, or Offline.
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { me as myDevice, dispatch, useTable } from '@/state/session';
 import { usePlainColors, brand } from '@/theme';
 
@@ -20,7 +21,6 @@ import { ThemedText } from '../themed-text';
 import { bubbleOut, bubblePop, MoveBubble, pinned, Thread, TypingBubble } from './bubbles';
 import { TagChip } from './challenge';
 import { Count } from './count';
-import { MoodFace } from './mood-face';
 import { PlayingCard } from './playing-card';
 import { moveSig } from './use-reactions';
 
@@ -306,7 +306,7 @@ function SeatPod({
     >
       <View style={{ width: compact ? 48 : 56, height: compact ? 40 : 54, alignItems: 'center', justifyContent: 'center' }}>
         <View style={{ opacity: out ? 0.35 : player.offline ? 0.55 : 1 }}>
-          <MoodFace game={game} player={player} seat={seat} size={compact ? 36 : 50} />
+          <SeatFace emoji={player.emoji} size={compact ? 36 : 50} turn={turn} />
         </View>
         <View style={{ position: 'absolute', right: -15, bottom: 8 }}>
           <PositionChip pos={positionOf(hand, player.id)} />
@@ -457,13 +457,44 @@ export function PositionChip({ pos }: { pos: Position | null }) {
         borderRadius: 9,
         alignItems: 'center',
         justifyContent: 'center',
+        // The ink ring is drawn inside the fill, not as a border, so its antialiased edge leaves no stray outline.
         backgroundColor: look.bg,
-        borderWidth: look.edge ? 1.5 : 0,
-        borderColor: look.edge,
+        boxShadow: look.edge ? `inset 0 0 0 1.5px ${look.edge}` : undefined,
       }}
     >
       <Text maxFontSizeMultiplier={1} style={{ fontSize: 9, fontWeight: '800', color: look.ink }}>
         {pos.label}
+      </Text>
+    </View>
+  );
+}
+
+/**
+ * A seat's emoji: plain, no reactions. On their turn a soft gold glow breathes behind it (a slow 3.2s cycle at low
+ * opacity; still under Reduce Motion). Only other players' seats use it; your own box has its own.
+ */
+function SeatFace({ emoji, size, turn }: { emoji: string; size: number; turn: boolean }) {
+  const reduce = useReduceMotion();
+  const glow = useSharedValue(0.5);
+  useEffect(() => {
+    cancelAnimation(glow);
+    if (!turn || reduce) {
+      glow.set(0.5);
+      return;
+    }
+    glow.set(withRepeat(withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.quad) }), -1, true));
+  }, [turn, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+  const halo = useAnimatedStyle(() => ({ opacity: 0.35 * glow.get() + 0.15 }));
+  return (
+    <View style={{ width: size + 6, height: size, alignItems: 'center', justifyContent: 'center' }}>
+      {turn && (
+        <Animated.View
+          pointerEvents="none"
+          style={[{ position: 'absolute', width: size, height: size, borderRadius: size / 2, backgroundColor: brand.gold, boxShadow: `0 0 ${size * 0.5}px ${size * 0.2}px ${brand.gold}` }, halo]}
+        />
+      )}
+      <Text style={{ fontSize: size * 0.82, lineHeight: size }} maxFontSizeMultiplier={1} accessible={false}>
+        {emoji}
       </Text>
     </View>
   );

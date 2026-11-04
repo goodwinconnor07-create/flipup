@@ -111,17 +111,19 @@ Files: `src/screens/Setup.tsx`, `GamePicker.tsx`, `HomeGames.tsx`, `src/ui/gameT
 
 ## Stage 6b: Invite friends and bots rows
 
+_Done in the iPhone app (`native/`): rows in `components/setup/` (`faces.tsx`, `invite-friends-row.tsx`, `bots-row.tsx`), invite state in `state/table-invites.ts`, the banner `components/invite-banner.tsx`, the lobby `components/table/lobby.tsx`. Server: `/decline` and `/uninvite` on `/api/friends/:code`, `lobby` on table invites, `botNames` on `POST /api/tables`, `addBot` by `name`. Tested with three phones (web build) against the local Worker: banner in about 5s, Joined, Declined, Open table seats the bots picked. The invite expiry is the existing 15 minutes (`INVITE_MS`, now shared). Joined is matched by the friend's name and face at the table (players carry no friend code)._
+
 Files: `Setup.tsx`, `Lobby.tsx`, `src/state/pals.ts`, `worker/` table routes, `store.ts`, `src/game/botTalk.ts`.
 
-- [ ] **I1 Invite friends row (first row).** A large "Invite friends" row at the top: bigger font than now, bigger emojis than now, friends shown as large profile circles in a horizontal row.
-- [ ] **I2 Invite tap.** Tapping a friend sends them an invite and plays purple ripple rings out from their profile picture for a few seconds. A pill sits on the picture reading "Invited…" with the dots cycling ".", "..", "…" (three-bubble lines). The pill stays the same size whatever dots are showing (fixed width, tabular).
-- [ ] **I3 Joined state.** When the friend joins, the same ring animation plays in green and the pill says "Joined".
-- [ ] **I4 Invites reach the friend.** The invite shows on their phone as a banner within about 15 seconds (reuse the `BjInviteBanner` pattern and `watchInvites()`), with Join and Decline. Server: add a table invite type to `FriendCard` like `BjInvite`. Invites expire. Invites for a table that has started or closed can't be joined.
-- [ ] **I5 Declined / no answer.** If they decline or it expires, the pill clears back to normal after a moment.
-- [ ] **I6 Bots row (second row).** Same row style as friends. Remove the +/- bot stepper. Starts empty with a circle containing a plus. Tapping it adds a random bot (from `BOTS`) with its face (always the bot face, never a picker emoji) and a small BOT pill overlapping the bottom edge of the emoji so it takes little room. Added bots show in the row with the + circle after them until the table is full. Tap a bot to remove it.
-- [ ] **I7 Bot announcement.** When a bot is added it says one line a short while later (about 0.8 to 1.5 seconds, not instantly), in a bubble over its icon. Lines are friendly or funny: "Hi, thanks for adding me", "This was a mistake", and many more, in the bot's style voice. Add at least 25 lines. Add to `botTalk.ts` with ids at the end.
-- [ ] **I8 Seats and limits.** Max seats respected (counts people plus bots). The Open table button shows how many are in.
-- [ ] **I9 Lobby.** The lobby after opening matches the new look and no longer uses the old seating table. Code, QR and share still work.
+- [x] **I1 Invite friends row (first row).** A large "Invite friends" row at the top: bigger font than now, bigger emojis than now, friends shown as large profile circles in a horizontal row.
+- [x] **I2 Invite tap.** Tapping a friend sends them an invite and plays purple ripple rings out from their profile picture for a few seconds. A pill sits on the picture reading "Invited…" with the dots cycling ".", "..", "…" (three-bubble lines). The pill stays the same size whatever dots are showing (fixed width, tabular).
+- [x] **I3 Joined state.** When the friend joins, the same ring animation plays in green and the pill says "Joined".
+- [x] **I4 Invites reach the friend.** The invite shows on their phone as a banner within about 15 seconds (reuse the `BjInviteBanner` pattern and `watchInvites()`), with Join and Decline. Server: add a table invite type to `FriendCard` like `BjInvite`. Invites expire. Invites for a table that has started or closed can't be joined.
+- [x] **I5 Declined / no answer.** If they decline or it expires, the pill clears back to normal after a moment.
+- [x] **I6 Bots row (second row).** Same row style as friends. Remove the +/- bot stepper. Starts empty with a circle containing a plus. Tapping it adds a random bot (from `BOTS`) with its face (always the bot face, never a picker emoji) and a small BOT pill overlapping the bottom edge of the emoji so it takes little room. Added bots show in the row with the + circle after them until the table is full. Tap a bot to remove it.
+- [x] **I7 Bot announcement.** When a bot is added it says one line a short while later (about 0.8 to 1.5 seconds, not instantly), in a bubble over its icon. Lines are friendly or funny: "Hi, thanks for adding me", "This was a mistake", and many more, in the bot's style voice. Add at least 25 lines. Add to `botTalk.ts` with ids at the end.
+- [x] **I8 Seats and limits.** Max seats respected (counts people plus bots). The Open table button shows how many are in.
+- [x] **I9 Lobby.** The lobby after opening matches the new look and no longer uses the old seating table. Code, QR and share still work.
 
 ## Stage 6c: Play with bots
 

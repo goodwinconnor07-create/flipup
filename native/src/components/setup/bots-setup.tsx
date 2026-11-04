@@ -4,9 +4,11 @@ import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
-import { setPickedBots } from '@/state/bots-pick';
+import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
-import { setDraft } from '@/state/setup-draft';
+import { openLocalTable } from '@/state/session';
+import { saveSettings, setDraft } from '@/state/setup-draft';
+import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing, useColors } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
@@ -22,7 +24,7 @@ const START_BOTS = 4;
 /**
  * Play with bots: Play with friends without the Invite friends row, on the same dark grain page. Top to bottom:
  * the bots (`BotsRow`), the game (`SetupGameRow`, whose popup sets the draft), and the settings table. Deal is
- * pinned at the bottom (`OpenTableButton`) and opens the `deal-confirm` sheet, which lists what you chose and deals.
+ * pinned at the bottom (`OpenTableButton`) and deals at once, seating exactly these bots.
  * `settings` is the draft the route started (app/play-bots.tsx).
  */
 export function BotsSetup({ settings }: { settings: Settings }) {
@@ -37,6 +39,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const profile = useProfile();
+  const premium = usePremium();
   const variant = s.variant ?? 'holdem';
   const [bots, setBots] = useState<RowBot[]>(() => {
     const out: RowBot[] = [];
@@ -52,8 +55,10 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 
   const deal = () => {
     if (!bots.length) return;
-    setPickedBots(bots.map(({ key, name, emoji }) => ({ key, name, emoji })));
-    router.push('/deal-confirm');
+    if (!unlockToHost([variant], premium)) return;
+    saveSettings(s);
+    openLocalTable(s, bots.length, profile.name, profile.emoji, bots.map((b) => b.name));
+    router.push('/table');
   };
 
   return (

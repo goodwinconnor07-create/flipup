@@ -12,6 +12,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { SheetScroll } from '@/components/sheet-scroll';
+import { CardFan } from '@/components/premium/card-fan';
 import { MoveBubble } from '@/components/table/bubbles';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
@@ -81,7 +82,7 @@ export default function PremiumSheet() {
           <Icon name="xmark" size={14} color="white" />
         </Pressable>
 
-        <Fan />
+        <CardFan />
         <View style={{ gap: spacing.xs, alignItems: 'center' }}>
           <ThemedText variant="largeTitle" tone="onColor" accessibilityRole="header" style={{ textAlign: 'center' }}>
             {title}
@@ -159,21 +160,6 @@ export default function PremiumSheet() {
         </ThemedText>
       </View>
     </GrainBackground>
-  );
-}
-
-/** The fan of every Premium card back at the top. */
-function Fan() {
-  const packs = CARD_PACKS.filter((p) => !p.venue);
-  const mid = (packs.length - 1) / 2;
-  return (
-    <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ height: 120, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end' }}>
-      {packs.map((p, i) => (
-        <View key={p.id} style={{ marginHorizontal: -14, transform: [{ rotate: `${(i - mid) * 6}deg` }, { translateY: Math.abs(i - mid) * 3 }] }}>
-          <PlayingCard back size="md" pack={p.id} />
-        </View>
-      ))}
-    </View>
   );
 }
 

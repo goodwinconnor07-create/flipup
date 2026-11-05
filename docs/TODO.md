@@ -184,7 +184,9 @@ The iPhone app only (`native/`), plus the Worker and shared engine code it needs
 
 - [x] **Stage 1: the new tab bar.** Play, Train, Global (`trophy.fill`), Friends. The Join tab and the search-role button are gone; Join is a round glass button (`qrcode.viewfinder`) in Play's title row that opens the `join` sheet (the old tab's code, moved: `CodePad` with the keyboard up as it opens, Scan a QR code, the table it found and Sit down, party codes and party QR codes). Join links still land there: `app/[code].tsx` (`/ABCDE`) and `app/party/[code].tsx` (`/party/ABCDE`) pass the code to the sheet. The orphaned `code-entry` sheet (party codes, only the old Party tab opened it) is gone too.
 - [x] **Stage 2: server-side play you can trust.** `BankrollRoom` and `Leaderboard` Durable Objects, Today's three scored on the server, owner checks and rate limits, Delete my data clears both.
-- [ ] **Stage 3: the Global tab.** This month's Bankroll, today's challenge, the boards (Bankroll/Today, World/Friends), your row pinned, dev-only filler rows.
-- [ ] **Stage 4: Bankroll.** The five rules, stack-matched random bots that remember you all month, 50 hands a day, the rebuy behind a placeholder ad, the Sunday cut, the screens, the share pictures, friend alerts, `bankrollLab.ts` and `docs/BANKROLL.md`.
-- [ ] **Stage 5: seasons and badges.** Monthly seasons, badges for the top 100, Last season podium, old boards kept a year.
-- [ ] **Stage 6: country flags.** Optional, off by default, in Settings; on the board rows; privacy text.
+- [x] **Stage 3: the Global tab.** This month's Bankroll, today's challenge, the boards (Bankroll/Today, World/Friends), your row pinned, dev-only filler rows.
+- [x] **Stage 4: Bankroll.** The five rules, stack-matched random bots that remember you all month, 50 hands a day, the rebuy behind a placeholder ad, the Sunday cut, the screens, the share pictures, friend alerts, `bankrollLab.ts` and `docs/BANKROLL.md`.
+- [x] **Stage 5: seasons and badges.** Monthly seasons, badges for the top 100, Last season podium, old boards kept a year.
+- [x] **Stage 6: country flags.** Optional, off by default, in Settings; on the board rows; privacy text.
+
+Left for later (lean build): the share pictures (the daily, bust and end-of-month cards share as text for now), friend alerts ("@cal03 just passed you": `TODO` push and in-app banners), the Cut sheet on the next launch (the start sheet shows it), and a longer `bankrollLab.ts` run.

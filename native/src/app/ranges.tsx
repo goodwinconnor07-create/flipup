@@ -41,6 +41,7 @@ import {
   type Mode,
   type Sampled,
 } from '@/state/range-logic';
+import { noteDailyPick } from '@/state/bankroll';
 import { answerHand, dailyToday, finishSession, flameOf, noteDaily, noteSwipe, numbersFor, readRangeGrades, readRangePlay, scenarioById, allHands, useRangePlay } from '@/state/ranges';
 import { ForceScheme, ROUNDED, spacing } from '@/theme';
 import { optionsFor, replay, type OptionId, type Pos } from '@train/ranges/model';
@@ -221,7 +222,11 @@ function Trainer() {
   const commit = (id: OptionId, g: number | null) => {
     const grade = answerHand(s, id);
     const n = numbersFor(s, r);
-    if (mode === 'daily' && session.day) noteDaily(session.day, grade);
+    if (mode === 'daily' && session.day) {
+      noteDaily(session.day, grade);
+      // Today's board: the answers go to the server, which scores them itself.
+      noteDailyPick(session.day, id);
+    }
     let result: HandResult;
     if (mode === 'blitz') {
       const nextRun = grade === 'mistake' ? 0 : run + 1;

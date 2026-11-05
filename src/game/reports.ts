@@ -16,7 +16,8 @@ export type ReportReason = (typeof REPORT_REASONS)[number]['id'];
 export interface ReportRequest {
   /** The phone sending it. */
   deviceId: string;
-  where: 'table' | 'party';
+  /** A table or party by its code, or a board row by the player's friend code. */
+  where: 'table' | 'party' | 'board';
   code: string;
   reason: ReportReason;
   /** The name and emoji the reported player was showing. */
@@ -34,7 +35,8 @@ export function parseReport(body: unknown): ReportRequest | null {
   if (!body || typeof body !== 'object') return null;
   const b = body as Record<string, unknown>;
   const code = typeof b.code === 'string' ? b.code.toUpperCase() : '';
-  if (!isDeviceId(b.deviceId) || (b.where !== 'table' && b.where !== 'party') || !isCode(code) || !isReason(b.reason)) return null;
+  const board = b.where === 'board' && /^\d{6}$/.test(code);
+  if (!isDeviceId(b.deviceId) || (b.where !== 'table' && b.where !== 'party' && !board) || (!board && !isCode(code)) || !isReason(b.reason)) return null;
   if (!shortText(b.name, 40) || !shortText(b.emoji, 16) || !shortText(b.playerId, 40)) return null;
-  return { deviceId: b.deviceId, where: b.where, code, reason: b.reason, name: b.name, emoji: b.emoji, playerId: b.playerId };
+  return { deviceId: b.deviceId, where: b.where as ReportRequest['where'], code, reason: b.reason, name: b.name, emoji: b.emoji, playerId: b.playerId };
 }

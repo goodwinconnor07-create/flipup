@@ -78,6 +78,7 @@ const WEB = {
   'chart.bar.xaxis': 'bar_chart',
   'arrow.uturn.backward': 'undo',
   magnifyingglass: 'search',
+  globe: 'public',
   'tag.fill': 'sell',
   'star.fill': 'star',
   'hand.thumbsup.fill': 'thumb_up',

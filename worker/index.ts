@@ -485,10 +485,14 @@ async function reportRoute(request: Request, env: Env, ctx: ExecutionContext): P
   if (limited(request, 'report', 10, 60 * 60_000)) return json({ error: 'Too many reports. Try again later.' }, 429);
   const report = parseReport(await readJson(request));
   if (!report) return json({ error: "That report isn't complete." }, 400);
+  // A board row: the player must be on this month's board (their username is what was shown).
+  const boardRow = report.where === 'board' ? await env.LEADERBOARD.getByName(`bankroll:${seasonOf(Date.now())}`).row(report.code) : null;
   const found =
-    report.where === 'table'
-      ? await env.TABLE_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId)
-      : await env.PARTY_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId);
+    report.where === 'board'
+      ? boardRow && { name: boardRow.username, emoji: boardRow.emoji, deviceId: null, bot: false }
+      : report.where === 'table'
+        ? await env.TABLE_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId)
+        : await env.PARTY_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId);
   if (!found) return json({ error: "We couldn't find that player at your table." }, 404);
   const stored: StoredReport = { ...report, id: newId(10), at: Date.now(), found };
   if (!(await env.REPORT_BOX.getByName('reports').add(stored))) return json({ error: "You've sent a lot of reports today. We'll look at those first." }, 429);

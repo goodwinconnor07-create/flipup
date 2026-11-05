@@ -307,6 +307,9 @@ the iPad release.
 
 ## Open items before submission
 
+- **Rewarded ads (Bankroll's rebuy).** No ad network is connected: `native/src/state/ads.ts` opens a placeholder. Before one is connected: answer App Tracking Transparency (most networks want the IDFA; FlipUp could run them without tracking), update the App Privacy label (Advertising Data, Device ID for third-party advertising if tracked) and `NSPrivacyTracking`/`NSPrivacyTrackingDomains` in `app.config.ts`, and verify rewards on the server (`TODO` in `worker/bankroll.ts`).
+- **Public boards and country.** Usernames, emojis, scores and badges are public on the Global tab. Country is optional and off by default, picked in Settings (suggested from the phone's region setting, never IP location), shown publicly on the boards, and removed with Delete my data. The hosted privacy policy needs `APP_INFO.privacyBoards` added. Board rows have Report and Block (guideline 1.2).
+
 | # | Item | Who |
 |---|---|---|
 | 1 | GitHub secrets: done. The Expo token is `EXPO_API_TOKEN` | Done |

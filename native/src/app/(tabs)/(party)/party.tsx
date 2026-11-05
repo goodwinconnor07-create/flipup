@@ -167,7 +167,7 @@ const press = (go: () => void) => () => {
 function HostButton({ onPress }: { onPress: () => void }) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel="Host a party. Pick the games, invite friends" haptics={false} onPress={press(onPress)}>
-      <LivingCard colors={cardColors.violet} radius={radius.xl} grain={0.12} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 104, paddingHorizontal: spacing.lg }}>
+      <LivingCard colors={cardColors.violet} radius={radius.xl} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 104, paddingHorizontal: spacing.lg }}>
         <View style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
           <Icon name="party.popper.fill" size={26} color="#ffffff" />
         </View>
@@ -192,7 +192,7 @@ function HostButton({ onPress }: { onPress: () => void }) {
 function JoinButton({ onPress }: { onPress: () => void }) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel="Join a party. Type the code from your host" haptics={false} onPress={press(onPress)}>
-      <LivingCard colors={cardColors.night} radius={radius.lg} grain={0.1} shadow="soft" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 64, paddingHorizontal: spacing.md }}>
+      <LivingCard colors={cardColors.night} radius={radius.lg} shadow="soft" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 64, paddingHorizontal: spacing.md }}>
         <View style={{ flex: 1 }}>
           <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1.4, color: brand.gold }}>
             GOT A CODE?

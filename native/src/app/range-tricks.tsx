@@ -7,7 +7,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { MiniRing } from '@/components/ranges/dial';
 import { Kicker, NightSheet, SheetHeading } from '@/components/ranges/night-sheet';
 import { FAMILY, trickOf, type Family } from '@/components/ranges/words';
-import { allHands, trickProgress, useRangeGrades } from '@/state/ranges';
+import { allHands, LESSON_GOAL, trickProgress, useRangeGrades } from '@/state/ranges';
 import { brand, cardColors, radius, ROUNDED, spacing } from '@/theme';
 
 const ORDER: Family[] = ['reads', 'calls', 'value', 'bluffs'];
@@ -15,7 +15,7 @@ const ORDER: Family[] = ['reads', 'calls', 'value', 'bluffs'];
 /**
  * Your tricks: every hand's idea as a card to collect, in four families. A card you've mastered (the best play on
  * its hands) turns gold with a crown; one you've half got is violet with its ring part filled; the rest wait on the
- * night. Tap any card to play its hand.
+ * night. Tap any card to play its lesson.
  */
 export default function RangeTricksSheet() {
   const grades = useRangeGrades();
@@ -26,7 +26,7 @@ export default function RangeTricksSheet() {
   const mastered = concepts.filter((c) => progress[c]?.best).length;
   return (
     <NightSheet>
-      <SheetHeading kicker="Range training" title="Your tricks" line={`${mastered} of ${concepts.length} collected. Get the best play on a hand to win its card.`} />
+      <SheetHeading kicker="Range training" title="Your tricks" line={`${mastered} of ${concepts.length} collected. Get the best play on ${LESSON_GOAL} of a trick’s hands to win its card.`} />
       <View style={{ height: 8, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.12)', overflow: 'hidden' }}>
         <View style={{ height: 8, borderRadius: 4, width: `${Math.round((mastered / Math.max(1, concepts.length)) * 100)}%`, backgroundColor: brand.gold }} />
       </View>
@@ -43,19 +43,18 @@ export default function RangeTricksSheet() {
               {mine.map((c) => {
                 const p = progress[c];
                 const t = trickOf(c);
-                const f = p ? p.done / p.total : 0;
+                const f = p ? p.done / p.goal : 0;
                 const state = p?.best ? 'gold' : f > 0 ? 'violet' : 'night';
                 const ink = state === 'gold' ? brand.goldInk : '#ffffff';
                 return (
                   <PressableScale
                     key={c}
                     accessibilityRole="button"
-                    accessibilityLabel={`${t.nick}${p?.best ? ', collected' : ''}. ${t.line} Play its hand`}
+                    accessibilityLabel={`${t.nick}${p?.best ? ', collected' : ''}. ${t.line} Play its lesson`}
                     onPress={() => {
-                      const id = p?.ids[0];
-                      if (!id) return;
+                      if (!p) return;
                       router.dismissAll();
-                      router.push({ pathname: '/ranges', params: { mode: 'hand', id } });
+                      router.push({ pathname: '/ranges', params: { mode: 'lesson', concept: c } });
                     }}
                     outerStyle={{ width: tile }}
                   >

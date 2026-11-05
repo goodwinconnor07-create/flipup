@@ -9,7 +9,7 @@ import { forgetParty, leaveParty, usePartyRef } from '@/state/party';
 import { leaveTable, useTable } from '@/state/session';
 import { spacing } from '@/theme';
 
-/** The party screen: the lobby, the leaderboard between games and the podium. Opened from the Party tab and Home. */
+/** The party screen: the lobby, the leaderboard between games and the podium. Opened from Play with friends, Join and Home. */
 export default function PartyRoom() {
   const ref = usePartyRef();
   const atTable = useTable().code;
@@ -18,7 +18,7 @@ export default function PartyRoom() {
     forgetParty();
     haptic.failure();
     Alert.alert('That party has closed');
-    router.navigate('/party');
+    router.navigate('/');
   };
   const leave = () => {
     if (!code) return;
@@ -30,7 +30,7 @@ export default function PartyRoom() {
         onPress: () => {
           void leaveParty(code);
           if (atTable) leaveTable();
-          router.navigate('/party');
+          router.navigate('/');
         },
       },
     ]);

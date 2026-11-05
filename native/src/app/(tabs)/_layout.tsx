@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { useFriendBox } from '@/state/pals';
 
-// Apple's own tab bar (Liquid Glass on iOS 26): Play, Party, Friends and Join. Tabs are peers, so switching never slides. Join is the search-role
+// Apple's own tab bar (Liquid Glass on iOS 26): Play, Train, Friends and Join. A party starts from Play with friends. Tabs are peers, so switching never slides. Join is the search-role
 // tab, which iOS 26 sets apart from the bar as its own round button: the round "Join with a code" button the plan
 // asks for. Below iOS 26 it's the last tab.
 export default function TabsLayout() {
@@ -17,9 +17,9 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf="suit.spade.fill" md="playing_cards" />
         <NativeTabs.Trigger.Label>Play</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(party)">
-        <NativeTabs.Trigger.Icon sf="person.3.fill" md="groups" />
-        <NativeTabs.Trigger.Label>Party</NativeTabs.Trigger.Label>
+      <NativeTabs.Trigger name="(train)">
+        <NativeTabs.Trigger.Icon sf="graduationcap.fill" md="school" />
+        <NativeTabs.Trigger.Label>Train</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(friends)">
         <NativeTabs.Trigger.Icon sf="person.2.fill" md="group" />

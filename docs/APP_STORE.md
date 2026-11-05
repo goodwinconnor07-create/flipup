@@ -257,7 +257,7 @@ after upload when a reason is missing.
 > FlipUp needs no account or login. To play right away, tap **Play with bots** on Home, then **Deal**. The bots
 > fill the table and the game runs on the phone, so no second device is needed. To see an online table, tap
 > **Play with friends**: it opens a table with a 5-letter code, and **Add bot** fills the seats. Party mode is on
-> the Party tab: **Host a party**, add bots, and start.
+> the same page: **Start a party**, pick the games, **Save playlist**, then **Open the party**.
 >
 > Chips are play chips only. They can't be bought, cashed out or exchanged, and there's no real-money play.
 >

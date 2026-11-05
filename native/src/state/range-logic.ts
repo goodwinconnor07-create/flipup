@@ -7,7 +7,7 @@ import { bb, combosOf, type Grade, type OptionId, type Pos, type RangeGroup, typ
 
 import type { HandNumbers } from './ranges';
 
-export type Mode = 'round' | 'daily' | 'blitz' | 'hand' | 'fix';
+export type Mode = 'round' | 'daily' | 'blitz' | 'hand' | 'fix' | 'lesson';
 export type Level = 'easy' | 'pro';
 
 export const ROUND_SIZE = 5;
@@ -67,6 +67,16 @@ export function roundIds(grades: Record<string, Grade>, all: readonly Scenario[]
     rng,
   );
   return [...open, ...done].slice(0, Math.min(size, all.length)).map((s) => s.id);
+}
+
+/** A lesson on the Train path: a round from one trick's hands, the ones you haven't played the best way first. */
+export function lessonIds(concept: string, grades: Record<string, Grade>, all: readonly Scenario[], rng: () => number = Math.random): string[] {
+  return roundIds(
+    grades,
+    all.filter((s) => s.concept === concept),
+    ROUND_SIZE,
+    rng,
+  );
 }
 
 /** Blitz: every hand once in a random order, then again, as long as the clock lasts. */

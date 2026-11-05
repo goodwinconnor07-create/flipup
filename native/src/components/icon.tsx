@@ -79,6 +79,7 @@ const WEB = {
   'arrow.uturn.backward': 'undo',
   magnifyingglass: 'search',
   globe: 'public',
+  'info.circle': 'info',
   'tag.fill': 'sell',
   'star.fill': 'star',
   'hand.thumbsup.fill': 'thumb_up',

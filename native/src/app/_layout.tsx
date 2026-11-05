@@ -100,6 +100,7 @@ export default function RootLayout() {
         <Stack.Screen name="join" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Join' }} />
         {/* Bankroll: the start sheet (night page), and the rebuy's placeholder ad, which can't be swiped away early by accident. */}
         <Stack.Screen name="bankroll" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Bankroll' }} />
+        <Stack.Screen name="bankroll-intro" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'How it works' }} />
         <Stack.Screen name="ad" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'Ad' }} />
         {/* Join links: they only pass the code on to the Join sheet. */}
         <Stack.Screen name="[code]" options={{ headerShown: false, animation: 'none' }} />

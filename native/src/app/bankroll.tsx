@@ -7,17 +7,10 @@ import { haptic } from '@/components/haptics';
 import { Kicker, NightSheet, panel, SheetHeading } from '@/components/ranges/night-sheet';
 import { BANKROLL, dayOfSeason, daysToNextCut, msToMidnight, seasonName, seasonOf } from '@/engine';
 import { showRewardedAd } from '@/state/ads';
-import { rebuyBankroll, sitBankroll, useBankroll, type BankrollView } from '@/state/bankroll';
+import { BANKROLL_RULES, rebuyBankroll, sitBankroll, useBankroll, type BankrollView } from '@/state/bankroll';
 import { useMyUsername } from '@/state/pals';
 import { brand, ROUNDED, spacing } from '@/theme';
 
-const RULES = [
-  'Everyone starts with 1,000 chips on the 1st of the month (UTC). Join later and you start with 1,000 too.',
-  'Play up to 50 hands a day against bots.',
-  'Your chips carry over. Bust and you’re out for the month, with one rebuy by watching an ad.',
-  'Every Sunday at midnight UTC, the bottom 10% of players still alive are cut.',
-  'Biggest stack at the end of the month wins.',
-];
 
 /**
  * Bankroll's start sheet (night page, like Range training's): your bankroll big, your place, who's still alive,
@@ -111,7 +104,7 @@ export default function BankrollSheet() {
       )}
       <View style={{ gap: spacing.xs }}>
         <Kicker>The rules</Kicker>
-        {RULES.map((r, i) => (
+        {BANKROLL_RULES.map((r, i) => (
           <Text key={i} maxFontSizeMultiplier={1.5} style={{ fontSize: 14, lineHeight: 20, color: 'rgba(255,255,255,0.7)' }}>
             {`${i + 1}. ${r}`}
           </Text>

@@ -8,6 +8,15 @@ import { ensureMyCode, loadPals, myPalCode } from './pals';
 import { read, save } from './storage';
 import { openBankrollTable } from './session';
 
+/** Bankroll's five rules, the same words wherever they're shown. */
+export const BANKROLL_RULES = [
+  'Everyone starts with 1,000 chips on the 1st of the month (UTC). Join later and you start with 1,000 too.',
+  'Play up to 50 hands a day against bots.',
+  'Your chips carry over. Bust and you’re out for the month, with one rebuy by watching an ad.',
+  'Every Sunday at midnight UTC, the bottom 10% of players still alive are cut.',
+  'Biggest stack at the end of the month wins.',
+];
+
 const API = process.env.EXPO_PUBLIC_API_ORIGIN || APP_INFO.apiOrigin;
 
 /** What the server says about your month (worker/bankroll.ts `BankrollStatusView`). */

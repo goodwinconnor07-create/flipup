@@ -7,7 +7,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { MiniRing } from '@/components/ranges/dial';
 import { Kicker, NightSheet, SheetHeading } from '@/components/ranges/night-sheet';
 import { FAMILY, trickOf, type Family } from '@/components/ranges/words';
-import { SCENARIOS, trickProgress, useRangeGrades } from '@/state/ranges';
+import { allHands, trickProgress, useRangeGrades } from '@/state/ranges';
 import { brand, cardColors, radius, ROUNDED, spacing } from '@/theme';
 
 const ORDER: Family[] = ['reads', 'calls', 'value', 'bluffs'];
@@ -22,7 +22,7 @@ export default function RangeTricksSheet() {
   const progress = trickProgress(grades);
   const { width } = useWindowDimensions();
   const tile = (Math.min(width, 600) - spacing.md * 2 - spacing.sm) / 2;
-  const concepts = [...new Set(SCENARIOS.map((s) => s.concept))];
+  const concepts = [...new Set(allHands().map((s) => s.concept))];
   const mastered = concepts.filter((c) => progress[c]?.best).length;
   return (
     <NightSheet>

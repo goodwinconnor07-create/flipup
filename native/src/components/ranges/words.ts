@@ -60,6 +60,7 @@ export const TRICKS: Record<string, Trick> = {
   'River bluffs': { nick: 'The Missed Draw', line: 'A hand that can’t win a showdown wins only by betting. Do they fold enough?', family: 'bluffs', icon: 'flame.fill' },
   'Pot odds for draws': { nick: 'The Price of a Draw', line: 'A draw needs the right price. Compare your odds with the bet.', family: 'calls', icon: 'questionmark.circle.fill' },
   'Delayed river bets': { nick: 'The Late Stab', line: 'They gave up on the turn and bet the river: thin value or a bluff.', family: 'reads', icon: 'tag.fill' },
+  'Multiway draws': { nick: 'Drawing Into a Crowd', line: 'More players means a better price for your draw, but more of them can have you beat.', family: 'calls', icon: 'person.3.fill' },
   'Limped pots': { nick: 'Limpers', line: 'Loose limpers call too much: value bet, don’t bluff.', family: 'value', icon: 'circle.grid.3x3.fill' },
 };
 

@@ -5,6 +5,7 @@
 
 import type { Scenario } from './model';
 import { MORE_SCENARIOS } from './moreScenarios';
+import { expandHand, expandRange } from './model';
 
 const FIRST: Scenario[] = [
   {
@@ -46,8 +47,14 @@ const FIRST: Scenario[] = [
     clues: [
       { street: 'preflop', text: 'The cutoff opens about a quarter of hands: lots of aces, kings, pairs and suited connectors.' },
       { street: 'flop', text: 'A small bet on K-8-4 with no flush draw is a bet with almost everything. It tells you very little yet.' },
-      { street: 'turn', text: 'The 2 changes nothing, but a big second bet does. Now it’s strong kings, sets, and the draws that picked something up: 6-5, 5-3, A-3 and A-5.' },
-      { street: 'river', text: 'The ace is a great card for them. A-K, A-8 and A-4 make two pair, 5-3 makes a straight. A bet bigger than the pot says “very strong or nothing”: that’s a polarised bet.' },
+      {
+        street: 'turn',
+        text: 'The 2 changes nothing, but a big second bet does. Now it’s strong kings, sets, and the draws that picked something up: 6-5, 5-3, A-3 and A-5.',
+      },
+      {
+        street: 'river',
+        text: 'The ace is a great card for them. A-K, A-8 and A-4 make two pair, 5-3 makes a straight. A bet bigger than the pot says “very strong or nothing”: that’s a polarised bet.',
+      },
     ],
     why: 'King-queen beats only a bluff now, and there aren’t many bluffs left: the missed draws are just 7-6 and 6-5. Calling an overbet this big needs you to be right about 36% of the time, but the ace hit their betting range so hard that you’re good far less often than that. Fold, and don’t feel bad: this is a spot where top pair is a bluff catcher, nothing more.',
   },
@@ -86,10 +93,19 @@ const FIRST: Scenario[] = [
     ],
     best: 'bet33',
     clues: [
-      { street: 'preflop', text: 'The big blind calls a button raise with a very wide range: lots of weak aces, suited cards and small pairs.' },
-      { street: 'flop', text: 'Check-calling a small bet on J-7-3: they have a jack, a seven, a pair or a draw. With a set or two pair this player would often raise.' },
+      {
+        street: 'preflop',
+        text: 'The big blind calls a button raise with a very wide range: lots of weak aces, suited cards and small pairs.',
+      },
+      {
+        street: 'flop',
+        text: 'Check-calling a small bet on J-7-3: they have a jack, a seven, a pair or a draw. With a set or two pair this player would often raise.',
+      },
       { street: 'turn', text: 'You checked back to keep the pot small. They didn’t lead, so they still don’t have much.' },
-      { street: 'river', text: 'A third check. This player almost never bluffs or slow-plays a big hand three times, so their range is capped: mostly one pair, worse than yours.' },
+      {
+        street: 'river',
+        text: 'A third check. This player almost never bluffs or slow-plays a big hand three times, so their range is capped: mostly one pair, worse than yours.',
+      },
     ],
     why: 'Ask who calls a small bet: J-T, J-9, J-8, every seven and the pocket pairs, and they’re all worse than your king-jack. Only a few hands beat you, and a passive player who checks three times rarely has them. Bet small (about a third of the pot): a big bet folds out exactly the weak pairs you want calling. Checking back wins nothing extra.',
   },
@@ -126,8 +142,14 @@ const FIRST: Scenario[] = [
     best: 'call',
     clues: [
       { street: 'preflop', text: 'The big blind defends wide against a cutoff raise, with lots of suited and connected hands.' },
-      { street: 'flop', text: 'J-T-6 with two diamonds is a board where the big blind has many sets, two pairs and draws. A check-raise here means a set, two pair, or a strong draw like a flush draw or an open-ender.' },
-      { street: 'turn', text: 'The 2 of spades completes nothing. Value hands keep betting, but so do all the draws: they need to win now or hit the river.' },
+      {
+        street: 'flop',
+        text: 'J-T-6 with two diamonds is a board where the big blind has many sets, two pairs and draws. A check-raise here means a set, two pair, or a strong draw like a flush draw or an open-ender.',
+      },
+      {
+        street: 'turn',
+        text: 'The 2 of spades completes nothing. Value hands keep betting, but so do all the draws: they need to win now or hit the river.',
+      },
     ],
     why: 'You’re crushed by their sets and two pairs, but more than half of their range is still a draw: flush draws, K-Q, Q-9, 9-8. You need about 29% to call this bet, and queens win much more than that. Calling keeps the draws in. Raising all in would only get called by the hands that beat you and by the biggest draws, so just call and look at the river.',
   },
@@ -151,8 +173,18 @@ const FIRST: Scenario[] = [
         type: 'Solid regular',
         pre: 'HJ open',
         range: [
-          { label: 'Weaker tens: K-T, Q-T, J-T', hands: 'KTs@s, KTs@c, KTs@d, QTs@s, QTs@c, QTs@d, JTs@s, JTs@c, JTs@d, KTo', role: 'calls', big: 'folds' },
-          { label: 'Nines: A-9, K-9, 9-8', hands: 'A9s@s, A9s@d, A9s@c, K9s@s, K9s@c, K9s@d, 98s@s, 98s@c, 98s@d', role: 'folds', small: 'calls' },
+          {
+            label: 'Weaker tens: K-T, Q-T, J-T',
+            hands: 'KTs@s, KTs@c, KTs@d, QTs@s, QTs@c, QTs@d, JTs@s, JTs@c, JTs@d, KTo',
+            role: 'calls',
+            big: 'folds',
+          },
+          {
+            label: 'Nines: A-9, K-9, 9-8',
+            hands: 'A9s@s, A9s@d, A9s@c, K9s@s, K9s@c, K9s@d, 98s@s, 98s@c, 98s@d',
+            role: 'folds',
+            small: 'calls',
+          },
           { label: 'A-K with the ace of hearts (nut flush draw)', hands: 'AhKs, AhKc, AhKd', role: 'folds', small: 'calls' },
           { label: 'Pocket pairs: sevens and eights', hands: '88, 77', role: 'folds', small: 'calls', weight: 0.6 },
           { label: 'Overpairs: jacks to kings', hands: 'JJ, QQ, KK', role: 'calls', weight: 0.5 },
@@ -167,7 +199,10 @@ const FIRST: Scenario[] = [
     clues: [
       { street: 'preflop', text: 'The hijack opens and you call in the cutoff with ace-ten.' },
       { street: 'flop', text: 'They bet small on T-9-4 with two hearts: a bet with most of their range.' },
-      { street: 'turn', text: 'The third heart comes and they check. Someone with a flush usually bets here to get value and to charge one-heart hands, so a check means they rarely have one. They’re mostly one pair, overpairs and ace-high.' },
+      {
+        street: 'turn',
+        text: 'The third heart comes and they check. Someone with a flush usually bets here to get value and to charge one-heart hands, so a check means they rarely have one. They’re mostly one pair, overpairs and ace-high.',
+      },
     ],
     why: 'Their check takes most flushes out of their range. You still beat K-T, Q-T, J-T, every nine, the small pairs, and A-K with the ace of hearts, and those hands will call a small bet. Bet a third to three-quarters of the pot: that gets value from the tens and nines and charges A-K with the ace of hearts, which could make the nut flush on the river. Checking gives all of those a free card for nothing. Don’t overbet, though: only their overpairs would call, and they beat you.',
   },
@@ -208,9 +243,18 @@ const FIRST: Scenario[] = [
     best: 'call',
     clues: [
       { street: 'preflop', text: 'The button opens very wide, so there are lots of suited and connected hands in their range.' },
-      { street: 'flop', text: 'J-8-3 with two spades: the small bet is with almost everything, including every spade draw and straight draw.' },
-      { street: 'turn', text: 'The 5 adds more straight draws (7-6, 6-4). An aggressive player keeps betting with value and with all those draws.' },
-      { street: 'river', text: 'A blank: the 2 of clubs. Every spade draw and most straight draws missed. Their range is now polarised: overpairs, sets and two pair for value, and a lot of missed draws that can only win by betting.' },
+      {
+        street: 'flop',
+        text: 'J-8-3 with two spades: the small bet is with almost everything, including every spade draw and straight draw.',
+      },
+      {
+        street: 'turn',
+        text: 'The 5 adds more straight draws (7-6, 6-4). An aggressive player keeps betting with value and with all those draws.',
+      },
+      {
+        street: 'river',
+        text: 'A blank: the 2 of clubs. Every spade draw and most straight draws missed. Their range is now polarised: overpairs, sets and two pair for value, and a lot of missed draws that can only win by betting.',
+      },
     ],
     why: 'Ace-jack loses to every value hand, but it beats every missed draw, and this player has plenty of them: nine spade draws plus T-9, 9-7 and 7-6. You need to win about 30% of the time to call. Against this range you win more than that. Your ace of clubs also matters: it doesn’t block any of their spade bluffs. Call.',
   },
@@ -248,8 +292,14 @@ const FIRST: Scenario[] = [
     alsoOk: ['bet75'],
     clues: [
       { street: 'preflop', text: 'The cutoff opens about a quarter of hands and you defend king-six suited from the big blind.' },
-      { street: 'flop', text: 'K-9-4 is a great board for the cutoff’s range, so it bets nearly everything with a king, and a lot more besides. When it checks back, it rarely has a good king: its range is capped at middle pairs, weak kings and ace-high.' },
-      { street: 'turn', text: 'The 2 of clubs changes nothing. You’re first to act, with a hand much stronger than most of what they checked.' },
+      {
+        street: 'flop',
+        text: 'K-9-4 is a great board for the cutoff’s range, so it bets nearly everything with a king, and a lot more besides. When it checks back, it rarely has a good king: its range is capped at middle pairs, weak kings and ace-high.',
+      },
+      {
+        street: 'turn',
+        text: 'The 2 of clubs changes nothing. You’re first to act, with a hand much stronger than most of what they checked.',
+      },
     ],
     why: 'Their check took the good kings out of their range, so your weak top pair is now ahead of almost everything they have: nines, pocket pairs, worse kings. Bet (this is called a probe bet). A small bet gets called by all of those, and it denies ace-high a free card. A bigger bet works too, but folds more of the pairs you beat.',
   },
@@ -294,7 +344,10 @@ const FIRST: Scenario[] = [
       { street: 'preflop', text: 'A tight-passive player defends the big blind with broadways, suited aces, pairs and connectors.' },
       { street: 'flop', text: 'They check-call on A-K-7: an ace, a king, or a gutshot like Q-J or Q-T.' },
       { street: 'turn', text: 'The 9 brings more draws (J-T, J-8, T-8). They call again.' },
-      { street: 'river', text: 'The T completes Q-J and J-8. A passive live player who check-raises the river almost always has it: they rarely bluff here, and they don’t raise with worse two pairs.' },
+      {
+        street: 'river',
+        text: 'The T completes Q-J and J-8. A passive live player who check-raises the river almost always has it: they rarely bluff here, and they don’t raise with worse two pairs.',
+      },
     ],
     why: 'Top two pair feels strong, but against this player a river check-raise is a straight or a set nearly every time. You need to win about 27% to call, and the bluffs in their range are tiny. You beat only A-9, A-7, T-9 and the odd bluff. Fold. Many live players never bluff-raise a river, so believe them.',
   },
@@ -320,7 +373,11 @@ const FIRST: Scenario[] = [
         type: 'Typical live player',
         pre: 'BB vs middle open',
         range: [
-          { label: 'Aces they called the flop with: A-6, A-3, A-T, A-J and more', hands: 'A6s, A3s, AT, AJo, A9o, A8o, A7s, A5s, A4s, A2s', role: 'calls' },
+          {
+            label: 'Aces they called the flop with: A-6, A-3, A-T, A-J and more',
+            hands: 'A6s, A3s, AT, AJo, A9o, A8o, A7s, A5s, A4s, A2s',
+            role: 'calls',
+          },
           { label: 'Better tens: K-T, Q-T, J-T', hands: 'KT, QTs, JTs', role: 'calls' },
           { label: 'Sets', hands: '66, 33, TT', role: 'raises', weight: 0.4 },
           { label: 'Sixes and small pairs', hands: '76s, 65s, 86s, 87s, 55, 44, 77, 88', role: 'folds' },
@@ -332,7 +389,10 @@ const FIRST: Scenario[] = [
     clues: [
       { street: 'preflop', text: 'The big blind defends with lots of aces, especially suited ones and the weaker offsuit aces.' },
       { street: 'flop', text: 'They check-call your small bet on T-6-3: a ten, a six, a pocket pair, an ace with something, or a draw.' },
-      { street: 'turn', text: 'An ace is the card their calling range hits most: every A-x that floated the flop now has top pair. Your ten-nine just became second pair.' },
+      {
+        street: 'turn',
+        text: 'An ace is the card their calling range hits most: every A-x that floated the flop now has top pair. Your ten-nine just became second pair.',
+      },
     ],
     why: 'If you bet, who calls? The aces and the better tens, and they all beat you. The sixes and small pairs you beat will fold. A bet that only gets called by better hands is a mistake, so check back. You keep the pot small, see the river for free, and your hand can still win a showdown against their weaker pairs.',
   },
@@ -375,8 +435,14 @@ const FIRST: Scenario[] = [
     clues: [
       { street: 'preflop', text: 'The big blind defends with lots of connected cards and pairs.' },
       { street: 'flop', text: 'They check-call on 8-6-2: an eight, a six, a pair or a straight draw.' },
-      { street: 'turn', text: 'The 5 gives you the nine-high straight. They check-call again; with a big hand many players would have raised by now.' },
-      { street: 'river', text: 'The K changes nothing for you. They check a third time: their range is capped at two pair, sets they slowed down, smaller straights and top pair.' },
+      {
+        street: 'turn',
+        text: 'The 5 gives you the nine-high straight. They check-call again; with a big hand many players would have raised by now.',
+      },
+      {
+        street: 'river',
+        text: 'The K changes nothing for you. They check a third time: their range is capped at two pair, sets they slowed down, smaller straights and top pair.',
+      },
     ],
     why: 'You have the best possible hand, and their range is full of strong-but-worse hands: two pair, sets, 7-4 and 4-3 straights. Those hands find it very hard to fold even to a big bet, so bet bigger than the pot. Their capped range can’t raise you, and every extra chip comes from hands that can’t beat a nine-high straight.',
   },
@@ -416,9 +482,18 @@ const FIRST: Scenario[] = [
     alsoOk: ['bet125'],
     clues: [
       { street: 'preflop', text: 'The hijack opens; you defend seven-six of hearts from the big blind.' },
-      { street: 'flop', text: 'J-9-3 with two hearts: they bet small, as they would with most of their range. You call with a flush draw.' },
-      { street: 'turn', text: 'A blank, and they check back. With a good jack they’d keep betting to charge all the draws on this board. Checking says they have a middle pair, a small pair, ace-high, or a draw that gave up.' },
-      { street: 'river', text: 'Your flush missed, so seven-high can’t win a showdown. The K is a card you can represent: your check-calls include K-J, K-9 and K-T.' },
+      {
+        street: 'flop',
+        text: 'J-9-3 with two hearts: they bet small, as they would with most of their range. You call with a flush draw.',
+      },
+      {
+        street: 'turn',
+        text: 'A blank, and they check back. With a good jack they’d keep betting to charge all the draws on this board. Checking says they have a middle pair, a small pair, ace-high, or a draw that gave up.',
+      },
+      {
+        street: 'river',
+        text: 'Your flush missed, so seven-high can’t win a showdown. The K is a card you can represent: your check-calls include K-J, K-9 and K-T.',
+      },
     ],
     why: 'Their turn check capped their range: most of it is middle and small pairs, ace-high and missed draws, which can’t call a big bet. Only their kings and the odd slow-played set want to continue. A three-quarter-pot bet needs to work about 43% of the time, and far more of their range folds than that. Seven-high never wins if you check, so bet.',
   },
@@ -444,13 +519,21 @@ const FIRST: Scenario[] = [
         type: 'Aggressive regular',
         pre: 'HJ open',
         range: [
-          { label: 'Flushes (no ace-high ones: you hold the A♠)', hands: 'KJs@s, KTs@s, K9s@s, JTs@s, T8s@s, 98s@s, 86s@s, 65s@s, 54s@s', role: 'value' },
+          {
+            label: 'Flushes (no ace-high ones: you hold the A♠)',
+            hands: 'KJs@s, KTs@s, K9s@s, JTs@s, T8s@s, 98s@s, 86s@s, 65s@s, 54s@s',
+            role: 'value',
+          },
           { label: 'Sets', hands: '77, 33, 99', role: 'value' },
           { label: 'Top set', hands: 'QQ', role: 'value', weight: 0.5 },
           { label: 'Two pair: Q-9, 9-7', hands: 'Q9s, 97s', role: 'value' },
           { label: 'Queens it bets thinly: K-Q, Q-J', hands: 'KQs, QJs', role: 'value', weight: 0.5 },
           { label: 'Ace-queen (a split)', hands: 'AQ', role: 'value', weight: 0.5 },
-          { label: 'Missed straight draws: J-T, T-8, 8-6', hands: 'JTo, JTs@h, JTs@d, JTs@c, T8s@h, T8s@d, T8s@c, 86s@h, 86s@d, 86s@c', role: 'bluff' },
+          {
+            label: 'Missed straight draws: J-T, T-8, 8-6',
+            hands: 'JTo, JTs@h, JTs@d, JTs@c, T8s@h, T8s@d, T8s@c, 86s@h, 86s@d, 86s@c',
+            role: 'bluff',
+          },
           { label: 'King-jack gutshot', hands: 'KJo', role: 'bluff', weight: 0.5 },
         ],
       },
@@ -459,8 +542,14 @@ const FIRST: Scenario[] = [
     clues: [
       { street: 'preflop', text: 'The hijack opens; you call with ace-queen on the button.' },
       { street: 'flop', text: 'Q-7-3 with two spades. They bet half the pot: queens, sevens, sets and draws.' },
-      { street: 'turn', text: 'The 9 of clubs adds straight draws: J-T, T-8, 8-6 all have eight outs now. An aggressive player keeps barrelling them.' },
-      { street: 'river', text: 'The 2 of spades completes the flush. But you hold the ace of spades, so they can never have the nut flush, and every A-x of spades draw they might have had is gone.' },
+      {
+        street: 'turn',
+        text: 'The 9 of clubs adds straight draws: J-T, T-8, 8-6 all have eight outs now. An aggressive player keeps barrelling them.',
+      },
+      {
+        street: 'river',
+        text: 'The 2 of spades completes the flush. But you hold the ace of spades, so they can never have the nut flush, and every A-x of spades draw they might have had is gone.',
+      },
     ],
     why: 'The flush came, but your ace of spades blocks all the ace-high flushes, the most common flush they’d bet. What’s left is a handful of other flushes and sets, against a lot of missed straight draws: J-T, T-8 and 8-6 all missed. You need to win about 30% to call this three-quarter-pot bet, and top pair with the ace of spades wins more often than that.',
   },
@@ -543,17 +632,60 @@ const FIRST: Scenario[] = [
       { street: 'preflop', text: 'A passive player defends the big blind.' },
       { street: 'flop', text: 'K-8-4: they check-call, so a king, an eight, or a draw like 6-5 or 5-3.' },
       { street: 'turn', text: 'They call again on the 2: still mostly a king or an eight.' },
-      { street: 'river', text: 'Now they lead for about a fifth of the pot. From a passive player, a tiny bet is usually a medium hand trying to see a cheap showdown: a weak king or an eight. With a strong hand they’d check to you or bet much more.' },
+      {
+        street: 'river',
+        text: 'Now they lead for about a fifth of the pot. From a passive player, a tiny bet is usually a medium hand trying to see a cheap showdown: a weak king or an eight. With a strong hand they’d check to you or bet much more.',
+      },
     ],
     why: 'King-queen beats every weaker king and every eight they’d make this little bet with. Raise for value: worse kings will call, and this player rarely has 8-7 or 7-4 here. Just calling isn’t wrong, but it leaves money behind against a range you’re crushing.',
   },
 ];
 
 /** Every hand, mixing heads-up and multiway: one of the new ones after every two of the first set. */
-export const SCENARIOS: Scenario[] = FIRST.flatMap((s, i) => (i % 2 === 1 && MORE_SCENARIOS[(i - 1) / 2] ? [s, MORE_SCENARIOS[(i - 1) / 2]] : [s])).concat(MORE_SCENARIOS.slice(Math.floor(FIRST.length / 2)));
+export const SCENARIOS: Scenario[] = FIRST.flatMap((s, i) =>
+  i % 2 === 1 && MORE_SCENARIOS[(i - 1) / 2] ? [s, MORE_SCENARIOS[(i - 1) / 2]] : [s],
+).concat(MORE_SCENARIOS.slice(Math.floor(FIRST.length / 2)));
 
-/** Generated hands are stored with each group's combos run together ("AhKhAdKd"); these convert both ways. */
-export const pack = (list: Scenario[]): Scenario[] =>
-  list.map((s) => ({ ...s, opponents: s.opponents.map((o) => ({ ...o, range: o.range.map((g) => ({ ...g, hands: g.hands.replace(/[ ,]/g, '') })) })) }));
+/**
+ * Generated hands are stored compactly: a group's combos become hand classes ("AKs", "QQ") wherever every live combo
+ * of the class is in it, and exact combos ("AhKh") for the rest. `unpack` also reads the older format, the combos
+ * run together ("AhKhAdKd").
+ */
+export function pack(list: Scenario[]): Scenario[] {
+  const R = '23456789TJQKA';
+  const classOf = (c: string) => {
+    const [a, b] = [c.slice(0, 2), c.slice(2, 4)].sort((x, y) => R.indexOf(y[0]) - R.indexOf(x[0]));
+    return a[0] === b[0] ? a[0] + b[0] : `${a[0]}${b[0]}${a[1] === b[1] ? 's' : 'o'}`;
+  };
+  return list.map((s) => {
+    const dead = new Set([...s.hero.cards, ...s.board]);
+    const live = (cls: string) => expandHand(cls).filter((c) => !dead.has(c[0]) && !dead.has(c[1])).length;
+    return {
+      ...s,
+      opponents: s.opponents.map((o) => ({
+        ...o,
+        range: o.range.map((g) => {
+          // Exact combos first (a group may already be packed), less any card you can see.
+          const combos = expandRange(g.hands)
+            .filter((c) => !dead.has(c[0]) && !dead.has(c[1]))
+            .map((c) => c.join(''));
+          const by = new Map<string, string[]>();
+          for (const c of combos) by.set(classOf(c), [...(by.get(classOf(c)) ?? []), c]);
+          const tokens = [...by.entries()].flatMap(([cls, cs]) => (cs.length === live(cls) ? [cls] : cs));
+          return { ...g, hands: tokens.join(',') };
+        }),
+      })),
+    };
+  });
+}
 export const unpack = (list: Scenario[]): Scenario[] =>
-  list.map((s) => ({ ...s, opponents: s.opponents.map((o) => ({ ...o, range: o.range.map((g) => ({ ...g, hands: (g.hands.match(/.{4}/g) ?? []).join(', ') })) })) }));
+  list.map((s) => ({
+    ...s,
+    opponents: s.opponents.map((o) => ({
+      ...o,
+      range: o.range.map((g) => ({
+        ...g,
+        hands: /^([2-9TJQKA][shdc]){2,}$/.test(g.hands) && g.hands.length > 4 ? (g.hands.match(/.{4}/g) ?? []).join(', ') : g.hands,
+      })),
+    })),
+  }));

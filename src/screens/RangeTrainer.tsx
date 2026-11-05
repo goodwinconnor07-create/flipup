@@ -71,6 +71,8 @@ export function RangeTrainer() {
     };
   }, []);
   const [pick, setPick] = useState<OptionId | null>(null);
+  // Opponents whose whole range is open (otherwise just the biggest groups show).
+  const [open, setOpen] = useState<string[]>([]);
   const r = useMemo(() => replay(scenario), [scenario]);
   const options = useMemo(() => optionsFor(scenario, r), [scenario, r]);
   const views = useMemo(() => (pick ? analyse(scenario, r) : []), [scenario, r, pick]);
@@ -85,8 +87,6 @@ export function RangeTrainer() {
     const rows = [{ id: 'check' as OptionId, ev: spot.evCheck! }, ...(['bet33', 'bet75', 'bet125'] as const).map((id) => ({ id: id as OptionId, ev: spotOf(scenario, r, id).bet!.ev }))];
     return { equity: spot.equity, price: 0, rows };
   }, [scenario, r, pick]);
-  const done = loadRangeProgress();
-  const solved = all.filter((s) => done[s.id] === 'best').length;
   const decision = scenario.board.length === 4 ? 'turn' : 'river';
 
   const answer = (id: OptionId) => {
@@ -99,6 +99,7 @@ export function RangeTrainer() {
   };
   const next = () => {
     setScenario(nextHand(all, scenario));
+    setOpen([]);
     setPick(null);
     window.scrollTo({ top: 0 });
   };
@@ -115,19 +116,24 @@ export function RangeTrainer() {
 
   return (
     <div className="screen ranges">
-      <BackBar title="Range training" right={<span className="rt-count">{solved} of {all.length}</span>} />
+      <BackBar title="Range training" />
       <div className="rt-page">
         <header className="rt-head">
           <span className="rt-concept">{scenario.concept}</span>
           <h1 className="rt-title">{scenario.title}</h1>
           <p className="rt-sub">
-            You’re {scenario.hero.pos} · {scenario.table === 9 ? '9-handed live' : '6-handed'} · {scenario.stack}bb deep
+            You’re {scenario.hero.pos} · {scenario.format === 'tournament' ? `Tournament, ${scenario.table === 9 ? '9-handed' : '6-handed'}` : scenario.table === 9 ? '9-handed live cash' : '6-handed cash'} · blinds 0.5/1bb
+            {scenario.ante ? ` · ${bb(scenario.ante)} big blind ante` : ''}
           </p>
           <ul className="rt-players">
+            <li>
+              <b>You</b> {bb(r.start[scenario.hero.pos] ?? scenario.stack)}
+              {` → ${(r.stacks[scenario.hero.pos] ?? 0) > 0 ? bb(r.stacks[scenario.hero.pos]!) : 'all in'}`}
+            </li>
             {scenario.opponents.map((o) => (
               <li key={o.pos} className={r.live.includes(o.pos) ? '' : 'rt-out'}>
-                <b>{o.pos}</b> {o.type.toLowerCase()}
-                {r.live.includes(o.pos) ? '' : ' (folded)'}
+                <b>{o.pos}</b> {o.type.toLowerCase()} · {bb(r.start[o.pos] ?? scenario.stack)}
+                {r.live.includes(o.pos) ? ` → ${(r.stacks[o.pos] ?? 0) > 0 ? bb(r.stacks[o.pos]!) : 'all in'}` : ' (folded)'}
               </li>
             ))}
           </ul>
@@ -148,6 +154,7 @@ export function RangeTrainer() {
             </span>
             <span className="rt-pot">
               Pot <b className="num">{bb(r.pot)}</b>
+              <small className="num">You have {bb(r.stacks[scenario.hero.pos] ?? 0)} behind</small>
             </span>
           </div>
         </section>
@@ -166,11 +173,29 @@ export function RangeTrainer() {
                 )}
                 {st !== 'preflop' && r.potAt[st] !== undefined && <small className="num">pot {bb(r.potAt[st]!)}</small>}
               </div>
+              {st === 'preflop' ? (
+                <p className="rt-stacks num">
+                  Blinds 0.5bb and 1bb{scenario.ante ? `, ${bb(scenario.ante)} big blind ante` : ''} · stacks{' '}
+                  {[scenario.hero.pos, ...scenario.opponents.map((o) => o.pos)].map((p) => `${p === scenario.hero.pos ? 'you' : p} ${bb(r.start[p] ?? scenario.stack)}`).join(', ')}
+                </p>
+              ) : (
+                r.stacksAt[st] && (
+                  <p className="rt-stacks num">
+                    Stacks{' '}
+                    {Object.entries(r.stacksAt[st]!)
+                      .map(([p, v]) => `${p === scenario.hero.pos ? 'you' : p} ${bb(Math.round(v! * 10) / 10)}`)
+                      .join(', ')}
+                  </p>
+                )
+              )}
               <ul>
                 {r.lines
                   .filter((l) => l.street === st)
                   .map((l, i) => (
-                    <li key={i}>{l.text}</li>
+                    <li key={i}>
+                      {l.text}
+                      {l.left !== undefined && <small className="rt-left num"> · {l.left > 0 ? `${bb(l.left)} behind` : 'all in'}</small>}
+                    </li>
                   ))}
                 {st === decision && <li className="rt-now">{facing ? 'Your move: call, fold or raise?' : 'Your move'}</li>}
               </ul>
@@ -236,6 +261,10 @@ export function RangeTrainer() {
 
             {views.map((v) => {
               const total = v.groups.reduce((n, g) => n + g.weight, 0);
+              // Biggest groups first; small ones wait behind "Show all" (a multiway range can have twenty).
+              const sorted = [...v.groups].sort((a, b) => b.weight - a.weight);
+              const big = sorted.filter((g, i) => i < 8 && g.weight / total >= 0.02);
+              const shown = open.includes(v.opponent.pos) || sorted.length - big.length <= 2 ? sorted : big;
               return (
                 <div key={v.opponent.pos} className="rt-opp">
                   <h2 className="rt-h">
@@ -243,7 +272,7 @@ export function RangeTrainer() {
                     <small> {v.opponent.type.toLowerCase()}</small>
                   </h2>
                   <ul className="rt-range">
-                    {v.groups.map((g) => (
+                    {shown.map((g) => (
                       <li key={g.group.label + g.group.role} className={`rt-group${g.equity >= 0.5 ? ' rt-ahead' : ''}`}>
                         <span className="rt-group-top">
                           <span className="rt-role">{respond(g.group, facing)}</span>
@@ -259,6 +288,11 @@ export function RangeTrainer() {
                       </li>
                     ))}
                   </ul>
+                  {shown.length < sorted.length && (
+                    <button type="button" className="btn btn-outline rt-more press" onClick={() => setOpen([...open, v.opponent.pos])}>
+                      Show all {sorted.length} groups ({pct(sorted.slice(shown.length).reduce((n, g) => n + g.weight, 0) / total)} more of their range)
+                    </button>
+                  )}
                 </div>
               );
             })}

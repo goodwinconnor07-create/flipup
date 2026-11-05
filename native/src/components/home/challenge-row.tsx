@@ -6,7 +6,7 @@ import type { SoloId } from '@design/challengeArt';
 
 import { CHALLENGES, type ChallengeDef } from '@/engine';
 import { useChallengeBests, type ChallengeBest } from '@/state/challenges';
-import { flameOf, SCENARIOS, solvedCount, useRangeGrades, useRangePlay } from '@/state/ranges';
+import { flameOf, solvedCount, useRangeGrades, useRangePlay } from '@/state/ranges';
 import { radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 import { ChallengePicture } from '../challenge-picture';
@@ -69,8 +69,8 @@ function RangeCard() {
       picture="ranges"
       art={<RangeTeaser width={CARD} height={PICTURE} />}
       name="Range training"
-      score={played ? { value: solved, unit: `of ${SCENARIOS.length} best` } : undefined}
-      accessibilityLabel={`Range training: read what they could have, then make one call. ${played ? `${solved} of ${SCENARIOS.length} hands played the best way` : 'Not played yet'}${flame ? `. ${flame}-day streak` : ''}`}
+      score={played ? { value: solved, unit: 'best' } : undefined}
+      accessibilityLabel={`Range training: read what they could have, then make one call. ${played ? `${solved} hands played the best way` : 'Not played yet'}${flame ? `. ${flame}-day streak` : ''}`}
       href="/range-training"
     />
   );

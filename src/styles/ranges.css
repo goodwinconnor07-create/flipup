@@ -81,6 +81,11 @@
   font-size: var(--fs-body);
 }
 
+.rt-pot small {
+  display: block;
+  color: var(--ink-3);
+}
+
 /* The hand log, street by street. */
 .rt-log {
   display: flex;
@@ -112,6 +117,17 @@
 
 .rt-street li {
   padding: 2px 0;
+}
+
+/* What each player has behind, after their move and at the start of each street. */
+.rt-left,
+.rt-stacks {
+  color: var(--ink-3);
+  font-size: var(--fs-caption);
+}
+
+.rt-stacks {
+  margin: 2px 0 0;
 }
 
 .rt-now {
@@ -257,6 +273,13 @@
 /* Green where you're ahead of these hands, red where they beat you. */
 .rt-ahead .rt-bar i {
   background: var(--green-hi);
+}
+
+/* Opens the rest of a long range. */
+.rt-more {
+  width: 100%;
+  margin-top: 8px;
+  min-height: 44px;
 }
 
 /* Everyone in the hand, under the title. */

@@ -33,6 +33,19 @@ export const CHARTS: Record<ChartKey, string> = {
   'Squeeze': 'TT+, AJs+, A5s-A4s, KQs, AQo+',
   'Call a 3-bet': '22+, A9s+, A5s-A2s, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, 54s, AJo+, KQo',
 
+  // ── Live iso-raises over limpers (raise bigger, play tighter: a good live regular's range) ──
+  'Live iso-raise': '22+, A2s+, K9s+, QTs+, JTs, T9s, 98s, A9o+, KJo+, QJo',
+
+  // ── Tournaments: 9-handed, 20-60bb, a big blind ante, opens of about 2.2bb ──
+  'MTT open EP': '33+, A8s+, A5s-A3s, KTs+, QTs+, JTs, T9s, 98s, ATo+, KJo+',
+  'MTT open MP': '22+, A2s+, K9s+, Q9s+, J9s+, T8s+, 98s, 87s, 76s, ATo+, KTo+, QJo',
+  'MTT open CO': '22+, A2s+, K6s+, Q8s+, J8s+, T8s+, 97s+, 86s+, 75s+, 65s, 54s, A7o+, A5o, KTo+, QTo+, JTo',
+  'MTT open BTN': '22+, A2s+, K2s+, Q4s+, J6s+, T6s+, 95s+, 85s+, 74s+, 63s+, 53s+, 43s, A2o+, K8o+, Q9o+, J9o+, T8o+, 98o, 87o',
+  // The ante and a small raise give the big blind a great price: it defends most hands.
+  'MTT BB defend vs early': '22+, A2s+, K2s+, Q4s+, J6s+, T6s+, 96s+, 85s+, 74s+, 63s+, 53s+, 43s, A2o+, K8o+, Q9o+, J9o+, T9o, 98o',
+  'MTT BB defend vs late': '22+, A2s+, K2s+, Q2s+, J2s+, T3s+, 94s+, 84s+, 73s+, 63s+, 52s+, 42s+, 32s, A2o+, K2o+, Q5o+, J7o+, T7o+, 97o+, 86o+, 75o+, 65o, 54o',
+  'MTT cold call': '22+, A9s+, A5s-A4s, KTs+, QTs+, JTs, T9s, 98s, 87s, AJo+, KQo',
+
   // ── Live limped pots ──
   'Live limp': '22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 96s+, 85s+, 75s+, 64s+, 54s, A2o+, KTo+, QTo+, JTo, T9o, 98o',
   'Any two cards': '22+, A2s+, K2s+, Q2s+, J2s+, T2s+, 92s+, 82s+, 72s+, 62s+, 52s+, 42s+, 32s, A2o+, K2o+, Q2o+, J2o+, T2o+, 92o+, 82o+, 72o+, 62o+, 52o+, 42o+, 32o',

@@ -9,8 +9,13 @@ import { ROUNDED } from '@/theme';
 import { GrainBackground } from './grain-background';
 
 const TILE = 120;
-/** The FlipUp spade on a 100 × 100 box. */
-const SPADE = 'M50 10 C61 27 86 40 86 60 C86 75 73 83 60 79 C57 78 55 76 53 73 C54 82 58 88 65 92 L35 92 C42 88 46 82 47 73 C45 76 43 78 40 79 C27 83 14 75 14 60 C14 40 39 27 50 10 Z';
+/**
+ * The app icon's mark: the spade with the up chevron cut through it, exactly as scripts/makeAppIcon.mjs draws it
+ * (centred on 0,0; drawn even-odd), and where the icon places it on its 1024 square.
+ */
+const MARK =
+  'M0 -60 C6 -46 22 -34 38 -20 C52 -8 58 4 58 18 C58 37 44 49 27 49 C15 49 7 44 3.5 37 C5 48 12 57 25 62 C26 63 25.5 65 24 65 L-24 65 C-25.5 65 -26 63 -25 62 C-12 57 -5 48 -3.5 37 C-7 44 -15 49 -27 49 C-44 49 -58 37 -58 18 C-58 4 -52 -8 -38 -20 C-22 -34 -6 -46 0 -60 Z M-27.30 14.70 L-5.30 -7.30 A7.5 7.5 0 0 1 5.30 -7.30 L27.30 14.70 A7.5 7.5 0 0 1 16.70 25.30 L0 8.61 L-16.70 25.30 A7.5 7.5 0 0 1 -27.30 14.70 Z';
+const PLACE = `translate(${(512 / 1024) * TILE} ${(500 / 1024) * TILE}) scale(${(5.15 / 1024) * TILE})`;
 /** At least this long on screen, so the spade is printed in full before the app shows. */
 const PRINT_MS = 1050;
 const EASE = Easing.bezier(0.23, 1, 0.32, 1);
@@ -76,17 +81,18 @@ export function LaunchCover() {
             <Svg width={TILE} height={TILE} style={{ position: 'absolute' }}>
               <Defs>
                 <LinearGradient id="tile" x1="0" y1="0" x2="1" y2="1">
+                  {/* The icon's own two colours (scripts/makeAppIcon.mjs). */}
                   <Stop offset="0" stopColor="#4a7bf0" />
                   <Stop offset="1" stopColor="#152f86" />
                 </LinearGradient>
               </Defs>
               <Path d={`M0 0H${TILE}V${TILE}H0Z`} fill="url(#tile)" />
-              {/* The spade still to be printed: a faint outline. */}
-              <Path d={SPADE} transform={`scale(${TILE / 100})`} fill="none" stroke="#ffffff" strokeOpacity={0.22} strokeWidth={1.4} />
+              {/* The mark still to be printed: a faint outline. */}
+              <Path d={MARK} transform={PLACE} fillRule="evenodd" fill="none" stroke="#ffffff" strokeOpacity={0.22} strokeWidth={2.4} />
             </Svg>
             <Animated.View style={[{ position: 'absolute', left: 0, right: 0, top: 0, overflow: 'hidden' }, inkStyle]}>
               <Svg width={TILE} height={TILE}>
-                <Path d={SPADE} transform={`scale(${TILE / 100})`} fill="#ffffff" />
+                <Path d={MARK} transform={PLACE} fillRule="evenodd" fill="#ffffff" />
               </Svg>
             </Animated.View>
             <Animated.View style={[{ position: 'absolute', left: 8, right: 8, height: 2, marginTop: -1, borderRadius: 1, backgroundColor: '#bfe0ff', boxShadow: '0 0 10px 3px rgba(120, 190, 255, 0.85)' }, headStyle]} />

@@ -1,3 +1,5 @@
+> **Replaced on 2026-11-05 by `docs/DESIGN.md`.** Kept for the record of what was tried (the Games-app direction) and why it was dropped.
+
 # Design direction (iPhone app)
 
 The owner's decisions from November 2026, after looking at SCRAM and Apple's Games app. The lesson taken from both

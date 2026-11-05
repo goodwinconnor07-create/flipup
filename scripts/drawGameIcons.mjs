@@ -366,12 +366,12 @@ function rays(x, y, n = 14, o = 0.07) {
   const xs = [190, 397, 627, 834];
   const bust = (x, n, smile) => `<g>
     <ellipse cx="${x + 26}" cy="520" rx="96" ry="104" fill="#000" opacity="0.18"/>
-    <path d="M${x - 150} 1060 C${x - 150} 690 ${x - 96} 610 ${x} 610 C${x + 96} 610 ${x + 150} 690 ${x + 150} 1060 Z" fill="url(#torso)" stroke="#2a2d3c" stroke-opacity="0.7" stroke-width="8"/>
+    <path d="M${x - 150} 1060 C${x - 150} 690 ${x - 96} 610 ${x} 610 C${x + 96} 610 ${x + 150} 690 ${x + 150} 1060 Z" fill="url(#${smile ? 'torsoRed' : 'torso'})" stroke="#2a2d3c" stroke-opacity="0.7" stroke-width="8"/>
     <path d="M${x - 118} 720 C${x - 100} 660 ${x - 60} 632 ${x - 20} 626" stroke="#fff" stroke-opacity="0.3" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <rect x="${x - 26}" y="560" width="52" height="70" fill="url(#neck)"/>
-    <ellipse cx="${x}" cy="478" rx="92" ry="104" fill="url(#head)" stroke="#2a2d3c" stroke-opacity="0.5" stroke-width="6"/>
+    <rect x="${x - 26}" y="560" width="52" height="70" fill="url(#${smile ? 'neckRed' : 'neck'})"/>
+    <ellipse cx="${x}" cy="478" rx="92" ry="104" fill="url(#${smile ? 'headRed' : 'head'})" stroke="#2a2d3c" stroke-opacity="0.5" stroke-width="6"/>
     <ellipse cx="${x - 34}" cy="430" rx="26" ry="40" fill="#fff" opacity="0.5" transform="rotate(25 ${x - 34} 430)"/>
-    ${smile ? `<path d="M${x - 50} 492 Q${x + 2} 556 ${x + 54} 484" stroke="#1a1d2a" stroke-width="18" fill="none" stroke-linecap="round"/>` : ''}
+    ${smile ? `<path d="M${x - 50} 492 Q${x + 2} 556 ${x + 54} 484" stroke="#3a0608" stroke-width="18" fill="none" stroke-linecap="round"/>` : ''}
     <rect x="${x - 72}" y="740" width="144" height="100" rx="12" fill="#000" opacity="0.25" transform="translate(6 10)"/>
     <rect x="${x - 72}" y="740" width="144" height="100" rx="12" fill="url(#plate)"/>
     <text x="${x}" y="814" text-anchor="middle" font-family="${FONT}" font-weight="800" font-size="72" fill="#1a1d2a">${n}</text>
@@ -387,6 +387,9 @@ function rays(x, y, n = 14, o = 0.07) {
  <linearGradient id="head" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3f1fa"/><stop offset="1" stop-color="#9c98b4"/></linearGradient>
  <linearGradient id="neck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a86a2"/><stop offset="1" stop-color="#b9b5cc"/></linearGradient>
  <linearGradient id="torso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c5da"/><stop offset="1" stop-color="#6e6a88"/></linearGradient>
+ <linearGradient id="headRed" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff7a70"/><stop offset="1" stop-color="#b3141c"/></linearGradient>
+ <linearGradient id="neckRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a1018"/><stop offset="1" stop-color="#c8262e"/></linearGradient>
+ <linearGradient id="torsoRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ef4a44"/><stop offset="1" stop-color="#7a0a12"/></linearGradient>
  <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e3ee"/></linearGradient>
  <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.45"/></linearGradient>`);
 }

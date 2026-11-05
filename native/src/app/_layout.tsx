@@ -54,6 +54,8 @@ export default function RootLayout() {
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
         {/* Play with friends: its own dark grain page, over the tabs so the tab bar never covers Open table. */}
         <Stack.Screen name="play-friends" options={{ headerShown: false, title: 'Play with friends', statusBarStyle: 'light' }} />
+        {/* A party's playlist, pushed from Play with friends; Save takes it back there. */}
+        <Stack.Screen name="party-playlist" options={{ headerShown: false, title: 'Party playlist', statusBarStyle: 'light' }} />
         <Stack.Screen name="play-bots" options={{ headerShown: false, title: 'Play with bots', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* The fade is short because the table's own DealWipe does the moving. */}
@@ -65,7 +67,6 @@ export default function RootLayout() {
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Challenges: the start sheet, a seat's tag, Detective's check, and Rewind's two sheets. */}
         <Stack.Screen name="challenge/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Challenge', headerShown: false }} />
-        <Stack.Screen name="range-training" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Range training', headerShown: false }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
         <Stack.Screen name="ranges" options={{ headerShown: false, title: 'Range training', statusBarStyle: 'light', contentStyle: { backgroundColor: '#040914' } }} />
         <Stack.Screen name="range-why" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'Why' }} />

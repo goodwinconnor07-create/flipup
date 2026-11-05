@@ -9,12 +9,12 @@ vi.mock('expo-sqlite/localStorage/install', () => ({}));
 vi.mock('../src/components/icon', () => ({}));
 
 const logic = await import('../src/state/range-logic');
-const { numbersFor } = await import('../src/state/ranges');
+const { allHands, numbersFor } = await import('../src/state/ranges');
 const { TRICKS } = await import('../src/components/ranges/words');
 
 describe('Range training play', () => {
   it('names every hand’s concept as a trick', () => {
-    for (const s of SCENARIOS) expect(TRICKS[s.concept], s.concept).toBeDefined();
+    for (const s of allHands()) expect(TRICKS[s.concept], s.concept).toBeDefined();
   });
 
   it('deals the same three different hands for a day on every phone', () => {

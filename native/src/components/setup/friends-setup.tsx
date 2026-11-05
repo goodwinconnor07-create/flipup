@@ -4,6 +4,8 @@ import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
+import { createParty } from '@/state/party';
+import { clearPartyDraft, usePartyDraft } from '@/state/party-draft';
 import { takeBackInvites, useDeclined, usePals, type Pal } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
@@ -18,6 +20,7 @@ import { BotsRow, randomBot, type RowBot } from './bots-row';
 import { SetupGameRow } from './game-row';
 import { InviteFriendsRow } from './invite-friends-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
+import { PartyPlaylistCard, PartyRules, StartPartyButton } from './party-pieces';
 import { SettingsTable } from './settings-table';
 import { SetupHeader, SetupRowTitle } from './setup-header';
 
@@ -27,7 +30,8 @@ import { SetupHeader, SetupRowTitle } from './setup-header';
  *  1. Invite friends (`InviteFriendsRow`): a tap invites a friend there and then
  *  2. Bots (`BotsRow`): a + that sits a random bot down, a tap on one takes it off
  *  3. The game row (`SetupGameRow`; a tap opens the `setup-game/[id]` popup, whose Select sets the draft)
- *  4. The settings table (`SettingsTable`: chips, blinds and house rules in one block)
+ *  4. "Want to play more than one game? Start a party." (`StartPartyButton`), which opens the party playlist
+ *  5. The settings table (`SettingsTable`: chips, blinds and house rules in one block)
  * and Open table pinned at the bottom (`OpenTableButton`, with how many are in). `settings` is the draft
  * (state/setup-draft.ts) that the route started (app/play-friends.tsx); `invite` is a friend to invite at once (a
  * friend's menu).
@@ -35,6 +39,11 @@ import { SetupHeader, SetupRowTitle } from './setup-header';
  * An invite needs a real table to join, so the first one opens the online lobby straight away (in the background:
  * you stay on this page). Joined friends wait there. Open table brings the lobby up to date (the settings, the
  * bots you picked) and takes you to it. Going back without opening ends that lobby and takes the invites back.
+ *
+ * Once a party's playlist is saved (state/party-draft.ts), the page is a party's: the playlist takes the game row's
+ * place, the party's house rules (chips, hands per level, bots fill) take the table's, and Open the party creates
+ * it and goes to its lobby, where friends join with the party's code. Invites and bots picked here are for a single
+ * table, so they're hidden while a party is set up.
  */
 export function FriendsSetup({ settings, invite }: { settings: Settings; invite?: string }) {
   return (
@@ -58,6 +67,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   const [bots, setBots] = useState<RowBot[]>([]);
   const [busy, setBusy] = useState(false);
   const [lobby, setLobby] = useState<string | null>(null);
+  const partyDraft = usePartyDraft();
   // The lobby made for the invites (once), whether it's still being made, and whether Open table took you to it.
   const made = useRef<{ code: string | null; making: Promise<string> | null; opened: boolean }>({ code: null, making: null, opened: false });
   const latest = useRef(s);
@@ -98,6 +108,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   // A fresh page starts with no invites. Leaving it without opening ends the lobby and takes back what's still out.
   useEffect(() => {
     clearInvites();
+    clearPartyDraft();
     const pal = invite ? pals.find((p) => p.code === invite) : undefined;
     if (pal) sendInvite(pal);
     return () => {
@@ -115,8 +126,34 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     if (bot) setBots((have) => [...have, bot]);
   };
 
+  /** Opens the party: ends any lobby made for invites, creates the party, and goes to its lobby. */
+  const openParty = async () => {
+    if (busy || !partyDraft) return;
+    if (!unlockToHost(partyDraft.games, premium)) return;
+    setBusy(true);
+    try {
+      const m = made.current;
+      if (m.making) await m.making.catch(() => undefined);
+      if (m.code) {
+        void takeBackInvites(waitingInvites(), m.code);
+        abandonLobby(m.code);
+        clearInvites();
+        m.code = null;
+        setLobby(null);
+      }
+      await createParty({ games: partyDraft.games, startingStack: partyDraft.stack, blindHands: partyDraft.blindHands, fillTo: partyDraft.fill });
+      clearPartyDraft();
+      router.back();
+      router.push('/party-room');
+    } catch (e) {
+      Alert.alert("Couldn't open the party", e instanceof Error ? e.message : 'Try again.');
+      setBusy(false);
+    }
+  };
+
   const open = async () => {
     if (busy) return;
+    if (partyDraft) return openParty();
     if (!unlockToHost([variant], premium)) return;
     saveSettings(s);
     setBusy(true);
@@ -148,26 +185,43 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
           gap: spacing.xl,
         }}
       >
-        <SetupHeader title="Play with friends" line="Invite friends, add bots, pick a game." />
+        <SetupHeader title="Play with friends" line={partyDraft ? 'A party: one short table per game, points for where you finish.' : 'Invite friends, add bots, pick a game.'} />
 
-        <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
+        {partyDraft ? (
+          <>
+            <PartyPlaylistCard draft={partyDraft} />
+            <PartyRules draft={partyDraft} tint={tint} />
+          </>
+        ) : (
+          <>
+            <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
 
-        <BotsRow
-          bots={bots}
-          canAdd={!full}
-          onAdd={addBot}
-          onRemove={(b) => setBots((have) => have.filter((x) => x.key !== b.key))}
-          detail={full ? `Table full · ${MAX_SEATS} seats` : undefined}
-        />
+            <BotsRow
+              bots={bots}
+              canAdd={!full}
+              onAdd={addBot}
+              onRemove={(b) => setBots((have) => have.filter((x) => x.key !== b.key))}
+              detail={full ? `Table full · ${MAX_SEATS} seats` : undefined}
+            />
 
-        <View style={{ gap: spacing.xs }}>
-          <SetupRowTitle title="Game" detail={variantInfo(variant).name} />
-          <SetupGameRow selected={variant} />
-        </View>
+            <View style={{ gap: spacing.xs }}>
+              <SetupRowTitle title="Game" detail={variantInfo(variant).name} />
+              <SetupGameRow selected={variant} />
+              <View style={{ marginTop: spacing.xs }}>
+                <StartPartyButton />
+              </View>
+            </View>
 
-        <SettingsTable settings={s} onChange={setDraft} tint={tint} />
+            <SettingsTable settings={s} onChange={setDraft} tint={tint} />
+          </>
+        )}
       </ScrollView>
-      <OpenTableButton title="Open table" line={line} busy={busy} onPress={() => void open()} />
+      <OpenTableButton
+        title={partyDraft ? 'Open the party' : 'Open table'}
+        line={partyDraft ? `${partyDraft.games.length} games · ${partyDraft.stack.toLocaleString('en-US')} chips each` : line}
+        busy={busy}
+        onPress={() => void open()}
+      />
     </GrainBackground>
   );
 }

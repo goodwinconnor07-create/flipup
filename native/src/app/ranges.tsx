@@ -17,6 +17,7 @@ import { Seats, ThoughtBubble, type SeatInfo } from '@/components/ranges/seats';
 import { Price, Story } from '@/components/ranges/story';
 import { StudyRoom, type Mood } from '@/components/ranges/study-room';
 import { TopBar } from '@/components/ranges/top-bar';
+import { trickOf } from '@/components/ranges/words';
 import { Confetti } from '@/components/table/confetti';
 import { playSound, type SoundName } from '@/components/table/sounds';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -28,6 +29,7 @@ import {
   blitzPoints,
   charactersOf,
   handPoints,
+  lessonIds,
   mainOpponent,
   pilesFor,
   POINTS,
@@ -39,12 +41,12 @@ import {
   type Mode,
   type Sampled,
 } from '@/state/range-logic';
-import { answerHand, dailyToday, finishSession, flameOf, noteDaily, noteSwipe, numbersFor, readRangeGrades, readRangePlay, scenarioById, SCENARIOS, useRangePlay } from '@/state/ranges';
+import { answerHand, dailyToday, finishSession, flameOf, noteDaily, noteSwipe, numbersFor, readRangeGrades, readRangePlay, scenarioById, allHands, useRangePlay } from '@/state/ranges';
 import { ForceScheme, ROUNDED, spacing } from '@/theme';
 import { optionsFor, replay, type OptionId, type Pos } from '@train/ranges/model';
 
-const MODES: Mode[] = ['round', 'daily', 'blitz', 'hand', 'fix'];
-const TITLE: Record<Mode, string> = { round: 'Round', daily: 'Today’s three', blitz: 'Blitz', hand: 'One hand', fix: 'Fixing misses' };
+const MODES: Mode[] = ['round', 'daily', 'blitz', 'hand', 'fix', 'lesson'];
+const TITLE: Record<Mode, string> = { round: 'Round', daily: 'Today’s three', blitz: 'Blitz', hand: 'One hand', fix: 'Fixing misses', lesson: 'Lesson' };
 /** How long each street of the story stays up. */
 const STEP_MS = 1300;
 const ACTION_SOUND: Record<OptionId, SoundName> = { fold: 'fold', check: 'check', call: 'chip', raise: 'chips', bet33: 'chip', bet75: 'chips', bet125: 'allin' };
@@ -57,24 +59,30 @@ interface Session {
   start: number;
   /** The daily's day, and the answers already given today. */
   day?: string;
+  /** A lesson's trick (its hands' concept). */
+  concept?: string;
   prior: HandResult[];
 }
 
 /** Which hands this session deals, from the route's `mode` (and `id` or `ids`). */
-function startSession(raw: { mode?: string; id?: string; ids?: string }): Session {
+function startSession(raw: { mode?: string; id?: string; ids?: string; concept?: string }): Session {
   const mode = MODES.includes(raw.mode as Mode) ? (raw.mode as Mode) : 'round';
   const valid = (ids: string[]) => ids.filter((id) => !!scenarioById(id));
   if (mode === 'daily') {
     const d = dailyToday(readRangePlay());
     return { mode, queue: d.ids, start: d.grades.length, day: d.day, prior: d.grades.map((g, i) => ({ id: d.ids[i], grade: g, points: POINTS[g], bonus: 0 })) };
   }
-  if (mode === 'blitz') return { mode, queue: blitzIds(SCENARIOS), start: 0, prior: [] };
+  if (mode === 'blitz') return { mode, queue: blitzIds(allHands()), start: 0, prior: [] };
   if (mode === 'hand' && raw.id && scenarioById(raw.id)) return { mode, queue: [raw.id], start: 0, prior: [] };
+  if (mode === 'lesson' && raw.concept) {
+    const ids = lessonIds(raw.concept, readRangeGrades(), allHands());
+    if (ids.length) return { mode, queue: ids, start: 0, prior: [], concept: raw.concept };
+  }
   if (mode === 'fix') {
     const ids = valid((raw.ids ?? '').split(','));
     if (ids.length) return { mode, queue: ids, start: 0, prior: [] };
   }
-  return { mode: 'round', queue: roundIds(readRangeGrades(), SCENARIOS), start: 0, prior: [] };
+  return { mode: 'round', queue: roundIds(readRangeGrades(), allHands()), start: 0, prior: [] };
 }
 
 /**
@@ -82,7 +90,8 @@ function startSession(raw: { mode?: string; id?: string; ids?: string }): Sessio
  * top, the other players with their faces, the felt under a spotlight with the board dealt street by street as the
  * hand is told, the price, your two cards big and fanned, and the answer pinned at the bottom. The answer rises
  * over the table, and the end of the session is its own page. Modes: a round of five, today's three (the same
- * three on every phone), Blitz (60 seconds), one hand, or the misses again.
+ * three on every phone), Blitz (60 seconds), a lesson from the Train tab's path (one trick's hands), one hand, or the
+ * misses again.
  */
 export default function RangesScreen() {
   return (
@@ -93,7 +102,7 @@ export default function RangesScreen() {
 }
 
 function Trainer() {
-  const params = useLocalSearchParams<{ mode?: string; id?: string; ids?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; id?: string; ids?: string; concept?: string }>();
   const [session, setSession] = useState(() => startSession(params));
   const { mode } = session;
   const play = useRangePlay();
@@ -125,7 +134,7 @@ function Trainer() {
   const [run, setRun] = useState(0);
   const [bestRun, setBestRun] = useState(0);
 
-  const s = scenarioById(session.queue[Math.min(index, session.queue.length - 1)]) ?? SCENARIOS[0];
+  const s = scenarioById(session.queue[Math.min(index, session.queue.length - 1)]) ?? allHands()[0];
   const r = useMemo(() => replay(s), [s]);
   const options = useMemo(() => optionsFor(s, r), [s, r]);
   const chars = useMemo(() => charactersOf(s), [s]);
@@ -136,6 +145,7 @@ function Trainer() {
   const numbers = useMemo(() => (phase === 'reveal' ? numbersFor(s, r) : null), [phase, s, r]);
   const score = results.reduce((n, x) => n + x.points + x.bonus, 0);
   const labelOf = (id: OptionId) => options.find((o) => o.id === id)?.label ?? id;
+  const title = mode === 'lesson' && session.concept ? trickOf(session.concept).nick : TITLE[mode];
 
   /** Your move: the whole board out and, in Easy, what the bettor's move usually means already open. */
   const toDecide = useCallback(() => {
@@ -281,7 +291,7 @@ function Trainer() {
     setSize('bet75');
   };
 
-  const restart = (next: { mode: Mode; id?: string; ids?: string }) => {
+  const restart = (next: { mode: Mode; id?: string; ids?: string; concept?: string }) => {
     const fresh = startSession(next);
     setSession(fresh);
     setIndex(fresh.start);
@@ -309,10 +319,10 @@ function Trainer() {
     return (
       <StudyRoom mood={grades.every((g) => g === 'best') ? 'best' : 'idle'}>
         <EndCard
-          summary={{ mode, title: TITLE[mode], day, score, stars: mode === 'blitz' || mode === 'hand' ? null : starsFor(score, results.length), grades, flame: flameOf(play).days, blitz: mode === 'blitz' ? { hands: results.length, run: bestRun } : undefined }}
+          summary={{ mode, title, day, score, stars: mode === 'blitz' || mode === 'hand' ? null : starsFor(score, results.length), grades, flame: flameOf(play).days, blitz: mode === 'blitz' ? { hands: results.length, run: bestRun } : undefined }}
           results={results}
           newBest={newBest}
-          onAgain={mode === 'daily' ? null : () => restart({ mode: mode === 'fix' || mode === 'hand' ? 'round' : mode })}
+          onAgain={mode === 'daily' ? null : () => restart(mode === 'lesson' ? { mode, concept: session.concept } : { mode: mode === 'fix' || mode === 'hand' ? 'round' : mode })}
           onFix={misses.length ? () => restart({ mode: 'fix', ids: misses.slice(0, 8).join(',') }) : null}
           onHand={(id) => restart({ mode: 'hand', id })}
           onDone={() => router.back()}
@@ -336,7 +346,7 @@ function Trainer() {
           total={session.queue.length}
           index={index}
           done={results.map((x) => x.grade)}
-          label={mode === 'round' ? `${Math.min(index + 1, session.queue.length)} of ${session.queue.length}` : mode === 'blitz' ? `${score}` : TITLE[mode]}
+          label={mode === 'round' || mode === 'lesson' ? `${Math.min(index + 1, session.queue.length)} of ${session.queue.length}` : mode === 'blitz' ? `${score}` : TITLE[mode]}
           concept={mode === 'blitz' ? null : s.concept}
           clock={mode === 'blitz' && endsAt ? { endsAt, multiplier: blitzMultiplier(run), score } : null}
           onClose={() => router.back()}

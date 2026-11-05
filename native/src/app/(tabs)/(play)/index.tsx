@@ -1,10 +1,9 @@
 import { router, Stack } from 'expo-router';
 import Animated, { FadeOut, Keyframe, LinearTransition } from 'react-native-reanimated';
-import { Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
-import { ChallengeRow } from '@/components/home/challenge-row';
 import { FriendsStrip } from '@/components/home/friends-strip';
 import { GameRow } from '@/components/home/game-row';
 import { PassportCard } from '@/components/home/passport';
@@ -18,7 +17,6 @@ import { ProfileMenu } from '@/components/profile-menu';
 import { TabScreen } from '@/components/tab-screen';
 import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { partyTile, ThumbSnapper } from '@/components/thumb-snaps';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, FREE_VARIANTS, VARIANTS, variantInfo, variantOf } from '@/engine';
 import { useFriendBox } from '@/state/pals';
@@ -46,12 +44,9 @@ export default function Home() {
   const hidden = useStored<number>(HIDDEN, 0);
   const reduce = useReduceMotion();
   const slide = reduce ? undefined : LinearTransition.duration(320).easing(EASE_OUT);
-  const { height } = useWindowDimensions();
   return (
     <>
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
-      {/* Saves the Party tab's game tiles as pictures while you're here, so that tab opens without a stutter. */}
-      <ThumbSnapper size={partyTile(height)} />
       <TabScreen
         title="Play"
         accessory={
@@ -78,7 +73,6 @@ export default function Home() {
         )}
         <Animated.View layout={slide} style={{ gap: spacing.xl }}>
           <GameRow />
-          <ChallengeRow />
           <FriendsStrip />
           {record.hands > 0 ? <PassportCard /> : <FirstHand />}
           {!premium && <PremiumBanner />}

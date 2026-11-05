@@ -2,11 +2,8 @@
 // generate.ts). The generated file is big, so it's a separate download, fetched when range training opens.
 
 import url from './generated.json?url';
-import { GENERATED_COUNT } from './generatedCount';
 import type { Scenario } from './model';
 import { SCENARIOS, unpack } from './scenarios';
-
-export const HAND_COUNT = SCENARIOS.length + GENERATED_COUNT;
 
 let loading: Promise<Scenario[]> | null = null;
 

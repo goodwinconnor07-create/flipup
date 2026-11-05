@@ -27,6 +27,15 @@ const EASE = Easing.bezier(0.23, 1, 0.32, 1);
  * simply there and the cover fades. The native splash before it is the same night blue, so nothing flashes.
  */
 export function LaunchCover() {
+  return <PrintCover total={PRINT_MS} zIndex={1000} />;
+}
+
+/**
+ * The cover itself, shared by the launch and the game's deal-in (`DealWipe`): `total` is how long the spade takes
+ * to print before it pops (every step scales with it), `zIndex` where it sits.
+ */
+export function PrintCover({ total = PRINT_MS, zIndex = 1000 }: { total?: number; zIndex?: number }) {
+  const k = total / PRINT_MS;
   const reduce = useReduceMotion();
   const [gone, setGone] = useState(false);
   const tile = useSharedValue(reduce ? 1 : 0.88);
@@ -37,17 +46,17 @@ export function LaunchCover() {
 
   useEffect(() => {
     if (!reduce) {
-      tile.set(withTiming(1, { duration: 380, easing: EASE }));
-      tileIn.set(withTiming(1, { duration: 260 }));
-      printed.set(withDelay(240, withTiming(1, { duration: 720, easing: Easing.inOut(Easing.quad) })));
-      name.set(withDelay(760, withTiming(1, { duration: 260 })));
+      tile.set(withTiming(1, { duration: 380 * k, easing: EASE }));
+      tileIn.set(withTiming(1, { duration: 260 * k }));
+      printed.set(withDelay(240 * k, withTiming(1, { duration: 720 * k, easing: Easing.inOut(Easing.quad) })));
+      name.set(withDelay(760 * k, withTiming(1, { duration: 260 * k })));
     }
     const started = Date.now();
     // Ready once the first screen has drawn (two frames on) and the spade has finished printing.
     let timer: ReturnType<typeof setTimeout> | undefined;
     let frame = requestAnimationFrame(() => {
       frame = requestAnimationFrame(() => {
-      const wait = Math.max(0, (reduce ? 300 : PRINT_MS) - (Date.now() - started));
+      const wait = Math.max(0, (reduce ? 300 * k : total) - (Date.now() - started));
       const leave = () => setGone(true);
       timer = setTimeout(() => {
         if (reduce) {
@@ -74,7 +83,7 @@ export function LaunchCover() {
 
   if (gone) return null;
   return (
-    <Animated.View pointerEvents="none" style={[{ position: 'absolute', inset: 0, zIndex: 1000 }, coverStyle]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+    <Animated.View pointerEvents="none" style={[{ position: 'absolute', inset: 0, zIndex }, coverStyle]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <GrainBackground style={{ alignItems: 'center', justifyContent: 'center', gap: 22 }}>
         <Animated.View style={[{ width: TILE, height: TILE, borderRadius: 27, borderCurve: 'continuous', boxShadow: '0 18px 40px -14px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
           <View style={{ flex: 1, borderRadius: 27, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: '#2149bf' }}>

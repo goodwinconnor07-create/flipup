@@ -1,6 +1,6 @@
 // Draws the Earth texture for the Global tab's globe (native/assets/images/earth.jpg): an equirectangular map from
-// world-atlas's public-domain Natural Earth land shapes, coloured by latitude (ice, forest, desert), on a deep ocean,
-// with shallow water at the coasts and a little grain. Rendered in Chromium.
+// world-atlas's public-domain Natural Earth land shapes, in the app's colours: brand-blue land, pale ice at
+// the poles, a night-blue sea, flat and solid. Rendered in Chromium.
 //
 //   npm pack world-atlas@2.0.2 (unpack it somewhere), then ATLAS=/that/folder/package node scripts/makeEarth.mjs
 // The TopoJSON is read as data and decoded here (`rings()`), so no code from the package runs.
@@ -42,13 +42,9 @@ const data = await page.evaluate(
     const g = c.getContext('2d');
     const x = (lon) => ((lon + 180) / 360) * W;
     const y = (lat) => ((90 - lat) / 180) * H;
-    const sea = g.createLinearGradient(0, 0, 0, H);
-    sea.addColorStop(0, '#0a2440');
-    sea.addColorStop(0.5, '#124f7d');
-    sea.addColorStop(1, '#0a2440');
-    g.fillStyle = sea;
+    // In the app's colours, flat and solid: night-blue sea, brand-blue land, pale ice at the poles.
+    g.fillStyle = '#0e1b42';
     g.fillRect(0, 0, W, H);
-    // Land as a mask.
     const mask = document.createElement('canvas');
     mask.width = W;
     mask.height = H;
@@ -64,34 +60,16 @@ const data = await page.evaluate(
       }
       m.fill('evenodd');
     }
-    // Ground colours by latitude, with grain, cut to the land.
     const paint = document.createElement('canvas');
     paint.width = W;
     paint.height = H;
     const p = paint.getContext('2d');
     const bands = p.createLinearGradient(0, 0, 0, H);
-    for (const [o, col] of [
-      [0, '#f4f7fa'], [0.1, '#e6ecf0'], [0.15, '#6b7458'], [0.24, '#3f6a34'], [0.32, '#8c7a4f'], [0.37, '#c4a66c'],
-      [0.44, '#3d7a2e'], [0.5, '#2c6524'], [0.56, '#3d7a2e'], [0.62, '#c9ab70'], [0.68, '#7d7448'], [0.76, '#4d6b3a'],
-      [0.84, '#8a8f86'], [0.88, '#eef2f5'], [1, '#ffffff'],
-    ])
-      bands.addColorStop(o, col);
+    for (const [o, col] of [[0, '#dfe8ff'], [0.12, '#dfe8ff'], [0.16, '#3a6ae6'], [0.84, '#3a6ae6'], [0.88, '#dfe8ff'], [1, '#dfe8ff']]) bands.addColorStop(o, col);
     p.fillStyle = bands;
     p.fillRect(0, 0, W, H);
-    for (let i = 0; i < 40000; i++) {
-      p.fillStyle = Math.random() < 0.5 ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.035)';
-      p.beginPath();
-      p.arc(Math.random() * W, Math.random() * H, 0.8 + Math.random() * 2.5, 0, Math.PI * 2);
-      p.fill();
-    }
     p.globalCompositeOperation = 'destination-in';
     p.drawImage(mask, 0, 0);
-    // Shallow water at the coasts, then the land.
-    g.filter = 'blur(8px)';
-    g.globalAlpha = 0.25;
-    g.drawImage(mask, 0, 0);
-    g.filter = 'none';
-    g.globalAlpha = 1;
     g.drawImage(paint, 0, 0);
     return c.toDataURL('image/jpeg', 0.85).split(',')[1];
   },

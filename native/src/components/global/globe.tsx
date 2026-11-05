@@ -10,18 +10,18 @@ const EARTH = require('../../../assets/images/earth.jpg');
 /**
  * The Global tab's Earth: the map (`assets/images/earth.jpg`, drawn by `scripts/makeEarth.mjs` from Natural Earth's
  * coastlines) slides sideways behind a round mask, under sphere shading (sunlit top left, dark limb) and a thin blue
- * atmosphere, so it reads as a globe turning (one turn every 80 seconds). Transform only, on the UI thread; still
+ * atmosphere, so it reads as a globe turning (one turn every 80 seconds, faster on the loading cover). In the app's colours, solid. Transform only, on the UI thread; still
  * under Reduce Motion.
  */
-export function Globe({ size = 220 }: { size?: number }) {
+export function Globe({ size = 220, turnMs = 80_000 }: { size?: number; /** One full turn takes this long. */ turnMs?: number }) {
   const reduce = useReduceMotion();
   const x = useSharedValue(0);
   const width = size * 2;
   useEffect(() => {
     if (reduce) return;
-    x.set(withRepeat(withTiming(-width, { duration: 80_000, easing: Easing.linear }), -1, false));
+    x.set(withRepeat(withTiming(-width, { duration: turnMs, easing: Easing.linear }), -1, false));
     return () => cancelAnimation(x);
-  }, [reduce, width, x]);
+  }, [reduce, width, x, turnMs]);
   const slide = useAnimatedStyle(() => ({ transform: [{ translateX: x.get() }] }));
   const pad = size * 0.08;
   return (

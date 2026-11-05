@@ -1,5 +1,6 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
+import Animated, { FadeOut } from 'react-native-reanimated';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -37,9 +38,13 @@ export default function GlobalTab() {
   const season = seasonOf(Date.now());
 
   const load = useCallback(async () => setBoard(await fetchBoard('bankroll').catch(() => null)), []);
+  // Opening the tab: the loading cover (a spinning globe, "Loading global stats") until the board is in, a second at least.
+  const [loading, setLoading] = useState(true);
   useFocusEffect(
     useCallback(() => {
-      void load();
+      setLoading(true);
+      const shown = Date.now();
+      void load().finally(() => setTimeout(() => setLoading(false), Math.max(0, 1100 - (Date.now() - shown))));
       void refresh();
       if (!read<boolean>(INTRO, false)) {
         save(INTRO, true);
@@ -139,6 +144,12 @@ export default function GlobalTab() {
           </View>
           <Text style={{ fontSize: 22, fontWeight: '800', color: '#ffffff', fontVariant: ['tabular-nums'] }}>{(board?.me?.score ?? 0).toLocaleString()}</Text>
         </PressableScale>
+        {loading && (
+          <Animated.View exiting={FadeOut.duration(250)} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.lg, backgroundColor: '#070f2a' }}>
+            <Globe size={150} turnMs={6000} />
+            <TypedText text="Loading global stats" speed={45} style={{ fontSize: 15, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.8)' }} />
+          </Animated.View>
+        )}
       </GrainBackground>
     </ForceScheme>
   );

@@ -6,7 +6,7 @@
 import { composeDialogue, DIALOGUE, dialogueText, type FixedLineEvent } from './botDialogue';
 import { reactionText } from './reactions';
 import { playerStyle, styleOf, type StyleId } from './botStyles';
-import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH } from './botLines';
+import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH, REMEMBER_FRIENDLY, REMEMBER_TRASH } from './botLines';
 import { lineBeats, sayAndReadMs } from './chat';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
@@ -116,7 +116,18 @@ export type TalkEvent =
   | 'beforeRiver'
   | 'beforeShowdown'
   /** A person has just picked this bot for their table on the setup page: its first word, before any cards. */
-  | 'addedToTable';
+  | 'addedToTable'
+  /**
+   * Bankroll's "I remember you" (bankroll.ts): a regular sits down; or a habit the month has shown comes up again
+   * (river bluffs, folding to 3-bets, big bets that are always the goods, check-raises, folding to c-bets, calling everything).
+   */
+  | 'rememberHello'
+  | 'rememberBluffs'
+  | 'rememberFold3bet'
+  | 'rememberBigBet'
+  | 'rememberCheckRaise'
+  | 'rememberFolds'
+  | 'rememberCalls';
 
 type Lines = Record<TalkEvent, string[]>;
 
@@ -189,6 +200,13 @@ const TRASH: Lines = {
   beforeRiver: [],
   beforeShowdown: [],
   addedToTable: [],
+  rememberHello: [],
+  rememberBluffs: [],
+  rememberFold3bet: [],
+  rememberBigBet: [],
+  rememberCheckRaise: [],
+  rememberFolds: [],
+  rememberCalls: [],
 };
 
 const FRIENDLY: Lines = {
@@ -259,6 +277,13 @@ const FRIENDLY: Lines = {
   beforeRiver: [],
   beforeShowdown: [],
   addedToTable: [],
+  rememberHello: [],
+  rememberBluffs: [],
+  rememberFold3bet: [],
+  rememberBigBet: [],
+  rememberCheckRaise: [],
+  rememberFolds: [],
+  rememberCalls: [],
 };
 
 // Each style adds its own lines on top of its tone's pool, so the four bots of a style sound alike
@@ -435,6 +460,8 @@ grow(TRASH, EXTRA_TRASH);
 grow(FRIENDLY, EXTRA_FRIENDLY);
 grow(TRASH, ADDED_TRASH);
 grow(FRIENDLY, ADDED_FRIENDLY);
+grow(TRASH, REMEMBER_TRASH);
+grow(FRIENDLY, REMEMBER_FRIENDLY);
 for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
   for (const [style, more] of Object.entries(passes) as [StyleId, Partial<Lines>][]) {
     for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
@@ -552,6 +579,14 @@ const CHANCE: Record<TalkEvent, number> = {
   beforeRiver: 0.3,
   beforeShowdown: 0.35,
   addedToTable: 1,
+  // Bankroll's "I remember you" lines are rationed by the table itself (two a sitting), so the dice never hold one back.
+  rememberHello: 1,
+  rememberBluffs: 1,
+  rememberFold3bet: 1,
+  rememberBigBet: 1,
+  rememberCheckRaise: 1,
+  rememberFolds: 1,
+  rememberCalls: 1,
 };
 
 /** A bot never speaks again within this long, so one seat can't chatter non-stop. */

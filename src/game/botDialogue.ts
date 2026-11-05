@@ -25,7 +25,8 @@ type ContextEvent =
 /** Moments the legends and AI twins speak to that the planner has no phrasing for: they use the fixed lines in botTalk.ts. */
 export type FixedLineEvent = 'cheer' | 'commiserate' | 'finishWon' | 'finishLost' | 'rematchWon' | 'rematchLost' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'signature'
   | 'flop' | 'turn' | 'river' | 'bigPot' | 'longHand' | 'shortStack' | 'chipLead' | 'button' | 'bigBlind' | 'handMilestone'
-  | 'beforeFlop' | 'beforeTurn' | 'beforeRiver' | 'beforeShowdown' | 'addedToTable';
+  | 'beforeFlop' | 'beforeTurn' | 'beforeRiver' | 'beforeShowdown' | 'addedToTable'
+  | 'rememberHello' | 'rememberBluffs' | 'rememberFold3bet' | 'rememberBigBet' | 'rememberCheckRaise' | 'rememberFolds' | 'rememberCalls';
 export type DialogueIntent = Exclude<TalkEvent, FixedLineEvent> | ContextEvent;
 // Indexes are a wire format. Append new lines; don't reorder published entries.
 export const DIALOGUE: Record<DialogueIntent, readonly string[]> = {

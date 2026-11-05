@@ -13,7 +13,7 @@ export interface MenuTarget {
   /** What they're showing now (already hidden if blocked) and what they showed when unmasked. */
   name: string;
   emoji: string;
-  where: 'table' | 'party';
+  where: 'table' | 'party' | 'board';
   code: string;
   /** Their seat id, or their party member id. */
   playerId: string;

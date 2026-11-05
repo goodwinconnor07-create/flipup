@@ -14,7 +14,7 @@ import { InviteCard } from '@/components/invite-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { RequestsPill } from '@/components/friend-requests';
 import { ProfileMenu } from '@/components/profile-menu';
-import { TabScreen } from '@/components/tab-screen';
+import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { ThemedText } from '@/components/themed-text';
@@ -52,6 +52,7 @@ export default function Home() {
         accessory={
           <>
             <RequestsPill />
+            <RoundButton icon="qrcode.viewfinder" label="Join with a code" onPress={openJoin} />
             <ProfileMenu />
           </>
         }
@@ -93,6 +94,12 @@ export default function Home() {
 }
 
 const HIDDEN = 'flipup.lastgamehidden';
+
+/** The Join sheet: a table or party code, or a QR code. */
+function openJoin() {
+  haptic.tap();
+  router.push('/join');
+}
 
 /** The Play again card leaving: a quick swell, then it shrinks and fades away. */
 const POP_AWAY = new Keyframe({

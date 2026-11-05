@@ -27,6 +27,18 @@ interface Stored {
   usernameAt?: number;
   /** This card's own friend code, so it can free its username when it goes. */
   code?: string;
+  /** Optional, off by default: an ISO country code shown as a flag on the boards. */
+  country?: string;
+  /** Bankroll seasons finished in the top 100: "2026-11", place. */
+  badges?: { season: string; place: number }[];
+}
+
+/** A player's best badge, as the board shows it: "TOP10 NOV" (gold) or "TOP100 NOV". */
+export function bestBadge(badges: Stored['badges']): string | undefined {
+  const best = [...(badges ?? [])].sort((a, b) => a.place - b.place)[0];
+  if (!best) return undefined;
+  const month = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][Number(best.season.slice(5)) - 1];
+  return `${best.place <= 10 ? 'TOP10' : 'TOP100'} ${month}`;
 }
 
 /** The card's requests and asks with `code` taken out of both. */
@@ -95,18 +107,31 @@ export class FriendCard extends DurableObject<Env> {
   }
 
   /** RPC: the owner's latest name and picture, and their campaign if they send it. */
-  async update(deviceId: string, name: string, emoji: string, campaign?: CampaignCard): Promise<'ok' | 'missing' | 'forbidden'> {
+  async update(deviceId: string, name: string, emoji: string, campaign?: CampaignCard, country?: string | null): Promise<'ok' | 'missing' | 'forbidden'> {
     const data = await this.load();
     if (!data) return 'missing';
     if (data.deviceId !== deviceId) return 'forbidden';
-    await this.save({ ...data, name, emoji, ...(campaign ? { campaign } : {}), updatedAt: Date.now() });
+    const next: Stored = { ...data, name, emoji, ...(campaign ? { campaign } : {}), updatedAt: Date.now() };
+    // `null` turns the flag off; missing leaves it as it was.
+    if (country === null) delete next.country;
+    else if (country) next.country = country;
+    await this.save(next);
     return 'ok';
   }
 
   /** RPC: what a friend sees. */
   async get(code: string): Promise<FriendCardInfo | null> {
     const data = await this.load();
-    return data ? { code, name: data.name, emoji: data.emoji, ...(data.username ? { username: data.username } : {}), ...(data.campaign ? { campaign: data.campaign } : {}) } : null;
+    return data
+      ? { code, name: data.name, emoji: data.emoji, ...(data.username ? { username: data.username } : {}), ...(data.campaign ? { campaign: data.campaign } : {}), ...(data.country ? { country: data.country } : {}), ...(bestBadge(data.badges) ? { badge: bestBadge(data.badges) } : {}) }
+      : null;
+  }
+
+  /** RPC (cron): a finished season's top 100 place. Once per season. */
+  async addBadge(season: string, place: number): Promise<void> {
+    const data = await this.load();
+    if (!data || data.badges?.some((b) => b.season === season)) return;
+    await this.save({ ...data, badges: [...(data.badges ?? []), { season, place }].slice(-24) }, false);
   }
 
   /** RPC: a friend asks this person to their blackjack table. One invite per friend; a new one replaces the old. */

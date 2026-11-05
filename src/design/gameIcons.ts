@@ -10,14 +10,14 @@ export const ICON_COLOURS = {
   circle: ['#2a93cf', '#06203a'],
   memory: ['#8a6bff', '#1f0f5c'],
   bjholdem: ['#16855a', '#041d12'],
-  detective: ['#3a24a8', '#0b0626'],
-  rewind: ['#5a34f0', '#120838'],
-  ranges: ['#5a35f0', '#160a4a'],
+  detective: ['#1f44a8', '#060f2e'],
+  rewind: ['#2557d6', '#0a1a52'],
+  ranges: ['#2a5fe0', '#0b1d5c'],
   pineapple: ['#ffcf52', '#e2570f'],
   imposter: ['#3a4152', '#07080c'],
   beanstalk: ['#6fd6ff', '#1d7a3a'],
   redriver: ['#3a0a14', '#0a0204'],
-  shortStack: ['#8263ff', '#2a1290'],
+  shortStack: ['#3a6ae6', '#0f2a78'],
 } as const satisfies Record<string, readonly [string, string]>;
 
 export type IconId = keyof typeof ICON_COLOURS;

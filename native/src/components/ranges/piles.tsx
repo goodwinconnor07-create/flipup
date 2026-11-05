@@ -14,7 +14,7 @@ import { MiniRing } from './dial';
 
 export const PILE: Record<PileId, { name: string; line: string; tint: string; back: string }> = {
   behind: { name: 'Beat you', line: 'Hands that are ahead of yours', tint: 'rgba(255,255,255,0.55)', back: 'rgba(255,255,255,0.07)' },
-  close: { name: 'Close', line: 'Hands that could go either way', tint: brand.violetDark, back: 'rgba(139,109,255,0.16)' },
+  close: { name: 'Close', line: 'Hands that could go either way', tint: brand.violetDark, back: 'rgba(90, 140, 255,0.16)' },
   ahead: { name: 'You beat', line: 'Hands yours is ahead of', tint: brand.gold, back: 'rgba(245,183,0,0.14)' },
 };
 

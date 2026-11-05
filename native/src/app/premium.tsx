@@ -1,12 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CARD_BACKS } from '@design/premiumLooks';
 import { Button } from '@/components/button';
-import { GameIcon, iconCorner } from '@/components/game-icon';
 import { GameThumb } from '@/components/game-picture';
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
@@ -19,7 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { BUBBLE_STYLES, CARD_PACKS, FREE_VARIANTS, isVariant, VARIANTS, variantInfo } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { buyPremium, ON_SALE, restorePremium, startStore, useStore } from '@/state/purchase';
-import { gradient, party, radius, ROUNDED, spacing, useColors } from '@/theme';
+import { gradient, party, radius, spacing, useColors } from '@/theme';
 
 import { APP_INFO } from '../../appInfo';
 
@@ -31,9 +30,8 @@ const glass = 'rgba(255,255,255,0.1)';
 
 /**
  * FlipUp Premium (docs/APP_STORE.md, 3.1.1; docs/PREMIUM_PLAN.md). A night-purple sheet that shows what you get
- * before it asks for money, the way SCRAM and Apple do it: "Not now" in quiet words, the eight games' icons as the
- * picture, one big line, three benefits, then everything in it (the eight games, every card back (tap to see it big),
- * every bubble effect, and what's free against what's not). It opens with whatever you tapped first (a locked game, a card back or a bubble). The price
+ * before it asks for money: the eight games, every card back (tap to see it big), every bubble effect, and what's
+ * free against what's not. It opens with whatever you tapped first (a locked game, a card back or a bubble). The price
  * comes from the App Store and sits in a bar pinned to the bottom, with Restore Purchases.
  */
 export default function PremiumSheet() {
@@ -76,22 +74,19 @@ export default function PremiumSheet() {
   if (reason) order.sort((a, b) => (a === FIRST[reason] ? -1 : b === FIRST[reason] ? 1 : 0));
 
   return (
-    <GrainBackground colors={[night[0], night[1], night[1]]} glow="rgba(150, 120, 255, 0.16)" glow2="rgba(245, 183, 0, 0.06)">
+    <GrainBackground colors={[night[0], night[1], night[1]]} glow="rgba(90, 140, 255, 0.16)" glow2="rgba(245, 183, 0, 0.06)">
       <Stack.Screen options={{ title: 'FlipUp Premium' }} />
       <SheetScroll style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: spacing.xl }}>
-        {/* The way out is quiet words, not a button that competes with Buy. */}
-        <Pressable accessibilityRole="button" accessibilityLabel={has ? 'Close' : 'Not now'} hitSlop={12} onPress={() => router.back()} style={({ pressed }) => ({ position: 'absolute', top: spacing.md, left: spacing.lg, zIndex: 1, minHeight: 32, justifyContent: 'center', opacity: pressed ? 0.5 : 1 })}>
-          <ThemedText variant="body" tone="onColor" style={{ opacity: 0.8 }}>
-            {has ? 'Close' : 'Not now'}
-          </ThemedText>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()} style={({ pressed }) => ({ position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1, width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: pressed ? 0.6 : 1 })}>
+          <Icon name="xmark" size={14} color="white" />
         </Pressable>
 
-        <IconWall first={wanted} />
-        <View style={{ gap: spacing.xs }}>
-          <Text accessibilityRole="header" maxFontSizeMultiplier={1.25} style={{ fontFamily: ROUNDED, fontSize: 40, lineHeight: 44, fontWeight: '800', color: '#ffffff' }}>
+        <Fan />
+        <View style={{ gap: spacing.xs, alignItems: 'center' }}>
+          <ThemedText variant="largeTitle" tone="onColor" accessibilityRole="header" style={{ textAlign: 'center' }}>
             {title}
-          </Text>
-          <ThemedText tone="onColor" style={{ opacity: 0.8 }}>
+          </ThemedText>
+          <ThemedText tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
             {line}
           </ThemedText>
         </View>
@@ -107,16 +102,20 @@ export default function PremiumSheet() {
           </View>
         )}
 
-        {/* What you get, in three lines, before the catalogue. */}
-        <View style={{ gap: spacing.md }}>
-          <Benefit icon="crown.fill" title={`${VARIANTS.length - FREE_VARIANTS} more games to host`} line="Imposter, Red River, Memory Poker and the rest, for your whole table." />
-          <Benefit icon="paintpalette.fill" title="Every card pack and bubble effect" line="Everyone at the table sees your look." />
-          <Benefit icon="person.2.fill" title="Friends play free" line="Only the host needs Premium. Everyone else joins by code." />
+        <View accessible accessibilityLabel="Friends play free. Only the host needs Premium. Everyone else joins by code for free." style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', padding: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
+          <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', ...gradient(`linear-gradient(180deg, ${party.yellow}, ${party.orange})`) }}>
+            <Icon name="person.2.fill" size={18} color="white" />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <ThemedText variant="headline" tone="onColor">
+              Friends play free
+            </ThemedText>
+            <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.75 }}>
+              Only the host needs Premium. Everyone else joins by code, with no payment.
+            </ThemedText>
+          </View>
         </View>
 
-        <Text accessibilityRole="header" maxFontSizeMultiplier={1.3} style={{ marginTop: spacing.md, fontSize: 13, fontWeight: '800', letterSpacing: 1.2, color: 'rgba(255, 255, 255, 0.6)' }}>
-          EVERYTHING IN PREMIUM
-        </Text>
         {order.map((p) => parts[p])}
 
         <Compare />
@@ -142,12 +141,7 @@ export default function PremiumSheet() {
             </ThemedText>
           </>
         ) : (
-          <>
-            <Button title={store.price ? `Unlock Premium · ${store.price}` : 'Loading price…'} variant="party" tint="gold" size="lg" loading={store.busy} disabled={!store.price} onPress={() => void buy()} />
-            <ThemedText variant="subhead" tone="onColor" style={{ textAlign: 'center', fontWeight: '600', opacity: 0.85 }}>
-              One payment, no subscription. Friends play free.
-            </ThemedText>
-          </>
+          <Button title={store.price ? `Unlock for ${store.price}` : 'Loading price…'} variant="party" tint="gold" size="lg" loading={store.busy} disabled={!store.price} onPress={() => void buy()} />
         )}
         {!has && store.error && store.price && (
           <ThemedText variant="footnote" tone="onColor" style={{ textAlign: 'center', opacity: 0.8 }}>
@@ -168,47 +162,17 @@ export default function PremiumSheet() {
   );
 }
 
-/**
- * The top of the offer: the eight Premium games' icons as a tilted wall that runs off the edges (the game you tapped
- * first, if any), so the picture is what you're buying.
- */
-function IconWall({ first }: { first?: string }) {
-  const games = VARIANTS.slice(FREE_VARIANTS).map((v) => v.id);
-  if (first) games.sort((a, b) => (a === first ? -1 : b === first ? 1 : 0));
-  const SIZE = 84;
-  const rows = [games.slice(0, 4), games.slice(4, 8)];
+/** The fan of every Premium card back at the top. */
+function Fan() {
+  const packs = CARD_PACKS.filter((p) => !p.venue);
+  const mid = (packs.length - 1) / 2;
   return (
-    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ height: SIZE * 2 + 56, marginHorizontal: -spacing.lg, marginTop: spacing.xl, overflow: 'visible', alignItems: 'center', justifyContent: 'center' }}>
-      <View style={{ gap: 14, transform: [{ rotate: '-8deg' }] }}>
-        {rows.map((row, r) => (
-          <View key={r} style={{ flexDirection: 'row', gap: 14, marginLeft: r ? SIZE * 0.6 : 0 }}>
-            {row.map((g) => (
-              <View key={g} style={{ borderRadius: iconCorner(SIZE), borderCurve: 'continuous', boxShadow: '0 12px 24px -10px rgba(0, 0, 0, 0.7)' }}>
-                <GameIcon id={g} size={SIZE} />
-              </View>
-            ))}
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
-/** One thing Premium gives you: a gold symbol, a bold line and a plain one. No box round it. */
-function Benefit({ icon, title, line }: { icon: 'crown.fill' | 'paintpalette.fill' | 'person.2.fill'; title: string; line: string }) {
-  return (
-    <View accessible style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
-      <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', ...gradient(`linear-gradient(180deg, ${party.yellow}, ${party.orange})`) }}>
-        <Icon name={icon} size={18} color="white" />
-      </View>
-      <View style={{ flex: 1, gap: 1 }}>
-        <ThemedText variant="headline" tone="onColor">
-          {title}
-        </ThemedText>
-        <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.72 }}>
-          {line}
-        </ThemedText>
-      </View>
+    <View accessible={false} importantForAccessibility="no-hide-descendants" style={{ height: 120, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end' }}>
+      {packs.map((p, i) => (
+        <View key={p.id} style={{ marginHorizontal: -14, transform: [{ rotate: `${(i - mid) * 6}deg` }, { translateY: Math.abs(i - mid) * 3 }] }}>
+          <PlayingCard back size="md" pack={p.id} />
+        </View>
+      ))}
     </View>
   );
 }

@@ -66,7 +66,7 @@ export default function RootLayout() {
         <Stack.Screen name="challenge/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Challenge', headerShown: false }} />
         <Stack.Screen name="range-training" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Range training', headerShown: false }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
-        <Stack.Screen name="ranges" options={{ headerShown: false, title: 'Range training', statusBarStyle: 'light', contentStyle: { backgroundColor: '#07051a' } }} />
+        <Stack.Screen name="ranges" options={{ headerShown: false, title: 'Range training', statusBarStyle: 'light', contentStyle: { backgroundColor: '#040914' } }} />
         <Stack.Screen name="range-why" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'Why' }} />
         <Stack.Screen name="range-glossary" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], headerShown: false, title: 'Poker words' }} />
         <Stack.Screen name="range-tricks" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Your tricks' }} />

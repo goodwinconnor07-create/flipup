@@ -1,5 +1,12 @@
 # FlipUp design (iPhone app)
 
+> **In force now (owner, 2026-11-05, after seeing the mockups): keep the app's design as it is on TestFlight.**
+> The changes on top of it are small: no purple (the brand and action colour is a deep blue, `brand.violet` in
+> `native/src/theme/brand.ts`, keys unchanged), no film grain (pages get a moving deep blue light field,
+> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the detailed game icons
+> (`scripts/drawGameIcons.mjs`), fewer spinners and faster screens. Everything below this box is the paper, ink and
+> red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
+
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.
 
@@ -195,4 +202,6 @@ and its best-play panel).
 ## 14. Decision log
 
 - 2026-11-05: the interview above. Replaces `docs/DESIGN_DIRECTION.md` (the Games-app direction).
-- 2026-11-05: first mockups made; waiting for the owner's review.
+- 2026-11-05: first mockups made.
+- 2026-11-05: the owner chose to keep the TestFlight design with small changes (the box at the top). The interview
+  direction is parked.

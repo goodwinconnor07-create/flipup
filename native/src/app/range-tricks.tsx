@@ -59,7 +59,7 @@ export default function RangeTricksSheet() {
                     }}
                     outerStyle={{ width: tile }}
                   >
-                    <LivingCard colors={cardColors[state]} radius={radius.lg} grain={0} shadow="soft" still={state === 'night'} style={{ padding: spacing.sm, gap: spacing.xs, minHeight: 150 }}>
+                    <LivingCard colors={cardColors[state]} radius={radius.lg} shadow="soft" still={state === 'night'} style={{ padding: spacing.sm, gap: spacing.xs, minHeight: 150 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
                         <View style={{ width: 36, height: 36, borderRadius: 11, alignItems: 'center', justifyContent: 'center', backgroundColor: state === 'gold' ? 'rgba(59,38,0,0.12)' : 'rgba(255,255,255,0.14)' }}>
                           <Icon name={t.icon} size={18} color={state === 'gold' ? brand.goldInk : brand.gold} />

@@ -12,7 +12,7 @@ export type Mood = 'idle' | 'best' | 'ok' | 'miss';
 
 const MOOD_GLOW: Record<Exclude<Mood, 'idle'>, string> = {
   best: 'rgba(255, 201, 51, 0.30)',
-  ok: 'rgba(139, 109, 255, 0.30)',
+  ok: 'rgba(90, 140, 255, 0.30)',
   miss: 'rgba(90, 110, 160, 0.20)',
 };
 
@@ -48,7 +48,7 @@ export function StudyRoom({ mood, energy = 0, children }: { mood: Mood; energy?:
   const glow = mood === 'idle' ? MOOD_GLOW.ok : MOOD_GLOW[mood];
 
   return (
-    <GrainBackground grain={0.04}>
+    <GrainBackground>
       <View pointerEvents="none" style={StyleSheet.absoluteFill}>
         {/* The spotlight: a pool of light over where the table sits. */}
         <View style={{ position: 'absolute', left: '-30%', right: '-30%', top: '4%', height: '58%', ...gradient('radial-gradient(ellipse at 50% 45%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 38%, transparent 66%)') }} />

@@ -1,11 +1,11 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
+import { HowToPicture } from '@/components/how-to-picture';
 import { Icon } from '@/components/icon';
-import { SheetHeader } from '@/components/sheet-header';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
@@ -27,6 +27,7 @@ export default function SetupGameSheet() {
   const draft = useDraft();
   const premium = usePremium();
   const colors = useColors();
+  const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const chosen = (draft.variant ?? 'holdem') === variant;
   const locked = needsUnlock([variant], premium);
@@ -42,10 +43,18 @@ export default function SetupGameSheet() {
     <View style={{ flex: 1 }}>
       <SheetScroll
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: spacing.md, paddingTop: 0, paddingBottom: spacing.xl, gap: spacing.lg }}
+        contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: spacing.lg }}
       >
         <Stack.Screen options={{ title: info.name, headerShown: false }} />
-        <SheetHeader id={variant} title={info.name} line={gameLook(variant).mood} howTo={variant} />
+        <HowToPicture variant={variant} name={info.name} width={width - spacing.md * 2} />
+        <View style={{ gap: spacing.xxs }}>
+          <ThemedText variant="title1" accessibilityRole="header">
+            {info.name}
+          </ThemedText>
+          <ThemedText variant="callout" tone="tertiaryLabel">
+            {gameLook(variant).mood}
+          </ThemedText>
+        </View>
         <View style={{ gap: spacing.xs }}>
           <ThemedText variant="headline">How it plays</ThemedText>
           {info.rules.map((r) => (

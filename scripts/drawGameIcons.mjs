@@ -227,7 +227,7 @@ ICONS.bjholdem = icon(['#16855a', '#041d12'], `
 
 // ----- Solo cards: the three challenges and Range training (colours from CHALLENGE_LOOK in challengeArt.ts) -----
 
-ICONS.detective = icon(['#3a24a8', '#0b0626'], `
+ICONS.detective = icon(['#1f44a8', '#060f2e'], `
   ${shadow(470, 860, 300, 50)}
   ${card({ x: 430, y: 470, r: -10, s: 0.95, rank: 'Q', suit: 'h' })}
   <clipPath id="lensClip"><circle cx="560" cy="600" r="180"/></clipPath>
@@ -245,7 +245,7 @@ ICONS.detective = icon(['#3a24a8', '#0b0626'], `
  <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe28a"/><stop offset="1" stop-color="#b37a00"/></linearGradient>
  <linearGradient id="handle" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a3a1a"/><stop offset="0.5" stop-color="#8a5a2a"/><stop offset="1" stop-color="#3a2410"/></linearGradient>`);
 
-ICONS.rewind = icon(['#5a34f0', '#120838'], `
+ICONS.rewind = icon(['#2557d6', '#0a1a52'], `
   ${glow(512, 520, 400, 'whiteGlow', 0.35)}
   ${shadow(512, 860, 260, 46)}
   ${card({ x: 512, y: 530, r: -6, s: 0.72, rank: 'A', suit: 'h', lift: 1.2 })}
@@ -261,11 +261,11 @@ function inRange(i, j) {
   if (i < j) return i <= 1 || (i <= 4 && j <= 9) || (i <= 8 && j <= i + 3);
   return (j <= 1 && i <= 9) || (j <= 4 && i <= j + 3);
 }
-ICONS.ranges = icon(['#5a35f0', '#160a4a'], `
+ICONS.ranges = icon(['#2a5fe0', '#0b1d5c'], `
   ${glow(380, 380, 420, 'goldGlow', 0.6)}
   <g transform="translate(512 520) rotate(-8) translate(-377 -377)">
     <rect x="-26" y="-26" width="806" height="806" rx="56" fill="#000" opacity="0.28" transform="translate(12 24)"/>
-    <rect x="-26" y="-26" width="806" height="806" rx="56" fill="#140a3d" opacity="0.65"/>
+    <rect x="-26" y="-26" width="806" height="806" rx="56" fill="#0a163d" opacity="0.65"/>
     ${Array.from({ length: 169 }, (_, k) => {
       const i = Math.floor(k / 13);
       const j = k % 13;
@@ -506,10 +506,10 @@ function rays(x, y, n = 14, o = 0.07) {
       <path d="M${-rx * 0.8} ${-ry * 0.35} Q${-rx * 0.3} ${-ry * 0.95} ${rx * 0.3} ${-ry * 0.9}" stroke="#fff" stroke-opacity="0.45" stroke-width="7" fill="none" stroke-linecap="round"/>
     </g>`;
   }
-  const VIO = ['#a48cff', '#4a26d9'];
+  const VIO = ['#7fa3ff', '#2149bf'];
   const GLD = ['#ffe28a', '#d18e00'];
-  const tall = (x, n) => Array.from({ length: n }, (_, k) => chipSide(x, 600 - k * 42, k % 3 === 1 ? ['#8a7240', '#4a3a14'] : ['#5a48b0', '#26166a'], { rx: 130, ry: 40, t: 40 })).join('');
-  ICONS.shortStack = icon(['#8263ff', '#2a1290'], `
+  const tall = (x, n) => Array.from({ length: n }, (_, k) => chipSide(x, 600 - k * 42, k % 3 === 1 ? ['#8a7240', '#4a3a14'] : ['#3c5fb8', '#16306e'], { rx: 130, ry: 40, t: 40 })).join('');
+  ICONS.shortStack = icon(['#3a6ae6', '#0f2a78'], `
   ${glow(512, 640, 420, 'whiteGlow', 0.35)}
   ${shadow(230, 640, 170, 30, 0.6)}${shadow(800, 620, 170, 30, 0.6)}
   ${tall(230, 9)}${tall(800, 11)}
@@ -519,7 +519,7 @@ function rays(x, y, n = 14, o = 0.07) {
   ${chipSide(500, 736, GLD)}
   ${chipSide(520, 682, VIO, { emblem: true })}
   ${sparkle(300, 280, 30, '#ffe28a')}${sparkle(720, 220, 22, '#fff', 0.8)}`,
-  `<linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1290" stop-opacity="0.15"/><stop offset="1" stop-color="#2a1290" stop-opacity="0.45"/></linearGradient>`);
+  `<linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0f2a78" stop-opacity="0.15"/><stop offset="1" stop-color="#0f2a78" stop-opacity="0.45"/></linearGradient>`);
 }
 
 

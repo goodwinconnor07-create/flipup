@@ -3,21 +3,16 @@ import { View } from 'react-native';
 
 import { SheetScroll } from '@/components/sheet-scroll';
 import { Avatar } from '@/components/avatar';
-import { ColourWash } from '@/components/colour-wash';
 import { Button } from '@/components/button';
 import { useFriendActions } from '@/components/friend-menu';
 import { Row, Section } from '@/components/grouped-list';
 import { ThemedText } from '@/components/themed-text';
 import { usePals } from '@/state/pals';
-import { emojiColour } from '@design/emojiColours';
 import { spacing, useColors } from '@/theme';
 
 const since = (at: number) => new Date(at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-/**
- * A friend's profile, as a sheet: the colour of their emoji fading into the page (Apple's profile sheet), their emoji
- * big, name and username, how long you've been friends, and Invite.
- */
+/** A friend's profile, as a sheet: their emoji big, name and username, how long you've been friends, and Invite. */
 export default function FriendProfile() {
   const { code } = useLocalSearchParams<{ code: string }>();
   const pal = usePals().find((p) => p.code === code);
@@ -34,9 +29,8 @@ export default function FriendProfile() {
   return (
     <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, gap: spacing.xl }}>
       <Stack.Screen options={{ title: pal.name, headerShown: false }} />
-      <ColourWash colour={emojiColour(pal.emoji)} height={360} />
       <View style={{ alignItems: 'center', gap: spacing.sm }}>
-        <Avatar emoji={pal.emoji} size={120} onColour />
+        <Avatar emoji={pal.emoji} size={120} />
         <View style={{ alignItems: 'center', gap: 2 }}>
           <ThemedText variant="title1" accessibilityRole="header" style={{ textAlign: 'center' }}>
             {pal.name}

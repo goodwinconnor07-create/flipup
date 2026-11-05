@@ -14,9 +14,7 @@ const SIZES = {
 /**
  * The app's buttons.
  * - `party`: the loud one for what you tap to play: a living gradient with a faint grain (LivingCard), heavy text.
- * - `primary`: the brand violet, for a screen's main action that isn't playing (Save, Done).
- * - `secondary`: the neutral frame (docs/DESIGN_DIRECTION.md): a flat grey cell with plain label text.
- * - `destructive`: red text on a grey cell.
+ * - `primary`: system blue. `secondary`: a flat grey cell. `destructive`: red text on a grey cell.
  * Every size is at least 44pt tall. States: pressed (PressableScale), disabled, loading.
  */
 export function Button({
@@ -47,7 +45,7 @@ export function Button({
       : variant === 'primary'
         ? { backgroundColor: colors.accent }
         : { backgroundColor: colors.cell };
-  const ink = variant === 'party' || variant === 'primary' ? 'onColor' : variant === 'destructive' ? 'red' : 'label';
+  const ink = variant === 'party' || variant === 'primary' ? 'onColor' : variant === 'destructive' ? 'red' : 'accent';
   const label = loading ? (
     <ActivityIndicator color={variant === 'party' || variant === 'primary' ? '#ffffff' : undefined} />
   ) : (
@@ -84,7 +82,7 @@ export function Button({
           colors={[gradients[tint][0], gradients[tint][1], gradients[tint][1]]}
           radius={radius.md}
           shadow="soft"
-          grain={0.07}
+         
           outerStyle={{ alignSelf: 'stretch' }}
           style={{ minHeight: s.height, paddingHorizontal: s.paddingHorizontal, alignItems: 'center', justifyContent: 'center' }}
         >

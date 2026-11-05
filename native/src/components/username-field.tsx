@@ -79,7 +79,7 @@ export function UsernameSheet({ title, line, button, start = '', run }: { title:
           </ThemedText>
         ) : null}
       </View>
-      <Button variant="primary" size="lg" title={button} loading={busy} disabled={!value} onPress={() => void go()} />
+      <Button variant="party" tint="blue" size="lg" title={button} loading={busy} disabled={!value} onPress={() => void go()} />
     </ScrollView>
   );
 }

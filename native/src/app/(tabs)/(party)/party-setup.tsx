@@ -3,8 +3,6 @@ import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { ColourWash } from '@/components/colour-wash';
-import { GameIcon, iconCorner, mix, panelTint } from '@/components/game-icon';
 import { GameThumb } from '@/components/game-picture';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
@@ -21,39 +19,6 @@ import { party, radius, spacing, useColors } from '@/theme';
 const ALL = VARIANTS.map((v) => v.id);
 const THUMB = 36;
 const chips = (n: number) => n.toLocaleString('en-US');
-
-/** The party's colour: its first three games' colours blended, so the page changes as the playlist does. */
-const playlistColour = (games: Variant[]) => {
-  const [a = 'holdem', b = a, c = b] = games;
-  return mix(mix(panelTint(a), panelTint(b), 0.5), panelTint(c), 0.33);
-};
-
-const FAN = 76;
-
-/** The first five games of the playlist fanned out like a hand of cards: the party at a glance. */
-function PlaylistFan({ games }: { games: Variant[] }) {
-  const shown = games.slice(0, 5);
-  const mid = (shown.length - 1) / 2;
-  return (
-    <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ height: FAN + 36, flexDirection: 'row', justifyContent: 'center', alignItems: 'flex-end', paddingTop: spacing.md }}>
-      {shown.map((g, i) => (
-        <View
-          key={`${i}-${g}`}
-          style={{
-            marginHorizontal: -12,
-            borderRadius: iconCorner(FAN),
-            borderCurve: 'continuous',
-            boxShadow: '0 10px 20px -10px rgba(0, 0, 0, 0.6)',
-            transform: [{ rotate: `${(i - mid) * 9}deg` }, { translateY: Math.abs(i - mid) * 8 }],
-            zIndex: 10 - Math.abs(i - mid),
-          }}
-        >
-          <GameIcon id={g} size={FAN} />
-        </View>
-      ))}
-    </View>
-  );
-}
 
 /**
  * Setting up a party, as on the web's PartySetup: the playlist (4 to 12 games, repeats allowed, Shuffle), a grid to
@@ -96,8 +61,6 @@ export default function PartySetup() {
     <>
       <Stack.Screen options={{ title: 'New party' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
-        <ColourWash colour={playlistColour(games)} height={300} />
-        <PlaylistFan games={games} />
         <View style={{ gap: spacing.xxs }}>
           <ThemedText variant="largeTitle" accessibilityRole="header">
             Pick the games

@@ -41,7 +41,7 @@ const place = (n: number) => (n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd
 /** Today's solo pick goes round the three challenges and Range training's three hands of the day. */
 const SOLO_ROTATION: (ChallengeId | 'ranges')[] = ['shortStack', 'detective', 'rewind', 'ranges'];
 
-/** Home's slides, in order: your table or party, the game of the week, today's solo pick, your last game, Premium. */
+/** Home's slides, in order: your table or party, the newest game, today's solo pick, your last game, Premium. */
 export function useHeroSlides(): Slide[] {
   const t = useTable();
   const partyRef = usePartyRef();
@@ -71,13 +71,10 @@ export function useHeroSlides(): Slide[] {
     slides.push({ key: 'party', art: 'party', eyebrow: `Your party · ${partyRef.code}`, symbol: 'party.popper.fill', title: 'Game night', line: 'Your party is open. Back to the board.', button: 'Open', href: '/party-room', live: true });
   }
 
-  // A different mini game each week (Texas Hold'em has its own tile).
-  const week = Math.floor(dayNumber() / 7);
-  const minis = VARIANTS.slice(1);
+  // The newest game: the last one in VARIANTS (new games go at the end), so the next one added takes this slide.
+  const newest = VARIANTS[VARIANTS.length - 1];
   const last = record.games.at(-1);
-  // Never the same game as your Play again slide.
-  const featured = [0, 1].map((k) => minis[(week + k) % minis.length]).find((v) => v.id !== last?.variant) ?? minis[0];
-  slides.push({ key: 'week', art: featured.id, eyebrow: 'Game of the week', symbol: 'star.fill', title: featured.name, line: gameLook(featured.id).mood, button: 'Play', href: `/game/${featured.id}` });
+  slides.push({ key: 'new', art: newest.id, eyebrow: 'New game', symbol: 'star.fill', title: newest.name, line: gameLook(newest.id).mood, button: 'Play', href: `/game/${newest.id}` });
 
   const solo = SOLO_ROTATION[dayNumber() % SOLO_ROTATION.length];
   if (solo === 'ranges') {
@@ -89,7 +86,7 @@ export function useHeroSlides(): Slide[] {
     slides.push({ key: 'solo', art: solo, eyebrow: "Today's challenge", symbol: 'trophy.fill', title: c.name, line: best && best.plays > 0 ? `Your best: ${best.best} ${unit}. Beat it.` : c.line, button: 'Try it', href: `/challenge/${solo}` });
   }
 
-  if (last && !atTable) {
+  if (last && !atTable && last.variant !== newest.id) {
     const info = variantInfo(last.variant);
     slides.push({ key: 'last', art: last.variant, eyebrow: 'Play again', symbol: 'arrow.counterclockwise', title: info.name, line: last.place === 1 ? `You won last time, out of ${last.players}.` : `You came ${place(last.place)} of ${last.players} last time.`, button: 'Play again', href: `/game/${last.variant}` });
   }

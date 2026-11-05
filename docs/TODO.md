@@ -177,3 +177,14 @@ Found during the full-app audit and left alone because each touches a lot at onc
 - [ ] **Q2 Pictures for every game tile.** Home's game shelf, the setup game row and See all draw every tile as SVG at launch; saving them as pictures would make launch lighter. The Party tab did this (`components/thumb-snaps.tsx`, in git history; the tab and the file went when Train replaced it). Check on a real iPhone first that the pictures look identical.
 - [ ] **Q3 Web build's tab bar.** On the web build the tab bar sits over the large titles (Play, Party). The iPhone app is fine; only the web fallback is off.
 - [ ] **Q4 Raise panel when the smallest raise is all in.** The slider is fixed (its thumb now sits at the all-in end), but the panel still shows a slider and a "Min" preset with nothing to choose. It could skip straight to an "All in" button.
+
+## Global, Join on Play and Bankroll (November 2026)
+
+The iPhone app only (`native/`), plus the Worker and shared engine code it needs. Premium is untouched. Each stage ends with `npm run check`, `npm run typecheck` and `npm test` in `native/`, a commit, and `CLAUDE.md` brought up to date.
+
+- [x] **Stage 1: the new tab bar.** Play, Train, Global (`trophy.fill`), Friends. The Join tab and the search-role button are gone; Join is a round glass button (`qrcode.viewfinder`) in Play's title row that opens the `join` sheet (the old tab's code, moved: `CodePad` with the keyboard up as it opens, Scan a QR code, the table it found and Sit down, party codes and party QR codes). Join links still land there: `app/[code].tsx` (`/ABCDE`) and `app/party/[code].tsx` (`/party/ABCDE`) pass the code to the sheet. The orphaned `code-entry` sheet (party codes, only the old Party tab opened it) is gone too.
+- [ ] **Stage 2: server-side play you can trust.** `BankrollRoom` and `Leaderboard` Durable Objects, Today's three scored on the server, owner checks and rate limits, Delete my data clears both.
+- [ ] **Stage 3: the Global tab.** This month's Bankroll, today's challenge, the boards (Bankroll/Today, World/Friends), your row pinned, dev-only filler rows.
+- [ ] **Stage 4: Bankroll.** The five rules, stack-matched random bots that remember you all month, 50 hands a day, the rebuy behind a placeholder ad, the Sunday cut, the screens, the share pictures, friend alerts, `bankrollLab.ts` and `docs/BANKROLL.md`.
+- [ ] **Stage 5: seasons and badges.** Monthly seasons, badges for the top 100, Last season podium, old boards kept a year.
+- [ ] **Stage 6: country flags.** Optional, off by default, in Settings; on the board rows; privacy text.

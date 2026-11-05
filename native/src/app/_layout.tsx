@@ -20,6 +20,9 @@ const applyAppearance = (a: AppearancePref) => {
   }
 };
 applyAppearance(loadAppearance());
+
+// A join link opened from outside (`/ABCDE`, `/party/ABCDE`) still has the tabs under its sheet.
+export const unstable_settings = { initialRouteName: '(tabs)' };
 // Connect to the App Store at launch: purchases that finish later still land, and Premium comes back on its own.
 void startStore();
 
@@ -92,7 +95,11 @@ export default function RootLayout() {
         <Stack.Screen name="friend/[code]" options={{ ...sheet, sheetAllowedDetents: [0.7, 1], title: 'Friend' }} />
         <Stack.Screen name="friend-requests" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'Friend requests' }} />
         <Stack.Screen name="add-friend" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Add a friend' }} />
-        <Stack.Screen name="code-entry" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Code' }} />
+        {/* Join with a code: Play's round button. The keyboard comes up as it opens; a table or party code, or a QR code. */}
+        <Stack.Screen name="join" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Join' }} />
+        {/* Join links: they only pass the code on to the Join sheet. */}
+        <Stack.Screen name="[code]" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="party/[code]" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
         <Stack.Screen name="sample-sheet" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'A sheet' }} />
       </Stack>

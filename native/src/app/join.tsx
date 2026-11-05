@@ -1,15 +1,14 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router, Stack, useIsFocused } from 'expo-router';
+import { router, Stack, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Linking, View } from 'react-native';
-
-import { TabScreen } from '@/components/tab-screen';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { CodePad, useCode } from '@/components/code-pad';
 import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
+import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import { isCode, normalizeCode, variantInfo, type TableInfo } from '@/engine';
 import { fetchTableInfo } from '@/state/api';
@@ -27,20 +26,24 @@ function codeFromScan(text: string): string | null {
   return isCode(code) ? code : null;
 }
 
-/** Sits you down in a party, and opens it. */
+/** Sits you down in a party, and opens it (the sheet closes first). */
 async function intoParty(code: string): Promise<void> {
   await joinParty(code);
+  router.back();
   router.navigate('/party-room');
 }
 
 /**
- * The Join tab: type the 5-letter table code with the iPhone keyboard, or scan the host's QR code. A code that's
- * found shows the table (the game, the host, who's there) and a Sit down button.
+ * The Join sheet, opened from the round button on Play (and by a join link, `/ABCDE` or `/party/ABCDE`, which
+ * arrive with `code`): type the 5-letter table code with the iPhone keyboard, which comes up as the sheet opens, or
+ * scan the host's QR code. A code that's found shows the table (the game, the host, who's there) and a Sit down
+ * button. A party code (typed or scanned) takes you into the party.
  */
-export default function JoinTab() {
+export default function JoinSheet() {
   const colors = useColors();
   const focused = useIsFocused();
   const profile = useProfile();
+  const params = useLocalSearchParams<{ code?: string }>();
   const [scanning, setScanning] = useState(false);
   const [found, setFound] = useState<TableInfo | null>(null);
   const [permission, askPermission] = useCameraPermissions();
@@ -63,11 +66,12 @@ export default function JoinTab() {
     }
   });
 
-  // Back on the tab after a party code took you to the party: empty boxes, ready for the next code.
-  const { reset } = state;
+  // A join link fills the boxes, and the look-up runs as if it had been typed.
+  const linked = params.code ? normalizeCode(params.code) : '';
+  const { fill } = state;
   useEffect(() => {
-    if (focused && !found) reset();
-  }, [focused]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (isCode(linked)) fill(linked);
+  }, [linked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scan = async () => {
     state.setError('');
@@ -104,14 +108,24 @@ export default function JoinTab() {
       return;
     }
     joinOnlineTable(found.code, profile.name, profile.emoji);
-    setFound(null);
-    state.setText('');
+    router.back();
     router.push('/table');
   };
 
   return (
-    <TabScreen title="Join" keyboardShouldPersistTaps="handled" contentStyle={{ gap: spacing.lg }}>
+    <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xxl, paddingBottom: spacing.xxxl, gap: spacing.lg }}>
+      {/* No nav bar: its title sat over the sheet's own and blurred it. The big title below is the sheet's. */}
       <Stack.Screen options={{ title: 'Join', headerShown: false }} />
+      <View style={{ gap: spacing.xxs }}>
+        <ThemedText variant="title1" accessibilityRole="header" style={{ textAlign: 'center' }}>
+          {found ? 'Found it' : 'Join with a code'}
+        </ThemedText>
+        {!found && !scanning && (
+          <ThemedText tone="tertiaryLabel" style={{ textAlign: 'center' }}>
+            Type the 5-letter code from whoever&apos;s hosting. A party code works too.
+          </ThemedText>
+        )}
+      </View>
       {found ? (
         <TableCard
           info={found}
@@ -138,12 +152,11 @@ export default function JoinTab() {
         </>
       ) : (
         <>
-          <ThemedText tone="tertiaryLabel">Type the 5-letter code from whoever&apos;s hosting.</ThemedText>
-          <CodePad state={state} label="Table code" focus={focused} />
+          <CodePad state={state} label="Table or party code" focus={focused} />
           <Button title="Scan a QR code" variant="party" tint="pink" onPress={() => void scan()} />
         </>
       )}
-    </TabScreen>
+    </SheetScroll>
   );
 }
 

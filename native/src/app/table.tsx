@@ -76,7 +76,16 @@ export default function TableScreen() {
             {!t.mode ? (t.notice?.text ?? 'No table open.') : t.conn === 'offline' ? 'No connection. Trying again…' : 'Finding your table…'}
           </ThemedText>
           <Button title="Back to Home" onPress={leave} />
-          {!t.mode && <Button title="Join another table" variant="secondary" onPress={() => router.dismissTo('/join')} />}
+          {!t.mode && (
+            <Button
+              title="Join another table"
+              variant="secondary"
+              onPress={() => {
+                router.dismissTo('/');
+                router.push('/join');
+              }}
+            />
+          )}
         </View>
       ) : (
         <>

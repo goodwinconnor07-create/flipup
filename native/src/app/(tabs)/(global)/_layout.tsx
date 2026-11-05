@@ -3,9 +3,9 @@ import { Stack } from 'expo-router';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useColors } from '@/theme';
 
-export const unstable_settings = { initialRouteName: 'join' };
+export const unstable_settings = { initialRouteName: 'global' };
 
-// The join tab's stack: a large title on its first screen, inline titles on screens pushed onto it.
+// The Global tab's stack: its first screen draws its own large title, like the other tabs.
 export default function Layout() {
   const colors = useColors();
   const reduce = useReduceMotion();

@@ -56,6 +56,10 @@ export interface FriendCardInfo {
   username?: string;
   /** How their campaign is going, if they've shared it. */
   campaign?: CampaignCard;
+  /** Their country (ISO 3166 two letters), only if they chose to show it. Shown as a flag on the boards. */
+  country?: string;
+  /** Their best Bankroll badge ("TOP10 NOV"), if they've earned one. */
+  badge?: string;
 }
 
 export interface CreateFriendCardResponse {

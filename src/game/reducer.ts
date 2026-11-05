@@ -45,7 +45,8 @@ import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
 import { BOSS_DULL, campaignDull, campaignStyles, venueById } from './campaign';
-import type { Action, ActionContext, ActionResult, Game, Player, Settings } from './types';
+import { BANKROLL, BANKROLL_CAP, BANKROLL_CODE, bankrollSettings, botRange, dayOf, memoryNotes, seasonOf, spreadStack, type BankrollClose, type MemoryNote } from './bankroll';
+import type { Action, ActionContext, ActionResult, Game, Hand, Move, Player, PlayerRead, Settings } from './types';
 
 export const LIMITS = {
   maxNameLength: 10,
@@ -267,7 +268,7 @@ const GOOD_NEWS = new Set<TalkEvent>(['bigWin', 'win', 'bluffWon', 'tiltJab', 'r
 const BAD_NEWS = new Set<TalkEvent>(['sweatLose', 'badBeat', 'lostToYou', 'bluffCaught', 'gotBluffed', 'tilted', 'showFold']);
 
 /** Pending lines that are said whatever the dice and the cooldown say. */
-const SURE_THINGS = new Set<string>(['hello', 'welcome', 'rematchWon', 'rematchLost', 'greetBack', 'thanks', 'ribbed', 'goodLuck', 'gg']);
+const SURE_THINGS = new Set<string>(['hello', 'welcome', 'rematchWon', 'rematchLost', 'rememberHello', 'greetBack', 'thanks', 'ribbed', 'goodLuck', 'gg']);
 
 /** What a bot says back to each quick message a person can send (none for the others). */
 const ANSWER: Record<string, NonNullable<Game['pendingTalk']>['event']> = {
@@ -303,11 +304,220 @@ function refillCash(game: Game): void {
   }
 }
 
-/** Deals the next hand, filling a campaign cash table's empty seats first. */
+/** Deals the next hand, filling a campaign cash table's empty seats first. A Bankroll table may close here instead. */
 function deal(game: Game, ctx: ActionContext): void {
   refillCash(game);
+  if (game.bankroll && !bankrollDeal(game, ctx)) return;
   startHand(game, ctx);
 }
+
+// ── Bankroll (bankroll.ts) ──────────────────────────────────────────────────────
+
+/**
+ * A Bankroll table, on the server: you with up to 100 big blinds of your bankroll (the rest waits in the bank) and
+ * five bots drawn at random from every style, at full strength, their stacks spread around yours. `read` is what the
+ * bots have seen you do this month, so every bot at every table plays against it from the first hand. The table is
+ * in its lobby; the server starts it.
+ */
+export function createBankrollTable(opts: {
+  deviceId: string;
+  name: string;
+  emoji: string;
+  bubble?: string;
+  cardPack?: string;
+  bankroll: number;
+  season: string;
+  day: string;
+  /** Hands already played today, and the bankroll at the start of today. */
+  today: number;
+  dayStart: number;
+  read?: PlayerRead;
+  now: number;
+  rng: () => number;
+}): Game {
+  const stack = Math.min(opts.bankroll, BANKROLL_CAP);
+  const game = createTable({
+    hostDeviceId: opts.deviceId,
+    name: opts.name,
+    emoji: opts.emoji,
+    ...(opts.bubble ? { bubble: opts.bubble } : {}),
+    ...(opts.cardPack ? { cardPack: opts.cardPack } : {}),
+    settings: bankrollSettings(stack),
+    bots: BANKROLL.bots,
+    code: BANKROLL_CODE,
+    now: opts.now,
+    rng: opts.rng,
+  });
+  const { lo, hi } = botRange(stack);
+  for (const p of game.players) if (p.bot) p.stack = p.bought = spreadStack(lo, hi, opts.rng);
+  const person = game.players.find((p) => !p.bot)!;
+  person.stack = person.bought = stack;
+  game.bankroll = {
+    season: opts.season,
+    day: opts.day,
+    bank: opts.bankroll - stack,
+    cap: BANKROLL_CAP,
+    today: opts.today,
+    limit: BANKROLL.handsADay,
+    played: 0,
+    start: opts.bankroll,
+    dayStart: opts.dayStart,
+    botIn: 0,
+    botOut: 0,
+  };
+  if (opts.read) game.reads = { [person.id]: structuredClone(opts.read) };
+  return game;
+}
+
+/** A Bankroll table closes: the table is over, and the server puts your stack back into your bankroll. */
+function closeBankroll(game: Game, reason: BankrollClose): void {
+  game.status = 'ended';
+  game.nextHandAt = null;
+  if (game.bankroll) game.bankroll.closed = reason;
+  schedule(game);
+}
+
+/**
+ * Before each deal at a Bankroll table: close it if you've left, gone broke, played the day's 50 hands, been cut or the
+ * month has ended (false: no deal). Otherwise your stack is set from your bankroll (up to the cap; the rest is
+ * banked), and the bots are matched to it: busted bots and bots that ran far above your stack get up, bots below the
+ * range are topped up, and new random bots fill the empty seats. Only bot chips come and go, between hands, and
+ * `botIn`/`botOut` count every one.
+ */
+function bankrollDeal(game: Game, ctx: ActionContext): boolean {
+  const tag = game.bankroll!;
+  const person = game.players.find((p) => !p.bot);
+  // Playing across midnight UTC: the hands from here on count toward the new day.
+  const day = dayOf(ctx.now);
+  if (day !== tag.day) {
+    tag.day = day;
+    tag.today = 0;
+    tag.played = 0;
+    tag.dayStart = (person?.stack ?? 0) + tag.bank;
+  }
+  const reason: BankrollClose | null = !person
+    ? 'left'
+    : (tag.stop ??
+      (seasonOf(ctx.now) !== tag.season
+        ? 'season'
+        : person.stack + tag.bank <= 0
+          ? 'busted'
+          : person.sittingOut || person.leaving || person.offline
+            ? 'left'
+            : tag.today + tag.played >= tag.limit
+              ? 'limit'
+              : null));
+  if (reason) {
+    closeBankroll(game, reason);
+    return false;
+  }
+  const you = person!;
+  const total = you.stack + tag.bank;
+  const stack = Math.min(total, tag.cap);
+  you.bought += stack - you.stack;
+  you.stack = stack;
+  tag.bank = total - stack;
+
+  const { lo, hi, far } = botRange(stack, game.settings.bigBlind);
+  for (const p of game.players) if (p.bot && p.stack >= far) tag.botOut += p.stack;
+  game.players = game.players.filter((p) => !(p.bot && (p.stack === 0 || p.stack >= far)));
+  for (const p of game.players) {
+    if (!p.bot || p.stack >= lo) continue;
+    const to = spreadStack(lo, hi, ctx.rng);
+    tag.botIn += to - p.stack;
+    p.bought += to - p.stack;
+    p.stack = to;
+  }
+  while (game.players.filter((p) => p.bot).length < BANKROLL.bots && game.players.length < MAX_SEATS) {
+    addBot(game, undefined, ctx.rng);
+    const bot = game.players[game.players.length - 1];
+    bot.stack = bot.bought = spreadStack(lo, hi, ctx.rng);
+    tag.botIn += bot.stack;
+  }
+  tag.played += 1;
+  return true;
+}
+
+/** You get up from a Bankroll table: a hand you're in is folded now and the table closes when it ends; between hands it closes at once. */
+function leaveBankroll(game: Game, person: Player, ctx: ActionContext): void {
+  const tag = game.bankroll!;
+  tag.stop ??= 'left';
+  const seat = seatFor(game.hand, person.id);
+  if (game.status === 'playing' && game.hand && !game.hand.result && seat && !seat.folded) foldOutOfTurn(game, person.id, ctx);
+  else closeBankroll(game, tag.stop);
+}
+
+/** Which line each month-long habit gets. */
+const MEMORY_EVENT: Record<MemoryNote, TalkEvent> = {
+  again: 'rememberHello',
+  bluffs: 'rememberBluffs',
+  fold3bet: 'rememberFold3bet',
+  bigBets: 'rememberBigBet',
+  checkRaise: 'rememberCheckRaise',
+  folds: 'rememberFolds',
+  calls: 'rememberCalls',
+};
+
+/**
+ * "I remember you": a bot says what the month has shown about you, when it's true and the moment fits. At most
+ * `BANKROLL.rememberMax` a sitting and each habit once, and not every time the moment comes, so they land.
+ */
+function remember(game: Game, botId: string, note: MemoryNote, personId: string, ctx: ActionContext): number {
+  const tag = game.bankroll;
+  if (!tag) return 0;
+  const said = tag.remembered ?? [];
+  if (said.length >= BANKROLL.rememberMax || said.includes(note)) return 0;
+  if (!memoryNotes(game.reads?.[personId]).has(note) || ctx.rng() > 0.6) return 0;
+  const ms = botSays(game, botId, MEMORY_EVENT[note], ctx.rng, ctx.now, true, personId);
+  if (ms) tag.remembered = [...said, note];
+  return ms;
+}
+
+/** Raises before the flop this hand, in order. */
+const preflopRaises = (hand: Hand) => (hand.actions ?? []).filter((a) => a.street === 'preflop' && (a.move === 'raise' || a.move === 'bet' || a.move === 'allin'));
+
+/**
+ * After your move at a Bankroll table, a bot may say it saw it coming: folding to a 3-bet again, a river bet from a
+ * player whose river bets keep turning out to be bluffs, a big bet from one whose big bets are always the goods.
+ * Returns whether a bot spoke. `street` and `raises` are from before the move.
+ */
+function rememberYourMove(game: Game, hand: Hand, me: Player, move: Move, to: number | undefined, street: Hand['street'], raises: ReturnType<typeof preflopRaises>, potBefore: number, ctx: ActionContext): boolean {
+  const botsIn = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot).map((s) => s.playerId);
+  if (!botsIn.length) return false;
+  const any = () => botsIn[Math.floor(ctx.rng() * botsIn.length)];
+  if (move === 'fold') {
+    const threeBettor = raises.length >= 2 && raises[0].playerId === me.id ? raises[raises.length - 1].playerId : null;
+    return !!threeBettor && playerById(game, threeBettor)?.bot === true && remember(game, threeBettor, 'fold3bet', me.id, ctx) > 0;
+  }
+  if (move !== 'bet' && move !== 'raise' && move !== 'allin') return false;
+  const big = move === 'allin' || (to ?? 0) >= potBefore * 0.7;
+  if (big && street !== 'preflop' && street !== 'flop' && remember(game, any(), 'bigBets', me.id, ctx)) return true;
+  return street === 'river' && remember(game, any(), 'bluffs', me.id, ctx) > 0;
+}
+
+/**
+ * A bot about to bet into you at a Bankroll table may say what it expects: a check-raise from someone who checks to
+ * raise, a fold from someone who folds to c-bets, a call from someone who calls everything. Returns how long it talks.
+ */
+function rememberBotBet(game: Game, hand: Hand, botId: string, ctx: ActionContext): number {
+  const person = game.players.find((p) => !p.bot);
+  const seat = person && seatFor(hand, person.id);
+  if (!person || !seat || seat.folded || seat.allIn || hand.street === 'preflop') return 0;
+  const streetMoves = (hand.actions ?? []).filter((a) => a.street === hand.street);
+  if (hand.currentBet === 0 && streetMoves.some((a) => a.playerId === person.id && a.move === 'check')) {
+    const ms = remember(game, botId, 'checkRaise', person.id, ctx);
+    if (ms) return ms;
+  }
+  const raises = preflopRaises(hand);
+  if (hand.street === 'flop' && hand.currentBet === 0 && raises.at(-1)?.playerId === botId) {
+    const ms = remember(game, botId, 'folds', person.id, ctx);
+    if (ms) return ms;
+  }
+  return hand.street === 'river' ? remember(game, botId, 'calls', person.id, ctx) : 0;
+}
+
+/** What a Bankroll table refuses: its stakes, its bots and its stacks are the same for everyone. */
+const NOT_AT_BANKROLL = new Set<Action['type']>(['addBot', 'settings', 'rebuy', 'playAgain', 'revealBots']);
 
 /** Party rounds: remember who ran out of chips on this hand. The one with fewer chips at the start goes out first. */
 function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
@@ -582,6 +792,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
   };
 
   if (game.status === 'ended' && action.type !== 'setLook' && action.type !== 'playAgain') return fail('This table has finished.');
+  if (game.bankroll && NOT_AT_BANKROLL.has(action.type)) return fail('Bankroll tables are the same for everyone.');
 
   switch (action.type) {
     case 'join': {
@@ -639,6 +850,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const target = playerById(game, action.playerId);
       if (!target) return done(false);
       if (!host && target.deviceId !== ctx.deviceId) return fail('Only the host can remove players.');
+      // At a Bankroll table you can only get up yourself; your chips go back to your bankroll when the table closes.
+      if (game.bankroll) {
+        if (target.bot || target.deviceId !== ctx.deviceId) return fail('Bankroll tables are the same for everyone.');
+        leaveBankroll(game, target, ctx);
+        return done();
+      }
       if ((game.party || game.campaign?.kind === 'sng') && game.status === 'playing' && !game.busted?.includes(target.id)) game.busted = [...(game.busted ?? []), target.id];
       const seat = seatFor(game.hand, target.id);
       const inHand = game.status === 'playing' && game.hand && !game.hand.result && seat && !seat.folded;
@@ -704,7 +921,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (bots.length) {
         const headsUp = game.players.length === 2 && people.length === 1;
         const who = headsUp ? bots[0] : bots[Math.floor(ctx.rng() * bots.length)];
-        game.pendingTalk = { at: ctx.now + greetWait(game), playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
+        // A Bankroll regular is greeted as one: the bots have been watching all month.
+        const regular = !!game.bankroll && people.length === 1 && memoryNotes(game.reads?.[people[0].id]).has('again') && ctx.rng() < 0.6;
+        if (regular) game.bankroll!.remembered = ['again'];
+        game.pendingTalk = regular
+          ? { at: ctx.now + greetWait(game), playerId: who.id, event: 'rememberHello', forId: people[0].id }
+          : { at: ctx.now + greetWait(game), playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
       }
       schedule(game);
       return done();
@@ -716,12 +938,16 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
       const potBefore = potTotal(hand);
+      const street = hand.street;
+      const raises = preflopRaises(hand);
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) return fail(error);
       me.timeouts = 0;
+      // At a Bankroll table a bot may say it has seen this from you before.
+      const remembered = !!game.bankroll && !game.hand?.result && rememberYourMove(game, hand, me, action.move, action.to, street, raises, potBefore, ctx);
       // A big move from a person gets a reaction from one of the bots still in the hand.
       const big = action.move === 'allin' || ((action.move === 'raise' || action.move === 'bet') && (action.to ?? 0) >= potBefore * 0.75);
-      if (big && !game.hand?.result) {
+      if (big && !remembered && !game.hand?.result) {
         const bots = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot);
         const who = bots[Math.floor(ctx.rng() * bots.length)];
         if (who) botSays(game, who.playerId, 'yourBigBet', ctx.rng, ctx.now, false, me.id);
@@ -886,6 +1112,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
 
     case 'end': {
       if (!host) return fail('Only the host can end the table.');
+      // Ending a Bankroll table is getting up from it: a hand in play is folded, never called off.
+      if (game.bankroll) {
+        if (me) leaveBankroll(game, me, ctx);
+        else closeBankroll(game, 'left');
+        return done();
+      }
       // A hand in progress is called off: everyone gets back what they put in.
       const hand = game.hand;
       if (hand && !hand.result) {
@@ -942,7 +1174,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
     if (event && SURE_THINGS.has(event)) {
       const ms = botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
       // The opening hello: nobody is dealt in until it has been said and read.
-      if (ms && !game.hand && game.nextHandAt !== null && (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost'))
+      if (ms && !game.hand && game.nextHandAt !== null && (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost' || event === 'rememberHello'))
         game.nextHandAt = Math.max(game.nextHandAt, ctx.now + ms + TIMING.afterHello);
       // Someone else at the table says hi back, before the cards come.
       if (event === 'welcome' && ms) {
@@ -1041,7 +1273,9 @@ function tick(game: Game, ctx: ActionContext): boolean {
       // What it says isn't always about the move it's about to make, or the line would give the move away.
       const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
       // (With every person out of the hand the bots hurry, and nobody has time to read what they think.)
-      const spoken = event && said && !fast ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0;
+      // At a Bankroll table, a bot about to bet into you may say what it expects you to do.
+      const memo = game.bankroll && !fast && (choice.move === 'bet' || choice.move === 'raise' || choice.move === 'allin') ? rememberBotBet(game, hand, player.id, ctx) : 0;
+      const spoken = memo || (event && said && !fast ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0);
       if (spoken) {
         wait = Math.max(wait, spoken);
         if (event === 'allin') owe(game, player.id);

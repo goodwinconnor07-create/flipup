@@ -1074,7 +1074,8 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   game.ready = [];
   // One player left with chips: the others get a short window to rebuy, then the game ends.
   // A campaign cash table where the person still has chips fills its empty seats with new bots instead.
-  const refills = game.campaign?.kind === 'cash' && game.players.some((p) => !p.bot && p.stack > 0);
+  // A Bankroll table always goes on to its deal, which tops up, refills or closes it (bankrollDeal in reducer.ts).
+  const refills = (game.campaign?.kind === 'cash' && game.players.some((p) => !p.bot && p.stack > 0)) || !!game.bankroll;
   game.nextHandAt = lastStanding(game) && !refills ? ctx.now + TIMING.rebuyWindow : canDeal(game) || refills ? ctx.now + pause : null;
   schedule(game);
 }

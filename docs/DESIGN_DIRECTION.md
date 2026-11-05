@@ -13,8 +13,8 @@ FlipUp keeps its depth (14 games, parties, friends, challenges); it gets a stric
   from the game's colour into the page, shelf cards tint the panel under the icon from their art, Setup tints
   from the chosen game, Party from its playlist.
 - **Icons.** Every game and solo card gets a hand-made SVG app icon in one shared style: one bold, lit subject,
-  cropped large. Games whose twist is a creature (Ghost, Imposter, Pineapple, Bean Stalk) get a simple
-  character face drawn in the same style; the rest are objects. Shared recipe: the game's two colours as a
+  cropped large. Games whose twist is a creature (Ghost, Pineapple, Bean Stalk) get a simple
+  character face drawn in the same style; the rest are objects or scenes (Imposter is a lineup of blank heads, one smiling). Shared recipe: the game's two colours as a
   diagonal gradient, a soft light from the top left, a vignette, one subject with a lit gradient, a highlight
   and a soft contact shadow. No SVG filters (react-native-svg can't draw them): shadows and glows are radial
   gradients. Playing cards in an icon are the game's own card, as on the table and the old thumbnails: plain

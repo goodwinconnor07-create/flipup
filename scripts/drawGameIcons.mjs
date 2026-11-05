@@ -361,53 +361,35 @@ function rays(x, y, n = 14, o = 0.07) {
  <linearGradient id="mitt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd866"/><stop offset="1" stop-color="#f29a1a"/></linearGradient>`);
 }
 
-// Imposter: a cute little blob in a disguise (fedora, nose-and-moustache glasses, collar up), eyes sliding sideways.
-ICONS.imposter = icon(['#3a4152', '#07080c'], `
-  <path d="M420 0 H604 L900 1024 H124 Z" fill="url(#spot)"/>
-  <ellipse cx="512" cy="990" rx="380" ry="70" fill="#fff" opacity="0.07"/>
-  ${[[300, 200, 4], [720, 260, 3], [640, 140, 5], [380, 330, 3], [560, 90, 4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity="0.5"/>`).join('')}
-  <ellipse cx="512" cy="500" rx="210" ry="200" fill="url(#skin)"/>
-  <ellipse cx="420" cy="420" rx="40" ry="66" fill="#fff" opacity="0.55" transform="rotate(30 420 420)"/>
-  <path d="M232 1060 C236 820 300 680 404 650 L512 720 L620 650 C724 680 788 820 792 1060 Z" fill="url(#coat)"/>
-  <path d="M512 720 L512 1060" stroke="#7d5526" stroke-width="7"/>
-  <rect x="244" y="900" width="536" height="46" fill="#8f6630"/>
-  <rect x="482" y="892" width="60" height="62" rx="10" fill="none" stroke="#e8c27a" stroke-width="9"/>
-  ${[[462, 800], [562, 800], [462, 1000], [562, 1000]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="12" fill="#5a3a16"/><circle cx="${x - 3}" cy="${y - 4}" r="4" fill="#fff" opacity="0.35"/>`).join('')}
-  <path d="M300 600 L404 650 L512 722 L430 880 L290 760 Z" fill="url(#lapel)"/>
-  <path d="M724 600 L620 650 L512 722 L594 880 L734 760 Z" fill="url(#lapelR)"/>
-  <path d="M310 610 L404 652" stroke="#f0d49a" stroke-opacity="0.6" stroke-width="6"/>
-  ${eyes(450, 574, 470, { w: 26, h: 34, look: -14 })}
-  <circle cx="450" cy="470" r="62" fill="#fff" fill-opacity="0.12" stroke="#16161d" stroke-width="15"/>
-  <circle cx="574" cy="470" r="62" fill="#fff" fill-opacity="0.12" stroke="#16161d" stroke-width="15"/>
-  <path d="M500 462 Q512 452 524 462" stroke="#16161d" stroke-width="13" fill="none"/>
-  <path d="M398 400 Q450 380 494 404" stroke="#2a2e3c" stroke-width="20" stroke-linecap="round" fill="none"/>
-  <path d="M530 396 Q578 372 628 386" stroke="#2a2e3c" stroke-width="20" stroke-linecap="round" fill="none"/>
-  <ellipse cx="512" cy="548" rx="44" ry="42" fill="url(#nose)"/>
-  <ellipse cx="498" cy="532" rx="12" ry="9" fill="#fff" opacity="0.55"/>
-  <path d="M512 586 C480 572 440 576 418 604 C440 600 456 606 470 614 C488 612 502 604 512 596 C522 604 536 612 554 614 C568 606 584 600 606 604 C584 576 544 572 512 586 Z" fill="url(#tache)"/>
-  <path d="M672 360 C690 384 694 404 680 414 C666 422 652 410 656 392 C658 380 664 372 672 360 Z" fill="#9fdcff" opacity="0.9"/>
-  <g transform="rotate(-8 512 330)">
-    <path d="M362 342 C358 236 400 186 512 184 C624 186 666 236 662 342 Z" fill="url(#hat)"/>
-    <path d="M450 196 Q512 240 574 196" stroke="#000" stroke-opacity="0.4" stroke-width="14" fill="none"/>
-    <rect x="362" y="296" width="300" height="48" fill="#8a2a3c"/>
-    <rect x="362" y="296" width="300" height="10" fill="#fff" opacity="0.15"/>
-    <ellipse cx="512" cy="350" rx="282" ry="52" fill="url(#hatBrim)"/>
-    <path d="M260 348 Q512 300 764 348" stroke="#fff" stroke-opacity="0.16" stroke-width="8" fill="none"/>
-    <ellipse cx="430" cy="236" rx="40" ry="16" fill="#fff" opacity="0.14" transform="rotate(-20 430 236)"/>
-  </g>
-  ${back({ x: 770, y: 760, r: 14, s: 0.42, lift: 1.2, mark: `<text y="70" text-anchor="middle" font-family="${FONT}" font-weight="800" font-size="230" fill="url(#gold)">?</text>` })}
-  <ellipse cx="702" cy="842" rx="46" ry="38" fill="url(#skin)" transform="rotate(-20 702 842)"/>
-  <ellipse cx="690" cy="830" rx="14" ry="8" fill="#fff" opacity="0.5" transform="rotate(-20 690 830)"/>`,
-`${FACE_DEFS}
- <linearGradient id="spot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
- <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3eefc"/><stop offset="1" stop-color="#a99ccc"/></linearGradient>
- <linearGradient id="coat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dcb36e"/><stop offset="1" stop-color="#8f6630"/></linearGradient>
- <linearGradient id="lapel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e4bf7c"/><stop offset="1" stop-color="#a77a3a"/></linearGradient>
- <linearGradient id="lapelR" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c49a58"/><stop offset="1" stop-color="#8a6128"/></linearGradient>
- <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#454b5e"/><stop offset="1" stop-color="#17191f"/></linearGradient>
- <linearGradient id="hatBrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f4f"/><stop offset="1" stop-color="#101217"/></linearGradient>
- <radialGradient id="nose" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#ffc2b0"/><stop offset="1" stop-color="#e07a6a"/></radialGradient>
- <linearGradient id="tache" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a24"/><stop offset="1" stop-color="#2a1608"/></linearGradient>`);
+// Imposter: a police lineup of blank heads, all the same, except one is smiling.
+{
+  const xs = [190, 397, 627, 834];
+  const bust = (x, n, smile) => `<g>
+    <ellipse cx="${x + 26}" cy="520" rx="96" ry="104" fill="#000" opacity="0.18"/>
+    <path d="M${x - 150} 1060 C${x - 150} 690 ${x - 96} 610 ${x} 610 C${x + 96} 610 ${x + 150} 690 ${x + 150} 1060 Z" fill="url(#torso)" stroke="#2a2d3c" stroke-opacity="0.7" stroke-width="8"/>
+    <path d="M${x - 118} 720 C${x - 100} 660 ${x - 60} 632 ${x - 20} 626" stroke="#fff" stroke-opacity="0.3" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="${x - 26}" y="560" width="52" height="70" fill="url(#neck)"/>
+    <ellipse cx="${x}" cy="478" rx="92" ry="104" fill="url(#head)" stroke="#2a2d3c" stroke-opacity="0.5" stroke-width="6"/>
+    <ellipse cx="${x - 34}" cy="430" rx="26" ry="40" fill="#fff" opacity="0.5" transform="rotate(25 ${x - 34} 430)"/>
+    ${smile ? `<path d="M${x - 50} 492 Q${x + 2} 556 ${x + 54} 484" stroke="#1a1d2a" stroke-width="18" fill="none" stroke-linecap="round"/>` : ''}
+    <rect x="${x - 72}" y="740" width="144" height="100" rx="12" fill="#000" opacity="0.25" transform="translate(6 10)"/>
+    <rect x="${x - 72}" y="740" width="144" height="100" rx="12" fill="url(#plate)"/>
+    <text x="${x}" y="814" text-anchor="middle" font-family="${FONT}" font-weight="800" font-size="72" fill="#1a1d2a">${n}</text>
+  </g>`;
+  ICONS.imposter = icon(['#3a4152', '#07080c'], `
+  <rect x="40" y="120" width="944" height="904" rx="20" fill="#fff" opacity="0.04"/>
+  ${[0, 1, 2, 3, 4, 5, 6].map((k) => `<line x1="40" y1="${180 + k * 76}" x2="984" y2="${180 + k * 76}" stroke="#fff" stroke-opacity="${k % 2 ? 0.1 : 0.2}" stroke-width="${k % 2 ? 4 : 7}"/>`).join('')}
+  ${[0, 2, 4, 6].map((k) => `<text x="58" y="${172 + k * 76}" font-family="${FONT}" font-weight="700" font-size="30" fill="#fff" opacity="0.3">${7 - k / 2}</text>`).join('')}
+  <path d="M520 0 H700 L860 1024 H360 Z" fill="url(#spot)"/>
+  ${xs.map((x, k) => bust(x, k + 1, k === 2)).join('')}
+  <rect x="0" y="880" width="1024" height="144" fill="url(#floor)"/>`,
+  `<linearGradient id="spot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <linearGradient id="head" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3f1fa"/><stop offset="1" stop-color="#9c98b4"/></linearGradient>
+ <linearGradient id="neck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a86a2"/><stop offset="1" stop-color="#b9b5cc"/></linearGradient>
+ <linearGradient id="torso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c5da"/><stop offset="1" stop-color="#6e6a88"/></linearGradient>
+ <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e3ee"/></linearGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.45"/></linearGradient>`);
+}
 
 // Bean Stalk: a twisting stalk climbing into the clouds, cards for leaves, and a little bean hugging it.
 {

@@ -14,66 +14,63 @@
   <symbol id="s-s" viewBox="-60 -50 120 116"><path d="M0 -46 C12 -30 58 -6 58 20 C58 44 30 52 8 38 C10 50 16 58 26 64 L-26 64 C-16 58 -10 50 -8 38 C-30 52 -58 44 -58 20 C-58 -6 -12 -30 0 -46 Z"/></symbol>
   <symbol id="s-d" viewBox="-52 -60 104 120"><path d="M0 -58 C14 -36 34 -16 50 0 C34 16 14 36 0 58 C-14 36 -34 16 -50 0 C-34 -16 -14 -36 0 -58 Z"/></symbol>
   <symbol id="s-c" viewBox="-58 -56 116 118"><circle cx="0" cy="-27" r="27"/><circle cx="-29" cy="13" r="27"/><circle cx="29" cy="13" r="27"/><path d="M-9 4 C-9 34 -16 48 -30 60 L30 60 C16 48 9 34 9 4 Z"/></symbol>
-    <linearGradient id="eyeInk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a3a"/><stop offset="1" stop-color="#0a0a12"/></linearGradient>
- <radialGradient id="blushG" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff7aa2" stop-opacity="0.75"/><stop offset="1" stop-color="#ff7aa2" stop-opacity="0"/></radialGradient>
- <linearGradient id="spot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
- <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3eefc"/><stop offset="1" stop-color="#a99ccc"/></linearGradient>
- <linearGradient id="coat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dcb36e"/><stop offset="1" stop-color="#8f6630"/></linearGradient>
- <linearGradient id="lapel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e4bf7c"/><stop offset="1" stop-color="#a77a3a"/></linearGradient>
- <linearGradient id="lapelR" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c49a58"/><stop offset="1" stop-color="#8a6128"/></linearGradient>
- <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#454b5e"/><stop offset="1" stop-color="#17191f"/></linearGradient>
- <linearGradient id="hatBrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f4f"/><stop offset="1" stop-color="#101217"/></linearGradient>
- <radialGradient id="nose" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#ffc2b0"/><stop offset="1" stop-color="#e07a6a"/></radialGradient>
- <linearGradient id="tache" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a24"/><stop offset="1" stop-color="#2a1608"/></linearGradient>
+    <linearGradient id="spot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.16"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <linearGradient id="head" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3f1fa"/><stop offset="1" stop-color="#9c98b4"/></linearGradient>
+ <linearGradient id="neck" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a86a2"/><stop offset="1" stop-color="#b9b5cc"/></linearGradient>
+ <linearGradient id="torso" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c9c5da"/><stop offset="1" stop-color="#6e6a88"/></linearGradient>
+ <linearGradient id="plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6e3ee"/></linearGradient>
+ <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.45"/></linearGradient>
   </defs>
   <rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#light)"/><rect width="1024" height="1024" fill="url(#vig)"/>
 
-  <path d="M420 0 H604 L900 1024 H124 Z" fill="url(#spot)"/>
-  <ellipse cx="512" cy="990" rx="380" ry="70" fill="#fff" opacity="0.07"/>
-  <circle cx="300" cy="200" r="4" fill="#fff" opacity="0.5"/><circle cx="720" cy="260" r="3" fill="#fff" opacity="0.5"/><circle cx="640" cy="140" r="5" fill="#fff" opacity="0.5"/><circle cx="380" cy="330" r="3" fill="#fff" opacity="0.5"/><circle cx="560" cy="90" r="4" fill="#fff" opacity="0.5"/>
-  <ellipse cx="512" cy="500" rx="210" ry="200" fill="url(#skin)"/>
-  <ellipse cx="420" cy="420" rx="40" ry="66" fill="#fff" opacity="0.55" transform="rotate(30 420 420)"/>
-  <path d="M232 1060 C236 820 300 680 404 650 L512 720 L620 650 C724 680 788 820 792 1060 Z" fill="url(#coat)"/>
-  <path d="M512 720 L512 1060" stroke="#7d5526" stroke-width="7"/>
-  <rect x="244" y="900" width="536" height="46" fill="#8f6630"/>
-  <rect x="482" y="892" width="60" height="62" rx="10" fill="none" stroke="#e8c27a" stroke-width="9"/>
-  <circle cx="462" cy="800" r="12" fill="#5a3a16"/><circle cx="459" cy="796" r="4" fill="#fff" opacity="0.35"/><circle cx="562" cy="800" r="12" fill="#5a3a16"/><circle cx="559" cy="796" r="4" fill="#fff" opacity="0.35"/><circle cx="462" cy="1000" r="12" fill="#5a3a16"/><circle cx="459" cy="996" r="4" fill="#fff" opacity="0.35"/><circle cx="562" cy="1000" r="12" fill="#5a3a16"/><circle cx="559" cy="996" r="4" fill="#fff" opacity="0.35"/>
-  <path d="M300 600 L404 650 L512 722 L430 880 L290 760 Z" fill="url(#lapel)"/>
-  <path d="M724 600 L620 650 L512 722 L594 880 L734 760 Z" fill="url(#lapelR)"/>
-  <path d="M310 610 L404 652" stroke="#f0d49a" stroke-opacity="0.6" stroke-width="6"/>
-  <ellipse cx="436" cy="470" rx="26" ry="34" fill="url(#eyeInk)"/>
-    <circle cx="428.2" cy="457.08" r="9.88" fill="#fff"/>
-    <circle cx="442.5" cy="481.9" r="4.16" fill="#fff" opacity="0.75"/><ellipse cx="560" cy="470" rx="26" ry="34" fill="url(#eyeInk)"/>
-    <circle cx="552.2" cy="457.08" r="9.88" fill="#fff"/>
-    <circle cx="566.5" cy="481.9" r="4.16" fill="#fff" opacity="0.75"/>
-  <circle cx="450" cy="470" r="62" fill="#fff" fill-opacity="0.12" stroke="#16161d" stroke-width="15"/>
-  <circle cx="574" cy="470" r="62" fill="#fff" fill-opacity="0.12" stroke="#16161d" stroke-width="15"/>
-  <path d="M500 462 Q512 452 524 462" stroke="#16161d" stroke-width="13" fill="none"/>
-  <path d="M398 400 Q450 380 494 404" stroke="#2a2e3c" stroke-width="20" stroke-linecap="round" fill="none"/>
-  <path d="M530 396 Q578 372 628 386" stroke="#2a2e3c" stroke-width="20" stroke-linecap="round" fill="none"/>
-  <ellipse cx="512" cy="548" rx="44" ry="42" fill="url(#nose)"/>
-  <ellipse cx="498" cy="532" rx="12" ry="9" fill="#fff" opacity="0.55"/>
-  <path d="M512 586 C480 572 440 576 418 604 C440 600 456 606 470 614 C488 612 502 604 512 596 C522 604 536 612 554 614 C568 606 584 600 606 604 C584 576 544 572 512 586 Z" fill="url(#tache)"/>
-  <path d="M672 360 C690 384 694 404 680 414 C666 422 652 410 656 392 C658 380 664 372 672 360 Z" fill="#9fdcff" opacity="0.9"/>
-  <g transform="rotate(-8 512 330)">
-    <path d="M362 342 C358 236 400 186 512 184 C624 186 666 236 662 342 Z" fill="url(#hat)"/>
-    <path d="M450 196 Q512 240 574 196" stroke="#000" stroke-opacity="0.4" stroke-width="14" fill="none"/>
-    <rect x="362" y="296" width="300" height="48" fill="#8a2a3c"/>
-    <rect x="362" y="296" width="300" height="10" fill="#fff" opacity="0.15"/>
-    <ellipse cx="512" cy="350" rx="282" ry="52" fill="url(#hatBrim)"/>
-    <path d="M260 348 Q512 300 764 348" stroke="#fff" stroke-opacity="0.16" stroke-width="8" fill="none"/>
-    <ellipse cx="430" cy="236" rx="40" ry="16" fill="#fff" opacity="0.14" transform="rotate(-20 430 236)"/>
+  <rect x="40" y="120" width="944" height="904" rx="20" fill="#fff" opacity="0.04"/>
+  <line x1="40" y1="180" x2="984" y2="180" stroke="#fff" stroke-opacity="0.2" stroke-width="7"/><line x1="40" y1="256" x2="984" y2="256" stroke="#fff" stroke-opacity="0.1" stroke-width="4"/><line x1="40" y1="332" x2="984" y2="332" stroke="#fff" stroke-opacity="0.2" stroke-width="7"/><line x1="40" y1="408" x2="984" y2="408" stroke="#fff" stroke-opacity="0.1" stroke-width="4"/><line x1="40" y1="484" x2="984" y2="484" stroke="#fff" stroke-opacity="0.2" stroke-width="7"/><line x1="40" y1="560" x2="984" y2="560" stroke="#fff" stroke-opacity="0.1" stroke-width="4"/><line x1="40" y1="636" x2="984" y2="636" stroke="#fff" stroke-opacity="0.2" stroke-width="7"/>
+  <text x="58" y="172" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="700" font-size="30" fill="#fff" opacity="0.3">7</text><text x="58" y="324" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="700" font-size="30" fill="#fff" opacity="0.3">6</text><text x="58" y="476" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="700" font-size="30" fill="#fff" opacity="0.3">5</text><text x="58" y="628" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="700" font-size="30" fill="#fff" opacity="0.3">4</text>
+  <path d="M520 0 H700 L860 1024 H360 Z" fill="url(#spot)"/>
+  <g>
+    <ellipse cx="216" cy="520" rx="96" ry="104" fill="#000" opacity="0.18"/>
+    <path d="M40 1060 C40 690 94 610 190 610 C286 610 340 690 340 1060 Z" fill="url(#torso)" stroke="#2a2d3c" stroke-opacity="0.7" stroke-width="8"/>
+    <path d="M72 720 C90 660 130 632 170 626" stroke="#fff" stroke-opacity="0.3" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="164" y="560" width="52" height="70" fill="url(#neck)"/>
+    <ellipse cx="190" cy="478" rx="92" ry="104" fill="url(#head)" stroke="#2a2d3c" stroke-opacity="0.5" stroke-width="6"/>
+    <ellipse cx="156" cy="430" rx="26" ry="40" fill="#fff" opacity="0.5" transform="rotate(25 156 430)"/>
+    
+    <rect x="118" y="740" width="144" height="100" rx="12" fill="#000" opacity="0.25" transform="translate(6 10)"/>
+    <rect x="118" y="740" width="144" height="100" rx="12" fill="url(#plate)"/>
+    <text x="190" y="814" text-anchor="middle" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="72" fill="#1a1d2a">1</text>
+  </g><g>
+    <ellipse cx="423" cy="520" rx="96" ry="104" fill="#000" opacity="0.18"/>
+    <path d="M247 1060 C247 690 301 610 397 610 C493 610 547 690 547 1060 Z" fill="url(#torso)" stroke="#2a2d3c" stroke-opacity="0.7" stroke-width="8"/>
+    <path d="M279 720 C297 660 337 632 377 626" stroke="#fff" stroke-opacity="0.3" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="371" y="560" width="52" height="70" fill="url(#neck)"/>
+    <ellipse cx="397" cy="478" rx="92" ry="104" fill="url(#head)" stroke="#2a2d3c" stroke-opacity="0.5" stroke-width="6"/>
+    <ellipse cx="363" cy="430" rx="26" ry="40" fill="#fff" opacity="0.5" transform="rotate(25 363 430)"/>
+    
+    <rect x="325" y="740" width="144" height="100" rx="12" fill="#000" opacity="0.25" transform="translate(6 10)"/>
+    <rect x="325" y="740" width="144" height="100" rx="12" fill="url(#plate)"/>
+    <text x="397" y="814" text-anchor="middle" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="72" fill="#1a1d2a">2</text>
+  </g><g>
+    <ellipse cx="653" cy="520" rx="96" ry="104" fill="#000" opacity="0.18"/>
+    <path d="M477 1060 C477 690 531 610 627 610 C723 610 777 690 777 1060 Z" fill="url(#torso)" stroke="#2a2d3c" stroke-opacity="0.7" stroke-width="8"/>
+    <path d="M509 720 C527 660 567 632 607 626" stroke="#fff" stroke-opacity="0.3" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="601" y="560" width="52" height="70" fill="url(#neck)"/>
+    <ellipse cx="627" cy="478" rx="92" ry="104" fill="url(#head)" stroke="#2a2d3c" stroke-opacity="0.5" stroke-width="6"/>
+    <ellipse cx="593" cy="430" rx="26" ry="40" fill="#fff" opacity="0.5" transform="rotate(25 593 430)"/>
+    <path d="M577 492 Q629 556 681 484" stroke="#1a1d2a" stroke-width="18" fill="none" stroke-linecap="round"/>
+    <rect x="555" y="740" width="144" height="100" rx="12" fill="#000" opacity="0.25" transform="translate(6 10)"/>
+    <rect x="555" y="740" width="144" height="100" rx="12" fill="url(#plate)"/>
+    <text x="627" y="814" text-anchor="middle" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="72" fill="#1a1d2a">3</text>
+  </g><g>
+    <ellipse cx="860" cy="520" rx="96" ry="104" fill="#000" opacity="0.18"/>
+    <path d="M684 1060 C684 690 738 610 834 610 C930 610 984 690 984 1060 Z" fill="url(#torso)" stroke="#2a2d3c" stroke-opacity="0.7" stroke-width="8"/>
+    <path d="M716 720 C734 660 774 632 814 626" stroke="#fff" stroke-opacity="0.3" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <rect x="808" y="560" width="52" height="70" fill="url(#neck)"/>
+    <ellipse cx="834" cy="478" rx="92" ry="104" fill="url(#head)" stroke="#2a2d3c" stroke-opacity="0.5" stroke-width="6"/>
+    <ellipse cx="800" cy="430" rx="26" ry="40" fill="#fff" opacity="0.5" transform="rotate(25 800 430)"/>
+    
+    <rect x="762" y="740" width="144" height="100" rx="12" fill="#000" opacity="0.25" transform="translate(6 10)"/>
+    <rect x="762" y="740" width="144" height="100" rx="12" fill="url(#plate)"/>
+    <text x="834" y="814" text-anchor="middle" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="72" fill="#1a1d2a">4</text>
   </g>
-  <g transform="translate(770 760) rotate(14) scale(0.42)">
-    <clipPath id="bk11"><rect x="-179" y="-259" width="358" height="518" rx="30"/></clipPath>
-    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.312" transform="translate(14.399999999999999 28.799999999999997)"/>
-    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#f4f4f8"/>
-    <rect x="-179" y="-259" width="358" height="518" rx="30" fill="url(#backFill)"/>
-    <g clip-path="url(#bk11)" stroke="#fff" stroke-opacity="0.13" stroke-width="22">
-      <line x1="-260" y1="260" x2="120" y2="-360"/><line x1="-120" y1="360" x2="260" y2="-260"/>
-    </g>
-    <text y="70" text-anchor="middle" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="230" fill="url(#gold)">?</text>
-  </g>
-  <ellipse cx="702" cy="842" rx="46" ry="38" fill="url(#skin)" transform="rotate(-20 702 842)"/>
-  <ellipse cx="690" cy="830" rx="14" ry="8" fill="#fff" opacity="0.5" transform="rotate(-20 690 830)"/>
+  <rect x="0" y="880" width="1024" height="144" fill="url(#floor)"/>
 </svg>

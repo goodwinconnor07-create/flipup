@@ -42,7 +42,7 @@ device, the back end must be on, and 2.1(b) says in-app purchases must be "compl
 reviewer and functional."
 
 **What we'll do:**
-- Replace every Expo placeholder: the icon (`assets/expo.icon`, `assets/images/icon.png`) and the splash image.
+- Replace every Expo placeholder: the icon (`assets/expo.icon`, `assets/images/icon.png`) and the splash image. Done: both are drawn by `scripts/makeAppIcon.mjs`.
 - Remove every `ComingNext` screen (`native/src/components/coming-next.tsx`): Phase 5 uses them as stand-ins for
   steps it hasn't built yet. `grep -r ComingNext native/src` must find nothing but the file itself, then delete it.
 - `/privacy` and `/support` on gtoduel.online answer today, but only with the web app's page (the single-page
@@ -316,7 +316,7 @@ the iPad release.
 | 5 | Real static pages at `/privacy` and `/support` (today both return the web app) | Claude, Phase 2 |
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |
 | 7 | `eas submit` may need the App Store Connect app ID (the number in the app's URL) if it can't find the app from the bundle ID | Owner, if asked |
-| 8 | App icon and splash made for FlipUp (Expo's placeholders are in now) | Design pass |
+| 8 | App icon and splash made for FlipUp: done (`scripts/makeAppIcon.mjs`). Check the layered icon in Icon Composer or on a TestFlight build, since it was written by hand, not exported | Done, check on device |
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
 | 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy | Owner |

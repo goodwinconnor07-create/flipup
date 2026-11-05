@@ -1,4 +1,4 @@
-# Build prompt: Train and Global tabs, Join on Play, and Heater
+# Build prompt: Global tab, Join on Play, and Heater
 
 Paste everything below the line into a fresh Claude Code session on this repo.
 
@@ -16,23 +16,23 @@ Work in the stages below, in order. After each one, run `npm run check` at the r
 
 ## Stage 1: The new tab bar
 
-The tabs become **Play, Train, Global, Friends**, in that order, in `(tabs)/_layout.tsx` (`NativeTabs`).
+Today the tabs are Play, Train, Friends, and Join as the iOS 26 search-role button beside the bar. There's no Party tab: a party starts from Play with friends. Check `(tabs)/_layout.tsx` and `CLAUDE.md` before you change anything, in case it has moved on since this prompt was written.
 
-- **Play** keeps Home as it is, with two changes. Join moves here (see below), and the Range training card and `ChallengeRow` move to Train.
-- **Train** is a new tab, `(tabs)/(train)/train.tsx`, built with `TabScreen` (the large rounded "Train" title, `ProfileMenu` on the right). It holds Range training at the top as a large card (the `RangeTeaser` hero, today's three squares, the flame), then the three challenges (Short Stack, Style Detective, Rewind) as cards with their pictures and your best, then Your tricks and Poker words as rows. The `range-training` and `challenge/[id]` sheets open from here as they do now. Use SF Symbol `brain.head.profile` (or `target` if it reads better) for the tab.
-- **Global** is a new tab, `(tabs)/(global)/global.tsx` (Stage 3). Use `trophy.fill` for the tab.
+The tabs become **Play, Train, Global, Friends**, in that order.
+
+- **Play** stays as it is, except Join moves here (see below).
+- **Train** stays exactly as it is. Don't rebuild it or move anything into or out of it.
+- **Global** is a new tab, `(tabs)/(global)/global.tsx` (Stage 3), with SF Symbol `trophy.fill`, between Train and Friends.
 - **Friends** stays as it is, with its badge.
-- **Party moves onto Home.** The Party tab goes away. Put a Party card on Home under the start tiles (night violet `LivingCard`, "GAME NIGHT", "4 to 12 games. One winner.", Host and Join a party). Keep `party.tsx`'s poster with its drifting belts as a pushed screen that the card opens, so none of that work is lost. Your open party keeps showing in Home's banner. `party-setup` and `party-room` keep their routes.
-- **The Join tab goes away**, and so does the iOS 26 search-role button.
+- **The Join tab goes away**, and so does the search-role button.
 
 ### Join on Play
 
-- Add a "Join with a code" button to Home's title row as a round glass button (`RoundButton`, SF Symbol `keyboard` or `qrcode.viewfinder`) next to `ProfileMenu`.
-- It opens a `join` sheet with the same content as today's `(join)/join.tsx`: `CodePad` (the keyboard opens as the sheet opens), Scan a QR code, the table it found and Sit down. Move the code, don't copy it. Keep `codeFromScan()` and party codes working, so a party code or party QR still lands in the party.
-- Home's Party card also offers Join a party, which opens `code-entry` as it does now.
-- Every deep link and route that pointed at `(join)` or `(party)` must still work. Grep for them and redirect where needed. Check that the Join Universal Link (`/ABCDE`) and `/party/CODE` still open the right place.
+- Add a "Join with a code" button to Home's title row as a round glass button (`RoundButton`, SF Symbol `qrcode.viewfinder` or `keyboard`) next to `ProfileMenu`.
+- It opens a `join` sheet with everything today's `(join)/join.tsx` does: `CodePad` (the keyboard opens as the sheet opens), Scan a QR code, the table it found and Sit down, and party codes and party QR codes, which still land in the party. Move the code, don't copy it.
+- Every deep link and route that pointed at `(join)` must still work. Grep for them and redirect where needed. Check that the join link (`/ABCDE`) and `/party/CODE` still open the right place.
 
-Run the app's e2e and typecheck, take screenshots of all four tabs in light and dark mode, and check the tab bar at the smallest iPhone width.
+Take screenshots of all four tabs in light and dark mode, and check the tab bar at the smallest iPhone width.
 
 ## Stage 2: Server-side scores you can trust
 

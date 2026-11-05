@@ -39,10 +39,16 @@ FlipUp keeps its depth (14 games, parties, friends, challenges); it gets a stric
   quiet note, if the server says no. Purchases still wait. Tabs load from the saved copy and never animate.
 - **Scope.** Home, games and their sheets; Profile, Friends and Party; the Premium offer. Not the table.
 
-## Order
+## Status
 
-1. Icons (done, waiting on the owner's review), then put them in the app in place of `gameThumb()` pictures.
-2. Game sheets tinted from the game, neutral buttons.
-3. Home hero.
-4. Profile, Friends, Party.
-5. Premium.
+All five steps are built in the iPhone app (November 2026):
+
+1. Icons: `scripts/drawGameIcons.mjs`, `scripts/renderGameIcons.mjs`, `native/src/components/game-icon.tsx`.
+2. Sheets tinted from the game (`SheetHeader`), neutral secondary buttons.
+3. Home hero (`components/home/hero.tsx`).
+4. Profile and friend sheets tinted from the emoji (`ColourWash`, `src/design/emojiColours.ts`), section headers
+   (`SectionTitle`), the Friends empty state, instant friend request answers, the party setup fan.
+5. Premium: "Not now", the icon wall, three benefits, the price line under Buy.
+
+Still to check on a real iPhone: how the hero feels under the status bar and with Dynamic Type, the tints in light
+mode, and that every tab still opens without a stutter.

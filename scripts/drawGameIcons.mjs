@@ -111,37 +111,6 @@ ICONS.holdem = icon(['#2aa86b', '#06301d'], `
   ${card({ x: 372, y: 505, r: -14, rank: 'A', suit: 's' })}
   ${card({ x: 652, y: 566, r: 10, rank: 'K', suit: 'h', lift: 1.4 })}`);
 
-ICONS.pineapple = icon(['#ffc24a', '#e2570f'], `
-  ${glow(470, 480, 420, 'whiteGlow', 0.5)}
-  ${shadow(512, 905, 320, 50)}
-  <g transform="translate(470 360)">
-    ${[-44, -22, 0, 22, 44].map((a, i) => `<path transform="rotate(${a}) scale(${i === 2 ? 1.12 : 1})" d="M0 20 C-46 -50 -36 -170 0 -240 C36 -170 46 -50 0 20 Z" fill="url(#leaf)" stroke="#156b2c" stroke-opacity="0.35" stroke-width="5"/>`).join('')}
-  </g>
-  <g transform="translate(-30 0)"><clipPath id="pBody"><ellipse cx="500" cy="600" rx="215" ry="260"/></clipPath>
-  <ellipse cx="500" cy="600" rx="215" ry="260" fill="url(#pine)"/>
-  <g clip-path="url(#pBody)" stroke="#b9560a" stroke-opacity="0.4" stroke-width="9">
-    ${Array.from({ length: 12 }, (_, i) => `<line x1="${120 + i * 70}" y1="300" x2="${120 + i * 70 - 600}" y2="900"/><line x1="${-120 + i * 70}" y1="300" x2="${-120 + i * 70 + 600}" y2="900"/>`).join('')}
-  </g>
-  <ellipse cx="500" cy="600" rx="215" ry="260" fill="url(#pineShade)"/>
-  <ellipse cx="400" cy="440" rx="50" ry="90" fill="#fff" opacity="0.4" transform="rotate(28 400 440)"/>
-  <ellipse cx="400" cy="640" rx="40" ry="24" fill="#ff7a59" opacity="0.55"/><ellipse cx="610" cy="640" rx="40" ry="24" fill="#ff7a59" opacity="0.55"/>
-  <g>
-    <path d="M360 548 Q365 515 400 512 L460 512 Q492 515 492 548 Q490 600 440 604 L412 604 Q362 600 360 548 Z" fill="url(#lens)"/>
-    <path d="M512 548 Q512 515 545 512 L605 512 Q640 515 642 548 Q640 600 590 604 L562 604 Q514 600 512 548 Z" fill="url(#lens)"/>
-    <path d="M488 530 Q502 518 516 530" stroke="#16161d" stroke-width="14" fill="none"/>
-    <path d="M335 528 L362 535 M642 535 L668 528" stroke="#16161d" stroke-width="14" stroke-linecap="round"/>
-    <path d="M385 530 L420 528 L392 575 Z" fill="#fff" opacity="0.35"/><path d="M537 530 L572 528 L544 575 Z" fill="#fff" opacity="0.35"/>
-  </g>
-  <path d="M452 668 Q505 720 560 664" fill="none" stroke="#7a3205" stroke-width="16" stroke-linecap="round"/>
-  </g>
-  ${card({ x: 660, y: 800, r: -18, s: 0.4, rank: 'Q', suit: 'd' })}
-  ${card({ x: 735, y: 785, r: 0, s: 0.4, rank: '8', suit: 'c' })}
-  ${card({ x: 810, y: 800, r: 18, s: 0.4, rank: '8', suit: 'h' })}`,
-`<linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9af07a"/><stop offset="1" stop-color="#1f9a45"/></linearGradient>
- <linearGradient id="pine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#f39a1b"/></linearGradient>
- <linearGradient id="pineShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0.5" stop-color="#b34a00" stop-opacity="0"/><stop offset="1" stop-color="#b34a00" stop-opacity="0.35"/></linearGradient>
- <linearGradient id="lens" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3a4a"/><stop offset="1" stop-color="#0b0b12"/></linearGradient>`);
-
 ICONS.deuces = icon(['#ff4fa0', '#6a22f0'], `
   ${glow(512, 500, 470, 'whiteGlow', 0.45)}
   ${shadow(520, 880, 320, 52)}
@@ -216,22 +185,6 @@ ICONS.dice = icon(['#e0334f', '#3a0610'], `
  <radialGradient id="pipred" cx="0.5" cy="0.35" r="0.6"><stop offset="0" stop-color="#ff5a52"/><stop offset="1" stop-color="#b3141c"/></radialGradient>
  <linearGradient id="river" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff6b7d" stop-opacity="0"/><stop offset="1" stop-color="#ff6b7d" stop-opacity="0.35"/></linearGradient>`);
 
-ICONS.redriver = icon(['#7a1420', '#120205'], `
-  <rect x="0" y="250" width="1024" height="780" fill="url(#ground)"/>
-  ${glow(520, 330, 380, 'redGlow', 1)}
-  <path d="M500 330 C470 450 640 520 590 650 C540 780 330 860 250 1060 L860 1060 C800 880 720 780 730 650 C740 520 570 450 540 330 Z" fill="url(#rv)"/>
-  <g fill="none" stroke="#ffd6d6" stroke-linecap="round" opacity="0.6">
-    <path d="M520 420 q14 -6 28 0" stroke-width="4"/><path d="M600 560 q24 -10 48 0" stroke-width="6"/>
-    <path d="M640 700 q34 -12 68 0" stroke-width="8"/><path d="M380 900 q50 -18 100 0" stroke-width="10"/><path d="M640 960 q50 -18 100 0" stroke-width="10"/>
-  </g>
-  ${card({ x: 522, y: 385, r: 4, s: 0.14, rank: '3', suit: 'h', lift: 0.4 })}
-  ${card({ x: 625, y: 560, r: 12, s: 0.26, rank: '9', suit: 'd', lift: 0.6 })}
-  ${shadow(500, 900, 250, 40, 0.8)}
-  ${card({ x: 480, y: 790, r: -12, s: 0.6, rank: '7', suit: 'h', lift: 1.2 })}`,
-`<linearGradient id="rv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb3b3"/><stop offset="0.35" stop-color="#ff4b4b"/><stop offset="1" stop-color="#c41616"/></linearGradient>
- <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#000" stop-opacity="0"/><stop offset="0.12" stop-color="#000" stop-opacity="0.22"/><stop offset="1" stop-color="#000" stop-opacity="0.35"/></linearGradient>
- <radialGradient id="redGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff6b6b" stop-opacity="0.7"/><stop offset="1" stop-color="#ff6b6b" stop-opacity="0"/></radialGradient>`);
-
 ICONS.crucifix = icon(['#6a55a8', '#140d26'], `
   ${glow(512, 512, 460, 'goldGlow', 0.8)}
   ${shadow(512, 920, 260, 40, 0.7)}
@@ -264,90 +217,13 @@ ICONS.memory = icon(['#8a6bff', '#1f0f5c'], `
   ${card({ x: 512, y: 505, r: -4, s: 0.6, rank: 'Q', suit: 'h', glowing: true, lift: 1.5 })}
   ${sparkle(700, 300, 48, '#fff')}${sparkle(310, 720, 32, '#ffe28a')}`);
 
-ICONS.beanstalk = icon(['#5cc761', '#0e3d20'], `
-  ${glow(512, 300, 380, 'whiteGlow', 0.45)}
-  <path d="M520 1080 C380 880 680 760 520 600 C380 470 640 340 520 200" fill="none" stroke="#0f5a26" stroke-width="64" stroke-linecap="round"/>
-  <path d="M520 1080 C380 880 680 760 520 600 C380 470 640 340 520 200" fill="none" stroke="url(#stalk)" stroke-width="48" stroke-linecap="round"/>
-  <path d="M506 1060 C370 880 664 760 506 600 C370 470 626 340 506 210" fill="none" stroke="#c8ff9e" stroke-opacity="0.5" stroke-width="10" stroke-linecap="round"/>
-  <path d="M520 205 C540 150 620 150 615 205 C610 245 560 240 565 210" fill="none" stroke="url(#stalk)" stroke-width="18" stroke-linecap="round"/>
-  ${[[600, 690, 30], [420, 480, -150], [585, 340, 20]].map(([x, y, r]) => `<path transform="translate(${x} ${y}) rotate(${r})" d="M0 0 C40 -70 140 -70 190 -10 C140 40 50 50 0 0 Z" fill="url(#leaf)"/><path transform="translate(${x} ${y}) rotate(${r})" d="M10 -4 C70 -30 120 -30 175 -12" stroke="#0f5a26" stroke-opacity="0.45" stroke-width="6" fill="none"/>`).join('')}
-  ${card({ x: 300, y: 760, r: -22, s: 0.34, rank: 'J', suit: 'c', lift: 0.7 })}
-  ${card({ x: 735, y: 520, r: 18, s: 0.3, rank: '6', suit: 'd', lift: 0.7 })}
-  ${card({ x: 335, y: 330, r: -16, s: 0.26, rank: 'A', suit: 'h', lift: 0.6 })}
-  <g transform="translate(560 150) rotate(-10)">
-    <path d="M-70 10 C-80 -50 -20 -80 20 -60 C50 -46 40 -20 70 -10 C100 2 90 60 30 66 C-30 72 -62 50 -70 10 Z" fill="url(#bean)"/>
-    <ellipse cx="-30" cy="-40" rx="20" ry="10" fill="#fff" opacity="0.55" transform="rotate(-20 -30 -40)"/>
-    <circle cx="-14" cy="6" r="10" fill="#16301c"/><circle cx="34" cy="10" r="10" fill="#16301c"/>
-    <circle cx="-17" cy="2" r="3.5" fill="#fff"/><circle cx="31" cy="6" r="3.5" fill="#fff"/>
-    <path d="M-2 28 Q10 40 24 28" fill="none" stroke="#16301c" stroke-width="7" stroke-linecap="round"/>
-  </g>`,
-`<linearGradient id="stalk" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7ee06a"/><stop offset="1" stop-color="#2f9e44"/></linearGradient>
- <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a6f28a"/><stop offset="1" stop-color="#2a8f3e"/></linearGradient>
- <linearGradient id="bean" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c6f59a"/><stop offset="1" stop-color="#5cbf3a"/></linearGradient>`);
-
 ICONS.bjholdem = icon(['#16855a', '#041d12'], `
   ${shadow(500, 860, 330, 56)}
   ${card({ x: 360, y: 490, r: -14, rank: 'K', suit: 's' })}
   ${card({ x: 620, y: 540, r: 9, rank: 'A', suit: 'd', lift: 1.4 })}
   ${chip({ x: 760, y: 790, r: 150, base: ['#ffe28a', '#e09a00'], edge: '#fff7d6', ink: '#5a3a00', text: '21' })}`);
 
-ICONS.imposter = icon(['#3a4152', '#07080c'], `
-  <path d="M430 0 H594 L860 1024 H164 Z" fill="url(#spot)"/>
-  ${shadow(512, 1000, 320, 50)}
-  <path d="M320 600 C320 420 400 320 512 320 C624 320 704 420 704 600 L704 1060 L320 1060 Z" fill="url(#skin)"/>
-  <path d="M290 760 Q512 720 734 760 L780 1060 L244 1060 Z" fill="url(#coat)"/>
-  <path d="M300 690 L470 790 L400 940 Z" fill="#a8783c"/><path d="M724 690 L554 790 L624 940 Z" fill="#a8783c"/>
-  <line x1="512" y1="800" x2="512" y2="1060" stroke="#7d5526" stroke-width="8"/>
-  <ellipse cx="452" cy="500" rx="44" ry="36" fill="#fff"/><ellipse cx="580" cy="500" rx="44" ry="36" fill="#fff"/>
-  <circle cx="430" cy="506" r="19" fill="#141724"/><circle cx="558" cy="506" r="19" fill="#141724"/>
-  <circle cx="424" cy="500" r="6" fill="#fff"/><circle cx="552" cy="500" r="6" fill="#fff"/>
-  <path d="M400 452 L498 470 M538 470 L632 446" stroke="#2a2e3c" stroke-width="18" stroke-linecap="round"/>
-  <g transform="rotate(-6 512 360)">
-    <path d="M370 380 C370 260 400 210 512 210 C624 210 654 260 654 380 Z" fill="url(#hat)"/>
-    <path d="M440 222 Q512 260 584 222" stroke="#000" stroke-opacity="0.35" stroke-width="12" fill="none"/>
-    <rect x="370" y="330" width="284" height="44" fill="#7a2232"/>
-    <ellipse cx="512" cy="382" rx="270" ry="50" fill="url(#hat)"/>
-    <ellipse cx="460" cy="370" rx="150" ry="14" fill="#fff" opacity="0.12"/>
-  </g>
-  ${back({ x: 560, y: 690, r: -10, s: 0.5, lift: 1.2, mark: `<text y="70" text-anchor="middle" font-family="${FONT}" font-weight="800" font-size="230" fill="url(#gold)">?</text>` })}
-  <ellipse cx="455" cy="760" rx="56" ry="42" fill="#c99a57" transform="rotate(-30 455 760)"/>`,
-`<linearGradient id="spot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.2"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
- <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2e6f2"/><stop offset="1" stop-color="#8d95ad"/></linearGradient>
- <linearGradient id="coat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6ac68"/><stop offset="1" stop-color="#8f6630"/></linearGradient>
- <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f4f"/><stop offset="1" stop-color="#14161e"/></linearGradient>`);
-
 // ----- Solo cards: the three challenges and Range training (colours from CHALLENGE_LOOK in challengeArt.ts) -----
-
-/** A chip seen from the side, its top at (x, y). */
-function sideChip(x, y, base, r = 0) {
-  const g = id('sc');
-  const rx = 210;
-  const ry = 66;
-  const t = 52;
-  const stripes = [-170, -80, 10, 100, 180].map((sx) => `<rect x="${sx}" y="0" width="34" height="${t + ry}" fill="#fff" opacity="0.85"/>`).join('');
-  return `<g transform="translate(${x} ${y}) rotate(${r})">
-    <linearGradient id="${g}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${base[0]}"/><stop offset="1" stop-color="${base[1]}"/></linearGradient>
-    <path d="M${-rx} 0 V${t} A${rx} ${ry} 0 0 0 ${rx} ${t} V0 Z" fill="url(#${g})"/>
-    <clipPath id="${g}c"><path d="M${-rx} 0 V${t} A${rx} ${ry} 0 0 0 ${rx} ${t} V0 Z"/></clipPath>
-    <g clip-path="url(#${g}c)">${stripes}</g>
-    <ellipse rx="${rx}" ry="${ry}" fill="${base[0]}"/>
-    <ellipse rx="${rx * 0.66}" ry="${ry * 0.66}" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="8" stroke-dasharray="26 18"/>
-    <ellipse cx="-60" cy="-22" rx="80" ry="14" fill="#fff" opacity="0.3"/>
-  </g>`;
-}
-
-const VIOLET = ['#9b84ff', '#5a35f0'];
-const GOLDC = ['#ffe28a', '#e0a100'];
-const WHITE = ['#ffffff', '#cfc8ea'];
-
-ICONS.shortStack = icon(['#8263ff', '#2a1290'], `
-  ${glow(512, 560, 420, 'whiteGlow', 0.35)}
-  ${shadow(500, 860, 320, 60)}
-  ${sideChip(500, 760, VIOLET)}
-  ${sideChip(492, 708, GOLDC)}
-  ${sideChip(506, 656, VIOLET)}
-  ${sideChip(560, 560, GOLDC, 16)}
-  ${sparkle(800, 300, 40, '#ffe28a')}${sparkle(230, 330, 26, '#fff', 0.8)}`);
 
 ICONS.detective = icon(['#3a24a8', '#0b0626'], `
   ${shadow(470, 860, 300, 50)}
@@ -397,6 +273,268 @@ ICONS.ranges = icon(['#5a35f0', '#160a4a'], `
     }).join('')}
   </g>
   ${sparkle(830, 220, 44, '#fff')}`);
+
+// ----- The characters and the detailed scenes. Same faces as the ghost: big dark eyes with two lights, blush, a
+// small smile, glossy bodies lit from the top left. -----
+
+/** Ghost-style eyes: dark ovals with a big and a small light. `look` moves the pupils sideways. */
+function eyes(lx, rx, y, { w = 34, h = 46, look = 0 } = {}) {
+  const one = (x) => `<ellipse cx="${x + look}" cy="${y}" rx="${w}" ry="${h}" fill="url(#eyeInk)"/>
+    <circle cx="${x + look - w * 0.3}" cy="${y - h * 0.38}" r="${w * 0.38}" fill="#fff"/>
+    <circle cx="${x + look + w * 0.25}" cy="${y + h * 0.35}" r="${w * 0.16}" fill="#fff" opacity="0.75"/>`;
+  return one(lx) + one(rx);
+}
+const blush = (x, y, rx = 44, ry = 26) => `<ellipse cx="${x}" cy="${y}" rx="${rx}" ry="${ry}" fill="url(#blushG)"/>`;
+const FACE_DEFS = `<linearGradient id="eyeInk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a2a3a"/><stop offset="1" stop-color="#0a0a12"/></linearGradient>
+ <radialGradient id="blushG" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff7aa2" stop-opacity="0.75"/><stop offset="1" stop-color="#ff7aa2" stop-opacity="0"/></radialGradient>`;
+
+/** Sun rays from (x, y): alternating soft wedges. */
+function rays(x, y, n = 14, o = 0.07) {
+  return Array.from({ length: n }, (_, i) => {
+    const a0 = ((i * 360) / n) * (Math.PI / 180);
+    const a1 = (((i + 0.5) * 360) / n) * (Math.PI / 180);
+    const R = 900;
+    return `<path d="M${x} ${y} L${x + Math.cos(a0) * R} ${y + Math.sin(a0) * R} L${x + Math.cos(a1) * R} ${y + Math.sin(a1) * R} Z" fill="#fff" opacity="${o}"/>`;
+  }).join('');
+}
+
+// Pineapple: a round, glossy pineapple with real scales, a layered crown, its sunglasses pushed up, three cards.
+{
+  const cx = 470;
+  const cy = 610;
+  const rx = 212;
+  const ry = 240;
+  const scales = [];
+  for (let row = -6; row <= 6; row++) {
+    for (let col = -5; col <= 5; col++) {
+      const x = cx + col * 66 + (row % 2 ? 33 : 0);
+      const y = cy + row * 54;
+      scales.push(`<path d="M${x} ${y - 30} Q${x + 30} ${y - 28} ${x + 35} ${y} Q${x + 30} ${y + 28} ${x} ${y + 31} Q${x - 30} ${y + 28} ${x - 35} ${y} Q${x - 30} ${y - 28} ${x} ${y - 30} Z" fill="url(#scale)" stroke="#c0600a" stroke-opacity="0.55" stroke-width="4"/>
+        <path d="M${x - 16} ${y - 14} Q${x} ${y - 24} ${x + 16} ${y - 14}" stroke="#fff6c2" stroke-opacity="0.7" stroke-width="5" fill="none" stroke-linecap="round"/>
+        <circle cx="${x}" cy="${y + 10}" r="5" fill="#8a3d04" opacity="0.55"/>`);
+    }
+  }
+  const leaf = (a, len, w, fill, bend = 0) =>
+    `<g transform="rotate(${a})"><path d="M0 24 C${-w} ${-len * 0.25} ${-w * 0.6 + bend} ${-len * 0.75} ${bend} ${-len} C${w * 0.5 + bend} ${-len * 0.7} ${w} ${-len * 0.25} 0 24 Z" fill="${fill}"/>
+      <path d="M0 10 Q${bend * 0.4} ${-len * 0.5} ${bend * 0.9} ${-len * 0.92}" stroke="#0f5a26" stroke-opacity="0.35" stroke-width="5" fill="none"/></g>`;
+  ICONS.pineapple = icon(['#ffcf52', '#e2570f'], `
+  ${rays(cx, cy - 40)}
+  ${glow(cx, 520, 420, 'whiteGlow', 0.5)}
+  ${shadow(cx + 40, 905, 320, 46)}
+  <g transform="translate(${cx} ${cy - ry + 34})">
+    ${leaf(-58, 190, 40, 'url(#leafDark)', -20)}${leaf(58, 190, 40, 'url(#leafDark)', 20)}
+    ${leaf(-34, 250, 46, 'url(#leafDark)', -14)}${leaf(34, 250, 46, 'url(#leafDark)', 14)}
+    ${leaf(-16, 300, 48, 'url(#leaf)', -10)}${leaf(16, 300, 48, 'url(#leaf)', 18)}${leaf(0, 330, 52, 'url(#leaf)', 6)}
+    ${leaf(-44, 180, 40, 'url(#leaf)', -16)}${leaf(44, 180, 40, 'url(#leaf)', 16)}
+  </g>
+  <ellipse cx="${cx - 70}" cy="855" rx="54" ry="30" fill="#d9761a"/><ellipse cx="${cx + 70}" cy="855" rx="54" ry="30" fill="#d9761a"/>
+  <clipPath id="pBody"><ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}"/></clipPath>
+  <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="#f5a524"/>
+  <g clip-path="url(#pBody)">${scales.join('')}
+    <ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="url(#pineShade)"/>
+    <ellipse cx="${cx}" cy="${cy + 40}" rx="140" ry="110" fill="#ffd866" opacity="0.55"/>
+  </g>
+  <ellipse cx="${cx - 110}" cy="${cy - 130}" rx="46" ry="90" fill="#fff" opacity="0.38" transform="rotate(28 ${cx - 110} ${cy - 130})"/>
+  ${eyes(cx - 66, cx + 66, cy + 10, { w: 32, h: 44 })}
+  ${blush(cx - 128, cy + 68, 42, 24)}${blush(cx + 128, cy + 68, 42, 24)}
+  <path d="M${cx - 30} ${cy + 74} Q${cx} ${cy + 118} ${cx + 30} ${cy + 74} Z" fill="#6a2304"/>
+  <ellipse cx="${cx}" cy="${cy + 98}" rx="14" ry="9" fill="#ff7a8a"/>
+  <g transform="rotate(-10 ${cx} ${cy - ry + 40})">
+    <path d="M${cx - 150} ${cy - ry + 40} Q${cx - 150} ${cy - ry + 4} ${cx - 112} ${cy - ry + 2} L${cx - 26} ${cy - ry + 2} Q${cx - 8} ${cy - ry + 6} ${cx - 10} ${cy - ry + 40} Q${cx - 16} ${cy - ry + 86} ${cx - 70} ${cy - ry + 88} Q${cx - 146} ${cy - ry + 86} ${cx - 150} ${cy - ry + 40} Z" fill="url(#shades)" stroke="#16161d" stroke-width="10"/>
+    <path d="M${cx + 10} ${cy - ry + 40} Q${cx + 8} ${cy - ry + 6} ${cx + 26} ${cy - ry + 2} L${cx + 112} ${cy - ry + 2} Q${cx + 150} ${cy - ry + 4} ${cx + 150} ${cy - ry + 40} Q${cx + 146} ${cy - ry + 86} ${cx + 70} ${cy - ry + 88} Q${cx + 16} ${cy - ry + 86} ${cx + 10} ${cy - ry + 40} Z" fill="url(#shades)" stroke="#16161d" stroke-width="10"/>
+    <path d="M${cx - 12} ${cy - ry + 22} Q${cx} ${cy - ry + 10} ${cx + 12} ${cy - ry + 22}" stroke="#16161d" stroke-width="12" fill="none"/>
+    <path d="M${cx - 120} ${cy - ry + 20} L${cx - 84} ${cy - ry + 18} L${cx - 118} ${cy - ry + 66} Z" fill="#fff" opacity="0.45"/>
+    <path d="M${cx + 40} ${cy - ry + 20} L${cx + 76} ${cy - ry + 18} L${cx + 42} ${cy - ry + 66} Z" fill="#fff" opacity="0.45"/>
+  </g>
+  ${card({ x: 690, y: 790, r: -18, s: 0.36, rank: 'Q', suit: 'd' })}
+  ${card({ x: 752, y: 772, r: 0, s: 0.36, rank: '8', suit: 'c' })}
+  ${card({ x: 814, y: 790, r: 18, s: 0.36, rank: '8', suit: 'h' })}
+  <ellipse cx="676" cy="872" rx="28" ry="22" fill="url(#mitt)" stroke="#c0600a" stroke-opacity="0.4" stroke-width="4"/>
+  <ellipse cx="826" cy="876" rx="26" ry="20" fill="url(#mitt)" stroke="#c0600a" stroke-opacity="0.4" stroke-width="4"/>
+  ${sparkle(170, 230, 40, '#fff')}${sparkle(860, 210, 30, '#fff', 0.85)}`,
+  `${FACE_DEFS}
+ <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a8f58a"/><stop offset="1" stop-color="#22a04a"/></linearGradient>
+ <linearGradient id="leafDark" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5ccf63"/><stop offset="1" stop-color="#11692e"/></linearGradient>
+ <linearGradient id="scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#f29a1a"/></linearGradient>
+ <radialGradient id="pineShade" cx="0.32" cy="0.25" r="0.85"><stop offset="0.45" stop-color="#a33f00" stop-opacity="0"/><stop offset="1" stop-color="#a33f00" stop-opacity="0.5"/></radialGradient>
+ <linearGradient id="shades" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ff5fa2"/><stop offset="0.5" stop-color="#3a1a5a"/><stop offset="1" stop-color="#0b0b12"/></linearGradient>
+ <linearGradient id="mitt" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd866"/><stop offset="1" stop-color="#f29a1a"/></linearGradient>`);
+}
+
+// Imposter: a cute little blob in a disguise (fedora, nose-and-moustache glasses, collar up), eyes sliding sideways.
+ICONS.imposter = icon(['#3a4152', '#07080c'], `
+  <path d="M420 0 H604 L900 1024 H124 Z" fill="url(#spot)"/>
+  <ellipse cx="512" cy="990" rx="380" ry="70" fill="#fff" opacity="0.07"/>
+  ${[[300, 200, 4], [720, 260, 3], [640, 140, 5], [380, 330, 3], [560, 90, 4]].map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity="0.5"/>`).join('')}
+  <ellipse cx="512" cy="500" rx="210" ry="200" fill="url(#skin)"/>
+  <ellipse cx="420" cy="420" rx="40" ry="66" fill="#fff" opacity="0.55" transform="rotate(30 420 420)"/>
+  <path d="M232 1060 C236 820 300 680 404 650 L512 720 L620 650 C724 680 788 820 792 1060 Z" fill="url(#coat)"/>
+  <path d="M512 720 L512 1060" stroke="#7d5526" stroke-width="7"/>
+  <rect x="244" y="900" width="536" height="46" fill="#8f6630"/>
+  <rect x="482" y="892" width="60" height="62" rx="10" fill="none" stroke="#e8c27a" stroke-width="9"/>
+  ${[[462, 800], [562, 800], [462, 1000], [562, 1000]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="12" fill="#5a3a16"/><circle cx="${x - 3}" cy="${y - 4}" r="4" fill="#fff" opacity="0.35"/>`).join('')}
+  <path d="M300 600 L404 650 L512 722 L430 880 L290 760 Z" fill="url(#lapel)"/>
+  <path d="M724 600 L620 650 L512 722 L594 880 L734 760 Z" fill="url(#lapelR)"/>
+  <path d="M310 610 L404 652" stroke="#f0d49a" stroke-opacity="0.6" stroke-width="6"/>
+  ${eyes(450, 574, 470, { w: 26, h: 34, look: -14 })}
+  <circle cx="450" cy="470" r="62" fill="#fff" fill-opacity="0.12" stroke="#16161d" stroke-width="15"/>
+  <circle cx="574" cy="470" r="62" fill="#fff" fill-opacity="0.12" stroke="#16161d" stroke-width="15"/>
+  <path d="M500 462 Q512 452 524 462" stroke="#16161d" stroke-width="13" fill="none"/>
+  <path d="M398 400 Q450 380 494 404" stroke="#2a2e3c" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <path d="M530 396 Q578 372 628 386" stroke="#2a2e3c" stroke-width="20" stroke-linecap="round" fill="none"/>
+  <ellipse cx="512" cy="548" rx="44" ry="42" fill="url(#nose)"/>
+  <ellipse cx="498" cy="532" rx="12" ry="9" fill="#fff" opacity="0.55"/>
+  <path d="M512 586 C480 572 440 576 418 604 C440 600 456 606 470 614 C488 612 502 604 512 596 C522 604 536 612 554 614 C568 606 584 600 606 604 C584 576 544 572 512 586 Z" fill="url(#tache)"/>
+  <path d="M672 360 C690 384 694 404 680 414 C666 422 652 410 656 392 C658 380 664 372 672 360 Z" fill="#9fdcff" opacity="0.9"/>
+  <g transform="rotate(-8 512 330)">
+    <path d="M362 342 C358 236 400 186 512 184 C624 186 666 236 662 342 Z" fill="url(#hat)"/>
+    <path d="M450 196 Q512 240 574 196" stroke="#000" stroke-opacity="0.4" stroke-width="14" fill="none"/>
+    <rect x="362" y="296" width="300" height="48" fill="#8a2a3c"/>
+    <rect x="362" y="296" width="300" height="10" fill="#fff" opacity="0.15"/>
+    <ellipse cx="512" cy="350" rx="282" ry="52" fill="url(#hatBrim)"/>
+    <path d="M260 348 Q512 300 764 348" stroke="#fff" stroke-opacity="0.16" stroke-width="8" fill="none"/>
+    <ellipse cx="430" cy="236" rx="40" ry="16" fill="#fff" opacity="0.14" transform="rotate(-20 430 236)"/>
+  </g>
+  ${back({ x: 770, y: 760, r: 14, s: 0.42, lift: 1.2, mark: `<text y="70" text-anchor="middle" font-family="${FONT}" font-weight="800" font-size="230" fill="url(#gold)">?</text>` })}
+  <ellipse cx="702" cy="842" rx="46" ry="38" fill="url(#skin)" transform="rotate(-20 702 842)"/>
+  <ellipse cx="690" cy="830" rx="14" ry="8" fill="#fff" opacity="0.5" transform="rotate(-20 690 830)"/>`,
+`${FACE_DEFS}
+ <linearGradient id="spot" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+ <linearGradient id="skin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3eefc"/><stop offset="1" stop-color="#a99ccc"/></linearGradient>
+ <linearGradient id="coat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dcb36e"/><stop offset="1" stop-color="#8f6630"/></linearGradient>
+ <linearGradient id="lapel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e4bf7c"/><stop offset="1" stop-color="#a77a3a"/></linearGradient>
+ <linearGradient id="lapelR" x1="1" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c49a58"/><stop offset="1" stop-color="#8a6128"/></linearGradient>
+ <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#454b5e"/><stop offset="1" stop-color="#17191f"/></linearGradient>
+ <linearGradient id="hatBrim" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3f4f"/><stop offset="1" stop-color="#101217"/></linearGradient>
+ <radialGradient id="nose" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#ffc2b0"/><stop offset="1" stop-color="#e07a6a"/></radialGradient>
+ <linearGradient id="tache" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a3a24"/><stop offset="1" stop-color="#2a1608"/></linearGradient>`);
+
+// Bean Stalk: a twisting stalk climbing into the clouds, cards for leaves, and a little bean hugging it.
+{
+  const stalk = 'M520 1080 C380 880 680 760 520 600 C380 470 640 340 520 160';
+  const twin = 'M500 1080 C420 900 640 760 540 600 C430 480 600 350 540 160';
+  const leaf = (x, y, r, s = 1) => `<g transform="translate(${x} ${y}) rotate(${r}) scale(${s})">
+    <path d="M0 0 C40 -74 150 -76 200 -8 C146 44 52 52 0 0 Z" fill="url(#leafG)"/>
+    <path d="M8 -4 C70 -32 128 -32 186 -10" stroke="#0f5a26" stroke-opacity="0.5" stroke-width="6" fill="none"/>
+    ${[50, 90, 130].map((v) => `<path d="M${v} -20 L${v + 18} -46 M${v} -20 L${v + 20} 6" stroke="#0f5a26" stroke-opacity="0.3" stroke-width="4"/>`).join('')}
+    <path d="M30 -36 C70 -62 120 -62 160 -40" stroke="#fff" stroke-opacity="0.35" stroke-width="6" fill="none" stroke-linecap="round"/></g>`;
+  const curl = (x, y, r, s = 1) => `<path transform="translate(${x} ${y}) rotate(${r}) scale(${s})" d="M0 0 C30 -10 50 -40 36 -62 C24 -80 -4 -70 2 -50 C6 -38 22 -40 22 -52" fill="none" stroke="#7ee06a" stroke-width="9" stroke-linecap="round"/>`;
+  const puff = (pts, shade = '#c9d8ff') => `<g>${pts.map(([x, y, r]) => `<circle cx="${x}" cy="${y + 10}" r="${r}" fill="${shade}"/>`).join('')}${pts.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="url(#cloud)"/>`).join('')}</g>`;
+  ICONS.beanstalk = icon(['#6fd6ff', '#1d7a3a'], `
+  ${glow(512, 160, 420, 'whiteGlow', 0.6)}
+  ${sparkle(170, 330, 34, '#fff', 0.9)}${sparkle(860, 400, 26, '#fff', 0.8)}
+  <path d="${stalk}" fill="none" stroke="#0f5a26" stroke-width="70" stroke-linecap="round"/>
+  <path d="${stalk}" fill="none" stroke="url(#stalkG)" stroke-width="54" stroke-linecap="round"/>
+  <path d="${twin}" fill="none" stroke="#2f9e44" stroke-width="24" stroke-linecap="round" opacity="0.9"/>
+  <path d="M506 1060 C370 880 664 760 506 600 C370 470 626 340 506 180" fill="none" stroke="#d6ffb0" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round"/>
+  ${leaf(590, 700, 24)}${leaf(440, 520, -156, 0.9)}${leaf(560, 360, 14, 0.8)}${leaf(470, 880, -170, 0.85)}
+  ${curl(620, 800, 20)}${curl(420, 640, -150, 0.9)}${curl(600, 450, 10, 0.8)}
+  ${card({ x: 300, y: 780, r: -22, s: 0.32, rank: 'J', suit: 'c', lift: 0.7 })}
+  ${card({ x: 760, y: 560, r: 18, s: 0.28, rank: '6', suit: 'd', lift: 0.7 })}
+  ${card({ x: 330, y: 400, r: -16, s: 0.24, rank: 'A', suit: 'h', lift: 0.6 })}
+  <g transform="translate(560 560) rotate(8)">
+    <path d="M-80 -60 C-96 -150 -10 -186 50 -156 C96 -132 80 -84 104 -50 C140 4 110 110 20 118 C-70 126 -100 40 -80 -60 Z" fill="url(#beanG)"/>
+    <path d="M-80 -60 C-96 -150 -10 -186 50 -156 C96 -132 80 -84 104 -50 C140 4 110 110 20 118 C-70 126 -100 40 -80 -60 Z" fill="url(#beanShade)"/>
+    <ellipse cx="-34" cy="-118" rx="30" ry="14" fill="#fff" opacity="0.6" transform="rotate(-25 -34 -118)"/>
+    <path d="M10 -160 C0 -196 20 -214 40 -220" stroke="#2f9e44" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M40 -220 C70 -246 110 -230 112 -206 C88 -196 60 -200 40 -220 Z" fill="url(#leafG)"/>
+    <path d="M30 -212 C0 -244 -36 -232 -40 -208 C-16 -198 10 -200 30 -212 Z" fill="url(#leafG)"/>
+    ${eyes(-24, 50, -40, { w: 22, h: 30, look: 4 })}
+    ${blush(-56, 4, 26, 16)}${blush(84, 4, 26, 16)}
+    <path d="M2 10 Q14 30 30 10" stroke="#16301c" stroke-width="8" fill="none" stroke-linecap="round"/>
+    <ellipse cx="-92" cy="30" rx="34" ry="24" fill="url(#beanG)" transform="rotate(-30 -92 30)"/>
+    <ellipse cx="-76" cy="80" rx="30" ry="22" fill="url(#beanG)" transform="rotate(-10 -76 80)"/>
+  </g>
+  ${puff([[120, 90, 90], [230, 60, 110], [350, 100, 80], [40, 150, 70]])}
+  ${puff([[600, 70, 100], [720, 40, 120], [840, 90, 100], [960, 60, 90], [520, 120, 70]])}`,
+  `${FACE_DEFS}
+ <linearGradient id="stalkG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#8ee86f"/><stop offset="1" stop-color="#2f9e44"/></linearGradient>
+ <linearGradient id="leafG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b6f79a"/><stop offset="1" stop-color="#2a8f3e"/></linearGradient>
+ <linearGradient id="beanG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d4fba8"/><stop offset="1" stop-color="#5cbf3a"/></linearGradient>
+ <radialGradient id="beanShade" cx="0.3" cy="0.25" r="0.9"><stop offset="0.5" stop-color="#1f6a20" stop-opacity="0"/><stop offset="1" stop-color="#1f6a20" stop-opacity="0.45"/></radialGradient>
+ <radialGradient id="cloud" cx="0.4" cy="0.3" r="0.7"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e6eeff"/></radialGradient>`);
+}
+
+// Red River: night, a red moon on the horizon, a glowing river winding toward you, cards drifting on it.
+{
+  const stars = [[90, 80], [180, 160], [300, 60], [420, 130], [690, 90], [780, 170], [900, 70], [960, 200], [130, 260], [860, 280]]
+    .map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${3 + (i % 3)}" fill="#fff" opacity="${0.4 + (i % 3) * 0.2}"/>`)
+    .join('');
+  const ripple = (x, y, w, o) => `<path d="M${x - w} ${y} Q${x - w / 2} ${y - w * 0.18} ${x} ${y} T${x + w} ${y}" stroke="#ffd6d6" stroke-width="${Math.max(3, w / 10)}" fill="none" stroke-linecap="round" opacity="${o}"/>`;
+  ICONS.redriver = icon(['#3a0a14', '#0a0204'], `
+  ${stars}
+  <circle cx="600" cy="300" r="240" fill="url(#moonGlow)"/>
+  <circle cx="600" cy="300" r="88" fill="url(#moon)"/>
+  <circle cx="570" cy="280" r="14" fill="#c8303a" opacity="0.3"/><circle cx="628" cy="322" r="10" fill="#c8303a" opacity="0.3"/><circle cx="600" cy="262" r="6" fill="#c8303a" opacity="0.3"/>
+  <path d="M0 360 C120 300 220 320 320 350 C420 300 520 310 600 352 C700 320 820 290 1024 350 V1024 H0 Z" fill="#2a0810"/>
+  <path d="M0 380 C160 350 300 380 420 372 C560 360 720 380 1024 372 V1024 H0 Z" fill="url(#land)"/>
+  <path d="M500 368 C470 470 650 540 600 660 C550 790 330 870 230 1060 L880 1060 C810 880 740 790 742 660 C744 530 572 470 538 368 Z" fill="url(#rv)"/>
+  <path d="M519 380 C510 470 640 540 662 660 C680 780 560 880 540 1060" stroke="#ffc0a8" stroke-opacity="0.25" stroke-width="80" fill="none"/><path d="M519 380 C510 470 640 540 662 660 C680 780 560 880 540 1060" stroke="#ffd6c4" stroke-opacity="0.22" stroke-width="30" fill="none"/>
+  ${ripple(520, 430, 14, 0.5)}${ripple(610, 520, 26, 0.5)}${ripple(690, 640, 34, 0.5)}${ripple(400, 900, 50, 0.6)}${ripple(700, 960, 60, 0.6)}${ripple(560, 1000, 40, 0.4)}
+  
+  <ellipse cx="522" cy="430" rx="30" ry="6" fill="#ffe0e0" opacity="0.35"/>
+  ${card({ x: 522, y: 405, r: 4, s: 0.12, rank: '3', suit: 'h', lift: 0.3 })}
+  <ellipse cx="640" cy="610" rx="70" ry="12" fill="#ffe0e0" opacity="0.3"/>
+  ${card({ x: 636, y: 560, r: 12, s: 0.24, rank: '9', suit: 'd', lift: 0.4 })}
+    <ellipse cx="490" cy="935" rx="230" ry="44" fill="none" stroke="#ffd6d6" stroke-opacity="0.45" stroke-width="6"/>
+  ${card({ x: 480, y: 780, r: -12, s: 0.58, rank: '7', suit: 'h', lift: 0.9 })}
+  ${sparkle(380, 700, 18, '#ffd6d6', 0.8)}${sparkle(720, 840, 24, '#fff', 0.8)}`,
+  `<radialGradient id="moonGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff5a4a" stop-opacity="0.75"/><stop offset="1" stop-color="#ff4a4a" stop-opacity="0"/></radialGradient>
+ <radialGradient id="moon" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#ffb08a"/><stop offset="1" stop-color="#e2343c"/></radialGradient>
+ <linearGradient id="land" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a0c16"/><stop offset="1" stop-color="#16030a"/></linearGradient>
+ <linearGradient id="rv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffb3a0"/><stop offset="0.25" stop-color="#ff4b4b"/><stop offset="1" stop-color="#b8121b"/></linearGradient>
+ <radialGradient id="rock" cx="0.4" cy="0.3" r="0.7"><stop offset="0" stop-color="#4a1a22"/><stop offset="1" stop-color="#140408"/></radialGradient>`);
+}
+
+// Short Stack: three detailed chips in a short pile, two tall stacks behind it in the dark.
+{
+  /** One chip seen from the side, top centre at (x, y): edge inserts that follow the curve, a lit top with an inlay. */
+  function chipSide(x, y, [c0, c1], { rx = 200, ry = 62, t = 50, r = 0, emblem = false } = {}) {
+    const g = id('cs');
+    const inserts = [];
+    for (let k = 0; k < 6; k++) {
+      const a0 = (Math.PI * (k + 0.15)) / 6;
+      const a1 = (Math.PI * (k + 0.55)) / 6;
+      const x0 = rx * Math.cos(a0);
+      const x1 = rx * Math.cos(a1);
+      const y0 = ry * Math.sin(a0);
+      const y1 = ry * Math.sin(a1);
+      inserts.push(`<path d="M${x0} ${y0} L${x1} ${y1} L${x1} ${y1 + t} L${x0} ${y0 + t} Z" fill="#fff" opacity="0.92"/>`);
+    }
+    const topInserts = Array.from({ length: 12 }, (_, k) => {
+      const a = (Math.PI * 2 * k) / 12;
+      return `<ellipse cx="${rx * 0.86 * Math.cos(a)}" cy="${ry * 0.86 * Math.sin(a)}" rx="${rx * 0.07}" ry="${ry * 0.12}" fill="#fff" opacity="0.9"/>`;
+    }).join('');
+    return `<g transform="translate(${x} ${y}) rotate(${r})">
+      <linearGradient id="${g}s" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${c1}"/><stop offset="0.35" stop-color="${c0}"/><stop offset="1" stop-color="${c1}"/></linearGradient>
+      <radialGradient id="${g}t" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="${c0}"/><stop offset="1" stop-color="${c1}"/></radialGradient>
+      <path d="M${-rx} 0 V${t} A${rx} ${ry} 0 0 0 ${rx} ${t} V0 A${rx} ${ry} 0 0 1 ${-rx} 0 Z" fill="url(#${g}s)"/>
+      ${inserts.join('')}
+      <path d="M${-rx} ${t} A${rx} ${ry} 0 0 0 ${rx} ${t}" stroke="#000" stroke-opacity="0.25" stroke-width="4" fill="none"/>
+      <ellipse rx="${rx}" ry="${ry}" fill="url(#${g}t)"/>
+      ${topInserts}
+      <ellipse rx="${rx * 0.62}" ry="${ry * 0.62}" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="5" stroke-dasharray="14 10"/>
+      <ellipse rx="${rx * 0.5}" ry="${ry * 0.5}" fill="url(#${g}t)" stroke="#000" stroke-opacity="0.15" stroke-width="3"/>
+      ${emblem ? `<use href="#s-s" x="${-rx * 0.22}" y="${-ry * 0.36}" width="${rx * 0.44}" height="${ry * 0.72}" fill="#fff" opacity="0.9"/>` : ''}
+      <path d="M${-rx * 0.8} ${-ry * 0.35} Q${-rx * 0.3} ${-ry * 0.95} ${rx * 0.3} ${-ry * 0.9}" stroke="#fff" stroke-opacity="0.45" stroke-width="7" fill="none" stroke-linecap="round"/>
+    </g>`;
+  }
+  const VIO = ['#a48cff', '#4a26d9'];
+  const GLD = ['#ffe28a', '#d18e00'];
+  const tall = (x, n) => Array.from({ length: n }, (_, k) => chipSide(x, 600 - k * 42, k % 3 === 1 ? ['#8a7240', '#4a3a14'] : ['#5a48b0', '#26166a'], { rx: 130, ry: 40, t: 40 })).join('');
+  ICONS.shortStack = icon(['#8263ff', '#2a1290'], `
+  ${glow(512, 640, 420, 'whiteGlow', 0.35)}
+  ${shadow(230, 640, 170, 30, 0.6)}${shadow(800, 620, 170, 30, 0.6)}
+  ${tall(230, 9)}${tall(800, 11)}
+  <rect width="1024" height="1024" fill="url(#fog)"/>
+  ${shadow(512, 900, 320, 56)}
+  ${chipSide(512, 790, VIO)}
+  ${chipSide(500, 736, GLD)}
+  ${chipSide(520, 682, VIO, { emblem: true })}
+  ${sparkle(300, 280, 30, '#ffe28a')}${sparkle(720, 220, 22, '#fff', 0.8)}`,
+  `<linearGradient id="fog" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a1290" stop-opacity="0.15"/><stop offset="1" stop-color="#2a1290" stop-opacity="0.45"/></linearGradient>`);
+}
+
 
 mkdirSync(OUT, { recursive: true });
 for (const [name, svg] of Object.entries(ICONS)) writeFileSync(join(OUT, `${name}.svg`), svg);

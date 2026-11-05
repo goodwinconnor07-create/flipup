@@ -140,7 +140,7 @@ export default function JoinTab() {
         <>
           <ThemedText tone="tertiaryLabel">Type the 5-letter code from whoever&apos;s hosting.</ThemedText>
           <CodePad state={state} label="Table code" focus={focused} />
-          <Button title="Scan a QR code" variant="party" tint="pink" onPress={() => void scan()} />
+          <Button title="Scan a QR code" variant="secondary" onPress={() => void scan()} />
         </>
       )}
     </TabScreen>

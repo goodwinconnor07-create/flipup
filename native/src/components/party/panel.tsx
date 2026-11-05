@@ -198,7 +198,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
           </View>
           <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           <PlaylistChips games={view.settings.games} round={total} />
-          <Button variant="party" tint="blue" size="lg" title="Back to the Party tab" onPress={home} />
+          <Button variant="secondary" size="lg" title="Back to the Party tab" onPress={home} />
         </>
       )}
       {place === 'screen' && view.status !== 'done' && view.status !== 'lobby' && (

@@ -1,17 +1,16 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { Alert, useWindowDimensions, View } from 'react-native';
+import { Alert, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { ChallengePicture } from '@/components/challenge-picture';
 import { haptic } from '@/components/haptics';
-import { Icon } from '@/components/icon';
+import { SheetHeader } from '@/components/sheet-header';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, isChallengeId } from '@/engine';
 import { useChallengeBests } from '@/state/challenges';
 import { useProfile } from '@/state/profile';
 import { openChallengeTable, useTable } from '@/state/session';
-import { radius, spacing, useColors } from '@/theme';
+import { spacing, useColors } from '@/theme';
 
 /** A challenge's sheet from Home: what it is in a few plain lines, your best, and Start. There's no setup. */
 export default function ChallengeSheet() {
@@ -20,7 +19,6 @@ export default function ChallengeSheet() {
   const profile = useProfile();
   const bests = useChallengeBests();
   const t = useTable();
-  const { width } = useWindowDimensions();
   if (!isChallengeId(id)) return null;
   const c = challengeById(id)!;
   const best = bests[id];
@@ -41,23 +39,9 @@ export default function ChallengeSheet() {
         ])
       : go();
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.xxl, gap: spacing.lg }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: 0, paddingBottom: spacing.xxl, gap: spacing.lg }}>
       <Stack.Screen options={{ title: c.name, headerShown: false }} />
-      <ChallengePicture id={id} width={width - spacing.md * 2} height={((width - spacing.md * 2) * 120) / 200} rounded={radius.lg} />
-      <View style={{ gap: spacing.xxs }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xxs }}>
-          <Icon name="person.fill" size={13} color={colors.secondaryLabel} />
-          <ThemedText variant="subhead" tone="secondaryLabel" style={{ fontWeight: '600' }}>
-            Solo challenge
-          </ThemedText>
-        </View>
-        <ThemedText variant="largeTitle" accessibilityRole="header">
-          {c.name}
-        </ThemedText>
-        <ThemedText variant="callout" tone="secondaryLabel">
-          {c.line}
-        </ThemedText>
-      </View>
+      <SheetHeader id={id} title={c.name} line={c.line} eyebrow="Solo challenge" />
       <View style={{ gap: spacing.xs }}>
         {c.rules.map((r) => (
           <View key={r} style={{ flexDirection: 'row', gap: spacing.xs }}>

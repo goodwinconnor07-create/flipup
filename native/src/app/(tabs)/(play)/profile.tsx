@@ -101,7 +101,7 @@ export default function ProfileScreen() {
             </ThemedText>
           </View>
           <View style={{ alignSelf: 'stretch' }}>
-            <Button variant="party" tint="blue" size="lg" title="Save" disabled={!ok || clean === profile.name} onPress={save} />
+            <Button variant="primary" size="lg" title="Save" disabled={!ok || clean === profile.name} onPress={save} />
           </View>
         </View>
 

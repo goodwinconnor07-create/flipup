@@ -1,5 +1,5 @@
 import { router, Stack } from 'expo-router';
-import { Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
@@ -16,7 +16,6 @@ import { RequestsPill } from '@/components/friend-requests';
 import { ProfileMenu } from '@/components/profile-menu';
 import { SwipeAway } from '@/components/swipe-away';
 import { TabScreen } from '@/components/tab-screen';
-import { partyTile, ThumbSnapper } from '@/components/thumb-snaps';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, FREE_VARIANTS, VARIANTS, variantInfo, variantOf } from '@/engine';
 import { useFriendBox } from '@/state/pals';
@@ -42,12 +41,9 @@ export default function Home() {
   const last = record.games.at(-1);
   // Play again can be swiped away; it comes back with the next game you finish.
   const hidden = useStored<number>(HIDDEN, 0);
-  const { height } = useWindowDimensions();
   return (
     <>
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
-      {/* Saves the Party tab's game tiles as pictures while you're here, so that tab opens without a stutter. */}
-      <ThumbSnapper size={partyTile(height)} />
       <TabScreen
         title="Play"
         accessory={

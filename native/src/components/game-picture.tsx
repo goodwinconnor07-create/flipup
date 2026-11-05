@@ -1,9 +1,13 @@
+import { Image } from 'expo-image';
+import { useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, G, Path, Rect, Text } from 'react-native-svg';
 
 import { gameLook, gameScene, gameThumb, GLOW, PIPS, SUIT_COLOUR, type CardShape, type Shape } from '@design/gameArt';
 import type { Variant } from '@/engine';
 import { gradient, radius } from '@/theme';
+
+import { tilePicture } from './thumb-cache';
 
 /** The system font (SF Pro on iPhone); SVG text falls back to a serif without it. */
 export const FONT = process.env.EXPO_OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System';
@@ -94,8 +98,32 @@ export function GamePicture({ variant, width, height, rounded = radius.md }: { v
 /**
  * A game's small square picture, for lists: its own layout of one to three big cards (gameThumb in gameArt.ts) on
  * the game's gradient, made to read at 30 to 52 points. The wide picture is for the big cards and sheets.
+ *
+ * On iPhone it's a saved picture once one exists at this size (thumb-cache.ts), which is far cheaper to show than
+ * the SVG. The choice is made when the tile appears and kept, so a tile on screen never flickers from one to the
+ * other; the next time it appears (or the next launch) it's the picture.
  */
 export function GameThumb({ variant, size, rounded = size * 0.24 }: { variant: Variant; size: number; rounded?: number }) {
+  const [picture] = useState(() => tilePicture({ variant, size, rounded }));
+  if (picture) {
+    return (
+      <Image
+        source={{ uri: picture }}
+        // The picture already has its rounded corners (transparent outside them).
+        style={{ width: size, height: size }}
+        cachePolicy="memory"
+        transition={null}
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+      />
+    );
+  }
+  return <DrawnThumb variant={variant} size={size} rounded={rounded} />;
+}
+
+/** The tile drawn as SVG: what the saved pictures are taken from. */
+export function DrawnThumb({ variant, size, rounded = size * 0.24 }: { variant: Variant; size: number; rounded?: number }) {
   const [top, bottom] = gameLook(variant).card;
   return (
     <View

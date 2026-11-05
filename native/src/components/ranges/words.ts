@@ -48,6 +48,19 @@ export const TRICKS: Record<string, Trick> = {
   '3-bet pots': { nick: 'The 3-Bet Pot', line: 'Big ranges preflop, big hands later: know who still calls.', family: 'value', icon: 'crown.fill' },
   'Multiway check-raises': { nick: 'Raised Into Two', line: 'A check-raise into two players is almost never a bluff.', family: 'calls', icon: 'exclamationmark.triangle.fill' },
   'Live turn raises': { nick: 'The Turn Raise', line: 'This is the spot where big pairs lose big pots.', family: 'calls', icon: 'arrow.uturn.backward' },
+  // The generated hands' concepts (src/train/ranges/generate.ts).
+  'Value betting': { nick: 'Get Paid', line: 'Ahead of what calls? Bet, and pick the size their worse hands still pay.', family: 'value', icon: 'dollarsign.circle.fill' },
+  'Turn check-raises': { nick: 'Raised on the Turn', line: 'A turn check-raise is two pair or better, plus a few big draws.', family: 'calls', icon: 'arrow.uturn.backward' },
+  'Probe bets': { nick: 'The Probe', line: 'They skipped the flop bet: lead the turn into a range that gave up.', family: 'bluffs', icon: 'scope' },
+  'Facing a lead': { nick: 'Led Into', line: 'After you check back, a river lead is value or a missed draw. Count both.', family: 'calls', icon: 'hand.raised.fill' },
+  'Turn defence': { nick: 'The Second Barrel', line: 'A second bet is much stronger than the first. One pair has to be careful.', family: 'calls', icon: 'exclamationmark.triangle.fill' },
+  'Delayed c-bets': { nick: 'Bet It Later', line: 'Checked the flop back? The turn can be the time to bet.', family: 'value', icon: 'bolt.fill' },
+  'Facing a probe': { nick: 'Probed', line: 'Your flop check told them you’re weak, so their turn bet is wider.', family: 'calls', icon: 'eye.fill' },
+  'Polarised overbets': { nick: 'The Overbet Puzzle', line: 'A bet bigger than the pot is the nuts or nothing. Count the bluffs.', family: 'reads', icon: 'scope' },
+  'River bluffs': { nick: 'The Missed Draw', line: 'A hand that can’t win a showdown wins only by betting. Do they fold enough?', family: 'bluffs', icon: 'flame.fill' },
+  'Pot odds for draws': { nick: 'The Price of a Draw', line: 'A draw needs the right price. Compare your odds with the bet.', family: 'calls', icon: 'questionmark.circle.fill' },
+  'Delayed river bets': { nick: 'The Late Stab', line: 'They gave up on the turn and bet the river: thin value or a bluff.', family: 'reads', icon: 'tag.fill' },
+  'Limped pots': { nick: 'Limpers', line: 'Loose limpers call too much: value bet, don’t bluff.', family: 'value', icon: 'circle.grid.3x3.fill' },
 };
 
 /** A trick for any concept (a new hand whose concept isn't listed yet still shows). */

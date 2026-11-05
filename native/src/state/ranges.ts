@@ -8,12 +8,16 @@
 // (`UPDATE_RANGES=1 npm test` writes it again). A hand that isn't in it is worked out on the phone.
 import { cleanDays, dayKey, streakOf, withToday } from '@/engine';
 import { analyse, gradeOf, spotOf, type Grade, type OptionId, type Pos, type Replay, type Scenario } from '@train/ranges/model';
-import { SCENARIOS } from '@train/ranges/scenarios';
+import GENERATED from '@train/ranges/generated.json';
+import { SCENARIOS as WRITTEN, unpack } from '@train/ranges/scenarios';
 
 import NUMBERS from '../data/range-numbers.json';
 import { DAILY_SIZE, dailyIds, type Level, type Mode } from './range-logic';
 import { read, save, useStored } from './storage';
 import { markPlayedToday } from './streak';
+
+/** Every hand: the hand-written ones, then the generated ones (src/train/ranges/generate.ts). */
+const SCENARIOS: Scenario[] = [...WRITTEN, ...unpack(GENERATED as unknown as Scenario[])];
 
 const KEY = 'flipup.ranges';
 const EMPTY: Record<string, Grade> = {};

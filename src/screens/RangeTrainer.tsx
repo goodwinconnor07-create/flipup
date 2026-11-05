@@ -2,8 +2,9 @@
 // street told you, every opponent's range broken down with how your hand does against each part of it, and what
 // each play wins on average.
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { read, write } from '../state/persist';
+import { loadHands } from '../train/ranges/library';
 import { analyse, bb, gradeOf, optionsFor, replay, spotOf, type Grade, type OptionId, type RangeGroup, type Scenario, type Street } from '../train/ranges/model';
 import { SCENARIOS } from '../train/ranges/scenarios';
 import { BackBar, PlayingCard } from '../ui/components';
@@ -23,12 +24,17 @@ function saveGrade(id: string, grade: Grade) {
   if (all[id] === undefined || rank[grade] > rank[all[id]]) write(KEY, { ...all, [id]: grade });
 }
 
-/** Hands you haven't got right yet first, then the rest. */
-function nextHand(after: string | null): Scenario {
+/**
+ * The next hand: a random one you haven't got right yet (the whole set once they're all done), never the same kind of
+ * spot twice running.
+ */
+function nextHand(all: Scenario[], after: Scenario | null): Scenario {
   const done = loadRangeProgress();
-  const start = after ? SCENARIOS.findIndex((s) => s.id === after) + 1 : 0;
-  const order = [...SCENARIOS.slice(start), ...SCENARIOS.slice(0, start)];
-  return order.find((s) => done[s.id] !== 'best' && s.id !== after) ?? order[0];
+  const fresh = all.filter((s) => s !== after && done[s.id] !== 'best');
+  const pool = fresh.length ? fresh : all.filter((s) => s !== after);
+  const varied = after ? pool.filter((s) => s.concept !== after.concept || s.hero.pos !== after.hero.pos) : pool;
+  const from = varied.length ? varied : pool;
+  return from[Math.floor(Math.random() * from.length)] ?? all[0];
 }
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
@@ -45,7 +51,25 @@ function respond(g: RangeGroup, facing: boolean): string {
 }
 
 export function RangeTrainer() {
-  const [scenario, setScenario] = useState(() => nextHand(null));
+  const [all, setAll] = useState<Scenario[]>(SCENARIOS);
+  const [scenario, setScenario] = useState(() => nextHand(SCENARIOS, null));
+  // The generated hands download once; until they're in, the hand-written ones are there to play. A quick download
+  // swaps the first hand for one from the whole set; a slow one leaves the hand you're reading alone.
+  const opened = useRef(Date.now());
+  const pickedRef = useRef(false);
+  useEffect(() => {
+    let live = true;
+    loadHands()
+      .then((hands) => {
+        if (!live) return;
+        setAll(hands);
+        if (!pickedRef.current && Date.now() - opened.current < 1200) setScenario(nextHand(hands, null));
+      })
+      .catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, []);
   const [pick, setPick] = useState<OptionId | null>(null);
   const r = useMemo(() => replay(scenario), [scenario]);
   const options = useMemo(() => optionsFor(scenario, r), [scenario, r]);
@@ -62,7 +86,7 @@ export function RangeTrainer() {
     return { equity: spot.equity, price: 0, rows };
   }, [scenario, r, pick]);
   const done = loadRangeProgress();
-  const solved = SCENARIOS.filter((s) => done[s.id] === 'best').length;
+  const solved = all.filter((s) => done[s.id] === 'best').length;
   const decision = scenario.board.length === 4 ? 'turn' : 'river';
 
   const answer = (id: OptionId) => {
@@ -70,10 +94,11 @@ export function RangeTrainer() {
     const grade = gradeOf(scenario, id);
     saveGrade(scenario.id, grade);
     haptic(grade === 'mistake' ? 'error' : 'success');
+    pickedRef.current = true;
     setPick(id);
   };
   const next = () => {
-    setScenario(nextHand(scenario.id));
+    setScenario(nextHand(all, scenario));
     setPick(null);
     window.scrollTo({ top: 0 });
   };
@@ -90,7 +115,7 @@ export function RangeTrainer() {
 
   return (
     <div className="screen ranges">
-      <BackBar title="Range training" right={<span className="rt-count">{solved} of {SCENARIOS.length}</span>} />
+      <BackBar title="Range training" right={<span className="rt-count">{solved} of {all.length}</span>} />
       <div className="rt-page">
         <header className="rt-head">
           <span className="rt-concept">{scenario.concept}</span>

@@ -81,13 +81,14 @@ Range training, challenges, Premium, Settings and every sheet.
 | `hairline` | `#E2DDD8` | `#2E2B28` | Dividers, card and input edges |
 | `ink` | `#141210` | `#F3F0ED` | Titles, numbers, body text |
 | `ink2` | `#5E5954` | `#A8A29C` | Secondary text |
-| `ink3` | `#9A948E` | `#6E6862` | Labels, placeholders, chevrons |
+| `ink3` | `#736D67` | `#8A847E` | Labels, placeholders, chevrons (dark enough for 12pt labels) |
 | `red` | `#E5262A` | `#E5262A` | Main buttons, links, selected tab |
 | `redPressed` | `#C81E22` | `#C81E22` | A pressed red button |
 | `onRed` | `#FFFFFF` | `#FFFFFF` | Text on red |
 | `gold` | `#E8B13A` | `#E8B13A` | Fills: 1st place, streak flame, Premium badge |
 | `goldInk` | `#9A6A00` | `#F0C45C` | Gold as text on the page |
 | `silver` / `bronze` | `#C9CDD3` / `#D8955E` | same | 2nd and 3rd place on a board |
+| `goldBg` / `goldDeep` | `#FBEFD2` / `#7A5300` | `#3A2E14` / `#F0C45C` | The win panel on learning screens and its text |
 
 Game drawings keep their own flat colours (section 8).
 
@@ -121,7 +122,9 @@ Sizes follow Dynamic Type with caps (display and number stop at 1.3×).
 - **Button.** `primary`: solid red, white text, 54pt, corner 14, pressed `redPressed`. `secondary`: `card` fill,
   `ink` text, a 1pt hairline. `text`: red words, no box (Not now, See all). `destructive`: red text on `card`.
 - **Learning button** (challenge and learning screens only): solid colour with a 4pt darker lip under it that
-  presses down, Duolingo's way.
+  presses down, Duolingo's way. Fold is `card` with a grey lip, Call red, Raise ink; on the win panel the next
+  step is gold with ink text.
+- **Switch.** On is `ink`, not red or green (red means "do this", gold means a win).
 - **Card.** `card` fill, corner 16, no shadow, padding 20.
 - **Row.** Inside a card: optional leading emoji or drawing, the text, a value in `numberSm` or `ink2`, a chevron
   in `ink3`. Rows are split by hairlines inset to the text.
@@ -183,6 +186,13 @@ no help text (rule 5). Numbers are written as figures.
 Snappy and native: system pushes and sheets, a 97% press dip, numbers that count up once. Learning screens may
 bounce and celebrate. Respect Reduce Motion everywhere.
 
-## 13. Decision log
+## 13. Mockups
+
+The owner reviews mockups before anything is built: https://claude.ai/artifact/6DoCrFYztyxGutbd9hkJPP (Play, Play in
+dark mode, Ranks, You, Friends, all games, a game sheet, Play with friends, the lobby, Premium, a Range training hand
+and its best-play panel).
+
+## 14. Decision log
 
 - 2026-11-05: the interview above. Replaces `docs/DESIGN_DIRECTION.md` (the Games-app direction).
+- 2026-11-05: first mockups made; waiting for the owner's review.

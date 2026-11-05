@@ -39,7 +39,7 @@ import {
   type Mode,
   type Sampled,
 } from '@/state/range-logic';
-import { answerHand, dailyToday, finishSession, flameOf, noteDaily, noteSwipe, numbersFor, readRangeGrades, readRangePlay, scenarioById, SCENARIOS, useRangePlay } from '@/state/ranges';
+import { answerHand, dailyToday, finishSession, flameOf, noteDaily, noteSwipe, numbersFor, readRangeGrades, readRangePlay, scenarioById, allHands, useRangePlay } from '@/state/ranges';
 import { ForceScheme, ROUNDED, spacing } from '@/theme';
 import { optionsFor, replay, type OptionId, type Pos } from '@train/ranges/model';
 
@@ -68,13 +68,13 @@ function startSession(raw: { mode?: string; id?: string; ids?: string }): Sessio
     const d = dailyToday(readRangePlay());
     return { mode, queue: d.ids, start: d.grades.length, day: d.day, prior: d.grades.map((g, i) => ({ id: d.ids[i], grade: g, points: POINTS[g], bonus: 0 })) };
   }
-  if (mode === 'blitz') return { mode, queue: blitzIds(SCENARIOS), start: 0, prior: [] };
+  if (mode === 'blitz') return { mode, queue: blitzIds(allHands()), start: 0, prior: [] };
   if (mode === 'hand' && raw.id && scenarioById(raw.id)) return { mode, queue: [raw.id], start: 0, prior: [] };
   if (mode === 'fix') {
     const ids = valid((raw.ids ?? '').split(','));
     if (ids.length) return { mode, queue: ids, start: 0, prior: [] };
   }
-  return { mode: 'round', queue: roundIds(readRangeGrades(), SCENARIOS), start: 0, prior: [] };
+  return { mode: 'round', queue: roundIds(readRangeGrades(), allHands()), start: 0, prior: [] };
 }
 
 /**
@@ -125,7 +125,7 @@ function Trainer() {
   const [run, setRun] = useState(0);
   const [bestRun, setBestRun] = useState(0);
 
-  const s = scenarioById(session.queue[Math.min(index, session.queue.length - 1)]) ?? SCENARIOS[0];
+  const s = scenarioById(session.queue[Math.min(index, session.queue.length - 1)]) ?? allHands()[0];
   const r = useMemo(() => replay(s), [s]);
   const options = useMemo(() => optionsFor(s, r), [s, r]);
   const chars = useMemo(() => charactersOf(s), [s]);

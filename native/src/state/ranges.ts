@@ -8,16 +8,21 @@
 // (`UPDATE_RANGES=1 npm test` writes it again). A hand that isn't in it is worked out on the phone.
 import { cleanDays, dayKey, streakOf, withToday } from '@/engine';
 import { analyse, gradeOf, spotOf, type Grade, type OptionId, type Pos, type Replay, type Scenario } from '@train/ranges/model';
-import GENERATED from '@train/ranges/generated.json';
 import { SCENARIOS as WRITTEN, unpack } from '@train/ranges/scenarios';
 
-import NUMBERS from '../data/range-numbers.json';
 import { DAILY_SIZE, dailyIds, type Level, type Mode } from './range-logic';
 import { read, save, useStored } from './storage';
 import { markPlayedToday } from './streak';
 
-/** Every hand: the hand-written ones, then the generated ones (src/train/ranges/generate.ts). */
-const SCENARIOS: Scenario[] = [...WRITTEN, ...unpack(GENERATED as unknown as Scenario[])];
+let ALL: Scenario[] | null = null;
+/**
+ * Every hand: the hand-written ones, then the generated ones (src/train/ranges/generate.ts). The generated list is
+ * big, so it's required the first time it's needed, not when the app starts.
+ */
+export function allHands(): Scenario[] {
+  ALL ??= [...WRITTEN, ...unpack(require('../../../src/train/ranges/generated.json') as Scenario[])];
+  return ALL;
+}
 
 const KEY = 'flipup.ranges';
 const EMPTY: Record<string, Grade> = {};
@@ -38,7 +43,7 @@ export function useRangeGrades(): Record<string, Grade> {
 export const readRangeGrades = (): Record<string, Grade> => clean(read<unknown>(KEY, EMPTY));
 
 /** How many hands you've played the best way. */
-export const solvedCount = (grades: Record<string, Grade>) => SCENARIOS.filter((s) => grades[s.id] === 'best').length;
+export const solvedCount = (grades: Record<string, Grade>) => Object.values(grades).filter((g) => g === 'best').length;
 
 /** Grades an answer and keeps it if it's your best on that hand. */
 export function answerHand(s: Scenario, pick: OptionId): Grade {
@@ -51,8 +56,9 @@ export function answerHand(s: Scenario, pick: OptionId): Grade {
 /** The next hand: ones you haven't played the best way yet first, in order, then the rest (as on the web). */
 export function nextHand(after: string | null): Scenario {
   const done = clean(read<unknown>(KEY, EMPTY));
-  const start = after ? SCENARIOS.findIndex((s) => s.id === after) + 1 : 0;
-  const order = [...SCENARIOS.slice(start), ...SCENARIOS.slice(0, start)];
+  const all = allHands();
+  const start = after ? all.findIndex((s) => s.id === after) + 1 : 0;
+  const order = [...all.slice(start), ...all.slice(0, start)];
   return order.find((s) => done[s.id] !== 'best' && s.id !== after) ?? order[0];
 }
 
@@ -79,16 +85,22 @@ export function computeNumbers(s: Scenario, r: Replay): HandNumbers {
   return { equity: round(spot.equity), price: 0, rows: [{ id: 'check', ev: round(spot.evCheck!) }, ...bets], views };
 }
 
-/** The numbers for a hand: from the file when it has them, else worked out here. */
-export function numbersFor(s: Scenario, r: Replay): HandNumbers {
-  return (NUMBERS as Record<string, HandNumbers>)[s.id] ?? computeNumbers(s, r);
+let NUMBERS: Record<string, HandNumbers> | null = null;
+/** The worked-out numbers, read the first time they're needed (the file is big). */
+function numbers(): Record<string, HandNumbers> {
+  NUMBERS ??= require('../data/range-numbers.json') as Record<string, HandNumbers>;
+  return NUMBERS;
 }
 
-export const hasStoredNumbers = (id: string) => id in (NUMBERS as Record<string, unknown>);
+/** The numbers for a hand: from the file when it has them, else worked out here. */
+export function numbersFor(s: Scenario, r: Replay): HandNumbers {
+  return numbers()[s.id] ?? computeNumbers(s, r);
+}
 
-export { SCENARIOS };
+export const hasStoredNumbers = (id: string) => id in numbers();
 
-export const scenarioById = (id: string): Scenario | undefined => SCENARIOS.find((s) => s.id === id);
+
+export const scenarioById = (id: string): Scenario | undefined => allHands().find((s) => s.id === id);
 
 // ── Play: your level, the daily three, the flame, Blitz and round bests ────────
 //
@@ -152,7 +164,7 @@ export const flameOf = (play: RangePlay, now = new Date()) => streakOf(play.days
 /** Today's three hands, and how far you've got with them. */
 export function dailyToday(play: RangePlay, now = new Date()): { day: string; ids: string[]; grades: Grade[]; done: boolean } {
   const day = dayKey(now);
-  const ids = dailyIds(day, SCENARIOS);
+  const ids = dailyIds(day, allHands());
   const grades = play.daily[day] ?? [];
   return { day, ids, grades, done: grades.length >= ids.length };
 }
@@ -185,7 +197,7 @@ export function finishSession(mode: Mode, score: number, now = new Date()): { ne
 /** Each concept's progress: 1 when every hand of it is a best play, half credit for also good. */
 export function trickProgress(grades: Record<string, Grade>): Record<string, { done: number; total: number; best: boolean; ids: string[] }> {
   const out: Record<string, { done: number; total: number; best: boolean; ids: string[] }> = {};
-  for (const s of SCENARIOS) {
+  for (const s of allHands()) {
     const t = (out[s.concept] ??= { done: 0, total: 0, best: false, ids: [] });
     t.total++;
     t.ids.push(s.id);

@@ -71,8 +71,14 @@ export interface Scenario {
   table?: 6 | 9;
   hero: { pos: Pos; cards: [Card, Card]; pre: ChartKey };
   opponents: Opponent[];
-  /** Effective stacks at the start, in big blinds. */
+  /** Stacks at the start, in big blinds (everyone, unless `stacks` says otherwise for a seat). */
   stack: number;
+  /** A different starting stack for some seats (live tables and tournaments rarely have everyone even). */
+  stacks?: Partial<Record<Pos, number>>;
+  /** A tournament's big blind ante: dead money the big blind puts in before the cards are dealt. */
+  ante?: number;
+  /** A cash game (default) or a tournament. */
+  format?: 'cash' | 'tournament';
   /** Four or five cards: the decision is on the turn or the river. */
   board: Card[];
   actions: Step[];
@@ -191,8 +197,12 @@ export interface Replay {
   stacks: Partial<Record<Pos, number>>;
   /** What each player has put in on the decision street so far. */
   bets: Partial<Record<Pos, number>>;
-  /** The hand log, street by street. */
-  lines: { street: Street; text: string }[];
+  /** The hand log, street by street: each move, who made it, and what they had left behind afterwards. */
+  lines: { street: Street; text: string; who?: Pos; left?: number }[];
+  /** Each player's stack at the start of the hand. */
+  start: Partial<Record<Pos, number>>;
+  /** The stacks of the players still in at the start of each street after preflop. */
+  stacksAt: Partial<Record<Street, Partial<Record<Pos, number>>>>;
   /** Pot at the start of each street that was played. */
   potAt: Partial<Record<Street, number>>;
   /** Who acts next (it has to be you). */
@@ -216,16 +226,25 @@ export function replay(s: Scenario): Replay {
   const name = (p: Pos) => (p === s.hero.pos ? 'You' : p);
   const verb = (p: Pos, v: string) => (p === s.hero.pos ? v : v === 'raise to' ? 'raises to' : v === 'fold' ? 'folds' : `${v}s`);
 
-  const stack: Partial<Record<Pos, number>> = Object.fromEntries(seats.map((p) => [p, inHand.includes(p) ? s.stack : 0]));
+  const startOf = (p: Pos) => s.stacks?.[p] ?? s.stack;
+  const stack: Partial<Record<Pos, number>> = Object.fromEntries(seats.map((p) => [p, inHand.includes(p) ? startOf(p) : 0]));
+  const start: Replay['start'] = Object.fromEntries(inHand.map((p) => [p, startOf(p)]));
   const folded = new Set<Pos>();
   const allIn = new Set<Pos>();
   const lines: Replay['lines'] = [];
   const potAt: Replay['potAt'] = {};
-  let pot = 0;
+  const stacksAt: Replay['stacksAt'] = {};
+  // A big blind ante goes straight into the pot.
+  const ante = s.ante ?? 0;
+  let pot = ante;
   let street: Street = 'preflop';
   let bet: Partial<Record<Pos, number>> = { SB: 0.5, BB: 1 };
   if (!inHand.includes('SB')) stack.SB = 0.5;
-  if (!inHand.includes('BB')) stack.BB = 1;
+  if (!inHand.includes('BB')) stack.BB = 1 + ante;
+  stack.BB = (stack.BB ?? 0) - ante;
+  /** What a player has behind right now, after what they've put in on this street. */
+  const behindOf = (p: Pos) => Math.round(((stack[p] ?? 0) - (bet[p] ?? 0)) * 100) / 100;
+  const snapshot = () => Object.fromEntries(inHand.filter((p) => !folded.has(p)).map((p) => [p, stack[p] ?? 0]));
   let current = 1;
   let acted = new Set<Pos>();
   let last: Pos | null = null;
@@ -269,6 +288,7 @@ export function replay(s: Scenario): Replay {
       endStreet();
       street = step.street;
       potAt[street] = pot;
+      stacksAt[street] = snapshot();
     }
     const expected = nextToAct();
     if (step.who !== expected) throw new Error(`${s.id}: ${step.who} acts on the ${street}, but it's ${expected ?? 'nobody'}'s turn`);
@@ -277,11 +297,11 @@ export function replay(s: Scenario): Replay {
     switch (step.move) {
       case 'fold':
         folded.add(p);
-        lines.push({ street, text: `${name(p)} ${verb(p, 'fold')}` });
+        lines.push({ street, text: `${name(p)} ${verb(p, 'fold')}`, who: p });
         break;
       case 'check':
         if ((bet[p] ?? 0) < current) throw new Error(`${s.id}: ${p} checks facing a bet`);
-        lines.push({ street, text: `${name(p)} ${verb(p, 'check')}` });
+        lines.push({ street, text: `${name(p)} ${verb(p, 'check')}`, who: p });
         break;
       case 'call': {
         if ((bet[p] ?? 0) >= current) throw new Error(`${s.id}: ${p} calls nothing`);
@@ -290,7 +310,7 @@ export function replay(s: Scenario): Replay {
         if (put === have) allIn.add(p);
         // Calling the big blind before anyone raises is a limp (the small blind completes).
         const word = street === 'preflop' && current === 1 ? (p === 'SB' ? 'complete' : 'limp') : 'call';
-        lines.push({ street, text: `${name(p)} ${verb(p, word)}${word === 'call' ? ` ${bb(bet[p]!)}` : ''}${allIn.has(p) ? ' (all in)' : ''}` });
+        lines.push({ street, text: `${name(p)} ${verb(p, word)}${word === 'call' ? ` ${bb(bet[p]!)}` : ''}${allIn.has(p) ? ' (all in)' : ''}`, who: p, left: behindOf(p) });
         break;
       }
       case 'bet':
@@ -305,7 +325,7 @@ export function replay(s: Scenario): Replay {
         current = to;
         acted = new Set();
         if (Math.abs(put - have) < 1e-9) allIn.add(p);
-        lines.push({ street, text: `${name(p)} ${verb(p, step.move === 'bet' ? 'bet' : 'raise to')} ${bb(to)}${allIn.has(p) ? ' (all in)' : ''}` });
+        lines.push({ street, text: `${name(p)} ${verb(p, step.move === 'bet' ? 'bet' : 'raise to')} ${bb(to)}${allIn.has(p) ? ' (all in)' : ''}`, who: p, left: behindOf(p) });
         break;
       }
     }
@@ -321,6 +341,7 @@ export function replay(s: Scenario): Replay {
     endStreet();
     street = decision;
     potAt[street] = pot;
+    stacksAt[street] = snapshot();
     next = nextToAct();
   }
   const live = s.opponents.map((o) => o.pos).filter((p) => !folded.has(p));
@@ -330,7 +351,7 @@ export function replay(s: Scenario): Replay {
   const streetBets = { ...bet };
   const total = pot + seats.reduce((n, p) => n + (bet[p] ?? 0), 0);
   const left = Object.fromEntries(inHand.map((p) => [p, (stack[p] ?? 0) - (bet[p] ?? 0)]));
-  return { pot: total, toCall, stacks: left, bets: streetBets, lines, potAt, next, live, behind };
+  return { pot: total, toCall, stacks: left, bets: streetBets, lines, potAt, next, live, behind, start, stacksAt };
 }
 
 // ── The decision ────────────────────────────────────────────────────────────
@@ -357,7 +378,9 @@ export function optionsFor(s: Scenario, r: Replay = replay(s)): Option[] {
       { id: 'raise', label: raiseTo === allIn ? `All in (${bb(allIn)})` : `Raise to ${bb(raiseTo)}`, amount: raiseTo - already },
     ];
   }
-  const size = (f: number) => Math.min(mine, Math.round(r.pot * f * 2) / 2);
+  // Nobody can be made to put in more than they have: a bet is capped at the biggest stack still against you.
+  const cover = Math.max(0, ...r.live.map((p) => r.stacks[p] ?? 0));
+  const size = (f: number) => Math.min(mine, cover, Math.round(r.pot * f * 2) / 2);
   return [
     { id: 'check', label: 'Check', amount: 0 },
     { id: 'bet33', label: `Bet ⅓ pot (${bb(size(0.33))})`, amount: size(0.33) },
@@ -520,7 +543,8 @@ function deal(s: Scenario, r: Replay, visit: (hands: Entry[], board: number[], w
     }
     return opps[k][lo];
   };
-  const N = 40000;
+  // Three or more opponents: half the deals (the hands are big, and the numbers settle by then).
+  const N = opps.length >= 3 ? 20000 : 40000;
   let n = 0;
   while (n < N) {
     const hands = opps.map((_, k) => pick(k));
@@ -550,7 +574,9 @@ export function spotOf(s: Scenario, r: Replay = replay(s), betId?: OptionId): Sp
     });
     const equity = eq / total;
     const call = options.find((o) => o.id === 'call')!.amount;
-    return { equity, price: call / (r.pot + call), evCall: equity * (r.pot + call) - call };
+    // All in for less than the bet: the part of it you can't match goes back to the bettor.
+    const pot = r.pot - Math.max(0, r.toCall - call);
+    return { equity, price: call / (pot + call), evCall: equity * (pot + call) - call };
   }
   const id = betId ?? (s.best.startsWith('bet') ? s.best : (s.compare ?? 'bet75'));
   const b = options.find((o) => o.id === id)!.amount;
@@ -558,19 +584,23 @@ export function spotOf(s: Scenario, r: Replay = replay(s), betId?: OptionId): Sp
   let calledW = 0;
   let calledEq = 0;
   let ev = 0;
+  // What each live opponent can put in to call (a short stack calls all in for less).
+  const caps = s.opponents.filter((o) => r.live.includes(o.pos)).map((o) => Math.min(b, r.stacks[o.pos] ?? b));
   deal(s, r, (hands, board, w) => {
     total += w;
     eq += w * share(hero, hands.map((h) => h.cards), board);
-    const go = hands.filter((h) => h.role === 'calls' || h.role === 'raises');
+    const go = hands.map((h, k) => ({ h, put: caps[k] })).filter((x) => x.h.role === 'calls' || x.h.role === 'raises');
     if (!go.length) {
       folds += w;
       ev += w * r.pot;
       return;
     }
-    const sh = share(hero, go.map((h) => h.cards), board);
+    const sh = share(hero, go.map((x) => x.h.cards), board);
+    // You risk only as much as the biggest call; the rest of your bet comes back.
+    const risk = Math.max(...go.map((x) => x.put));
     calledW += w;
     calledEq += w * sh;
-    ev += w * (sh * (r.pot + b * (go.length + 1)) - b);
+    ev += w * (sh * (r.pot + risk + go.reduce((t, x) => t + x.put, 0)) - risk);
   }, id);
   return {
     equity: eq / total,

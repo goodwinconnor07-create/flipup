@@ -16,7 +16,7 @@ import { CardSlot, PlayingCard } from '@/components/table/playing-card';
 import { enter } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { charactersOf, pilesFor, storySteps, type PileId } from '@/state/range-logic';
-import { numbersFor, scenarioById, SCENARIOS, useRangePlay } from '@/state/ranges';
+import { allHands, numbersFor, scenarioById, useRangePlay } from '@/state/ranges';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
 import { bb, gradeOf, optionsFor, replay, type OptionId, type Street } from '@train/ranges/model';
 
@@ -31,7 +31,7 @@ const GRADE = { best: 'Best play', ok: 'Also good', mistake: 'Not this time' } a
  */
 export default function RangeWhySheet() {
   const params = useLocalSearchParams<{ id?: string; pick?: string }>();
-  const s = scenarioById(params.id ?? '') ?? SCENARIOS[0];
+  const s = scenarioById(params.id ?? '') ?? allHands()[0];
   const r = useMemo(() => replay(s), [s]);
   const options = useMemo(() => optionsFor(s, r), [s, r]);
   const numbers = useMemo(() => numbersFor(s, r), [s, r]);

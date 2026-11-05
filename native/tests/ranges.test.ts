@@ -9,8 +9,8 @@ import { replay } from '@train/ranges/model';
 vi.mock('expo-sqlite/localStorage/install', () => ({}));
 
 it('has every hand’s numbers, matching the model', async () => {
-  const { computeNumbers, SCENARIOS } = await import('../src/state/ranges');
-  const fresh = Object.fromEntries(SCENARIOS.map((s) => [s.id, computeNumbers(s, replay(s))]));
+  const { computeNumbers, allHands } = await import('../src/state/ranges');
+  const fresh = Object.fromEntries(allHands().map((s) => [s.id, computeNumbers(s, replay(s))]));
   if (process.env.UPDATE_RANGES) writeFileSync(new URL('../src/data/range-numbers.json', import.meta.url).pathname, JSON.stringify(fresh) + '\n');
   else expect((await import('../src/data/range-numbers.json')).default).toEqual(fresh);
-}, 120_000);
+}, 900_000);

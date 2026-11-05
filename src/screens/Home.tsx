@@ -7,18 +7,11 @@ import { GameShelf } from './HomeGames';
 import { LegendShelf } from './HomeLegends';
 import { CAMPAIGN_ON, LEGENDS_ON, variantInfo } from '../game';
 import { PartyTab } from './HomeParty';
-import { loadRangeProgress } from './RangeTrainer';
-import { HAND_COUNT } from '../train/ranges/library';
 import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
 import { ChevronIcon, CloseIcon, ChipIcon, KeypadIcon, PencilIcon, PersonIcon, PlusIcon, SpadeIcon, UsersIcon } from '../ui/Icons';
 
-/** "4 of 13 hands right", or what range training is, before you've started. */
-function rangesDone(): string {
-  const done = Object.values(loadRangeProgress()).filter((g) => g === 'best').length;
-  return done ? `${done} of ${HAND_COUNT} hands right` : 'Read their hand from the action, then make the call';
-}
 
 function ago(at: number): string {
   const mins = Math.max(1, Math.round((Date.now() - at) / 60_000));
@@ -209,7 +202,7 @@ export function Home() {
                     </span>
                     <span className="gr-text">
                       Range training
-                      <small>{rangesDone()}</small>
+                      <small>Read their hand from the action, then make the call</small>
                     </span>
                     <ChevronIcon className="gr-chev" width={16} height={16} />
                   </button>

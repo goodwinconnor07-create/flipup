@@ -11,6 +11,7 @@
 import { score, toInt } from '../../game/botEval';
 import { fullDeck, rankOf, type Card } from '../../game/cards';
 import { CHARTS } from './charts';
+import { pack, unpack } from './scenarios';
 import { classify, texture, type Kind } from './classify';
 import {
   analyse,
@@ -56,7 +57,7 @@ interface Combo {
 }
 
 /** Charts for calling (or limping): the biggest hands would usually have raised, so only a few are trapping. */
-const FLAT = /^BB vs|cold call|Call a 3-bet|limp/i;
+const FLAT = /^BB vs|defend|cold call|Call a 3-bet|limp/i;
 const premium = (c: [Card, Card]) => {
   const [a, b] = [rankOf(c[0]), rankOf(c[1])];
   return (a === b && a >= 12) || (Math.min(a, b) === 13 && Math.max(a, b) === 14);
@@ -168,7 +169,7 @@ function examples(combos: Combo[]): string {
   for (const c of combos) by.set(handName(c.cards), (by.get(handName(c.cards)) ?? 0) + c.w);
   return [...by.entries()]
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
+    .slice(0, 3)
     .map(([n]) => n)
     .join(', ');
 }
@@ -179,6 +180,35 @@ interface Grouped {
   small?: Role;
   big?: Role;
   combos: Combo[];
+}
+
+/** A group name for a hand: on the turn a made hand with a draw says so ("Top pair, weak kicker, with a flush draw"). */
+const nameOf = (k: Kind, board: Card[]) =>
+  board.length === 4 && k.level >= 3 && k.draw !== 'none' ? `${k.label}, with ${k.draw === 'open-ender' ? 'an' : 'a'} ${k.draw}` : k.label;
+
+/**
+ * A kind of hand that splits between answers (the stronger weak pairs call, the rest fold) gets a word for each part,
+ * strongest first, so no two groups share a name. `list` has to be strongest first within each kind.
+ */
+function qualify(list: Grouped[]): Grouped[] {
+  const count = new Map<string, number>();
+  for (const g of list) count.set(g.label, (count.get(g.label) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  const words: Record<number, string[]> = {
+    2: ['the stronger ones', 'the weaker ones'],
+    3: ['the strongest', 'the middle ones', 'the weakest'],
+    4: ['the strongest', 'the stronger ones', 'the weaker ones', 'the weakest'],
+    5: ['the strongest', 'the stronger ones', 'the middle ones', 'the weaker ones', 'the weakest'],
+  };
+  return list.map((g) => {
+    const n = count.get(g.label)!;
+    if (n < 2) return g;
+    const i = seen.get(g.label) ?? 0;
+    seen.set(g.label, i + 1);
+    const w =
+      words[n]?.[i] ?? (i === 0 ? 'the strongest' : i === n - 1 ? 'the weakest' : i < n / 2 ? 'the stronger ones' : 'the weaker ones');
+    return { ...g, label: `${g.label}, ${w}` };
+  });
 }
 
 function toGroups(list: Grouped[]): RangeGroup[] {
@@ -229,12 +259,16 @@ function callerGroups(range: Combo[], board: Card[], before: Card[] | undefined,
     .map((c) => ({ c, k: classify(c.cards, board, before), v: score([...c.cards, ...board].map(toInt)) }))
     .sort((x, y) => y.v - x.v);
   const total = scored.reduce((t, x) => t + x.c.w, 0);
-  const factor = DEFEND[style] * (players > 1 ? 0.75 : 1);
+  // Multiway, each player defends less: someone else can call too (roughly, the folds have to add up to the same).
+  const factor = DEFEND[style] * (players >= 3 ? 0.62 : players === 2 ? 0.75 : 1);
   const cut = (frac: number) => Math.min(0.95, factor / (1 + frac)) * total;
   const by = new Map<string, Grouped>();
+  // Hands of equal strength answer alike: `above` counts only the strictly stronger part of the range.
   let acc = 0;
-  for (const { c, k } of scored) {
-    const above = acc;
+  let above = 0;
+  let prev = Infinity;
+  for (const { c, k, v } of scored) {
+    if (v !== prev) [above, prev] = [acc, v];
     acc += c.w;
     const at = (frac: number): Role => (k.level === 0 || above >= cut(frac) ? 'folds' : k.level >= 9 ? 'raises' : 'calls');
     const r = { role: at(0.75), small: at(0.33), big: at(1.25) };
@@ -242,7 +276,7 @@ function callerGroups(range: Combo[], board: Card[], before: Card[] | undefined,
     if (!by.has(key)) by.set(key, { label: k.label, ...r, combos: [] });
     by.get(key)!.combos.push(c);
   }
-  return toGroups([...by.values()]);
+  return toGroups(qualify([...by.values()]));
 }
 
 /** Groups a range that's just in the pot (a caller in front of you): all `calls`. */
@@ -250,8 +284,9 @@ function stayGroups(range: Combo[], board: Card[], before?: Card[]): RangeGroup[
   const by = new Map<string, Grouped>();
   for (const c of range) {
     const k = classify(c.cards, board, before);
-    if (!by.has(k.label)) by.set(k.label, { label: k.label, role: 'calls', combos: [] });
-    by.get(k.label)!.combos.push(c);
+    const name = nameOf(k, board);
+    if (!by.has(name)) by.set(name, { label: name, role: 'calls', combos: [] });
+    by.get(name)!.combos.push(c);
   }
   return toGroups([...by.values()]);
 }
@@ -361,7 +396,18 @@ interface Draft {
   others: Seat[];
   board: Card[];
   actions: Step[];
+  /** Starting stacks (everyone 100bb if not given). */
+  stacks?: Partial<Record<Pos, number>>;
+  ante?: number;
+  format?: 'cash' | 'tournament';
 }
+
+/** The table setup a draft adds to a scenario: stacks, ante and format. */
+const tableOf = (d: Draft) => ({
+  ...(d.stacks ? { stacks: d.stacks } : {}),
+  ...(d.ante ? { ante: d.ante } : {}),
+  ...(d.format === 'tournament' ? { format: 'tournament' as const } : {}),
+});
 
 /** The hand so far, for bet sizes (the actions so far, with the board up to `cards`). */
 function replayDraft(d: Draft, cards: number) {
@@ -373,6 +419,7 @@ function replayDraft(d: Draft, cards: number) {
     hero: { pos: d.hero.pos, cards: d.hero.cards, pre: d.hero.chart },
     opponents: d.others.map((o) => ({ pos: o.pos, type: '', pre: o.chart, range: [] })),
     stack: 100,
+    ...tableOf(d),
     board: d.board.slice(0, cards),
     actions: d.actions,
     best: 'check',
@@ -458,12 +505,15 @@ function finish(d: Draft, opponents: Opponent[], meta: Meta): Scenario | null {
     hero: { pos: d.hero.pos, cards: d.hero.cards, pre: d.hero.chart },
     opponents,
     stack: 100,
+    ...tableOf(d),
     board: d.board,
     actions: d.actions,
     best: 'check',
     clues: meta.clues,
     why: '',
   };
+  // Work everything out on the hand exactly as it will be stored (packed ranges deal in their own order).
+  s.opponents = unpack(pack([s]))[0].opponents;
   let r;
   try {
     r = replay(s);
@@ -474,6 +524,8 @@ function finish(d: Draft, opponents: Opponent[], meta: Meta): Scenario | null {
   if (r.toCall > 0 && r.behind.length) return null;
   for (const o of opponents) if (r.live.includes(o.pos) && !o.range.length) return null;
   const spot = spotOf(s, r);
+  // Nothing to think about: you never win, or always do.
+  if (spot.equity < 0.04 || spot.equity > 0.97) return null;
   if (r.toCall > 0) {
     const gap = spot.equity - spot.price!;
     if (gap > 0 ? gap < (meta.gap?.call ?? MARGIN + 0.01) : -gap < (meta.gap?.fold ?? MARGIN + 0.01)) return null;
@@ -506,7 +558,12 @@ type Bet = NonNullable<ReturnType<typeof spotOf>['bet']>;
 
 const sizeWord = (id: OptionId) =>
   id === 'bet33' ? 'a third of the pot' : id === 'bet75' ? 'three-quarters of the pot' : id === 'bet125' ? 'more than the pot' : 'nothing';
-const groupName = (g: RangeGroup) => g.label.split(':')[0].toLowerCase();
+/** A group's kind of hand, without the "the stronger ones" that splits a kind between answers. */
+const groupName = (g: RangeGroup) =>
+  g.label
+    .split(':')[0]
+    .replace(/, (the (strongest|stronger ones|middle ones|weaker ones|weakest)|part \d+)$/, '')
+    .toLowerCase();
 const list = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 /** "top pair (24%) and sets (9%)": the biggest kinds of hand in a view that pass `keep`, with their share of the range. */
@@ -526,15 +583,33 @@ function biggest(v: OpponentView, keep: (g: GroupView) => boolean, n = 3): strin
 const shareOf = (v: OpponentView, keep: (g: GroupView) => boolean) =>
   v.groups.filter(keep).reduce((t, g) => t + g.weight, 0) / (v.groups.reduce((t, g) => t + g.weight, 0) || 1);
 
-/** "You beat X and lose to Y." for one player's range (only the parts that `keep`). */
-function beatWords(v: OpponentView, keep: (g: GroupView) => boolean = () => true): string {
-  const ahead = biggest(v, (g) => keep(g) && g.equity >= 0.6);
-  const behind = biggest(v, (g) => keep(g) && g.equity <= 0.4);
-  if (ahead && behind) return `you beat ${ahead}, and lose to ${behind}`;
-  if (ahead) return `you beat almost all of it: ${ahead}`;
-  if (behind) return `almost all of it beats you: ${behind}`;
-  return 'it’s close against most of it';
+/** The parts of a view you beat and lose to: "ahead of 35% of it (missed flush draws 20%...) and behind 65% (...)". */
+function beatWords(v: OpponentView): string {
+  const total = v.groups.reduce((t, g) => t + g.weight, 0) || 1;
+  const part = (keep: (g: GroupView) => boolean) => {
+    const by = new Map<string, number>();
+    for (const g of v.groups.filter(keep)) by.set(groupName(g.group), (by.get(groupName(g.group)) ?? 0) + g.weight);
+    const share = [...by.values()].reduce((t, w) => t + w, 0) / total;
+    const names = [...by.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .filter(([, w]) => w / total >= 0.03)
+      .slice(0, 3)
+      .map(([name, w]) => `${name} ${pct(w / total)}`);
+    return { share, names: list(names) };
+  };
+  const ahead = part((g) => g.equity >= 0.6);
+  const behind = part((g) => g.equity <= 0.4);
+  const close = 1 - ahead.share - behind.share;
+  const bits: string[] = [];
+  if (ahead.share >= 0.02) bits.push(`ahead of ${pct(ahead.share)} of it${ahead.names ? ` (${ahead.names})` : ''}`);
+  if (behind.share >= 0.02) bits.push(`behind ${pct(behind.share)}${behind.names ? ` (${behind.names})` : ''}`);
+  if (close >= 0.1) bits.push(`close against the other ${pct(close)}`);
+  return bits.length ? `You’re ${list(bits)}` : 'It’s close against all of it';
 }
+
+/** Your win rate against one player's range on its own (as if nobody else were in the pot). */
+const aloneEquity = (v: OpponentView) =>
+  v.groups.reduce((t, g) => t + g.weight * g.equity, 0) / (v.groups.reduce((t, g) => t + g.weight, 0) || 1);
 
 const hasDraw = (s: Scenario, k: Kind) => s.board.length === 4 && k.draw !== 'none';
 const MADE: Record<number, string> = { 3: 'a weak pair', 4: 'second pair' };
@@ -548,20 +623,19 @@ function heroLine(s: Scenario, k: Kind): string {
 
 function explainFacing(s: Scenario, r: ReturnType<typeof replay>, equity: number, price: number, meta: Meta): string {
   const views = analyse(s, r);
+  const multi = views.length > 1;
   const parts = [`${heroLine(s, meta.k)}.`];
   for (const v of views) {
     const polar = v.groups.some((g) => g.group.role === 'value' || g.group.role === 'bluff');
-    const who = views.length > 1 ? `${v.opponent.pos}: ` : '';
-    if (polar) {
-      const value = shareOf(v, (g) => g.group.role === 'value');
-      const bluffs = biggest(v, (g) => g.group.role === 'bluff', 2);
-      parts.push(
-        `${who}About ${pct(value)} of their bets here are value (${biggest(v, (g) => g.group.role === 'value', 2)})${bluffs ? `, the rest semi-bluffs and bluffs (${bluffs})` : ', with almost no bluffs'}. Against it, ${beatWords(v)}.`,
-      );
-    } else parts.push(`${who}They have ${biggest(v, () => true)}: ${beatWords(v)}.`);
+    const who = multi ? `${v.opponent.pos} ${polar ? '(the bettor)' : '(called in front of you)'}: ` : '';
+    const mix = polar
+      ? `${pct(shareOf(v, (g) => g.group.role === 'value'))} value, ${pct(shareOf(v, (g) => g.group.role === 'bluff'))} bluffs and semi-bluffs. `
+      : '';
+    parts.push(`${who}${mix}${beatWords(v)}${multi ? `; against them alone you’d win ${pct(aloneEquity(v))}` : ''}.`);
   }
+  const call = Math.min(r.toCall, r.stacks[s.hero.pos] ?? r.toCall);
   parts.push(
-    `Calling costs ${bb(r.toCall)} into a pot of ${bb(r.pot)}, so you need to win ${pct(price)} of the time. You win ${pct(equity)}${s.board.length === 4 ? ' with the river to come' : ''}.`,
+    `Calling costs ${bb(call)}${call < r.toCall ? ' (all in)' : ''} to win a pot of ${bb(r.pot - (r.toCall - call))}, so you need to win ${pct(price)} of the time. ${multi ? 'Against everyone together' : 'All in all'} you win ${pct(equity)}${s.board.length === 4 ? ' with the river to come' : ''}.`,
   );
   parts.push(equity > price ? 'Call.' : 'Fold.');
   const note = meta.note?.(equity > price ? 'call' : 'fold');
@@ -571,29 +645,40 @@ function explainFacing(s: Scenario, r: ReturnType<typeof replay>, equity: number
 
 function explainBetting(s: Scenario, r: ReturnType<typeof replay>, equity: number, b: Bet, best: OptionId, meta: Meta): string {
   const views = analyse(s, r);
+  const multi = views.length > 1;
   const parts = [`${heroLine(s, meta.k)}.`];
   const callers = (v: OpponentView) => biggest(v, (g) => roleFor(g.group, b.id) !== 'folds', 3);
-  const callWords = views.map((v) => (views.length > 1 ? `${v.opponent.pos} ${callers(v) || 'nothing'}` : callers(v))).join('; ');
+  const callWords = views.map((v) => (multi ? `${v.opponent.pos}: ${callers(v) || 'nothing'}` : callers(v))).join('; ');
   const needed = b.amount / (r.pot + b.amount);
+  // Multiway, each player's folds multiply: show them, then the chance everyone folds.
+  const foldEach = multi
+    ? `${list(views.map((v) => `${v.opponent.pos} folds ${pct(shareOf(v, (g) => roleFor(g.group, b.id) === 'folds'))}`))} of the time, so everyone folds only ${pct(b.allFold)}`
+    : '';
   if (best === 'check') {
     parts.push(
       b.equityCalled < 0.5
-        ? `If you bet ${sizeWord(b.id)}, ${views.length > 1 ? 'everyone folds' : 'they fold'} only ${pct(b.allFold)} of the time, and the hands that call (${callWords || 'their best hands'}) leave you winning just ${pct(b.equityCalled)}.`
-        : `A bet of ${sizeWord(b.id)} gets called by too little that you beat: ${views.length > 1 ? 'everyone folds' : 'they fold'} ${pct(b.allFold)}, and you win ${pct(b.equityCalled)} when called.`,
+        ? `If you bet ${sizeWord(b.id)}, ${multi ? foldEach : `they fold only ${pct(b.allFold)}`}, and the hands that call (${callWords || 'their best hands'}) leave you winning just ${pct(b.equityCalled)}.`
+        : `A bet of ${sizeWord(b.id)} gets called by too little that you beat: ${multi ? foldEach : `they fold ${pct(b.allFold)}`}, and you win ${pct(b.equityCalled)} when called.`,
     );
     parts.push(`Checking keeps your ${pct(equity)} share of the pot at showdown, which is worth more. Check.`);
   } else if (b.equityCalled >= 0.5) {
     parts.push(
-      `Bet ${sizeWord(best)} for value. The hands that call it are ${callWords || 'their pairs'}, and you win ${pct(b.equityCalled)} of the time when called.${b.allFold > 0.05 ? ` They fold ${pct(b.allFold)}.` : ''}`,
+      `Bet ${sizeWord(best)} for value. The hands that call it are ${callWords || 'their pairs'}, and you win ${pct(b.equityCalled)} of the time when called.`,
     );
+    if (multi) parts.push(`With ${views.length} players in, someone usually has a hand that calls: ${foldEach}.`);
+    else if (b.allFold > 0.05) parts.push(`They fold ${pct(b.allFold)}.`);
     if (best === 'bet33') parts.push('A bigger bet would fold out the worse hands that pay you.');
     if (best === 'bet125') parts.push('Their worse hands that call can’t fold even to a big bet, so make it big.');
+  } else if (s.board.length === 4 && b.equityCalled > 0.1) {
+    // A semi-bluff wins two ways: folds now, and the river when it's called.
+    parts.push(
+      `Bet ${sizeWord(best)} as a semi-bluff. It wins two ways: ${multi ? foldEach : `they fold ${pct(b.allFold)} of the time`}, and when called you still win ${pct(b.equityCalled)} with the river to come. Together the bet is worth ${bb(Math.round(b.ev * 10) / 10)} on average, against ${bb(Math.round(equity * r.pot * 10) / 10)} for checking.`,
+    );
   } else {
     parts.push(
-      `Bet ${sizeWord(best)} as a ${s.board.length === 4 && meta.k.draw !== 'none' ? 'semi-bluff' : 'bluff'}. It risks ${bb(b.amount)} to win ${bb(r.pot)}, so it needs folds ${pct(needed)} of the time, and ${views.length > 1 ? 'everyone folds' : 'they fold'} ${pct(b.allFold)}.`,
+      `Bet ${sizeWord(best)} as a bluff. It risks ${bb(b.amount)} to win ${bb(r.pot)}, so it needs everyone to fold ${pct(needed)} of the time, and ${multi ? foldEach : `they fold ${pct(b.allFold)}`}.`,
     );
-    if (s.board.length === 4 && b.equityCalled > 0.1) parts.push(`When called you still win ${pct(b.equityCalled)}.`);
-    else if (equity > 0.05) parts.push(`Checking would only win your ${pct(equity)} share at showdown.`);
+    if (equity > 0.05) parts.push(`Checking would only win your ${pct(equity)} share at showdown.`);
   }
   const note = meta.note?.(best);
   if (note) parts.push(note);
@@ -611,7 +696,60 @@ interface Pair {
   defendChart: string;
   /** A 3-bet pot: the defender opened, the opener 3-bet to this, and the defender called. */
   threeBet?: number;
+  /** A tournament (big blind ante, shorter stacks, smaller opens). */
+  format?: 'cash' | 'tournament';
+  /** Starting stacks, set per round (`withStacks()`). */
+  stacks?: Partial<Record<Pos, number>>;
 }
+
+/** A heads-up pot's table setup for its drafts. */
+const pairTable = (p: Pair) => ({
+  ...(p.stacks ? { stacks: p.stacks } : {}),
+  ...(p.format === 'tournament' ? { ante: 1, format: 'tournament' as const } : {}),
+});
+
+/** Stacks for a pot: about 100bb online, anything from 60bb to 250bb live, 18bb to 60bb in a tournament. */
+function stacksFor(
+  random: () => number,
+  table: 6 | 9,
+  format: 'cash' | 'tournament' | undefined,
+  seats: Pos[],
+): Partial<Record<Pos, number>> {
+  const one = () => {
+    if (format === 'tournament') return 18 + Math.round(random() * 42);
+    if (table === 9) return 60 + Math.round(random() * 38) * 5;
+    const r = random();
+    return r < 0.6 ? 100 : [60, 80, 150, 200][Math.floor(random() * 4)];
+  };
+  return Object.fromEntries(seats.map((p) => [p, one()]));
+}
+const withStacks = (p: Pair, random: () => number): Pair => ({
+  ...p,
+  stacks: stacksFor(random, p.table, p.format, [p.opener, p.defender]),
+});
+
+/** Tournament pots, nine-handed with a big blind ante. */
+const mtt = (opener: Pos, openChart: string, defender: Pos, defendChart: string): Pair => ({
+  table: 9,
+  opener,
+  openChart,
+  defender,
+  defendChart,
+  format: 'tournament',
+});
+const MTT_PAIRS: Pair[] = [
+  mtt('UTG', 'MTT open EP', 'BB', 'MTT BB defend vs early'),
+  mtt('UTG1', 'MTT open EP', 'BTN', 'MTT cold call'),
+  mtt('MP', 'MTT open MP', 'BB', 'MTT BB defend vs early'),
+  mtt('LJ', 'MTT open MP', 'CO', 'MTT cold call'),
+  mtt('HJ', 'MTT open MP', 'BB', 'MTT BB defend vs early'),
+  mtt('HJ', 'MTT open MP', 'BTN', 'MTT cold call'),
+  mtt('CO', 'MTT open CO', 'BB', 'MTT BB defend vs late'),
+  mtt('CO', 'MTT open CO', 'BTN', 'MTT cold call'),
+  mtt('BTN', 'MTT open BTN', 'BB', 'MTT BB defend vs late'),
+  mtt('BTN', 'MTT open BTN', 'SB', 'MTT cold call'),
+  mtt('SB', 'SB open', 'BB', 'MTT BB defend vs late'),
+];
 
 const pair = (table: 6 | 9, opener: Pos, openChart: string, defender: Pos, defendChart: string): Pair => ({
   table,
@@ -695,12 +833,13 @@ function preWords(p: Pair, heroRaised: boolean): string {
     return heroRaised
       ? `${cap(SEAT[p.defender])} opens, you 3-bet from ${SEAT[p.opener]} and they call. Calling a 3-bet: pairs, suited aces, suited broadways and connectors (the biggest hands would 4-bet). In a 3-bet pot the stacks are short next to the pot, so one pair is worth more.`
       : `You open from ${SEAT[p.defender]}, ${SEAT[p.opener]} 3-bets and you call. A 3-bet range is strong and linear-ish: big pairs, A-K, A-Q, good suited broadways, plus suited bluffs like A-5 and suited connectors.`;
+  const mtt = p.format === 'tournament' ? 'Tournament, big blind ante. ' : '';
   return heroRaised
-    ? `You open from ${SEAT[p.opener]} and ${SEAT[p.defender]} calls. ${chartWords(p.defendChart)}`
-    : `${cap(SEAT[p.opener])} opens and you call from ${SEAT[p.defender]}. ${chartWords(p.openChart)}`;
+    ? `${mtt}You open from ${SEAT[p.opener]} and ${SEAT[p.defender]} calls. ${chartWords(p.defendChart)}`
+    : `${mtt}${cap(SEAT[p.opener])} opens and you call from ${SEAT[p.defender]}. ${chartWords(p.openChart)}`;
 }
 
-const openSize = (p: Pair) => (p.table === 9 ? 3 : p.opener === 'SB' ? 3 : 2.5);
+const openSize = (p: Pair) => (p.format === 'tournament' ? (p.opener === 'SB' ? 3 : 2.2) : p.table === 9 ? 3 : p.opener === 'SB' ? 3 : 2.5);
 const styleFor = (random: () => number, table: 6 | 9): Style =>
   (table === 9 ? (['passive', 'loose', 'reg'] as Style[]) : (['reg', 'aggro', 'reg', 'passive'] as Style[]))[
     Math.floor(random() * (table === 9 ? 3 : 4))
@@ -739,6 +878,7 @@ function threeBarrels(p: Pair, random: () => number, idx: number): Scenario[] {
       if (!groups.some((g) => g.role === 'value')) continue;
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.defender, chart: p.defendChart, style: 'reg', cards },
         others: [{ pos: p.opener, chart: p.openChart, style }],
         board,
@@ -799,6 +939,8 @@ const chartWords = (chart: string) => {
   const share = Math.round((n / 1326) * 100);
   if (/open/.test(chart)) return `They open about ${share}% of hands from there.`;
   if (/^BB vs/.test(chart)) return `The big blind defends about ${share}% of hands against that seat.`;
+  if (/BB defend/.test(chart))
+    return `With the ante in the pot and a small raise, the big blind gets a great price and defends about ${share}% of hands.`;
   if (/cold call/i.test(chart)) return 'Cold-calling ranges are pairs, suited cards and good broadways; the biggest hands usually 3-bet.';
   return '';
 };
@@ -821,6 +963,7 @@ function riverDecision(p: Pair, random: () => number, idx: number): Scenario[] {
       const groups = callerGroups(theirs, board, board.slice(0, 4), style);
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.opener, chart: p.openChart, style: 'reg', cards },
         others: [{ pos: p.defender, chart: p.defendChart, style }],
         board,
@@ -841,7 +984,7 @@ function riverDecision(p: Pair, random: () => number, idx: number): Scenario[] {
       const k = classify(cards, board, board.slice(0, 4));
       const s = finish(d, [{ pos: p.defender, type: STYLE_NAME[style], pre: p.defendChart, range: groups }], {
         id: `gen-river-${idx}-${tries}`,
-        title: k.level >= 6 ? 'Value on the river' : k.level <= 1 ? 'The river after your draw missed' : 'One pair on the river',
+        title: k.level >= 6 ? 'A strong hand on the river' : k.level <= 1 ? 'The river after your draw missed' : 'One pair on the river',
         concept: k.level >= 7 ? 'Value betting' : k.level <= 1 ? 'River bluffs' : 'Thin value',
         clues: [
           { street: 'preflop', text: preWords(p, true) },
@@ -884,6 +1027,7 @@ function checkedTurn(p: Pair, random: () => number, idx: number): Scenario[] {
       const groups = callerGroups(theirs, board, board.slice(0, 4), style);
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.defender, chart: p.defendChart, style: 'reg', cards },
         others: [{ pos: p.opener, chart: p.openChart, style }],
         board,
@@ -947,6 +1091,7 @@ function turnCheckRaise(p: Pair, random: () => number, idx: number): Scenario[] 
       if (!groups.length) continue;
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.opener, chart: p.openChart, style: 'reg', cards },
         others: [{ pos: p.defender, chart: p.defendChart, style }],
         board,
@@ -1369,23 +1514,28 @@ function turnStrength(k: Kind): number {
  * Groups a turn range by how it answers each bet size: like the river (callerGroups), the best part of the range
  * calls, as much as the size and style allow, but draws count as strong hands here, and air never calls.
  */
-function turnGroups(range: Combo[], board: Card[], style: Style): RangeGroup[] {
+function turnGroups(range: Combo[], board: Card[], style: Style, players = 1): RangeGroup[] {
   const scored = range.map((c) => ({ c, k: classify(c.cards, board), v: score([...c.cards, ...board].map(toInt)) }));
   scored.sort((x, y) => turnStrength(y.k) - turnStrength(x.k) || y.v - x.v);
   const total = scored.reduce((t, x) => t + x.c.w, 0);
-  const cut = (frac: number) => Math.min(0.95, DEFEND[style] / (1 + frac)) * total;
+  const factor = DEFEND[style] * (players >= 3 ? 0.62 : players === 2 ? 0.75 : 1);
+  const cut = (frac: number) => Math.min(0.95, factor / (1 + frac)) * total;
   const by = new Map<string, Grouped>();
+  // Hands of equal strength answer alike: `above` counts only the strictly stronger part of the range.
   let acc = 0;
-  for (const { c, k } of scored) {
-    const above = acc;
+  let above = 0;
+  let prev = '';
+  for (const { c, k, v } of scored) {
+    const tier = `${turnStrength(k)}|${v}`;
+    if (tier !== prev) [above, prev] = [acc, tier];
     acc += c.w;
     const at = (frac: number): Role => (turnStrength(k) === 0 || above >= cut(frac) ? 'folds' : k.level >= 8 ? 'raises' : 'calls');
     const r = { role: at(0.75), small: at(0.33), big: at(1.25) };
-    const key = `${k.label}|${r.role}|${r.small}|${r.big}`;
-    if (!by.has(key)) by.set(key, { label: k.label, ...r, combos: [] });
+    const key = `${nameOf(k, board)}|${r.role}|${r.small}|${r.big}`;
+    if (!by.has(key)) by.set(key, { label: nameOf(k, board), ...r, combos: [] });
     by.get(key)!.combos.push(c);
   }
-  return toGroups([...by.values()]);
+  return toGroups(qualify([...by.values()]));
 }
 
 /** The raiser checked back the flop; out of position, you're first on the turn: probe-bet or check. */
@@ -1402,6 +1552,7 @@ function probeTurn(p: Pair, random: () => number, idx: number): Scenario[] {
       const groups = turnGroups(theirs, board, style);
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.defender, chart: p.defendChart, style: 'reg', cards },
         others: [{ pos: p.opener, chart: p.openChart, style }],
         board,
@@ -1466,6 +1617,7 @@ function riverLead(p: Pair, random: () => number, idx: number): Scenario[] {
       if (!groups.some((g) => g.role === 'value')) continue;
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.opener, chart: p.openChart, style: 'reg', cards },
         others: [{ pos: p.defender, chart: p.defendChart, style }],
         board,
@@ -1535,6 +1687,7 @@ function turnBarrel(p: Pair, random: () => number, idx: number): Scenario[] {
       if (!groups.some((g) => g.role === 'value')) continue;
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.defender, chart: p.defendChart, style: 'reg', cards },
         others: [{ pos: p.opener, chart: p.openChart, style }],
         board,
@@ -1587,8 +1740,8 @@ function betGroups(range: Combo[], board: Card[], before: Card[] | undefined, p:
     const w = c.w * Math.max(0, Math.min(1, p(k)));
     if (w <= 0.01) continue;
     const role: Role = k.level >= valueFrom ? 'value' : 'bluff';
-    const key = `${k.label}|${role}`;
-    if (!by.has(key)) by.set(key, { label: k.label, role, combos: [] });
+    const key = `${nameOf(k, board)}|${role}`;
+    if (!by.has(key)) by.set(key, { label: nameOf(k, board), role, combos: [] });
     by.get(key)!.combos.push({ cards: c.cards, w });
   }
   return toGroups([...by.values()]);
@@ -1627,6 +1780,7 @@ function riverStab(p: Pair, random: () => number, idx: number): Scenario[] {
       if (!groups.some((g) => g.role === 'value')) continue;
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.defender, chart: p.defendChart, style: 'reg', cards },
         others: [{ pos: p.opener, chart: p.openChart, style }],
         board,
@@ -1683,6 +1837,7 @@ function delayedCbet(p: Pair, random: () => number, idx: number): Scenario[] {
       const groups = turnGroups(theirs, board, style);
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.opener, chart: p.openChart, style: 'reg', cards },
         others: [{ pos: p.defender, chart: p.defendChart, style }],
         board,
@@ -1753,6 +1908,7 @@ function facingProbe(p: Pair, random: () => number, idx: number): Scenario[] {
       if (!groups.some((g) => g.role === 'value')) continue;
       const d: Draft = {
         table: p.table,
+        ...pairTable(p),
         hero: { pos: p.opener, chart: p.openChart, style: 'reg', cards },
         others: [{ pos: p.defender, chart: p.defendChart, style }],
         board,
@@ -1937,29 +2093,659 @@ function fourWay(random: () => number, idx: number): Scenario[] {
   return out;
 }
 
+// ── Multiway pots ───────────────────────────────────────────────────────────
+//
+// Three to five players see the flop. What changes multiway (from solver work on three-way pots and coaching on
+// live games): the raiser c-bets much less often and smaller, mostly strong hands and strong draws; players in the
+// middle call tighter than the one who closes the action; a second bet into several players is very strong; river
+// bets are value-heavy and bluffs need everyone to fold; a caller with someone still to act behind has a real hand.
+
+/** The raiser's c-bet into two or more players: strong hands and strong draws, much less air. */
+const mwCbet = (players: number, style: Style) => (k: Kind) => {
+  if (k.level >= 5) return 0.85;
+  if (k.draw === 'combo draw' || k.draw === 'nut flush draw') return 0.75;
+  if (strongDraw(k)) return 0.55;
+  if (k.level >= 3) return 0.25;
+  return (players >= 3 ? 0.05 : 0.12) * BLUFFS[style];
+};
+/** Calling a multiway flop bet: tighter in the middle, a little wider when you close the action. */
+const mwCallFlop = (style: Style, closing: boolean) => (k: Kind) => {
+  if (k.level >= 8) return 0.7;
+  if (k.level >= 4) return 1;
+  if (k.level === 3) return closing ? 0.85 : 0.6;
+  if (strongDraw(k) || k.draw === 'combo draw') return 1;
+  if (k.draw === 'gutshot') return closing ? 0.45 : 0.25;
+  if (k.level === 1) return (closing ? 0.25 : 0.1) * STICKY[style];
+  return 0.03 * STICKY[style];
+};
+/** A second barrel into several players: value-heavy, the best draws, almost no air. */
+const mwBarrel = (style: Style) => (k: Kind) => {
+  if (k.level >= 6) return 0.9;
+  if (k.level === 5) return 0.45;
+  if (k.draw === 'combo draw') return 0.7;
+  if (strongDraw(k)) return 0.4 * Math.min(1.2, BLUFFS[style] + 0.2);
+  if (k.level === 4) return 0.1;
+  return 0.05 * BLUFFS[style];
+};
+/** Calling a multiway turn bet with someone still to act: good made hands and strong draws. */
+const mwCallTurn = (style: Style) => (k: Kind) => {
+  if (k.level >= 8) return 0.7;
+  if (k.level >= 6) return 1;
+  if (k.level === 5) return 0.7 * STICKY[style];
+  if (k.draw === 'combo draw' || k.draw === 'nut flush draw') return 0.9;
+  if (strongDraw(k)) return 0.7;
+  if (k.level === 4) return 0.25 * STICKY[style];
+  return 0.02;
+};
+/** The river bet after betting the turn into several players. */
+const mwRiverBet = (style: Style) => (k: Kind) => {
+  if (k.level >= 7) return 0.95;
+  if (k.level === 6) return 0.6;
+  if (k.label.startsWith('Missed')) return 0.3 * BLUFFS[style];
+  if (k.level <= 1) return 0.08 * BLUFFS[style];
+  return 0;
+};
+/** Overcalling a river bet with a player still to act behind: only strong hands. */
+const overcall = (k: Kind) => (k.level >= 7 ? 1 : k.level === 6 ? 0.7 : k.level === 5 ? 0.2 : 0);
+/** Checking a street in a multiway pot: the biggest hands often bet instead (to charge the draws). */
+const mwCheck = (k: Kind) => (k.level >= 7 ? 0.35 : k.level === 6 ? 0.7 : k.draw === 'combo draw' ? 0.6 : 1);
+
+interface MwSeat {
+  pos: Pos;
+  /** The chart for how they got in (for a squeeze pot, calling the 3-bet). */
+  chart: string;
+  /** A second chart the hand has to be in too (the opener's chart, for an opener who calls a squeeze). */
+  also?: string;
+}
+
+interface MwSetup {
+  key: string;
+  table: 6 | 9;
+  format?: 'cash' | 'tournament';
+  /** Seats in the hand, the preflop aggressor (or the flop bettor in a limped pot) first. */
+  seats: MwSeat[];
+  /** The kind of pot, for titles and clues. */
+  pot: 'raised' | 'squeeze' | 'iso' | 'limped';
+  /** Plays the preflop action. */
+  pre: (d: Draft) => void;
+  /** The preflop clue (from the hero's seat). */
+  preText: (hero: Pos) => string;
+}
+
+const seatName = (p: Pos, hero: Pos) => (p === hero ? 'you' : SEAT[p]);
+
+/** What a multiway flop does to the ranges, by its texture. */
+function mwFlopWords(board: Card[]): string {
+  const t = texture(board);
+  if (t.paired) return 'On a paired board hardly anyone has trips: the betting is mostly about who holds the best pair, and draws are few.';
+  if (t.mono)
+    return 'On a one-suit board anyone with a big card of that suit has a draw; made flushes are rare but real, and one pair plays carefully.';
+  if (t.high && t.dry)
+    return 'A dry, high board suits the raiser: callers continue with a pair of the top card, good underpairs and the odd gutshot.';
+  if (t.low && t.connected)
+    return 'A low, connected board hits the callers (small pairs, suited connectors, the big blind’s wide range) harder than the raiser, so straights and two pair are live.';
+  if (t.twoTone && t.connected)
+    return 'A wet board: plenty of flush and straight draws keep calling, so the pot will grow with hands that are not made yet.';
+  return 'Calls come from pairs and draws; the players in the middle need a bit more than the one who closes the action.';
+}
+
+/** A raised pot: the opener raises to `size`, the rest call. */
+function raised(table: 6 | 9, opener: [Pos, string], callers: [Pos, string][], size: number, format?: 'tournament'): MwSetup {
+  const seats = [opener, ...callers].map(([pos, chart]) => ({ pos, chart }));
+  return {
+    key: `r-${table}-${seats.map((x) => x.pos).join('')}${format ? '-t' : ''}`,
+    table,
+    format,
+    seats,
+    pot: 'raised',
+    pre: (d) =>
+      openAndCall(
+        d,
+        opener[0],
+        callers.map((c) => c[0]),
+        size,
+      ),
+    preText: (hero) =>
+      `${format ? 'Tournament, big blind ante. ' : ''}${cap(seatName(opener[0], hero))} ${opener[0] === hero ? 'open' : 'opens'} to ${bb(size)}, and ${list(callers.map((c) => seatName(c[0], hero)))} ${callers.length === 1 && callers[0][0] !== hero ? 'calls' : 'call'}. ${seats.length} players see the flop. ${
+        callers.some((c) => /cold call/i.test(c[1]))
+          ? 'Cold-callers have pairs, suited cards and good broadways; they’d 3-bet most of their biggest hands. '
+          : ''
+      }${callers.some((c) => /^BB|BB defend/.test(c[1])) ? 'The big blind closes the action with a good price, so it calls the widest.' : ''}`,
+  };
+}
+
+/** A squeeze: the opener raises, a player calls, a third player 3-bets, and both call. */
+function squeeze(open: [Pos, string], caller: [Pos, string], squeezer: Pos, size: number): MwSetup {
+  return {
+    key: `sq-${open[0]}${caller[0]}${squeezer}`,
+    table: 6,
+    seats: [
+      { pos: squeezer, chart: 'Squeeze' },
+      { pos: open[0], chart: 'Call a 3-bet', also: open[1] },
+      { pos: caller[0], chart: 'Call a 3-bet', also: caller[1] },
+    ],
+    pot: 'squeeze',
+    pre: (d) => {
+      const order = [open[0], caller[0], squeezer].sort((a, b) => PRE_ORDER.indexOf(a) - PRE_ORDER.indexOf(b));
+      for (const p of order) {
+        if (p === open[0]) step(d, 'preflop', p, 'raise', 2.5);
+        else if (p === caller[0]) step(d, 'preflop', p, 'call');
+        else step(d, 'preflop', p, 'raise', size);
+      }
+      for (const p of [open[0], caller[0]]) step(d, 'preflop', p, 'call');
+    },
+    preText: (hero) =>
+      `${cap(seatName(open[0], hero))} ${open[0] === hero ? 'open' : 'opens'}, ${seatName(caller[0], hero)} ${caller[0] === hero ? 'call' : 'calls'}, and ${seatName(squeezer, hero)} ${squeezer === hero ? 'squeeze' : 'squeezes'} to ${bb(size)}. Both call. A squeeze over a raise and a call is strong and linear: big pairs, A-K, A-Q, A-J suited, plus a few suited aces. The callers have medium pairs, suited broadways and connectors (they’d 4-bet their best hands). With so much in the pot the stacks are shallow: top pair is often good enough to get it all in.`,
+  };
+}
+
+/** A live iso-raise: limpers, a raise over them, and calls. */
+function iso(limpers: Pos[], raiser: Pos, size: number, callers: [Pos, string][]): MwSetup {
+  const seats: MwSeat[] = [
+    { pos: raiser, chart: 'Live iso-raise' },
+    ...callers.map(([pos, chart]) => ({ pos, chart })),
+    ...limpers.map((pos) => ({ pos, chart: 'Live limp' })),
+  ];
+  return {
+    key: `iso-${limpers.join('')}${raiser}${callers.map((c) => c[0]).join('')}`,
+    table: 9,
+    seats,
+    pot: 'iso',
+    pre: (d) => {
+      for (const p of [...limpers, raiser, ...callers.map((c) => c[0])].sort((a, b) => PRE_ORDER.indexOf(a) - PRE_ORDER.indexOf(b))) {
+        if (limpers.includes(p)) step(d, 'preflop', p, 'call');
+        else if (p === raiser) step(d, 'preflop', p, 'raise', size);
+        else step(d, 'preflop', p, 'call');
+      }
+      for (const p of limpers) step(d, 'preflop', p, 'call');
+    },
+    preText: (hero) =>
+      `Live cash. ${cap(list(limpers.map((p) => seatName(p, hero))))} ${limpers.includes(hero) && limpers.length === 1 ? 'limp' : limpers.length > 1 ? 'limp' : 'limps'}, ${seatName(raiser, hero)} ${raiser === hero ? 'raise' : 'raises'} to ${bb(size)} to isolate, and ${list([...callers.map((c) => seatName(c[0], hero)), ...limpers.map((p) => seatName(p, hero))])} call. Limpers have wide, weak ranges (small pairs, suited cards, weak aces) and rarely a premium; live players almost never fold after limping.`,
+  };
+}
+
+type MwKind = 'turnFacing' | 'riverFacing' | 'turnToYou' | 'riverToYou' | 'riverFirst' | 'turnFirst' | 'turnMiddle' | 'riverMiddle';
+
+const MW_SETUPS: MwSetup[] = [
+  // Six-handed cash.
+  raised(
+    6,
+    ['UTG', 'UTG open'],
+    [
+      ['CO', 'Cold call'],
+      ['BB', 'BB vs early open'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['UTG', 'UTG open'],
+    [
+      ['BTN', 'Cold call'],
+      ['BB', 'BB vs early open'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['HJ', 'HJ open'],
+    [
+      ['CO', 'Cold call'],
+      ['BTN', 'Cold call'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['HJ', 'HJ open'],
+    [
+      ['BTN', 'Cold call'],
+      ['SB', 'Cold call'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['CO', 'CO open'],
+    [
+      ['BTN', 'Cold call'],
+      ['BB', 'BB vs late open'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['CO', 'CO open'],
+    [
+      ['SB', 'Cold call'],
+      ['BB', 'BB vs late open'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['BTN', 'BTN open'],
+    [
+      ['SB', 'Cold call'],
+      ['BB', 'BB vs late open'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['UTG', 'UTG open'],
+    [
+      ['HJ', 'Cold call'],
+      ['BTN', 'Cold call'],
+      ['BB', 'BB vs early open'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['HJ', 'HJ open'],
+    [
+      ['CO', 'Cold call'],
+      ['BTN', 'Cold call'],
+      ['BB', 'BB vs middle open'],
+    ],
+    2.5,
+  ),
+  raised(
+    6,
+    ['CO', 'CO open'],
+    [
+      ['BTN', 'Cold call'],
+      ['SB', 'Cold call'],
+      ['BB', 'BB vs late open'],
+    ],
+    2.5,
+  ),
+  // Nine-handed live cash: bigger opens, more callers.
+  raised(
+    9,
+    ['UTG', 'EP open (9-handed)'],
+    [
+      ['MP', 'Live cold call'],
+      ['BTN', 'Live cold call'],
+      ['BB', 'BB vs early open'],
+    ],
+    4,
+  ),
+  raised(
+    9,
+    ['UTG1', 'EP open (9-handed)'],
+    [
+      ['CO', 'Live cold call'],
+      ['BB', 'BB vs early open'],
+    ],
+    3,
+  ),
+  raised(
+    9,
+    ['MP', 'MP open (9-handed)'],
+    [
+      ['HJ', 'Live cold call'],
+      ['BTN', 'Live cold call'],
+    ],
+    4,
+  ),
+  raised(
+    9,
+    ['LJ', 'MP open (9-handed)'],
+    [
+      ['CO', 'Live cold call'],
+      ['SB', 'Live cold call'],
+      ['BB', 'BB vs middle open'],
+    ],
+    3,
+  ),
+  raised(
+    9,
+    ['HJ', 'HJ open'],
+    [
+      ['BTN', 'Live cold call'],
+      ['BB', 'BB vs middle open'],
+    ],
+    5,
+  ),
+  raised(
+    9,
+    ['CO', 'CO open'],
+    [
+      ['BTN', 'Live cold call'],
+      ['SB', 'Live cold call'],
+    ],
+    4,
+  ),
+  raised(
+    9,
+    ['UTG1', 'EP open (9-handed)'],
+    [
+      ['LJ', 'Live cold call'],
+      ['CO', 'Live cold call'],
+      ['BTN', 'Live cold call'],
+      ['BB', 'BB vs early open'],
+    ],
+    3,
+  ),
+  // Squeezed pots.
+  squeeze(['CO', 'CO open'], ['BTN', 'Cold call'], 'SB', 12),
+  squeeze(['HJ', 'HJ open'], ['CO', 'Cold call'], 'BB', 13),
+  squeeze(['UTG', 'UTG open'], ['BTN', 'Cold call'], 'BB', 14),
+  squeeze(['HJ', 'HJ open'], ['BTN', 'Cold call'], 'SB', 12),
+  // Live iso-raised pots.
+  iso(['UTG1', 'LJ'], 'BTN', 7, [['BB', 'BB vs middle open']]),
+  iso(['MP'], 'CO', 5, [['BB', 'BB vs middle open']]),
+  iso(['UTG', 'HJ'], 'CO', 7, [['BTN', 'Live cold call']]),
+  iso(['LJ'], 'BTN', 5, [
+    ['SB', 'Live cold call'],
+    ['BB', 'BB vs late open'],
+  ]),
+  // Tournaments.
+  raised(
+    9,
+    ['UTG1', 'MTT open EP'],
+    [
+      ['BTN', 'MTT cold call'],
+      ['BB', 'MTT BB defend vs early'],
+    ],
+    2.2,
+    'tournament',
+  ),
+  raised(
+    9,
+    ['LJ', 'MTT open MP'],
+    [
+      ['CO', 'MTT cold call'],
+      ['BB', 'MTT BB defend vs early'],
+    ],
+    2.2,
+    'tournament',
+  ),
+  raised(
+    9,
+    ['CO', 'MTT open CO'],
+    [
+      ['BTN', 'MTT cold call'],
+      ['BB', 'MTT BB defend vs late'],
+    ],
+    2.2,
+    'tournament',
+  ),
+  raised(
+    9,
+    ['BTN', 'MTT open BTN'],
+    [
+      ['SB', 'MTT cold call'],
+      ['BB', 'MTT BB defend vs late'],
+    ],
+    2.2,
+    'tournament',
+  ),
+  raised(
+    9,
+    ['HJ', 'MTT open MP'],
+    [
+      ['CO', 'MTT cold call'],
+      ['BTN', 'MTT cold call'],
+      ['BB', 'MTT BB defend vs early'],
+    ],
+    2.2,
+    'tournament',
+  ),
+];
+
+/** A seat's starting range: its chart (and the second chart, if any), less the cards you can see. */
+const seatRange = (x: MwSeat, dead: Card[]) => {
+  const r = startRange(x.chart, dead);
+  if (!x.also) return r;
+  const ok = new Set(expandRange(CHARTS[x.also]).map(comboKey));
+  return r.filter((c) => ok.has(comboKey(c.cards)));
+};
+
+function mwSpot(w: MwSetup, kind: MwKind, random: () => number, idx: number): Scenario[] {
+  const order = w.seats.map((x) => x.pos).sort((a, b) => ORDER.indexOf(a) - ORDER.indexOf(b));
+  const n = order.length;
+  const bettor = w.seats[0].pos;
+  const bi = order.indexOf(bettor);
+  const facing = kind === 'turnFacing' || kind === 'riverFacing';
+  const middle = kind === 'turnMiddle' || kind === 'riverMiddle';
+  const heroPos = facing
+    ? order[(bi - 1 + n) % n]
+    : kind === 'turnToYou' || kind === 'riverToYou'
+      ? order[n - 1]
+      : middle
+        ? order[1]
+        : order[0];
+  if (facing && heroPos === bettor) return [];
+  if ((kind === 'riverFirst' || kind === 'turnFirst') && heroPos === bettor) return [];
+  const heroSeat = w.seats.find((x) => x.pos === heroPos)!;
+  const river = kind.startsWith('river');
+  const cards = river ? 5 : 4;
+  const styles = new Map(w.seats.map((x) => [x.pos, styleFor(random, w.table)] as const));
+  const stacks: Partial<Record<Pos, number>> =
+    w.format === 'tournament'
+      ? Object.fromEntries(order.map((p) => [p, 25 + Math.round(random() * 35)]))
+      : Object.fromEntries(order.map((p) => [p, w.table === 9 ? 80 + Math.round(random() * 34) * 5 : 100]));
+  if (w.format === 'tournament' || w.pot === 'squeeze') {
+    // Even stacks where the money goes in fast (tournaments, squeezed pots): the effective stack is what matters, and
+    // it keeps side pots out of it.
+    const eff = w.pot === 'squeeze' ? [70, 100, 100, 150][Math.floor(random() * 4)] : Math.min(...(Object.values(stacks) as number[]));
+    for (const p of order) stacks[p] = eff;
+  } else if (w.table === 6 && random() < 0.4) for (const p of order) stacks[p] = [80, 120, 150, 200][Math.floor(random() * 4)];
+  // The turn: in the facing spots the bettor fires again; elsewhere it either checks through or (river spots) gets a bet and calls.
+  const turnBet =
+    kind === 'riverFacing' ||
+    kind === 'turnFacing' ||
+    ((kind === 'riverToYou' || kind === 'riverFirst' || kind === 'riverMiddle') && random() < 0.4);
+  const out: Scenario[] = [];
+  for (let tries = 0; tries < 8 && !out.length; tries++) {
+    const board = dealBoard(random, cards);
+    const flop = board.slice(0, 3);
+    const turn = board.slice(0, 4);
+    const before = river ? turn : undefined;
+    const t = texture(board);
+    const flopFrac = t.dry && t.high ? 0.25 : 0.33;
+    // Each other player's range, street by street, and what they do on the decision street.
+    const lineRange = (x: MwSeat, dead: Card[]) => {
+      const st = styles.get(x.pos)!;
+      const closing = order.indexOf(x.pos) === (bi - 1 + n) % n;
+      let r = seatRange(x, dead);
+      r = narrow(r, flop, x.pos === bettor ? mwCbet(n - 1, st) : mwCallFlop(st, closing));
+      if (turnBet) r = narrow(r, turn, x.pos === bettor ? mwBarrel(st) : mwCallTurn(st));
+      else if (cards === 5 || order.indexOf(x.pos) < order.indexOf(heroPos))
+        r = narrow(r, turn, x.pos === bettor ? (k) => 1 - mwBarrel(st)(k) : mwCheck);
+      return r;
+    };
+    // Your hand: one that played your line and has a real decision.
+    const heroStyle: Style = 'reg';
+    let mine = seatRange(heroSeat, board);
+    mine = narrow(
+      mine,
+      flop,
+      heroPos === bettor ? mwCbet(n - 1, heroStyle) : mwCallFlop(heroStyle, order.indexOf(heroPos) === (bi - 1 + n) % n),
+    );
+    if (turnBet && cards === 5) mine = narrow(mine, turn, heroPos === bettor ? mwBarrel(heroStyle) : mwCallTurn(heroStyle));
+    else if (cards === 5) mine = narrow(mine, turn, heroPos === bettor ? (k) => 1 - mwBarrel(heroStyle)(k) : mwCheck);
+    mine = mine.filter((c) => {
+      const k = classify(c.cards, board, before);
+      return facing ? (k.level >= (river ? 4 : 3) && k.level <= (river ? 8 : 7)) || (!river && k.draw !== 'none') : true;
+    });
+    const heroCards = heroCandidates(mine, random, 1)[0];
+    if (!heroCards) continue;
+    const dead = [...heroCards, ...board];
+    const others = w.seats.filter((x) => x.pos !== heroPos);
+    const d: Draft = {
+      table: w.table,
+      hero: { pos: heroPos, chart: heroSeat.chart, style: heroStyle, cards: heroCards },
+      others: others.map((x) => ({ pos: x.pos, chart: x.chart, style: styles.get(x.pos)! })),
+      board,
+      actions: [],
+      stacks,
+      ...(w.format === 'tournament' ? { ante: 1, format: 'tournament' as const } : {}),
+    };
+    w.pre(d);
+    // Flop: checks to the bettor, a small bet, everyone calls.
+    for (const p of order.slice(0, bi)) step(d, 'flop', p, 'check');
+    bet(d, 'flop', bettor, flopFrac, 3);
+    for (const p of [...order.slice(bi + 1), ...order.slice(0, bi)]) step(d, 'flop', p, 'call');
+    // Turn.
+    const folders = new Set<Pos>();
+    const between = [...order.slice(bi + 1), ...order.slice(0, bi)].filter((p) => p !== heroPos);
+    if (turnBet) {
+      for (const p of order.slice(0, bi)) step(d, 'turn', p, 'check');
+      bet(d, 'turn', bettor, kind === 'turnFacing' ? (random() < 0.5 ? 0.5 : 0.66) : 0.55, 4);
+      if (kind === 'turnFacing') {
+        for (const p of between) {
+          const fold = n >= 4 && !folders.size && random() < 0.4;
+          if (fold) folders.add(p);
+          step(d, 'turn', p, fold ? 'fold' : 'call');
+        }
+      } else for (const p of [...order.slice(bi + 1), ...order.slice(0, bi)]) step(d, 'turn', p, 'call');
+    } else if (kind === 'turnToYou') {
+      for (const p of order.slice(0, -1)) step(d, 'turn', p, 'check');
+    } else if (kind === 'riverToYou' || kind === 'riverFirst' || kind === 'riverMiddle') {
+      for (const p of order) step(d, 'turn', p, 'check');
+    } else if (kind === 'turnMiddle') {
+      step(d, 'turn', order[0], 'check');
+    }
+    // River.
+    if (kind === 'riverFacing') {
+      for (const p of order.slice(0, bi)) step(d, 'river', p, 'check');
+      bet(d, 'river', bettor, random() < 0.5 ? 0.6 : 0.8, 5);
+      for (const p of between) {
+        const fold = random() < 0.5;
+        if (fold) folders.add(p);
+        step(d, 'river', p, fold ? 'fold' : 'call');
+      }
+    } else if (kind === 'riverToYou') {
+      for (const p of order.slice(0, -1)) step(d, 'river', p, 'check');
+    } else if (kind === 'riverMiddle') {
+      step(d, 'river', order[0], 'check');
+    }
+    // Ranges at the decision.
+    const live = n - 1 - folders.size;
+    const opponents: Opponent[] = others.map((x) => {
+      const st = styles.get(x.pos)!;
+      const type = STYLE_NAME[st];
+      if (folders.has(x.pos)) return { pos: x.pos, type, pre: x.chart, range: [] };
+      let r = lineRange(x, dead);
+      let range: RangeGroup[];
+      if (kind === 'riverFacing') {
+        if (x.pos === bettor) range = betGroups(r, board, before, mwRiverBet(st), 6);
+        else range = stayGroups(narrow(r, board, overcall, before), board, before);
+      } else if (kind === 'turnFacing') {
+        range = x.pos === bettor ? betGroups(r, board, undefined, () => 1, 5) : stayGroups(r, board);
+      } else {
+        // You can bet: the players who checked to you on the river are weaker still.
+        if (river && order.indexOf(x.pos) < order.indexOf(heroPos)) r = narrow(r, board, mwCheck, before);
+        range = river ? callerGroups(r, board, before, st, live) : turnGroups(r, board, st, live);
+      }
+      return { pos: x.pos, type, pre: x.chart, range };
+    });
+    if (opponents.some((o) => !folders.has(o.pos) && !o.range.length)) continue;
+    if (facing && !opponents.find((o) => o.pos === bettor)!.range.some((g) => g.role === 'value')) continue;
+    const k = classify(heroCards, board, before);
+    const potWord = { raised: '', squeeze: 'squeezed ', iso: 'iso-raised ', limped: 'limped ' }[w.pot];
+    const ways = `${n}-way`;
+    const titleOf: Record<MwKind, string> = {
+      turnFacing: `A turn bet in a ${ways} ${potWord}pot`,
+      riverFacing: `A river bet in a ${ways} ${potWord}pot`,
+      turnToYou: `Checked to you on the turn, ${ways}`,
+      riverToYou: `Checked to you on the river, ${ways}`,
+      riverFirst: `First to act on the river, ${ways}`,
+      turnFirst: `First to act on the turn, ${ways}`,
+      turnMiddle: `Checked to you, players behind, ${ways}`,
+      riverMiddle: `Checked to you on the river, players behind, ${ways}`,
+    };
+    const concept = facing
+      ? !river && k.level <= 1
+        ? 'Multiway draws'
+        : 'Multiway bluff catching'
+      : k.level <= 1 && (river || k.draw === 'none')
+        ? 'Bluffing multiway'
+        : 'Value betting multiway';
+    const bettorName = (hero: Pos) => (bettor === hero ? 'You' : cap(SEAT[bettor]));
+    const flopText = `${flopWords(board)}. ${bettorName(heroPos)} ${bettor === heroPos ? 'c-bet' : 'c-bets'} ${flopFrac < 0.3 ? 'a quarter' : 'a third'} of the pot and everyone calls. Into ${n - 1} players a c-bet is small and selective: good pairs, strong draws, very few bluffs. ${mwFlopWords(board)}`;
+    const turnText = turnBet
+      ? `${cardWords(board, 3)}. ${bettorName(heroPos)} ${bettor === heroPos ? 'bet' : 'bets'} again. A second bet into ${n - 1} players is mostly top pair or better and the best draws.${kind === 'turnFacing' ? (folders.size ? ` ${cap(SEAT[[...folders][0]])} folds.` : '') + (between.filter((p) => !folders.has(p)).length ? ` ${cap(list(between.filter((p) => !folders.has(p)).map((p) => SEAT[p])))} ${between.filter((p) => !folders.has(p)).length > 1 ? 'call' : 'calls'} in front of you: calling with someone still to act behind takes a real hand or a good draw.` : '') : ' Everyone calls.'}`
+      : kind === 'turnToYou'
+        ? `${cardWords(board, 3)}. It’s checked to you. In a ${ways} pot, players with a strong hand often bet the turn to charge the draws, so the checks take some strength out of their ranges, though slow-plays are possible.`
+        : kind === 'turnFirst'
+          ? `${cardWords(board, 3)}. You’re first to act, with ${n - 1} players behind you.`
+          : kind === 'turnMiddle'
+            ? `${cardWords(board, 3)}. ${cap(SEAT[order[0]])} checks to you, with ${n - 2} still to act behind you. A bet has to get past players who haven’t shown any weakness yet.`
+            : `${cardWords(board, 3)}. Everyone checks. Multiway, a strong hand usually bets the turn, so nobody is showing much.`;
+    const riverText = !river
+      ? ''
+      : kind === 'riverFacing'
+        ? `${cardWords(board, 4)}. ${bettorName(heroPos)} bets a third time. Three bets into a multiway pot is a value-heavy line: the misses that bluff are few.${between.length ? ` ${between.map((p) => `${cap(SEAT[p])} ${folders.has(p) ? 'folds' : 'calls'}`).join(', ')}.` : ''}${between.some((p) => !folders.has(p)) ? ' A call with you still to act behind is a strong hand.' : ''}`
+        : kind === 'riverToYou'
+          ? `${cardWords(board, 4)}. Everyone checks to you. Checked-down multiway rivers are weak, but someone usually has a pair, and a bluff has to get through ${n - 1 === 2 ? 'both' : `all ${n - 1}`} of them.`
+          : kind === 'riverMiddle'
+            ? `${cardWords(board, 4)}. ${cap(SEAT[order[0]])} checks to you, with ${n - 2} still to act behind you.`
+            : `${cardWords(board, 4)}. You’re first to act, with ${n - 1} players behind you.`;
+    const clues: Clue[] = [
+      { street: 'preflop', text: w.preText(heroPos) },
+      { street: 'flop', text: flopText },
+      { street: 'turn', text: turnText },
+      ...(river ? [{ street: 'river' as const, text: riverText }] : []),
+    ];
+    const drawing = !river && k.level <= 1 && k.draw !== 'none';
+    const s = finish(d, opponents, {
+      id: `gen-mw-${w.key}-${kind}-${idx}-${tries}`,
+      title: titleOf[kind],
+      concept,
+      clues,
+      k,
+      ...(facing && !river ? { gap: { call: 0.07, fold: drawing ? 0.1 : MARGIN + 0.01 } } : {}),
+      note: (best) =>
+        facing
+          ? best === 'call'
+            ? live > 1
+              ? 'Multiway the pot lays you a bigger price, which is why calls can still be right with someone else in.'
+              : ''
+            : 'Multiway, one-pair hands lose value fast: someone often has you beat.'
+          : best === 'check' && k.level <= 1
+            ? 'Multiway, bluffs rarely work: each player has to fold, and the folds multiply.'
+            : '',
+    });
+    if (s) out.push(s);
+  }
+  return out;
+}
+
+const MW_KINDS: MwKind[] = ['turnFacing', 'riverFacing', 'turnToYou', 'riverToYou', 'riverFirst', 'turnFirst', 'turnMiddle', 'riverMiddle'];
+
 // ── All of them ─────────────────────────────────────────────────────────────
 
 /** Every generated hand, deterministic. Rounds over each seat pairing build up the set. */
 export function generateScenarios(rounds = 4): Scenario[] {
   const out: Scenario[] = [];
+  const spots = [
+    threeBarrels,
+    riverDecision,
+    checkedTurn,
+    turnCheckRaise,
+    probeTurn,
+    riverLead,
+    turnBarrel,
+    riverStab,
+    delayedCbet,
+    facingProbe,
+  ];
   for (let round = 0; round < rounds; round++) {
     const random = rng(1000 + round * 7919);
-    [...HU_PAIRS, ...TB_PAIRS].forEach((p, i) => {
+    // Heads-up: cash pots (single-raised and 3-bet) on the first rounds, tournament pots on every round.
+    const pairs = [...(round < Math.min(2, rounds) ? [...HU_PAIRS, ...TB_PAIRS] : []), ...MTT_PAIRS];
+    pairs.forEach((p0, i) => {
+      const p = withStacks(p0, random);
       const id = round * 100 + i;
-      const spots = [
-        threeBarrels,
-        riverDecision,
-        checkedTurn,
-        turnCheckRaise,
-        probeTurn,
-        riverLead,
-        turnBarrel,
-        riverStab,
-        delayedCbet,
-        facingProbe,
-      ];
       for (const spot of spots) out.push(...spot(p, random, id));
     });
+    // Multiway, every setup and every kind of decision, each round.
+    for (const w of MW_SETUPS) for (const kind of MW_KINDS) out.push(...mwSpot(w, kind, random, round));
     out.push(...threeBetPots(random, round), ...threeWay(random, round), ...fourWay(random, round), ...limpedPots(random, round));
   }
   // One of each id.

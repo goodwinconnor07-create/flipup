@@ -11,7 +11,7 @@ import { SQUARE_COLOUR } from '@/components/ranges/share';
 import { RangeTeaser } from '@/components/ranges/teaser';
 import { SegmentedControl } from '@/components/segmented-control';
 import type { Mode } from '@/state/range-logic';
-import { dailyToday, flameOf, SCENARIOS, setLevel, solvedCount, trickProgress, useRangeGrades, useRangePlay } from '@/state/ranges';
+import { dailyToday, flameOf, setLevel, solvedCount, trickProgress, useRangeGrades, useRangePlay } from '@/state/ranges';
 import { brand, cardColors, radius, ROUNDED, spacing } from '@/theme';
 
 /**
@@ -122,7 +122,7 @@ export default function RangeTrainingSheet() {
       </View>
 
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Tile value={`${solved}/${SCENARIOS.length}`} line="best plays" />
+        <Tile value={`${solved}`} line="best plays" />
         <Tile value={play.points.toLocaleString('en-US')} line="points" />
         <Tile value={String(play.roundBest)} line="best round" />
       </View>

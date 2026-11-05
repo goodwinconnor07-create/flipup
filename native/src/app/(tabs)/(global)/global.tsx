@@ -50,7 +50,7 @@ export default function GlobalTab() {
 
   const mine = myPalCode();
   const real = (scope === 'world' ? (board?.top ?? []) : (board?.friends ?? [])).filter((r) => !isBlocked(`f:${r.code}`));
-  const rows = (scope === 'world' ? withFiller(real) : real).slice(0, 100);
+  const rows = (scope === 'world' ? withFiller(real) : withFiller(real, undefined, 'friends')).slice(0, 100);
   const open = (r: BoardRow) => {
     if (r.filler || r.code === mine) return;
     const extra = isPal(r.code) ? [] : [{ text: 'Add friend', onPress: () => void sendFriendRequest(r.code, { name: r.username, emoji: r.emoji, username: r.username }).catch(() => undefined) }];
@@ -88,19 +88,19 @@ export default function GlobalTab() {
             <RoundButton icon="info.circle" label="How Bankroll works" onPress={() => router.push('/bankroll-intro')} />
           </View>
 
-          <PressableScale accessibilityRole="button" accessibilityLabel={`Your bankroll ${(view?.bankroll ?? BANKROLL.start).toLocaleString()}. Play`} onPress={play} style={{ alignItems: 'center' }}>
+          <View style={{ alignItems: 'center', gap: spacing.sm }}>
             <Globe size={200} />
-            <View style={{ position: 'absolute', top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+            <PressableScale accessibilityRole="button" accessibilityLabel={`Your bankroll ${(view?.bankroll ?? BANKROLL.start).toLocaleString()} chips${board?.me?.pos ? `, number ${board.me.pos} in the world` : ''}. Play`} onPress={play} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingLeft: spacing.md, paddingRight: spacing.xxs, minHeight: 44, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.1)' }}>
               <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff', fontVariant: ['tabular-nums'] }}>
-                {(view?.bankroll ?? BANKROLL.start).toLocaleString()} chips
+                {(view?.bankroll ?? BANKROLL.start).toLocaleString()} chips{board?.me?.pos ? ` · #${board.me.pos.toLocaleString()}` : ''}
               </Text>
-              <View style={{ paddingHorizontal: spacing.lg, minHeight: 36, borderRadius: radius.full, justifyContent: 'center', backgroundColor: '#ffffff' }}>
+              <View style={{ paddingHorizontal: spacing.md, minHeight: 36, borderRadius: radius.full, justifyContent: 'center', backgroundColor: '#ffffff' }}>
                 <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '800', color: brand.violetDeep }}>
                   {view?.status === 'busted' ? 'Busted' : view?.status === 'cut' ? 'Cut' : 'Play'}
                 </Text>
               </View>
-            </View>
-          </PressableScale>
+            </PressableScale>
+          </View>
 
           <SegmentedControl label="Who" options={[{ value: 'world', label: 'World' }, { value: 'friends', label: 'Friends' }]} value={scope} onChange={(v) => setScope(v)} />
 

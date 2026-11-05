@@ -118,6 +118,10 @@ export class BankrollRoom extends DurableObject<Env> {
     if (!rec.look.username) return 'Pick a username first: it’s how you show on the board.';
     const read = await this.ctx.storage.get<PlayerRead>('read');
     const created = createBankrollTable({ deviceId, name: rec.look.name, emoji: rec.look.emoji, bankroll: rec.bankroll, season: rec.season, day: rec.day, today: rec.handsToday, dayStart: rec.dayStart, read, now, rng: cryptoRng });
+    // Your place in the world from the first hand, so it's on the table the moment you sit down.
+    const row = rec.hands > 0 ? await this.board().row(rec.code).catch(() => null) : null;
+    const counts = await this.board().view(null).catch(() => null);
+    Object.assign(created.bankroll!, { ...(row?.pos ? { rank: row.pos } : {}), ...(counts ? { alive: counts.alive, players: counts.players } : {}) });
     const started = applyAction(created, { type: 'start' }, { deviceId, now, rng: cryptoRng });
     if (!started.ok) return started.error;
     await this.ctx.storage.put('owner', deviceId);

@@ -12,18 +12,18 @@ export function BankrollStrip({ game }: { game: Game }) {
   const tag = game.bankroll!;
   const now = bankrollNow(game) ?? 0;
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.md, paddingHorizontal: spacing.sm, minHeight: 32, borderRadius: radius.full, backgroundColor: colors.cell }}>
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 14, fontWeight: '800', color: brand.gold, fontVariant: ['tabular-nums'] }}>
-        {now.toLocaleString()}
-      </Text>
-      <ThemedText variant="footnote" tone="secondaryLabel" style={{ flex: 1 }} numberOfLines={1}>
-        {`Hand ${Math.min(bankrollHandsToday(tag), tag.limit)} of ${BANKROLL.handsADay}${tag.rank ? ` · #${tag.rank.toLocaleString()}` : ''}`}
-      </ThemedText>
-      {tag.bank > 0 && (
-        <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontVariant: ['tabular-nums'] }}>
-          {`+ ${tag.bank.toLocaleString()} in the bank`}
-        </ThemedText>
-      )}
+    <View accessibilityLabel={`Bankroll ${now.toLocaleString()} chips${tag.rank ? `, number ${tag.rank} in the world` : ''}. Hand ${bankrollHandsToday(tag)} of ${BANKROLL.handsADay}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginHorizontal: spacing.md, paddingHorizontal: spacing.md, minHeight: 40, borderRadius: radius.full, backgroundColor: colors.cell }}>
+      <View style={{ flex: 1 }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '800', color: brand.gold, fontVariant: ['tabular-nums'] }}>
+          {now.toLocaleString()} <Text style={{ fontSize: 13, fontWeight: '600', color: colors.secondaryLabel }}>{tag.bank > 0 ? `chips · ${tag.bank.toLocaleString()} banked` : 'chips'}</Text>
+        </Text>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '800', color: colors.label, fontVariant: ['tabular-nums'] }}>
+          {tag.rank ? `#${tag.rank.toLocaleString()}` : '–'} <Text style={{ fontSize: 13, fontWeight: '600', color: colors.secondaryLabel }}>in the world</Text>
+        </Text>
+        <ThemedText variant="caption1" tone="secondaryLabel">{`Hand ${Math.min(bankrollHandsToday(tag), tag.limit)} of ${BANKROLL.handsADay}`}</ThemedText>
+      </View>
     </View>
   );
 }

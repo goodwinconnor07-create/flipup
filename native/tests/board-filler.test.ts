@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
 (globalThis as Record<string, unknown>).__DEV__ = false;
-const { fillerRows, withFiller } = await import('@/state/board-filler');
+const { fillerRows, friendFillerRows, withFiller } = await import('@/state/board-filler');
 
 describe('filler rows', () => {
   it('are never in a release build', () => {
     expect(fillerRows(false)).toEqual([]);
     expect(withFiller([], false)).toEqual([]);
+    expect(friendFillerRows(false)).toEqual([]);
+    expect(withFiller([], false, 'friends')).toEqual([]);
   });
 
   it('are about 200 fixed rows in development, ranked with the real ones', () => {

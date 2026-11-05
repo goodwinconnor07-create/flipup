@@ -4,35 +4,28 @@
     <radialGradient id="light" cx="0.28" cy="0.14" r="0.75"><stop offset="0" stop-color="#fff" stop-opacity="0.26"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
     <radialGradient id="vig" cx="0.5" cy="0.42" r="0.72"><stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.38"/></radialGradient>
     <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
-    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#e9e6f0"/></linearGradient>
-    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#c9c4d6"/></linearGradient>
-    <linearGradient id="red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff5a52"/><stop offset="1" stop-color="#c81e1e"/></linearGradient>
-    <linearGradient id="ink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3a48"/><stop offset="1" stop-color="#0d0d14"/></linearGradient>
-    <radialGradient id="gloss" cx="0.3" cy="0.1" r="0.8"><stop offset="0" stop-color="#fff" stop-opacity="0.9"/><stop offset="0.5" stop-color="#fff" stop-opacity="0"/></radialGradient>
-    <symbol id="A" viewBox="-40 -52 80 104"><path fill-rule="evenodd" stroke-linejoin="round" stroke-width="7" d="M-36 48 L-10 -48 L10 -48 L36 48 L18 48 L12 26 L-12 26 L-18 48 Z M-7 10 L7 10 L0 -17 Z"/></symbol>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1eff5"/></linearGradient>
+    <linearGradient id="cast" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity="0.32"/><stop offset="1" stop-color="#000" stop-opacity="0.08"/></linearGradient>
     <symbol id="heart" viewBox="-60 -60 120 100"><path d="M0 38 C-12 26 -58 2 -58 -26 C-58 -52 -24 -60 0 -34 C24 -60 58 -52 58 -26 C58 2 12 26 0 38 Z"/></symbol>
     <symbol id="spade" viewBox="-60 -50 120 116"><path d="M0 -46 C12 -30 58 -6 58 20 C58 44 30 52 8 38 C10 50 16 58 26 64 L-26 64 C-16 58 -10 50 -8 38 C-30 52 -58 44 -58 20 C-58 -6 -12 -30 0 -46 Z"/></symbol>
   </defs>
   <rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#light)"/><rect width="1024" height="1024" fill="url(#vig)"/>
-  <ellipse cx="530" cy="870" rx="330" ry="60" fill="url(#shadow)"/>
-  <!-- back card: A spade -->
-  <g transform="translate(395 505) rotate(-14)">
-    <rect x="-200" y="-285" width="400" height="570" rx="46" fill="#000" opacity="0.18" transform="translate(10 18)"/>
-    <rect x="-200" y="-285" width="400" height="570" rx="46" fill="url(#edge)"/>
-    <rect x="-192" y="-277" width="384" height="554" rx="40" fill="url(#face)"/>
-    <use href="#A" x="-172" y="-262" width="74" height="96" fill="url(#ink)" stroke="#1a1a24"/>
-    <use href="#spade" x="-170" y="-152" width="70" height="68" fill="url(#ink)"/>
-    <use href="#spade" x="-150" y="-70" width="170" height="164" fill="url(#ink)"/><ellipse cx="-90" cy="-30" rx="22" ry="12" fill="#fff" opacity="0.25" transform="rotate(-30 -90 -30)"/>
+  <ellipse cx="530" cy="860" rx="330" ry="56" fill="url(#shadow)"/>
+  <!-- A spades, behind -->
+  <g transform="translate(372 505) rotate(-14)">
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.22" transform="translate(12 22)"/>
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
+    <text x="-140" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16161d">A</text>
+    <use href="#spade" x="-150" y="-5" width="175" height="170" fill="#16161d"/>
   </g>
-  <!-- front card: A heart -->
-  <g transform="translate(640 565) rotate(10)">
-    <rect x="-200" y="-285" width="400" height="570" rx="46" fill="#000" opacity="0.28" transform="translate(-14 26)"/>
-    <rect x="-200" y="-285" width="400" height="570" rx="46" fill="url(#edge)"/>
-    <rect x="-192" y="-277" width="384" height="554" rx="40" fill="url(#face)"/>
-    <use href="#A" x="-172" y="-262" width="74" height="96" fill="url(#red)" stroke="#d42a26"/>
-    <use href="#heart" x="-170" y="-150" width="70" height="58" fill="url(#red)"/>
-    <use href="#heart" x="-125" y="-115" width="250" height="208" fill="url(#red)"/>
-    <ellipse cx="-30" cy="-60" rx="38" ry="22" fill="#fff" opacity="0.35" transform="rotate(-25 -30 -60)"/>
-    <rect x="-192" y="-277" width="384" height="554" rx="40" fill="url(#gloss)" opacity="0.5"/>
+  <!-- the front card's shadow on the back card -->
+  <g transform="translate(652 566) rotate(10)">
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#cast)" transform="translate(-22 30)"/>
+  </g>
+  <!-- K hearts, in front -->
+  <g transform="translate(652 566) rotate(10)">
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
+    <text x="-140" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">K</text>
+    <use href="#heart" x="-115" y="-5" width="230" height="192" fill="#e5322d"/>
   </g>
 </svg>

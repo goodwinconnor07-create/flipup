@@ -17,7 +17,9 @@ FlipUp keeps its depth (14 games, parties, friends, challenges); it gets a stric
   character face drawn in the same style; the rest are objects. Shared recipe: the game's two colours as a
   diagonal gradient, a soft light from the top left, a vignette, one subject with a lit gradient, a highlight
   and a soft contact shadow. No SVG filters (react-native-svg can't draw them): shadows and glows are radial
-  gradients. Drawn on a 1024 box. Three samples get the owner's OK before the rest.
+  gradients. Playing cards in an icon are the game's own card, as on the table and the old thumbnails: plain
+  white, a heavy rounded rank top left, one big suit below it, the four-colour deck, no corner pips or gloss.
+  Drawn on a 1024 box. Three samples get the owner's OK before the rest.
 - **Type.** SF Pro Rounded stays. Big numbers (chips, pot, stats, Passport, finish page) are heavy with
   tabular digits.
 - **Appearance.** Follows the phone. Tints and art must work in light and dark.

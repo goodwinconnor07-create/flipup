@@ -25,7 +25,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.288" transform="translate(14.399999999999999 28.799999999999997)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">A</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">A</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g>
   <path d="M724.119911196558 267.2053337707373 A330 330 0 1 1 347 234.21161675113524" fill="none" stroke="#000" stroke-opacity="0.25" stroke-width="58" stroke-linecap="round" transform="translate(8 16)"/>

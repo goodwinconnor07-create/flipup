@@ -25,7 +25,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.24" transform="translate(12 24)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">2</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">2</text>
     <use href="#s-d" x="-102" y="-8" width="184" height="212" fill="#2563eb"/>
   </g>
   <g><g transform="translate(450 545) rotate(-8) scale(1)">
@@ -33,7 +33,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.33599999999999997" transform="translate(16.799999999999997 33.599999999999994)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16a34a">2</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16a34a">2</text>
     <use href="#s-c" x="-108" y="-8" width="196" height="200" fill="#16a34a"/>
   </g></g>
   <g transform="translate(450 545) rotate(-8) scale(1)"><clipPath id="dc"><rect x="-195" y="-275" width="390" height="550" rx="42"/></clipPath>

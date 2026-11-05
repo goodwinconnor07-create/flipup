@@ -38,7 +38,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.072" transform="translate(3.5999999999999996 7.199999999999999)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">3</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">3</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g>
   <ellipse cx="640" cy="610" rx="70" ry="12" fill="#ffe0e0" opacity="0.3"/>
@@ -47,7 +47,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.096" transform="translate(4.800000000000001 9.600000000000001)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">9</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">9</text>
     <use href="#s-d" x="-102" y="-8" width="184" height="212" fill="#2563eb"/>
   </g>
     <ellipse cx="490" cy="935" rx="230" ry="44" fill="none" stroke="#ffd6d6" stroke-opacity="0.45" stroke-width="6"/>
@@ -56,7 +56,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.216" transform="translate(10.8 21.6)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">7</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">7</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g>
   <path transform="translate(380 700)" d="M0 -18 Q2.16 -2.16 18 0 Q2.16 2.16 0 18 Q-2.16 2.16 -18 0 Q-2.16 -2.16 0 -18 Z" fill="#ffd6d6" opacity="0.8"/><path transform="translate(720 840)" d="M0 -24 Q2.88 -2.88 24 0 Q2.88 2.88 0 24 Q-2.88 2.88 -24 0 Q-2.88 -2.88 0 -24 Z" fill="#fff" opacity="0.8"/>

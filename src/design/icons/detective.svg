@@ -26,7 +26,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.24" transform="translate(12 24)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g>
   <clipPath id="lensClip"><circle cx="560" cy="600" r="180"/></clipPath>
@@ -36,7 +36,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0" transform="translate(0 0)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g></g>
     <circle cx="560" cy="600" r="180" fill="url(#glass)"/>

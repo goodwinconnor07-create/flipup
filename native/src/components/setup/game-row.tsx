@@ -2,10 +2,11 @@ import { router } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { gameLook } from '@design/gameArt';
+import { iconColours } from '@design/gameIcons';
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { brand, spacing, useColors } from '@/theme';
 
+import { iconCorner } from '../game-icon';
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
@@ -62,8 +63,8 @@ export function SetupGameRow({ selected }: { selected: Variant }) {
 
 function GameIcon({ variant, name, chosen, crown }: { variant: Variant; name: string; chosen: boolean; crown: boolean }) {
   const colors = useColors();
-  const tone = ringTone(gameLook(variant).card[0]);
-  const corner = ICON * 0.24;
+  const tone = ringTone(iconColours(variant)[0]);
+  const corner = iconCorner(ICON);
   return (
     <PressableScale
       accessibilityRole="button"

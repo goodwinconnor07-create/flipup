@@ -97,7 +97,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.36" transform="translate(18 36)"/>
     <rect x="-207" y="-287" width="414" height="574" rx="52" fill="none" stroke="#ffb020" stroke-width="12"/>
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g>
   <path transform="translate(700 300)" d="M0 -48 Q5.76 -5.76 48 0 Q5.76 5.76 0 48 Q-5.76 5.76 -48 0 Q-5.76 -5.76 0 -48 Z" fill="#fff" opacity="1"/><path transform="translate(310 720)" d="M0 -32 Q3.84 -3.84 32 0 Q3.84 3.84 0 32 Q-3.84 3.84 -32 0 Q-3.84 -3.84 0 -32 Z" fill="#ffe28a" opacity="1"/>

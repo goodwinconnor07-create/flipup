@@ -24,7 +24,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.24" transform="translate(12 24)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16161d">K</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16161d">K</text>
     <use href="#s-s" x="-108" y="-8" width="196" height="190" fill="#16161d"/>
   </g>
   <g transform="translate(620 540) rotate(9) scale(1)">
@@ -32,7 +32,7 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.33599999999999997" transform="translate(16.799999999999997 33.599999999999994)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">A</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">A</text>
     <use href="#s-d" x="-102" y="-8" width="184" height="212" fill="#2563eb"/>
   </g>
   <g transform="translate(760 790)">
@@ -43,6 +43,6 @@
     <circle r="99" fill="none" stroke="#fff7d6" stroke-opacity="0.7" stroke-width="7.5" stroke-dasharray="18 12"/>
     <circle r="84.00000000000001" fill="url(#chip10)" stroke="#000" stroke-opacity="0.12" stroke-width="4"/>
     <ellipse cx="-45" cy="-75" rx="52.5" ry="21.000000000000004" fill="#fff" opacity="0.35" transform="rotate(-25 -45 -75)"/>
-    <text y="30" text-anchor="middle" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="93" fill="#5a3a00">21</text>
+    <text y="30" text-anchor="middle" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="93" fill="#5a3a00">21</text>
   </g>
 </svg>

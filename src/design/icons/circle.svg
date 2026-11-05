@@ -26,42 +26,42 @@
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.144" transform="translate(7.199999999999999 14.399999999999999)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">A</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">A</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g><g transform="translate(802.1185102677869 344.5) rotate(60) scale(0.3)">
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.144" transform="translate(7.199999999999999 14.399999999999999)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">K</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">K</text>
     <use href="#s-d" x="-102" y="-8" width="184" height="212" fill="#2563eb"/>
   </g><g transform="translate(802.118510267787 679.4999999999999) rotate(120) scale(0.3)">
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.144" transform="translate(7.199999999999999 14.399999999999999)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16a34a">9</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16a34a">9</text>
     <use href="#s-c" x="-108" y="-8" width="196" height="200" fill="#16a34a"/>
   </g><g transform="translate(512 847) rotate(180) scale(0.3)">
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.144" transform="translate(7.199999999999999 14.399999999999999)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16161d">6</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16161d">6</text>
     <use href="#s-s" x="-108" y="-8" width="196" height="190" fill="#16161d"/>
   </g><g transform="translate(221.88148973221308 679.5000000000001) rotate(240) scale(0.3)">
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.144" transform="translate(7.199999999999999 14.399999999999999)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
     <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
   </g><g transform="translate(221.88148973221308 344.5) rotate(300) scale(0.3)">
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.144" transform="translate(7.199999999999999 14.399999999999999)"/>
     
     <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
-    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">4</text>
+    <text x="-142" y="-95" font-family="Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">4</text>
     <use href="#s-d" x="-102" y="-8" width="184" height="212" fill="#2563eb"/>
   </g>
   <g stroke-linecap="round">

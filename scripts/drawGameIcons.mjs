@@ -10,7 +10,9 @@ const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'design',
 
 // The table's four-colour deck (native/src/components/table/playing-card.tsx).
 const INK = { s: '#16161d', h: '#e5322d', d: '#2563eb', c: '#16a34a' };
-const FONT = 'SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif';
+// Inter first: the icons are turned into pictures on a computer without Apple's fonts (renderGameIcons.mjs), and Inter's
+// ExtraBold is the closest to the table's SF Pro. On an Apple device the SVG falls back to SF Pro Rounded.
+const FONT = 'Inter, SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif';
 const GOLD = ['#ffe28a', '#f5b700'];
 
 let uid = 0;
@@ -523,4 +525,24 @@ function rays(x, y, n = 14, o = 0.07) {
 
 mkdirSync(OUT, { recursive: true });
 for (const [name, svg] of Object.entries(ICONS)) writeFileSync(join(OUT, `${name}.svg`), svg);
+
+// Each icon's two background colours, for the screens that take their colour from a game's art (tinted sheets,
+// the panels under shelf cards, the Home hero).
+const colours = Object.entries(ICONS).map(([name, svg]) => {
+  const [, top, bottom] = svg.match(/id="bg"[^>]*><stop offset="0" stop-color="(#[0-9a-f]+)"\/><stop offset="1" stop-color="(#[0-9a-f]+)"/);
+  return `  ${name}: ['${top}', '${bottom}'],`;
+});
+writeFileSync(
+  join(OUT, '..', 'gameIcons.ts'),
+  `// Written by scripts/drawGameIcons.mjs: don't edit. Every game's and solo card's icon (src/design/icons/<id>.svg, shown
+// in the iPhone app as native/assets/game-icons/<id>.webp) and its two background colours, top left to bottom right.
+export const ICON_COLOURS = {
+${colours.join('\n')}
+} as const satisfies Record<string, readonly [string, string]>;
+
+export type IconId = keyof typeof ICON_COLOURS;
+
+export const iconColours = (id: IconId): readonly [string, string] => ICON_COLOURS[id];
+`,
+);
 console.log(`Wrote ${Object.keys(ICONS).length} icons to ${OUT}`);

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#24405c"/><stop offset="1" stop-color="#03070c"/></linearGradient>
+    <radialGradient id="light" cx="0.28" cy="0.14" r="0.75"><stop offset="0" stop-color="#fff" stop-opacity="0.26"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="vig" cx="0.5" cy="0.42" r="0.72"><stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.38"/></radialGradient>
+    <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    <radialGradient id="goldGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffc933" stop-opacity="0.6"/><stop offset="1" stop-color="#ffc933" stop-opacity="0"/></radialGradient>
+    <radialGradient id="whiteGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1eff5"/></linearGradient>
+    <linearGradient id="backFill" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#3b4256"/><stop offset="1" stop-color="#161821"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe28a"/><stop offset="1" stop-color="#f5b700"/></linearGradient>
+    
+  <symbol id="s-h" viewBox="-60 -60 120 100"><path d="M0 38 C-12 26 -58 2 -58 -26 C-58 -52 -24 -60 0 -34 C24 -60 58 -52 58 -26 C58 2 12 26 0 38 Z"/></symbol>
+  <symbol id="s-s" viewBox="-60 -50 120 116"><path d="M0 -46 C12 -30 58 -6 58 20 C58 44 30 52 8 38 C10 50 16 58 26 64 L-26 64 C-16 58 -10 50 -8 38 C-30 52 -58 44 -58 20 C-58 -6 -12 -30 0 -46 Z"/></symbol>
+  <symbol id="s-d" viewBox="-52 -60 104 120"><path d="M0 -58 C14 -36 34 -16 50 0 C34 16 14 36 0 58 C-14 36 -34 16 -50 0 C-34 -16 -14 -36 0 -58 Z"/></symbol>
+  <symbol id="s-c" viewBox="-58 -56 116 118"><circle cx="0" cy="-27" r="27"/><circle cx="-29" cy="13" r="27"/><circle cx="29" cy="13" r="27"/><path d="M-9 4 C-9 34 -16 48 -30 60 L30 60 C16 48 9 34 9 4 Z"/></symbol>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#6fd3ff" stop-opacity="0.55"/><stop offset="1" stop-color="#6fd3ff" stop-opacity="0"/></radialGradient>
+ <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="0.7" stop-color="#e3ecfb"/><stop offset="1" stop-color="#b7c8e6" stop-opacity="0.85"/></linearGradient>
+ <linearGradient id="gshade" x1="0" y1="0" x2="1" y2="0"><stop offset="0.45" stop-color="#5b7cb0" stop-opacity="0"/><stop offset="1" stop-color="#5b7cb0" stop-opacity="0.35"/></linearGradient>
+ <linearGradient id="eye" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a3550"/><stop offset="1" stop-color="#0c1120"/></linearGradient>
+ <radialGradient id="blush" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ff8fb3" stop-opacity="0.7"/><stop offset="1" stop-color="#ff8fb3" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#light)"/><rect width="1024" height="1024" fill="url(#vig)"/>
+
+  <circle cx="500" cy="500" r="430" fill="url(#aura)"/>
+  <circle cx="200" cy="230" r="9" fill="#cfefff" opacity="0.8"/><circle cx="830" cy="190" r="6" fill="#cfefff" opacity="0.7"/><circle cx="860" cy="560" r="8" fill="#cfefff" opacity="0.5"/><circle cx="170" cy="640" r="5" fill="#cfefff" opacity="0.6"/>
+  <ellipse cx="500" cy="890" rx="230" ry="40" fill="url(#shadow)" opacity="1"/>
+  <g transform="rotate(-7 500 520)">
+    <g transform="translate(735 600) rotate(18) scale(0.62)">
+    <clipPath id="bk1"><rect x="-179" y="-259" width="358" height="518" rx="30"/></clipPath>
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.26" transform="translate(12 24)"/>
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#f4f4f8"/>
+    <rect x="-179" y="-259" width="358" height="518" rx="30" fill="url(#backFill)"/>
+    <g clip-path="url(#bk1)" stroke="#fff" stroke-opacity="0.13" stroke-width="22">
+      <line x1="-260" y1="260" x2="120" y2="-360"/><line x1="-120" y1="360" x2="260" y2="-260"/>
+    </g>
+    
+  </g>
+    <path fill="url(#body)" d="M290 520 C290 330 385 205 500 205 C615 205 710 330 710 520 L710 770 Q657.5 850 605 770 Q552.5 850 500 770 Q447.5 850 395 770 Q342.5 850 290 770 Z"/>
+    <path fill="url(#gshade)" d="M290 520 C290 330 385 205 500 205 C615 205 710 330 710 520 L710 770 Q657.5 850 605 770 Q552.5 850 500 770 Q447.5 850 395 770 Q342.5 850 290 770 Z"/>
+    <ellipse cx="390" cy="320" rx="46" ry="74" fill="#fff" opacity="0.8" transform="rotate(30 390 320)"/>
+    <ellipse cx="690" cy="600" rx="62" ry="44" fill="#eef3fc" transform="rotate(-25 690 600)"/>
+    <ellipse cx="300" cy="610" rx="50" ry="36" fill="#e6edf9" transform="rotate(30 300 610)"/>
+    <ellipse cx="438" cy="455" rx="36" ry="50" fill="url(#eye)"/><ellipse cx="572" cy="455" rx="36" ry="50" fill="url(#eye)"/>
+    <circle cx="428" cy="436" r="13" fill="#fff"/><circle cx="562" cy="436" r="13" fill="#fff"/>
+    <circle cx="446" cy="474" r="6" fill="#fff" opacity="0.7"/><circle cx="580" cy="474" r="6" fill="#fff" opacity="0.7"/>
+    <ellipse cx="385" cy="535" rx="42" ry="26" fill="url(#blush)"/><ellipse cx="625" cy="535" rx="42" ry="26" fill="url(#blush)"/>
+    <path d="M470 545 Q505 585 545 540" fill="none" stroke="#1a2236" stroke-width="16" stroke-linecap="round"/>
+  </g>
+</svg>

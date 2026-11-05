@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc24a"/><stop offset="1" stop-color="#e2570f"/></linearGradient>
+    <radialGradient id="light" cx="0.28" cy="0.14" r="0.75"><stop offset="0" stop-color="#fff" stop-opacity="0.26"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="vig" cx="0.5" cy="0.42" r="0.72"><stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.38"/></radialGradient>
+    <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    <radialGradient id="goldGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffc933" stop-opacity="0.6"/><stop offset="1" stop-color="#ffc933" stop-opacity="0"/></radialGradient>
+    <radialGradient id="whiteGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1eff5"/></linearGradient>
+    <linearGradient id="backFill" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#3b4256"/><stop offset="1" stop-color="#161821"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe28a"/><stop offset="1" stop-color="#f5b700"/></linearGradient>
+    
+  <symbol id="s-h" viewBox="-60 -60 120 100"><path d="M0 38 C-12 26 -58 2 -58 -26 C-58 -52 -24 -60 0 -34 C24 -60 58 -52 58 -26 C58 2 12 26 0 38 Z"/></symbol>
+  <symbol id="s-s" viewBox="-60 -50 120 116"><path d="M0 -46 C12 -30 58 -6 58 20 C58 44 30 52 8 38 C10 50 16 58 26 64 L-26 64 C-16 58 -10 50 -8 38 C-30 52 -58 44 -58 20 C-58 -6 -12 -30 0 -46 Z"/></symbol>
+  <symbol id="s-d" viewBox="-52 -60 104 120"><path d="M0 -58 C14 -36 34 -16 50 0 C34 16 14 36 0 58 C-14 36 -34 16 -50 0 C-34 -16 -14 -36 0 -58 Z"/></symbol>
+  <symbol id="s-c" viewBox="-58 -56 116 118"><circle cx="0" cy="-27" r="27"/><circle cx="-29" cy="13" r="27"/><circle cx="29" cy="13" r="27"/><path d="M-9 4 C-9 34 -16 48 -30 60 L30 60 C16 48 9 34 9 4 Z"/></symbol>
+    <linearGradient id="leaf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9af07a"/><stop offset="1" stop-color="#1f9a45"/></linearGradient>
+ <linearGradient id="pine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe066"/><stop offset="1" stop-color="#f39a1b"/></linearGradient>
+ <linearGradient id="pineShade" x1="0" y1="0" x2="1" y2="0"><stop offset="0.5" stop-color="#b34a00" stop-opacity="0"/><stop offset="1" stop-color="#b34a00" stop-opacity="0.35"/></linearGradient>
+ <linearGradient id="lens" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a3a4a"/><stop offset="1" stop-color="#0b0b12"/></linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#light)"/><rect width="1024" height="1024" fill="url(#vig)"/>
+
+  <circle cx="470" cy="480" r="420" fill="url(#whiteGlow)" opacity="0.5"/>
+  <ellipse cx="512" cy="905" rx="320" ry="50" fill="url(#shadow)" opacity="1"/>
+  <g transform="translate(470 360)">
+    <path transform="rotate(-44) scale(1)" d="M0 20 C-46 -50 -36 -170 0 -240 C36 -170 46 -50 0 20 Z" fill="url(#leaf)" stroke="#156b2c" stroke-opacity="0.35" stroke-width="5"/><path transform="rotate(-22) scale(1)" d="M0 20 C-46 -50 -36 -170 0 -240 C36 -170 46 -50 0 20 Z" fill="url(#leaf)" stroke="#156b2c" stroke-opacity="0.35" stroke-width="5"/><path transform="rotate(0) scale(1.12)" d="M0 20 C-46 -50 -36 -170 0 -240 C36 -170 46 -50 0 20 Z" fill="url(#leaf)" stroke="#156b2c" stroke-opacity="0.35" stroke-width="5"/><path transform="rotate(22) scale(1)" d="M0 20 C-46 -50 -36 -170 0 -240 C36 -170 46 -50 0 20 Z" fill="url(#leaf)" stroke="#156b2c" stroke-opacity="0.35" stroke-width="5"/><path transform="rotate(44) scale(1)" d="M0 20 C-46 -50 -36 -170 0 -240 C36 -170 46 -50 0 20 Z" fill="url(#leaf)" stroke="#156b2c" stroke-opacity="0.35" stroke-width="5"/>
+  </g>
+  <g transform="translate(-30 0)"><clipPath id="pBody"><ellipse cx="500" cy="600" rx="215" ry="260"/></clipPath>
+  <ellipse cx="500" cy="600" rx="215" ry="260" fill="url(#pine)"/>
+  <g clip-path="url(#pBody)" stroke="#b9560a" stroke-opacity="0.4" stroke-width="9">
+    <line x1="120" y1="300" x2="-480" y2="900"/><line x1="-120" y1="300" x2="480" y2="900"/><line x1="190" y1="300" x2="-410" y2="900"/><line x1="-50" y1="300" x2="550" y2="900"/><line x1="260" y1="300" x2="-340" y2="900"/><line x1="20" y1="300" x2="620" y2="900"/><line x1="330" y1="300" x2="-270" y2="900"/><line x1="90" y1="300" x2="690" y2="900"/><line x1="400" y1="300" x2="-200" y2="900"/><line x1="160" y1="300" x2="760" y2="900"/><line x1="470" y1="300" x2="-130" y2="900"/><line x1="230" y1="300" x2="830" y2="900"/><line x1="540" y1="300" x2="-60" y2="900"/><line x1="300" y1="300" x2="900" y2="900"/><line x1="610" y1="300" x2="10" y2="900"/><line x1="370" y1="300" x2="970" y2="900"/><line x1="680" y1="300" x2="80" y2="900"/><line x1="440" y1="300" x2="1040" y2="900"/><line x1="750" y1="300" x2="150" y2="900"/><line x1="510" y1="300" x2="1110" y2="900"/><line x1="820" y1="300" x2="220" y2="900"/><line x1="580" y1="300" x2="1180" y2="900"/><line x1="890" y1="300" x2="290" y2="900"/><line x1="650" y1="300" x2="1250" y2="900"/>
+  </g>
+  <ellipse cx="500" cy="600" rx="215" ry="260" fill="url(#pineShade)"/>
+  <ellipse cx="400" cy="440" rx="50" ry="90" fill="#fff" opacity="0.4" transform="rotate(28 400 440)"/>
+  <ellipse cx="400" cy="640" rx="40" ry="24" fill="#ff7a59" opacity="0.55"/><ellipse cx="610" cy="640" rx="40" ry="24" fill="#ff7a59" opacity="0.55"/>
+  <g>
+    <path d="M360 548 Q365 515 400 512 L460 512 Q492 515 492 548 Q490 600 440 604 L412 604 Q362 600 360 548 Z" fill="url(#lens)"/>
+    <path d="M512 548 Q512 515 545 512 L605 512 Q640 515 642 548 Q640 600 590 604 L562 604 Q514 600 512 548 Z" fill="url(#lens)"/>
+    <path d="M488 530 Q502 518 516 530" stroke="#16161d" stroke-width="14" fill="none"/>
+    <path d="M335 528 L362 535 M642 535 L668 528" stroke="#16161d" stroke-width="14" stroke-linecap="round"/>
+    <path d="M385 530 L420 528 L392 575 Z" fill="#fff" opacity="0.35"/><path d="M537 530 L572 528 L544 575 Z" fill="#fff" opacity="0.35"/>
+  </g>
+  <path d="M452 668 Q505 720 560 664" fill="none" stroke="#7a3205" stroke-width="16" stroke-linecap="round"/>
+  </g>
+  <g transform="translate(660 800) rotate(-18) scale(0.4)">
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.24" transform="translate(12 24)"/>
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
+    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#2563eb">Q</text>
+    <use href="#s-d" x="-102" y="-8" width="184" height="212" fill="#2563eb"/>
+  </g>
+  <g transform="translate(735 785) rotate(0) scale(0.4)">
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.24" transform="translate(12 24)"/>
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
+    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#16a34a">8</text>
+    <use href="#s-c" x="-108" y="-8" width="196" height="200" fill="#16a34a"/>
+  </g>
+  <g transform="translate(810 800) rotate(18) scale(0.4)">
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.24" transform="translate(12 24)"/>
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
+    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">8</text>
+    <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
+  </g>
+</svg>

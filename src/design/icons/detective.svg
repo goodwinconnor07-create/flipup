@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a24a8"/><stop offset="1" stop-color="#0b0626"/></linearGradient>
+    <radialGradient id="light" cx="0.28" cy="0.14" r="0.75"><stop offset="0" stop-color="#fff" stop-opacity="0.26"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <radialGradient id="vig" cx="0.5" cy="0.42" r="0.72"><stop offset="0.6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity="0.38"/></radialGradient>
+    <radialGradient id="shadow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0.5"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
+    <radialGradient id="goldGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#ffc933" stop-opacity="0.6"/><stop offset="1" stop-color="#ffc933" stop-opacity="0"/></radialGradient>
+    <radialGradient id="whiteGlow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#fff" stop-opacity="0.45"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#f1eff5"/></linearGradient>
+    <linearGradient id="backFill" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#3b4256"/><stop offset="1" stop-color="#161821"/></linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe28a"/><stop offset="1" stop-color="#f5b700"/></linearGradient>
+    
+  <symbol id="s-h" viewBox="-60 -60 120 100"><path d="M0 38 C-12 26 -58 2 -58 -26 C-58 -52 -24 -60 0 -34 C24 -60 58 -52 58 -26 C58 2 12 26 0 38 Z"/></symbol>
+  <symbol id="s-s" viewBox="-60 -50 120 116"><path d="M0 -46 C12 -30 58 -6 58 20 C58 44 30 52 8 38 C10 50 16 58 26 64 L-26 64 C-16 58 -10 50 -8 38 C-30 52 -58 44 -58 20 C-58 -6 -12 -30 0 -46 Z"/></symbol>
+  <symbol id="s-d" viewBox="-52 -60 104 120"><path d="M0 -58 C14 -36 34 -16 50 0 C34 16 14 36 0 58 C-14 36 -34 16 -50 0 C-34 -16 -14 -36 0 -58 Z"/></symbol>
+  <symbol id="s-c" viewBox="-58 -56 116 118"><circle cx="0" cy="-27" r="27"/><circle cx="-29" cy="13" r="27"/><circle cx="29" cy="13" r="27"/><path d="M-9 4 C-9 34 -16 48 -30 60 L30 60 C16 48 9 34 9 4 Z"/></symbol>
+    <radialGradient id="glass" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#fff" stop-opacity="0.35"/><stop offset="0.6" stop-color="#bfe6ff" stop-opacity="0.08"/><stop offset="1" stop-color="#6fd3ff" stop-opacity="0.2"/></radialGradient>
+ <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe28a"/><stop offset="1" stop-color="#b37a00"/></linearGradient>
+ <linearGradient id="handle" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#5a3a1a"/><stop offset="0.5" stop-color="#8a5a2a"/><stop offset="1" stop-color="#3a2410"/></linearGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/><rect width="1024" height="1024" fill="url(#light)"/><rect width="1024" height="1024" fill="url(#vig)"/>
+
+  <ellipse cx="470" cy="860" rx="300" ry="50" fill="url(#shadow)" opacity="1"/>
+  <g transform="translate(430 470) rotate(-10) scale(0.95)">
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0.24" transform="translate(12 24)"/>
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
+    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
+    <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
+  </g>
+  <clipPath id="lensClip"><circle cx="560" cy="600" r="180"/></clipPath>
+  <g clip-path="url(#lensClip)">
+    <g transform="translate(560 600) scale(1.45) translate(-560 -600)"><g transform="translate(430 470) rotate(-10) scale(0.95)">
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="#000" opacity="0" transform="translate(0 0)"/>
+    
+    <rect x="-195" y="-275" width="390" height="550" rx="42" fill="url(#face)" stroke="#d9d5e2" stroke-width="3"/>
+    <text x="-142" y="-95" font-family="SF Pro Rounded, ui-rounded, -apple-system, system-ui, sans-serif" font-weight="800" font-size="190" letter-spacing="-6" fill="#e5322d">Q</text>
+    <use href="#s-h" x="-125" y="-8" width="230" height="192" fill="#e5322d"/>
+  </g></g>
+    <circle cx="560" cy="600" r="180" fill="url(#glass)"/>
+  </g>
+  <g transform="rotate(-45 560 600)">
+    <rect x="530" y="800" width="60" height="230" rx="30" fill="url(#handle)"/>
+    <rect x="538" y="770" width="44" height="44" rx="8" fill="#c9a24a"/>
+  </g>
+  <circle cx="560" cy="600" r="180" fill="none" stroke="url(#rim)" stroke-width="40"/>
+  <path d="M440 500 A140 140 0 0 1 520 455" fill="none" stroke="#fff" stroke-width="16" stroke-linecap="round" opacity="0.7"/>
+</svg>

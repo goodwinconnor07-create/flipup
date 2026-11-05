@@ -19,7 +19,9 @@ FlipUp keeps its depth (14 games, parties, friends, challenges); it gets a stric
   and a soft contact shadow. No SVG filters (react-native-svg can't draw them): shadows and glows are radial
   gradients. Playing cards in an icon are the game's own card, as on the table and the old thumbnails: plain
   white, a heavy rounded rank top left, one big suit below it, the four-colour deck, no corner pips or gloss.
-  Drawn on a 1024 box. Three samples get the owner's OK before the rest.
+  Drawn on a 1024 box by `node scripts/drawGameIcons.mjs`, which writes `src/design/icons/<id>.svg` (every game in
+  `VARIANTS` plus the four solo cards); `docs/design/icon-samples/all-icons.png` is the overview. Edit the script,
+  not the SVGs, and rerun it. Not wired into the app yet.
 - **Type.** SF Pro Rounded stays. Big numbers (chips, pot, stats, Passport, finish page) are heavy with
   tabular digits.
 - **Appearance.** Follows the phone. Tints and art must work in light and dark.
@@ -39,7 +41,7 @@ FlipUp keeps its depth (14 games, parties, friends, challenges); it gets a stric
 
 ## Order
 
-1. Three sample icons, then all of them.
+1. Icons (done, waiting on the owner's review), then put them in the app in place of `gameThumb()` pictures.
 2. Game sheets tinted from the game, neutral buttons.
 3. Home hero.
 4. Profile, Friends, Party.

@@ -52,7 +52,7 @@ Base the layout on the owner's reference screenshot: a small caps line ("NOVEMBE
 
 Top to bottom:
 
-1. **This month's Bankroll** as a large `LivingCard` (Stage 4): the month, your bankroll counting up, your rank, hands left today ("32 of 50 left"), how many players are still alive, the days until the next cut, and Play.
+1. **This month's Bankroll** as a large `LivingCard` (Stage 4): the month, your bankroll counting up, your rank, hands left today ("32 of 50 left"), how many players are still alive ("1,204 of 4,812"), the days until the next cut, and Play.
 2. **Today's challenge**: Today's three from Range training, your score and Play.
 3. **The boards**: a `SegmentedControl` for Bankroll and Today, then World and Friends, then the list. Friends shows only you and your friends, ranked. Rows slide to their rank (reuse the motion from `components/party/board.tsx`). Pull to refresh. Busted and cut players stay on the board under the live ones, greyed, with their peak.
 4. **Your row**, pinned above the tab bar: your rank and bankroll, or "Not on this board yet" with Play.
@@ -68,29 +68,48 @@ To see how a full board looks while it's empty, add filler rows **in development
 
 ## Stage 4: Bankroll, the monthly game
 
-One month, one stack. Everyone starts the month with 1,000 chips and plays cash hands against bots. The stack carries from day to day, and the biggest bankroll at the end of the month wins.
+**"1,000 chips. One month. Don't go broke."** That's the whole pitch, and the game has to stay that simple. A new player should get it in one sentence, and every day should give them something to share. When a choice comes up while you build it, pick the simpler one.
 
-### Rules
+### The rules (these five, nothing more)
 
-- **Start:** 1,000 chips on the 1st of the month (UTC). Anyone who joins later in the month starts with 1,000 too.
-- **One stake for everyone.** All players sit at the same blinds, and the blinds rise through the month (for example 5/10 in week one, 10/20 in week two, 25/50 in week three, 50/100 in the last days). Tune the steps with the lab below. Max buy-in is 100 big blinds; anything above that stays in the bankroll and is shown next to the stack ("+ 4,200 in the bank"). If the bankroll is under the max, everything goes on the table.
-- **The table:** six seats, you and five bots from `BOTS` with mixed styles. The bots are full strength; no `dull`.
-- **Bots match your stack.** The bots' stacks always follow yours, so a short player never faces a wall of deep stacks and a big one never bullies a table of short bots. When you sit down and at every deal, each bot's stack is set within about 70% to 130% of your stack on the table (spread so they aren't all identical, and never under 10 big blinds). A bot that busts is replaced at the next deal with a new bot in that range (build on `refillCash()` in `reducer.ts`). A bot that has run far above the range is swapped for a new bot at the next deal (it "leaves the table") rather than having chips taken away mid-session. Topping bots up or swapping them only ever touches bot chips, never yours, and happens between hands, never during one. Keep the chip-accounting test passing by counting bot top-ups and departures as chips entering and leaving the table, and add a test that the bots stay in range across a long session for a short stack, a 100-big-blind stack and one in between.
-- **Short stacks.** If your bankroll drops under 10 big blinds at the current blinds, you can still sit down, and the bots still match you, so the table plays as a short-stacked table rather than as a hopeless one.
-- **50 hands a day.** Each player can play at most 50 hands a day (UTC), across as many sittings as they like. The count is kept by `BankrollRoom`, so it can't be reset on the phone. When the 50th hand ends, the table closes for the day with "Back tomorrow" and the time until midnight UTC.
-- **Fresh random cards.** Every hand is dealt by the server from `cryptoRng`, a new random deck per player per hand. There's no shared deal.
-- **Busting and the rebuy.** When the bankroll hits zero, the player is offered one rebuy for the month: watch an ad (see the ad structure below) and get 1,000 chips back. A rebuy is shown next to their name on the board (a small "R" pill). Bust again, or skip the ad, and they're out for the month: greyed on the board with their peak.
-- **Weekly cuts.** Every Sunday at midnight UTC, two groups are cut: the bottom 10% of alive players by bankroll, and anyone alive who didn't play a hand that week. Cut players are out for the rest of the month, greyed with their peak and "Cut, week 2". Players who started that week are safe from the inactivity cut for that week. Run it from a Worker cron (`triggers.crons` in `wrangler.jsonc`), and make it safe to run twice.
-- **Leaving mid-hand.** Leaving or losing connection works like any online table: the player sits out, their hand is folded on the clock (`TIMING.offlineClock`), and the stack goes back to the bankroll. The hand still counts toward the 50.
+1. Everyone starts with 1,000 chips on the 1st of the month (UTC). Anyone joining later in the month starts with 1,000 too.
+2. Play up to 50 hands a day against bots.
+3. Your chips carry over. Bust and you're out for the month, with one rebuy by watching an ad.
+4. Every Sunday at midnight UTC, the bottom 10% of players still alive are cut.
+5. Biggest stack at the end of the month wins.
+
+These five lines are what the start sheet shows. There are no stakes to pick, no levels, no table choice: one Sit down button.
+
+### How it works underneath
+
+- **One blind level all month**, the same for everyone (10/20 unless the lab below says otherwise). Your stack on the table is capped at 100 big blinds; anything above that stays in your bankroll and shows next to your stack ("+ 4,200 in the bank"). If the bankroll is under the cap, it all goes on the table. The cap means nobody wins the month in one hand.
+- **The table:** six seats, you and five bots.
+- **Bots are always full strength.** No `dull`, no difficulty curve, nothing that changes with your bankroll or rank.
+- **Every table is a random mix.** Each time you sit down, the five bots are drawn at random from `BOTS` across all the styles, so one session you get a soft table and the next you're with sharks. Their styles are never shown; working out who's who is the skill.
+- **The bots remember you.** Each player's reads (`PlayerRead`: how often they fold, fold to c-bets and 3-bets, bluff, check-raise, what their bet sizes have meant at showdown) are kept in their `BankrollRoom` for the whole month and seeded into `game.reads` every time they sit down, so every bot at every table plays against what the month has shown about them. The more someone plays one way, the harder the bots punish it. Reads reset with the month.
+- **And they say so.** Add a set of "I remember you" lines in `botLines.ts` (new ids at the end only), triggered by a read that's strong enough, for example "You again? Still bluffing rivers?", "Third time you've folded to a 3-bet today.", "Big bet, so you've got it. You always do.", "Let me guess. Check-raise?" At most one or two per session, so they land. They go through `botSays()` like every other line. These lines are the part people screenshot, so write plenty and make them sharp.
+- **Bots match your stack.** At every deal, each bot's stack is set within about 70% to 130% of your stack on the table (spread so they aren't all equal, and never under 10 big blinds), so a short stack plays a short table and a deep stack plays a deep one. A bot that busts is replaced at the next deal with a new random bot in that range (build on `refillCash()` in `reducer.ts`). A bot that runs far above the range leaves the table at the next deal and a new one sits down; chips are never taken off a bot mid-session. Top-ups and swaps touch only bot chips, never yours, and only between hands. Keep the chip-accounting test passing by counting them as chips entering and leaving the table, and add a test that the bots stay in range over a long session for a short, a medium and a 100-big-blind stack.
+- **50 hands a day**, across as many sittings as they like. `BankrollRoom` counts them, so the phone can't reset it. After the 50th hand the table closes with "Back tomorrow" and the time until midnight UTC.
+- **Fresh random cards.** Every hand is dealt by the server from `cryptoRng`, a new random deck per player per hand. No shared deal.
+- **Busting and the rebuy.** At zero, the player is offered one rebuy for the month: watch an ad (below) and get 1,000 back. A rebuy shows as a small "R" pill next to their name on the board. Bust again, or skip the ad, and they're out for the month: greyed on the board with their peak.
+- **The Sunday cut** takes the bottom 10% of alive players by bankroll. Cut players are out for the month, greyed with their peak and "Cut, week 2". Players who haven't played yet that month are left off the board, so they aren't cut before they start. Run it from a Worker cron (`triggers.crons` in `wrangler.jsonc`) and make it safe to run twice.
+- **Leaving mid-hand** works like any online table: they sit out, the hand folds on the clock (`TIMING.offlineClock`), the stack goes back to the bankroll, and the hand counts toward the 50.
 
 ### Screens
 
-- **Start sheet** (`bankroll` sheet, night grain like Range training's `NightSheet`): this month, your bankroll and peak, today's hands left, the current blinds and when they rise, the next cut and how many are still alive, your rank, and Sit down. First time only: a short How it works (1,000 chips, 50 hands a day, the stack carries over, bottom 10% cut every Sunday, one rebuy).
-- **The table** is the normal `table.tsx` with a Bankroll header: your bankroll, hands left today ("Hand 18 of 50"), your rank live. The table menu has Leave (back to the bankroll).
-- **End of day / leaving**: a small summary sheet: today's result (+ or −), bankroll now, rank and the change, hands left, Share.
-- **Busted**: "You're busted." with your peak and rank, then "Watch an ad to rebuy 1,000" (if the rebuy isn't used) or "Out for November. Back on December 1st."
-- **Cut**: shown the next time they open the Global tab or Bankroll: "Cut in week 2" with their peak and best rank.
-- **Share card**: a 1080 × 1350 picture like `useStatsShare()`: "Bankroll · November · Day 23", the bankroll, "#84 of 2,140 still alive", the peak. If they're out: "Busted on day 12 by Vinnie, K♠K♥ into A♣A♦" (the bot and the hand that ended it).
+- **Start sheet** (`bankroll` sheet, night grain like Range training's `NightSheet`): your bankroll big, your rank, "1,204 of 4,812 still alive", hands left today, days to the next cut, and Sit down. The five rules underneath, every time, in small type.
+- **The table** is the normal `table.tsx` with a Bankroll header: your bankroll, "Hand 18 of 50", your rank live. The table menu has Leave.
+- **Today's card**, after the 50th hand or on leaving: today's result big ("+640 today"), the bankroll, the rank and how far it moved, and Share. This is the daily share, like Wordle's grid: small, the same shape every day, one tap.
+- **Busted**: "You're busted." with the hand that did it, your peak and rank, then "Watch an ad to rebuy 1,000" if the rebuy isn't used, or "Out for November. Back December 1st."
+- **Cut**: shown the next time they open the app: "Cut in week 2" with their peak and best rank.
+- **Share pictures**, 1080 × 1350 like `useStatsShare()`:
+  - the daily card: "Bankroll · November · Day 23", "+640 today", the bankroll, "#212 of 4,812 still alive";
+  - the bust card: "Busted on day 12. K♠K♥ into A♣A♦", with the bot who did it;
+  - the end-of-month card: final place, final bankroll, peak, and the badge if they earned one.
+
+### Friend alerts
+
+The fastest way to get someone to open the app is a friend passing them. While the app is open, `useFriendWatch()` (or a light poll of the friends' rows) shows a small banner like `InviteBanner` when a friend passes you ("@cal03 just passed you"), busts ("@jake4147 busted") or survives a cut you didn't. Once per event, never more than one every few minutes. Leave a `TODO` for push notifications for the same three events; don't build push now.
 
 ### The ad structure (not connected)
 
@@ -102,8 +121,8 @@ One month, one stack. Everyone starts the month with 1,000 chips and plays cash 
 
 ### Tuning and tests
 
-- Add `scripts/bankrollLab.ts`, like `challengeLab.ts`, that plays whole months with scripted players (a tight player, a loose player, the constant bluffer from `botSim.ts`) at 50 hands a day and reports bankrolls, bust rates and who survives each cut. Tune the blind steps so a solid player usually survives to the end, a loose one usually busts or gets cut by week three, and the top bankrolls land around 10 to 30 times the starting 1,000. Write the rules and results in `docs/BANKROLL.md`.
-- Unit and Worker tests: chips accounted for across sittings and days; the 50-hand limit can't be passed; one rebuy only; the weekly cut picks the right players and is safe to run twice; a new month starts everyone at 1,000; the phone never receives an unseen card.
+- Add `scripts/bankrollLab.ts`, like `challengeLab.ts`, that plays whole months with scripted players (a tight player, a loose player, the constant bluffer from `botSim.ts`) at 50 hands a day, with the month-long reads on, and reports bankrolls, bust rates and who survives each cut. Check that the bots' reads make a one-note player (the constant bluffer) lose more as the month goes on. Pick the blind level so a solid player usually survives to the end, a loose one usually busts or is cut by week three, and the top bankrolls land around 10 to 30 times the starting 1,000. Write the rules and results in `docs/BANKROLL.md`.
+- Unit and Worker tests: chips accounted for across sittings and days; the 50-hand limit can't be passed; one rebuy only; reads carry across sittings and reset with the month; the Sunday cut picks the right players and is safe to run twice; a new month starts everyone at 1,000; the phone never receives an unseen card.
 
 ## Stage 5: Monthly seasons and badges
 
@@ -121,6 +140,6 @@ One month, one stack. Everyone starts the month with 1,000 chips and plays cash 
 ## When you're done
 
 - Every stage committed, `npm run check` and the native checks passing.
-- `CLAUDE.md` describes the four tabs, the Join sheet, Global, the `BankrollRoom` and `Leaderboard` Durable Objects, Bankroll (rules in `docs/BANKROLL.md`), the dev-only filler rows, the ad structure, cuts, seasons and flags, in the same style as the rest of the file.
+- `CLAUDE.md` describes the four tabs, the Join sheet, Global, the `BankrollRoom` and `Leaderboard` Durable Objects, Bankroll (rules in `docs/BANKROLL.md`), the dev-only filler rows, month-long bot reads, friend alerts, the ad structure, cuts, seasons and flags, in the same style as the rest of the file.
 - Screenshots of Play, Train, Global (with filler rows), the Bankroll start sheet, a Bankroll table, the busted sheet with the ad placeholder, and the share card, in light and dark mode, sent to the owner.
 - A short list of anything you weren't sure about, so the owner can decide.

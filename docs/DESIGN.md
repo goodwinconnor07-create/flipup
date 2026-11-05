@@ -3,8 +3,8 @@
 > **In force now (owner, 2026-11-05, after seeing the mockups): keep the app's design as it is on TestFlight.**
 > The changes on top of it are small: no purple (the brand and action colour is a deep blue, `brand.violet` in
 > `native/src/theme/brand.ts`, keys unchanged), no film grain (pages get a moving deep blue light field,
-> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the detailed game icons
-> (`scripts/drawGameIcons.mjs`), fewer spinners and faster screens. Everything below this box is the paper, ink and
+> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the original game pictures (`gameArt.ts`; the
+> detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the

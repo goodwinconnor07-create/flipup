@@ -3,9 +3,8 @@ import { ScrollView, Text, View } from 'react-native';
 
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
-import { party, spacing, useColors, useShadows } from '@/theme';
+import { party, radius, spacing, useColors, useShadows } from '@/theme';
 
-import { iconCorner } from '../game-icon';
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
@@ -46,8 +45,8 @@ function Tile({ variant, name, locked }: { variant: Variant; name: string; locke
       haptics={false}
       style={{ width: TILE, gap: spacing.xs }}
     >
-      <View style={{ borderRadius: iconCorner(TILE), borderCurve: 'continuous', boxShadow: shadows.card }}>
-        <GameThumb variant={variant} size={TILE} />
+      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
+        <GameThumb variant={variant} size={TILE} rounded={radius.lg} />
         {locked && (
           <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
             <Icon name="crown.fill" size={13} color={party.yellow} />

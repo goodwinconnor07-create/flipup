@@ -8,7 +8,7 @@ import { LegendShelf } from './HomeLegends';
 import { CAMPAIGN_ON, LEGENDS_ON, variantInfo } from '../game';
 import { PartyTab } from './HomeParty';
 import { loadRangeProgress } from './RangeTrainer';
-import { SCENARIOS } from '../train/ranges/scenarios';
+import { HAND_COUNT } from '../train/ranges/library';
 import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
 import { colourWipe } from '../ui/effects';
@@ -17,7 +17,7 @@ import { ChevronIcon, CloseIcon, ChipIcon, KeypadIcon, PencilIcon, PersonIcon, P
 /** "4 of 13 hands right", or what range training is, before you've started. */
 function rangesDone(): string {
   const done = Object.values(loadRangeProgress()).filter((g) => g === 'best').length;
-  return done ? `${done} of ${SCENARIOS.length} hands right` : 'Read their hand from the action, then make the call';
+  return done ? `${done} of ${HAND_COUNT} hands right` : 'Read their hand from the action, then make the call';
 }
 
 function ago(at: number): string {

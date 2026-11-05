@@ -551,3 +551,9 @@ const FIRST: Scenario[] = [
 
 /** Every hand, mixing heads-up and multiway: one of the new ones after every two of the first set. */
 export const SCENARIOS: Scenario[] = FIRST.flatMap((s, i) => (i % 2 === 1 && MORE_SCENARIOS[(i - 1) / 2] ? [s, MORE_SCENARIOS[(i - 1) / 2]] : [s])).concat(MORE_SCENARIOS.slice(Math.floor(FIRST.length / 2)));
+
+/** Generated hands are stored with each group's combos run together ("AhKhAdKd"); these convert both ways. */
+export const pack = (list: Scenario[]): Scenario[] =>
+  list.map((s) => ({ ...s, opponents: s.opponents.map((o) => ({ ...o, range: o.range.map((g) => ({ ...g, hands: g.hands.replace(/[ ,]/g, '') })) })) }));
+export const unpack = (list: Scenario[]): Scenario[] =>
+  list.map((s) => ({ ...s, opponents: s.opponents.map((o) => ({ ...o, range: o.range.map((g) => ({ ...g, hands: (g.hands.match(/.{4}/g) ?? []).join(', ') })) })) }));

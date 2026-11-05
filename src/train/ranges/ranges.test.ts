@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { isCard } from '../../game/cards';
 import { CHARTS, inChart } from './charts';
 import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, replay, spotOf, streetOfBoard, type OptionId, type Scenario } from './model';
-import { SCENARIOS } from './scenarios';
+import { readFileSync } from 'node:fs';
+import { SCENARIOS as WRITTEN, unpack } from './scenarios';
+
+/** Every hand: the hand-written ones and the generated ones. */
+const SCENARIOS: Scenario[] = [...WRITTEN, ...unpack(JSON.parse(readFileSync(new URL('./generated.json', import.meta.url), 'utf8')))];
 
 describe('hands', () => {
   it('reads pairs, suited, offsuit, exact combos and one-suit hands', () => {

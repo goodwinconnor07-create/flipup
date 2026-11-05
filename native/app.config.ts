@@ -65,15 +65,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        // The app icon on the system's own page colour, so the launch screen hands over to Home without a flash.
-        // Drawn by scripts/makeAppIcon.mjs with the icon.
-        backgroundColor: '#ffffff',
+        // The night blue of the launch cover (components/launch-cover.tsx), with no picture, so it hands over seamlessly.
+        backgroundColor: '#070f2a',
         image: './assets/images/splash-icon.png',
-        imageWidth: 100,
-        dark: {
-          backgroundColor: '#000000',
-          image: './assets/images/splash-icon-dark.png',
-        },
+        imageWidth: 1,
       },
     ],
   ],

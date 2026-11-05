@@ -1,4 +1,5 @@
 import { router, Stack } from 'expo-router';
+import Animated, { FadeOut, Keyframe, LinearTransition } from 'react-native-reanimated';
 import { Pressable, Text, View } from 'react-native';
 
 import { Row, Section } from '@/components/grouped-list';
@@ -13,8 +14,9 @@ import { InviteCard } from '@/components/invite-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { RequestsPill } from '@/components/friend-requests';
 import { ProfileMenu } from '@/components/profile-menu';
-import { SwipeAway } from '@/components/swipe-away';
 import { TabScreen } from '@/components/tab-screen';
+import { EASE_OUT } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, FREE_VARIANTS, VARIANTS, variantInfo, variantOf } from '@/engine';
 import { useFriendBox } from '@/state/pals';
@@ -38,8 +40,10 @@ export default function Home() {
   const box = useFriendBox();
   const banner = useHasBanner();
   const last = record.games.at(-1);
-  // Play again can be swiped away; it comes back with the next game you finish.
+  // Play again can be taken away with its X; it comes back with the next game you finish.
   const hidden = useStored<number>(HIDDEN, 0);
+  const reduce = useReduceMotion();
+  const slide = reduce ? undefined : LinearTransition.duration(320).easing(EASE_OUT);
   return (
     <>
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
@@ -62,30 +66,40 @@ export default function Home() {
         )}
         <StartTiles />
         {!banner && last && hidden !== last.at && (
-          <SwipeAway label="Remove" onDismiss={() => save(HIDDEN, last.at)}>
-            <LastGame line={last} />
-          </SwipeAway>
+          // The X pops the card away and everything under it slides up into its place.
+          <Animated.View exiting={reduce ? FadeOut.duration(160) : POP_AWAY}>
+            <LastGame line={last} onDismiss={() => save(HIDDEN, last.at)} />
+          </Animated.View>
         )}
-        <GameRow />
-        <FriendsStrip />
-        {record.hands > 0 ? <PassportCard /> : <FirstHand />}
-        {!premium && <PremiumBanner />}
+        <Animated.View layout={slide} style={{ gap: spacing.xl }}>
+          <GameRow />
+          <FriendsStrip />
+          {record.hands > 0 ? <PassportCard /> : <FirstHand />}
+          {!premium && <PremiumBanner />}
 
-        {__DEV__ && (
-          <Section header="Development">
-            <Row title="Design system" icon={{ symbol: 'paintbrush.fill', color: colors.indigo as string }} onPress={() => router.push('/design')} />
-          </Section>
-        )}
+          {__DEV__ && (
+            <Section header="Development">
+              <Row title="Design system" icon={{ symbol: 'paintbrush.fill', color: colors.indigo as string }} onPress={() => router.push('/design')} />
+            </Section>
+          )}
 
-        <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-          Play chips only. They have no cash value and can&apos;t be bought or won.
-        </ThemedText>
+          <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
+            Play chips only. They have no cash value and can&apos;t be bought or won.
+          </ThemedText>
+        </Animated.View>
       </TabScreen>
     </>
   );
 }
 
 const HIDDEN = 'flipup.lastgamehidden';
+
+/** The Play again card leaving: a quick swell, then it shrinks and fades away. */
+const POP_AWAY = new Keyframe({
+  0: { opacity: 1, transform: [{ scale: 1 }] },
+  30: { opacity: 1, transform: [{ scale: 1.04 }], easing: EASE_OUT },
+  100: { opacity: 0, transform: [{ scale: 0.6 }], easing: EASE_OUT },
+}).duration(220);
 /** How many games Premium adds (every game after the free ones). */
 const PREMIUM_GAMES = VARIANTS.length - FREE_VARIANTS;
 

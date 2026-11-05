@@ -234,7 +234,7 @@ function ContinueCard({ lesson, onPress }: { lesson: Lesson; onPress: () => void
 function ModeCard({ colors, ink = '#ffffff', icon, title, line, onPress, extra }: { colors: readonly [string, string, string]; ink?: string; icon: IconName; title: string; line: string; onPress: () => void; extra?: ReactNode }) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={`${title}. ${line}`} haptics={false} onPress={onPress} outerStyle={{ flex: 1 }}>
-      <LivingCard colors={colors} radius={radius.lg} grain={0.08} shadow="soft" style={{ padding: spacing.md, gap: spacing.xs, minHeight: 132, justifyContent: 'space-between' }}>
+      <LivingCard colors={colors} radius={radius.lg} shadow="soft" style={{ padding: spacing.md, gap: spacing.xs, minHeight: 132, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: ink === '#ffffff' ? 'rgba(255,255,255,0.18)' : 'rgba(59,38,0,0.12)' }}>
             <Icon name={icon} size={16} color={ink} />

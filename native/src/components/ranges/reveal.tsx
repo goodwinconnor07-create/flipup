@@ -18,8 +18,8 @@ import { GlossaryText } from './glossary-text';
 import { Piles } from './piles';
 
 const HEAD: Record<Grade, { title: string; icon: IconName; ink: string; colors: readonly [string, string, string]; glow: string }> = {
-  best: { title: 'Best play!', icon: 'checkmark.seal.fill', ink: brand.gold, colors: ['#4a3508', '#22144f', '#0e0a2c'], glow: 'rgba(255, 201, 51, 0.38)' },
-  ok: { title: 'Also good', icon: 'hand.thumbsup.fill', ink: '#b9a6ff', colors: ['#3a2696', '#1b1250', '#0e0a2c'], glow: 'rgba(160, 130, 255, 0.34)' },
+  best: { title: 'Best play!', icon: 'checkmark.seal.fill', ink: brand.gold, colors: ['#4a3508', '#101f4c', '#070e26'], glow: 'rgba(255, 201, 51, 0.38)' },
+  ok: { title: 'Also good', icon: 'hand.thumbsup.fill', ink: '#a8bff5', colors: ['#152f86', '#0e1b42', '#070e26'], glow: 'rgba(90, 140, 255, 0.34)' },
   mistake: { title: 'Not this time', icon: 'arrow.uturn.backward', ink: 'rgba(255,255,255,0.88)', colors: ['#24242e', '#16161d', '#0c0c12'], glow: 'rgba(255, 255, 255, 0.06)' },
 };
 
@@ -61,7 +61,7 @@ export function Reveal(p: RevealProps) {
       entering={reduce ? FadeIn.duration(200) : SlideInDown.springify().mass(0.9).damping(19).stiffness(170)}
       style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.xs, paddingBottom: Math.max(insets.bottom - spacing.xs, spacing.xs) }}
     >
-      <LivingCard colors={head.colors} glow={head.glow} glow2="rgba(110, 75, 255, 0.22)" radius={radius.xl} grain={0} style={{ maxHeight: p.maxHeight }}>
+      <LivingCard colors={head.colors} glow={head.glow} glow2="rgba(90, 140, 255, 0.22)" radius={radius.xl} style={{ maxHeight: p.maxHeight }}>
         {p.grade === 'best' && <Burst />}
         <ScrollView bounces={false} showsVerticalScrollIndicator={false} style={{ flexShrink: 1, flexGrow: 0 }} contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing.sm, gap: spacing.md }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }} accessible accessibilityLiveRegion="assertive" accessibilityLabel={`${head.title} ${p.pick === p.best ? '' : `Best: ${p.labelOf(p.best)}.`} ${total >= 0 ? 'plus' : 'minus'} ${Math.abs(total)} points`}>

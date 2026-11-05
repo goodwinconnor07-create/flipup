@@ -48,8 +48,9 @@ export function SetupGameRow({ selected }: { selected: Variant }) {
       snapToInterval={STEP}
       decelerationRate="fast"
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      style={{ marginHorizontal: -spacing.md }}
-      contentContainerStyle={{ paddingHorizontal: spacing.md - (RING + GAP) + spacing.xxs, gap: spacing.xs, paddingVertical: spacing.xs }}
+      style={{ marginHorizontal: -spacing.md, marginVertical: -22 + spacing.xs }}
+      // Room round the row for the chosen game's glow, so the scroll view's edges never cut it off.
+      contentContainerStyle={{ paddingHorizontal: spacing.md - (RING + GAP) + spacing.xxs, gap: spacing.xs, paddingVertical: 22 }}
       accessibilityRole="list"
       accessibilityLabel="Games"
     >

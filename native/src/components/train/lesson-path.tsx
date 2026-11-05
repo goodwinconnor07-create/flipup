@@ -71,7 +71,7 @@ function UnitBand({ unit, onTricks }: { unit: Unit; onTricks: () => void }) {
   const ink = gold ? brand.goldInk : '#ffffff';
   const soft = gold ? 'rgba(59,38,0,0.72)' : 'rgba(255,255,255,0.78)';
   return (
-    <LivingCard colors={colors} radius={radius.lg} grain={0.08} shadow="soft" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md }}>
+    <LivingCard colors={colors} radius={radius.lg} shadow="soft" style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md }}>
       <View style={{ flex: 1, gap: 2 }}>
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 1.2, color: soft }}>
           UNIT {unit.number} · {unit.collected} OF {unit.lessons.length}
@@ -109,7 +109,7 @@ function Node({ lesson, picked, onPress }: { lesson: Lesson; picked: boolean; on
   const state = done ? 'collected' : locked ? 'locked' : lesson.state === 'current' ? 'up next' : `${Math.round(fraction * 100)}% done`;
   return (
     <View style={{ width: RING, height: RING, alignItems: 'center', justifyContent: 'center' }}>
-      {lesson.state === 'current' && <ProgressRing value={fraction} track={dark ? 'rgba(139,109,255,0.25)' : '#e4dcff'} />}
+      {lesson.state === 'current' && <ProgressRing value={fraction} track={dark ? 'rgba(91,139,255,0.25)' : '#dbe5fb'} />}
       <Pressable accessibilityRole="button" accessibilityLabel={`${lesson.trick.nick}, ${state}`} accessibilityState={{ expanded: picked }} onPress={onPress} hitSlop={6}>
         {({ pressed }) => (
           <View style={{ width: NODE, height: NODE + EDGE, borderRadius: NODE / 2, backgroundColor: edge }}>
@@ -185,7 +185,7 @@ function LessonCard({ lesson, onStart }: { lesson: Lesson; onStart: () => void }
   const dots = Array.from({ length: lesson.goal }, (_, i) => (lesson.done >= i + 1 ? 1 : lesson.done > i ? 0.5 : 0));
   return (
     <Animated.View entering={FadeIn.duration(180)} style={{ alignSelf: 'stretch' }}>
-      <LivingCard colors={look} radius={radius.lg} grain={0.08} shadow="soft" still={locked} style={{ padding: spacing.md, gap: spacing.sm }}>
+      <LivingCard colors={look} radius={radius.lg} shadow="soft" still={locked} style={{ padding: spacing.md, gap: spacing.sm }}>
         <View style={{ gap: 2 }}>
           <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 27, fontWeight: '800', color: ink }}>
             {lesson.trick.nick}

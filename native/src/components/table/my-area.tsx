@@ -112,8 +112,8 @@ export function MyArea({
             <Text style={{ fontSize: 24, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{pct(odds.tie)}</Text>
           </View>
         ) : (
-          // The chip count is the biggest thing in the box.
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          // The chip count is the biggest thing in the box, sat a little low so the corner bubbles have room above it.
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: compact ? 10 : 14 }}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`${inBB ? 'Stack in big blinds' : 'Stack in chips'}, tap to switch`}
@@ -160,8 +160,9 @@ export function MyArea({
             <QuickMessages />
           </View>
         )}
-        {/* What you just did or said: a small pill outside the box, over its top-right corner. */}
-        <View pointerEvents="none" style={{ position: 'absolute', right: -4, bottom: '100%', marginBottom: -10, width: 150, height: 0 }}>
+        {/* What you just did or said: a small pill on the top-right corner, half over the box's edge, mirroring the
+            quick-messages button on the left. */}
+        <View pointerEvents="none" style={{ position: 'absolute', right: -9, bottom: '100%', marginBottom: -17, width: 150, height: 0 }}>
           {talk ? (
             <Thread talk={talk} fx={me?.bubble} room={140} place={pinned('flex-end')} />
           ) : last && hand && quiet !== moveSig(hand.number, last) ? (

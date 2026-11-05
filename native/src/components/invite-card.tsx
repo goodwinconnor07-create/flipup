@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Text, View } from 'react-native';
 
 import { isVariant, variantInfo, type BjInvite } from '@/engine';
@@ -14,18 +14,29 @@ import { Icon } from './icon';
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';
 
+/** How long a look at the table, taken when the invite showed up, still counts when you tap Join. */
+const FRESH_MS = 20_000;
+
 /**
  * Join for a friend's table invite: checks the table is still there (and, for an invite sent from their lobby, that
- * it hasn't dealt yet) and has a seat, then sits you down and opens the table.
+ * it hasn't dealt yet) and has a seat, then sits you down and opens the table. The check starts as soon as the
+ * invite shows, so by the time you tap Join the answer is usually in and the table opens at once.
  */
 export function useJoinInvite(invite: BjInvite, after?: () => void) {
   const profile = useProfile();
   const [busy, setBusy] = useState(false);
+  const early = useRef<{ at: number; info: ReturnType<typeof fetchTableInfo> } | null>(null);
+  useEffect(() => {
+    const info = fetchTableInfo(invite.table);
+    info.catch(() => undefined);
+    early.current = { at: Date.now(), info };
+  }, [invite.table]);
   const join = async () => {
     if (busy) return;
     setBusy(true);
     try {
-      const info = await fetchTableInfo(invite.table);
+      const e = early.current;
+      const info = await (e && Date.now() - e.at < FRESH_MS ? e.info.catch(() => fetchTableInfo(invite.table)) : fetchTableInfo(invite.table));
       if (!info || info.status === 'ended') {
         dismissInvite(invite);
         Alert.alert('That table has closed', `Ask ${invite.name} to invite you to a new one.`);

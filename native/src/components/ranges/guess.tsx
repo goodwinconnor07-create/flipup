@@ -20,7 +20,7 @@ export function GuessCard({ pickLabel, onDone }: { pickLabel: string; onDone: (g
   const [value, setValue] = useState(40);
   return (
     <Animated.View entering={reduce ? undefined : SlideInDown.springify().mass(0.8).damping(18)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md) }}>
-      <LivingCard colors={cardColors.night} radius={radius.xl} grain={0} style={{ padding: spacing.lg, gap: spacing.md }}>
+      <LivingCard colors={cardColors.night} radius={radius.xl} style={{ padding: spacing.lg, gap: spacing.md }}>
         <View style={{ gap: 2 }}>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: brand.gold }}>
             YOU PICKED {pickLabel.toUpperCase()}

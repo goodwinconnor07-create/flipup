@@ -22,12 +22,16 @@ function ago(at: number): string {
   return `${Math.round(hours / 24)}d ago`;
 }
 
-/** Your last game: the game, where you finished and when, and a tap back into it. */
-export function LastGame({ line }: { line: GameLine }) {
+/**
+ * Your last game: the game, where you finished and when, and a tap back into it. `onDismiss` adds a small X on the
+ * top-right corner that takes the card away (it comes back with the next game you finish).
+ */
+export function LastGame({ line, onDismiss }: { line: GameLine; onDismiss?: () => void }) {
   const colors = useColors();
   const shadows = useShadows();
   const info = variantInfo(line.variant);
   return (
+    <View>
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={`Play ${info.name} again. You finished ${place(line.place)} of ${line.players}`}
@@ -52,6 +56,23 @@ export function LastGame({ line }: { line: GameLine }) {
         </Text>
       </View>
     </PressableScale>
+      {onDismiss && (
+        <View style={{ position: 'absolute', top: -8, right: -8 }}>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel="Remove this card"
+            hitSlop={10}
+            onPress={() => {
+              haptic.tap();
+              onDismiss();
+            }}
+            style={{ width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed, borderWidth: 2, borderColor: colors.background }}
+          >
+            <Icon name="xmark" size={10} color={colors.secondaryLabel} weight="bold" />
+          </PressableScale>
+        </View>
+      )}
+    </View>
   );
 }
 

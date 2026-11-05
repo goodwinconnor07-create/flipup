@@ -74,7 +74,7 @@ export default function PremiumSheet() {
   if (reason) order.sort((a, b) => (a === FIRST[reason] ? -1 : b === FIRST[reason] ? 1 : 0));
 
   return (
-    <GrainBackground colors={[night[0], night[1], night[1]]} glow="rgba(150, 120, 255, 0.16)" glow2="rgba(245, 183, 0, 0.06)">
+    <GrainBackground colors={[night[0], night[1], night[1]]} glow="rgba(90, 140, 255, 0.16)" glow2="rgba(245, 183, 0, 0.06)">
       <Stack.Screen options={{ title: 'FlipUp Premium' }} />
       <SheetScroll style={{ flex: 1 }} contentContainerStyle={{ padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: spacing.xl }}>
         <Pressable accessibilityRole="button" accessibilityLabel="Close" hitSlop={12} onPress={() => router.back()} style={({ pressed }) => ({ position: 'absolute', top: spacing.md, right: spacing.md, zIndex: 1, width: 32, height: 32, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: pressed ? 0.6 : 1 })}>

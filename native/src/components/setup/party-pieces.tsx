@@ -26,7 +26,7 @@ export function StartPartyButton() {
         haptic.tap();
         router.push('/party-playlist');
       }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 1.5, borderColor: 'rgba(139,109,255,0.55)', backgroundColor: 'rgba(110,75,255,0.14)' }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 1.5, borderColor: 'rgba(91,139,255,0.55)', backgroundColor: 'rgba(37,87,214,0.16)' }}
     >
       <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}>
         <Icon name="party.popper.fill" size={20} color="#ffffff" />

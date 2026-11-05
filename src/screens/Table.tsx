@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { bestHand, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, equity, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Equity, type Game, type Hand, type Player, type Seat } from '../game';
+import { bestHand, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, runoutOdds, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Player, type Seat, type Variant } from '../game';
 import { closeTable, dispatch, leaveTable, navigate, openSheet, useApp } from '../state/store';
 import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -247,19 +247,24 @@ function TableBar({ game }: { game: Game | null }) {
   );
 }
 
-/** Win and tie chances, only during an all-in run-out when every live hand is face up. */
-function useOdds(hand: Hand | null, oddsOk: boolean): Map<string, { win: number; tie: number }> | null {
-  // Only plain Hold'em: the variants score hands differently.
-  const live = hand?.runout && oddsOk ? hand.seats.filter((s) => !s.folded && s.cards.length === 2) : [];
-  const key = hand?.runout ? `${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}` : '';
+/**
+ * Win and tie chances, only during an all-in run-out when every live hand is face up, played out by the game's own
+ * rules (`runoutOdds()`). Ghost Hold'em leaves the ghost out until it's turned over at the showdown.
+ */
+function useOdds(hand: Hand | null, ok: boolean, variant: Variant): Map<string, { win: number; tie: number }> | null {
+  const live = hand?.runout && ok ? hand.seats.filter((s) => !s.folded && s.cards.length >= 2) : [];
+  const ghost = hand?.ghost?.length ? hand.ghost : undefined;
+  const key = hand?.runout ? `${variant}/${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}/${ghost?.join('') ?? ''}` : '';
   return useMemo(() => {
     if (!hand?.runout || live.length < 2) return null;
-    const e: Equity = equity(
+    const e = runoutOdds(
+      variant,
       live.map((s) => s.cards),
       hand.board,
+      ghost,
     );
     return new Map(live.map((s, i) => [s.playerId, { win: e.win[i], tie: e.tie[i] }]));
-  }, [key]);
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 }
 
 /** The table itself: the other players, the board, the actions and your cards. `bare` is how a Scroll card uses it: no show-cards buttons or between-hands bar, and no confetti of its own. */
@@ -272,7 +277,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const mySeat = seatFor(hand, me?.id);
   const others = othersInOrder(game, me);
   const variant = variantOf(game);
-  const odds = useOdds(hand, showsOdds(variant));
+  const odds = useOdds(hand, showsOdds(variant), variant);
   const themed = variant !== 'holdem';
   // Imposter: you only learn it's you; everyone else in the hand is innocent.
   const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;

@@ -22,7 +22,7 @@ export function GameRow() {
   const premium = usePremium();
   return (
     <View style={{ gap: spacing.sm }}>
-      <SectionTitle title="Games" onMore={() => router.push('/games')} />
+      <SectionTitle eyebrow={`${VARIANTS.length} ways to play`} symbol="suit.spade.fill" title="Games" onMore={() => router.push('/games')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md }} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.sm }}>
         {VARIANTS.map((v) => (
           <Tile key={v.id} variant={v.id} name={v.name} locked={!premium && isPremiumVariant(v.id)} />

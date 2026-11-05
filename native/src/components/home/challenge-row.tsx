@@ -29,7 +29,7 @@ export function ChallengeRow() {
   const bests = useChallengeBests();
   return (
     <View style={{ gap: spacing.sm }}>
-      <SectionTitle title="Challenges" />
+      <SectionTitle eyebrow="Solo, against the bots" symbol="person.fill" title="Challenges" />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, gap: spacing.sm }}>
         {CHALLENGES.map((c) => (
           <ChallengeCard key={c.id} challenge={c} best={bests[c.id]} />

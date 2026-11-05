@@ -147,9 +147,23 @@ export async function sendFriendRequest(code: string, who?: { name: string; emoj
 export async function answerRequest(from: string, accept: boolean): Promise<void> {
   const mine = myPalCode();
   if (!mine) return;
+  // The answer shows at once (docs/DESIGN_DIRECTION.md, Speed): the request leaves the list and, on a yes, they're on
+  // your friends list straight away. If the server says no, both are put back and the error goes to the caller.
   const box = read<FriendBox | null>(BOX, null) ?? NO_BOX;
+  const request = box.requests.find((r) => r.from === from);
+  const pals = loadPals();
   save(BOX, { ...box, requests: box.requests.filter((r) => r.from !== from) });
-  await answerFriend(mine, { deviceId: deviceId(), from, accept });
+  if (accept && request && !pals.some((p) => p.code === from)) {
+    savePals([...pals, { code: from, name: request.name, emoji: request.emoji, username: request.username, addedAt: Date.now() }]);
+  }
+  try {
+    await answerFriend(mine, { deviceId: deviceId(), from, accept });
+  } catch (e) {
+    const now = read<FriendBox | null>(BOX, null) ?? NO_BOX;
+    if (request && !now.requests.some((r) => r.from === from)) save(BOX, { ...now, requests: [...now.requests, request] });
+    savePals(loadPals().filter((p) => p.code !== from || pals.some((q) => q.code === from)));
+    throw e;
+  }
   await syncFriends();
 }
 

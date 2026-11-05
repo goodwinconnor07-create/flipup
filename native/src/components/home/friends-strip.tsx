@@ -26,7 +26,7 @@ export function FriendsStrip() {
   const add = () => router.push(username ? '/add-friend' : '/username');
   return (
     <View style={{ gap: spacing.sm }}>
-      <SectionTitle title="Friends" onMore={pals.length ? () => router.navigate('/friends') : undefined} />
+      <SectionTitle eyebrow={pals.length ? `${pals.length} ${pals.length === 1 ? 'friend' : 'friends'}` : 'Play together'} symbol="person.2.fill" title="Friends" onMore={pals.length ? () => router.navigate('/friends') : undefined} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md }} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, alignItems: 'flex-start' }}>
         <AddFace onPress={add} />
         {pals.length === 0 ? (

@@ -5,23 +5,27 @@ import Animated, { ZoomIn } from 'react-native-reanimated';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
+import { ColourWash } from '@/components/colour-wash';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
+import { ensureMyCode, myPalCode, useMyUsername, usePals } from '@/state/pals';
 import { usePremium } from '@/state/premium';
+import { usePokerRecord } from '@/state/record';
 import { saveProfile, useProfile } from '@/state/profile';
 import { useStreak } from '@/state/streak';
+import { emojiColour } from '@design/emojiColours';
 import { party, radius, spacing, typography, useColors } from '@/theme';
 
 const PIC = 140;
 
 /**
- * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
- * then your streak and Settings, and FlipUp Premium. The name is saved with Save; the emoji as you pick it.
+ * Your profile: the colour of your emoji fading into the page (Apple's profile sheet), your emoji (tap it to pick
+ * another) and your name, which everyone at the table sees; then rows that carry their number (friends, hands,
+ * streak), Settings, and FlipUp Premium. The name is saved with Save; the emoji as you pick it.
  */
 export default function ProfileScreen() {
   const colors = useColors();
@@ -30,6 +34,8 @@ export default function ProfileScreen() {
   const premium = usePremium();
   const { username } = useMyUsername();
   const streak = useStreak();
+  const friends = usePals().length;
+  const hands = usePokerRecord().hands;
   const [name, setName] = useState(profile.name);
   const clean = cleanName(name);
   const blocked = isNameBlocked(clean);
@@ -50,6 +56,7 @@ export default function ProfileScreen() {
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Stack.Screen options={{ title: first ? 'Your profile' : 'Profile' }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
+        <ColourWash colour={emojiColour(profile.emoji)} height={330} />
         <View style={{ alignItems: 'center', gap: spacing.lg }}>
           <Pressable
             accessibilityRole="button"
@@ -61,7 +68,7 @@ export default function ProfileScreen() {
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           >
             <Animated.View key={profile.emoji} entering={reduce ? undefined : ZoomIn.springify().mass(1).stiffness(300).damping(18)}>
-              <Avatar emoji={profile.emoji} size={PIC} />
+              <Avatar emoji={profile.emoji} size={PIC} onColour />
             </Animated.View>
             <View style={{ position: 'absolute', right: 4, bottom: 4, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, borderWidth: 3, borderColor: colors.background }}>
               <Icon name="pencil" size={17} color={colors.onColor} />
@@ -112,6 +119,20 @@ export default function ProfileScreen() {
             detail={username ? `@${username}` : 'Choose'}
             icon={{ symbol: 'person.badge.plus', color: colors.pink as string }}
             onPress={() => router.push('/username')}
+          />
+          <Row
+            title="Friends"
+            subtitle={friends ? 'Invite them to a table' : 'Add friends by their username'}
+            detail={String(friends)}
+            icon={{ symbol: 'person.2.fill', color: colors.indigo as string }}
+            onPress={() => router.navigate('/friends')}
+          />
+          <Row
+            title="Your stats"
+            subtitle="Best hand, streak, the games you play"
+            detail={`${hands} ${hands === 1 ? 'hand' : 'hands'}`}
+            icon={{ symbol: 'chart.bar.xaxis', color: colors.green as string }}
+            onPress={() => router.push('/stats')}
           />
           <Row
             title="Streak"

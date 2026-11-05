@@ -1,6 +1,7 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, RefreshControl, Share, Text, View } from 'react-native';
+import Svg, { Defs, Ellipse, LinearGradient, RadialGradient, Stop } from 'react-native-svg';
 
 import { Avatar } from '@/components/avatar';
 import { useFriendActions } from '@/components/friend-menu';
@@ -13,6 +14,7 @@ import { LivingCard } from '@/components/living-card';
 import { Menu } from '@/components/menu';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
+import { SectionTitle } from '@/components/home/section-title';
 import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
 import { removePal, syncFriends, useFriendBox, useMyUsername, usePals, useSentRequests, type Pal } from '@/state/pals';
@@ -87,7 +89,7 @@ export default function FriendsTab() {
       >
         {box.requests.length > 0 && (
           <View style={{ gap: spacing.sm }}>
-            <Heading text="Incoming Friend Requests" />
+            <SectionTitle eyebrow="Waiting for you" symbol="person.badge.plus" title="Friend requests" />
             <RequestList requests={box.requests} />
           </View>
         )}
@@ -96,7 +98,7 @@ export default function FriendsTab() {
 
         {box.invites.length > 0 && (
           <View style={{ gap: spacing.sm }}>
-            <Heading text="Invites" />
+            <SectionTitle eyebrow="Friends' tables" symbol="suit.spade.fill" title="Invites" />
             {box.invites.map((i) => (
               <InviteCard key={`${i.from}:${i.at}`} invite={i} />
             ))}
@@ -104,7 +106,7 @@ export default function FriendsTab() {
         )}
 
         <View style={{ gap: spacing.sm }}>
-          <Heading text={pals.length ? `Your friends · ${pals.length}` : 'Your friends'} />
+          <SectionTitle eyebrow={pals.length ? `${pals.length} ${pals.length === 1 ? 'friend' : 'friends'}` : undefined} symbol="person.2.fill" title="Your friends" />
           {refreshing ? (
             <FriendSkeleton rows={Math.min(6, Math.max(2, pals.length + sent.length))} />
           ) : pals.length + sent.length > 0 ? (
@@ -121,22 +123,7 @@ export default function FriendsTab() {
             </View>
             </View>
           ) : (
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel="Add a friend by their username"
-              onPress={addFriend}
-              style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}
-            >
-              <View style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
-                <Icon name="person.badge.plus" size={28} color="#ffffff" />
-              </View>
-              <ThemedText variant="title3" style={{ textAlign: 'center' }}>
-                Add your first friend
-              </ThemedText>
-              <ThemedText variant="subhead" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-                Type their username, or tap + Friend on a party leaderboard. Friends can invite each other to a table.
-              </ThemedText>
-            </PressableScale>
+            <FriendsEmpty onAdd={addFriend} />
           )}
         </View>
       </TabScreen>
@@ -167,11 +154,71 @@ function FriendRow({ pal, first }: { pal: Pal; first: boolean }) {
   );
 }
 
-function Heading({ text }: { text: string }) {
+/**
+ * No friends yet: one picture, one sentence, one button (Apple's Games app does the same). The picture is three faces
+ * on a glowing orbit round yours.
+ */
+function FriendsEmpty({ onAdd }: { onAdd: () => void }) {
+  const colors = useColors();
+  const shadows = useShadows();
+  const me = useProfile().emoji || '😎';
+  const W = 280;
+  const H = 150;
+  const faces: [string, number, number, number][] = [
+    ['🦊', 34, 58, 46],
+    ['🐼', 206, 18, 50],
+    ['🐸', 196, 102, 40],
+  ];
   return (
-    <ThemedText variant="title2" accessibilityRole="header">
-      {text}
-    </ThemedText>
+    <View style={{ alignItems: 'center', gap: spacing.md, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}>
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: W, height: H }}>
+        <Svg width={W} height={H} style={{ position: 'absolute' }}>
+          <Defs>
+            <LinearGradient id="orbit" x1="0" y1="0" x2="1" y2="0">
+              <Stop offset="0" stopColor={brand.violet} stopOpacity={0.15} />
+              <Stop offset="0.5" stopColor={brand.violet} stopOpacity={0.95} />
+              <Stop offset="1" stopColor={brand.gold} stopOpacity={0.3} />
+            </LinearGradient>
+            <RadialGradient id="halo" cx="0.5" cy="0.5" r="0.5">
+              <Stop offset="0" stopColor={brand.violet} stopOpacity={0.35} />
+              <Stop offset="1" stopColor={brand.violet} stopOpacity={0} />
+            </RadialGradient>
+          </Defs>
+          <Ellipse cx={W / 2} cy={H / 2} rx={W / 2} ry={H / 2} fill="url(#halo)" />
+          {[0, 1, 2].map((k) => (
+            <Ellipse key={k} cx={W / 2} cy={H / 2 + 6} rx={118 - k * 10} ry={34 - k * 4} fill="none" stroke="url(#orbit)" strokeWidth={4 - k} transform={`rotate(-14 ${W / 2} ${H / 2})`} opacity={1 - k * 0.3} />
+          ))}
+        </Svg>
+        <View style={{ position: 'absolute', left: W / 2 - 38, top: H / 2 - 38 }}>
+          <Avatar emoji={me} size={76} />
+        </View>
+        {faces.map(([e, x, y, size]) => (
+          <View key={e} style={{ position: 'absolute', left: x, top: y }}>
+            <Avatar emoji={e} size={size} />
+          </View>
+        ))}
+      </View>
+      <ThemedText variant="title3" style={{ textAlign: 'center' }}>
+        Play with your friends
+      </ThemedText>
+      <ThemedText variant="subhead" tone="secondaryLabel" style={{ textAlign: 'center' }}>
+        Add them by their username, then invite them straight to your table.
+      </ThemedText>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel="Add friends"
+        onPress={() => {
+          haptic.tap();
+          onAdd();
+        }}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 46, paddingHorizontal: spacing.lg, borderRadius: radius.full, backgroundColor: colors.cellPressed }}
+      >
+        <Icon name="plus" size={16} color={colors.label} />
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '700', color: colors.label }}>
+          Add friends
+        </Text>
+      </PressableScale>
+    </View>
   );
 }
 

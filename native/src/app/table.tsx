@@ -23,7 +23,7 @@ import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
 import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
-import { challengeById, equity, myPlayer, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand } from '@/engine';
+import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { joinLink } from '@/state/api';
 import { forgetParty } from '@/state/party';
@@ -365,15 +365,21 @@ function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: 
   );
 }
 
-/** Win and tie chances, only during an all-in run-out when every live hand is face up (plain Hold'em only). */
-function useOdds(hand: Hand | null, ok: boolean): Map<string, { win: number; tie: number }> | null {
-  const live = hand?.runout && ok ? hand.seats.filter((s) => !s.folded && s.cards.length === 2) : [];
-  const key = hand?.runout ? `${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}` : '';
+/**
+ * Win and tie chances, only during an all-in run-out when every live hand is face up, played out by the game's own
+ * rules (`runoutOdds()`). Ghost Hold'em leaves the ghost out until it's turned over at the showdown.
+ */
+function useOdds(hand: Hand | null, ok: boolean, variant: Variant): Map<string, { win: number; tie: number }> | null {
+  const live = hand?.runout && ok ? hand.seats.filter((s) => !s.folded && s.cards.length >= 2) : [];
+  const ghost = hand?.ghost?.length ? hand.ghost : undefined;
+  const key = hand?.runout ? `${variant}/${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}/${ghost?.join('') ?? ''}` : '';
   return useMemo(() => {
     if (!hand?.runout || live.length < 2) return null;
-    const e = equity(
+    const e = runoutOdds(
+      variant,
       live.map((s) => s.cards),
       hand.board,
+      ghost,
     );
     return new Map(live.map((s, i) => [s.playerId, { win: e.win[i], tie: e.tie[i] }]));
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -426,8 +432,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
 
   const [available, setAvailable] = useState(0);
   const compact = available > 0 && available < 700;
-  // Reserve the action area and hole cards before sizing the felt. Detailed boards retain a readable minimum;
-  // when the rest cannot fit, only the opponents/board scroll while betting and your hand stay in reach.
+  // Reserve the action area and hole cards before sizing the felt; a board that can't fit shrinks to the room left.
   const feltBudget = available > 0 ? available - (compact ? 260 : 310) - 180 : undefined;
 
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
@@ -439,7 +444,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
     speakerOk.current = slots.canShow;
   }, [slots.canShow]);
   useTableSounds(game, me?.id);
-  const odds = useOdds(hand, showsOdds(variantOf(game)));
+  const odds = useOdds(hand, showsOdds(variantOf(game)), variantOf(game));
   // At a showdown the winning five lift and glow and the rest grey out. Never while the hand is being played.
   const highlight = useHighlight(game, me);
   const lit = new Set(highlight?.best ?? []);
@@ -449,14 +454,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
 
   return (
     <View style={{ flex: 1 }} onLayout={(e) => setAvailable(e.nativeEvent.layout.height)}>
-      <ScrollView
-        style={{ flex: 1, minHeight: 0 }}
-        contentContainerStyle={{ flexGrow: 1, gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 8 }}
-      >
+      {/* The table is locked: it never scrolls or bounces (the felt shrinks to fit instead, see FeltOval). */}
+      <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 8 }}>
         <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
-        {/* Detailed boards keep their readable size; the table scrolls when it cannot fit above the fixed actions. */}
         <FeltOval game={game} me={me} heightLimit={feltBudget} />
-      </ScrollView>
+      </View>
       <View style={{ gap: 4, paddingTop: 4 }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: 112, justifyContent: 'flex-end' }}>
           {hand?.voting && mySeat && me ? (

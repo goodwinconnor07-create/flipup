@@ -30,7 +30,7 @@ export function ChallengeRow() {
   return (
     <View style={{ gap: spacing.sm }}>
       <SectionTitle title="Challenges" />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingVertical: spacing.xs, gap: spacing.sm }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md, marginTop: -8 + spacing.xs, marginBottom: -28 + spacing.xs }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 28, gap: spacing.sm }}>
         {CHALLENGES.map((c) => (
           <ChallengeCard key={c.id} challenge={c} best={bests[c.id]} />
         ))}

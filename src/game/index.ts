@@ -3,6 +3,7 @@
 export * from './cards';
 export * from './evaluate';
 export * from './equity';
+export * from './runoutOdds';
 export * from './types';
 export * from './holdem';
 export * from './variants';

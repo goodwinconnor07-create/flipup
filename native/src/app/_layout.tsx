@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
 import { InviteBanner } from '@/components/invite-banner';
+import { LaunchCover } from '@/components/launch-cover';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useFriendWatch } from '@/state/pals';
 import { startStore } from '@/state/purchase';
@@ -96,6 +97,7 @@ export default function RootLayout() {
       </Stack>
       {/* A friend's table invite drops in over any screen. */}
       <InviteBanner />
+      <LaunchCover />
     </ThemeProvider>
   );
 }

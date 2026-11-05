@@ -54,7 +54,7 @@ export function StudyRoom({ mood, energy = 0, children }: { mood: Mood; energy?:
         <View style={{ position: 'absolute', left: '-30%', right: '-30%', top: '4%', height: '58%', ...gradient('radial-gradient(ellipse at 50% 45%, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.03) 38%, transparent 66%)') }} />
         <Animated.View style={[{ position: 'absolute', left: '-40%', right: '-40%', top: '-10%', height: '80%', ...gradient(`radial-gradient(ellipse at 50% 40%, ${glow} 0%, transparent 62%)`) }, verdictStyle]} />
         {energy > 0 && (
-          <Animated.View style={[{ position: 'absolute', left: '-50%', right: '-50%', bottom: '-25%', height: '75%', ...gradient('radial-gradient(ellipse at 50% 60%, rgba(245,183,0,0.22) 0%, rgba(110,75,255,0.16) 35%, transparent 65%)') }, pulseStyle]} />
+          <Animated.View style={[{ position: 'absolute', left: '-50%', right: '-50%', bottom: '-25%', height: '75%', ...gradient('radial-gradient(ellipse at 50% 60%, rgba(245,183,0,0.22) 0%, rgba(70,120,255,0.16) 35%, transparent 65%)') }, pulseStyle]} />
         )}
       </View>
       {children}

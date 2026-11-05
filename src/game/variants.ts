@@ -219,7 +219,7 @@ export const boardSize = (v: Variant) => streetCards(v, 'flop') + streetCards(v,
 /** Bets are capped at the size of the pot. */
 export const potLimit = (v: Variant) => v === 'ghost';
 /** Win odds can be worked out for the all-in run-out (only plain Hold'em: the others score hands differently). */
-export const showsOdds = (v: Variant) => v === 'holdem';
+export const showsOdds = (v: Variant) => v !== 'imposter';
 /** Everyone puts in this many big blinds before the blinds (dead money in the middle). */
 export const anteBigBlinds = (v: Variant) => (v === 'imposter' ? 1 : 0);
 /** Imposter needs three players to be a guessing game. */

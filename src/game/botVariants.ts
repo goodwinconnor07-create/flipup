@@ -31,7 +31,7 @@ export function variantScore(v: Variant, hole: Card[], board: Card[]): number {
 }
 
 /** The rest of the board, dealt by the variant's rules. */
-function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => number): Card[] {
+export function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => number): Card[] {
   const out = board.slice();
   const target = boardSize(v);
   const hadRiver = out.length >= 5;

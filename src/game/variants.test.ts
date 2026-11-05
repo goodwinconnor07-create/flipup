@@ -11,6 +11,7 @@ import {
   options,
   parseAction,
   redactForDevice,
+  runoutOdds,
   seededRng,
   VARIANTS,
   wildHand,
@@ -58,6 +59,39 @@ describe('Crazy Pineapple', () => {
   it('keeps the two cards that make the best hand', () => {
     expect(keepTwo(h('Ah Kd 7c'), h('7d 7s 2h')).sort()).toEqual(['7c', 'Ah']);
     expect(keepTwo(h('Qs Qd 3c'), [])).toEqual(['Qs', 'Qd']);
+  });
+});
+
+describe('run-out odds in every game', () => {
+  const share = (e: { win: number[]; tie: number[] }) => e.win.reduce((a, b) => a + b, 0) + e.tie.reduce((a, b) => a + b, 0) / 2;
+
+  it('uses the wild deuces', () => {
+    // A pair of deuces is four of a kind with the flop's pair in Crazy Deuces, and loses to aces in Hold'em.
+    expect(runoutOdds('deuces', [h('2c 2d'), h('Ah Ad')], h('Kc Ks 7h')).win[0]).toBeGreaterThan(0.95);
+    expect(runoutOdds('holdem', [h('2c 2d'), h('Ah Ad')], h('Kc Ks 7h')).win[0]).toBeLessThan(0.2);
+  });
+
+  it('leaves the ghost out until it shows, then counts it', () => {
+    const board = h('Kc 9d 4h 2s 7c');
+    expect(runoutOdds('ghost', [h('Ah Qd'), h('Js Jd')], board).win[1]).toBe(1);
+    const shown = runoutOdds('ghost', [h('Ah Qd'), h('Js Jd')], board, h('Kd Kh'));
+    expect(shown.win).toEqual([0, 0]);
+  });
+
+  it('plays the extra rivers, the cross, the clock and Bean Stalk out, and adds up to the whole pot', () => {
+    for (const [v, hands, board] of [
+      ['pittsburgh', [h('Ah Kh'), h('Qs Qd')], h('2h 7h 9c 4d')],
+      ['redriver', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c 4d')],
+      ['crucifix', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c')],
+      ['circle', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c')],
+      ['beanstalk', [h('Ah Kh Td'), h('Qs Qd 3c')], h('2h 7c 9c')],
+      ['dice', [h('Ah Kh'), h('Qs Qd')], h('2h 7c 9c 4d')],
+      ['bjholdem', [h('Ah 9d'), h('Qs Qd')], h('2h 7c 9c')],
+    ] as [Variant, string[][], string[]][]) {
+      const e = runoutOdds(v, hands, board);
+      expect(share(e), v).toBeCloseTo(1, 5);
+      expect(e.win.every((w) => w > 0 && w < 1), v).toBe(true);
+    }
   });
 });
 
@@ -130,6 +164,36 @@ describe('variant tables', { timeout: TABLE_MS }, () => {
         else if (hand.board.length === 0) expect(s.cards.length).toBe(3);
       }
     });
+  });
+
+  it('stops an all-in run-out on the flop in Crazy Pineapple so each player throws a card away', () => {
+    // The host shoves every hand; whenever a bot calls, the run-out must wait on the flop for the host's discard.
+    let game = table('pineapple', 1, 1000);
+    const rng = seededRng(3);
+    let clock = 0;
+    let asked = 0;
+    for (let i = 0; i < 4000 && game.status === 'playing' && asked < 3; i++) {
+      const hand = game.hand;
+      const host = game.players.find((p) => p.deviceId === HOST)!;
+      const mine = hand?.seats.find((s) => s.playerId === host.id);
+      let r;
+      if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
+        expect(hand.board.length).toBe(3);
+        if (hand.runout) asked++;
+        r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[0] }, { deviceId: HOST, now: clock, rng });
+        expect(r.ok && r.game.hand?.seats.find((s) => s.playerId === host.id)?.cards).toEqual(mine.cards.slice(1));
+      } else if (hand && !hand.result && hand.toAct === host.id && mine) {
+        r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' }, { deviceId: HOST, now: clock, rng });
+      } else {
+        // The run-out never deals the turn while someone still holds three cards.
+        if (hand && !hand.result && hand.board.length >= 4) for (const s of hand.seats) if (!s.folded) expect(s.cards.length).toBe(2);
+        clock = (game.wakeAt ?? clock) + 1;
+        r = applyAction(game, { type: 'tick' }, { deviceId: 'server', now: clock, rng });
+      }
+      if (!r.ok) throw new Error(r.error);
+      game = r.game;
+    }
+    expect(asked).toBeGreaterThan(0);
   });
 
   it('deals three rivers in Pittsburgh', () => {

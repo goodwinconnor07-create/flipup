@@ -65,9 +65,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        backgroundColor: '#000000',
+        // The night blue of the launch cover (components/launch-cover.tsx), with no picture, so it hands over seamlessly.
+        backgroundColor: '#070f2a',
         image: './assets/images/splash-icon.png',
-        imageWidth: 76,
+        imageWidth: 1,
       },
     ],
   ],

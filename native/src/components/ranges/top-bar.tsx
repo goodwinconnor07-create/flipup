@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
-import { SETTLE } from '@/motion/presets';
+import { EASE_OUT, SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import type { Grade } from '@train/ranges/model';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
@@ -113,7 +113,7 @@ function BlitzClock({ endsAt, multiplier, score }: { endsAt: number; multiplier:
   }, [secs]);
   const width = useSharedValue(1);
   useEffect(() => {
-    width.set(withTiming(left / 60_000, { duration: 100 }));
+    width.set(withTiming(left / 60_000, { duration: 100, easing: EASE_OUT }));
   }, [left, width]);
   const bar = useAnimatedStyle(() => ({ width: `${Math.round(width.get() * 1000) / 10}%` }));
   const hot = secs <= 10;

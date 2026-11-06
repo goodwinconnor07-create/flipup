@@ -28,7 +28,8 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { joinLink } from '@/state/api';
 import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, useTable } from '@/state/session';
-import { gradient, radius, spacing, useColors, usePlainColors } from '@/theme';
+import { EASE_OUT, exitMs } from '@/motion/presets';
+import { gradient, motion, radius, spacing, useColors, usePlainColors } from '@/theme';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -136,8 +137,8 @@ function Notice({ notice }: { notice: { id: number; text: string } }) {
   return (
     <Animated.View
       key={notice.id}
-      entering={FadeIn}
-      exiting={FadeOut}
+      entering={FadeIn.duration(motion.base).easing(EASE_OUT)}
+      exiting={FadeOut.duration(motion.exit).easing(EASE_OUT)}
       style={{ position: 'absolute', top: 110, left: spacing.md, right: spacing.md, zIndex: 10, alignItems: 'center' }}
     >
       <Pill text={notice.text} />
@@ -270,8 +271,8 @@ function BlindNews({ game }: { game: Game }) {
       key={news.id}
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
-      entering={reduce ? FadeIn : SlideInUp.duration(380)}
-      exiting={reduce ? FadeOut : SlideOutUp.duration(320)}
+      entering={reduce ? FadeIn : SlideInUp.duration(380).easing(EASE_OUT)}
+      exiting={reduce ? FadeOut : SlideOutUp.duration(exitMs(380)).easing(EASE_OUT)}
       pointerEvents="none"
       style={{
         position: 'absolute',

@@ -11,7 +11,8 @@ import { stepsFor, ZOOMS } from '@/components/how-to/steps';
 import { Icon } from '@/components/icon';
 import { isVariant, variantInfo, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { radius, ROUNDED, spacing } from '@/theme';
+import { EASE_OUT } from '@/motion/presets';
+import { motion, radius, ROUNDED, spacing } from '@/theme';
 
 /** The pictures are a 390 × 844 phone screen. */
 const ASPECT = 390 / 844;
@@ -143,7 +144,7 @@ export default function HowToPlay() {
         </View>
 
         <View style={{ paddingHorizontal: spacing.lg }}>
-          <Animated.View key={index} entering={reduce ? undefined : FadeIn.duration(220)} accessibilityLiveRegion="polite" style={{ minHeight: 118, gap: spacing.xs }}>
+          <Animated.View key={index} entering={reduce ? undefined : FadeIn.duration(motion.base).easing(EASE_OUT)} accessibilityLiveRegion="polite" style={{ minHeight: 118, gap: spacing.xs }}>
             <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: 13, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
               {info.name}
               {steps.length ? ` · ${index + 1} of ${steps.length}` : ''}

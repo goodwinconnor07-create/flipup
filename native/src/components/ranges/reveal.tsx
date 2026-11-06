@@ -3,12 +3,12 @@ import { ScrollView, Text, View } from 'react-native';
 import Animated, { Easing, FadeIn, SlideInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { popIn } from '@/motion/presets';
+import { EASE_OUT, popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import type { Character, Pile } from '@/state/range-logic';
 import type { HandNumbers } from '@/state/ranges';
 import { bb, type Grade, type OptionId, type Pos } from '@train/ranges/model';
-import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
+import { brand, gradient, motion, radius, ROUNDED, spacing } from '@/theme';
 
 import { Icon, type IconName } from '../icon';
 import { LivingCard } from '../living-card';
@@ -60,7 +60,7 @@ export function Reveal(p: RevealProps) {
   const pile = p.piles[Math.min(tab, p.piles.length - 1)];
   return (
     <Animated.View
-      entering={reduce ? FadeIn.duration(200) : SlideInDown.springify().mass(0.9).damping(19).stiffness(170)}
+      entering={reduce ? FadeIn.duration(200) : SlideInDown.duration(motion.base).easing(EASE_OUT)}
       style={{ position: 'absolute', left: 0, right: 0, bottom: 0, paddingHorizontal: spacing.xs, paddingBottom: Math.max(insets.bottom - spacing.xs, spacing.xs) }}
     >
       <LivingCard colors={head.colors} glow={head.glow} glow2="rgba(110, 75, 255, 0.22)" radius={radius.xl} grain={0} style={{ maxHeight: p.maxHeight }}>

@@ -5,7 +5,8 @@ import Animated, { FadeIn, LinearTransition } from 'react-native-reanimated';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import type { Pile, PileGroup, PileId } from '@/state/range-logic';
 import type { Role } from '@train/ranges/model';
-import { brand, radius, ROUNDED, spacing } from '@/theme';
+import { EASE_IN_OUT, EASE_OUT } from '@/motion/presets';
+import { brand, motion, radius, ROUNDED, spacing } from '@/theme';
 
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
@@ -36,7 +37,7 @@ export function Piles({ piles, facing, light }: { piles: Pile[]; facing: boolean
   const sub = light ? 'rgba(60,60,67,0.6)' : 'rgba(255,255,255,0.6)';
   const shown = piles.find((p) => p.id === open);
   return (
-    <Animated.View layout={reduce ? undefined : LinearTransition.duration(250)} style={{ gap: spacing.sm }}>
+    <Animated.View layout={reduce ? undefined : LinearTransition.duration(motion.base).easing(EASE_IN_OUT)} style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', gap: spacing.xs }}>
         {piles.map((p, i) => (
           <PressableScale
@@ -66,7 +67,7 @@ export function Piles({ piles, facing, light }: { piles: Pile[]; facing: boolean
         ))}
       </View>
       {shown && (
-        <Animated.View entering={FadeIn.duration(200)} style={{ gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: light ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)' }}>
+        <Animated.View entering={FadeIn.duration(motion.base).easing(EASE_OUT)} style={{ gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: light ? 'rgba(0,0,0,0.04)' : 'rgba(255,255,255,0.06)' }}>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1, color: sub }}>
             {PILE[shown.id].line.toUpperCase()}
           </Text>

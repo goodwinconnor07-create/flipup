@@ -2,13 +2,13 @@ import { useEffect } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
-import { popIn, stagger } from '@/motion/presets';
+import { EASE_OUT, popIn, stagger } from '@/motion/presets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { scenarioById } from '@/state/ranges';
 import type { Grade } from '@train/ranges/model';
-import { brand, radius, ROUNDED, spacing } from '@/theme';
+import { brand, motion, radius, ROUNDED, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon, type IconName } from '../icon';
@@ -97,7 +97,7 @@ export function EndCard({
             {summary.blitz ? `points · ${summary.blitz.hands} hands · best run ${summary.blitz.run}` : 'points'}
           </Text>
           {newBest && (
-            <Animated.View entering={FadeInDown.delay(1300)} style={{ paddingHorizontal: 12, height: 28, borderRadius: 14, justifyContent: 'center', backgroundColor: brand.gold }}>
+            <Animated.View entering={FadeInDown.delay(1300).duration(motion.base).easing(EASE_OUT)} style={{ paddingHorizontal: 12, height: 28, borderRadius: 14, justifyContent: 'center', backgroundColor: brand.gold }}>
               <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 14, fontWeight: '800', color: brand.goldInk }}>
                 New best
               </Text>

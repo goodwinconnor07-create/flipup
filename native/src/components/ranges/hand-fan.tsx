@@ -2,9 +2,9 @@ import { useEffect, useRef } from 'react';
 import { Text, View, type GestureResponderEvent } from 'react-native';
 import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
-import { SETTLE } from '@/motion/presets';
+import { EASE_OUT, SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { spacing } from '@/theme';
+import { motion, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
@@ -48,11 +48,11 @@ export function HandFan({
 
   useEffect(() => {
     if (state === 'live') {
-      gone.set(withTiming(0, { duration: 200 }));
+      gone.set(withTiming(0, { duration: motion.exit, easing: EASE_OUT }));
       y.set(withSpring(0, SPRING));
     } else if (state === 'mucked') {
       gone.set(withTiming(1, { duration: 420, easing: Easing.bezier(0.23, 1, 0.32, 1) }));
-      y.set(withTiming(0, { duration: 200 }));
+      y.set(withTiming(0, { duration: motion.exit, easing: EASE_OUT }));
     } else y.set(withSpring(0, SPRING));
     lift.set(withSpring(0, SPRING));
   }, [state, gone, y, lift]);
@@ -76,7 +76,7 @@ export function HandFan({
         return;
       }
       if (canSwipe && dy < -THRESHOLD) {
-        y.set(withTiming(-110, { duration: 160 }));
+        y.set(withTiming(-110, { duration: motion.exit, easing: EASE_OUT }));
         onSwipe('up');
       } else if (canSwipe && dy > THRESHOLD) onSwipe('down');
       else y.set(withSpring(0, SPRING));
@@ -111,7 +111,7 @@ export function HandFan({
         </Animated.View>
       </Animated.View>
       {hint && canSwipe && (
-        <Animated.View entering={FadeIn.delay(400)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} accessible={false} importantForAccessibility="no-hide-descendants">
+        <Animated.View entering={FadeIn.delay(400).duration(motion.base).easing(EASE_OUT)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} accessible={false} importantForAccessibility="no-hide-descendants">
           <Icon name="arrow.up" size={12} color="rgba(255,255,255,0.55)" />
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.55)' }}>
             Swipe up to {up} · down to {down}

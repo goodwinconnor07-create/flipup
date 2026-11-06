@@ -52,10 +52,19 @@ are in `motion` (`src/design/tokens.ts`), the pure helpers in `native/src/motion
 | 19 | Rubber band past bounds | `rubber()`: exact to the limit, then diminishing resistance, never a wall (`SwipeAway`) |
 | 20 | Reuse the same layout id | when a thing opens into a bigger version of itself, animate the same view, not a replacement: the invite ticket's QR code is drawn once and scales (`GrowingQR`), and "Show the math" turns one chevron (`Turn`) instead of swapping two; piles use `LinearTransition`. On the web use a View Transition with a shared `view-transition-name` |
 
+**The table is covered too** (the owner's call, 6 November 2026: app-wide). Bubbles (`bubblePop`: 95% to 100%, 250ms
+ease-out, `bubbleOut` 200ms), the raise panel (`rise()`/`sink()` from the bottom, anchored at the Raise button's edge, its
+four parts settling 30ms apart with `detail()`), the hand-over notices and the news banner (ease-out, exit 80% of the
+entrance), the slider thumb (held: exactly under the finger), the pot chip pulse, seats' bubbles, dice and felt pills,
+and the reveal and guess panels (timing, not springs). One exception, on purpose: **dealing cadence**. Cards turn over
+one after another at their own beat (the flop 160ms apart, your two cards 180ms apart, the long flip itself 650ms),
+because a deal is a physical sequence the eye follows, not a list settling; the 30ms stagger is for rows and parts.
+A Swap on a button is keyed by its label, never by a number that changes while you drag (the raise amount updates in
+place).
+
 Every rule is in the code now; 1 to 15, 18 and 19 and the shared button labels are also checked by tests. Whenever
 a screen changes an icon, a label or a panel, use `Swap`/`SwapIcon` or keep one object and animate it, and say in
-the change which rules it touched. Not done yet: the table's Raise button opening into the raise panel is still a
-replacement, not one object (the table's feel is on the owner's keep-as-is list), and nothing here has been run on
+the change which rules it touched. Nothing here has been run on
 a phone, so the 4pt icon blur in particular needs a look on a device. Reduce Motion still wins over all of them. Where a rule and a celebration collide (the confetti and the
 win banner), the rule stays and the celebration comes from colour, confetti and haptics, not from overshoot.
 

@@ -68,6 +68,19 @@ describe('the app source', () => {
     const bad = files.filter(({ text }) => /\b(ZoomIn|ZoomOut|BounceIn|BounceOut|Easing\.bounce|Easing\.elastic)\b/.test(text)).map((x) => x.f);
     expect(bad).toEqual([]);
   });
+  it('rule 13: no springified layout animation (they overshoot); use a timing with EASE_OUT', () => {
+    const bad = files.filter(({ text }) => /\.springify\(/.test(text)).map((x) => x.f);
+    expect(bad).toEqual([]);
+  });
+  it('rule 14: the raise slider never tweens its thumb while a finger is down', () => {
+    const t = files.find((x) => x.f === 'components/table/raise-slider.tsx')?.text ?? '';
+    expect(t).toContain('if (down.current) return;');
+    expect(t).toContain('if (down.current) pos.set(f);');
+  });
+  it('rule 14: a label that shows a changing amount keys its Swap by the label, not the amount', () => {
+    const t = files.find((x) => x.f === 'components/table/actions.tsx')?.text ?? '';
+    expect(t).toContain('<Swap id={label} kind="text">');
+  });
   it('rule 1: nothing eases in on its way onto the screen', () => {
     const bad = files.filter(({ text }) => /Easing\.in\(|Easing\.ease\b/.test(text)).map((x) => x.f);
     expect(bad).toEqual([]);

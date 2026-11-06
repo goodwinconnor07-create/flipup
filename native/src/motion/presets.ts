@@ -4,7 +4,7 @@ import { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown, ReduceMotion, withTim
 
 import { motion } from '@design/tokens';
 
-import { settleSpring } from './rules';
+import { settleSpring, stagger } from './rules';
 
 export { arcPoint, exitMs, knobStretch, rubber, settleSpring, stagger } from './rules';
 
@@ -78,6 +78,38 @@ const textOut: EntryExitAnimationFunction = () => {
     animations: { opacity: withTiming(0, OUT), transform: [{ translateY: withTiming(-SWAP_SLIDE, OUT) }] },
   } as never;
 };
+
+// A panel that opens from the bottom, where its trigger is (rules 11 and 12): it rises 40pt from 95%, anchored at its
+// bottom edge, and sinks back the same way, 20% quicker. Its parts settle one after another (`detail`).
+const riseIn: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ translateY: 40 }, { scale: motion.popFrom }] },
+    animations: { opacity: withTiming(1, IN), transform: [{ translateY: withTiming(0, IN) }, { scale: withTiming(1, IN) }] },
+  } as never;
+};
+const sinkOut: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 1, transform: [{ translateY: 0 }, { scale: 1 }] },
+    animations: { opacity: withTiming(0, OUT), transform: [{ translateY: withTiming(40, OUT) }, { scale: withTiming(motion.popFrom, OUT) }] },
+  } as never;
+};
+
+/** A panel opening from its trigger at the bottom of the screen (the raise panel). Set `transformOrigin: '50% 100%'` on it. */
+export function rise(reduce: boolean) {
+  return reduce ? FadeIn.duration(motion.exit) : riseIn;
+}
+
+/** The same panel closing. */
+export function sink(reduce: boolean) {
+  return reduce ? FadeOut.duration(motion.exit) : sinkOut;
+}
+
+/** Part `i` of a panel that has just opened: it fades in 30ms after the one before (rule 6). */
+export function detail(i: number, reduce: boolean) {
+  return reduce ? undefined : FadeIn.duration(motion.base).easing(EASE_OUT).delay(stagger(i + 1));
+}
 
 /** What arrives when one thing replaces another (see `Swap`). Under Reduce Motion it's a short fade. */
 export function swapIn(kind: 'icon' | 'text', reduce: boolean) {

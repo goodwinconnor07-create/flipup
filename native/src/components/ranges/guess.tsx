@@ -4,7 +4,8 @@ import Animated, { SlideInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { brand, cardColors, radius, ROUNDED, spacing } from '@/theme';
+import { EASE_OUT } from '@/motion/presets';
+import { brand, cardColors, motion, radius, ROUNDED, spacing } from '@/theme';
 
 import { Button } from '../button';
 import { LivingCard } from '../living-card';
@@ -19,7 +20,7 @@ export function GuessCard({ pickLabel, onDone }: { pickLabel: string; onDone: (g
   const reduce = useReduceMotion();
   const [value, setValue] = useState(40);
   return (
-    <Animated.View entering={reduce ? undefined : SlideInDown.springify().mass(0.8).damping(18)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md) }}>
+    <Animated.View entering={reduce ? undefined : SlideInDown.duration(motion.base).easing(EASE_OUT)} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md) }}>
       <LivingCard colors={cardColors.night} radius={radius.xl} grain={0} style={{ padding: spacing.lg, gap: spacing.md }}>
         <View style={{ gap: 2 }}>
           <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: brand.gold }}>

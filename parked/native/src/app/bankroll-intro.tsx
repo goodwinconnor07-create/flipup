@@ -2,7 +2,7 @@ import { router, Stack } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { NightSheet, SheetHeading } from '@/components/ranges/night-sheet';
+import { NightSheet, SheetHeading } from '@/components/night-sheet';
 import { BANKROLL_RULES } from '@/state/bankroll';
 import { brand, spacing } from '@/theme';
 

@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
-import type { ReactNode } from 'react';
-import { Platform, useColorScheme, View, type ScrollViewProps } from 'react-native';
+import type { ComponentRef, ReactNode, RefObject } from 'react';
+import { Platform, useColorScheme, View, type ScrollView, type ScrollViewProps } from 'react-native';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +16,7 @@ import { ThemedText } from './themed-text';
  * buttons on the same line, all scrolling with the page. Once the page scrolls, a blur fades in under the status bar
  * so nothing reads through the clock. The screen hides the stack's header itself (`headerShown: false`).
  */
-export function TabScreen({ title, accessory, children, contentStyle, ...scroll }: { title: string; accessory?: ReactNode; children: ReactNode; contentStyle?: ScrollViewProps['contentContainerStyle'] } & Omit<ScrollViewProps, 'contentContainerStyle' | 'children'>) {
+export function TabScreen({ title, accessory, children, contentStyle, scrollRef, ...scroll }: { title: string; accessory?: ReactNode; children: ReactNode; contentStyle?: ScrollViewProps['contentContainerStyle']; /** To scroll the page from outside (Range training's Next hand goes back to the top). */ scrollRef?: RefObject<ComponentRef<typeof ScrollView> | null> } & Omit<ScrollViewProps, 'contentContainerStyle' | 'children'>) {
   const insets = useSafeAreaInsets();
   const dark = useColorScheme() === 'dark';
   const y = useSharedValue(0);
@@ -30,6 +30,7 @@ export function TabScreen({ title, accessory, children, contentStyle, ...scroll 
     <View style={{ flex: 1 }}>
       <Animated.ScrollView
         {...scroll}
+        ref={scrollRef as never}
         onScroll={onScroll}
         scrollEventThrottle={16}
         contentInsetAdjustmentBehavior="automatic"

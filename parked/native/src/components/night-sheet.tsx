@@ -3,12 +3,12 @@ import { Text, View } from 'react-native';
 
 import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
 
-import { GrainBackground } from '../grain-background';
-import { SheetScroll } from '../sheet-scroll';
+import { GrainBackground } from './grain-background';
+import { SheetScroll } from './sheet-scroll';
 
 /**
- * Range training's sheets (the start sheet, why, poker words, your tricks) live in the same room as the table: the
- * night grain page, white type, gold for what matters. No title bar; each sheet draws its own heading.
+ * A night sheet (the Bankroll sheets): the moving blue page, white type, gold for what matters. No title bar; each
+ * sheet draws its own heading.
  */
 export function NightSheet({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
   return (

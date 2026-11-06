@@ -4,7 +4,7 @@ import { Alert, Share, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
-import { Kicker, NightSheet, panel, SheetHeading } from '@/components/ranges/night-sheet';
+import { Kicker, NightSheet, panel, SheetHeading } from '@/components/night-sheet';
 import { BANKROLL, dayOfSeason, daysToNextCut, msToMidnight, seasonName, seasonOf } from '@/engine';
 import { showRewardedAd } from '@/state/ads';
 import { BANKROLL_RULES, rebuyBankroll, sitBankroll, useBankroll, type BankrollView } from '@/state/bankroll';

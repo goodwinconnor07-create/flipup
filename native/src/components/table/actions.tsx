@@ -220,7 +220,13 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
         ) : (
           <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="blue" disabled={sending} onPress={() => act('call')} />
         )}
-        {o.canRaise && <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />}
+        {o.canRaise &&
+          (o.minTo >= o.maxTo ? (
+            // The smallest raise is already everything you have: no sizer, just All in.
+            <TableButton label="All in" sub={chips(o.maxTo)} tone="raise" disabled={sending} onPress={() => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' })} />
+          ) : (
+            <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />
+          ))}
       </Row>
     </View>
   );

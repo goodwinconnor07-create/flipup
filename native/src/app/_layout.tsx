@@ -5,6 +5,7 @@ import { Appearance, useColorScheme } from 'react-native';
 
 import { InviteBanner } from '@/components/invite-banner';
 import { LaunchCover } from '@/components/launch-cover';
+import { ThumbSnapper } from '@/components/thumb-snaps';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useFriendWatch } from '@/state/pals';
 import { startStore } from '@/state/purchase';
@@ -102,6 +103,8 @@ export default function RootLayout() {
       {/* A friend's table invite drops in over any screen. */}
       <InviteBanner />
       <LaunchCover />
+      {/* Saves the game tiles as pictures in the background, so lists of games show images, not SVGs. */}
+      <ThumbSnapper />
     </ThemeProvider>
   );
 }

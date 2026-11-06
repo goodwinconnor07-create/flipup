@@ -430,3 +430,5 @@ still join one for free. `unlockToHost()` in `native/src/state/unlock.ts` opens 
   locked out of Premium games and looks. Switch it to `"1"` when the iPhone app is the client that sells them.
 - **Family Sharing** is off for the purchase (a shared purchase is refused by the check).
 - **Not done:** Apple offer codes (unconfirmed for non-consumables), a referral reward (see `docs/PREMIUM_PLAN.md`).
+
+- Contacts (November 2026): the Invite from contacts sheet reads names and phone numbers on the phone only, after the system permission prompt (`NSContactsUsageDescription` from the expo-contacts plugin). Nothing is uploaded, so the privacy label needs no Contacts data type; say so in review notes if asked.

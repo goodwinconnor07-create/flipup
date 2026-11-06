@@ -95,6 +95,7 @@ export default function RootLayout() {
         <Stack.Screen name="username" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Username' }} />
         <Stack.Screen name="friend/[code]" options={{ ...sheet, sheetAllowedDetents: [0.7, 1], title: 'Friend' }} />
         <Stack.Screen name="friend-requests" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'Friend requests' }} />
+        <Stack.Screen name="invite-contacts" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Invite friends' }} />
         <Stack.Screen name="add-friend" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Add a friend' }} />
         {/* Join with a code: Play's round button. The keyboard comes up as it opens; a table or party code, or a QR code. */}
         <Stack.Screen name="join" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Join' }} />

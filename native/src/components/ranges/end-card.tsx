@@ -57,10 +57,13 @@ export function EndCard({
   useEffect(() => {
     if (stars == null) return;
     const timers = Array.from({ length: stars }, (_, i) =>
-      setTimeout(() => {
-        haptic.tap();
-        playSound('pop');
-      }, 350 + i * 260),
+      setTimeout(
+        () => {
+          haptic.tap();
+          playSound('pop');
+        },
+        350 + i * 260,
+      ),
     );
     if (stars === 3) timers.push(setTimeout(() => haptic.success(), 350 + 3 * 260));
     return () => timers.forEach(clearTimeout);
@@ -69,7 +72,15 @@ export function EndCard({
   return (
     <View style={{ flex: 1 }}>
       {card}
-      <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={{ paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + spacing.xl, paddingHorizontal: spacing.md, gap: spacing.xl }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="never"
+        contentContainerStyle={{
+          paddingTop: insets.top + spacing.xs,
+          paddingBottom: insets.bottom + spacing.xl,
+          paddingHorizontal: spacing.md,
+          gap: spacing.xl,
+        }}
+      >
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <RoundButton icon="xmark" label="Done" onPress={onDone} />
           <RoundButton icon="square.and.arrow.up" label="Share" onPress={() => void share()} />
@@ -82,20 +93,47 @@ export function EndCard({
           {stars != null && (
             <View style={{ flexDirection: 'row', gap: spacing.sm }} accessibilityLabel={`${stars} of 3 stars`}>
               {[0, 1, 2].map((i) => (
-                <Animated.View key={i} entering={reduce ? undefined : ZoomIn.delay(350 + i * 260).springify().mass(0.7).damping(9)}>
+                <Animated.View
+                  key={i}
+                  entering={
+                    reduce
+                      ? undefined
+                      : ZoomIn.delay(350 + i * 260)
+                          .springify()
+                          .mass(0.7)
+                          .damping(9)
+                  }
+                >
                   <Icon name="star.fill" size={i === 1 ? 64 : 50} color={i < stars ? brand.gold : 'rgba(255,255,255,0.14)'} />
                 </Animated.View>
               ))}
             </View>
           )}
-          <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 76, lineHeight: 84, fontWeight: '800', color: '#ffffff', fontVariant: ['tabular-nums'] }} accessibilityLabel={`${summary.score} points`}>
+          <Text
+            maxFontSizeMultiplier={1.2}
+            style={{
+              fontFamily: ROUNDED,
+              fontSize: 76,
+              lineHeight: 84,
+              fontWeight: '800',
+              color: '#ffffff',
+              fontVariant: ['tabular-nums'],
+            }}
+            accessibilityLabel={`${summary.score} points`}
+          >
             {Math.round(score)}
           </Text>
-          <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}>
+          <Text
+            maxFontSizeMultiplier={1.4}
+            style={{ fontSize: 15, fontWeight: '700', color: 'rgba(255,255,255,0.7)', textAlign: 'center' }}
+          >
             {summary.blitz ? `points · ${summary.blitz.hands} hands · best run ${summary.blitz.run}` : 'points'}
           </Text>
           {newBest && (
-            <Animated.View entering={FadeInDown.delay(1300)} style={{ paddingHorizontal: 12, height: 28, borderRadius: 14, justifyContent: 'center', backgroundColor: brand.gold }}>
+            <Animated.View
+              entering={FadeInDown.delay(1300)}
+              style={{ paddingHorizontal: 12, height: 28, borderRadius: 14, justifyContent: 'center', backgroundColor: brand.gold }}
+            >
               <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 14, fontWeight: '800', color: brand.goldInk }}>
                 New best
               </Text>
@@ -103,9 +141,23 @@ export function EndCard({
           )}
         </View>
 
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }} accessibilityLabel={`${results.filter((r) => r.grade === 'best').length} best plays out of ${results.length}`}>
+        <View
+          style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }}
+          accessibilityLabel={`${results.filter((r) => r.grade === 'best').length} best plays out of ${results.length}`}
+        >
           {results.slice(0, 36).map((r, i) => (
-            <Animated.View key={i} entering={reduce ? undefined : ZoomIn.delay(700 + i * 50)} style={{ width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: SQUARE_COLOUR[r.grade] }}>
+            <Animated.View
+              key={i}
+              entering={reduce ? undefined : ZoomIn.delay(700 + i * 50)}
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 9,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: SQUARE_COLOUR[r.grade],
+              }}
+            >
               <Icon name={GRADE_ICON[r.grade]} size={15} color={r.grade === 'best' ? brand.goldInk : 'rgba(255,255,255,0.8)'} />
             </Animated.View>
           ))}
@@ -122,12 +174,21 @@ export function EndCard({
 
         <View style={{ gap: spacing.xs }}>
           {onAgain && <Big title="Play again" onPress={onAgain} />}
-          {onFix && <Soft icon="arrow.counterclockwise" title={`Fix your misses (${results.filter((r) => r.grade === 'mistake').length})`} onPress={onFix} />}
+          {onFix && (
+            <Soft
+              icon="arrow.counterclockwise"
+              title={`Fix your misses (${results.filter((r) => r.grade === 'mistake').length})`}
+              onPress={onFix}
+            />
+          )}
           <Soft icon="square.and.arrow.up" title={busy ? 'Getting it ready…' : 'Share'} onPress={() => void share()} />
         </View>
 
         <View style={{ gap: spacing.xs }}>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: 'rgba(255,255,255,0.55)' }}>
+          <Text
+            maxFontSizeMultiplier={1.3}
+            style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: 'rgba(255,255,255,0.55)' }}
+          >
             THE HANDS
           </Text>
           {dedupe(results).map((r) => {
@@ -135,8 +196,31 @@ export function EndCard({
             if (!s) return null;
             const t = trickOf(s.concept);
             return (
-              <PressableScale key={r.id} accessibilityRole="button" accessibilityLabel={`${t.nick}: ${s.title}. Play it again`} onPress={() => onHand(r.id)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.07)' }}>
-                <View style={{ width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', backgroundColor: SQUARE_COLOUR[r.grade] }}>
+              <PressableScale
+                key={r.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${t.nick}: ${s.title}. Play it again`}
+                onPress={() => onHand(r.id)}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: spacing.sm,
+                  padding: spacing.sm,
+                  borderRadius: radius.md,
+                  borderCurve: 'continuous',
+                  backgroundColor: 'rgba(255,255,255,0.07)',
+                }}
+              >
+                <View
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: SQUARE_COLOUR[r.grade],
+                  }}
+                >
                   <Icon name={t.icon} size={17} color={r.grade === 'best' ? brand.goldInk : '#ffffff'} />
                 </View>
                 <View style={{ flex: 1 }}>
@@ -162,8 +246,23 @@ const dedupe = (rs: HandResult[]) => [...new Map(rs.map((r) => [r.id, r])).value
 
 function Big({ title, onPress }: { title: string; onPress: () => void }) {
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} outerStyle={{ alignSelf: 'stretch' }} style={{ borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: brand.paperEdge, paddingBottom: 4 }}>
-      <View style={{ minHeight: 58, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: brand.paper }}>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      outerStyle={{ alignSelf: 'stretch' }}
+      style={{ borderRadius: radius.md, borderCurve: 'continuous', boxShadow: '0 8px 24px rgba(0,0,0,0.28)' }}
+    >
+      <View
+        style={{
+          minHeight: 58,
+          borderRadius: radius.md,
+          borderCurve: 'continuous',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: brand.paper,
+        }}
+      >
         <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 21, fontWeight: '800', color: brand.violet }}>
           {title}
         </Text>
@@ -174,7 +273,21 @@ function Big({ title, onPress }: { title: string; onPress: () => void }) {
 
 function Soft({ icon, title, onPress }: { icon: IconName; title: string; onPress: () => void }) {
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={title} onPress={onPress} style={{ minHeight: 52, borderRadius: radius.md, borderCurve: 'continuous', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, backgroundColor: 'rgba(255,255,255,0.12)' }}>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      onPress={onPress}
+      style={{
+        minHeight: 52,
+        borderRadius: radius.md,
+        borderCurve: 'continuous',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: spacing.xs,
+        backgroundColor: 'rgba(255,255,255,0.12)',
+      }}
+    >
       <Icon name={icon} size={15} color="#ffffff" />
       <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
         {title}

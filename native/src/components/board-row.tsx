@@ -44,7 +44,7 @@ export function BoardRowView({ row, you, onPress, daily }: { row: BoardRow; you?
           @{row.username}
         </ThemedText>
         {row.badge ? <Pill text={row.badge.split(' ')[1] ?? row.badge} gold={row.badge.startsWith('TOP10 ')} /> : null}
-        {row.rebuy ? <Pill text="R" /> : null}
+        {row.rebuy ? <Pill text="Rebuy" /> : null}
         <View style={{ flex: 1 }} />
         <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'], color: colors.label }}>
           {(out ? row.peak : row.score).toLocaleString()}

@@ -354,12 +354,9 @@ export default function GlobalTab() {
   );
 }
 
-/** How far the button's chunky edge shows under it (the same as Open table's). */
-const EDGE = 4;
-
 /**
  * The page's one main action, drawn like Open table on Play with friends: full width, solid light with blue ink and
- * a pale edge under it, the brightest thing on the night page. Quieter (see-through, white ink) when there's nothing
+ * a soft shadow, the brightest thing on the night page. Quieter (see-through, white ink) when there's nothing
  * to play right now, though it still opens the sheet that says why.
  */
 function PlayButton({ title, line, ready, onPress }: { title: string; line: string; ready: boolean; onPress: () => void }) {
@@ -372,8 +369,7 @@ function PlayButton({ title, line, ready, onPress }: { title: string; line: stri
       style={{
         borderRadius: radius.md,
         borderCurve: 'continuous',
-        backgroundColor: ready ? brand.paperEdge : 'transparent',
-        paddingBottom: ready ? EDGE : 0,
+        boxShadow: ready ? '0 8px 24px rgba(0,0,0,0.28)' : undefined,
       }}
     >
       <View

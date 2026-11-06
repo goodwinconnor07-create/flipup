@@ -37,7 +37,7 @@ export function OpenTableButton({ title, line, busy, onPress }: { title: string;
         accessibilityState={{ busy: !!busy }}
         onPress={busy ? undefined : onPress}
         outerStyle={{ alignSelf: 'stretch' }}
-        style={{ borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: brand.paperEdge, paddingBottom: EDGE }}
+        style={{ borderRadius: radius.md, borderCurve: 'continuous', boxShadow: '0 8px 24px rgba(0,0,0,0.28)' }}
       >
         <View
           style={{

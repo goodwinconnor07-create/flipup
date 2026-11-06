@@ -28,6 +28,7 @@ import {
   blitzMultiplier,
   blitzPoints,
   charactersOf,
+  ENDLESS_SIZE,
   handPoints,
   lessonIds,
   mainOpponent,
@@ -42,15 +43,44 @@ import {
   type Sampled,
 } from '@/state/range-logic';
 import { noteDailyPick } from '@/state/bankroll';
-import { answerHand, dailyToday, finishSession, flameOf, noteDaily, noteSwipe, numbersFor, readRangeGrades, readRangePlay, scenarioById, allHands, useRangePlay } from '@/state/ranges';
+import {
+  answerHand,
+  dailyToday,
+  finishSession,
+  flameOf,
+  noteDaily,
+  noteSwipe,
+  numbersFor,
+  readRangeGrades,
+  readRangePlay,
+  scenarioById,
+  allHands,
+  useRangePlay,
+} from '@/state/ranges';
 import { ForceScheme, ROUNDED, spacing } from '@/theme';
 import { optionsFor, replay, type OptionId, type Pos } from '@train/ranges/model';
 
-const MODES: Mode[] = ['round', 'daily', 'blitz', 'hand', 'fix', 'lesson'];
-const TITLE: Record<Mode, string> = { round: 'Round', daily: 'Today’s three', blitz: 'Blitz', hand: 'One hand', fix: 'Fixing misses', lesson: 'Lesson' };
+const MODES: Mode[] = ['round', 'daily', 'blitz', 'hand', 'fix', 'lesson', 'endless'];
+const TITLE: Record<Mode, string> = {
+  round: 'Round',
+  daily: 'Today’s three',
+  blitz: 'Blitz',
+  hand: 'One hand',
+  fix: 'Fixing misses',
+  lesson: 'Lesson',
+  endless: 'Keep going',
+};
 /** How long each street of the story stays up. */
 const STEP_MS = 1300;
-const ACTION_SOUND: Record<OptionId, SoundName> = { fold: 'fold', check: 'check', call: 'chip', raise: 'chips', bet33: 'chip', bet75: 'chips', bet125: 'allin' };
+const ACTION_SOUND: Record<OptionId, SoundName> = {
+  fold: 'fold',
+  check: 'check',
+  call: 'chip',
+  raise: 'chips',
+  bet33: 'chip',
+  bet75: 'chips',
+  bet125: 'allin',
+};
 
 type Phase = 'countdown' | 'story' | 'decide' | 'guess' | 'reveal' | 'done';
 
@@ -71,9 +101,16 @@ function startSession(raw: { mode?: string; id?: string; ids?: string; concept?:
   const valid = (ids: string[]) => ids.filter((id) => !!scenarioById(id));
   if (mode === 'daily') {
     const d = dailyToday(readRangePlay());
-    return { mode, queue: d.ids, start: d.grades.length, day: d.day, prior: d.grades.map((g, i) => ({ id: d.ids[i], grade: g, points: POINTS[g], bonus: 0 })) };
+    return {
+      mode,
+      queue: d.ids,
+      start: d.grades.length,
+      day: d.day,
+      prior: d.grades.map((g, i) => ({ id: d.ids[i], grade: g, points: POINTS[g], bonus: 0 })),
+    };
   }
   if (mode === 'blitz') return { mode, queue: blitzIds(allHands()), start: 0, prior: [] };
+  if (mode === 'endless') return { mode, queue: roundIds(readRangeGrades(), allHands(), ENDLESS_SIZE), start: 0, prior: [] };
   if (mode === 'hand' && raw.id && scenarioById(raw.id)) return { mode, queue: [raw.id], start: 0, prior: [] };
   if (mode === 'lesson' && raw.concept) {
     const ids = lessonIds(raw.concept, readRangeGrades(), allHands());
@@ -296,6 +333,16 @@ function Trainer() {
     setSize('bet75');
   };
 
+  // Keep going has no end: closing it banks the points from the hands you answered.
+  const closeRun = () => {
+    if (mode === 'endless' && results.length > 0 && phase !== 'done')
+      finishSession(
+        mode,
+        results.reduce((n, x) => n + x.points + x.bonus, 0),
+      );
+    router.back();
+  };
+
   const restart = (next: { mode: Mode; id?: string; ids?: string; concept?: string }) => {
     const fresh = startSession(next);
     setSession(fresh);
@@ -320,14 +367,32 @@ function Trainer() {
   if (phase === 'done') {
     const grades = results.map((x) => x.grade);
     const misses = [...new Set(results.filter((x) => x.grade === 'mistake').map((x) => x.id))];
-    const day = session.day ? new Date(`${session.day}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) : undefined;
+    const day = session.day
+      ? new Date(`${session.day}T12:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+      : undefined;
     return (
       <StudyRoom mood={grades.every((g) => g === 'best') ? 'best' : 'idle'}>
         <EndCard
-          summary={{ mode, title, day, score, stars: mode === 'blitz' || mode === 'hand' ? null : starsFor(score, results.length), grades, flame: flameOf(play).days, blitz: mode === 'blitz' ? { hands: results.length, run: bestRun } : undefined }}
+          summary={{
+            mode,
+            title,
+            day,
+            score,
+            stars: mode === 'blitz' || mode === 'hand' ? null : starsFor(score, results.length),
+            grades,
+            flame: flameOf(play).days,
+            blitz: mode === 'blitz' ? { hands: results.length, run: bestRun } : undefined,
+          }}
           results={results}
           newBest={newBest}
-          onAgain={mode === 'daily' ? null : () => restart(mode === 'lesson' ? { mode, concept: session.concept } : { mode: mode === 'fix' || mode === 'hand' ? 'round' : mode })}
+          onAgain={
+            mode === 'daily'
+              ? null
+              : () =>
+                  restart(
+                    mode === 'lesson' ? { mode, concept: session.concept } : { mode: mode === 'fix' || mode === 'hand' ? 'round' : mode },
+                  )
+          }
           onFix={misses.length ? () => restart({ mode: 'fix', ids: misses.slice(0, 8).join(',') }) : null}
           onHand={(id) => restart({ mode: 'hand', id })}
           onDone={() => router.back()}
@@ -336,7 +401,13 @@ function Trainer() {
     );
   }
 
-  const seats: SeatInfo[] = s.opponents.map((o) => ({ pos: o.pos, who: chars[o.pos], type: o.type, live: r.live.includes(o.pos), bet: shown.final ? (r.bets[o.pos] ?? 0) : 0 }));
+  const seats: SeatInfo[] = s.opponents.map((o) => ({
+    pos: o.pos,
+    who: chars[o.pos],
+    type: o.type,
+    live: r.live.includes(o.pos),
+    bet: shown.final ? (r.bets[o.pos] ?? 0) : 0,
+  }));
   const openSeat = seats.find((x) => x.pos === open) ?? null;
   const decided = phase === 'reveal' || phase === 'guess';
   // The story line already says who checked; the price line only adds when nobody has acted yet.
@@ -351,14 +422,32 @@ function Trainer() {
           total={session.queue.length}
           index={index}
           done={results.map((x) => x.grade)}
-          label={mode === 'round' || mode === 'lesson' ? `${Math.min(index + 1, session.queue.length)} of ${session.queue.length}` : mode === 'blitz' ? `${score}` : TITLE[mode]}
+          label={
+            mode === 'round' || mode === 'lesson'
+              ? `${Math.min(index + 1, session.queue.length)} of ${session.queue.length}`
+              : mode === 'blitz'
+                ? `${score}`
+                : mode === 'endless'
+                  ? `${index + 1}`
+                  : TITLE[mode]
+          }
           concept={mode === 'blitz' ? null : s.concept}
           clock={mode === 'blitz' && endsAt ? { endsAt, multiplier: blitzMultiplier(run), score } : null}
-          onClose={() => router.back()}
+          onClose={closeRun}
         />
         <Seats seats={seats} open={open} reveal={sampled} onOpen={setOpen} />
-        <ThoughtBubble seat={openSeat} read={openSeat ? (shown.final ? betRead(s, r, openSeat.pos) : 'Watch how they play it.') : ''} shown={sampled?.find((h) => h.pos === open) ?? null} />
-        <FeltBoard board={s.board} shown={phase === 'countdown' ? 0 : shown.shown} pot={shown.pot} width={width - spacing.md * 2} compact={compact} />
+        <ThoughtBubble
+          seat={openSeat}
+          read={openSeat ? (shown.final ? betRead(s, r, openSeat.pos) : 'Watch how they play it.') : ''}
+          shown={sampled?.find((h) => h.pos === open) ?? null}
+        />
+        <FeltBoard
+          board={s.board}
+          shown={phase === 'countdown' ? 0 : shown.shown}
+          pot={shown.pot}
+          width={width - spacing.md * 2}
+          compact={compact}
+        />
         {phase !== 'countdown' && (
           <Story
             step={shown}
@@ -392,7 +481,19 @@ function Trainer() {
         </View>
       </View>
 
-      {(phase === 'decide' || phase === 'story') && <ActionBar options={options} size={size} onSize={setSize} onPick={answer} waiting={phase === 'story'} pro={pro} locked={locked} onLock={() => setLocked(!locked)} onHeight={setBarH} />}
+      {(phase === 'decide' || phase === 'story') && (
+        <ActionBar
+          options={options}
+          size={size}
+          onSize={setSize}
+          onPick={answer}
+          waiting={phase === 'story'}
+          pro={pro}
+          locked={locked}
+          onLock={() => setLocked(!locked)}
+          onHeight={setBarH}
+        />
+      )}
       {phase === 'guess' && pick && <GuessCard pickLabel={labelOf(pick)} onDone={(g) => commit(pick, g)} />}
       {phase === 'reveal' && pick && numbers && mode !== 'blitz' && (
         <Reveal
@@ -403,7 +504,9 @@ function Trainer() {
           why={shortWhy(s.why)}
           numbers={numbers}
           facing={facing}
-          piles={s.opponents.filter((o) => r.live.includes(o.pos)).map((o) => ({ pos: o.pos, who: chars[o.pos], piles: pilesFor(s, numbers, o.pos) }))}
+          piles={s.opponents
+            .filter((o) => r.live.includes(o.pos))
+            .map((o) => ({ pos: o.pos, who: chars[o.pos], piles: pilesFor(s, numbers, o.pos) }))}
           points={results[results.length - 1].points}
           bonus={results[results.length - 1].bonus}
           guess={guess}
@@ -417,7 +520,9 @@ function Trainer() {
           onWhy={() => router.push({ pathname: '/range-why', params: { id: s.id, pick } })}
         />
       )}
-      {phase === 'reveal' && mode === 'blitz' && results.length > 0 && <Flash grade={results[results.length - 1].grade} points={results[results.length - 1].points} multiplier={blitzMultiplier(run)} />}
+      {phase === 'reveal' && mode === 'blitz' && results.length > 0 && (
+        <Flash grade={results[results.length - 1].grade} points={results[results.length - 1].points} multiplier={blitzMultiplier(run)} />
+      )}
       {phase === 'countdown' && (
         <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
           <Animated.View key={count} entering={reduce ? undefined : ZoomIn.springify().mass(0.6)}>

@@ -1,38 +1,32 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import Animated, { FadeOut } from 'react-native-reanimated';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { RefreshControl, Text, View } from 'react-native';
 
 import { BoardRowView } from '@/components/board-row';
-import { Globe } from '@/components/global/globe';
-import { TypedText } from '@/components/global/typed-text';
-import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { openPlayerMenu } from '@/components/player-menu';
 import { PressableScale } from '@/components/pressable-scale';
 import { SegmentedControl } from '@/components/segmented-control';
-import { RoundButton } from '@/components/tab-screen';
+import { RoundButton, TabScreen } from '@/components/tab-screen';
+import { ThemedText } from '@/components/themed-text';
 import { BANKROLL, daysLeftInSeason, seasonName, seasonOf } from '@/engine';
 import { fetchBoard, useBankroll, type BoardRow, type BoardView } from '@/state/bankroll';
 import { isBlocked } from '@/state/blocks';
 import { withFiller } from '@/state/board-filler';
 import { isPal, myPalCode, sendFriendRequest } from '@/state/pals';
 import { read, save } from '@/state/storage';
-import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
+import { brand, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 const INTRO = 'flipup.bankrollintro';
-const dim = 'rgba(255,255,255,0.55)';
-/** The loading cover shows once per launch; later visits to the tab just refresh the board in place. */
-let coverShown = false;
 
 /**
- * The Global tab: its own page on the moving blue field, always dark. The season line and "Climb the boards." type
- * themselves in, a globe turns behind your bankroll, then World or Friends and the board, with your row pinned above
- * the tab bar. The rules are the intro sheet (opened the first time, and from the info button).
+ * The Global tab, drawn like the other tabs: a large title on the app's own background, the season line, one card
+ * with your chips, rank and peak and a Play button, then the board (World or Friends). The rules are the intro sheet
+ * (opened the first time, and from the info button).
  */
 export default function GlobalTab() {
-  const insets = useSafeAreaInsets();
+  const colors = useColors();
+  const shadows = useShadows();
   const { view, refresh } = useBankroll();
   const [scope, setScope] = useState<'world' | 'friends'>('world');
   const [board, setBoard] = useState<BoardView | null>(null);
@@ -40,17 +34,9 @@ export default function GlobalTab() {
   const season = seasonOf(Date.now());
 
   const load = useCallback(async () => setBoard(await fetchBoard('bankroll').catch(() => null)), []);
-  // The first time the tab opens in a launch: the loading cover (a spinning globe) until the board is in. After that
-  // the page is just there, and the board refreshes underneath.
-  const [loading, setLoading] = useState(!coverShown);
   useFocusEffect(
     useCallback(() => {
-      const first = !coverShown;
-      coverShown = true;
-      const shown = Date.now();
-      void load().finally(() => {
-        if (first) setTimeout(() => setLoading(false), Math.max(0, 800 - (Date.now() - shown)));
-      });
+      void load();
       void refresh();
       if (!read<boolean>(INTRO, false)) {
         save(INTRO, true);
@@ -59,8 +45,8 @@ export default function GlobalTab() {
     }, [load, refresh]),
   );
 
-  const chips = view?.bankroll ?? BANKROLL.start;
   const mine = myPalCode();
+  const chips = view?.bankroll ?? BANKROLL.start;
   const real = (scope === 'world' ? (board?.top ?? []) : (board?.friends ?? [])).filter((r) => !isBlocked(`f:${r.code}`));
   const rows = (scope === 'world' ? withFiller(real) : withFiller(real, undefined, 'friends')).slice(0, 100);
   const open = (r: BoardRow) => {
@@ -85,110 +71,78 @@ export default function GlobalTab() {
     haptic.tap();
     router.push('/bankroll');
   };
+  const label = view?.status === 'busted' ? 'Busted · see options' : view?.status === 'cut' ? 'Cut · see why' : 'Play today’s hands';
 
   return (
-    <ForceScheme scheme="dark">
+    <>
       <Stack.Screen options={{ title: 'Global', headerShown: false }} />
-      <GrainBackground>
-        <ScrollView
-          contentInsetAdjustmentBehavior="never"
-          contentContainerStyle={{
-            paddingTop: insets.top + spacing.md,
-            paddingHorizontal: spacing.md,
-            paddingBottom: insets.bottom + 180,
-            gap: spacing.lg,
-            width: '100%',
-            maxWidth: 560 + spacing.md * 2,
-            alignSelf: 'center',
+      <TabScreen
+        title="Global"
+        accessory={<RoundButton icon="info.circle" label="How Bankroll works" onPress={() => router.push('/bankroll-intro')} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={pulling}
+            onRefresh={() => {
+              haptic.select();
+              setPulling(true);
+              void Promise.all([load(), refresh()]).finally(() => setPulling(false));
+            }}
+          />
+        }
+      >
+        <View style={{ gap: spacing.xxs }}>
+          <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textTransform: 'uppercase' }}>
+            {seasonName(season)} season ends in {daysLeftInSeason(Date.now())} days
+          </ThemedText>
+          <ThemedText tone="secondaryLabel">
+            Everyone starts the month with {BANKROLL.start.toLocaleString()} chips. Biggest stack at the end wins.
+          </ThemedText>
+        </View>
+
+        <View
+          style={{
+            padding: spacing.md,
+            gap: spacing.md,
+            borderRadius: radius.lg,
+            borderCurve: 'continuous',
+            backgroundColor: colors.cell,
+            boxShadow: shadows.card,
           }}
-          refreshControl={
-            <RefreshControl
-              tintColor="#ffffff"
-              refreshing={pulling}
-              onRefresh={() => {
-                haptic.select();
-                setPulling(true);
-                void Promise.all([load(), refresh()]).finally(() => setPulling(false));
-              }}
-            />
-          }
         >
-          <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
-            <View style={{ flex: 1, gap: spacing.xxs }}>
-              <TypedText
-                text={`${seasonName(season)} season ends in ${daysLeftInSeason(Date.now())} days`.toUpperCase()}
-                style={{ fontSize: 13, fontWeight: '800', letterSpacing: 1.4, color: dim, fontVariant: ['tabular-nums'] }}
-              />
-              <TypedText
-                text="Climb the boards."
-                delay={500}
-                speed={55}
-                style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', color: '#ffffff' }}
-              />
-              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, lineHeight: 20, color: dim }}>
-                Everyone starts the month with {BANKROLL.start.toLocaleString()} chips. Biggest stack at the end wins.
-              </Text>
-            </View>
-            <RoundButton icon="info.circle" label="How Bankroll works" onPress={() => router.push('/bankroll-intro')} />
-          </View>
-
-          <View style={{ alignItems: 'center', gap: spacing.sm }}>
-            <Globe size={200} />
-          </View>
-
           <View
+            style={{ flexDirection: 'row' }}
+            accessible
+            accessibilityLabel={`Your bankroll ${chips.toLocaleString()} chips${board?.me?.pos ? `, number ${board.me.pos} in the world` : ''}${board?.me ? `, peak ${board.me.peak.toLocaleString()}` : ''}`}
+          >
+            <Stat label="Your chips" value={chips.toLocaleString()} />
+            <Stat label="World rank" value={board?.me?.pos ? `#${board.me.pos.toLocaleString()}` : '–'} />
+            <Stat label="Month's peak" value={(board?.me?.peak ?? chips).toLocaleString()} />
+          </View>
+          <PressableScale
+            accessibilityRole="button"
+            accessibilityLabel={label}
+            onPress={play}
             style={{
-              borderRadius: radius.lg,
-              borderCurve: 'continuous',
-              padding: spacing.md,
-              gap: spacing.md,
-              backgroundColor: 'rgba(255,255,255,0.08)',
+              minHeight: 50,
+              borderRadius: radius.full,
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: brand.violet,
             }}
           >
-            <View
-              style={{ flexDirection: 'row' }}
-              accessible
-              accessibilityLabel={`Your bankroll ${chips.toLocaleString()} chips${board?.me?.pos ? `, number ${board.me.pos} in the world` : ''}${board?.me ? `, peak ${board.me.peak.toLocaleString()}` : ''}`}
-            >
-              <Stat label="Your chips" value={chips.toLocaleString()} />
-              <Stat label="World rank" value={board?.me?.pos ? `#${board.me.pos.toLocaleString()}` : '–'} />
-              <Stat label="Month's peak" value={(board?.me?.peak ?? chips).toLocaleString()} />
-            </View>
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={
-                view?.status === 'busted' ? 'Busted. See your options' : view?.status === 'cut' ? 'Cut. See why' : 'Play today’s hands'
-              }
-              onPress={play}
-              style={{
-                minHeight: 48,
-                borderRadius: radius.full,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: '#ffffff',
-              }}
-            >
-              <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: brand.violetDeep }}>
-                {view?.status === 'busted' ? 'Busted · see options' : view?.status === 'cut' ? 'Cut · see why' : 'Play today’s hands'}
-              </Text>
-            </PressableScale>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, lineHeight: 18, color: dim, textAlign: 'center' }}>
-              Up to {BANKROLL.handsADay} hands a day against bots. Every Sunday the bottom {Math.round(BANKROLL.cutShare * 100)}% are cut.
+            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
+              {label}
             </Text>
-          </View>
+          </PressableScale>
+          <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
+            Up to {BANKROLL.handsADay} hands a day against bots. Every Sunday the bottom {Math.round(BANKROLL.cutShare * 100)}% are cut.
+          </ThemedText>
+        </View>
 
-          <View style={{ gap: spacing.xs }}>
-            <Text
-              maxFontSizeMultiplier={1.3}
-              accessibilityRole="header"
-              style={{ fontFamily: ROUNDED, fontSize: 22, fontWeight: '800', color: '#ffffff' }}
-            >
-              Biggest stacks
-            </Text>
-            <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 14, color: dim }}>
-              {scope === 'world' ? 'Everyone playing this month, by chips.' : 'You and your friends, by chips.'}
-            </Text>
-          </View>
+        <View style={{ gap: spacing.sm }}>
+          <ThemedText variant="title3" accessibilityRole="header">
+            Biggest stacks
+          </ThemedText>
           <SegmentedControl
             label="Who"
             options={[
@@ -198,9 +152,14 @@ export default function GlobalTab() {
             value={scope}
             onChange={(v) => setScope(v)}
           />
-
           <View
-            style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: 'rgba(255,255,255,0.06)' }}
+            style={{
+              borderRadius: radius.lg,
+              borderCurve: 'continuous',
+              overflow: 'hidden',
+              backgroundColor: colors.cell,
+              boxShadow: shadows.card,
+            }}
           >
             <View style={{ flexDirection: 'row', paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xs }}>
               {['POS', 'PLAYER', 'CHIPS'].map((h, i) => (
@@ -210,7 +169,7 @@ export default function GlobalTab() {
                     fontSize: 12,
                     fontWeight: '800',
                     letterSpacing: 1.2,
-                    color: dim,
+                    color: colors.tertiaryLabel as string,
                     width: i === 0 ? 46 : undefined,
                     flex: i === 1 ? 1 : undefined,
                   }}
@@ -221,106 +180,40 @@ export default function GlobalTab() {
             </View>
             {rows.length ? (
               rows.map((r, i) => (
-                <View key={r.code} style={{ borderTopWidth: i ? 0.5 : 0, borderTopColor: 'rgba(255,255,255,0.08)' }}>
+                <View key={r.code} style={{ borderTopWidth: i ? 0.5 : 0, borderTopColor: colors.separator as string }}>
                   <BoardRowView row={r} you={r.code === mine} onPress={() => open(r)} />
                 </View>
               ))
             ) : (
-              <Text style={{ color: dim, textAlign: 'center', paddingVertical: spacing.xl }}>Nobody here yet.</Text>
+              <ThemedText tone="secondaryLabel" style={{ textAlign: 'center', paddingVertical: spacing.xl }}>
+                Nobody here yet.
+              </ThemedText>
             )}
           </View>
-        </ScrollView>
-
-        {/* Your row, pinned above the tab bar. */}
-        <PressableScale
-          accessibilityRole="button"
-          onPress={play}
-          style={{
-            position: 'absolute',
-            left: spacing.md,
-            right: spacing.md,
-            bottom: insets.bottom + 64,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.sm,
-            padding: spacing.sm,
-            paddingHorizontal: spacing.md,
-            borderRadius: radius.lg,
-            borderCurve: 'continuous',
-            backgroundColor: brand.violet,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
-          }}
-        >
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: radius.sm,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: '#ffffff',
-            }}
-          >
-            <Text style={{ fontSize: 15, fontWeight: '800', color: brand.violetDeep, fontVariant: ['tabular-nums'] }}>
-              {board?.me?.pos ?? '–'}
-            </Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text numberOfLines={1} style={{ fontSize: 16, fontWeight: '800', color: '#ffffff' }}>
-              You{board?.me ? ` · @${board.me.username}` : ''}
-            </Text>
-            <Text numberOfLines={1} style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>
-              {board?.me ? `Peak ${board.me.peak.toLocaleString()}` : 'Not on this board yet'}
-            </Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={{ fontSize: 22, fontWeight: '800', color: '#ffffff', fontVariant: ['tabular-nums'] }}>
-              {(board?.me?.score ?? 0).toLocaleString()}
-            </Text>
-            <Text style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1, color: 'rgba(255,255,255,0.7)' }}>CHIPS</Text>
-          </View>
-        </PressableScale>
-        {loading && (
-          <Animated.View
-            exiting={FadeOut.duration(250)}
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: spacing.lg,
-              backgroundColor: '#070f2a',
-            }}
-          >
-            <Globe size={150} turnMs={6000} />
-            <TypedText
-              text="Loading global stats"
-              speed={45}
-              style={{ fontSize: 15, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.8)' }}
-            />
-          </Animated.View>
-        )}
-      </GrainBackground>
-    </ForceScheme>
+        </View>
+      </TabScreen>
+    </>
   );
 }
 
-/** One of the three numbers in the bankroll card: a small label over a big number. */
+/** One of the three numbers in the card: a big number over a small label. */
 function Stat({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
   return (
     <View style={{ flex: 1, alignItems: 'center', gap: 2 }}>
       <Text
         maxFontSizeMultiplier={1.2}
         numberOfLines={1}
         adjustsFontSizeToFit
-        style={{ fontFamily: ROUNDED, fontSize: 26, lineHeight: 31, fontWeight: '800', color: '#ffffff', fontVariant: ['tabular-nums'] }}
+        style={{ fontFamily: ROUNDED, fontSize: 26, lineHeight: 31, fontWeight: '800', color: colors.label, fontVariant: ['tabular-nums'] }}
       >
         {value}
       </Text>
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1, color: dim }}>
+      <Text
+        maxFontSizeMultiplier={1.2}
+        numberOfLines={1}
+        style={{ fontSize: 11, fontWeight: '800', letterSpacing: 1, color: colors.tertiaryLabel as string }}
+      >
         {label.toUpperCase()}
       </Text>
     </View>

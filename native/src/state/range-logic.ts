@@ -7,11 +7,13 @@ import { bb, combosOf, type Grade, type OptionId, type Pos, type RangeGroup, typ
 
 import type { HandNumbers } from './ranges';
 
-export type Mode = 'round' | 'daily' | 'blitz' | 'hand' | 'fix' | 'lesson';
+export type Mode = 'round' | 'daily' | 'blitz' | 'hand' | 'fix' | 'lesson' | 'endless';
 export type Level = 'easy' | 'pro';
 
 export const ROUND_SIZE = 5;
 export const DAILY_SIZE = 3;
+/** Keep going: this many hands lined up, unsolved first. Nobody gets near the end; closing it banks the points. */
+export const ENDLESS_SIZE = 60;
 export const BLITZ_MS = 60_000;
 
 const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];

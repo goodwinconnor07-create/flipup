@@ -37,12 +37,18 @@ export function cutLine(now: number, view: BankrollView | null): { text: string;
 /** Hands you can still play today. */
 export const handsLeft = (view: BankrollView | null): number => Math.max(0, BANKROLL.handsADay - (view?.handsToday ?? 0));
 
-/** What the Play button says: what it starts, or why it won't. */
-export function playLabel(view: BankrollView | null): string {
-  if (view?.status === 'busted') return 'Busted';
-  if (view?.status === 'cut') return 'Cut';
+/**
+ * What the Play button says: a title, a line under it, and whether it starts a sitting at all (a spent day, busted or
+ * cut still opens the sheet, but the button is drawn quieter). A new player gets "Play your first hand".
+ */
+export function playButton(view: BankrollView | null): { title: string; line: string; ready: boolean } {
+  if (view?.status === 'busted')
+    return { title: 'Busted', line: view.rebuyUsed ? 'Out until next month' : 'See your rebuy', ready: !view.rebuyUsed };
+  if (view?.status === 'cut') return { title: 'Cut', line: 'Out until next month', ready: false };
   const left = handsLeft(view);
-  return left > 0 ? `Play · ${left} left` : 'Back tomorrow';
+  if (left === 0) return { title: 'Back tomorrow', line: `You’ve played today’s ${BANKROLL.handsADay} hands`, ready: false };
+  if (!view || view.hands === 0) return { title: 'Play your first hand', line: `${left} hands to play today`, ready: true };
+  return { title: 'Play', line: `${left} of ${BANKROLL.handsADay} hands left today`, ready: true };
 }
 
 const n = (v: number) => v.toLocaleString('en-US');

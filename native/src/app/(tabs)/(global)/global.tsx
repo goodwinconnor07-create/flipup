@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BoardRowView } from '@/components/board-row';
 import { Globe } from '@/components/global/globe';
-import { cutLine, playLabel, tickerLines } from '@/components/global/standing';
+import { cutLine, playButton, tickerLines } from '@/components/global/standing';
 import { Ticker } from '@/components/global/ticker';
 import { TypedText } from '@/components/global/typed-text';
 import { GrainBackground } from '@/components/grain-background';
@@ -169,44 +169,15 @@ export default function GlobalTab() {
 
           <View style={{ alignItems: 'center', gap: spacing.sm }}>
             <Globe size={120} />
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={`Your bankroll ${chips.toLocaleString()} chips${board?.me?.pos ? `, number ${board.me.pos} in the world` : ''}. ${playLabel(view)}`}
-              onPress={play}
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                gap: spacing.sm,
-                paddingLeft: spacing.md,
-                paddingRight: spacing.xxs,
-                minHeight: 44,
-                borderRadius: radius.full,
-                backgroundColor: 'rgba(255,255,255,0.1)',
-              }}
+            <Text
+              maxFontSizeMultiplier={1.3}
+              accessibilityLabel={`Your bankroll ${chips.toLocaleString()} chips${board?.me?.pos ? `, number ${board.me.pos} in the world` : ''}`}
+              style={{ fontSize: 15, color: dim, fontVariant: ['tabular-nums'] }}
             >
-              <Text
-                maxFontSizeMultiplier={1.3}
-                style={{ fontSize: 15, fontWeight: '700', color: '#ffffff', fontVariant: ['tabular-nums'] }}
-              >
-                {chips.toLocaleString()} chips{board?.me?.pos ? ` · #${board.me.pos.toLocaleString()}` : ''}
-              </Text>
-              <View
-                style={{
-                  paddingHorizontal: spacing.md,
-                  minHeight: 36,
-                  borderRadius: radius.full,
-                  justifyContent: 'center',
-                  backgroundColor: '#ffffff',
-                }}
-              >
-                <Text
-                  maxFontSizeMultiplier={1.3}
-                  style={{ fontSize: 15, fontWeight: '800', color: brand.violetDeep, fontVariant: ['tabular-nums'] }}
-                >
-                  {playLabel(view)}
-                </Text>
-              </View>
-            </PressableScale>
+              <Text style={{ fontFamily: ROUNDED, fontSize: 28, fontWeight: '800', color: '#ffffff' }}>{chips.toLocaleString()}</Text> chips
+              {board?.me?.pos ? ` · #${board.me.pos.toLocaleString()} in the world` : ''}
+            </Text>
+            <PlayButton {...playButton(view)} onPress={play} />
             {cut && (
               <Text
                 maxFontSizeMultiplier={1.3}
@@ -380,5 +351,57 @@ export default function GlobalTab() {
         )}
       </GrainBackground>
     </ForceScheme>
+  );
+}
+
+/** How far the button's chunky edge shows under it (the same as Open table's). */
+const EDGE = 4;
+
+/**
+ * The page's one main action, drawn like Open table on Play with friends: full width, solid light with blue ink and
+ * a pale edge under it, the brightest thing on the night page. Quieter (see-through, white ink) when there's nothing
+ * to play right now, though it still opens the sheet that says why.
+ */
+function PlayButton({ title, line, ready, onPress }: { title: string; line: string; ready: boolean; onPress: () => void }) {
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`${title}. ${line}`}
+      onPress={onPress}
+      outerStyle={{ alignSelf: 'stretch' }}
+      style={{
+        borderRadius: radius.md,
+        borderCurve: 'continuous',
+        backgroundColor: ready ? brand.paperEdge : 'transparent',
+        paddingBottom: ready ? EDGE : 0,
+      }}
+    >
+      <View
+        style={{
+          minHeight: 60,
+          borderRadius: radius.md,
+          borderCurve: 'continuous',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingHorizontal: spacing.xl,
+          paddingVertical: spacing.xs,
+          backgroundColor: ready ? brand.paper : 'rgba(255,255,255,0.1)',
+        }}
+      >
+        <Text
+          maxFontSizeMultiplier={1.3}
+          style={{ fontFamily: ROUNDED, fontSize: 21, lineHeight: 25, fontWeight: '800', color: ready ? brand.violet : '#ffffff' }}
+        >
+          {title}
+        </Text>
+        <Text
+          maxFontSizeMultiplier={1.3}
+          numberOfLines={1}
+          style={{ fontSize: 13, lineHeight: 17, fontWeight: '600', color: ready ? brand.violetDeep : dim, fontVariant: ['tabular-nums'] }}
+        >
+          {line}
+        </Text>
+      </View>
+    </PressableScale>
   );
 }

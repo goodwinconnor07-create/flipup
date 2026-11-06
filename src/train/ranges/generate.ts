@@ -16,11 +16,11 @@ import { classify, texture, type Kind } from './classify';
 import {
   analyse,
   bb,
+  callShare,
   comboKey,
   expandRange,
   optionsFor,
   replay,
-  roleFor,
   spotOf,
   type Clue,
   type GroupView,
@@ -180,50 +180,55 @@ interface Grouped {
   small?: Role;
   big?: Role;
   combos: Combo[];
+  /** Hands of the same kind that answer differently (see `merge`). */
+  parts?: { role: Role; small?: Role; big?: Role; combos: Combo[] }[];
 }
 
-/** A group name for a hand: on the turn a made hand with a draw says so ("Top pair, weak kicker, with a flush draw"). */
-const nameOf = (k: Kind, board: Card[]) =>
-  board.length === 4 && k.level >= 3 && k.draw !== 'none' ? `${k.label}, with ${k.draw === 'open-ender' ? 'an' : 'a'} ${k.draw}` : k.label;
-
 /**
- * A kind of hand that splits between answers (the stronger weak pairs call, the rest fold) gets a word for each part,
- * strongest first, so no two groups share a name. `list` has to be strongest first within each kind.
+ * One group per kind of hand: groups with the same name (the weak pairs that call and the weak pairs that fold) become
+ * one group, answering like most of its hands, with the rest kept as `split` parts that answer their own way.
  */
-function qualify(list: Grouped[]): Grouped[] {
-  const count = new Map<string, number>();
-  for (const g of list) count.set(g.label, (count.get(g.label) ?? 0) + 1);
-  const seen = new Map<string, number>();
-  const words: Record<number, string[]> = {
-    2: ['the stronger ones', 'the weaker ones'],
-    3: ['the strongest', 'the middle ones', 'the weakest'],
-    4: ['the strongest', 'the stronger ones', 'the weaker ones', 'the weakest'],
-    5: ['the strongest', 'the stronger ones', 'the middle ones', 'the weaker ones', 'the weakest'],
-  };
-  return list.map((g) => {
-    const n = count.get(g.label)!;
-    if (n < 2) return g;
-    const i = seen.get(g.label) ?? 0;
-    seen.set(g.label, i + 1);
-    const w =
-      words[n]?.[i] ?? (i === 0 ? 'the strongest' : i === n - 1 ? 'the weakest' : i < n / 2 ? 'the stronger ones' : 'the weaker ones');
-    return { ...g, label: `${g.label}, ${w}` };
+function merge(list: Grouped[]): Grouped[] {
+  const by = new Map<string, Grouped[]>();
+  for (const g of list) by.set(g.label, [...(by.get(g.label) ?? []), g]);
+  return [...by.values()].map((gs) => {
+    const sized = gs.map((g) => ({ g, w: g.combos.reduce((t, c) => t + c.w, 0) })).sort((a, b) => b.w - a.w);
+    const [main, ...rest] = sized.map((x) => x.g);
+    return rest.length ? { ...main, parts: rest.map(({ role, small, big, combos }) => ({ role, small, big, combos })) } : main;
   });
 }
 
 function toGroups(list: Grouped[]): RangeGroup[] {
+  const pick = (role: Role, r?: Role) => (r && r !== role ? r : undefined);
   return list
     .filter((g) => g.combos.length)
     .map((g) => {
-      const total = g.combos.reduce((n, c) => n + c.w, 0);
-      const weight = Math.round((total / g.combos.length) * 100) / 100;
+      const all = [...g.combos, ...(g.parts ?? []).flatMap((p) => p.combos)];
+      const total = all.reduce((n, c) => n + c.w, 0);
+      const weight = Math.round((total / all.length) * 100) / 100;
+      const small = pick(g.role, g.small);
+      const big = pick(g.role, g.big);
       return {
-        label: `${g.label}: ${examples(g.combos)}`,
+        label: `${g.label}: ${examples(all)}`,
         hands: g.combos.map((c) => c.cards.join('')).join(', '),
         role: g.role,
-        ...(g.small && g.small !== g.role ? { small: g.small } : {}),
-        ...(g.big && g.big !== g.role ? { big: g.big } : {}),
+        ...(small ? { small } : {}),
+        ...(big ? { big } : {}),
         ...(weight < 0.995 ? { weight: Math.max(0.01, weight) } : {}),
+        ...(g.parts?.length
+          ? {
+              split: g.parts.map((p) => {
+                const ps = pick(p.role, p.small);
+                const pb = pick(p.role, p.big);
+                return {
+                  hands: p.combos.map((c) => c.cards.join('')).join(', '),
+                  role: p.role,
+                  ...(ps ? { small: ps } : {}),
+                  ...(pb ? { big: pb } : {}),
+                };
+              }),
+            }
+          : {}),
       };
     })
     .filter((g) => (g.weight ?? 1) >= 0.01);
@@ -276,7 +281,7 @@ function callerGroups(range: Combo[], board: Card[], before: Card[] | undefined,
     if (!by.has(key)) by.set(key, { label: k.label, ...r, combos: [] });
     by.get(key)!.combos.push(c);
   }
-  return toGroups(qualify([...by.values()]));
+  return toGroups(merge([...by.values()]));
 }
 
 /** Groups a range that's just in the pot (a caller in front of you): all `calls`. */
@@ -284,7 +289,7 @@ function stayGroups(range: Combo[], board: Card[], before?: Card[]): RangeGroup[
   const by = new Map<string, Grouped>();
   for (const c of range) {
     const k = classify(c.cards, board, before);
-    const name = nameOf(k, board);
+    const name = k.label;
     if (!by.has(name)) by.set(name, { label: name, role: 'calls', combos: [] });
     by.get(name)!.combos.push(c);
   }
@@ -567,10 +572,13 @@ const groupName = (g: RangeGroup) =>
 const list = (xs: string[]) => (xs.length <= 1 ? (xs[0] ?? '') : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`);
 
 /** "top pair (24%) and sets (9%)": the biggest kinds of hand in a view that pass `keep`, with their share of the range. */
-function biggest(v: OpponentView, keep: (g: GroupView) => boolean, n = 3): string {
+function biggest(v: OpponentView, keep: (g: GroupView) => boolean | number, n = 3): string {
   const total = v.groups.reduce((t, g) => t + g.weight, 0) || 1;
   const by = new Map<string, number>();
-  for (const g of v.groups) if (keep(g)) by.set(groupName(g.group), (by.get(groupName(g.group)) ?? 0) + g.weight);
+  for (const g of v.groups) {
+    const f = Number(keep(g));
+    if (f > 0) by.set(groupName(g.group), (by.get(groupName(g.group)) ?? 0) + g.weight * f);
+  }
   return list(
     [...by.entries()]
       .filter(([, w]) => w / total >= 0.02)
@@ -580,8 +588,9 @@ function biggest(v: OpponentView, keep: (g: GroupView) => boolean, n = 3): strin
   );
 }
 
-const shareOf = (v: OpponentView, keep: (g: GroupView) => boolean) =>
-  v.groups.filter(keep).reduce((t, g) => t + g.weight, 0) / (v.groups.reduce((t, g) => t + g.weight, 0) || 1);
+/** The share of a view that passes `keep` (a number counts that part of each group). */
+const shareOf = (v: OpponentView, keep: (g: GroupView) => boolean | number) =>
+  v.groups.reduce((t, g) => t + g.weight * Number(keep(g)), 0) / (v.groups.reduce((t, g) => t + g.weight, 0) || 1);
 
 /** The parts of a view you beat and lose to: "ahead of 35% of it (missed flush draws 20%...) and behind 65% (...)". */
 function beatWords(v: OpponentView): string {
@@ -647,12 +656,13 @@ function explainBetting(s: Scenario, r: ReturnType<typeof replay>, equity: numbe
   const views = analyse(s, r);
   const multi = views.length > 1;
   const parts = [`${heroLine(s, meta.k)}.`];
-  const callers = (v: OpponentView) => biggest(v, (g) => roleFor(g.group, b.id) !== 'folds', 3);
+  const dead = [...s.hero.cards, ...s.board];
+  const callers = (v: OpponentView) => biggest(v, (g) => callShare(g.group, dead, b.id), 3);
   const callWords = views.map((v) => (multi ? `${v.opponent.pos}: ${callers(v) || 'nothing'}` : callers(v))).join('; ');
   const needed = b.amount / (r.pot + b.amount);
   // Multiway, each player's folds multiply: show them, then the chance everyone folds.
   const foldEach = multi
-    ? `${list(views.map((v) => `${v.opponent.pos} folds ${pct(shareOf(v, (g) => roleFor(g.group, b.id) === 'folds'))}`))} of the time, so everyone folds only ${pct(b.allFold)}`
+    ? `${list(views.map((v) => `${v.opponent.pos} folds ${pct(shareOf(v, (g) => 1 - callShare(g.group, dead, b.id)))}`))} of the time, so everyone folds only ${pct(b.allFold)}`
     : '';
   if (best === 'check') {
     parts.push(
@@ -1531,11 +1541,11 @@ function turnGroups(range: Combo[], board: Card[], style: Style, players = 1): R
     acc += c.w;
     const at = (frac: number): Role => (turnStrength(k) === 0 || above >= cut(frac) ? 'folds' : k.level >= 8 ? 'raises' : 'calls');
     const r = { role: at(0.75), small: at(0.33), big: at(1.25) };
-    const key = `${nameOf(k, board)}|${r.role}|${r.small}|${r.big}`;
-    if (!by.has(key)) by.set(key, { label: nameOf(k, board), ...r, combos: [] });
+    const key = `${k.label}|${r.role}|${r.small}|${r.big}`;
+    if (!by.has(key)) by.set(key, { label: k.label, ...r, combos: [] });
     by.get(key)!.combos.push(c);
   }
-  return toGroups(qualify([...by.values()]));
+  return toGroups(merge([...by.values()]));
 }
 
 /** The raiser checked back the flop; out of position, you're first on the turn: probe-bet or check. */
@@ -1740,8 +1750,8 @@ function betGroups(range: Combo[], board: Card[], before: Card[] | undefined, p:
     const w = c.w * Math.max(0, Math.min(1, p(k)));
     if (w <= 0.01) continue;
     const role: Role = k.level >= valueFrom ? 'value' : 'bluff';
-    const key = `${nameOf(k, board)}|${role}`;
-    if (!by.has(key)) by.set(key, { label: nameOf(k, board), role, combos: [] });
+    const key = `${k.label}|${role}`;
+    if (!by.has(key)) by.set(key, { label: k.label, role, combos: [] });
     by.get(key)!.combos.push({ cards: c.cards, w });
   }
   return toGroups([...by.values()]);

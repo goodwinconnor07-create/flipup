@@ -39,6 +39,11 @@ export interface RangeGroup {
   big?: Role;
   /** How often it plays these hands this way (1 = always). */
   weight?: number;
+  /**
+   * Hands of the same kind that answer a bet differently (the best weak pairs call, the rest fold): still one group
+   * with one name, but these hands take their own `role`/`small`/`big`.
+   */
+  split?: { hands: string; role: Role; small?: Role; big?: Role }[];
 }
 
 /** A read on one street: what the action there says about the hands. */
@@ -172,7 +177,13 @@ export function expandRange(text: string): [Card, Card][] {
 /** The live combos of a group: its hands, less any that use a card we can see. */
 export function combosOf(group: RangeGroup, dead: Card[]): [Card, Card][] {
   const gone = new Set(dead);
-  return expandRange(group.hands).filter((c) => !gone.has(c[0]) && !gone.has(c[1]));
+  const all = [group.hands, ...(group.split ?? []).map((p) => p.hands)].filter(Boolean).join(',');
+  return expandRange(all).filter((c) => !gone.has(c[0]) && !gone.has(c[1]));
+}
+
+/** A group's hands with what each does: its own role, and each split part's. */
+export function partsOf(group: RangeGroup): { hands: string; role: Role; small?: Role; big?: Role }[] {
+  return [{ hands: group.hands, role: group.role, small: group.small, big: group.big }, ...(group.split ?? [])].filter((p) => p.hands);
 }
 
 export { comboKey };
@@ -371,12 +382,19 @@ export function optionsFor(s: Scenario, r: Replay = replay(s)): Option[] {
     const already = r.bets[s.hero.pos] ?? 0;
     // A raise to three times the bet, or all in if that's most of the stack.
     const allIn = already + mine;
-    const raiseTo = facing * 3 > allIn * 0.6 ? allIn : facing * 3;
-    return [
+    const call = Math.min(r.toCall, mine);
+    const options: Option[] = [
       { id: 'fold', label: 'Fold', amount: 0 },
-      { id: 'call', label: `Call ${bb(Math.min(r.toCall, mine))}`, amount: Math.min(r.toCall, mine) },
-      { id: 'raise', label: raiseTo === allIn ? `All in (${bb(allIn)})` : `Raise to ${bb(raiseTo)}`, amount: raiseTo - already },
+      { id: 'call', label: `Call ${bb(call)}${call >= mine ? ' (all in)' : ''}`, amount: call },
     ];
+    // A raise only makes sense if someone still has chips to put in, and you have more than the call.
+    const canAnswer = r.live.some((p) => (r.stacks[p] ?? 0) > 0);
+    if (!canAnswer || mine <= r.toCall) return options;
+    const cover = Math.max(...r.live.map((p) => (r.stacks[p] ?? 0) + (r.bets[p] ?? 0)));
+    const most = Math.min(allIn, cover);
+    const raiseTo = facing * 3 > most * 0.6 ? most : facing * 3;
+    options.push({ id: 'raise', label: raiseTo === allIn ? `All in (${bb(allIn)})` : `Raise to ${bb(raiseTo)}`, amount: raiseTo - already });
+    return options;
   }
   // Nobody can be made to put in more than they have: a bet is capped at the biggest stack still against you.
   const cover = Math.max(0, ...r.live.map((p) => r.stacks[p] ?? 0));
@@ -472,7 +490,18 @@ export const roleFor = (g: RangeGroup, bet?: OptionId): Role => (bet === 'bet33'
 
 /** One opponent's range as weighted combos (ints), for dealing, with each hand's response to `bet`. */
 function entries(o: Opponent, dead: Card[], bet?: OptionId): Entry[] {
-  return o.range.flatMap((g) => combosOf(g, dead).map((c) => ({ cards: [toInt(c[0]), toInt(c[1])] as [number, number], role: roleFor(g, bet), weight: g.weight ?? 1 })));
+  return o.range.flatMap((g) =>
+    partsOf(g).flatMap((part) =>
+      combosOf({ ...part, label: '' }, dead).map((c) => ({ cards: [toInt(c[0]), toInt(c[1])] as [number, number], role: roleFor({ ...part, label: '' }, bet), weight: g.weight ?? 1 })),
+    ),
+  );
+}
+
+/** How much of a group answers a bet of this size by calling or raising (0 to 1, by combos). */
+export function callShare(g: RangeGroup, dead: Card[], bet?: OptionId): number {
+  const parts = partsOf(g).map((p) => ({ n: combosOf({ ...p, label: '' }, dead).length, role: roleFor({ ...p, label: '' }, bet) }));
+  const total = parts.reduce((t, p) => t + p.n, 0);
+  return total ? parts.filter((p) => p.role === 'calls' || p.role === 'raises').reduce((t, p) => t + p.n, 0) / total : 0;
 }
 
 /** The hero's share of the pot at showdown against these hands (ties split). */

@@ -660,32 +660,35 @@ export function pack(list: Scenario[]): Scenario[] {
   return list.map((s) => {
     const dead = new Set([...s.hero.cards, ...s.board]);
     const live = (cls: string) => expandHand(cls).filter((c) => !dead.has(c[0]) && !dead.has(c[1])).length;
+    /** Exact combos first (a group may already be packed), less any card you can see; then whole classes where they fit. */
+    const squeeze = (hands: string) => {
+      const combos = expandRange(hands)
+        .filter((c) => !dead.has(c[0]) && !dead.has(c[1]))
+        .map((c) => c.join(''));
+      const by = new Map<string, string[]>();
+      for (const c of combos) by.set(classOf(c), [...(by.get(classOf(c)) ?? []), c]);
+      return [...by.entries()].flatMap(([cls, cs]) => (cs.length === live(cls) ? [cls] : cs)).join(',');
+    };
     return {
       ...s,
       opponents: s.opponents.map((o) => ({
         ...o,
-        range: o.range.map((g) => {
-          // Exact combos first (a group may already be packed), less any card you can see.
-          const combos = expandRange(g.hands)
-            .filter((c) => !dead.has(c[0]) && !dead.has(c[1]))
-            .map((c) => c.join(''));
-          const by = new Map<string, string[]>();
-          for (const c of combos) by.set(classOf(c), [...(by.get(classOf(c)) ?? []), c]);
-          const tokens = [...by.entries()].flatMap(([cls, cs]) => (cs.length === live(cls) ? [cls] : cs));
-          return { ...g, hands: tokens.join(',') };
-        }),
+        range: o.range.map((g) => ({
+          ...g,
+          hands: squeeze(g.hands),
+          ...(g.split ? { split: g.split.map((p) => ({ ...p, hands: squeeze(p.hands) })) } : {}),
+        })),
       })),
     };
   });
 }
+const oldFormat = (hands: string) =>
+  /^([2-9TJQKA][shdc]){2,}$/.test(hands) && hands.length > 4 ? (hands.match(/.{4}/g) ?? []).join(', ') : hands;
 export const unpack = (list: Scenario[]): Scenario[] =>
   list.map((s) => ({
     ...s,
     opponents: s.opponents.map((o) => ({
       ...o,
-      range: o.range.map((g) => ({
-        ...g,
-        hands: /^([2-9TJQKA][shdc]){2,}$/.test(g.hands) && g.hands.length > 4 ? (g.hands.match(/.{4}/g) ?? []).join(', ') : g.hands,
-      })),
+      range: o.range.map((g) => ({ ...g, hands: oldFormat(g.hands) })),
     })),
   }));

@@ -1,6 +1,7 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 import { Platform } from 'react-native';
 
+import { FRIENDS_ON } from '@/scope';
 import { useFriendBox } from '@/state/pals';
 
 // Apple's own tab bar (Liquid Glass on iOS 26): Play, Train and Friends. A party starts from Play with
@@ -21,7 +22,8 @@ export default function TabsLayout() {
         <NativeTabs.Trigger.Icon sf="graduationcap.fill" md="school" />
         <NativeTabs.Trigger.Label>Train</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(friends)">
+      {/* Hidden while friends are off (scope.ts): people join with the game code. */}
+      <NativeTabs.Trigger name="(friends)" hidden={!FRIENDS_ON}>
         <NativeTabs.Trigger.Icon sf="person.2.fill" md="group" />
         <NativeTabs.Trigger.Label>Friends</NativeTabs.Trigger.Label>
         {/* The web build's tab bar ignores `hidden` and showed a red 0, so there the badge is left out at zero. */}

@@ -6,7 +6,7 @@ import Animated from 'react-native-reanimated';
 import { Button } from '@/components/button';
 import { GlassSurface } from '@/components/glass-surface';
 import { haptic } from '@/components/haptics';
-import { Icon } from '@/components/icon';
+import { SwapIcon } from '@/components/swap';
 import { Row, Section } from '@/components/grouped-list';
 import { ThemedText } from '@/components/themed-text';
 import { enter, exit } from '@/motion/presets';
@@ -64,7 +64,7 @@ export default function MotionScreen() {
       {toast && (
         <Animated.View key={toast.id} entering={enter(reduce)} exiting={exit(reduce)} pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, bottom: spacing.xxxl, alignItems: 'center' }}>
           <GlassSurface style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, borderRadius: radius.full, paddingVertical: spacing.sm, paddingHorizontal: spacing.lg }}>
-            <Icon name={toast.ok ? 'checkmark.circle.fill' : 'xmark.circle.fill'} size={20} color={toast.ok ? colors.green : colors.red} />
+            <SwapIcon name={toast.ok ? 'checkmark.circle.fill' : 'xmark.circle.fill'} size={20} color={toast.ok ? colors.green : colors.red} />
             <ThemedText variant="headline">{toast.ok ? 'Done' : "That didn't work"}</ThemedText>
           </GlassSurface>
         </Animated.View>

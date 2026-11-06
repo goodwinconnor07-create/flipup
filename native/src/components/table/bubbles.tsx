@@ -9,17 +9,17 @@ import Animated, { Easing, FadeIn, FadeOut, Keyframe, useAnimatedStyle, useShare
 
 import { bubbleLook } from '@design/premiumLooks';
 import { CHAT, isBubbleId, ticker, widestWindow, windowAt, type Message, type Talk } from '@/engine';
+import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { gradient, usePlainColors } from '@/theme';
+import { gradient, motion, usePlainColors } from '@/theme';
 
 const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
 
-/** The web's `.pop`, toned down for a bubble: in from 60% to a hair over full size and settled, in 0.28s. */
+/** A bubble appearing: from 95% to full size and fading in, ease-out, 250ms. No overshoot and never from nothing (motion rules 10 and 13). */
 export const bubblePop = new Keyframe({
-  0: { opacity: 0, transform: [{ scale: 0.6 }] },
-  60: { opacity: 1, transform: [{ scale: 1.05 }], easing: Easing.out(Easing.quad) },
-  100: { opacity: 1, transform: [{ scale: 1 }], easing: Easing.inOut(Easing.quad) },
-}).duration(280);
+  0: { opacity: 0, transform: [{ scale: motion.popFrom }] },
+  100: { opacity: 1, transform: [{ scale: 1 }], easing: EASE_OUT },
+}).duration(motion.base);
 
 const SHADOW = '0 2px 6px -2px rgba(18, 18, 40, 0.35)';
 
@@ -138,10 +138,10 @@ function Word({ text, ink, gone, lead }: { text: string; ink: string; gone: bool
   const enter = useSharedValue(reduce ? 1 : 0);
   const out = useSharedValue(0);
   useEffect(() => {
-    if (!reduce) enter.set(withTiming(1, { duration: 160, easing: Easing.out(Easing.quad) }));
+    if (!reduce) enter.set(withTiming(1, { duration: 160, easing: EASE_OUT }));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (gone) out.set(reduce ? 1 : withTiming(1, { duration: 200, easing: Easing.inOut(Easing.quad) }));
+    if (gone) out.set(reduce ? 1 : withTiming(1, { duration: motion.exit, easing: EASE_OUT }));
   }, [gone]); // eslint-disable-line react-hooks/exhaustive-deps
   const style = useAnimatedStyle(() => {
     const w = width.get();
@@ -177,7 +177,7 @@ export const pinned = (align: 'center' | 'flex-end' | 'flex-start'): ViewStyle =
 });
 
 /** How every bubble leaves: a quick fade in place. */
-export const bubbleOut = FadeOut.duration(220).easing(Easing.out(Easing.quad));
+export const bubbleOut = FadeOut.duration(motion.exit).easing(EASE_OUT);
 
 /** A seat's talk: its newest message, or the typing dots while the next one comes. One bubble a seat. */
 export function Thread({ talk, fx, room, place }: { talk: Talk; fx?: string; room?: number; place: ViewStyle }) {

@@ -24,13 +24,12 @@ export function TypedText({
   const [n, setN] = useState(reduce ? text.length : 0);
   const [cursor, setCursor] = useState(!reduce);
   useEffect(() => {
-    if (reduce) {
-      setN(text.length);
-      setCursor(false);
-      return;
-    }
-    setN(0);
-    setCursor(true);
+    // Start over for new text (in a callback, so it doesn't render twice in a row).
+    const reset = setTimeout(() => {
+      setN(reduce ? text.length : 0);
+      setCursor(!reduce);
+    }, 0);
+    if (reduce) return () => clearTimeout(reset);
     let i = 0;
     let tick: ReturnType<typeof setInterval> | undefined;
     const start = setTimeout(() => {
@@ -44,6 +43,7 @@ export function TypedText({
       }, speed);
     }, delay);
     return () => {
+      clearTimeout(reset);
       clearTimeout(start);
       clearInterval(tick);
     };

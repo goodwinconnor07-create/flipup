@@ -5,15 +5,29 @@
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
+import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
+import { detail, EASE_OUT, exit, popIn } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useTableLook } from '@/state/prefs';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
 import { brand, radius, spacing, useColors } from '@/theme';
-import { bb, callShare, gradeOf, optionsFor, replay, type Grade, type OptionId, type RangeGroup, type Scenario, type Street } from '@train/ranges/model';
+import {
+  bb,
+  callShare,
+  gradeOf,
+  optionsFor,
+  replay,
+  type Grade,
+  type OptionId,
+  type RangeGroup,
+  type Scenario,
+  type Street,
+} from '@train/ranges/model';
 import { narrate } from '@train/ranges/narrate';
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
@@ -44,7 +58,23 @@ function respond(g: RangeGroup, facing: boolean, dead: string[]): string {
 /** A flat grey cell, the web's `--bg-2` boxes. */
 function Cell({ children, gap = spacing.xxs, style }: { children: ReactNode; gap?: number; style?: object }) {
   const colors = useColors();
-  return <View style={[{ gap, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.sm, borderCurve: 'continuous', backgroundColor: colors.cell }, style]}>{children}</View>;
+  return (
+    <View
+      style={[
+        {
+          gap,
+          paddingVertical: spacing.sm,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.sm,
+          borderCurve: 'continuous',
+          backgroundColor: colors.cell,
+        },
+        style,
+      ]}
+    >
+      {children}
+    </View>
+  );
 }
 
 /** A thin bar filled to `share` (0 to 1). */
@@ -61,6 +91,7 @@ function Bar({ share, color, height = 4 }: { share: number; color: string; heigh
 export function RangeTrainer({ onNext }: { onNext?: () => void }) {
   const colors = useColors();
   const look = useTableLook();
+  const reduce = useReduceMotion();
   const [scenario, setScenario] = useState<Scenario>(() => nextHand(null));
   const [pick, setPick] = useState<OptionId | null>(null);
   // Opponents whose whole range is open (otherwise just the biggest groups show).
@@ -76,7 +107,14 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
       evs
         ? evs.views.flatMap((v) => {
             const opponent = scenario.opponents.find((o) => o.pos === v.pos);
-            return opponent ? [{ opponent, groups: opponent.range.map((group, i) => ({ group, ...(v.groups[i] ?? { combos: 0, weight: 0, equity: 0 }) })) }] : [];
+            return opponent
+              ? [
+                  {
+                    opponent,
+                    groups: opponent.range.map((group, i) => ({ group, ...(v.groups[i] ?? { combos: 0, weight: 0, equity: 0 }) })),
+                  },
+                ]
+              : [];
           })
         : [],
     [evs, scenario],
@@ -122,7 +160,15 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
     <View key={scenario.id} style={{ gap: spacing.md }}>
       {/* The hand: what it teaches, the title, your seat and the table, and everyone in it. */}
       <View style={{ gap: spacing.xxs }}>
-        <View style={{ alignSelf: 'flex-start', paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: colors.blueBg }}>
+        <View
+          style={{
+            alignSelf: 'flex-start',
+            paddingVertical: spacing.xxs,
+            paddingHorizontal: spacing.sm,
+            borderRadius: radius.full,
+            backgroundColor: colors.blueBg,
+          }}
+        >
           <ThemedText variant="caption1" style={{ fontWeight: '600', color: colors.blueInk }}>
             {scenario.concept}
           </ThemedText>
@@ -255,117 +301,150 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
       </Cell>
 
       {!pick ? (
-        <View style={{ gap: spacing.xs }} accessibilityLabel="Your options">
+        <Animated.View exiting={exit(reduce)} style={{ gap: spacing.xs }} accessibilityLabel="Your options">
           {options.map((o) => (
             <Button key={o.id} title={o.label} variant="secondary" onPress={() => answer(o.id)} />
           ))}
-        </View>
+        </Animated.View>
       ) : (
         <View style={{ gap: spacing.sm }} accessibilityLiveRegion="polite">
-          <View style={{ gap: 2, paddingVertical: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.sm, borderCurve: 'continuous', backgroundColor: gradeLook[grade!].bg }}>
+          {/* Motion rules: the verdict pops in from 95% (10, 13), then the parts under it settle 30ms apart (6, 3). */}
+          <Animated.View
+            entering={reduce ? undefined : popIn()}
+            style={{
+              gap: 2,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: radius.sm,
+              borderCurve: 'continuous',
+              backgroundColor: gradeLook[grade!].bg,
+            }}
+          >
             <ThemedText variant="title3" style={{ fontWeight: '700', color: gradeLook[grade!].ink }}>
               {GRADE[grade!]}
             </ThemedText>
             <ThemedText variant="subhead" style={{ color: gradeLook[grade!].ink }}>
               {pick === scenario.best ? best?.label : `Best: ${best?.label}`}
             </ThemedText>
-          </View>
-          <ThemedText variant="body">{scenario.why}</ThemedText>
+          </Animated.View>
+          <Animated.View entering={detail(0, reduce)}>
+            <ThemedText variant="body">{scenario.why}</ThemedText>
+          </Animated.View>
 
           {evs && (
-            <Cell>
-              {facing ? (
-                <>
+            <Animated.View entering={detail(1, reduce)}>
+              <Cell>
+                {facing ? (
+                  <>
+                    <ThemedText variant="subhead">
+                      You need{' '}
+                      <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+                        {pct(evs.price)}
+                      </ThemedText>{' '}
+                      to call
+                    </ThemedText>
+                    <ThemedText variant="subhead">
+                      You win{' '}
+                      <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+                        {pct(evs.equity)}
+                      </ThemedText>{' '}
+                      against {inPot.length > 1 ? 'everyone still in' : 'their range'}
+                    </ThemedText>
+                  </>
+                ) : (
                   <ThemedText variant="subhead">
-                    You need <ThemedText variant="subhead" style={{ fontWeight: '700' }}>{pct(evs.price)}</ThemedText> to call
+                    At a showdown now you’d win{' '}
+                    <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+                      {pct(evs.equity)}
+                    </ThemedText>{' '}
+                    of the pot
+                    {inPot.length > 1 ? ' against everyone still in' : ''}
                   </ThemedText>
-                  <ThemedText variant="subhead">
-                    You win <ThemedText variant="subhead" style={{ fontWeight: '700' }}>{pct(evs.equity)}</ThemedText> against{' '}
-                    {inPot.length > 1 ? 'everyone still in' : 'their range'}
-                  </ThemedText>
-                </>
-              ) : (
-                <ThemedText variant="subhead">
-                  At a showdown now you’d win <ThemedText variant="subhead" style={{ fontWeight: '700' }}>{pct(evs.equity)}</ThemedText> of the pot
-                  {inPot.length > 1 ? ' against everyone still in' : ''}
+                )}
+                <ThemedText variant="subhead" style={{ marginTop: spacing.xs, fontWeight: '600' }}>
+                  What each play wins on average
                 </ThemedText>
-              )}
-              <ThemedText variant="subhead" style={{ marginTop: spacing.xs, fontWeight: '600' }}>
-                What each play wins on average
-              </ThemedText>
-              <View style={{ gap: spacing.xxs }}>
-                {evs.rows.map((row) => {
-                  const isBest = row.id === scenario.best;
-                  const isPick = row.id === pick;
-                  const ink = isBest ? (colors.goldInk as string) : undefined;
-                  return (
-                    <View
-                      key={row.id}
-                      style={{
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        gap: spacing.xs,
-                        paddingVertical: spacing.xxs,
-                        paddingHorizontal: spacing.xs,
-                        borderRadius: radius.xs,
-                        backgroundColor: isBest ? colors.goldBg : isPick ? colors.cellPressed : 'transparent',
-                      }}
-                    >
-                      <ThemedText variant="subhead" numberOfLines={1} style={[{ flex: 1.4 }, ink ? { color: ink } : null]}>
-                        {label(row.id)}
-                      </ThemedText>
-                      <View style={{ flex: 1 }}>
-                        <Bar share={Math.abs(row.ev) / topEv} color={row.ev >= 0 ? brand.violet : (colors.quaternaryLabel as string)} height={6} />
-                      </View>
-                      <ThemedText variant="subhead" style={[{ fontWeight: '700' }, NUM, ink ? { color: ink } : null]}>
-                        {signed(row.ev)}
-                      </ThemedText>
-                    </View>
-                  );
-                })}
-              </View>
-            </Cell>
+                <View style={{ gap: spacing.xxs }}>
+                  {evs.rows.map((row, i) => {
+                    const isBest = row.id === scenario.best;
+                    const isPick = row.id === pick;
+                    const ink = isBest ? (colors.goldInk as string) : undefined;
+                    return (
+                      <Animated.View
+                        key={row.id}
+                        entering={detail(i + 1, reduce)}
+                        style={{
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: spacing.xs,
+                          paddingVertical: spacing.xxs,
+                          paddingHorizontal: spacing.xs,
+                          borderRadius: radius.xs,
+                          backgroundColor: isBest ? colors.goldBg : isPick ? colors.cellPressed : 'transparent',
+                        }}
+                      >
+                        <ThemedText variant="subhead" numberOfLines={1} style={[{ flex: 1.4 }, ink ? { color: ink } : null]}>
+                          {label(row.id)}
+                        </ThemedText>
+                        <View style={{ flex: 1 }}>
+                          <Bar
+                            share={Math.abs(row.ev) / topEv}
+                            color={row.ev >= 0 ? brand.violet : (colors.quaternaryLabel as string)}
+                            height={6}
+                          />
+                        </View>
+                        <ThemedText variant="subhead" style={[{ fontWeight: '700' }, NUM, ink ? { color: ink } : null]}>
+                          {signed(row.ev)}
+                        </ThemedText>
+                      </Animated.View>
+                    );
+                  })}
+                </View>
+              </Cell>
+            </Animated.View>
           )}
 
-          <ThemedText variant="title3" accessibilityRole="header" style={{ marginTop: spacing.xs }}>
-            What each street told you
-          </ThemedText>
-          <View style={{ gap: spacing.xs }}>
-            {scenario.clues.map((c, i) => {
-              const read = reads.find((x) => x.street === c.street);
-              return (
-                <View key={i} style={{ flexDirection: 'row', gap: spacing.xs }}>
-                  <ThemedText variant="subhead" tone="tertiaryLabel" style={[{ width: 20, textAlign: 'right' }, NUM]}>
-                    {i + 1}.
-                  </ThemedText>
-                  <View style={{ flex: 1 }}>
-                    <ThemedText variant="subhead">
-                      <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
-                        {STREET_NAME[c.street]}
-                      </ThemedText>{' '}
-                      {c.text}
+          <Animated.View entering={detail(2, reduce)}>
+            <ThemedText variant="title3" accessibilityRole="header" style={{ marginTop: spacing.xs }}>
+              What each street told you
+            </ThemedText>
+            <View style={{ gap: spacing.xs }}>
+              {scenario.clues.map((c, i) => {
+                const read = reads.find((x) => x.street === c.street);
+                return (
+                  <View key={i} style={{ flexDirection: 'row', gap: spacing.xs }}>
+                    <ThemedText variant="subhead" tone="tertiaryLabel" style={[{ width: 20, textAlign: 'right' }, NUM]}>
+                      {i + 1}.
                     </ThemedText>
-                    {read && (
-                      <View style={{ marginTop: 6, marginBottom: 2, gap: 2 }}>
-                        <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
-                          Their range
-                        </ThemedText>
-                        <ThemedText variant="subhead" tone="secondaryLabel" style={{ marginBottom: 6 }}>
-                          {read.theirs}
-                        </ThemedText>
-                        <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
-                          What you want
-                        </ThemedText>
-                        <ThemedText variant="subhead" tone="secondaryLabel" style={{ marginBottom: 6 }}>
-                          {read.ours}
-                        </ThemedText>
-                      </View>
-                    )}
+                    <View style={{ flex: 1 }}>
+                      <ThemedText variant="subhead">
+                        <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+                          {STREET_NAME[c.street]}
+                        </ThemedText>{' '}
+                        {c.text}
+                      </ThemedText>
+                      {read && (
+                        <View style={{ marginTop: 6, marginBottom: 2, gap: 2 }}>
+                          <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
+                            Their range
+                          </ThemedText>
+                          <ThemedText variant="subhead" tone="secondaryLabel" style={{ marginBottom: 6 }}>
+                            {read.theirs}
+                          </ThemedText>
+                          <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
+                            What you want
+                          </ThemedText>
+                          <ThemedText variant="subhead" tone="secondaryLabel" style={{ marginBottom: 6 }}>
+                            {read.ours}
+                          </ThemedText>
+                        </View>
+                      )}
+                    </View>
                   </View>
-                </View>
-              );
-            })}
-          </View>
+                );
+              })}
+            </View>
+          </Animated.View>
 
           {views.map((v) => {
             const total = v.groups.reduce((n, g) => n + g.weight, 0) || 1;
@@ -383,12 +462,27 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
                   </ThemedText>
                 </ThemedText>
                 {shown.map((g) => (
-                  <View
+                  // Rule 20: Show all keeps every group that was already there and lets the list grow round it.
+                  <Animated.View
                     key={g.group.label + g.group.role}
-                    style={{ gap: spacing.xxs, padding: spacing.sm, borderRadius: radius.sm, borderCurve: 'continuous', backgroundColor: colors.cell }}
+                    layout={reduce ? undefined : LinearTransition.duration(250).easing(EASE_OUT)}
+                    style={{
+                      gap: spacing.xxs,
+                      padding: spacing.sm,
+                      borderRadius: radius.sm,
+                      borderCurve: 'continuous',
+                      backgroundColor: colors.cell,
+                    }}
                   >
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                      <View style={{ paddingVertical: 2, paddingHorizontal: spacing.xs, borderRadius: radius.full, backgroundColor: colors.cellPressed }}>
+                      <View
+                        style={{
+                          paddingVertical: 2,
+                          paddingHorizontal: spacing.xs,
+                          borderRadius: radius.full,
+                          backgroundColor: colors.cellPressed,
+                        }}
+                      >
                         <ThemedText variant="caption2" tone="secondaryLabel" style={{ fontWeight: '600' }}>
                           {respond(g.group, facing, dead)}
                         </ThemedText>
@@ -406,7 +500,7 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
                     <ThemedText variant="caption1" tone="tertiaryLabel">
                       {g.combos} combo{g.combos === 1 ? '' : 's'} · you win {pct(g.equity)} against these
                     </ThemedText>
-                  </View>
+                  </Animated.View>
                 ))}
                 {shown.length < sorted.length && (
                   <Button

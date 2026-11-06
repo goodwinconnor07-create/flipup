@@ -19,6 +19,7 @@ import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, FREE_VARIANTS, VARIANTS, variantInfo, variantOf } from '@/engine';
+import { FRIENDS_ON } from '@/scope';
 import { useFriendBox } from '@/state/pals';
 import { usePartyRef } from '@/state/party';
 import { usePokerRecord } from '@/state/record';
@@ -51,15 +52,15 @@ export default function Home() {
         title="Play"
         accessory={
           <>
-            <RequestsPill />
+            {FRIENDS_ON && <RequestsPill />}
             <ProfileMenu />
           </>
         }
       >
-        {(banner || box.invites.length > 0) && (
+        {(banner || (FRIENDS_ON && box.invites.length > 0)) && (
           <View style={{ gap: spacing.sm }}>
             <TableBanner />
-            {box.invites.slice(0, 2).map((i) => (
+            {FRIENDS_ON && box.invites.slice(0, 2).map((i) => (
               <InviteCard key={`${i.from}:${i.at}`} invite={i} />
             ))}
           </View>
@@ -73,7 +74,7 @@ export default function Home() {
         )}
         <Animated.View layout={slide} style={{ gap: spacing.xl }}>
           <GameRow />
-          <FriendsStrip />
+          {FRIENDS_ON && <FriendsStrip />}
           {record.hands > 0 ? <PassportCard /> : <FirstHand />}
           {!premium && <PremiumBanner />}
 

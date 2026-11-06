@@ -24,6 +24,7 @@ import {
   type Player,
 } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { stagger } from '@/motion/presets';
 import { gradient, radius, spacing, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
@@ -366,7 +367,7 @@ function MemoryPeek({ game, width, pack }: { game: Game; width: number; pack?: s
       style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center', maxWidth: w * 10 + 27 }}
     >
       {cards.map((c, i) => (
-        <PlayingCard key={c} card={c} size="sm" width={w} flip delay={i * 25} pack={pack} />
+        <PlayingCard key={c} card={c} size="sm" width={w} flip delay={stagger(i)} pack={pack} />
       ))}
     </View>
   );

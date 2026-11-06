@@ -10,7 +10,7 @@ import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
-import { isCode, normalizeCode, variantInfo, type TableInfo } from '@/engine';
+import { isTableCode, normalizeTableCode, variantInfo, type TableInfo } from '@/engine';
 import { fetchTableInfo } from '@/state/api';
 import { joinParty, readParty } from '@/state/party';
 import { useProfile } from '@/state/profile';
@@ -22,8 +22,8 @@ function codeFromScan(text: string): string | null {
   let tail = text.trim();
   const m = /^[a-z]+:\/\/[^/]+(\/.*)?$/i.exec(tail);
   if (m) tail = m[1] ?? '';
-  const code = normalizeCode(tail.split(/[/?#]/).filter(Boolean).pop() ?? '');
-  return isCode(code) ? code : null;
+  const code = normalizeTableCode(tail.split(/[/?#]/).filter(Boolean).pop() ?? '');
+  return isTableCode(code) ? code : null;
 }
 
 /** Sits you down in a party, and opens it (the sheet closes first). */
@@ -35,7 +35,7 @@ async function intoParty(code: string): Promise<void> {
 
 /**
  * The Join sheet, opened from the round button on Play (and by a join link, `/ABCDE` or `/party/ABCDE`, which
- * arrive with `code`): type the 5-letter table code with the iPhone keyboard, which comes up as the sheet opens, or
+ * arrive with `code`): type the game code (six letters or numbers, like ACES42) with the iPhone keyboard, which comes up as the sheet opens, or
  * scan the host's QR code. A code that's found shows the table (the game, the host, who's there) and a Sit down
  * button. A party code (typed or scanned) takes you into the party.
  */
@@ -64,13 +64,13 @@ export default function JoinSheet() {
     } catch (e) {
       return e instanceof Error ? e.message : 'Something went wrong. Try again.';
     }
-  });
+  }, 'table');
 
   // A join link fills the boxes, and the look-up runs as if it had been typed.
-  const linked = params.code ? normalizeCode(params.code) : '';
+  const linked = params.code ? normalizeTableCode(params.code) : '';
   const { fill } = state;
   useEffect(() => {
-    if (isCode(linked)) fill(linked);
+    if (isTableCode(linked)) fill(linked);
   }, [linked]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const scan = async () => {
@@ -122,7 +122,7 @@ export default function JoinSheet() {
         </ThemedText>
         {!found && !scanning && (
           <ThemedText tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-            Type the 5-letter code from whoever&apos;s hosting. A party code works too.
+            Type the game code from whoever&apos;s hosting. A party code works too: type it and press Go.
           </ThemedText>
         )}
       </View>

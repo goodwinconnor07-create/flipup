@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import { useWindowDimensions, View } from 'react-native';
 
 import { haptic } from '@/components/haptics';
-import { Icon } from '@/components/icon';
+import { SwapIcon } from '@/components/swap';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { radius, spacing, useColors } from '@/theme';
@@ -50,7 +50,7 @@ export function LookGrid({ choices, value, onPick, reason }: { choices: LookChoi
               <ThemedText variant="headline" style={{ flex: 1 }} numberOfLines={1}>
                 {c.name}
               </ThemedText>
-              {c.locked ? <Icon name="crown.fill" size={14} color={colors.gold} /> : on ? <Icon name="checkmark.circle.fill" size={16} color={colors.accent} /> : null}
+              <SwapIcon name={c.locked ? 'crown.fill' : on ? 'checkmark.circle.fill' : null} size={c.locked ? 14 : 16} color={c.locked ? colors.gold : colors.accent} reserve={false} />
             </View>
             <ThemedText variant="footnote" tone="tertiaryLabel" numberOfLines={2}>
               {c.note}

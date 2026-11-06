@@ -44,7 +44,8 @@ export default function GlobalTab() {
   const [scope, setScope] = useState<'world' | 'friends'>('world');
   const [board, setBoard] = useState<BoardView | null>(lastBoard);
   const [pulling, setPulling] = useState(false);
-  const now = Date.now();
+  // The time the tab last opened (for the season, the next cut and the ticker), read outside render.
+  const [now, setNow] = useState(Date.now);
 
   const load = useCallback(async () => {
     const next = await fetchBoard('bankroll').catch(() => null);
@@ -58,6 +59,7 @@ export default function GlobalTab() {
     useCallback(() => {
       const first = lastBoard === null;
       const shown = Date.now();
+      setNow(shown);
       void load().finally(() => {
         if (first) setTimeout(() => setLoading(false), Math.max(0, 1100 - (Date.now() - shown)));
       });

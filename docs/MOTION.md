@@ -15,10 +15,58 @@ animate at all, what is it for, the cheapest tool, which properties, spring or c
 | Sheets | Occasional | Spatial | Real iOS form sheets (`presentation: 'formSheet'`) with half and full detents and a grab handle. Dismissed by a swipe down or the handle. |
 | Scrolling | Constant | — | Native scroll views: system indicators and rubber-band bounce. No custom physics. |
 | Tab switches (Phase 5) | 100+ a day | — | No animation. Tabs are peers; they never slide. |
-| Toasts and small banners | Occasional | State | Rise 8pt and fade in over 250ms (ease-out), leave in 160ms (`enter()`/`exit()` in `presets.ts`). |
+| Toasts and small banners | Occasional | State | Rise 8pt and fade in over 250ms (ease-out), leave in 200ms (`enter()`/`exit()` in `presets.ts`). |
+| A verdict, letter, count or menu appearing in place | Often | State | `popIn()`: grows from 95% and fades in over 250ms, ease-out, no overshoot. Never from nothing, never a bounce. |
 
 Rejected: animating the header into a large title by hand (the native stack's `headerLargeTitleEnabled` does
 it), any slide between tabs, and scaling an element in from nothing.
+
+## The 20 rules
+
+From a reel, "20 Ways to Make Beautiful AI Animations", and **binding on everything that moves, now and in every
+later change** (the owner's instruction, 6 November 2026). Each one says where it lives in the code. The numbers
+are in `motion` (`src/design/tokens.ts`), the pure helpers in `native/src/motion/rules.ts`, the presets in
+`native/src/motion/presets.ts`, the web's in `:root` of `global.css` (`--ease-out`, `--dur-exit`, `--stagger`,
+`--pop-from`), and `native/tests/motion-rules.test.ts` fails when code breaks the ones a test can see.
+
+| # | Rule | In this app |
+|---|---|---|
+| 1 | Ease-out for entrances | `EASE_OUT` (0.23, 1, 0.32, 1), `--ease-out`. No `Easing.in`, no plain `ease-in` on something arriving |
+| 2 | Dropdowns open in 150 to 250ms | `motion.dropdown`; `popIn()` is 250 |
+| 3 | Stagger list rows by 30ms | `stagger(i)` (30ms a step, at most 8 steps), `--stagger` |
+| 4 | Scale to 0.97 on press | `motion.pressScale`, `PressableScale` |
+| 5 | Stretch a moving knob 12% (its other side shrinks so its area stays the same) | `knobStretch()`; the bet slider's thumb while held |
+| 6 | Stagger details as a card settles | `stagger(i)` on a card's parts (the deal wipe's suits) |
+| 7 | Arcs for objects that travel | `arcPoint()` (32px bow, `motion.arc`); the web's `flyChips()` already arcs |
+| 8 | Pulse to confirm success | out to 108% and back (`PotChips`, `chip-pop`), never a bounce |
+| 9 | Ease-in-out for moves across the screen | `EASE_IN_OUT`, `--ease-in-out` |
+| 10 | Popovers start at 0.95, never 0 | `popIn()`, `motion.popFrom`, `--pop-from`; `ZoomIn` is only allowed inside `presets.ts` |
+| 11 | Enter from the trigger | set `transformOrigin` to the trigger's corner (the web build's `Menu`) |
+| 12 | Exit toward the trigger | the same origin on the way out |
+| 13 | No bounce on everyday UI | `SETTLE` (critically damped) and `popIn()`; any spring in numbers keeps a damping ratio of 0.7 or more; no easing curve with a y above 1 |
+| 14 | Don't tween while held | while a finger is down, a thing is exactly under it (the bet slider, the hand fan, `SwipeAway`); springs only on release |
+| 15 | Exits 20% shorter than entrances | `motion.exit` (200) against `motion.base` (250), `exitMs()`, `--dur-exit` |
+| 16 | Overlap the old and the new state | `Swap` (`components/swap.tsx`): the old leaves while the new arrives, no blank beat. Used by `Button` (title and spinner), `TableButton`, the Lock it in pill, Next hand |
+| 17 | Masks for reveals and colour | `Swap kind="text"`: the label slides 8pt through a clipped box (the mask) while it fades; never two copies of text crossfading in place |
+| 18 | Crossfade icons with scale and blur | `SwapIcon`: opacity, scale 0.5 and a 4pt blur, 250ms in and 200ms out; every check mark, crown, lock and arrow that changes uses it. A test fails on a bare `{on && <Icon …/>}` or `name={a ? … : …}` |
+| 19 | Rubber band past bounds | `rubber()`: exact to the limit, then diminishing resistance, never a wall (`SwipeAway`) |
+| 20 | Reuse the same layout id | when a thing opens into a bigger version of itself, animate the same view, not a replacement: the invite ticket's QR code is drawn once and scales (`GrowingQR`), and "Show the math" turns one chevron (`Turn`) instead of swapping two; piles use `LinearTransition`. On the web use a View Transition with a shared `view-transition-name` |
+
+**The table is covered too** (the owner's call, 6 November 2026: app-wide). Bubbles (`bubblePop`: 95% to 100%, 250ms
+ease-out, `bubbleOut` 200ms), the raise panel (`rise()`/`sink()` from the bottom, anchored at the Raise button's edge, its
+four parts settling 30ms apart with `detail()`), the hand-over notices and the news banner (ease-out, exit 80% of the
+entrance), the slider thumb (held: exactly under the finger), the pot chip pulse, seats' bubbles, dice and felt pills,
+and the reveal and guess panels (timing, not springs). One exception, on purpose: **dealing cadence**. Cards turn over
+one after another at their own beat (the flop 160ms apart, your two cards 180ms apart, the long flip itself 650ms),
+because a deal is a physical sequence the eye follows, not a list settling; the 30ms stagger is for rows and parts.
+A Swap on a button is keyed by its label, never by a number that changes while you drag (the raise amount updates in
+place).
+
+Every rule is in the code now; 1 to 15, 18 and 19 and the shared button labels are also checked by tests. Whenever
+a screen changes an icon, a label or a panel, use `Swap`/`SwapIcon` or keep one object and animate it, and say in
+the change which rules it touched. Nothing here has been run on
+a phone, so the 4pt icon blur in particular needs a look on a device. Reduce Motion still wins over all of them. Where a rule and a celebration collide (the confetti and the
+win banner), the rule stays and the celebration comes from colour, confetti and haptics, not from overshoot.
 
 ## Haptics
 

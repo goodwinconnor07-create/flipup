@@ -1,6 +1,6 @@
 import { Redirect, useLocalSearchParams } from 'expo-router';
 
-import { isCode, normalizeCode } from '@/engine';
+import { isTableCode, normalizeTableCode } from '@/engine';
 
 /**
  * A table's join link (`/ABCDE`, what the lobby's QR code and Share send) opens the Join sheet with the code filled
@@ -8,6 +8,6 @@ import { isCode, normalizeCode } from '@/engine';
  */
 export default function JoinLink() {
   const { code } = useLocalSearchParams<{ code: string }>();
-  const clean = normalizeCode(code ?? '');
-  return isCode(clean) ? <Redirect href={{ pathname: '/join', params: { code: clean } }} /> : <Redirect href="/" />;
+  const clean = normalizeTableCode(code ?? '');
+  return isTableCode(clean) ? <Redirect href={{ pathname: '/join', params: { code: clean } }} /> : <Redirect href="/" />;
 }

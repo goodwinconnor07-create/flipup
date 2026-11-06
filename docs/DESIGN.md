@@ -1,0 +1,207 @@
+# FlipUp design (iPhone app)
+
+> **In force now (owner, 2026-11-05, after seeing the mockups): keep the app's design as it is on TestFlight.**
+> The changes on top of it are small: no purple (the brand and action colour is a deep blue, `brand.violet` in
+> `native/src/theme/brand.ts`, keys unchanged), no film grain (pages get a moving deep blue light field,
+> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the original game pictures (`gameArt.ts`; the
+> detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
+> red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
+
+The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
+owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.
+
+**How this document works.** Read it before any UI change. A new decision is written here first, then built. If a
+screen and this document disagree, the document wins until the owner says otherwise; then the document is changed
+in the same commit. New screens are mocked up and shown to the owner before they're built.
+
+## 1. What FlipUp feels like
+
+**A poker league for you and your friends, printed on paper.** You keep score against your mates: who won, how
+often, who's on top this month. The pages are warm grey paper with near-black ink, one signal red for actions and
+gold for winning. Everything is flat and still. The words are plain and calm, and there are very few of them.
+
+The game table is the one place with colour, felt and life. Everything around it is the scoreboard.
+
+## 2. Why: what was wrong
+
+The owner's complaints about the app before the rebuild, in their words and ours:
+
+- **"Vibe-coded."** It looked generated rather than designed.
+- **Purple gradients and glows.** Violet gradient cards, drifting glows, film grain and blurred art are the look
+  of AI-made apps.
+- **Too many styles.** Each screen was modelled on a different app (Flighty, Apple's Games app, Chess.com,
+  Settings, SCRAM), so nothing felt made by one hand.
+- **Detailed game icons.** The shaded, glossy, many-shape icons were the biggest single cause. The first, simple
+  flat Imposter drawing was the only one that didn't feel that way, because it was simple.
+- **Too much like Apple's Games app** after the hero carousel and art-tinted sheets.
+
+## 3. What we take from other apps, and why
+
+| App | What we take | Why |
+| --- | --- | --- |
+| SCRAM | Flat cards barely lighter than the page, hairline dividers, a stats grid that is only type and lines | It looks designed without decoration: the structure is the style |
+| SCRAM | The recipe of paper, ink and one red, big confident titles, wide capital labels | It reads instantly and feels sporty |
+| Flighty | Your numbers made beautiful: big figures that feel earned | Stats are the reward in a league |
+| Duolingo | Only on challenge and learning screens: chunky pressable buttons, celebrations, progress you can see | Learning needs encouragement; the rest of the app stays calm |
+| The first Imposter drawing | Flat simple shapes, no shading | It was the one picture that didn't feel generated |
+
+Not taken: Apple's Games app (hero carousel, art-tinted sheets, glossy icons), SCRAM's cheeky voice (the owner
+chose plain and calm), Spotify, Revolut.
+
+## 4. What stays as it is
+
+- **The table during play** and all of the gameplay: felt, rail, seats, cards, actions, raise panel, bubbles,
+  sounds, deal, run-outs. Its own colours stay (Call blue, Raise green, Fold red), because they belong to the
+  table, not the menus.
+- **Emoji profiles.** Everyone's picture is an emoji.
+
+Everything else is rebuilt: Home, the lobby before the deal, the table menu and its sheets, the finish page, Party,
+Range training, challenges, Premium, Settings and every sheet.
+
+## 5. Rules (never break these)
+
+1. No gradients, glows, grain, film texture, blur or glass on any content. (The system tab bar and sheets keep
+   whatever iOS gives them.)
+2. No shadows on cards. Cards are flat, a shade lighter than the page.
+3. No violet. The brand is paper, ink, red and gold.
+4. No coloured icon squares in rows (the iPhone Settings look). Rows are text, an optional emoji or drawing, a
+   value and a chevron.
+5. No explanation lines under rows or titles, except where a mistake costs something (Delete my data, leaving a
+   table) and in How to Play.
+6. Red means "do this": the main button, links, the selected tab. Gold means "you won": 1st place, streaks,
+   Premium. Nothing else gets colour.
+7. One way to do each thing: one button style per job, one row style, one card style, one back button.
+8. Every number that matters is set in the narrow display face; every label in the wide face, in capitals.
+9. Motion is snappy and native. Nothing drifts, loops or breathes outside the table and learning screens.
+10. Mock up new screens and show the owner before building them.
+
+## 6. Tokens
+
+### Colour
+
+| Token | Light | Dark | Use |
+| --- | --- | --- | --- |
+| `page` | `#F3F0ED` | `#141210` | Every page |
+| `card` | `#F9F7F5` | `#1E1C1A` | Cards, rows, inputs |
+| `cardPressed` | `#ECE8E4` | `#2A2725` | A pressed row or card |
+| `disc` | `#E9E5E1` | `#2A2725` | The disc behind an emoji |
+| `hairline` | `#E2DDD8` | `#2E2B28` | Dividers, card and input edges |
+| `ink` | `#141210` | `#F3F0ED` | Titles, numbers, body text |
+| `ink2` | `#5E5954` | `#A8A29C` | Secondary text |
+| `ink3` | `#736D67` | `#8A847E` | Labels, placeholders, chevrons (dark enough for 12pt labels) |
+| `red` | `#E5262A` | `#E5262A` | Main buttons, links, selected tab |
+| `redPressed` | `#C81E22` | `#C81E22` | A pressed red button |
+| `onRed` | `#FFFFFF` | `#FFFFFF` | Text on red |
+| `gold` | `#E8B13A` | `#E8B13A` | Fills: 1st place, streak flame, Premium badge |
+| `goldInk` | `#9A6A00` | `#F0C45C` | Gold as text on the page |
+| `silver` / `bronze` | `#C9CDD3` / `#D8955E` | same | 2nd and 3rd place on a board |
+| `goldBg` / `goldDeep` | `#FBEFD2` / `#7A5300` | `#3A2E14` / `#F0C45C` | The win panel on learning screens and its text |
+
+Game drawings keep their own flat colours (section 8).
+
+### Type
+
+One family, Archivo (free, SIL Open Font License), in two widths, plus the system font for reading:
+
+| Step | Face | Size / line | Use |
+| --- | --- | --- | --- |
+| `display` | Archivo Expanded ExtraBold | 40 / 44 | "Hi, Connor.", "You." |
+| `title` | Archivo Expanded Bold | 28 / 32 | Screen and sheet titles |
+| `heading` | Archivo Expanded Bold | 20 / 24 | Card and section headings |
+| `label` | Archivo Expanded SemiBold, capitals, +1.2 tracking | 12 / 16 | Eyebrows, stat labels, column heads |
+| `number` | Archivo ExtraCondensed Black | 44 / 44 | Stat figures, scores, chips, ranks |
+| `numberSm` | Archivo ExtraCondensed Bold | 24 / 26 | Row values, board points |
+| `body` | SF Pro, regular | 17 / 22 | Reading text |
+| `bodySm` | SF Pro, regular | 15 / 20 | Row text, small lines |
+| `button` | SF Pro, semibold | 17 / 22 | Buttons |
+
+Sizes follow Dynamic Type with caps (display and number stop at 1.3×).
+
+### Shape and space
+
+- Spacing on a 4pt grid: 4, 8, 12, 16, 20, 24, 32, 48. Page margin 20.
+- Corners: cards 16, buttons 14, inputs 14, game drawings 12, small chips 8, emoji discs round.
+- Hairlines are 1pt (`hairline`). Cards have no border unless they sit on another card.
+- Tap targets are at least 44pt; main buttons are 54pt tall.
+
+## 7. Components
+
+- **Button.** `primary`: solid red, white text, 54pt, corner 14, pressed `redPressed`. `secondary`: `card` fill,
+  `ink` text, a 1pt hairline. `text`: red words, no box (Not now, See all). `destructive`: red text on `card`.
+- **Learning button** (challenge and learning screens only): solid colour with a 4pt darker lip under it that
+  presses down, Duolingo's way. Fold is `card` with a grey lip, Call red, Raise ink; on the win panel the next
+  step is gold with ink text.
+- **Switch.** On is `ink`, not red or green (red means "do this", gold means a win).
+- **Card.** `card` fill, corner 16, no shadow, padding 20.
+- **Row.** Inside a card: optional leading emoji or drawing, the text, a value in `numberSm` or `ink2`, a chevron
+  in `ink3`. Rows are split by hairlines inset to the text.
+- **Stat grid.** Two columns, hairlines between cells; each cell is a `number` and a `label` under it. Nothing
+  played yet shows "–", never "0%".
+- **Eyebrow.** A `label` in `ink3` above a title or a card's content.
+- **Board row.** Place in a small square (gold, silver, bronze for the top three, `disc` after), the emoji, the
+  @username, then the score in `numberSm`.
+- **Emoji avatar.** The emoji on a round `disc` with a 1pt hairline. No ring, no colour.
+- **Navigation.** The standard iOS bar: a centred title and a red "‹ Back"; swipe back everywhere but the table.
+- **Tab bar.** Play · Ranks · You, iOS's own bar, the chosen tab in red.
+
+## 8. Game drawings
+
+Each game has a flat drawing: 2 to 4 flat colours, simple shapes, no outlines, no gradients, no shine, at most one
+soft flat shadow shape. On a rounded square (corner 12) in the game's own colour. They should look like the first
+Imposter drawing: readable at 44pt, with a little character. Playing cards in them are the table's card (white, a
+heavy rank, one suit, the four-colour deck), drawn flat.
+
+## 9. Screens
+
+- **Play** (tab). "Hi, Connor." in `display`, then two buttons: Host a game (red) and Join with a code
+  (secondary). Then the live thing if there is one (your table, an invite). Then sections, each an eyebrow and a
+  card: Games (all 13 as rows: drawing, name, one short line), Party night, Challenges and Range training, Friends.
+- **Ranks** (tab). "Ranks." with This month / All time. Your place card ("Not ranked yet: 3 of 5 games" until
+  you've played five). The board: place, emoji, @username, win rate out of 100.
+- **You** (tab). "You." and a settings button. A card with your emoji, @username in `title`, and the stat grid:
+  hands, games won, win rate, biggest pot, best hand, streak. Then Friends, Card packs and bubbles, Premium as
+  rows. Friends is a pushed screen like SCRAM's: Add a friend (the @username field), My QR and Share my link,
+  Friends · N, Requests.
+- **Game sheet.** The drawing, the name in `title`, how it plays as short numbered lines, then Play with friends
+  (red) and Play with bots (secondary).
+- **Setup** (Play with friends / bots). A paper page: who's in (emoji discs, + Invite, + Bot), the game as a row
+  that opens the game list, the table's settings as rows, Open table / Deal pinned in red.
+- **Lobby.** The code big in `number`, the QR, Share; who's at the table; settings; Deal in red.
+- **Premium.** The same paper page: a gold Premium badge, the title, the eight Premium games' drawings, three plain
+  lines, a red Buy with the price, "One payment, no subscription." under it, Restore as a text button.
+- **Challenges and Range training.** Duolingo's feel: a progress bar across the top, chunky learning buttons,
+  a celebration (a bounce, confetti in red and gold, a sound) for a best play or a new best.
+- **Finish.** Your place huge in `number`, the stat grid for the table, the standings as board rows, Play again in
+  red.
+
+## 10. Ranks
+
+- **Score:** win rate out of 100 = games finished 1st ÷ games played, rounded.
+- **What counts:** online games with at least one friend at the table. Bots-only tables and challenges don't.
+- **Fair start:** you're "Not ranked yet" until you've played 5 counting games.
+- **Periods:** This month (resets on the 1st; "November ends in 25 days") and All time.
+- **Who:** you and your friends only.
+- Needs the server to keep each player's counts per month on their friend card (not built yet).
+
+## 11. Words
+
+Plain and calm. Short sentences; titles may end with a full stop ("You.", "Ranks."). No jokes on buttons. Almost
+no help text (rule 5). Numbers are written as figures.
+
+## 12. Motion
+
+Snappy and native: system pushes and sheets, a 97% press dip, numbers that count up once. Learning screens may
+bounce and celebrate. Respect Reduce Motion everywhere.
+
+## 13. Mockups
+
+The owner reviews mockups before anything is built: https://claude.ai/artifact/6DoCrFYztyxGutbd9hkJPP (Play, Play in
+dark mode, Ranks, You, Friends, all games, a game sheet, Play with friends, the lobby, Premium, a Range training hand
+and its best-play panel).
+
+## 14. Decision log
+
+- 2026-11-05: the interview above. Replaces `docs/DESIGN_DIRECTION.md` (the Games-app direction).
+- 2026-11-05: first mockups made.
+- 2026-11-05: the owner chose to keep the TestFlight design with small changes (the box at the top). The interview
+  direction is parked.

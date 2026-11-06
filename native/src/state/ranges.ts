@@ -124,9 +124,11 @@ export interface RangePlay {
   points: number;
   /** How many times you've swiped your cards to answer: the swipe hint goes once you have a few times. */
   swipes: number;
+  /** Points scored each day, as local dates: the Train tab's daily goal. The last 60 days are kept. */
+  xp: Record<string, number>;
 }
 
-const START: RangePlay = { level: 'easy', days: [], daily: {}, blitzBest: 0, roundBest: 0, rounds: 0, points: 0, swipes: 0 };
+const START: RangePlay = { level: 'easy', days: [], daily: {}, blitzBest: 0, roundBest: 0, rounds: 0, points: 0, swipes: 0, xp: {} };
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 
 function cleanPlay(raw: unknown): RangePlay {
@@ -136,6 +138,9 @@ function cleanPlay(raw: unknown): RangePlay {
   if (r.daily && typeof r.daily === 'object')
     for (const [day, list] of Object.entries(r.daily as Record<string, unknown>))
       if (/^\d{4}-\d{2}-\d{2}$/.test(day) && Array.isArray(list)) daily[day] = list.filter((g): g is Grade => g === 'best' || g === 'ok' || g === 'mistake').slice(0, DAILY_SIZE);
+  const xp: Record<string, number> = {};
+  if (r.xp && typeof r.xp === 'object')
+    for (const [day, n] of Object.entries(r.xp as Record<string, unknown>)) if (/^\d{4}-\d{2}-\d{2}$/.test(day) && num(n) > 0) xp[day] = num(n);
   return {
     level: r.level === 'pro' ? 'pro' : 'easy',
     days: cleanDays(r.days),
@@ -145,6 +150,7 @@ function cleanPlay(raw: unknown): RangePlay {
     rounds: num(r.rounds),
     points: num(r.points),
     swipes: num(r.swipes),
+    xp,
   };
 }
 
@@ -183,7 +189,10 @@ export function noteDaily(day: string, grade: Grade): void {
 export function finishSession(mode: Mode, score: number, now = new Date()): { newBest: boolean } {
   const play = readPlay();
   const newBest = (mode === 'blitz' && score > play.blitzBest) || (mode === 'round' && score > play.roundBest);
+  const day = dayKey(now);
+  const kept = Object.keys(play.xp).sort().filter((d) => d !== day).slice(-59);
   writePlay({
+    xp: { ...Object.fromEntries(kept.map((d) => [d, play.xp[d]])), [day]: (play.xp[day] ?? 0) + Math.max(0, score) },
     days: withToday(play.days, now),
     blitzBest: mode === 'blitz' ? Math.max(play.blitzBest, score) : play.blitzBest,
     roundBest: mode === 'round' ? Math.max(play.roundBest, score) : play.roundBest,
@@ -194,15 +203,44 @@ export function finishSession(mode: Mode, score: number, now = new Date()): { ne
   return { newBest };
 }
 
-/** Each concept's progress: 1 when every hand of it is a best play, half credit for also good. */
-export function trickProgress(grades: Record<string, Grade>): Record<string, { done: number; total: number; best: boolean; ids: string[] }> {
-  const out: Record<string, { done: number; total: number; best: boolean; ids: string[] }> = {};
+/** Points a day that meet the Train tab's daily goal: about one good round. */
+export const DAILY_GOAL = 300;
+
+/** Points scored today. */
+export const xpToday = (play: RangePlay, now = new Date()): number => play.xp[dayKey(now)] ?? 0;
+
+/** Best plays a trick needs before it's collected and the next lesson on the path opens (fewer if it has fewer hands). */
+export const LESSON_GOAL = 3;
+
+export interface TrickProgress {
+  /** Best plays, with half credit for also good, up to `goal`. */
+  done: number;
+  /** Best plays it needs: `LESSON_GOAL`, or every hand when it has fewer. */
+  goal: number;
+  /** How many hands it has. */
+  total: number;
+  /** Collected: `goal` best plays. */
+  best: boolean;
+  /** Played at least once. */
+  started: boolean;
+  ids: string[];
+}
+
+/** Each concept's progress: collected once `LESSON_GOAL` of its hands (or all, if fewer) are best plays. */
+export function trickProgress(grades: Record<string, Grade>): Record<string, TrickProgress> {
+  const out: Record<string, TrickProgress & { bests: number; oks: number }> = {};
   for (const s of allHands()) {
-    const t = (out[s.concept] ??= { done: 0, total: 0, best: false, ids: [] });
+    const t = (out[s.concept] ??= { done: 0, goal: 0, total: 0, best: false, started: false, ids: [], bests: 0, oks: 0 });
     t.total++;
     t.ids.push(s.id);
-    t.done += grades[s.id] === 'best' ? 1 : grades[s.id] === 'ok' ? 0.5 : 0;
+    if (grades[s.id] === 'best') t.bests++;
+    else if (grades[s.id] === 'ok') t.oks++;
+    if (grades[s.id]) t.started = true;
   }
-  for (const t of Object.values(out)) t.best = t.done >= t.total;
+  for (const t of Object.values(out)) {
+    t.goal = Math.min(LESSON_GOAL, t.total);
+    t.best = t.bests >= t.goal;
+    t.done = Math.min(t.goal, t.bests + t.oks * 0.5);
+  }
   return out;
 }

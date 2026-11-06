@@ -48,6 +48,11 @@ import { askToBeFriends, type FriendCardApi } from './friendCard';
 export { BlackjackRoom } from './blackjack';
 export { ReportBox } from './reports';
 export { Entitlements } from './entitlement';
+export { BankrollRoom } from './bankroll';
+export { Leaderboard } from './leaderboard';
+import { dayOf, dueCut, isDay, isFriendCode as isPalCode, isSeason, previousSeason, seasonOf } from '../src/game';
+import { scoreDaily } from '../src/train/ranges/daily';
+import DAILY_KEY from '../src/train/ranges/dailyKey.json';
 
 const MAX_BODY_CHARS = 16 * 1024;
 
@@ -233,7 +238,9 @@ async function friendRoute(request: Request, env: Env, pathname: string, search:
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
     const look = lookFields(body);
     if ('error' in look) return json({ error: look.error }, 400);
-    const result = await card.update(body.deviceId, look.name, look.emoji, parseCampaignCard(body.campaign));
+    // A country is two capital letters, or null to stop showing one.
+    const country = body.country === null ? null : typeof body.country === 'string' && /^[A-Z]{2}$/.test(body.country) ? body.country : undefined;
+    const result = await card.update(body.deviceId, look.name, look.emoji, parseCampaignCard(body.campaign), country);
     if (result === 'missing') return json({ error: 'No friend with that code.' }, 404);
     if (result === 'forbidden') return json({ error: 'That code belongs to another phone.' }, 403);
     return json({ ok: true });
@@ -242,6 +249,7 @@ async function friendRoute(request: Request, env: Env, pathname: string, search:
     if (limited(request, 'friend-change', 120, 60 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
+    if ((await card.owner()) === body.deviceId) await forgetBoards(env, code);
     const result = await card.remove(body.deviceId);
     // Already gone counts as done: the phone wanted it deleted.
     if (result === 'forbidden') return json({ error: 'That code belongs to another phone.' }, 403);
@@ -477,10 +485,14 @@ async function reportRoute(request: Request, env: Env, ctx: ExecutionContext): P
   if (limited(request, 'report', 10, 60 * 60_000)) return json({ error: 'Too many reports. Try again later.' }, 429);
   const report = parseReport(await readJson(request));
   if (!report) return json({ error: "That report isn't complete." }, 400);
+  // A board row: the player must be on this month's board (their username is what was shown).
+  const boardRow = report.where === 'board' ? await env.LEADERBOARD.getByName(`bankroll:${seasonOf(Date.now())}`).row(report.code) : null;
   const found =
-    report.where === 'table'
-      ? await env.TABLE_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId)
-      : await env.PARTY_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId);
+    report.where === 'board'
+      ? boardRow && { name: boardRow.username, emoji: boardRow.emoji, deviceId: null, bot: false }
+      : report.where === 'table'
+        ? await env.TABLE_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId)
+        : await env.PARTY_ROOM.getByName(report.code).reportee(report.playerId, report.deviceId);
   if (!found) return json({ error: "We couldn't find that player at your table." }, 404);
   const stored: StoredReport = { ...report, id: newId(10), at: Date.now(), found };
   if (!(await env.REPORT_BOX.getByName('reports').add(stored))) return json({ error: "You've sent a lot of reports today. We'll look at those first." }, 429);
@@ -505,9 +517,110 @@ async function premiumRoute(request: Request, env: Env, pathname: string): Promi
   return json({ error: 'Not found.' }, 404);
 }
 
+
+/** Delete my data: this player's rows on this and last month's boards and the last week's daily boards, and their Bankroll rooms. */
+async function forgetBoards(env: Env, code: string): Promise<void> {
+  const now = Date.now();
+  const seasons = [seasonOf(now), previousSeason(seasonOf(now))];
+  const days = Array.from({ length: 8 }, (_, i) => dayOf(now - i * 86_400_000));
+  await Promise.all([
+    ...seasons.map((s) => env.LEADERBOARD.getByName(`bankroll:${s}`).remove(code)),
+    ...days.map((d) => env.LEADERBOARD.getByName(`daily:${d}`).remove(code)),
+    ...seasons.map((s) => env.BANKROLL_ROOM.getByName(`${code}:${s}`).remove()),
+  ]);
+}
+
+/** Per friend code, in this instance's memory: a phone can't hammer its own room or the score route. */
+const perCode = new Map<string, number[]>();
+function codeLimited(code: string, max: number, windowMs: number): boolean {
+  const now = Date.now();
+  const recent = (perCode.get(code) ?? []).filter((t) => now - t < windowMs);
+  recent.push(now);
+  perCode.set(code, recent);
+  if (perCode.size > 5000) for (const [k, v] of perCode) if (now - v[v.length - 1] > windowMs) perCode.delete(k);
+  return recent.length > max;
+}
+
+/**
+ * Bankroll, for the friend code's owner only: GET /api/bankroll/:code?device= (the month so far), POST /sit,
+ * POST /rebuy {watched}, and the table's socket /ws?device=. Nothing here lets a phone set a chip count.
+ */
+async function bankrollRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
+  const m = pathname.match(/^\/api\/bankroll\/(\d{6})(?:\/(sit|rebuy|ws))?$/);
+  if (!m) return json({ error: 'Not found.' }, 404);
+  const [, code, kind] = m;
+  const params = new URL(`http://x/${search}`).searchParams;
+  const body = request.method === 'POST' ? ((await readJson(request)) as Record<string, unknown> | null) : null;
+  const deviceId = body?.deviceId ?? params.get('device');
+  if (!isDeviceId(deviceId) || !(await ownedCode(env, code, deviceId))) return json({ error: 'That code belongs to another phone.' }, 403);
+  if (kind !== 'ws' && codeLimited(code, 120, 60_000)) return json({ error: 'Slow down a little.' }, 429);
+  const season = seasonOf(Date.now());
+  const room = env.BANKROLL_ROOM.getByName(`${code}:${season}`);
+  if (kind === 'ws') return sameSite(request) ? room.fetch(request) : json({ error: 'Not allowed.' }, 403);
+  if (!kind) {
+    const card = await env.FRIEND_CARD.getByName(code).get(code);
+    const look = card ? { username: card.username ?? '', emoji: card.emoji, name: card.name, ...(card.country ? { country: card.country } : {}), ...(card.badge ? { badge: card.badge } : {}) } : undefined;
+    return json(await room.status(code, season, look));
+  }
+  const error = kind === 'sit' ? await room.sit(deviceId) : await room.rebuy(body?.watched === true);
+  return error ? json({ error }, 400) : json({ ok: true });
+}
+
+/**
+ * GET /api/boards/:board?code=&friends=a,b (board: "bankroll", "bankroll:2026-10", "daily", "daily:2026-11-04"):
+ * the top 100, your row and your friends' rows. Reading is public; only the server writes.
+ */
+async function boardRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
+  if (limited(request, 'boards', 600, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+  const [kind, when] = decodeURIComponent(pathname.slice('/api/boards/'.length)).split(':');
+  const name = kind === 'bankroll' && (!when || isSeason(when)) ? `bankroll:${when ?? seasonOf(Date.now())}` : kind === 'daily' && (!when || isDay(when)) ? `daily:${when ?? dayOf(Date.now())}` : null;
+  if (!name) return json({ error: 'No such board.' }, 404);
+  const params = new URL(`http://x/${search}`).searchParams;
+  const me = params.get('code');
+  const friends = (params.get('friends') ?? '').split(',').filter((c) => isPalCode(c)).slice(0, 200);
+  return json(await env.LEADERBOARD.getByName(name).view(isPalCode(me) ? me : null, friends));
+}
+
+/** POST /api/daily/:code {deviceId, day, answers}: Today's three, scored here from the answers. The first score of the day counts. */
+async function dailyRoute(request: Request, env: Env, pathname: string): Promise<Response> {
+  const code = pathname.split('/')[3];
+  const body = (await readJson(request)) as Record<string, unknown> | null;
+  if (!body || !isDeviceId(body.deviceId) || !isPalCode(code) || !(await ownedCode(env, code, body.deviceId))) return json({ error: 'That code belongs to another phone.' }, 403);
+  if (codeLimited(`daily:${code}`, 10, 60 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+  // A phone's date can be a day either side of the server's (time zones).
+  const day = body.day;
+  const near = [-1, 0, 1].map((d) => dayOf(Date.now() + d * 86_400_000));
+  if (!isDay(day) || !near.includes(day)) return json({ error: 'That isn’t today.' }, 400);
+  const score = scoreDaily(day, body.answers, DAILY_KEY as string[][]);
+  if (score === null) return json({ error: "Those answers don't fit today's hands." }, 400);
+  const card = await env.FRIEND_CARD.getByName(code).get(code);
+  if (!card?.username) return json({ error: 'Pick a username first.' }, 400);
+  const board = env.LEADERBOARD.getByName(`daily:${day}`);
+  if (await board.row(code)) return json({ score, counted: false });
+  await board.report({ code, username: card.username, emoji: card.emoji, ...(card.country ? { country: card.country } : {}), ...(card.badge ? { badge: card.badge } : {}), score, peak: score, rebuy: false, status: 'alive', at: Date.now() });
+  return json({ score, counted: true });
+}
+
+/** The hourly cron: this week's cut once it's due, and on the 1st, last month's top 100 badges. Both safe to run twice. */
+async function scheduled(env: Env): Promise<void> {
+  const now = Date.now();
+  const due = dueCut(now);
+  if (due) await env.LEADERBOARD.getByName(`bankroll:${due.season}`).cut(due.week);
+  const last = previousSeason(seasonOf(now));
+  const top = await env.LEADERBOARD.getByName(`bankroll:${last}`).close();
+  for (const { code, place } of top) await env.FRIEND_CARD.getByName(code).addBadge(last, place);
+}
+
 export default {
+  async scheduled(_controller, env, ctx): Promise<void> {
+    ctx.waitUntil(scheduled(env));
+  },
   async fetch(request, env, ctx): Promise<Response> {
     const { pathname, search } = new URL(request.url);
+
+    if (pathname.startsWith('/api/bankroll/')) return bankrollRoute(request, env, pathname, search);
+    if (pathname.startsWith('/api/boards/')) return request.method === 'GET' ? boardRoute(request, env, pathname, search) : json({ error: 'Use GET.' }, 405);
+    if (pathname.startsWith('/api/daily/')) return request.method === 'POST' ? dailyRoute(request, env, pathname) : json({ error: 'Use POST.' }, 405);
 
     if (pathname.startsWith('/api/premium/') || pathname === '/api/apple/notifications') return premiumRoute(request, env, pathname);
 

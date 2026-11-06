@@ -148,7 +148,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
     void leaveParty(view.code);
     if (atTable) leaveTable();
     if (place !== 'screen' && router.canDismiss()) router.dismissAll();
-    router.navigate('/party');
+    router.navigate('/');
   };
 
   return (

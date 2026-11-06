@@ -27,7 +27,7 @@ export function FriendsStrip() {
   return (
     <View style={{ gap: spacing.sm }}>
       <SectionTitle title="Friends" onMore={pals.length ? () => router.navigate('/friends') : undefined} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md }} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: spacing.md, alignItems: 'flex-start' }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md, marginTop: -8, marginBottom: -28 }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 28, gap: spacing.md, alignItems: 'flex-start' }}>
         <AddFace onPress={add} />
         {pals.length === 0 ? (
           <View style={{ justifyContent: 'center', height: FACE, maxWidth: 240 }}>

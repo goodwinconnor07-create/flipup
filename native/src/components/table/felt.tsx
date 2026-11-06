@@ -103,8 +103,12 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
   const potNow = hand && !hand.result ? pot(hand) : 0;
   const pack = me?.cardPack;
+  // The table screen never scrolls: a board that needs more room than the phone has left (the cross or the clock on
+  // a small phone) keeps its layout and shrinks to fit, from the top.
+  const natural = Math.min(feltHeight(variant, height), Math.max(feltHeight(variant, 0), heightLimit ?? Infinity));
+  const fit = heightLimit && heightLimit > 0 && heightLimit < natural ? Math.max(0.6, heightLimit / natural) : 1;
 
-  return (
+  const oval = (
     <View
       style={{
         marginHorizontal: spacing.md,
@@ -113,7 +117,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         // A fixed size for the whole game, so nothing on the table (cards shown under seats, the win banner) can
         // squeeze it: a wide stadium from 196pt to 240 by the phone's height; the cross, the clock and the Memory
         // peek take more. Memory Poker plays at that size too, so the board doesn't jump when the peek ends.
-        height: Math.min(feltHeight(variant, height), Math.max(feltHeight(variant, 0), heightLimit ?? Infinity)),
+        height: natural,
         flexShrink: 0,
         boxShadow: '0 12px 26px -14px rgba(18,18,40,0.55), inset 0 1px 0 rgba(255,255,255,0.28)',
         ...gradient(`${look.rail === 'wood' && !theme ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
@@ -219,6 +223,12 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           ) : null}
         </View>
       </View>
+    </View>
+  );
+  if (fit === 1) return oval;
+  return (
+    <View style={{ height: natural * fit, flexShrink: 0 }}>
+      <View style={{ transform: [{ scale: fit }], transformOrigin: 'top center' }}>{oval}</View>
     </View>
   );
 }

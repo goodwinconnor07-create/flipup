@@ -86,7 +86,7 @@ export function Button({
           colors={[gradients[tint][0], gradients[tint][1], gradients[tint][1]]}
           radius={radius.md}
           shadow="soft"
-          grain={0.07}
+         
           outerStyle={{ alignSelf: 'stretch' }}
           style={{ minHeight: s.height, paddingHorizontal: s.paddingHorizontal, alignItems: 'center', justifyContent: 'center' }}
         >

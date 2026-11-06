@@ -85,7 +85,7 @@ export function Price({ toCall, pot, quiet }: { toCall: number; pot: number; qui
           need {need}%
         </Text>
       </View>
-      <View style={{ height: 8, borderRadius: 4, flexDirection: 'row', overflow: 'hidden', backgroundColor: 'rgba(139,109,255,0.45)' }}>
+      <View style={{ height: 8, borderRadius: 4, flexDirection: 'row', overflow: 'hidden', backgroundColor: 'rgba(90, 140, 255,0.45)' }}>
         <View style={{ width: `${need}%`, backgroundColor: brand.gold }} />
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>

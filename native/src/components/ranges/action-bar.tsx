@@ -16,7 +16,7 @@ type Kind = 'fold' | 'plain' | 'raise';
 /** The table's colours: Fold red, Call and Check the plain bright button, Raise and bets green. */
 const LOOK: Record<Kind, { colors: readonly [string, string, string]; ink: string; sub: string; glow: string }> = {
   fold: { colors: ['#ff6b5e', '#e5322d', '#a51d18'], ink: '#ffffff', sub: 'rgba(255,255,255,0.8)', glow: 'rgba(255,255,255,0.22)' },
-  plain: { colors: ['#ffffff', '#f6f4ff', '#e2dbff'], ink: brand.violetNight, sub: brand.violetDeep, glow: 'rgba(255,255,255,0.6)' },
+  plain: { colors: ['#ffffff', '#f3f6ff', '#dbe5ff'], ink: brand.violetNight, sub: brand.violetDeep, glow: 'rgba(255,255,255,0.6)' },
   raise: { colors: ['#45dc8c', brand.raise, brand.raiseDeep], ink: '#ffffff', sub: 'rgba(255,255,255,0.85)', glow: 'rgba(255,255,255,0.25)' },
 };
 
@@ -104,7 +104,7 @@ function Answer({ kind, title, sub, wide, onPress }: { kind: Kind; title: string
   const look = LOOK[kind];
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={sub ? `${title}, ${sub}` : title} onPress={onPress} outerStyle={{ flex: wide ? 2 : 1 }}>
-      <LivingCard colors={look.colors} glow={look.glow} glow2="rgba(255,255,255,0.08)" grain={0} shadow="soft" radius={radius.md} style={{ minHeight: 60, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, paddingVertical: 6 }}>
+      <LivingCard colors={look.colors} glow={look.glow} glow2="rgba(255,255,255,0.08)" shadow="soft" radius={radius.md} style={{ minHeight: 60, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, paddingVertical: 6 }}>
         <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 19, lineHeight: 23, fontWeight: '800', color: look.ink }}>
           {title}
         </Text>

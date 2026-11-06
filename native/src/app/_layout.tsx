@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
 import { InviteBanner } from '@/components/invite-banner';
+import { LaunchCover } from '@/components/launch-cover';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useFriendWatch } from '@/state/pals';
 import { startStore } from '@/state/purchase';
@@ -19,6 +20,9 @@ const applyAppearance = (a: AppearancePref) => {
   }
 };
 applyAppearance(loadAppearance());
+
+// A join link opened from outside (`/ABCDE`, `/party/ABCDE`) still has the tabs under its sheet.
+export const unstable_settings = { initialRouteName: '(tabs)' };
 // Connect to the App Store at launch: purchases that finish later still land, and Premium comes back on its own.
 void startStore();
 
@@ -53,6 +57,8 @@ export default function RootLayout() {
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
         {/* Play with friends: its own dark grain page, over the tabs so the tab bar never covers Open table. */}
         <Stack.Screen name="play-friends" options={{ headerShown: false, title: 'Play with friends', statusBarStyle: 'light' }} />
+        {/* A party's playlist, pushed from Play with friends; Save takes it back there. */}
+        <Stack.Screen name="party-playlist" options={{ headerShown: false, title: 'Party playlist', statusBarStyle: 'light' }} />
         <Stack.Screen name="play-bots" options={{ headerShown: false, title: 'Play with bots', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* The fade is short because the table's own DealWipe does the moving. */}
@@ -64,9 +70,8 @@ export default function RootLayout() {
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Challenges: the start sheet, a seat's tag, Detective's check, and Rewind's two sheets. */}
         <Stack.Screen name="challenge/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Challenge', headerShown: false }} />
-        <Stack.Screen name="range-training" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Range training', headerShown: false }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
-        <Stack.Screen name="ranges" options={{ headerShown: false, title: 'Range training', statusBarStyle: 'light', contentStyle: { backgroundColor: '#07051a' } }} />
+        <Stack.Screen name="ranges" options={{ headerShown: false, title: 'Range training', statusBarStyle: 'light', contentStyle: { backgroundColor: '#040914' } }} />
         <Stack.Screen name="range-why" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'Why' }} />
         <Stack.Screen name="range-glossary" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], headerShown: false, title: 'Poker words' }} />
         <Stack.Screen name="range-tricks" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Your tricks' }} />
@@ -83,19 +88,30 @@ export default function RootLayout() {
         <Stack.Screen name="table-log" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand log' }} />
         <Stack.Screen name="card-packs" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Card packs' }} />
         <Stack.Screen name="chat-bubbles" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Chat bubbles' }} />
+        <Stack.Screen name="country" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Show my country' }} />
         <Stack.Screen name="blocked" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Blocked players' }} />
         <Stack.Screen name="emoji" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Your emoji' }} />
         <Stack.Screen name="streak" options={{ ...sheet, title: 'Daily streak' }} />
         <Stack.Screen name="username" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Username' }} />
         <Stack.Screen name="friend/[code]" options={{ ...sheet, sheetAllowedDetents: [0.7, 1], title: 'Friend' }} />
         <Stack.Screen name="friend-requests" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'Friend requests' }} />
+        <Stack.Screen name="invite-contacts" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Invite friends' }} />
         <Stack.Screen name="add-friend" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Add a friend' }} />
-        <Stack.Screen name="code-entry" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Code' }} />
+        {/* Join with a code: Play's round button. The keyboard comes up as it opens; a table or party code, or a QR code. */}
+        <Stack.Screen name="join" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Join' }} />
+        {/* Bankroll: the start sheet (night page), and the rebuy's placeholder ad, which can't be swiped away early by accident. */}
+        <Stack.Screen name="bankroll" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Bankroll' }} />
+        <Stack.Screen name="bankroll-intro" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'How it works' }} />
+        <Stack.Screen name="ad" options={{ presentation: 'fullScreenModal', headerShown: false, title: 'Ad' }} />
+        {/* Join links: they only pass the code on to the Join sheet. */}
+        <Stack.Screen name="[code]" options={{ headerShown: false, animation: 'none' }} />
+        <Stack.Screen name="party/[code]" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
         <Stack.Screen name="sample-sheet" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'A sheet' }} />
       </Stack>
       {/* A friend's table invite drops in over any screen. */}
       <InviteBanner />
+      <LaunchCover />
     </ThemeProvider>
   );
 }

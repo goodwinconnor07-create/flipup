@@ -11,10 +11,11 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
+    "resolveJsonModule": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["worker", "src/game"],
+  "include": ["worker", "src/game", "src/train/ranges/daily.ts"],
   "exclude": ["src/game/**/*.test.ts", "worker/**/*.test.ts"]
 }

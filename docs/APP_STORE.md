@@ -257,7 +257,7 @@ after upload when a reason is missing.
 > FlipUp needs no account or login. To play right away, tap **Play with bots** on Home, then **Deal**. The bots
 > fill the table and the game runs on the phone, so no second device is needed. To see an online table, tap
 > **Play with friends**: it opens a table with a 5-letter code, and **Add bot** fills the seats. Party mode is on
-> the Party tab: **Host a party**, add bots, and start.
+> the same page: **Start a party**, pick the games, **Save playlist**, then **Open the party**.
 >
 > Chips are play chips only. They can't be bought, cashed out or exchanged, and there's no real-money play.
 >
@@ -306,6 +306,9 @@ the iPad release.
 ---
 
 ## Open items before submission
+
+- **Rewarded ads (Bankroll's rebuy).** No ad network is connected: `native/src/state/ads.ts` opens a placeholder. Before one is connected: answer App Tracking Transparency (most networks want the IDFA; FlipUp could run them without tracking), update the App Privacy label (Advertising Data, Device ID for third-party advertising if tracked) and `NSPrivacyTracking`/`NSPrivacyTrackingDomains` in `app.config.ts`, and verify rewards on the server (`TODO` in `worker/bankroll.ts`).
+- **Public boards and country.** Usernames, emojis, scores and badges are public on the Global tab. Country is optional and off by default, picked in Settings (suggested from the phone's region setting, never IP location), shown publicly on the boards, and removed with Delete my data. The hosted privacy policy needs `APP_INFO.privacyBoards` added. Board rows have Report and Block (guideline 1.2).
 
 | # | Item | Who |
 |---|---|---|
@@ -427,3 +430,5 @@ still join one for free. `unlockToHost()` in `native/src/state/unlock.ts` opens 
   locked out of Premium games and looks. Switch it to `"1"` when the iPhone app is the client that sells them.
 - **Family Sharing** is off for the purchase (a shared purchase is refused by the check).
 - **Not done:** Apple offer codes (unconfirmed for non-consumables), a referral reward (see `docs/PREMIUM_PLAN.md`).
+
+- Contacts (November 2026): the Invite from contacts sheet reads names and phone numbers on the phone only, after the system permission prompt (`NSContactsUsageDescription` from the expo-contacts plugin). Nothing is uploaded, so the privacy label needs no Contacts data type; say so in review notes if asked.

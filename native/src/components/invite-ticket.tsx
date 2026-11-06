@@ -16,7 +16,7 @@ import { ThemedText } from './themed-text';
 
 /**
  * How friends get in, like a ticket: the code big across the top in letter tiles, Share as a small round button in
- * the corner, and the QR code on a white stub under it (they scan it from FlipUp's Join tab). A tap on the QR code
+ * the corner, and the QR code on a white stub under it (they scan it from the Join button on FlipUp's Play tab). A tap on the QR code
  * shows it big, for a phone across the table.
  */
 export function InviteTicket({ code, link, kind = 'table', share }: { code: string; link: string; kind?: 'table' | 'party'; share: string }) {
@@ -68,7 +68,7 @@ export function InviteTicket({ code, link, kind = 'table', share }: { code: stri
               Or scan it
             </ThemedText>
             <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.8 }}>
-              From FlipUp&apos;s Join tab. Tap to make it bigger.
+              From Join on FlipUp&apos;s Play tab. Tap to make it bigger.
             </ThemedText>
           </Animated.View>
         )}

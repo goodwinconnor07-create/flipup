@@ -39,7 +39,7 @@ function branded(dark: boolean): Partial<Colors> {
     violet,
     green: brand.gold,
     gold: brand.gold,
-    blueBg: dark ? 'rgba(139, 109, 255, 0.18)' : '#efeaff',
+    blueBg: dark ? 'rgba(90, 140, 255, 0.18)' : '#eaf0ff',
     blueInk: violet,
   };
 }

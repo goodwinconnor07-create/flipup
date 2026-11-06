@@ -13,7 +13,7 @@ import { SheetScroll } from '../sheet-scroll';
 export function NightSheet({ children, footer }: { children: ReactNode; footer?: ReactNode }) {
   return (
     <ForceScheme scheme="dark">
-      <GrainBackground grain={0.04}>
+      <GrainBackground>
         <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.lg }}>{children}</SheetScroll>
         {footer}
       </GrainBackground>

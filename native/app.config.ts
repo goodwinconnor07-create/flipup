@@ -60,20 +60,16 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-iap',
+    ['expo-contacts', { contactsPermission: 'FlipUp shows your contacts so you can text a friend an invite. They stay on your phone and are never uploaded.' }],
     ['expo-camera', { cameraPermission: 'FlipUp uses the camera to scan a table or party QR code so you can join it.', microphonePermission: false, recordAudioAndroid: false }],
     ['expo-build-properties', { ios: { deploymentTarget: APP_INFO.iosDeploymentTarget } }],
     [
       'expo-splash-screen',
       {
-        // The app icon on the system's own page colour, so the launch screen hands over to Home without a flash.
-        // Drawn by scripts/makeAppIcon.mjs with the icon.
-        backgroundColor: '#ffffff',
+        // The night blue of the launch cover (components/launch-cover.tsx), with no picture, so it hands over seamlessly.
+        backgroundColor: '#070f2a',
         image: './assets/images/splash-icon.png',
-        imageWidth: 100,
-        dark: {
-          backgroundColor: '#000000',
-          image: './assets/images/splash-icon-dark.png',
-        },
+        imageWidth: 1,
       },
     ],
   ],

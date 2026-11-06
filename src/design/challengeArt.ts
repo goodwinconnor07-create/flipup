@@ -1,6 +1,6 @@
 // How each challenge looks on its card: a picture drawn the same way as the games' (src/design/gameArt.ts), from
 // playing cards in the four-colour deck on a 200 × 120 box, plus four shapes only the solo cards use: a stack of
-// chips, a magnifying glass, a rewind arrow and Range training's grid of hands. The colours stay in the app's palette (violet, night and gold).
+// chips, a magnifying glass, a rewind arrow and Range training's grid of hands. The colours stay in the app's palette (blue, night and gold).
 // Drawn by native/src/components/challenge-picture.tsx.
 import type { ChallengeId } from '../game/challenges';
 import type { CardShape, LabelShape, MarkShape, Shape } from './gameArt';
@@ -48,7 +48,7 @@ export type ChallengeShape = Shape | ChipsShape | LensShape | ArcShape | GridSha
 /** The solo cards on Home: the three challenges, then Range training (not a challenge: no table, no score). */
 export type SoloId = ChallengeId | 'ranges';
 
-export const CHIP = { gold: '#f5b700', violet: '#6e4bff', white: '#f4f1ff', night: '#2b1a80' } as const;
+export const CHIP = { gold: '#f5b700', violet: '#2557d6', white: '#f1f5ff', night: '#14307a' } as const;
 export const ART_GOLD = '#ffc933';
 
 export interface ChallengeLook {
@@ -57,10 +57,10 @@ export interface ChallengeLook {
 }
 
 export const CHALLENGE_LOOK: Record<SoloId, ChallengeLook> = {
-  shortStack: { card: ['#8263ff', '#2a1290'] },
-  detective: { card: ['#2b1a80', '#0b0626'] },
-  rewind: { card: ['#4a26d9', '#160b45'] },
-  ranges: { card: ['#5a35f0', '#1d0f5c'] },
+  shortStack: { card: ['#3a6ae6', '#0f2a78'] },
+  detective: { card: ['#1f44a8', '#060f2e'] },
+  rewind: { card: ['#2557d6', '#0a1a52'] },
+  ranges: { card: ['#2a5fe0', '#0b1d5c'] },
 };
 
 const mark = (suit: string, x: number, y = 100, size = 150): MarkShape => ({ kind: 'mark', suit, x, y, size });

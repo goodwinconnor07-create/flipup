@@ -612,18 +612,26 @@ function endStreet(game: Game, ctx: ActionContext): void {
   }
 
   // Crazy Pineapple: after the flop betting everyone still in throws a card away. Bots do it at once.
-  if (hand.street === 'flop' && variantOf(game) === 'pineapple' && hand.seats.some((s) => !s.folded && s.cards.length > 2)) {
-    for (const s of hand.seats) if (!s.folded && s.cards.length > 2 && playerById(game, s.playerId)?.bot) throwAway(game, s, null);
-    if (pendingDiscards(game).length) {
-      hand.discarding = true;
-      hand.toAct = null;
-      hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
-      hand.actAt = hand.deadline;
-      schedule(game);
-      return;
-    }
-  }
+  if (askForDiscards(game, ctx)) return;
   pauseBeforeNextStreet(game, ctx);
+}
+
+/**
+ * Crazy Pineapple, on the flop: everyone still in with three cards throws one away before the turn, after the flop
+ * betting or in the middle of an all-in run-out (the run-out waits). Bots choose at once; people get the clock.
+ * Returns whether the table is now waiting for someone.
+ */
+function askForDiscards(game: Game, ctx: ActionContext): boolean {
+  const hand = game.hand!;
+  if (hand.street !== 'flop' || variantOf(game) !== 'pineapple' || !hand.seats.some((s) => !s.folded && s.cards.length > 2)) return false;
+  for (const s of hand.seats) if (!s.folded && s.cards.length > 2 && playerById(game, s.playerId)?.bot) throwAway(game, s, null);
+  if (!pendingDiscards(game).length) return false;
+  hand.discarding = true;
+  hand.toAct = null;
+  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
+  hand.actAt = hand.deadline;
+  schedule(game);
+  return true;
 }
 
 /** A beat before the next card, so the last move is seen first and nobody's cards land mid-thought. */
@@ -722,6 +730,13 @@ export function endDiscards(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   for (const s of pendingDiscards(game)) throwAway(game, s, null);
   hand.discarding = false;
+  hand.deadline = null;
+  // An all-in run-out picks up where it stopped: the turn, then the river.
+  if (hand.runout) {
+    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
+    schedule(game);
+    return;
+  }
   pauseBeforeNextStreet(game, ctx);
 }
 
@@ -743,7 +758,10 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
     startShowdown(game, ctx);
     return;
   }
+  // Crazy Pineapple: the run-out stops on the flop until everyone has thrown a card away.
+  if (askForDiscards(game, ctx)) return;
   dealStreet(game, hand, ctx.rng);
+  if (askForDiscards(game, ctx)) return;
   hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
   schedule(game);
 }
@@ -1056,7 +1074,8 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   game.ready = [];
   // One player left with chips: the others get a short window to rebuy, then the game ends.
   // A campaign cash table where the person still has chips fills its empty seats with new bots instead.
-  const refills = game.campaign?.kind === 'cash' && game.players.some((p) => !p.bot && p.stack > 0);
+  // A Bankroll table always goes on to its deal, which tops up, refills or closes it (bankrollDeal in reducer.ts).
+  const refills = (game.campaign?.kind === 'cash' && game.players.some((p) => !p.bot && p.stack > 0)) || !!game.bankroll;
   game.nextHandAt = lastStanding(game) && !refills ? ctx.now + TIMING.rebuyWindow : canDeal(game) || refills ? ctx.now + pause : null;
   schedule(game);
 }

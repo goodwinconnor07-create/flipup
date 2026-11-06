@@ -3,6 +3,7 @@
 export * from './cards';
 export * from './evaluate';
 export * from './equity';
+export * from './runoutOdds';
 export * from './types';
 export * from './holdem';
 export * from './variants';
@@ -37,5 +38,6 @@ export * from './reports';
 export * from './premiumGate';
 export * from './challenges';
 export * from './rewind';
+export * from './bankroll';
 export { addedLine } from './botTalk';
 export { botFace } from './botProfiles';

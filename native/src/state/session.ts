@@ -63,7 +63,7 @@ import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
 
-type Session = { mode: 'local'; code: null; game: Game; challenge?: ChallengeRun & { result?: ChallengeResult } } | { mode: 'online'; code: string; game: Game | null; joining?: boolean };
+type Session = { mode: 'local'; code: null; game: Game; challenge?: ChallengeRun & { result?: ChallengeResult } } | { mode: 'online'; code: string; game: Game | null; joining?: boolean; room?: 'bankroll' };
 
 /** How a finished challenge run came out. */
 export interface ChallengeResult {
@@ -303,7 +303,7 @@ function sendJoin(): void {
   conn?.send({ t: 'act', id: newId(8), a: { type: 'join', name: cleanName(profile.name) || 'Player', emoji: profile.emoji } });
 }
 
-function connect(code: string): void {
+function connect(code: string, room: 'table' | 'bankroll' = session?.mode === 'online' && session.room ? session.room : 'table'): void {
   conn?.close();
   joinSent = false;
   publish({ conn: 'connecting' });
@@ -319,7 +319,14 @@ function connect(code: string): void {
       set(null);
       notify(message);
     },
-  });
+  }, room);
+}
+
+/** Goes to your Bankroll table, which the server has just set up in your own room (`code` is your friend code). */
+export function openBankrollTable(code: string): void {
+  if (session?.mode === 'online' && session.room === 'bankroll' && session.code === code && conn) return;
+  set({ mode: 'online', code, game: null, room: 'bankroll' });
+  connect(code, 'bankroll');
 }
 
 function closeConnection(): void {
@@ -445,8 +452,8 @@ try {
   profile = { name: p?.name ?? '', emoji: p?.emoji ?? '' };
   if (saved?.mode === 'local' && saved.game) set(saved);
   else if (saved?.mode === 'online' && saved.code) {
-    set({ mode: 'online', code: saved.code, game: saved.game });
-    connect(saved.code);
+    set({ mode: 'online', code: saved.code, game: saved.game, ...(saved.room ? { room: saved.room } : {}) });
+    connect(saved.code, saved.room ?? 'table');
   }
 } catch {
   // A broken saved table is dropped.

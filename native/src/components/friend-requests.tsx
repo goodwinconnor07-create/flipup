@@ -1,8 +1,7 @@
 // Friend requests waiting for you: the rows (their face, name and username, Deny and Accept) used by the Friends
 // tab's "Incoming Friend Requests" section and the `friend-requests` sheet, and the red count pill that opens it.
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { ActivityIndicator, Alert, View } from 'react-native';
+import { Alert, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import type { FriendRequest } from '@/engine';
@@ -34,21 +33,16 @@ export function RequestList({ requests }: { requests: FriendRequest[] }) {
   );
 }
 
-/** One request: who's asking, then Deny and Accept. Answered, the row fades out and the list closes up. */
+/**
+ * One request: who's asking, then Deny and Accept. Answered, the row fades out at once and the list closes up (no
+ * spinner: `answerRequest()` updates the lists first and puts the request back if the server says no).
+ */
 function RequestRow({ request, first }: { request: FriendRequest; first: boolean }) {
   const colors = useColors();
   const reduce = useReduceMotion();
-  const [busy, setBusy] = useState(false);
-  const go = async (yes: boolean) => {
-    if (busy) return;
-    setBusy(true);
+  const go = (yes: boolean) => {
     haptic[yes ? 'success' : 'tap']();
-    try {
-      await answerRequest(request.from, yes);
-    } catch {
-      Alert.alert("Couldn't answer", 'Check your connection and try again.');
-      setBusy(false);
-    }
+    answerRequest(request.from, yes).catch(() => Alert.alert("Couldn't answer", 'Check your connection and try again.'));
   };
   return (
     <Animated.View exiting={exit(reduce)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 76, paddingHorizontal: spacing.md }}>
@@ -62,34 +56,30 @@ function RequestRow({ request, first }: { request: FriendRequest; first: boolean
             {request.username ? `@${request.username}` : 'Wants to be friends'}
           </ThemedText>
         </View>
-        {busy ? (
-          <ActivityIndicator />
-        ) : (
-          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-            <PressableScale
-              haptics={false}
-              accessibilityRole="button"
-              accessibilityLabel={`Deny ${request.name}`}
-              onPress={() => void go(false)}
-              style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed }}
-            >
-              <ThemedText variant="subhead" tone="secondaryLabel" style={{ fontWeight: '600' }}>
-                Deny
-              </ThemedText>
-            </PressableScale>
-            <PressableScale
-              haptics={false}
-              accessibilityRole="button"
-              accessibilityLabel={`Accept ${request.name}`}
-              onPress={() => void go(true)}
-              style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}
-            >
-              <ThemedText variant="subhead" tone="onColor" style={{ fontWeight: '700' }}>
-                Accept
-              </ThemedText>
-            </PressableScale>
-          </View>
-        )}
+        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+          <PressableScale
+            haptics={false}
+            accessibilityRole="button"
+            accessibilityLabel={`Deny ${request.name}`}
+            onPress={() => go(false)}
+            style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed }}
+          >
+            <ThemedText variant="subhead" tone="secondaryLabel" style={{ fontWeight: '600' }}>
+              Deny
+            </ThemedText>
+          </PressableScale>
+          <PressableScale
+            haptics={false}
+            accessibilityRole="button"
+            accessibilityLabel={`Accept ${request.name}`}
+            onPress={() => go(true)}
+            style={{ minHeight: 36, paddingHorizontal: spacing.md, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}
+          >
+            <ThemedText variant="subhead" tone="onColor" style={{ fontWeight: '700' }}>
+              Accept
+            </ThemedText>
+          </PressableScale>
+        </View>
       </View>
     </Animated.View>
   );

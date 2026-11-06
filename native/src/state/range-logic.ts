@@ -7,37 +7,22 @@ import { bb, combosOf, type Grade, type OptionId, type Pos, type RangeGroup, typ
 
 import type { HandNumbers } from './ranges';
 
-export type Mode = 'round' | 'daily' | 'blitz' | 'hand' | 'fix';
+export type Mode = 'round' | 'daily' | 'blitz' | 'hand' | 'fix' | 'lesson' | 'endless';
 export type Level = 'easy' | 'pro';
 
 export const ROUND_SIZE = 5;
 export const DAILY_SIZE = 3;
+/** Keep going: this many hands lined up, unsolved first. Nobody gets near the end; closing it banks the points. */
+export const ENDLESS_SIZE = 60;
 export const BLITZ_MS = 60_000;
 
 const STREETS: Street[] = ['preflop', 'flop', 'turn', 'river'];
 /** Board cards showing on each street. */
 const SHOWN: Record<Street, number> = { preflop: 0, flop: 3, turn: 4, river: 5 };
 
-/** A small, stable hash (FNV-1a), so the same day or hand always picks the same thing on every phone. */
-export function hash(text: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < text.length; i++) {
-    h ^= text.charCodeAt(i);
-    h = Math.imul(h, 0x01000193);
-  }
-  return h >>> 0;
-}
+import { dailyIdsOf, hash, seeded } from '@train/ranges/daily';
 
-/** A seeded random number generator (mulberry32), for shuffles that have to come out the same. */
-export function seeded(seed: number): () => number {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+export { hash, seeded };
 
 function shuffle<T>(list: readonly T[], rng: () => number): T[] {
   const out = [...list];
@@ -48,12 +33,12 @@ function shuffle<T>(list: readonly T[], rng: () => number): T[] {
   return out;
 }
 
-/** Today's three hands, the same on every phone for that date ("2026-11-04"). */
+/** Today's three hands, the same on every phone for that date ("2026-11-04"); the server scores the same three. */
 export function dailyIds(day: string, all: readonly Scenario[]): string[] {
-  return shuffle(
+  return dailyIdsOf(
+    day,
     all.map((s) => s.id),
-    seeded(hash(`daily:${day}`)),
-  ).slice(0, Math.min(DAILY_SIZE, all.length));
+  );
 }
 
 /** A round: hands you haven't played the best way first (in a random order), then the rest. */
@@ -67,6 +52,16 @@ export function roundIds(grades: Record<string, Grade>, all: readonly Scenario[]
     rng,
   );
   return [...open, ...done].slice(0, Math.min(size, all.length)).map((s) => s.id);
+}
+
+/** A lesson on the Train path: a round from one trick's hands, the ones you haven't played the best way first. */
+export function lessonIds(concept: string, grades: Record<string, Grade>, all: readonly Scenario[], rng: () => number = Math.random): string[] {
+  return roundIds(
+    grades,
+    all.filter((s) => s.concept === concept),
+    ROUND_SIZE,
+    rng,
+  );
 }
 
 /** Blitz: every hand once in a random order, then again, as long as the clock lasts. */

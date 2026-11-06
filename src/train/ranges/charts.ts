@@ -28,10 +28,13 @@ export const CHARTS: Record<ChartKey, string> = {
   'Live cold call': '22+, A2s+, K9s+, Q9s+, J9s+, T8s+, 97s+, 86s+, 75s+, 64s+, 54s, A9o+, KTo+, QTo+, JTo',
 
   // ── 3-bets, and calling them ──
-  '3-bet': 'TT+, AJs+, ATs, A5s-A2s, KQs, KJs, QJs, JTs, T9s, 98s, 87s, 76s, 65s, AQo+, KQo',
+  // Value (big pairs, A-K, A-Q) plus suited bluffs that block aces and kings; small suited connectors fold or call.
+  '3-bet': 'TT+, ATs+, A5s-A4s, KQs, KJs, QJs, AQo+, KQo',
   'Live 3-bet': 'QQ+, AKs, AKo, AQs',
   'Squeeze': 'TT+, AJs+, A5s-A4s, KQs, AQo+',
-  'Call a 3-bet': '22+, A9s+, A5s-A2s, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, 54s, AJo+, KQo',
+  // Calling a 3-bet: medium pairs, suited aces and broadways that play well in a big pot. No small pairs or small
+  // suited connectors: they can't call the bets that follow, so a 3-bet pot has few straight draws.
+  'Call a 3-bet': '66-QQ, ATs+, A5s-A4s, KTs+, QTs+, JTs, AQo+, KQo',
 
   // ── Live iso-raises over limpers (raise bigger, play tighter: a good live regular's range) ──
   'Live iso-raise': '22+, A2s+, K9s+, QTs+, JTs, T9s, 98s, A9o+, KJo+, QJo',

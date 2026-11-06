@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isCard } from '../../game/cards';
 import { CHARTS, inChart } from './charts';
+import { narrate } from './narrate';
 import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, replay, spotOf, streetOfBoard, type OptionId, type Scenario } from './model';
 import { readFileSync } from 'node:fs';
 import { SCENARIOS as WRITTEN, unpack } from './scenarios';
@@ -161,4 +162,50 @@ describe('the hand log', () => {
     const bad: Scenario = { ...s, actions: [s.actions[1], s.actions[0], ...s.actions.slice(2)] };
     expect(() => replay(bad)).toThrow(/turn/);
   });
+});
+
+describe('facing an all-in', () => {
+  it('offers only fold or call when nobody behind the bet has chips left', () => {
+    const s: Scenario = {
+      id: 'shove-test',
+      title: '',
+      concept: '',
+      hero: { pos: 'BB', cards: ['Kc', 'Qd'], pre: 'BB vs late open' },
+      opponents: [{ pos: 'BTN', type: 'Solid regular', pre: 'BTN open', range: [{ label: 'Kings', hands: 'KK', role: 'value' }] }],
+      stack: 100,
+      stacks: { BTN: 20 },
+      board: ['Kh', '8d', '4c', '2s'],
+      actions: [
+        { street: 'preflop', who: 'BTN', move: 'raise', to: 2.5 },
+        { street: 'preflop', who: 'BB', move: 'call' },
+        { street: 'flop', who: 'BB', move: 'check' },
+        { street: 'flop', who: 'BTN', move: 'bet', to: 3 },
+        { street: 'flop', who: 'BB', move: 'call' },
+        { street: 'turn', who: 'BB', move: 'check' },
+        { street: 'turn', who: 'BTN', move: 'bet', to: 14.5 },
+      ],
+      best: 'call',
+      clues: [],
+      why: '',
+    };
+    const r = replay(s);
+    expect(r.stacks.BTN).toBe(0);
+    expect(optionsFor(s, r).map((o) => o.id)).toEqual(['fold', 'call']);
+  });
+});
+
+describe('street by street', () => {
+  // Every hand-written hand and a spread of generated ones (the narration replays the whole hand, so not all 1,600).
+  const sample = [...WRITTEN, ...SCENARIOS.slice(WRITTEN.length).filter((_, i) => i % 15 === 0)];
+  it('says what their range is and what you want on every street', () => {
+    for (const s of sample) {
+      const reads = narrate(s);
+      const streets = ['preflop', 'flop', 'turn', 'river'].slice(0, s.board.length - 1);
+      expect(reads.map((x) => x.street), s.id).toEqual(streets);
+      for (const x of reads) {
+        expect(x.theirs.length, `${s.id} ${x.street}`).toBeGreaterThan(20);
+        expect(x.ours.length, `${s.id} ${x.street}`).toBeGreaterThan(20);
+      }
+    }
+  }, 120_000);
 });

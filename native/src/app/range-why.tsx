@@ -19,6 +19,7 @@ import { charactersOf, pilesFor, storySteps, type PileId } from '@/state/range-l
 import { allHands, numbersFor, scenarioById, useRangePlay } from '@/state/ranges';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
 import { bb, gradeOf, optionsFor, replay, type OptionId, type Street } from '@train/ranges/model';
+import { narrate } from '@train/ranges/narrate';
 
 const STREET: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
 const GRADE = { best: 'Best play', ok: 'Also good', mistake: 'Not this time' } as const;
@@ -48,6 +49,9 @@ export default function RangeWhySheet() {
   const facing = r.toCall > 0;
   const step = steps[at];
   const clue = s.clues.find((c) => c.street === step.street);
+  // Each street's two questions: what's their range, and what do you want to do about it.
+  const reads = useMemo(() => narrate(s), [s]);
+  const read = reads.find((x) => x.street === step.street);
   const labelOf = (id: OptionId) => options.find((o) => o.id === id)?.label ?? id;
   const best = options.find((o) => o.id === s.best);
   const edge = pick ? edgeOf(numbers, s.best, pick) : null;
@@ -104,6 +108,18 @@ export default function RangeWhySheet() {
               <View style={{ flexDirection: 'row', gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, backgroundColor: 'rgba(245,183,0,0.10)' }}>
                 <Icon name="lightbulb.fill" size={15} color={brand.gold} />
                 <GlossaryText style={{ flex: 1, fontSize: 15, lineHeight: 21, color: '#ffffff' }}>{clue.text}</GlossaryText>
+              </View>
+            )}
+            {read && (
+              <View style={{ gap: spacing.xs, padding: spacing.sm, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.06)' }}>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700', color: brand.gold }}>
+                  Their range
+                </Text>
+                <GlossaryText style={{ fontSize: 15, lineHeight: 21, color: '#ffffff' }}>{read.theirs}</GlossaryText>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 13, fontWeight: '700', color: brand.gold, marginTop: spacing.xs }}>
+                  What you want
+                </Text>
+                <GlossaryText style={{ fontSize: 15, lineHeight: 21, color: '#ffffff' }}>{read.ours}</GlossaryText>
               </View>
             )}
           </Animated.View>

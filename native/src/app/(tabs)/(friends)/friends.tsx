@@ -6,6 +6,7 @@ import { Avatar } from '@/components/avatar';
 import { useFriendActions } from '@/components/friend-menu';
 import { RequestList, RequestsPill } from '@/components/friend-requests';
 import { FriendSkeleton } from '@/components/friend-skeleton';
+import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
@@ -18,7 +19,6 @@ import { ThemedText } from '@/components/themed-text';
 import { removePal, syncFriends, useFriendBox, useMyUsername, usePals, useSentRequests, type Pal } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { brand, cardColors, radius, spacing, useColors, useShadows } from '@/theme';
-
 
 /** The skeleton stays up at least this long, so a quick refresh doesn't flash. */
 const MIN_REFRESH_MS = 600;
@@ -103,31 +103,63 @@ export default function FriendsTab() {
           </View>
         )}
 
+        <Section footer="Text someone a note from you with a link to FlipUp. Your contacts stay on your phone.">
+          <Row
+            title="Invite from contacts"
+            icon={{ symbol: 'person.crop.circle.badge.plus', color: brand.violet }}
+            onPress={() => router.push('/invite-contacts')}
+          />
+        </Section>
+
         <View style={{ gap: spacing.sm }}>
           <Heading text={pals.length ? `Your friends · ${pals.length}` : 'Your friends'} />
           {refreshing ? (
             <FriendSkeleton rows={Math.min(6, Math.max(2, pals.length + sent.length))} />
           ) : pals.length + sent.length > 0 ? (
             <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
-            <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.cell }}>
-              {pals.map((pal, i) => (
-                <Menu key={pal.code} fill label={`${pal.name}. Invite, profile`} title={pal.username ? `${pal.name} · @${pal.username}` : pal.name} sections={actions.sections(pal)}>
-                  <FriendRow pal={pal} first={i === 0} />
-                </Menu>
-              ))}
-              {sent.map((pal, i) => (
-                <PendingRow key={pal.code} pal={pal} first={pals.length + i === 0} />
-              ))}
-            </View>
+              <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.cell }}>
+                {pals.map((pal, i) => (
+                  <Menu
+                    key={pal.code}
+                    fill
+                    label={`${pal.name}. Invite, profile`}
+                    title={pal.username ? `${pal.name} · @${pal.username}` : pal.name}
+                    sections={actions.sections(pal)}
+                  >
+                    <FriendRow pal={pal} first={i === 0} />
+                  </Menu>
+                ))}
+                {sent.map((pal, i) => (
+                  <PendingRow key={pal.code} pal={pal} first={pals.length + i === 0} />
+                ))}
+              </View>
             </View>
           ) : (
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel="Add a friend by their username"
               onPress={addFriend}
-              style={{ alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.xl, paddingHorizontal: spacing.lg, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}
+              style={{
+                alignItems: 'center',
+                gap: spacing.sm,
+                paddingVertical: spacing.xl,
+                paddingHorizontal: spacing.lg,
+                borderRadius: radius.lg,
+                borderCurve: 'continuous',
+                backgroundColor: colors.cell,
+                boxShadow: shadows.card,
+              }}
             >
-              <View style={{ width: 64, height: 64, borderRadius: 32, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
+              <View
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 32,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: colors.accent,
+                }}
+              >
                 <Icon name="person.badge.plus" size={28} color="#ffffff" />
               </View>
               <ThemedText variant="title3" style={{ textAlign: 'center' }}>
@@ -150,7 +182,17 @@ function FriendRow({ pal, first }: { pal: Pal; first: boolean }) {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 84, paddingHorizontal: spacing.md }}>
       <Avatar emoji={pal.emoji} size={56} />
-      <View style={{ flex: 1, alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderTopWidth: first ? 0 : 0.5, borderTopColor: colors.separator }}>
+      <View
+        style={{
+          flex: 1,
+          alignSelf: 'stretch',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          borderTopWidth: first ? 0 : 0.5,
+          borderTopColor: colors.separator,
+        }}
+      >
         <View style={{ flex: 1, gap: 2 }}>
           <ThemedText variant="title3" numberOfLines={1}>
             {pal.name}
@@ -159,7 +201,16 @@ function FriendRow({ pal, first }: { pal: Pal; first: boolean }) {
             {pal.username ? `@${pal.username}` : 'Friend'}
           </ThemedText>
         </View>
-        <View style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed }}>
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.cellPressed,
+          }}
+        >
           <Icon name="ellipsis" size={16} color={colors.secondaryLabel} />
         </View>
       </View>
@@ -179,10 +230,19 @@ function Heading({ text }: { text: string }) {
 function UsernameCard({ username, onPress }: { username: string | null; onPress: () => void }) {
   return (
     <LivingCard colors={cardColors.violet} style={{ padding: spacing.lg, gap: spacing.sm }}>
-      <ThemedText variant="footnote" tone="onColor" style={{ textTransform: 'uppercase', fontWeight: '700', letterSpacing: 0.6, opacity: 0.85 }}>
+      <ThemedText
+        variant="footnote"
+        tone="onColor"
+        style={{ textTransform: 'uppercase', fontWeight: '700', letterSpacing: 0.6, opacity: 0.85 }}
+      >
         {username ? 'Your username' : 'Get found by friends'}
       </ThemedText>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff' }}>
+      <Text
+        maxFontSizeMultiplier={1.3}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        style={{ fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff' }}
+      >
         {username ? `@${username}` : 'Choose a username'}
       </Text>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
@@ -208,7 +268,15 @@ function Pill({ icon, label, onPress }: { icon: 'square.and.arrow.up' | 'pencil'
         haptic.tap();
         onPress();
       }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 44, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#ffffff' }}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        minHeight: 44,
+        paddingHorizontal: spacing.md,
+        borderRadius: radius.full,
+        backgroundColor: '#ffffff',
+      }}
     >
       <Icon name={icon} size={16} color={brand.violet} />
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: brand.violet }}>
@@ -227,15 +295,34 @@ function PendingRow({ pal, first }: { pal: Pal; first: boolean }) {
   const takeBack = () =>
     Alert.alert(`Cancel your request to ${pal.name}?`, undefined, [
       { text: 'Keep', style: 'cancel' },
-      { text: 'Cancel Request', style: 'destructive', onPress: () => void removePal(pal.code).catch(() => Alert.alert("Couldn't cancel it", 'Check your connection and try again.')) },
+      {
+        text: 'Cancel Request',
+        style: 'destructive',
+        onPress: () => void removePal(pal.code).catch(() => Alert.alert("Couldn't cancel it", 'Check your connection and try again.')),
+      },
     ]);
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={`${pal.name}, pending`} accessibilityHint="Waiting for them to accept" onPress={takeBack}>
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={`${pal.name}, pending`}
+      accessibilityHint="Waiting for them to accept"
+      onPress={takeBack}
+    >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 84, paddingHorizontal: spacing.md }}>
         <View style={{ opacity: 0.6 }}>
           <Avatar emoji={pal.emoji} size={56} />
         </View>
-        <View style={{ flex: 1, alignSelf: 'stretch', flexDirection: 'row', alignItems: 'center', gap: spacing.sm, borderTopWidth: first ? 0 : 0.5, borderTopColor: colors.separator }}>
+        <View
+          style={{
+            flex: 1,
+            alignSelf: 'stretch',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.sm,
+            borderTopWidth: first ? 0 : 0.5,
+            borderTopColor: colors.separator,
+          }}
+        >
           <View style={{ flex: 1, gap: 2 }}>
             <ThemedText variant="title3" tone="secondaryLabel" numberOfLines={1}>
               {pal.name}
@@ -244,7 +331,17 @@ function PendingRow({ pal, first }: { pal: Pal; first: boolean }) {
               {pal.username ? `@${pal.username}` : 'Friend request sent'}
             </ThemedText>
           </View>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 28, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: colors.cellPressed }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.xs,
+              minHeight: 28,
+              paddingHorizontal: spacing.sm,
+              borderRadius: radius.full,
+              backgroundColor: colors.cellPressed,
+            }}
+          >
             <Icon name="clock.fill" size={12} color={colors.secondaryLabel} />
             <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
               Pending

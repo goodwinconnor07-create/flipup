@@ -20,7 +20,8 @@ export default function BankrollSheet() {
   const { view, error, refresh } = useBankroll();
   const { username } = useMyUsername();
   const [busy, setBusy] = useState(false);
-  const now = Date.now();
+  // When the sheet opened (for the month and the day of the season), read outside render.
+  const [now] = useState(Date.now);
   const month = seasonName(seasonOf(now));
   const left = view ? Math.max(0, BANKROLL.handsADay - view.handsToday) : BANKROLL.handsADay;
   const today = view ? view.bankroll - view.dayStart : 0;

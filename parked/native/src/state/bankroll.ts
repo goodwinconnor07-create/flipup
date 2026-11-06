@@ -122,9 +122,22 @@ export function useBankroll(): { view: BankrollView | null; error: string; refre
       setError(e instanceof Error ? e.message : 'Something went wrong.');
     }
   }, []);
+  // Load once when the screen opens (setting state only when the answer comes back, and not after it closes).
   useEffect(() => {
-    void refresh();
-  }, [refresh]);
+    let live = true;
+    fetchBankroll()
+      .then((v) => {
+        if (!live) return;
+        setView(v);
+        setError('');
+      })
+      .catch((e) => {
+        if (live) setError(e instanceof Error ? e.message : 'Something went wrong.');
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
   return { view, error, refresh };
 }
 

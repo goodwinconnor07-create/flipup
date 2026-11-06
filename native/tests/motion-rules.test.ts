@@ -72,6 +72,18 @@ describe('the app source', () => {
     const bad = files.filter(({ text }) => /Easing\.in\(|Easing\.ease\b/.test(text)).map((x) => x.f);
     expect(bad).toEqual([]);
   });
+  it('rule 18: an icon that changes into another, or comes and goes, goes through SwapIcon, never a bare ternary or &&', () => {
+    // stepper.tsx picks minus or plus once per button, it never changes in place.
+    const bad = files
+      .filter(({ f }) => !f.endsWith('components/swap.tsx') && !f.endsWith('components/stepper.tsx'))
+      .filter(({ text }) => /<Icon\s+name=\{[^}]*\?[^}]*\}/.test(text) || /&&\s*<Icon\s+name="(checkmark|lock|lock\.fill|xmark)/.test(text) || /\?\s*<Icon\b[^>]*\/>\s*:\s*<Icon\b/.test(text))
+      .map((x) => x.f);
+    expect(bad).toEqual([]);
+  });
+  it('rules 16 and 17: the shared buttons swap their labels through Swap', () => {
+    const need = ['components/button.tsx', 'components/table/actions.tsx', 'components/ranges/action-bar.tsx'];
+    for (const f of need) expect(files.find((x) => x.f === f)?.text, f).toContain('<Swap ');
+  });
   it('rule 13: every spring written out in numbers is damped enough not to wobble', () => {
     const bad: string[] = [];
     for (const { f, text } of files) {

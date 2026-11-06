@@ -7,7 +7,7 @@ import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
 
 import { GRAIN_NIGHT } from '../grain-background';
 import { haptic } from '../haptics';
-import { Icon } from '../icon';
+import { Swap, SwapIcon } from '../swap';
 import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
 
@@ -132,10 +132,12 @@ function LockChip({ locked, onPress }: { locked: boolean; onPress: () => void })
       }}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: locked ? brand.gold : 'rgba(255,255,255,0.10)', borderWidth: 1, borderColor: locked ? brand.gold : 'rgba(255,255,255,0.16)' }}
     >
-      <Icon name={locked ? 'lock.fill' : 'lock.open.fill'} size={14} color={locked ? brand.goldInk : '#ffffff'} />
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', color: locked ? brand.goldInk : '#ffffff' }}>
-        {locked ? 'Locked ×2' : 'Lock it in'}
-      </Text>
+      <SwapIcon name={locked ? 'lock.fill' : 'lock.open.fill'} size={14} color={locked ? brand.goldInk : '#ffffff'} />
+      <Swap id={locked ? 'locked' : 'open'} kind="text">
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', color: locked ? brand.goldInk : '#ffffff' }}>
+          {locked ? 'Locked ×2' : 'Lock it in'}
+        </Text>
+      </Swap>
     </PressableScale>
   );
 }

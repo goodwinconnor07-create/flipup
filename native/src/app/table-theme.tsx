@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 
 import { FELTS, RAILS, type Rail } from '@design/tableLooks';
 import { haptic } from '@/components/haptics';
-import { Icon } from '@/components/icon';
+import { SwapIcon } from '@/components/swap';
 import { Row, Section } from '@/components/grouped-list';
 import { SegmentedControl } from '@/components/segmented-control';
 import { Switch } from '@/components/switch';
@@ -51,7 +51,7 @@ export default function TableTheme() {
               }}
               style={{ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: f.felt, borderWidth: 3, borderColor: on ? colors.accent : 'transparent' }}
             >
-              {on && <Icon name="checkmark" size={18} color="#ffffff" />}
+              <SwapIcon name={on ? 'checkmark' : null} size={18} color="#ffffff" />
             </Pressable>
           );
         })}

@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
-import Animated from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
@@ -13,7 +13,7 @@ import { useFadeIn } from '@/components/ranges/use-fade';
 import { trickOf, vibeOf } from '@/components/ranges/words';
 import { PressableScale } from '@/components/pressable-scale';
 import { CardSlot, PlayingCard } from '@/components/table/playing-card';
-import { enter } from '@/motion/presets';
+import { EASE_IN_OUT, enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { charactersOf, pilesFor, storySteps, type PileId } from '@/state/range-logic';
 import { allHands, numbersFor, scenarioById, useRangePlay } from '@/state/ranges';
@@ -181,10 +181,12 @@ export default function RangeWhySheet() {
           <Text maxFontSizeMultiplier={1.4} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 18, fontWeight: '800', color: '#ffffff' }}>
             Show the math
           </Text>
-          <Icon name={math ? 'chevron.up' : 'chevron.down'} size={14} color="rgba(255,255,255,0.6)" />
+          <Turn open={math} reduce={reduce}>
+            <Icon name="chevron.down" size={14} color="rgba(255,255,255,0.6)" />
+          </Turn>
         </Pressable>
         {math && (
-          <Animated.View entering={enter(reduce)} style={panel}>
+          <Animated.View entering={enter(reduce)} exiting={exit(reduce)} style={panel}>
             <View style={{ flexDirection: 'row', gap: spacing.md }}>
               <Stat value={`${Math.round(numbers.equity * 100)}%`} line={facing ? 'your chance to win' : 'your chance to win at showdown now'} gold />
               {facing && <Stat value={`${Math.round(numbers.price * 100)}%`} line="what calling needs" />}
@@ -283,4 +285,14 @@ function StepButton({ dir, disabled, onPress }: { dir: 'back' | 'on'; disabled: 
       {dir === 'on' && <Icon name="chevron.right" size={13} color="#ffffff" />}
     </PressableScale>
   );
+}
+
+/** One icon that turns over when its panel opens, instead of two icons swapping (motion rule 20: one object, one identity). */
+function Turn({ open, reduce, children }: { open: boolean; reduce: boolean; children: React.ReactNode }) {
+  const t = useSharedValue(open ? 1 : 0);
+  useEffect(() => {
+    t.set(reduce ? (open ? 1 : 0) : withTiming(open ? 1 : 0, { duration: 250, easing: EASE_IN_OUT }));
+  }, [open, reduce, t]);
+  const style = useAnimatedStyle(() => ({ transform: [{ rotate: `${t.get() * 180}deg` }] }));
+  return <Animated.View style={style}>{children}</Animated.View>;
 }

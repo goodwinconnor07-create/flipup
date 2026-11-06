@@ -46,15 +46,17 @@ are in `motion` (`src/design/tokens.ts`), the pure helpers in `native/src/motion
 | 13 | No bounce on everyday UI | `SETTLE` (critically damped) and `popIn()`; any spring in numbers keeps a damping ratio of 0.7 or more; no easing curve with a y above 1 |
 | 14 | Don't tween while held | while a finger is down, a thing is exactly under it (the bet slider, the hand fan, `SwipeAway`); springs only on release |
 | 15 | Exits 20% shorter than entrances | `motion.exit` (200) against `motion.base` (250), `exitMs()`, `--dur-exit` |
-| 16 | Overlap the old and the new state | no blank beat: start the new state while the old one leaves |
-| 17 | Masks for reveals and colour | clip content or a gradient to reveal text and colour changes; don't crossfade two copies of text |
-| 18 | Crossfade icons with scale and blur | when an icon swaps for another (copy to check), fade both with a small scale and blur, not a hard swap |
+| 16 | Overlap the old and the new state | `Swap` (`components/swap.tsx`): the old leaves while the new arrives, no blank beat. Used by `Button` (title and spinner), `TableButton`, the Lock it in pill, Next hand |
+| 17 | Masks for reveals and colour | `Swap kind="text"`: the label slides 8pt through a clipped box (the mask) while it fades; never two copies of text crossfading in place |
+| 18 | Crossfade icons with scale and blur | `SwapIcon`: opacity, scale 0.5 and a 4pt blur, 250ms in and 200ms out; every check mark, crown, lock and arrow that changes uses it. A test fails on a bare `{on && <Icon …/>}` or `name={a ? … : …}` |
 | 19 | Rubber band past bounds | `rubber()`: exact to the limit, then diminishing resistance, never a wall (`SwipeAway`) |
-| 20 | Reuse the same layout id | when a thing opens into a bigger version of itself, animate the same view (shared element, Reanimated layout transitions, or the web's View Transitions), not a replacement |
+| 20 | Reuse the same layout id | when a thing opens into a bigger version of itself, animate the same view, not a replacement: the invite ticket's QR code is drawn once and scales (`GrowingQR`), and "Show the math" turns one chevron (`Turn`) instead of swapping two; piles use `LinearTransition`. On the web use a View Transition with a shared `view-transition-name` |
 
-Rules 1 to 15 and 19 are in the code and checked by tests. Rules 16 to 18 and 20 are the way to build new
-things; use them whenever a screen changes an icon, a label or a panel, and say in the change which rules it
-touched. Reduce Motion still wins over all of them. Where a rule and a celebration collide (the confetti and the
+Every rule is in the code now; 1 to 15, 18 and 19 and the shared button labels are also checked by tests. Whenever
+a screen changes an icon, a label or a panel, use `Swap`/`SwapIcon` or keep one object and animate it, and say in
+the change which rules it touched. Not done yet: the table's Raise button opening into the raise panel is still a
+replacement, not one object (the table's feel is on the owner's keep-as-is list), and nothing here has been run on
+a phone, so the 4pt icon blur in particular needs a look on a device. Reduce Motion still wins over all of them. Where a rule and a celebration collide (the confetti and the
 win banner), the rule stays and the celebration comes from colour, confetti and haptics, not from overshoot.
 
 ## Haptics

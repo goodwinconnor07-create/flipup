@@ -11,6 +11,7 @@ import { radius, spacing, usePlainColors } from '@/theme';
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { SwapIcon } from '../swap';
 import { openPlayerMenu } from '../player-menu';
 
 /** One row's height plus the gap under it, as on the web (56 + 4). */
@@ -102,7 +103,7 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
       </Pressable>
       {r.move !== 0 && (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Icon name={r.move > 0 ? 'arrowtriangle.up.fill' : 'arrowtriangle.down.fill'} size={10} color={r.move > 0 ? c.green : c.red} />
+          <SwapIcon name={r.move > 0 ? 'arrowtriangle.up.fill' : 'arrowtriangle.down.fill'} size={10} color={r.move > 0 ? c.green : c.red} />
           <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', color: r.move > 0 ? c.green : c.red }}>
             {Math.abs(r.move)}
           </Text>

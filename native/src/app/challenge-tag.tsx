@@ -2,7 +2,7 @@ import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 
 import { haptic } from '@/components/haptics';
-import { Icon } from '@/components/icon';
+import { SwapIcon } from '@/components/swap';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import { LABELS, type Label } from '@/engine';
@@ -51,7 +51,7 @@ export default function ChallengeTag() {
                   {l.blurb}
                 </ThemedText>
               </View>
-              {on && <Icon name="checkmark" size={18} color={brand.violet} />}
+              <SwapIcon name={on ? 'checkmark' : null} size={18} color={brand.violet} />
             </Pressable>
           );
         })}

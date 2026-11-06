@@ -9,6 +9,7 @@ import { brand, minTap, radius, spacing, useColors, usePlainColors, useShadows }
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { Swap } from '../swap';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
@@ -51,10 +52,12 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
       style={{ minHeight: height, borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, backgroundColor: look[tone].bg }}
     >
       {fill !== undefined && <View style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: `${fill * 100}%`, backgroundColor: 'rgba(255,255,255,0.85)' }} />}
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
-        {label}
-        {sub ? ` ${sub}` : ''}
-      </Text>
+      <Swap id={`${label} ${sub ?? ''}`} kind="text">
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
+          {label}
+          {sub ? ` ${sub}` : ''}
+        </Text>
+      </Swap>
     </PressableScale>
   );
 }

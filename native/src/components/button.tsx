@@ -4,6 +4,7 @@ import { gradients, minTap, radius, spacing, useColors } from '@/theme';
 
 import { LivingCard } from './living-card';
 import { PressableScale } from './pressable-scale';
+import { Swap } from './swap';
 import { ThemedText } from './themed-text';
 
 const SIZES = {
@@ -46,14 +47,17 @@ export function Button({
         ? { backgroundColor: colors.accent }
         : { backgroundColor: colors.cell };
   const ink = variant === 'party' || variant === 'primary' ? 'onColor' : variant === 'destructive' ? 'red' : 'accent';
-  const label = loading ? (
-    <ActivityIndicator color={variant === 'party' || variant === 'primary' ? '#ffffff' : undefined} />
-  ) : (
-    <View>
-      <ThemedText variant={s.text} tone={ink} style={variant === 'party' ? { fontWeight: '800' } : undefined}>
-        {title}
-      </ThemedText>
-    </View>
+  // The title and the spinner replace each other, and a title that changes (Select to Selected) slides through a mask.
+  const label = (
+    <Swap id={loading ? '\u0000busy' : title} kind="text">
+      {loading ? (
+        <ActivityIndicator color={variant === 'party' || variant === 'primary' ? '#ffffff' : undefined} />
+      ) : (
+        <ThemedText variant={s.text} tone={ink} style={variant === 'party' ? { fontWeight: '800' } : undefined}>
+          {title}
+        </ThemedText>
+      )}
+    </Swap>
   );
   return (
     <PressableScale

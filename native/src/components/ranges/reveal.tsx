@@ -13,6 +13,7 @@ import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
 import { Icon, type IconName } from '../icon';
 import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
+import { Swap } from '../swap';
 import { useCountTo } from './count-up';
 import { OddsDial } from './dial';
 import { GlossaryText } from './glossary-text';
@@ -119,9 +120,11 @@ export function Reveal(p: RevealProps) {
           </PressableScale>
           <PressableScale accessibilityRole="button" accessibilityLabel={p.last ? 'See how you did' : 'Next hand'} onPress={p.onNext} outerStyle={{ flex: 1.3 }} style={{ borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: brand.paperEdge, paddingBottom: 4 }}>
             <View style={{ minHeight: 50, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: brand.paper }}>
-              <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 18, fontWeight: '800', color: brand.violet }}>
-                {p.last ? 'See how you did' : 'Next hand'}
-              </Text>
+              <Swap id={p.last ? 'last' : 'next'} kind="text">
+                <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 18, fontWeight: '800', color: brand.violet }}>
+                  {p.last ? 'See how you did' : 'Next hand'}
+                </Text>
+              </Swap>
             </View>
           </PressableScale>
         </View>

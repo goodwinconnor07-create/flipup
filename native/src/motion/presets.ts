@@ -1,6 +1,6 @@
 // The app's motion vocabulary. Values come from src/design/tokens.ts (`motion`) and the expo-animation skill's
 // tables; nothing here is tuned by eye. Screens and sheets never use these: they use the native stack.
-import { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown, ReduceMotion, ZoomIn } from 'react-native-reanimated';
+import { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown, ReduceMotion, withTiming, ZoomIn, type EntryExitAnimationFunction } from 'react-native-reanimated';
 
 import { motion } from '@design/tokens';
 
@@ -40,3 +40,51 @@ export function popIn() {
 
 /** A spring that settles without overshooting, for a thing that lets go and comes to rest (rule 13). */
 export const SETTLE = { ...settleSpring(1, 300), reduceMotion: ReduceMotion.Never } as const;
+
+// Rules 16, 17 and 18: one thing replacing another. The old one leaves while the new one arrives (they overlap,
+// there is no empty beat). An icon crossfades with scale and blur; text slides through a mask (the container
+// clips it) by a few points. The arrival runs 250ms ease-out, the leaving 200ms (20% shorter, rule 15).
+const SWAP_BLUR = 4;
+const SWAP_SCALE = 0.5;
+const SWAP_SLIDE = 8;
+const IN = { duration: motion.base, easing: EASE_OUT } as const;
+const OUT = { duration: motion.exit, easing: EASE_OUT } as const;
+
+const iconIn: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ scale: SWAP_SCALE }], filter: [{ blur: SWAP_BLUR }] },
+    animations: { opacity: withTiming(1, IN), transform: [{ scale: withTiming(1, IN) }], filter: [{ blur: withTiming(0, IN) }] },
+  } as never;
+};
+const iconOut: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 1, transform: [{ scale: 1 }], filter: [{ blur: 0 }] },
+    animations: { opacity: withTiming(0, OUT), transform: [{ scale: withTiming(SWAP_SCALE, OUT) }], filter: [{ blur: withTiming(SWAP_BLUR, OUT) }] },
+  } as never;
+};
+const textIn: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 0, transform: [{ translateY: SWAP_SLIDE }] },
+    animations: { opacity: withTiming(1, IN), transform: [{ translateY: withTiming(0, IN) }] },
+  } as never;
+};
+const textOut: EntryExitAnimationFunction = () => {
+  'worklet';
+  return {
+    initialValues: { opacity: 1, transform: [{ translateY: 0 }] },
+    animations: { opacity: withTiming(0, OUT), transform: [{ translateY: withTiming(-SWAP_SLIDE, OUT) }] },
+  } as never;
+};
+
+/** What arrives when one thing replaces another (see `Swap`). Under Reduce Motion it's a short fade. */
+export function swapIn(kind: 'icon' | 'text', reduce: boolean) {
+  return reduce ? FadeIn.duration(motion.exit) : kind === 'icon' ? iconIn : textIn;
+}
+
+/** What leaves while the new one arrives. */
+export function swapOut(kind: 'icon' | 'text', reduce: boolean) {
+  return reduce ? FadeOut.duration(motion.exit) : kind === 'icon' ? iconOut : textOut;
+}

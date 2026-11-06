@@ -1,34 +1,29 @@
 import { router } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { addedLine, BOTS, MAX_SEATS, variantInfo, type Game } from '@/engine';
-import { joinLink } from '@/state/api';
-import { useDeclined, usePals, type Pal } from '@/state/pals';
-import { useProfile } from '@/state/profile';
-import { dispatch, me as myDevice, type TableState } from '@/state/session';
-import { invitePal, invitesFor, seatOf, uninvitePal, useInviteWatch, useTableInvites } from '@/state/table-invites';
-import { ForceScheme, radius, ROUNDED, spacing, useColors } from '@/theme';
+import { variantInfo, type Game, type Settings } from '@/engine';
+import { usePremium } from '@/state/premium';
+import { abandonLobby, changeTableCode, dispatch, leaveTable, me as myDevice, type TableState } from '@/state/session';
+import { unlockToHost } from '@/state/unlock';
+import { ForceScheme, spacing } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
 import { haptic } from '../haptics';
-import { InviteTicket } from '../invite-ticket';
-import { BotsRow, type RowBot } from '../setup/bots-row';
-import { Face, FaceRow } from '../setup/faces';
-import { InviteFriendsRow } from '../setup/invite-friends-row';
+import { CodeCard } from '../lobby/code-card';
+import { GameCard } from '../lobby/game-card';
+import { HouseRules } from '../lobby/house-rules';
+import { Players } from '../lobby/players';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from '../setup/open-table-button';
-import { SetupRowTitle } from '../setup/setup-header';
 import { RoundButton } from '../tab-screen';
 import { ThemedText } from '../themed-text';
 
-const chips = (n: number) => Math.round(n).toLocaleString('en-US');
-
 /**
- * Before the first deal, on the same dark grain page as Play with friends. The host sees the code (big tiles, the QR
- * code and Share), who's sitting down, the Invite friends row (the same faces, rings and pills: invites sent on the
- * setup page carry on here), the bots row (+ seats a random bot, a tap takes one off), what the table plays, and
- * Deal. Everyone else sees who's there and waits. The menu button opens the table menu.
+ * Before the first deal: Play with friends opens the table straight away, so this is that page (the owner's
+ * reference was a game lobby). On the dark grain page, top to bottom: the game code with Copy and Change, the game
+ * with Change and How it plays, the house rules (presets, then each number with a − + stepper, then the switches),
+ * who's at the table with Add a bot, and Start game pinned at the bottom. The host changes things live; everyone
+ * else sees the same page without the controls, waiting for the deal.
  */
 export function Lobby({ game, online, conn }: { game: Game; online: boolean; conn: TableState['conn'] }) {
   return (
@@ -39,155 +34,112 @@ export function Lobby({ game, online, conn }: { game: Game; online: boolean; con
 }
 
 function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: TableState['conn'] }) {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
-  const profile = useProfile();
-  const pals = usePals();
-  const declined = useDeclined();
-  const invites = useTableInvites();
+  const premium = usePremium();
   const host = game.hostDeviceId === myDevice;
   const s = game.settings;
-  useEffect(() => invitesFor(game.code), [game.code]);
-  useInviteWatch(game.code, game, pals, declined);
+  const people = game.players.filter((p) => !p.bot).length;
 
-  const people = game.players.filter((p) => !p.bot);
-  const bots = game.players.filter((p) => p.bot);
-  const waiting = pals.filter((p) => invites[p.code]?.status === 'invited' && !seatOf(game, p)).length;
-  const room = MAX_SEATS - game.players.length - waiting;
-  // Friends to invite: the ones not sitting here already.
-  const invitable = pals.filter((p) => !seatOf(game, p) || invites[p.code]?.status === 'joined');
+  const change = (next: Settings) => {
+    if (!unlockToHost([next.variant ?? 'holdem'], premium)) return;
+    dispatch({ type: 'settings', settings: next });
+  };
+  const changeCode = async (code: string): Promise<string | null> => {
+    const go = async () => {
+      try {
+        await changeTableCode(code);
+        return null;
+      } catch (e) {
+        return e instanceof Error ? e.message : "Couldn't change the code. Try again.";
+      }
+    };
+    if (people <= 1) return go();
+    // Anyone already sitting down came in with the old code; the table moves, so they'd need the new one.
+    return new Promise((done) =>
+      Alert.alert(
+        'Change the code?',
+        `${people - 1 === 1 ? "The friend who's" : `The ${people - 1} friends who are`} already here will need the new code to sit back down.`,
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => done('') },
+          { text: 'Change', onPress: () => void go().then(done) },
+        ],
+      ),
+    );
+  };
 
-  // Bots that sit down while you're here say hello; the ones already seated when the lobby opened stay quiet.
-  const seen = useRef<Set<string> | null>(null);
-  const [greets, setGreets] = useState<Record<string, string>>({});
-  const botIds = bots.map((b) => b.id).join();
-  // The bots Open table brings over from the setup page arrive just after the lobby opens: they've said hello already.
-  const opened = useRef(0);
-  useEffect(() => {
-    if (!seen.current) {
-      seen.current = new Set(bots.map((b) => b.id));
-      opened.current = Date.now();
-      return;
-    }
-    if (Date.now() - opened.current < 2500) {
-      for (const b of bots) seen.current.add(b.id);
-      return;
-    }
-    const fresh: Record<string, string> = {};
-    for (const b of bots) {
-      if (seen.current.has(b.id)) continue;
-      seen.current.add(b.id);
-      const style = BOTS.find((x) => x.name === b.name)?.style;
-      if (style) fresh[b.id] = addedLine(style, profile.name || undefined, Math.random).text;
-    }
-    // Bots that just sat down say hello: new arrivals come from the table, so this follows it rather than a tap.
-    if (Object.keys(fresh).length) setGreets((g) => ({ ...g, ...fresh })); // eslint-disable-line react-hooks/set-state-in-effect
-  }, [botIds]); // eslint-disable-line react-hooks/exhaustive-deps
-  const rowBots: RowBot[] = bots.map((b) => ({ key: b.id, name: b.name, emoji: b.emoji, greet: greets[b.id] }));
-
+  const back = () => {
+    haptic.tap();
+    const leave = () => {
+      if (host && game.code) abandonLobby(game.code);
+      else leaveTable();
+      router.dismissTo('/');
+    };
+    if (host && online && people > 1)
+      return Alert.alert('Close the table?', 'Everyone here goes back to their Home screen.', [
+        { text: 'Stay', style: 'cancel' },
+        { text: 'Close', style: 'destructive', onPress: leave },
+      ]);
+    leave();
+  };
   const deal = () => {
-    if (!online || people.length > 1) return dispatch({ type: 'start' });
-    Alert.alert('Deal without friends?', "Nobody's joined yet. Friends can still sit down later and get dealt in on the next hand.", [
-      { text: 'Wait', style: 'cancel' },
-      { text: 'Deal', onPress: () => dispatch({ type: 'start' }) },
-    ]);
-  };
-  const removePerson = (id: string, name: string) =>
-    Alert.alert(`Take ${name} off the table?`, undefined, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Remove', style: 'destructive', onPress: () => dispatch({ type: 'remove', playerId: id }) },
-    ]);
-  const invite = (pal: Pal) => {
-    if (!game.code) return;
-    const code = game.code;
-    invitePal(pal, async () => code).catch((e: unknown) => Alert.alert("Couldn't send the invite", e instanceof Error ? e.message : 'Check your connection and try again.'));
+    if (!online || people > 1) return dispatch({ type: 'start' });
+    Alert.alert(
+      'Start without friends?',
+      "Nobody's joined yet. Friends can still sit down later with the code and get dealt in on the next hand.",
+      [
+        { text: 'Wait', style: 'cancel' },
+        { text: 'Start', onPress: () => dispatch({ type: 'start' }) },
+      ],
+    );
   };
 
-  const title = host ? 'Your table' : "You're in!";
-  const line = host ? (online ? 'Friends join with the code, or from your invite.' : 'Add or take off bots, then deal.') : 'Waiting for the host to deal.';
-  const variant = variantInfo(s.variant);
+  const status = online && conn === 'offline' ? 'Reconnecting…' : !host ? 'Waiting for the host to start.' : null;
 
   return (
     <GrainBackground>
       <ScrollView
         contentInsetAdjustmentBehavior="never"
-        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: (host ? OPEN_BUTTON_ROOM : spacing.xxxl) + insets.bottom, gap: spacing.xl }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
+        contentContainerStyle={{
+          paddingHorizontal: spacing.md,
+          paddingTop: insets.top + spacing.xs,
+          paddingBottom: (host ? OPEN_BUTTON_ROOM : spacing.xxxl) + insets.bottom,
+          gap: spacing.lg,
+        }}
       >
-        <View style={{ gap: spacing.sm }}>
-          <View style={{ flexDirection: 'row' }}>
-            <RoundButton
-              icon="line.3.horizontal"
-              label="Menu"
-              onPress={() => {
-                haptic.tap();
-                router.push('/table-menu');
-              }}
-            />
-          </View>
-          <View style={{ gap: spacing.xxs }}>
-            <ThemedText variant="largeTitle" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
-              {title}
-            </ThemedText>
-            <ThemedText variant="callout" tone="secondaryLabel">
-              {online && conn === 'offline' ? 'Reconnecting…' : line}
-            </ThemedText>
-          </View>
-        </View>
-
-        {online && game.code && host && <InviteTicket code={game.code} link={joinLink(game.code)} share="Come play poker with me on FlipUp." />}
-
-        <View style={{ gap: 4 }}>
-          <SetupRowTitle big title="At the table" detail={`${game.players.length} of ${MAX_SEATS}`} />
-          <FaceRow>
-            {people.map((p) => {
-              const you = p.deviceId === myDevice;
-              const theHost = p.deviceId === game.hostDeviceId;
-              return (
-                <Face
-                  key={p.id}
-                  emoji={p.emoji}
-                  name={you ? 'You' : p.name}
-                  label={`${p.name}${you ? ', you' : ''}${theHost ? ', host' : ''}`}
-                  onPress={host && !you ? () => removePerson(p.id, p.name) : undefined}
-                  selected={you ? (colors.accent as string) : undefined}
-                />
-              );
-            })}
-          </FaceRow>
-        </View>
-
-        {online && host && game.code && <InviteFriendsRow pals={invitable} invites={invites} full={room <= 0} onInvite={invite} onUninvite={(p) => uninvitePal(p.code)} />}
-
-        {host ? (
-          <BotsRow
-            bots={rowBots}
-            canAdd={room > 0}
-            onAdd={() => dispatch({ type: 'addBot' })}
-            onRemove={(b) => dispatch({ type: 'remove', playerId: b.key })}
-            detail={room <= 0 ? `Table full · ${MAX_SEATS} seats` : undefined}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <RoundButton icon="chevron.left" label={host ? 'Back, close the table' : 'Back, leave the table'} onPress={back} />
+          <ThemedText variant="headline" accessibilityRole="header">
+            Lobby
+          </ThemedText>
+          <RoundButton
+            icon="line.3.horizontal"
+            label="Menu"
+            onPress={() => {
+              haptic.tap();
+              router.push('/table-menu');
+            }}
           />
-        ) : (
-          rowBots.length > 0 && <BotsRow bots={rowBots} canAdd={false} onAdd={() => undefined} onRemove={() => undefined} detail={`${rowBots.length} at the table`} />
+        </View>
+
+        {status && (
+          <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center', marginTop: -spacing.xs }}>
+            {status}
+          </ThemedText>
         )}
 
-        <View style={{ gap: spacing.sm }}>
-          <SetupRowTitle title="The table" />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            {[
-              ['Game', `${variant.emoji} ${variant.name}`],
-              ['Blinds', `${chips(s.smallBlind)}/${chips(s.bigBlind)}`],
-              ['Stack', chips(s.startingStack)],
-              ['Rebuys', s.rebuys ? 'On' : 'Off'],
-            ].map(([k, v]) => (
-              <View key={k} style={{ flexDirection: 'row', gap: 6, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs, borderRadius: radius.full, backgroundColor: colors.cell }}>
-                <ThemedText tone="secondaryLabel">{k}</ThemedText>
-                <ThemedText style={{ fontWeight: '700' }}>{v}</ThemedText>
-              </View>
-            ))}
-          </View>
-        </View>
+        {online && game.code && <CodeCard code={game.code} host={host} onChange={changeCode} />}
+
+        <GameCard variant={s.variant ?? 'holdem'} host={host} />
+
+        <HouseRules settings={s} onChange={host ? change : undefined} online={online} />
+
+        <Players game={game} host={host} online={online} />
       </ScrollView>
-      {host && <OpenTableButton title="Deal" line={`${game.players.length} at the table${waiting ? ` · ${waiting} invited` : ''}`} onPress={deal} />}
+      {host && (
+        <OpenTableButton title="Start game" line={`${game.players.length} at the table · ${variantInfo(s.variant).name}`} onPress={deal} />
+      )}
     </GrainBackground>
   );
 }

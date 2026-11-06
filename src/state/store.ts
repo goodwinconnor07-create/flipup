@@ -33,9 +33,9 @@ import {
   createTable,
   cryptoRng,
   DEFAULT_SETTINGS,
-  isCode,
+  isTableCode,
+  normalizeTableCode,
   newId,
-  normalizeCode,
   redactForDevice,
   dressAsLegend,
   LEGENDS_ON,
@@ -1146,7 +1146,9 @@ export function closeTable(): void {
 export function boot(): void {
   window.addEventListener('popstate', onPopState);
   const s = state.session;
-  const linked = normalizeCode(location.pathname.replace(/^\/+/, ''));
+  // A join link is the code as the whole path (/ACES42, or an older /BCDFG).
+  const path = location.pathname.replace(/^\/+|\/+$/g, '');
+  const linked = /^[A-Za-z0-9]{5,6}$/.test(path) ? normalizeTableCode(path) : '';
   if (location.pathname.length > 1) {
     try {
       history.replaceState(null, '', '/');
@@ -1156,7 +1158,7 @@ export function boot(): void {
   }
   if (s?.mode === 'online' && s.code) connect(s.code);
   if (s?.mode === 'local') scheduleLocal();
-  if (isCode(linked) && !(s?.mode === 'online' && s.code === linked)) {
+  if (isTableCode(linked) && !(s?.mode === 'online' && s.code === linked)) {
     resetTo({ name: 'join', code: linked });
   }
 }

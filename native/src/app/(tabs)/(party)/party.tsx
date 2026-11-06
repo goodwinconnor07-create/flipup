@@ -166,7 +166,7 @@ const press = (go: () => void) => () => {
 /** Host a party: the big one, the brand violet as a living card with grain, a party popper and a line on what you do. */
 function HostButton({ onPress }: { onPress: () => void }) {
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel="Host a party. Pick the games, invite friends" haptics={false} onPress={press(onPress)}>
+    <PressableScale accessibilityRole="button" accessibilityLabel="Host a party. Pick the games, share the code" haptics={false} onPress={press(onPress)}>
       <LivingCard colors={cardColors.violet} radius={radius.xl} grain={0.12} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, minHeight: 104, paddingHorizontal: spacing.lg }}>
         <View style={{ width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
           <Icon name="party.popper.fill" size={26} color="#ffffff" />
@@ -176,7 +176,7 @@ function HostButton({ onPress }: { onPress: () => void }) {
             Host a party
           </Text>
           <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: 'rgba(255, 255, 255, 0.82)' }}>
-            Pick games, invite friends
+            Pick games, share the code
           </Text>
         </View>
         <Icon name="chevron.right" size={18} color="#ffffff" />

@@ -102,7 +102,7 @@ export default function TableMenu() {
         )}
         {online && t.code && !ended && (
           <Row
-            title="Invite friends"
+            title="Share the game code"
             detail={t.code}
             icon={{ symbol: 'square.and.arrow.up', color: colors.green as string }}
             onPress={() => void Share.share({ message: `Come play poker with me on FlipUp. Code ${t.code}: ${joinLink(t.code!)}`, url: joinLink(t.code!) })}

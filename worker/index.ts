@@ -1,6 +1,10 @@
 import {
   createTable,
   isCode,
+  isTableCode,
+  newTableCode,
+  normalizeTableCode,
+  tableCodeProblem,
   isFriendCode,
   isUsername,
   normalizeUsername,
@@ -158,9 +162,16 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     botNames = [];
   }
 
-  // Codes are random, so a clash is rare. Try a few before giving up.
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const code = newCode();
+  // The host's own code (the lobby's Change): exactly that one, or an answer saying why not.
+  let own: string | undefined;
+  if (body.code !== undefined) {
+    own = typeof body.code === 'string' ? normalizeTableCode(body.code) : '';
+    const problem = tableCodeProblem(own) ?? (isNameBlocked(own) ? 'Pick a different code.' : null);
+    if (problem) return json({ error: problem }, 400);
+  }
+  // Random codes are a poker word and two numbers, so a clash is rare. Try a few before giving up.
+  for (let attempt = 0; attempt < (own ? 1 : 8); attempt++) {
+    const code = own ?? newTableCode();
     const game = createTable({
       hostDeviceId: body.deviceId,
       name,
@@ -175,6 +186,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     const created = await env.TABLE_ROOM.getByName(code).create(game);
     if (created) return json({ code } satisfies CreateTableResponse, 201);
   }
+  if (own) return json({ error: 'That code is taken. Try another.' }, 409);
   return json({ error: "Couldn't find a free code. Try again." }, 503);
 }
 
@@ -270,7 +282,7 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
     if (limited(request, 'invite-answer', 120, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
-    if (!isCode(body.table)) return json({ error: 'That table has closed.' }, 404);
+    if (!isTableCode(body.table)) return json({ error: 'That table has closed.' }, 404);
     if (kind === 'decline') {
       // `code` is the person saying no, who proves it with their device id; the inviter hears on their next check.
       if (!isFriendCode(body.from)) return json({ error: "That code doesn't look right." }, 400);
@@ -292,7 +304,7 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
   if (!from) return json({ error: 'Get your own friend code first.' }, 403);
   const me = await env.FRIEND_CARD.getByName(from).get(from);
   if (!me) return json({ error: 'Get your own friend code first.' }, 403);
-  if (!isCode(body.table)) return json({ error: 'That table has closed.' }, 404);
+  if (!isTableCode(body.table)) return json({ error: 'That table has closed.' }, 404);
   let invite: BjInvite;
   if (body.kind === 'table') {
     // A poker table: only friends can ask each other, and only to a table that's still open.
@@ -532,7 +544,7 @@ export default {
     const match = pathname.match(/^\/api\/tables\/([^/]+)(\/ws)?$/);
     if (match) {
       const code = match[1].toUpperCase();
-      if (!isCode(code)) return json({ error: "That code doesn't look right." }, 400);
+      if (!isTableCode(code)) return json({ error: "That code doesn't look right." }, 400);
       const room = env.TABLE_ROOM.getByName(code);
       if (match[2]) return sameSite(request) ? room.fetch(request) : json({ error: 'Not allowed.' }, 403);
       if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);

@@ -11,7 +11,7 @@ import { CodePad, useCode } from '@/components/code-pad';
 import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
 import { ThemedText } from '@/components/themed-text';
-import { isCode, normalizeCode, variantInfo, type TableInfo } from '@/engine';
+import { isTableCode, normalizeTableCode, variantInfo, type TableInfo } from '@/engine';
 import { fetchTableInfo } from '@/state/api';
 import { joinParty, readParty } from '@/state/party';
 import { useProfile } from '@/state/profile';
@@ -23,8 +23,8 @@ function codeFromScan(text: string): string | null {
   let tail = text.trim();
   const m = /^[a-z]+:\/\/[^/]+(\/.*)?$/i.exec(tail);
   if (m) tail = m[1] ?? '';
-  const code = normalizeCode(tail.split(/[/?#]/).filter(Boolean).pop() ?? '');
-  return isCode(code) ? code : null;
+  const code = normalizeTableCode(tail.split(/[/?#]/).filter(Boolean).pop() ?? '');
+  return isTableCode(code) ? code : null;
 }
 
 /** Sits you down in a party, and opens it. */
@@ -34,7 +34,7 @@ async function intoParty(code: string): Promise<void> {
 }
 
 /**
- * The Join tab: type the 5-letter table code with the iPhone keyboard, or scan the host's QR code. A code that's
+ * The Join tab: type the table's game code (six letters or numbers, like ACES42) with the iPhone keyboard, or scan the host's QR code. A code that's
  * found shows the table (the game, the host, who's there) and a Sit down button.
  */
 export default function JoinTab() {
@@ -61,7 +61,7 @@ export default function JoinTab() {
     } catch (e) {
       return e instanceof Error ? e.message : 'Something went wrong. Try again.';
     }
-  });
+  }, 'table');
 
   // Back on the tab after a party code took you to the party: empty boxes, ready for the next code.
   const { reset } = state;
@@ -138,7 +138,7 @@ export default function JoinTab() {
         </>
       ) : (
         <>
-          <ThemedText tone="tertiaryLabel">Type the 5-letter code from whoever&apos;s hosting.</ThemedText>
+          <ThemedText tone="tertiaryLabel">Type the game code from whoever&apos;s hosting. A party code works too: type it and press Go.</ThemedText>
           <CodePad state={state} label="Table code" focus={focused} />
           <Button title="Scan a QR code" variant="party" tint="pink" onPress={() => void scan()} />
         </>

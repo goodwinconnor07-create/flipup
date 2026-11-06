@@ -5,6 +5,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from '
 import type { PartyRow } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { BLOCKED_EMOJI, BLOCKED_NAME, memberKey, useBlocked } from '@/state/blocks';
+import { FRIENDS_ON } from '@/scope';
 import { sendFriendRequest, usePals } from '@/state/pals';
 import { radius, spacing, usePlainColors } from '@/theme';
 
@@ -118,7 +119,7 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
           </Text>
         )}
       </View>
-      {canAdd && r.friendCode && <AddFriend code={r.friendCode} name={r.name} emoji={r.emoji} />}
+      {FRIENDS_ON && canAdd && r.friendCode && <AddFriend code={r.friendCode} name={r.name} emoji={r.emoji} />}
     </Animated.View>
   );
 }

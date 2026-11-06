@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
+import { FRIENDS_ON } from '@/scope';
 import { usePals } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { cardColors, ROUNDED, spacing } from '@/theme';
@@ -21,8 +22,9 @@ const BOT_FACES = ['🦊', '🐼', '🦉'];
 export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | 'bots') => void; height?: number } = {}) {
   const profile = useProfile();
   const pals = usePals();
-  const friends = [profile.emoji || '🙂', ...pals.slice(0, 2).map((p) => p.emoji)];
-  while (friends.length < 3) friends.push('');
+  // With friends off (scope.ts) the tile shows your face alone.
+  const friends = [profile.emoji || '🙂', ...(FRIENDS_ON ? pals.slice(0, 2).map((p) => p.emoji) : [])];
+  if (FRIENDS_ON) while (friends.length < 3) friends.push('');
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm }}>
       <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />

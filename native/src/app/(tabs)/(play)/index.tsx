@@ -14,6 +14,7 @@ import { InviteCard } from '@/components/invite-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { RequestsPill } from '@/components/friend-requests';
 import { ProfileMenu } from '@/components/profile-menu';
+import { FRIENDS_ON } from '@/scope';
 import { SwipeAway } from '@/components/swipe-away';
 import { TabScreen } from '@/components/tab-screen';
 import { partyTile, ThumbSnapper } from '@/components/thumb-snaps';
@@ -52,15 +53,15 @@ export default function Home() {
         title="Play"
         accessory={
           <>
-            <RequestsPill />
+            {FRIENDS_ON && <RequestsPill />}
             <ProfileMenu />
           </>
         }
       >
-        {(banner || box.invites.length > 0) && (
+        {(banner || (FRIENDS_ON && box.invites.length > 0)) && (
           <View style={{ gap: spacing.sm }}>
             <TableBanner />
-            {box.invites.slice(0, 2).map((i) => (
+            {FRIENDS_ON && box.invites.slice(0, 2).map((i) => (
               <InviteCard key={`${i.from}:${i.at}`} invite={i} />
             ))}
           </View>
@@ -73,7 +74,7 @@ export default function Home() {
         )}
         <GameRow />
         <ChallengeRow />
-        <FriendsStrip />
+        {FRIENDS_ON && <FriendsStrip />}
         {record.hands > 0 ? <PassportCard /> : <FirstHand />}
         {!premium && <PremiumBanner />}
 

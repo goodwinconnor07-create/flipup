@@ -105,11 +105,22 @@ export function MyArea({
         }}
       >
         {odds ? (
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}>Win</Text>
-            <Text style={{ fontSize: 28, fontWeight: '700', color: c.gold, fontVariant: ['tabular-nums'] }}>{pct(odds.win)}</Text>
-            <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}>Tie</Text>
-            <Text style={{ fontSize: 24, fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{pct(odds.tie)}</Text>
+          // Win and Tie side by side, each shrinking to fit its half, so the box never needs more height than it has
+          // and the numbers can't run into the name row or the move pill on the corner.
+          <View
+            style={{
+              flex: 1,
+              alignSelf: 'stretch',
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              paddingTop: 12,
+              minHeight: 0,
+            }}
+          >
+            <OddsCell label="Win" value={pct(odds.win)} size={28} colour={c.gold} caption={c.tertiaryLabel} />
+            <OddsCell label="Tie" value={pct(odds.tie)} size={24} colour={c.label} caption={c.tertiaryLabel} />
           </View>
         ) : (
           // The chip count is the biggest thing in the box, sat a little low so the corner bubbles have room above it.
@@ -149,7 +160,11 @@ export function MyArea({
           <PositionChip pos={me ? positionOf(hand, me.id) : null} />
           {me && <Avatar emoji={me.emoji} size={22} />}
           {me && (
-            <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}>
+            <Text
+              numberOfLines={1}
+              maxFontSizeMultiplier={1.2}
+              style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}
+            >
               {me.name}
             </Text>
           )}
@@ -172,6 +187,46 @@ export function MyArea({
           ) : null}
         </View>
       </View>
+    </View>
+  );
+}
+
+/** One half of the odds readout: a small label over a number that shrinks rather than overflow. */
+function OddsCell({
+  label,
+  value,
+  size,
+  colour,
+  caption,
+}: {
+  label: string;
+  value: string;
+  size: number;
+  colour: string;
+  caption: string;
+}) {
+  return (
+    <View style={{ flex: 1, minWidth: 0, alignItems: 'center' }}>
+      <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 14, fontWeight: '600', color: caption }}>
+        {label}
+      </Text>
+      <Text
+        maxFontSizeMultiplier={1.1}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.5}
+        style={{
+          alignSelf: 'stretch',
+          textAlign: 'center',
+          fontSize: size,
+          lineHeight: size + 4,
+          fontWeight: '700',
+          color: colour,
+          fontVariant: ['tabular-nums'],
+        }}
+      >
+        {value}
+      </Text>
     </View>
   );
 }

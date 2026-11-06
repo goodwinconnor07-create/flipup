@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 
-import { EASE_IN_OUT } from '@/motion/presets';
+import { EASE_IN_OUT, SETTLE, stagger } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { brand, cardColors, gradient, motion, spacing } from '@/theme';
 
@@ -35,7 +35,7 @@ export function DealWipe() {
   return (
     <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, { zIndex: 50 }, panel]}>
       <LivingCard colors={cardColors.night} radius={0} shadow={false} outerStyle={{ flex: 1 }} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md }}>
-        {!reduce && SUITS.map((s, i) => <Suit key={s} name={s} delay={i * 50} red={i % 2 === 1} />)}
+        {!reduce && SUITS.map((s, i) => <Suit key={s} name={s} delay={stagger(i)} red={i % 2 === 1} />)}
       </LivingCard>
       {/* The leading edge of the sweep: a soft lighter band at the bottom. */}
       <View style={[{ position: 'absolute', left: 0, right: 0, bottom: 0, height: 24 }, gradient('linear-gradient(180deg, rgba(255,255,255,0), rgba(255,255,255,0.12))')]} />
@@ -46,9 +46,9 @@ export function DealWipe() {
 function Suit({ name, delay, red }: { name: IconName; delay: number; red: boolean }) {
   const s = useSharedValue(0);
   useEffect(() => {
-    s.set(withDelay(delay, withSpring(1, { mass: 1, stiffness: 450, damping: 18 })));
+    s.set(withDelay(delay, withSpring(1, SETTLE)));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const style = useAnimatedStyle(() => ({ opacity: Math.min(1, s.get() * 1.5), transform: [{ scale: 0.4 + s.get() * 0.6 }] }));
+  const style = useAnimatedStyle(() => ({ opacity: Math.min(1, s.get() * 1.5), transform: [{ scale: motion.popFrom + s.get() * (1 - motion.popFrom) }] }));
   return (
     <Animated.View style={style}>
       <Icon name={name} size={40} color={red ? brand.gold : 'white'} weight="bold" />

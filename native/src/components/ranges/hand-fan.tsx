@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Text, View, type GestureResponderEvent } from 'react-native';
 import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
+import { SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { spacing } from '@/theme';
 
@@ -11,7 +12,7 @@ import { PlayingCard } from '../table/playing-card';
 
 /** How far a swipe has to go to count. */
 const THRESHOLD = 56;
-const SPRING = { mass: 1, stiffness: 320, damping: 22 } as const;
+const SPRING = SETTLE;
 
 export type HandState = 'live' | 'mucked' | 'played';
 

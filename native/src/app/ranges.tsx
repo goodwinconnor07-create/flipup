@@ -1,7 +1,9 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
+
+import { popIn } from '@/motion/presets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { confettiColors } from '@design/tokens';
@@ -405,7 +407,7 @@ function Trainer() {
       {phase === 'reveal' && mode === 'blitz' && results.length > 0 && <Flash grade={results[results.length - 1].grade} points={results[results.length - 1].points} multiplier={blitzMultiplier(run)} />}
       {phase === 'countdown' && (
         <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
-          <Animated.View key={count} entering={reduce ? undefined : ZoomIn.springify().mass(0.6)}>
+          <Animated.View key={count} entering={reduce ? undefined : popIn()}>
             <Text maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 120, fontWeight: '800', color: '#ffffff' }}>
               {count || 'Go'}
             </Text>

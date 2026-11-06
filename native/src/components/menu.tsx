@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
+import { popIn } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { radius, spacing, useColors, useShadows } from '@/theme';
 
 import { haptic } from './haptics';
@@ -14,6 +17,7 @@ type Anchor = { measureInWindow: (cb: (x: number, y: number, w: number, h: numbe
  */
 export function Menu({ sections, title, children, label, fill }: MenuProps) {
   const colors = useColors();
+  const reduce = useReduceMotion();
   const shadow = useShadows();
   const anchor = useRef<Anchor | null>(null);
   const [at, setAt] = useState<{ x: number; y: number; w: number } | null>(null);
@@ -31,7 +35,10 @@ export function Menu({ sections, title, children, label, fill }: MenuProps) {
       <Modal transparent visible={!!at} animationType="fade" onRequestClose={() => setAt(null)}>
         <Pressable accessibilityLabel="Close the menu" onPress={() => setAt(null)} style={{ flex: 1 }}>
           {at && (
-            <View style={{ position: 'absolute', top: at.y, left: Math.max(spacing.md, Math.min(at.x + at.w - width, at.x)), width, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.cell, boxShadow: shadow.raised }}>
+            // Grows out of the trigger's corner from 95% (motion rules 10 and 11), never from the middle.
+            <Animated.View
+              entering={reduce ? undefined : popIn()}
+              style={{ position: 'absolute', top: at.y, left: Math.max(spacing.md, Math.min(at.x + at.w - width, at.x)), transformOrigin: at.x + at.w - width > at.x ? 'top left' : 'top right', width, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.cell, boxShadow: shadow.raised }}>
               {title && (
                 <Text style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xxs, fontSize: 13, color: colors.secondaryLabel }}>{title}</Text>
               )}
@@ -53,7 +60,7 @@ export function Menu({ sections, title, children, label, fill }: MenuProps) {
                   ))}
                 </View>
               ))}
-            </View>
+            </Animated.View>
           )}
         </Pressable>
       </Modal>

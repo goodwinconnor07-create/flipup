@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import Animated, { Easing, FadeIn, SlideInDown, useAnimatedStyle, useSharedValue, withTiming, ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, FadeIn, SlideInDown, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import type { Character, Pile } from '@/state/range-logic';
 import type { HandNumbers } from '@/state/ranges';
@@ -207,7 +208,7 @@ export function Flash({ grade, points, multiplier }: { grade: Grade; points: num
   const head = HEAD[grade];
   return (
     <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: '38%', alignItems: 'center' }}>
-      <Animated.View entering={reduce ? FadeIn.duration(120) : ZoomIn.springify().mass(0.5).damping(12)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, height: 56, borderRadius: 28, backgroundColor: grade === 'best' ? brand.gold : grade === 'ok' ? brand.violet : 'rgba(40,40,52,0.95)', boxShadow: '0 12px 30px -10px rgba(0,0,0,0.7)' }}>
+      <Animated.View entering={reduce ? FadeIn.duration(120) : popIn()} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.lg, height: 56, borderRadius: 28, backgroundColor: grade === 'best' ? brand.gold : grade === 'ok' ? brand.violet : 'rgba(40,40,52,0.95)', boxShadow: '0 12px 30px -10px rgba(0,0,0,0.7)' }}>
         <Icon name={head.icon} size={22} color={grade === 'best' ? brand.goldInk : '#ffffff'} />
         <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 22, fontWeight: '800', color: grade === 'best' ? brand.goldInk : '#ffffff' }}>
           {grade === 'mistake' ? 'Miss' : `+${points}`}

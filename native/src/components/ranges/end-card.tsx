@@ -1,6 +1,8 @@
 import { useEffect } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import Animated, { FadeInDown, ZoomIn } from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+
+import { popIn, stagger } from '@/motion/presets';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -82,7 +84,7 @@ export function EndCard({
           {stars != null && (
             <View style={{ flexDirection: 'row', gap: spacing.sm }} accessibilityLabel={`${stars} of 3 stars`}>
               {[0, 1, 2].map((i) => (
-                <Animated.View key={i} entering={reduce ? undefined : ZoomIn.delay(350 + i * 260).springify().mass(0.7).damping(9)}>
+                <Animated.View key={i} entering={reduce ? undefined : popIn().delay(350 + i * 260)}>
                   <Icon name="star.fill" size={i === 1 ? 64 : 50} color={i < stars ? brand.gold : 'rgba(255,255,255,0.14)'} />
                 </Animated.View>
               ))}
@@ -105,7 +107,7 @@ export function EndCard({
 
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 }} accessibilityLabel={`${results.filter((r) => r.grade === 'best').length} best plays out of ${results.length}`}>
           {results.slice(0, 36).map((r, i) => (
-            <Animated.View key={i} entering={reduce ? undefined : ZoomIn.delay(700 + i * 50)} style={{ width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: SQUARE_COLOUR[r.grade] }}>
+            <Animated.View key={i} entering={reduce ? undefined : popIn().delay(700 + stagger(i))} style={{ width: 34, height: 34, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: SQUARE_COLOUR[r.grade] }}>
               <Icon name={GRADE_ICON[r.grade]} size={15} color={r.grade === 'best' ? brand.goldInk : 'rgba(255,255,255,0.8)'} />
             </Animated.View>
           ))}

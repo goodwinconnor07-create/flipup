@@ -216,6 +216,18 @@ export const motion = {
   base: 250,
   screen: 350,
   sheetOut: 160,
+  /** Exits run 20% shorter than the entrance they undo (250 in, 200 out). See docs/MOTION.md, "The 20 rules". */
+  exit: 200,
+  /** Gap between rows or details that settle one after another. */
+  stagger: 30,
+  /** A popover, menu or chip starts here, never from 0, so it grows out of something that's already there. */
+  popFrom: 0.95,
+  /** How far a moving knob stretches along its travel (its other side shrinks so its area stays the same). */
+  stretch: 0.12,
+  /** How far an object that moves across the screen bows out of a straight line, in points. */
+  arc: 32,
+  /** Menus and dropdowns open in this range of milliseconds. */
+  dropdown: { min: 150, max: 250 },
 } as const;
 
 /** Tap targets are never smaller than this (Apple's minimum). */

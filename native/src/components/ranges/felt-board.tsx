@@ -1,5 +1,7 @@
 import { Text, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
+
+import { popIn } from '@/motion/presets';
 
 import { RAILS } from '@design/tableLooks';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -45,7 +47,7 @@ export function FeltBoard({ board, shown, pot, width, compact }: { board: string
           <View style={{ flexDirection: 'row', gap }} accessibilityLabel={shown ? `Board: ${board.slice(0, shown).join(' ')}` : 'No board cards yet'}>
             {board.map((c, i) => (i < shown ? <PlayingCard key={c} card={c} size="md" width={cardW} flip delay={(i % 3) * 90} /> : <CardSlot key={`slot${i}`} size="md" width={cardW} />))}
           </View>
-          <Animated.View key={pot} entering={reduce ? undefined : ZoomIn.springify().mass(0.6)} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 26, borderRadius: 13, backgroundColor: 'rgba(0,0,0,0.38)' }}>
+          <Animated.View key={pot} entering={reduce ? undefined : popIn()} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12, height: 26, borderRadius: 13, backgroundColor: 'rgba(0,0,0,0.38)' }}>
             <View style={{ width: 11, height: 11, borderRadius: 6, backgroundColor: '#f5b700', borderWidth: 2, borderColor: '#fff3c4' }} />
             <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 14, fontWeight: '800', color: '#ffffff', fontVariant: ['tabular-nums'] }}>
               Pot {bb(pot)}

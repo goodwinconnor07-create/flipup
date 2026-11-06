@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
+import { SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import type { Grade } from '@train/ranges/model';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
@@ -89,7 +90,7 @@ function Dot({ colour, current }: { colour: string; current: boolean }) {
   const reduce = useReduceMotion();
   const w = useSharedValue(current ? 22 : 8);
   useEffect(() => {
-    w.set(reduce ? (current ? 22 : 8) : withSpring(current ? 22 : 8, { mass: 1, stiffness: 300, damping: 24 }));
+    w.set(reduce ? (current ? 22 : 8) : withSpring(current ? 22 : 8, SETTLE));
   }, [current, reduce, w]);
   const style = useAnimatedStyle(() => ({ width: w.get() }));
   return <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: colour }, style]} />;

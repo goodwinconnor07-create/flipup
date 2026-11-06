@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -16,8 +16,13 @@ import { Icon } from './icon';
  */
 export function Swap({ id, kind, children, size, style }: { id: string | null; kind: 'icon' | 'text'; children?: ReactNode; size?: number; style?: StyleProp<ViewStyle> }) {
   const reduce = useReduceMotion();
+  // The first thing shown doesn't animate: entrances start once `id` has changed (React's adjust-state-on-render pattern).
+  const [prev, setPrev] = useState(id);
   const [ready, setReady] = useState(false);
-  useEffect(() => setReady(true), []);
+  if (id !== prev) {
+    setPrev(id);
+    setReady(true);
+  }
   return (
     <View style={[{ alignItems: 'center', justifyContent: 'center' }, kind === 'text' ? { overflow: 'hidden' } : null, size ? { width: size, height: size } : null, style]}>
       {id === null ? null : (

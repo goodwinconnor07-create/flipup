@@ -1,7 +1,9 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
+
+import { popIn } from '@/motion/presets';
 
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
@@ -60,7 +62,7 @@ export default function ProfileScreen() {
             }}
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
           >
-            <Animated.View key={profile.emoji} entering={reduce ? undefined : ZoomIn.springify().mass(1).stiffness(300).damping(18)}>
+            <Animated.View key={profile.emoji} entering={reduce ? undefined : popIn()}>
               <Avatar emoji={profile.emoji} size={PIC} />
             </Animated.View>
             <View style={{ position: 'absolute', right: 4, bottom: 4, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, borderWidth: 3, borderColor: colors.background }}>

@@ -63,7 +63,7 @@ export function PrintCover({ total = PRINT_MS, zIndex = 1000 }: { total?: number
           cover.set(withTiming(0, { duration: 220 }, (done) => done && runOnJS(leave)()));
           return;
         }
-        tile.set(withSequence(withTiming(1.1, { duration: 140, easing: EASE }), withTiming(0.2, { duration: 260, easing: Easing.in(Easing.quad) })));
+        tile.set(withSequence(withTiming(1.1, { duration: 140, easing: EASE }), withTiming(0.2, { duration: 260, easing: EASE })));
         cover.set(withDelay(150, withTiming(0, { duration: 260 }, (done) => done && runOnJS(leave)())));
       }, wait);
       });

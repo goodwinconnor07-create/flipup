@@ -1,10 +1,11 @@
 // The chip beside the Pot pill: a stack that grows with the pot, in five steps (the web's PotChips, same bands).
-// Bigger pots show the next step, never a bigger picture, so the pill keeps its size. A new step pops in (a short
-// scale spring); under Reduce Motion it swaps at once.
+// Bigger pots show the next step, never a bigger picture, so the pill keeps its size. A new step pulses (out to 108%
+// and back, no bounce); under Reduce Motion it swaps at once.
 import { useEffect } from 'react';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import Svg, { Ellipse, G, Rect } from 'react-native-svg';
 
+import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 
 /** Big blinds in the pot where each step ends: under 5, 15, 40, 100, then over. */
@@ -43,8 +44,8 @@ export function PotChips({ pot, bigBlind }: { pot: number; bigBlind: number }) {
       scale.set(1);
       return;
     }
-    scale.set(0.6);
-    scale.set(withSpring(1, { mass: 1, stiffness: 420, damping: 14 }));
+    // A pulse, not a bounce: out to 108% and back, ease-out both ways.
+    scale.set(withSequence(withTiming(1.08, { duration: 100, easing: EASE_OUT }), withTiming(1, { duration: 160, easing: EASE_OUT })));
   }, [tier, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
   const pop = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
   return (

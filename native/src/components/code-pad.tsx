@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, TextInput, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
 import { CODE_ALPHABET, CODE_LENGTH } from '@/engine';
+import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { radius, spacing, usePlainColors } from '@/theme';
 
@@ -153,7 +154,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
               }}
             >
               {letter ? (
-                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : ZoomIn.springify().mass(1).stiffness(450).damping(22)} maxFontSizeMultiplier={1} style={{ fontSize: 34, fontWeight: '700', color: c.label }}>
+                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : popIn()} maxFontSizeMultiplier={1} style={{ fontSize: 34, fontWeight: '700', color: c.label }}>
                   {letter}
                 </Animated.Text>
               ) : next ? (

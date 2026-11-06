@@ -10,6 +10,7 @@ import { ThemedText } from '@/components/themed-text';
 import type { Usually } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { closeWhatIf, pauseTable, usuallyForWhatIf, useTable } from '@/state/session';
+import { EASE_OUT } from '@/motion/presets';
 import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
 
 /** "How it usually goes" should take about this long; the run count is set from how fast this phone plays the first few. */
@@ -153,7 +154,7 @@ function Progress({ done, total }: { done: number; total: number }) {
   const colors = useColors();
   const reduce = useReduceMotion();
   const share = Math.max(0, Math.min(1, done / Math.max(1, total)));
-  const bar = useAnimatedStyle(() => ({ width: reduce ? `${share * 100}%` : withTiming(`${share * 100}%`, { duration: 120 }) }));
+  const bar = useAnimatedStyle(() => ({ width: reduce ? `${share * 100}%` : withTiming(`${share * 100}%`, { duration: 120, easing: EASE_OUT }) }));
   return (
     <View accessible accessibilityRole="progressbar" accessibilityValue={{ min: 0, max: total, now: done }} style={{ height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.cell }}>
       <Animated.View style={[{ height: 8, borderRadius: 4, backgroundColor: brand.violet }, bar]} />

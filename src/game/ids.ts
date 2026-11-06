@@ -64,8 +64,8 @@ export function isFriendCode(value: unknown): value is string {
   return (typeof value === 'string' && value.length === FRIEND_CODE_LENGTH && normalizeFriendCode(value) === value) || isCode(value);
 }
 
-/** Usernames: 3 to 20 lowercase letters, digits, dots or underscores, starting with a letter. How friends find you. */
-export const USERNAME_MIN = 3;
+/** Usernames: 2 to 20 lowercase letters, digits, dots or underscores, starting with a letter. How friends find you. */
+export const USERNAME_MIN = 2;
 export const USERNAME_MAX = 20;
 /** A username can change once in this long. */
 export const USERNAME_CHANGE_MS = 30 * 24 * 60 * 60 * 1000;

@@ -11,7 +11,6 @@ import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actio
 import { ChallengeEnded, ChallengeStrip, useChallengeSheets } from '@/components/table/challenge';
 import { Confetti } from '@/components/table/confetti';
 import { PartyPanel } from '@/components/party/panel';
-import { BankrollEnded, BankrollStrip } from '@/components/table/bankroll-strip';
 import { Ended } from '@/components/table/ended';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
@@ -63,8 +62,7 @@ export default function TableScreen() {
     <View
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
-      <TableBar game={game} online={online} code={game?.bankroll ? null : t.code} />
-      {game?.bankroll && game.status !== 'ended' && <BankrollStrip game={game} />}
+      <TableBar game={game} online={online} code={t.code} />
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
       {online && t.conn === 'offline' && <Pill text="Reconnecting…" />}
@@ -92,7 +90,7 @@ export default function TableScreen() {
       ) : (
         <>
           {game.status === 'playing' && <Playing game={game} sending={t.sending} />}
-          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : game.bankroll ? <BankrollEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
+          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>
       )}
     </View>

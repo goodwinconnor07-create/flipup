@@ -23,9 +23,6 @@ export const APP_INFO = {
   apiOrigin: 'https://gtoduel.online',
   /** Public pages the store listing and the app link to. */
   privacyUrl: 'https://gtoduel.online/privacy',
-  /** What the privacy policy says about the public boards (add it to the hosted page at privacyUrl too). */
-  privacyBoards:
-    'Bankroll and Today’s three show your username, emoji, score and any badge on public leaderboards. Your country shows only if you turn it on in Settings. Delete my data removes you from every board.',
   supportUrl: 'https://gtoduel.online/support',
 
   /** TODO(before launch): placeholder address. Replace before submitting (listed in docs/APP_STORE.md). */

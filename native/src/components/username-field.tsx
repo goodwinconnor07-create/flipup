@@ -22,7 +22,7 @@ export function UsernameSheet({ title, line, button, start = '', run }: { title:
   const go = async () => {
     if (busy) return;
     if (!ok) {
-      setError('Use 3 to 20 letters, numbers, dots or underscores, starting with a letter.');
+      setError('Use 2 to 20 letters, numbers, dots or underscores, starting with a letter.');
       haptic.failure();
       return;
     }

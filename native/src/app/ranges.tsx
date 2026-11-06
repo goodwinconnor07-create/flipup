@@ -42,7 +42,6 @@ import {
   type Mode,
   type Sampled,
 } from '@/state/range-logic';
-import { noteDailyPick } from '@/state/bankroll';
 import {
   answerHand,
   dailyToday,
@@ -261,8 +260,6 @@ function Trainer() {
     const n = numbersFor(s, r);
     if (mode === 'daily' && session.day) {
       noteDaily(session.day, grade);
-      // Today's board: the answers go to the server, which scores them itself.
-      noteDailyPick(session.day, id);
     }
     let result: HandResult;
     if (mode === 'blitz') {

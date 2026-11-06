@@ -14,14 +14,14 @@ import { SectionTitle } from './section-title';
 const TILE = 124;
 
 /**
- * Every game as a row you swipe through, like a shelf in Apple's Games app: the game's picture in a big rounded
+ * Every variant as a row you swipe through, like a shelf in Apple's Games app: the game's picture in a big rounded
  * square, its name under it, a crown on the Premium ones. "See all" opens them all as big cards.
  */
 export function GameRow() {
   const premium = usePremium();
   return (
     <View style={{ gap: spacing.sm }}>
-      <SectionTitle title="Games" onMore={() => router.push('/games')} />
+      <SectionTitle title="Variants" onMore={() => router.push('/games')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md, marginTop: -8, marginBottom: -28 }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 28, gap: spacing.sm }}>
         {VARIANTS.map((v) => (
           <Tile key={v.id} variant={v.id} name={v.name} locked={!premium && isPremiumVariant(v.id)} />

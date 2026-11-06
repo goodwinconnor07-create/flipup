@@ -353,7 +353,7 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
 
   if (kind === 'username') {
     const username = typeof body.username === 'string' ? normalizeUsername(body.username) : '';
-    if (!isUsername(username)) return json({ error: 'Usernames are 3 to 20 letters, numbers, dots or underscores, starting with a letter.' }, 400);
+    if (!isUsername(username)) return json({ error: 'Usernames are 2 to 20 letters, numbers, dots or underscores, starting with a letter.' }, 400);
     if (isNameBlocked(username)) return json({ error: "That username isn't allowed. Try another." }, 400);
     if ((await card.owner()) !== body.deviceId) return json({ error: 'That code belongs to another phone.' }, 403);
     const wait = await card.usernameFree(USERNAME_CHANGE_MS);

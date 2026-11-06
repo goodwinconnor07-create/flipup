@@ -4,9 +4,10 @@ import { Text, View } from 'react-native';
 
 import { usePals } from '@/state/pals';
 import { useProfile } from '@/state/profile';
-import { cardColors, ROUNDED, spacing } from '@/theme';
+import { brand, cardColors, ROUNDED, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
+import { Icon } from '../icon';
 import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
 
@@ -24,10 +25,28 @@ export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | '
   const friends = [profile.emoji || '🙂', ...pals.slice(0, 2).map((p) => p.emoji)];
   while (friends.length < 3) friends.push('');
   return (
-    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-      <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
-      <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
+    <View style={{ gap: spacing.sm }}>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
+        <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
+      </View>
+      {!onGo && <JoinCard />}
     </View>
+  );
+}
+
+/** Across the bottom of the two tiles: the way into a table or party with a code or a QR code (the Join sheet). */
+function JoinCard() {
+  return (
+    <PressableTile label="Join a game. With a code or a QR code" onPress={() => router.push('/join')}>
+      <LivingCard colors={cardColors.gold} outerStyle={{ height: 64 }} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md }}>
+        <Icon name="qrcode.viewfinder" size={26} color={brand.goldInk} />
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 20, fontWeight: '800', color: brand.goldInk }}>
+          Join a game
+        </Text>
+        <Icon name="chevron.right" size={15} color={brand.goldInk} />
+      </LivingCard>
+    </PressableTile>
   );
 }
 

@@ -65,7 +65,7 @@ export async function createFriendCard(body: { deviceId: string; name: string; e
 }
 
 /** Sends a new name and picture. Returns false when the code has gone. */
-export async function updateFriendCard(code: string, body: { deviceId: string; name: string; emoji: string; country?: string | null }): Promise<boolean> {
+export async function updateFriendCard(code: string, body: { deviceId: string; name: string; emoji: string }): Promise<boolean> {
   const res = await json(`/api/friends/${encodeURIComponent(code)}`, { method: 'PUT', body: JSON.stringify(body) });
   if (res.status === 404 || res.status === 403) return false;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't update your friend code."));

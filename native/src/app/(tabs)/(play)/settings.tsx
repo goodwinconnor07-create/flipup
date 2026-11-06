@@ -3,8 +3,6 @@ import { openBrowserAsync } from 'expo-web-browser';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Linking, ScrollView } from 'react-native';
 
-import { flagOf } from '@/components/board-row';
-import { COUNTRY_KEY } from '@/state/pals';
 import { useStored } from '@/state/storage';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
@@ -27,7 +25,6 @@ export default function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
   const blocked = useBlocked();
-  const country = useStored<string | null>(COUNTRY_KEY, null);
   const store = useStore();
   const restore = async () => {
     if (await restorePremium()) {
@@ -82,7 +79,6 @@ export default function SettingsScreen() {
       )}
 
       <Section footer="To report or block someone, tap their seat at a table or their row on a party board.">
-        <Row title="Show my country" detail={country ? flagOf(country) : 'Off'} icon={{ symbol: 'globe', color: colors.accent as string }} onPress={() => router.push('/country')} />
         <Row title="Blocked players" detail={blocked.length ? String(blocked.length) : undefined} icon={{ symbol: 'hand.raised.slash.fill', color: colors.red as string }} onPress={() => router.push('/blocked')} />
       </Section>
 

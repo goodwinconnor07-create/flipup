@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 
 import { useFriendBox } from '@/state/pals';
 
-// Apple's own tab bar (Liquid Glass on iOS 26): Play, Train, Global and Friends. A party starts from Play with
+// Apple's own tab bar (Liquid Glass on iOS 26): Play, Train and Friends. A party starts from Play with
 // friends, and joining a table or party is the round button in Play's title row (the `join` sheet). Tabs are peers,
 // so switching never slides.
 export default function TabsLayout() {
@@ -20,10 +20,6 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="(train)">
         <NativeTabs.Trigger.Icon sf="graduationcap.fill" md="school" />
         <NativeTabs.Trigger.Label>Train</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="(global)">
-        <NativeTabs.Trigger.Icon sf="trophy.fill" md="emoji_events" />
-        <NativeTabs.Trigger.Label>Global</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="(friends)">
         <NativeTabs.Trigger.Icon sf="person.2.fill" md="group" />

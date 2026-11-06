@@ -5,7 +5,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { read, write } from '../state/persist';
 import { loadHands } from '../train/ranges/library';
-import { analyse, bb, gradeOf, optionsFor, replay, spotOf, type Grade, type OptionId, type RangeGroup, type Scenario, type Street } from '../train/ranges/model';
+import { narrate } from '../train/ranges/narrate';
+import {
+  analyse,
+  bb,
+  callShare,
+  gradeOf,
+  optionsFor,
+  replay,
+  spotOf,
+  type Grade,
+  type OptionId,
+  type RangeGroup,
+  type Scenario,
+  type Street,
+} from '../train/ranges/model';
 import { SCENARIOS } from '../train/ranges/scenarios';
 import { BackBar, PlayingCard } from '../ui/components';
 import { haptic } from '../ui/effects';
@@ -43,10 +57,21 @@ const pct = (x: number) => `${Math.round(x * 100)}%`;
 const signed = (n: number) => `${n >= 0 ? '+' : '−'}${bb(Math.abs(Math.round(n * 10) / 10))}`;
 
 /** What a group does, in a few words: "Value", or "Folds · calls ⅓" when a small bet changes its mind. */
-function respond(g: RangeGroup, facing: boolean): string {
+function respond(g: RangeGroup, facing: boolean, dead: string[]): string {
   if (facing) return g.role === 'value' ? 'Value' : g.role === 'bluff' ? 'Bluff' : 'Called';
+  // Some of the group calls and some folds: the ¾-pot answer first, then how much calls the other sizes.
+  if (g.split?.length) {
+    const at = (id: OptionId) => Math.round(callShare(g, dead, id) * 100);
+    const [sm, md, bg] = [at('bet33'), at('bet75'), at('bet125')];
+    const base = md >= 99 ? 'Calls' : md <= 1 ? 'Folds' : `${md}% call`;
+    const extra = [sm !== md ? `${sm}% call ⅓` : '', bg !== md ? `${bg}% call an overbet` : ''].filter(Boolean);
+    return [base, ...extra].join(' · ');
+  }
   const word = { calls: 'Calls', folds: 'Folds', raises: 'Raises', value: 'Value', bluff: 'Bluff' };
-  const extra = [g.small && g.small !== g.role ? `${word[g.small].toLowerCase()} ⅓` : '', g.big && g.big !== g.role ? `${word[g.big].toLowerCase()} to an overbet` : ''].filter(Boolean);
+  const extra = [
+    g.small && g.small !== g.role ? `${word[g.small].toLowerCase()} ⅓` : '',
+    g.big && g.big !== g.role ? `${word[g.big].toLowerCase()} to an overbet` : '',
+  ].filter(Boolean);
   return [word[g.role], ...extra].join(' · ');
 }
 
@@ -76,15 +101,27 @@ export function RangeTrainer() {
   const r = useMemo(() => replay(scenario), [scenario]);
   const options = useMemo(() => optionsFor(scenario, r), [scenario, r]);
   const views = useMemo(() => (pick ? analyse(scenario, r) : []), [scenario, r, pick]);
+  // Each street's two questions (their range, and what you want), once you've answered.
+  const reads = useMemo(() => (pick ? narrate(scenario) : []), [scenario, pick]);
   // What each play wins on average (worked out once you've answered).
   const evs = useMemo(() => {
     if (!pick) return null;
     if (r.toCall > 0) {
       const spot = spotOf(scenario, r);
-      return { equity: spot.equity, price: spot.price!, rows: [{ id: 'fold' as OptionId, ev: 0 }, { id: 'call' as OptionId, ev: spot.evCall! }] };
+      return {
+        equity: spot.equity,
+        price: spot.price!,
+        rows: [
+          { id: 'fold' as OptionId, ev: 0 },
+          { id: 'call' as OptionId, ev: spot.evCall! },
+        ],
+      };
     }
     const spot = spotOf(scenario, r);
-    const rows = [{ id: 'check' as OptionId, ev: spot.evCheck! }, ...(['bet33', 'bet75', 'bet125'] as const).map((id) => ({ id: id as OptionId, ev: spotOf(scenario, r, id).bet!.ev }))];
+    const rows = [
+      { id: 'check' as OptionId, ev: spot.evCheck! },
+      ...(['bet33', 'bet75', 'bet125'] as const).map((id) => ({ id: id as OptionId, ev: spotOf(scenario, r, id).bet!.ev })),
+    ];
     return { equity: spot.equity, price: 0, rows };
   }, [scenario, r, pick]);
   const decision = scenario.board.length === 4 ? 'turn' : 'river';
@@ -109,7 +146,12 @@ export function RangeTrainer() {
   const facing = r.toCall > 0;
   const label = (id: OptionId) => options.find((o) => o.id === id)?.label ?? id;
   // The board as it came, street by street.
-  const boardAt: Record<Street, string[]> = { preflop: [], flop: scenario.board.slice(0, 3), turn: scenario.board.slice(3, 4), river: scenario.board.slice(4, 5) };
+  const boardAt: Record<Street, string[]> = {
+    preflop: [],
+    flop: scenario.board.slice(0, 3),
+    turn: scenario.board.slice(3, 4),
+    river: scenario.board.slice(4, 5),
+  };
   const streets: Street[] = ['preflop', 'flop', 'turn', 'river'].slice(0, scenario.board.length - 1) as Street[];
   const inPot = scenario.opponents.filter((o) => r.live.includes(o.pos));
   const topEv = evs ? Math.max(...evs.rows.map((x) => Math.abs(x.ev)), 0.1) : 1;
@@ -122,18 +164,18 @@ export function RangeTrainer() {
           <span className="rt-concept">{scenario.concept}</span>
           <h1 className="rt-title">{scenario.title}</h1>
           <p className="rt-sub">
-            You’re {scenario.hero.pos} · {scenario.format === 'tournament' ? `Tournament, ${scenario.table === 9 ? '9-handed' : '6-handed'}` : scenario.table === 9 ? '9-handed live cash' : '6-handed cash'} · blinds 0.5/1bb
-            {scenario.ante ? ` · ${bb(scenario.ante)} big blind ante` : ''}
+            You’re {scenario.hero.pos} ·{' '}
+            {scenario.format === 'tournament'
+              ? `Tournament, ${scenario.table === 9 ? '9-handed' : '6-handed'}`
+              : scenario.table === 9
+                ? '9-handed live cash'
+                : '6-handed cash'}
           </p>
           <ul className="rt-players">
-            <li>
-              <b>You</b> {bb(r.start[scenario.hero.pos] ?? scenario.stack)}
-              {` → ${(r.stacks[scenario.hero.pos] ?? 0) > 0 ? bb(r.stacks[scenario.hero.pos]!) : 'all in'}`}
-            </li>
             {scenario.opponents.map((o) => (
               <li key={o.pos} className={r.live.includes(o.pos) ? '' : 'rt-out'}>
-                <b>{o.pos}</b> {o.type.toLowerCase()} · {bb(r.start[o.pos] ?? scenario.stack)}
-                {r.live.includes(o.pos) ? ` → ${(r.stacks[o.pos] ?? 0) > 0 ? bb(r.stacks[o.pos]!) : 'all in'}` : ' (folded)'}
+                <b>{o.pos}</b> {o.type.toLowerCase()}
+                {r.live.includes(o.pos) ? '' : ' (folded)'}
               </li>
             ))}
           </ul>
@@ -176,7 +218,9 @@ export function RangeTrainer() {
               {st === 'preflop' ? (
                 <p className="rt-stacks num">
                   Blinds 0.5bb and 1bb{scenario.ante ? `, ${bb(scenario.ante)} big blind ante` : ''} · stacks{' '}
-                  {[scenario.hero.pos, ...scenario.opponents.map((o) => o.pos)].map((p) => `${p === scenario.hero.pos ? 'you' : p} ${bb(r.start[p] ?? scenario.stack)}`).join(', ')}
+                  {[scenario.hero.pos, ...scenario.opponents.map((o) => o.pos)]
+                    .map((p) => `${p === scenario.hero.pos ? 'you' : p} ${bb(r.start[p] ?? scenario.stack)}`)
+                    .join(', ')}
                 </p>
               ) : (
                 r.stacksAt[st] && (
@@ -252,11 +296,22 @@ export function RangeTrainer() {
 
             <h2 className="rt-h">What each street told you</h2>
             <ol className="rt-clues">
-              {scenario.clues.map((c, i) => (
-                <li key={i}>
-                  <b>{STREET_NAME[c.street]}</b> {c.text}
-                </li>
-              ))}
+              {scenario.clues.map((c, i) => {
+                const read = reads.find((x) => x.street === c.street);
+                return (
+                  <li key={i}>
+                    <b>{STREET_NAME[c.street]}</b> {c.text}
+                    {read && (
+                      <dl className="rt-read">
+                        <dt>Their range</dt>
+                        <dd>{read.theirs}</dd>
+                        <dt>What you want</dt>
+                        <dd>{read.ours}</dd>
+                      </dl>
+                    )}
+                  </li>
+                );
+              })}
             </ol>
 
             {views.map((v) => {
@@ -275,7 +330,7 @@ export function RangeTrainer() {
                     {shown.map((g) => (
                       <li key={g.group.label + g.group.role} className={`rt-group${g.equity >= 0.5 ? ' rt-ahead' : ''}`}>
                         <span className="rt-group-top">
-                          <span className="rt-role">{respond(g.group, facing)}</span>
+                          <span className="rt-role">{respond(g.group, facing, [...scenario.hero.cards, ...scenario.board])}</span>
                           <span className="rt-group-name">{g.group.label}</span>
                           <span className="rt-share num">{pct(g.weight / total)}</span>
                         </span>
@@ -290,7 +345,8 @@ export function RangeTrainer() {
                   </ul>
                   {shown.length < sorted.length && (
                     <button type="button" className="btn btn-outline rt-more press" onClick={() => setOpen([...open, v.opponent.pos])}>
-                      Show all {sorted.length} groups ({pct(sorted.slice(shown.length).reduce((n, g) => n + g.weight, 0) / total)} more of their range)
+                      Show all {sorted.length} groups ({pct(sorted.slice(shown.length).reduce((n, g) => n + g.weight, 0) / total)} more of
+                      their range)
                     </button>
                   )}
                 </div>

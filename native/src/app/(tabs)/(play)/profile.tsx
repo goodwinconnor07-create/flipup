@@ -13,6 +13,7 @@ import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { FRIENDS_ON } from '@/scope';
 import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
@@ -43,7 +44,7 @@ export default function ProfileScreen() {
     saveProfile({ name: clean, emoji: profile.emoji });
     haptic.success();
     // Friends see the new name on your friend code.
-    if (myPalCode()) void ensureMyCode().catch(() => undefined);
+    if (FRIENDS_ON && myPalCode()) void ensureMyCode().catch(() => undefined);
     // Stay here: a new player still has their emoji to pick, and Back is one tap away.
     Keyboard.dismiss();
   };
@@ -51,7 +52,11 @@ export default function ProfileScreen() {
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Stack.Screen options={{ title: first ? 'Your profile' : 'Profile' }} />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}
+      >
         <View style={{ alignItems: 'center', gap: spacing.lg }}>
           <Pressable
             accessibilityRole="button"
@@ -65,7 +70,21 @@ export default function ProfileScreen() {
             <Animated.View key={profile.emoji} entering={reduce ? undefined : popIn()}>
               <Avatar emoji={profile.emoji} size={PIC} />
             </Animated.View>
-            <View style={{ position: 'absolute', right: 4, bottom: 4, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, borderWidth: 3, borderColor: colors.background }}>
+            <View
+              style={{
+                position: 'absolute',
+                right: 4,
+                bottom: 4,
+                width: 40,
+                height: 40,
+                borderRadius: 20,
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: colors.accent,
+                borderWidth: 3,
+                borderColor: colors.background,
+              }}
+            >
               <Icon name="pencil" size={17} color={colors.onColor} />
             </View>
           </Pressable>
@@ -98,7 +117,12 @@ export default function ProfileScreen() {
                 borderColor: blocked ? colors.red : 'transparent',
               }}
             />
-            <ThemedText variant="footnote" tone={blocked ? 'red' : 'tertiaryLabel'} accessibilityLiveRegion="polite" style={{ textAlign: 'center' }}>
+            <ThemedText
+              variant="footnote"
+              tone={blocked ? 'red' : 'tertiaryLabel'}
+              accessibilityLiveRegion="polite"
+              style={{ textAlign: 'center' }}
+            >
               {blocked ? NAME_BLOCKED : 'Everyone at the table sees your name and emoji.'}
             </ThemedText>
           </View>
@@ -108,13 +132,15 @@ export default function ProfileScreen() {
         </View>
 
         <Section>
-          <Row
-            title="Username"
-            subtitle="Friends add you by it"
-            detail={username ? `@${username}` : 'Choose'}
-            icon={{ symbol: 'person.badge.plus', color: colors.pink as string }}
-            onPress={() => router.push('/username')}
-          />
+          {FRIENDS_ON && (
+            <Row
+              title="Username"
+              subtitle="Friends add you by it"
+              detail={username ? `@${username}` : 'Choose'}
+              icon={{ symbol: 'person.badge.plus', color: colors.pink as string }}
+              onPress={() => router.push('/username')}
+            />
+          )}
           <Row
             title="Streak"
             subtitle={streak.today ? 'You played today.' : 'Play a hand today to keep it.'}
@@ -122,13 +148,21 @@ export default function ProfileScreen() {
             icon={{ symbol: 'flame.fill', color: party.orange }}
             onPress={() => router.push('/streak')}
           />
-          <Row title="Settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/settings')} />
+          <Row
+            title="Settings"
+            icon={{ symbol: 'gearshape.fill', color: colors.slate as string }}
+            onPress={() => router.push('/settings')}
+          />
         </Section>
 
         <Section>
           <Row
             title="FlipUp Premium"
-            subtitle={premium ? 'Unlocked. Thank you for backing FlipUp.' : `Card packs, bubble effects and ${VARIANTS.length - FREE_VARIANTS} more games`}
+            subtitle={
+              premium
+                ? 'Unlocked. Thank you for backing FlipUp.'
+                : `Card packs, bubble effects and ${VARIANTS.length - FREE_VARIANTS} more games`
+            }
             icon={{ symbol: 'crown.fill', color: colors.gold as string }}
             onPress={() => router.push('/premium')}
           />

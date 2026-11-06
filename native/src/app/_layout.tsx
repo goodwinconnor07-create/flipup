@@ -8,6 +8,7 @@ import { LaunchCover } from '@/components/launch-cover';
 import { ThumbSnapper } from '@/components/thumb-snaps';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useFriendWatch } from '@/state/pals';
+import { FRIENDS_ON } from '@/scope';
 import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { useColors, usePlainColors } from '@/theme';
@@ -29,10 +30,16 @@ void startStore();
 
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
 // grab handle, dismissed by a swipe down. Each tab has its own stack inside (see (tabs)/*/_layout.tsx).
-export default function RootLayout() {
-  // Friends, requests and table invites stay fresh on every screen, so an invite's banner and a host's
-  // "Invited…" pills move on wherever you are.
+/**
+ * Friends, requests and table invites stay fresh on every screen, so an invite's banner moves on wherever you are.
+ * Only while friends are on (scope.ts).
+ */
+function FriendWatch() {
   useFriendWatch();
+  return <InviteBanner />;
+}
+
+export default function RootLayout() {
   const appearance = useAppearance();
   useEffect(() => applyAppearance(appearance), [appearance]);
   const dark = useColorScheme() === 'dark';
@@ -67,6 +74,8 @@ export default function RootLayout() {
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
         {/* Play with friends: a game's popup with Select and Close. */}
         <Stack.Screen name="setup-game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Game' }} />
+        {/* Play with friends' Change on the game card: every game in a list, Premium under a gold line. */}
+        <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
         {/* How to Play: a story on black, full screen so its bars sit at the top edge; the X closes it. */}
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Challenges: the start sheet, a seat's tag, Detective's check, and Rewind's two sheets. */}
@@ -101,7 +110,7 @@ export default function RootLayout() {
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
       </Stack>
       {/* A friend's table invite drops in over any screen. */}
-      <InviteBanner />
+      {FRIENDS_ON && <FriendWatch />}
       <LaunchCover />
       {/* Saves the game tiles as pictures in the background, so lists of games show images, not SVGs. */}
       <ThumbSnapper />

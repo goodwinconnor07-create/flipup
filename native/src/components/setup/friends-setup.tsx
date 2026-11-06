@@ -4,49 +4,47 @@ import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
+import { FRIENDS_ON } from '@/scope';
+import { seatKey } from '@/state/blocks';
 import { createParty } from '@/state/party';
 import { clearPartyDraft, usePartyDraft } from '@/state/party-draft';
-import { takeBackInvites, useDeclined, useMyUsername, usePals, type Pal } from '@/state/pals';
+import { takeBackInvites, useDeclined, usePals, type Pal } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
-import { abandonLobby, currentTable, dispatch, me as myDevice, openOnlineTable, useTable } from '@/state/session';
+import { abandonLobby, changeTableCode, currentTable, dispatch, me as myDevice, openOnlineTable, useTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
 import { clearInvites, invitePal, uninvitePal, useInviteWatch, useTableInvites, waitingInvites } from '@/state/table-invites';
 import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing, useColors } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
-import { BotsRow, randomBot, type RowBot } from './bots-row';
-import { SetupGameRow } from './game-row';
+import { haptic } from '../haptics';
+import { CodeCard } from '../lobby/code-card';
+import { GameCard } from '../lobby/game-card';
+import { HouseRules } from '../lobby/house-rules';
+import { Players, type PlayerLine } from '../lobby/players';
+import { openPlayerMenu } from '../player-menu';
+import { RoundButton } from '../tab-screen';
+import { ThemedText } from '../themed-text';
+import { randomBot, type RowBot } from './bots-row';
 import { InviteFriendsRow } from './invite-friends-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { PartyPlaylistCard, PartyRules, StartPartyButton } from './party-pieces';
-import { SettingsTable } from './settings-table';
-import { SetupHeader, SetupRowTitle } from './setup-header';
-import { TableCodeCard } from './table-code-card';
+import { SetupHeader } from './setup-header';
 
 /**
- * Play with friends: the page on the dark grain field, always drawn dark (ForceScheme) whatever the phone's
- * appearance, under its own white header. Top to bottom:
- *  1. Invite friends (`InviteFriendsRow`): a tap invites a friend there and then
- *  2. Bots (`BotsRow`): a + that sits a random bot down, a tap on one takes it off
- *  3. The game row (`SetupGameRow`; a tap opens the `setup-game/[id]` popup, whose Select sets the draft)
- *  4. "Want to play more than one game? Start a party." (`StartPartyButton`), which opens the party playlist
- *  5. The settings table (`SettingsTable`: chips, blinds and house rules in one block)
- * and Open table pinned at the bottom (`OpenTableButton`, with how many are in). `settings` is the draft
- * (state/setup-draft.ts) that the route started (app/play-friends.tsx); `invite` is a friend to invite at once (a
- * friend's menu).
+ * Play with friends, laid out after the owner's reference video in FlipUp's own look (the deep blue moving field,
+ * always dark). The online table opens in the background as the page opens, so its code is real from the start, and
+ * the host deals from here; there's no separate lobby for the host. Top to bottom:
+ *  1. `CodeCard`: the game code with Copy, QR and Change (the host's own code, `changeTableCode()`)
+ *  2. `GameCard`: the game (Texas Hold'em unless one was passed), Change opens the `lobby-game` list, then How it plays
+ *  3. "Want to play more than one game? Start a party." (`StartPartyButton`)
+ *  4. `HouseRules`: each number with its − + stepper, then the switches
+ *  5. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
+ * and Start game pinned at the bottom. Friends join with the code (the friends list is off, `FRIENDS_ON`).
  *
- * The online table opens in the background as the page opens, so its code is real from the start: `TableCodeCard`
- * sits above Invite friends with the code, Show QR, Share link and Invite from your contacts, and lists who has sat
- * down with the code. Everything happens on this page: Deal brings the table up to date (the settings, the bots you
- * picked), deals, and takes you to it; there's no separate lobby for the host. Going back without dealing ends that
- * table and takes the invites back.
- *
- * Once a party's playlist is saved (state/party-draft.ts), the page is a party's: the playlist takes the game row's
- * place, the party's house rules (chips, hands per level, bots fill) take the table's, and Open the party creates
- * it and goes to its lobby, where friends join with the party's code. Invites and bots picked here are for a single
- * table, so they're hidden while a party is set up.
+ * Once a party's playlist is saved (state/party-draft.ts), the page is a party's: the playlist and the party's rules
+ * take the game's and the table's places, and Open the party creates it and goes to its lobby.
  */
 export function FriendsSetup({ settings, invite }: { settings: Settings; invite?: string }) {
   return (
@@ -71,7 +69,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   const [busy, setBusy] = useState(false);
   const [lobby, setLobby] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
-  const { username } = useMyUsername();
   const partyDraft = usePartyDraft();
   // The lobby made for the invites (once), whether it's still being made, and whether Open table took you to it.
   const made = useRef<{ code: string | null; making: Promise<string> | null; opened: boolean }>({
@@ -198,6 +195,71 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   const inNow = 1 + Math.max(joined, others.length) + bots.length;
   const line = [`${inNow} in`, asked ? `${asked} invited` : '', variantInfo(variant).name].filter(Boolean).join(' · ');
 
+  // The host's own code: the table moves to it (settings and seated bots come along) and the old one ends.
+  const changeCode = async (code: string): Promise<string | null> => {
+    const m = made.current;
+    if (!m.code) return 'Your table is still opening. Try again in a moment.';
+    const go = async () => {
+      try {
+        const fresh = await changeTableCode(code);
+        m.code = fresh;
+        setLobby(fresh);
+        return null;
+      } catch (e) {
+        return e instanceof Error ? e.message : "Couldn't change the code. Try again.";
+      }
+    };
+    if (!others.length) return go();
+    return new Promise((done) =>
+      Alert.alert(
+        'Change the code?',
+        `${others.length === 1 ? "The friend who's" : `The ${others.length} friends who are`} already here will need the new code.`,
+        [
+          { text: 'Cancel', style: 'cancel', onPress: () => done('') },
+          { text: 'Change', onPress: () => void go().then(done) },
+        ],
+      ),
+    );
+  };
+
+  const removeBot = (b: RowBot) => {
+    haptic.tap();
+    setBots((have) => have.filter((x) => x.key !== b.key));
+  };
+  const rows: PlayerLine[] = [
+    { key: 'you', name: profile.name || 'You', emoji: profile.emoji || '🙂', line: 'You · Host', you: true },
+    ...others.map((p) => {
+      const key = seatKey(p);
+      const remove = () => dispatch({ type: 'remove', playerId: p.id });
+      return {
+        key: p.id,
+        name: p.name,
+        emoji: p.emoji,
+        line: p.offline ? 'Offline' : 'Ready',
+        onMore: () =>
+          key && lobby
+            ? openPlayerMenu({ key, name: p.name, emoji: p.emoji, where: 'table', code: lobby, playerId: p.id }, p.name, undefined, [
+                { text: 'Remove', style: 'destructive', onPress: remove },
+              ])
+            : Alert.alert(p.name, undefined, [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Remove', style: 'destructive', onPress: remove },
+              ]),
+      };
+    }),
+    ...bots.map((b) => ({
+      key: b.key,
+      name: b.name,
+      emoji: b.emoji,
+      line: 'Bot',
+      onMore: () =>
+        Alert.alert(b.name, undefined, [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: () => removeBot(b) },
+        ]),
+    })),
+  ];
+
   return (
     <GrainBackground>
       <ScrollView
@@ -206,15 +268,22 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
           paddingHorizontal: spacing.md,
           paddingTop: insets.top + spacing.xs,
           paddingBottom: OPEN_BUTTON_ROOM + insets.bottom,
-          gap: spacing.xl,
+          gap: spacing.lg,
         }}
+        keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets
       >
-        <SetupHeader
-          title="Play with friends"
-          line={
-            partyDraft ? 'A party: one short table per game, points for where you finish.' : 'Share the code, add bots, pick a game, deal.'
-          }
-        />
+        {partyDraft ? (
+          <SetupHeader title="Start a party" line="One short table per game, points for where you finish." />
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <RoundButton icon="chevron.left" label="Back" onPress={() => router.back()} />
+            <ThemedText variant="headline" accessibilityRole="header">
+              Lobby
+            </ThemedText>
+            <View style={{ width: 44 }} />
+          </View>
+        )}
 
         {partyDraft ? (
           <>
@@ -223,38 +292,25 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
           </>
         ) : (
           <>
-            <TableCodeCard
-              code={lobby}
-              failed={failed}
-              username={username}
-              people={others.map((p) => ({ name: p.name, emoji: p.emoji }))}
-              onContacts={() => router.push(lobby ? { pathname: '/invite-contacts', params: { code: lobby } } : '/invite-contacts')}
-            />
+            <CodeCard code={lobby} failed={failed} onChange={changeCode} />
 
-            <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
-
-            <BotsRow
-              bots={bots}
-              canAdd={!full}
-              onAdd={addBot}
-              onRemove={(b) => setBots((have) => have.filter((x) => x.key !== b.key))}
-              detail={full ? `Table full · ${MAX_SEATS} seats` : undefined}
-            />
-
-            <View style={{ gap: spacing.xs }}>
-              <SetupRowTitle title="Game" detail={variantInfo(variant).name} />
-              <SetupGameRow selected={variant} />
-              <View style={{ marginTop: spacing.xs }}>
-                <StartPartyButton />
-              </View>
+            <View style={{ gap: spacing.md }}>
+              <GameCard variant={variant} host />
+              <StartPartyButton />
             </View>
 
-            <SettingsTable settings={s} onChange={setDraft} tint={tint} />
+            {FRIENDS_ON && (
+              <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
+            )}
+
+            <HouseRules settings={s} onChange={setDraft} online />
+
+            <Players rows={rows} onAdd={addBot} />
           </>
         )}
       </ScrollView>
       <OpenTableButton
-        title={partyDraft ? 'Open the party' : 'Deal'}
+        title={partyDraft ? 'Open the party' : 'Start game'}
         line={partyDraft ? `${partyDraft.games.length} games · ${partyDraft.stack.toLocaleString('en-US')} chips each` : line}
         busy={busy}
         onPress={() => void open()}

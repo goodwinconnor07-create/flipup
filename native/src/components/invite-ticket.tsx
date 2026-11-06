@@ -85,7 +85,7 @@ const LARGE = 240;
  * makes the same object bigger instead of swapping one picture for another (motion rule 20). The stub's position
  * moves with the layout (row to column) on the same curve.
  */
-function GrowingQR({ link, big, reduce }: { link: string; big: boolean; reduce: boolean }) {
+export function GrowingQR({ link, big, reduce }: { link: string; big: boolean; reduce: boolean }) {
   const t = useSharedValue(big ? 1 : 0);
   useEffect(() => {
     t.set(reduce ? (big ? 1 : 0) : withTiming(big ? 1 : 0, { duration: 300, easing: EASE_IN_OUT }));

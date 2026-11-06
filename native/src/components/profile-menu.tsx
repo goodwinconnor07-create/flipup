@@ -1,5 +1,6 @@
 import { router } from 'expo-router';
 
+import { FRIENDS_ON } from '@/scope';
 import { usePals } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 
@@ -16,12 +17,20 @@ export function ProfileMenu() {
   const named = profile.name.trim().length > 0;
   return (
     <Menu
-      label={named ? `${profile.name}. Profile, friends, stats and settings` : 'Set up your profile'}
+      label={named ? `${profile.name}. Profile, ${FRIENDS_ON ? 'friends, ' : ''}stats and settings` : 'Set up your profile'}
       title={named ? profile.name : undefined}
       sections={[
         [{ title: named ? 'Edit profile' : 'Set up your profile', symbol: 'person.crop.circle', onPress: () => router.push('/profile') }],
         [
-          { title: pals.length ? `Friends (${pals.length})` : 'Friends', symbol: 'person.2', onPress: () => router.navigate('/friends') },
+          ...(FRIENDS_ON
+            ? [
+                {
+                  title: pals.length ? `Friends (${pals.length})` : 'Friends',
+                  symbol: 'person.2' as const,
+                  onPress: () => router.navigate('/friends'),
+                },
+              ]
+            : []),
           { title: 'Your stats', symbol: 'chart.bar.xaxis', onPress: () => router.push('/stats') },
           { title: 'Settings', symbol: 'gearshape', onPress: () => router.push('/settings') },
         ],

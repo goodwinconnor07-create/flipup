@@ -1,7 +1,7 @@
 // Reporting a player (App Store guideline 1.2): the reasons a phone can pick, and the check the server runs on a
 // report before storing and emailing it. Nothing typed is accepted: a report names a reason from this list, where
 // it happened (a table or a party, by code) and the name and emoji that were shown.
-import { isCode, isDeviceId } from './ids';
+import { isCode, isDeviceId, isTableCode } from './ids';
 
 export const REPORT_REASONS = [
   { id: 'name', label: 'Offensive name or picture' },
@@ -36,7 +36,8 @@ export function parseReport(body: unknown): ReportRequest | null {
   const b = body as Record<string, unknown>;
   const code = typeof b.code === 'string' ? b.code.toUpperCase() : '';
   const board = b.where === 'board' && /^\d{6}$/.test(code);
-  if (!isDeviceId(b.deviceId) || (b.where !== 'table' && b.where !== 'party' && !board) || (!board && !isCode(code)) || !isReason(b.reason)) return null;
+  const known = board || (b.where === 'table' ? isTableCode(code) : b.where === 'party' && isCode(code));
+  if (!isDeviceId(b.deviceId) || !known || !isReason(b.reason)) return null;
   if (!shortText(b.name, 40) || !shortText(b.emoji, 16) || !shortText(b.playerId, 40)) return null;
   return { deviceId: b.deviceId, where: b.where as ReportRequest['where'], code, reason: b.reason, name: b.name, emoji: b.emoji, playerId: b.playerId };
 }

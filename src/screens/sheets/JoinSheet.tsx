@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { isCode, normalizeCode, type TableInfo } from '../../game';
+import { isTableCode, normalizeTableCode, type TableInfo } from '../../game';
 import { fetchTableInfo } from '../../state/api';
 import { navigate } from '../../state/store';
 import { Sheet } from '../../ui/components';
@@ -25,8 +25,8 @@ export function codeFromScan(text: string): string | null {
   } catch {
     // Not a link; treat the whole text as the code.
   }
-  const code = normalizeCode(tail.split('/').filter(Boolean).pop() ?? '');
-  return isCode(code) ? code : null;
+  const code = normalizeTableCode(tail.split('/').filter(Boolean).pop() ?? '');
+  return isTableCode(code) ? code : null;
 }
 
 /** A popup to type the 5-letter code with the keys below it, or scan the host's QR code. */

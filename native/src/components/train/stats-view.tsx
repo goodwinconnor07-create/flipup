@@ -1,178 +1,140 @@
 import { Text, View } from 'react-native';
 
-import { brand, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
+import { brand, cardColors, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
+import { Stat } from '../home/passport';
+import { Row, Section } from '../grouped-list';
+import type { IconName } from '../icon';
+import { LivingCard } from '../living-card';
 import { ThemedText } from '../themed-text';
 import type { TrainStats } from './stats';
 
-const pct = (n: number | null) => (n === null ? '–' : `${Math.round(n * 100)}%`);
+const n = (v: number) => v.toLocaleString('en-US');
+const pct = (v: number | null) => (v === null ? '–' : `${Math.round(v * 100)}%`);
+const UNIT_ICON: Record<string, IconName> = { reads: 'eye.fill', calls: 'trophy.fill', value: 'crown.fill', bluffs: 'bolt.fill' };
 
 /**
- * The Stats half of the Train tab: how you're going. Best plays as a share of the hands you've played (with the
- * best / also good / missed split as one bar), three totals, the last seven days' points, and how you do in each
- * of the four units.
+ * The Stats half of the Train tab, built from the same pieces as Your stats on Home: a night card in the Passport's
+ * style (spaced capitals, big rounded numbers), a gradient card for the week like the streak card, then grouped
+ * Settings-style rows for each unit and your records. Counted on this phone.
  */
 export function StatsView({ stats }: { stats: TrainStats }) {
   const colors = useColors();
   const shadows = useShadows();
-  const card = { borderRadius: radius.lg, borderCurve: 'continuous' as const, backgroundColor: colors.cell, boxShadow: shadows.card };
   if (stats.played === 0) {
     return (
-      <View style={[card, { padding: spacing.lg, gap: spacing.xs }]}>
+      <View
+        style={{
+          padding: spacing.lg,
+          gap: spacing.xs,
+          borderRadius: 16,
+          borderCurve: 'continuous',
+          backgroundColor: colors.cell,
+          boxShadow: shadows.card,
+        }}
+      >
         <ThemedText variant="title3">No numbers yet</ThemedText>
         <ThemedText tone="secondaryLabel">Play a few hands and how you’re going shows up here.</ThemedText>
       </View>
     );
   }
-  const top = Math.max(1, ...stats.week.map((d) => d.xp));
-  const share = (n: number) => `${(n / stats.played) * 100}%` as const;
+  const weekPoints = stats.week.reduce((sum, d) => sum + d.xp, 0);
   return (
     <>
-      <View
-        style={[card, { padding: spacing.md, gap: spacing.sm }]}
-        accessible
-        accessibilityLabel={`Best plays: ${pct(stats.accuracy)} of ${stats.played} hands. ${stats.best} best, ${stats.ok} also good, ${stats.mistake} missed.`}
-      >
-        <Text
-          maxFontSizeMultiplier={1.2}
-          style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.2, color: colors.tertiaryLabel as string }}
-        >
-          BEST PLAYS
+      <LivingCard colors={cardColors.night} style={{ padding: spacing.lg, gap: spacing.lg }}>
+        <View style={{ gap: 2 }}>
+          <Text
+            maxFontSizeMultiplier={1.2}
+            style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: 1.5, color: '#ffffff' }}
+          >
+            YOUR TRAINING
+          </Text>
+          <Text
+            maxFontSizeMultiplier={1.2}
+            style={{ fontSize: 13, fontWeight: '600', letterSpacing: 1.2, color: 'rgba(255,255,255,0.65)' }}
+          >
+            ALL-TIME · ON THIS PHONE
+          </Text>
+        </View>
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <Stat label="Best plays" value={pct(stats.accuracy)} note={`${n(stats.best)} of ${n(stats.played)}`} big />
+          <Stat label="Hands" value={n(stats.played)} note={`${n(stats.ok)} also good`} big />
+        </View>
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <Stat label="Points" value={n(stats.points)} grow={1.6} />
+          <Stat label="Missed" value={n(stats.mistake)} />
+          <Stat label="Streak" value={`${stats.streak}d`} />
+        </View>
+      </LivingCard>
+
+      <LivingCard colors={cardColors.violet} style={{ padding: spacing.lg, gap: spacing.sm }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.75)' }}>
+          THIS WEEK
         </Text>
         <Text
-          maxFontSizeMultiplier={1.2}
-          style={{
-            fontFamily: ROUNDED,
-            fontSize: 52,
-            lineHeight: 58,
-            fontWeight: '800',
-            color: colors.label,
-            fontVariant: ['tabular-nums'],
-          }}
+          maxFontSizeMultiplier={1.3}
+          style={{ fontFamily: ROUNDED, fontSize: 24, lineHeight: 30, fontWeight: '700', color: '#ffffff' }}
         >
-          {pct(stats.accuracy)}
+          {n(weekPoints)} {weekPoints === 1 ? 'point' : 'points'}
         </Text>
         <View
-          style={{ flexDirection: 'row', height: 10, borderRadius: 5, overflow: 'hidden', backgroundColor: colors.cellPressed as string }}
-        >
-          <View style={{ width: share(stats.best), backgroundColor: brand.gold }} />
-          <View style={{ width: share(stats.ok), backgroundColor: brand.violet }} />
-        </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-          <Legend colour={brand.gold} text={`${stats.best} best`} />
-          <Legend colour={brand.violet} text={`${stats.ok} also good`} />
-          <Legend colour={colors.tertiaryLabel as string} text={`${stats.mistake} missed`} />
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Tile value={stats.played.toLocaleString('en-US')} line="hands played" />
-        <Tile value={stats.points.toLocaleString('en-US')} line="points" />
-        <Tile value={String(stats.streak)} line="day streak" />
-      </View>
-
-      <View style={[card, { padding: spacing.md, gap: spacing.sm }]}>
-        <ThemedText variant="headline" accessibilityRole="header">
-          This week
-        </ThemedText>
-        <View
-          style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', height: 96 }}
+          style={{ flexDirection: 'row', justifyContent: 'space-between', paddingTop: spacing.xs }}
           accessible
           accessibilityLabel={`Points the last seven days: ${stats.week.map((d) => d.xp).join(', ')}`}
         >
           {stats.week.map((d, i) => (
-            <View key={i} style={{ flex: 1, alignItems: 'center', gap: 6 }}>
-              <View
-                style={{
-                  width: 22,
-                  height: Math.max(4, (d.xp / top) * 70),
-                  borderRadius: 6,
-                  backgroundColor: d.xp ? (d.today ? brand.gold : brand.violet) : (colors.cellPressed as string),
-                }}
-              />
+            <View key={i} style={{ alignItems: 'center', gap: 4 }}>
               <Text
                 maxFontSizeMultiplier={1.2}
-                style={{ fontSize: 12, fontWeight: '700', color: d.today ? brand.gold : (colors.tertiaryLabel as string) }}
+                style={{ fontSize: 12, fontWeight: '700', color: d.today ? brand.gold : 'rgba(255,255,255,0.65)' }}
               >
                 {d.letter}
               </Text>
+              <View
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 17,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: d.xp ? brand.gold : 'rgba(255,255,255,0.14)',
+                  borderWidth: d.today && !d.xp ? 2 : 0,
+                  borderColor: brand.gold,
+                }}
+              >
+                {d.xp > 0 && (
+                  <Text
+                    maxFontSizeMultiplier={1.1}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    style={{ fontSize: 11, fontWeight: '800', color: brand.goldInk, paddingHorizontal: 2 }}
+                  >
+                    {d.xp}
+                  </Text>
+                )}
+              </View>
             </View>
           ))}
         </View>
-      </View>
+      </LivingCard>
 
-      <View style={[card, { padding: spacing.md, gap: spacing.md }]}>
-        <ThemedText variant="headline" accessibilityRole="header">
-          By unit
-        </ThemedText>
+      <Section header="By unit">
         {stats.units.map((u) => (
-          <View
+          <Row
             key={u.family}
-            style={{ gap: 6 }}
-            accessible
-            accessibilityLabel={`${u.name}: ${pct(u.accuracy)} best plays over ${u.played} hands`}
-          >
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <ThemedText numberOfLines={1} style={{ flex: 1, fontWeight: '600' }}>
-                {u.name}
-              </ThemedText>
-              <ThemedText tone="secondaryLabel" style={{ fontVariant: ['tabular-nums'] }}>
-                {u.played ? `${pct(u.accuracy)} · ${u.played} hands` : 'Not played'}
-              </ThemedText>
-            </View>
-            <View style={{ height: 8, borderRadius: 4, overflow: 'hidden', backgroundColor: colors.cellPressed as string }}>
-              <View style={{ width: `${(u.accuracy ?? 0) * 100}%`, height: 8, backgroundColor: brand.violet }} />
-            </View>
-          </View>
+            title={u.name}
+            subtitle={u.played ? `${n(u.played)} ${u.played === 1 ? 'hand' : 'hands'}` : 'Not played yet'}
+            detail={u.played ? pct(u.accuracy) : undefined}
+            icon={{ symbol: UNIT_ICON[u.family] ?? 'star.fill', color: brand.violet }}
+          />
         ))}
-      </View>
+      </Section>
 
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Tile value={String(stats.roundBest)} line="best round" />
-        <Tile value={String(stats.blitzBest)} line="best Blitz" />
-        <Tile value={String(stats.rounds)} line="sessions" />
-      </View>
+      <Section header="Records">
+        <Row title="Best round" detail={n(stats.roundBest)} icon={{ symbol: 'play.fill', color: brand.violet }} />
+        <Row title="Best Blitz" detail={n(stats.blitzBest)} icon={{ symbol: 'bolt.fill', color: brand.violet }} />
+        <Row title="Sessions" detail={n(stats.rounds)} icon={{ symbol: 'calendar', color: brand.violet }} />
+      </Section>
     </>
-  );
-}
-
-function Legend({ colour, text }: { colour: string; text: string }) {
-  const colors = useColors();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colour }} />
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, fontWeight: '600', color: colors.secondaryLabel as string }}>
-        {text}
-      </Text>
-    </View>
-  );
-}
-
-function Tile({ value, line }: { value: string; line: string }) {
-  const colors = useColors();
-  const shadows = useShadows();
-  return (
-    <View
-      style={{
-        flex: 1,
-        padding: spacing.sm,
-        borderRadius: radius.md,
-        borderCurve: 'continuous',
-        backgroundColor: colors.cell,
-        boxShadow: shadows.card,
-      }}
-    >
-      <Text
-        maxFontSizeMultiplier={1.2}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={{ fontFamily: ROUNDED, fontSize: 24, lineHeight: 29, fontWeight: '800', color: colors.gold, fontVariant: ['tabular-nums'] }}
-      >
-        {value}
-      </Text>
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 12, fontWeight: '600', color: colors.secondaryLabel as string }}>
-        {line}
-      </Text>
-    </View>
   );
 }

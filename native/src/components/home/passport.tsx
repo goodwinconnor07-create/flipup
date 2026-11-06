@@ -70,7 +70,7 @@ export function PassportCard({ full }: { full?: boolean }) {
   );
 }
 
-function Stat({ label, value, note, big, grow = 1 }: { label: string; value: string; note?: string; big?: boolean; grow?: number }) {
+export function Stat({ label, value, note, big, grow = 1 }: { label: string; value: string; note?: string; big?: boolean; grow?: number }) {
   return (
     <View accessible accessibilityLabel={`${label}: ${value}${note ? `, ${note}` : ''}`} style={{ flex: grow, gap: 2 }}>
       <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', letterSpacing: 1, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase' }}>

@@ -113,7 +113,7 @@ function PremiumBanner() {
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`FlipUp Premium. ${PREMIUM_GAMES} more games, card packs and bubble effects`}
+      accessibilityLabel={`FlipUp Premium. ${PREMIUM_GAMES} more games and card packs`}
       onPress={() => {
         haptic.tap();
         router.push('/premium');
@@ -132,7 +132,7 @@ function PremiumBanner() {
         <Icon name="chevron.right" size={15} color={colors.goldInk} />
       </View>
       <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, color: colors.goldInk }}>
-        Plus card packs and bubble effects. One payment, yours to keep.
+        Plus card packs. One payment, yours to keep.
       </Text>
     </PressableScale>
   );

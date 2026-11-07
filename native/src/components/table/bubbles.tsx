@@ -1,17 +1,16 @@
 // Speech bubbles over a seat, drawn to the web's measurements (Bubbles.tsx and the bubble rules in table.css): a
 // move ("Raise 120") in bold 13pt, table talk in semibold 13pt, the typing dots in a bubble exactly as tall as a
 // one-line message so the dots turn into words without a jump, and a bot's line coming through a few words at a
-// time like a conveyor. Plain capsules, no tail. A player's Premium bubble colour (`fx`) paints all of them but the
-// dots. Each bubble pops in the way a Messages bubble does: a quick, small grow from the seat, no bounce.
+// time like a conveyor. Plain capsules, no tail. Moves are coloured by what they were (Call blue, Raise green, Fold red, Check
+// grey); talk is grey. Each bubble pops in the way a Messages bubble does: a quick, small grow from the seat, no bounce.
 import { useEffect, useState } from 'react';
 import { Text, View, type LayoutChangeEvent, type ViewStyle } from 'react-native';
 import Animated, { Easing, FadeIn, FadeOut, Keyframe, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
-import { bubbleLook } from '@design/premiumLooks';
-import { CHAT, isBubbleId, ticker, widestWindow, windowAt, type Message, type Talk } from '@/engine';
+import { CHAT, ticker, widestWindow, windowAt, type Message, type Talk } from '@/engine';
 import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { gradient, motion, usePlainColors } from '@/theme';
+import { brand, gradient, motion, usePlainColors } from '@/theme';
 
 const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
 
@@ -23,28 +22,29 @@ export const bubblePop = new Keyframe({
 
 const SHADOW = '0 2px 6px -2px rgba(18, 18, 40, 0.35)';
 
-/** The capsule's paint: a Premium look, else the blue gradient for chips going in and grey for the rest. */
-function useTint(tone: 'blue' | 'grey', fx?: string): { box: ViewStyle; ink: string } {
+/** A move's colour: Call blue, Raise (bet, raise, all in) green, Fold red, Check and the blinds grey. Talk is grey. */
+export type Tone = 'call' | 'raise' | 'fold' | 'grey';
+
+/** The tone for a move, from `Seat.last.move` or a hand action. */
+export function moveTone(move: string): Tone {
+  if (move === 'call') return 'call';
+  if (move === 'fold') return 'fold';
+  if (move === 'bet' || move === 'raise' || move === 'allin') return 'raise';
+  return 'grey';
+}
+
+/** The capsule's paint for each tone. */
+function useTint(tone: Tone): { box: ViewStyle; ink: string } {
   const c = usePlainColors();
-  const look = isBubbleId(fx) ? bubbleLook(fx) : undefined;
-  if (look) {
-    return {
-      box: {
-        ...gradient(`linear-gradient(${look.angle ?? 135}deg, ${look.fill.join(', ')})`),
-        borderWidth: look.edge ? 1.5 : 0,
-        borderColor: look.edge,
-        boxShadow: look.glow ? `0 0 10px ${look.glow}, ${SHADOW}` : SHADOW,
-      },
-      ink: look.ink,
-    };
-  }
-  if (tone === 'blue') return { box: { ...gradient(`linear-gradient(180deg, ${c.bubbleBlueHi}, ${c.bubbleBlue})`), backgroundColor: c.bubbleBlue, boxShadow: SHADOW }, ink: '#ffffff' };
+  if (tone === 'call') return { box: { ...gradient(`linear-gradient(180deg, ${c.bubbleBlueHi}, ${c.bubbleBlue})`), backgroundColor: c.bubbleBlue, boxShadow: SHADOW }, ink: '#ffffff' };
+  if (tone === 'raise') return { box: { ...gradient(`linear-gradient(180deg, ${brand.raise}, ${brand.raiseDeep})`), backgroundColor: brand.raise, boxShadow: SHADOW }, ink: '#ffffff' };
+  if (tone === 'fold') return { box: { backgroundColor: c.red, boxShadow: SHADOW }, ink: '#ffffff' };
   return { box: { backgroundColor: c.bubbleGrey, boxShadow: SHADOW }, ink: c.label };
 }
 
-/** A move: "Call 10", "Fold". Blue when chips go in. From an earlier street it's a touch quieter. `big` is yours, on your box. */
-export function MoveBubble({ text, tone, fx, old, big }: { text: string; tone: 'blue' | 'grey'; fx?: string; old?: boolean; big?: boolean }) {
-  const { box, ink } = useTint(tone, fx);
+/** A move: "Call 10", "Fold", coloured by what it was (`moveTone`). From an earlier street it's a touch quieter. `big` is yours, on your box. */
+export function MoveBubble({ text, tone, old, big }: { text: string; tone: Tone; old?: boolean; big?: boolean }) {
+  const { box, ink } = useTint(tone);
   return (
     <View style={[{ paddingHorizontal: big ? 11 : 10, paddingVertical: big ? 5 : 4, borderRadius: 999, opacity: old ? 0.72 : 1 }, box]}>
       <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: big ? 15 : 13, lineHeight: big ? 18 : 16, fontWeight: '700', color: ink, fontVariant: ['tabular-nums'] }}>
@@ -55,8 +55,8 @@ export function MoveBubble({ text, tone, fx, old, big }: { text: string; tone: '
 }
 
 /** Talk said whole (a person's quick message): semibold, wrapping inside the seat's share of the row. */
-function TalkBubble({ text, fx, room }: { text: string; fx?: string; room?: number }) {
-  const { box, ink } = useTint('grey', fx);
+function TalkBubble({ text, room }: { text: string; room?: number }) {
+  const { box, ink } = useTint('grey');
   const emoji = emojiOnly(text);
   return (
     <View style={[{ paddingHorizontal: emoji ? 8 : 10, paddingVertical: emoji ? 1 : 4, borderRadius: 999, maxWidth: room }, box]}>
@@ -104,8 +104,8 @@ export function Dot({ delay, color, size, lift }: { delay: number; color: string
  * invisible copy of its widest few words, and the real words come in at the right, each sliding 6pt as it fades in,
  * while the oldest fades and its place closes up, so the rest slide left like a conveyor.
  */
-function Ticker({ text, fx, room }: { text: string; fx?: string; room?: number }) {
-  const { box, ink } = useTint('grey', fx);
+function Ticker({ text, room }: { text: string; room?: number }) {
+  const { box, ink } = useTint('grey');
   const { words, at } = ticker(text);
   const [shown, setShown] = useState(0);
   useEffect(() => {
@@ -187,12 +187,12 @@ export const pinnedTop = (align: 'center' | 'flex-end' | 'flex-start'): ViewStyl
 export const bubbleOut = FadeOut.duration(motion.exit).easing(EASE_OUT);
 
 /** A seat's talk: its newest message, or the typing dots while the next one comes. One bubble a seat. */
-export function Thread({ talk, fx, room, place }: { talk: Talk; fx?: string; room?: number; place: ViewStyle }) {
+export function Thread({ talk, room, place }: { talk: Talk; room?: number; place: ViewStyle }) {
   const reduce = useReduceMotion();
   const item: Message | null = talk.typing ? null : (talk.shown.at(-1) ?? null);
   return (
     <Animated.View key={item?.key ?? 'typing'} accessibilityLiveRegion="polite" entering={reduce ? FadeIn.duration(150) : bubblePop} exiting={bubbleOut} style={place}>
-      {!item ? <TypingBubble /> : item.rolling ? <Ticker text={item.text} fx={fx} room={room} /> : <TalkBubble text={item.text} fx={fx} room={room} />}
+      {!item ? <TypingBubble /> : item.rolling ? <Ticker text={item.text} room={room} /> : <TalkBubble text={item.text} room={room} />}
     </Animated.View>
   );
 }

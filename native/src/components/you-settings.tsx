@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { BUBBLE_STYLES, CARD_PACKS } from '@/engine';
+import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { useProfile, wornLook } from '@/state/profile';
 import { setAppearance, setCalm, setFast, setMuted, setTalkOn, useAppearance, useCalm, useFast, useMuted, useTalkOn, type AppearancePref } from '@/state/prefs';
@@ -14,7 +14,7 @@ import { ThemedText } from './themed-text';
 
 /**
  * How this phone looks and sounds, the same rows in Settings and in the table's menu (the web's `useYouRows()`):
- * appearance, sound, animations, the bots' talk and fast bot games, then card packs, chat bubbles, the table theme
+ * appearance, sound, animations, the bots' talk and fast bot games, then card packs, the table theme
  * and hand rankings.
  */
 export function YouSettings({ header, online = false }: { header?: string; online?: boolean }) {
@@ -27,7 +27,6 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
   const premium = usePremium();
   const worn = wornLook(useProfile(), premium);
   const pack = CARD_PACKS.find((p) => p.id === worn.cardPack)?.name ?? 'Classic';
-  const bubble = BUBBLE_STYLES.find((b) => b.id === worn.bubble)?.name ?? 'Classic';
   return (
     <>
       <Section header={header}>
@@ -62,7 +61,6 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
       )}
       <Section>
  <Row title="Card packs" detail={pack} icon={{ symbol: 'suit.spade.fill', color: colors.indigo as string }} onPress={() => router.push('/card-packs')} />
-        <Row title="Chat bubbles" detail={bubble} icon={{ symbol: 'bubble.left.fill', color: colors.violet as string }} onPress={() => router.push('/chat-bubbles')} />
         <Row title="Table theme" icon={{ symbol: 'paintpalette.fill', color: colors.pink as string }} onPress={() => router.push('/table-theme')} />
         <Row title="Hand rankings" icon={{ symbol: 'questionmark.circle.fill', color: colors.slate as string }} onPress={() => router.push('/hand-rankings')} />
       </Section>

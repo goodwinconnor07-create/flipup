@@ -12,31 +12,30 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { SheetScroll } from '@/components/sheet-scroll';
-import { MoveBubble } from '@/components/table/bubbles';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { BUBBLE_STYLES, CARD_PACKS, FREE_VARIANTS, isVariant, VARIANTS, variantInfo } from '@/engine';
+import { CARD_PACKS, FREE_VARIANTS, isVariant, VARIANTS, variantInfo } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { buyPremium, ON_SALE, restorePremium, startStore, useStore } from '@/state/purchase';
 import { gradient, party, radius, spacing, useColors } from '@/theme';
 
 import { APP_INFO } from '../../appInfo';
 
-type Reason = 'game' | 'pack' | 'bubble';
-type Part = 'games' | 'packs' | 'bubbles';
+type Reason = 'game' | 'pack';
+type Part = 'games' | 'packs';
 
-const FIRST: Record<Reason, Part> = { game: 'games', pack: 'packs', bubble: 'bubbles' };
+const FIRST: Record<Reason, Part> = { game: 'games', pack: 'packs' };
 const glass = 'rgba(255,255,255,0.1)';
 
 /**
  * FlipUp Premium (docs/APP_STORE.md, 3.1.1; docs/PREMIUM_PLAN.md). A night-purple sheet that shows what you get
- * before it asks for money: the eight games, every card back (tap to see it big), every bubble effect, and what's
- * free against what's not. It opens with whatever you tapped first (a locked game, a card back or a bubble). The price
+ * before it asks for money: the eight games, every card back (tap to see it big), and what's free against what's
+ * not. It opens with whatever you tapped first (a locked game or a card back). The price
  * comes from the App Store and sits in a bar pinned to the bottom, with Restore Purchases.
  */
 export default function PremiumSheet() {
   const params = useLocalSearchParams<{ reason?: string; game?: string }>();
-  const reason: Reason | undefined = params.reason === 'game' || params.reason === 'pack' || params.reason === 'bubble' ? params.reason : undefined;
+  const reason: Reason | undefined = params.reason === 'game' || params.reason === 'pack' ? params.reason : undefined;
   const wanted = params.game && isVariant(params.game) ? params.game : undefined;
   const has = usePremium();
   const store = useStore();
@@ -56,21 +55,20 @@ export default function PremiumSheet() {
     } else if (!store.error) Alert.alert('Nothing to restore', 'This Apple Account hasn’t bought FlipUp Premium.');
   };
 
-  const title = has ? 'You have Premium' : reason === 'game' && wanted ? `Host ${variantInfo(wanted).name}` : reason === 'pack' ? 'Get the card packs' : reason === 'bubble' ? 'Get the chat bubbles' : 'FlipUp Premium';
+  const title = has ? 'You have Premium' : reason === 'game' && wanted ? `Host ${variantInfo(wanted).name}` : reason === 'pack' ? 'Get the card packs' : 'FlipUp Premium';
   const line = has
     ? 'Thank you for backing FlipUp. Everything below is yours.'
     : reason === 'game'
       ? 'This game needs Premium to host. Your friends can join it for free.'
-      : reason === 'pack' || reason === 'bubble'
+      : reason === 'pack'
         ? 'Everyone at your table sees your look. One payment, yours for good.'
         : 'Make every table yours. One payment, yours for good.';
 
   const parts: Record<Part, React.ReactNode> = {
     games: <Games key="games" first={wanted} />,
     packs: <Packs key="packs" />,
-    bubbles: <Bubbles key="bubbles" />,
   };
-  const order: Part[] = ['games', 'packs', 'bubbles'];
+  const order: Part[] = ['games', 'packs'];
   if (reason) order.sort((a, b) => (a === FIRST[reason] ? -1 : b === FIRST[reason] ? 1 : 0));
 
   return (
@@ -91,16 +89,7 @@ export default function PremiumSheet() {
           </ThemedText>
         </View>
 
-        {has && (
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-            <View style={{ flex: 1 }}>
-              <Button title="Card packs" variant="secondary" onPress={() => router.push('/card-packs')} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Button title="Chat bubbles" variant="secondary" onPress={() => router.push('/chat-bubbles')} />
-            </View>
-          </View>
-        )}
+        {has && <Button title="Card packs" variant="secondary" onPress={() => router.push('/card-packs')} />}
 
         <View accessible accessibilityLabel="Friends play free. Only the host needs Premium. Everyone else joins by code for free." style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', padding: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
           <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', ...gradient(`linear-gradient(180deg, ${party.yellow}, ${party.orange})`) }}>
@@ -277,32 +266,11 @@ function Packs() {
   );
 }
 
-/** Every Premium bubble effect as a live bubble. */
-function Bubbles() {
-  const fx = BUBBLE_STYLES.filter((b) => !b.free);
-  return (
-    <View style={{ gap: spacing.sm }}>
-      <Heading note="Your moves and messages show in this colour for the whole table.">{`${fx.length} bubble effects`}</Heading>
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        {fx.map((b) => (
-          <View key={b.id} accessible accessibilityLabel={`${b.name}. ${b.note}`} style={{ width: '48%', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
-            <MoveBubble text="Raise 40" tone="blue" fx={b.id} big />
-            <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.8 }}>
-              {b.name}
-            </ThemedText>
-          </View>
-        ))}
-      </View>
-    </View>
-  );
-}
-
 /** Free against Premium, from the real counts. */
 function Compare() {
   const rows = [
     { what: 'Games to host', free: String(FREE_VARIANTS), premium: String(VARIANTS.length) },
     { what: 'Card backs', free: '1', premium: String(1 + CARD_PACKS.filter((p) => !p.venue).length) },
-    { what: 'Bubble looks', free: String(1 + BUBBLE_STYLES.filter((b) => b.free).length), premium: String(1 + BUBBLE_STYLES.length) },
     { what: 'Joining any game', free: 'Yes', premium: 'Yes' },
   ];
   return (

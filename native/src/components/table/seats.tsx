@@ -18,7 +18,7 @@ import { Icon } from '../icon';
 import { openPlayerMenu } from '../player-menu';
 import { seatKey } from '@/state/blocks';
 import { ThemedText } from '../themed-text';
-import { bubbleOut, bubblePop, MoveBubble, pinned, Thread, TypingBubble } from './bubbles';
+import { bubbleOut, bubblePop, MoveBubble, moveTone, pinned, Thread, TypingBubble } from './bubbles';
 import { TagChip } from './challenge';
 import { Count } from './count';
 import { PlayingCard } from './playing-card';
@@ -48,19 +48,24 @@ export function usePodSlots(
   talking: Record<string, unknown>,
 ): { shown: Player[]; hidden: Player[]; canShow: (id: string) => boolean } {
   const [start, setStart] = useState(0);
+  const justFolded = useJustFolded(game.hand);
   if (others.length <= MAX_PODS) return { shown: others, hidden: [], canShow: () => true };
   const hand = game.hand;
   const liveFor = (speaking: ReadonlySet<string>) =>
     others.filter((p) => {
       if (!hand) return true;
       const seat = seatFor(hand, p.id);
-      return !!seat && (!seat.folded || speaking.has(p.id));
+      return !!seat && (!seat.folded || speaking.has(p.id) || justFolded.has(p.id));
     });
   const focus = hand?.result ? Object.entries(hand.result.won).sort((a, b) => b[1] - a[1])[0]?.[0] : hand?.toAct;
   const plan = (speaking: ReadonlySet<string>) => {
     const live = liveFor(speaking);
     const n = Math.min(MAX_PODS, live.length);
     let s = Math.max(0, Math.min(start, live.length - n));
+    // Someone in view who just folded holds the window still until their "Fold" has been seen, so they don't
+    // vanish the moment the next player to act is somewhere off to the side.
+    const holding = !hand?.result && live.slice(s, s + n).some((p) => justFolded.has(p.id));
+    if (holding) return { live, n, s };
     const at = live.findIndex((p) => p.id === focus);
     if (at >= 0) {
       if (at < s) s = at;
@@ -82,6 +87,26 @@ export function usePodSlots(
     return p.live.slice(p.s, p.s + p.n).some((x) => x.id === id);
   };
   return { shown, hidden: others.filter((p) => !shown.includes(p)), canShow };
+}
+
+/** How long a player who just folded stays in the row, so their "Fold" bubble can be read before they go. */
+const FOLD_LINGER_MS = 1500;
+
+/** The players who folded in the last moment (`FOLD_LINGER_MS`) of this hand. */
+function useJustFolded(hand: Game['hand']): ReadonlySet<string> {
+  const n = hand?.number ?? 0;
+  const folded = hand ? hand.seats.filter((x) => x.folded).map((x) => x.playerId) : [];
+  const [s, setS] = useState<{ n: number; seen: string[]; recent: string[] }>({ n, seen: folded, recent: [] });
+  const fresh = n === s.n ? folded.filter((id) => !s.seen.includes(id)) : [];
+  if (n !== s.n) setS({ n, seen: folded, recent: [] });
+  else if (fresh.length) setS({ n, seen: [...s.seen, ...fresh], recent: [...s.recent, ...fresh] });
+  const key = s.recent.join(',');
+  useEffect(() => {
+    if (!key) return;
+    const t = setTimeout(() => setS((p) => ({ ...p, recent: [] })), FOLD_LINGER_MS);
+    return () => clearTimeout(t);
+  }, [key]);
+  return new Set(s.recent);
 }
 
 /** The row of other players across the top. */
@@ -251,7 +276,6 @@ function SeatPod({
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   const thinking = turn && player.bot && !hand?.runout;
   const last = seat?.last;
-  const money = !!last && last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   // A move whose talk has run its course stays hidden, so it doesn't look like they moved again.
   const hush = !!hand && !!quiet && quiet === moveSig(hand.number, last);
   // Once the hand is over, the host can tap a bot's face-down cards to turn them over.
@@ -319,7 +343,7 @@ function SeatPod({
         {/* The bubble sits over the top of the face, as on the web. */}
         <View pointerEvents="none" style={{ position: 'absolute', bottom: compact ? 34 : 48, left: -40, right: -40, height: 0 }}>
           {talk ? (
-            <Thread talk={talk} fx={player.bubble} room={room} place={pinned('center')} />
+            <Thread talk={talk} room={room} place={pinned('center')} />
           ) : thinking ? (
             <Animated.View key="thinking" entering={bubblePop} exiting={bubbleOut} style={pinned('center')}>
               <TypingBubble label={`${player.name} is thinking`} />
@@ -328,8 +352,7 @@ function SeatPod({
             <Animated.View key={`${hand?.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('center')}>
               <MoveBubble
                 text={moveLabel(last)}
-                tone={money ? 'blue' : 'grey'}
-                fx={player.bubble}
+                tone={moveTone(last.move)}
                 old={!!hand && last.street !== hand.street}
               />
             </Animated.View>

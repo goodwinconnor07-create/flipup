@@ -152,7 +152,7 @@ export default function ProfileScreen() {
             subtitle={
               premium
                 ? 'Unlocked. Thank you for backing FlipUp.'
-                : `Card packs, bubble effects and ${VARIANTS.length - FREE_VARIANTS} more games`
+                : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`
             }
             icon={{ symbol: 'crown.fill', color: colors.gold as string }}
             onPress={() => router.push('/premium')}

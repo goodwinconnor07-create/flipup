@@ -11,7 +11,7 @@ import { usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
-import { bubbleOut, bubblePop, MoveBubble, pinnedTop, Thread } from './bubbles';
+import { bubbleOut, bubblePop, MoveBubble, moveTone, pinnedTop, Thread } from './bubbles';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { QuickMessages } from './quick-messages';
@@ -50,7 +50,6 @@ export function MyArea({
   // Two cards at full size; three or more step down so they still fit beside the box.
   const w = count > 2 || compact ? 72 : 100;
   const last = seat?.last;
-  const money = !!last && last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   const bb = Math.max(game.settings.bigBlind, 1);
   const myTurn = !!me && !!hand && !hand.result && hand.toAct === me.id;
   const big = compact ? 32 : 38;
@@ -179,10 +178,10 @@ export function MyArea({
             quick-messages button on the left. */}
         <View pointerEvents="none" style={{ position: 'absolute', right: -9, top: -17, width: 150, height: 0 }}>
           {talk ? (
-            <Thread talk={talk} fx={me?.bubble} room={140} place={pinnedTop('flex-end')} />
+            <Thread talk={talk} room={140} place={pinnedTop('flex-end')} />
           ) : last && hand && quiet !== moveSig(hand.number, last) ? (
             <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinnedTop('flex-end')}>
-              <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={me?.bubble} old={last.street !== hand.street} />
+              <MoveBubble text={moveLabel(last)} tone={moveTone(last.move)} old={last.street !== hand.street} />
             </Animated.View>
           ) : null}
         </View>

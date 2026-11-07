@@ -150,7 +150,7 @@ subscribe(BLOCKED_KEY, () => {
 });
 
 /**
- * Keeps your bubble effect and card back on your seat (the web's `syncLook()`): a table you just opened or joined
+ * Keeps your card back on your seat (the web's `syncLook()`): a table you just opened or joined
  * doesn't know them yet, and picking a new one mid-game should show at once. Sent once per table and look.
  */
 let lookSent = '';
@@ -159,8 +159,8 @@ export function syncLook(): void {
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine || game.status === 'ended') return;
   const want = wornLook();
-  const key = `${game.id}:${want.bubble ?? ''}:${want.cardPack ?? ''}`;
-  if (((mine.bubble ?? '') === (want.bubble ?? '') && (mine.cardPack ?? '') === (want.cardPack ?? '')) || lookSent === key) return;
+  const key = `${game.id}:${want.cardPack ?? ''}`;
+  if ((mine.cardPack ?? '') === (want.cardPack ?? '') || lookSent === key) return;
   lookSent = key;
   // After this update has gone out, so a bots-only table doesn't change inside its own set().
   setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);

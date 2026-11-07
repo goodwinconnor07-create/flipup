@@ -99,7 +99,6 @@ export default function RootLayout() {
         <Stack.Screen name="hand-rankings" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand rankings' }} />
         <Stack.Screen name="table-log" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand log' }} />
         <Stack.Screen name="card-packs" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Card packs' }} />
-        <Stack.Screen name="chat-bubbles" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Chat bubbles' }} />
         <Stack.Screen name="blocked" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Blocked players' }} />
         {/* Asked on top of joining or opening a table when the player has no name yet (state/ask-name.ts). */}
         <Stack.Screen name="your-name" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Your name' }} />

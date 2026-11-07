@@ -21,11 +21,26 @@ export interface RowBot {
  * full. A tap on a bot takes it off. A bot that has just sat down says something a moment later in a bubble over
  * its face; the bubble never gets in the way of a tap.
  */
-export function BotsRow({ bots, canAdd, onAdd, onRemove, detail }: { bots: RowBot[]; canAdd: boolean; onAdd: () => void; onRemove: (bot: RowBot) => void; detail?: string }) {
+export function BotsRow({
+  bots,
+  canAdd,
+  onAdd,
+  onRemove,
+  detail,
+  hideTitle,
+}: {
+  bots: RowBot[];
+  canAdd: boolean;
+  onAdd: () => void;
+  onRemove: (bot: RowBot) => void;
+  detail?: string;
+  /** Inside a card that has its own heading (Play with bots). */
+  hideTitle?: boolean;
+}) {
   const colors = useColors();
   return (
     <View style={{ gap: 4 }}>
-      <SetupRowTitle big title="Bots" detail={detail ?? (bots.length ? 'Tap a bot to take it off' : 'Fill the seats your friends leave')} />
+      {!hideTitle && <SetupRowTitle big title="Bots" detail={detail ?? (bots.length ? 'Tap a bot to take it off' : 'Fill the seats your friends leave')} />}
       <FaceRow top={BUBBLE_ROOM}>
         {bots.map((b) => (
           <BotFace key={b.key} bot={b} onRemove={() => onRemove(b)} />

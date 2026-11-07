@@ -1,8 +1,9 @@
 import '@/polyfills';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
+import { CrashScreen } from '@/components/crash-screen';
 import { InviteBanner } from '@/components/invite-banner';
 import { LaunchCover } from '@/components/launch-cover';
 import { ThumbSnapper } from '@/components/thumb-snaps';
@@ -24,6 +25,11 @@ const applyAppearance = (a: AppearancePref) => {
 applyAppearance(loadAppearance());
 
 // A join link opened from outside (`/ABCDE`, `/party/ABCDE`) still has the tabs under its sheet.
+/** A screen that throws while drawing shows a way back instead of closing the app. */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return <CrashScreen {...props} />;
+}
+
 export const unstable_settings = { initialRouteName: '(tabs)' };
 // Connect to the App Store at launch: purchases that finish later still land, and Premium comes back on its own.
 void startStore();

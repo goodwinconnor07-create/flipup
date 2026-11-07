@@ -37,16 +37,30 @@ export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | '
   );
 }
 
-/** Across the bottom of the two tiles: the way into a table or party with a code or a QR code (the Join sheet). */
+/**
+ * Across the bottom of the two tiles: the way into a table or party with a code or a QR code (the Join sheet). Drawn
+ * like the tiles above it (a living blue card, a round white badge, the same white rounded title and line), only wide.
+ */
 function JoinCard() {
   return (
     <PressableTile label="Join a game. With a code or a QR code" onPress={() => router.push('/join')}>
-      <LivingCard colors={cardColors.gold} outerStyle={{ height: 64 }} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md }}>
-        <Icon name="qrcode.viewfinder" size={26} color={brand.goldInk} />
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 20, fontWeight: '800', color: brand.goldInk }}>
-          Join a game
-        </Text>
-        <Icon name="chevron.right" size={15} color={brand.goldInk} />
+      <LivingCard colors={cardColors.violet} outerStyle={{ height: 84 }} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md }}>
+        <View
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' }}
+        >
+          <Icon name="qrcode.viewfinder" size={24} color={brand.violet} />
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 24, lineHeight: 27, fontWeight: '800', color: '#ffffff' }}>
+            Join a game
+          </Text>
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: 'rgba(255,255,255,0.82)' }}>
+            With a code or a QR code
+          </Text>
+        </View>
+        <Icon name="chevron.right" size={15} color="rgba(255,255,255,0.82)" />
       </LivingCard>
     </PressableTile>
   );

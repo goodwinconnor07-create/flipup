@@ -1,10 +1,11 @@
-import { router } from 'expo-router';
+import { router, type ErrorBoundaryProps } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Share, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { CrashScreen } from '@/components/crash-screen';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
@@ -32,6 +33,22 @@ import { EASE_OUT, exitMs } from '@/motion/presets';
 import { gradient, motion, radius, spacing, useColors, usePlainColors } from '@/theme';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
+
+/**
+ * The table hit an error while drawing: Try again redraws it (a bots-only table's clock keeps going underneath), and
+ * Leave the table puts it away and goes Home, so a broken table can't keep failing.
+ */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return (
+    <CrashScreen
+      {...props}
+      title="The table hit a snag"
+      line="Sorry about that. Try again, or leave this table and start a new one."
+      leaveTitle="Leave the table"
+      onLeave={leaveTable}
+    />
+  );
+}
 
 /**
  * The table, laid out as on the web: the bar (menu, blinds, hand number), the other players along the top, the

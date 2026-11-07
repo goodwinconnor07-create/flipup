@@ -11,7 +11,7 @@ import { usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
-import { bubbleOut, bubblePop, MoveBubble, pinned, Thread } from './bubbles';
+import { bubbleOut, bubblePop, MoveBubble, pinnedTop, Thread } from './bubbles';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { QuickMessages } from './quick-messages';
@@ -175,13 +175,13 @@ export function MyArea({
             <QuickMessages />
           </View>
         )}
-        {/* What you just did or said: a small pill on the top-right corner, half over the box's edge, mirroring the
+        {/* What you just did or said: a small pill whose top is pinned to the top-right corner, a little outside the box's edge, mirroring the
             quick-messages button on the left. */}
-        <View pointerEvents="none" style={{ position: 'absolute', right: -9, bottom: '100%', marginBottom: -17, width: 150, height: 0 }}>
+        <View pointerEvents="none" style={{ position: 'absolute', right: -9, top: -17, width: 150, height: 0 }}>
           {talk ? (
-            <Thread talk={talk} fx={me?.bubble} room={140} place={pinned('flex-end')} />
+            <Thread talk={talk} fx={me?.bubble} room={140} place={pinnedTop('flex-end')} />
           ) : last && hand && quiet !== moveSig(hand.number, last) ? (
-            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('flex-end')}>
+            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinnedTop('flex-end')}>
               <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={me?.bubble} old={last.street !== hand.street} />
             </Animated.View>
           ) : null}

@@ -176,6 +176,13 @@ export const pinned = (align: 'center' | 'flex-end' | 'flex-start'): ViewStyle =
   alignItems: align,
 });
 
+/** Like `pinned`, but by the top edge: the bubble's top stays put and a longer one grows downward. */
+export const pinnedTop = (align: 'center' | 'flex-end' | 'flex-start'): ViewStyle => ({
+  ...pinned(align),
+  bottom: undefined,
+  top: 0,
+});
+
 /** How every bubble leaves: a quick fade in place. */
 export const bubbleOut = FadeOut.duration(motion.exit).easing(EASE_OUT);
 

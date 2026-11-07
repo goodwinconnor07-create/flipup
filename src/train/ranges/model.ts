@@ -95,6 +95,8 @@ export interface Scenario {
   clues: Clue[];
   /** Why the best play is best, in a few sentences. */
   why: string;
+  /** The published breakdown this hand comes from, with the expert's answer. */
+  source: { by: string; title: string; url: string; note?: string };
 }
 
 // ── Hands and ranges ────────────────────────────────────────────────────────

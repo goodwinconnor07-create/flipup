@@ -4,7 +4,7 @@
 // each play wins on average. The numbers come from range-numbers.json (worked out ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
 import { useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Linking, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
@@ -28,7 +28,6 @@ import {
   type Scenario,
   type Street,
 } from '@train/ranges/model';
-import { narrate } from '@train/ranges/narrate';
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
 const GRADE: Record<Grade, string> = { best: 'Best play', ok: 'Also good', mistake: 'Not this time' };
@@ -101,7 +100,6 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
   // What each play wins on average and each group's numbers (worked out ahead), once you've answered.
   const evs = useMemo(() => (pick ? numbersFor(scenario, r) : null), [scenario, r, pick]);
   // Each street's two questions (their range, and what you want), once you've answered.
-  const reads = useMemo(() => (pick ? narrate(scenario) : []), [scenario, pick]);
   const views = useMemo(
     () =>
       evs
@@ -292,7 +290,7 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
                 ))}
               {st === decision && (
                 <ThemedText variant="subhead" tone="accent" style={{ paddingVertical: 2, fontWeight: '600' }}>
-                  {facing ? 'Your move: call, fold or raise?' : 'Your move'}
+                  {facing ? (options.some((o) => o.id === 'raise') ? 'Your move: fold, call or raise?' : 'Your move: fold or call?') : 'Your move'}
                 </ThemedText>
               )}
             </View>
@@ -329,6 +327,10 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
           </Animated.View>
           <Animated.View entering={detail(0, reduce)}>
             <ThemedText variant="body">{scenario.why}</ThemedText>
+            <ThemedText variant="footnote" tone="secondaryLabel" onPress={() => void Linking.openURL(scenario.source.url)} accessibilityRole="link">
+              From {scenario.source.by}: {scenario.source.title}
+              {scenario.source.note ? ` (${scenario.source.note})` : ''}
+            </ThemedText>
           </Animated.View>
 
           {evs && (
@@ -410,7 +412,6 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
             </ThemedText>
             <View style={{ gap: spacing.xs }}>
               {scenario.clues.map((c, i) => {
-                const read = reads.find((x) => x.street === c.street);
                 return (
                   <View key={i} style={{ flexDirection: 'row', gap: spacing.xs }}>
                     <ThemedText variant="subhead" tone="tertiaryLabel" style={[{ width: 20, textAlign: 'right' }, NUM]}>
@@ -423,22 +424,6 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
                         </ThemedText>{' '}
                         {c.text}
                       </ThemedText>
-                      {read && (
-                        <View style={{ marginTop: 6, marginBottom: 2, gap: 2 }}>
-                          <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
-                            Their range
-                          </ThemedText>
-                          <ThemedText variant="subhead" tone="secondaryLabel" style={{ marginBottom: 6 }}>
-                            {read.theirs}
-                          </ThemedText>
-                          <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
-                            What you want
-                          </ThemedText>
-                          <ThemedText variant="subhead" tone="secondaryLabel" style={{ marginBottom: 6 }}>
-                            {read.ours}
-                          </ThemedText>
-                        </View>
-                      )}
                     </View>
                   </View>
                 );

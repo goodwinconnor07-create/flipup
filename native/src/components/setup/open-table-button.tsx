@@ -14,7 +14,7 @@ const EDGE = 4;
  * under it. A solid light button with violet ink and a pale violet edge under it (the party look): on the night
  * page it's the brightest thing there, and it never stacks a second grainy violet layer on the violet glow.
  */
-export function OpenTableButton({ title, line, busy, onPress }: { title: string; line?: string; busy?: boolean; onPress: () => void }) {
+export function OpenTableButton({ title, line, busy, disabled, onPress }: { title: string; line?: string; busy?: boolean; disabled?: boolean; onPress: () => void }) {
   const insets = useSafeAreaInsets();
   const night = GRAIN_NIGHT[2];
   return (
@@ -34,8 +34,8 @@ export function OpenTableButton({ title, line, busy, onPress }: { title: string;
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={line ? `${title}, ${line}` : title}
-        accessibilityState={{ busy: !!busy }}
-        onPress={busy ? undefined : onPress}
+        accessibilityState={{ busy: !!busy, disabled: !!disabled }}
+        onPress={busy || disabled ? undefined : onPress}
         outerStyle={{ alignSelf: 'stretch' }}
         style={{ borderRadius: radius.md, borderCurve: 'continuous', boxShadow: '0 8px 24px rgba(0,0,0,0.28)' }}
       >
@@ -45,6 +45,7 @@ export function OpenTableButton({ title, line, busy, onPress }: { title: string;
             borderRadius: radius.md,
             borderCurve: 'continuous',
             backgroundColor: brand.paper,
+            opacity: disabled ? 0.45 : 1,
             alignItems: 'center',
             justifyContent: 'center',
             paddingHorizontal: spacing.xl,

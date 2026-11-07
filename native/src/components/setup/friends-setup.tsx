@@ -9,8 +9,11 @@ import { seatKey } from '@/state/blocks';
 import { createParty } from '@/state/party';
 import { clearPartyDraft, usePartyDraft } from '@/state/party-draft';
 import { takeBackInvites, useDeclined, usePals, type Pal } from '@/state/pals';
+import { joinLink } from '@/state/api';
+import { askForName } from '@/state/ask-name';
+import { tableShareMessage } from '@/state/invite-message';
 import { usePremium } from '@/state/premium';
-import { useProfile } from '@/state/profile';
+import { readProfile, useProfile } from '@/state/profile';
 import { abandonLobby, changeTableCode, currentTable, dispatch, me as myDevice, openOnlineTable, useTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
 import { clearInvites, invitePal, uninvitePal, useInviteWatch, useTableInvites, waitingInvites } from '@/state/table-invites';
@@ -93,7 +96,9 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   const makeLobby = (): Promise<string> => {
     const m = made.current;
     if (m.code) return Promise.resolve(m.code);
-    m.making ??= openOnlineTable(latest.current, 0, profile.name, profile.emoji)
+    // Read the profile now, not from this render: a new player may have just given their name (askForName below).
+    const me = readProfile();
+    m.making ??= openOnlineTable(latest.current, 0, me.name, me.emoji)
       .then((code) => {
         m.code = code;
         setLobby(code);
@@ -118,9 +123,16 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     clearInvites();
     clearPartyDraft();
     const pal = invite ? pals.find((p) => p.code === invite) : undefined;
-    if (pal) sendInvite(pal);
-    else makeLobby().catch(() => setFailed(true));
+    // A new player is asked for a name first (the table is made with it); closing that goes back to Play.
+    let live = true;
+    void askForName().then((named) => {
+      if (!live) return;
+      if (!named) return router.back();
+      if (pal) sendInvite(pal);
+      else makeLobby().catch(() => setFailed(true));
+    });
     return () => {
+      live = false;
       const m = made.current;
       if (!m.code || m.opened) return;
       void takeBackInvites(waitingInvites(), m.code);
@@ -292,7 +304,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
           </>
         ) : (
           <>
-            <CodeCard code={lobby} failed={failed} onChange={changeCode} />
+            <CodeCard code={lobby} failed={failed} share={lobby ? { message: tableShareMessage({ host: profile.name, game: variantInfo(variant).name, code: lobby }), url: joinLink(lobby) } : undefined} onChange={changeCode} />
 
             <View style={{ gap: spacing.md }}>
               <GameCard variant={variant} host />
@@ -311,8 +323,10 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
       </ScrollView>
       <OpenTableButton
         title={partyDraft ? 'Open the party' : 'Start game'}
-        line={partyDraft ? `${partyDraft.games.length} games · ${partyDraft.stack.toLocaleString('en-US')} chips each` : line}
+        line={partyDraft ? `${partyDraft.games.length} games · ${partyDraft.stack.toLocaleString('en-US')} chips each` : inNow < 2 ? 'Add a bot or wait for a friend' : line}
         busy={busy}
+        // A table needs two: nothing to deal until a friend sits down or you add a bot.
+        disabled={!partyDraft && inNow < 2}
         onPress={() => void open()}
       />
     </GrainBackground>

@@ -87,7 +87,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 
         <SettingsTable settings={s} onChange={setDraft} tint={colors.accent as string} online={false} />
       </ScrollView>
-      <OpenTableButton title="Deal" line={bots.length ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}` : 'Add a bot first'} onPress={deal} />
+      <OpenTableButton title="Deal" line={bots.length ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}` : 'Add a bot first'} disabled={!bots.length} onPress={deal} />
     </GrainBackground>
   );
 }

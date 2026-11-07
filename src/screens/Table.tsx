@@ -121,7 +121,7 @@ function EmptyTablePopup({ game }: { game: Game }) {
   return (
     <div className="empty-scrim" role="alertdialog" aria-modal="true" aria-labelledby="empty-title">
       <div className="empty-card">
-        <h2 id="empty-title">Nobody in the lobby</h2>
+        <h2 id="empty-title">Everyone else left</h2>
         <p className="muted">
           Closing game in <b className="num">{secs}s</b>
         </p>

@@ -25,7 +25,7 @@ import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { joinLink } from '@/state/api';
+import { tableShare } from '@/state/table-share';
 import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, useTable } from '@/state/session';
 import { EASE_OUT, exitMs } from '@/motion/presets';
@@ -231,7 +231,7 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
           accessibilityLabel={`Invite: code ${code}`}
           onPress={() => {
             haptic.tap();
-            void Share.share({ message: `Come play poker with me on FlipUp. Code ${code}: ${joinLink(code)}`, url: joinLink(code) });
+            void Share.share(tableShare(game, code));
           }}
           style={{
             minWidth: 48,
@@ -330,7 +330,7 @@ function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: 
             backgroundColor: c.surface,
           }}
         >
-          <Text style={{ fontSize: 22, fontWeight: '800', color: c.label, textAlign: 'center' }}>Nobody in the lobby</Text>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: c.label, textAlign: 'center' }}>Everyone else left</Text>
           <Text style={{ fontSize: 15, color: c.tertiaryLabel, textAlign: 'center' }}>
             Closing game in <Text style={{ fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{secs}s</Text>
           </Text>

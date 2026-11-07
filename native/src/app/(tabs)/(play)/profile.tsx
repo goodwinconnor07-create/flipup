@@ -17,14 +17,13 @@ import { FRIENDS_ON } from '@/scope';
 import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
-import { useStreak } from '@/state/streak';
-import { party, radius, spacing, typography, useColors } from '@/theme';
+import { radius, spacing, typography, useColors } from '@/theme';
 
 const PIC = 140;
 
 /**
  * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
- * then your streak and Settings, and FlipUp Premium. The name is saved with Save; the emoji as you pick it.
+ * then Settings, and FlipUp Premium. The name is saved with Save; the emoji as you pick it.
  */
 export default function ProfileScreen() {
   const colors = useColors();
@@ -32,7 +31,6 @@ export default function ProfileScreen() {
   const profile = useProfile();
   const premium = usePremium();
   const { username } = useMyUsername();
-  const streak = useStreak();
   const [name, setName] = useState(profile.name);
   const clean = cleanName(name);
   const blocked = isNameBlocked(clean);
@@ -141,13 +139,6 @@ export default function ProfileScreen() {
               onPress={() => router.push('/username')}
             />
           )}
-          <Row
-            title="Streak"
-            subtitle={streak.today ? 'You played today.' : 'Play a hand today to keep it.'}
-            detail={`${streak.days} ${streak.days === 1 ? 'day' : 'days'}`}
-            icon={{ symbol: 'flame.fill', color: party.orange }}
-            onPress={() => router.push('/streak')}
-          />
           <Row
             title="Settings"
             icon={{ symbol: 'gearshape.fill', color: colors.slate as string }}

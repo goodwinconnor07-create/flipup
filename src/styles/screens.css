@@ -302,6 +302,30 @@
 }
 
 /* Table settings at a glance. The host taps them to change. */
+.app-nudge {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--r-lg);
+  background: var(--bg-2);
+}
+
+.app-nudge small {
+  display: block;
+  margin-top: 4px;
+}
+
+.app-nudge-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.app-nudge-buttons .btn {
+  flex: 1;
+  text-decoration: none;
+  text-align: center;
+}
+
 .info-chips {
   display: flex;
   flex-wrap: wrap;

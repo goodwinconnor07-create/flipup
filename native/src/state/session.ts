@@ -57,7 +57,6 @@ import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { noteRun } from './challenges';
 import { noteGame, noteHand } from './record';
-import { markPlayedToday } from './streak';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
 import { save, subscribe } from './storage';
 
@@ -167,18 +166,17 @@ export function syncLook(): void {
   setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
 }
 
-/** A finished hand you were dealt into counts today toward the daily streak (once per hand, as on the web). */
+/** A finished hand you were dealt into counts once toward your poker record; a table that ends is noted once. */
 let lastCounted = '';
 function noteDay(game: Game | null): void {
   const hand = game?.hand;
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine) return;
   const key = `${game.id}/${hand?.number}`;
-  // A challenge's chips are pretend: its hands count for the streak, never for your poker record.
+  // A challenge's chips are pretend: its hands never count for your poker record.
   const challenge = !!game.challenge;
   if (hand?.result && key !== lastCounted && hand.seats.some((s) => s.playerId === mine.id && s.cards.length > 0)) {
     lastCounted = key;
-    markPlayedToday();
     if (!challenge) noteHand(game, mine.id);
   }
   // Home's record of your games: where you finished, once the table is over.

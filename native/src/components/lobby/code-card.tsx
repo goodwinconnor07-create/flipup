@@ -1,6 +1,6 @@
 import * as Clipboard from 'expo-clipboard';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, Text, TextInput, View } from 'react-native';
+import { Pressable, Share, Text, TextInput, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { normalizeTableCode, TABLE_CODE_LENGTH, tableCodeProblem } from '@/engine';
@@ -25,10 +25,13 @@ import { ThemedText } from '../themed-text';
 export function CodeCard({
   code,
   failed,
+  share,
   onChange,
 }: {
   code: string | null;
   failed?: boolean;
+  /** What Share sends (who's hosting, the game, the code and the link). */
+  share?: { message: string; url: string };
   onChange: (code: string) => Promise<string | null>;
 }) {
   const colors = useColors();
@@ -113,6 +116,15 @@ export function CodeCard({
         ) : (
           <View style={{ flexDirection: 'row', gap: spacing.md, opacity: wait ? 0.4 : 1 }}>
             <TextButton title={copied ? 'Copied' : 'Copy'} onPress={copy} label={code ? `Copy the game code ${code}` : 'Copy'} />
+            <TextButton
+              title="Share"
+              onPress={() => {
+                if (!code || !share) return;
+                haptic.tap();
+                void Share.share(share);
+              }}
+              label="Share the game code"
+            />
             <TextButton
               title="QR"
               onPress={() => {

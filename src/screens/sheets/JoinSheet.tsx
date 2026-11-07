@@ -39,7 +39,7 @@ export function JoinSheet() {
       return null;
     }
     return result.error;
-  }, !scanning);
+  }, !scanning, 'table');
 
   const onScan = (text: string) => {
     const found = codeFromScan(text);
@@ -72,7 +72,7 @@ export function JoinSheet() {
         ) : (
           <>
             <p className="muted" style={{ margin: 0 }}>
-              Type the 5-letter code from whoever's hosting.
+              Type the code from whoever's hosting, like ACES42.
             </p>
             <CodePad state={state} label="Table code" />
             <div className="join-or">or</div>

@@ -19,13 +19,13 @@ import { ThemedText } from './themed-text';
  * the corner, and the QR code on a white stub under it (they scan it from the Join button on FlipUp's Play tab). A tap on the QR code
  * shows it big, for a phone across the table.
  */
-export function InviteTicket({ code, link, kind = 'table', share }: { code: string; link: string; kind?: 'table' | 'party'; share: string }) {
+export function InviteTicket({ code, link, kind = 'table', message }: { code: string; link: string; kind?: 'table' | 'party'; message: string }) {
   const [big, setBig] = useState(false);
   const reduce = useReduceMotion();
   const label = kind === 'party' ? 'Party code' : 'Table code';
   const onShare = () => {
     haptic.tap();
-    void Share.share({ message: `${share} Code ${code}: ${link}`, url: link });
+    void Share.share({ message, url: link });
   };
   return (
     <LivingCard colors={cardColors.violet} radius={radius.lg} style={{ padding: spacing.md, gap: spacing.md }}>

@@ -161,7 +161,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
             </ThemedText>
             <ThemedText tone="tertiaryLabel">{host ? `${total} games. Start when everyone's here.` : `Waiting for the host to start. ${total} games to play.`}</ThemedText>
           </View>
-          <InviteTicket code={view.code} link={partyLink(view.code)} kind="party" share="Join my FlipUp party." />
+          <InviteTicket code={view.code} link={partyLink(view.code)} kind="party" message={`Join my FlipUp party. Code ${view.code}: ${partyLink(view.code)}`} />
           <PlaylistChips games={view.settings.games} round={-1} />
           <SectionTitle text={`In the party · ${view.members.length}`} />
           <PartyBoard rows={rows} you={view.you} running={false} code={code} />

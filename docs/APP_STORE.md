@@ -323,6 +323,7 @@ the iPad release.
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
 | 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy | Owner |
+| 12 | **Join links open the app.** Put your Apple Developer Team ID (10 characters) in `APPLE_TEAM_ID` in `wrangler.jsonc` and deploy, so the Worker can answer `/.well-known/apple-app-site-association`. The app needs a new build too (`associatedDomains` in `app.config.ts`). Check with `curl https://gtoduel.online/.well-known/apple-app-site-association`, then tap a link in Messages on a phone with the build installed. If the domain changes, the app and the Worker both follow `apiOrigin` | Owner (the Team ID), then Claude |
 
 ---
 

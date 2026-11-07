@@ -1,6 +1,6 @@
 // Range training on the phone: the web's RangeTrainer.tsx, the same hands and the same rules. Grades are kept in
 // `flipup.ranges` ({ [hand id]: 'best' | 'ok' | 'mistake' }, your best grade on each), the same key and shape as the
-// web. Nothing here touches the server, your poker record or the daily streak.
+// web. Nothing here touches the server or your poker record.
 //
 // The hands and every number come from the shared model (src/train/ranges). Working the numbers out takes up to a
 // second in a browser and several on the phone's JavaScript engine (a 40,000-deal sample for multiway pots), so

@@ -174,7 +174,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   const next = <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn
   // them over. Tapping sends the `show` action; the greyed cards turn white as the answer. Never during play.
-  const canShow = !!seat && !seat.shown && seat.cards.length === 2;
+  const canShow = !!seat && !seat.shown && seat.cards.length > 0;
   if (!canShow) return next;
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>

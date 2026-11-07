@@ -463,7 +463,7 @@ describe('table', () => {
   });
 
   it('lets a busted player rebuy, and counts it against them', () => {
-    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 });
+    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true });
     const [a, b] = game.hand!.seats.map((s) => nameOf(game, s.playerId)!);
     game = rig(game, { [a]: 'Ah Ad', [b]: '7c 2d' }, 'Ks 9c 5d 3h Jc');
     game = act(game, 'allin');
@@ -499,14 +499,14 @@ describe('table', () => {
   });
 
   it('ends an online game three seconds after the deciding hand, even with rebuys on', () => {
-    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 });
+    let game = table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true });
     game = decidingHand(game);
     expect(game.hand!.result).not.toBeNull();
     expect(game.wakeAt).toBe(clock + 3000);
   });
 
   it('ends a legend game three seconds after the deciding hand, even with rebuys on and no code', () => {
-    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 }), code: null, legendGame: 'legend-test' };
+    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true }), code: null, legendGame: 'legend-test' };
     game = decidingHand(game);
     expect(game.hand!.result).not.toBeNull();
     expect(game.wakeAt).toBe(clock + 3000);
@@ -532,7 +532,7 @@ describe('table', () => {
   });
 
   it('keeps the rebuy window for a table on one phone with rebuys on', () => {
-    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10 }), code: null };
+    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true }), code: null };
     game = decidingHand(game);
     expect(game.hand!.result).not.toBeNull();
     expect(game.wakeAt).toBe(clock + TIMING.rebuyWindow);

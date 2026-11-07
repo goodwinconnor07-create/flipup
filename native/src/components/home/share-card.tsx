@@ -5,7 +5,6 @@ import { captureRef } from 'react-native-view-shot';
 import { useMyUsername } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
-import { useStreak } from '@/state/streak';
 import { brand, cardColors, ROUNDED } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -58,7 +57,6 @@ export function useStatsShare(): { share: () => Promise<void>; card: ReactNode; 
 
 export function StatsPicture() {
   const record = usePokerRecord();
-  const streak = useStreak();
   const profile = useProfile();
   const { username } = useMyUsername();
   return (
@@ -91,7 +89,7 @@ export function StatsPicture() {
         <View style={{ flexDirection: 'row' }}>
           <Small label="BIGGEST POT" value={n(record.biggestPot)} />
           <Small label="POTS WON" value={n(record.won)} />
-          {streak.days > 0 ? <Small label="STREAK" value={`${streak.days} days`} gold /> : <Small label="GAMES" value={n(record.games.length)} />}
+          <Small label="GAMES" value={n(record.games.length)} />
         </View>
       </View>
 

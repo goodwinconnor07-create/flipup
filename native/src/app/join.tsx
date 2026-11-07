@@ -13,7 +13,8 @@ import { ThemedText } from '@/components/themed-text';
 import { isTableCode, normalizeTableCode, variantInfo, type TableInfo } from '@/engine';
 import { fetchTableInfo } from '@/state/api';
 import { joinParty, readParty } from '@/state/party';
-import { useProfile } from '@/state/profile';
+import { askForName } from '@/state/ask-name';
+import { readProfile } from '@/state/profile';
 import { joinOnlineTable } from '@/state/session';
 import { radius, spacing, useColors, useShadows } from '@/theme';
 
@@ -42,7 +43,6 @@ async function intoParty(code: string): Promise<void> {
 export default function JoinSheet() {
   const colors = useColors();
   const focused = useIsFocused();
-  const profile = useProfile();
   const params = useLocalSearchParams<{ code?: string }>();
   const [scanning, setScanning] = useState(false);
   const [found, setFound] = useState<TableInfo | null>(null);
@@ -98,16 +98,12 @@ export default function JoinSheet() {
     state.fill(code);
   };
 
-  const sitDown = () => {
+  const sitDown = async () => {
     if (!found) return;
-    if (!profile.name) {
-      Alert.alert('Add your name first', 'Friends see your name and picture at the table.', [
-        { text: 'Not now', style: 'cancel' },
-        { text: 'Set up profile', onPress: () => router.push('/profile') },
-      ]);
-      return;
-    }
-    joinOnlineTable(found.code, profile.name, profile.emoji);
+    // A new player is asked for a name right here, on top of this sheet, and carries on to the table.
+    if (!(await askForName())) return;
+    const me = readProfile();
+    joinOnlineTable(found.code, me.name, me.emoji);
     router.back();
     router.push('/table');
   };

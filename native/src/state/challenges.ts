@@ -1,6 +1,5 @@
 // Challenge best scores on this phone: `flipup.challenges`, { [id]: { best, plays, lastAt } }. Challenge chips are
-// pretend, so nothing here touches your poker record (flipup.record) or Home's last game; only the day streak
-// counts a challenge hand (session.ts).
+// pretend, so nothing here touches your poker record (flipup.record) or Home's last game.
 import { isChallengeId, isNewBest, type ChallengeId } from '@/engine';
 
 import { read, save, useStored } from './storage';

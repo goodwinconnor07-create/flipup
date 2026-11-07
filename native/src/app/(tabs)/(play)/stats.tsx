@@ -11,20 +11,18 @@ import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo, type Variant } from '@/engine';
 import { usePokerRecord, type PokerRecord } from '@/state/record';
-import { useStreakInfo } from '@/state/streak';
-import { brand, cardColors, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
+import { cardColors, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 const n = (v: number) => v.toLocaleString('en-US');
 const place = (p: number) => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd' : `${p}th`);
 
 /**
  * Your stats, the way Flighty's Passport shows a year of flying: one big all-time card, then a card each for what
- * stands out (your best hand, your streak), then the games you play and how you finished. Everything here is
- * counted on this phone (`flipup.record`, `flipup.days`).
+ * stands out (your best hand), then the games you play and how you finished. Everything here is
+ * counted on this phone (`flipup.record`).
  */
 export default function StatsScreen() {
   const record = usePokerRecord();
-  const streak = useStreakInfo();
   const colors = useColors();
   return (
     <>
@@ -42,18 +40,6 @@ export default function StatsScreen() {
             <Big>{record.best.name}</Big>
             <Faint>{variantInfo(record.best.variant).name}, at a showdown</Faint>
           </Card>
-        )}
-
-        {streak.total > 0 && (
-        <Card colors={cardColors.night} label="Streak" onShare={() => share(`I'm on a ${streak.days}-day poker streak on FlipUp.`)}>
-          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 64, lineHeight: 70, fontWeight: '800', color: brand.gold }}>
-            {streak.days}
-          </Text>
-          <Big>{streak.days === 1 ? 'day in a row' : 'days in a row'}</Big>
-          <Faint>
-            Longest {streak.best} · {streak.total} {streak.total === 1 ? 'day' : 'days'} played
-          </Faint>
-        </Card>
         )}
 
         <GamesYouPlay record={record} />

@@ -43,6 +43,11 @@ export interface TableStats {
   foldPct: number;
   /** One word for the style these add up to. */
   style: string;
+  /** How many times they bet or raised, and how many times they called (all hands, all streets). */
+  bets: number;
+  calls: number;
+  /** The rank score of `bestMade` (-1 when there isn't one), to compare players. */
+  bestScore: number;
   net: number;
   /** What you started with at this table. */
   start: number;
@@ -50,7 +55,7 @@ export interface TableStats {
 
 const EMPTY: TableStats = {
   hands: 0, won: 0, showdowns: 0, showdownsWon: 0, uncontested: 0, bluffsWon: 0, allIns: 0, allInsWon: 0, bigWin: null, bigLoss: null, bestMade: null, bigWinBlinds: 0,
-  series: [0], streak: 0, lowest: 1, vpip: 0, pfr: 0, aggression: 0, foldPct: 0, style: 'Not enough hands', net: 0, start: 0,
+  series: [0], streak: 0, lowest: 1, vpip: 0, pfr: 0, aggression: 0, foldPct: 0, style: 'Not enough hands', bets: 0, calls: 0, bestScore: -1, net: 0, start: 0,
 };
 
 /** A word for how someone played, from how many hands they entered and how hard they pushed. */
@@ -137,6 +142,9 @@ export function tableStats(records: HandRecord[], heroId: string): TableStats {
   s.pfr = raised / n;
   s.aggression = aggressive + passive > 0 ? aggressive / (aggressive + passive) : 0;
   s.foldPct = folds / n;
+  s.bets = aggressive;
+  s.calls = passive;
+  s.bestScore = s.bestMade ? bestScore : -1;
   s.net = total;
   s.lowest = start > 0 ? Math.max(0, (start + low) / start) : 1;
   s.style = styleWord(s.vpip, s.aggression, n);

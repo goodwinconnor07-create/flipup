@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { usePokerRecord } from '@/state/record';
-import { useStreak } from '@/state/streak';
 import { cardColors, radius, ROUNDED, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -20,7 +19,6 @@ const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) 
  */
 export function PassportCard({ full }: { full?: boolean }) {
   const record = usePokerRecord();
-  const streak = useStreak();
   const wins = record.games.filter((g) => g.place === 1).length;
   const { share, card, busy } = useStatsShare();
   return (
@@ -47,7 +45,7 @@ export function PassportCard({ full }: { full?: boolean }) {
       <View style={{ flexDirection: 'row', gap: spacing.md }}>
         <Stat label="Biggest pot" value={n(record.biggestPot)} grow={1.6} />
         <Stat label="Games" value={n(record.games.length)} />
-        <Stat label={full ? 'Wins' : 'Streak'} value={full ? n(wins) : `${streak.days}d`} />
+        <Stat label="Table wins" value={n(wins)} />
       </View>
 
       {!full && (

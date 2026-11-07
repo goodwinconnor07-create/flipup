@@ -623,12 +623,36 @@ async function scheduled(env: Env): Promise<void> {
   for (const { code, place } of top) await env.FRIEND_CARD.getByName(code).addBadge(last, place);
 }
 
+/**
+ * /.well-known/apple-app-site-association: tells iOS which links open the FlipUp app instead of Safari. A table's
+ * link is `/ACES42` (six characters, or the older five), a party's is `/party/ABCDE`. It needs the team id, so
+ * until `APPLE_TEAM_ID` is set in wrangler.jsonc there is no file and links keep opening the web app.
+ */
+function appSiteAssociation(env: Env): Response {
+  const team = env.APPLE_TEAM_ID;
+  if (!/^[A-Z0-9]{10}$/.test(team)) return json({ error: 'Not set up.' }, 404);
+  const body = {
+    applinks: {
+      details: [
+        {
+          appIDs: [`${team}.${env.APPLE_BUNDLE_ID}`],
+          components: [{ '/': '/??????' }, { '/': '/?????' }, { '/': '/party/?????' }],
+        },
+      ],
+    },
+  };
+  return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=3600' } });
+}
+
 export default {
   async scheduled(_controller, env, ctx): Promise<void> {
     ctx.waitUntil(scheduled(env));
   },
   async fetch(request, env, ctx): Promise<Response> {
     const { pathname, search } = new URL(request.url);
+
+    if (pathname === '/.well-known/apple-app-site-association') return appSiteAssociation(env);
+    if (pathname.startsWith('/.well-known/')) return env.ASSETS.fetch(request);
 
     if (pathname.startsWith('/api/bankroll/')) return bankrollRoute(request, env, pathname, search);
     if (pathname.startsWith('/api/boards/')) return request.method === 'GET' ? boardRoute(request, env, pathname, search) : json({ error: 'Use GET.' }, 405);

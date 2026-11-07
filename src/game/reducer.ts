@@ -59,8 +59,9 @@ export const DEFAULT_SETTINGS: Settings = {
   startingStack: 1000,
   smallBlind: 5,
   bigBlind: 10,
-  rebuys: true,
-  turnSeconds: 45,
+  // A friends game should end: no rebuys unless the host turns them on. 30 seconds a turn keeps a table moving.
+  rebuys: false,
+  turnSeconds: 30,
 };
 
 /** Blind levels the host can pick from. */
@@ -78,7 +79,7 @@ export const BLIND_LEVELS: [number, number][] = [
 export const BLIND_CAP_CHOICES = [0, 100, 200, 500, 1000, 2000];
 
 export const STACK_CHOICES = [500, 1000, 2000, 5000, 10000];
-export const TIMER_CHOICES = [0, 20, 45, 90];
+export const TIMER_CHOICES = [0, 20, 30, 45, 90];
 
 export function cleanName(name: string): string {
   return name.replace(/\s+/g, ' ').trim().slice(0, LIMITS.maxNameLength);
@@ -1290,10 +1291,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
         makeMove(game, passiveMove(hand, seat), undefined, ctx);
       return true;
     }
-    // Out of time: check if that's free, otherwise fold. Two in a row and they sit out.
+    // Out of time: check if that's free, otherwise fold. Two in a row and they sit out (three when their phone has
+    // lost the table, so a look at Messages doesn't cost the seat).
     makeMove(game, passiveMove(hand, seat), undefined, ctx);
     player.timeouts += 1;
-    if (player.timeouts >= 2) player.sittingOut = true;
+    if (player.timeouts >= (player.offline ? TIMING.sitOutAfterOffline : TIMING.sitOutAfter)) player.sittingOut = true;
     return true;
   }
 

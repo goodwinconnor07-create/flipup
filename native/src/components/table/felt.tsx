@@ -59,9 +59,12 @@ export function useHighlight(game: Game, me: Player | undefined) {
   return useMemo(() => {
     if (!hand || hand.board.length < 3 || hand.variant === 'imposter') return null;
     if (hand.result?.showdown) {
-      const winner = hand.result.pots[0]?.winners[0];
-      const seat = seatFor(hand, winner);
-      if (seat?.cards.length) return bestHand(variant, seat.cards, hand.board);
+      // A split pot lights every winner's five, so nobody's winning hand is left greyed out.
+      const wins = (hand.result.pots[0]?.winners ?? [])
+        .map((id) => seatFor(hand, id))
+        .filter((seat) => seat?.cards.length)
+        .map((seat) => bestHand(variant, seat!.cards, hand.board));
+      if (wins.length) return wins.length === 1 ? wins[0] : { ...wins[0], best: [...new Set(wins.flatMap((w) => w.best))] };
     }
     if (mySeat && !mySeat.folded && mySeat.cards.length) return bestHand(variant, mySeat.cards, hand.board);
     return null;
@@ -488,11 +491,13 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
     face = '👻';
   } else {
     const top = winners[0];
-    const split = winners.length > 1;
-    title = split
-      ? `Split pot · ${winners.map((w) => w.p!.name).join(' & ')}`
+    // A real split is one pot with more than one winner; a main pot and a side pot to different people isn't.
+    const tied = result.pots.find((pot) => pot.winners.length > 1);
+    const sharers = tied ? winners.filter((w) => tied.winners.includes(w.id)) : [];
+    title = tied
+      ? `Split pot · ${sharers.map((w) => w.p!.name).join(' & ')}`
       : `${top.p!.id === me?.id ? 'You win' : `${top.p!.name} wins`} ${chips(top.amount)}`;
-    how = result.showdown ? result.names[top.id] : 'Everyone else folded';
+    how = !result.showdown ? 'Everyone else folded' : tied ? `${result.names[sharers[0].id] ?? ''} · ${chips(sharers[0].amount)} each` : result.names[top.id];
     face = top.p!.emoji;
   }
   return (

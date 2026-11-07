@@ -28,7 +28,10 @@ export const TIMING = {
   /** An online table with nobody left to play against closes this long after it stopped. */
   emptyClose: 60000,
   /** The clock for someone whose phone has lost the table, when the table has a clock at all. */
-  offlineClock: 15000,
+  offlineClock: 25000,
+  /** Timeouts in a row before a person is sat out: more when their phone has lost the table, so a look at Messages doesn't cost the seat. */
+  sitOutAfter: 2,
+  sitOutAfterOffline: 3,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
   startDelay: 3000,
   /** Memory Poker: how long everyone sees the 20 cards taken out before the hand is dealt. */

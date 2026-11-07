@@ -3,6 +3,7 @@ import { FORMATS, stakeById, venueById, type TableInfo } from '../game';
 import { useCampaign } from '../state/campaign';
 import { joinTable, navigate, openSheet, replace, resetTo, useApp } from '../state/store';
 import { Avatar, BackBar, chips } from '../ui/components';
+import { appLink, APP_STORE_URL } from '../ui/appLinks';
 import { haptic } from '../ui/effects';
 import { findTable } from './sheets/JoinSheet';
 
@@ -94,6 +95,22 @@ export function JoinTable({ info }: { info: TableInfo }) {
             )}
           </p>
         )}
+        {!full && !ended && (
+          <div className="app-nudge">
+            <div>
+              <b>Better in the app</b>
+              <small className="muted">Sharper cards, quick messages and your table in your pocket.</small>
+            </div>
+            <div className="app-nudge-buttons">
+              <a className="btn btn-blue" href={appLink(info.code)}>
+                Open in FlipUp
+              </a>
+              <a className="btn btn-outline" href={APP_STORE_URL}>
+                Get the app
+              </a>
+            </div>
+          </div>
+        )}
         <div className="info-chips">
           <span className="info-chip">
             Blinds{' '}
@@ -128,7 +145,7 @@ export function JoinTable({ info }: { info: TableInfo }) {
           </button>
         )}
         <button type="button" className="btn btn-xl btn-green" disabled={full || ended || !!blocked} onClick={sit}>
-          {ended ? 'Table finished' : full ? 'Table full' : (blocked ?? (tag ? `Buy in for ${chips(cost)}` : 'Take a seat'))}
+          {ended ? 'Table finished' : full ? 'Table full' : (blocked ?? (tag ? `Buy in for ${chips(cost)}` : 'Play in your browser'))}
         </button>
       </div>
     </div>

@@ -9,6 +9,7 @@ import { useDeclined, usePals, type Pal } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { dispatch, me as myDevice, type TableState } from '@/state/session';
 import { invitePal, invitesFor, seatOf, uninvitePal, useInviteWatch, useTableInvites } from '@/state/table-invites';
+import { tableShare } from '@/state/table-share';
 import { ForceScheme, radius, ROUNDED, spacing, useColors } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
@@ -134,7 +135,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
           </View>
         </View>
 
-        {online && game.code && host && <InviteTicket code={game.code} link={joinLink(game.code)} share="Come play poker with me on FlipUp." />}
+        {online && game.code && host && <InviteTicket code={game.code} link={joinLink(game.code)} message={tableShare(game, game.code).message} />}
 
         <View style={{ gap: 4 }}>
           <SetupRowTitle big title="At the table" detail={`${game.players.length} of ${MAX_SEATS}`} />
@@ -187,7 +188,14 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
           </View>
         </View>
       </ScrollView>
-      {host && <OpenTableButton title="Deal" line={`${game.players.length} at the table${waiting ? ` · ${waiting} invited` : ''}`} onPress={deal} />}
+      {host && (
+        <OpenTableButton
+          title="Deal"
+          line={game.players.length < 2 ? 'Add a bot or wait for a friend' : `${game.players.length} at the table${waiting ? ` · ${waiting} invited` : ''}`}
+          disabled={game.players.length < 2}
+          onPress={deal}
+        />
+      )}
     </GrainBackground>
   );
 }

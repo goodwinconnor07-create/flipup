@@ -15,10 +15,9 @@ vi.mock('expo-sqlite/localStorage/install', () => ({}));
 const { allHands, answerHand, nextHand, readRangeGrades } = await import('../src/state/ranges');
 
 describe('Range training', () => {
-  it('has every hand the web has: the written ones first, then the generated ones', () => {
+  it('has every hand the web has, in the same order', () => {
     const all = allHands();
-    expect(all.slice(0, SCENARIOS.length).map((s) => s.id)).toEqual(SCENARIOS.map((s) => s.id));
-    expect(all.length).toBeGreaterThan(1000);
+    expect(all.map((s) => s.id)).toEqual(SCENARIOS.map((s) => s.id));
     expect(new Set(all.map((s) => s.id)).size).toBe(all.length);
   });
 

@@ -7,19 +7,12 @@
 // they're worked out ahead in src/data/range-numbers.json; tests/ranges.test.ts checks that file against the model
 // (`UPDATE_RANGES=1 npm test` writes it again). A hand that isn't in it is worked out on the phone.
 import { analyse, gradeOf, spotOf, type Grade, type OptionId, type Pos, type Replay, type Scenario } from '@train/ranges/model';
-import { SCENARIOS as WRITTEN, unpack } from '@train/ranges/scenarios';
+import { SCENARIOS } from '@train/ranges/scenarios';
 
 import { read, save, useStored } from './storage';
 
-let ALL: Scenario[] | null = null;
-/**
- * Every hand: the hand-written ones, then the generated ones (src/train/ranges/generate.ts), as the web's
- * `loadHands()`. The generated list is big, so it's required the first time it's needed, not when the app starts.
- */
-export function allHands(): Scenario[] {
-  ALL ??= [...WRITTEN, ...unpack(require('../../../src/train/ranges/generated.json') as Scenario[])];
-  return ALL;
-}
+/** Every hand, the same list as the web: each one from a published hand breakdown (src/train/ranges/scenarios.ts). */
+export const allHands = (): Scenario[] => SCENARIOS;
 
 const KEY = 'flipup.ranges';
 const EMPTY: Record<string, Grade> = {};

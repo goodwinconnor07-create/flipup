@@ -35,6 +35,10 @@ export const CHARTS: Record<ChartKey, string> = {
   // Calling a 3-bet: medium pairs, suited aces and broadways that play well in a big pot. No small pairs or small
   // suited connectors: they can't call the bets that follow, so a 3-bet pot has few straight draws.
   'Call a 3-bet': '66-QQ, ATs+, A5s-A4s, KTs+, QTs+, JTs, AQo+, KQo',
+  // Wider 3-bets from players who 3-bet light (online regulars, blind against steal), and 4-bets.
+  'Light 3-bet': '22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, 54s, AJo+, KQo',
+  '4-bet': 'QQ+, AK, AQs, AQo, A5s-A4s, KQs',
+  'Light 4-bet': 'QQ+, AK, AQ, AJs, KQs, KJs, KTs, A5s-A2s, 87s, 76s, 65s, 54s',
 
   // ── Live iso-raises over limpers (raise bigger, play tighter: a good live regular's range) ──
   'Live iso-raise': '22+, A2s+, K9s+, QTs+, JTs, T9s, 98s, A9o+, KJo+, QJo',

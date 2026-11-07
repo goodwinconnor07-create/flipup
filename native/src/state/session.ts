@@ -199,7 +199,7 @@ export function useTable(): TableState {
 }
 
 /** A bots-only table's clock: one timer for the next thing that's due. Online, the server keeps the clock. */
-function schedule(): void {
+function schedule(minDelay = 0): void {
   clearTimeout(timer);
   const wakeAt = session?.mode === 'local' ? session.game.wakeAt : null;
   if (wakeAt == null || session?.mode !== 'local') return;
@@ -212,12 +212,44 @@ function schedule(): void {
       if (session?.mode !== 'local') return;
       const now = toTableTime(Date.now(), session.game.fast);
       if (session.challenge && dealDue(session.game, now) && !readyToDeal()) return;
-      const r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now, rng: rngFor(session.game) });
+      let r: ReturnType<typeof applyAction>;
+      try {
+        r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now, rng: rngFor(session.game) });
+      } catch (e) {
+        clockFailed(e);
+        return;
+      }
+      clockFails = 0;
       if (r.ok && r.changed) set({ ...session, game: r.game });
-      else schedule();
+      // Nothing changed though it was due: wait a beat rather than spin on a 0ms timer.
+      else schedule(wakeAt <= now ? IDLE_RETRY_MS : 0);
     },
-    Math.max(0, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
+    Math.max(minDelay, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
   );
+}
+
+/** How long the clock waits before looking again when a tick that was due changed nothing. */
+const IDLE_RETRY_MS = 250;
+/** A tick that throws is tried again this many times, a second apart, before the table is put away. */
+const CLOCK_RETRIES = 3;
+let clockFails = 0;
+
+/**
+ * A bots-only table's clock hit an error in the engine. An error thrown from a timer closes the app in a release
+ * build (and a saved table would do it again at every launch), so it's caught here: tried again a few times, then
+ * the table is put away with a note, and nothing else is lost.
+ */
+function clockFailed(e: unknown): void {
+  clockFails++;
+  console.warn('[table clock]', e);
+  if (clockFails <= CLOCK_RETRIES) {
+    clearTimeout(timer);
+    timer = setTimeout(schedule, 1000);
+    return;
+  }
+  clockFails = 0;
+  set(null);
+  notify('Something went wrong at that table, so it was closed. Sorry! Start a new one from Play.');
 }
 
 function notify(text: string): void {
@@ -251,7 +283,15 @@ export function dispatch(action: Action): string | null {
     if (action.type === 'next' && !readyToDeal()) return null;
     if (action.type === 'act') notePoint(action.move, action.to);
   }
-  const r = applyAction(session.game, action, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: rngFor(session.game) });
+  let r: ReturnType<typeof applyAction>;
+  try {
+    r = applyAction(session.game, action, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: rngFor(session.game) });
+  } catch (e) {
+    // A tap that hits an engine error is turned down, never thrown into the screen that sent it.
+    console.warn('[table move]', action.type, e);
+    notify("That didn't work. Try again.");
+    return 'error';
+  }
   if (!r.ok) {
     notify(r.error);
     return r.error;

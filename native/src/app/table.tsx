@@ -16,7 +16,6 @@ import { Ended } from '@/components/table/ended';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
 import { MyArea } from '@/components/table/my-area';
-import { ActionShelf } from '@/components/table/action-shelf';
 import { othersInOrder, SeatRow, usePodSlots } from '@/components/table/seats';
 import { playSound } from '@/components/table/sounds';
 import { useTableNow } from '@/components/table/use-now';
@@ -81,7 +80,6 @@ export default function TableScreen() {
     <View
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
-      {game?.status === 'playing' && <ActionShelf game={game} />}
       <TableBar game={game} online={online} code={t.code} />
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}

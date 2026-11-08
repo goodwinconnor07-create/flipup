@@ -5,7 +5,7 @@ import { Text, View } from 'react-native';
 import { FRIENDS_ON } from '@/scope';
 import { usePals } from '@/state/pals';
 import { useProfile } from '@/state/profile';
-import { brand, cardColors, ROUNDED, spacing } from '@/theme';
+import { brand, cardColors, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
@@ -17,20 +17,21 @@ const BOT_FACES = ['🦊', '🐼', '🦉'];
 
 /**
  * The two ways to sit down, side by side and big, the first thing under the title: Play with friends (your face
- * and your friends', on the party pink) and Play with bots (three bot faces, on blue). Each opens Setup.
+ * and an open + seat, on blue) and Play with bots (three bot faces, on night blue). Faces wear a ring in their
+ * tile's colour so an overlapping stack reads as separate faces.
  */
 /** `onGo` replaces opening Setup (a game's sheet closes itself first and passes its game); `height` for a smaller pair. */
 export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | 'bots') => void; height?: number } = {}) {
   const profile = useProfile();
   const pals = usePals();
-  // With friends off (scope.ts) the tile shows your face alone.
+  // Your face and friends' (with friends off, scope.ts, your face and an empty + seat: people join you).
   const friends = [profile.emoji || '🙂', ...(FRIENDS_ON ? pals.slice(0, 2).map((p) => p.emoji) : [])];
-  if (FRIENDS_ON) while (friends.length < 3) friends.push('');
+  while (friends.length < (FRIENDS_ON ? 3 : 2)) friends.push('');
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Tile title="Play with friends" line="Online table" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
-        <Tile title="Play with bots" line="Start right now" faces={BOT_FACES} colors={cardColors.night} height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
+        <Tile title="Play with friends" line="They join by code" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
+        <Tile title="Play with bots" line="Play right now" faces={BOT_FACES} colors={cardColors.night} glow="rgba(255, 255, 255, 0.12)" height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
       </View>
       {!onGo && <JoinCard />}
     </View>
@@ -38,47 +39,52 @@ export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | '
 }
 
 /**
- * Across the bottom of the two tiles: the way into a table or party with a code or a QR code (the Join sheet). Drawn
- * like the tiles above it (a living blue card, a round white badge, the same white rounded title and line), only wide.
+ * Across the bottom of the two tiles: the way into a table or party with a code or a QR code (the Join sheet). A
+ * quieter grey panel than the tiles (the blue badge and chevron carry the colour), so the two ways to start a game
+ * read first and joining reads as the lighter step.
  */
 function JoinCard() {
+  const colors = useColors();
+  const shadows = useShadows();
   return (
-    <PressableTile label="Join a game. With a code or a QR code" onPress={() => router.push('/join')}>
-      <LivingCard colors={cardColors.violet} outerStyle={{ height: 84 }} style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md }}>
-        <View
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.92)' }}
-        >
-          <Icon name="qrcode.viewfinder" size={24} color={brand.violet} />
+    <PressableTile label="Join a game. Type a code or scan" onPress={() => router.push('/join')}>
+      <View style={{ height: 84, borderRadius: radius.xl, borderCurve: 'continuous', boxShadow: shadows.card }}>
+        <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.md, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: colors.cell, overflow: 'hidden' }}>
+          <View
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={{ width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}
+          >
+            <Icon name="qrcode.viewfinder" size={24} color="#ffffff" />
+          </View>
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', color: colors.label }}>
+              Join a game
+            </Text>
+            <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: colors.secondaryLabel }}>
+              Type a code or scan
+            </Text>
+          </View>
+          <Icon name="chevron.right" size={17} color={brand.violetDark} />
         </View>
-        <View style={{ flex: 1, gap: 2 }}>
-          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 24, lineHeight: 27, fontWeight: '800', color: '#ffffff' }}>
-            Join a game
-          </Text>
-          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, fontWeight: '600', color: 'rgba(255,255,255,0.82)' }}>
-            With a code or a QR code
-          </Text>
-        </View>
-        <Icon name="chevron.right" size={15} color="rgba(255,255,255,0.82)" />
-      </LivingCard>
+      </View>
     </PressableTile>
   );
 }
 
-function Tile({ title, line, faces, colors, height, go }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; height: number; go: () => void }) {
+function Tile({ title, line, faces, colors, glow, height, go }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; glow?: string; height: number; go: () => void }) {
   return (
     <View style={{ flex: 1 }}>
       <PressableTile label={`${title}. ${line}`} onPress={go}>
-        <LivingCard colors={colors} outerStyle={{ height }} style={{ flex: 1, padding: spacing.md, justifyContent: 'space-between' }}>
+        <LivingCard colors={colors} glow={glow} outerStyle={{ height }} style={{ flex: 1, padding: spacing.md, justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {faces.map((f, i) => (
             <View
               key={i}
-              style={{ width: 46, height: 46, borderRadius: 23, marginLeft: i ? -12 : 0, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.22)', borderWidth: 2, borderColor: f ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.5)', borderStyle: f ? 'solid' : 'dashed' }}
+              style={{ width: 46, height: 46, borderRadius: 23, marginLeft: i ? -8 : 0, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.18)', borderWidth: f ? 3 : 2, borderColor: f ? colors[1] : 'rgba(255,255,255,0.55)', borderStyle: f ? 'solid' : 'dashed' }}
             >
               {f ? (
-                <Text style={{ fontSize: 26 }} maxFontSizeMultiplier={1}>
+                <Text style={{ fontSize: 24 }} maxFontSizeMultiplier={1}>
                   {f}
                 </Text>
               ) : (

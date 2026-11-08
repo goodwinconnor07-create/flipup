@@ -102,7 +102,7 @@ jobs:
           fi
           echo "EAS_PROJECT_ID=$id" >> "$GITHUB_ENV"
           # EAS's own builders read the app config too, so put the ID in this run's copy of appInfo.ts.
-          sed -i "s/easProjectId: '',/easProjectId: '$id',/" appInfo.ts
+          perl -pi -e "s/easProjectId: '',/easProjectId: '$id',/" appInfo.ts
 
       - name: Check the app config
         run: |

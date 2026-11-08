@@ -177,7 +177,7 @@ function BotsCard({
           <Stepper label="Bots" value={bots.length} min={1} max={max} onChange={setCount} />
         </View>
         <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: panel.hairline }} />
-        <SeatLine emoji={profile.emoji || '🙂'} name={profile.name || 'You'} line={profile.name ? 'You' : 'That'"'"'s you'} />
+        <SeatLine emoji={profile.emoji || '🙂'} name={profile.name || 'You'} line={profile.name ? 'You' : "That's you"} />
         {bots.map((b) => (
           <View key={b.key}>
             <View style={{ height: 0.5, marginLeft: 68, backgroundColor: panel.hairline }} />

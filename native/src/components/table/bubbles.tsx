@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { Text, View, type LayoutChangeEvent, type ViewStyle } from 'react-native';
 import Animated, { Easing, FadeIn, FadeOut, Keyframe, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
-import { CHAT, ticker, widestWindow, windowAt, type Message, type Talk } from '@/engine';
+import { CHAT, ticker, widestWindow, windowAt, type Hand, type Message, type Talk } from '@/engine';
 import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { brand, gradient, motion, usePlainColors } from '@/theme';
@@ -26,11 +26,25 @@ const SHADOW = '0 2px 6px -2px rgba(18, 18, 40, 0.35)';
 export type Tone = 'call' | 'raise' | 'fold' | 'grey';
 
 /** The tone for a move, from `Seat.last.move` or a hand action. */
-export function moveTone(move: string): Tone {
+export function moveTone(move: string, hand?: Hand | null, playerId?: string, bigBlind = 0): Tone {
   if (move === 'call') return 'call';
+  // An all in only colours as a raise when it put in more than anyone had bet on that street; for less it's a call.
+  if (move === 'allin' && hand && playerId) return allinRaised(hand, playerId, bigBlind) ? 'raise' : 'call';
   if (move === 'fold') return 'fold';
   if (move === 'bet' || move === 'raise' || move === 'allin') return 'raise';
   return 'grey';
+}
+
+/** Whether this player's latest all in went over the street's biggest bet before it. */
+function allinRaised(hand: Hand, playerId: string, bigBlind: number): boolean {
+  const acts = hand.actions ?? [];
+  let i = acts.length - 1;
+  while (i >= 0 && !(acts[i].playerId === playerId && acts[i].move === 'allin')) i--;
+  if (i < 0) return true;
+  const street = acts[i].street;
+  let top = street === 'preflop' ? bigBlind : 0;
+  for (let j = 0; j < i; j++) if (acts[j].street === street && acts[j].move !== 'fold' && acts[j].move !== 'check') top = Math.max(top, acts[j].to);
+  return acts[i].to > top;
 }
 
 /** The capsule's paint for each tone. */
@@ -38,15 +52,17 @@ function useTint(tone: Tone): { box: ViewStyle; ink: string } {
   const c = usePlainColors();
   if (tone === 'call') return { box: { ...gradient(`linear-gradient(180deg, ${c.bubbleBlueHi}, ${c.bubbleBlue})`), backgroundColor: c.bubbleBlue, boxShadow: SHADOW }, ink: '#ffffff' };
   if (tone === 'raise') return { box: { ...gradient(`linear-gradient(180deg, ${brand.raise}, ${brand.raiseDeep})`), backgroundColor: brand.raise, boxShadow: SHADOW }, ink: '#ffffff' };
-  if (tone === 'fold') return { box: { backgroundColor: c.red, boxShadow: SHADOW }, ink: '#ffffff' };
+  // Fold is the commonest move, so it's the quiet red of the Fold button: a dark red pill with red letters.
+  if (tone === 'fold') return { box: { backgroundColor: c.redBg, boxShadow: SHADOW }, ink: c.redInk };
   return { box: { backgroundColor: c.bubbleGrey, boxShadow: SHADOW }, ink: c.label };
 }
 
-/** A move: "Call 10", "Fold", coloured by what it was (`moveTone`). From an earlier street it's a touch quieter. `big` is yours, on your box. */
+/** A move: "Call 10", "Fold", coloured by what it was (`moveTone`). From an earlier street it's grey and faded. `big` is yours, on your box. */
 export function MoveBubble({ text, tone, old, big }: { text: string; tone: Tone; old?: boolean; big?: boolean }) {
-  const { box, ink } = useTint(tone);
+  // From an earlier street a move turns grey and fades back, so this street's moves are the bright ones.
+  const { box, ink } = useTint(old ? 'grey' : tone);
   return (
-    <View style={[{ paddingHorizontal: big ? 11 : 10, paddingVertical: big ? 5 : 4, borderRadius: 999, opacity: old ? 0.72 : 1 }, box]}>
+    <View style={[{ paddingHorizontal: big ? 11 : 10, paddingVertical: big ? 5 : 4, borderRadius: 999, opacity: old ? 0.55 : 1 }, box]}>
       <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: big ? 15 : 13, lineHeight: big ? 18 : 16, fontWeight: '700', color: ink, fontVariant: ['tabular-nums'] }}>
         {text}
       </Text>

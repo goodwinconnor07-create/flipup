@@ -181,7 +181,7 @@ export function MyArea({
             <Thread talk={talk} room={140} place={pinnedTop('flex-end')} />
           ) : last && hand && quiet !== moveSig(hand.number, last) ? (
             <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinnedTop('flex-end')}>
-              <MoveBubble text={moveLabel(last)} tone={moveTone(last.move)} old={last.street !== hand.street} />
+              <MoveBubble text={moveLabel(last)} tone={moveTone(last.move, hand, me?.id, game.settings.bigBlind)} old={last.street !== hand.street} />
             </Animated.View>
           ) : null}
         </View>

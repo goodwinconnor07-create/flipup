@@ -352,7 +352,7 @@ function SeatPod({
             <Animated.View key={`${hand?.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('center')}>
               <MoveBubble
                 text={moveLabel(last)}
-                tone={moveTone(last.move)}
+                tone={moveTone(last.move, hand, player.id, game.settings.bigBlind)}
                 old={!!hand && last.street !== hand.street}
               />
             </Animated.View>

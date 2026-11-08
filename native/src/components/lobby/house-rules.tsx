@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from 'react';
+import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { View } from 'react-native';
 
 import {
@@ -129,8 +130,9 @@ export function HouseRules({ settings: s, onChange, online }: { settings: Settin
 /** One rounded box of rows with hairlines between them. */
 function Card({ children }: { children: ReactNode[] }) {
   const colors = useColors();
+  const panel = usePanel();
   return (
-    <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, overflow: 'hidden' }}>
+    <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
       {children.map((row, i) => (
         <Fragment key={i}>
           {i > 0 && <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: colors.separator }} />}
@@ -144,6 +146,7 @@ function Card({ children }: { children: ReactNode[] }) {
 /** A number: its name small and grey over the value in a little box of its own, and the stepper on the right. */
 function NumberRow({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
   const colors = useColors();
+  const panel = usePanel();
   return (
     <View
       accessible={!children}

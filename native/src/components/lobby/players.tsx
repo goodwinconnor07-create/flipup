@@ -1,4 +1,5 @@
 import { Platform, Pressable, View } from 'react-native';
+import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import Animated from 'react-native-reanimated';
 
 import { MAX_SEATS } from '@/engine';
@@ -31,6 +32,7 @@ export interface PlayerLine {
  */
 export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => void }) {
   const colors = useColors();
+  const panel = usePanel();
   const shadows = useShadows();
   const reduce = useReduceMotion();
   const people = rows.filter((r) => r.line !== 'Bot').length;
@@ -50,8 +52,8 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => voi
           {detail}
         </ThemedText>
       </View>
-      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
-        <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, overflow: 'hidden' }}>
+      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', boxShadow: shadows.card }}>
+        <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
           {rows.map((r, i) => (
             // The web build's Reanimated takes animated rows out of the layout, so they only animate on the phone.
             <Animated.View key={r.key} entering={WEB ? undefined : enter(reduce)} exiting={WEB ? undefined : exit(reduce)}>
@@ -109,6 +111,7 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => voi
 
 function Row({ row: r }: { row: PlayerLine }) {
   const colors = useColors();
+  const panel = usePanel();
   return (
     <View
       style={{

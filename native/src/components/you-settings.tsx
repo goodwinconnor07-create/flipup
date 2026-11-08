@@ -35,7 +35,7 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
           icon={{ symbol: 'moon.fill', color: colors.indigo as string }}
           chevron={false}
           trailing={
-            <View style={{ width: 170 }}>
+            <View style={{ width: 156 }}>
               <SegmentedControl<AppearancePref>
                 label="Appearance"
                 value={appearance}

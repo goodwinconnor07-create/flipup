@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { PANEL_RADIUS, usePanel } from '@/components/grouped-list';
 import { Fragment } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -22,6 +23,7 @@ import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
  */
 export default function LobbyGameSheet() {
   const colors = useColors();
+  const panel = usePanel();
   const insets = useSafeAreaInsets();
   const premium = usePremium();
   const draft = useDraft();
@@ -43,7 +45,7 @@ export default function LobbyGameSheet() {
   };
 
   const list = (games: VariantInfo[]) => (
-    <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, overflow: 'hidden' }}>
+    <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
       {games.map((v, i) => (
         <Fragment key={v.id}>
           {i > 0 && <View style={{ height: 0.5, marginLeft: 76, backgroundColor: colors.separator }} />}
@@ -104,6 +106,7 @@ export default function LobbyGameSheet() {
 
 function GameRow({ info, chosen, locked, onPress }: { info: VariantInfo; chosen: boolean; locked: boolean; onPress: () => void }) {
   const colors = useColors();
+  const panel = usePanel();
   return (
     <Pressable
       accessibilityRole="button"

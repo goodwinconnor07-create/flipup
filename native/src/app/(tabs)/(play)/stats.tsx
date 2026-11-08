@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router';
+import { PANEL_RADIUS, usePanel } from '@/components/grouped-list';
 import { ScrollView, Share, Text, View } from 'react-native';
 
 import { haptic } from '@/components/haptics';
@@ -24,6 +25,7 @@ const place = (p: number) => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd
 export default function StatsScreen() {
   const record = usePokerRecord();
   const colors = useColors();
+  const panel = usePanel();
   return (
     <>
       <Stack.Screen options={{ title: 'Your stats', headerLargeTitleEnabled: false }} />
@@ -90,6 +92,7 @@ const Faint = ({ children }: { children: React.ReactNode }) => (
 /** Which games you've played lately, most played first, and where you finished in each. */
 function GamesYouPlay({ record }: { record: PokerRecord }) {
   const colors = useColors();
+  const panel = usePanel();
   const shadows = useShadows();
   if (!record.games.length) return null;
   const by = new Map<Variant, { games: number; wins: number; bestPlace: number }>();
@@ -103,8 +106,8 @@ function GamesYouPlay({ record }: { record: PokerRecord }) {
       <ThemedText variant="title2" accessibilityRole="header">
         Games you play
       </ThemedText>
-      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
-      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors.cell }}>
+      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', boxShadow: shadows.card }}>
+      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
         {rows.map(([v, r], i) => (
           <View key={v} accessible accessibilityLabel={`${variantInfo(v).name}: ${r.games} games, ${r.wins} won`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderTopWidth: i ? 0.5 : 0, borderTopColor: colors.separator }}>
             <GameThumb variant={v} size={44} />

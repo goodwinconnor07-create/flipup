@@ -129,3 +129,12 @@ describe('the web stylesheets', () => {
     expect(g).not.toMatch(/@keyframes pop \{\s*0% \{\s*transform: scale\(0\./);
   });
 });
+
+describe('UI-thread helpers', () => {
+  it('are worklets, so an animated style can call them without crashing the app', async () => {
+    const src = (await import('node:fs')).readFileSync(new URL('../src/motion/rules.ts', import.meta.url), 'utf8');
+    for (const name of ['knobStretch', 'rubber', 'arcPoint']) {
+      expect(src).toMatch(new RegExp(`export function ${name}\\([^\\n]*\\{\\n\\s*'worklet';`));
+    }
+  });
+});

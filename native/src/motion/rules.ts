@@ -17,6 +17,7 @@ export function stagger(i: number): number {
  * `amount` is 0 (resting) to 1 (moving).
  */
 export function knobStretch(amount: number): { x: number; y: number } {
+  'worklet';
   const k = 1 + motion.stretch * Math.min(1, Math.max(0, amount));
   return { x: k, y: 1 / k };
 }
@@ -27,6 +28,7 @@ export function knobStretch(amount: number): { x: number; y: number } {
  * `limit + room`. Apple's rubber-band curve.
  */
 export function rubber(distance: number, limit: number, room = limit): number {
+  'worklet';
   const d = Math.abs(distance);
   if (d <= limit) return distance;
   const over = d - limit;
@@ -39,6 +41,7 @@ export function rubber(distance: number, limit: number, room = limit): number {
  * (up, for a negative `bow` in screen space). Quadratic, so it eases the way a thrown thing does.
  */
 export function arcPoint(t: number, from: { x: number; y: number }, to: { x: number; y: number }, bow: number = motion.arc): { x: number; y: number } {
+  'worklet';
   return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t - bow * 4 * t * (1 - t) };
 }
 

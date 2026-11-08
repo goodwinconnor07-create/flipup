@@ -74,11 +74,19 @@ jobs:
           eas-version: 27.2.0
           token: ${{ secrets.EXPO_API_TOKEN }}
 
-      - name: Use the newest Xcode (GitHub's Mac only)
+      - name: Pick Xcode (GitHub's Mac only)
         if: ${{ inputs.where == 'github-mac' }}
         working-directory: .
+        # The Xcode Expo's own builders use: 26.3's stricter Swift checks stop expo-modules-jsi building, so take an
+        # earlier 26 first and the newest only if none is there.
         run: |
-          xc=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          ls -d /Applications/Xcode_*.app
+          xc=""
+          for v in 26.1 26.2 26.0; do
+            xc=$(ls -d /Applications/Xcode_${v}*.app 2>/dev/null | sort -V | tail -1)
+            [ -n "$xc" ] && break
+          done
+          [ -z "$xc" ] && xc=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
           echo "Using $xc"
           sudo xcode-select -s "$xc"
           xcodebuild -version

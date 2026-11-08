@@ -35,7 +35,7 @@ permissions:
 jobs:
   build:
     # GitHub's Mac builds the app itself (eas build --local), so it doesn't use an Expo build; Expo's servers do.
-    runs-on: ${{ inputs.where == 'github-mac' && 'macos-15' || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.where == 'github-mac' && 'macos-26' || 'ubuntu-latest' }}
     timeout-minutes: 120
     defaults:
       run:
@@ -77,16 +77,12 @@ jobs:
       - name: Pick Xcode (GitHub's Mac only)
         if: ${{ inputs.where == 'github-mac' }}
         working-directory: .
-        # The Xcode Expo's own builders use: 26.3's stricter Swift checks stop expo-modules-jsi building, so take an
-        # earlier 26 first and the newest only if none is there.
+        # Expo SDK 58's expo-modules-jsi needs Swift from Xcode 26.4 or later (earlier compilers reject its Swift 6
+        # code), so take the newest Xcode 26 on the macOS 26 image and stop if it's older than 26.4.
         run: |
           ls -d /Applications/Xcode_*.app
-          xc=""
-          for v in 26.1 26.2 26.0; do
-            xc=$(ls -d /Applications/Xcode_${v}*.app 2>/dev/null | sort -V | tail -1)
-            [ -n "$xc" ] && break
-          done
-          [ -z "$xc" ] && xc=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          xc=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          case "$xc" in *Xcode_26.[0-3]*) echo "::error::$xc is too old for Expo SDK 58 (needs Xcode 26.4+)"; exit 1;; esac
           echo "Using $xc"
           sudo xcode-select -s "$xc"
           xcodebuild -version

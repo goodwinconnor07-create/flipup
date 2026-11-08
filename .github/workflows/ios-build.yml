@@ -1,5 +1,6 @@
 # Builds the iPhone and iPad app with EAS, and sends it to App Store Connect only when asked.
 # Runs by hand only (Actions tab > iOS build > Run workflow). Nothing builds or submits on push.
+# "where": github-mac builds on GitHub's own macOS runner with eas build --local (no Expo build used); expo uses EAS's servers.
 # Secret values never go into the repository or the logs: the App Store Connect key is written to a temp
 # file outside the checkout, with `printf`, and the last step deletes it whatever happened before.
 name: iOS build
@@ -15,6 +16,13 @@ on:
         description: EAS build profile from native/eas.json
         type: string
         default: production
+      where:
+        description: "Where to build: on Expo's servers (counts toward the monthly Expo build limit) or on GitHub's own Mac (doesn't)"
+        type: choice
+        options:
+          - expo
+          - github-mac
+        default: github-mac
 
 # One iOS build at a time. A second run waits for the first instead of cancelling it.
 concurrency:
@@ -26,7 +34,8 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # GitHub's Mac builds the app itself (eas build --local), so it doesn't use an Expo build; Expo's servers do.
+    runs-on: ${{ inputs.where == 'github-mac' && 'macos-15' || 'ubuntu-latest' }}
     timeout-minutes: 120
     defaults:
       run:
@@ -64,6 +73,15 @@ jobs:
         with:
           eas-version: 27.2.0
           token: ${{ secrets.EXPO_API_TOKEN }}
+
+      - name: Use the newest Xcode (GitHub's Mac only)
+        if: ${{ inputs.where == 'github-mac' }}
+        working-directory: .
+        run: |
+          xc=$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)
+          echo "Using $xc"
+          sudo xcode-select -s "$xc"
+          xcodebuild -version
 
       - run: npm ci
 
@@ -116,7 +134,21 @@ jobs:
           EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
           EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
           PROFILE: ${{ inputs.profile }}
-        run: eas build --platform ios --profile "$PROFILE" --non-interactive
+          WHERE: ${{ inputs.where }}
+        run: |
+          if [ "$WHERE" = "github-mac" ]; then
+            eas build --platform ios --profile "$PROFILE" --non-interactive --local --output "$RUNNER_TEMP/FlipUp.ipa"
+          else
+            eas build --platform ios --profile "$PROFILE" --non-interactive
+          fi
+
+      - name: Keep the .ipa (GitHub's Mac only)
+        if: ${{ inputs.where == 'github-mac' }}
+        uses: actions/upload-artifact@v4 # pin to a commit SHA when convenient, like the others
+        with:
+          name: FlipUp-ipa
+          path: ${{ runner.temp }}/FlipUp.ipa
+          retention-days: 7
 
       - name: Submit to App Store Connect
         if: ${{ inputs.submit == true }}
@@ -139,7 +171,11 @@ jobs:
             Object.assign(j.submit.production.ios, { ascApiKeyPath: process.env.ASC_KEY_PATH, ascApiKeyId: process.env.ASC_KEY_ID, ascApiKeyIssuerId: process.env.ASC_ISSUER_ID });
             fs.writeFileSync("eas.json", JSON.stringify(j, null, 2));
           '
-          eas submit --platform ios --latest --non-interactive
+          if [ "${{ inputs.where }}" = "github-mac" ]; then
+            eas submit --platform ios --path "$RUNNER_TEMP/FlipUp.ipa" --non-interactive
+          else
+            eas submit --platform ios --latest --non-interactive
+          fi
 
       - name: Delete the App Store Connect key
         if: always()

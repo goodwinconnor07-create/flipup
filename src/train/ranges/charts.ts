@@ -55,6 +55,8 @@ export const CHARTS: Record<ChartKey, string> = {
 
   // ── Live limped pots ──
   'Live limp': '22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 96s+, 85s+, 75s+, 64s+, 54s, A2o+, KTo+, QTo+, JTo, T9o, 98o',
+  // Loose live limpers: small suited connectors and gappers, small offsuit connectors too.
+  'Loose live limp': '22+, A2s+, K2s+, Q2s+, J5s+, T6s+, 95s+, 84s+, 74s+, 63s+, 52s+, 42s+, 32s, A2o+, K8o+, Q9o+, J9o+, T8o+, 97o+, 86o+, 75o+, 65o, 54o',
   'Any two cards': '22+, A2s+, K2s+, Q2s+, J2s+, T2s+, 92s+, 82s+, 72s+, 62s+, 52s+, 42s+, 32s, A2o+, K2o+, Q2o+, J2o+, T2o+, 92o+, 82o+, 72o+, 62o+, 52o+, 42o+, 32o',
 };
 

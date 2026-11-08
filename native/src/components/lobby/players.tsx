@@ -29,7 +29,7 @@ export interface PlayerLine {
  * others, and Add a bot as the last row. Friends come in with the game code, so there's no invite row. Rows come and
  * go with a short rise and fade (motion rules 1, 15).
  */
-export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd: () => void }) {
+export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => void }) {
   const colors = useColors();
   const shadows = useShadows();
   const reduce = useReduceMotion();
@@ -59,7 +59,7 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd: () => void
               <Row row={r} />
             </Animated.View>
           ))}
-          <Animated.View>
+          {onAdd && <Animated.View>
             <View style={{ height: 0.5, marginLeft: 64, backgroundColor: colors.separator }} />
             <Pressable
               accessibilityRole="button"
@@ -95,10 +95,10 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd: () => void
                 {room > 0 ? 'Add a bot' : `Table full · ${MAX_SEATS} seats`}
               </ThemedText>
             </Pressable>
-          </Animated.View>
+          </Animated.View>}
         </View>
       </View>
-      {people === 1 && (
+      {people === 1 && onAdd && (
         <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
           Friends join from Join on the Play tab with the game code. Bots fill in until they do.
         </ThemedText>

@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Fragment } from 'react';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import { isPremiumVariant, VARIANTS, withVariant, type VariantInfo } from '@/engine';
 import { usePremium } from '@/state/premium';
+import { dispatch, useTable } from '@/state/session';
 import { setDraft, useDraft } from '@/state/setup-draft';
 import { needsUnlock, unlockToHost } from '@/state/unlock';
 import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
@@ -24,13 +25,19 @@ export default function LobbyGameSheet() {
   const insets = useSafeAreaInsets();
   const premium = usePremium();
   const draft = useDraft();
-  const current = draft.variant ?? 'holdem';
+  // From an open table's lobby (Play again), the game changes on the table itself.
+  const table = useLocalSearchParams<{ table?: string }>().table === '1';
+  const tableSettings = useTable().game?.settings;
+  const current = (table ? tableSettings?.variant : draft.variant) ?? 'holdem';
   const free = VARIANTS.filter((v) => !isPremiumVariant(v.id));
   const paid = VARIANTS.filter((v) => isPremiumVariant(v.id));
 
   const pick = (v: VariantInfo) => {
     haptic.select();
-    if (v.id !== current) setDraft(withVariant(draft, v.id));
+    if (v.id !== current) {
+      if (table && tableSettings) dispatch({ type: 'settings', settings: withVariant(tableSettings, v.id) });
+      else setDraft(withVariant(draft, v.id));
+    }
     router.back();
     if (needsUnlock([v.id], premium)) unlockToHost([v.id], premium);
   };

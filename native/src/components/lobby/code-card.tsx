@@ -32,7 +32,8 @@ export function CodeCard({
   failed?: boolean;
   /** What Share sends (who's hosting, the game, the code and the link). */
   share?: { message: string; url: string };
-  onChange: (code: string) => Promise<string | null>;
+  /** Missing: the code can't be changed (a player who isn't the host). */
+  onChange?: (code: string) => Promise<string | null>;
 }) {
   const colors = useColors();
   const shadows = useShadows();
@@ -77,6 +78,7 @@ export function CodeCard({
       return setError(problem);
     }
     setBusy(true);
+    if (!onChange) return;
     const answer = await onChange(draft);
     setBusy(false);
     if (answer === '') return setEditing(false);
@@ -134,7 +136,7 @@ export function CodeCard({
               }}
               label={qr ? 'Hide the QR code' : 'Show the QR code'}
             />
-            <TextButton title="Change" onPress={start} label="Change the game code" />
+            {onChange && <TextButton title="Change" onPress={start} label="Change the game code" />}
           </View>
         )}
       </View>

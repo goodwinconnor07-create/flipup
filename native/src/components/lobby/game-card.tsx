@@ -15,12 +15,12 @@ import { TextButton } from './code-card';
  * What the table plays: the game's icon, a small GAME MODE over its name and its mood line, and Change (the host's)
  * that opens the `lobby-game` sheet. Under the card, "How <game> plays" opens the How to Play story.
  */
-export function GameCard({ variant, host }: { variant: Variant; host: boolean }) {
+export function GameCard({ variant, host, table = false }: { variant: Variant; host: boolean; /** Change sets the open table's game, not the setup draft. */ table?: boolean }) {
   const colors = useColors();
   const info = variantInfo(variant);
   const change = () => {
     haptic.tap();
-    router.push('/lobby-game');
+    router.push(table ? { pathname: '/lobby-game', params: { table: '1' } } : '/lobby-game');
   };
   return (
     <View style={{ gap: spacing.sm }}>

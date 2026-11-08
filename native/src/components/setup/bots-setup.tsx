@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { NavRow } from './setup-header';
 import { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
@@ -10,16 +10,17 @@ import { useProfile } from '@/state/profile';
 import { dispatch, openLocalTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
 import { unlockToHost } from '@/state/unlock';
-import { brand, ForceScheme, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
+import { ForceScheme, ROUNDED, spacing, useColors } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
 import { haptic } from '../haptics';
-import { Icon, type IconName } from '../icon';
+import { Icon } from '../icon';
 import { GameCard } from '../lobby/game-card';
 import { HouseRules } from '../lobby/house-rules';
-import { RoundButton } from '../tab-screen';
+import { PANEL_RADIUS, usePanel } from '../grouped-list';
+import { Stepper } from '../stepper';
 import { ThemedText } from '../themed-text';
-import { BotsRow, randomBot, type RowBot } from './bots-row';
+import { randomBot, type RowBot } from './bots-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 
 /** Bots already sitting when the page opens, so Start game works at once. */
@@ -28,7 +29,7 @@ const START_BOTS = 4;
 /**
  * Play with bots: the same page as Play with friends (the lobby's pieces on the deep blue field, always dark) with
  * no game code, and the bots up top where the code card sits. Top to bottom:
- *  1. `BotsCard`: the bots as big faces (a tap takes one off, each new one says hello), Add a bot and Fill the table
+ *  1. `BotsCard`: At the table, a Bots stepper, then you and each bot as a list row (a red minus takes one off), Fill the table
  *  2. `GameCard`: the game, Change opens the `lobby-game` list, then How it plays
  *  3. `HouseRules`: the table's numbers and switches, without the online ones
  * and Start game pinned at the bottom, which deals at once with exactly these bots.
@@ -126,8 +127,9 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 }
 
 /**
- * The page's main card, where Play with friends has its game code: who you're playing, as the big faces from the
- * setup rows, then two buttons, Add a bot (the loud one) and Fill the table, and how many seats are left.
+ * The page's main card, where Play with friends has its game code: who's at the table, said plainly for someone
+ * new. A "Bots" stepper sets how many (Fill the table for every seat), then everyone as a list: you first, each bot
+ * with a red minus to take it off, the newest one saying hello on its second line. No BOT pills, nothing to guess.
  */
 function BotsCard({
   bots,
@@ -143,77 +145,111 @@ function BotsCard({
   onRemove: (b: RowBot) => void;
 }) {
   const colors = useColors();
-  const shadows = useShadows();
-  const seats = room <= 0 ? `Table full · ${MAX_SEATS} seats` : `${room} ${room === 1 ? 'seat' : 'seats'} left`;
+  const panel = usePanel();
+  const profile = useProfile();
+  const max = MAX_SEATS - 1;
+  const newest = bots.at(-1);
+  const setCount = (n: number) => {
+    if (n > bots.length) onAdd();
+    else if (n < bots.length && newest) onRemove(newest);
+  };
   return (
-    <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
-      <View
-        style={{
-          borderRadius: radius.lg,
-          borderCurve: 'continuous',
-          backgroundColor: colors.cell,
-          overflow: 'hidden',
-          padding: spacing.md,
-          gap: spacing.md,
-        }}
-      >
-        <View style={{ gap: 2 }}>
-          <ThemedText
-            variant="caption2"
-            tone="secondaryLabel"
-            style={{ fontWeight: '700', letterSpacing: 1.2, textTransform: 'uppercase' }}
-          >
-            Your table
-          </ThemedText>
-          <ThemedText variant="title2" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
-            {bots.length ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'}` : 'Add some bots'}
-          </ThemedText>
-        </View>
-
-        <BotsRow bots={bots} canAdd={room > 0} onAdd={onAdd} onRemove={onRemove} hideTitle />
-
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <CardButton icon="plus" title="Add a bot" loud disabled={room <= 0} onPress={onAdd} />
-          <CardButton icon="person.3.fill" title="Fill the table" disabled={room <= 0} onPress={onFill} />
-        </View>
-
-        <ThemedText variant="footnote" tone="secondaryLabel">
-          {bots.length ? `Tap a bot to take it off · ${seats}` : seats}
+    <View style={{ gap: spacing.sm }}>
+      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', paddingHorizontal: spacing.xxs }}>
+        <ThemedText variant="title3" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
+          At the table
         </ThemedText>
+        <ThemedText variant="subhead" tone="secondaryLabel">
+          {bots.length + 1} of {MAX_SEATS} seats
+        </ThemedText>
+      </View>
+      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, minHeight: 72 }}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <ThemedText variant="headline">Bots</ThemedText>
+            <ThemedText variant="subhead" tone="secondaryLabel">
+              {room <= 0 ? 'Every seat is taken' : `Up to ${max} computer players`}
+            </ThemedText>
+          </View>
+          <ThemedText variant="title2" style={{ fontFamily: ROUNDED, fontWeight: '800', fontVariant: ['tabular-nums'], minWidth: 24, textAlign: 'center' }}>
+            {bots.length}
+          </ThemedText>
+          <Stepper label="Bots" value={bots.length} min={1} max={max} onChange={setCount} />
+        </View>
+        <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: panel.hairline }} />
+        <SeatLine emoji={profile.emoji || '🙂'} name={profile.name || 'You'} line={profile.name ? 'You' : 'That'"'"'s you'} />
+        {bots.map((b) => (
+          <View key={b.key}>
+            <View style={{ height: 0.5, marginLeft: 68, backgroundColor: panel.hairline }} />
+            <SeatLine
+              emoji={b.emoji}
+              name={b.name}
+              line={b.key === newest?.key && b.greet ? `“${b.greet}”` : 'Bot'}
+              onRemove={bots.length > 1 ? () => onRemove(b) : undefined}
+            />
+          </View>
+        ))}
+        {room > 0 && (
+          <>
+            <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: panel.hairline }} />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Fill the table, ${room} more bots`}
+              onPress={() => {
+                haptic.tap();
+                onFill();
+              }}
+              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, minHeight: 56, backgroundColor: pressed ? panel.pressed : 'transparent' })}
+            >
+              <View style={{ width: 40, alignItems: 'center' }}>
+                <Icon name="person.3.fill" size={20} color={colors.accent as string} />
+              </View>
+              <ThemedText variant="headline" style={{ color: colors.accent as string }}>
+                Fill the table
+              </ThemedText>
+              <ThemedText variant="subhead" tone="secondaryLabel" style={{ marginLeft: 'auto' }}>
+                +{room}
+              </ThemedText>
+            </Pressable>
+          </>
+        )}
       </View>
     </View>
   );
 }
 
-function CardButton({ icon, title, loud, disabled, onPress }: { icon: IconName; title: string; loud?: boolean; disabled?: boolean; onPress: () => void }) {
+/** One person at the table: their face, name and a grey line, and for a bot the red minus that takes it off. */
+function SeatLine({ emoji, name, line, onRemove }: { emoji: string; name: string; line: string; onRemove?: () => void }) {
   const colors = useColors();
-  const ink = loud ? brand.violet : (colors.label as string);
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={title}
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      onPress={() => {
-        haptic.tap();
-        onPress();
-      }}
-      style={({ pressed }) => ({
-        flex: 1,
-        minHeight: 50,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: spacing.xs,
-        borderRadius: radius.md,
-        borderCurve: 'continuous',
-        backgroundColor: loud ? brand.paper : colors.cellPressed,
-        opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
-        transform: [{ scale: pressed ? 0.97 : 1 }],
-      })}
-    >
-      <Icon name={icon} size={16} color={ink} weight="semibold" />
-      <ThemedText style={{ fontWeight: '700', color: ink }}>{title}</ThemedText>
-    </Pressable>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, minHeight: 64 }}>
+      <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+        <Text style={{ fontSize: 24 }} maxFontSizeMultiplier={1}>
+          {emoji}
+        </Text>
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <ThemedText variant="headline" numberOfLines={1}>
+          {name}
+        </ThemedText>
+        <ThemedText variant="subhead" tone="secondaryLabel" numberOfLines={1}>
+          {line}
+        </ThemedText>
+      </View>
+      {onRemove && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Take ${name} off`}
+          hitSlop={10}
+          onPress={() => {
+            haptic.tap();
+            onRemove();
+          }}
+          style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+        >
+          <Icon name="minus.circle.fill" size={24} color={colors.red as string} />
+        </Pressable>
+      )}
+    </View>
   );
 }

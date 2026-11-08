@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, TextInput, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, Keyframe, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
 import { CODE_ALPHABET, CODE_LENGTH, isCode, normalizeTableCode, TABLE_CODE_LENGTH } from '@/engine';
-import { popIn } from '@/motion/presets';
+import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { radius, spacing, usePlainColors } from '@/theme';
 
@@ -14,6 +14,21 @@ import { ThemedText } from './themed-text';
 // show it. A table code is six letters or numbers (ACES42); a party code is five letters with no vowels or Y, so
 // those are dropped as you type, with a word under the boxes saying why. An older five-letter code (a party, or a
 // table opened on the web) still goes in at a table code's boxes: type it and press Go.
+
+
+/**
+ * A typed letter grows into its box and settles (the owner's reference: the iOS passcode feel), ease-out with no
+ * overshoot; a deleted one shrinks away a little quicker (rule 15). It grows from 60% rather than the usual 95%
+ * so each keystroke reads at a glance, and never from nothing (rule 10).
+ */
+const LETTER_IN = new Keyframe({
+  0: { opacity: 0, transform: [{ scale: 0.6 }, { translateY: 6 }] },
+  100: { opacity: 1, transform: [{ scale: 1 }, { translateY: 0 }], easing: EASE_OUT },
+}).duration(220);
+const LETTER_OUT = new Keyframe({
+  0: { opacity: 1, transform: [{ scale: 1 }] },
+  100: { opacity: 0, transform: [{ scale: 0.6 }], easing: EASE_OUT },
+}).duration(160);
 
 /** Which code the boxes take. */
 export type CodeKind = 'table' | 'party';
@@ -171,7 +186,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
               }}
             >
               {letter ? (
-                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : popIn()} maxFontSizeMultiplier={1} style={{ fontSize: 34, fontWeight: '700', color: c.label }}>
+                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : LETTER_IN} exiting={reduce ? undefined : LETTER_OUT} maxFontSizeMultiplier={1} style={{ fontSize: 34, fontWeight: '700', color: c.label }}>
                   {letter}
                 </Animated.Text>
               ) : next ? (
@@ -185,7 +200,11 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
           ref={input}
           autoFocus={focus}
           value={code}
-          onChangeText={state.setText}
+          onChangeText={(t) => {
+            // A light tick for each letter in, like a key click you can feel.
+            if (t.length !== code.length) haptic.select();
+            state.setText(t);
+          }}
           editable={!busy}
           accessibilityLabel={label}
           accessibilityHint={state.kind === 'table' ? 'Six letters or numbers' : 'Five letters'}

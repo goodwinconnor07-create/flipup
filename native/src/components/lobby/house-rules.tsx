@@ -182,17 +182,15 @@ function SwitchRow({ label, line, value, onChange }: { label: string; line: stri
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: spacing.sm,
-        padding: spacing.md,
+        gap: 14,
+        paddingHorizontal: spacing.md,
         paddingVertical: spacing.sm,
-        minHeight: 60,
+        minHeight: 64,
       }}
     >
       <View style={{ flex: 1, gap: 2 }}>
-        <ThemedText variant="body" style={{ fontWeight: '600' }}>
-          {label}
-        </ThemedText>
-        <ThemedText variant="footnote" tone="secondaryLabel">
+        <ThemedText variant="headline">{label}</ThemedText>
+        <ThemedText variant="subhead" tone="secondaryLabel">
           {line}
         </ThemedText>
       </View>

@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { NavRow } from './setup-header';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -96,13 +97,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           gap: spacing.lg,
         }}
       >
-        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <RoundButton icon="chevron.left" label="Back" onPress={() => router.back()} />
-          <ThemedText variant="headline" accessibilityRole="header">
-            Play with bots
-          </ThemedText>
-          <View style={{ width: 44 }} />
-        </View>
+        <NavRow title="Play with bots" />
 
         <BotsCard
           bots={bots}

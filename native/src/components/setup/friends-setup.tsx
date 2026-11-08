@@ -33,7 +33,7 @@ import { randomBot, type RowBot } from './bots-row';
 import { InviteFriendsRow } from './invite-friends-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { PartyPlaylistCard, PartyRules, StartPartyButton } from './party-pieces';
-import { SetupHeader } from './setup-header';
+import { SetupHeader, NavRow } from './setup-header';
 
 /**
  * Play with friends, laid out after the owner's reference video in FlipUp's own look (the deep blue moving field,
@@ -288,13 +288,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         {partyDraft ? (
           <SetupHeader title="Start a party" line="One short table per game, points for where you finish." />
         ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <RoundButton icon="chevron.left" label="Back" onPress={() => router.back()} />
-            <ThemedText variant="headline" accessibilityRole="header">
-              Lobby
-            </ThemedText>
-            <View style={{ width: 44 }} />
-          </View>
+          <NavRow title="Lobby" />
         )}
 
         {partyDraft ? (

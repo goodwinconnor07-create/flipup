@@ -9,6 +9,7 @@
 import { analyse, gradeOf, spotOf, type Grade, type OptionId, type Pos, type Replay, type Scenario } from '@train/ranges/model';
 import { SCENARIOS } from '@train/ranges/scenarios';
 
+import { recordAnswer } from './range-history';
 import { read, save, useStored } from './storage';
 
 /** Every hand, the same list as the web: each one from a published hand breakdown (src/train/ranges/scenarios.ts). */
@@ -37,6 +38,7 @@ export function answerHand(s: Scenario, pick: OptionId): Grade {
   const grade = gradeOf(s, pick);
   const all = readRangeGrades();
   if (all[s.id] === undefined || RANK[grade] > RANK[all[s.id]]) save(KEY, { ...all, [s.id]: grade });
+  recordAnswer(s, pick, grade);
   return grade;
 }
 
@@ -44,8 +46,9 @@ export function answerHand(s: Scenario, pick: OptionId): Grade {
  * The next hand, as on the web: a random one you haven't got right yet (the whole set once they're all done), never
  * the same kind of spot twice running.
  */
-export function nextHand(after: Scenario | null, rng: () => number = Math.random): Scenario {
-  const all = allHands();
+export function nextHand(after: Scenario | null, rng: () => number = Math.random, focus?: readonly string[]): Scenario {
+  // Practising the spots you miss: only hands of those concepts (every hand of them once you've got them all).
+  const all = focus?.length && allHands().some((s) => focus.includes(s.concept)) ? allHands().filter((s) => focus.includes(s.concept)) : allHands();
   const done = readRangeGrades();
   const fresh = all.filter((s) => s !== after && done[s.id] !== 'best');
   const pool = fresh.length ? fresh : all.filter((s) => s !== after);

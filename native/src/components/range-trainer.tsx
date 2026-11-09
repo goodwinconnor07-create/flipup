@@ -3,18 +3,20 @@
 // street told you, every opponent's range broken down with how your hand does against each part of it, and what
 // each play wins on average. The numbers come from range-numbers.json (worked out ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Linking, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
+import { BoardTable } from '@/components/range/board-table';
+import { HandHistory } from '@/components/range/hand-history';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { detail, EASE_OUT, exit, popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { useTableLook } from '@/state/prefs';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
+import { eventsOf, firstSentence, viewAt } from '@/state/range-view';
 import { brand, radius, spacing, useColors } from '@/theme';
 import {
   bb,
@@ -87,11 +89,14 @@ function Bar({ share, color, height = 4 }: { share: number; color: string; heigh
 }
 
 /** The trainer: one hand, your answer, then why. `onNext` runs after Next hand deals the next one (to scroll up). */
-export function RangeTrainer({ onNext }: { onNext?: () => void }) {
+export function RangeTrainer({ onNext, focus, onStopFocus }: { onNext?: () => void; /** Practising only these kinds of spot (from Stats). */ focus?: string[]; onStopFocus?: () => void }) {
   const colors = useColors();
-  const look = useTableLook();
   const reduce = useReduceMotion();
-  const [scenario, setScenario] = useState<Scenario>(() => nextHand(null));
+  const [scenario, setScenario] = useState<Scenario>(() => nextHand(null, Math.random, focus));
+  // Replaying the hand's history on the table (only when asked), and whether the details under the verdict are open.
+  const [step, setStep] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [more, setMore] = useState(false);
   const [pick, setPick] = useState<OptionId | null>(null);
   // Opponents whose whole range is open (otherwise just the biggest groups show).
   const [open, setOpen] = useState<string[]>([]);
@@ -117,7 +122,15 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
         : [],
     [evs, scenario],
   );
-  const decision = scenario.board.length === 4 ? 'turn' : 'river';
+  const events = useMemo(() => eventsOf(scenario, r), [scenario, r]);
+  const view = useMemo(() => viewAt(scenario, r, events, step), [scenario, r, events, step]);
+  // The replay plays itself a move at a time while it's playing, and stops at the end.
+  useEffect(() => {
+    if (!playing || step === null) return;
+    const end = step >= events.length;
+    const t = setTimeout(() => (end ? setPlaying(false) : setStep(step + 1)), end ? 0 : 1100);
+    return () => clearTimeout(t);
+  }, [playing, step, events.length]);
 
   const answer = (id: OptionId) => {
     if (pick) return;
@@ -127,9 +140,12 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
     setPick(id);
   };
   const next = () => {
-    setScenario(nextHand(scenario));
+    setScenario(nextHand(scenario, Math.random, focus));
     setOpen([]);
     setPick(null);
+    setStep(null);
+    setPlaying(false);
+    setMore(false);
     onNext?.();
   };
 
@@ -137,14 +153,6 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
   const best = options.find((o) => o.id === scenario.best);
   const facing = r.toCall > 0;
   const label = (id: OptionId) => options.find((o) => o.id === id)?.label ?? id;
-  // The board as it came, street by street.
-  const boardAt: Record<Street, string[]> = {
-    preflop: [],
-    flop: scenario.board.slice(0, 3),
-    turn: scenario.board.slice(3, 4),
-    river: scenario.board.slice(4, 5),
-  };
-  const streets = (['preflop', 'flop', 'turn', 'river'] as Street[]).slice(0, scenario.board.length - 1);
   const inPot = scenario.opponents.filter((o) => r.live.includes(o.pos));
   const topEv = evs ? Math.max(...evs.rows.map((x) => Math.abs(x.ev)), 0.1) : 1;
   const dead = [...scenario.hero.cards, ...scenario.board];
@@ -156,17 +164,17 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
 
   return (
     <View key={scenario.id} style={{ gap: spacing.md }}>
-      {/* The hand: what it teaches, the title, your seat and the table, and everyone in it. */}
+      {/* What the hand teaches and what to do now. */}
       <View style={{ gap: spacing.xxs }}>
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            paddingVertical: spacing.xxs,
-            paddingHorizontal: spacing.sm,
-            borderRadius: radius.full,
-            backgroundColor: colors.blueBg,
-          }}
-        >
+        {focus?.length ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.xs, paddingLeft: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.goldBg }}>
+            <ThemedText variant="footnote" numberOfLines={2} style={{ flex: 1, fontWeight: '600', color: colors.goldInk }}>
+              Practising: {focus.join(', ')}
+            </ThemedText>
+            <Button title="Done" variant="secondary" size="md" onPress={() => onStopFocus?.()} style={{ minHeight: 36, height: 36, paddingHorizontal: spacing.sm }} />
+          </View>
+        ) : null}
+        <View style={{ alignSelf: 'flex-start', paddingVertical: spacing.xxs, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: colors.blueBg }}>
           <ThemedText variant="caption1" style={{ fontWeight: '600', color: colors.blueInk }}>
             {scenario.concept}
           </ThemedText>
@@ -182,121 +190,37 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
               ? '9-handed live cash'
               : '6-handed cash'}
         </ThemedText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, rowGap: spacing.xxs, marginTop: spacing.xxs }}>
-          {scenario.opponents.map((o) => {
-            const live = r.live.includes(o.pos);
-            return (
-              <ThemedText key={o.pos} variant="caption1" tone="tertiaryLabel" style={{ opacity: live ? 1 : 0.6 }}>
-                <ThemedText variant="caption1" style={{ fontWeight: '700' }}>
-                  {o.pos}
-                </ThemedText>{' '}
-                {o.type.toLowerCase()}
-                {live ? '' : ' (folded)'}
-              </ThemedText>
-            );
-          })}
-        </View>
       </View>
 
-      {/* The board and your hand, on your felt. */}
-      <View
-        accessibilityLabel={`Board ${scenario.board.join(' ')}. Your hand ${scenario.hero.cards.join(' ')}`}
-        style={{
-          alignItems: 'center',
-          gap: spacing.sm,
-          padding: spacing.md,
-          borderRadius: radius.lg,
-          borderCurve: 'continuous',
-          backgroundColor: look.felt,
-        }}
-      >
-        <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-          {scenario.board.map((c, i) => (
-            <PlayingCard key={c} card={c} size="md" flip delay={i * 80} />
+      {/* The table as it stands: everyone's seat, the pot and the whole board. Nothing deals unless you replay. */}
+      <BoardTable scenario={scenario} view={view} />
+
+      {/* Your hand, big, with what it costs. */}
+      <View accessibilityLabel={`Your hand ${scenario.hero.cards.join(' ')}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+          {scenario.hero.cards.map((c) => (
+            <PlayingCard key={c} card={c} size="lg" />
           ))}
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <ThemedText variant="caption1" tone="onColor">
-            Your hand
+        <View style={{ flex: 1, gap: 2 }}>
+          <ThemedText variant="headline">{facing ? `${bb(r.toCall)} to call` : 'Checked to you'}</ThemedText>
+          <ThemedText variant="subhead" tone="secondaryLabel" style={NUM}>
+            Pot {bb(r.pot)} · you have {bb(r.stacks[scenario.hero.pos] ?? 0)} behind
           </ThemedText>
-          <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-            {scenario.hero.cards.map((c) => (
-              <PlayingCard key={c} card={c} size="md" />
-            ))}
-          </View>
-          <View>
-            <ThemedText variant="caption1" tone="onColor">
-              Pot{' '}
-              <ThemedText variant="body" tone="onColor" style={[{ fontWeight: '700' }, NUM]}>
-                {bb(r.pot)}
-              </ThemedText>
-            </ThemedText>
-            <ThemedText variant="caption1" style={[{ color: 'rgba(255,255,255,0.7)' }, NUM]}>
-              You have {bb(r.stacks[scenario.hero.pos] ?? 0)} behind
-            </ThemedText>
-          </View>
         </View>
       </View>
 
-      {/* The hand log, street by street. */}
-      <Cell gap={spacing.sm}>
-        {streets.map((st) => (
-          <View key={st}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <ThemedText variant="headline">{STREET_NAME[st]}</ThemedText>
-              {boardAt[st].length > 0 && (
-                <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-                  {boardAt[st].map((c) => (
-                    <PlayingCard key={c} card={c} size="sm" />
-                  ))}
-                </View>
-              )}
-              {st !== 'preflop' && r.potAt[st] !== undefined && (
-                <ThemedText variant="footnote" tone="tertiaryLabel" style={[{ marginLeft: 'auto' }, NUM]}>
-                  pot {bb(r.potAt[st]!)}
-                </ThemedText>
-              )}
-            </View>
-            {st === 'preflop' ? (
-              <ThemedText variant="caption1" tone="tertiaryLabel" style={[{ marginTop: 2 }, NUM]}>
-                Blinds 0.5bb and 1bb{scenario.ante ? `, ${bb(scenario.ante)} big blind ante` : ''} · stacks{' '}
-                {[scenario.hero.pos, ...scenario.opponents.map((o) => o.pos)]
-                  .map((p) => `${p === scenario.hero.pos ? 'you' : p} ${bb(r.start[p] ?? scenario.stack)}`)
-                  .join(', ')}
-              </ThemedText>
-            ) : (
-              r.stacksAt[st] && (
-                <ThemedText variant="caption1" tone="tertiaryLabel" style={[{ marginTop: 2 }, NUM]}>
-                  Stacks{' '}
-                  {Object.entries(r.stacksAt[st]!)
-                    .map(([p, v]) => `${p === scenario.hero.pos ? 'you' : p} ${bb(Math.round(v! * 10) / 10)}`)
-                    .join(', ')}
-                </ThemedText>
-              )
-            )}
-            <View style={{ marginTop: spacing.xxs }}>
-              {r.lines
-                .filter((l) => l.street === st)
-                .map((l, i) => (
-                  <ThemedText key={i} variant="subhead" tone="secondaryLabel" style={{ paddingVertical: 2 }}>
-                    {l.text}
-                    {l.left !== undefined && (
-                      <ThemedText variant="caption1" tone="tertiaryLabel" style={NUM}>
-                        {' '}
-                        · {l.left > 0 ? `${bb(l.left)} behind` : 'all in'}
-                      </ThemedText>
-                    )}
-                  </ThemedText>
-                ))}
-              {st === decision && (
-                <ThemedText variant="subhead" tone="accent" style={{ paddingVertical: 2, fontWeight: '600' }}>
-                  {facing ? (options.some((o) => o.id === 'raise') ? 'Your move: fold, call or raise?' : 'Your move: fold or call?') : 'Your move'}
-                </ThemedText>
-              )}
-            </View>
-          </View>
-        ))}
-      </Cell>
+      <HandHistory
+        scenario={scenario}
+        replay={r}
+        events={events}
+        pot={r.potAt}
+        step={step}
+        playing={playing}
+        onStep={setStep}
+        onPlaying={setPlaying}
+        decision={facing ? (options.some((o) => o.id === 'raise') ? 'fold, call or raise?' : 'fold or call?') : 'check or bet?'}
+      />
 
       {!pick ? (
         <Animated.View exiting={exit(reduce)} style={{ gap: spacing.xs }} accessibilityLabel="Your options">
@@ -324,15 +248,21 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
             <ThemedText variant="subhead" style={{ color: gradeLook[grade!].ink }}>
               {pick === scenario.best ? best?.label : `Best: ${best?.label}`}
             </ThemedText>
-          </Animated.View>
-          <Animated.View entering={detail(0, reduce)}>
-            <ThemedText variant="body">{scenario.why}</ThemedText>
-            <ThemedText variant="footnote" tone="secondaryLabel" onPress={() => void Linking.openURL(scenario.source.url)} accessibilityRole="link">
-              From {scenario.source.by}: {scenario.source.title}
-              {scenario.source.note ? ` (${scenario.source.note})` : ''}
+            <ThemedText variant="subhead" style={{ color: gradeLook[grade!].ink, marginTop: spacing.xxs }}>
+              {firstSentence(scenario.why)}
             </ThemedText>
           </Animated.View>
-
+          <View style={{ gap: spacing.sm }}>
+            <Button title="Next hand" onPress={next} />
+            <Button title={more ? 'Hide the details' : 'Show me more'} variant="secondary" onPress={() => setMore(!more)} />
+          </View>
+          {more && (
+            <View style={{ gap: spacing.sm }}>
+              <ThemedText variant="body">{scenario.why}</ThemedText>
+              <ThemedText variant="footnote" tone="secondaryLabel" onPress={() => void Linking.openURL(scenario.source.url)} accessibilityRole="link">
+                From {scenario.source.by}: {scenario.source.title}
+                {scenario.source.note ? ` (${scenario.source.note})` : ''}
+              </ThemedText>
           {evs && (
             <Animated.View entering={detail(1, reduce)}>
               <Cell>
@@ -497,7 +427,8 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
               </View>
             );
           })}
-          <Button title="Next hand" onPress={next} style={{ marginTop: spacing.xs }} />
+            </View>
+          )}
         </View>
       )}
     </View>

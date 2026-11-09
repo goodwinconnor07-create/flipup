@@ -1,14 +1,14 @@
 import { router, Stack } from 'expo-router';
-import Animated, { FadeOut, Keyframe, LinearTransition } from 'react-native-reanimated';
+import Animated, { LinearTransition } from 'react-native-reanimated';
+import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { FriendsStrip } from '@/components/home/friends-strip';
 import { GameRow } from '@/components/home/game-row';
 import { PassportCard } from '@/components/home/passport';
 import { StartTiles } from '@/components/home/start-tiles';
-import { FirstHand, LastGame } from '@/components/home/your-poker';
+import { FirstHand } from '@/components/home/your-poker';
 import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
 import { PressableScale } from '@/components/pressable-scale';
@@ -23,9 +23,10 @@ import { FRIENDS_ON } from '@/scope';
 import { useFriendBox } from '@/state/pals';
 import { usePartyRef } from '@/state/party';
 import { usePokerRecord } from '@/state/record';
+import { useRangeHistory } from '@/state/range-history';
+import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
-import { save, useStored } from '@/state/storage';
 import { radius, spacing, useColors, useShadows } from '@/theme';
 
 /**
@@ -35,14 +36,17 @@ import { radius, spacing, useColors, useShadows } from '@/theme';
  * faces; your poker on one card (How to Play before your first hand); the games as a shelf you swipe; Premium.
  */
 export default function Home() {
-  const colors = useColors();
   const premium = usePremium();
   const record = usePokerRecord();
   const box = useFriendBox();
   const banner = useHasBanner();
-  const last = record.games.at(-1);
-  // Play again can be taken away with its X; it comes back with the next game you finish.
-  const hidden = useStored<number>(HIDDEN, 0);
+  // After a good moment (three finished games or ten best plays) iOS may ask for a rating, once.
+  const games = record.games.length;
+  const bestPlays = useRangeHistory().filter((a) => a.grade === 'best').length;
+  useEffect(() => {
+    const t = setTimeout(() => void maybeAskForReview(games, bestPlays), 2500);
+    return () => clearTimeout(t);
+  }, [games, bestPlays]);
   const reduce = useReduceMotion();
   const slide = reduce ? undefined : LinearTransition.duration(320).easing(EASE_OUT);
   return (
@@ -66,13 +70,7 @@ export default function Home() {
           </View>
         )}
         <StartTiles />
-        {!banner && last && hidden !== last.at && (
-          // The X pops the card away and everything under it slides up into its place.
-          <Animated.View exiting={reduce ? FadeOut.duration(160) : POP_AWAY}>
-            <LastGame line={last} onDismiss={() => save(HIDDEN, last.at)} />
-          </Animated.View>
-        )}
-        <Animated.View layout={slide} style={{ gap: spacing.xl }}>
+        <Animated.View layout={slide} style={{ gap: spacing.lg }}>
           <GameRow />
           {FRIENDS_ON && <FriendsStrip />}
           {record.hands > 0 ? <PassportCard /> : <FirstHand />}
@@ -87,14 +85,6 @@ export default function Home() {
   );
 }
 
-const HIDDEN = 'flipup.lastgamehidden';
-
-/** The Play again card leaving: a quick swell, then it shrinks and fades away. */
-const POP_AWAY = new Keyframe({
-  0: { opacity: 1, transform: [{ scale: 1 }] },
-  30: { opacity: 1, transform: [{ scale: 1.04 }], easing: EASE_OUT },
-  100: { opacity: 0, transform: [{ scale: 0.6 }], easing: EASE_OUT },
-}).duration(220);
 /** How many games Premium adds (every game after the free ones). */
 const PREMIUM_GAMES = VARIANTS.length - FREE_VARIANTS;
 

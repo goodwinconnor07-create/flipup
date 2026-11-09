@@ -527,7 +527,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
         </Animated.View>
       )}
       {/* The table is locked: it never scrolls or bounces (the felt shrinks to fit instead, see FeltOval). */}
-      <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 8 }}>
+      <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 20 }}>
         <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
         <FeltOval game={game} me={me} heightLimit={feltBudget} />
       </View>

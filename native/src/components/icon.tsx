@@ -99,6 +99,7 @@ const WEB = {
   'checkmark.seal.fill': 'verified',
   'chevron.down': 'expand_more',
   'chevron.up': 'expand_less',
+  'graduationcap.fill': 'school',
   'arrow.up': 'arrow_upward',
   'arrow.down': 'arrow_downward',
   'lock.open.fill': 'lock_open',

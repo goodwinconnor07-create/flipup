@@ -3,19 +3,32 @@
 // street told you, every opponent's range broken down with how your hand does against each part of it, and what
 // each play wins on average. The numbers come from range-numbers.json (worked out ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
-import { useMemo, useState } from 'react';
-import { Linking, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Linking, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
+import { BoardTable } from '@/components/range/board-table';
+import { GlassButton } from '@/components/range/glass-button';
+import { exampleOf, topGroups, TheirHands } from '@/components/range/their-hands';
+import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
+import { Icon } from '@/components/icon';
+import { PressableScale } from '@/components/pressable-scale';
+import { cardName, describeHand, rankLabel, suitOf } from '@/engine';
+import { SwapIcon } from '@/components/swap';
+import { Confetti } from '@/components/table/confetti';
+import { playSound } from '@/components/table/sounds';
+import { useTabFooter } from '@/components/tab-screen';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { detail, EASE_OUT, exit, popIn } from '@/motion/presets';
+import { detail, EASE_OUT, popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { useTableLook } from '@/state/prefs';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
-import { brand, radius, spacing, useColors } from '@/theme';
+import { runOf, useRangeHistory } from '@/state/range-history';
+import { save, useStored } from '@/state/storage';
+import { eventsOf, firstSentence, sentenceAt, viewAt } from '@/state/range-view';
+import { brand, gradient, radius, spacing, useColors } from '@/theme';
 import {
   bb,
   callShare,
@@ -25,6 +38,7 @@ import {
   type Grade,
   type OptionId,
   type RangeGroup,
+  type Pos,
   type Scenario,
   type Street,
 } from '@train/ranges/model';
@@ -87,11 +101,22 @@ function Bar({ share, color, height = 4 }: { share: number; color: string; heigh
 }
 
 /** The trainer: one hand, your answer, then why. `onNext` runs after Next hand deals the next one (to scroll up). */
-export function RangeTrainer({ onNext }: { onNext?: () => void }) {
+export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: () => void; /** Scrolls the page back up to the table (a street tapped in the history replays on it). */ onTop?: () => void; /** Practising only these kinds of spot (from Stats). */ focus?: string[]; onStopFocus?: () => void }) {
   const colors = useColors();
-  const look = useTableLook();
   const reduce = useReduceMotion();
-  const [scenario, setScenario] = useState<Scenario>(() => nextHand(null));
+  const [scenario, setScenario] = useState<Scenario>(() => nextHand(null, Math.random, focus));
+  // Replaying the hand's history on the table (only when asked), and whether the details under the verdict are open.
+  const [step, setStep] = useState<number | null>(null);
+  const [playing, setPlaying] = useState(false);
+  const [more, setMore] = useState(false);
+  // Hints: the clues for each street, one more each tap (no penalty), and a first-use tip about the table.
+  const [hints, setHints] = useState(0);
+  const tipSeen = useStored<boolean>('flipup.rangetip', false);
+  // A best play fills the screen in green for a moment, with confetti, as at a won hand.
+  const [cheer, setCheer] = useState(false);
+  const run = runOf(useRangeHistory());
+  const cheerTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(cheerTimer.current), []);
   const [pick, setPick] = useState<OptionId | null>(null);
   // Opponents whose whole range is open (otherwise just the biggest groups show).
   const [open, setOpen] = useState<string[]>([]);
@@ -117,7 +142,19 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
         : [],
     [evs, scenario],
   );
-  const decision = scenario.board.length === 4 ? 'turn' : 'river';
+  const events = useMemo(() => eventsOf(scenario, r), [scenario, r]);
+  // A light tick as each step of the replay lands.
+  useEffect(() => {
+    if (step) haptic.select();
+  }, [step]);
+  const view = useMemo(() => viewAt(scenario, r, events, step), [scenario, r, events, step]);
+  // The replay plays itself a move at a time while it's playing, and stops at the end.
+  useEffect(() => {
+    if (!playing || step === null) return;
+    const end = step >= events.length;
+    const t = setTimeout(() => (end ? setPlaying(false) : setStep(step + 1)), end ? 0 : 1100);
+    return () => clearTimeout(t);
+  }, [playing, step, events.length]);
 
   const answer = (id: OptionId) => {
     if (pick) return;
@@ -125,11 +162,24 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
     if (grade === 'mistake') haptic.failure();
     else haptic.success();
     setPick(id);
+    // The verdict is at the top of the page: bring it into view for the answer.
+    onTop?.();
+    // A sound for each result: a win, a soft pop for also good, a quiet knock for a miss.
+    playSound(grade === 'best' ? 'win' : grade === 'ok' ? 'pop' : 'check');
+    if (grade === 'best') {
+      setCheer(true);
+      clearTimeout(cheerTimer.current);
+      cheerTimer.current = setTimeout(() => setCheer(false), 2000);
+    }
   };
   const next = () => {
-    setScenario(nextHand(scenario));
+    setScenario(nextHand(scenario, Math.random, focus));
     setOpen([]);
     setPick(null);
+    setStep(null);
+    setPlaying(false);
+    setMore(false);
+    setHints(0);
     onNext?.();
   };
 
@@ -137,174 +187,97 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
   const best = options.find((o) => o.id === scenario.best);
   const facing = r.toCall > 0;
   const label = (id: OptionId) => options.find((o) => o.id === id)?.label ?? id;
-  // The board as it came, street by street.
-  const boardAt: Record<Street, string[]> = {
-    preflop: [],
-    flop: scenario.board.slice(0, 3),
-    turn: scenario.board.slice(3, 4),
-    river: scenario.board.slice(4, 5),
-  };
-  const streets = (['preflop', 'flop', 'turn', 'river'] as Street[]).slice(0, scenario.board.length - 1);
   const inPot = scenario.opponents.filter((o) => r.live.includes(o.pos));
   const topEv = evs ? Math.max(...evs.rows.map((x) => Math.abs(x.ev)), 0.1) : 1;
-  const dead = [...scenario.hero.cards, ...scenario.board];
   const gradeLook: Record<Grade, { bg: string; ink: string }> = {
-    best: { bg: colors.goldBg as string, ink: colors.goldInk as string },
+    best: { bg: brand.raise, ink: '#ffffff' },
     ok: { bg: colors.blueBg as string, ink: colors.blueInk as string },
     mistake: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
   };
 
+  // After a miss: an example of what each opponent most likely had, on their seat and in the panel under the verdict.
+  const dead = useMemo(() => [...scenario.hero.cards, ...scenario.board], [scenario]);
+  const reveal = useMemo(() => {
+    if (!pick || grade === 'best') return undefined;
+    const out: Partial<Record<Pos, [string, string]>> = {};
+    for (const v of views) {
+      const g = topGroups(v.groups, facing, 1)[0];
+      const ex = g ? exampleOf(g, dead) : null;
+      if (ex) out[v.opponent.pos] = ex;
+    }
+    return out;
+  }, [pick, grade, views, facing, dead]);
+  // One line to look for next time: the next sentence of why, else what the last street told you.
+  const nextTime = sentenceAt(scenario.why, 1) ?? (scenario.clues.length ? firstSentence(scenario.clues[scenario.clues.length - 1].text) : null);
+  // The replay in words: what just happened and the pot after it.
+  const pretty = (c: string) => `${rankLabel(c)}${{ s: '♠', h: '♥', d: '♦', c: '♣' }[suitOf(c)]}`;
+  const lastEvent = step !== null && step > 0 ? events[step - 1] : null;
+  const narration =
+    step === null
+      ? undefined
+      : !lastEvent
+        ? 'Blinds are in'
+        : lastEvent.kind === 'deal'
+          ? `${STREET_NAME[lastEvent.street]}: ${scenario.board.slice(0, lastEvent.street === 'flop' ? 3 : lastEvent.street === 'turn' ? 4 : 5).map(pretty).join(' ')}`
+          : `${lastEvent.text} · pot ${bb(view.pot)}`;
+  // What you're holding, in words.
+  const made = describeHand([...scenario.hero.cards, ...scenario.board]).detail;
+  // The table as one sentence for VoiceOver.
+  const summary = `The table. You're ${scenario.hero.pos}, holding ${scenario.hero.cards.map(cardName).join(' and ')}. Board: ${view.board.map(cardName).join(', ') || 'not dealt yet'}. Pot ${bb(view.pot)}. ${facing ? `${bb(r.toCall)} to call` : 'Checked to you'}. ${inPot.map((o) => `${o.pos} is ${o.type.toLowerCase()}`).join('. ')}.`;
+  const kind = (id: OptionId): 'fold' | 'blue' | 'raise' => (id === 'fold' ? 'fold' : id === 'call' || id === 'check' ? 'blue' : 'raise');
+  // The bigger the bet, the deeper the green: a third of the pot lightest, an overbet or all in darkest.
+  const green = (o: { id: OptionId; label: string }) =>
+    o.id === 'bet33' ? 'rgba(43,189,104,0.72)' : o.id === 'bet75' ? 'rgba(26,154,80,0.78)' : o.id === 'bet125' || o.label.startsWith('All in') ? 'rgba(15,122,59,0.85)' : 'rgba(26,154,80,0.78)';
+  // The answer bar, pinned under the page above the tab bar: your options, then Next hand once you've answered.
+  const bar = !pick ? (
+    <View accessibilityLabel="Your options" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+      {options.map((o) => (
+        <AnswerButton key={o.id} label={o.label} kind={kind(o.id)} green={green(o)} wide={options.length > 3} onPress={() => answer(o.id)} />
+      ))}
+    </View>
+  ) : (
+    <GlassButton tint="rgba(10,132,255,0.78)" label="Next hand" onPress={next}>
+      <ThemedText variant="headline" tone="onColor" style={{ fontWeight: '800' }}>
+        Next hand
+      </ThemedText>
+    </GlassButton>
+  );
+  useTabFooter(bar);
+
   return (
     <View key={scenario.id} style={{ gap: spacing.md }}>
-      {/* The hand: what it teaches, the title, your seat and the table, and everyone in it. */}
-      <View style={{ gap: spacing.xxs }}>
-        <View
-          style={{
-            alignSelf: 'flex-start',
-            paddingVertical: spacing.xxs,
-            paddingHorizontal: spacing.sm,
-            borderRadius: radius.full,
-            backgroundColor: colors.blueBg,
-          }}
-        >
-          <ThemedText variant="caption1" style={{ fontWeight: '600', color: colors.blueInk }}>
+      {cheer && <Celebration run={run} concept={scenario.concept} onClose={() => setCheer(false)} />}
+      {focus?.length ? (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.xs, paddingLeft: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
+          <ThemedText variant="footnote" numberOfLines={2} style={{ flex: 1, fontWeight: '600', color: colors.blueInk }}>
+            Practising: {focus.some((f) => f.startsWith('id:')) ? `your missed hands (${focus.length})` : focus.join(', ')}
+          </ThemedText>
+          <Button title="Done" variant="secondary" size="md" onPress={() => onStopFocus?.()} style={{ minHeight: 36, height: 36, paddingHorizontal: spacing.sm }} />
+        </View>
+      ) : null}
+
+      {/* What the hand teaches, then its name. */}
+      <View style={{ gap: 2 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <ThemedText variant="caption1" tone="accent" style={{ fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 }}>
             {scenario.concept}
           </ThemedText>
+          {run >= 2 && (
+            <View accessibilityLabel={`${run} best plays in a row`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name="flame.fill" size={15} color={brand.gold} />
+              <ThemedText variant="footnote" style={{ fontWeight: '700' }}>
+                {run} in a row
+              </ThemedText>
+            </View>
+          )}
         </View>
-        <ThemedText variant="title2" accessibilityRole="header" style={{ marginTop: spacing.xxs }}>
+        <ThemedText variant="title2" accessibilityRole="header">
           {scenario.title}
         </ThemedText>
-        <ThemedText variant="subhead" tone="tertiaryLabel">
-          You’re {scenario.hero.pos} ·{' '}
-          {scenario.format === 'tournament'
-            ? `Tournament, ${scenario.table === 9 ? '9-handed' : '6-handed'}`
-            : scenario.table === 9
-              ? '9-handed live cash'
-              : '6-handed cash'}
-        </ThemedText>
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: spacing.sm, rowGap: spacing.xxs, marginTop: spacing.xxs }}>
-          {scenario.opponents.map((o) => {
-            const live = r.live.includes(o.pos);
-            return (
-              <ThemedText key={o.pos} variant="caption1" tone="tertiaryLabel" style={{ opacity: live ? 1 : 0.6 }}>
-                <ThemedText variant="caption1" style={{ fontWeight: '700' }}>
-                  {o.pos}
-                </ThemedText>{' '}
-                {o.type.toLowerCase()}
-                {live ? '' : ' (folded)'}
-              </ThemedText>
-            );
-          })}
-        </View>
       </View>
 
-      {/* The board and your hand, on your felt. */}
-      <View
-        accessibilityLabel={`Board ${scenario.board.join(' ')}. Your hand ${scenario.hero.cards.join(' ')}`}
-        style={{
-          alignItems: 'center',
-          gap: spacing.sm,
-          padding: spacing.md,
-          borderRadius: radius.lg,
-          borderCurve: 'continuous',
-          backgroundColor: look.felt,
-        }}
-      >
-        <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-          {scenario.board.map((c, i) => (
-            <PlayingCard key={c} card={c} size="md" flip delay={i * 80} />
-          ))}
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-          <ThemedText variant="caption1" tone="onColor">
-            Your hand
-          </ThemedText>
-          <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-            {scenario.hero.cards.map((c) => (
-              <PlayingCard key={c} card={c} size="md" />
-            ))}
-          </View>
-          <View>
-            <ThemedText variant="caption1" tone="onColor">
-              Pot{' '}
-              <ThemedText variant="body" tone="onColor" style={[{ fontWeight: '700' }, NUM]}>
-                {bb(r.pot)}
-              </ThemedText>
-            </ThemedText>
-            <ThemedText variant="caption1" style={[{ color: 'rgba(255,255,255,0.7)' }, NUM]}>
-              You have {bb(r.stacks[scenario.hero.pos] ?? 0)} behind
-            </ThemedText>
-          </View>
-        </View>
-      </View>
-
-      {/* The hand log, street by street. */}
-      <Cell gap={spacing.sm}>
-        {streets.map((st) => (
-          <View key={st}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <ThemedText variant="headline">{STREET_NAME[st]}</ThemedText>
-              {boardAt[st].length > 0 && (
-                <View style={{ flexDirection: 'row', gap: spacing.xxs }}>
-                  {boardAt[st].map((c) => (
-                    <PlayingCard key={c} card={c} size="sm" />
-                  ))}
-                </View>
-              )}
-              {st !== 'preflop' && r.potAt[st] !== undefined && (
-                <ThemedText variant="footnote" tone="tertiaryLabel" style={[{ marginLeft: 'auto' }, NUM]}>
-                  pot {bb(r.potAt[st]!)}
-                </ThemedText>
-              )}
-            </View>
-            {st === 'preflop' ? (
-              <ThemedText variant="caption1" tone="tertiaryLabel" style={[{ marginTop: 2 }, NUM]}>
-                Blinds 0.5bb and 1bb{scenario.ante ? `, ${bb(scenario.ante)} big blind ante` : ''} · stacks{' '}
-                {[scenario.hero.pos, ...scenario.opponents.map((o) => o.pos)]
-                  .map((p) => `${p === scenario.hero.pos ? 'you' : p} ${bb(r.start[p] ?? scenario.stack)}`)
-                  .join(', ')}
-              </ThemedText>
-            ) : (
-              r.stacksAt[st] && (
-                <ThemedText variant="caption1" tone="tertiaryLabel" style={[{ marginTop: 2 }, NUM]}>
-                  Stacks{' '}
-                  {Object.entries(r.stacksAt[st]!)
-                    .map(([p, v]) => `${p === scenario.hero.pos ? 'you' : p} ${bb(Math.round(v! * 10) / 10)}`)
-                    .join(', ')}
-                </ThemedText>
-              )
-            )}
-            <View style={{ marginTop: spacing.xxs }}>
-              {r.lines
-                .filter((l) => l.street === st)
-                .map((l, i) => (
-                  <ThemedText key={i} variant="subhead" tone="secondaryLabel" style={{ paddingVertical: 2 }}>
-                    {l.text}
-                    {l.left !== undefined && (
-                      <ThemedText variant="caption1" tone="tertiaryLabel" style={NUM}>
-                        {' '}
-                        · {l.left > 0 ? `${bb(l.left)} behind` : 'all in'}
-                      </ThemedText>
-                    )}
-                  </ThemedText>
-                ))}
-              {st === decision && (
-                <ThemedText variant="subhead" tone="accent" style={{ paddingVertical: 2, fontWeight: '600' }}>
-                  {facing ? (options.some((o) => o.id === 'raise') ? 'Your move: fold, call or raise?' : 'Your move: fold or call?') : 'Your move'}
-                </ThemedText>
-              )}
-            </View>
-          </View>
-        ))}
-      </Cell>
-
-      {!pick ? (
-        <Animated.View exiting={exit(reduce)} style={{ gap: spacing.xs }} accessibilityLabel="Your options">
-          {options.map((o) => (
-            <Button key={o.id} title={o.label} variant="secondary" onPress={() => answer(o.id)} />
-          ))}
-        </Animated.View>
-      ) : (
+      {/* Your answer comes first, right under the title, so it's never below the fold. */}
+      {pick ? (
         <View style={{ gap: spacing.sm }} accessibilityLiveRegion="polite">
           {/* Motion rules: the verdict pops in from 95% (10, 13), then the parts under it settle 30ms apart (6, 3). */}
           <Animated.View
@@ -318,21 +291,38 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
               backgroundColor: gradeLook[grade!].bg,
             }}
           >
-            <ThemedText variant="title3" style={{ fontWeight: '700', color: gradeLook[grade!].ink }}>
-              {GRADE[grade!]}
-            </ThemedText>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+              <SwapIcon name={grade === 'mistake' ? 'arrow.counterclockwise' : 'checkmark.circle.fill'} size={20} color={gradeLook[grade!].ink} />
+              <ThemedText variant="title3" style={{ fontWeight: '700', color: gradeLook[grade!].ink }}>
+                {GRADE[grade!]}
+              </ThemedText>
+            </View>
             <ThemedText variant="subhead" style={{ color: gradeLook[grade!].ink }}>
               {pick === scenario.best ? best?.label : `Best: ${best?.label}`}
             </ThemedText>
-          </Animated.View>
-          <Animated.View entering={detail(0, reduce)}>
-            <ThemedText variant="body">{scenario.why}</ThemedText>
-            <ThemedText variant="footnote" tone="secondaryLabel" onPress={() => void Linking.openURL(scenario.source.url)} accessibilityRole="link">
-              From {scenario.source.by}: {scenario.source.title}
-              {scenario.source.note ? ` (${scenario.source.note})` : ''}
+            <ThemedText variant="subhead" style={{ color: gradeLook[grade!].ink, marginTop: spacing.xxs }}>
+              {firstSentence(scenario.why)}
             </ThemedText>
           </Animated.View>
-
+          {grade !== 'best' && views.length > 0 && (
+            <TheirHands
+              scenario={scenario}
+              opponents={views.map((v) => ({ pos: v.opponent.pos, type: v.opponent.type, groups: v.groups }))}
+              facing={facing}
+              dead={dead}
+              nextTime={nextTime}
+            />
+          )}
+          <View style={{ gap: spacing.sm }}>
+            <Button title={more ? 'Hide the details' : 'Show me more'} variant="secondary" onPress={() => setMore(!more)} />
+          </View>
+          {more && (
+            <View style={{ gap: spacing.sm }}>
+              <ThemedText variant="body">{scenario.why}</ThemedText>
+              <ThemedText variant="footnote" tone="secondaryLabel" onPress={() => void Linking.openURL(scenario.source.url)} accessibilityRole="link">
+                From {scenario.source.by}: {scenario.source.title}
+                {scenario.source.note ? ` (${scenario.source.note})` : ''}
+              </ThemedText>
           {evs && (
             <Animated.View entering={detail(1, reduce)}>
               <Cell>
@@ -497,9 +487,181 @@ export function RangeTrainer({ onNext }: { onNext?: () => void }) {
               </View>
             );
           })}
-          <Button title="Next hand" onPress={next} style={{ marginTop: spacing.xs }} />
+            </View>
+          )}
+        </View>
+      ) : null}
+
+      {!tipSeen && (
+        <View style={{ gap: spacing.xs, padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
+          <ThemedText variant="subhead" style={{ color: colors.blueInk }}>
+            Your seat is at the bottom. The white D is the dealer and white chips are bets. Tap Replay hand to watch the hand play out; it never plays unless you ask.
+          </ThemedText>
+          <Button title="Got it" variant="secondary" onPress={() => save('flipup.rangetip', true)} style={{ minHeight: 40, height: 40 }} />
         </View>
       )}
+
+      {/* The table as it stands: everyone's seat, the pot and the whole board. Nothing deals unless you replay. */}
+      <BoardTable scenario={scenario} view={view} summary={summary} reveal={reveal} />
+      <ReplayStrip step={step} total={events.length} playing={playing} narration={narration} onStep={setStep} onPlaying={setPlaying} />
+
+      {/* Who is in the hand: their types (a read that often decides it). */}
+      <ThemedText variant="footnote" tone="tertiaryLabel" accessibilityLabel={`In the hand: ${inPot.map((o) => `${o.pos}, ${o.type}`).join('; ')}`}>
+        {inPot.map((o, i) => (
+          <ThemedText key={o.pos} variant="footnote" tone="tertiaryLabel">
+            {i > 0 ? '  ·  ' : ''}
+            <ThemedText variant="footnote" style={{ fontWeight: '800' }}>
+              {o.pos}
+            </ThemedText>{' '}
+            {o.type.toLowerCase()}
+          </ThemedText>
+        ))}
+      </ThemedText>
+
+      {/* Your hand, with what it costs and where you sit. */}
+      <View accessibilityLabel={`Your hand ${scenario.hero.cards.join(' ')}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+          {scenario.hero.cards.map((c) => (
+            <PlayingCard key={c} card={c} size="md" width={56} />
+          ))}
+        </View>
+        <View style={{ flex: 1, gap: 2 }}>
+          <ThemedText variant="title3" style={NUM}>
+            {facing ? `${bb(r.toCall)} to call` : 'Checked to you'}
+          </ThemedText>
+          <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+            You have {made.charAt(0).toLowerCase()}
+            {made.slice(1)}
+          </ThemedText>
+          <ThemedText variant="subhead" tone="secondaryLabel" style={NUM}>
+            You’re {scenario.hero.pos} · {bb(r.stacks[scenario.hero.pos] ?? 0)} behind
+          </ThemedText>
+          <ThemedText variant="footnote" tone="tertiaryLabel">
+            {scenario.format === 'tournament' ? 'Tournament' : scenario.table === 9 ? 'Live cash' : 'Cash'}, {scenario.table === 9 ? '9' : '6'}-handed
+          </ThemedText>
+        </View>
+      </View>
+
+      {!pick && (
+        <View style={{ gap: spacing.xs }}>
+          {hints > 0 && (
+            <View accessibilityLiveRegion="polite" style={{ gap: spacing.xxs, padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
+              {scenario.clues.slice(0, hints).map((c, i) => (
+                <ThemedText key={i} variant="subhead" style={{ color: colors.blueInk }}>
+                  <ThemedText variant="subhead" style={{ fontWeight: '800', color: colors.blueInk }}>
+                    {STREET_NAME[c.street]}{' '}
+                  </ThemedText>
+                  {c.text}
+                </ThemedText>
+              ))}
+            </View>
+          )}
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            {hints < scenario.clues.length && (
+              <SmallButton label={hints ? `Another hint (${hints} of ${scenario.clues.length})` : 'Hint'} onPress={() => setHints(hints + 1)} />
+            )}
+            <SmallButton label="Skip hand" quiet onPress={next} />
+          </View>
+        </View>
+      )}
+
+      <HandHistory
+        scenario={scenario}
+        events={events}
+        pot={r.potAt}
+        step={step}
+        onJump={(n) => {
+          setStep(n);
+          setPlaying(true);
+          onTop?.();
+        }}
+        decision={facing ? (options.some((o) => o.id === 'raise') ? 'fold, call or raise?' : 'fold or call?') : 'check or bet?'}
+      />
+
     </View>
+  );
+}
+
+/** One answer in the pinned bar: Fold in red, Call and Check in the table's blue, Bet and Raise in its green. */
+function AnswerButton({ label, kind, green, wide, onPress }: { label: string; kind: 'fold' | 'blue' | 'raise'; /** The glass tint a bet or raise takes. */ green: string; /** Four options: two to a row. */ wide: boolean; onPress: () => void }) {
+  const [main, sub] = splitLabel(label);
+  const tint = kind === 'fold' ? 'rgba(235,72,60,0.6)' : kind === 'blue' ? 'rgba(10,132,255,0.78)' : green;
+  return (
+    <View style={{ flexGrow: 1, flexBasis: wide ? '47%' : '30%' }}>
+      <GlassButton tint={tint} label={label} onPress={onPress}>
+        <ThemedText variant="callout" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: '#ffffff', fontWeight: '800', textAlign: 'center' }}>
+          {main}
+        </ThemedText>
+        {sub ? (
+          <ThemedText variant="footnote" numberOfLines={1} style={{ color: '#ffffff', fontWeight: '600', textAlign: 'center', opacity: 0.92 }}>
+            {sub}
+          </ThemedText>
+        ) : null}
+      </GlassButton>
+    </View>
+  );
+}
+
+/** "Bet ¾ pot (24bb)" as two lines: the move, then what it costs. */
+function splitLabel(label: string): [string, string?] {
+  const paren = /^(.*?)\s*\((.*)\)$/.exec(label);
+  if (paren) return [paren[1], paren[2]];
+  const amount = /^(Call|Raise to) (.+)$/.exec(label);
+  if (amount) return [amount[1], amount[2]];
+  return [label];
+}
+
+/**
+ * A best play: the whole screen goes green for about two seconds with the check, the words and confetti, and
+ * counts your run if you're on one. A tap ends it early. Under Reduce Motion there's no confetti and no pop.
+ */
+function Celebration({ run, concept, onClose }: { run: number; concept: string; onClose: () => void }) {
+  const { width, height } = useWindowDimensions();
+  const reduce = useReduceMotion();
+  return (
+    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Best play. ${run >= 2 ? `${run} in a row.` : ''} Tap to continue`}
+        onPress={onClose}
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', ...gradient('linear-gradient(160deg, #2fd072 0%, #1a9c4d 50%, #0b5a2a 100%)') }}
+      >
+        <Animated.View entering={reduce ? undefined : popIn()} style={{ alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ width: 128, height: 128, borderRadius: 64, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)' }}>
+            <Icon name="checkmark.circle.fill" size={88} color="#ffffff" />
+          </View>
+          <ThemedText variant="largeTitle" tone="onColor" style={{ fontWeight: '800' }}>
+            Best play!
+          </ThemedText>
+          <ThemedText variant="title3" tone="onColor" style={{ opacity: 0.92, textAlign: 'center', paddingHorizontal: spacing.xl }}>
+            {run >= 2 ? `${run} in a row` : concept}
+          </ThemedText>
+        </Animated.View>
+        <Confetti burst={1} origin={{ x: width / 2, y: height * 0.4 }} amount={110} />
+        <ThemedText variant="footnote" tone="onColor" style={{ position: 'absolute', bottom: 48, opacity: 0.8 }}>
+          Tap to continue
+        </ThemedText>
+      </Pressable>
+    </Modal>
+  );
+}
+
+/** A small pill under the hand: Hint, or Skip hand (quieter). */
+function SmallButton({ label, onPress, quiet }: { label: string; onPress: () => void; quiet?: boolean }) {
+  const colors = useColors();
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      style={{ minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: quiet ? 'transparent' : colors.blueBg }}
+    >
+      <ThemedText variant="subhead" style={{ fontWeight: '700', color: quiet ? (colors.tertiaryLabel as string) : (colors.blueInk as string) }}>
+        {label}
+      </ThemedText>
+    </PressableScale>
   );
 }

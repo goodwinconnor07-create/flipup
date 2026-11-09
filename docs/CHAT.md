@@ -106,3 +106,23 @@ by frame: messages were up for a median 1.2 s (never under 0.9 s), follow-ups 30
 Two things the browser test found that the unit tests didn't: a bot moved only 0.6 s after speaking, so its message
 was gone before it could be read (now `CHAT.readTime`, and the bot waits for its own line), and a new hand dealing
 wiped messages that had just landed (now only a waiting line or a "c'mon" is dropped when the moment changes).
+
+
+## Bubble upgrades (9 Nov 2026)
+
+- **Held beats.** A bot's line is one bubble, but its `|` and `||` breaks are kept as pauses in the ticker (`Beat.pauses`,
+  `CHAT.pauseQuick` 220ms, `pauseSlow` 560ms, after the word that ends a piece), so `Funny.||I'll remember this.` and
+  `Brick.|Brick.|Brick.` keep the timing they were written with.
+- **Windows stop at a full stop.** `windowAt()` never reaches back over the end of a sentence, so two thoughts are not run
+  together in one bubble.
+- **Why not a bigger bubble.** A wrapped two- or three-line bubble was tried on paper and dropped. Lines run a median 14
+  letters (p90 22, p99 31, max 41), but a seat at a four-handed table has room for about 10 letters a line, so half of all
+  lines would be two lines (about 40pt) and one in four three (about 56pt), growing over the neighbouring seats and the
+  board while up to two bots' bubbles are up at once. The one-line conveyor stays.
+- **Who is talking.** The line id says the voice (`voiceKind()`): a friendly bot's bubble has a thin blue ring, a legend's a
+  gold one, a trash talker's is plain. A line aimed at you has a stronger blue ring and a light haptic as it lands.
+- **Emoji are stickers.** An emoji-only message (yours or a bot's) is drawn big with no capsule. Bots send them now and
+  then (`EMOJI_TRASH`/`EMOJI_FRIENDLY` in `botLines.ts`), and the quick messages gain Nice fold!, Big bet?, Run it!, 😎, 😭, 🙏
+  (bots answer them through `ANSWER` in `reducer.ts`).
+- **A voice.** Each word of a bot's line makes a very quiet tick, pitched per bot from a hash of its id (`playBlip()` in
+  `sounds.ts`); muted when the table is muted. VoiceOver reads only lines aimed at you and people's own messages.

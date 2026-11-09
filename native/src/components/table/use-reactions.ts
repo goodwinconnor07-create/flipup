@@ -10,6 +10,7 @@ import {
   quickSay,
   reactionBeats,
   reactionText,
+  voiceKind,
   worthKeeping,
   worthSaying,
   type Game,
@@ -28,7 +29,7 @@ export const moveSig = (hand: number, last: NonNullable<Seat['last']> | null | u
  * `canShow(id)` says whether a seat is on screen: a line from someone out of view would only hold up the rest.
  * `quiet` holds, per seat, the move whose talk has run its course: that move stays hidden rather than popping back.
  */
-export function useReactions(game: Game, canShow: (id: string) => boolean): { say: Record<string, Talk>; quiet: Record<string, string> } {
+export function useReactions(game: Game, canShow: (id: string) => boolean, meId?: string): { say: Record<string, Talk>; quiet: Record<string, string> } {
   // One conversation for as long as the table is on screen.
   const [chat] = useState(() => new ChatLane());
   const [now, redraw] = useReducer((_previous: number, at: number) => at, 0);
@@ -46,6 +47,10 @@ export function useReactions(game: Game, canShow: (id: string) => boolean): { sa
   useEffect(() => {
     canShowRef.current = canShow;
   }, [canShow]);
+  const meRef = useRef(meId);
+  useEffect(() => {
+    meRef.current = meId;
+  }, [meId]);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Moves the conversation along to now, then wakes up again when something next changes.
@@ -137,6 +142,8 @@ export function useReactions(game: Game, canShow: (id: string) => boolean): { sa
           moment: momentRef.current,
           sig: lastMoves.current[who] ?? '',
           luck: Math.random(),
+          voice: voiceKind(r.id),
+          toYou: !!meRef.current && r.to === meRef.current,
         }),
       );
     }

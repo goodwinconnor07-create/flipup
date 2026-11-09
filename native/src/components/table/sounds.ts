@@ -85,3 +85,16 @@ export function playSound(name: SoundName, offsetMs = 0): void {
   if (offsetMs > 0) setTimeout(go, offsetMs);
   else go();
 }
+
+/** A speaker's own pitch: the same bot always sounds the same, from a hash of its id (0.9 to 1.5). */
+function voicePitch(who: string): number {
+  let h = 0;
+  for (let i = 0; i < who.length; i++) h = (h * 31 + who.charCodeAt(i)) >>> 0;
+  return 0.9 + (h % 7) * 0.1;
+}
+
+/** A tiny, quiet tick as a word of a bot's line comes through its bubble, pitched per bot (the Animalese trick). Nothing while muted. */
+export function playBlip(who: string): void {
+  if (isMuted()) return;
+  play('tick', 0.09, voicePitch(who) * 1.5);
+}

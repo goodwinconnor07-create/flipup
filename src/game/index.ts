@@ -39,5 +39,5 @@ export * from './premiumGate';
 export * from './challenges';
 export * from './rewind';
 export * from './bankroll';
-export { addedLine } from './botTalk';
+export { addedLine, voiceKind } from './botTalk';
 export { botFace } from './botProfiles';

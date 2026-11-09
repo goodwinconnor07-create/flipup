@@ -6,7 +6,7 @@
 import { composeDialogue, DIALOGUE, dialogueText, type FixedLineEvent } from './botDialogue';
 import { reactionText } from './reactions';
 import { playerStyle, styleOf, type StyleId } from './botStyles';
-import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH, REMEMBER_FRIENDLY, REMEMBER_TRASH } from './botLines';
+import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EMOJI_FRIENDLY, EMOJI_TRASH, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH, REMEMBER_FRIENDLY, REMEMBER_TRASH } from './botLines';
 import { lineBeats, sayAndReadMs } from './chat';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
@@ -462,6 +462,8 @@ grow(TRASH, ADDED_TRASH);
 grow(FRIENDLY, ADDED_FRIENDLY);
 grow(TRASH, REMEMBER_TRASH);
 grow(FRIENDLY, REMEMBER_FRIENDLY);
+grow(TRASH, EMOJI_TRASH);
+grow(FRIENDLY, EMOJI_FRIENDLY);
 for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
   for (const [style, more] of Object.entries(passes) as [StyleId, Partial<Lines>][]) {
     for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
@@ -469,6 +471,18 @@ for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
 }
 
 const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
+
+/**
+ * How a bot's line should be dressed: its tone ('trash' or 'friendly'), or 'legend' for one of the named players.
+ * Read from the line id (`b:<voice>:<event>:<i>`), so the screen needs nothing else about the bot. '' for anything that isn't a bot's line.
+ */
+export function voiceKind(lineId: string): 'trash' | 'friendly' | 'legend' | '' {
+  const [b, voice] = lineId.split(':');
+  if (b !== 'b' || !voice || voice === 'local') return '';
+  if (voice === 'trash' || voice === 'friendly') return voice;
+  if (Object.hasOwn(LEGEND_VOICES, voice)) return 'legend';
+  return Object.hasOwn(VOICES, voice) ? (styleOf(voice as StyleId).talk.tone === 'trash' ? 'trash' : 'friendly') : '';
+}
 
 /** The text for a bot line id, or '' if it isn't one. */
 export function botLineText(lineId: string): string {

@@ -809,3 +809,35 @@ export const REMEMBER_FRIENDLY: Lines = {
     'This one’s|worth a call.',
   ],
 };
+
+/**
+ * Emoji-only reactions: a bot sometimes answers with a face instead of a line, the way people do. Added last, so
+ * earlier line ids keep their meaning. They show as a big sticker with no bubble (see the table's `Thread`).
+ */
+export const EMOJI_TRASH: Lines = {
+  thanks: ['😏', '😎'],
+  ribbed: ['😏', '🙄'],
+  goodLuck: ['😏'],
+  cheer: ['🙄', '👏'],
+  commiserate: ['😬', '🫡'],
+  win: ['😎'],
+  bigWin: ['😎', '💰'],
+  lostToYou: ['🙄'],
+  badBeat: ['😤'],
+  bluffWon: ['😏'],
+  idle: ['💤'],
+};
+
+export const EMOJI_FRIENDLY: Lines = {
+  thanks: ['🙏', '😊'],
+  ribbed: ['😅', '😂'],
+  goodLuck: ['🍀', '🤞'],
+  gg: ['🤝'],
+  cheer: ['👏', '🔥'],
+  commiserate: ['😬', '🫶'],
+  win: ['😄'],
+  bigWin: ['🎉'],
+  lostToYou: ['👏'],
+  badBeat: ['😭'],
+  greetBack: ['👋'],
+};

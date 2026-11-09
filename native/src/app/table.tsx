@@ -468,7 +468,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
 
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
   const speakerOk = useRef<(id: string) => boolean>(() => true);
-  const { say, quiet } = useReactions(game, (id) => id === me?.id || speakerOk.current(id));
+  const { say, quiet } = useReactions(game, (id) => id === me?.id || speakerOk.current(id), me?.id);
   const others = othersInOrder(game, me);
   const slots = usePodSlots(game, others, say);
   useEffect(() => {

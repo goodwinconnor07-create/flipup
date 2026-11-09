@@ -98,6 +98,15 @@ export function HouseRules({ settings: s, onChange, online }: { settings: Settin
   ].filter(Boolean);
 
   const switches: ReactNode[] = [
+    (s.variant ?? 'holdem') === 'holdem' && (
+      <SwitchRow
+        key="human-poker"
+        label="Invite BOT_001"
+        line="New experimental bot. Joins next hand; leaves after this hand."
+        value={!!s.humanPoker}
+        onChange={edit ? (humanPoker) => set({ humanPoker }) : undefined}
+      />
+    ),
     <SwitchRow
       key="rebuys"
       label="Rebuys"
@@ -132,7 +141,16 @@ export function Card({ children }: { children: ReactNode[] }) {
   const colors = useColors();
   const panel = usePanel();
   return (
-    <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
+    <View
+      style={{
+        borderRadius: PANEL_RADIUS,
+        borderCurve: 'continuous',
+        backgroundColor: panel.fill,
+        borderWidth: 1,
+        borderColor: panel.edge,
+        overflow: 'hidden',
+      }}
+    >
       {children.map((row, i) => (
         <Fragment key={i}>
           {i > 0 && <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: colors.separator }} />}
@@ -176,7 +194,17 @@ export function NumberRow({ label, value, children }: { label: string; value: st
   );
 }
 
-export function SwitchRow({ label, line, value, onChange }: { label: string; line: string; value: boolean; onChange?: (on: boolean) => void }) {
+export function SwitchRow({
+  label,
+  line,
+  value,
+  onChange,
+}: {
+  label: string;
+  line: string;
+  value: boolean;
+  onChange?: (on: boolean) => void;
+}) {
   return (
     <View
       style={{

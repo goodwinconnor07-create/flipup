@@ -4,12 +4,15 @@ import type { BankrollTag } from './bankroll';
 import type { Card } from './cards';
 import type { TwinBrain } from './twinFit';
 import type { Variant } from './variants';
+import type { LiveBotState } from '../bot_engine/live';
 
 export type Status = 'lobby' | 'playing' | 'ended';
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
 export type Move = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
 
 export interface Settings {
+  /** Opt in to one experimental BOT_001 seat at a standard Hold'em table. */
+  humanPoker?: boolean;
   /** Chips each player sits down with (and gets again on a rebuy). */
   startingStack: number;
   smallBlind: number;
@@ -62,6 +65,8 @@ export interface Player {
   twin?: TwinBrain;
   /** Stable bot identity, private on online tables. */
   botProfile?: string;
+  /** Private choice of decision engine, independent of legacy style identity. */
+  botKind?: 'human-poker';
   /** 0 to 1: how much less well this bot plays than its style, at an easy campaign table (see `dulled()`). Stripped before the table is sent to any phone. */
   dull?: number;
 }
@@ -300,6 +305,8 @@ export interface CardScene {
 }
 
 export interface Game {
+  /** Private observer memory, persisted with the table and stripped from public views. */
+  humanPoker?: LiveBotState;
   id: string;
   /** Join code for online tables. null for bots-only tables on one phone. */
   code: string | null;
@@ -338,7 +345,29 @@ export interface Game {
   /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
   botPlan?: { playerId: string; seq: number; move: Move; to?: number };
   /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */
-  pendingTalk?: { at: number; playerId: string; /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?: 'reply' | 'tank' | 'hello' | 'welcome' | 'rematchWon' | 'rematchLost' | 'rememberHello' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'cheer' | 'commiserate'; forId?: string; seq?: number; reactionN?: number; handNumber?: number };
+  pendingTalk?: {
+    at: number;
+    playerId: string;
+    /** Default 'reply'. A 'tank' jab only lands if `forId` is still on the clock in hand-action `seq`. 'hello' is said to `forId`. */ event?:
+      | 'reply'
+      | 'tank'
+      | 'hello'
+      | 'welcome'
+      | 'rematchWon'
+      | 'rematchLost'
+      | 'rememberHello'
+      | 'greetBack'
+      | 'thanks'
+      | 'ribbed'
+      | 'goodLuck'
+      | 'gg'
+      | 'cheer'
+      | 'commiserate';
+    forId?: string;
+    seq?: number;
+    reactionN?: number;
+    handNumber?: number;
+  };
   /** Hands in a row each person has lost chips without winning one. Bots use it to pick their moment. Never sent to phones. */
   streaks?: Record<string, number>;
   /** Bots that said something before this hand's outcome was known ("c'mon!", "all in"). They owe the table a reaction when it ends. Never sent to phones. */

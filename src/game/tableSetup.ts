@@ -15,7 +15,8 @@ const GHOST_STACKS = [5000, 10000];
 const smallestBigBlind = (stack: number) => (stack >= 10_000 ? 20 : stack >= 5_000 ? 10 : 0);
 
 /** Blinds offered for a starting stack: at least 10 big blinds deep. */
-export const levelsFor = (stack: number): [number, number][] => BLIND_LEVELS.filter(([, bb]) => bb <= stack / 10 && bb >= smallestBigBlind(stack));
+export const levelsFor = (stack: number): [number, number][] =>
+  BLIND_LEVELS.filter(([, bb]) => bb <= stack / 10 && bb >= smallestBigBlind(stack));
 
 const n = (v: number) => Math.round(v).toLocaleString('en-US');
 export const blindsLabel = ([sb, bb]: [number, number]): string => `${n(sb)}/${n(bb)}`;
@@ -31,7 +32,7 @@ export function withStack(settings: Settings, startingStack: number): Settings {
 
 /** The settings a game plays best with: Ghost wants deep stacks, Imposter bigger blinds. */
 export function withVariant(settings: Settings, variant: Variant): Settings {
-  let next: Settings = { ...settings, variant };
+  let next: Settings = { ...settings, variant, ...(variant !== 'holdem' && settings.humanPoker ? { humanPoker: false } : {}) };
   // Deep stacks for the ghost, so a pot it keeps doesn't wipe anyone out.
   if (variant === 'ghost' && settings.startingStack < settings.bigBlind * GHOST_DEPTH) {
     const stack = GHOST_STACKS.find((s) => s >= settings.bigBlind * GHOST_DEPTH) ?? GHOST_STACKS[GHOST_STACKS.length - 1];
@@ -39,7 +40,10 @@ export function withVariant(settings: Settings, variant: Variant): Settings {
   }
   // Imposter plays for bigger blinds (about 50 big blinds deep), so every hand matters.
   if (variant === 'imposter' && settings.bigBlind < next.startingStack / 50) {
-    const [smallBlind, bigBlind] = [...BLIND_LEVELS].reverse().find(([, bb]) => bb <= next.startingStack / 50) ?? [settings.smallBlind, settings.bigBlind];
+    const [smallBlind, bigBlind] = [...BLIND_LEVELS].reverse().find(([, bb]) => bb <= next.startingStack / 50) ?? [
+      settings.smallBlind,
+      settings.bigBlind,
+    ];
     next = { ...next, smallBlind, bigBlind };
   }
   return next;

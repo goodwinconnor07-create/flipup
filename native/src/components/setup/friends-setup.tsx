@@ -104,7 +104,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   const asked = pals.filter((p) => status(p.code) === 'invited').length;
   const joined = pals.filter((p) => status(p.code) === 'joined').length;
   // Seats: you, every friend who's in or still has an invite out, and the bots.
-  const taken = 1 + asked + joined + bots.length;
+  const taken = 1 + asked + joined + bots.length + Number(!!s.humanPoker);
   const full = taken >= MAX_SEATS;
 
   const makeLobby = (): Promise<string> => {
@@ -150,8 +150,11 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         return;
       }
       p.making = true;
-      setPartyFailed(false);
-      createParty(partySettings(partyDraft))
+      Promise.resolve()
+        .then(() => {
+          setPartyFailed(false);
+          return createParty(partySettings(partyDraft));
+        })
         .then((code) => {
           p.code = code;
           setPartyCode(code);
@@ -168,7 +171,9 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     }
     const code = p.code;
     const t = setTimeout(() => {
-      configureParty(code, partySettings(partyDraft)).catch((e: unknown) => Alert.alert("Couldn't update the party", e instanceof Error ? e.message : 'Try again.'));
+      configureParty(code, partySettings(partyDraft)).catch((e: unknown) =>
+        Alert.alert("Couldn't update the party", e instanceof Error ? e.message : 'Try again.'),
+      );
     }, 350);
     return () => clearTimeout(t);
   }, [partyDraft, partyCode]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -248,7 +253,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
 
   // Everyone who has sat down at the table but you (friends from an invite and anyone with the code).
   const others = (game?.players ?? []).filter((p) => !p.bot && p.deviceId !== myDevice);
-  const inNow = 1 + Math.max(joined, others.length) + bots.length;
+  const inNow = 1 + Math.max(joined, others.length) + bots.length + Number(!!s.humanPoker);
   const line = [`${inNow} in`, asked ? `${asked} invited` : '', variantInfo(variant).name].filter(Boolean).join(' · ');
 
   // The host's own code: the table moves to it (settings and seated bots come along) and the old one ends.
@@ -284,6 +289,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   };
   const rows: PlayerLine[] = [
     { key: 'you', name: profile.name || 'You', emoji: profile.emoji || '🙂', line: 'You · Host', you: true },
+    ...(s.humanPoker ? [{ key: 'human-poker', name: 'BOT_001', emoji: '🤖', line: 'New experimental bot' }] : []),
     ...others.map((p) => {
       const key = seatKey(p);
       const remove = () => dispatch({ type: 'remove', playerId: p.id });
@@ -346,17 +352,34 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               share={partyCode ? { message: `Join my FlipUp party. Game code ${partyCode}`, url: joinLink(partyCode) } : undefined}
             />
             <PartyCard games={partyDraft.games} host />
-            <PartyRules rules={{ stack: partyDraft.stack, blindHands: partyDraft.blindHands, fill: partyDraft.fill }} onChange={setPartyRules} />
+            <PartyRules
+              rules={{ stack: partyDraft.stack, blindHands: partyDraft.blindHands, fill: partyDraft.fill }}
+              onChange={setPartyRules}
+            />
             <View style={{ gap: spacing.xs }}>
               <Players rows={partyRows} />
               <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
-                {partyDraft.fill ? `Friends join from Join on the Play tab with the game code. Bots fill the empty seats up to ${partyDraft.fill}.` : 'Friends join from Join on the Play tab with the game code. No bots in this party.'}
+                {partyDraft.fill
+                  ? `Friends join from Join on the Play tab with the game code. Bots fill the empty seats up to ${partyDraft.fill}.`
+                  : 'Friends join from Join on the Play tab with the game code. No bots in this party.'}
               </ThemedText>
             </View>
           </>
         ) : (
           <>
-            <CodeCard code={lobby} failed={failed} share={lobby ? { message: tableShareMessage({ host: profile.name, game: variantInfo(variant).name, code: lobby }), url: joinLink(lobby) } : undefined} onChange={changeCode} />
+            <CodeCard
+              code={lobby}
+              failed={failed}
+              share={
+                lobby
+                  ? {
+                      message: tableShareMessage({ host: profile.name, game: variantInfo(variant).name, code: lobby }),
+                      url: joinLink(lobby),
+                    }
+                  : undefined
+              }
+              onChange={changeCode}
+            />
 
             <View style={{ gap: spacing.md }}>
               <GameCard variant={variant} host />
@@ -367,7 +390,14 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
             )}
 
-            <HouseRules settings={s} onChange={setDraft} online />
+            <HouseRules
+              settings={s}
+              onChange={(next) => {
+                if (next.humanPoker) setBots((b) => b.slice(0, Math.max(0, MAX_SEATS - 2 - asked - joined)));
+                setDraft(next);
+              }}
+              online
+            />
 
             <Players rows={rows} onAdd={addBot} />
           </>
@@ -410,4 +440,9 @@ async function catchUp(code: string, settings: Settings, botNames: string[]): Pr
 }
 
 /** What the server is told about a party. */
-const partySettings = (d: PartyDraft): PartySettings => ({ games: d.games, startingStack: d.stack, blindHands: d.blindHands, fillTo: d.fill });
+const partySettings = (d: PartyDraft): PartySettings => ({
+  games: d.games,
+  startingStack: d.stack,
+  blindHands: d.blindHands,
+  fillTo: d.fill,
+});

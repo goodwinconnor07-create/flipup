@@ -2,6 +2,7 @@
 // tables) run exactly this code, so they always agree.
 
 import { decide, handBucket, updateReads, type BotMove } from './botPlay';
+import { humanPokerThought, updateHumanPokerMemory } from '../bot_engine/live';
 import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
@@ -45,7 +46,19 @@ import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
 import { BOSS_DULL, campaignDull, campaignStyles, venueById } from './campaign';
-import { BANKROLL, BANKROLL_CAP, BANKROLL_CODE, bankrollSettings, botRange, dayOf, memoryNotes, seasonOf, spreadStack, type BankrollClose, type MemoryNote } from './bankroll';
+import {
+  BANKROLL,
+  BANKROLL_CAP,
+  BANKROLL_CODE,
+  bankrollSettings,
+  botRange,
+  dayOf,
+  memoryNotes,
+  seasonOf,
+  spreadStack,
+  type BankrollClose,
+  type MemoryNote,
+} from './bankroll';
 import type { Action, ActionContext, ActionResult, Game, Hand, Move, Player, PlayerRead, Settings } from './types';
 
 export const LIMITS = {
@@ -97,6 +110,8 @@ export function validSettings(s: Settings): boolean {
     s.bigBlind >= s.smallBlind &&
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
+    (s.humanPoker === undefined || typeof s.humanPoker === 'boolean') &&
+    (!s.humanPoker || (s.variant ?? 'holdem') === 'holdem') &&
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
     (s.variant === undefined || isVariant(s.variant)) &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
@@ -184,7 +199,9 @@ export function createTable(opts: {
     ...(isBubbleId(opts.bubble) ? { bubble: opts.bubble } : {}),
     ...(isPackId(opts.cardPack) ? { cardPack: opts.cardPack } : {}),
   });
+  const botSeatLimit = MAX_SEATS - (game.settings.humanPoker && !game.campaign ? 1 : 0);
   for (const name of opts.botNames ?? []) {
+    if (game.players.length >= botSeatLimit) break;
     const legend = LEGENDS.find((l) => l.short === name);
     if (legend) {
       if (game.players.length < MAX_SEATS && !game.players.some((p) => p.legend === legend.id)) addLegend(game, legend.id);
@@ -192,9 +209,31 @@ export function createTable(opts: {
     }
     seatBotNamed(game, name);
   }
-  while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles, opts.rng);
+  while (game.players.length - 1 < opts.bots && game.players.length < botSeatLimit) addBot(game, opts.botStyles, opts.rng);
   if (game.campaign) seatBoss(game);
+  syncHumanPokerSeat(game);
   return game;
+}
+
+/** The opt-in seat joins now, or leaves after the current hand. Never replaces a human. */
+function syncHumanPokerSeat(game: Game): void {
+  const existing = game.players.find((p) => p.botKind === 'human-poker');
+  const enabled = game.settings.humanPoker && (game.settings.variant ?? 'holdem') === 'holdem' && !game.campaign && !game.party;
+  if (enabled && !existing && game.players.length < MAX_SEATS) {
+    if (game.humanPoker && !game.settings.rebuys) return;
+    game.players.push({
+      ...newPlayer(game, { name: uniqueName(game, 'BOT_001'), emoji: '🤖', deviceId: null, bot: true }),
+      style: 'tag',
+      botKind: 'human-poker',
+    });
+  } else if (enabled && existing && existing.stack === 0 && game.settings.rebuys && (!game.hand || game.hand.result)) {
+    existing.stack = game.settings.startingStack;
+    existing.bought += existing.stack;
+  } else if (!enabled && existing && (!game.hand || game.hand.result || !game.hand.seats.some((s) => s.playerId === existing.id))) {
+    game.players = game.players.filter((p) => p.id !== existing.id);
+    delete game.humanPoker;
+  }
+  if (!enabled && !existing) delete game.humanPoker;
 }
 
 /** Seats an AI Legend: a bot dressed as them, with their style and voice. */
@@ -269,7 +308,18 @@ const GOOD_NEWS = new Set<TalkEvent>(['bigWin', 'win', 'bluffWon', 'tiltJab', 'r
 const BAD_NEWS = new Set<TalkEvent>(['sweatLose', 'badBeat', 'lostToYou', 'bluffCaught', 'gotBluffed', 'tilted', 'showFold']);
 
 /** Pending lines that are said whatever the dice and the cooldown say. */
-const SURE_THINGS = new Set<string>(['hello', 'welcome', 'rematchWon', 'rematchLost', 'rememberHello', 'greetBack', 'thanks', 'ribbed', 'goodLuck', 'gg']);
+const SURE_THINGS = new Set<string>([
+  'hello',
+  'welcome',
+  'rematchWon',
+  'rematchLost',
+  'rememberHello',
+  'greetBack',
+  'thanks',
+  'ribbed',
+  'goodLuck',
+  'gg',
+]);
 
 /** What a bot says back to each quick message a person can send (none for the others). */
 const ANSWER: Record<string, NonNullable<Game['pendingTalk']>['event']> = {
@@ -307,6 +357,7 @@ function refillCash(game: Game): void {
 
 /** Deals the next hand, filling a campaign cash table's empty seats first. A Bankroll table may close here instead. */
 function deal(game: Game, ctx: ActionContext): void {
+  syncHumanPokerSeat(game);
   refillCash(game);
   if (game.bankroll && !bankrollDeal(game, ctx)) return;
   startHand(game, ctx);
@@ -475,14 +526,25 @@ function remember(game: Game, botId: string, note: MemoryNote, personId: string,
 }
 
 /** Raises before the flop this hand, in order. */
-const preflopRaises = (hand: Hand) => (hand.actions ?? []).filter((a) => a.street === 'preflop' && (a.move === 'raise' || a.move === 'bet' || a.move === 'allin'));
+const preflopRaises = (hand: Hand) =>
+  (hand.actions ?? []).filter((a) => a.street === 'preflop' && (a.move === 'raise' || a.move === 'bet' || a.move === 'allin'));
 
 /**
  * After your move at a Bankroll table, a bot may say it saw it coming: folding to a 3-bet again, a river bet from a
  * player whose river bets keep turning out to be bluffs, a big bet from one whose big bets are always the goods.
  * Returns whether a bot spoke. `street` and `raises` are from before the move.
  */
-function rememberYourMove(game: Game, hand: Hand, me: Player, move: Move, to: number | undefined, street: Hand['street'], raises: ReturnType<typeof preflopRaises>, potBefore: number, ctx: ActionContext): boolean {
+function rememberYourMove(
+  game: Game,
+  hand: Hand,
+  me: Player,
+  move: Move,
+  to: number | undefined,
+  street: Hand['street'],
+  raises: ReturnType<typeof preflopRaises>,
+  potBefore: number,
+  ctx: ActionContext,
+): boolean {
   const botsIn = hand.seats.filter((s) => !s.folded && playerById(game, s.playerId)?.bot).map((s) => s.playerId);
   if (!botsIn.length) return false;
   const any = () => botsIn[Math.floor(ctx.rng() * botsIn.length)];
@@ -530,12 +592,16 @@ function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
   // Who put them out: whoever won a pot they were in.
   if (game.campaign && fresh.length && hand.result) {
     const knocked = { ...(game.knocked ?? {}) };
-    for (const p of fresh) knocked[p.id] = [...new Set(hand.result.pots.filter((pot) => pot.eligible.includes(p.id)).flatMap((pot) => pot.winners))].filter((id) => id !== p.id);
+    for (const p of fresh)
+      knocked[p.id] = [...new Set(hand.result.pots.filter((pot) => pot.eligible.includes(p.id)).flatMap((pot) => pot.winners))].filter(
+        (id) => id !== p.id,
+      );
     game.knocked = knocked;
   }
 }
 
 function afterHand(game: Game, ctx: ActionContext): void {
+  updateHumanPokerMemory(game);
   const hand = game.hand!;
   const result = hand.result!;
   game.readHand = hand.number;
@@ -591,7 +657,8 @@ function afterHand(game: Game, ctx: ActionContext): void {
 
   // Now and then a bot turns its cards over when it didn't have to: a bluff that worked, a monster
   // nobody paid off, or a good hand it laid down. Its own cards only, so nothing hidden leaks.
-  for (const id of showOffs(game, hand, ctx)) if (say(id, id in result.won ? (strongEnough(hand, id) ? 'showStrong' : 'showBluff') : 'showFold')) spoke.push(id);
+  for (const id of showOffs(game, hand, ctx))
+    if (say(id, id in result.won ? (strongEnough(hand, id) ? 'showStrong' : 'showBluff') : 'showFold')) spoke.push(id);
 
   if (hand.ranOut) {
     for (const id of winners) if (isBot(id) && say(id, 'sweatWin', true)) spoke.push(id);
@@ -601,11 +668,22 @@ function afterHand(game: Game, ctx: ActionContext): void {
       if (!isBot(id)) continue;
       const b = bucketOf(id);
       // Twice or more in a row and they pile on; a big showdown win is a smaller chance.
-      const rubbedIn = tilted ? ctx.rng() < 0.7 : result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.25;
+      const rubbedIn = tilted
+        ? ctx.rng() < 0.7
+        : result.showdown && pot >= bb * 15 && showdownLosers.some((l) => !isBot(l)) && ctx.rng() < 0.25;
       if (spoke.includes(id)) continue;
       // Beating the player it has a grudge with is sweeter.
       const revenge = result.showdown && pot >= bb * 15 && showdownLosers.some((l) => (mindOf(game, id).grudges?.[l] ?? 0) > 0.3);
-      const event: TalkEvent = !result.showdown && (b === 'air' || b === 'weak') ? 'bluffWon' : revenge ? 'revenge' : rubbedIn ? 'tiltJab' : pot >= bb * 15 ? 'bigWin' : 'win';
+      const event: TalkEvent =
+        !result.showdown && (b === 'air' || b === 'weak')
+          ? 'bluffWon'
+          : revenge
+            ? 'revenge'
+            : rubbedIn
+              ? 'tiltJab'
+              : pot >= bb * 15
+                ? 'bigWin'
+                : 'win';
       if (say(id, event)) spoke.push(id);
     }
     for (const id of showdownLosers) {
@@ -626,9 +704,15 @@ function afterHand(game: Game, ctx: ActionContext): void {
   for (const id of game.sweating ?? []) {
     if (spoke.includes(id) || !isBot(id)) continue;
     const event: TalkEvent = winners.includes(id)
-      ? hand.ranOut ? 'sweatWin' : pot >= bb * 15 ? 'bigWin' : 'win'
+      ? hand.ranOut
+        ? 'sweatWin'
+        : pot >= bb * 15
+          ? 'bigWin'
+          : 'win'
       : showdownLosers.includes(id)
-        ? hand.ranOut || !personWon ? 'sweatLose' : 'lostToYou'
+        ? hand.ranOut || !personWon
+          ? 'sweatLose'
+          : 'lostToYou'
         : 'watched';
     if (say(id, event, true)) spoke.push(id);
   }
@@ -640,11 +724,19 @@ function afterHand(game: Game, ctx: ActionContext): void {
     const who = others[Math.floor(ctx.rng() * others.length)];
     // It answers once the first line has landed, like someone who was listening: cheering a win, feeling a loss.
     const event = firstEvent && GOOD_NEWS.has(firstEvent) ? 'cheer' : firstEvent && BAD_NEWS.has(firstEvent) ? 'commiserate' : 'reply';
-    game.pendingTalk = { at: ctx.now + Math.max(TIMING.replyMin, firstMs - TIMING.replyEarly), playerId: who.id, event, forId: spoke[spoke.length - 1], reactionN: game.reactions?.[spoke[spoke.length - 1]]?.n, handNumber: hand.number };
+    game.pendingTalk = {
+      at: ctx.now + Math.max(TIMING.replyMin, firstMs - TIMING.replyEarly),
+      playerId: who.id,
+      event,
+      forId: spoke[spoke.length - 1],
+      reactionN: game.reactions?.[spoke[spoke.length - 1]]?.n,
+      handNumber: hand.number,
+    };
     talkMs += TIMING.replyMin + 900;
   }
   // A little longer before the next deal, so the table talk can be read (but not when the game is about to end).
-  if (game.nextHandAt !== null && !(endsAtOnce(game) && lastStanding(game))) game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
+  if (game.nextHandAt !== null && !(endsAtOnce(game) && lastStanding(game)))
+    game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
   schedule(game);
 }
 
@@ -666,7 +758,8 @@ function openAgain(game: Game, ctx: ActionContext): void {
     p.offline = undefined;
   }
   // Bots that busted out of the last game left the table: bring the count back.
-  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS) addBot(game, undefined, ctx.rng);
+  while (first && game.players.filter((p) => p.bot).length < first.bots && game.players.length < MAX_SEATS)
+    addBot(game, undefined, ctx.rng);
   game.id = newId(16);
   game.createdAt = ctx.now;
   game.status = 'lobby';
@@ -678,7 +771,22 @@ function openAgain(game: Game, ctx: ActionContext): void {
   game.reactions = {};
   game.hands = 0;
   game.blindsRaiseAt = null;
-  for (const k of ['again', 'first', 'pendingTalk', 'botPlan', 'sweating', 'talkAt', 'talkDone', 'reads', 'streaks', 'minds', 'readHand', 'dialogue'] as const) delete game[k];
+  for (const k of [
+    'again',
+    'first',
+    'pendingTalk',
+    'botPlan',
+    'sweating',
+    'talkAt',
+    'talkDone',
+    'reads',
+    'streaks',
+    'minds',
+    'readHand',
+    'dialogue',
+    'humanPoker',
+  ] as const)
+    delete game[k];
   schedule(game);
 }
 
@@ -771,7 +879,8 @@ function wakeIfWaiting(game: Game, ctx: ActionContext): void {
 
 /** An online table that's between hands with nobody to play against gets a minute before it closes. */
 function watchEmpty(game: Game, ctx: ActionContext): void {
-  const waiting = !!game.code && game.status === 'playing' && (!game.hand || !!game.hand.result) && game.nextHandAt === null && !canDeal(game);
+  const waiting =
+    !!game.code && game.status === 'playing' && (!game.hand || !!game.hand.result) && game.nextHandAt === null && !canDeal(game);
   const next = waiting ? (game.emptyAt ?? ctx.now + TIMING.emptyClose) : null;
   if ((game.emptyAt ?? null) === next) return;
   game.emptyAt = next;
@@ -857,7 +966,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         leaveBankroll(game, target, ctx);
         return done();
       }
-      if ((game.party || game.campaign?.kind === 'sng') && game.status === 'playing' && !game.busted?.includes(target.id)) game.busted = [...(game.busted ?? []), target.id];
+      if ((game.party || game.campaign?.kind === 'sng') && game.status === 'playing' && !game.busted?.includes(target.id))
+        game.busted = [...(game.busted ?? []), target.id];
       const seat = seatFor(game.hand, target.id);
       const inHand = game.status === 'playing' && game.hand && !game.hand.result && seat && !seat.folded;
       if (inHand) {
@@ -881,9 +991,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.campaign && game.code) return fail('A campaign table’s stakes are fixed.');
       const next = { ...game.settings, ...action.settings };
       if (!validSettings(next)) return fail("Those settings don't work together.");
+      if (next.humanPoker && !game.players.some((p) => p.botKind === 'human-poker') && game.players.length >= MAX_SEATS)
+        return fail('Free a seat before inviting BOT_001.');
       const stackChanged = next.startingStack !== game.settings.startingStack;
       const minutesChanged = (next.blindMinutes ?? 0) !== (game.settings.blindMinutes ?? 0);
       game.settings = next;
+      syncHumanPokerSeat(game);
       // Changing how often the blinds rise restarts their clock; turning it off stops it.
       if (!next.blindMinutes) game.blindsRaiseAt = null;
       else if (game.status === 'playing' && (minutesChanged || game.blindsRaiseAt == null))
@@ -927,7 +1040,12 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         if (regular) game.bankroll!.remembered = ['again'];
         game.pendingTalk = regular
           ? { at: ctx.now + greetWait(game), playerId: who.id, event: 'rememberHello', forId: people[0].id }
-          : { at: ctx.now + greetWait(game), playerId: who.id, event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello', forId: headsUp ? people[0].id : undefined };
+          : {
+              at: ctx.now + greetWait(game),
+              playerId: who.id,
+              event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello',
+              forId: headsUp ? people[0].id : undefined,
+            };
       }
       schedule(game);
       return done();
@@ -945,7 +1063,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (error) return fail(error);
       me.timeouts = 0;
       // At a Bankroll table a bot may say it has seen this from you before.
-      const remembered = !!game.bankroll && !game.hand?.result && rememberYourMove(game, hand, me, action.move, action.to, street, raises, potBefore, ctx);
+      const remembered =
+        !!game.bankroll && !game.hand?.result && rememberYourMove(game, hand, me, action.move, action.to, street, raises, potBefore, ctx);
       // A big move from a person gets a reaction from one of the bots still in the hand.
       const big = action.move === 'allin' || ((action.move === 'raise' || action.move === 'bet') && (action.to ?? 0) >= potBefore * 0.75);
       if (big && !remembered && !game.hand?.result) {
@@ -1025,7 +1144,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (answer && !game.card && !game.pendingTalk && game.status === 'playing') {
         const ready = game.players.filter((p) => p.bot && !p.sittingOut && ctx.now - (game.talkAt?.[p.id] ?? -Infinity) > 3000);
         if (ready.length && ctx.rng() < ANSWER_CHANCE) {
-          game.pendingTalk = { at: ctx.now + ANSWER_AFTER.min + Math.floor(ctx.rng() * ANSWER_AFTER.spread), playerId: ready[Math.floor(ctx.rng() * ready.length)].id, event: answer, forId: me.id, reactionN: game.reactions[me.id].n, handNumber: game.hand?.number };
+          game.pendingTalk = {
+            at: ctx.now + ANSWER_AFTER.min + Math.floor(ctx.rng() * ANSWER_AFTER.spread),
+            playerId: ready[Math.floor(ctx.rng() * ready.length)].id,
+            event: answer,
+            forId: me.id,
+            reactionN: game.reactions[me.id].n,
+            handNumber: game.hand?.number,
+          };
           schedule(game);
         }
       }
@@ -1175,7 +1301,12 @@ function tick(game: Game, ctx: ActionContext): boolean {
     if (event && SURE_THINGS.has(event)) {
       const ms = botSays(game, playerId, event, ctx.rng, ctx.now, true, forId);
       // The opening hello: nobody is dealt in until it has been said and read.
-      if (ms && !game.hand && game.nextHandAt !== null && (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost' || event === 'rememberHello'))
+      if (
+        ms &&
+        !game.hand &&
+        game.nextHandAt !== null &&
+        (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost' || event === 'rememberHello')
+      )
         game.nextHandAt = Math.max(game.nextHandAt, ctx.now + ms + TIMING.afterHello);
       // Someone else at the table says hi back, before the cards come.
       if (event === 'welcome' && ms) {
@@ -1188,7 +1319,8 @@ function tick(game: Game, ctx: ActionContext): boolean {
       return true;
     }
     // A jab at a slow player only lands if they're still on the clock.
-    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq)) botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now, false, event === 'tank' ? forId : undefined);
+    if (event !== 'tank' || (hand && !hand.result && hand.toAct === forId && hand.seq === seq))
+      botSays(game, playerId, event ?? 'reply', ctx.rng, ctx.now, false, event === 'tank' ? forId : undefined);
     schedule(game);
     return true;
   }
@@ -1258,12 +1390,14 @@ function tick(game: Game, ctx: ActionContext): boolean {
       }
       const before = options(game, hand, seat);
       // A big bet: after the flop, half the pot or more; before it, a raise of three big blinds or more.
-      const bigBet =
-        hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
+      const bigBet = hand.street === 'preflop' ? hand.currentBet >= game.settings.bigBlind * 3 : before.toCall > potTotal(hand) * 0.45;
       // In a Hold'em variant it sees the hand as plain Hold'em (see botView).
       const view = botView(game, hand, seat);
       // At a variant table it plays the variant's own way (botVariants.ts); plain Hold'em gets the full bot brain.
-      const thought = variantDecide(game, hand, seat, ctx.rng) ?? decide(view.game, view.hand, view.seat, ctx.rng);
+      const thought =
+        humanPokerThought(game, seat.playerId) ??
+        variantDecide(game.humanPoker ? { ...game, humanPoker: undefined } : game, hand, seat, ctx.rng) ??
+        decide(view.game, view.hand, view.seat, ctx.rng);
       const choice = thought.move;
       const fast = botsOnly(game);
       // It has already taken a moment to look; the rest of its thinking time depends on how hard
@@ -1275,7 +1409,10 @@ function tick(game: Game, ctx: ActionContext): boolean {
       const said = event && ctx.rng() < 0.4 ? (ctx.rng() < 0.5 ? 'thinkHard' : 'thinkEasy') : event;
       // (With every person out of the hand the bots hurry, and nobody has time to read what they think.)
       // At a Bankroll table, a bot about to bet into you may say what it expects you to do.
-      const memo = game.bankroll && !fast && (choice.move === 'bet' || choice.move === 'raise' || choice.move === 'allin') ? rememberBotBet(game, hand, player.id, ctx) : 0;
+      const memo =
+        game.bankroll && !fast && (choice.move === 'bet' || choice.move === 'raise' || choice.move === 'allin')
+          ? rememberBotBet(game, hand, player.id, ctx)
+          : 0;
       const spoken = memo || (event && said && !fast ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0);
       if (spoken) {
         wait = Math.max(wait, spoken);
@@ -1287,8 +1424,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
         schedule(game);
         return true;
       }
-      if (makeMove(game, choice.move, choice.to, ctx))
-        makeMove(game, passiveMove(hand, seat), undefined, ctx);
+      if (makeMove(game, choice.move, choice.to, ctx)) makeMove(game, passiveMove(hand, seat), undefined, ctx);
       return true;
     }
     // Out of time: check if that's free, otherwise fold. Two in a row and they sit out (three when their phone has

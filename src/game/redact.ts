@@ -24,7 +24,10 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     ...game,
     hostDeviceId: shown(game.hostDeviceId),
     // Bots' styles and identities (and what an AI twin remembers) and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, dull: _dull, ...p }) => (p.deviceId ? { ...p, deviceId: shown(p.deviceId) } : p)),
+    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, botKind: _kind, dull: _dull, ...p }) =>
+      p.deviceId ? { ...p, deviceId: shown(p.deviceId) } : p,
+    ),
+    humanPoker: undefined,
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,
@@ -45,7 +48,9 @@ export function redactForDevice(game: Game, deviceId: string): Game {
       removed: hand.result ? hand.removed : undefined,
       // Imposter: only the imposter knows it's them until the hand is over, and votes stay secret until then too.
       imposter: hand.result || (hand.imposter && mine.has(hand.imposter)) ? hand.imposter : undefined,
-      votes: hand.votes && (hand.result ? hand.votes : Object.fromEntries(Object.keys(hand.votes).map((k) => [k, mine.has(k) ? hand.votes![k] : '']))),
+      votes:
+        hand.votes &&
+        (hand.result ? hand.votes : Object.fromEntries(Object.keys(hand.votes).map((k) => [k, mine.has(k) ? hand.votes![k] : '']))),
       seats: hand.seats.map((s) => (peek || mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
     },
   };

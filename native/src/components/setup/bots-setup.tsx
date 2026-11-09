@@ -57,7 +57,8 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
     return out;
   });
   const [busy, setBusy] = useState(false);
-  const room = MAX_SEATS - 1 - bots.length;
+  const extra = Number(!!s.humanPoker);
+  const room = MAX_SEATS - 1 - extra - bots.length;
 
   const addBot = () => {
     if (room <= 0) return;
@@ -67,7 +68,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   // Every empty seat at once; only the first new bot says hello, so the row isn't a wall of bubbles.
   const fill = () => {
     const out = [...bots];
-    while (out.length < MAX_SEATS - 1) {
+    while (out.length < MAX_SEATS - 1 - extra) {
       const b = randomBot(out, profile.name || undefined);
       if (!b) break;
       out.push(out.length === bots.length ? b : { ...b, key: `${b.key}:${out.length}`, greet: undefined });
@@ -76,11 +77,17 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   };
 
   const deal = () => {
-    if (busy || !bots.length) return;
+    if (busy || (!bots.length && !extra)) return;
     if (!unlockToHost([variant], premium)) return;
     setBusy(true);
     saveSettings(s);
-    openLocalTable(s, bots.length, profile.name, profile.emoji, bots.map((b) => b.name));
+    openLocalTable(
+      s,
+      bots.length,
+      profile.name,
+      profile.emoji,
+      bots.map((b) => b.name),
+    );
     // Straight to the deal ("Dealing in 3…"): the bots are already picked here, so no second lobby.
     dispatch({ type: 'start' });
     router.push('/table');
@@ -101,6 +108,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
         <NavRow title="Play with bots" />
 
         <BotsCard
+          humanPoker={!!s.humanPoker}
           bots={bots}
           room={room}
           onAdd={addBot}
@@ -113,13 +121,24 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 
         <GameCard variant={variant} host />
 
-        <HouseRules settings={s} onChange={setDraft} online={false} />
+        <HouseRules
+          settings={s}
+          onChange={(next) => {
+            if (next.humanPoker) setBots((b) => b.slice(0, MAX_SEATS - 2));
+            setDraft(next);
+          }}
+          online={false}
+        />
       </ScrollView>
       <OpenTableButton
         title="Start game"
-        line={bots.length ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}` : 'Add a bot first'}
+        line={
+          bots.length + extra
+            ? `You and ${bots.length + extra} ${bots.length + extra === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
+            : 'Add a bot first'
+        }
         busy={busy}
-        disabled={!bots.length}
+        disabled={!bots.length && !extra}
         onPress={deal}
       />
     </GrainBackground>
@@ -132,12 +151,14 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
  * with a red minus to take it off, the newest one saying hello on its second line. No BOT pills, nothing to guess.
  */
 function BotsCard({
+  humanPoker,
   bots,
   room,
   onAdd,
   onFill,
   onRemove,
 }: {
+  humanPoker: boolean;
   bots: RowBot[];
   room: number;
   onAdd: () => void;
@@ -147,7 +168,7 @@ function BotsCard({
   const colors = useColors();
   const panel = usePanel();
   const profile = useProfile();
-  const max = MAX_SEATS - 1;
+  const max = MAX_SEATS - 1 - Number(humanPoker);
   const newest = bots.at(-1);
   const setCount = (n: number) => {
     if (n > bots.length) onAdd();
@@ -160,10 +181,19 @@ function BotsCard({
           At the table
         </ThemedText>
         <ThemedText variant="subhead" tone="secondaryLabel">
-          {bots.length + 1} of {MAX_SEATS} seats
+          {bots.length + 1 + Number(humanPoker)} of {MAX_SEATS} seats
         </ThemedText>
       </View>
-      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
+      <View
+        style={{
+          borderRadius: PANEL_RADIUS,
+          borderCurve: 'continuous',
+          backgroundColor: panel.fill,
+          borderWidth: 1,
+          borderColor: panel.edge,
+          overflow: 'hidden',
+        }}
+      >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, minHeight: 72 }}>
           <View style={{ flex: 1, gap: 2 }}>
             <ThemedText variant="headline">Bots</ThemedText>
@@ -171,13 +201,17 @@ function BotsCard({
               {room <= 0 ? 'Every seat is taken' : `Up to ${max} computer players`}
             </ThemedText>
           </View>
-          <ThemedText variant="title2" style={{ fontFamily: ROUNDED, fontWeight: '800', fontVariant: ['tabular-nums'], minWidth: 24, textAlign: 'center' }}>
+          <ThemedText
+            variant="title2"
+            style={{ fontFamily: ROUNDED, fontWeight: '800', fontVariant: ['tabular-nums'], minWidth: 24, textAlign: 'center' }}
+          >
             {bots.length}
           </ThemedText>
-          <Stepper label="Bots" value={bots.length} min={1} max={max} onChange={setCount} />
+          <Stepper label="Bots" value={bots.length} min={humanPoker ? 0 : 1} max={max} onChange={setCount} />
         </View>
         <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: panel.hairline }} />
         <SeatLine emoji={profile.emoji || '🙂'} name={profile.name || 'You'} line={profile.name ? 'You' : "That's you"} />
+        {humanPoker && <SeatLine emoji="🤖" name="BOT_001" line="New experimental bot" />}
         {bots.map((b) => (
           <View key={b.key}>
             <View style={{ height: 0.5, marginLeft: 68, backgroundColor: panel.hairline }} />
@@ -185,7 +219,7 @@ function BotsCard({
               emoji={b.emoji}
               name={b.name}
               line={b.key === newest?.key && b.greet ? `“${b.greet}”` : 'Bot'}
-              onRemove={bots.length > 1 ? () => onRemove(b) : undefined}
+              onRemove={bots.length > 1 || humanPoker ? () => onRemove(b) : undefined}
             />
           </View>
         ))}
@@ -199,7 +233,14 @@ function BotsCard({
                 haptic.tap();
                 onFill();
               }}
-              style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, minHeight: 56, backgroundColor: pressed ? panel.pressed : 'transparent' })}
+              style={({ pressed }) => ({
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 14,
+                paddingHorizontal: spacing.md,
+                minHeight: 56,
+                backgroundColor: pressed ? panel.pressed : 'transparent',
+              })}
             >
               <View style={{ width: 40, alignItems: 'center' }}>
                 <Icon name="person.3.fill" size={20} color={colors.accent as string} />
@@ -223,7 +264,16 @@ function SeatLine({ emoji, name, line, onRemove }: { emoji: string; name: string
   const colors = useColors();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, minHeight: 64 }}>
-      <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'rgba(255,255,255,0.1)',
+        }}
+      >
         <Text style={{ fontSize: 24 }} maxFontSizeMultiplier={1}>
           {emoji}
         </Text>

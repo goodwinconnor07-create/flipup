@@ -1,0 +1,565 @@
+{
+  "protocolVersion": 1,
+  "policyVersion": "baseline-2",
+  "scope": "synthetic-battery-only",
+  "status": "accepted",
+  "requested": 20,
+  "attempts": 37,
+  "contextCount": 32,
+  "samplesPerContext": 200,
+  "minimumDistance": 0.005,
+  "profiles": [
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_001",
+        "seed": 1001,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.7176500428467989,
+          "pressure": -0.4651927840895951
+        },
+        "traits": {
+          "aggression": 0.38370180397760123,
+          "curiosity": 0.5970107301604003,
+          "riverCaution": 0.3205874892883003,
+          "adaptation": 0.3564699914306402
+        }
+      },
+      "nearestPolicyDistance": null,
+      "sampledActionFrequencies": {
+        "fold": 0.005625,
+        "check": 0.03109375,
+        "call": 0.10890625,
+        "bet": 0.34390625,
+        "raise": 0.51046875
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_002",
+        "seed": 1002,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.13268463546410203,
+          "pressure": 0.0680534872226417
+        },
+        "traits": {
+          "aggression": 0.5170133718056604,
+          "curiosity": 0.5333422758150845,
+          "riverCaution": 0.4668288411339745,
+          "adaptation": 0.4734630729071796
+        }
+      },
+      "nearestPolicyDistance": 0.021186247190029917,
+      "sampledActionFrequencies": {
+        "fold": 0.004375,
+        "check": 0.02296875,
+        "call": 0.09171875,
+        "bet": 0.35203125,
+        "raise": 0.52890625
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_003",
+        "seed": 1003,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.33216829132288694,
+          "pressure": -0.5508082406595349
+        },
+        "traits": {
+          "aggression": 0.36229793983511627,
+          "curiosity": 0.5113528341986239,
+          "riverCaution": 0.41695792716927826,
+          "adaptation": 0.43356634173542263
+        }
+      },
+      "nearestPolicyDistance": 0.00578224693386813,
+      "sampledActionFrequencies": {
+        "fold": 0.00453125,
+        "check": 0.03421875,
+        "call": 0.100625,
+        "bet": 0.34078125,
+        "raise": 0.51984375
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_004",
+        "seed": 1005,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.16321448981761932,
+          "pressure": 0.38450341019779444
+        },
+        "traits": {
+          "aggression": 0.5961258525494486,
+          "curiosity": 0.5710932389833032,
+          "riverCaution": 0.45919637754559517,
+          "adaptation": 0.4673571020364761
+        }
+      },
+      "nearestPolicyDistance": 0.008150125956718423,
+      "sampledActionFrequencies": {
+        "fold": 0.003125,
+        "check": 0.02265625,
+        "call": 0.084375,
+        "bet": 0.35234375,
+        "raise": 0.5375
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_005",
+        "seed": 1007,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.742092264816165,
+          "pressure": -0.5139949768781662
+        },
+        "traits": {
+          "aggression": 0.37150125578045845,
+          "curiosity": 0.30018204934895043,
+          "riverCaution": 0.6855230662040412,
+          "adaptation": 0.648418452963233
+        }
+      },
+      "nearestPolicyDistance": 0.014408510228923236,
+      "sampledActionFrequencies": {
+        "fold": 0.006875,
+        "check": 0.0365625,
+        "call": 0.08921875,
+        "bet": 0.3384375,
+        "raise": 0.52890625
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_006",
+        "seed": 1008,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.5400312510319054,
+          "pressure": 0.4526314726099372
+        },
+        "traits": {
+          "aggression": 0.6131578681524843,
+          "curiosity": 0.4372568970546126,
+          "riverCaution": 0.6350078127579764,
+          "adaptation": 0.6080062502063811
+        }
+      },
+      "nearestPolicyDistance": 0.008985889182226007,
+      "sampledActionFrequencies": {
+        "fold": 0.005625,
+        "check": 0.02703125,
+        "call": 0.07984375,
+        "bet": 0.34796875,
+        "raise": 0.53953125
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_007",
+        "seed": 1009,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.38597923843190074,
+          "pressure": 0.25932600861415267
+        },
+        "traits": {
+          "aggression": 0.5648315021535382,
+          "curiosity": 0.4487367531750351,
+          "riverCaution": 0.5964948096079752,
+          "adaptation": 0.5771958476863801
+        }
+      },
+      "nearestPolicyDistance": 0.0055656336085499886,
+      "sampledActionFrequencies": {
+        "fold": 0.00421875,
+        "check": 0.0228125,
+        "call": 0.0840625,
+        "bet": 0.3521875,
+        "raise": 0.53671875
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_008",
+        "seed": 1010,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.13491216767579317,
+          "pressure": 0.6034462749958038
+        },
+        "traits": {
+          "aggression": 0.650861568748951,
+          "curiosity": 0.587327061034739,
+          "riverCaution": 0.4662719580810517,
+          "adaptation": 0.4730175664648414
+        }
+      },
+      "nearestPolicyDistance": 0.005621785617390655,
+      "sampledActionFrequencies": {
+        "fold": 0.0059375,
+        "check": 0.020625,
+        "call": 0.0825,
+        "bet": 0.354375,
+        "raise": 0.5365625
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_009",
+        "seed": 1013,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.9569302881136537,
+          "pressure": -0.6058788769878447
+        },
+        "traits": {
+          "aggression": 0.3485302807530388,
+          "curiosity": 0.6307981699239463,
+          "riverCaution": 0.2607674279715866,
+          "adaptation": 0.30861394237726925
+        }
+      },
+      "nearestPolicyDistance": 0.007427250862047614,
+      "sampledActionFrequencies": {
+        "fold": 0.005625,
+        "check": 0.03234375,
+        "call": 0.11296875,
+        "bet": 0.34265625,
+        "raise": 0.50640625
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_010",
+        "seed": 1014,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.6851545237004757,
+          "pressure": 0.6269413367845118
+        },
+        "traits": {
+          "aggression": 0.656735334196128,
+          "curiosity": 0.6997250384185464,
+          "riverCaution": 0.3287113690748811,
+          "adaptation": 0.36296909525990484
+        }
+      },
+      "nearestPolicyDistance": 0.006253650792932698,
+      "sampledActionFrequencies": {
+        "fold": 0.00234375,
+        "check": 0.01828125,
+        "call": 0.08390625,
+        "bet": 0.35671875,
+        "raise": 0.53875
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_011",
+        "seed": 1015,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.4984648465178907,
+          "pressure": 0.8980624685063958
+        },
+        "traits": {
+          "aggression": 0.724515617126599,
+          "curiosity": 0.6894992161542177,
+          "riverCaution": 0.3753837883705273,
+          "adaptation": 0.4003070306964219
+        }
+      },
+      "nearestPolicyDistance": 0.005597821783244148,
+      "sampledActionFrequencies": {
+        "fold": 0.0034375,
+        "check": 0.01828125,
+        "call": 0.079375,
+        "bet": 0.35671875,
+        "raise": 0.5421875
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_012",
+        "seed": 1016,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.970085330773145,
+          "pressure": 0.9887110646814108
+        },
+        "traits": {
+          "aggression": 0.7471777661703527,
+          "curiosity": 0.4048540403135121,
+          "riverCaution": 0.7425213326932862,
+          "adaptation": 0.694017066154629
+        }
+      },
+      "nearestPolicyDistance": 0.013653011160791931,
+      "sampledActionFrequencies": {
+        "fold": 0.00265625,
+        "check": 0.0221875,
+        "call": 0.06890625,
+        "bet": 0.3528125,
+        "raise": 0.5534375
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_013",
+        "seed": 1018,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.42544147092849016,
+          "pressure": 0.7076300950720906
+        },
+        "traits": {
+          "aggression": 0.6769075237680227,
+          "curiosity": 0.4856747153215111,
+          "riverCaution": 0.6063603677321225,
+          "adaptation": 0.5850882941856981
+        }
+      },
+      "nearestPolicyDistance": 0.005354670419482855,
+      "sampledActionFrequencies": {
+        "fold": 0.00328125,
+        "check": 0.02359375,
+        "call": 0.07578125,
+        "bet": 0.35140625,
+        "raise": 0.5459375
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_014",
+        "seed": 1021,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.8973545785993338,
+          "pressure": 0.7609607712365687
+        },
+        "traits": {
+          "aggression": 0.6902401928091422,
+          "curiosity": 0.3966251614037901,
+          "riverCaution": 0.7243386446498334,
+          "adaptation": 0.6794709157198667
+        }
+      },
+      "nearestPolicyDistance": 0.005058988294877426,
+      "sampledActionFrequencies": {
+        "fold": 0.00328125,
+        "check": 0.02546875,
+        "call": 0.0725,
+        "bet": 0.34953125,
+        "raise": 0.54921875
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_015",
+        "seed": 1022,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.8102691690437496,
+          "pressure": -0.24054207792505622
+        },
+        "traits": {
+          "aggression": 0.43986448051873595,
+          "curiosity": 0.31389195839874445,
+          "riverCaution": 0.7025672922609374,
+          "adaptation": 0.6620538338087499
+        }
+      },
+      "nearestPolicyDistance": 0.008105907913943326,
+      "sampledActionFrequencies": {
+        "fold": 0.00390625,
+        "check": 0.0321875,
+        "call": 0.08375,
+        "bet": 0.3428125,
+        "raise": 0.53734375
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_016",
+        "seed": 1025,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.9398731617256999,
+          "pressure": 0.1502090455032885
+        },
+        "traits": {
+          "aggression": 0.5375522613758221,
+          "curiosity": 0.32704627220518884,
+          "riverCaution": 0.734968290431425,
+          "adaptation": 0.68797463234514
+        }
+      },
+      "nearestPolicyDistance": 0.005950032596231161,
+      "sampledActionFrequencies": {
+        "fold": 0.0075,
+        "check": 0.02765625,
+        "call": 0.0790625,
+        "bet": 0.34734375,
+        "raise": 0.5384375
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_017",
+        "seed": 1026,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.5937498034909368,
+          "pressure": 0.2255348856560886
+        },
+        "traits": {
+          "aggression": 0.5563837214140221,
+          "curiosity": 0.6413034492637962,
+          "riverCaution": 0.3515625491272658,
+          "adaptation": 0.38125003930181267
+        }
+      },
+      "nearestPolicyDistance": 0.005646600573268012,
+      "sampledActionFrequencies": {
+        "fold": 0.00296875,
+        "check": 0.023125,
+        "call": 0.0953125,
+        "bet": 0.351875,
+        "raise": 0.52671875
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_018",
+        "seed": 1029,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": -0.7610575724393129,
+          "pressure": -0.2551747946999967
+        },
+        "traits": {
+          "aggression": 0.4362063013250008,
+          "curiosity": 0.6266940350178629,
+          "riverCaution": 0.30973560689017177,
+          "adaptation": 0.34778848551213737
+        }
+      },
+      "nearestPolicyDistance": 0.006218383182595934,
+      "sampledActionFrequencies": {
+        "fold": 0.004375,
+        "check": 0.03125,
+        "call": 0.1021875,
+        "bet": 0.34375,
+        "raise": 0.5184375
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_019",
+        "seed": 1030,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.3092173016630113,
+          "pressure": -0.47730223229154944
+        },
+        "traits": {
+          "aggression": 0.38067444192711264,
+          "curiosity": 0.3904263164382428,
+          "riverCaution": 0.5773043254157528,
+          "adaptation": 0.5618434603326022
+        }
+      },
+      "nearestPolicyDistance": 0.005511206669092335,
+      "sampledActionFrequencies": {
+        "fold": 0.005625,
+        "check": 0.0334375,
+        "call": 0.09390625,
+        "bet": 0.3415625,
+        "raise": 0.52546875
+      }
+    },
+    {
+      "profile": {
+        "version": 1,
+        "generatorVersion": "latent-1",
+        "botId": "BOT_020",
+        "seed": 1037,
+        "createdAt": "2026-11-09T00:00:00.000Z",
+        "latent": {
+          "discipline": 0.13043291866779327,
+          "pressure": -0.2018585097976029
+        },
+        "traits": {
+          "aggression": 0.4495353725505993,
+          "curiosity": 0.45372756528668107,
+          "riverCaution": 0.5326082296669483,
+          "adaptation": 0.5260865837335587
+        }
+      },
+      "nearestPolicyDistance": 0.005836345495781601,
+      "sampledActionFrequencies": {
+        "fold": 0.004375,
+        "check": 0.03625,
+        "call": 0.0925,
+        "bet": 0.33875,
+        "raise": 0.528125
+      }
+    }
+  ],
+  "warnings": [
+    "Distance is mean total variation over conditional action distributions, not numeric trait distance or sampling noise.",
+    "Synthetic contexts and an engineering diversity threshold do not certify human realism, skill targets or long-session behavioural diversity."
+  ],
+  "measurement": {
+    "date": "2026-11-09",
+    "node": "24.22.1",
+    "strategyVersion": "baseline-2",
+    "identityPolicyVersion": "identity-2",
+    "equitySamples": 160,
+    "hardware": "current cloud development instance, not production hardware"
+  }
+}

@@ -1,0 +1,235 @@
+{
+  "hands": 100,
+  "decisions": 874,
+  "seed": 7,
+  "seats": 6,
+  "agents": ["bot", "bot", "bot", "bot", "bot", "bot"],
+  "actionCounts": {
+    "fold": 67,
+    "check": 0,
+    "call": 28,
+    "bet": 0,
+    "raise": 46,
+    "allin": 0
+  },
+  "bbPer100": -824,
+  "approximate95CI": [-2174.778721356199, 526.7787213561992],
+  "latencyMs": {
+    "p50": 10.530193000000509,
+    "p95": 26.93757199999891,
+    "max": 43.941456999999986
+  },
+  "memories": [
+    {
+      "version": 1,
+      "botId": "BOT_001",
+      "tableId": "simulation-7",
+      "latestSequence": 4291,
+      "opponents": {
+        "BOT_004": {
+          "alpha": 20.125057055748933,
+          "beta": 31.360572825368923,
+          "samples": 47.48562988111784
+        },
+        "BOT_005": {
+          "alpha": 20.379257873870237,
+          "beta": 31.00269743758108,
+          "samples": 47.38195531145131
+        },
+        "BOT_006": {
+          "alpha": 25.2566694175974,
+          "beta": 25.126236173200038,
+          "samples": 46.382905590797435
+        },
+        "BOT_002": {
+          "alpha": 18.390314146452532,
+          "beta": 32.88369180049801,
+          "samples": 47.274005946950545
+        },
+        "BOT_003": {
+          "alpha": 17.397626084902654,
+          "beta": 34.2358688741664,
+          "samples": 47.633494959069054
+        }
+      }
+    },
+    {
+      "version": 1,
+      "botId": "BOT_002",
+      "tableId": "simulation-7",
+      "latestSequence": 4292,
+      "opponents": {
+        "BOT_004": {
+          "alpha": 20.125057055748933,
+          "beta": 31.360572825368923,
+          "samples": 47.48562988111784
+        },
+        "BOT_005": {
+          "alpha": 20.379257873870237,
+          "beta": 31.00269743758108,
+          "samples": 47.38195531145131
+        },
+        "BOT_006": {
+          "alpha": 25.2566694175974,
+          "beta": 25.126236173200038,
+          "samples": 46.382905590797435
+        },
+        "BOT_001": {
+          "alpha": 24.92372898729636,
+          "beta": 26.12084153099925,
+          "samples": 47.04457051829559
+        },
+        "BOT_003": {
+          "alpha": 17.397626084902654,
+          "beta": 34.2358688741664,
+          "samples": 47.633494959069054
+        }
+      }
+    },
+    {
+      "version": 1,
+      "botId": "BOT_003",
+      "tableId": "simulation-7",
+      "latestSequence": 4287,
+      "opponents": {
+        "BOT_004": {
+          "alpha": 20.125057055748933,
+          "beta": 31.360572825368923,
+          "samples": 47.48562988111784
+        },
+        "BOT_005": {
+          "alpha": 20.379257873870237,
+          "beta": 31.00269743758108,
+          "samples": 47.38195531145131
+        },
+        "BOT_006": {
+          "alpha": 25.2566694175974,
+          "beta": 25.126236173200038,
+          "samples": 46.382905590797435
+        },
+        "BOT_001": {
+          "alpha": 24.92372898729636,
+          "beta": 26.12084153099925,
+          "samples": 47.04457051829559
+        },
+        "BOT_002": {
+          "alpha": 18.390314146452532,
+          "beta": 32.88369180049801,
+          "samples": 47.274005946950545
+        }
+      }
+    },
+    {
+      "version": 1,
+      "botId": "BOT_004",
+      "tableId": "simulation-7",
+      "latestSequence": 4293,
+      "opponents": {
+        "BOT_005": {
+          "alpha": 20.379257873870237,
+          "beta": 31.00269743758108,
+          "samples": 47.38195531145131
+        },
+        "BOT_006": {
+          "alpha": 25.2566694175974,
+          "beta": 25.126236173200038,
+          "samples": 46.382905590797435
+        },
+        "BOT_001": {
+          "alpha": 24.92372898729636,
+          "beta": 26.12084153099925,
+          "samples": 47.04457051829559
+        },
+        "BOT_002": {
+          "alpha": 18.390314146452532,
+          "beta": 32.88369180049801,
+          "samples": 47.274005946950545
+        },
+        "BOT_003": {
+          "alpha": 17.397626084902654,
+          "beta": 34.2358688741664,
+          "samples": 47.633494959069054
+        }
+      }
+    },
+    {
+      "version": 1,
+      "botId": "BOT_005",
+      "tableId": "simulation-7",
+      "latestSequence": 4294,
+      "opponents": {
+        "BOT_004": {
+          "alpha": 20.125057055748933,
+          "beta": 31.360572825368923,
+          "samples": 47.48562988111784
+        },
+        "BOT_006": {
+          "alpha": 25.2566694175974,
+          "beta": 25.126236173200038,
+          "samples": 46.382905590797435
+        },
+        "BOT_001": {
+          "alpha": 24.92372898729636,
+          "beta": 26.12084153099925,
+          "samples": 47.04457051829559
+        },
+        "BOT_002": {
+          "alpha": 18.390314146452532,
+          "beta": 32.88369180049801,
+          "samples": 47.274005946950545
+        },
+        "BOT_003": {
+          "alpha": 17.397626084902654,
+          "beta": 34.2358688741664,
+          "samples": 47.633494959069054
+        }
+      }
+    },
+    {
+      "version": 1,
+      "botId": "BOT_006",
+      "tableId": "simulation-7",
+      "latestSequence": 4295,
+      "opponents": {
+        "BOT_004": {
+          "alpha": 20.125057055748933,
+          "beta": 31.360572825368923,
+          "samples": 47.48562988111784
+        },
+        "BOT_005": {
+          "alpha": 20.379257873870237,
+          "beta": 31.00269743758108,
+          "samples": 47.38195531145131
+        },
+        "BOT_001": {
+          "alpha": 24.92372898729636,
+          "beta": 26.12084153099925,
+          "samples": 47.04457051829559
+        },
+        "BOT_002": {
+          "alpha": 18.390314146452532,
+          "beta": 32.88369180049801,
+          "samples": 47.274005946950545
+        },
+        "BOT_003": {
+          "alpha": 17.397626084902654,
+          "beta": 34.2358688741664,
+          "samples": 47.633494959069054
+        }
+      }
+    }
+  ],
+  "warnings": [
+    "Normal CI is descriptive and unreliable for small samples. Opponents are uncalibrated; this is not evidence of human realism."
+  ],
+  "memoryFile": "/tmp/bot-final-6p.json",
+  "persistenceRoundtrip": "passed",
+  "measurement": {
+    "date": "2026-11-09",
+    "node": "24.22.1",
+    "strategyVersion": "baseline-2",
+    "identityPolicyVersion": "identity-2",
+    "equitySamples": 160,
+    "hardware": "current cloud development instance, not production hardware"
+  }
+}

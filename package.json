@@ -15,10 +15,15 @@
     "check": "npm run typecheck && npm run test && npm run build",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
-    "test:native": "vitest run --config native/vitest.config.mts"
+    "test:native": "vitest run --config native/vitest.config.mts",
+    "bot:demo": "tsx scripts/humanPoker.ts simulate",
+    "bot:generate": "tsx scripts/humanPoker.ts generate",
+    "bot:evaluate": "tsx scripts/humanPoker.ts evaluate",
+    "bot:persistence": "tsx scripts/botPersistence.ts",
+    "bot:calibrate": "tsx scripts/humanPoker.ts calibrate"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   },
   "dependencies": {
     "jsqr": "^1.4.0",
@@ -34,6 +39,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "prettier": "^3.8.1",
+    "tsx": "4.20.6",
     "typescript": "^7.0.2",
     "vite": "^8.3.4",
     "vitest": "^5.0.4",

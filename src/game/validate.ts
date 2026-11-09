@@ -21,6 +21,10 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const out: Partial<Settings> = {};
+  if (r.humanPoker !== undefined) {
+    if (typeof r.humanPoker !== 'boolean') return null;
+    out.humanPoker = r.humanPoker;
+  }
   for (const key of ['startingStack', 'smallBlind', 'bigBlind', 'turnSeconds', 'blindMinutes', 'blindCap', 'blindHands'] as const) {
     if (r[key] === undefined) continue;
     if (!isInt(r[key])) return null;
@@ -62,7 +66,10 @@ export function parseAction(raw: unknown): Action | null {
         ...(a.cardPack !== undefined ? { cardPack: a.cardPack as string } : {}),
       };
     case 'addBot':
-      if (a.name !== undefined) return a.legend === undefined && typeof a.name === 'string' && BOTS.some((b) => b.name === a.name) ? { type: 'addBot', name: a.name } : null;
+      if (a.name !== undefined)
+        return a.legend === undefined && typeof a.name === 'string' && BOTS.some((b) => b.name === a.name)
+          ? { type: 'addBot', name: a.name }
+          : null;
       if (a.legend === undefined) return { type: 'addBot' };
       return typeof a.legend === 'string' && legendById(a.legend) ? { type: 'addBot', legend: a.legend } : null;
     case 'start':
@@ -87,7 +94,9 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) && isInt(a.seq) ? { type: 'hit', hand: a.hand, seq: a.seq } : null;
     case 'revealBots':
       if (a.playerId !== undefined && !isId(a.playerId)) return null;
-      return isInt(a.hand) ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) } : null;
+      return isInt(a.hand)
+        ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) }
+        : null;
     case 'show':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
     case 'vote':

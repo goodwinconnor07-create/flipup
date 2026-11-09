@@ -1,0 +1,150 @@
+import { hashString, seededRng } from '../game/cards';
+import { createTable, DEFAULT_SETTINGS } from '../game/reducer';
+import { dealNextStreet, makeMove, runoutStep, showdown, startHand } from '../game/holdem';
+import { informationFor } from './information';
+import { BotFactory } from './identity';
+import { emptyMemory, observe } from './memory';
+import { BotService } from './service';
+import { BaselineProvider } from './strategy';
+import { scriptedMove, type AgentKind, SCRIPTED_OPPONENTS } from './scriptedOpponents';
+
+export interface SimulationOptions {
+  agents?: AgentKind[];
+  reverseSeats?: boolean;
+  pairedDecks?: boolean;
+}
+
+/** Uses production rules; independently seeded policy and dealing streams. No illegal-action fallback. */
+export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOptions = {}) {
+  if (!Number.isSafeInteger(hands) || hands < 1) throw new Error('Invalid hand count');
+  if (!Number.isSafeInteger(seats) || seats < 2 || seats > 9) throw new Error('Invalid seat count');
+  const agents = config.agents ?? Array<AgentKind>(seats).fill('bot');
+  if (agents.length !== seats || agents.some((a) => !['bot', 'baseline', 'previous', ...SCRIPTED_OPPONENTS].includes(a)))
+    throw new Error('Invalid agents');
+  const dealing = seededRng(seed);
+  const ctx = { now: 0, deviceId: 'simulation', rng: dealing };
+  const game = createTable({
+    hostDeviceId: ctx.deviceId,
+    name: 'Research',
+    emoji: '🃏',
+    settings: { ...DEFAULT_SETTINGS, startingStack: 1000, smallBlind: 5, bigBlind: 10, rebuys: true },
+    bots: seats - 1,
+    code: null,
+    now: 0,
+    rng: seededRng(seed + 1),
+  });
+  game.id = `simulation-${seed}`;
+  // Keep both as human seats so the engine does not automatically run its legacy bots.
+  game.players.forEach((p, n) => {
+    p.id = `BOT_${String(n + 1).padStart(3, '0')}`;
+    p.bot = false;
+    p.deviceId = `simulation-${n}`;
+    if (config.reverseSeats) p.seat = seats - 1 - n;
+  });
+  const factory = new BotFactory();
+  const profiles = game.players.map((p, n) => factory.generate(p.id, 1001 + n));
+  const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
+  const service = new BotService();
+  const previous = new BotService(new BaselineProvider(160, 'baseline-2'));
+  const baseline = new BaselineProvider();
+  const latencies: number[] = [];
+  const returns: number[] = [];
+  const dealChecksums: number[] = [];
+  const actionCounts = { fold: 0, check: 0, call: 0, bet: 0, raise: 0, allin: 0 };
+  let decisions = 0,
+    eventSequence = 0;
+  for (let handNo = 0; handNo < hands; handNo++) {
+    // Independent cash hands at the same stack, retaining identity and memory.
+    game.players.forEach((p) => {
+      p.stack = 1000;
+    });
+    game.status = 'playing';
+    if (config.pairedDecks) ctx.rng = seededRng(hashString(`${seed}:${handNo}:deck`));
+    startHand(game, ctx);
+    // Evaluator-only digest lets paired experiments verify identical physical seat deals.
+    // It is never sent to an agent or included in a decision trace.
+    dealChecksums.push(hashString(JSON.stringify([game.buttonSeat, game.hand!.seats.map((s) => s.cards), game.hand!.deck])));
+    if (config.pairedDecks) ctx.rng = seededRng(hashString(`${seed}:${handNo}:table-effects`));
+    let steps = 0;
+    while (!game.hand?.result && steps++ < 200) {
+      const h = game.hand!;
+      ctx.now += 10000;
+      if (h.runout) {
+        runoutStep(game, ctx);
+        continue;
+      }
+      if (h.showdownAt) {
+        showdown(game, ctx);
+        continue;
+      }
+      if (!h.toAct) {
+        dealNextStreet(game, ctx);
+        continue;
+      }
+      const at = profiles.findIndex((p) => p.botId === h.toAct);
+      const info = informationFor(game, h.toAct);
+      const started = performance.now();
+      const agent = agents[at];
+      const sampling = seededRng(service.seedFor(info, profiles[at]));
+      const action =
+        agent === 'bot' || agent === 'previous'
+          ? (agent === 'previous' ? previous : service).decide(info, profiles[at], memories[at], service.seedFor(info, profiles[at])).action
+          : agent === 'baseline'
+            ? (() => {
+                const prediction = baseline.predict(info);
+                let draw = sampling();
+                return prediction.actions[
+                  prediction.probabilities.findIndex((p, n) => {
+                    draw -= p;
+                    return draw < 0 || n === prediction.actions.length - 1;
+                  })
+                ];
+              })()
+            : scriptedMove(info, agent, sampling, handNo >= hands / 2);
+      if (at === 0) actionCounts[action.move]++;
+      const elapsed = performance.now() - started;
+      const error = makeMove(game, action.move, action.to, ctx);
+      if (error) throw new Error(`Illegal bot action: ${error}`);
+      if (!info.legal.canCheck) {
+        for (const memory of memories)
+          if (memory.botId !== info.heroId)
+            observe(memory, {
+              observerId: memory.botId,
+              targetId: info.heroId,
+              tableId: game.id,
+              sequence: ++eventSequence,
+              foldedToBet: action.move === 'fold',
+            });
+      }
+      if (agent === 'bot' || agent === 'baseline' || agent === 'previous') latencies.push(elapsed);
+      decisions++;
+    }
+    if (!game.hand?.result) throw new Error('Hand did not finish');
+    if (game.players.reduce((sum, p) => sum + p.stack, 0) !== seats * 1000) throw new Error('Chip conservation failed');
+    returns.push((game.players[0].stack - 1000) / 10);
+  }
+  const mean = returns.reduce((a, b) => a + b, 0) / hands;
+  const variance = hands > 1 ? returns.reduce((sum, r) => sum + (r - mean) ** 2, 0) / (hands - 1) : 0;
+  latencies.sort((a, b) => a - b);
+  return {
+    hands,
+    decisions,
+    seed,
+    seats,
+    agents,
+    actionCounts,
+    handReturnsBb: returns,
+    dealChecksums,
+    bbPer100: mean * 100,
+    approximate95CI: hands > 1 ? [mean * 100 - 196 * Math.sqrt(variance / hands), mean * 100 + 196 * Math.sqrt(variance / hands)] : null,
+    latencyMs: {
+      p50: latencies[Math.floor(latencies.length * 0.5)],
+      p95: latencies[Math.floor(latencies.length * 0.95)],
+      max: latencies.at(-1),
+    },
+    memories,
+    warnings: [
+      'Normal CI is descriptive and unreliable for small samples. Opponents are uncalibrated; this is not evidence of human realism.',
+    ],
+  };
+}

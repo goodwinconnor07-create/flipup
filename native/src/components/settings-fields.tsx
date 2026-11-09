@@ -117,6 +117,15 @@ export function SettingsFields({
   ];
 
   const ruleRows = [
+    (settings.variant ?? 'holdem') === 'holdem' && (
+      <Row
+        key="human-poker"
+        title="Invite BOT_001"
+        subtitle="New experimental bot. Joins next hand; leaves after this hand."
+        icon={{ symbol: 'person.fill', color: color(party.blue) }}
+        accessory={<Switch label="Invite BOT_001" value={!!settings.humanPoker} onValueChange={(humanPoker) => set({ humanPoker })} />}
+      />
+    ),
     online && (
       <View key="clock" style={{ padding: spacing.md, paddingBottom: spacing.sm, gap: spacing.xs }}>
         <ThemedText>Time to act</ThemedText>

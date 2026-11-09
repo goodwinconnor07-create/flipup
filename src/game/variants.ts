@@ -5,7 +5,20 @@ import { rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 
-export type Variant = 'holdem' | 'pineapple' | 'deuces' | 'ghost' | 'pittsburgh' | 'dice' | 'redriver' | 'imposter' | 'crucifix' | 'circle' | 'memory' | 'beanstalk' | 'bjholdem';
+export type Variant =
+  | 'holdem'
+  | 'pineapple'
+  | 'deuces'
+  | 'ghost'
+  | 'pittsburgh'
+  | 'dice'
+  | 'redriver'
+  | 'imposter'
+  | 'crucifix'
+  | 'circle'
+  | 'memory'
+  | 'beanstalk'
+  | 'bjholdem';
 
 export interface VariantInfo {
   id: Variant;
@@ -33,7 +46,7 @@ export const VARIANTS: VariantInfo[] = [
     rules: [
       'You get three cards instead of two.',
       'After the betting on the flop, everyone still in throws one card away.',
-      'From the turn on it\'s normal Hold\'em with the two you kept.',
+      "From the turn on it's normal Hold'em with the two you kept.",
       'All in before then? The app keeps your best two for you.',
     ],
   },
@@ -55,7 +68,7 @@ export const VARIANTS: VariantInfo[] = [
     tagline: 'Beat your friends, then beat the ghost, or the pot stays.',
     rules: [
       'A ghost is dealt two cards too. Nobody sees them until the showdown.',
-      'At a showdown, whoever wins a pot also has to beat the ghost. A tie isn\'t enough.',
+      "At a showdown, whoever wins a pot also has to beat the ghost. A tie isn't enough.",
       'If the ghost wins, that pot stays in the middle and goes to the winner of the next hand.',
       'If everyone folds to you, you win the pot (and anything the ghost was holding) without facing the ghost.',
       'Bets are pot limit: you can raise at most the size of the pot. Deep stacks work best.',
@@ -78,7 +91,7 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🎲',
     tagline: 'When the river comes, a die swaps out one board card.',
     rules: [
-      'Normal Hold\'em until the river.',
+      "Normal Hold'em until the river.",
       'As soon as the river is dealt, a die is rolled. Roll a 1 to 5 and that card on the board (counting from the left) is replaced by a new card from the deck.',
       'Roll a 6 and the board stays as it is.',
       'Then the river betting starts with the new board.',
@@ -90,10 +103,10 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🟥',
     tagline: 'A red river keeps the cards coming until a black one lands.',
     rules: [
-      'Normal Hold\'em until the river.',
+      "Normal Hold'em until the river.",
       'If the river is red (a heart or a diamond), another card is dealt, and another, until a black card (a spade or a club) comes.',
       'Every card on the board counts: make your best five from your two and all of them.',
-      'Then there\'s one round of river betting.',
+      "Then there's one round of river betting.",
     ],
   },
   {
@@ -102,12 +115,12 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🕵️',
     tagline: 'Everyone has the same hand but one. Find the imposter.',
     rules: [
-      'Everyone gets the same two cards, except the imposter, who gets a different hand. You\'re told whether you\'re the imposter or innocent.',
-      'How strong your cards are doesn\'t matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table (or, as the imposter, to blend in).',
-      'Everyone antes a big blind each hand, so there\'s money in the middle from the start.',
+      "Everyone gets the same two cards, except the imposter, who gets a different hand. You're told whether you're the imposter or innocent.",
+      "How strong your cards are doesn't matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table (or, as the imposter, to blend in).",
+      "Everyone antes a big blind each hand, so there's money in the middle from the start.",
       'After the river everyone votes for who they think the imposter is.',
       'If the most votes go to the imposter, the innocent players still in split the pot. If not (a tie counts as not), the imposter takes it all.',
-      'Needs three or more players: with two, the hand is plain Hold\'em.',
+      "Needs three or more players: with two, the hand is plain Hold'em.",
     ],
   },
   {
@@ -119,7 +132,7 @@ export const VARIANTS: VariantInfo[] = [
       'The board is dealt as a cross of nine cards: one in the middle and two on each arm.',
       'The flop is the middle card and one card on each arm. The turn adds one to the top arm and one to the right arm, and the river finishes the cross.',
       'Your hand is your two cards with one line: either the five across or the five down (the middle card is in both). Make your best five from those seven.',
-      'You can\'t mix cards from the two lines. The app picks the line that gives you the best hand.',
+      "You can't mix cards from the two lines. The app picks the line that gives you the best hand.",
     ],
   },
   {
@@ -129,7 +142,7 @@ export const VARIANTS: VariantInfo[] = [
     tagline: 'Six cards round a clock. Use three in a row with both of yours.',
     rules: [
       'The board is six cards in a circle, like the hours on a clock.',
-      'The flop is two cards, at 12 and 6 o\'clock. The turn adds 8 and 2 o\'clock, and the river adds 10 and 4 o\'clock to close the circle.',
+      "The flop is two cards, at 12 and 6 o'clock. The turn adds 8 and 2 o'clock, and the river adds 10 and 4 o'clock to close the circle.",
       'Your hand is both of your cards plus three board cards that sit next to each other round the circle (12, 2 and 4, or 10, 12 and 2, and so on).',
       'You must use both of your cards. The app picks the best three in a row for you.',
     ],
@@ -141,9 +154,9 @@ export const VARIANTS: VariantInfo[] = [
     tagline: '20 cards come out of the deck. Remember which.',
     rules: [
       'Before every hand, 20 random cards are taken out of the deck and shown to everyone for a few seconds.',
-      'Then they\'re hidden and the hand is dealt from the 32 cards left. Nobody can have them and they can\'t come on the board.',
-      'Remember what\'s gone to work out your odds: if three aces are out, nobody has a set of aces.',
-      'Everything else is normal Texas Hold\'em.',
+      "Then they're hidden and the hand is dealt from the 32 cards left. Nobody can have them and they can't come on the board.",
+      "Remember what's gone to work out your odds: if three aces are out, nobody has a set of aces.",
+      "Everything else is normal Texas Hold'em.",
     ],
   },
   {
@@ -152,7 +165,7 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🌱',
     tagline: 'Your hand grows: a new card for you on every street.',
     rules: [
-      'You start with two cards, like normal Hold\'em.',
+      "You start with two cards, like normal Hold'em.",
       'When the flop comes, everyone still in gets another card of their own. The same again on the turn and on the river.',
       'By the river you have five cards of your own and five on the board. Make your best five from all ten.',
     ],
@@ -163,7 +176,7 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '♠️',
     tagline: 'Hit on the flop. Half the pot to the best hand, half to closest to 21.',
     rules: [
-      'Normal Hold\'em: two cards each, then the flop, the turn and the river.',
+      "Normal Hold'em: two cards each, then the flop, the turn and the river.",
       'On the flop, on your turn, you can Hit as many times as you like to take another card, face down, before you check, bet or call.',
       'Your 21 count is your own cards: your two plus your hits (not the board). Aces are 1 or 11, picture cards 10.',
       'Go over 21 and you bust: your hand is folded straight away.',
@@ -377,6 +390,8 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
  * (or its own) cards, so it never learns anything a player in its seat couldn't.
  */
 export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand: Hand; seat: Seat } {
+  // The experimental bot's observer memory is private even from legacy bot brains.
+  if (game.humanPoker) game = { ...game, humanPoker: undefined };
   const v = variantOf(game);
   let cards = v === 'pineapple' && seat.cards.length > 2 ? keepTwo(seat.cards, hand.board.slice(0, 3)) : seat.cards;
   if (cards.length > 2) {
@@ -402,7 +417,11 @@ export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand:
 /** How pushy each player has been this hand: bets, raises and all-ins count, calls a little. */
 function pushiness(hand: Hand): Map<string, number> {
   const score = new Map(hand.seats.map((s) => [s.playerId, 0]));
-  for (const a of hand.actions ?? []) score.set(a.playerId, (score.get(a.playerId) ?? 0) + (a.move === 'bet' || a.move === 'raise' || a.move === 'allin' ? 2 : a.move === 'call' ? 1 : 0));
+  for (const a of hand.actions ?? [])
+    score.set(
+      a.playerId,
+      (score.get(a.playerId) ?? 0) + (a.move === 'bet' || a.move === 'raise' || a.move === 'allin' ? 2 : a.move === 'call' ? 1 : 0),
+    );
   return score;
 }
 

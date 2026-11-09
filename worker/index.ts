@@ -147,6 +147,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     return json({ error: 'Hosting this game needs FlipUp Premium.', premium: true }, 402);
   }
   let bots = typeof body.bots === 'number' && Number.isInteger(body.bots) ? Math.max(0, Math.min(MAX_SEATS - 1, body.bots)) : 0;
+  if (settings.humanPoker && bots > MAX_SEATS - 2) return json({ error: 'Leave one bot seat free for BOT_001.' }, 400);
   // Bots the host picked by name (the setup page's bots row): only names from the roster, one seat each.
   let botNames = Array.isArray(body.botNames)
     ? [...new Set(body.botNames.filter((n): n is string => typeof n === 'string' && BOTS.some((b) => b.name === n)))].slice(0, MAX_SEATS - 1)

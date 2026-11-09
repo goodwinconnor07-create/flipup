@@ -6,12 +6,13 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
 import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { me as myDevice, dispatch, useTable } from '@/state/session';
-import { usePlainColors, brand } from '@/theme';
+import { EASE_OUT } from '@/motion/presets';
+import { usePlainColors, brand, motion } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
@@ -23,6 +24,7 @@ import { TagChip } from './challenge';
 import { Count } from './count';
 import { GhostDivider, GhostSeat } from './ghost-seat';
 import { PlayingCard } from './playing-card';
+import { planWindow, type WindowAnchor } from './pod-window';
 import { moveSig } from './use-reactions';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -48,54 +50,33 @@ export function usePodSlots(
   others: Player[],
   talking: Record<string, unknown>,
 ): { shown: Player[]; hidden: Player[]; canShow: (id: string) => boolean } {
-  const [start, setStart] = useState(0);
+  const [anchor, setAnchor] = useState<WindowAnchor>({ id: null, idx: 0 });
   const justFolded = useJustFolded(game.hand);
   // The ghost takes a seat's room in Ghost Hold'em, so three players show beside it instead of four.
   const max = variantOf(game) === 'ghost' ? MAX_PODS - 1 : MAX_PODS;
   if (others.length <= max) return { shown: others, hidden: [], canShow: () => true };
   const hand = game.hand;
-  const liveFor = (speaking: ReadonlySet<string>) =>
-    others.filter((p) => {
-      if (!hand) return true;
-      const seat = seatFor(hand, p.id);
-      return !!seat && (!seat.folded || speaking.has(p.id) || justFolded.has(p.id));
-    });
+  const ids = others.map((p) => p.id);
+  const folded = hand ? new Set(hand.seats.filter((x) => x.folded).map((x) => x.playerId)) : null;
   const focus = hand?.result ? Object.entries(hand.result.won).sort((a, b) => b[1] - a[1])[0]?.[0] : hand?.toAct;
-  const plan = (speaking: ReadonlySet<string>) => {
-    const live = liveFor(speaking);
-    const n = Math.min(max, live.length);
-    let s = Math.max(0, Math.min(start, live.length - n));
-    // Someone in view who just folded holds the window still until their "Fold" has been seen, so they don't
-    // vanish the moment the next player to act is somewhere off to the side.
-    const holding = !hand?.result && live.slice(s, s + n).some((p) => justFolded.has(p.id));
-    if (holding) return { live, n, s };
-    const at = live.findIndex((p) => p.id === focus);
-    if (at >= 0) {
-      if (at < s) s = at;
-      else if (at > s + n - 1) s = at - n + 1;
-    }
-    const speaker = live.findIndex((p, i) => speaking.has(p.id) && (i < s || i > s + n - 1));
-    if (speaker >= 0) {
-      const to = speaker < s ? speaker : speaker - n + 1;
-      if (at < 0 || (at >= to && at <= to + n - 1)) s = to;
-    }
-    return { live, n, s };
-  };
+  const plan = (speaking: ReadonlySet<string>) => planWindow({ others: ids, folded, justFolded, speaking, focus: focus ?? undefined, max, anchor });
   const now = new Set(Object.keys(talking));
   const { live, n, s } = plan(now);
-  if (s !== start) setStart(s);
-  const shown = live.slice(s, s + n);
+  const first = live[s] ?? null;
+  if (first !== anchor.id || s !== anchor.idx) setAnchor({ id: first, idx: s });
+  const shownIds = new Set(live.slice(s, s + n));
+  const shown = others.filter((p) => shownIds.has(p.id));
   const canShow = (id: string) => {
     const p = plan(new Set([...now, id]));
-    return p.live.slice(p.s, p.s + p.n).some((x) => x.id === id);
+    return p.live.slice(p.s, p.s + p.n).includes(id);
   };
-  return { shown, hidden: others.filter((p) => !shown.includes(p)), canShow };
+  return { shown, hidden: others.filter((p) => !shownIds.has(p.id)), canShow };
 }
 
 /** How long a player who just folded stays in the row, so their "Fold" bubble can be read before they go. */
-const FOLD_LINGER_MS = 1500;
+const FOLD_LINGER_MS = 600;
 
-/** The players who folded in the last moment (`FOLD_LINGER_MS`) of this hand. */
+/** The players who folded in the last moment (`FOLD_LINGER_MS`) of this hand, each on their own clock. */
 function useJustFolded(hand: Game['hand']): ReadonlySet<string> {
   const n = hand?.number ?? 0;
   const folded = hand ? hand.seats.filter((x) => x.folded).map((x) => x.playerId) : [];
@@ -103,12 +84,18 @@ function useJustFolded(hand: Game['hand']): ReadonlySet<string> {
   const fresh = n === s.n ? folded.filter((id) => !s.seen.includes(id)) : [];
   if (n !== s.n) setS({ n, seen: folded, recent: [] });
   else if (fresh.length) setS({ n, seen: [...s.seen, ...fresh], recent: [...s.recent, ...fresh] });
-  const key = s.recent.join(',');
+  // Each fold has its own timer, so a second fold doesn't keep the first one on screen.
+  const [timed] = useState(() => new Set<string>());
   useEffect(() => {
-    if (!key) return;
-    const t = setTimeout(() => setS((p) => ({ ...p, recent: [] })), FOLD_LINGER_MS);
-    return () => clearTimeout(t);
-  }, [key]);
+    timed.clear();
+  }, [n, timed]);
+  useEffect(() => {
+    for (const id of s.recent) {
+      if (timed.has(id)) continue;
+      timed.add(id);
+      setTimeout(() => setS((p) => ({ ...p, recent: p.recent.filter((x) => x !== id) })), FOLD_LINGER_MS);
+    }
+  }, [s.recent, timed]);
   return new Set(s.recent);
 }
 
@@ -134,6 +121,10 @@ export function SeatRow({
   glowCard: (c: Card) => boolean;
   odds: Map<string, { win: number; tie: number }> | null;
 }) {
+  const reduce = useReduceMotion();
+  // Seats fade in as the window moves, but not all at once when the table first draws.
+  const [settled, setSettled] = useState(false);
+  useEffect(() => setSettled(true), []);
   return (
     // The row reaches a little into the side margins, so each seat (and its bubble) gets more room.
     <View style={{ flexDirection: 'row', justifyContent: 'center', marginHorizontal: 4, paddingTop: compact ? 24 : 30, minHeight: compact ? 140 : 166 }}>
@@ -144,7 +135,13 @@ export function SeatRow({
         </>
       )}
       {shown.map((p) => (
-        <View key={p.id} style={{ flex: 1, maxWidth: 110 }}>
+        <Animated.View
+          key={p.id}
+          entering={settled && !reduce ? FadeIn.duration(motion.base).easing(EASE_OUT) : undefined}
+          exiting={reduce ? undefined : FadeOut.duration(motion.exit).easing(EASE_OUT)}
+          layout={reduce ? undefined : LinearTransition.duration(motion.base).easing(EASE_OUT)}
+          style={{ flex: 1, maxWidth: 110 }}
+        >
           <SeatPod
             game={game}
             compact={compact}
@@ -157,7 +154,7 @@ export function SeatRow({
             odds={odds?.get(p.id)}
             n={shown.length}
           />
-        </View>
+        </Animated.View>
       ))}
       {hidden.length > 0 && <HiddenPlayers game={game} players={hidden} />}
     </View>

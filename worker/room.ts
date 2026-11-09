@@ -11,6 +11,7 @@ import {
   redactLogs,
   finishOrder,
   liveOf,
+  actionNeedsPremium,
   withoutPremiumLook,
   type Action,
   type Game,
@@ -131,6 +132,8 @@ export class TableRoom extends DurableObject<Env> {
 
     const action = parseAction(a);
     if (!action) return this.send(ws, { t: 'reject', id, error: "The server didn't understand that." });
+    // Opening a Premium game is for Premium hosts: changing the table's mode (or playing again in another) needs it too, not only opening the table.
+    if (premium === false && actionNeedsPremium(action)) return this.send(ws, { t: 'reject', id, error: 'Hosting this game needs FlipUp Premium.' });
     // A phone that doesn't own Premium gets the plain look: the Premium bubble and card back are dropped, the name and emoji kept.
     await this.apply(premium !== false ? action : withoutPremiumLook(action), deviceId, ws, id);
   }

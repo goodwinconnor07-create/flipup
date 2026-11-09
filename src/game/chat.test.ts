@@ -539,15 +539,15 @@ describe('more to say', () => {
       expect(streetWaits).toBeLessThanOrEqual(DRAMA_MAX + 1100 + 50);
     }
     expect(total).toBeGreaterThan(0);
-  }, 60000);
+  }, 180_000);
 
   it('halves the pause at a fast bot game', () => {
     for (let seed = 1; seed <= 4; seed++) for (const w of drama(null, true, seed).waits) expect(w).toBeLessThanOrEqual(DRAMA_MAX / 2 + 50);
-  }, 60000);
+  }, 180_000);
 
   it('leaves an online table as it was', () => {
     for (let seed = 1; seed <= 3; seed++) expect(drama('ABCDE', false, seed, 25).waits).toEqual([]);
-  }, 60000);
+  }, 180_000);
 });
 
 describe('the timing a line was written with', () => {

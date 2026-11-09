@@ -68,6 +68,7 @@ const WEB = {
   'person.crop.circle.badge.plus': 'person_add',
   pencil: 'edit',
   'flame.fill': 'local_fire_department',
+  'wifi.slash': 'wifi_off',
   'hand.raised.fill': 'privacy_tip',
   'lifepreserver.fill': 'support',
   'envelope.fill': 'mail',

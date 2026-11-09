@@ -511,7 +511,7 @@ export type Action =
   | { type: 'rebuy' }
   | { type: 'end' }
   /** After a game ends: the host opens a new one; anyone else says they want in (`off` takes that back). */
-  | { type: 'playAgain'; off?: boolean }
+  | { type: 'playAgain'; off?: boolean; /** The host, opening the next game in a different mode. */ variant?: Variant }
   /** Internal: time has moved on (bots, timers, run-outs). Never accepted from a phone. */
   | { type: 'tick' }
   /** Internal: which phones are connected right now (device ids), from the server. Never accepted from a phone. */

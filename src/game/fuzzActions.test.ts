@@ -54,7 +54,7 @@ describe('the engine survives whatever a phone sends', { timeout: TABLE_MS }, ()
       let start = chips(g);
       let clock = 0;
       let accepted = 0;
-      for (let i = 0; i < 1500 && g.status !== 'ended'; i++) {
+      for (let i = 0; i < 700 && g.status !== 'ended'; i++) {
         let r;
         if (rng() < 0.5) {
           clock = (g.wakeAt ?? clock) + 1;

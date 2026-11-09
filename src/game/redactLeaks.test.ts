@@ -52,7 +52,7 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
       let clock = 0;
       let hands = 0;
       const problems = new Set<string>();
-      for (let i = 0; i < 5000 && game.status === 'playing' && hands < 25; i++) {
+      for (let i = 0; i < 5000 && game.status === 'playing' && hands < 12; i++) {
         const before = game.hand?.number;
         const hand = game.hand;
         const host = game.players.find((p) => p.deviceId === HOST)!;

@@ -14,7 +14,7 @@ Not the five hours the task asked for: this pass ran from 22:19 to about 22:55 U
 
 ## Tests added (all pass; none found a bug, which is the result)
 - No hidden card, deck, ghost, Memory card, device id or bot secret reaches a phone, in all 13 games, every step (and it fails when redaction is deliberately broken).
-- 1,500 random and invalid actions per game, no exceptions, no chip created or lost.
+- 700 random and invalid actions per game, no exceptions, no chip created or lost.
 - 310 corrupted-storage combinations and 4 corrupted saved tables in the web export: no crash.
 - 3,940 fuzzed requests against the local Worker: no 5xx.
 

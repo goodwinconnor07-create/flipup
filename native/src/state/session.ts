@@ -125,12 +125,15 @@ function publish(patch: Partial<TableState>): void {
 }
 
 function set(next: Session | null): void {
+  // A notice belongs to the table it was about: a refusal from an earlier lobby ("You need at least two players") must not greet the next one.
+  const fresh = session?.game?.id !== next?.game?.id || session?.mode !== next?.mode;
   session = next;
   if (next?.mode === 'local' && next.challenge) {
     watchWhatIf();
     finishRun(next);
   }
   publish({
+    ...(fresh ? { notice: null } : {}),
     mode: next?.mode ?? null,
     code: next?.code ?? null,
     game: !next?.game ? null : maskBlocked(next.mode === 'local' ? redactForDevice(next.game, me) : next.game),

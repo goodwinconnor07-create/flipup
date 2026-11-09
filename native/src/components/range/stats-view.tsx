@@ -7,7 +7,8 @@ import { Button } from '@/components/button';
 import { PressableScale } from '@/components/pressable-scale';
 import { Donut, Gauge, RateRing } from '@/components/range/charts';
 import { ThemedText } from '@/components/themed-text';
-import { rangeStats, type Answer, type Tally } from '@/state/range-history';
+import { libraryProgress, missedHands, rangeStats, type Answer, type Tally } from '@/state/range-history';
+import type { Grade } from '@train/ranges/model';
 import { seatName } from '@/state/range-view';
 import { brand, radius, spacing, useColors } from '@/theme';
 
@@ -62,9 +63,11 @@ function RateRow({ t, onPress }: { t: Tally; onPress?: () => void }) {
   );
 }
 
-export function StatsView({ history, onPractice }: { history: Answer[]; onPractice: (concepts: string[]) => void }) {
+export function StatsView({ history, grades, onPractice }: { history: Answer[]; /** Your best grade on each hand, for how much of the library you have. */ grades: Record<string, Grade>; /** Kinds of spot (concepts) or single hands ('id:<id>') to practise. */ onPractice: (focus: string[]) => void }) {
   const colors = useColors();
   const st = rangeStats(history);
+  const lib = libraryProgress(grades);
+  const missed = missedHands(history);
   if (st.total === 0) {
     return (
       <Tile>
@@ -156,6 +159,49 @@ export function StatsView({ history, onPractice }: { history: Answer[]; onPracti
         </View>
       </Tile>
 
+      {/* How much of the whole set of hands you have. */}
+      <Tile title="Your library">
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.lg }}>
+          <Donut
+            size={112}
+            parts={[
+              { value: lib.best, color: GOOD },
+              { value: lib.ok, color: BLUE },
+              { value: lib.mistake, color: WORK },
+              { value: lib.fresh, color: colors.quaternaryLabel as string },
+            ]}
+          >
+            <ThemedText variant="title2" style={[{ fontWeight: '800' }, NUM]}>
+              {lib.best}
+            </ThemedText>
+            <ThemedText variant="caption2" tone="tertiaryLabel">
+              of {lib.total}
+            </ThemedText>
+          </Donut>
+          <View style={{ flex: 1, gap: spacing.xs }}>
+            {[
+              { label: 'Mastered', n: lib.best, color: GOOD },
+              { label: 'Also good', n: lib.ok, color: BLUE },
+              { label: 'To retry', n: lib.mistake, color: WORK },
+              { label: 'New', n: lib.fresh, color: colors.quaternaryLabel as string },
+            ].map((x) => (
+              <View key={x.label} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: x.color }} />
+                <ThemedText variant="subhead" style={{ flex: 1 }}>
+                  {x.label}
+                </ThemedText>
+                <ThemedText variant="subhead" style={[{ fontWeight: '700' }, NUM]}>
+                  {x.n}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+        </View>
+        <ThemedText variant="caption1" tone="tertiaryLabel">
+          Hands where your best answer so far is the best play.
+        </ThemedText>
+      </Tile>
+
       {st.trend.length > 1 && (
         <Tile title="Your trend">
           <View accessibilityLabel={`Best-play rate in each run of 10 answers: ${st.trend.map(pct).join(', ')}`} style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.xs, height: 96 }}>
@@ -180,6 +226,25 @@ export function StatsView({ history, onPractice }: { history: Answer[]; onPracti
             <RateRow key={t.label} t={t} onPress={() => onPractice([t.label])} />
           ))}
           <Button title="Practise these" onPress={() => onPractice(st.weakest.map((t) => t.label))} />
+        </Tile>
+      )}
+
+      {missed.length > 0 && (
+        <Tile title="Retry your misses">
+          {missed.slice(0, 5).map((m) => (
+            <PressableScale key={m.id} accessibilityRole="button" accessibilityHint="Practise just this hand" onPress={() => onPractice([`id:${m.id}`])}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 36 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: WORK }} />
+                <ThemedText variant="subhead" numberOfLines={2} style={{ flex: 1 }}>
+                  {m.title}
+                </ThemedText>
+                <ThemedText variant="caption1" tone="tertiaryLabel" numberOfLines={1}>
+                  {m.concept}
+                </ThemedText>
+              </View>
+            </PressableScale>
+          ))}
+          <Button title={`Retry these ${missed.length} hand${missed.length === 1 ? '' : 's'}`} onPress={() => onPractice(missed.map((m) => `id:${m.id}`))} />
         </Tile>
       )}
 

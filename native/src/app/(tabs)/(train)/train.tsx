@@ -7,6 +7,7 @@ import { RangeTrainer } from '@/components/range-trainer';
 import { StatsView } from '@/components/range/stats-view';
 import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { useRangeHistory } from '@/state/range-history';
+import { useRangeGrades } from '@/state/ranges';
 
 /**
  * The Train tab is Range training: a hand, your answer, then why. A round button in the title row opens Stats (how
@@ -15,6 +16,7 @@ import { useRangeHistory } from '@/state/range-history';
 export default function TrainTab() {
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
   const history = useRangeHistory();
+  const grades = useRangeGrades();
   const [stats, setStats] = useState(false);
   const [focus, setFocus] = useState<string[] | null>(null);
   const top = () => scroll.current?.scrollTo({ y: 0, animated: false });
@@ -41,8 +43,9 @@ export default function TrainTab() {
         {stats ? (
           <StatsView
             history={history}
-            onPractice={(concepts) => {
-              setFocus(concepts);
+            grades={grades}
+            onPractice={(focus) => {
+              setFocus(focus);
               setStats(false);
               top();
             }}

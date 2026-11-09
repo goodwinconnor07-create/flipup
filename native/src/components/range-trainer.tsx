@@ -13,7 +13,8 @@ import { BoardTable } from '@/components/range/board-table';
 import { GlassButton } from '@/components/range/glass-button';
 import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
 import { Icon } from '@/components/icon';
-import { describeHand, rankLabel, suitOf } from '@/engine';
+import { PressableScale } from '@/components/pressable-scale';
+import { cardName, describeHand, rankLabel, suitOf } from '@/engine';
 import { SwapIcon } from '@/components/swap';
 import { Confetti } from '@/components/table/confetti';
 import { playSound } from '@/components/table/sounds';
@@ -24,6 +25,7 @@ import { detail, EASE_OUT, popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
 import { runOf, useRangeHistory } from '@/state/range-history';
+import { save, useStored } from '@/state/storage';
 import { eventsOf, firstSentence, viewAt } from '@/state/range-view';
 import { brand, gradient, radius, spacing, useColors } from '@/theme';
 import {
@@ -105,6 +107,9 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
   const [step, setStep] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [more, setMore] = useState(false);
+  // Hints: the clues for each street, one more each tap (no penalty), and a first-use tip about the table.
+  const [hints, setHints] = useState(0);
+  const tipSeen = useStored<boolean>('flipup.rangetip', false);
   // A best play fills the screen in green for a moment, with confetti, as at a won hand.
   const [cheer, setCheer] = useState(false);
   const run = runOf(useRangeHistory());
@@ -136,6 +141,10 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
     [evs, scenario],
   );
   const events = useMemo(() => eventsOf(scenario, r), [scenario, r]);
+  // A light tick as each step of the replay lands.
+  useEffect(() => {
+    if (step) haptic.select();
+  }, [step]);
   const view = useMemo(() => viewAt(scenario, r, events, step), [scenario, r, events, step]);
   // The replay plays itself a move at a time while it's playing, and stops at the end.
   useEffect(() => {
@@ -168,6 +177,7 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
     setStep(null);
     setPlaying(false);
     setMore(false);
+    setHints(0);
     onNext?.();
   };
 
@@ -206,6 +216,8 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
           : `${lastEvent.text} · pot ${bb(view.pot)}`;
   // What you're holding, in words.
   const made = describeHand([...scenario.hero.cards, ...scenario.board]).detail;
+  // The table as one sentence for VoiceOver.
+  const summary = `The table. You're ${scenario.hero.pos}, holding ${scenario.hero.cards.map(cardName).join(' and ')}. Board: ${view.board.map(cardName).join(', ') || 'not dealt yet'}. Pot ${bb(view.pot)}. ${facing ? `${bb(r.toCall)} to call` : 'Checked to you'}. ${inPot.map((o) => `${o.pos} is ${o.type.toLowerCase()}`).join('. ')}.`;
   const kind = (id: OptionId): 'fold' | 'blue' | 'raise' => (id === 'fold' ? 'fold' : id === 'call' || id === 'check' ? 'blue' : 'raise');
   // The bigger the bet, the deeper the green: a third of the pot lightest, an overbet or all in darkest.
   const green = (o: { id: OptionId; label: string }) =>
@@ -232,7 +244,7 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
       {focus?.length ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.xs, paddingLeft: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
           <ThemedText variant="footnote" numberOfLines={2} style={{ flex: 1, fontWeight: '600', color: colors.blueInk }}>
-            Practising: {focus.join(', ')}
+            Practising: {focus.some((f) => f.startsWith('id:')) ? `your missed hands (${focus.length})` : focus.join(', ')}
           </ThemedText>
           <Button title="Done" variant="secondary" size="md" onPress={() => onStopFocus?.()} style={{ minHeight: 36, height: 36, paddingHorizontal: spacing.sm }} />
         </View>
@@ -470,9 +482,31 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
         </View>
       ) : null}
 
+      {!tipSeen && (
+        <View style={{ gap: spacing.xs, padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
+          <ThemedText variant="subhead" style={{ color: colors.blueInk }}>
+            Your seat is at the bottom. The white D is the dealer and white chips are bets. Tap Replay hand to watch the hand play out; it never plays unless you ask.
+          </ThemedText>
+          <Button title="Got it" variant="secondary" onPress={() => save('flipup.rangetip', true)} style={{ minHeight: 40, height: 40 }} />
+        </View>
+      )}
+
       {/* The table as it stands: everyone's seat, the pot and the whole board. Nothing deals unless you replay. */}
-      <BoardTable scenario={scenario} view={view} />
+      <BoardTable scenario={scenario} view={view} summary={summary} />
       <ReplayStrip step={step} total={events.length} playing={playing} narration={narration} onStep={setStep} onPlaying={setPlaying} />
+
+      {/* Who is in the hand: their types (a read that often decides it). */}
+      <ThemedText variant="footnote" tone="tertiaryLabel" accessibilityLabel={`In the hand: ${inPot.map((o) => `${o.pos}, ${o.type}`).join('; ')}`}>
+        {inPot.map((o, i) => (
+          <ThemedText key={o.pos} variant="footnote" tone="tertiaryLabel">
+            {i > 0 ? '  ·  ' : ''}
+            <ThemedText variant="footnote" style={{ fontWeight: '800' }}>
+              {o.pos}
+            </ThemedText>{' '}
+            {o.type.toLowerCase()}
+          </ThemedText>
+        ))}
+      </ThemedText>
 
       {/* Your hand, with what it costs and where you sit. */}
       <View accessibilityLabel={`Your hand ${scenario.hero.cards.join(' ')}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
@@ -497,6 +531,29 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
           </ThemedText>
         </View>
       </View>
+
+      {!pick && (
+        <View style={{ gap: spacing.xs }}>
+          {hints > 0 && (
+            <View accessibilityLiveRegion="polite" style={{ gap: spacing.xxs, padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
+              {scenario.clues.slice(0, hints).map((c, i) => (
+                <ThemedText key={i} variant="subhead" style={{ color: colors.blueInk }}>
+                  <ThemedText variant="subhead" style={{ fontWeight: '800', color: colors.blueInk }}>
+                    {STREET_NAME[c.street]}{' '}
+                  </ThemedText>
+                  {c.text}
+                </ThemedText>
+              ))}
+            </View>
+          )}
+          <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+            {hints < scenario.clues.length && (
+              <SmallButton label={hints ? `Another hint (${hints} of ${scenario.clues.length})` : 'Hint'} onPress={() => setHints(hints + 1)} />
+            )}
+            <SmallButton label="Skip hand" quiet onPress={next} />
+          </View>
+        </View>
+      )}
 
       <HandHistory
         scenario={scenario}
@@ -576,5 +633,25 @@ function Celebration({ run, concept, onClose }: { run: number; concept: string; 
         </ThemedText>
       </Pressable>
     </Modal>
+  );
+}
+
+/** A small pill under the hand: Hint, or Skip hand (quieter). */
+function SmallButton({ label, onPress, quiet }: { label: string; onPress: () => void; quiet?: boolean }) {
+  const colors = useColors();
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+      style={{ minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: quiet ? 'transparent' : colors.blueBg }}
+    >
+      <ThemedText variant="subhead" style={{ fontWeight: '700', color: quiet ? (colors.tertiaryLabel as string) : (colors.blueInk as string) }}>
+        {label}
+      </ThemedText>
+    </PressableScale>
   );
 }

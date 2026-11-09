@@ -126,3 +126,36 @@ export function longestRun(history: Answer[]): number {
   }
   return best;
 }
+
+export interface Library {
+  total: number;
+  /** Hands whose best grade is a best play, also good, a miss, and hands you haven't answered yet. */
+  best: number;
+  ok: number;
+  mistake: number;
+  fresh: number;
+}
+
+/** How much of the whole set of hands you've got: from your best grade on each (`flipup.ranges`). */
+export function libraryProgress(grades: Record<string, Grade>, scenarios: Scenario[] = SCENARIOS): Library {
+  const count = (g: Grade) => scenarios.filter((s) => grades[s.id] === g).length;
+  const best = count('best');
+  const ok = count('ok');
+  const mistake = count('mistake');
+  return { total: scenarios.length, best, ok, mistake, fresh: scenarios.length - best - ok - mistake };
+}
+
+/** The hands you last got wrong, most recent first (a hand you've since answered well is left out). */
+export function missedHands(history: Answer[], scenarios: Scenario[] = SCENARIOS, max = 12): Scenario[] {
+  const byId = new Map(scenarios.map((s) => [s.id, s]));
+  const seen = new Set<string>();
+  const out: Scenario[] = [];
+  for (let i = history.length - 1; i >= 0 && out.length < max; i--) {
+    const a = history[i];
+    if (seen.has(a.id)) continue;
+    seen.add(a.id);
+    const s = byId.get(a.id);
+    if (s && a.grade === 'mistake') out.push(s);
+  }
+  return out;
+}

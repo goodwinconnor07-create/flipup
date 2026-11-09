@@ -10,7 +10,7 @@ vi.stubGlobal('localStorage', {
 });
 vi.mock('expo-sqlite/localStorage/install', () => ({}));
 
-const { rangeStats, recordAnswer, readRangeHistory, runOf, roughPatch, longestRun } = await import('../src/state/range-history');
+const { rangeStats, recordAnswer, readRangeHistory, runOf, roughPatch, longestRun, libraryProgress, missedHands } = await import('../src/state/range-history');
 const { answerHand, nextHand } = await import('../src/state/ranges');
 
 describe('range history', () => {
@@ -55,6 +55,24 @@ describe('range history', () => {
     expect(roughPatch([a('mistake'), a('mistake'), a('mistake'), a('mistake'), a('best')])).toBe(false);
     expect(roughPatch([a('mistake'), a('mistake')])).toBe(false);
     expect(longestRun([a('best'), a('best'), a('ok'), a('best'), a('best'), a('best')])).toBe(3);
+  });
+
+  it('counts how much of the library you have, and which hands you last missed', () => {
+    const [a, b, c] = SCENARIOS;
+    const lib = libraryProgress({ [a.id]: 'best', [b.id]: 'mistake', [c.id]: 'ok' });
+    expect(lib.best).toBe(1);
+    expect(lib.ok).toBe(1);
+    expect(lib.mistake).toBe(1);
+    expect(lib.fresh).toBe(SCENARIOS.length - 3);
+    const h = (id: string, grade: 'best' | 'mistake', at: number) => ({ id, pick: 'fold' as const, grade, at });
+    // b missed then got right: not a miss now; c missed last; a missed earlier than c.
+    const missed = missedHands([h(a.id, 'mistake', 1), h(b.id, 'mistake', 2), h(b.id, 'best', 3), h(c.id, 'mistake', 4)]);
+    expect(missed.map((s) => s.id)).toEqual([c.id, a.id]);
+  });
+
+  it('can practise one hand by its id', () => {
+    const s = SCENARIOS[7];
+    for (let i = 0; i < 20; i++) expect(nextHand(null, Math.random, [`id:${s.id}`]).id).toBe(s.id);
   });
 
   it('ignores answers for hands that no longer exist', () => {

@@ -113,7 +113,7 @@ export function seatPositions(s: Scenario, width: number, height: number): { pos
   const at = seats.indexOf(s.hero.pos);
   const cx = width / 2;
   const cy = height / 2;
-  const rx = width / 2 - (n > 6 ? 30 : 38);
+  const rx = width / 2 - (n > 6 ? 30 : 32);
   const ry = height / 2 - 22;
   return seats.map((pos, i) => {
     const theta = (((i - at + n) % n) * 2 * Math.PI) / n;

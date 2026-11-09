@@ -48,7 +48,9 @@ export function answerHand(s: Scenario, pick: OptionId): Grade {
  */
 export function nextHand(after: Scenario | null, rng: () => number = Math.random, focus?: readonly string[]): Scenario {
   // Practising the spots you miss: only hands of those concepts (every hand of them once you've got them all).
-  const all = focus?.length && allHands().some((s) => focus.includes(s.concept)) ? allHands().filter((s) => focus.includes(s.concept)) : allHands();
+  // A focus entry is a kind of spot (its concept) or one hand ('id:<hand id>', from Retry your misses).
+  const inFocus = (s: Scenario) => !!focus && (focus.includes(s.concept) || focus.includes(`id:${s.id}`));
+  const all = focus?.length && allHands().some(inFocus) ? allHands().filter(inFocus) : allHands();
   const done = readRangeGrades();
   // After a rough patch (a miss, and three of the last five), an easy one: a hand you've already got right, of another kind.
   if (!focus?.length && after && roughPatch(readRangeHistory())) {

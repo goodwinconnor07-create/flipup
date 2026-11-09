@@ -13,18 +13,20 @@ import { seatsOf, type Pos, type Scenario } from '@train/ranges/model';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
 
-export function BoardTable({ scenario, view }: { scenario: Scenario; view: BoardView }) {
+export function BoardTable({ scenario, view, summary }: { scenario: Scenario; view: BoardView; /** The table in a sentence, for VoiceOver. */ summary?: string }) {
   const [width, setWidth] = useState(0);
   const nine = seatsOf(scenario).length > 6;
   const height = nine ? 250 : 214;
   const inHand: Pos[] = [scenario.hero.pos, ...scenario.opponents.map((o) => o.pos)];
   const seatW = nine ? 52 : 60;
   const seats = width ? seatPositions(scenario, width, height) : [];
-  const cardW = Math.min(40, Math.floor((width - (nine ? 130 : 150)) / 5.2)) || 36;
+  // Six-handed, the lower side seats sit close to the board, so its cards are a little smaller.
+  const cardW = Math.min(nine ? 40 : 35, Math.floor((width - (nine ? 130 : 150)) / 5.2)) || 35;
   const cy = height / 2;
   return (
     <View
-      accessibilityLabel={`The table. Pot ${bb(view.pot)}. Board ${view.board.join(' ') || 'not dealt yet'}.`}
+      accessible
+      accessibilityLabel={summary ?? `The table. Pot ${bb(view.pot)}. Board ${view.board.join(' ') || 'not dealt yet'}.`}
       onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       style={{
         height,

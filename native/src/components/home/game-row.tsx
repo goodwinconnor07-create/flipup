@@ -55,7 +55,7 @@ function Tile({ variant, name, locked }: { variant: Variant; name: string; locke
           </View>
         )}
       </View>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ minHeight: 38, fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
         {name}
       </Text>
       <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, marginTop: -spacing.xs + 2 }}>
@@ -83,7 +83,7 @@ function Surprise() {
       <View style={{ width: TILE, height: TILE, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 2, borderStyle: 'dashed', borderColor: colors.separator, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name="shuffle" size={40} color={colors.secondaryLabel} />
       </View>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ minHeight: 38, fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
         Surprise me
       </Text>
       <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, marginTop: -spacing.xs + 2 }}>

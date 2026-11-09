@@ -61,7 +61,7 @@ function JoinCard() {
             <Icon name="qrcode.viewfinder" size={20} color="#ffffff" />
           </View>
           <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: '700', color: colors.label }}>
-            Join a game <Text style={{ fontWeight: '500', color: colors.secondaryLabel }}>· type a code or scan</Text>
+            Join a game <Text style={{ fontWeight: '500', color: colors.secondaryLabel }}>· code or scan</Text>
           </Text>
           <Icon name="chevron.right" size={15} color={brand.violetDark} />
         </View>
@@ -96,7 +96,7 @@ function Tile({ title, line, faces, colors, glow, bubble, height, go }: { title:
               )}
             </View>
           ))}
-          {bubble && (
+          {bubble && width >= 360 && (
             <View style={{ flexShrink: 1, alignSelf: 'center', marginLeft: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.95)' }}>
               <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontSize: 14, fontWeight: '800', color: colors[1] }}>
                 {bubble}
@@ -108,7 +108,7 @@ function Tile({ title, line, faces, colors, glow, bubble, height, go }: { title:
           <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 23, fontWeight: '800', color: '#ffffff' }}>
             {title}
           </Text>
-          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.82)' }}>
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255,255,255,0.82)' }}>
             {line}
           </Text>
         </View>

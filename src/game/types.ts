@@ -304,7 +304,7 @@ export interface Hand {
   discards?: Record<string, Card>;
 }
 
-export type MomentKind = 'reveal' | 'dice' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust';
+export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust';
 
 /**
  * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
@@ -317,9 +317,6 @@ export interface Moment {
   from?: number;
   offsets?: number[];
   gate?: boolean;
-  /** Die on the River: when the roll shows and when the swapped card changes. */
-  rollAt?: number;
-  swapAt?: number;
   /** Imposter's tally: ms between votes. */
   step?: number;
   /** Bust: who, and with what count. */

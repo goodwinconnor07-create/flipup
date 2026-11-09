@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyAction, createTable, DEFAULT_SETTINGS, diceFace, explainHand, options, redactForDevice, seededRng, tallyOrder, tallyShown, visibleBoard, type Game, type Variant } from './index';
+import { applyAction, createTable, DEFAULT_SETTINGS, explainHand, options, redactForDevice, seededRng, tallyOrder, tallyShown, visibleBoard, type Game, type Variant } from './index';
 
 const HOST = 'host-device';
 
@@ -41,34 +41,6 @@ function run(variant: Variant, seed: number, until: (g: Game, clock: number) => 
 }
 
 describe('moments', () => {
-  it('Die on the River: the river lands, the die takes its time, and betting waits for it', () => {
-    const found = run('dice', 3, (g) => !!g.hand?.dice && !!g.hand.moment && g.hand.moment.kind === 'dice' && !g.hand.result);
-    expect(found).not.toBeNull();
-    const { game, clock } = found!;
-    const hand = game.hand!;
-    const m = hand.moment!;
-    // Nobody acts until the moment is over.
-    expect(hand.toAct).toBeNull();
-    expect(hand.bettingAt).toBe(m.until);
-    expect(m.until - m.at).toBeGreaterThanOrEqual(4000);
-    // The river shows, then the die tumbles, then the roll, then the swap.
-    expect(visibleBoard(hand, m.at - 1).filter(Boolean)).toHaveLength(4);
-    expect(visibleBoard(hand, m.at + 100).filter(Boolean)).toHaveLength(5);
-    expect(diceFace(hand, m.at + 100).phase).toBe('none');
-    expect(diceFace(hand, m.at + 1200).phase).toBe('tumble');
-    expect(diceFace(hand, m.rollAt!).phase).toBe('rolled');
-    if (hand.dice!.out && hand.dice!.in) {
-      const before = visibleBoard(hand, m.rollAt! - 1);
-      expect(before).toContain(hand.dice!.out);
-      expect(visibleBoard(hand, m.swapAt!)).toContain(hand.dice!.in);
-    }
-    // Then the clock runs out and betting starts.
-    const r = applyAction(game, { type: 'tick' }, { deviceId: 'server', now: m.until + 1, rng: seededRng(1) });
-    expect(r.ok).toBe(true);
-    if (r.ok) expect(r.game.hand!.toAct).not.toBeNull();
-    expect(clock).toBeLessThan(m.until);
-  });
-
   it('Red River deals each extra card on its own beat', () => {
     let found = null as ReturnType<typeof run>;
     for (let seed = 1; seed < 30 && !found; seed++) found = run('redriver', seed, (g) => g.hand?.moment?.kind === 'redriver' && !g.hand.result);

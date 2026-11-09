@@ -19,11 +19,6 @@ export const MOMENT_TIMING = {
   riverStep: 1000,
   /** Red River: gap before each extra card, long enough to say "another one". */
   redStep: 1500,
-  /** Die on the River: the river lands, the die tumbles, the number shows, the card swaps, then betting. */
-  diceRoll: 900,
-  diceShow: 2400,
-  diceSwap: 3100,
-  diceEnd: 4400,
   /** A beat before the showdown, with the ghost or the 21 count hanging in the air. */
   suspenseGhost: 3200,
   suspenseBlackjack: 2400,
@@ -64,12 +59,8 @@ export function dealMoment(variant: Variant, now: number, from: number, count: n
     offsets = Array.from({ length: count }, (_, i) => i * T.cardStep);
   }
   const last = offsets[offsets.length - 1] ?? 0;
-  const end = kind === 'dice' ? T.diceEnd : last + T.settle + (kind === 'redriver' ? 400 : 0);
+  const end = last + T.settle + (kind === 'redriver' ? 400 : 0);
   const m: Moment = { kind, at: now, until: now + scaled(end, fast), from, offsets: offsets.map((o) => scaled(o, fast)) };
-  if (kind === 'dice') {
-    m.rollAt = now + scaled(T.diceShow, fast);
-    m.swapAt = now + scaled(T.diceSwap, fast);
-  }
   return m;
 }
 
@@ -90,19 +81,8 @@ export function visibleBoard(hand: Hand, now: number): (Card | null)[] {
       const at = m.at + (m.offsets?.[i - from] ?? 0);
       return now >= at ? card : null;
     }
-    if (m.kind === 'dice' && hand.dice?.out && hand.dice.in && card === hand.dice.in && m.swapAt && now < m.swapAt) return hand.dice.out;
     return card;
   });
-}
-
-/** What the die shows right now: still tumbling (null), or the number it landed on. */
-export function diceFace(hand: Hand, now: number): { phase: 'none' | 'tumble' | 'rolled'; roll?: number } {
-  const m = hand.moment;
-  if (!hand.dice) return { phase: 'none' };
-  if (!m || m.kind !== 'dice' || hand.result || now >= m.until) return { phase: 'rolled', roll: hand.dice.roll };
-  if (m.rollAt && now >= m.rollAt) return { phase: 'rolled', roll: hand.dice.roll };
-  if (now >= m.at + T.diceRoll) return { phase: 'tumble' };
-  return { phase: 'none' };
 }
 
 /** A line for the felt while a moment plays. */
@@ -116,12 +96,6 @@ export function momentCaption(variant: Variant, hand: Hand, now: number): string
     }
     case 'rivers':
       return '🌉 Three rivers. Your hand uses one';
-    case 'dice': {
-      const f = diceFace(hand, now);
-      if (f.phase === 'none') return '🎲 Here comes the die…';
-      if (f.phase === 'tumble') return '🎲 Rolling…';
-      return hand.dice?.out ? `🎲 Rolled ${f.roll}: card ${f.roll} changes` : `🎲 Rolled ${f.roll}: the board stays`;
-    }
     case 'suspense':
       return variant === 'ghost' ? '👻 Can anyone beat the ghost?' : variant === 'bjholdem' ? '♠️ Best hand and closest to 21…' : '🤪 Working out the wild cards…';
     case 'discuss':

@@ -86,8 +86,7 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     const before = seen.current;
     seen.current = now;
     if (!before) return;
-    // The die starts rattling a moment after the river lands.
-    if (dice && dice !== before.dice) playSound('dice', hand?.moment ? Math.max(0, hand.moment.at + 900 - toTableTime(Date.now(), game.fast)) : 0);
+    if (dice && dice !== before.dice) playSound('dice');
     if (kept && kept !== before.kept) playSound('spook');
     if (voting && voting !== before.voting) playSound('sting');
     if (reds && reds !== before.reds) {

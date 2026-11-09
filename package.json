@@ -24,6 +24,7 @@
     "bot:everyday": "tsx scripts/evaluateEveryday.ts",
     "bot:planning": "tsx scripts/evaluatePlanning.ts",
     "bot:ranges": "tsx scripts/analyseBotRanges.ts",
+    "bot:improve": "tsx scripts/improveBots.ts",
     "bot:persistence": "tsx scripts/botPersistence.ts",
     "bot:calibrate": "tsx scripts/humanPoker.ts calibrate",
     "bot:train": "tsx scripts/trainBot.ts"

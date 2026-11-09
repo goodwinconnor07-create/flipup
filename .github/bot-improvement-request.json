@@ -1,0 +1,6 @@
+{
+  "requestId": "lookahead-v6-improvement-1",
+  "durationMinutes": 300,
+  "purpose": "Continue offline bot calibration and evaluation for five hours after the one-street planning update.",
+  "automaticProductionWeightChanges": false
+}

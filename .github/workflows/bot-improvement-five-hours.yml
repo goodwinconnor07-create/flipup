@@ -1,0 +1,45 @@
+name: Five-hour bot improvement
+
+on:
+  push:
+    branches: [main]
+    paths: ['.github/bot-improvement-request.json']
+  workflow_dispatch:
+    inputs:
+      minutes:
+        description: Training and evaluation duration (at most 300 minutes)
+        default: '300'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: five-hour-bot-improvement
+  cancel-in-progress: false
+
+jobs:
+  improve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run src/bot_engine
+      - name: Train, evaluate and save checkpoints
+        run: npm run bot:improve -- "$BOT_IMPROVE_MINUTES" bot-improvement-output
+        env:
+          BOT_IMPROVE_MINUTES: ${{ inputs.minutes || '300' }}
+          BOT_IMPROVE_RUN_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
+          BOT_IMPROVE_SOURCE_COMMIT: ${{ github.sha }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: five-hour-bot-improvement-${{ github.run_id }}
+          path: bot-improvement-output
+          retention-days: 30

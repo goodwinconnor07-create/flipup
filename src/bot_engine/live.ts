@@ -4,6 +4,8 @@ import { BOT_001 } from './identity';
 import { emptyMemory, observe, type BotMemory } from './memory';
 import { BotService } from './service';
 import type { BotThought } from '../game/botPlay';
+import type { DecisionTrace } from './service';
+import { publicResponses } from './observations';
 
 export interface LiveBotState {
   playerId: string;
@@ -12,6 +14,8 @@ export interface LiveBotState {
   observedActions: number;
   eventSequence: number;
   lastDecision?: { hand: number; sequence: number; model: string; source: string };
+  /** Private bounded replay history; the whole LiveBotState is stripped from client/bot views. */
+  traces?: DecisionTrace[];
 }
 const service = new BotService();
 
@@ -36,29 +40,25 @@ export function updateHumanPokerMemory(game: Game): LiveBotState | null {
     state.observedActions = 0;
   }
   // Replay public commitments to count actual faced-bet opportunities, not checks or blind posts.
-  let street = 'preflop',
-    top = game.settings.bigBlind;
-  const bets = new Map(
-    h.seats.map((s) => [s.playerId, s.playerId === h.sbId ? game.settings.smallBlind : s.playerId === h.bbId ? game.settings.bigBlind : 0]),
-  );
-  (h.actions ?? []).forEach((a, index) => {
-    if (a.street !== street) {
-      street = a.street;
-      top = 0;
-      bets.forEach((_, id) => bets.set(id, 0));
-    }
-    if (index >= state.observedActions && a.playerId !== player.id && !a.outOfTurn && top > (bets.get(a.playerId) ?? 0)) {
+  const responses = publicResponses({
+    actions: (h.actions ?? []).map((a) => ({ playerId: a.playerId, street: a.street, move: a.move, to: a.to, outOfTurn: a.outOfTurn })),
+    playerIds: h.seats.map((s) => s.playerId),
+    sbId: h.sbId,
+    bbId: h.bbId,
+    smallBlind: game.settings.smallBlind,
+    bigBlind: game.settings.bigBlind,
+    startStacks: h.startStacks,
+  });
+  responses.forEach((a) => {
+    if (a.actionIndex >= state.observedActions && a.targetId !== player.id) {
       observe(state.memory, {
         observerId: player.id,
-        targetId: a.playerId,
+        targetId: a.targetId,
         tableId: game.id,
         sequence: ++state.eventSequence,
-        foldedToBet: a.move === 'fold',
+        foldedToBet: a.foldedToBet,
+        context: a.context,
       });
-    }
-    if (a.move !== 'fold' && a.move !== 'check') {
-      bets.set(a.playerId, a.to);
-      top = Math.max(top, a.to);
     }
   });
   state.observedActions = h.actions?.length ?? 0;
@@ -74,5 +74,6 @@ export function humanPokerThought(game: Game, playerId: string): BotThought | nu
   const profile = { ...BOT_001, botId: playerId };
   const trace = service.decide(info, profile, state.memory, service.seedFor(info, profile));
   state.lastDecision = { hand: info.hand, sequence: info.sequence, model: trace.prediction.modelVersion, source: trace.prediction.source };
+  state.traces = [...(state.traces ?? []), trace].slice(-8);
   return { move: trace.action, thinkMs: 1200 };
 }

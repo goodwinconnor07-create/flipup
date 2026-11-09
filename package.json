@@ -20,7 +20,8 @@
     "bot:generate": "tsx scripts/humanPoker.ts generate",
     "bot:evaluate": "tsx scripts/humanPoker.ts evaluate",
     "bot:persistence": "tsx scripts/botPersistence.ts",
-    "bot:calibrate": "tsx scripts/humanPoker.ts calibrate"
+    "bot:calibrate": "tsx scripts/humanPoker.ts calibrate",
+    "bot:train": "tsx scripts/trainBot.ts"
   },
   "engines": {
     "node": ">=22.13"

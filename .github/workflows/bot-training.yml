@@ -1,0 +1,47 @@
+name: BOT_001 learning experiments
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/bot_engine/**'
+      - 'scripts/trainBot.ts'
+      - '.github/workflows/bot-training.yml'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bot-learning-experiments
+  cancel-in-progress: false
+
+jobs:
+  train-and-evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: bot-training-output
+          key: bot-learning-${{ runner.os }}-${{ hashFiles('src/bot_engine/**', 'scripts/trainBot.ts') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: |
+            bot-learning-${{ runner.os }}-${{ hashFiles('src/bot_engine/**', 'scripts/trainBot.ts') }}-
+      - run: npx vitest run src/bot_engine
+      - run: npm run bot:train -- 2 bot-training-output
+        env:
+          BOT_TRAIN_PAIRS: '250'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bot-learning-${{ github.run_id }}
+          path: bot-training-output
+          retention-days: 30

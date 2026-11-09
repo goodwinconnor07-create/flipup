@@ -13,7 +13,7 @@ Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mi
 
 ## Try BOT_001
 
-For standard Texas Hold’em, turn on **Invite BOT_001** in setup or the host’s table settings. It adds the experimental bot in one extra seat. Choose zero other bots to play it heads up. The setting is off by default. See [behaviour and validation](docs/bot_system/PLAY_BOT_001.md).
+For standard Texas Hold’em, turn on **Invite BOT_001** in setup or the host’s table settings. It adds the experimental bot in one extra seat. Choose zero other bots to play it heads up. The setting is off by default. See [behaviour and validation](docs/bot_system/PLAY_BOT_001.md) and [contextual learning experiments](docs/bot_system/LEARNING_LOOP.md).
 
 ## Running it
 

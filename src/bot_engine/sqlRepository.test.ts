@@ -107,6 +107,19 @@ describe('Transactional bot storage on actual SQLite', () => {
     const journal = db.all<{ event_json: string }>('SELECT event_json FROM bot_observations')[0].event_json;
     expect(journal).not.toMatch(/hiddenCards|deck|As|Ah/);
   });
+  it('persists contextual posteriors and strips private extras inside context metadata', () => {
+    const file = path(),
+      db = open(file),
+      store = new BotStateStore(db);
+    store.saveProfile(BOT_001);
+    const contextual = { ...event, context: { street: 'river', size: 'medium', headsUp: true, hiddenCards: ['As', 'Ah'] } as const };
+    store.ingest(contextual);
+    db.close();
+    const restarted = new BotStateStore(open(file));
+    expect(restarted.memory('BOT_001', 'table').contexts?.OPPONENT?.['river|medium|heads-up'].samples).toBe(1);
+    expect(JSON.stringify(restarted.memory('BOT_001', 'table'))).not.toMatch(/hiddenCards|As|Ah/);
+    expect(restarted.ingest(contextual).applied).toBe(false);
+  });
   it('stores idempotent decisions and their original memory snapshot across restarts', () => {
     const file = path(),
       db = open(file),

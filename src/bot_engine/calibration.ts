@@ -3,7 +3,7 @@ import { createTable, DEFAULT_SETTINGS } from '../game/reducer';
 import { dealNextStreet, makeMove, startHand } from '../game/holdem';
 import { informationFor, type InformationSet } from './information';
 import { BotFactory, type BotProfile } from './identity';
-import { emptyMemory, observe } from './memory';
+import { emptyMemory, observe, betSizeBucket, contextKey, type ObservationContext } from './memory';
 import { BaselineProvider } from './strategy';
 import { BotService } from './service';
 
@@ -99,15 +99,32 @@ export function calibratePopulation(count = 20, seed = 1001, minimumDistance = 0
       };
       const memory = emptyMemory(profile.botId, info.tableId);
       // Half the battery tests a controlled, high-confidence overfold read. No other bot state is used.
+      const opponent = info.players.find((p) => p.id !== profile.botId)!;
+      const hero = info.players.find((p) => p.id === profile.botId)!;
+      const pot = info.players.reduce((sum, p) => sum + p.total, 0);
+      const contexts = new Map<string, ObservationContext>();
+      for (const action of predictions[n].actions)
+        if (action.to !== undefined) {
+          const context: ObservationContext = {
+            street: info.street,
+            size: betSizeBucket(Math.min(opponent.stack, Math.max(0, action.to - opponent.bet)), pot + action.to - hero.bet),
+            headsUp: true,
+            raised: info.currentBet > 0,
+          };
+          contexts.set(contextKey(context), context);
+        }
+      let sequence = 0;
       if (n % 2)
-        for (let seq = 0; seq < 80; seq++)
-          observe(memory, {
-            observerId: profile.botId,
-            targetId: info.players.find((p) => p.id !== profile.botId)!.id,
-            tableId: info.tableId,
-            sequence: seq,
-            foldedToBet: true,
-          });
+        for (const context of contexts.values())
+          for (let seq = 0; seq < 80; seq++)
+            observe(memory, {
+              observerId: profile.botId,
+              targetId: info.players.find((p) => p.id !== profile.botId)!.id,
+              tableId: info.tableId,
+              sequence: ++sequence,
+              foldedToBet: true,
+              context,
+            });
       const policy = new BotService({ predict: () => structuredClone(predictions[n]) }).decide(info, profile, memory, 0).finalDistribution;
       signature.push(policy);
       const sampling = seededRng(hashString(`${profile.seed}:${n}:calibration`));
@@ -134,7 +151,8 @@ export function calibratePopulation(count = 20, seed = 1001, minimumDistance = 0
     });
   }
   return {
-    protocolVersion: 1,
+    protocolVersion: 2,
+    learningVersion: 'contextual-1',
     policyVersion: predictions[0].modelVersion,
     scope: 'synthetic-battery-only',
     status: accepted.length === count ? 'accepted' : 'insufficient-diversity',

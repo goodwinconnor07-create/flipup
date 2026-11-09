@@ -70,6 +70,16 @@ export class BotStateStore {
       tableId: event.tableId,
       sequence: event.sequence,
       foldedToBet: event.foldedToBet,
+      ...(event.context
+        ? {
+            context: {
+              street: event.context.street,
+              size: event.context.size,
+              headsUp: event.context.headsUp,
+              ...(event.context.raised !== undefined ? { raised: event.context.raised } : {}),
+            },
+          }
+        : {}),
     };
     const json = canonical(safe);
     return this.db.transaction(() => {

@@ -7,11 +7,15 @@ import { emptyMemory, observe } from './memory';
 import { BotService } from './service';
 import { BaselineProvider } from './strategy';
 import { scriptedMove, type AgentKind, SCRIPTED_OPPONENTS } from './scriptedOpponents';
+import { LEARNING_CONFIG, type LearningConfig } from './learningConfig';
+import { publicResponses } from './observations';
 
 export interface SimulationOptions {
   agents?: AgentKind[];
   reverseSeats?: boolean;
   pairedDecks?: boolean;
+  learningMode?: 'contextual' | 'pooled' | 'off';
+  learningConfig?: LearningConfig;
 }
 
 /** Uses production rules; independently seeded policy and dealing streams. No illegal-action fallback. */
@@ -44,8 +48,8 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   const factory = new BotFactory();
   const profiles = game.players.map((p, n) => factory.generate(p.id, 1001 + n));
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
-  const service = new BotService();
-  const previous = new BotService(new BaselineProvider(160, 'baseline-2'));
+  const service = new BotService(new BaselineProvider(), config.learningMode ?? 'contextual', config.learningConfig ?? LEARNING_CONFIG);
+  const previous = new BotService(new BaselineProvider(160, 'baseline-2'), 'pooled');
   const baseline = new BaselineProvider();
   const latencies: number[] = [];
   const returns: number[] = [];
@@ -106,15 +110,29 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) throw new Error(`Illegal bot action: ${error}`);
       if (!info.legal.canCheck) {
+        const context = publicResponses({
+          actions: h.actions ?? [],
+          playerIds: h.seats.map((s) => s.playerId),
+          sbId: h.sbId,
+          bbId: h.bbId,
+          smallBlind: game.settings.smallBlind,
+          bigBlind: game.settings.bigBlind,
+          startStacks: h.startStacks,
+        }).at(-1)!.context;
         for (const memory of memories)
           if (memory.botId !== info.heroId)
-            observe(memory, {
-              observerId: memory.botId,
-              targetId: info.heroId,
-              tableId: game.id,
-              sequence: ++eventSequence,
-              foldedToBet: action.move === 'fold',
-            });
+            observe(
+              memory,
+              {
+                observerId: memory.botId,
+                targetId: info.heroId,
+                tableId: game.id,
+                sequence: ++eventSequence,
+                foldedToBet: action.move === 'fold',
+                context,
+              },
+              config.learningConfig ?? LEARNING_CONFIG,
+            );
       }
       if (agent === 'bot' || agent === 'baseline' || agent === 'previous') latencies.push(elapsed);
       decisions++;

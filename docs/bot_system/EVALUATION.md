@@ -1,5 +1,7 @@
 # Evaluation and implementation progress
 
+For the latest contextual learner, daily experiments and 8,000-hand comparison, see [LEARNING_LOOP.md](LEARNING_LOOP.md). The following records the earlier foundation/strategy measurements; its outstanding-work list is historical.
+
 Updated 9 November 2026 on this cloud instance, Node 24.22.1. Backend-only development system. **BOT_001 is not production ready.**
 
 ## Verified work in this iteration

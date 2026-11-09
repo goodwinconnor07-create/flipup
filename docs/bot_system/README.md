@@ -10,6 +10,7 @@ npm run typecheck
 npx vitest run src/bot_engine
 npm run bot:demo -- 100 /tmp/bot-001-memory.json
 npm run bot:generate -- 20
+npm run bot:train -- 2 /tmp/flipup-training
 npm run bot:calibrate -- 20
 npm run bot:evaluate -- 200
 npm run bot:persistence -- /tmp/bot-persistence.sqlite
@@ -25,7 +26,7 @@ No secret, remote solver, neural model or paid API is needed. The simulation use
 
 `BaselineProvider.predict(info)` returns legal candidate actions, normalized probabilities, source, coverage, model version, optional approximate values, equity uncertainty and warnings. `BotService.decide(info, profile, memory, seed)` applies bounded identity and heads-up evidence adjustments and samples one action. The returned internal trace contains the inputs and actual numeric transformations; rerunning it with the same provider version reproduces the policy and action. Execution time itself is not deterministic.
 
-`MemoryRepository` retains the original string KV storage interface. Its versioned keys include both observer bot and table. Writes must be serialized by the caller; the CLI uses a single-writer JSON file with atomic replacement. Only narrow public fold-to-bet events enter `observe()`. Sequence numbers are monotonic **across the entire table session**, not the engine's per-hand `Hand.seq`. The legacy in-memory observer discards stale sequence numbers; the SQL ingestion service instead rejects out-of-order delivery and atomically deduplicates journaled events. Fold evidence currently pools streets and bet sizes; contextual inference remains a limitation.
+`MemoryRepository` retains the original string KV storage interface. Its versioned keys include both observer bot and table. Writes must be serialized by the caller; the CLI uses a single-writer JSON file with atomic replacement. Only narrow public fold-to-bet events enter `observe()`. Sequence numbers are monotonic **across the entire table session**, not the engine's per-hand `Hand.seq`. The legacy in-memory observer discards stale sequence numbers; the SQL ingestion service instead rejects out-of-order delivery and atomically deduplicates journaled events. New fold evidence is separated by street, bet size, facing a bet/raise and heads-up/multiway play. Legacy pooled counts remain for comparison; the contextual learner does not use them as a substitute for missing context. See [the learning loop and measured results](LEARNING_LOOP.md).
 
 To integrate in a trusted backend: authorize the current actor; construct `info`; load its persisted profile and observer memory; call `decide` with `seedFor`; submit the returned action to `makeMove`; persist public observation events in order. Keep trace storage private. Traces contain the hero's own private cards and strategy: never broadcast them or enable detailed production logging by default. Persist profile versions and memory snapshots if replay is required. Do not expose an unauthenticated endpoint that accepts arbitrary actor IDs.
 

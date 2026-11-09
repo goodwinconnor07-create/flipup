@@ -1,0 +1,105 @@
+{
+  "protocol": "river-learning-2",
+  "nextCycle": 6,
+  "champion": {
+    "version": "contextual-1",
+    "contextDecay": 0.96,
+    "minimumSamples": 8,
+    "confidenceSamples": 24,
+    "confidenceZ": 1.64,
+    "profitMargin": 0.02,
+    "maximumBlend": 0.5
+  },
+  "cycles": [
+    {
+      "cycle": 0,
+      "config": {
+        "version": "contextual-1",
+        "contextDecay": 0.96,
+        "minimumSamples": 8,
+        "confidenceSamples": 24,
+        "confidenceZ": 1.64,
+        "profitMargin": 0.02,
+        "maximumBlend": 0.5
+      },
+      "trainingGain": 2.012735884946456,
+      "validationGain": 2.0113970000241177,
+      "accepted": true
+    },
+    {
+      "cycle": 1,
+      "config": {
+        "version": "contextual-1",
+        "contextDecay": 0.96,
+        "minimumSamples": 8,
+        "confidenceSamples": 24,
+        "confidenceZ": 1.64,
+        "profitMargin": 0.02,
+        "maximumBlend": 0.5
+      },
+      "trainingGain": 2.0263721948796016,
+      "validationGain": 1.9863891081618965,
+      "accepted": true
+    },
+    {
+      "cycle": 2,
+      "config": {
+        "version": "contextual-1",
+        "contextDecay": 0.96,
+        "minimumSamples": 8,
+        "confidenceSamples": 24,
+        "confidenceZ": 1.64,
+        "profitMargin": 0.02,
+        "maximumBlend": 0.5
+      },
+      "trainingGain": 2.0121479251438332,
+      "validationGain": 2.0157154406565723,
+      "accepted": true
+    },
+    {
+      "cycle": 3,
+      "config": {
+        "version": "contextual-1",
+        "contextDecay": 0.96,
+        "minimumSamples": 8,
+        "confidenceSamples": 24,
+        "confidenceZ": 1.64,
+        "profitMargin": 0.02,
+        "maximumBlend": 0.5
+      },
+      "trainingGain": 2.018437626284125,
+      "validationGain": 2.010015448151762,
+      "accepted": true
+    },
+    {
+      "cycle": 4,
+      "config": {
+        "version": "contextual-1",
+        "contextDecay": 0.96,
+        "minimumSamples": 8,
+        "confidenceSamples": 24,
+        "confidenceZ": 1.64,
+        "profitMargin": 0.02,
+        "maximumBlend": 0.5
+      },
+      "trainingGain": 2.0053579234621655,
+      "validationGain": 2.0078991107138933,
+      "accepted": true
+    },
+    {
+      "cycle": 5,
+      "config": {
+        "version": "contextual-1",
+        "contextDecay": 0.96,
+        "minimumSamples": 8,
+        "confidenceSamples": 24,
+        "confidenceZ": 1.64,
+        "profitMargin": 0.02,
+        "maximumBlend": 0.5
+      },
+      "trainingGain": 2.0186116261174485,
+      "validationGain": 2.002790387516063,
+      "accepted": true
+    }
+  ]
+}

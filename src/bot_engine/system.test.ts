@@ -170,7 +170,7 @@ describe('Human Poker foundation', () => {
         warnings: ['Synthetic test policy'],
       }),
     };
-    const service = new BotService(provider);
+    const service = new BotService(provider, 'pooled');
     const memory = emptyMemory(info.heroId, g.id);
     const targetId = info.players.find((p) => p.id !== info.heroId)!.id;
     const aggression = () =>

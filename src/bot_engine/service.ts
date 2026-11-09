@@ -5,6 +5,8 @@ import { copyInformation, legalActions, type InformationSet } from './informatio
 import { foldEstimate, type BotMemory } from './memory';
 import { BaselineProvider, normalize, type StrategyProvider, type StrategyPrediction } from './strategy';
 import { features } from './features';
+import { evaluateAdaptation } from './adaptation';
+import { LEARNING_CONFIG, validateLearningConfig, type LearningConfig } from './learningConfig';
 
 export interface DecisionTrace {
   version: 1;
@@ -21,10 +23,22 @@ export interface DecisionTrace {
   samplingSeed: number;
   action: BotMove;
   latencyMs: number;
+  adaptation?: {
+    mode: 'contextual' | 'pooled' | 'off';
+    config: LearningConfig;
+    blend: number;
+    evidence: ReturnType<typeof evaluateAdaptation>['evidence'];
+  };
 }
 /** Backend service contract. Production must authorize the actor before constructing info. */
 export class BotService {
-  constructor(private provider: StrategyProvider = new BaselineProvider()) {}
+  constructor(
+    private provider: StrategyProvider = new BaselineProvider(),
+    private learningMode: 'contextual' | 'pooled' | 'off' = 'contextual',
+    private learningConfig: LearningConfig = LEARNING_CONFIG,
+  ) {
+    validateLearningConfig(learningConfig);
+  }
   decide(info: InformationSet, profile: BotProfile, memory: BotMemory, samplingSeed: number): DecisionTrace {
     const start = performance.now();
     info = copyInformation(info);
@@ -36,7 +50,7 @@ export class BotService {
       !Number.isSafeInteger(samplingSeed)
     )
       throw new Error('Identity mismatch');
-    const prediction = this.provider.predict(info);
+    const prediction = structuredClone(this.provider.predict(info));
     const legal = new Set(legalActions(info).map((a) => JSON.stringify(a)));
     if (
       !prediction.actions.length ||
@@ -65,22 +79,29 @@ export class BotService {
           ? (profile.traits.curiosity - 0.5) * 2
           : 0,
     );
-    const exploitation = prediction.actions.map((a) =>
-      a.to !== undefined && (prediction.equity ?? 0.5) < 0.5
-        ? Math.max(-0.25, Math.min(0.25, (read.mean - 0.5) * read.confidence * profile.traits.adaptation))
-        : 0,
-    );
+    const adaptation = evaluateAdaptation(info, prediction, memory, profile, this.learningConfig);
+    const exploitation =
+      this.learningMode === 'contextual'
+        ? adaptation.logWeights
+        : prediction.actions.map((a) =>
+            this.learningMode === 'pooled' && a.to !== undefined && (prediction.equity ?? 0.5) < 0.5
+              ? Math.max(-0.25, Math.min(0.25, (read.mean - 0.5) * read.confidence * profile.traits.adaptation))
+              : 0,
+          );
     let finalDistribution = normalize(prediction.probabilities.map((p, n) => p * Math.exp(identity[n] + exploitation[n])));
+    if (this.learningMode === 'contextual' && adaptation.blend > 0)
+      finalDistribution = normalize(finalDistribution.map((p, n) => (1 - adaptation.blend) * p + adaptation.blend * adaptation.target[n]));
     // Observable preferences may move close decisions, but have a bounded estimated chip cost.
     // These are approximate provider values, so this is not a true regret guarantee.
     const budget = Math.max(info.bigBlind * 0.1, stateFeatures.eligiblePotBb * info.bigBlind * 0.02);
     let blend = 1,
       estimatedValueLoss: number | null = null;
-    if (prediction.values) {
-      if (prediction.values.length !== prediction.actions.length || prediction.values.some((v) => !Number.isFinite(v)))
+    const guardValues = this.learningMode === 'contextual' ? adaptation.adjustedValues : prediction.values;
+    if (guardValues) {
+      if (guardValues.length !== prediction.actions.length || guardValues.some((v) => !Number.isFinite(v)))
         throw new Error('Invalid provider values');
-      const baselineValue = prediction.values.reduce((sum, value, n) => sum + value * prediction.probabilities[n], 0);
-      const adjustedValue = prediction.values.reduce((sum, value, n) => sum + value * finalDistribution[n], 0);
+      const baselineValue = guardValues.reduce((sum, value, n) => sum + value * prediction.probabilities[n], 0);
+      const adjustedValue = guardValues.reduce((sum, value, n) => sum + value * finalDistribution[n], 0);
       const loss = Math.max(0, baselineValue - adjustedValue);
       blend = loss > budget ? budget / loss : 1;
       finalDistribution = normalize(finalDistribution.map((p, n) => blend * p + (1 - blend) * prediction.probabilities[n]));
@@ -111,6 +132,12 @@ export class BotService {
       samplingSeed,
       action: { ...prediction.actions[selected] },
       latencyMs: performance.now() - start,
+      adaptation: {
+        mode: this.learningMode,
+        config: { ...this.learningConfig },
+        blend: this.learningMode === 'contextual' ? adaptation.blend : 0,
+        evidence: this.learningMode === 'contextual' ? adaptation.evidence : [],
+      },
     };
   }
   /** Stable per-decision randomness; a retry cannot resample until it gets a preferred move. */

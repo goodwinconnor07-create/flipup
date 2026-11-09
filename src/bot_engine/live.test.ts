@@ -58,6 +58,9 @@ describe('Opt-in BOT_001 at real tables', () => {
     ).toBe(game.players.reduce((sum, p) => sum + p.bought, 0));
     const loaded: Game = JSON.parse(JSON.stringify(game));
     expect(loaded.humanPoker).toEqual(game.humanPoker);
+    expect(loaded.humanPoker?.traces?.length).toBeGreaterThan(0);
+    expect(loaded.humanPoker!.traces!.length).toBeLessThanOrEqual(8);
+    expect(JSON.stringify(loaded.humanPoker!.traces!.map((t) => t.information))).not.toMatch(/"deck"|"botKind"|"deviceId"/);
     const view = redactForDevice(loaded, 'host');
     expect(view.humanPoker).toBeUndefined();
     expect(view.players.every((p) => p.botKind === undefined)).toBe(true);

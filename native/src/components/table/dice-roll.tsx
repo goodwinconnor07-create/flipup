@@ -8,6 +8,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { gradient, ROUNDED } from '@/theme';
 
 import { haptic } from '../haptics';
+import { DiceCube } from './dice-cube';
 import { PlayingCard } from './playing-card';
 
 /** The show, in ms from its start: three counts, the die falling and tumbling, then the result until `dice.until`. */
@@ -15,17 +16,6 @@ const COUNT_MS = 800;
 const COUNT_END = COUNT_MS * 3;
 const ROLL_MS = 1900;
 const RESULT_AT = COUNT_END + ROLL_MS;
-const DIE = 168;
-
-/** Where the pips sit on a 3 × 3 grid for each face. */
-const PIPS: Record<number, [number, number][]> = {
-  1: [[1, 1]],
-  2: [[0, 0], [2, 2]],
-  3: [[0, 0], [1, 1], [2, 2]],
-  4: [[0, 0], [2, 0], [0, 2], [2, 2]],
-  5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]],
-  6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]],
-};
 
 /** A big number arriving: from a little larger and see-through, down to its size (ease-out, no bounce). */
 const COUNT_IN = new Keyframe({
@@ -35,7 +25,7 @@ const COUNT_IN = new Keyframe({
 
 /**
  * Die on the River's roll as a show over the whole table: "Rolling the die in 3, 2, 1", then a big die drops onto
- * the screen and tumbles, its faces flickering slower and slower until it lands on the roll, and the result: which
+ * the screen and spins, a true 3D cube (`DiceCube`), slower and slower until it comes to rest on the roll, and the result: which
  * board card went and which came in, or that the board stays. The engine holds the river's betting for exactly this
  * long (`TIMING.diceShow`, `hand.dice.until`), so nothing happens under it. A phone that comes back in the middle
  * picks up where the show is; one that missed it sees nothing. Under Reduce Motion the die fades in on its face.
@@ -96,7 +86,7 @@ function Show({ at, dice }: { at: number; dice: NonNullable<NonNullable<Game['ha
       ) : null}
       {rolling && (
         <View style={{ alignItems: 'center', gap: 28 }}>
-          <Die roll={dice.roll} reduce={reduce} />
+          <DiceCube roll={dice.roll} reduce={reduce} duration={ROLL_MS - 200} />
           {result && <Result dice={dice} />}
         </View>
       )}
@@ -106,109 +96,6 @@ function Show({ at, dice }: { at: number; dice: NonNullable<NonNullable<Game['ha
 
 const resultWords = (d: { roll: number; out?: string; in?: string }) =>
   d.roll <= 5 && d.out && d.in ? `Rolled a ${d.roll}. Board card ${d.roll} is swapped.` : `Rolled a ${d.roll}. The board stays.`;
-
-/**
- * The die: a white face with its pips, a darker slab under and beside it for depth, dropping in from above the screen
- * (ease-out, motion rule 1), one small hop when it hits, and tumbling in perspective as it settles (tilts kept under 35°, so iOS never
- * projects it past the screen). Its face flickers through random numbers, slower and slower, until it shows the roll.
- */
-function Die({ roll, reduce }: { roll: number; reduce: boolean }) {
-  const { height } = useWindowDimensions();
-  const drop = useSharedValue(reduce ? 0 : -height * 0.75);
-  const spin = useSharedValue(reduce ? 1 : 0);
-  const [face, setFace] = useState(reduce ? roll : 1 + Math.floor(Math.random() * 6));
-  const landed = useRef(false);
-
-  useEffect(() => {
-    if (reduce) return;
-    drop.set(
-      withSequence(
-        withTiming(0, { duration: 460, easing: EASE_OUT }),
-        withTiming(-28, { duration: 150, easing: EASE_OUT }),
-        withTiming(0, { duration: 170, easing: EASE_OUT }),
-      ),
-    );
-    spin.set(withTiming(1, { duration: ROLL_MS - 200, easing: EASE_OUT }));
-    const hit = setTimeout(() => {
-      landed.current = true;
-      haptic.turn();
-    }, 460);
-    // The face flickers fast at first and slows down, then stops on the roll.
-    let wait = 70;
-    let t: ReturnType<typeof setTimeout>;
-    const started = Date.now();
-    const next = () => {
-      if (Date.now() - started > ROLL_MS - 420) {
-        setFace(roll);
-        haptic.turn();
-        return;
-      }
-      setFace((f) => {
-        let n = 1 + Math.floor(Math.random() * 6);
-        if (n === f) n = (n % 6) + 1;
-        return n;
-      });
-      haptic.select();
-      wait = Math.min(240, wait * 1.18);
-      t = setTimeout(next, wait);
-    };
-    t = setTimeout(next, 120);
-    return () => {
-      clearTimeout(hit);
-      clearTimeout(t);
-    };
-  }, [reduce]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const style = useAnimatedStyle(() => {
-    const s = spin.get();
-    const wobble = (1 - s) * 34;
-    return {
-      transform: [
-        { perspective: 900 },
-        { translateY: drop.get() },
-        { rotateZ: `${s * 720}deg` },
-        { rotateX: `${Math.sin(s * Math.PI * 5) * wobble}deg` },
-        { rotateY: `${Math.cos(s * Math.PI * 4) * wobble}deg` },
-      ],
-    };
-  });
-
-  const pip = DIE * 0.15;
-  const cell = DIE / 3;
-  return (
-    <Animated.View style={[{ width: DIE + 14, height: DIE + 14 }, style]} accessible={false}>
-      {/* The die's depth: a darker slab behind, down and to the right. */}
-      <View style={{ position: 'absolute', left: 14, top: 14, width: DIE, height: DIE, borderRadius: 36, borderCurve: 'continuous', backgroundColor: '#b9c2da' }} />
-      <View
-        style={{
-          width: DIE,
-          height: DIE,
-          borderRadius: 36,
-          borderCurve: 'continuous',
-          ...gradient('linear-gradient(145deg, #ffffff 0%, #eef1f8 55%, #d6dcec 100%)'),
-          backgroundColor: '#f4f6fb',
-          boxShadow: '0 30px 60px rgba(0,0,0,0.55), inset 0 2px 0 rgba(255,255,255,0.9)',
-        }}
-      >
-        {PIPS[face].map(([x, y], i) => (
-          <View
-            key={i}
-            style={{
-              position: 'absolute',
-              left: x * cell + (cell - pip) / 2,
-              top: y * cell + (cell - pip) / 2,
-              width: pip,
-              height: pip,
-              borderRadius: pip / 2,
-              backgroundColor: face === 1 ? '#d7263d' : '#121a33',
-              boxShadow: 'inset 0 3px 4px rgba(0,0,0,0.45)',
-            }}
-          />
-        ))}
-      </View>
-    </Animated.View>
-  );
-}
 
 /** What the roll did: "Rolled a 3", then the card that left and the one that came in, or that the board stays. */
 function Result({ dice }: { dice: { roll: number; out?: Card; in?: Card } }) {

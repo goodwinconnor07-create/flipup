@@ -195,8 +195,9 @@ export async function fetchParty(code: string, deviceId: string): Promise<PartyV
   return (await res.json()) as PartyView;
 }
 
-export async function partyAct(code: string, action: 'join' | 'leave' | 'start' | 'skip', body: Record<string, unknown>): Promise<PartyView> {
+export async function partyAct(code: string, action: 'join' | 'leave' | 'start' | 'skip' | 'settings', body: Record<string, unknown>): Promise<PartyView> {
   const res = await json(`/api/parties/${encodeURIComponent(code)}/${action}`, { method: 'POST', body: JSON.stringify(body) });
+  if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting these games needs FlipUp Premium.'));
   if (!res.ok) throw new Error(await errorText(res, 'Something went wrong. Try again.'));
   return (await res.json()) as PartyView;
 }

@@ -30,7 +30,7 @@ export function StartTiles({ onGo, height = 184 }: { onGo?: (mode: 'friends' | '
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Tile title="Play with friends" line="They join by code" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
+        <Tile title="Play with friends" line="Invite up to 8 people" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
         <Tile title="Play with bots" line="Play right now" faces={BOT_FACES} colors={cardColors.night} glow="rgba(255, 255, 255, 0.12)" height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
       </View>
       {!onGo && <JoinCard />}

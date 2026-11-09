@@ -128,7 +128,7 @@ export function HouseRules({ settings: s, onChange, online }: { settings: Settin
 }
 
 /** One rounded box of rows with hairlines between them. */
-function Card({ children }: { children: ReactNode[] }) {
+export function Card({ children }: { children: ReactNode[] }) {
   const colors = useColors();
   const panel = usePanel();
   return (
@@ -144,7 +144,7 @@ function Card({ children }: { children: ReactNode[] }) {
 }
 
 /** A number: its name small and grey over the value in a little box of its own, and the stepper on the right. */
-function NumberRow({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
+export function NumberRow({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
   const colors = useColors();
   const panel = usePanel();
   return (
@@ -176,7 +176,7 @@ function NumberRow({ label, value, children }: { label: string; value: string; c
   );
 }
 
-function SwitchRow({ label, line, value, onChange }: { label: string; line: string; value: boolean; onChange?: (on: boolean) => void }) {
+export function SwitchRow({ label, line, value, onChange }: { label: string; line: string; value: boolean; onChange?: (on: boolean) => void }) {
   return (
     <View
       style={{

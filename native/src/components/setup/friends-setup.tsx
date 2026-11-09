@@ -3,11 +3,11 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
+import { MAX_SEATS, variantInfo, type PartySettings, type Settings } from '@/engine';
 import { FRIENDS_ON } from '@/scope';
 import { seatKey } from '@/state/blocks';
-import { createParty } from '@/state/party';
-import { clearPartyDraft, usePartyDraft } from '@/state/party-draft';
+import { configureParty, createParty, leaveParty, startParty } from '@/state/party';
+import { clearPartyDraft, setPartyRules, usePartyDraft, type PartyDraft } from '@/state/party-draft';
 import { takeBackInvites, useDeclined, usePals, type Pal } from '@/state/pals';
 import { joinLink } from '@/state/api';
 import { askForName } from '@/state/ask-name';
@@ -18,7 +18,7 @@ import { abandonLobby, changeTableCode, currentTable, dispatch, me as myDevice, 
 import { saveSettings, setDraft } from '@/state/setup-draft';
 import { clearInvites, invitePal, uninvitePal, useInviteWatch, useTableInvites, waitingInvites } from '@/state/table-invites';
 import { unlockToHost } from '@/state/unlock';
-import { ForceScheme, spacing, useColors } from '@/theme';
+import { ForceScheme, spacing } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
 import { haptic } from '../haptics';
@@ -32,8 +32,9 @@ import { ThemedText } from '../themed-text';
 import { randomBot, type RowBot } from './bots-row';
 import { InviteFriendsRow } from './invite-friends-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
-import { PartyPlaylistCard, PartyRules, StartPartyButton } from './party-pieces';
-import { SetupHeader, NavRow } from './setup-header';
+import { lobbyRows, usePartyView } from '../party/panel';
+import { PartyCard, PartyRules, StartPartyButton } from './party-pieces';
+import { NavRow } from './setup-header';
 
 /**
  * Play with friends, laid out after the owner's reference video in FlipUp's own look (the deep blue moving field,
@@ -46,8 +47,10 @@ import { SetupHeader, NavRow } from './setup-header';
  *  5. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
  * and Start game pinned at the bottom. Friends join with the code (the friends list is off, `FRIENDS_ON`).
  *
- * Once a party's playlist is saved (state/party-draft.ts), the page is a party's: the playlist and the party's rules
- * take the game's and the table's places, and Open the party creates it and goes to its lobby.
+ * Once a party's playlist is saved (state/party-draft.ts) the page is still this same lobby, with a party in it: the
+ * party is made at that moment (so its game code is real), the playlist card takes the game card's place, the party's
+ * rules (rebuys locked off) take the house rules' place, the players are who's joined the party, and Start party
+ * starts it. Editing the playlist or the rules updates the party for everyone who's already in.
  */
 export function FriendsSetup({ settings, invite }: { settings: Settings; invite?: string }) {
   return (
@@ -58,10 +61,8 @@ export function FriendsSetup({ settings, invite }: { settings: Settings; invite?
 }
 
 function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?: string }) {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const variant = s.variant ?? 'holdem';
-  const tint = colors.accent as string;
   const profile = useProfile();
   const premium = usePremium();
   const pals = usePals();
@@ -73,6 +74,19 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   const [lobby, setLobby] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const partyDraft = usePartyDraft();
+  // The party made for a saved playlist: its code, whether it's being made, and whether Start party has run.
+  const party = useRef<{ code: string | null; making: boolean; started: boolean }>({ code: null, making: false, started: false });
+  const [partyCode, setPartyCode] = useState<string | null>(null);
+  const [partyFailed, setPartyFailed] = useState(false);
+  const [partyView] = usePartyView(
+    partyCode ?? '',
+    () => {
+      party.current.code = null;
+      setPartyCode(null);
+      clearPartyDraft();
+    },
+    !!partyCode,
+  );
   // The lobby made for the invites (once), whether it's still being made, and whether Open table took you to it.
   const made = useRef<{ code: string | null; making: Promise<string> | null; opened: boolean }>({
     code: null,
@@ -118,6 +132,47 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     );
   };
 
+  // A saved playlist makes the party (once), keeps it up to date as it's edited, and going back to one game ends it.
+  useEffect(() => {
+    const p = party.current;
+    if (!partyDraft) {
+      if (p.code && !p.started) {
+        void leaveParty(p.code);
+        p.code = null;
+        setPartyCode(null);
+      }
+      return;
+    }
+    if (!p.code) {
+      if (p.making) return;
+      if (!unlockToHost(partyDraft.games, premium)) {
+        clearPartyDraft();
+        return;
+      }
+      p.making = true;
+      setPartyFailed(false);
+      createParty(partySettings(partyDraft))
+        .then((code) => {
+          p.code = code;
+          setPartyCode(code);
+        })
+        .catch((e: unknown) => {
+          setPartyFailed(true);
+          clearPartyDraft();
+          Alert.alert("Couldn't open the party", e instanceof Error ? e.message : 'Check your connection and try again.');
+        })
+        .finally(() => {
+          p.making = false;
+        });
+      return;
+    }
+    const code = p.code;
+    const t = setTimeout(() => {
+      configureParty(code, partySettings(partyDraft)).catch((e: unknown) => Alert.alert("Couldn't update the party", e instanceof Error ? e.message : 'Try again.'));
+    }, 350);
+    return () => clearTimeout(t);
+  }, [partyDraft, partyCode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // A fresh page starts with no invites. Leaving it without opening ends the lobby and takes back what's still out.
   useEffect(() => {
     clearInvites();
@@ -133,6 +188,8 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     });
     return () => {
       live = false;
+      // Going back without starting ends the party too (anyone already in it is handed to the next person).
+      if (party.current.code && !party.current.started) void leaveParty(party.current.code);
       const m = made.current;
       if (!m.code || m.opened) return;
       void takeBackInvites(waitingInvites(), m.code);
@@ -147,39 +204,26 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     if (bot) setBots((have) => [...have, bot]);
   };
 
-  /** Opens the party: ends any lobby made for invites, creates the party, and goes to its lobby. */
-  const openParty = async () => {
-    if (busy || !partyDraft) return;
-    if (!unlockToHost(partyDraft.games, premium)) return;
+  /** Starts the party: the final playlist and rules go up first, then round one. The lobby made for invites ends with this page. */
+  const startThisParty = async () => {
+    const p = party.current;
+    if (busy || !p.code || !partyDraft) return;
     setBusy(true);
     try {
-      const m = made.current;
-      if (m.making) await m.making.catch(() => undefined);
-      if (m.code) {
-        void takeBackInvites(waitingInvites(), m.code);
-        abandonLobby(m.code);
-        clearInvites();
-        m.code = null;
-        setLobby(null);
-      }
-      await createParty({
-        games: partyDraft.games,
-        startingStack: partyDraft.stack,
-        blindHands: partyDraft.blindHands,
-        fillTo: partyDraft.fill,
-      });
-      clearPartyDraft();
+      await configureParty(p.code, partySettings(partyDraft));
+      await startParty(p.code);
+      p.started = true;
       router.back();
       router.push('/party-room');
     } catch (e) {
-      Alert.alert("Couldn't open the party", e instanceof Error ? e.message : 'Try again.');
+      Alert.alert("Couldn't start the party", e instanceof Error ? e.message : 'Try again.');
       setBusy(false);
     }
   };
 
   const open = async () => {
     if (busy) return;
-    if (partyDraft) return openParty();
+    if (partyDraft) return startThisParty();
     if (!unlockToHost([variant], premium)) return;
     saveSettings(s);
     setBusy(true);
@@ -272,6 +316,13 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     })),
   ];
 
+  // In a party: who's joined it (you first, from the party itself once it answers), and how many seats it will fill.
+  const partyRows: PlayerLine[] = partyView
+    ? lobbyRows(partyView)
+    : [{ key: 'you', name: profile.name || 'You', emoji: profile.emoji || '🙂', line: 'You · Host', you: true }];
+  const partyPeople = partyView?.members.length ?? 1;
+  const partyReady = !!partyCode && Math.max(partyPeople, partyDraft?.fill ?? 0) >= 2;
+
   return (
     <GrainBackground>
       <ScrollView
@@ -285,16 +336,23 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         keyboardShouldPersistTaps="handled"
         automaticallyAdjustKeyboardInsets
       >
-        {partyDraft ? (
-          <SetupHeader title="Start a party" line="One short table per game, points for where you finish." />
-        ) : (
-          <NavRow title="Lobby" />
-        )}
+        <NavRow title="Lobby" />
 
         {partyDraft ? (
           <>
-            <PartyPlaylistCard draft={partyDraft} />
-            <PartyRules draft={partyDraft} tint={tint} />
+            <CodeCard
+              code={partyCode}
+              failed={partyFailed}
+              share={partyCode ? { message: `Join my FlipUp party. Game code ${partyCode}`, url: joinLink(partyCode) } : undefined}
+            />
+            <PartyCard games={partyDraft.games} host />
+            <PartyRules rules={{ stack: partyDraft.stack, blindHands: partyDraft.blindHands, fill: partyDraft.fill }} onChange={setPartyRules} />
+            <View style={{ gap: spacing.xs }}>
+              <Players rows={partyRows} />
+              <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
+                {partyDraft.fill ? `Friends join from Join on the Play tab with the game code. Bots fill the empty seats up to ${partyDraft.fill}.` : 'Friends join from Join on the Play tab with the game code. No bots in this party.'}
+              </ThemedText>
+            </View>
           </>
         ) : (
           <>
@@ -316,11 +374,21 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         )}
       </ScrollView>
       <OpenTableButton
-        title={partyDraft ? 'Open the party' : 'Start game'}
-        line={partyDraft ? `${partyDraft.games.length} games · ${partyDraft.stack.toLocaleString('en-US')} chips each` : inNow < 2 ? 'Add a bot or wait for a friend' : line}
+        title={partyDraft ? 'Start party' : 'Start game'}
+        line={
+          partyDraft
+            ? !partyCode
+              ? 'Opening your party…'
+              : partyReady
+                ? `${partyPeople} in · ${partyDraft.games.length} games`
+                : 'Wait for a friend or let bots fill in'
+            : inNow < 2
+              ? 'Add a bot or wait for a friend'
+              : line
+        }
         busy={busy}
-        // A table needs two: nothing to deal until a friend sits down or you add a bot.
-        disabled={!partyDraft && inNow < 2}
+        // A table needs two: nothing to deal until a friend sits down or you add a bot (a party: or bots fill in).
+        disabled={partyDraft ? !partyReady : inNow < 2}
         onPress={() => void open()}
       />
     </GrainBackground>
@@ -340,3 +408,6 @@ async function catchUp(code: string, settings: Settings, botNames: string[]): Pr
     throw new Error("You're offline. Try again in a moment.");
   for (const name of botNames) if (!t.game.players.some((p) => p.name === name)) dispatch({ type: 'addBot', name });
 }
+
+/** What the server is told about a party. */
+const partySettings = (d: PartyDraft): PartySettings => ({ games: d.games, startingStack: d.stack, blindHands: d.blindHands, fillTo: d.fill });

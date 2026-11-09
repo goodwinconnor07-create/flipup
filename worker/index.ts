@@ -438,7 +438,7 @@ async function createBlackjackRoute(request: Request, env: Env): Promise<Respons
 
 /** POST /api/parties opens a party. GET /api/parties/:code?device= reads it; POST /api/parties/:code/join|leave|start|skip changes it. */
 async function partyRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
-  const match = pathname.match(/^\/api\/parties(?:\/([^/]+)(?:\/(join|leave|start|skip))?)?$/);
+  const match = pathname.match(/^\/api\/parties(?:\/([^/]+)(?:\/(join|leave|start|skip|settings))?)?$/);
   if (!match) return json({ error: 'Not found.' }, 404);
   const code = match[1]?.toUpperCase();
   const action = match[2];
@@ -457,7 +457,10 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     }
     const person = { ...look, friendCode: await ownedCode(env, body.friendCode, body.deviceId) };
     for (let attempt = 0; attempt < 6; attempt++) {
-      const fresh = newCode();
+      // Same look as a table's code (ACES42), so a party's code reads like a game's. A code a table already has is skipped,
+      // so the Join sheet never has to guess which one a code means.
+      const fresh = newTableCode();
+      if (await env.TABLE_ROOM.getByName(fresh).info()) continue;
       if (await env.PARTY_ROOM.getByName(fresh).create(fresh, body.deviceId, person, { games: settings.games, startingStack: settings.startingStack, blindHands: settings.blindHands, fillTo: settings.fillTo })) {
         return json({ code: fresh }, 201);
       }
@@ -465,7 +468,7 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     return json({ error: "Couldn't find a free code. Try again." }, 503);
   }
 
-  if (!isCode(code)) return json({ error: "That code doesn't look right." }, 400);
+  if (!isTableCode(code)) return json({ error: "That code doesn't look right." }, 400);
   const room = env.PARTY_ROOM.getByName(code);
 
   if (!action) {
@@ -487,7 +490,15 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     if ('error' in look) return json({ error: look.error }, 400);
     result = await room.join(code, body.deviceId, { ...look, friendCode: await ownedCode(env, body.friendCode, body.deviceId) });
   } else if (action === 'leave') result = await room.leave(code, body.deviceId);
-  else if (action === 'start') result = await room.start(code, body.deviceId);
+  else if (action === 'settings') {
+    // The host changes the playlist and rules while everyone is still in the lobby.
+    const settings = body.settings as PartySettings | undefined;
+    if (!settings || !validPartySettings(settings, isVariant)) return json({ error: "Those party settings don't work." }, 400);
+    if (gamesNeedPremium(settings.games) && !(await mayHostPremium(env, body.deviceId))) {
+      return json({ error: 'Hosting these games needs FlipUp Premium.', premium: true }, 402);
+    }
+    result = await room.configure(code, body.deviceId, { games: settings.games, startingStack: settings.startingStack, blindHands: settings.blindHands, fillTo: settings.fillTo });
+  } else if (action === 'start') result = await room.start(code, body.deviceId);
   else result = await room.skip(code, body.deviceId);
   return result.ok ? json(result.view) : json({ error: result.error }, result.error.startsWith('No party') ? 404 : 400);
 }
@@ -636,7 +647,7 @@ function appSiteAssociation(env: Env): Response {
       details: [
         {
           appIDs: [`${team}.${env.APPLE_BUNDLE_ID}`],
-          components: [{ '/': '/??????' }, { '/': '/?????' }, { '/': '/party/?????' }],
+          components: [{ '/': '/??????' }, { '/': '/?????' }, { '/': '/party/?????' }, { '/': '/party/??????' }],
         },
       ],
     },

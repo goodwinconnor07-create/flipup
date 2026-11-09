@@ -115,6 +115,18 @@ export class PartyRoom extends DurableObject<Env> {
     return { ok: true, view: this.render(code, data, null) };
   }
 
+  /** The host changes the playlist and rules (valid settings, checked by the route) while the party is still a lobby. */
+  async configure(code: string, deviceId: string, settings: PartySettings): Promise<Result> {
+    const data = await this.load();
+    if (!data) return { ok: false, error: 'No party with that code.' };
+    const me = data.members.find((m) => m.deviceId === deviceId);
+    if (!me || me.id !== data.hostId) return { ok: false, error: 'Only the host can change the party.' };
+    if (data.status !== 'lobby') return { ok: false, error: 'The party has already started.' };
+    data.settings = settings;
+    await this.save(data);
+    return { ok: true, view: this.render(code, data, deviceId) };
+  }
+
   /** The host starts the first game. */
   async start(code: string, deviceId: string): Promise<Result> {
     const data = await this.load();

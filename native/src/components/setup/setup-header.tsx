@@ -70,7 +70,7 @@ export function BackText({ onPress = () => router.back() }: { onPress?: () => vo
 }
 
 /** A page's top row with no navigation bar: "‹ Back" on the left and the title in the middle, as iOS draws it. */
-export function NavRow({ title, left }: { title: string; left?: ReactNode }) {
+export function NavRow({ title, left, right }: { title: string; left?: ReactNode; right?: ReactNode }) {
   return (
     <View style={{ height: 44, flexDirection: 'row', alignItems: 'center' }}>
       <View style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
@@ -79,6 +79,7 @@ export function NavRow({ title, left }: { title: string; left?: ReactNode }) {
         </ThemedText>
       </View>
       {left ?? <BackText />}
+      {right && <View style={{ marginLeft: 'auto' }}>{right}</View>}
     </View>
   );
 }

@@ -12,7 +12,9 @@ import { spacing, usePlainColors } from '@/theme';
 import { Button } from '../button';
 import { GameThumb } from '../game-picture';
 import { haptic } from '../haptics';
-import { InviteTicket } from '../invite-ticket';
+import { CodeCard } from '../lobby/code-card';
+import { Players, type PlayerLine } from '../lobby/players';
+import { PartyCard, PartyRules } from '../setup/party-pieces';
 import { ThemedText } from '../themed-text';
 import { PartyBoard } from './board';
 
@@ -28,7 +30,7 @@ export type PanelPlace = 'screen' | 'table' | 'sheet';
 const followed = new Set<string>();
 
 /** Polls the party while it's on screen: every 2s while a round is on, 3.5s otherwise, never in the background. */
-function usePartyView(code: string, onGone: () => void, active: boolean) {
+export function usePartyView(code: string, onGone: () => void, active: boolean) {
   const [view, setView] = useState<PartyView | null>(null);
   const gone = useRef(onGone);
   useEffect(() => {
@@ -72,6 +74,17 @@ function usePartyView(code: string, onGone: () => void, active: boolean) {
     };
   }, [code, active]);
   return [view, setView] as const;
+}
+
+/** Who's in a party's lobby, as the lobby's player rows. */
+export function lobbyRows(view: PartyView): PlayerLine[] {
+  return view.members.map((m) => ({
+    key: m.id,
+    name: m.name,
+    emoji: m.emoji,
+    line: m.id === view.hostId ? (m.id === view.you ? 'You · Host' : 'Host') : m.id === view.you ? 'You' : 'Ready',
+    you: m.id === view.you,
+  }));
 }
 
 /** Counts down to a time, in whole seconds. */
@@ -155,16 +168,16 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
     <View style={{ gap: spacing.lg }}>
       {view.status === 'lobby' && (
         <>
-          <View style={{ gap: spacing.xxs }}>
-            <ThemedText variant="largeTitle" accessibilityRole="header">
-              {host ? 'Invite your friends' : "You're in!"}
+          <CodeCard code={view.code} share={{ message: `Join my FlipUp party. Game code ${view.code}`, url: partyLink(view.code) }} />
+          <PartyCard games={view.settings.games} host={false} />
+          <PartyRules rules={{ stack: view.settings.startingStack, blindHands: view.settings.blindHands, fill: view.settings.fillTo }} />
+          <View style={{ gap: spacing.xs }}>
+            <Players rows={lobbyRows(view)} />
+            <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
+              {view.settings.fillTo ? `Bots fill the empty seats up to ${view.settings.fillTo}.` : 'No bots in this party.'}
+              {host ? '' : " Waiting for the host to start."}
             </ThemedText>
-            <ThemedText tone="tertiaryLabel">{host ? `${total} games. Start when everyone's here.` : `Waiting for the host to start. ${total} games to play.`}</ThemedText>
           </View>
-          <InviteTicket code={view.code} link={partyLink(view.code)} kind="party" message={`Join my FlipUp party. Code ${view.code}: ${partyLink(view.code)}`} />
-          <PlaylistChips games={view.settings.games} round={-1} />
-          <SectionTitle text={`In the party · ${view.members.length}`} />
-          <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           {host && <Button variant="party" tint="green" size="lg" title="Start the party" loading={busy} onPress={() => void act(() => startParty(view.code))} />}
         </>
       )}
@@ -198,7 +211,7 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
           </View>
           <PartyBoard rows={rows} you={view.you} running={false} code={code} />
           <PlaylistChips games={view.settings.games} round={total} />
-          <Button variant="party" tint="blue" size="lg" title="Back to the Party tab" onPress={home} />
+          <Button variant="party" tint="blue" size="lg" title="Back to Play" onPress={home} />
         </>
       )}
       {place === 'screen' && view.status !== 'done' && view.status !== 'lobby' && (

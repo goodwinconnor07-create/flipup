@@ -11,7 +11,7 @@ import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { BoardTable } from '@/components/range/board-table';
 import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
-import { Icon } from '@/components/icon';
+import { SwapIcon } from '@/components/swap';
 import { PressableScale } from '@/components/pressable-scale';
 import { useTabFooter } from '@/components/tab-screen';
 import { PlayingCard } from '@/components/table/playing-card';
@@ -215,7 +215,7 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
             }}
           >
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-              <Icon name={grade === 'mistake' ? 'arrow.counterclockwise' : 'checkmark.circle.fill'} size={20} color={gradeLook[grade!].ink} />
+              <SwapIcon name={grade === 'mistake' ? 'arrow.counterclockwise' : 'checkmark.circle.fill'} size={20} color={gradeLook[grade!].ink} />
               <ThemedText variant="title3" style={{ fontWeight: '700', color: gradeLook[grade!].ink }}>
                 {GRADE[grade!]}
               </ThemedText>

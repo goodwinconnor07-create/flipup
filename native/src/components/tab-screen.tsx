@@ -7,7 +7,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, useScheme } from '@/theme';
 
 import { GlassSurface } from './glass-surface';
-import { Icon, type IconName } from './icon';
+import type { IconName } from './icon';
+import { SwapIcon } from './swap';
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';
 
@@ -93,5 +94,6 @@ export function RoundButton({ icon, label, onPress }: { icon: IconName; label: s
 
 function IconInk({ name }: { name: IconName }) {
   const dark = useScheme() === 'dark';
-  return <Icon name={name} size={19} color={dark ? '#ffffff' : '#000000'} />;
+  // The icon can change in place (Range training's Stats button becomes a close button), so it crossfades.
+  return <SwapIcon name={name} size={19} color={dark ? '#ffffff' : '#000000'} />;
 }

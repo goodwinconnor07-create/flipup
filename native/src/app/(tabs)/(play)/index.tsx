@@ -72,7 +72,7 @@ export default function Home() {
             <LastGame line={last} onDismiss={() => save(HIDDEN, last.at)} />
           </Animated.View>
         )}
-        <Animated.View layout={slide} style={{ gap: spacing.xl }}>
+        <Animated.View layout={slide} style={{ gap: spacing.lg }}>
           <GameRow />
           {FRIENDS_ON && <FriendsStrip />}
           {record.hands > 0 ? <PassportCard /> : <FirstHand />}

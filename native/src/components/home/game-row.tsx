@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
+import { gameLook } from '@design/gameArt';
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { party, radius, spacing, useColors, useShadows } from '@/theme';
@@ -11,7 +12,7 @@ import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 import { SectionTitle } from './section-title';
 
-const TILE = 124;
+const TILE = 112;
 
 /**
  * Every variant as a row you swipe through, like a shelf in Apple's Games app: the game's picture in a big rounded
@@ -21,11 +22,12 @@ export function GameRow() {
   const premium = usePremium();
   return (
     <View style={{ gap: spacing.sm }}>
-      <SectionTitle title="Variants" onMore={() => router.push('/games')} />
+      <SectionTitle title="Game modes" onMore={() => router.push('/games')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md, marginTop: -8, marginBottom: -28 }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 28, gap: spacing.sm }}>
         {VARIANTS.map((v) => (
           <Tile key={v.id} variant={v.id} name={v.name} locked={!premium && isPremiumVariant(v.id)} />
         ))}
+        <Surprise />
       </ScrollView>
     </View>
   );
@@ -55,6 +57,37 @@ function Tile({ variant, name, locked }: { variant: Variant; name: string; locke
       </View>
       <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
         {name}
+      </Text>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, marginTop: -spacing.xs + 2 }}>
+        {gameLook(variant).hook}
+      </Text>
+    </PressableScale>
+  );
+}
+
+/** The end of the shelf: a random game, so nobody has to choose. Opens that game's sheet like any other tile. */
+function Surprise() {
+  const colors = useColors();
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel="Surprise me. A random game mode"
+      onPress={() => {
+        haptic.tap();
+        const pick = VARIANTS[Math.floor(Math.random() * VARIANTS.length)];
+        router.push(`/game/${pick.id}`);
+      }}
+      haptics={false}
+      style={{ width: TILE, gap: spacing.xs }}
+    >
+      <View style={{ width: TILE, height: TILE, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 2, borderStyle: 'dashed', borderColor: colors.separator, alignItems: 'center', justifyContent: 'center' }}>
+        <Icon name="shuffle" size={40} color={colors.secondaryLabel} />
+      </View>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
+        Surprise me
+      </Text>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, marginTop: -spacing.xs + 2 }}>
+        A random mode
       </Text>
     </PressableScale>
   );

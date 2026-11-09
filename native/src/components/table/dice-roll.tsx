@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Text, useWindowDimensions, View } from 'react-native';
+import { Text, View } from 'react-native';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import Animated, { Easing, FadeIn, FadeOut, Keyframe, useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 
 import { TIMING, variantOf, type Card, type Game } from '@/engine';
 import { EASE_OUT, enter } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { ROUNDED } from '@/theme';
+import { gradient, ROUNDED } from '@/theme';
 
 import { haptic } from '../haptics';
 import { PlayingCard } from './playing-card';
@@ -15,7 +16,6 @@ const COUNT_MS = 800;
 const COUNT_END = COUNT_MS * 3;
 const ROLL_MS = 1900;
 const RESULT_AT = COUNT_END + ROLL_MS;
-const DIE = 176;
 
 /** Where the pips sit on a 3 × 3 grid for each face. */
 const PIPS: Record<number, [number, number][]> = {
@@ -107,78 +107,99 @@ function Show({ at, dice }: { at: number; dice: NonNullable<NonNullable<Game['ha
 const resultWords = (d: { roll: number; out?: string; in?: string }) =>
   d.roll <= 5 && d.out && d.in ? `Rolled a ${d.roll}. Board card ${d.roll} is swapped.` : `Rolled a ${d.roll}. The board stays.`;
 
+/** Isometric geometry for a die standing still: the hexagon's radius, and sin/cos of 30°. */
+const R = 108;
+const C30 = Math.cos(Math.PI / 6);
+/** The three faces you see: the corner they share is the middle of the die. [origin, across, down] in points from the centre. */
+const TOP = { o: [0, -R], u: [R * C30, R / 2], v: [-R * C30, R / 2], fill: '#ffffff' };
+const LEFT = { o: [-R * C30, -R / 2], u: [R * C30, R / 2], v: [0, R], fill: '#dfe4f1' };
+const RIGHT = { o: [R * C30, -R / 2], u: [-R * C30, R / 2], v: [0, R], fill: '#bcc5dc' };
+const SIZE = R * 2 + 24;
+const GRID = [0.27, 0.5, 0.73];
+
+/** Opposite faces add up to seven. */
+const opposite = (n: number) => 7 - n;
+
+/** Three faces that can be seen together (none opposite another), with the given number on top. */
+function sides(top: number, pick: number): [number, number] {
+  const rest = [1, 2, 3, 4, 5, 6].filter((n) => n !== top && n !== opposite(top));
+  const left = rest[pick % rest.length];
+  const right = rest.filter((n) => n !== left && n !== opposite(left))[Math.floor(pick / rest.length) % 2];
+  return [left, right];
+}
+
+function Face({ g, n, cx, cy }: { g: typeof TOP; n: number; cx: number; cy: number }) {
+  const [ox, oy] = [cx + g.o[0], cy + g.o[1]];
+  const pts = [
+    [ox, oy],
+    [ox + g.u[0], oy + g.u[1]],
+    [ox + g.u[0] + g.v[0], oy + g.u[1] + g.v[1]],
+    [ox + g.v[0], oy + g.v[1]],
+  ];
+  const d = pts.map((p, k) => `${k ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join('') + 'Z';
+  return (
+    <>
+      {/* A stroke in the face's own colour with rounded joins rounds the corners. */}
+      <Path d={d} fill={g.fill} stroke={g.fill} strokeWidth={14} strokeLinejoin="round" />
+      {/* The pips live in the face's own 0 to 1 square, so the slant of the face squashes them for free. */}
+      <G transform={`matrix(${g.u[0]} ${g.u[1]} ${g.v[0]} ${g.v[1]} ${ox} ${oy})`}>
+        {PIPS[n].map(([x, y], i) => (
+          <Circle key={i} cx={GRID[x]} cy={GRID[y]} r={0.085} fill={n === 1 ? '#d7263d' : '#141c38'} />
+        ))}
+      </G>
+    </>
+  );
+}
+
 /**
- * A simple flat die: a white rounded square with its pips. It drops in from above the screen and hops once as it
- * lands, tumbling and blurred, its face flickering through numbers slower and slower, the blur and the spin easing
- * away until it sits still, sharp, on the roll. Under Reduce Motion it just shows the roll.
+ * A 3D-looking die that never moves: it sits dead centre in a fixed pose (top, left and right faces, lit from above
+ * so the top is the brightest). Rolling is its faces changing, a frame at a time like a sprite, fast and then slower
+ * and slower, each frame a different valid die (no two opposite faces ever show), until it stops with the roll on top.
+ * It flashes a ring of light and gives a firm haptic as it stops. Under Reduce Motion it just shows the roll.
  */
 function Die({ roll, reduce }: { roll: number; reduce: boolean }) {
-  const { height } = useWindowDimensions();
-  const drop = useSharedValue(reduce ? 0 : -height * 0.8);
-  const spin = useSharedValue(0);
-  const blur = useSharedValue(reduce ? 0 : 14);
-  const [face, setFace] = useState(reduce ? roll : 1 + Math.floor(Math.random() * 6));
+  const [top, setTop] = useState(reduce ? roll : 1 + Math.floor(Math.random() * 6));
+  const [pick, setPick] = useState(0);
+  const glow = useSharedValue(0);
 
   useEffect(() => {
     if (reduce) return;
-    drop.set(withSequence(withTiming(0, { duration: 460, easing: EASE_OUT }), withTiming(-30, { duration: 150, easing: EASE_OUT }), withTiming(0, { duration: 170, easing: EASE_OUT })));
-    spin.set(withTiming(1, { duration: ROLL_MS - 200, easing: EASE_OUT }));
-    blur.set(withTiming(0, { duration: ROLL_MS - 200, easing: EASE_OUT }));
-    const hit = setTimeout(() => haptic.turn(), 460);
-    // The face flickers fast at first and slows down, then stops on the roll.
-    let wait = 70;
+    let wait = 60;
     let t: ReturnType<typeof setTimeout>;
     const started = Date.now();
     const next = () => {
-      if (Date.now() - started > ROLL_MS - 420) {
-        setFace(roll);
+      if (Date.now() - started > ROLL_MS - 300) {
+        setTop(roll);
+        setPick(Math.floor(Math.random() * 6));
+        glow.set(withSequence(withTiming(1, { duration: 120, easing: EASE_OUT }), withTiming(0, { duration: 500, easing: EASE_OUT })));
         haptic.turn();
         return;
       }
-      setFace((f) => {
+      setTop((f) => {
         const n = 1 + Math.floor(Math.random() * 6);
         return n === f ? (n % 6) + 1 : n;
       });
+      setPick(Math.floor(Math.random() * 6));
       haptic.select();
-      wait = Math.min(240, wait * 1.18);
+      wait = Math.min(260, wait * 1.16);
       t = setTimeout(next, wait);
     };
-    t = setTimeout(next, 120);
-    return () => {
-      clearTimeout(hit);
-      clearTimeout(t);
-    };
+    t = setTimeout(next, 80);
+    return () => clearTimeout(t);
   }, [reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateY: drop.get() }, { rotate: `${(1 - spin.get()) * 540}deg` }],
-    filter: [{ blur: blur.get() }],
-  }));
-
-  const pip = DIE * 0.16;
-  const cell = DIE / 3;
+  const [left, right] = sides(top, pick);
+  const ring = useAnimatedStyle(() => ({ opacity: glow.get() }));
+  const c = SIZE / 2;
   return (
-    <Animated.View
-      accessible={false}
-      style={[
-        {
-          width: DIE,
-          height: DIE,
-          borderRadius: 40,
-          borderCurve: 'continuous',
-          backgroundColor: '#ffffff',
-          boxShadow: '0 24px 50px rgba(0,0,0,0.5)',
-        },
-        style,
-      ]}
-    >
-      {PIPS[face].map(([x, y], i) => (
-        <View
-          key={i}
-          style={{ position: 'absolute', left: x * cell + (cell - pip) / 2, top: y * cell + (cell - pip) / 2, width: pip, height: pip, borderRadius: pip / 2, backgroundColor: face === 1 ? '#d7263d' : '#141c38' }}
-        />
-      ))}
-    </Animated.View>
+    <View accessible={false} style={{ width: SIZE, height: SIZE, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View pointerEvents="none" style={[{ position: 'absolute', width: SIZE * 1.5, height: SIZE * 1.5, ...gradient('radial-gradient(circle at center, rgba(125, 170, 255, 0.6) 0%, rgba(125, 170, 255, 0) 62%)') }, ring]} />
+      <Svg width={SIZE} height={SIZE} style={{ position: 'absolute' }}>
+        <Face g={LEFT} n={left} cx={c} cy={c} />
+        <Face g={RIGHT} n={right} cx={c} cy={c} />
+        <Face g={TOP} n={top} cx={c} cy={c} />
+      </Svg>
+    </View>
   );
 }
 

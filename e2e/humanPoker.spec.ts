@@ -11,6 +11,8 @@ test('invite BOT_001 and play its new engine through actual table turns', async 
   await expect(toggle).not.toBeChecked();
   await toggle.click();
   await expect(toggle).toBeChecked();
+  await page.getByRole('button', { name: 'More BOT_001 personality', exact: true }).click();
+  await expect(page.getByText('Patient', { exact: true })).toBeVisible();
   for (let n = 0; n < 4; n++) await page.getByRole('button', { name: 'One less bot' }).click();
   await page.screenshot({ path: '/tmp/bot-001-toggle.png', fullPage: true });
   await page.getByRole('button', { name: 'Sit down' }).click();
@@ -22,7 +24,7 @@ test('invite BOT_001 and play its new engine through actual table turns', async 
       const session = JSON.parse(localStorage.getItem('flipup.session') ?? 'null');
       return session?.game?.humanPoker?.lastDecision?.model;
     });
-    if (model === 'baseline-4') {
+    if (model === 'baseline-5') {
       usedNewEngine = true;
       break;
     }
@@ -36,6 +38,10 @@ test('invite BOT_001 and play its new engine through actual table turns', async 
     await page.waitForTimeout(500);
   }
   expect(usedNewEngine).toBe(true);
+  const personality = await page.evaluate(
+    () => JSON.parse(localStorage.getItem('flipup.session') ?? 'null')?.game?.humanPoker?.profile?.personality,
+  );
+  expect(personality).toBe('patient');
 });
 
 test('online BOT_001 acts through the Worker without broadcasting its memory', async ({ page, request }) => {
@@ -46,7 +52,15 @@ test('online BOT_001 acts through the Worker without broadcasting its memory', a
       name: 'Host',
       emoji: '🙂',
       bots: 0,
-      settings: { startingStack: 1000, smallBlind: 5, bigBlind: 10, rebuys: true, turnSeconds: 0, humanPoker: true },
+      settings: {
+        startingStack: 1000,
+        smallBlind: 5,
+        bigBlind: 10,
+        rebuys: true,
+        turnSeconds: 0,
+        humanPoker: true,
+        botPersonality: 'aggressive',
+      },
     },
   });
   expect(opened.ok()).toBe(true);

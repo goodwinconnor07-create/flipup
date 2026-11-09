@@ -14,6 +14,7 @@ import {
   TIMER_CHOICES,
   type Settings,
   type Variant,
+  PERSONALITIES,
 } from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
@@ -86,6 +87,16 @@ export function SettingsFields({
             hint="Add the new experimental bot. Joins next hand; leaves after the current hand."
             on={!!settings.humanPoker}
             onChange={(humanPoker) => onChange({ ...settings, humanPoker })}
+          />
+        )}
+        {(settings.variant ?? 'holdem') === 'holdem' && settings.humanPoker && (
+          <StepRow
+            label="BOT_001 personality"
+            hint={`${PERSONALITIES.find((p) => p.id === settings.botPersonality)?.description ?? 'The original experimental profile.'} Changes next hand.`}
+            value={settings.botPersonality ?? 'original'}
+            options={['original', ...PERSONALITIES.map((p) => p.id)]}
+            format={(id) => PERSONALITIES.find((p) => p.id === id)?.label ?? 'Original'}
+            onChange={(botPersonality) => onChange({ ...settings, botPersonality })}
           />
         )}
         {timer && (

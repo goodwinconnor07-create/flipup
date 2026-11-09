@@ -12,6 +12,7 @@ import {
   timerLabel,
   withStack,
   type Settings,
+  PERSONALITIES,
 } from '@/engine';
 import { radius, ROUNDED, spacing, useColors } from '@/theme';
 
@@ -106,6 +107,24 @@ export function HouseRules({ settings: s, onChange, online }: { settings: Settin
         value={!!s.humanPoker}
         onChange={edit ? (humanPoker) => set({ humanPoker }) : undefined}
       />
+    ),
+    (s.variant ?? 'holdem') === 'holdem' && s.humanPoker && (
+      <View key="bot-personality" style={{ padding: spacing.md, gap: spacing.xs }}>
+        <ThemedText>BOT_001 personality</ThemedText>
+        {edit ? (
+          <SegmentedControl
+            label="BOT_001 personality"
+            value={s.botPersonality ?? 'original'}
+            options={[{ value: 'original' as const, label: 'Original' }, ...PERSONALITIES.map((p) => ({ value: p.id, label: p.label }))]}
+            onChange={(botPersonality) => set({ botPersonality })}
+          />
+        ) : (
+          <ThemedText>{PERSONALITIES.find((p) => p.id === s.botPersonality)?.label ?? 'Original'}</ThemedText>
+        )}
+        <ThemedText variant="caption1" tone="secondaryLabel">
+          {PERSONALITIES.find((p) => p.id === s.botPersonality)?.description ?? 'The original experimental profile.'} Changes next hand.
+        </ThemedText>
+      </View>
     ),
     <SwitchRow
       key="rebuys"

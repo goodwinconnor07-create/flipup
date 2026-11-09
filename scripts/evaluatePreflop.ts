@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { simulate } from '../src/bot_engine/simulation';
 import { evaluateMatchup, summarizeReturns } from '../src/bot_engine/evaluation';
 import type { AgentKind, ScriptedOpponent } from '../src/bot_engine/scriptedOpponents';
+import { CURRENT_STRATEGY_VERSION } from '../src/bot_engine/strategy';
 
 const pairs = Number(process.argv[2] ?? 250);
 if (!Number.isSafeInteger(pairs) || pairs < 2 || pairs > 10000) throw new Error('Pairs must be from 2 to 10000');
@@ -44,8 +45,8 @@ const multiway = [false, true].map((reverseSeats) => {
   return { hands: result.hands, preflopCoverage: result.preflopCoverage, p95Ms: result.latencyMs.p95, completed: true };
 });
 const report = {
-  protocol: 'preflop-coverage-1',
-  candidate: 'baseline-4',
+  protocol: 'preflop-coverage-2',
+  candidate: CURRENT_STRATEGY_VERSION,
   incumbent: 'baseline-3',
   seed,
   pairsPerOpponent: pairs,
@@ -54,7 +55,7 @@ const report = {
   headToHead,
   multiway,
   limitations: [
-    'Fresh equal 100bb stacks each hand; ordinary sessions quickly reach unequal stacks and fall back. Only exact shipped 20/40/100bb banks are used.',
+    'Fresh equal 100bb stacks here. Exact chart matches use shipped banks; other preflop decisions use an untrained model of ranges, commitments and risk. Separate personality report tests unequal stacks.',
     'Seat-swapped common deals and matching personalities/learning; intervals are descriptive because beliefs adapt across hands. No statistical strength or exploitability certification.',
     'Coverage expansion, not newly trained chart frequencies. Raise/jam proportions were lost during chart export; the combined mass uses one rounded default solver size.',
   ],

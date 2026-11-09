@@ -51,7 +51,14 @@ export function showdownReturn(i: InformationSet, contributions: number[], folde
 /** Same hypothetical deals/response draws across candidates reduce comparison noise.
  * Evaluates one betting round followed by showdown; never claims future-street solver EVs.
  */
-export function estimateActionValues(i: InformationSet, ranges: OpponentRange[], actions: BotMove[], rng: () => number, samples: number) {
+export function estimateActionValues(
+  i: InformationSet,
+  ranges: OpponentRange[],
+  actions: BotMove[],
+  rng: () => number,
+  samples: number,
+  commitmentAware = false,
+) {
   const hero = i.players.findIndex((p) => p.id === i.heroId);
   const sums = actions.map(() => 0),
     squares = actions.map(() => 0);
@@ -77,7 +84,15 @@ export function estimateActionValues(i: InformationSet, ranges: OpponentRange[],
         const call = Math.min(p.stack, Math.max(0, (action.to ?? i.currentBet) - p.bet));
         if (!call) return;
         const offeredPot = contributions.reduce((sum, total) => sum + Math.min(total, p.total + call), 0);
-        const probability = continuationProbability(holes.get(p.id)!, i.board, call, offeredPot);
+        let probability = continuationProbability(holes.get(p.id)!, i.board, call, offeredPot);
+        if (commitmentAware && i.street === 'preflop') {
+          // Already committed callers/raisers are harder to fold than untouched blinds.
+          // Also account for the fraction of their starting stack the new price costs.
+          const invested = p.bet / Math.max(i.bigBlind, p.stack + p.total);
+          const price = call / Math.max(i.bigBlind, p.stack + p.total);
+          const logit = Math.log(probability / (1 - probability)) + Math.min(1.4, invested * 5) - Math.max(0, price - 0.2) * 1.5;
+          probability = Math.max(0.02, Math.min(0.995, 1 / (1 + Math.exp(-logit))));
+        }
         if (responseDraws[n] < probability) contributions[n] += call;
         else folded[n] = true;
       });

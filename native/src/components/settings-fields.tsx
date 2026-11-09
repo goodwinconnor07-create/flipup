@@ -10,6 +10,7 @@ import {
   timerLabel,
   withStack,
   type Settings,
+  PERSONALITIES,
 } from '@/engine';
 import { party, spacing, useColors } from '@/theme';
 
@@ -125,6 +126,21 @@ export function SettingsFields({
         icon={{ symbol: 'person.fill', color: color(party.blue) }}
         accessory={<Switch label="Invite BOT_001" value={!!settings.humanPoker} onValueChange={(humanPoker) => set({ humanPoker })} />}
       />
+    ),
+    (settings.variant ?? 'holdem') === 'holdem' && settings.humanPoker && (
+      <View key="bot-personality" style={{ padding: spacing.md, gap: spacing.xs }}>
+        <ThemedText>BOT_001 personality</ThemedText>
+        <SegmentedControl
+          label="BOT_001 personality"
+          value={settings.botPersonality ?? 'original'}
+          options={[{ value: 'original' as const, label: 'Original' }, ...PERSONALITIES.map((p) => ({ value: p.id, label: p.label }))]}
+          onChange={(botPersonality) => set({ botPersonality })}
+        />
+        <ThemedText variant="caption1" tone="secondaryLabel">
+          {PERSONALITIES.find((p) => p.id === settings.botPersonality)?.description ?? 'The original experimental profile.'} Changes next
+          hand.
+        </ThemedText>
+      </View>
     ),
     online && (
       <View key="clock" style={{ padding: spacing.md, paddingBottom: spacing.sm, gap: spacing.xs }}>

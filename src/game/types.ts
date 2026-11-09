@@ -5,6 +5,7 @@ import type { Card } from './cards';
 import type { TwinBrain } from './twinFit';
 import type { Variant } from './variants';
 import type { LiveBotState } from '../bot_engine/live';
+import type { PersonalityId } from '../bot_engine/personalities';
 
 export type Status = 'lobby' | 'playing' | 'ended';
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
@@ -13,6 +14,8 @@ export type Move = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
 export interface Settings {
   /** Opt in to one experimental BOT_001 seat at a standard Hold'em table. */
   humanPoker?: boolean;
+  /** Missing keeps the original BOT_001 profile. Changes take effect next hand. */
+  botPersonality?: PersonalityId | 'original';
   /** Chips each player sits down with (and gets again on a rebuy). */
   startingStack: number;
   smallBlind: number;

@@ -10,6 +10,7 @@ import { legendById } from './legends';
 import { BOTS } from './botStyles';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
+import { isPersonality } from '../bot_engine/personalities';
 
 const MOVES: Move[] = ['fold', 'check', 'call', 'bet', 'raise', 'allin'];
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && Math.abs(v) <= 1e9;
@@ -21,6 +22,10 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const out: Partial<Settings> = {};
+  if (r.botPersonality !== undefined) {
+    if (r.botPersonality !== 'original' && !isPersonality(r.botPersonality)) return null;
+    out.botPersonality = r.botPersonality;
+  }
   if (r.humanPoker !== undefined) {
     if (typeof r.humanPoker !== 'boolean') return null;
     out.humanPoker = r.humanPoker;

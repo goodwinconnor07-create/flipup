@@ -16,6 +16,11 @@
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.
 
+BOT_001 personalities (owner request, 9 November 2026): when Invite BOT_001 is on, the existing House rules panel
+shows a BOT_001 personality control: Original, Patient, Curious, Aggressive, with a short description. Reuse the
+existing segmented control in native setup/lobby and the existing step row on web. Only the host edits it; changes
+apply next hand. This adds a row to existing screens without changing their surfaces or navigation.
+
 **How this document works.** Read it before any UI change. A new decision is written here first, then built. If a
 screen and this document disagree, the document wins until the owner says otherwise; then the document is changed
 in the same commit. New screens are mocked up and shown to the owner before they're built.

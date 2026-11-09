@@ -6,17 +6,22 @@ import { legalActions, validateInformation, type InformationSet } from './inform
 import type { BotMove } from '../game/botPlay';
 import { blueprintMix } from './blueprint';
 import { preflopLookup, type PreflopLookup } from './preflop';
+import { preflopContext } from './preflopContext';
+import { decisionRisk } from './decisionRisk';
 
-export const CURRENT_STRATEGY_VERSION = 'baseline-4';
+export const CURRENT_STRATEGY_VERSION = 'baseline-5';
 
 export interface StrategyPrediction {
   actions: BotMove[];
   probabilities: number[];
+  unmodifiedProbabilities?: number[];
   values: number[] | null;
-  source: 'shipped-preflop-frequency' | 'range-equity-fallback' | 'coarse-blueprint-blend';
-  coverage: 'abstracted' | 'fallback';
-  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4';
+  rolloutValues?: number[];
+  source: 'shipped-preflop-frequency' | 'range-equity-fallback' | 'coarse-blueprint-blend' | 'commitment-aware-preflop';
+  coverage: 'abstracted' | 'fallback' | 'modelled';
+  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5';
   preflop?: PreflopLookup;
+  preflopContext?: ReturnType<typeof preflopContext>;
   blueprint?: { key: string; blend: number };
   valueStandardErrors?: (number | null)[];
   equity: number | null;
@@ -37,14 +42,16 @@ const digit = '0123456789abcdefghijklmnopqrstuvwxyz';
 export class BaselineProvider implements StrategyProvider {
   constructor(
     private samples = 160,
-    private revision: 'baseline-2' | 'baseline-3' | 'baseline-4' = CURRENT_STRATEGY_VERSION,
+    private revision: 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' = CURRENT_STRATEGY_VERSION,
   ) {
     if (!Number.isSafeInteger(samples) || samples < 1) throw new Error('Invalid sample count');
   }
   predict(i: InformationSet): StrategyPrediction {
     validateInformation(i);
-    const actions = legalActions(i, this.revision === 'baseline-4');
-    const preflop = this.revision === 'baseline-4' && i.street === 'preflop' ? preflopLookup(i) : undefined;
+    const contextual = this.revision === 'baseline-5' && i.street === 'preflop';
+    const actions = legalActions(i, this.revision === 'baseline-4' || this.revision === 'baseline-5', contextual);
+    const preflop =
+      (this.revision === 'baseline-4' || this.revision === 'baseline-5') && i.street === 'preflop' ? preflopLookup(i) : undefined;
     const common = { actions, modelVersion: this.revision, ...(preflop ? { preflop } : {}) };
     if (preflop?.matched) {
       const weights = actions.map((a) =>
@@ -88,7 +95,7 @@ export class BaselineProvider implements StrategyProvider {
       i.currentBet === i.bigBlind &&
       i.actions.every((a) => a.move === 'fold') &&
       players.every((p) => (p.stack + p.total) / i.bigBlind === depth);
-    if (this.revision !== 'baseline-4' && opening && encoded && index >= 0 && i.legal.canRaise) {
+    if ((this.revision === 'baseline-2' || this.revision === 'baseline-3') && opening && encoded && index >= 0 && i.legal.canRaise) {
       const call = digit.indexOf(encoded[index * 2]) / 35;
       const raise = digit.indexOf(encoded[index * 2 + 1]) / 35;
       if (call >= 0 && raise >= 0 && call + raise <= 1.03) {
@@ -125,14 +132,15 @@ export class BaselineProvider implements StrategyProvider {
     const rng = seededRng(hashString(JSON.stringify([i.hole, i.board, opponents])));
     const estimate = estimateActionValues(
       i,
-      inferRanges(i, this.revision === 'baseline-2' ? 'legacy' : 'street-aware'),
+      inferRanges(i, this.revision === 'baseline-2' ? 'legacy' : contextual ? 'commitment-aware' : 'street-aware'),
       actions,
       rng,
       this.samples,
+      contextual,
     );
     const equity = estimate.equity;
     const pot = players.reduce((sum, p) => sum + p.total, 0);
-    const values = estimate.values;
+    const values = contextual ? decisionRisk(i, actions, estimate.values, estimate.standardErrors, equity) : estimate.values;
     const best = Math.max(...values);
     const temperature = Math.max(i.bigBlind * 0.5, pot * 0.08);
     const weights = values.map((v) => Math.exp(Math.max(-40, (v - best) / temperature)));
@@ -142,13 +150,20 @@ export class BaselineProvider implements StrategyProvider {
       ...common,
       probabilities: normalize(blueprint?.probabilities ?? probabilities),
       values,
-      source: blueprint ? 'coarse-blueprint-blend' : 'range-equity-fallback',
+      ...(contextual ? { rolloutValues: estimate.values } : {}),
+      source: contextual ? 'commitment-aware-preflop' : blueprint ? 'coarse-blueprint-blend' : 'range-equity-fallback',
+      ...(contextual ? { preflopContext: preflopContext(i) } : {}),
       ...(blueprint ? { blueprint: { key: blueprint.key, blend: blueprint.blend } } : {}),
-      coverage: 'fallback',
+      coverage: contextual ? 'modelled' : 'fallback',
       equity,
       equityStandardError: estimate.equityStandardError,
       valueStandardErrors: estimate.standardErrors,
       warnings: [
+        ...(contextual
+          ? [
+              'Uses actual unequal stacks, cold-call commitments and capped squeeze sizes; scores subtract an untrained risk reserve and sampling uncertainty. Not solved or calibrated future-street EVs.',
+            ]
+          : []),
         'Untrained ranges/responses; one-round rollout with exact pot eligibility and stack caps. Future betting, re-raises and position-dependent realization omitted; tie shares are fractional expectations. Not solver EVs.',
       ],
     };

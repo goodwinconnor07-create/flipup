@@ -3,6 +3,7 @@ import { options, type Options } from '../game/selectors';
 import type { Game, HandAction, Street } from '../game/types';
 import type { BotMove } from '../game/botPlay';
 import { preflopLookup } from './preflop';
+import { preflopContext } from './preflopContext';
 
 /** Whitelist boundary: no deck, other hole cards, server logs or other bot state. */
 export interface InformationSet {
@@ -139,7 +140,7 @@ export function copyInformation(i: InformationSet): InformationSet {
 }
 
 /** Engine bounds are authoritative, including short all-ins and reopening. */
-export function legalActions(i: InformationSet, chartSizing = false): BotMove[] {
+export function legalActions(i: InformationSet, chartSizing = false, contextualSizing = false): BotMove[] {
   const o = i.legal;
   const p = i.players.find((p) => p.id === i.heroId)!;
   const pot = i.players.reduce((n, p) => n + p.total, 0);
@@ -148,6 +149,7 @@ export function legalActions(i: InformationSet, chartSizing = false): BotMove[] 
     const sizes = [o.minTo, ...[0.33, 0.75, 1.25].map((f) => Math.round(p.bet + o.toCall + (pot + o.toCall) * f)), o.maxTo];
     const chart = chartSizing ? preflopLookup(i) : null;
     if (chart?.matched && chart.raiseTo !== undefined) sizes.push(chart.raiseTo);
+    if (contextualSizing && i.street === 'preflop') sizes.push(preflopContext(i).raiseTo);
     for (const to of new Set(sizes.map((n) => Math.max(o.minTo, Math.min(o.maxTo, n)))))
       moves.push({ move: i.currentBet ? 'raise' : 'bet', to });
   }

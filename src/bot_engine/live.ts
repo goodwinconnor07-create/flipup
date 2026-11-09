@@ -1,6 +1,7 @@
 import type { Game } from '../game/types';
 import { informationFor } from './information';
-import { BOT_001 } from './identity';
+import { BOT_001, type BotProfile } from './identity';
+import { withPersonality } from './personalities';
 import { emptyMemory, observe, type BotMemory } from './memory';
 import { BotService } from './service';
 import type { BotThought } from '../game/botPlay';
@@ -13,6 +14,7 @@ export interface LiveBotState {
   observedHand: number;
   observedActions: number;
   eventSequence: number;
+  profile?: BotProfile;
   lastDecision?: { hand: number; sequence: number; model: string; source: string };
   /** Private bounded replay history; the whole LiveBotState is stripped from client/bot views. */
   traces?: DecisionTrace[];
@@ -38,6 +40,10 @@ export function updateHumanPokerMemory(game: Game): LiveBotState | null {
   if (state.observedHand !== h.number) {
     state.observedHand = h.number;
     state.observedActions = 0;
+    state.profile =
+      game.settings.botPersonality && game.settings.botPersonality !== 'original'
+        ? withPersonality(BOT_001, game.settings.botPersonality)
+        : BOT_001;
   }
   // Replay public commitments to count actual faced-bet opportunities, not checks or blind posts.
   const responses = publicResponses({
@@ -71,7 +77,7 @@ export function humanPokerThought(game: Game, playerId: string): BotThought | nu
   const state = updateHumanPokerMemory(game)!;
   const info = informationFor(game, playerId);
   // Persistent BOT_001 parameters; table seat IDs remain distinct from identity names.
-  const profile = { ...BOT_001, botId: playerId };
+  const profile = { ...(state.profile ?? BOT_001), botId: playerId };
   const trace = service.decide(info, profile, state.memory, service.seedFor(info, profile));
   state.lastDecision = { hand: info.hand, sequence: info.sequence, model: trace.prediction.modelVersion, source: trace.prediction.source };
   state.traces = [...(state.traces ?? []), trace].slice(-8);

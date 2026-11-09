@@ -143,7 +143,7 @@ describe('Preflop chart coverage', () => {
   ] as [number, number, (Move | number)[], string][])('falls back explicitly for %ip%i %j', (n, depth, line, reason) => {
     const info = fixture(n, depth, 10, line).info;
     expect(preflopLookup(info)).toEqual({ matched: false, reason });
-    expect(new BaselineProvider(4).predict(info).coverage).toBe('fallback');
+    expect(new BaselineProvider(4, 'baseline-4').predict(info).coverage).toBe('fallback');
   });
 
   it('rejects unequal stacks, altered blinds, out-of-turn folds and inconsistent public state', () => {

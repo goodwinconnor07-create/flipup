@@ -7,6 +7,7 @@ on:
       - 'src/bot_engine/**'
       - 'scripts/trainBot.ts'
       - 'scripts/evaluatePreflop.ts'
+      - 'scripts/evaluatePersonalities.ts'
       - '.github/workflows/bot-training.yml'
   workflow_dispatch:
   schedule:
@@ -22,7 +23,7 @@ concurrency:
 jobs:
   train-and-evaluate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -41,6 +42,7 @@ jobs:
         env:
           BOT_TRAIN_PAIRS: '250'
       - run: npm run bot:preflop -- 250 bot-training-output/preflop-comparison.json
+      - run: npm run bot:personalities -- 100 bot-training-output/personality-comparison.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

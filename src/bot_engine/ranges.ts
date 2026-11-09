@@ -2,6 +2,7 @@ import { fullDeck, rankOf, type Card } from '../game/cards';
 import { scoreHand } from '../game/evaluate';
 import type { InformationSet } from './information';
 import { handBucket } from '../game/handBucket';
+import { preflopLikelihood } from './preflopContext';
 
 export interface Holding {
   cards: [Card, Card];
@@ -10,7 +11,7 @@ export interface Holding {
 export interface OpponentRange {
   playerId: string;
   holdings: Holding[];
-  source: 'smoothed-action-heuristic' | 'street-aware-action-heuristic';
+  source: 'smoothed-action-heuristic' | 'street-aware-action-heuristic' | 'commitment-aware-heuristic';
 }
 
 export function normalizeRange(holdings: Holding[]): Holding[] {
@@ -21,7 +22,7 @@ export function normalizeRange(holdings: Holding[]): Holding[] {
 }
 
 /** Exact combinations; the likelihood model is an explicit untrained approximation. */
-export function inferRanges(i: InformationSet, revision: 'legacy' | 'street-aware' = 'street-aware'): OpponentRange[] {
+export function inferRanges(i: InformationSet, revision: 'legacy' | 'street-aware' | 'commitment-aware' = 'street-aware'): OpponentRange[] {
   const blocked = new Set([...i.hole, ...i.board]);
   const deck = fullDeck().filter((c) => !blocked.has(c));
   return i.players
@@ -35,12 +36,13 @@ export function inferRanges(i: InformationSet, revision: 'legacy' | 'street-awar
           const hi = Math.max(rankOf(cards[0]), rankOf(cards[1]));
           const lo = Math.min(rankOf(cards[0]), rankOf(cards[1]));
           const quality = Math.min(1, ((hi + lo - 4) / 24) * 0.65 + (hi === lo ? 0.35 : 0) + (cards[0][1] === cards[1][1] ? 0.06 : 0));
-          let weight = 1;
+          let weight = revision === 'commitment-aware' ? preflopLikelihood(i, p.id, quality, cards[0][1] === cards[1][1], hi === lo) : 1;
           const strengths = new Map<string, number>();
           for (const action of i.actions.filter((a) => a.playerId === p.id && !a.outOfTurn)) {
+            if (revision === 'commitment-aware' && action.street === 'preflop') continue;
             // No future board is used to evaluate what an opponent knew on an earlier street.
             let strength = quality;
-            if (revision === 'street-aware' && action.street !== 'preflop') {
+            if (revision !== 'legacy' && action.street !== 'preflop') {
               const board = i.board.slice(0, { flop: 3, turn: 4, river: 5 }[action.street]);
               if (!strengths.has(action.street))
                 strengths.set(
@@ -58,7 +60,12 @@ export function inferRanges(i: InformationSet, revision: 'legacy' | 'street-awar
       return {
         playerId: p.id,
         holdings: normalizeRange(holdings),
-        source: revision === 'legacy' ? 'smoothed-action-heuristic' : 'street-aware-action-heuristic',
+        source:
+          revision === 'legacy'
+            ? 'smoothed-action-heuristic'
+            : revision === 'commitment-aware'
+              ? 'commitment-aware-heuristic'
+              : 'street-aware-action-heuristic',
       };
     });
 }

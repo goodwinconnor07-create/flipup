@@ -124,7 +124,10 @@ export function SeatRow({
   const reduce = useReduceMotion();
   // Seats fade in as the window moves, but not all at once when the table first draws.
   const [settled, setSettled] = useState(false);
-  useEffect(() => setSettled(true), []);
+  useEffect(() => {
+    const timer = setTimeout(() => setSettled(true), 0);
+    return () => clearTimeout(timer);
+  }, []);
   return (
     // The row reaches a little into the side margins, so each seat (and its bubble) gets more room.
     <View style={{ flexDirection: 'row', justifyContent: 'center', marginHorizontal: 4, paddingTop: compact ? 24 : 30, minHeight: compact ? 140 : 166 }}>

@@ -150,7 +150,7 @@ describe('Human Poker foundation', () => {
     const g = fixture(),
       info = informationFor(g, g.hand!.toAct!);
     info.players.forEach((p) => (p.stack += 13));
-    expect(new BaselineProvider().predict(info).coverage).toBe('fallback');
+    expect(new BaselineProvider(160, 'baseline-4').predict(info).coverage).toBe('fallback');
   });
   it('uses bounded evidence to expand bluffs, then reverses when opponents stop folding', () => {
     const g = fixture(),

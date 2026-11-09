@@ -9,6 +9,9 @@ import { BaselineProvider, type StrategyPrediction } from './strategy';
 import { scriptedMove, type AgentKind, SCRIPTED_OPPONENTS } from './scriptedOpponents';
 import { LEARNING_CONFIG, type LearningConfig } from './learningConfig';
 import { publicResponses } from './observations';
+import { withPersonality, type PersonalityId } from './personalities';
+import { preflopContext } from './preflopContext';
+import { handBucket } from '../game/handBucket';
 
 export interface SimulationOptions {
   agents?: AgentKind[];
@@ -16,6 +19,10 @@ export interface SimulationOptions {
   pairedDecks?: boolean;
   learningMode?: 'contextual' | 'pooled' | 'off';
   learningConfig?: LearningConfig;
+  personality?: PersonalityId;
+  startingStacksBb?: number[];
+  carryStacks?: boolean;
+  revision?: 'baseline-4' | 'baseline-5';
 }
 
 /** Uses production rules; independently seeded policy and dealing streams. No illegal-action fallback. */
@@ -23,6 +30,9 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   if (!Number.isSafeInteger(hands) || hands < 1) throw new Error('Invalid hand count');
   if (!Number.isSafeInteger(seats) || seats < 2 || seats > 9) throw new Error('Invalid seat count');
   const agents = config.agents ?? Array<AgentKind>(seats).fill('bot');
+  const starting = (config.startingStacksBb ?? Array<number>(seats).fill(100)).map((v) => v * 10);
+  if (starting.length !== seats || starting.some((v) => !Number.isSafeInteger(v) || v < 10 || v > 1e8))
+    throw new Error('Invalid starting stacks');
   if (agents.length !== seats || agents.some((a) => !['bot', 'baseline', 'previous', 'incumbent', ...SCRIPTED_OPPONENTS].includes(a)))
     throw new Error('Invalid agents');
   const dealing = seededRng(seed);
@@ -46,9 +56,16 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     if (config.reverseSeats) p.seat = seats - 1 - n;
   });
   const factory = new BotFactory();
-  const profiles = game.players.map((p, n) => factory.generate(p.id, 1001 + n));
+  const profiles = game.players.map((p, n) => {
+    const profile = factory.generate(p.id, 1001 + n);
+    return n === 0 && config.personality ? withPersonality(profile, config.personality) : profile;
+  });
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
-  const service = new BotService(new BaselineProvider(), config.learningMode ?? 'contextual', config.learningConfig ?? LEARNING_CONFIG);
+  const service = new BotService(
+    new BaselineProvider(160, config.revision),
+    config.learningMode ?? 'contextual',
+    config.learningConfig ?? LEARNING_CONFIG,
+  );
   const previous = new BotService(new BaselineProvider(160, 'baseline-2'), 'pooled');
   const incumbent = new BotService(
     new BaselineProvider(160, 'baseline-3'),
@@ -63,6 +80,9 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   const preflopCoverage = {
     decisions: 0,
     chartDecisions: 0,
+    modelledDecisions: 0,
+    unequalStackDecisions: 0,
+    coldCallDecisions: 0,
     spots: {} as Record<string, number>,
     fallbackReasons: {} as Record<string, number>,
   };
@@ -73,17 +93,43 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       const key = prediction.preflop?.matched ? `${prediction.preflop.bank}:${prediction.preflop.spot}` : 'legacy-rfi';
       preflopCoverage.spots[key] = (preflopCoverage.spots[key] ?? 0) + 1;
     } else {
+      if (prediction.coverage === 'modelled') preflopCoverage.modelledDecisions++;
+      if (prediction.preflopContext?.unequalStacks) preflopCoverage.unequalStackDecisions++;
+      if (prediction.preflopContext?.coldCall) preflopCoverage.coldCallDecisions++;
       const reason = prediction.preflop?.matched === false ? prediction.preflop.reason : 'legacy-fallback';
       preflopCoverage.fallbackReasons[reason] = (preflopCoverage.fallbackReasons[reason] ?? 0) + 1;
     }
+  };
+  const behavior = {
+    hands: 0,
+    vpipHands: 0,
+    pfrHands: 0,
+    threeBetOpportunities: 0,
+    threeBets: 0,
+    postflopDecisions: 0,
+    postflopAggressions: 0,
+    foldOpportunities: 0,
+    folds: 0,
+    drawCallOpportunities: 0,
+    drawCalls: 0,
+    riverCallOpportunities: 0,
+    riverCalls: 0,
+    weakBetOpportunities: 0,
+    weakBets: 0,
+    betSizeSum: 0,
+    betSizes: 0,
   };
   let decisions = 0,
     eventSequence = 0;
   for (let handNo = 0; handNo < hands; handNo++) {
     // Independent cash hands at the same stack, retaining identity and memory.
-    game.players.forEach((p) => {
-      p.stack = 1000;
+    game.players.forEach((p, k) => {
+      if (!config.carryStacks || handNo === 0 || p.stack === 0) p.stack = starting[k];
     });
+    const heroStart = game.players[0].stack,
+      bankroll = game.players.reduce((s, p) => s + p.stack, 0);
+    let vpip = false,
+      pfr = false;
     game.status = 'playing';
     if (config.pairedDecks) ctx.rng = seededRng(hashString(`${seed}:${handNo}:deck`));
     startHand(game, ctx);
@@ -137,7 +183,46 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
                 ];
               })()
             : scriptedMove(info, agent, sampling, handNo >= hands / 2);
-      if (at === 0) actionCounts[action.move]++;
+      if (at === 0) {
+        actionCounts[action.move]++;
+        const aggressive = action.to !== undefined;
+        if (info.street === 'preflop') {
+          if (action.move === 'call' || aggressive) vpip = true;
+          if (aggressive) pfr = true;
+          const context = preflopContext(info);
+          if (context.raiseCount === 1 && context.lastRaiser !== info.heroId && info.legal.canRaise) {
+            behavior.threeBetOpportunities++;
+            if (aggressive) behavior.threeBets++;
+          }
+        } else {
+          behavior.postflopDecisions++;
+          if (aggressive) behavior.postflopAggressions++;
+          const bucket = handBucket(info.hole, info.board);
+          if (info.legal.canRaise && (bucket === 'air' || bucket === 'weak')) {
+            behavior.weakBetOpportunities++;
+            if (aggressive) behavior.weakBets++;
+          }
+          if (!info.legal.canCheck && bucket === 'draw') {
+            behavior.drawCallOpportunities++;
+            if (action.move === 'call') behavior.drawCalls++;
+          }
+          if (!info.legal.canCheck && info.street === 'river') {
+            behavior.riverCallOpportunities++;
+            if (action.move === 'call') behavior.riverCalls++;
+          }
+          if (aggressive) {
+            const hero = info.players.find((p) => p.id === info.heroId)!;
+            behavior.betSizeSum +=
+              (action.to! - hero.bet - info.legal.toCall) /
+              Math.max(info.bigBlind, info.players.reduce((s, p) => s + p.total, 0) + info.legal.toCall);
+            behavior.betSizes++;
+          }
+        }
+        if (!info.legal.canCheck) {
+          behavior.foldOpportunities++;
+          if (action.move === 'fold') behavior.folds++;
+        }
+      }
       const elapsed = performance.now() - started;
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) throw new Error(`Illegal bot action: ${error}`);
@@ -170,8 +255,11 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       decisions++;
     }
     if (!game.hand?.result) throw new Error('Hand did not finish');
-    if (game.players.reduce((sum, p) => sum + p.stack, 0) !== seats * 1000) throw new Error('Chip conservation failed');
-    returns.push((game.players[0].stack - 1000) / 10);
+    if (game.players.reduce((sum, p) => sum + p.stack, 0) !== bankroll) throw new Error('Chip conservation failed');
+    behavior.hands++;
+    if (vpip) behavior.vpipHands++;
+    if (pfr) behavior.pfrHands++;
+    returns.push((game.players[0].stack - heroStart) / 10);
   }
   const mean = returns.reduce((a, b) => a + b, 0) / hands;
   const variance = hands > 1 ? returns.reduce((sum, r) => sum + (r - mean) ** 2, 0) / (hands - 1) : 0;
@@ -184,6 +272,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     agents,
     actionCounts,
     preflopCoverage,
+    behavior,
     handReturnsBb: returns,
     dealChecksums,
     bbPer100: mean * 100,

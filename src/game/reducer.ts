@@ -3,6 +3,7 @@
 
 import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { humanPokerThought, updateHumanPokerMemory } from '../bot_engine/live';
+import { isPersonality } from '../bot_engine/personalities';
 import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
@@ -111,6 +112,7 @@ export function validSettings(s: Settings): boolean {
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
     (s.humanPoker === undefined || typeof s.humanPoker === 'boolean') &&
+    (s.botPersonality === undefined || s.botPersonality === 'original' || isPersonality(s.botPersonality)) &&
     (!s.humanPoker || (s.variant ?? 'holdem') === 'holdem') &&
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
     (s.variant === undefined || isVariant(s.variant)) &&
@@ -1001,6 +1003,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         return fail('Free a seat before inviting BOT_001.');
       const stackChanged = next.startingStack !== game.settings.startingStack;
       const minutesChanged = (next.blindMinutes ?? 0) !== (game.settings.blindMinutes ?? 0);
+      // Freeze this hand's identity before a setting can change the next hand's choice.
+      if (game.hand && !game.hand.result) updateHumanPokerMemory(game);
       game.settings = next;
       syncHumanPokerSeat(game);
       // Changing how often the blinds rise restarts their clock; turning it off stops it.

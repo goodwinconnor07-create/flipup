@@ -1,9 +1,11 @@
 import { seededRng } from '../game/cards';
+import { isPersonality, type PersonalityId } from './personalities';
 
 export interface BotProfile {
   version: 1;
   generatorVersion: 'latent-1';
   botId: string;
+  personality?: PersonalityId;
   seed: number;
   createdAt: string;
   latent: { discipline: number; pressure: number };
@@ -16,6 +18,7 @@ export function validateProfile(p: BotProfile): void {
     p.generatorVersion !== 'latent-1' ||
     typeof p.botId !== 'string' ||
     !p.botId ||
+    (p.personality !== undefined && !isPersonality(p.personality)) ||
     !Number.isSafeInteger(p.seed) ||
     !Number.isFinite(Date.parse(p.createdAt)) ||
     [p.latent?.discipline, p.latent?.pressure].some((x) => !Number.isFinite(x) || Math.abs(x) > 1) ||

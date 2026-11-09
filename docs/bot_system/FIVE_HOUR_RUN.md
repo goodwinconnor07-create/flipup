@@ -4,6 +4,8 @@ The owner's requested run is bounded to 300 minutes after the runner starts. It 
 
 From [baseline-7](MULTIPLAYER_V7.md), the periodic comparison covers multiplayer planning, hand continuity and the realism auditor against frozen baseline-6. `BOT_IMPROVE_REALISM_HANDS=1000` increases its first comparison to 24,000 hands; later monitoring stays smaller. Both remain inside the same overall deadline. A source upgrade can retain the unchanged synthetic learner's atomic checkpoint while keeping old-model poker reports separate and preserving the original remaining time.
 
+Push-triggered runs read the request's absolute cutoff and first-comparison size through `BOT_IMPROVE_REQUEST_FILE`. A replacement request supersedes the older Actions run; a queued/delayed launch cannot restart a fresh five-hour budget. An already expired request exits with a saved expired-at-launch status and no experiments. Manual dispatch without a request file starts the explicitly chosen new duration.
+
 This is automated training and evaluation, not an unattended coding agent. It cannot invent and implement new features after the chat ends. It does not change production weights, the deck, bot personalities, difficulty or the trainer's answer review. The candidate configuration and saved failure cases provide concrete material for the next development pass.
 
 ```sh

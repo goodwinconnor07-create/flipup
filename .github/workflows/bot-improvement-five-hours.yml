@@ -17,7 +17,7 @@ permissions:
 
 concurrency:
   group: five-hour-bot-improvement
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   improve:
@@ -37,6 +37,7 @@ jobs:
           BOT_IMPROVE_MINUTES: ${{ inputs.minutes || '300' }}
           BOT_IMPROVE_RUN_ID: github-${{ github.run_id }}-${{ github.run_attempt }}
           BOT_IMPROVE_SOURCE_COMMIT: ${{ github.sha }}
+          BOT_IMPROVE_REQUEST_FILE: ${{ github.event_name == 'push' && '.github/bot-improvement-request.json' || '' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

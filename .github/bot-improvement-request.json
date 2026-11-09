@@ -1,6 +1,8 @@
 {
-  "requestId": "lookahead-v6-improvement-1",
+  "requestId": "multiplayer-v7-improvement-2",
   "durationMinutes": 300,
-  "purpose": "Continue offline bot calibration and evaluation for five hours after the one-street planning update.",
+  "deadlineAt": "2026-11-09T20:14:22.473Z",
+  "initialRealismHands": 1000,
+  "purpose": "Evaluate multiplayer planning, hand continuity and realism on baseline-7, then continue offline calibration until the original five-hour cutoff.",
   "automaticProductionWeightChanges": false
 }

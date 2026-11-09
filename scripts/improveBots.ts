@@ -5,14 +5,22 @@ import { CURRENT_STRATEGY_VERSION } from '../src/bot_engine/strategy';
 
 const minutes = Number(process.argv[2] ?? 300);
 const output = resolve(process.argv[3] ?? '/tmp/flipup-bot-improvement');
-const initialRealismHands = Number(process.env.BOT_IMPROVE_REALISM_HANDS ?? 50);
+const request = process.env.BOT_IMPROVE_REQUEST_FILE
+  ? (JSON.parse(readFileSync(resolve(process.env.BOT_IMPROVE_REQUEST_FILE), 'utf8')) as {
+      deadlineAt?: string;
+      initialRealismHands?: number;
+    })
+  : null;
+const initialRealismHands = Number(process.env.BOT_IMPROVE_REALISM_HANDS ?? request?.initialRealismHands ?? 50);
 if (!Number.isSafeInteger(initialRealismHands) || initialRealismHands < 20 || initialRealismHands > 1000)
   throw new Error('BOT_IMPROVE_REALISM_HANDS must be 20..1000');
 if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 300)
   throw new Error('Duration must be greater than zero and at most 300 minutes');
 mkdirSync(output, { recursive: true });
-const started = Date.now(),
-  deadline = started + minutes * 60000;
+const started = Date.now();
+const requestedDeadline = request?.deadlineAt === undefined ? started + minutes * 60000 : Date.parse(request.deadlineAt);
+if (!Number.isFinite(requestedDeadline)) throw new Error('Invalid experiment deadline');
+const deadline = Math.min(started + minutes * 60000, requestedDeadline);
 const statusPath = resolve(output, 'status.json');
 if (existsSync(statusPath)) throw new Error('Use a new output directory; saved runs are never overwritten');
 type Phase = {
@@ -36,7 +44,9 @@ const state = {
   status: 'running',
   completedBatches: 0,
   completedCycles: 0,
-  durationMinutes: minutes,
+  durationMinutes: Math.max(0, (deadline - started) / 60000),
+  requestedMinutes: minutes,
+  deadlineExpiredAtLaunch: deadline <= started,
   productionConfigChanged: false,
   model: CURRENT_STRATEGY_VERSION,
   initialRealismHands,

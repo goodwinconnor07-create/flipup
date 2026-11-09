@@ -59,12 +59,56 @@ function Pill({ label, onPress, strong, disabled }: { label: string; onPress: ()
   );
 }
 
+/** Who moved: you in a blue pill, everyone else as plain bold text (a pill each was a lot of grey noise). */
 function PosChip({ pos, hero }: { pos: Pos; hero: boolean }) {
   const colors = useColors();
+  if (hero)
+    return (
+      <View style={{ minWidth: 50, paddingVertical: 3, paddingHorizontal: spacing.xs, borderRadius: radius.sm, alignItems: 'center', backgroundColor: colors.accent }}>
+        <ThemedText variant="caption1" tone="onColor" style={{ fontWeight: '800' }}>
+          You
+        </ThemedText>
+      </View>
+    );
   return (
-    <View style={{ minWidth: 50, paddingVertical: 3, paddingHorizontal: spacing.xs, borderRadius: radius.sm, alignItems: 'center', backgroundColor: hero ? colors.accent : colors.cellPressed }}>
-      <ThemedText variant="caption1" tone={hero ? 'onColor' : 'label'} style={{ fontWeight: '800' }}>
-        {hero ? 'You' : seatName(pos)}
+    <View style={{ minWidth: 50, alignItems: 'flex-start' }}>
+      <ThemedText variant="subhead" style={{ fontWeight: '800' }}>
+        {seatName(pos)}
+      </ThemedText>
+    </View>
+  );
+}
+
+/**
+ * Under the table: Replay hand, or, while replaying, Back, Play, Next and Done with where you are. Right beside the
+ * table so what you're stepping through stays in view.
+ */
+export function ReplayStrip({ step, total, playing, onStep, onPlaying }: { step: number | null; total: number; playing: boolean; onStep: (step: number | null) => void; onPlaying: (on: boolean) => void }) {
+  const colors = useColors();
+  if (step === null) {
+    return (
+      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
+        <Pill
+          label="Replay hand"
+          onPress={() => {
+            onStep(0);
+            onPlaying(true);
+          }}
+        />
+      </View>
+    );
+  }
+  const done = step >= total;
+  return (
+    <View style={{ gap: 4, alignItems: 'center' }}>
+      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+        <Pill label="Back" disabled={step === 0} onPress={() => (onPlaying(false), onStep(Math.max(0, step - 1)))} />
+        <Pill label={playing ? 'Pause' : done ? 'Again' : 'Play'} strong onPress={() => (done ? (onStep(0), onPlaying(true)) : onPlaying(!playing))} />
+        <Pill label="Next" disabled={done} onPress={() => (onPlaying(false), onStep(Math.min(total, step + 1)))} />
+        <Pill label="Done" onPress={() => (onPlaying(false), onStep(null))} />
+      </View>
+      <ThemedText variant="caption1" style={[{ color: colors.tertiaryLabel as string }, NUM]}>
+        Replaying · step {step} of {total}
       </ThemedText>
     </View>
   );
@@ -72,25 +116,20 @@ function PosChip({ pos, hero }: { pos: Pos; hero: boolean }) {
 
 export function HandHistory({
   scenario,
-  replay,
   events,
   pot,
   step,
-  playing,
-  onStep,
-  onPlaying,
+  onJump,
   decision,
 }: {
   scenario: Scenario;
-  replay: Replay;
   events: HandEvent[];
   /** The pot at the start of each street after preflop. */
   pot: Replay['potAt'];
-  /** Where the replay is (null: not replaying). */
+  /** Where the replay is (null: not replaying), to light the move being replayed. */
   step: number | null;
-  playing: boolean;
-  onStep: (step: number | null) => void;
-  onPlaying: (on: boolean) => void;
+  /** Tapping a street replays from there. */
+  onJump: (step: number) => void;
   /** What you're being asked, for the last line. */
   decision: string;
 }) {
@@ -110,7 +149,15 @@ export function HandHistory({
     const hidden = replaying && street !== 'preflop' && step <= dealt;
     body.push(
       <View key={street} style={{ gap: spacing.xxs, opacity: replaying && step === 0 && street !== 'preflop' ? 0.35 : 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 30 }}>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={`Replay from the ${STREET[street].toLowerCase()}`}
+          onPress={() => {
+            haptic.select();
+            onJump(Math.max(0, dealt));
+          }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 30 }}
+        >
           <ThemedText variant="headline">{STREET[street]}</ThemedText>
           {!hidden && cards.length > 0 && (
             <View style={{ flexDirection: 'row', gap: 2 }}>
@@ -124,7 +171,7 @@ export function HandHistory({
               pot {bb(Math.round(pot[street]! * 10) / 10)}
             </ThemedText>
           )}
-        </View>
+        </PressableScale>
         {street === 'preflop' && (
           <ThemedText variant="caption1" tone="tertiaryLabel" style={NUM}>
             Blinds 0.5bb and 1bb{scenario.ante ? `, ${bb(scenario.ante)} big blind ante` : ''}
@@ -169,40 +216,15 @@ export function HandHistory({
 
   return (
     <View style={{ gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 36 }}>
-        <ThemedText variant="title3" accessibilityRole="header">
-          Hand history
-        </ThemedText>
-        {!replaying && (
-          <Pill
-            label="Replay hand"
-            onPress={() => {
-              onStep(0);
-              onPlaying(true);
-            }}
-          />
-        )}
-      </View>
-
-      {replaying && (
-        <View style={{ gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-            <Pill label="Back" disabled={step === 0} onPress={() => (onPlaying(false), onStep(Math.max(0, step - 1)))} />
-            <Pill label={playing ? 'Pause' : done ? 'Again' : 'Play'} strong onPress={() => (done ? (onStep(0), onPlaying(true)) : onPlaying(!playing))} />
-            <Pill label="Next" disabled={done} onPress={() => (onPlaying(false), onStep(Math.min(events.length, step + 1)))} />
-            <Pill label="Done" onPress={() => (onPlaying(false), onStep(null))} />
-          </View>
-          <ThemedText variant="caption1" tone="tertiaryLabel" style={NUM}>
-            Replaying · step {step} of {events.length}
-          </ThemedText>
-        </View>
-      )}
+      <ThemedText variant="title3" accessibilityRole="header">
+        Hand history
+      </ThemedText>
 
       <View style={{ gap: spacing.sm }}>{body}</View>
 
       {(!replaying || done) && (
-        <View style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.goldBg }}>
-          <ThemedText variant="subhead" style={{ fontWeight: '700', color: colors.goldInk }}>
+        <View style={{ paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
+          <ThemedText variant="subhead" style={{ fontWeight: '700', color: colors.blueInk }}>
             Your move: {decision}
           </ThemedText>
         </View>

@@ -26,7 +26,7 @@ function Card({ title, children }: { title?: string; children: ReactNode }) {
 }
 
 /** A label, how many were best plays, and a bar. */
-function RateRow({ t }: { t: Tally }) {
+function RateRow({ t, needs }: { t: Tally; /** A spot to work on: drawn in gold. */ needs?: boolean }) {
   const colors = useColors();
   return (
     <View accessibilityLabel={`${t.label}: ${t.best} of ${t.total} best plays`} style={{ gap: 4 }}>
@@ -42,7 +42,7 @@ function RateRow({ t }: { t: Tally }) {
         </ThemedText>
       </View>
       <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.cellPressed, overflow: 'hidden' }}>
-        <View style={{ width: `${Math.round(t.rate * 100)}%`, height: '100%', backgroundColor: t.rate >= 0.6 ? brand.violet : (colors.quaternaryLabel as string) }} />
+        <View style={{ width: `${Math.round(t.rate * 100)}%`, height: '100%', backgroundColor: needs ? brand.gold : brand.violet }} />
       </View>
     </View>
   );
@@ -107,7 +107,7 @@ export function StatsView({ history, onPractice }: { history: Answer[]; onPracti
                 <ThemedText variant="caption2" tone="tertiaryLabel" style={NUM}>
                   {Math.round(r * 100)}
                 </ThemedText>
-                <View style={{ width: '100%', height: Math.max(4, Math.round(r * 60)), borderRadius: 4, backgroundColor: i === st.trend.length - 1 ? brand.violet : (colors.quaternaryLabel as string) }} />
+                <View style={{ width: '100%', height: Math.max(4, Math.round(r * 66)), borderRadius: 4, backgroundColor: brand.violet, opacity: i === st.trend.length - 1 ? 1 : 0.55 }} />
               </View>
             ))}
           </View>
@@ -120,7 +120,7 @@ export function StatsView({ history, onPractice }: { history: Answer[]; onPracti
       {st.weakest.length > 0 && (
         <Card title="Where you miss most">
           {st.weakest.map((t) => (
-            <RateRow key={t.label} t={t} />
+            <RateRow key={t.label} t={t} needs />
           ))}
           <Button title="Practise these" onPress={() => onPractice(st.weakest.map((t) => t.label))} />
         </Card>

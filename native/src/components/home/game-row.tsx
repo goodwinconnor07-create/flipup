@@ -4,6 +4,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { gameLook } from '@design/gameArt';
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
+import { usePokerRecord } from '@/state/record';
 import { party, radius, spacing, useColors, useShadows } from '@/theme';
 
 import { GameThumb } from '../game-picture';
@@ -20,12 +21,15 @@ const TILE = 112;
  */
 export function GameRow() {
   const premium = usePremium();
+  // The game you played last comes first, marked Play again (no card of its own taking room above the shelf).
+  const last = usePokerRecord().games.at(-1)?.variant;
+  const games = last ? [...VARIANTS.filter((v) => v.id === last), ...VARIANTS.filter((v) => v.id !== last)] : VARIANTS;
   return (
     <View style={{ gap: spacing.sm }}>
       <SectionTitle title="Game modes" onMore={() => router.push('/games')} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md, marginTop: -8, marginBottom: -28 }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 28, gap: spacing.sm }}>
-        {VARIANTS.map((v) => (
-          <Tile key={v.id} variant={v.id} name={v.name} locked={!premium && isPremiumVariant(v.id)} />
+        {games.map((v) => (
+          <Tile key={v.id} variant={v.id} name={v.name} locked={!premium && isPremiumVariant(v.id)} again={v.id === last} />
         ))}
         <Surprise />
       </ScrollView>
@@ -33,13 +37,13 @@ export function GameRow() {
   );
 }
 
-function Tile({ variant, name, locked }: { variant: Variant; name: string; locked: boolean }) {
+function Tile({ variant, name, locked, again }: { variant: Variant; name: string; locked: boolean; /** The game you played last. */ again?: boolean }) {
   const colors = useColors();
   const shadows = useShadows();
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${name}${locked ? ', Premium' : ''}`}
+      accessibilityLabel={`${again ? 'Play again: ' : ''}${name}${locked ? ', Premium' : ''}`}
       onPress={() => {
         haptic.tap();
         router.push(`/game/${variant}`);
@@ -49,6 +53,11 @@ function Tile({ variant, name, locked }: { variant: Variant; name: string; locke
     >
       <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
         <GameThumb variant={variant} size={TILE} rounded={radius.lg} />
+        {again && (
+          <View style={{ position: 'absolute', top: spacing.xs, left: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
+            <Icon name="arrow.counterclockwise" size={13} color="#ffffff" />
+          </View>
+        )}
         {locked && (
           <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
             <Icon name="crown.fill" size={13} color={party.yellow} />
@@ -59,7 +68,7 @@ function Tile({ variant, name, locked }: { variant: Variant; name: string; locke
         {name}
       </Text>
       <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, marginTop: -spacing.xs + 2 }}>
-        {gameLook(variant).hook}
+        {again ? 'Play again' : gameLook(variant).hook}
       </Text>
     </PressableScale>
   );

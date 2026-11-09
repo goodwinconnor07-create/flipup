@@ -332,6 +332,12 @@ const ANSWER: Record<string, NonNullable<Game['pendingTalk']>['event']> = {
   grimace: 'ribbed',
   gl: 'goodLuck',
   gg: 'gg',
+  nicefold: 'thanks',
+  bigbet: 'ribbed',
+  runit: 'goodLuck',
+  cool: 'ribbed',
+  cry: 'commiserate',
+  pray: 'thanks',
 };
 
 /** How often a bot answers a quick message, and how soon (ms) after it. */

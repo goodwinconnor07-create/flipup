@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allLines, DRAMA_MAX } from './botTalk';
+import { allLines, DRAMA_MAX, voiceKind } from './botTalk';
 import { seededRng } from './cards';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import { options } from './selectors';
@@ -548,4 +548,57 @@ describe('more to say', () => {
   it('leaves an online table as it was', () => {
     for (let seed = 1; seed <= 3; seed++) expect(drama('ABCDE', false, seed, 25).waits).toEqual([]);
   }, 60000);
+});
+
+describe('the timing a line was written with', () => {
+  it('keeps the | and || breaks as held beats between words, one bubble', () => {
+    const [b] = lineBeats('Funny.||I’ll remember this.', 'Sam');
+    expect(b.text).toBe('Funny. I’ll remember this.');
+    expect(b.pauses).toEqual({ 0: CHAT.pauseSlow });
+    const [q] = lineBeats('Brick.|Brick.|Brick.');
+    expect(q.pauses).toEqual({ 0: CHAT.pauseQuick, 1: CHAT.pauseQuick });
+    expect(lineBeats('Mine.')[0].pauses).toBeUndefined();
+  });
+
+  it('puts the pause after the word that ends a piece, even when a name takes two words', () => {
+    const [b] = lineBeats('Hey {you}.|Ready?', 'Sam K');
+    expect(b.text).toBe('Hey Sam K. Ready?');
+    expect(b.pauses).toEqual({ 2: CHAT.pauseQuick });
+  });
+
+  it('holds the ticker at a pause: the next word comes later than it would without one', () => {
+    const plain = ticker('Funny. I’ll remember this.');
+    const held = ticker('Funny. I’ll remember this.', { 0: CHAT.pauseSlow });
+    expect(held.at[1] - held.at[0]).toBe(plain.at[1] - plain.at[0] + CHAT.pauseSlow);
+    expect(holdMs('Funny. I’ll remember this.', { 0: CHAT.pauseSlow })).toBeGreaterThanOrEqual(holdMs('Funny. I’ll remember this.'));
+  });
+
+  it('carries the pauses onto the message on screen', () => {
+    const lane = new ChatLane();
+    lane.push(botSay({ who: 'a', lineId: 'b:trash:ribbed:0', n: 1, beats: lineBeats('Funny.||Hm.'), at: 0, moment: 'm', sig: '', luck: 0, voice: 'trash', toYou: true }));
+    for (let t = 0; t <= 800; t += 50) lane.advance(t);
+    const m = lane.talk('a', 800)?.shown.at(-1);
+    expect(m?.pauses).toEqual({ 0: CHAT.pauseSlow });
+    expect(m?.who).toBe('a');
+    expect(m?.voice).toBe('trash');
+    expect(m?.toYou).toBe(true);
+  });
+});
+
+describe('a window never runs two sentences together', () => {
+  it('stops at the end of a sentence, however much room there is', () => {
+    const words = wordsOf('Ha. Nice one.');
+    expect(windowAt(words, 1, 30, 3)).toEqual([1, 1]);
+    expect(windowAt(words, 2, 30, 3)).toEqual([1, 2]);
+  });
+});
+
+describe('how a bot’s line is dressed', () => {
+  it('reads the tone off the line id, a legend as its own', () => {
+    expect(voiceKind('b:trash:win:0')).toBe('trash');
+    expect(voiceKind('b:friendly:win:0')).toBe('friendly');
+    expect(voiceKind('nice')).toBe('');
+    expect(voiceKind('b:local:x')).toBe('');
+    for (const { voice } of allLines().slice(0, 400)) expect(['trash', 'friendly', 'legend']).toContain(voiceKind(`b:${voice}:win:0`));
+  });
 });

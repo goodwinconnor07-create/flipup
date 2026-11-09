@@ -12,6 +12,9 @@ import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { brand, gradient, motion, usePlainColors } from '@/theme';
 
+import { haptic } from '../haptics';
+import { playBlip } from './sounds';
+
 const emojiOnly = (text: string) => !/[A-Za-z]/.test(text);
 
 /** A bubble appearing: from 95% to full size and fading in, ease-out, 250ms. No overshoot and never from nothing (motion rules 10 and 13). */
@@ -48,8 +51,22 @@ function allinRaised(hand: Hand, playerId: string, bigBlind: number): boolean {
 }
 
 /** The capsule's paint for each tone. */
-function useTint(tone: Tone): { box: ViewStyle; ink: string } {
+function useTint(tone: Tone, ring?: string): { box: ViewStyle; ink: string } {
   const c = usePlainColors();
+  const t = tint(tone, c);
+  // A thin ring marks who is talking (see `ringFor`); it sits inside the capsule so the size never changes.
+  return ring ? { ...t, box: { ...t.box, boxShadow: `${SHADOW}, inset 0 0 0 1.5px ${ring}` } } : t;
+}
+
+/** Whose bubble it is, by a thin ring: friendly bots blue, a legend gold, trash talkers plain; a line aimed at you gets a stronger blue. */
+export function ringFor(voice?: string, toYou?: boolean): string | undefined {
+  if (toYou) return 'rgba(10, 122, 255, 0.95)';
+  if (voice === 'legend') return 'rgba(245, 183, 0, 0.9)';
+  if (voice === 'friendly') return 'rgba(10, 122, 255, 0.45)';
+  return undefined;
+}
+
+function tint(tone: Tone, c: ReturnType<typeof usePlainColors>): { box: ViewStyle; ink: string } {
   if (tone === 'call') return { box: { ...gradient(`linear-gradient(180deg, ${c.bubbleBlueHi}, ${c.bubbleBlue})`), backgroundColor: c.bubbleBlue, boxShadow: SHADOW }, ink: '#ffffff' };
   if (tone === 'raise') return { box: { ...gradient(`linear-gradient(180deg, ${brand.raise}, ${brand.raiseDeep})`), backgroundColor: brand.raise, boxShadow: SHADOW }, ink: '#ffffff' };
   // Fold is the commonest move, so it's the quiet red of the Fold button: a dark red pill with red letters.
@@ -70,16 +87,32 @@ export function MoveBubble({ text, tone, old, big }: { text: string; tone: Tone;
   );
 }
 
-/** Talk said whole (a person's quick message): semibold, wrapping inside the seat's share of the row. */
-function TalkBubble({ text, room }: { text: string; room?: number }) {
-  const { box, ink } = useTint('grey');
-  const emoji = emojiOnly(text);
+/**
+ * Talk said whole (a person's quick message): semibold, wrapping inside the seat's share of the row. An emoji on its
+ * own isn't a message in a bubble but a sticker: big, no capsule, popping in where the bubble would.
+ */
+function TalkBubble({ text, room, ring }: { text: string; room?: number; ring?: string }) {
+  const { box, ink } = useTint('grey', ring);
+  if (emojiOnly(text)) return <Sticker text={text} />;
   return (
-    <View style={[{ paddingHorizontal: emoji ? 8 : 10, paddingVertical: emoji ? 1 : 4, borderRadius: 999, maxWidth: room }, box]}>
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: emoji ? 22 : 13, lineHeight: emoji ? 26 : 16, fontWeight: '600', color: ink, textAlign: 'center' }}>
+    <View style={[{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, maxWidth: room }, box]}>
+      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, lineHeight: 16, fontWeight: '600', color: ink, textAlign: 'center' }}>
         {text}
       </Text>
     </View>
+  );
+}
+
+/** An emoji reaction: 34pt with a soft shadow for contrast on any felt, no capsule. */
+function Sticker({ text }: { text: string }) {
+  return (
+    <Text
+      maxFontSizeMultiplier={1.1}
+      accessibilityLabel={text}
+      style={{ fontSize: 34, lineHeight: 40, textAlign: 'center', textShadowColor: 'rgba(0,0,0,0.35)', textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 5 }}
+    >
+      {text}
+    </Text>
   );
 }
 
@@ -120,12 +153,18 @@ export function Dot({ delay, color, size, lift }: { delay: number; color: string
  * invisible copy of its widest few words, and the real words come in at the right, each sliding 6pt as it fades in,
  * while the oldest fades and its place closes up, so the rest slide left like a conveyor.
  */
-function Ticker({ text, room }: { text: string; room?: number }) {
-  const { box, ink } = useTint('grey');
-  const { words, at } = ticker(text);
+function Ticker({ text, room, pauses, who, ring }: { text: string; room?: number; pauses?: Record<number, number>; who?: string; ring?: string }) {
+  const { box, ink } = useTint('grey', ring);
+  const { words, at } = ticker(text, pauses);
   const [shown, setShown] = useState(0);
   useEffect(() => {
-    const timers = at.slice(1).map((ms, i) => setTimeout(() => setShown(i + 1), ms));
+    if (who) playBlip(who);
+    const timers = at.slice(1).map((ms, i) =>
+      setTimeout(() => {
+        setShown(i + 1);
+        if (who) playBlip(who);
+      }, ms),
+    );
     return () => timers.forEach(clearTimeout);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   // About 7.2pt a letter at this size: a narrow seat shows fewer letters at a time, so nothing is cut off.
@@ -206,9 +245,23 @@ export const bubbleOut = FadeOut.duration(motion.exit).easing(EASE_OUT);
 export function Thread({ talk, room, place }: { talk: Talk; room?: number; place: ViewStyle }) {
   const reduce = useReduceMotion();
   const item: Message | null = talk.typing ? null : (talk.shown.at(-1) ?? null);
+  const ring = ringFor(item?.voice, item?.toYou);
+  // A line aimed at you gets a light tap as it lands.
+  const key = item?.key;
+  useEffect(() => {
+    if (key && item?.toYou) haptic.tap();
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  // A bubble is read out only when it's for you or a person's own message; eight bots talking would drown VoiceOver.
+  const live = item && (item.toYou || !item.rolling) ? 'polite' : 'none';
   return (
-    <Animated.View key={item?.key ?? 'typing'} accessibilityLiveRegion="polite" entering={reduce ? FadeIn.duration(150) : bubblePop} exiting={bubbleOut} style={place}>
-      {!item ? <TypingBubble /> : item.rolling ? <Ticker text={item.text} room={room} /> : <TalkBubble text={item.text} room={room} />}
+    <Animated.View key={item?.key ?? 'typing'} accessibilityLiveRegion={live} entering={reduce ? FadeIn.duration(150) : bubblePop} exiting={bubbleOut} style={place}>
+      {!item ? (
+        <TypingBubble />
+      ) : item.rolling && !emojiOnly(item.text) ? (
+        <Ticker text={item.text} room={room} pauses={item.pauses} who={item.who} ring={ring} />
+      ) : (
+        <TalkBubble text={item.text} room={room} ring={ring} />
+      )}
     </Animated.View>
   );
 }

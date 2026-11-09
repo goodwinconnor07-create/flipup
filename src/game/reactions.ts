@@ -17,10 +17,16 @@ export const REACTIONS: Reaction[] = [
   { id: 'gl', text: 'Good luck!' },
   { id: 'oops', text: 'Oops!' },
   { id: 'gg', text: 'GG' },
+  { id: 'nicefold', text: 'Nice fold!' },
+  { id: 'bigbet', text: 'Big bet?' },
+  { id: 'runit', text: 'Run it!' },
   { id: 'clap', text: '👏' },
   { id: 'laugh', text: '😂' },
   { id: 'grimace', text: '😬' },
   { id: 'fire', text: '🔥' },
+  { id: 'cool', text: '😎' },
+  { id: 'cry', text: '😭' },
+  { id: 'pray', text: '🙏' },
 ];
 
 export const isReactionId = (v: unknown): v is string => typeof v === 'string' && REACTIONS.some((r) => r.id === v);

@@ -1,42 +1,29 @@
 import { router } from 'expo-router';
 
-import { FRIENDS_ON } from '@/scope';
-import { usePals } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 
 import { Avatar } from './avatar';
-import { Menu } from './menu';
+import { haptic } from './haptics';
+import { PressableScale } from './pressable-scale';
 
 /**
- * Your emoji in a tab's title row, the way Flighty's avatar works: a tap opens Apple's menu with your profile,
- * Friends, Your stats and Settings. Before you've set up a profile it's an empty outline that goes straight there.
+ * Your emoji in a tab's title row: a tap opens your profile, where your name, face, stats and Settings are (the
+ * owner, 9 Nov 2026: a menu of three items repeated what the profile already lists). Before you've set up a
+ * profile it's an empty outline that goes to the same place. The name is older than the behaviour.
  */
 export function ProfileMenu() {
   const profile = useProfile();
-  const pals = usePals();
   const named = profile.name.trim().length > 0;
   return (
-    <Menu
-      label={named ? `${profile.name}. Profile, ${FRIENDS_ON ? 'friends, ' : ''}stats and settings` : 'Set up your profile'}
-      title={named ? profile.name : undefined}
-      sections={[
-        [{ title: named ? 'Edit profile' : 'Set up your profile', symbol: 'person.crop.circle', onPress: () => router.push('/profile') }],
-        [
-          ...(FRIENDS_ON
-            ? [
-                {
-                  title: pals.length ? `Friends (${pals.length})` : 'Friends',
-                  symbol: 'person.2' as const,
-                  onPress: () => router.navigate('/friends'),
-                },
-              ]
-            : []),
-          { title: 'Your stats', symbol: 'chart.bar.xaxis', onPress: () => router.push('/stats') },
-          { title: 'Settings', symbol: 'gearshape', onPress: () => router.push('/settings') },
-        ],
-      ]}
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={named ? `${profile.name}. Open your profile` : 'Set up your profile'}
+      onPress={() => {
+        haptic.tap();
+        router.push('/profile');
+      }}
     >
       <Avatar emoji={named ? profile.emoji : undefined} size={44} />
-    </Menu>
+    </PressableScale>
   );
 }

@@ -92,7 +92,7 @@ export default function ProfileScreen() {
             value={name}
             onChangeText={setName}
             placeholder="Your name"
-            placeholderTextColor="rgba(255,255,255,0.55)"
+            placeholderTextColor={dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.4)'}
             accessibilityLabel="Your name"
             maxLength={LIMITS.maxNameLength}
             autoComplete="given-name"
@@ -103,7 +103,7 @@ export default function ProfileScreen() {
             autoFocus={first}
             onSubmitEditing={save}
             maxFontSizeMultiplier={1.3}
-            style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', textAlign: 'center', color: '#ffffff', minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
+            style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
           />
           <Swap id={changed ? 'save' : 'hint'} kind="text">
             {changed ? (
@@ -112,15 +112,15 @@ export default function ProfileScreen() {
                 accessibilityLabel="Save your name"
                 disabled={!ok}
                 onPress={save}
-                style={{ height: 36, paddingHorizontal: 20, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: ok ? '#ffffff' : 'rgba(255,255,255,0.3)' }}
+                style={{ height: 36, paddingHorizontal: 20, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? (ok ? '#ffffff' : 'rgba(255,255,255,0.3)') : ok ? brand.violet : 'rgba(0,0,0,0.12)' }}
               >
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: brand.violetDeep }}>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: dark ? brand.violetDeep : '#ffffff' }}>
                   Save name
                 </Text>
               </PressableScale>
             ) : (
-              <View style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.18)' }}>
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: '#ffffff' }}>
+              <View style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.06)' }}>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: dark ? '#ffffff' : (colors.label as string) }}>
                   Tap your name or face to change
                 </Text>
               </View>

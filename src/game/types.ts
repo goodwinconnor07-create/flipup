@@ -267,7 +267,8 @@ export interface Hand {
   /** The game this hand is played as (a change of game in the settings waits for the next hand). Missing = Texas Hold'em. */
   variant?: Variant;
   /** Die on the River: what the die rolled, and the board card it swapped (out) for a new one (in). A 6 swaps nothing. */
-  dice?: { roll: number; out?: Card; in?: Card };
+  /** `until`: when the roll's show ends on the phones (the river's betting waits for it). */
+  dice?: { roll: number; out?: Card; in?: Card; until?: number };
   /** Blackjack Hold'em: how many cards each player has hit (public; the cards themselves are face down). */
   hits?: Record<string, number>;
   /** Blackjack Hold'em: players who went over 21 and were folded. */

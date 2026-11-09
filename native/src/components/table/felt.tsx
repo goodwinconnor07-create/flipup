@@ -74,7 +74,6 @@ export function useHighlight(game: Game, me: Player | undefined) {
 /** The felt's height for a game on this phone. It depends only on the game and the screen, never on what's shown. */
 export function feltHeight(variant: string, screen: number): number {
   if (variant === 'crucifix' || variant === 'circle' || variant === 'memory') return 330;
-  if (variant === 'dice') return 290;
   return Math.max(196, Math.min(240, Math.round(screen * 0.3)));
 }
 
@@ -192,22 +191,13 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
             >
               <VariantPill
-                text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${info.emoji} ${info.name}`}
+                text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : `${info.emoji} ${info.name}`}
                 hot={role === 'imposter'}
               />
             </Pressable>
           )}
           {hand && !game.memory && <PotPill value={potNow} bigBlind={game.settings.bigBlind} />}
         </View>
-        {hand?.dice && (
-          <Animated.View key={`dice-${hand.number}`} entering={reduce ? FadeIn : bubblePop}>
-            <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
-              {hand.dice.out && hand.dice.in
-                ? `🎲 Rolled ${hand.dice.roll}: ${short(hand.dice.out)} → ${short(hand.dice.in)}`
-                : `🎲 Rolled ${hand.dice.roll}: the board stays`}
-            </Text>
-          </Animated.View>
-        )}
         {game.memory ? (
           <MemoryPeek game={game} width={width} pack={pack} />
         ) : (

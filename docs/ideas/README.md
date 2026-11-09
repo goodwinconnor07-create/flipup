@@ -1,5 +1,7 @@
 # Ideas, ranked
 
+**Built on 9 Nov 2026 (branch `overnight/bug-sweep`):** 2 (can't-connect card and page), 8 (mode chip on the finish page, with a Premium check in the room), 9 (Premium banner after the first finished game) and 10 (`scripts/crowdedTable.mjs`). **6 is not built:** see the note under the table.
+
 Proposals only. Nothing here is built, and the owner approves mockups first (see `CLAUDE.md`). They come from reading the code and looking at web-export screenshots at 320 and 390pt, not from playing on a phone. Open `mockups/ideas.html` in a browser to compare the three that are drawn.
 
 | # | Idea | File | Effort | Why first |
@@ -16,3 +18,5 @@ Proposals only. Nothing here is built, and the owner approves mockups first (see
 | 10 | A 9-player, longest-name screenshot test at 320 and 390pt | errors | S | Small-phone layout bugs keep coming back |
 
 Also in the files: a "First hand!" payoff on Passport (first-run), who-left toasts (errors).
+
+**Why 6 is not built.** The idea said a local notification. A phone can only schedule a local notification while the app is running, and iOS suspends FlipUp and drops its socket soon after you leave it, so the app can't know it is your turn. It needs a real push from the server: an Apple push key, a device token sent to the Worker, and the Worker calling Apple when a turn starts. That is a new server feature with a secret, so it needs the owner's go-ahead.

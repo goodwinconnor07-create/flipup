@@ -74,7 +74,7 @@ export function useHighlight(game: Game, me: Player | undefined) {
 /** The felt's height for a game on this phone. It depends only on the game and the screen, never on what's shown. */
 export function feltHeight(variant: string, screen: number): number {
   if (variant === 'crucifix' || variant === 'circle' || variant === 'memory') return 330;
-  if (variant === 'ghost' || variant === 'dice') return 290;
+  if (variant === 'dice') return 290;
   return Math.max(196, Math.min(240, Math.round(screen * 0.3)));
 }
 
@@ -199,7 +199,6 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           )}
           {hand && !game.memory && <PotPill value={potNow} bigBlind={game.settings.bigBlind} />}
         </View>
-        <Ghost game={game} pack={pack} />
         {hand?.dice && (
           <Animated.View key={`dice-${hand.number}`} entering={reduce ? FadeIn : bubblePop}>
             <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
@@ -315,44 +314,6 @@ function Board({
   return (
     <View accessibilityLabel="Board" style={{ flexDirection: 'row', gap, rowGap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
       {Array.from({ length: slots }, (_, i) => card(i, w, variant === 'pittsburgh' && i === 4 ? { marginLeft: 8 } : undefined))}
-    </View>
-  );
-}
-
-/** Ghost Hold'em: the ghost's two cards (face down until a showdown) and what it's holding for the next hand. */
-function Ghost({ game, pack }: { game: Game; pack?: string }) {
-  const hand = game.hand;
-  const ghost = hand?.result?.ghost;
-  const holding = hand && !hand.result ? (hand.carry ?? 0) : (game.ghostPot ?? 0);
-  const isGhost = variantOf(game) === 'ghost';
-  if (!isGhost && !holding) return null;
-  const cards = ghost?.cards ?? hand?.ghost ?? [null, null];
-  return (
-    <View
-      accessibilityLabel="The ghost"
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: spacing.xs,
-        paddingVertical: 2,
-        borderRadius: radius.full,
-        backgroundColor: ghost?.kept ? 'rgba(124,92,255,0.45)' : 'rgba(0,0,0,0.28)',
-      }}
-    >
-      <Text style={{ fontSize: 20 }} maxFontSizeMultiplier={1} accessible={false}>
-        👻
-      </Text>
-      {hand && isGhost && (
-        <View style={{ flexDirection: 'row', gap: 2 }}>
-          {cards.map((c, i) =>
-            c ? <PlayingCard key={c} card={c} size="sm" flip pack={pack} /> : <PlayingCard key={i} back size="sm" pack={pack} />,
-          )}
-        </View>
-      )}
-      <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff', fontWeight: '700', fontSize: 13 }}>
-        {ghost ? (ghost.kept ? `Keeps ${chips(ghost.kept)} · ${ghost.name}` : ghost.name) : holding ? `Holding ${chips(holding)}` : 'Ghost'}
-      </Text>
     </View>
   );
 }

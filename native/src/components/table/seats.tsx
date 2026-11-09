@@ -21,6 +21,7 @@ import { ThemedText } from '../themed-text';
 import { bubbleOut, bubblePop, MoveBubble, moveTone, pinned, Thread, TypingBubble } from './bubbles';
 import { TagChip } from './challenge';
 import { Count } from './count';
+import { GhostDivider, GhostSeat } from './ghost-seat';
 import { PlayingCard } from './playing-card';
 import { moveSig } from './use-reactions';
 
@@ -134,6 +135,12 @@ export function SeatRow({
   return (
     // The row reaches a little into the side margins, so each seat (and its bubble) gets more room.
     <View style={{ flexDirection: 'row', justifyContent: 'center', marginHorizontal: 4, paddingTop: compact ? 24 : 30, minHeight: compact ? 140 : 166 }}>
+      {variantOf(game) === 'ghost' && (
+        <>
+          <GhostSeat game={game} compact={compact} />
+          <GhostDivider compact={compact} />
+        </>
+      )}
       {shown.map((p) => (
         <View key={p.id} style={{ flex: 1, maxWidth: 110 }}>
           <SeatPod

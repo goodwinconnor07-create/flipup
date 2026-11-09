@@ -4,7 +4,7 @@
 // each play wins on average. The numbers come from range-numbers.json (worked out ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, useColorScheme, useWindowDimensions, View } from 'react-native';
+import { Linking, Modal, Pressable, useColorScheme, useWindowDimensions, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
@@ -14,15 +14,17 @@ import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
 import { Icon } from '@/components/icon';
 import { SwapIcon } from '@/components/swap';
 import { Confetti } from '@/components/table/confetti';
+import { playSound } from '@/components/table/sounds';
 import { PressableScale } from '@/components/pressable-scale';
 import { useTabFooter } from '@/components/tab-screen';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { detail, EASE_OUT, exit, popIn } from '@/motion/presets';
+import { detail, EASE_OUT, popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
+import { runOf, useRangeHistory } from '@/state/range-history';
 import { eventsOf, firstSentence, viewAt } from '@/state/range-view';
-import { brand, radius, spacing, useColors, usePlainColors } from '@/theme';
+import { brand, gradient, radius, spacing, useColors, usePlainColors } from '@/theme';
 import {
   bb,
   callShare,
@@ -102,10 +104,9 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
   const [step, setStep] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [more, setMore] = useState(false);
-  // A best play: a green "Best play!" pops in for a moment and confetti flies, as at a won hand.
-  const { width } = useWindowDimensions();
-  const [burst, setBurst] = useState(0);
+  // A best play fills the screen in green for a moment, with confetti, as at a won hand.
   const [cheer, setCheer] = useState(false);
+  const run = runOf(useRangeHistory());
   const cheerTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(cheerTimer.current), []);
   const [pick, setPick] = useState<OptionId | null>(null);
@@ -151,11 +152,12 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
     setPick(id);
     // The verdict is at the top of the page: bring it into view for the answer.
     onTop?.();
+    // A sound for each result: a win, a soft pop for also good, a quiet knock for a miss.
+    playSound(grade === 'best' ? 'win' : grade === 'ok' ? 'pop' : 'check');
     if (grade === 'best') {
-      setBurst((b) => b + 1);
       setCheer(true);
       clearTimeout(cheerTimer.current);
-      cheerTimer.current = setTimeout(() => setCheer(false), 1700);
+      cheerTimer.current = setTimeout(() => setCheer(false), 2000);
     }
   };
   const next = () => {
@@ -181,6 +183,15 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
     mistake: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
   };
 
+  // After a miss: the kind of hand they most likely had (the biggest value group when you face a bet), with a few examples.
+  const couldHave = useMemo(() => {
+    const v = views[0];
+    if (!v) return null;
+    const value = facing ? v.groups.filter((g) => g.group.role === 'value') : [];
+    const top = [...(value.length ? value : v.groups)].sort((a, b) => b.weight - a.weight)[0];
+    if (!top) return null;
+    return { pos: v.opponent.pos, label: top.group.label, hands: top.group.hands.split(',').slice(0, 3).map((x) => x.trim()).join(', ') };
+  }, [views, facing]);
   const kind = (id: OptionId): 'fold' | 'blue' | 'raise' => (id === 'fold' ? 'fold' : id === 'call' || id === 'check' ? 'blue' : 'raise');
   // The answer bar, pinned under the page above the tab bar: your options, then Next hand once you've answered.
   const bar = !pick ? (
@@ -196,21 +207,7 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
 
   return (
     <View key={scenario.id} style={{ gap: spacing.md }}>
-      <Confetti burst={burst} origin={{ x: width / 2 - spacing.md, y: 90 }} />
-      {cheer && (
-        <Animated.View
-          pointerEvents="none"
-          entering={reduce ? undefined : popIn()}
-          exiting={exit(reduce)}
-          accessibilityLiveRegion="polite"
-          style={{ position: 'absolute', top: 6, alignSelf: 'center', zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.lg, borderRadius: radius.full, backgroundColor: brand.raiseDeep, boxShadow: '0 8px 24px rgba(20,132,63,0.55)' }}
-        >
-          <Icon name="checkmark.circle.fill" size={24} color="#ffffff" />
-          <ThemedText variant="title3" tone="onColor" style={{ fontWeight: '800' }}>
-            Best play!
-          </ThemedText>
-        </Animated.View>
-      )}
+      {cheer && <Celebration run={run} concept={scenario.concept} onClose={() => setCheer(false)} />}
       {focus?.length ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.xs, paddingLeft: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
           <ThemedText variant="footnote" numberOfLines={2} style={{ flex: 1, fontWeight: '600', color: colors.blueInk }}>
@@ -222,9 +219,19 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
 
       {/* What the hand teaches, then its name. */}
       <View style={{ gap: 2 }}>
-        <ThemedText variant="caption1" tone="accent" style={{ fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-          {scenario.concept}
-        </ThemedText>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <ThemedText variant="caption1" tone="accent" style={{ fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', flexShrink: 1 }}>
+            {scenario.concept}
+          </ThemedText>
+          {run >= 2 && (
+            <View accessibilityLabel={`${run} best plays in a row`} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Icon name="flame.fill" size={15} color={brand.gold} />
+              <ThemedText variant="footnote" style={{ fontWeight: '700' }}>
+                {run} in a row
+              </ThemedText>
+            </View>
+          )}
+        </View>
         <ThemedText variant="title2" accessibilityRole="header">
           {scenario.title}
         </ThemedText>
@@ -257,6 +264,11 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
             <ThemedText variant="subhead" style={{ color: gradeLook[grade!].ink, marginTop: spacing.xxs }}>
               {firstSentence(scenario.why)}
             </ThemedText>
+            {grade !== 'best' && couldHave && (
+              <ThemedText variant="footnote" style={{ color: gradeLook[grade!].ink, marginTop: spacing.xxs }}>
+                {views.length > 1 ? `${couldHave.pos} could have` : 'They could have'}: {couldHave.label} ({couldHave.hands})
+              </ThemedText>
+            )}
           </Animated.View>
           <View style={{ gap: spacing.sm }}>
             <Button title={more ? 'Hide the details' : 'Show me more'} variant="secondary" onPress={() => setMore(!more)} />
@@ -483,6 +495,7 @@ function AnswerButton({ label, kind, wide, onPress }: { label: string; kind: 'fo
   const colors = useColors();
   const c = usePlainColors();
   const blue = useColorScheme() === 'dark' ? '#0a84ff' : '#007aff';
+  const [main, sub] = splitLabel(label);
   const look = kind === 'fold' ? { bg: c.redBg, ink: c.redInk } : kind === 'blue' ? { bg: blue, ink: '#ffffff' } : { bg: brand.raise, ink: '#ffffff' };
   return (
     <View style={{ flexGrow: 1, flexBasis: wide ? '47%' : '30%' }}>
@@ -493,10 +506,59 @@ function AnswerButton({ label, kind, wide, onPress }: { label: string; kind: 'fo
       outerStyle={{ width: '100%' }}
       style={{ width: '100%', minHeight: 52, paddingHorizontal: spacing.xs, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: look.bg || (colors.cell as string) }}
     >
-      <ThemedText variant="subhead" numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: look.ink, fontWeight: '700', textAlign: 'center' }}>
-        {label}
+      <ThemedText variant="callout" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: look.ink, fontWeight: '800', textAlign: 'center' }}>
+        {main}
       </ThemedText>
+      {sub ? (
+        <ThemedText variant="footnote" numberOfLines={1} style={{ color: look.ink, fontWeight: '600', textAlign: 'center', opacity: 0.9 }}>
+          {sub}
+        </ThemedText>
+      ) : null}
     </PressableScale>
     </View>
+  );
+}
+
+/** "Bet ¾ pot (24bb)" as two lines: the move, then what it costs. */
+function splitLabel(label: string): [string, string?] {
+  const paren = /^(.*?)\s*\((.*)\)$/.exec(label);
+  if (paren) return [paren[1], paren[2]];
+  const amount = /^(Call|Raise to) (.+)$/.exec(label);
+  if (amount) return [amount[1], amount[2]];
+  return [label];
+}
+
+/**
+ * A best play: the whole screen goes green for about two seconds with the check, the words and confetti, and
+ * counts your run if you're on one. A tap ends it early. Under Reduce Motion there's no confetti and no pop.
+ */
+function Celebration({ run, concept, onClose }: { run: number; concept: string; onClose: () => void }) {
+  const { width, height } = useWindowDimensions();
+  const reduce = useReduceMotion();
+  return (
+    <Modal visible transparent animationType="fade" statusBarTranslucent onRequestClose={onClose}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Best play. ${run >= 2 ? `${run} in a row.` : ''} Tap to continue`}
+        onPress={onClose}
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', ...gradient('linear-gradient(160deg, #2fd072 0%, #1a9c4d 50%, #0b5a2a 100%)') }}
+      >
+        <Animated.View entering={reduce ? undefined : popIn()} style={{ alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ width: 128, height: 128, borderRadius: 64, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)' }}>
+            <Icon name="checkmark.circle.fill" size={88} color="#ffffff" />
+          </View>
+          <ThemedText variant="largeTitle" tone="onColor" style={{ fontWeight: '800' }}>
+            Best play!
+          </ThemedText>
+          <ThemedText variant="title3" tone="onColor" style={{ opacity: 0.92, textAlign: 'center', paddingHorizontal: spacing.xl }}>
+            {run >= 2 ? `${run} in a row` : concept}
+          </ThemedText>
+        </Animated.View>
+        <Confetti burst={1} origin={{ x: width / 2, y: height * 0.4 }} amount={110} />
+        <ThemedText variant="footnote" tone="onColor" style={{ position: 'absolute', bottom: 48, opacity: 0.8 }}>
+          Tap to continue
+        </ThemedText>
+      </Pressable>
+    </Modal>
   );
 }

@@ -9,7 +9,7 @@
 import { analyse, gradeOf, spotOf, type Grade, type OptionId, type Pos, type Replay, type Scenario } from '@train/ranges/model';
 import { SCENARIOS } from '@train/ranges/scenarios';
 
-import { recordAnswer } from './range-history';
+import { readRangeHistory, recordAnswer, roughPatch } from './range-history';
 import { read, save, useStored } from './storage';
 
 /** Every hand, the same list as the web: each one from a published hand breakdown (src/train/ranges/scenarios.ts). */
@@ -50,6 +50,11 @@ export function nextHand(after: Scenario | null, rng: () => number = Math.random
   // Practising the spots you miss: only hands of those concepts (every hand of them once you've got them all).
   const all = focus?.length && allHands().some((s) => focus.includes(s.concept)) ? allHands().filter((s) => focus.includes(s.concept)) : allHands();
   const done = readRangeGrades();
+  // After a rough patch (a miss, and three of the last five), an easy one: a hand you've already got right, of another kind.
+  if (!focus?.length && after && roughPatch(readRangeHistory())) {
+    const easy = all.filter((s) => s !== after && done[s.id] === 'best' && s.concept !== after.concept);
+    if (easy.length) return easy[Math.floor(rng() * easy.length)];
+  }
   const fresh = all.filter((s) => s !== after && done[s.id] !== 'best');
   const pool = fresh.length ? fresh : all.filter((s) => s !== after);
   const varied = after ? pool.filter((s) => s.concept !== after.concept || s.hero.pos !== after.hero.pos) : pool;

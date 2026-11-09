@@ -99,3 +99,16 @@ export function rangeStats(history: Answer[], scenarios: Scenario[] = SCENARIOS)
     weakest: byConcept.filter((t) => t.total >= 3 && t.rate < 1).slice(0, 3),
   };
 }
+
+/** How many best plays you've given in a row, counting back from your latest answer. */
+export function runOf(history: Answer[]): number {
+  let n = 0;
+  for (let i = history.length - 1; i >= 0 && history[i].grade === 'best'; i--) n++;
+  return n;
+}
+
+/** A rough patch: your last answer was a miss and three of your last five were. */
+export function roughPatch(history: Answer[]): boolean {
+  const last = history.slice(-5);
+  return last.length >= 4 && last[last.length - 1].grade === 'mistake' && last.filter((a) => a.grade === 'mistake').length >= 3;
+}

@@ -100,6 +100,7 @@ export default function SettingsScreen() {
 
       <Section header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
         <Row title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />
+        <Row title="Help" icon={{ symbol: 'questionmark.circle.fill', color: colors.accent as string }} onPress={() => router.push('/help')} />
         <Row title="Share FlipUp" icon={{ symbol: 'square.and.arrow.up', color: colors.accent as string }} chevron={false} onPress={share} />
         <Row title="Rate FlipUp" icon={{ symbol: 'star.fill', color: colors.gold as string }} onPress={rate} />
         <Row title="Support" icon={{ symbol: 'lifepreserver.fill', color: colors.green as string }} onPress={() => open(APP_INFO.supportUrl)} />

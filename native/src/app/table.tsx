@@ -24,6 +24,7 @@ import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
 import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
+import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
 import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -112,6 +113,8 @@ export default function TableScreen() {
           {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>
       )}
+      {/* Die on the River's roll covers the whole screen, the bar and the notch included. */}
+      {game?.status === 'playing' && <DiceRoll game={game} />}
     </View>
   );
 }

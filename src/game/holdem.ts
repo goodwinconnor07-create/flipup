@@ -34,6 +34,8 @@ export const TIMING = {
   sitOutAfterOffline: 3,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
   startDelay: 3000,
+  /** Die on the River: how long the roll is shown (the count from 3, the die landing, the result) before the river betting starts. Not on a table where only bots are left in the hand. */
+  diceShow: 6000,
   /** Memory Poker: how long everyone sees the 20 cards taken out before the hand is dealt. */
   memoryPeek: 9000,
   /** Once the opening hello has been said and read, this long before the first cards. */
@@ -752,6 +754,21 @@ export function dealNextStreet(game: Game, ctx: ActionContext): void {
   // After the flop the first player still in, left of the button, acts first.
   const first = nextIndex(hand, button === -1 ? hand.seats.length - 1 : button, isLive);
   setTurn(game, first, ctx);
+  holdForDice(game, ctx);
+}
+
+/**
+ * Die on the River: the roll is a show (a count from three, the die landing, the result, `TIMING.diceShow`), so the
+ * river's first move and clock wait until it's over, and `dice.until` tells the phones when it ends. Skipped once
+ * only bots are left in the hand: nobody is watching.
+ */
+function holdForDice(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  if (!hand.dice || hand.street !== 'river' || hand.result || hand.dice.until || botsOnly(game)) return;
+  hand.dice.until = ctx.now + TIMING.diceShow;
+  if (hand.actAt != null) hand.actAt += TIMING.diceShow;
+  if (hand.deadline != null) hand.deadline += TIMING.diceShow;
+  schedule(game);
 }
 
 /** One card of an all-in run-out, or the showdown once the river is out. */
@@ -766,6 +783,7 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
   dealStreet(game, hand, ctx.rng);
   if (askForDiscards(game, ctx)) return;
   hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
+  holdForDice(game, ctx);
   schedule(game);
 }
 

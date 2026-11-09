@@ -247,6 +247,21 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
     expect(rolled).toBeGreaterThan(0);
   });
 
+  it('Die on the River holds the river betting while the roll is shown', () => {
+    const firstSeen = new Set<number>();
+    let held = 0;
+    play('dice', 40, (g) => {
+      const hand = g.hand;
+      if (!hand?.dice || firstSeen.has(hand.number)) return;
+      firstSeen.add(hand.number);
+      if (!hand.dice.until) return;
+      held++;
+      // Nothing happens at the table before the show is over.
+      if (hand.actAt != null) expect(hand.actAt).toBeGreaterThanOrEqual(hand.dice.until);
+    });
+    expect(held).toBeGreaterThan(0);
+  });
+
   it('Red River keeps dealing until a black card', () => {
     let rivers = 0;
     play('redriver', 60, (g) => {

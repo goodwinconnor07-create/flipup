@@ -122,8 +122,9 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   const extra = explained ? [explained.note, wildText(explained)].filter(Boolean).join(' · ') : '';
   const pillName = basePill && extra ? `${basePill} · ${extra}` : basePill;
   // Memory Poker: after the hand, a tap brings back the 20 cards that were out.
-  const [recap, setRecap] = useState(false);
-  useEffect(() => setRecap(false), [hand?.number]);
+  const recapKey = hand ? `${game.id}:${hand.number}` : '';
+  const [recapHand, setRecapHand] = useState<string | null>(null);
+  const recap = !!recapKey && recapHand === recapKey;
   // The table screen never scrolls: a board that needs more room than the phone has left (the cross or the clock on
   // a small phone) keeps its layout and shrinks to fit, from the top.
   const natural = Math.min(feltHeight(variant, height), Math.max(feltHeight(variant, 0), heightLimit ?? Infinity));
@@ -232,7 +233,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
             <View style={{ alignItems: 'center', gap: 4 }}>
               <WinBanner key={hand.number} game={game} me={me} />
               {variant === 'memory' && !!hand.removed?.length && (
-                <Pressable accessibilityRole="button" onPress={() => setRecap((r) => !r)} hitSlop={8}>
+                <Pressable accessibilityRole="button" onPress={() => setRecapHand(recap ? null : recapKey)} hitSlop={8}>
                   <VariantPill text={recap ? '🧠 Back to the board' : '🧠 The 20 that were out'} />
                 </Pressable>
               )}

@@ -353,7 +353,9 @@ describe('betting', () => {
       for (const p of game.players) expect(p.stack).toBeGreaterThanOrEqual(0);
     }
     expect(hands).toBeGreaterThan(5);
-  });
+    // This covers up to 60 complete hands through production bot inference.
+    // Per-decision latency is measured separately by the bot benchmarks.
+  }, 20000);
 });
 
 describe('all-ins, side pots and showdowns', () => {

@@ -189,7 +189,7 @@ describe('Preflop chart coverage', () => {
     expect(new BaselineProvider(4, 'baseline-3').predict(info).modelVersion).toBe('baseline-3');
     for (const postflop of calibrationContexts().filter((i) => i.street !== 'preflop')) {
       const { modelVersion: _old, ...before } = new BaselineProvider(4, 'baseline-3').predict(postflop);
-      const { modelVersion: _new, ...after } = new BaselineProvider(4).predict(postflop);
+      const { modelVersion: _new, ...after } = new BaselineProvider(4, 'baseline-5').predict(postflop);
       expect(after).toEqual(before);
     }
   });

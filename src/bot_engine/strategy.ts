@@ -8,8 +8,10 @@ import { blueprintMix } from './blueprint';
 import { preflopLookup, type PreflopLookup } from './preflop';
 import { preflopContext } from './preflopContext';
 import { decisionRisk } from './decisionRisk';
+import { estimateLookahead, lookaheadCoverage } from './lookahead';
+import { summarizeRange, type RangeRead } from './rangeAnalysis';
 
-export const CURRENT_STRATEGY_VERSION = 'baseline-5';
+export const CURRENT_STRATEGY_VERSION = 'baseline-6';
 
 export interface StrategyPrediction {
   actions: BotMove[];
@@ -22,9 +24,13 @@ export interface StrategyPrediction {
     | 'range-equity-fallback'
     | 'coarse-blueprint-blend'
     | 'commitment-aware-preflop'
-    | 'everyday-preflop-ranges';
+    | 'everyday-preflop-ranges'
+    | 'one-street-lookahead';
   coverage: 'abstracted' | 'fallback' | 'modelled';
-  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5';
+  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6';
+  rangeReads?: RangeRead[];
+  planning?: ReturnType<typeof estimateLookahead>['planning'];
+  planningFallback?: string;
   preflop?: PreflopLookup;
   preflopContext?: ReturnType<typeof preflopContext>;
   blueprint?: { key: string; blend: number };
@@ -47,16 +53,16 @@ const digit = '0123456789abcdefghijklmnopqrstuvwxyz';
 export class BaselineProvider implements StrategyProvider {
   constructor(
     private samples = 160,
-    private revision: 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' = CURRENT_STRATEGY_VERSION,
+    private revision: 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6' = CURRENT_STRATEGY_VERSION,
   ) {
     if (!Number.isSafeInteger(samples) || samples < 1) throw new Error('Invalid sample count');
   }
   predict(i: InformationSet): StrategyPrediction {
     validateInformation(i);
-    const contextual = this.revision === 'baseline-5' && i.street === 'preflop';
-    const actions = legalActions(i, this.revision === 'baseline-4' || this.revision === 'baseline-5', contextual);
-    const preflop =
-      (this.revision === 'baseline-4' || this.revision === 'baseline-5') && i.street === 'preflop' ? preflopLookup(i) : undefined;
+    const modern = this.revision === 'baseline-5' || this.revision === 'baseline-6';
+    const contextual = modern && i.street === 'preflop';
+    const actions = legalActions(i, this.revision === 'baseline-4' || modern, contextual);
+    const preflop = (this.revision === 'baseline-4' || modern) && i.street === 'preflop' ? preflopLookup(i) : undefined;
     const common = { actions, modelVersion: this.revision, ...(preflop ? { preflop } : {}) };
     if (preflop?.matched) {
       const weights = actions.map((a) =>
@@ -80,6 +86,35 @@ export class BaselineProvider implements StrategyProvider {
         equityStandardError: null,
         warnings: [
           'Quantized frequencies, not EVs. Collapsed raise/jam mass uses the default solver raise size rounded to whole chips; no sizing mix is preserved. Equal shipped stacks only. Solver convergence not independently certified.',
+        ],
+      };
+    }
+    const planningCoverage = lookaheadCoverage(i);
+    if (this.revision === 'baseline-6' && planningCoverage.eligible) {
+      const ranges = inferRanges(i, 'public-range');
+      const estimate = estimateLookahead(
+        i,
+        ranges,
+        actions,
+        seededRng(hashString(JSON.stringify([i.hole, i.board, i.actions, 'one-street-1']))),
+        Math.max(2, Math.min(this.samples, 112)),
+      );
+      const best = Math.max(...estimate.values),
+        pot = i.players.reduce((sum, p) => sum + p.total, 0);
+      const temperature = Math.max(i.bigBlind * 0.5, pot * 0.08);
+      return {
+        ...common,
+        probabilities: normalize(estimate.values.map((v) => Math.exp(Math.max(-40, (v - best) / temperature)))),
+        values: estimate.values,
+        source: 'one-street-lookahead',
+        coverage: 'modelled',
+        equity: estimate.equity,
+        equityStandardError: estimate.equityStandardError,
+        valueStandardErrors: estimate.standardErrors,
+        planning: estimate.planning,
+        rangeReads: ranges.map((r) => summarizeRange(i, r)),
+        warnings: [
+          'Untrained public-action ranges and continuation policies. One future betting street, one possible current re-raise; no future raise tree or full-game solver EVs. Hypothetical river stays hidden from turn policies.',
         ],
       };
     }
@@ -135,14 +170,17 @@ export class BaselineProvider implements StrategyProvider {
     const opponents = players.filter((p) => p.id !== i.heroId && !p.folded).length;
     // Analysis randomness is separate from dealing and policy sampling. Only visible cards seed it.
     const rng = seededRng(hashString(JSON.stringify([i.hole, i.board, opponents])));
-    const estimate = estimateActionValues(
+    const ranges = inferRanges(
       i,
-      inferRanges(i, this.revision === 'baseline-2' ? 'legacy' : contextual ? 'commitment-aware' : 'street-aware'),
-      actions,
-      rng,
-      this.samples,
-      contextual,
+      this.revision === 'baseline-2'
+        ? 'legacy'
+        : contextual
+          ? 'commitment-aware'
+          : this.revision === 'baseline-6'
+            ? 'public-range'
+            : 'street-aware',
     );
+    const estimate = estimateActionValues(i, ranges, actions, rng, this.samples, contextual);
     const equity = estimate.equity;
     const pot = players.reduce((sum, p) => sum + p.total, 0);
     const values = contextual ? decisionRisk(i, actions, estimate.values, estimate.standardErrors, equity) : estimate.values;
@@ -153,6 +191,8 @@ export class BaselineProvider implements StrategyProvider {
     const blueprint = this.revision !== 'baseline-2' ? blueprintMix(i, actions, probabilities, values) : null;
     return {
       ...common,
+      ...(this.revision === 'baseline-6' && i.street !== 'preflop' ? { rangeReads: ranges.map((r) => summarizeRange(i, r)) } : {}),
+      ...(this.revision === 'baseline-6' && i.street !== 'preflop' ? { planningFallback: planningCoverage.reason } : {}),
       probabilities: normalize(blueprint?.probabilities ?? probabilities),
       values,
       ...(contextual ? { rolloutValues: estimate.values } : {}),

@@ -22,6 +22,8 @@
     "bot:preflop": "tsx scripts/evaluatePreflop.ts",
     "bot:personalities": "tsx scripts/evaluatePersonalities.ts",
     "bot:everyday": "tsx scripts/evaluateEveryday.ts",
+    "bot:planning": "tsx scripts/evaluatePlanning.ts",
+    "bot:ranges": "tsx scripts/analyseBotRanges.ts",
     "bot:persistence": "tsx scripts/botPersistence.ts",
     "bot:calibrate": "tsx scripts/humanPoker.ts calibrate",
     "bot:train": "tsx scripts/trainBot.ts"

@@ -2,6 +2,8 @@
 
 Standard Hold'em now uses the shared poker service for ordinary opponents automatically. Players tap Play with bots, keep the automatic lineup and start. The existing names and faces remain; no personality selection is required. Original experimental BOT_001 and its three pronounced profiles remain available separately.
 
+The subsequent [baseline-6 update](LOOKAHEAD_V6.md) adds one-street heads-up planning and internal public-action range analysis. The measured results below describe the original baseline-5 release; current paired results are recorded separately in that update.
+
 ## Table and individual behavior
 
 Automatic selection prefers the least represented of four internal tendencies: balanced, slightly patient, slightly curious and slightly inclined to pressure. The preference is derived from a stable name hash; micro-traits and thinking tempo also come from that name. Four automatically picked ordinary bots cover all four tendencies, and eight cover each twice when available. Manually chosen opponents retain their own identities rather than being reassigned to fill a quota. Native setup and engine-created lineups use the same pool selection function.

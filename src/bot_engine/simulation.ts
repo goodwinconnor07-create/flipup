@@ -24,7 +24,7 @@ export interface SimulationOptions {
   personality?: PersonalityId;
   startingStacksBb?: number[];
   carryStacks?: boolean;
-  revision?: 'baseline-4' | 'baseline-5';
+  revision?: 'baseline-4' | 'baseline-5' | 'baseline-6';
   everyday?: BotDifficulty;
   everydayFocus?: EverydayFocus;
 }
@@ -73,7 +73,9 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   });
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
   const service = new BotService(
-    config.everyday ? new EverydayProvider(config.everyday === 'casual' ? 96 : 160) : new BaselineProvider(160, config.revision),
+    config.everyday
+      ? new EverydayProvider(config.everyday === 'casual' ? 96 : 160, config.revision === 'baseline-5' ? 'baseline-5' : 'baseline-6')
+      : new BaselineProvider(160, config.revision),
     config.learningMode ?? 'contextual',
     config.learningConfig ?? LEARNING_CONFIG,
   );
@@ -109,6 +111,26 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       if (prediction.preflopContext?.coldCall) preflopCoverage.coldCallDecisions++;
       const reason = prediction.preflop?.matched === false ? prediction.preflop.reason : 'legacy-fallback';
       preflopCoverage.fallbackReasons[reason] = (preflopCoverage.fallbackReasons[reason] ?? 0) + 1;
+    }
+  };
+  const postflopCoverage = {
+    decisions: 0,
+    plannedDecisions: 0,
+    rangeAnalysedDecisions: 0,
+    flopPlans: 0,
+    turnPlans: 0,
+    fallbackReasons: {} as Record<string, number>,
+  };
+  const recordPostflop = (prediction: StrategyPrediction, street: string) => {
+    postflopCoverage.decisions++;
+    if (prediction.rangeReads?.length) postflopCoverage.rangeAnalysedDecisions++;
+    if (prediction.planning) {
+      postflopCoverage.plannedDecisions++;
+      if (street === 'flop') postflopCoverage.flopPlans++;
+      if (street === 'turn') postflopCoverage.turnPlans++;
+    } else {
+      const reason = prediction.planningFallback ?? 'historical-model';
+      postflopCoverage.fallbackReasons[reason] = (postflopCoverage.fallbackReasons[reason] ?? 0) + 1;
     }
   };
   const behavior = {
@@ -180,12 +202,14 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
                 service.seedFor(info, profiles[at]),
               );
               if (at === 0 && info.street === 'preflop') recordCoverage(trace.prediction);
+              if (at === 0 && info.street !== 'preflop') recordPostflop(trace.prediction, info.street);
               return trace.action;
             })()
           : agent === 'baseline'
             ? (() => {
                 const prediction = baseline.predict(info);
                 if (at === 0 && info.street === 'preflop') recordCoverage(prediction);
+                if (at === 0 && info.street !== 'preflop') recordPostflop(prediction, info.street);
                 let draw = sampling();
                 return prediction.actions[
                   prediction.probabilities.findIndex((p, n) => {
@@ -291,6 +315,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     agents,
     actionCounts,
     preflopCoverage,
+    postflopCoverage,
     behavior,
     tableExperience,
     handReturnsBb: returns,

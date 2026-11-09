@@ -437,14 +437,15 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   }, [variant]); // eslint-disable-line react-hooks/exhaustive-deps
   // Imposter: your role, announced as each hand is dealt.
   const role = hand?.variant === 'imposter' && mySeat && me ? (hand.imposter === me.id ? 'imposter' : 'innocent') : null;
-  const [flash, setFlash] = useState<string | null>(null);
+  const roleKey = role && hand ? `${game.id}:${hand.number}:${role}` : '';
+  const [dismissedRole, setDismissedRole] = useState('');
+  const flash = roleKey && roleKey !== dismissedRole ? role : null;
   useEffect(() => {
-    if (!role || !hand) return;
-    setFlash(role);
+    if (!roleKey) return;
     if (role === 'imposter') haptic.turn();
-    const t = setTimeout(() => setFlash(null), 2800);
+    const t = setTimeout(() => setDismissedRole(roleKey), 2800);
     return () => clearTimeout(t);
-  }, [hand?.number, role]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [roleKey, role]);
 
   // A buzz when it's your turn; the raise panel closes when it isn't.
   const turnKey = myTurn ? `${game.id}-${hand!.number}-${hand!.seq}` : '';

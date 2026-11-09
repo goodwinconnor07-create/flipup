@@ -1,0 +1,1660 @@
+{
+  "protocol": "bot-range-analysis-1",
+  "model": "baseline-6",
+  "examples": [
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 2,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "flop",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "3h",
+          "7c"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 980,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "source": "one-street-lookahead",
+      "planning": {
+        "version": "one-street-1",
+        "street": "flop",
+        "nextStreet": "turn",
+        "samples": 96,
+        "futureBetShare": [
+          0.0625,
+          0.11458333333333333,
+          0.10416666666666667,
+          0.0625,
+          0.041666666666666664,
+          0
+        ],
+        "reRaiseShare": [
+          0,
+          0.020833333333333332,
+          0.020833333333333332,
+          0.020833333333333332,
+          0.020833333333333332,
+          0
+        ],
+        "futureCostBb": [
+          0.12395833333333332,
+          0.30208333333333337,
+          0.29791666666666666,
+          0.25833333333333336,
+          0.19166666666666668,
+          0
+        ]
+      },
+      "planningFallback": null,
+      "ranges": [
+        {
+          "playerId": "seat-0",
+          "combinations": 1081,
+          "effectiveCombinations": 480.54646221059073,
+          "groups": [
+            {
+              "label": "Nothing",
+              "combinations": 473,
+              "probability": 0.3127807466607182
+            },
+            {
+              "label": "Ace-high",
+              "combinations": 108,
+              "probability": 0.24572188564513697
+            },
+            {
+              "label": "Second pair",
+              "combinations": 153,
+              "probability": 0.13884046105642875
+            },
+            {
+              "label": "Top pair, weak kicker",
+              "combinations": 90,
+              "probability": 0.08352160119088602
+            },
+            {
+              "label": "Top pair, good kicker",
+              "combinations": 24,
+              "probability": 0.06424845022789434
+            },
+            {
+              "label": "Gutshots",
+              "combinations": 56,
+              "probability": 0.059086026585996924
+            },
+            {
+              "label": "Weak pairs",
+              "combinations": 117,
+              "probability": 0.037846671591646584
+            },
+            {
+              "label": "Overpairs",
+              "combinations": 12,
+              "probability": 0.032904503315380876
+            },
+            {
+              "label": "Sets",
+              "combinations": 9,
+              "probability": 0.020253356706494273
+            },
+            {
+              "label": "Two pair",
+              "combinations": 27,
+              "probability": 0.003331701323919423
+            },
+            {
+              "label": "Open-enders",
+              "combinations": 12,
+              "probability": 0.001464595695499627
+            }
+          ],
+          "topClasses": [
+            {
+              "hand": "AKo",
+              "combinations": 12,
+              "probability": 0.032544391293006236
+            },
+            {
+              "hand": "AJo",
+              "combinations": 12,
+              "probability": 0.03188564274770268
+            },
+            {
+              "hand": "KJo",
+              "combinations": 12,
+              "probability": 0.030783111167847408
+            },
+            {
+              "hand": "KTo",
+              "combinations": 12,
+              "probability": 0.02921058312689442
+            },
+            {
+              "hand": "ATo",
+              "combinations": 12,
+              "probability": 0.02873473946014025
+            },
+            {
+              "hand": "A8o",
+              "combinations": 12,
+              "probability": 0.027750948628367095
+            },
+            {
+              "hand": "A9o",
+              "combinations": 12,
+              "probability": 0.02715087759732344
+            },
+            {
+              "hand": "AQo",
+              "combinations": 9,
+              "probability": 0.024190845830486946
+            }
+          ]
+        }
+      ],
+      "equity": 0.13541666666666666,
+      "actions": [
+        {
+          "action": {
+            "move": "check"
+          },
+          "probability": 0.02467296030854462,
+          "rawValueBb": 0.553125
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 10
+          },
+          "probability": 0.15561337821623378,
+          "rawValueBb": 1.4739583333333335
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 13
+          },
+          "probability": 0.17126429012308575,
+          "rawValueBb": 1.521875
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 30
+          },
+          "probability": 0.20190378114787594,
+          "rawValueBb": 1.6041666666666667
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 50
+          },
+          "probability": 0.44654547952514645,
+          "rawValueBb": 2.0010416666666666
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 980
+          },
+          "probability": 1.1067911338451629e-7,
+          "rawValueBb": -5.604166666666666
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 3,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "flop",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "3s",
+          "8s"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 980,
+            "bet": 0,
+            "total": 20,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 970,
+            "bet": 10,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 980,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "source": "one-street-lookahead",
+      "planning": {
+        "version": "one-street-1",
+        "street": "flop",
+        "nextStreet": "turn",
+        "samples": 96,
+        "futureBetShare": [
+          0,
+          0.10416666666666667,
+          0.09375,
+          0.08333333333333333,
+          0.052083333333333336,
+          0.052083333333333336,
+          0
+        ],
+        "reRaiseShare": [
+          0,
+          0,
+          0.010416666666666666,
+          0.010416666666666666,
+          0.010416666666666666,
+          0.010416666666666666,
+          0
+        ],
+        "futureCostBb": [
+          0,
+          0.671875,
+          0.59375,
+          0.68125,
+          0.8208333333333334,
+          1.0677083333333335,
+          0
+        ]
+      },
+      "planningFallback": null,
+      "ranges": [
+        {
+          "playerId": "seat-1",
+          "combinations": 1081,
+          "effectiveCombinations": 407.5969440799061,
+          "groups": [
+            {
+              "label": "Second pair",
+              "combinations": 153,
+              "probability": 0.18666650878628024
+            },
+            {
+              "label": "Top pair, weak kicker",
+              "combinations": 90,
+              "probability": 0.16294179849944282
+            },
+            {
+              "label": "Nothing",
+              "combinations": 473,
+              "probability": 0.14563533141076207
+            },
+            {
+              "label": "Gutshots",
+              "combinations": 56,
+              "probability": 0.12227162015599016
+            },
+            {
+              "label": "Top pair, good kicker",
+              "combinations": 24,
+              "probability": 0.10865201045503362
+            },
+            {
+              "label": "Ace-high",
+              "combinations": 108,
+              "probability": 0.08857279408634941
+            },
+            {
+              "label": "Overpairs",
+              "combinations": 12,
+              "probability": 0.055121891445426056
+            },
+            {
+              "label": "Weak pairs",
+              "combinations": 117,
+              "probability": 0.04756593530352302
+            },
+            {
+              "label": "Sets",
+              "combinations": 9,
+              "probability": 0.0473470993474898
+            },
+            {
+              "label": "Two pair",
+              "combinations": 27,
+              "probability": 0.02731894488744492
+            },
+            {
+              "label": "Open-enders",
+              "combinations": 12,
+              "probability": 0.0079060656222597
+            }
+          ],
+          "topClasses": [
+            {
+              "hand": "AQo",
+              "combinations": 9,
+              "probability": 0.04082342914509466
+            },
+            {
+              "hand": "KQo",
+              "combinations": 9,
+              "probability": 0.04038548890629185
+            },
+            {
+              "hand": "A5o",
+              "combinations": 12,
+              "probability": 0.03606104990275541
+            },
+            {
+              "hand": "QJo",
+              "combinations": 9,
+              "probability": 0.032352244777609764
+            },
+            {
+              "hand": "QTo",
+              "combinations": 9,
+              "probability": 0.029102270294909294
+            },
+            {
+              "hand": "A3o",
+              "combinations": 9,
+              "probability": 0.027966053025434
+            },
+            {
+              "hand": "AA",
+              "combinations": 6,
+              "probability": 0.02757242551244741
+            },
+            {
+              "hand": "KK",
+              "combinations": 6,
+              "probability": 0.027549465932978655
+            }
+          ]
+        }
+      ],
+      "equity": 0.09375,
+      "actions": [
+        {
+          "action": {
+            "move": "fold"
+          },
+          "probability": 0.08394292708641024,
+          "rawValueBb": 0
+        },
+        {
+          "action": {
+            "move": "call"
+          },
+          "probability": 0.044465804777270614,
+          "rawValueBb": -0.31770833333333337
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 20
+          },
+          "probability": 0.26072610803101276,
+          "rawValueBb": 0.5666666666666667
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 30
+          },
+          "probability": 0.2917713541503509,
+          "rawValueBb": 0.6229166666666667
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 55
+          },
+          "probability": 0.23739382284452729,
+          "rawValueBb": 0.5197916666666667
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 85
+          },
+          "probability": 0.0816999831104009,
+          "rawValueBb": -0.013541666666666665
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 980
+          },
+          "probability": 2.7416862516224674e-14,
+          "rawValueBb": -14.375
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 4,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "turn",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "3h",
+          "7c"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 970,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "source": "one-street-lookahead",
+      "planning": {
+        "version": "one-street-1",
+        "street": "turn",
+        "nextStreet": "river",
+        "samples": 96,
+        "futureBetShare": [
+          0.28125,
+          0.2604166666666667,
+          0.22916666666666666,
+          0.16666666666666666,
+          0.14583333333333334,
+          0
+        ],
+        "reRaiseShare": [
+          0,
+          0.010416666666666666,
+          0.010416666666666666,
+          0.010416666666666666,
+          0.010416666666666666,
+          0
+        ],
+        "futureCostBb": [
+          1.5875,
+          1.1083333333333334,
+          1.2364583333333334,
+          1.571875,
+          2.051041666666667,
+          0
+        ]
+      },
+      "planningFallback": null,
+      "ranges": [
+        {
+          "playerId": "seat-0",
+          "combinations": 1035,
+          "effectiveCombinations": 369.73247132837787,
+          "groups": [
+            {
+              "label": "Ace-high",
+              "combinations": 90,
+              "probability": 0.1488742431749641
+            },
+            {
+              "label": "Nothing",
+              "combinations": 325,
+              "probability": 0.1359319775552028
+            },
+            {
+              "label": "Top pair, weak kicker",
+              "combinations": 81,
+              "probability": 0.12515133878672846
+            },
+            {
+              "label": "Weak pairs",
+              "combinations": 216,
+              "probability": 0.12325857490923754
+            },
+            {
+              "label": "Second pair",
+              "combinations": 94,
+              "probability": 0.11272450522369609
+            },
+            {
+              "label": "Top pair, good kicker",
+              "combinations": 24,
+              "probability": 0.11107607818713089
+            },
+            {
+              "label": "Gutshots",
+              "combinations": 67,
+              "probability": 0.07518087071903075
+            },
+            {
+              "label": "Overpairs",
+              "combinations": 12,
+              "probability": 0.05688702482322487
+            },
+            {
+              "label": "Sets",
+              "combinations": 10,
+              "probability": 0.04675362386568937
+            },
+            {
+              "label": "Flush draws",
+              "combinations": 31,
+              "probability": 0.017808946386439407
+            },
+            {
+              "label": "Nut flush draws",
+              "combinations": 7,
+              "probability": 0.013438901188917045
+            },
+            {
+              "label": "Combo draws",
+              "combinations": 7,
+              "probability": 0.011897239327984054
+            },
+            {
+              "label": "Open-enders",
+              "combinations": 26,
+              "probability": 0.011810326298824886
+            },
+            {
+              "label": "Two pair",
+              "combinations": 45,
+              "probability": 0.009206349552928404
+            }
+          ],
+          "topClasses": [
+            {
+              "hand": "AQo",
+              "combinations": 9,
+              "probability": 0.04182239841348561
+            },
+            {
+              "hand": "KQo",
+              "combinations": 9,
+              "probability": 0.04098868058876563
+            },
+            {
+              "hand": "QJo",
+              "combinations": 9,
+              "probability": 0.03552092914880043
+            },
+            {
+              "hand": "AA",
+              "combinations": 6,
+              "probability": 0.02846012243810809
+            },
+            {
+              "hand": "KK",
+              "combinations": 6,
+              "probability": 0.028426902385116783
+            },
+            {
+              "hand": "A5o",
+              "combinations": 12,
+              "probability": 0.027158410617365333
+            },
+            {
+              "hand": "QTo",
+              "combinations": 9,
+              "probability": 0.026662349095283686
+            },
+            {
+              "hand": "AKo",
+              "combinations": 12,
+              "probability": 0.02294997071785963
+            }
+          ]
+        }
+      ],
+      "equity": 0.4947916666666667,
+      "actions": [
+        {
+          "action": {
+            "move": "check"
+          },
+          "probability": 0.03577924105350116,
+          "rawValueBb": 1.8260416666666668
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 10
+          },
+          "probability": 0.30715971800280145,
+          "rawValueBb": 2.901041666666667
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 20
+          },
+          "probability": 0.43406799820355496,
+          "rawValueBb": 3.073958333333333
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 45
+          },
+          "probability": 0.1930182092788502,
+          "rawValueBb": 2.66875
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 75
+          },
+          "probability": 0.02997262703720416,
+          "rawValueBb": 1.7375
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 970
+          },
+          "probability": 0.0000022064240880798277,
+          "rawValueBb": -3.020833333333333
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 5,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "turn",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "3s",
+          "8s"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 970,
+            "bet": 0,
+            "total": 30,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 960,
+            "bet": 10,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 970,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "source": "one-street-lookahead",
+      "planning": {
+        "version": "one-street-1",
+        "street": "turn",
+        "nextStreet": "river",
+        "samples": 96,
+        "futureBetShare": [
+          0,
+          0.11458333333333333,
+          0.13541666666666666,
+          0.10416666666666667,
+          0.09375,
+          0.07291666666666667,
+          0
+        ],
+        "reRaiseShare": [
+          0,
+          0,
+          0.041666666666666664,
+          0.041666666666666664,
+          0.041666666666666664,
+          0.041666666666666664,
+          0
+        ],
+        "futureCostBb": [
+          0,
+          1.6020833333333333,
+          1.740625,
+          1.7989583333333332,
+          2.26875,
+          2.7354166666666666,
+          0
+        ]
+      },
+      "planningFallback": null,
+      "ranges": [
+        {
+          "playerId": "seat-1",
+          "combinations": 1035,
+          "effectiveCombinations": 240.6931107349029,
+          "groups": [
+            {
+              "label": "Top pair, weak kicker",
+              "combinations": 78,
+              "probability": 0.1853127268634192
+            },
+            {
+              "label": "Top pair, good kicker",
+              "combinations": 24,
+              "probability": 0.16111794812160582
+            },
+            {
+              "label": "Gutshots",
+              "combinations": 63,
+              "probability": 0.11822196332743534
+            },
+            {
+              "label": "Sets",
+              "combinations": 12,
+              "probability": 0.10226447155926055
+            },
+            {
+              "label": "Weak pairs",
+              "combinations": 212,
+              "probability": 0.09274026783211814
+            },
+            {
+              "label": "Second pair",
+              "combinations": 123,
+              "probability": 0.0823522830991603
+            },
+            {
+              "label": "Overpairs",
+              "combinations": 12,
+              "probability": 0.08173917821745653
+            },
+            {
+              "label": "Two pair",
+              "combinations": 54,
+              "probability": 0.06606916986879413
+            },
+            {
+              "label": "Open-enders",
+              "combinations": 27,
+              "probability": 0.03914296564869796
+            },
+            {
+              "label": "Nothing",
+              "combinations": 315,
+              "probability": 0.02379998150036985
+            },
+            {
+              "label": "Ace-high",
+              "combinations": 87,
+              "probability": 0.02098058950034902
+            },
+            {
+              "label": "Flush draws",
+              "combinations": 20,
+              "probability": 0.010809857151333374
+            },
+            {
+              "label": "Combo draws",
+              "combinations": 2,
+              "probability": 0.008024401335861117
+            },
+            {
+              "label": "Nut flush draws",
+              "combinations": 6,
+              "probability": 0.007424195974139167
+            }
+          ],
+          "topClasses": [
+            {
+              "hand": "AQo",
+              "combinations": 9,
+              "probability": 0.060536267222294125
+            },
+            {
+              "hand": "KQo",
+              "combinations": 9,
+              "probability": 0.059886854179863606
+            },
+            {
+              "hand": "A5o",
+              "combinations": 12,
+              "probability": 0.04385677347696029
+            },
+            {
+              "hand": "AA",
+              "combinations": 6,
+              "probability": 0.04088661226512568
+            },
+            {
+              "hand": "KK",
+              "combinations": 6,
+              "probability": 0.040852565952330853
+            },
+            {
+              "hand": "QJo",
+              "combinations": 9,
+              "probability": 0.03875304163802119
+            },
+            {
+              "hand": "QTo",
+              "combinations": 9,
+              "probability": 0.034860069224009214
+            },
+            {
+              "hand": "A3o",
+              "combinations": 9,
+              "probability": 0.0340117898921019
+            }
+          ]
+        }
+      ],
+      "equity": 0.3020833333333333,
+      "actions": [
+        {
+          "action": {
+            "move": "fold"
+          },
+          "probability": 0.0013243805276094266,
+          "rawValueBb": 0
+        },
+        {
+          "action": {
+            "move": "call"
+          },
+          "probability": 0.06390725674494736,
+          "rawValueBb": 2.1708333333333334
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 20
+          },
+          "probability": 0.16533169890498034,
+          "rawValueBb": 2.703125
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 36
+          },
+          "probability": 0.23454703261660137,
+          "rawValueBb": 2.8989583333333333
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 70
+          },
+          "probability": 0.28780098833274215,
+          "rawValueBb": 3.013541666666667
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 110
+          },
+          "probability": 0.24708674434093103,
+          "rawValueBb": 2.928125
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 970
+          },
+          "probability": 0.0000018985321883048035,
+          "rawValueBb": -3.6666666666666665
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 6,
+        "heroId": "seat-1",
+        "buttonId": "seat-0",
+        "street": "river",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 0,
+        "hole": [
+          "3h",
+          "7c"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s",
+          "3c"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "turn",
+            "move": "call",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 0,
+          "canCheck": true,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 10,
+          "maxTo": 960,
+          "word": "Bet",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "source": "coarse-blueprint-blend",
+      "planning": null,
+      "planningFallback": "not-flop-or-turn",
+      "ranges": [
+        {
+          "playerId": "seat-0",
+          "combinations": 990,
+          "effectiveCombinations": 257.4049987889105,
+          "groups": [
+            {
+              "label": "Top pair, good kicker",
+              "combinations": 24,
+              "probability": 0.15442325269627163
+            },
+            {
+              "label": "Top pair, weak kicker",
+              "combinations": 72,
+              "probability": 0.15114589590065008
+            },
+            {
+              "label": "Weak pairs",
+              "combinations": 268,
+              "probability": 0.14013503012227488
+            },
+            {
+              "label": "Second pair",
+              "combinations": 88,
+              "probability": 0.11943578196950672
+            },
+            {
+              "label": "Ace-high",
+              "combinations": 90,
+              "probability": 0.08442281451532027
+            },
+            {
+              "label": "Sets",
+              "combinations": 11,
+              "probability": 0.08210964343082941
+            },
+            {
+              "label": "Overpairs",
+              "combinations": 12,
+              "probability": 0.07908705054040802
+            },
+            {
+              "label": "Straights",
+              "combinations": 32,
+              "probability": 0.06796361789456026
+            },
+            {
+              "label": "Nothing",
+              "combinations": 270,
+              "probability": 0.0628908098032117
+            },
+            {
+              "label": "Missed flush draws",
+              "combinations": 26,
+              "probability": 0.03378613423102333
+            },
+            {
+              "label": "Two pair",
+              "combinations": 67,
+              "probability": 0.018713809994412484
+            },
+            {
+              "label": "Missed straight draws",
+              "combinations": 30,
+              "probability": 0.005886158901531687
+            }
+          ],
+          "topClasses": [
+            {
+              "hand": "AQo",
+              "combinations": 9,
+              "probability": 0.05814348961519325
+            },
+            {
+              "hand": "KQo",
+              "combinations": 9,
+              "probability": 0.056984415398445884
+            },
+            {
+              "hand": "QJo",
+              "combinations": 9,
+              "probability": 0.04353491354291283
+            },
+            {
+              "hand": "AA",
+              "combinations": 6,
+              "probability": 0.03956661731991168
+            },
+            {
+              "hand": "KK",
+              "combinations": 6,
+              "probability": 0.03952043322049634
+            },
+            {
+              "hand": "A5o",
+              "combinations": 12,
+              "probability": 0.033553974702324324
+            },
+            {
+              "hand": "QTo",
+              "combinations": 9,
+              "probability": 0.032677722416879246
+            },
+            {
+              "hand": "QQ",
+              "combinations": 3,
+              "probability": 0.030191321437322775
+            }
+          ]
+        }
+      ],
+      "equity": 0.84375,
+      "actions": [
+        {
+          "action": {
+            "move": "check"
+          },
+          "probability": 8.683301807363482e-8,
+          "rawValueBb": 6.75
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 10
+          },
+          "probability": 1.9593613657096178e-7,
+          "rawValueBb": 7.270833333333333
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 26
+          },
+          "probability": 4.7186660194202474e-7,
+          "rawValueBb": 7.833333333333333
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 60
+          },
+          "probability": 0.0000014744249650736758,
+          "rawValueBb": 8.5625
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 100
+          },
+          "probability": 0.0000035508365155140918,
+          "rawValueBb": 9.125
+        },
+        {
+          "action": {
+            "move": "bet",
+            "to": 960
+          },
+          "probability": 0.9999942201027628,
+          "rawValueBb": 17
+        }
+      ]
+    },
+    {
+      "information": {
+        "version": 1,
+        "variant": "holdem",
+        "tableId": "calibration-3",
+        "hand": 1,
+        "sequence": 7,
+        "heroId": "seat-0",
+        "buttonId": "seat-0",
+        "street": "river",
+        "bigBlind": 10,
+        "smallBlind": 5,
+        "currentBet": 10,
+        "hole": [
+          "3s",
+          "8s"
+        ],
+        "board": [
+          "4s",
+          "2h",
+          "Qc",
+          "7s",
+          "3c"
+        ],
+        "players": [
+          {
+            "id": "seat-0",
+            "seat": 0,
+            "stack": 960,
+            "bet": 0,
+            "total": 40,
+            "folded": false,
+            "allIn": false
+          },
+          {
+            "id": "seat-1",
+            "seat": 1,
+            "stack": 950,
+            "bet": 10,
+            "total": 50,
+            "folded": false,
+            "allIn": false
+          }
+        ],
+        "actions": [
+          {
+            "playerId": "seat-0",
+            "street": "preflop",
+            "move": "raise",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "preflop",
+            "move": "call",
+            "to": 20
+          },
+          {
+            "playerId": "seat-1",
+            "street": "flop",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "flop",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "turn",
+            "move": "bet",
+            "to": 10
+          },
+          {
+            "playerId": "seat-0",
+            "street": "turn",
+            "move": "call",
+            "to": 10
+          },
+          {
+            "playerId": "seat-1",
+            "street": "river",
+            "move": "bet",
+            "to": 10
+          }
+        ],
+        "legal": {
+          "toCall": 10,
+          "canCheck": false,
+          "callIsAllIn": false,
+          "canRaise": true,
+          "minTo": 20,
+          "maxTo": 960,
+          "word": "Raise",
+          "canFold": true,
+          "canHit": false
+        }
+      },
+      "source": "coarse-blueprint-blend",
+      "planning": null,
+      "planningFallback": "not-flop-or-turn",
+      "ranges": [
+        {
+          "playerId": "seat-1",
+          "combinations": 990,
+          "effectiveCombinations": 162.8030695560359,
+          "groups": [
+            {
+              "label": "Top pair, good kicker",
+              "combinations": 24,
+              "probability": 0.19146544965431472
+            },
+            {
+              "label": "Top pair, weak kicker",
+              "combinations": 69,
+              "probability": 0.16946295079579923
+            },
+            {
+              "label": "Sets",
+              "combinations": 13,
+              "probability": 0.15276893942635167
+            },
+            {
+              "label": "Straights",
+              "combinations": 32,
+              "probability": 0.14650695861559002
+            },
+            {
+              "label": "Two pair",
+              "combinations": 78,
+              "probability": 0.10549065101903309
+            },
+            {
+              "label": "Overpairs",
+              "combinations": 12,
+              "probability": 0.09713522729303425
+            },
+            {
+              "label": "Weak pairs",
+              "combinations": 260,
+              "probability": 0.06538257986649154
+            },
+            {
+              "label": "Second pair",
+              "combinations": 114,
+              "probability": 0.05851753166135095
+            },
+            {
+              "label": "Ace-high",
+              "combinations": 87,
+              "probability": 0.004859185720984835
+            },
+            {
+              "label": "Nothing",
+              "combinations": 258,
+              "probability": 0.004315028966432727
+            },
+            {
+              "label": "Missed flush draws",
+              "combinations": 19,
+              "probability": 0.002728183203900749
+            },
+            {
+              "label": "Missed straight draws",
+              "combinations": 24,
+              "probability": 0.0013673137767173684
+            }
+          ],
+          "topClasses": [
+            {
+              "hand": "AQo",
+              "combinations": 9,
+              "probability": 0.07193862483503169
+            },
+            {
+              "hand": "KQo",
+              "combinations": 9,
+              "probability": 0.0711668910733375
+            },
+            {
+              "hand": "A5o",
+              "combinations": 12,
+              "probability": 0.06793276092336491
+            },
+            {
+              "hand": "AA",
+              "combinations": 6,
+              "probability": 0.0485878432133169
+            },
+            {
+              "hand": "KK",
+              "combinations": 6,
+              "probability": 0.04854738407971736
+            },
+            {
+              "hand": "QQ",
+              "combinations": 3,
+              "probability": 0.04680365309406241
+            },
+            {
+              "hand": "44",
+              "combinations": 3,
+              "probability": 0.042449646516892266
+            },
+            {
+              "hand": "22",
+              "combinations": 3,
+              "probability": 0.04007484973623854
+            }
+          ]
+        }
+      ],
+      "equity": 0.07291666666666667,
+      "actions": [
+        {
+          "action": {
+            "move": "fold"
+          },
+          "probability": 0.4085723992297696,
+          "rawValueBb": 0
+        },
+        {
+          "action": {
+            "move": "call"
+          },
+          "probability": 0.4056448671427918,
+          "rawValueBb": -0.27083333333333337
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 20
+          },
+          "probability": 0.13219013418978728,
+          "rawValueBb": -0.6979166666666667
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 43
+          },
+          "probability": 0.041133911923432506,
+          "rawValueBb": -1.5302083333333334
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 85
+          },
+          "probability": 0.011632040949636057,
+          "rawValueBb": -2.432291666666667
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 135
+          },
+          "probability": 0.0008266465645827386,
+          "rawValueBb": -4.333333333333334
+        },
+        {
+          "action": {
+            "move": "raise",
+            "to": 960
+          },
+          "probability": 1.4428551787878765e-18,
+          "rawValueBb": -37.04166666666667
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Synthetic production-engine contexts; neither human hand histories nor training lesson answers.",
+    "Range probabilities are untrained public-action estimates. The actual opposing cards and deck are unavailable.",
+    "Action probabilities are the shared provider before individual identity, uncertainty and adaptation guards.",
+    "Raw values describe the approximate continuation model, not certified solver EVs.",
+    "Range groups cover all mass. The eight leading starting-hand classes cover only their own mass; effective combinations measure concentration."
+  ]
+}

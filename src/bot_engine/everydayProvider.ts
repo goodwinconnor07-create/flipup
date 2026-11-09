@@ -7,8 +7,10 @@ import { BaselineProvider, type StrategyPrediction, type StrategyProvider } from
  * Avoid expensive rollouts that the preflop reference would immediately replace. */
 export class EverydayProvider implements StrategyProvider {
   private baseline: BaselineProvider;
-  constructor(samples = 96) {
-    this.baseline = new BaselineProvider(samples);
+  private revision: 'baseline-5' | 'baseline-6';
+  constructor(samples = 96, revision: 'baseline-5' | 'baseline-6' = 'baseline-6') {
+    this.baseline = new BaselineProvider(samples, revision);
+    this.revision = revision;
   }
   predict(i: InformationSet): StrategyPrediction {
     if (i.street !== 'preflop') return this.baseline.predict(i);
@@ -20,7 +22,7 @@ export class EverydayProvider implements StrategyProvider {
       actions,
       probabilities: actions.map(() => 1 / actions.length),
       values: null,
-      modelVersion: 'baseline-5',
+      modelVersion: this.revision,
       coverage: 'modelled',
       source: 'everyday-preflop-ranges',
       preflop: chart,

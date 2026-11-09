@@ -696,7 +696,14 @@ export default {
       const code = match[1].toUpperCase();
       if (!isTableCode(code)) return json({ error: "That code doesn't look right." }, 400);
       const room = env.TABLE_ROOM.getByName(code);
-      if (match[2]) return sameSite(request) ? room.fetch(request) : json({ error: 'Not allowed.' }, 403);
+      if (match[2]) {
+        if (!sameSite(request)) return json({ error: 'Not allowed.' }, 403);
+        // Opening a socket to a table that isn't there is the same scan as asking for its info, so it counts as a miss too.
+        if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
+        const res = await room.fetch(request);
+        if (res.status === 404) noteMiss(request);
+        return res;
+      }
       if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
       if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
       const info = await room.info();

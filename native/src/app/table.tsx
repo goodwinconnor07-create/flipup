@@ -69,7 +69,9 @@ export default function TableScreen() {
     router.dismissTo('/');
   };
   // A connection down for 20 seconds is said in words, with Try again and Leave (see connection-lost.tsx).
-  const lost = useOfflineFor(online && t.conn === 'offline');
+  // Every automatic retry passes through 'connecting', so that counts as down too or the 20 seconds would restart each time.
+  const down = online && (t.conn === 'offline' || t.conn === 'connecting');
+  const lost = useOfflineFor(down);
   // A challenge's own sheets (Detective's check, Rewind's result) open by themselves when they're due.
   useChallengeSheets(t.challenge);
   // Before the first deal the lobby is the whole screen, on the same grain page as Play with friends.
@@ -89,7 +91,7 @@ export default function TableScreen() {
       <TableBar game={game} online={online} code={t.code} />
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
-      {online && t.conn === 'offline' && (lost && game ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : <Pill text="Reconnecting…" />)}
+      {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
       <DealWipe />

@@ -1,0 +1,19 @@
+import { readFileSync } from 'node:fs';
+import { describe, expect, it } from 'vitest';
+
+import { ICON_COLORS, MARK, PLACE } from '../src/components/launch-mark';
+
+// The launch cover must show exactly the app icon: same spade, same place on the canvas, same colours.
+const root = new URL('../../', import.meta.url);
+describe('the launch cover is the app icon', () => {
+  it('draws the same spade at the same place as the icon layer', () => {
+    const svg = readFileSync(new URL('native/assets/expo.icon/Assets/spade.svg', root), 'utf8');
+    expect(svg).toContain(`d="${MARK}"`);
+    expect(svg).toContain(`transform="${PLACE}"`);
+  });
+  it("uses the icon script's colours", () => {
+    const script = readFileSync(new URL('scripts/makeAppIcon.mjs', root), 'utf8');
+    for (const hex of Object.values(ICON_COLORS)) expect(script.toLowerCase()).toContain(hex);
+    expect(script).toContain('translate(512 500) scale(5.15)');
+  });
+});

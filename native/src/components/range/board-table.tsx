@@ -5,6 +5,7 @@
 import { useState } from 'react';
 import { Text, View } from 'react-native';
 
+import { MiniCard } from '@/components/range/their-hands';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { bb, seatName, seatPositions, type BoardView } from '@/state/range-view';
@@ -13,7 +14,7 @@ import { seatsOf, type Pos, type Scenario } from '@train/ranges/model';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
 
-export function BoardTable({ scenario, view, summary }: { scenario: Scenario; view: BoardView; /** The table in a sentence, for VoiceOver. */ summary?: string }) {
+export function BoardTable({ scenario, view, summary, reveal }: { scenario: Scenario; view: BoardView; /** The table in a sentence, for VoiceOver. */ summary?: string; /** An example hand for opponents (after a miss), shown on their seats in place of the stack. */ reveal?: Partial<Record<Pos, [string, string]>> }) {
   const [width, setWidth] = useState(0);
   const nine = seatsOf(scenario).length > 6;
   const height = nine ? 250 : 214;
@@ -70,7 +71,7 @@ export function BoardTable({ scenario, view, summary }: { scenario: Scenario; vi
         // The top seat sits over the pot, so its bet goes beside it.
         const top = s.y < 40;
         // Seats at the sides keep their bet outside the board: above the upper ones, below the lower ones.
-        const side = Math.abs(s.x - width / 2) > width * 0.3;
+        const side = Math.abs(s.x - width / 2) > width * 0.2;
         const bx = top ? s.x + seatW / 2 + 26 : s.x;
         const by = top ? s.y : side ? (s.y > cy ? s.y + 36 : s.y - 36) : s.y > cy + 4 ? s.y - 36 : s.y + 36;
         return (
@@ -95,7 +96,12 @@ export function BoardTable({ scenario, view, summary }: { scenario: Scenario; vi
               <Text maxFontSizeMultiplier={1.1} style={{ fontSize: nine ? 12 : 13, fontWeight: '800', color: s.hero ? '#111111' : '#ffffff' }}>
                 {s.hero ? 'You' : seatName(s.pos)}
               </Text>
-              {playing && stack !== undefined && (
+              {reveal?.[s.pos] && !s.hero ? (
+                <View style={{ flexDirection: 'row', gap: 2, marginTop: 1 }}>
+                  <MiniCard card={reveal[s.pos]![0]} w={20} />
+                  <MiniCard card={reveal[s.pos]![1]} w={20} />
+                </View>
+              ) : playing && stack !== undefined && (
                 <Text maxFontSizeMultiplier={1.1} style={[{ fontSize: 12, fontWeight: '700', color: s.hero ? '#333333' : 'rgba(255,255,255,0.85)' }, NUM]}>
                   {bb(Math.round(stack * 10) / 10)}
                 </Text>

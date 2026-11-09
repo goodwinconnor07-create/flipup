@@ -11,6 +11,7 @@ import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { BoardTable } from '@/components/range/board-table';
 import { GlassButton } from '@/components/range/glass-button';
+import { exampleOf, topGroups, TheirHands } from '@/components/range/their-hands';
 import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
@@ -26,7 +27,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
 import { runOf, useRangeHistory } from '@/state/range-history';
 import { save, useStored } from '@/state/storage';
-import { eventsOf, firstSentence, viewAt } from '@/state/range-view';
+import { eventsOf, firstSentence, sentenceAt, viewAt } from '@/state/range-view';
 import { brand, gradient, radius, spacing, useColors } from '@/theme';
 import {
   bb,
@@ -37,6 +38,7 @@ import {
   type Grade,
   type OptionId,
   type RangeGroup,
+  type Pos,
   type Scenario,
   type Street,
 } from '@train/ranges/model';
@@ -187,22 +189,26 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
   const label = (id: OptionId) => options.find((o) => o.id === id)?.label ?? id;
   const inPot = scenario.opponents.filter((o) => r.live.includes(o.pos));
   const topEv = evs ? Math.max(...evs.rows.map((x) => Math.abs(x.ev)), 0.1) : 1;
-  const dead = [...scenario.hero.cards, ...scenario.board];
   const gradeLook: Record<Grade, { bg: string; ink: string }> = {
     best: { bg: brand.raise, ink: '#ffffff' },
     ok: { bg: colors.blueBg as string, ink: colors.blueInk as string },
     mistake: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
   };
 
-  // After a miss: the kind of hand they most likely had (the biggest value group when you face a bet), with a few examples.
-  const couldHave = useMemo(() => {
-    const v = views[0];
-    if (!v) return null;
-    const value = facing ? v.groups.filter((g) => g.group.role === 'value') : [];
-    const top = [...(value.length ? value : v.groups)].sort((a, b) => b.weight - a.weight)[0];
-    if (!top) return null;
-    return { pos: v.opponent.pos, label: top.group.label, hands: top.group.hands.split(',').slice(0, 3).map((x) => x.trim()).join(', ') };
-  }, [views, facing]);
+  // After a miss: an example of what each opponent most likely had, on their seat and in the panel under the verdict.
+  const dead = useMemo(() => [...scenario.hero.cards, ...scenario.board], [scenario]);
+  const reveal = useMemo(() => {
+    if (!pick || grade === 'best') return undefined;
+    const out: Partial<Record<Pos, [string, string]>> = {};
+    for (const v of views) {
+      const g = topGroups(v.groups, facing, 1)[0];
+      const ex = g ? exampleOf(g, dead) : null;
+      if (ex) out[v.opponent.pos] = ex;
+    }
+    return out;
+  }, [pick, grade, views, facing, dead]);
+  // One line to look for next time: the next sentence of why, else what the last street told you.
+  const nextTime = sentenceAt(scenario.why, 1) ?? (scenario.clues.length ? firstSentence(scenario.clues[scenario.clues.length - 1].text) : null);
   // The replay in words: what just happened and the pot after it.
   const pretty = (c: string) => `${rankLabel(c)}${{ s: '♠', h: '♥', d: '♦', c: '♣' }[suitOf(c)]}`;
   const lastEvent = step !== null && step > 0 ? events[step - 1] : null;
@@ -297,12 +303,16 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
             <ThemedText variant="subhead" style={{ color: gradeLook[grade!].ink, marginTop: spacing.xxs }}>
               {firstSentence(scenario.why)}
             </ThemedText>
-            {grade !== 'best' && couldHave && (
-              <ThemedText variant="footnote" style={{ color: gradeLook[grade!].ink, marginTop: spacing.xxs }}>
-                {views.length > 1 ? `${couldHave.pos} could have` : 'They could have'}: {couldHave.label} ({couldHave.hands})
-              </ThemedText>
-            )}
           </Animated.View>
+          {grade !== 'best' && views.length > 0 && (
+            <TheirHands
+              scenario={scenario}
+              opponents={views.map((v) => ({ pos: v.opponent.pos, type: v.opponent.type, groups: v.groups }))}
+              facing={facing}
+              dead={dead}
+              nextTime={nextTime}
+            />
+          )}
           <View style={{ gap: spacing.sm }}>
             <Button title={more ? 'Hide the details' : 'Show me more'} variant="secondary" onPress={() => setMore(!more)} />
           </View>
@@ -492,7 +502,7 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
       )}
 
       {/* The table as it stands: everyone's seat, the pot and the whole board. Nothing deals unless you replay. */}
-      <BoardTable scenario={scenario} view={view} summary={summary} />
+      <BoardTable scenario={scenario} view={view} summary={summary} reveal={reveal} />
       <ReplayStrip step={step} total={events.length} playing={playing} narration={narration} onStep={setStep} onPlaying={setPlaying} />
 
       {/* Who is in the hand: their types (a read that often decides it). */}

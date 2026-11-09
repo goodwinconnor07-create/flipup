@@ -124,6 +124,12 @@ export function seatPositions(s: Scenario, width: number, height: number): { pos
 /** "UTG1" reads as UTG+1. */
 export const seatName = (p: Pos): string => (p === 'UTG1' ? 'UTG+1' : p);
 
+/** A sentence of a longer explanation, counting from 0 (null when there isn't one). */
+export function sentenceAt(text: string, n: number): string | null {
+  const parts = text.trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+  return parts[n] ?? null;
+}
+
 /** The first sentence of a longer explanation. */
 export function firstSentence(text: string): string {
   const m = /^.*?[.!?](?=\s|$)/s.exec(text.trim());

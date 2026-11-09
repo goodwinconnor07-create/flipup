@@ -14,6 +14,7 @@ import { calibrationContexts } from './calibration';
 import { BotService } from './service';
 import { emptyMemory } from './memory';
 import { EverydayProvider } from './everydayProvider';
+import { CalibratedProvider } from './calibratedProvider';
 
 const ctx = () => ({ deviceId: 'host', now: 0, rng: seededRng(413) });
 const table = (bots = 4) =>
@@ -140,36 +141,45 @@ describe('Everyday poker tables', () => {
     bot.legend = 'test';
     expect(everydayThought(g, bot.id)).toBeNull();
   });
-  it('keeps profiles different but much closer than the experimental extremes', () => {
-    const contexts = calibrationContexts();
-    const signatures = EVERYDAY_FOCUSES.map((f) =>
-      contexts.map((info) => {
-        const profile = everydayProfile(new BotFactory().generate(info.heroId, 1), 'Mick', 'casual', f);
-        return new BotService(new EverydayProvider()).decide(info, profile, emptyMemory(info.heroId, info.tableId), 15);
-      }),
-    );
-    for (const row of signatures)
-      for (const trace of row) {
-        if (trace.deviation.estimatedValueLoss === null) expect(trace.information.street).toBe('preflop');
-        else expect(trace.deviation.estimatedValueLoss).toBeLessThanOrEqual(trace.deviation.budget + 1e-8);
+  it.each(['live', 'conservative'] as const)(
+    'keeps %s profiles different but much closer than the experimental extremes',
+    (model) => {
+      const contexts = calibrationContexts();
+      const signatures = EVERYDAY_FOCUSES.map((f) =>
+        contexts.map((info) => {
+          const profile = everydayProfile(new BotFactory().generate(info.heroId, 1), 'Mick', 'casual', f);
+          return new BotService(model === 'live' ? new EverydayProvider() : new CalibratedProvider(96, 'robust')).decide(
+            info,
+            profile,
+            emptyMemory(info.heroId, info.tableId),
+            15,
+          );
+        }),
+      );
+      for (const row of signatures)
+        for (const trace of row) {
+          if (trace.deviation.estimatedValueLoss === null) expect(trace.information.street).toBe('preflop');
+          else expect(trace.deviation.estimatedValueLoss).toBeLessThanOrEqual(trace.deviation.budget + 1e-8);
+        }
+      for (let k = 1; k < signatures.length; k++) {
+        const tv =
+          signatures[0].reduce(
+            (s, t, j) => s + t.finalDistribution.reduce((v, p, n) => v + Math.abs(p - signatures[k][j].finalDistribution[n]), 0) / 2,
+            0,
+          ) / contexts.length;
+        expect(tv).toBeGreaterThan(0.001);
+        expect(tv).toBeLessThan(0.1);
       }
-    for (let k = 1; k < signatures.length; k++) {
-      const tv =
-        signatures[0].reduce(
-          (s, t, j) => s + t.finalDistribution.reduce((v, p, n) => v + Math.abs(p - signatures[k][j].finalDistribution[n]), 0) / 2,
-          0,
-        ) / contexts.length;
-      expect(tv).toBeGreaterThan(0.001);
-      expect(tv).toBeLessThan(0.1);
-    }
-    const mixed = signatures[0].filter((t) => Math.max(...t.finalDistribution) < 0.98).length / contexts.length;
-    expect(mixed).toBeGreaterThan(0.1);
-    const info = contexts[0],
-      p = everydayProfile(new BotFactory().generate(info.heroId, 1), 'Mick');
-    const timings = Array.from({ length: 25 }, (_, k) => everydayThinkMs(info, p, k));
-    expect(new Set(timings).size).toBeGreaterThan(20);
-    expect(Math.max(...timings)).toBeLessThan(2000);
-  }, 30000);
+      const mixed = signatures[0].filter((t) => Math.max(...t.finalDistribution) < 0.98).length / contexts.length;
+      expect(mixed).toBeGreaterThan(0.1);
+      const info = contexts[0],
+        p = everydayProfile(new BotFactory().generate(info.heroId, 1), 'Mick');
+      const timings = Array.from({ length: 25 }, (_, k) => everydayThinkMs(info, p, k));
+      expect(new Set(timings).size).toBeGreaterThan(20);
+      expect(Math.max(...timings)).toBeLessThan(2000);
+    },
+    30000,
+  );
   it('keeps the same physical cards at both levels with the same dealing seed', () => {
     const a = table(),
       b = table();

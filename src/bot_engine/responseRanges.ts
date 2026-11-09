@@ -3,6 +3,7 @@ import { responseProbabilities, type ResponseView } from './responseModel';
 import { publicRangeLikelihood } from './rangeAnalysis';
 import { normalizeRange, type OpponentRange } from './ranges';
 import { publicLine } from './handPlan';
+import type { ResponsePredictor } from './multiplayerPlanning';
 
 /** Replay only public commitments. Capture the context BEFORE each observed action. */
 export function publicResponseContexts(i: InformationSet) {
@@ -80,7 +81,11 @@ export function publicResponseContexts(i: InformationSet) {
   }
   return records;
 }
-export function calibratedRanges(i: InformationSet, ranges: OpponentRange[]): OpponentRange[] {
+export function calibratedRanges(
+  i: InformationSet,
+  ranges: OpponentRange[],
+  predictor: ResponsePredictor = responseProbabilities,
+): OpponentRange[] {
   const records = publicResponseContexts(i),
     pre = { ...i, actions: i.actions.filter((a) => a.street === 'preflop') };
   return ranges.map((r) => ({
@@ -89,7 +94,7 @@ export function calibratedRanges(i: InformationSet, ranges: OpponentRange[]): Op
       r.holdings.map((h) => {
         let weight = publicRangeLikelihood(pre, r.playerId, h.cards);
         for (const row of records.get(r.playerId) ?? [])
-          weight *= Math.pow(0.025 + 0.975 * responseProbabilities({ ...row.view, hole: h.cards })[row.label], 0.6);
+          weight *= Math.pow(0.025 + 0.975 * predictor({ ...row.view, hole: h.cards })[row.label], 0.6);
         return { cards: h.cards, weight };
       }),
     ),

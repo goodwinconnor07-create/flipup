@@ -1,14 +1,58 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
 import { dirname, resolve } from 'node:path';
 import { simulate, type SimulationOptions } from '../src/bot_engine/simulation';
 import { RealismAudit } from '../src/bot_engine/realism';
 import { DecisionQualityAudit } from '../src/bot_engine/decisionQuality';
+import type { CalibrationMode } from '../src/bot_engine/calibratedProvider';
 const hands = Number(process.argv[2] ?? 100),
   destination = resolve(process.argv[3] ?? '/tmp/calibrated-comparison.json'),
   partition = process.argv[4] ?? 'holdout';
-if (!Number.isInteger(hands) || hands < 20 || hands > 1000 || !['development', 'holdout', 'confirmation'].includes(partition))
+const candidateMode = (process.argv[5] ?? 'combined') as CalibrationMode;
+const partitions: Record<string, number[]> = {
+  development: [511011],
+  holdout: [611021, 622037, 633049],
+  confirmation: [711031, 722051, 733063],
+  'repair-development': [941011, 941033],
+  'repair-holdout': [1101011, 1101033, 1101057],
+  'repair-confirmation': [1201019, 1201037, 1201061],
+};
+if (
+  !Number.isInteger(hands) ||
+  hands < 20 ||
+  hands > 1000 ||
+  !partitions[partition] ||
+  !['combined', 'guarded', 'nonlinear', 'robust'].includes(candidateMode)
+)
   throw new Error('Invalid comparison arguments');
-const seeds = partition === 'development' ? [511011] : partition === 'confirmation' ? [711031, 722051, 733063] : [611021, 622037, 633049];
+const seeds = partitions[partition];
+const candidateName =
+  candidateMode === 'combined'
+    ? 'calibrated-1'
+    : candidateMode === 'guarded'
+      ? 'guarded-2'
+      : candidateMode === 'robust'
+        ? 'robust-4'
+        : 'nonlinear-3';
+const frozenFiles = [
+  'calibratedProvider.ts',
+  'multiplayerPlanning.ts',
+  'responseModel.ts',
+  'responseModelV2.ts',
+  'responseWeights.json',
+  'responseWeightsV2.json',
+  'responseRanges.ts',
+  'guardedResponse.ts',
+  'strategy.ts',
+  'service.ts',
+  'decisionRisk.ts',
+];
+const fingerprint = async () => {
+  const h = createHash('sha256');
+  for (const file of frozenFiles) h.update(file).update(await readFile(resolve('src/bot_engine', file)));
+  return h.digest('hex');
+};
+const candidateFingerprint = await fingerprint();
 const cases: { id: string; seats: number; options: SimulationOptions }[] = [
   { id: 'HU', seats: 2, options: { agents: ['bot', 'competent'], everyday: 'casual' } },
   {
@@ -35,6 +79,11 @@ const cases: { id: string; seats: number; options: SimulationOptions }[] = [
     },
   },
 ];
+if (partition.startsWith('repair-'))
+  cases.push(
+    { id: 'HU-station', seats: 2, options: { agents: ['bot', 'calling-station'], everyday: 'casual' } },
+    { id: 'HU-aggressive', seats: 2, options: { agents: ['bot', 'loose-aggressive'], everyday: 'casual' } },
+  );
 type Run = {
   version: string;
   returns: number[];
@@ -60,20 +109,20 @@ const grouped = new Map<string, RealismAudit>();
 for (const c of cases)
   for (const seed of seeds) {
     const runs: Run[] = [];
-    for (const version of ['baseline-6', 'baseline-7', 'calibrated-1'] as const) {
+    for (const version of ['baseline-6', 'baseline-7', candidateName]) {
       const realism = new RealismAudit(),
         quality = new DecisionQualityAudit();
       const group = grouped.get(c.id) ?? new RealismAudit();
-      if (version === 'calibrated-1') grouped.set(c.id, group);
+      if (version === candidateName) grouped.set(c.id, group);
       const r = simulate(hands, seed, c.seats, {
         ...c.options,
         pairedDecks: true,
         revision: version === 'baseline-6' ? 'baseline-6' : 'baseline-7',
-        calibrated: version === 'calibrated-1',
+        calibrated: version === candidateName ? candidateMode : false,
         onDecision: (t) => {
           realism.observe(t);
           quality.observe(t);
-          if (version === 'calibrated-1') {
+          if (version === candidateName) {
             group.observe(t);
             pooled.observe(t, c.id);
           }
@@ -120,6 +169,8 @@ const promotionCandidate = Object.values(gates).every(Boolean) && summary.every(
 const report = {
   protocol: 'response-comparison-1',
   partition,
+  candidateMode,
+  candidateFingerprint,
   seeds,
   handsPerSession: hands,
   totalHands: sessions.length * hands * 3,
@@ -138,6 +189,7 @@ const report = {
     'Promotion eligibility is a conservative review screen, not automatic deployment.',
   ],
 };
+if ((await fingerprint()) !== candidateFingerprint) throw new Error('Policy source changed during comparison; report rejected');
 await mkdir(dirname(destination), { recursive: true });
 await writeFile(destination, JSON.stringify(report, null, 2) + '\n');
 console.log(JSON.stringify({ summary, gates, promotionCandidate, report: destination }));

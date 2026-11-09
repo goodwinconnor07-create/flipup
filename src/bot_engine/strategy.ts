@@ -31,6 +31,13 @@ export interface StrategyPrediction {
   coverage: 'abstracted' | 'fallback' | 'modelled';
   modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7';
   calibration?: { revision: string; samples: number };
+  modelAgreement?: {
+    rule: 'lower-model-score';
+    referenceValues: number[];
+    candidateValues: number[];
+    referenceEquity: number;
+    candidateEquity: number;
+  };
   rangeReads?: RangeRead[];
   planning?: ReturnType<typeof estimateLookahead>['planning'] | ReturnType<typeof estimateMultiplayer>['planning'];
   planningFallback?: string;

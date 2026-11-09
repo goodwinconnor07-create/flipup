@@ -267,6 +267,11 @@ export function continuationIntent(view: ReturnType<typeof continuationView>) {
 /** All random variates are indexed by actor, round and response, never by the chosen
  * root action. Conditional policies have no opposing holes or unseen board input. */
 export type ResponsePredictor = (view: ReturnType<typeof continuationView>) => [number, number, number];
+/** Opponent prediction and the bot's own future policy are separate modelling choices. */
+export interface ContinuationPolicies {
+  opponents: ResponsePredictor;
+  hero?: ResponsePredictor;
+}
 
 export function estimateMultiplayer(
   i: InformationSet,
@@ -281,7 +286,7 @@ export function estimateMultiplayer(
     view: ReturnType<typeof continuationView>;
     action: BotMove;
   }) => void,
-  responseModel?: ResponsePredictor,
+  responseModel?: ResponsePredictor | ContinuationPolicies,
 ) {
   if (i.street === 'preflop' || !Number.isSafeInteger(samples) || samples < 2 || samples > 256)
     throw new Error('Unsupported multiplayer estimate');
@@ -329,8 +334,10 @@ export function estimateMultiplayer(
           const o = round.options(at),
             view = continuationView(round, at, holes[at]),
             intent = continuationIntent(view);
-          if (responseModel) {
-            const [fold, passive, aggressive] = responseModel({ ...view, canRaise: o.canRaise && round.aggressions < maxAggressions });
+          const predictor =
+            typeof responseModel === 'function' ? responseModel : at === hero ? responseModel?.hero : responseModel?.opponents;
+          if (predictor) {
+            const [fold, passive, aggressive] = predictor({ ...view, canRaise: o.canRaise && round.aggressions < maxAggressions });
             void fold;
             intent.raiseProbability = aggressive;
             intent.betProbability = aggressive;

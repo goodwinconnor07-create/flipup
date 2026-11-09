@@ -2,6 +2,8 @@
 
 This update adds a fitted response/range candidate, targeted decision diagnostics, and paired evaluation against frozen V6 and V7. **Live ordinary bots and BOT_001 continue using V7.** The candidate predicts the reserved synthetic responses better, but loses average return heads-up in both gameplay batteries. It has not cleared the promotion screen. No live bot analysis is added to the Range trainer review.
 
+See the [heads-up follow-up](HEADS_UP_REPAIR.md) for isolated ablations, nonlinear response fitting, specified-world probes and a conservative model-disagreement candidate. The original results below remain historical evidence.
+
 ## Fitted response and range model
 
 `CalibratedProvider` is an explicit offline opt-in through `SimulationOptions.calibrated`. Preflop still delegates to V7; postflop uses the existing multiplayer engine, action space, sample budget, hand plans, personality preferences and estimated-value-cost guards. Frozen providers retain their original response policies and ranges. `prediction.calibration` identifies the candidate separately from its shared `baseline-7` engine version.

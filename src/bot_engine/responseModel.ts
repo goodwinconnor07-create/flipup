@@ -49,14 +49,18 @@ export function responseFeatures(v: ResponseView): number[] {
     crowd * strength,
   ];
 }
-export function responseProbabilities(v: ResponseView, weights: number[][] = model.weights): [number, number, number] {
+export function responseProbabilities(
+  v: ResponseView,
+  weights: number[][] = model.weights,
+  extract = responseFeatures,
+): [number, number, number] {
   if (
     v.board.length === 5 &&
     v.board.every((c) => c[1] === v.board[0][1]) &&
     ['T', 'J', 'Q', 'K', 'A'].every((r) => v.board.some((c) => c[0] === r))
   )
     return [0, 1, 0];
-  const x = responseFeatures(v);
+  const x = extract(v);
   const logits = weights.map((row) => row.reduce((s, w, k) => s + w * x[k], 0));
   const best = Math.max(...logits),
     allowed = [v.toCall > 0, true, v.canRaise];
@@ -68,14 +72,15 @@ export interface ResponseExample {
   view: ResponseView;
   label: number;
 }
-export function fitResponses(rows: ResponseExample[], iterations = 180) {
-  const weights = Array.from({ length: 3 }, () => RESPONSE_FEATURES.map(() => 0));
+export function fitResponses(rows: ResponseExample[], iterations = 180, extract = responseFeatures) {
+  if (!rows.length) throw new Error('No response training observations');
+  const weights = Array.from({ length: 3 }, () => extract(rows[0].view).map(() => 0));
   const squares = weights.map((r) => r.map(() => 1e-5));
-  const data = rows.map((r) => ({ ...r, x: responseFeatures(r.view) }));
+  const data = rows.map((r) => ({ ...r, x: extract(r.view) }));
   for (let epoch = 0; epoch < iterations; epoch++) {
     const gradient = weights.map((r) => r.map(() => 0));
     for (const row of data) {
-      const p = responseProbabilities(row.view, weights);
+      const p = responseProbabilities(row.view, weights, extract);
       for (let a = 0; a < 3; a++)
         for (let k = 0; k < row.x.length; k++) gradient[a][k] += ((p[a] - Number(a === row.label)) * row.x[k]) / data.length;
     }

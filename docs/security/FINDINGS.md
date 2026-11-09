@@ -12,6 +12,7 @@ A scheduled overnight run did the first part of this (three fixes) and was stopp
 | 2 | medium | Scanning table codes through the socket route (`/api/tables/CODE/ws`) was not rate limited, unlike `GET /api/tables/CODE`. Generated codes are 39 words × 100 numbers = 3,900 values | A socket 404 now counts as a miss; 429 after 40 | `scripts/security/probe-ws-scan.sh` (39 × 404 then 429) |
 | 3 | low | Zero-width, soft-hyphen and bidi characters split a blocked word (`a​ss`) and got past the name filter | Those characters are removed before matching in `letters()` | `names.test.ts` (failed before the fix) |
 | 4 | low | A web page where JSON should be (hotel or airport Wi-Fi sign-in) showed the user "Unexpected token '<'… is not valid JSON" | `answerJson()` in the app's `state/api.ts` | `native/tests/api-errors.test.ts` (failed before the fix) |
+| 5 | medium (once Premium is enforced) | A free host could open a Hold'em table, then change its mode to a Premium one inside the room (`settings` with `variant`). Premium was checked only when a table or party was opened, not when its mode changed. Reproduced locally with `--var PREMIUM_ENFORCED:1`: the table became Imposter | `actionNeedsPremium()` in `src/game/premiumGate.ts`, enforced in `worker/room.ts` for `settings` and for the new `playAgain` mode | `src/game/playAgainMode.test.ts`; end to end against the local server, refused with the gate and allowed without it |
 
 ## New regression tests (they found nothing, which is the point)
 
@@ -23,7 +24,7 @@ A scheduled overnight run did the first part of this (three fixes) and was stopp
 
 - **Small code space.** 3,900 generated table codes, and anyone with a code can sit at a table, even one that has started (by design in `docs/RULES.md`). The miss limiter lives in one Worker instance's memory, so it is best effort and resets on deploy. A Cloudflare rate-limit rule or longer codes is the real fix.
 - **Bidi override characters in names** are still stored and shown (only matching ignores them). Removing them in `cleanName()` is one line, but it changes stored names.
-- **`PREMIUM_ENFORCED`** ships off. Confirm it is "1" in production before charging for Premium games, otherwise a modified client can host them free.
+- **`PREMIUM_ENFORCED` is "0" in `wrangler.jsonc`**, so Premium is not enforced on the server at all today. Set it to "1" before charging for Premium games, otherwise anyone can host them free. (Fix 5 above closes the in-room path for when you do.)
 - **The privacy page promises a response to reports within 24 hours.** Make sure that is something you can keep.
 - **Support email** on the privacy and support pages is still `goodwinconnor007@gmail.com`, which `appInfo.ts` flags as a placeholder.
 - **Native dependency audit:** 8 moderate findings, all in Expo's own build tooling (`glob`, `minimatch`). They run on the build machine and don't ship in the app. The suggested `npm audit fix --force` downgrades Expo to 52, so don't. The web and Worker dependencies have 0 findings.

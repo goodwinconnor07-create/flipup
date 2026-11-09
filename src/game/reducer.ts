@@ -1267,6 +1267,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status !== 'ended') return done(false);
       if (host && !action.off) {
         openAgain(game, ctx);
+        // The host picked another mode for the next game (the finish page's mode chip).
+        if (action.variant && action.variant !== game.settings.variant && validSettings({ ...game.settings, variant: action.variant })) game.settings = { ...game.settings, variant: action.variant };
         return done();
       }
       const wants = new Set(game.again ?? []);

@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import { FRIENDS_ON } from '@/scope';
 import { useFriendBox } from '@/state/pals';
 
-// Apple's own tab bar (Liquid Glass on iOS 26): Play, Train and Friends. A party starts from Play with
+// Apple's own tab bar (Liquid Glass on iOS 26), which stays full size when a page scrolls (minimizeBehavior never): Play, Train and Friends. A party starts from Play with
 // friends, and joining a table or party is the round button in Play's title row (the `join` sheet). Tabs are peers,
 // so switching never slides.
 export default function TabsLayout() {
@@ -13,7 +13,7 @@ export default function TabsLayout() {
   const box = useFriendBox();
   const waiting = box.requests.length + box.invites.length;
   return (
-    <NativeTabs minimizeBehavior="onScrollDown">
+    <NativeTabs minimizeBehavior="never">
       <NativeTabs.Trigger name="(play)">
         <NativeTabs.Trigger.Icon sf="suit.spade.fill" md="playing_cards" />
         <NativeTabs.Trigger.Label>Play</NativeTabs.Trigger.Label>

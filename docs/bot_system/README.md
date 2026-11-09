@@ -2,6 +2,8 @@
 
 Status: working development slice, **not production ready**. Backend-only. The optional Invite BOT_001 setting selects it for one standard Hold’em seat; it is off by default. See [how to play it](PLAY_BOT_001.md).
 
+The [response calibration candidate and decision-quality checks](RESPONSE_CALIBRATION.md) add synthetic response fitting, public-action range updates and paired V6/V7 comparisons. The candidate remains offline because its heads-up gameplay result did not clear promotion; the live strategy stays V7.
+
 From the repository root, use Node 22.13+ (validated here on Node 24; SQLite tooling uses the built-in Node SQLite API):
 
 ```sh

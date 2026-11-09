@@ -4,6 +4,8 @@ Standard Hold'em now uses the shared poker service for ordinary opponents automa
 
 The subsequent [baseline-6 update](LOOKAHEAD_V6.md) adds one-street heads-up planning and internal public-action range analysis. The measured results below describe the original baseline-5 release; current paired results are recorded separately in that update.
 
+The current [baseline-7 update](MULTIPLAYER_V7.md) extends planning to multiplayer pots and all remaining streets, adds reconstructible hand plans, and checks whole-hand repetition and sizing tells. Its measurements are recorded separately from these historical release results.
+
 ## Table and individual behavior
 
 Automatic selection prefers the least represented of four internal tendencies: balanced, slightly patient, slightly curious and slightly inclined to pressure. The preference is derived from a stable name hash; micro-traits and thinking tempo also come from that name. Four automatically picked ordinary bots cover all four tendencies, and eight cover each twice when available. Manually chosen opponents retain their own identities rather than being reassigned to fill a quota. Native setup and engine-created lineups use the same pool selection function.

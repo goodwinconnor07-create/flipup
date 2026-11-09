@@ -141,5 +141,7 @@ describe('Persistent, distinct personalities', () => {
     expect(a.preflopCoverage.modelledDecisions).toBeGreaterThan(0);
     expect(a.preflopCoverage.unequalStackDecisions).toBeGreaterThan(0);
     expect(a.behavior.hands).toBe(12);
-  });
+    // Two complete 12-hand sessions include multiplayer future-street inference.
+    // Per-decision latency is checked in the benchmark rather than this replay test.
+  }, 20000);
 });

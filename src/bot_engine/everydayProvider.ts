@@ -7,8 +7,8 @@ import { BaselineProvider, type StrategyPrediction, type StrategyProvider } from
  * Avoid expensive rollouts that the preflop reference would immediately replace. */
 export class EverydayProvider implements StrategyProvider {
   private baseline: BaselineProvider;
-  private revision: 'baseline-5' | 'baseline-6';
-  constructor(samples = 96, revision: 'baseline-5' | 'baseline-6' = 'baseline-6') {
+  private revision: 'baseline-5' | 'baseline-6' | 'baseline-7';
+  constructor(samples = 96, revision: 'baseline-5' | 'baseline-6' | 'baseline-7' = 'baseline-7') {
     this.baseline = new BaselineProvider(samples, revision);
     this.revision = revision;
   }

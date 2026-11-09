@@ -12,6 +12,19 @@ const fixture = () => {
 };
 
 describe('Internal public-action range analysis', () => {
+  it('recognizes private improvements to a made river board only in the new range revision', () => {
+    const { i, opponent } = fixture();
+    i.street = 'river';
+    i.hole = ['2c', '3c'];
+    i.board = ['Kh', 'Jh', '9h', '7h', '4h'];
+    i.actions = [{ playerId: opponent, street: 'river', move: 'bet', to: 30 }];
+    const old = inferRanges(i, 'public-range')[0],
+      current = inferRanges(i, 'public-range-v2')[0];
+    const weight = (r: typeof current) => r.holdings.find((h) => h.cards.includes('Ah') && h.cards.includes('5c'))!.weight;
+    expect(weight(current)).toBeGreaterThan(weight(old));
+    expect(summarizeRange(i, current).groups.some((g) => g.label === 'Flushes')).toBe(true);
+    expect(current.source).toBe('public-action-range-model-2');
+  });
   it('removes visible blockers and partitions all posterior mass using Range training hand groups', () => {
     const { i } = fixture();
     const range = inferRanges(i, 'public-range')[0],

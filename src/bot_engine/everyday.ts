@@ -5,6 +5,7 @@ import type { BotProfile } from './identity';
 import type { InformationSet } from './information';
 import type { StrategyPrediction } from './strategy';
 import { preflopContext } from './preflopContext';
+import { ownHandBucket } from './handPlan';
 
 export type BotDifficulty = 'casual' | 'challenge';
 export const EVERYDAY_FOCUSES = ['balanced', 'patient', 'curious', 'pressure'] as const;
@@ -104,7 +105,7 @@ export function everydayReference(i: InformationSet, p: StrategyPrediction, prof
   let weights = p.probabilities.map((v, k) => (allowed[k] ? v : 0));
   if (weights.reduce((s, v) => s + v, 0) < 1e-12) weights = p.actions.map((_, k) => (allowed[k] ? 1 : 0));
   weights = normalized(weights);
-  const bucket = handBucket(i.hole, i.board);
+  const bucket = p.modelVersion === 'baseline-7' ? ownHandBucket(i.hole, i.board) : handBucket(i.hole, i.board);
   if (bucket === 'air' || bucket === 'weak') {
     const cap = (i.players.filter((p) => !p.folded).length > 2 ? 0.11 : 0.23) + (profile.traits.aggression - 0.5) * 0.25;
     const aggressive = weights.reduce((s, v, k) => s + (p.actions[k].to !== undefined ? v : 0), 0);

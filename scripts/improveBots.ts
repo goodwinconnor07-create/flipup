@@ -1,9 +1,13 @@
 import { spawn } from 'node:child_process';
 import { closeSync, copyFileSync, existsSync, mkdirSync, openSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { CURRENT_STRATEGY_VERSION } from '../src/bot_engine/strategy';
 
 const minutes = Number(process.argv[2] ?? 300);
 const output = resolve(process.argv[3] ?? '/tmp/flipup-bot-improvement');
+const initialRealismHands = Number(process.env.BOT_IMPROVE_REALISM_HANDS ?? 50);
+if (!Number.isSafeInteger(initialRealismHands) || initialRealismHands < 20 || initialRealismHands > 1000)
+  throw new Error('BOT_IMPROVE_REALISM_HANDS must be 20..1000');
 if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 300)
   throw new Error('Duration must be greater than zero and at most 300 minutes');
 mkdirSync(output, { recursive: true });
@@ -34,6 +38,8 @@ const state = {
   completedCycles: 0,
   durationMinutes: minutes,
   productionConfigChanged: false,
+  model: CURRENT_STRATEGY_VERSION,
+  initialRealismHands,
   phases: [] as Phase[],
   latestCandidate: null as unknown,
   error: null as string | null,
@@ -123,7 +129,9 @@ try {
       // Fixed-seed regression checks are repeated monitoring, not fresh independent evidence.
       if (batch === 1 || batch % 10 === 0) {
         const comparison = resolve(output, `planning-${batch}.json`);
-        if (!(await run('planning', batch, 'scripts/evaluatePlanning.ts', ['50', comparison, 'holdout'], comparison))) break;
+        const script = CURRENT_STRATEGY_VERSION === 'baseline-7' ? 'scripts/evaluateRealism.ts' : 'scripts/evaluatePlanning.ts';
+        if (!(await run('planning', batch, script, [String(batch === 1 ? initialRealismHands : 50), comparison, 'holdout'], comparison)))
+          break;
       }
     }
   }

@@ -4,7 +4,7 @@ import { dealNextStreet, makeMove, runoutStep, showdown, startHand } from '../ga
 import { informationFor } from './information';
 import { BotFactory } from './identity';
 import { emptyMemory, observe } from './memory';
-import { BotService } from './service';
+import { BotService, type DecisionTrace } from './service';
 import { BaselineProvider, type StrategyPrediction } from './strategy';
 import { scriptedMove, type AgentKind, SCRIPTED_OPPONENTS } from './scriptedOpponents';
 import { LEARNING_CONFIG, type LearningConfig } from './learningConfig';
@@ -24,7 +24,9 @@ export interface SimulationOptions {
   personality?: PersonalityId;
   startingStacksBb?: number[];
   carryStacks?: boolean;
-  revision?: 'baseline-4' | 'baseline-5' | 'baseline-6';
+  revision?: 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7';
+  /** Observer receives only this actor's whitelisted information and private trace. */
+  onDecision?: (trace: DecisionTrace) => void;
   everyday?: BotDifficulty;
   everydayFocus?: EverydayFocus;
 }
@@ -74,7 +76,10 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
   const service = new BotService(
     config.everyday
-      ? new EverydayProvider(config.everyday === 'casual' ? 96 : 160, config.revision === 'baseline-5' ? 'baseline-5' : 'baseline-6')
+      ? new EverydayProvider(
+          config.everyday === 'casual' ? 96 : 160,
+          config.revision === 'baseline-5' ? 'baseline-5' : config.revision === 'baseline-6' ? 'baseline-6' : 'baseline-7',
+        )
       : new BaselineProvider(160, config.revision),
     config.learningMode ?? 'contextual',
     config.learningConfig ?? LEARNING_CONFIG,
@@ -119,6 +124,9 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     rangeAnalysedDecisions: 0,
     flopPlans: 0,
     turnPlans: 0,
+    multiwayPlans: 0,
+    allInOpponentModels: 0,
+    riverModels: 0,
     fallbackReasons: {} as Record<string, number>,
   };
   const recordPostflop = (prediction: StrategyPrediction, street: string) => {
@@ -128,6 +136,11 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       postflopCoverage.plannedDecisions++;
       if (street === 'flop') postflopCoverage.flopPlans++;
       if (street === 'turn') postflopCoverage.turnPlans++;
+      if (street === 'river') postflopCoverage.riverModels++;
+      if (prediction.planning.version === 'multi-street-2') {
+        if (prediction.planning.opponents > 1) postflopCoverage.multiwayPlans++;
+        if (prediction.planning.opponents > prediction.planning.activeOpponents) postflopCoverage.allInOpponentModels++;
+      }
     } else {
       const reason = prediction.planningFallback ?? 'historical-model';
       postflopCoverage.fallbackReasons[reason] = (postflopCoverage.fallbackReasons[reason] ?? 0) + 1;
@@ -191,6 +204,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       const info = informationFor(game, h.toAct);
       const started = performance.now();
       const agent = agents[at];
+      let capturedTrace: DecisionTrace | undefined;
       const sampling = seededRng(service.seedFor(info, profiles[at]));
       const action =
         agent === 'bot' || agent === 'previous' || agent === 'incumbent'
@@ -203,6 +217,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
               );
               if (at === 0 && info.street === 'preflop') recordCoverage(trace.prediction);
               if (at === 0 && info.street !== 'preflop') recordPostflop(trace.prediction, info.street);
+              if (at === 0 && config.onDecision) capturedTrace = trace;
               return trace.action;
             })()
           : agent === 'baseline'
@@ -260,6 +275,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
         }
       }
       const elapsed = performance.now() - started;
+      if (capturedTrace && config.onDecision) config.onDecision(structuredClone(capturedTrace));
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) throw new Error(`Illegal bot action: ${error}`);
       if (!info.legal.canCheck) {

@@ -24,7 +24,7 @@ test('invite BOT_001 and play its new engine through actual table turns', async 
       const session = JSON.parse(localStorage.getItem('flipup.session') ?? 'null');
       return session?.game?.humanPoker?.lastDecision?.model;
     });
-    if (model === 'baseline-6') {
+    if (model === 'baseline-7') {
       usedNewEngine = true;
       break;
     }

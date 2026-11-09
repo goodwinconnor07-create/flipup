@@ -4,6 +4,7 @@ import type { StrategyPrediction } from './strategy';
 import { rankOf } from '../game/cards';
 import { handBucket } from '../game/handBucket';
 import { preflopContext } from './preflopContext';
+import { ownHandBucket } from './handPlan';
 
 export const PERSONALITIES = [
   {
@@ -43,7 +44,8 @@ export function personalityWeights(i: InformationSet, prediction: StrategyPredic
     1,
     ((ranks[0] + ranks[1] - 4) / 24) * 0.65 + (ranks[0] === ranks[1] ? 0.35 : 0) + (i.hole[0][1] === i.hole[1][1] ? 0.06 : 0),
   );
-  const bucket = i.street === 'preflop' ? null : handBucket(i.hole, i.board);
+  const bucket =
+    i.street === 'preflop' ? null : prediction.modelVersion === 'baseline-7' ? ownHandBucket(i.hole, i.board) : handBucket(i.hole, i.board);
   const weak = i.street === 'preflop' ? quality < 0.55 : bucket === 'air' || bucket === 'weak';
   const draw = bucket === 'draw';
   return prediction.actions.map((a) => {
@@ -112,7 +114,8 @@ export function plausiblePersonalityPolicy(i: InformationSet, p: StrategyPredict
       result = result.map((v, k) => (k === fold ? v + voluntary - cap : (v * cap) / voluntary));
     }
   }
-  const bucket = i.street === 'preflop' ? null : handBucket(i.hole, i.board);
+  const bucket =
+    i.street === 'preflop' ? null : p.modelVersion === 'baseline-7' ? ownHandBucket(i.hole, i.board) : handBucket(i.hole, i.board);
   if (bucket === 'air' || bucket === 'weak') {
     const cap = profile.personality === 'patient' ? 0.18 : profile.personality === 'curious' ? 0.25 : 0.55;
     const aggression = result.reduce((s, v, k) => s + (p.actions[k].to !== undefined ? v : 0), 0);

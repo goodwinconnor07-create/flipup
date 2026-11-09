@@ -23,7 +23,7 @@ afterEach(() => vi.restoreAllMocks());
 
 describe('One-street planning', () => {
   it('uses planning on flop/turn and explicitly falls back for river, multiway and all-in states', () => {
-    const provider = new BaselineProvider(8);
+    const provider = new BaselineProvider(8, 'baseline-6');
     for (const street of ['flop', 'turn'] as const) {
       const prediction = provider.predict(context(street));
       expect(provider.predict(structuredClone(context(street)))).toEqual(prediction);

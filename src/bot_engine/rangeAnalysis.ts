@@ -3,6 +3,7 @@ import { CLASS_INDEX, TOP } from '../game/botRange';
 import { classify } from '../train/ranges/classify';
 import type { InformationSet } from './information';
 import type { OpponentRange } from './ranges';
+import { ownHandKind } from './handPlan';
 
 export function handClass(cards: string[]): string {
   const hole = [...cards].sort((a, b) => rankOf(b) - rankOf(a));
@@ -10,7 +11,7 @@ export function handClass(cards: string[]): string {
 }
 
 /** Public-action likelihoods, independent of lesson answers, opponent types and private profiles. */
-export function publicRangeLikelihood(i: InformationSet, playerId: string, cards: [string, string]): number {
+export function publicRangeLikelihood(i: InformationSet, playerId: string, cards: [string, string], classifyHolding = classify): number {
   const quality = 1 - TOP[CLASS_INDEX.get(handClass(cards))!];
   let weight = 1,
     price = i.bigBlind,
@@ -41,7 +42,7 @@ export function publicRangeLikelihood(i: InformationSet, playerId: string, cards
     if (aggressive) prices.set(action.street, action.to);
     if (action.playerId !== playerId) continue;
     const board = i.board.slice(0, { preflop: 0, flop: 3, turn: 4, river: 5 }[action.street]);
-    if (!kinds.has(action.street)) kinds.set(action.street, classify(cards, board));
+    if (!kinds.has(action.street)) kinds.set(action.street, classifyHolding(cards, board));
     const kind = kinds.get(action.street)!;
     const strength = Math.max(kind.level / 11, kind.draw !== 'none' ? 0.46 : 0.04);
     if (aggressive) {
@@ -68,7 +69,8 @@ export function summarizeRange(i: InformationSet, range: OpponentRange): RangeRe
   const classes = new Map<string, { combinations: number; probability: number }>();
   const before = i.board.length === 5 ? i.board.slice(0, 4) : undefined;
   for (const h of range.holdings) {
-    const label = i.board.length >= 3 ? classify(h.cards, i.board, before).label : handClass(h.cards);
+    const classifyHolding = range.source === 'public-action-range-model-2' ? ownHandKind : classify;
+    const label = i.board.length >= 3 ? classifyHolding(h.cards, i.board, before).label : handClass(h.cards);
     const cls = handClass(h.cards);
     for (const [map, key] of [
       [groups, label],

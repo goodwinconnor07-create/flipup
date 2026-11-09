@@ -10,8 +10,9 @@ import { preflopContext } from './preflopContext';
 import { decisionRisk } from './decisionRisk';
 import { estimateLookahead, lookaheadCoverage } from './lookahead';
 import { summarizeRange, type RangeRead } from './rangeAnalysis';
+import { estimateMultiplayer } from './multiplayerPlanning';
 
-export const CURRENT_STRATEGY_VERSION = 'baseline-6';
+export const CURRENT_STRATEGY_VERSION = 'baseline-7';
 
 export interface StrategyPrediction {
   actions: BotMove[];
@@ -25,11 +26,12 @@ export interface StrategyPrediction {
     | 'coarse-blueprint-blend'
     | 'commitment-aware-preflop'
     | 'everyday-preflop-ranges'
-    | 'one-street-lookahead';
+    | 'one-street-lookahead'
+    | 'multi-street-lookahead';
   coverage: 'abstracted' | 'fallback' | 'modelled';
-  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6';
+  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7';
   rangeReads?: RangeRead[];
-  planning?: ReturnType<typeof estimateLookahead>['planning'];
+  planning?: ReturnType<typeof estimateLookahead>['planning'] | ReturnType<typeof estimateMultiplayer>['planning'];
   planningFallback?: string;
   preflop?: PreflopLookup;
   preflopContext?: ReturnType<typeof preflopContext>;
@@ -53,13 +55,13 @@ const digit = '0123456789abcdefghijklmnopqrstuvwxyz';
 export class BaselineProvider implements StrategyProvider {
   constructor(
     private samples = 160,
-    private revision: 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6' = CURRENT_STRATEGY_VERSION,
+    private revision: 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7' = CURRENT_STRATEGY_VERSION,
   ) {
     if (!Number.isSafeInteger(samples) || samples < 1) throw new Error('Invalid sample count');
   }
   predict(i: InformationSet): StrategyPrediction {
     validateInformation(i);
-    const modern = this.revision === 'baseline-5' || this.revision === 'baseline-6';
+    const modern = ['baseline-5', 'baseline-6', 'baseline-7'].includes(this.revision);
     const contextual = modern && i.street === 'preflop';
     const actions = legalActions(i, this.revision === 'baseline-4' || modern, contextual);
     const preflop = (this.revision === 'baseline-4' || modern) && i.street === 'preflop' ? preflopLookup(i) : undefined;
@@ -90,6 +92,39 @@ export class BaselineProvider implements StrategyProvider {
       };
     }
     const planningCoverage = lookaheadCoverage(i);
+    if (this.revision === 'baseline-7' && i.street !== 'preflop') {
+      const physical = [...i.players].sort((a, b) => a.seat - b.seat),
+        button = physical.findIndex((p) => p.id === i.buttonId);
+      const publicOrder = physical.map((_, n) => physical[(button + n + 1) % physical.length]);
+      const ranges = inferRanges({ ...i, players: publicOrder }, 'public-range-v2');
+      const opponents = ranges.length;
+      const samples = Math.max(2, Math.min(160, Math.ceil(this.samples / Math.sqrt(Math.max(1, (opponents + 1) / 2)))));
+      const estimate = estimateMultiplayer(
+        i,
+        ranges,
+        actions,
+        seededRng(hashString(JSON.stringify([i.hole, i.board, i.actions, 'multi-street-2']))),
+        samples,
+      );
+      const best = Math.max(...estimate.values),
+        pot = i.players.reduce((s, p) => s + p.total, 0);
+      const temperature = Math.max(i.bigBlind * 0.5, pot * 0.08);
+      return {
+        ...common,
+        probabilities: normalize(estimate.values.map((v) => Math.exp(Math.max(-40, (v - best) / temperature)))),
+        values: estimate.values,
+        source: 'multi-street-lookahead',
+        coverage: 'modelled',
+        equity: estimate.equity,
+        equityStandardError: estimate.equityStandardError,
+        valueStandardErrors: estimate.standardErrors,
+        planning: estimate.planning,
+        rangeReads: ranges.map((r) => summarizeRange(i, r)),
+        warnings: [
+          'Untrained multiplayer ranges and continuation policies; bounded raises, with betting on all remaining streets. Uses hypothetical cards and exact pot eligibility; not full-game solver EVs. Continuation policies never see opposing holes or an unrevealed runout.',
+        ],
+      };
+    }
     if (this.revision === 'baseline-6' && planningCoverage.eligible) {
       const ranges = inferRanges(i, 'public-range');
       const estimate = estimateLookahead(

@@ -4,7 +4,8 @@ import { balancedBotPool, everydayProfile, EVERYDAY_FOCUSES, focusForName, every
 import { everydayThought, updateEverydayMemory } from './everydayLive';
 import { createTable, applyAction, DEFAULT_SETTINGS } from '../game/reducer';
 import { seededRng } from '../game/cards';
-import { startHand, makeMove } from '../game/holdem';
+import { startHand, makeMove, dealNextStreet } from '../game/holdem';
+import { decisionFixture } from './testFixtures';
 import { informationFor } from './information';
 import { redactForDevice } from '../game/redact';
 import { botView } from '../game/variants';
@@ -27,6 +28,25 @@ const table = (bots = 4) =>
     rng: seededRng(413),
   });
 describe('Everyday poker tables', () => {
+  it('uses multiplayer plans in live dispatch while isolating the actual deck and opposing holes', () => {
+    const { game, ctx } = decisionFixture([60, 12, 100]);
+    while (game.hand!.toAct) {
+      const i = informationFor(game, game.hand!.toAct!);
+      expect(makeMove(game, i.legal.canCheck ? 'check' : 'call', undefined, ctx)).toBeNull();
+    }
+    dealNextStreet(game, ctx);
+    const id = game.hand!.toAct!;
+    game.players.find((p) => p.id === id)!.bot = true;
+    const first = everydayThought(game, id)!;
+    const trace = game.botTable!.traces.at(-1)!;
+    expect(trace.prediction.modelVersion).toBe('baseline-7');
+    expect(trace.prediction.planning).toMatchObject({ version: 'multi-street-2', opponents: 2, futureStreets: ['turn', 'river'] });
+    expect(trace.handPlan?.version).toBe('hand-plan-1');
+    game.hand!.deck.reverse();
+    for (const seat of game.hand!.seats) if (seat.playerId !== id) seat.cards = ['2s', '3h'];
+    expect(everydayThought(game, id)).toEqual(first);
+    expect(JSON.stringify(redactForDevice(game, game.hostDeviceId))).not.toMatch(/coherenceWeights|hand-plan-1|rangeReads/);
+  });
   it('automatically balances eight seats without altering names or duplicates', () => {
     for (let seed = 0; seed < 30; seed++) {
       const g = createTable({

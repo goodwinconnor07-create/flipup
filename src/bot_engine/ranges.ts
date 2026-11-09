@@ -4,6 +4,7 @@ import type { InformationSet } from './information';
 import { handBucket } from '../game/handBucket';
 import { preflopLikelihood } from './preflopContext';
 import { publicRangeLikelihood } from './rangeAnalysis';
+import { ownHandKind } from './handPlan';
 
 export interface Holding {
   cards: [Card, Card];
@@ -12,7 +13,12 @@ export interface Holding {
 export interface OpponentRange {
   playerId: string;
   holdings: Holding[];
-  source: 'smoothed-action-heuristic' | 'street-aware-action-heuristic' | 'commitment-aware-heuristic' | 'public-action-range-model';
+  source:
+    | 'smoothed-action-heuristic'
+    | 'street-aware-action-heuristic'
+    | 'commitment-aware-heuristic'
+    | 'public-action-range-model'
+    | 'public-action-range-model-2';
 }
 
 export function normalizeRange(holdings: Holding[]): Holding[] {
@@ -25,7 +31,7 @@ export function normalizeRange(holdings: Holding[]): Holding[] {
 /** Exact combinations; the likelihood model is an explicit untrained approximation. */
 export function inferRanges(
   i: InformationSet,
-  revision: 'legacy' | 'street-aware' | 'commitment-aware' | 'public-range' = 'street-aware',
+  revision: 'legacy' | 'street-aware' | 'commitment-aware' | 'public-range' | 'public-range-v2' = 'street-aware',
 ): OpponentRange[] {
   const blocked = new Set([...i.hole, ...i.board]);
   const deck = fullDeck().filter((c) => !blocked.has(c));
@@ -41,14 +47,14 @@ export function inferRanges(
           const lo = Math.min(rankOf(cards[0]), rankOf(cards[1]));
           const quality = Math.min(1, ((hi + lo - 4) / 24) * 0.65 + (hi === lo ? 0.35 : 0) + (cards[0][1] === cards[1][1] ? 0.06 : 0));
           let weight =
-            revision === 'public-range'
-              ? publicRangeLikelihood(i, p.id, cards)
+            revision === 'public-range' || revision === 'public-range-v2'
+              ? publicRangeLikelihood(i, p.id, cards, revision === 'public-range-v2' ? ownHandKind : undefined)
               : revision === 'commitment-aware'
                 ? preflopLikelihood(i, p.id, quality, cards[0][1] === cards[1][1], hi === lo)
                 : 1;
           const strengths = new Map<string, number>();
           for (const action of i.actions.filter((a) => a.playerId === p.id && !a.outOfTurn)) {
-            if (revision === 'public-range') continue;
+            if (revision === 'public-range' || revision === 'public-range-v2') continue;
             if (revision === 'commitment-aware' && action.street === 'preflop') continue;
             // No future board is used to evaluate what an opponent knew on an earlier street.
             let strength = quality;
@@ -71,13 +77,15 @@ export function inferRanges(
         playerId: p.id,
         holdings: normalizeRange(holdings),
         source:
-          revision === 'public-range'
-            ? 'public-action-range-model'
-            : revision === 'legacy'
-              ? 'smoothed-action-heuristic'
-              : revision === 'commitment-aware'
-                ? 'commitment-aware-heuristic'
-                : 'street-aware-action-heuristic',
+          revision === 'public-range-v2'
+            ? 'public-action-range-model-2'
+            : revision === 'public-range'
+              ? 'public-action-range-model'
+              : revision === 'legacy'
+                ? 'smoothed-action-heuristic'
+                : revision === 'commitment-aware'
+                  ? 'commitment-aware-heuristic'
+                  : 'street-aware-action-heuristic',
       };
     });
 }

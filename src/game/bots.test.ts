@@ -161,7 +161,9 @@ describe('bots', () => {
     expect(jabQueued).toBe(true);
     expect(streak).toBeGreaterThanOrEqual(2);
     expect(redactForDevice(g, 'h').streaks).toBeUndefined();
-  });
+    // Thousands of production ticks/complete hands; this checks reactions and streaks.
+    // Per-decision latency is checked separately by the bot benchmarks.
+  }, 20000);
 
   it('talks like a real table: most hands get a word, the chatty styles more than the quiet ones', () => {
     const report = simulate(['pro', 'maniac', 'rock', 'gambler'], 150, 9);

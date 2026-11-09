@@ -2,6 +2,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { calibrationContexts } from '../src/bot_engine/calibration';
 import { EverydayProvider } from '../src/bot_engine/everydayProvider';
+import { CURRENT_STRATEGY_VERSION } from '../src/bot_engine/strategy';
 
 const destination = resolve(process.argv[2] ?? '/tmp/flipup-bot-ranges.json');
 const provider = new EverydayProvider(96);
@@ -13,7 +14,7 @@ const contexts = (['flop', 'turn', 'river'] as const).flatMap((street) => [
 ]);
 const report = {
   protocol: 'bot-range-analysis-1',
-  model: 'baseline-6',
+  model: CURRENT_STRATEGY_VERSION,
   examples: contexts.map((information) => {
     const prediction = provider.predict(information);
     return {

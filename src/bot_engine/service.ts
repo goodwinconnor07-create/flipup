@@ -12,6 +12,7 @@ import { inferRanges } from './ranges';
 import { estimateActionValues } from './actionValues';
 import { decisionRisk } from './decisionRisk';
 import { everydayReference, everydayWeights, everydaySupport } from './everyday';
+import { handPlanWeights } from './handPlan';
 
 export interface DecisionTrace {
   version: 1;
@@ -28,6 +29,8 @@ export interface DecisionTrace {
   samplingSeed: number;
   action: BotMove;
   latencyMs: number;
+  handPlan?: NonNullable<ReturnType<typeof handPlanWeights>>['plan'];
+  coherenceWeights?: number[];
   adaptation?: {
     mode: 'contextual' | 'pooled' | 'off';
     config: LearningConfig;
@@ -145,7 +148,8 @@ export class BotService {
       : profile.personality
         ? personalitySupport(info, prediction)
         : prediction.probabilities;
-    let finalDistribution = normalize(support.map((p, n) => p * Math.exp(identity[n] + exploitation[n])));
+    const coherence = prediction.modelVersion === 'baseline-7' ? handPlanWeights(info, prediction, profile) : null;
+    let finalDistribution = normalize(support.map((p, n) => p * Math.exp(identity[n] + exploitation[n] + (coherence?.logWeights[n] ?? 0))));
     if (this.learningMode === 'contextual' && adaptation.blend > 0)
       finalDistribution = normalize(finalDistribution.map((p, n) => (1 - adaptation.blend) * p + adaptation.blend * adaptation.target[n]));
     if (profile.personality) finalDistribution = plausiblePersonalityPolicy(info, prediction, finalDistribution, profile);
@@ -202,6 +206,7 @@ export class BotService {
       samplingSeed,
       action: { ...prediction.actions[selected] },
       latencyMs: performance.now() - start,
+      ...(coherence ? { handPlan: coherence.plan, coherenceWeights: coherence.logWeights } : {}),
       adaptation: {
         mode: this.learningMode,
         config: { ...this.learningConfig },

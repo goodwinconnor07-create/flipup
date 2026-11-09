@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { Text, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 
 import { FRIENDS_ON } from '@/scope';
 import { usePals } from '@/state/pals';
@@ -11,6 +11,9 @@ import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
+
+/** Play with bots: night blue lifted enough to stand off the black page without an outline. */
+const BOTS_TILE = ['#2a4396', '#18296a', '#0c173f'] as const;
 
 /** Faces a bots table might seat (bots never wear a face from the profile picker). */
 const BOT_FACES = ['🦊', '🐼', '🦉'];
@@ -26,12 +29,12 @@ export function StartTiles({ onGo, height = 150 }: { onGo?: (mode: 'friends' | '
   const pals = usePals();
   // Your face and friends' (with friends off, scope.ts, your face and an empty + seat: people join you).
   const friends = [profile.emoji || '🙂', ...(FRIENDS_ON ? pals.slice(0, 2).map((p) => p.emoji) : [])];
-  while (friends.length < (FRIENDS_ON ? 3 : 2)) friends.push('');
+  if (FRIENDS_ON) while (friends.length < 3) friends.push('');
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        <Tile title="Play with friends" line="Invite up to 8 people" faces={friends} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
-        <Tile title="Play with bots" line="Play right now" faces={BOT_FACES} colors={cardColors.night} glow="rgba(255, 255, 255, 0.12)" edge height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
+        <Tile title="Play with friends" line="Invite up to 8 people" faces={friends} colors={cardColors.violet} bubble={FRIENDS_ON ? undefined : 'Join me!'} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
+        <Tile title="Play with bots" line="Play right now" faces={BOT_FACES} colors={BOTS_TILE} glow="rgba(255, 255, 255, 0.14)" height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
       </View>
       {!onGo && <JoinCard />}
     </View>
@@ -67,21 +70,23 @@ function JoinCard() {
   );
 }
 
-function Tile({ title, line, faces, colors, glow, edge, height, go }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; glow?: string; /** A thin light outline, so a dark tile doesn't melt into the page. */ edge?: boolean; height: number; go: () => void }) {
-  const face = height <= 160 ? 36 : 46;
+function Tile({ title, line, faces, colors, glow, bubble, height, go }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; glow?: string; /** A short message beside the faces, said by the first one. */ bubble?: string; height: number; go: () => void }) {
+  // Big enough to read on the tile: three overlapping faces fill about four fifths of a half-width tile.
+  const { width } = useWindowDimensions();
+  const inner = (width - spacing.md * 2 - spacing.sm) / 2 - (spacing.sm + 2) * 2;
+  const face = Math.min(height <= 160 ? 52 : 56, Math.floor(inner / 2.6));
   return (
     <View style={{ flex: 1 }}>
       <PressableTile label={`${title}. ${line}`} onPress={go}>
         <LivingCard colors={colors} glow={glow} outerStyle={{ height }} style={{ flex: 1, padding: spacing.sm + 2, justifyContent: 'space-between' }}>
-        {edge && <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, borderRadius: radius.xl, borderCurve: 'continuous', borderWidth: 1, borderColor: 'rgba(140, 170, 255, 0.35)' }} />}
         <View style={{ flexDirection: 'row' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
           {faces.map((f, i) => (
             <View
               key={i}
-              style={{ width: face, height: face, borderRadius: face / 2, marginLeft: i ? -8 : 0, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.18)', borderWidth: f ? 3 : 2, borderColor: f ? colors[1] : 'rgba(255,255,255,0.55)', borderStyle: f ? 'solid' : 'dashed' }}
+              style={{ width: face, height: face, borderRadius: face / 2, marginLeft: i ? -face * 0.2 : 0, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.18)', borderWidth: f ? 3 : 2, borderColor: f ? colors[1] : 'rgba(255,255,255,0.55)', borderStyle: f ? 'solid' : 'dashed' }}
             >
               {f ? (
-                <Text style={{ fontSize: face / 2 }} maxFontSizeMultiplier={1}>
+                <Text style={{ fontSize: face * 0.58 }} maxFontSizeMultiplier={1}>
                   {f}
                 </Text>
               ) : (
@@ -91,6 +96,13 @@ function Tile({ title, line, faces, colors, glow, edge, height, go }: { title: s
               )}
             </View>
           ))}
+          {bubble && (
+            <View style={{ flexShrink: 1, alignSelf: 'center', marginLeft: 6, paddingHorizontal: 10, paddingVertical: 5, borderRadius: radius.full, backgroundColor: 'rgba(255,255,255,0.95)' }}>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ fontSize: 14, fontWeight: '800', color: colors[1] }}>
+                {bubble}
+              </Text>
+            </View>
+          )}
         </View>
         <View style={{ gap: 2 }}>
           <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 23, fontWeight: '800', color: '#ffffff' }}>

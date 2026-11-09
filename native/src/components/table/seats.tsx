@@ -38,7 +38,7 @@ export function othersInOrder(game: Game, me: Player | undefined): Player[] {
 }
 
 /**
- * The web's usePodSlots: up to four players show. With more, the row is a window that moves only when it has to:
+ * The web's usePodSlots: up to four players show (three beside the ghost). With more, the row is a window that moves only when it has to:
  * players who've folded drop out (unless they're still saying something), and it moves to keep whoever's acting (or
  * the winner) in view, or to bring a speaker in when the one in focus can stay. `canShow(id)` says whether someone
  * could be seen talking, so a line from someone out of view isn't queued.
@@ -50,7 +50,9 @@ export function usePodSlots(
 ): { shown: Player[]; hidden: Player[]; canShow: (id: string) => boolean } {
   const [start, setStart] = useState(0);
   const justFolded = useJustFolded(game.hand);
-  if (others.length <= MAX_PODS) return { shown: others, hidden: [], canShow: () => true };
+  // The ghost takes a seat's room in Ghost Hold'em, so three players show beside it instead of four.
+  const max = variantOf(game) === 'ghost' ? MAX_PODS - 1 : MAX_PODS;
+  if (others.length <= max) return { shown: others, hidden: [], canShow: () => true };
   const hand = game.hand;
   const liveFor = (speaking: ReadonlySet<string>) =>
     others.filter((p) => {
@@ -61,7 +63,7 @@ export function usePodSlots(
   const focus = hand?.result ? Object.entries(hand.result.won).sort((a, b) => b[1] - a[1])[0]?.[0] : hand?.toAct;
   const plan = (speaking: ReadonlySet<string>) => {
     const live = liveFor(speaking);
-    const n = Math.min(MAX_PODS, live.length);
+    const n = Math.min(max, live.length);
     let s = Math.max(0, Math.min(start, live.length - n));
     // Someone in view who just folded holds the window still until their "Fold" has been seen, so they don't
     // vanish the moment the next player to act is somewhere off to the side.

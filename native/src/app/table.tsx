@@ -24,6 +24,7 @@ import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
 import { Discard, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
+import { WildDeuces } from '@/components/table/playing-card';
 import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { tableShare } from '@/state/table-share';
@@ -480,6 +481,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const glow = (card: Card) => showdown && lit.has(card);
 
   return (
+    <WildDeuces.Provider value={variantOf(game) === 'deuces'}>
     <View style={{ flex: 1 }} onLayout={(e) => setAvailable(e.nativeEvent.layout.height)}>
       {/* The table is locked: it never scrolls or bounces (the felt shrinks to fit instead, see FeltOval). */}
       <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 8 }}>
@@ -529,5 +531,6 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
         </>
       )}
     </View>
+    </WildDeuces.Provider>
   );
 }

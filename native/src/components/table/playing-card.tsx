@@ -2,7 +2,7 @@
 // rank at 54% of the width and the suit at 40%, in the four-colour deck. A card that's dealt turns over the way the
 // web's does: it starts face down (in the owner's card pack), lifts a little and grows 6% as it turns, and lands
 // face up, in 0.65s. Under Reduce Motion it fades in instead.
-import { useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, type ReactNode } from 'react';
 import { Text, useColorScheme, View, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -16,6 +16,7 @@ import Animated, {
 
 import { cardBack } from '@design/premiumLooks';
 import { cardName, rankLabel, suitOf, type Card } from '@/engine';
+import { useDrift } from '@/motion/use-drift';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { gradient, usePlainColors } from '@/theme';
 
@@ -24,6 +25,10 @@ export const CARD_W = { xl: 100, lg: 66, md: 48, sm: 26 } as const;
 export type CardSize = keyof typeof CARD_W;
 const SYMBOL = { s: '♠', h: '♥', d: '♦', c: '♣' } as const;
 const INK = { s: '#16161d', h: '#e5322d', d: '#2563eb', c: '#16a34a' } as const;
+
+/** True at a Crazy Deuces table: every 2 is wild there, so it's drawn in shining gold (set once by the table screen). */
+export const WildDeuces = createContext(false);
+const GOLD_INK = '#5b3a00';
 
 function useCardLook() {
   const dark = useColorScheme() === 'dark';
@@ -153,6 +158,9 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
   const { edge, shadow, dimBg, dark } = useCardLook();
   const suit = suitOf(card);
   const fade = dim ? (dark ? 0.75 : 1) : 1;
+  // A wild deuce: gold with a shine sweeping across it, a gold glow round it and a "WILD" tag, so a 2 can't be missed.
+  const wild = useContext(WildDeuces) && card[0] === '2' && !dim;
+  const ink = wild ? GOLD_INK : INK[suit];
   return (
     <View
       accessibilityRole="image"
@@ -160,7 +168,8 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
       style={[
         frame(w, small),
         {
-          backgroundColor: dim ? dimBg : '#ffffff',
+          backgroundColor: dim ? dimBg : wild ? '#f7c948' : '#ffffff',
+          ...(wild ? gradient('linear-gradient(145deg, #fff3b0 0%, #f7c948 38%, #e39a12 70%, #ffd75e 100%)') : null),
           opacity: dim && !dark ? 0.55 : 1,
           paddingTop: small ? 3 : w * 0.1,
           paddingHorizontal: small ? 4 : w * 0.16,
@@ -170,7 +179,9 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
           borderColor: edge,
           overflow: 'visible',
           transform: glow ? [{ translateY: small ? -3 : -8 }] : undefined,
-          boxShadow: glow
+          boxShadow: wild
+            ? `0 0 0 ${small ? 1.5 : 2.5}px #ffb400, 0 0 ${small ? 8 : 20}px ${small ? 1 : 3}px rgba(255,190,20,0.7)`
+            : glow
             ? `0 0 0 ${small ? 2 : 3}px #ff9f0a, 0 0 ${small ? 8 : 18}px ${small ? 1 : 2}px rgba(245,158,11,${small ? 0.6 : 0.55})`
             : small
               ? '0 2px 4px -2px rgba(18,18,40,0.3)'
@@ -178,10 +189,11 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
         },
       ]}
     >
+      {wild && <Shine small={small} />}
       <Text
         maxFontSizeMultiplier={1}
         style={{
-          color: INK[suit],
+          color: ink,
           opacity: fade,
           fontSize: small ? 14 : w * 0.54,
           lineHeight: small ? 15 : w * 0.56,
@@ -193,10 +205,26 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
       </Text>
       <Text
         maxFontSizeMultiplier={1}
-        style={{ color: INK[suit], opacity: fade, fontSize: small ? 11 : w * 0.4, lineHeight: small ? 12 : w * 0.42 }}
+        style={{ color: ink, opacity: fade, fontSize: small ? 11 : w * 0.4, lineHeight: small ? 12 : w * 0.42 }}
       >
         {SYMBOL[suit]}
       </Text>
+      {wild && !small && (
+        <Text maxFontSizeMultiplier={1} style={{ position: 'absolute', right: w * 0.1, top: w * 0.12, fontSize: Math.max(8, w * 0.13), fontWeight: '900', letterSpacing: 0.5, color: GOLD_INK }}>
+          WILD
+        </Text>
+      )}
+    </View>
+  );
+}
+
+/** A bright band that sweeps across a wild deuce every couple of seconds (transform only; still under Reduce Motion). */
+function Shine({ small }: { small: boolean }) {
+  const { t } = useDrift(1500);
+  const band = useAnimatedStyle(() => ({ transform: [{ translateX: -140 + 280 * t.get() }, { rotate: '20deg' }] }));
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: small ? 5 : 14, overflow: 'hidden' }}>
+      <Animated.View style={[{ position: 'absolute', top: -20, bottom: -20, width: small ? 10 : 26, ...gradient('linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.85), rgba(255,255,255,0))') }, band]} />
     </View>
   );
 }

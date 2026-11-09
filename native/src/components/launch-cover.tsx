@@ -9,7 +9,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { motion, useScheme } from '@/theme';
 
 import { GrainBackground } from './grain-background';
-import { ICON_COLORS, ICON_RADIUS, ICON_SIZE, MARK, PLACE } from './launch-mark';
+import { ICON_COLORS, ICON_COLORS_DARK, ICON_RADIUS, ICON_SIZE, MARK, PLACE } from './launch-mark';
 import { read, save } from '@/state/storage';
 
 /** The icon's size on the cover: a good deal bigger than the old 120, so it is the whole first impression. */
@@ -39,18 +39,21 @@ export function LaunchCover() {
 }
 
 /** The app icon on a `TILE` square, drawn on the icon's own 1024 canvas with the icon script's gradient, light and lift shadow. */
-function IconArt() {
+function IconArt({ dark = false }: { dark?: boolean }) {
   const S = ICON_SIZE;
+  // At night the icon is its dark look (the one iOS shows on a dark Home Screen), a night-blue gradient.
+  const top = dark ? ICON_COLORS_DARK.violetTop : ICON_COLORS.violetTop;
+  const bottom = dark ? ICON_COLORS_DARK.violetBottom : ICON_COLORS.violetBottom;
   return (
     <Svg width={TILE} height={TILE} viewBox={`0 0 ${S} ${S}`}>
       <Defs>
         <LinearGradient id="bg" x1="0.25" y1="0" x2="0.75" y2="1">
-          <Stop offset="0" stopColor={ICON_COLORS.violetTop} />
-          <Stop offset="1" stopColor={ICON_COLORS.violetBottom} />
+          <Stop offset="0" stopColor={top} />
+          <Stop offset="1" stopColor={bottom} />
         </LinearGradient>
         <RadialGradient id="light" cx="0.5" cy="0.08" r="0.75">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.22" />
-          <Stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          <Stop offset="0" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0.22" />
+          <Stop offset="1" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0" />
         </RadialGradient>
         <LinearGradient id="spade" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={ICON_COLORS.spadeTop} />
@@ -136,7 +139,7 @@ export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: 
       <GrainBackground style={{ alignItems: 'center', justifyContent: 'center' }} {...(look ? { colors: look.base, glow: look.glow, glow2: look.glow2 } : {})}>
         <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', boxShadow: look ? look.shadow : '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
           <View style={{ flex: 1, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
-            <IconArt />
+            <IconArt dark={!!look && dark} />
             {!reduce && (
               <Animated.View style={[{ position: 'absolute', top: -TILE * 0.1, bottom: -TILE * 0.1, left: 0, width: TILE * 0.7 }, bandStyle]}>
                 <Svg width="100%" height="100%" preserveAspectRatio="none">

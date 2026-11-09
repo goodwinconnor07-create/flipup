@@ -68,12 +68,14 @@ export function TabScreen({ title, accessory, children, contentStyle, scrollRef,
         <BlurView tint={dark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'} intensity={80} style={{ flex: 1 }} />
       </Animated.View>
       {footer ? (
+        // Nothing behind the bar: the buttons are glass themselves (Range training's GlassButton), so the page shows
+        // through them. The gaps between them still let a scroll through.
         <View
+          pointerEvents="box-none"
           onLayout={(e) => setFooterH(e.nativeEvent.layout.height)}
-          style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom, overflow: 'hidden' }}
+          style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom }}
         >
-          <BlurView tint={dark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'} intensity={80} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-          <View style={{ width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.sm }}>{footer}</View>
+          <View pointerEvents="box-none" style={{ width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.sm }}>{footer}</View>
         </View>
       ) : null}
     </View>

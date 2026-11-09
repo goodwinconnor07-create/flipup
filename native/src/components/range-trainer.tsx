@@ -4,19 +4,19 @@
 // each play wins on average. The numbers come from range-numbers.json (worked out ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Linking, Modal, Pressable, useColorScheme, useWindowDimensions, View } from 'react-native';
+import { Linking, Modal, Pressable, useWindowDimensions, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { BoardTable } from '@/components/range/board-table';
+import { GlassButton } from '@/components/range/glass-button';
 import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
 import { Icon } from '@/components/icon';
 import { describeHand, rankLabel, suitOf } from '@/engine';
 import { SwapIcon } from '@/components/swap';
 import { Confetti } from '@/components/table/confetti';
 import { playSound } from '@/components/table/sounds';
-import { PressableScale } from '@/components/pressable-scale';
 import { useTabFooter } from '@/components/tab-screen';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
@@ -25,7 +25,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
 import { runOf, useRangeHistory } from '@/state/range-history';
 import { eventsOf, firstSentence, viewAt } from '@/state/range-view';
-import { brand, gradient, radius, spacing, useColors, usePlainColors } from '@/theme';
+import { brand, gradient, radius, spacing, useColors } from '@/theme';
 import {
   bb,
   callShare,
@@ -208,7 +208,8 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
   const made = describeHand([...scenario.hero.cards, ...scenario.board]).detail;
   const kind = (id: OptionId): 'fold' | 'blue' | 'raise' => (id === 'fold' ? 'fold' : id === 'call' || id === 'check' ? 'blue' : 'raise');
   // The bigger the bet, the deeper the green: a third of the pot lightest, an overbet or all in darkest.
-  const green = (o: { id: OptionId; label: string }) => (o.id === 'bet33' ? '#2bbd68' : o.id === 'bet75' ? '#1a9a50' : o.id === 'bet125' || o.label.startsWith('All in') ? '#0f7a3b' : '#1a9a50');
+  const green = (o: { id: OptionId; label: string }) =>
+    o.id === 'bet33' ? 'rgba(43,189,104,0.72)' : o.id === 'bet75' ? 'rgba(26,154,80,0.78)' : o.id === 'bet125' || o.label.startsWith('All in') ? 'rgba(15,122,59,0.85)' : 'rgba(26,154,80,0.78)';
   // The answer bar, pinned under the page above the tab bar: your options, then Next hand once you've answered.
   const bar = !pick ? (
     <View accessibilityLabel="Your options" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
@@ -217,7 +218,11 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
       ))}
     </View>
   ) : (
-    <Button title="Next hand" onPress={next} />
+    <GlassButton tint="rgba(10,132,255,0.78)" label="Next hand" onPress={next}>
+      <ThemedText variant="headline" tone="onColor" style={{ fontWeight: '800' }}>
+        Next hand
+      </ThemedText>
+    </GlassButton>
   );
   useTabFooter(bar);
 
@@ -511,30 +516,21 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
 }
 
 /** One answer in the pinned bar: Fold in red, Call and Check in the table's blue, Bet and Raise in its green. */
-function AnswerButton({ label, kind, green, wide, onPress }: { label: string; kind: 'fold' | 'blue' | 'raise'; /** The green a bet or raise takes. */ green: string; /** Four options: two to a row. */ wide: boolean; onPress: () => void }) {
-  const colors = useColors();
-  const c = usePlainColors();
-  const blue = useColorScheme() === 'dark' ? '#0a84ff' : '#007aff';
+function AnswerButton({ label, kind, green, wide, onPress }: { label: string; kind: 'fold' | 'blue' | 'raise'; /** The glass tint a bet or raise takes. */ green: string; /** Four options: two to a row. */ wide: boolean; onPress: () => void }) {
   const [main, sub] = splitLabel(label);
-  const look = kind === 'fold' ? { bg: c.redBg, ink: c.redInk } : kind === 'blue' ? { bg: blue, ink: '#ffffff' } : { bg: green, ink: '#ffffff' };
+  const tint = kind === 'fold' ? 'rgba(235,72,60,0.6)' : kind === 'blue' ? 'rgba(10,132,255,0.78)' : green;
   return (
     <View style={{ flexGrow: 1, flexBasis: wide ? '47%' : '30%' }}>
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      outerStyle={{ width: '100%' }}
-      style={{ width: '100%', minHeight: 52, paddingHorizontal: spacing.xs, borderRadius: radius.md, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: look.bg || (colors.cell as string) }}
-    >
-      <ThemedText variant="callout" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: look.ink, fontWeight: '800', textAlign: 'center' }}>
-        {main}
-      </ThemedText>
-      {sub ? (
-        <ThemedText variant="footnote" numberOfLines={1} style={{ color: look.ink, fontWeight: '600', textAlign: 'center', opacity: 0.9 }}>
-          {sub}
+      <GlassButton tint={tint} label={label} onPress={onPress}>
+        <ThemedText variant="callout" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ color: '#ffffff', fontWeight: '800', textAlign: 'center' }}>
+          {main}
         </ThemedText>
-      ) : null}
-    </PressableScale>
+        {sub ? (
+          <ThemedText variant="footnote" numberOfLines={1} style={{ color: '#ffffff', fontWeight: '600', textAlign: 'center', opacity: 0.92 }}>
+            {sub}
+          </ThemedText>
+        ) : null}
+      </GlassButton>
     </View>
   );
 }

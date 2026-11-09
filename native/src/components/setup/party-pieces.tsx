@@ -6,7 +6,7 @@ import { clearPartyDraft, setPartyRules, type PartyDraft } from '@/state/party-d
 import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
 
 import { GameThumb } from '../game-picture';
-import { Row, Section } from '../grouped-list';
+import { PANEL_RADIUS, Row, Section, usePanel } from '../grouped-list';
 import { haptic } from '../haptics';
 import { Icon, type IconName } from '../icon';
 import { PressableScale } from '../pressable-scale';
@@ -17,6 +17,7 @@ const chips = (n: number) => n.toLocaleString('en-US');
 
 /** Under the game row: the way into a party, for a night of more than one game. */
 export function StartPartyButton() {
+  const panel = usePanel();
   return (
     <PressableScale
       accessibilityRole="button"
@@ -26,7 +27,7 @@ export function StartPartyButton() {
         haptic.tap();
         router.push('/party-playlist');
       }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 1.5, borderColor: 'rgba(91,139,255,0.55)', backgroundColor: 'rgba(37,87,214,0.16)' }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, borderRadius: PANEL_RADIUS, borderCurve: 'continuous', borderWidth: 1, borderColor: panel.edge, backgroundColor: panel.fill }}
     >
       <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}>
         <Icon name="party.popper.fill" size={20} color="#ffffff" />
@@ -47,10 +48,11 @@ export function StartPartyButton() {
 /** In place of the game row once a party's playlist is saved: the games in order, Edit, and back to one game. */
 export function PartyPlaylistCard({ draft }: { draft: PartyDraft }) {
   const colors = useColors();
+  const panel = usePanel();
   return (
     <View style={{ gap: spacing.xs }}>
       <SetupRowTitle title="Party" detail={`${draft.games.length} games`} />
-      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, paddingVertical: spacing.sm, gap: spacing.sm }}>
+      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, paddingVertical: spacing.sm, gap: spacing.sm }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.sm, gap: spacing.sm }}>
           {draft.games.map((g, i) => (
             <View key={`${i}-${g}`} style={{ width: 64, alignItems: 'center', gap: 4 }} accessible accessibilityLabel={`Game ${i + 1}: ${variantInfo(g).name}`}>

@@ -6,6 +6,12 @@
 > `GrainBackground`, and cards keep their slow glows, `LivingCard`), the original game pictures (`gameArt.ts`; the
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
+>
+> **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
+> pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:
+> `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,
+> chevrons and text buttons only. The pinned Start game / Deal button waiting on players is a solid dim fill, never
+> a translucent one, so rows scrolling under it can't show through.
 
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.

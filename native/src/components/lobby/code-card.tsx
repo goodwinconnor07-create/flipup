@@ -7,9 +7,10 @@ import { normalizeTableCode, TABLE_CODE_LENGTH, tableCodeProblem } from '@/engin
 import { EASE_IN_OUT, enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { inviteLink } from '@/state/invite-message';
-import { brand, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
+import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
 
 import { haptic } from '../haptics';
+import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { GrowingQR } from '../invite-ticket';
 import { Swap } from '../swap';
 import { ThemedText } from '../themed-text';
@@ -36,7 +37,7 @@ export function CodeCard({
   onChange?: (code: string) => Promise<string | null>;
 }) {
   const colors = useColors();
-  const shadows = useShadows();
+  const panel = usePanel();
   const reduce = useReduceMotion();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
@@ -100,10 +101,11 @@ export function CodeCard({
         padding: spacing.md,
         paddingTop: spacing.sm,
         gap: spacing.xxs,
-        borderRadius: radius.lg,
+        borderRadius: PANEL_RADIUS,
         borderCurve: 'continuous',
-        backgroundColor: colors.cell,
-        boxShadow: shadows.card,
+        backgroundColor: panel.fill,
+        borderWidth: 1,
+        borderColor: panel.edge,
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32, gap: spacing.md }}>

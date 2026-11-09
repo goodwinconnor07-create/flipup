@@ -3,9 +3,10 @@ import { Pressable, View } from 'react-native';
 
 import { gameLook } from '@design/gameArt';
 import { variantInfo, type Variant } from '@/engine';
-import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
+import { brand, ROUNDED, spacing } from '@/theme';
 
 import { GameThumb } from '../game-picture';
+import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { ThemedText } from '../themed-text';
@@ -16,7 +17,7 @@ import { TextButton } from './code-card';
  * that opens the `lobby-game` sheet. Under the card, "How <game> plays" opens the How to Play story.
  */
 export function GameCard({ variant, host, table = false }: { variant: Variant; host: boolean; /** Change sets the open table's game, not the setup draft. */ table?: boolean }) {
-  const colors = useColors();
+  const panel = usePanel();
   const info = variantInfo(variant);
   const change = () => {
     haptic.tap();
@@ -35,9 +36,11 @@ export function GameCard({ variant, host, table = false }: { variant: Variant; h
           alignItems: 'center',
           gap: spacing.sm,
           padding: spacing.md,
-          borderRadius: radius.lg,
+          borderRadius: PANEL_RADIUS,
           borderCurve: 'continuous',
-          backgroundColor: pressed ? colors.cellPressed : colors.cell,
+          borderWidth: 1,
+          borderColor: panel.edge,
+          backgroundColor: pressed ? panel.pressed : panel.fill,
         })}
       >
         <GameThumb variant={variant} size={52} />

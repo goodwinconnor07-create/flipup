@@ -8,6 +8,7 @@ on:
       - 'scripts/trainBot.ts'
       - 'scripts/evaluatePreflop.ts'
       - 'scripts/evaluatePersonalities.ts'
+      - 'scripts/evaluateEveryday.ts'
       - '.github/workflows/bot-training.yml'
   workflow_dispatch:
   schedule:
@@ -43,6 +44,7 @@ jobs:
           BOT_TRAIN_PAIRS: '250'
       - run: npm run bot:preflop -- 250 bot-training-output/preflop-comparison.json
       - run: npm run bot:personalities -- 100 bot-training-output/personality-comparison.json
+      - run: npm run bot:everyday -- 100 bot-training-output/everyday-table.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

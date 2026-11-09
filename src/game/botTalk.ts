@@ -5,8 +5,25 @@
 
 import { composeDialogue, DIALOGUE, dialogueText, type FixedLineEvent } from './botDialogue';
 import { reactionText } from './reactions';
+import { usesEverydayBots } from './botTableMode';
 import { playerStyle, styleOf, type StyleId } from './botStyles';
-import { ADDED_FRIENDLY, ADDED_TRASH, ADDED_VOICES, EMOJI_FRIENDLY, EMOJI_TRASH, EXTRA_FRIENDLY, EXTRA_TRASH, EXTRA_VOICES, MORE_FRIENDLY, MORE_TRASH, MORE_VOICES, NEW_FRIENDLY, NEW_TRASH, REMEMBER_FRIENDLY, REMEMBER_TRASH } from './botLines';
+import {
+  ADDED_FRIENDLY,
+  ADDED_TRASH,
+  ADDED_VOICES,
+  EMOJI_FRIENDLY,
+  EMOJI_TRASH,
+  EXTRA_FRIENDLY,
+  EXTRA_TRASH,
+  EXTRA_VOICES,
+  MORE_FRIENDLY,
+  MORE_TRASH,
+  MORE_VOICES,
+  NEW_FRIENDLY,
+  NEW_TRASH,
+  REMEMBER_FRIENDLY,
+  REMEMBER_TRASH,
+} from './botLines';
 import { lineBeats, sayAndReadMs } from './chat';
 import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
@@ -171,7 +188,13 @@ const TRASH: Lines = {
   tilted: ['I’m fine.', 'Totally calm.', 'Next hand’s mine.', 'Unreal deck.', 'Just deal.'],
   gotBluffed: ['You had THAT?', 'Noted.', 'I’ll remember that.', 'Enjoy it while it lasts.', 'Cute.'],
   watched: ['Well, well.', 'Brutal.', 'There it is.', 'Wow, okay.', 'Next.'],
-  hello: ['Hey {you}. Ready to lose?', 'Sit down, {you}.', '{you}. Let’s see what you’ve got.', 'Nice to meet you, {you}. Nice chips.', 'Evening, {you}.'],
+  hello: [
+    'Hey {you}. Ready to lose?',
+    'Sit down, {you}.',
+    '{you}. Let’s see what you’ve got.',
+    'Nice to meet you, {you}. Nice chips.',
+    'Evening, {you}.',
+  ],
   rematchWon: [],
   rematchLost: [],
   finishWon: [],
@@ -248,7 +271,13 @@ const FRIENDLY: Lines = {
   tilted: ['Deep breaths…', 'Not my night.', 'I’m okay. Mostly.', 'Need a break.', 'Can I win one?'],
   gotBluffed: ['No way!', 'You had nothing?!', 'Sneaky!', 'Ugh, I believed you.', 'Well played…'],
   watched: ['Wow!', 'What a hand!', 'Wild one.', 'Oof, nice.', 'Phew, glad that’s over.'],
-  hello: ['Hi {you}! Good luck!', 'Hey {you}, let’s have fun!', 'Welcome, {you}! Ready?', 'Good to see you, {you}!', 'Hi {you}! Be gentle 😅'],
+  hello: [
+    'Hi {you}! Good luck!',
+    'Hey {you}, let’s have fun!',
+    'Welcome, {you}! Ready?',
+    'Good to see you, {you}!',
+    'Hi {you}! Be gentle 😅',
+  ],
   rematchWon: [],
   rematchLost: [],
   finishWon: [],
@@ -466,7 +495,8 @@ grow(TRASH, EMOJI_TRASH);
 grow(FRIENDLY, EMOJI_FRIENDLY);
 for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
   for (const [style, more] of Object.entries(passes) as [StyleId, Partial<Lines>][]) {
-    for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
+    for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][])
+      VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
   }
 }
 
@@ -639,14 +669,18 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   if (game.card) return 0;
   // A Style Detective table is quiet too: every style has lines of its own, which would give the answer away.
   if (game.challenge?.quiet) return 0;
+  const everyday = usesEverydayBots(game);
+  // At ordinary tables, speech stays incidental and never delays a routine move.
+  const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
+  if (everyday && !owed && now - tableLast < 10000) return 0;
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return 0;
   const style = playerStyle(player);
   // A legend speaks in its own voice; everyone else in their style's.
   const voice = player.legend ?? style.id;
-  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId))) return 0;
+  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId) * (everyday ? 0.4 : 1)))
+    return 0;
   // A table-wide pause keeps nine seats from shouting over an ordinary decision.
-  const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
   if (!owed && now - tableLast < 700) return 0;
   // A regular with a profile talks through the dialogue planner (its own phrasing, aimed at whoever bet).
   // A legend, or an AI twin, keeps the fixed lines of its own voice.
@@ -661,9 +695,14 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
     const i = Math.floor(rng() * lines.length);
     line = id(voice, event, i);
   }
-  game.reactions = { ...game.reactions, [playerId]: { id: line, n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(target ? { to: target } : {}) } };
+  game.reactions = {
+    ...game.reactions,
+    [playerId]: { id: line, n: (game.reactions?.[playerId]?.n ?? 0) + 1, ...(target ? { to: target } : {}) },
+  };
   game.talkAt = { ...game.talkAt, [playerId]: now };
-  const ms = sayAndReadMs(lineBeats(reactionText(line, game.players.find((p) => p.id === target)?.name), game.players.find((p) => p.id === target)?.name));
+  const ms = sayAndReadMs(
+    lineBeats(reactionText(line, game.players.find((p) => p.id === target)?.name), game.players.find((p) => p.id === target)?.name),
+  );
   game.talkDone = { ...game.talkDone, [playerId]: now + ms };
   return ms;
 }
@@ -723,9 +762,16 @@ export const DRAMA_MAX = 3200;
  * and read, so the moment has some weight. Returns how long to wait (0 for nothing to say). Never more than `DRAMA_MAX`,
  * half of it at a fast bot game. Only for a table on one phone: an online table (it has a code) is left as it was.
  */
-export function dramaPause(game: Game, playerId: string, upcoming: 'flop' | 'turn' | 'river' | 'showdown', rng: () => number, now: number): number {
+export function dramaPause(
+  game: Game,
+  playerId: string,
+  upcoming: 'flop' | 'turn' | 'river' | 'showdown',
+  rng: () => number,
+  now: number,
+): number {
   if (game.code) return 0;
-  const event: TalkEvent = upcoming === 'flop' ? 'beforeFlop' : upcoming === 'turn' ? 'beforeTurn' : upcoming === 'river' ? 'beforeRiver' : 'beforeShowdown';
+  const event: TalkEvent =
+    upcoming === 'flop' ? 'beforeFlop' : upcoming === 'turn' ? 'beforeTurn' : upcoming === 'river' ? 'beforeRiver' : 'beforeShowdown';
   const ms = botSays(game, playerId, event, rng, now);
   return ms ? Math.round(Math.min(DRAMA_MAX, ms) * (game.fast ? 0.5 : 1)) : 0;
 }

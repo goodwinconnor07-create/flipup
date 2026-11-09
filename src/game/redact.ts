@@ -28,6 +28,8 @@ export function redactForDevice(game: Game, deviceId: string): Game {
       p.deviceId ? { ...p, deviceId: shown(p.deviceId) } : p,
     ),
     humanPoker: undefined,
+    botTable: undefined,
+    legacyBotSimulation: undefined,
     reads: undefined,
     botPlan: undefined,
     pendingTalk: undefined,

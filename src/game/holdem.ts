@@ -2,6 +2,7 @@
 // Everything here works on a copy of the game that applyAction() already made, so it changes it in place.
 
 import { dramaPause } from './botTalk';
+import { usesEverydayBots } from './botTableMode';
 import { handRecord } from './record';
 import { fullDeck, isRed, shuffle, type Card } from './cards';
 import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
@@ -501,7 +502,7 @@ function setTurn(game: Game, idx: number, ctx: ActionContext): void {
     return;
   }
   if (player.bot) {
-    const [lo, hi] = botsOnly(game) ? [TIMING.fastBotMin, TIMING.fastBotMax] : [TIMING.botMin, TIMING.botMax];
+    const [lo, hi] = botsOnly(game) ? [TIMING.fastBotMin, TIMING.fastBotMax] : usesEverydayBots(game) ? [350, 550] : [TIMING.botMin, TIMING.botMax];
     hand.actAt = ctx.now + lo + Math.floor(ctx.rng() * (hi - lo));
   } else if (game.settings.turnSeconds > 0) {
     const clock = game.settings.turnSeconds * 1000;
@@ -1062,6 +1063,7 @@ function winWithoutShowdown(game: Game, ctx: ActionContext): void {
 }
 
 function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
+  if (usesEverydayBots(game) && !game.code) usualPause = Math.min(usualPause, usualPause === TIMING.afterFold ? 2500 : 5000);
   const hand = game.hand!;
   const pause = botsOnly(game) ? Math.round(usualPause * TIMING.fastAfter) : usualPause;
   for (const s of hand.seats) s.bet = 0;

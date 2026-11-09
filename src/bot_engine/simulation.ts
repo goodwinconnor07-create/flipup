@@ -12,6 +12,8 @@ import { publicResponses } from './observations';
 import { withPersonality, type PersonalityId } from './personalities';
 import { preflopContext } from './preflopContext';
 import { handBucket } from '../game/handBucket';
+import { everydayProfile, EVERYDAY_FOCUSES, type BotDifficulty, type EverydayFocus } from './everyday';
+import { EverydayProvider } from './everydayProvider';
 
 export interface SimulationOptions {
   agents?: AgentKind[];
@@ -23,6 +25,8 @@ export interface SimulationOptions {
   startingStacksBb?: number[];
   carryStacks?: boolean;
   revision?: 'baseline-4' | 'baseline-5';
+  everyday?: BotDifficulty;
+  everydayFocus?: EverydayFocus;
 }
 
 /** Uses production rules; independently seeded policy and dealing streams. No illegal-action fallback. */
@@ -58,11 +62,18 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   const factory = new BotFactory();
   const profiles = game.players.map((p, n) => {
     const profile = factory.generate(p.id, 1001 + n);
+    if (config.everyday)
+      return everydayProfile(
+        profile,
+        `Everyday ${n}`,
+        config.everyday,
+        n === 0 ? (config.everydayFocus ?? 'balanced') : EVERYDAY_FOCUSES[n % 4],
+      );
     return n === 0 && config.personality ? withPersonality(profile, config.personality) : profile;
   });
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
   const service = new BotService(
-    new BaselineProvider(160, config.revision),
+    config.everyday ? new EverydayProvider(config.everyday === 'casual' ? 96 : 160) : new BaselineProvider(160, config.revision),
     config.learningMode ?? 'contextual',
     config.learningConfig ?? LEARNING_CONFIG,
   );
@@ -119,6 +130,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     betSizeSum: 0,
     betSizes: 0,
   };
+  const tableExperience = { hands: 0, flops: 0, walks: 0, raisedPots: 0, preflopAllIns: 0 };
   let decisions = 0,
     eventSequence = 0;
   for (let handNo = 0; handNo < hands; handNo++) {
@@ -255,6 +267,13 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       decisions++;
     }
     if (!game.hand?.result) throw new Error('Hand did not finish');
+    const preflop = (game.hand.actions ?? []).filter((a) => a.street === 'preflop');
+    const raised = preflop.some((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > game.settings.bigBlind));
+    tableExperience.hands++;
+    if (game.hand.board.length) tableExperience.flops++;
+    if (raised) tableExperience.raisedPots++;
+    if (!raised && !game.hand.board.length) tableExperience.walks++;
+    if (preflop.some((a) => a.move === 'allin')) tableExperience.preflopAllIns++;
     if (game.players.reduce((sum, p) => sum + p.stack, 0) !== bankroll) throw new Error('Chip conservation failed');
     behavior.hands++;
     if (vpip) behavior.vpipHands++;
@@ -273,6 +292,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     actionCounts,
     preflopCoverage,
     behavior,
+    tableExperience,
     handReturnsBb: returns,
     dealChecksums,
     bbPer100: mean * 100,

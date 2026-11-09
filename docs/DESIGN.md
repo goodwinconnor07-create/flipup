@@ -21,6 +21,11 @@ shows a BOT_001 personality control: Original, Patient, Curious, Aggressive, wit
 existing segmented control in native setup/lobby and the existing step row on web. Only the host edits it; changes
 apply next hand. This adds a row to existing screens without changing their surfaces or navigation.
 
+Everyday bot tables (owner request, 9 November 2026): Play with bots keeps its existing setup and Start game flow.
+Standard Hold'em uses a balanced automatic mix of subtly different opponents. Add one optional Bot level row to
+House rules, default Casual with Challenge as the alternative; use the existing native segmented control and web
+step row. No personality labels on seats, extra onboarding or new screens. Difficulty changes apply next hand.
+
 **How this document works.** Read it before any UI change. A new decision is written here first, then built. If a
 screen and this document disagree, the document wins until the owner says otherwise; then the document is changed
 in the same commit. New screens are mocked up and shown to the owner before they're built.

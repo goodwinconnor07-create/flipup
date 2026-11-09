@@ -1,5 +1,7 @@
 # Play BOT_001
 
+Ordinary standard Hold'em bots now use the shared engine automatically with subtler tendencies and an optional Casual/Challenge level. No opt-in is required for that experience; see [everyday bot tables](EVERYDAY_TABLES.md). BOT_001 remains an extra experimental seat with its separate pronounced personality presets.
+
 In standard Texas Hold’em setup or the host’s table settings, turn on **Invite BOT_001**. It is off by default. BOT_001 uses one extra bot seat; choose zero other bots for heads-up play. A full table must free a seat before inviting it. Only the host can change the table setting. New seats join the next deal; turning the setting off lets the current hand finish before the seat leaves. Switching to another variant clears the opt-in.
 
 The same control is present in the web app and native iPhone settings. The web app ships through the normal main-branch deployment. Native code changes require a new app build/update; no EAS build or TestFlight submission was triggered.

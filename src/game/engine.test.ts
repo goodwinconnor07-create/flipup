@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   startHand,
+  makeMove,
   startWait,
   TIMING,
   applyAction,
@@ -669,15 +670,8 @@ describe('table', () => {
     const n = game.hand!.number;
     // Not while the hand is still being played.
     expect(applyAction(game, { type: 'revealBots', hand: n }, ctx(HOST)).ok).toBe(false);
-    // Everyone folds round to one player.
-    while (!game.hand!.result) {
-      const id = game.hand!.toAct!;
-      const who = game.players.find((p) => p.id === id)!;
-      game = who.bot
-        ? must(game, { type: 'tick' }, 'server', seededRng(3))
-        : must(game, { type: 'act', hand: game.hand!.number, seq: game.hand!.seq, move: 'fold' }, who.deviceId!);
-      if (who.bot) clock = (game.wakeAt ?? clock) + 1;
-    }
+    // Construct a folded hand directly: reveal permissions must not depend on the opponent policy.
+    while (!game.hand!.result) expect(makeMove(game, 'fold', undefined, ctx(HOST))).toBeNull();
     const bots = game.players.filter((p) => p.bot).map((p) => p.id);
     const hiddenFrom = (device: string, id: string) =>
       redactForDevice(game, device).hand!.seats.find((s) => s.playerId === id)!.cards.length === 0;

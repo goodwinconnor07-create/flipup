@@ -17,7 +17,12 @@ export interface StrategyPrediction {
   unmodifiedProbabilities?: number[];
   values: number[] | null;
   rolloutValues?: number[];
-  source: 'shipped-preflop-frequency' | 'range-equity-fallback' | 'coarse-blueprint-blend' | 'commitment-aware-preflop';
+  source:
+    | 'shipped-preflop-frequency'
+    | 'range-equity-fallback'
+    | 'coarse-blueprint-blend'
+    | 'commitment-aware-preflop'
+    | 'everyday-preflop-ranges';
   coverage: 'abstracted' | 'fallback' | 'modelled';
   modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5';
   preflop?: PreflopLookup;

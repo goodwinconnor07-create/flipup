@@ -391,7 +391,7 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
  */
 export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand: Hand; seat: Seat } {
   // The experimental bot's observer memory is private even from legacy bot brains.
-  if (game.humanPoker) game = { ...game, humanPoker: undefined };
+  if (game.humanPoker || game.botTable) game = { ...game, humanPoker: undefined, botTable: undefined };
   const v = variantOf(game);
   let cards = v === 'pineapple' && seat.cards.length > 2 ? keepTwo(seat.cards, hand.board.slice(0, 3)) : seat.cards;
   if (cards.length > 2) {

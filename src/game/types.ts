@@ -6,12 +6,16 @@ import type { TwinBrain } from './twinFit';
 import type { Variant } from './variants';
 import type { LiveBotState } from '../bot_engine/live';
 import type { PersonalityId } from '../bot_engine/personalities';
+import type { BotDifficulty } from '../bot_engine/everyday';
+import type { EverydayBotState } from '../bot_engine/everydayLive';
 
 export type Status = 'lobby' | 'playing' | 'ended';
 export type Street = 'preflop' | 'flop' | 'turn' | 'river';
 export type Move = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
 
 export interface Settings {
+  /** Normal Hold'em opponents. Missing defaults to Casual; changes apply next hand. */
+  botDifficulty?: BotDifficulty;
   /** Opt in to one experimental BOT_001 seat at a standard Hold'em table. */
   humanPoker?: boolean;
   /** Missing keeps the original BOT_001 profile. Changes take effect next hand. */
@@ -309,6 +313,10 @@ export interface CardScene {
 }
 
 export interface Game {
+  /** Offline legacy-style laboratory only; never accepted as a network setting. */
+  legacyBotSimulation?: true;
+  /** Private, independent observer memories and stable everyday bot profiles. */
+  botTable?: EverydayBotState;
   /** Private observer memory, persisted with the table and stripped from public views. */
   humanPoker?: LiveBotState;
   id: string;

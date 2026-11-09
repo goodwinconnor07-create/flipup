@@ -44,7 +44,11 @@ export async function myTurn(page: Page): Promise<boolean> {
 export async function checkOrCall(page: Page): Promise<void> {
   const check = page.getByRole('button', { name: 'Check', exact: true });
   if (await check.isVisible()) await check.click();
-  else await page.locator('.action-buttons .btn-green').click();
+  else
+    await page
+      .locator('.action-buttons')
+      .getByRole('button', { name: /^(Call|All in)\s/ })
+      .click();
 }
 
 /** Reloads the page. A launch lands on Home, so a table in progress is a tap away on its banner. */

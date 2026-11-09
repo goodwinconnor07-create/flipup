@@ -11,6 +11,7 @@ import { personalitySupport, personalityWeights, plausiblePersonalityPolicy } fr
 import { inferRanges } from './ranges';
 import { estimateActionValues } from './actionValues';
 import { decisionRisk } from './decisionRisk';
+import { everydayReference, everydayWeights, everydaySupport } from './everyday';
 
 export interface DecisionTrace {
   version: 1;
@@ -22,7 +23,7 @@ export interface DecisionTrace {
   prediction: StrategyPrediction;
   finalDistribution: number[];
   adjustment: { identity: number[]; exploitation: number[] };
-  identityPolicyVersion: 'identity-2' | 'personality-1';
+  identityPolicyVersion: 'identity-2' | 'personality-1' | 'everyday-1';
   deviation: { estimatedValueLoss: number | null; budget: number; blend: number };
   samplingSeed: number;
   action: BotMove;
@@ -64,8 +65,8 @@ export class BotService {
     )
       throw new Error('Provider returned illegal action space');
     prediction.probabilities = normalize(prediction.probabilities);
-    if (profile.personality) prediction.unmodifiedProbabilities = [...prediction.probabilities];
-    if (profile.personality && !prediction.values) {
+    if (profile.personality || profile.everyday) prediction.unmodifiedProbabilities = [...prediction.probabilities];
+    if ((profile.personality || (profile.everyday && info.street !== 'preflop')) && !prediction.values) {
       const estimate = estimateActionValues(
         info,
         inferRanges(info, 'commitment-aware'),
@@ -79,7 +80,7 @@ export class BotService {
       prediction.valueStandardErrors = estimate.standardErrors;
       prediction.warnings.push('Personality guard values are approximate one-round rollouts, not chart EVs.');
     }
-    if (profile.personality && prediction.values && !prediction.rolloutValues) {
+    if ((profile.personality || profile.everyday) && prediction.values && !prediction.rolloutValues) {
       prediction.rolloutValues = [...prediction.values];
       prediction.values = decisionRisk(
         info,
@@ -103,27 +104,33 @@ export class BotService {
         'Named-profile reference includes sizing and weak-hand betting priors; deviation budget is relative to that reference.',
       );
     }
+    if (profile.everyday) {
+      prediction.probabilities = everydayReference(info, prediction, profile);
+      prediction.warnings.push('Everyday reference uses authored ranges and restrained tendencies, not human-data calibration.');
+    }
     const beliefs = info.players
       .filter((p) => p.id !== info.heroId && !p.folded)
       .map((p) => foldEstimate(Object.hasOwn(memory.opponents, p.id) ? memory.opponents[p.id] : undefined));
     // Conservative: evidence-based bluff expansion only heads up; never aggregate pooled reads.
     const read = beliefs.length === 1 ? beliefs[0] : { mean: 0.5, confidence: 0 };
     const stateFeatures = features(info);
-    const identity = profile.personality
-      ? personalityWeights(info, prediction, profile)
-      : prediction.actions.map((a) =>
-          a.to !== undefined
-            ? Math.max(
-                -0.8,
-                Math.min(
-                  0.8,
-                  (profile.traits.aggression - 0.5) * 2.4 - (info.street === 'river' ? (profile.traits.riverCaution - 0.5) * 1.2 : 0),
-                ),
-              )
-            : a.move === 'call'
-              ? (profile.traits.curiosity - 0.5) * 2
-              : 0,
-        );
+    const identity = profile.everyday
+      ? everydayWeights(info, prediction, profile)
+      : profile.personality
+        ? personalityWeights(info, prediction, profile)
+        : prediction.actions.map((a) =>
+            a.to !== undefined
+              ? Math.max(
+                  -0.8,
+                  Math.min(
+                    0.8,
+                    (profile.traits.aggression - 0.5) * 2.4 - (info.street === 'river' ? (profile.traits.riverCaution - 0.5) * 1.2 : 0),
+                  ),
+                )
+              : a.move === 'call'
+                ? (profile.traits.curiosity - 0.5) * 2
+                : 0,
+          );
     const adaptation = evaluateAdaptation(info, prediction, memory, profile, this.learningConfig);
     const exploitation =
       this.learningMode === 'contextual'
@@ -133,16 +140,30 @@ export class BotService {
               ? Math.max(-0.25, Math.min(0.25, (read.mean - 0.5) * read.confidence * profile.traits.adaptation))
               : 0,
           );
-    const support = profile.personality ? personalitySupport(info, prediction) : prediction.probabilities;
+    const support = profile.everyday
+      ? everydaySupport(info, prediction, profile)
+      : profile.personality
+        ? personalitySupport(info, prediction)
+        : prediction.probabilities;
     let finalDistribution = normalize(support.map((p, n) => p * Math.exp(identity[n] + exploitation[n])));
     if (this.learningMode === 'contextual' && adaptation.blend > 0)
       finalDistribution = normalize(finalDistribution.map((p, n) => (1 - adaptation.blend) * p + adaptation.blend * adaptation.target[n]));
     if (profile.personality) finalDistribution = plausiblePersonalityPolicy(info, prediction, finalDistribution, profile);
+    if (profile.everyday && info.street !== 'preflop')
+      finalDistribution = everydayReference(info, { ...prediction, probabilities: finalDistribution }, profile);
     // Observable preferences may move close decisions, but have a bounded estimated chip cost.
     // These are approximate provider values, so this is not a true regret guarantee.
-    const budget = profile.personality
-      ? Math.min(info.bigBlind * 2, Math.max(info.bigBlind * 0.35, stateFeatures.eligiblePotBb * info.bigBlind * 0.06))
-      : Math.max(info.bigBlind * 0.1, stateFeatures.eligiblePotBb * info.bigBlind * 0.02);
+    const budget = profile.everyday
+      ? Math.min(
+          info.bigBlind,
+          Math.max(
+            info.bigBlind * (profile.everyday.difficulty === 'challenge' ? 0.12 : 0.25),
+            stateFeatures.eligiblePotBb * info.bigBlind * 0.025,
+          ),
+        )
+      : profile.personality
+        ? Math.min(info.bigBlind * 2, Math.max(info.bigBlind * 0.35, stateFeatures.eligiblePotBb * info.bigBlind * 0.06))
+        : Math.max(info.bigBlind * 0.1, stateFeatures.eligiblePotBb * info.bigBlind * 0.02);
     let blend = 1,
       estimatedValueLoss: number | null = null;
     const guardValues = this.learningMode === 'contextual' ? adaptation.adjustedValues : prediction.values;
@@ -176,7 +197,7 @@ export class BotService {
       prediction,
       finalDistribution,
       adjustment: { identity, exploitation },
-      identityPolicyVersion: profile.personality ? 'personality-1' : 'identity-2',
+      identityPolicyVersion: profile.everyday ? 'everyday-1' : profile.personality ? 'personality-1' : 'identity-2',
       deviation: { estimatedValueLoss, budget, blend },
       samplingSeed,
       action: { ...prediction.actions[selected] },

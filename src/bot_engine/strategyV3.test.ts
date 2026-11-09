@@ -32,7 +32,7 @@ describe('Street-aware strategy', () => {
     const allIn = structuredClone(info);
     allIn.players.find((p) => p.id !== info.heroId)!.allIn = true;
     expect(blueprintMix(allIn, actions, p, values)).toBeNull();
-    const prediction = new BaselineProvider().predict(info);
+    const prediction = new BaselineProvider(160, 'baseline-3').predict(info);
     expect(prediction.modelVersion).toBe('baseline-3');
     expect(prediction.source).toBe('coarse-blueprint-blend');
     expect(new BaselineProvider(160, 'baseline-2').predict(info).modelVersion).toBe('baseline-2');

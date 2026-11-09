@@ -5,6 +5,9 @@ import { estimateActionValues } from './actionValues';
 import { legalActions, validateInformation, type InformationSet } from './information';
 import type { BotMove } from '../game/botPlay';
 import { blueprintMix } from './blueprint';
+import { preflopLookup, type PreflopLookup } from './preflop';
+
+export const CURRENT_STRATEGY_VERSION = 'baseline-4';
 
 export interface StrategyPrediction {
   actions: BotMove[];
@@ -12,7 +15,8 @@ export interface StrategyPrediction {
   values: number[] | null;
   source: 'shipped-preflop-frequency' | 'range-equity-fallback' | 'coarse-blueprint-blend';
   coverage: 'abstracted' | 'fallback';
-  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3';
+  modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4';
+  preflop?: PreflopLookup;
   blueprint?: { key: string; blend: number };
   valueStandardErrors?: (number | null)[];
   equity: number | null;
@@ -33,14 +37,40 @@ const digit = '0123456789abcdefghijklmnopqrstuvwxyz';
 export class BaselineProvider implements StrategyProvider {
   constructor(
     private samples = 160,
-    private revision: 'baseline-2' | 'baseline-3' = 'baseline-3',
+    private revision: 'baseline-2' | 'baseline-3' | 'baseline-4' = CURRENT_STRATEGY_VERSION,
   ) {
     if (!Number.isSafeInteger(samples) || samples < 1) throw new Error('Invalid sample count');
   }
   predict(i: InformationSet): StrategyPrediction {
     validateInformation(i);
-    const actions = legalActions(i);
-    const common = { actions, modelVersion: this.revision };
+    const actions = legalActions(i, this.revision === 'baseline-4');
+    const preflop = this.revision === 'baseline-4' && i.street === 'preflop' ? preflopLookup(i) : undefined;
+    const common = { actions, modelVersion: this.revision, ...(preflop ? { preflop } : {}) };
+    if (preflop?.matched) {
+      const weights = actions.map((a) =>
+        a.to !== undefined
+          ? a.to === preflop.raiseTo
+            ? preflop.raise
+            : 0
+          : a.move === 'call'
+            ? preflop.call
+            : a.move === 'check'
+              ? 1 - preflop.raise
+              : Math.max(0, 1 - preflop.call - preflop.raise),
+      );
+      return {
+        ...common,
+        probabilities: normalize(weights),
+        values: null,
+        source: 'shipped-preflop-frequency',
+        coverage: 'abstracted',
+        equity: null,
+        equityStandardError: null,
+        warnings: [
+          'Quantized frequencies, not EVs. Collapsed raise/jam mass uses the default solver raise size rounded to whole chips; no sizing mix is preserved. Equal shipped stacks only. Solver convergence not independently certified.',
+        ],
+      };
+    }
     const players = [...i.players].sort((a, b) => a.seat - b.seat);
     const button = players.findIndex((p) => p.id === i.buttonId);
     const order = players.map((_, n) => players[(button + (players.length === 2 ? 0 : 3) + n) % players.length]);
@@ -58,7 +88,7 @@ export class BaselineProvider implements StrategyProvider {
       i.currentBet === i.bigBlind &&
       i.actions.every((a) => a.move === 'fold') &&
       players.every((p) => (p.stack + p.total) / i.bigBlind === depth);
-    if (opening && encoded && index >= 0 && i.legal.canRaise) {
+    if (this.revision !== 'baseline-4' && opening && encoded && index >= 0 && i.legal.canRaise) {
       const call = digit.indexOf(encoded[index * 2]) / 35;
       const raise = digit.indexOf(encoded[index * 2 + 1]) / 35;
       if (call >= 0 && raise >= 0 && call + raise <= 1.03) {
@@ -107,7 +137,7 @@ export class BaselineProvider implements StrategyProvider {
     const temperature = Math.max(i.bigBlind * 0.5, pot * 0.08);
     const weights = values.map((v) => Math.exp(Math.max(-40, (v - best) / temperature)));
     const probabilities = normalize(weights);
-    const blueprint = this.revision === 'baseline-3' ? blueprintMix(i, actions, probabilities, values) : null;
+    const blueprint = this.revision !== 'baseline-2' ? blueprintMix(i, actions, probabilities, values) : null;
     return {
       ...common,
       probabilities: normalize(blueprint?.probabilities ?? probabilities),

@@ -52,7 +52,7 @@ describe('Opt-in BOT_001 at real tables', () => {
     let game = step(setup(), { type: 'start' }, 0);
     game = play(game, 2);
     expect(game.logs.length).toBeGreaterThanOrEqual(2);
-    expect(game.humanPoker?.lastDecision?.model).toBe('baseline-3');
+    expect(game.humanPoker?.lastDecision?.model).toBe('baseline-4');
     expect(
       game.players.reduce((sum, p) => sum + p.stack, 0) + (game.hand?.result ? 0 : game.hand!.seats.reduce((sum, s) => sum + s.total, 0)),
     ).toBe(game.players.reduce((sum, p) => sum + p.bought, 0));

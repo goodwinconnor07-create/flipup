@@ -12,13 +12,17 @@ This live path uses existing atomic table snapshots, not the separate SQLite dem
 
 ## Strategy changes
 
+The current provider is `baseline-4`. It reads all 350 exported preflop situations: unopened pots, responses to opens, the opener facing a 3-bet, the 3-bettor facing a 4-bet, and the big blind after a small-blind limp. It checks public actor order, observed sizes and starting stacks before selecting a row. These banks cover 2–6 players with equal starting stacks of exactly 20, 40 or 100 big blinds. Missing lines, cold callers, different bet sizes, other depths and unequal starting stacks use the rollout fallback, with the reason in private traces. Real cash sessions frequently have unequal stacks after the first hand, so this remains a substantial coverage limit.
+
+Raises use the solver's default position-dependent sizes, rounded to whole chips, including its stack-based shove threshold. The export combined normal raises and jams into a single frequency: this adapter cannot recover the original sizing mixture or EVs. It is a labelled abstraction over existing frequencies, not new solver training. Postflop analysis and contextual learning are unchanged. See [preflop coverage and comparison](PREFLOP_V4.md).
+
 `baseline-3` evaluates observed postflop actions using the board visible on that street. Future turn/river cards do not affect earlier-street action likelihoods, apart from legitimate current card removal. The existing 687-row coarse solver-derived policy is blended conservatively in eligible heads-up turn/river states, with estimated-value guards. The shipped table has no flop rows. Missing keys, multiway pots, all-in opponents and unsupported stack depths remain explicit rollout fallbacks. This table is a coarse abstraction, not an exact solve of a live hand.
 
 The previous provider is retained as `new BaselineProvider(160, 'baseline-2')` for comparison. Three seeded duplicated-deal comparisons against it completed 600 hands. Every individual descriptive interval includes zero; the measurements do not establish stronger win rate. See benchmarks/strategy-v3-comparison.json. The changes improve the model’s use of available evidence and strategy data; strength still needs larger replicated evaluation.
 
 ## Validation
 
-The current-main root check passed 913 tests across 45 files, typechecking and production build. Native typecheck and lint pass (existing warnings remain); Expo/Metro web export succeeds with the shared bot-engine folder. Browser tests exercise the visible toggle, heads-up local play through the new provider, and online Worker turns with private-memory redaction. Integration tests cover host authorization, defaults, full tables, completed hands, persisted-state reload and legacy-view isolation.
+The original live rollout passed 913 tests across 45 files, typechecking and production build. Native typecheck and lint passed (existing warnings remain); Expo/Metro web export succeeded with the shared bot-engine folder. Browser tests exercise the visible toggle, heads-up local play through the new provider, and online Worker turns with private-memory redaction. Integration tests cover host authorization, defaults, full tables, completed hands, persisted-state reload and legacy-view isolation. Current preflop checks are recorded in PREFLOP_V4.md.
 
 The main update also fixes a pre-existing native lint failure by moving the party-creation failure-state reset into the asynchronous creation callback. No poker rules or hand outcomes were changed.
 

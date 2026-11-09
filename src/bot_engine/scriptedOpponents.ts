@@ -13,7 +13,7 @@ export const SCRIPTED_OPPONENTS = [
   'changing',
 ] as const;
 export type ScriptedOpponent = (typeof SCRIPTED_OPPONENTS)[number];
-export type AgentKind = 'bot' | 'baseline' | 'previous' | ScriptedOpponent;
+export type AgentKind = 'bot' | 'baseline' | 'previous' | 'incumbent' | ScriptedOpponent;
 
 /** Intentionally simple public-information reference opponents, not strength-certified agents. */
 export function scriptedMove(i: InformationSet, kind: ScriptedOpponent, rng: () => number, changed = false) {

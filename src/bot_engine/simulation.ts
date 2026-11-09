@@ -5,7 +5,7 @@ import { informationFor } from './information';
 import { BotFactory } from './identity';
 import { emptyMemory, observe } from './memory';
 import { BotService } from './service';
-import { BaselineProvider } from './strategy';
+import { BaselineProvider, type StrategyPrediction } from './strategy';
 import { scriptedMove, type AgentKind, SCRIPTED_OPPONENTS } from './scriptedOpponents';
 import { LEARNING_CONFIG, type LearningConfig } from './learningConfig';
 import { publicResponses } from './observations';
@@ -23,7 +23,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   if (!Number.isSafeInteger(hands) || hands < 1) throw new Error('Invalid hand count');
   if (!Number.isSafeInteger(seats) || seats < 2 || seats > 9) throw new Error('Invalid seat count');
   const agents = config.agents ?? Array<AgentKind>(seats).fill('bot');
-  if (agents.length !== seats || agents.some((a) => !['bot', 'baseline', 'previous', ...SCRIPTED_OPPONENTS].includes(a)))
+  if (agents.length !== seats || agents.some((a) => !['bot', 'baseline', 'previous', 'incumbent', ...SCRIPTED_OPPONENTS].includes(a)))
     throw new Error('Invalid agents');
   const dealing = seededRng(seed);
   const ctx = { now: 0, deviceId: 'simulation', rng: dealing };
@@ -50,11 +50,33 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
   const service = new BotService(new BaselineProvider(), config.learningMode ?? 'contextual', config.learningConfig ?? LEARNING_CONFIG);
   const previous = new BotService(new BaselineProvider(160, 'baseline-2'), 'pooled');
+  const incumbent = new BotService(
+    new BaselineProvider(160, 'baseline-3'),
+    config.learningMode ?? 'contextual',
+    config.learningConfig ?? LEARNING_CONFIG,
+  );
   const baseline = new BaselineProvider();
   const latencies: number[] = [];
   const returns: number[] = [];
   const dealChecksums: number[] = [];
   const actionCounts = { fold: 0, check: 0, call: 0, bet: 0, raise: 0, allin: 0 };
+  const preflopCoverage = {
+    decisions: 0,
+    chartDecisions: 0,
+    spots: {} as Record<string, number>,
+    fallbackReasons: {} as Record<string, number>,
+  };
+  const recordCoverage = (prediction: StrategyPrediction) => {
+    preflopCoverage.decisions++;
+    if (prediction.source === 'shipped-preflop-frequency') {
+      preflopCoverage.chartDecisions++;
+      const key = prediction.preflop?.matched ? `${prediction.preflop.bank}:${prediction.preflop.spot}` : 'legacy-rfi';
+      preflopCoverage.spots[key] = (preflopCoverage.spots[key] ?? 0) + 1;
+    } else {
+      const reason = prediction.preflop?.matched === false ? prediction.preflop.reason : 'legacy-fallback';
+      preflopCoverage.fallbackReasons[reason] = (preflopCoverage.fallbackReasons[reason] ?? 0) + 1;
+    }
+  };
   let decisions = 0,
     eventSequence = 0;
   for (let handNo = 0; handNo < hands; handNo++) {
@@ -91,11 +113,21 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       const agent = agents[at];
       const sampling = seededRng(service.seedFor(info, profiles[at]));
       const action =
-        agent === 'bot' || agent === 'previous'
-          ? (agent === 'previous' ? previous : service).decide(info, profiles[at], memories[at], service.seedFor(info, profiles[at])).action
+        agent === 'bot' || agent === 'previous' || agent === 'incumbent'
+          ? (() => {
+              const trace = (agent === 'previous' ? previous : agent === 'incumbent' ? incumbent : service).decide(
+                info,
+                profiles[at],
+                memories[at],
+                service.seedFor(info, profiles[at]),
+              );
+              if (at === 0 && info.street === 'preflop') recordCoverage(trace.prediction);
+              return trace.action;
+            })()
           : agent === 'baseline'
             ? (() => {
                 const prediction = baseline.predict(info);
+                if (at === 0 && info.street === 'preflop') recordCoverage(prediction);
                 let draw = sampling();
                 return prediction.actions[
                   prediction.probabilities.findIndex((p, n) => {
@@ -134,7 +166,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
               config.learningConfig ?? LEARNING_CONFIG,
             );
       }
-      if (agent === 'bot' || agent === 'baseline' || agent === 'previous') latencies.push(elapsed);
+      if (agent === 'bot' || agent === 'baseline' || agent === 'previous' || agent === 'incumbent') latencies.push(elapsed);
       decisions++;
     }
     if (!game.hand?.result) throw new Error('Hand did not finish');
@@ -151,6 +183,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     seats,
     agents,
     actionCounts,
+    preflopCoverage,
     handReturnsBb: returns,
     dealChecksums,
     bbPer100: mean * 100,

@@ -10,7 +10,7 @@ export function summarizeReturns(values: number[]) {
 }
 
 /** Each pair uses the same deck/button twice with the two identities exchanging physical seats. */
-export function evaluateMatchup(pairs: number, opponent: ScriptedOpponent | 'baseline' | 'bot' | 'previous', seed = 17) {
+export function evaluateMatchup(pairs: number, opponent: ScriptedOpponent | 'baseline' | 'bot' | 'previous' | 'incumbent', seed = 17) {
   const legs = [false, true].map((reverseSeats) =>
     simulate(pairs, seed, 2, { agents: ['bot', opponent], reverseSeats, pairedDecks: true }),
   );

@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/bot_engine/**'
       - 'scripts/trainBot.ts'
+      - 'scripts/evaluatePreflop.ts'
       - '.github/workflows/bot-training.yml'
   workflow_dispatch:
   schedule:
@@ -39,6 +40,7 @@ jobs:
       - run: npm run bot:train -- 2 bot-training-output
         env:
           BOT_TRAIN_PAIRS: '250'
+      - run: npm run bot:preflop -- 250 bot-training-output/preflop-comparison.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

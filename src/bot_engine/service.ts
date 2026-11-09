@@ -51,7 +51,7 @@ export class BotService {
     )
       throw new Error('Identity mismatch');
     const prediction = structuredClone(this.provider.predict(info));
-    const legal = new Set(legalActions(info).map((a) => JSON.stringify(a)));
+    const legal = new Set(legalActions(info, true).map((a) => JSON.stringify(a)));
     if (
       !prediction.actions.length ||
       prediction.actions.length !== prediction.probabilities.length ||

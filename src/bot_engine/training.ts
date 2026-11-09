@@ -3,6 +3,7 @@ import { LEARNING_CONFIG, type LearningConfig } from './learningConfig';
 import { simulate } from './simulation';
 import type { ScriptedOpponent } from './scriptedOpponents';
 import { hashString } from '../game/cards';
+import { CURRENT_STRATEGY_VERSION } from './strategy';
 
 export interface TrainingState {
   protocol: 'river-learning-2';
@@ -94,6 +95,7 @@ export function fullPokerLearningCheck(config: LearningConfig, pairs = 40, seed 
   });
   return {
     seed,
+    baselineModel: CURRENT_STRATEGY_VERSION,
     matchups,
     hands: opponents.length * pairs * 4,
     promotionToProduction: false,

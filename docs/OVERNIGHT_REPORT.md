@@ -2,7 +2,7 @@
 
 **What happened.** The scheduled overnight run started at 15:23 UTC and stopped after 13 minutes because it could not push to GitHub (the scheduled session had no repo access). It left three fixes in a private artifact. I then ran the sweep in the main session from 22:19 UTC, on the branch `overnight/bug-sweep` (from the latest `main`; nothing was pushed to `main`). I re-did the three fixes myself and checked each before keeping it.
 
-Not the five hours the task asked for: this pass was a bit over an hour, so the list under "Not done" is real.
+Not the five hours the task asked for: this pass ran from 22:19 to about 22:55 UTC (roughly 35 minutes of wall clock), so the list under "Not done" is real.
 
 ## Fixed (each with a test, each in its own commit)
 1. Worker: a broken `%` escape in `/api/usernames` and `/api/boards` answered 500; now 404.

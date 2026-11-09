@@ -1,5 +1,6 @@
 import { router, Stack } from 'expo-router';
 import Animated, { LinearTransition } from 'react-native-reanimated';
+import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { haptic } from '@/components/haptics';
@@ -22,6 +23,8 @@ import { FRIENDS_ON } from '@/scope';
 import { useFriendBox } from '@/state/pals';
 import { usePartyRef } from '@/state/party';
 import { usePokerRecord } from '@/state/record';
+import { useRangeHistory } from '@/state/range-history';
+import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
 import { radius, spacing, useColors, useShadows } from '@/theme';
@@ -37,6 +40,13 @@ export default function Home() {
   const record = usePokerRecord();
   const box = useFriendBox();
   const banner = useHasBanner();
+  // After a good moment (three finished games or ten best plays) iOS may ask for a rating, once.
+  const games = record.games.length;
+  const bestPlays = useRangeHistory().filter((a) => a.grade === 'best').length;
+  useEffect(() => {
+    const t = setTimeout(() => void maybeAskForReview(games, bestPlays), 2500);
+    return () => clearTimeout(t);
+  }, [games, bestPlays]);
   const reduce = useReduceMotion();
   const slide = reduce ? undefined : LinearTransition.duration(320).easing(EASE_OUT);
   return (

@@ -286,8 +286,45 @@ export interface Hand {
   imposter?: string;
   /** Imposter: everyone dealt in is voting for who the imposter is. */
   voting?: boolean;
-  /** Imposter: votes so far, voter to suspect. Phones see who has voted, not for whom, until the hand is over. */
+  /** Imposter: votes so far, voter to suspect. Phones see who has voted, not for whom, until the votes are counted. */
   votes?: Record<string, string>;
+  /** A timed beat the table waits on (a die roll, a red river, the ghost turning over...), see moments.ts. */
+  moment?: Moment | null;
+  /** Betting on this street starts at this time, once the moment has played. */
+  bettingAt?: number | null;
+  /** Imposter: the table is talking it over before the vote. */
+  discussing?: boolean;
+  /** Imposter: the votes are being read out one at a time before the result. */
+  tally?: boolean;
+  /** Imposter: who each player is pointing a finger at (public, can change until the vote). */
+  points?: Record<string, string>;
+  /** Crazy Pineapple: who has thrown their card away (public). */
+  discarded?: string[];
+  /** Crazy Pineapple: the cards thrown away. Phones see their own until everyone is done. */
+  discards?: Record<string, Card>;
+}
+
+export type MomentKind = 'reveal' | 'dice' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust';
+
+/**
+ * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
+ * the board cards from index `from`), and while `gate` is on nobody can act. Times are table times.
+ */
+export interface Moment {
+  kind: MomentKind;
+  at: number;
+  until: number;
+  from?: number;
+  offsets?: number[];
+  gate?: boolean;
+  /** Die on the River: when the roll shows and when the swapped card changes. */
+  rollAt?: number;
+  swapAt?: number;
+  /** Imposter's tally: ms between votes. */
+  step?: number;
+  /** Bust: who, and with what count. */
+  who?: string;
+  value?: number;
 }
 
 /** One move played for a seat before anyone gets control, to set up a Scroll card's spot. `to` is the street total, as in an `act`. */
@@ -465,6 +502,8 @@ export type Action =
   | { type: 'discard'; hand: number; card: Card }
   /** Imposter: who you think the imposter is. */
   | { type: 'vote'; hand: number; playerId: string }
+  /** Imposter: point a finger at someone you suspect (`null` takes it back). It changes nothing but what the table sees. */
+  | { type: 'point'; hand: number; playerId: string | null }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
   /** After a hand, the host turns every bot's cards face up for everyone. */

@@ -26,6 +26,7 @@ import { GhostDivider, GhostSeat } from './ghost-seat';
 import { PlayingCard } from './playing-card';
 import { planWindow, type WindowAnchor } from './pod-window';
 import { moveSig } from './use-reactions';
+import { SeatBadge } from './variant-steps';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 export const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -344,6 +345,7 @@ function SeatPod({
         <View style={{ opacity: out ? 0.35 : player.offline ? 0.55 : 1 }}>
           <SeatFace emoji={player.emoji} size={compact ? 36 : 50} turn={turn} />
         </View>
+        <SeatBadge game={game} playerId={player.id} />
         {tag && (
           <View pointerEvents="none" style={{ position: 'absolute', left: -22, bottom: 6 }}>
             <TagChip label={tag} />

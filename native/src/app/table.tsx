@@ -22,13 +22,14 @@ import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
-import { Discard, Vote } from '@/components/table/variant-steps';
+import { Discard, Discuss, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
 import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { tableShare } from '@/state/table-share';
+import { read, save } from '@/state/storage';
 import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, useTable } from '@/state/session';
 import { EASE_OUT, exitMs } from '@/motion/presets';
@@ -425,6 +426,26 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [raiseTurn, setRaiseTurn] = useState('');
   const [selection, setSelection] = useState<{ street: string; action: PreAction } | null>(null);
 
+  // The first time you sit at a mini game, how it plays opens by itself (once per game, never again).
+  const variant = variantOf(game);
+  useEffect(() => {
+    if (variant === 'holdem' || game.challenge || game.bankroll) return;
+    const seen = read<string[]>('flipup.rulesseen', []);
+    if (seen.includes(variant)) return;
+    save('flipup.rulesseen', [...seen, variant]);
+    router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } });
+  }, [variant]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Imposter: your role, announced as each hand is dealt.
+  const role = hand?.variant === 'imposter' && mySeat && me ? (hand.imposter === me.id ? 'imposter' : 'innocent') : null;
+  const [flash, setFlash] = useState<string | null>(null);
+  useEffect(() => {
+    if (!role || !hand) return;
+    setFlash(role);
+    if (role === 'imposter') haptic.turn();
+    const t = setTimeout(() => setFlash(null), 2800);
+    return () => clearTimeout(t);
+  }, [hand?.number, role]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // A buzz when it's your turn; the raise panel closes when it isn't.
   const turnKey = myTurn ? `${game.id}-${hand!.number}-${hand!.seq}` : '';
   const raising = !!turnKey && raiseTurn === turnKey;
@@ -464,7 +485,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [available, setAvailable] = useState(0);
   const compact = available > 0 && available < 700;
   // Reserve the action area and hole cards before sizing the felt; a board that can't fit shrinks to the room left.
-  const feltBudget = available > 0 ? available - (compact ? 260 : 310) - 180 : undefined;
+  const pointing = variantOf(game) === 'imposter';
+  const feltBudget = available > 0 ? available - (compact ? 260 : 310) - 180 - (pointing ? 44 : 0) : undefined;
 
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
   const speakerOk = useRef<(id: string) => boolean>(() => true);
@@ -477,6 +499,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   useTableSounds(game, me?.id);
   const odds = useOdds(hand, showsOdds(variantOf(game)), variantOf(game));
   // At a showdown the winning five lift and glow and the rest grey out. Never while the hand is being played.
+  const showPointing = pointing && !!hand && !hand.result && !hand.voting && !hand.tally && !hand.discussing && !!mySeat;
   const highlight = useHighlight(game, me);
   const lit = new Set(highlight?.best ?? []);
   const showdown = !!hand?.result?.showdown && !!highlight;
@@ -486,6 +509,22 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   return (
     <WildDeuces.Provider value={variantOf(game) === 'deuces'}>
     <View style={{ flex: 1 }} onLayout={(e) => setAvailable(e.nativeEvent.layout.height)}>
+      {flash && (
+        <Animated.View
+          pointerEvents="none"
+          entering={FadeIn}
+          exiting={FadeOut}
+          style={{ position: 'absolute', top: '30%', left: 0, right: 0, zIndex: 20, alignItems: 'center' }}
+        >
+          <View style={{ paddingHorizontal: 22, paddingVertical: 14, borderRadius: 22, borderCurve: 'continuous', backgroundColor: flash === 'imposter' ? 'rgba(180,30,30,0.94)' : 'rgba(20,90,50,0.94)', alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 34 }}>{flash === 'imposter' ? '🕵️' : '😇'}</Text>
+            <Text style={{ color: '#ffffff', fontSize: 20, fontWeight: '800' }}>{flash === 'imposter' ? "You're the imposter" : "You're innocent"}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
+              {flash === 'imposter' ? 'Your cards are different. Blend in.' : 'You hold what the other innocents hold. Find the odd one out.'}
+            </Text>
+          </View>
+        </Animated.View>
+      )}
       {/* The table is locked: it never scrolls or bounces (the felt shrinks to fit instead, see FeltOval). */}
       <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 8 }}>
         <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
@@ -493,7 +532,13 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
       </View>
       <View style={{ gap: 4, paddingTop: 4 }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: 112, justifyContent: 'flex-end' }}>
-          {hand?.voting && mySeat && me ? (
+          {/* Imposter: point a finger at someone while the betting goes on. */}
+          {showPointing && me && <SuspectBar game={game} me={me} />}
+          {hand?.tally ? (
+            <Tally game={game} />
+          ) : hand?.discussing && mySeat && me ? (
+            <Discuss game={game} me={me} />
+          ) : hand?.voting && mySeat && me ? (
             <Vote game={game} me={me} />
           ) : hand?.discarding && mySeat && !mySeat.folded ? (
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />

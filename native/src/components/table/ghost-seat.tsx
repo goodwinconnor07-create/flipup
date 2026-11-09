@@ -98,7 +98,7 @@ export function GhostSeat({ game, compact = false }: { game: Game; compact?: boo
       </Text>
       {/* No chips: the ghost only holds cards. */}
       <View style={{ flexDirection: 'row', gap: 2, marginTop: 6 }}>
-        {cards.map((card, i) => (card ? <PlayingCard key={card} card={card} size="sm" flip /> : <PlayingCard key={i} back size="sm" />))}
+        {cards.map((card, i) => (card ? <PlayingCard key={card} card={card} size="sm" flip delay={i * 800} /> : <PlayingCard key={i} back size="sm" />))}
       </View>
       {shown && (
         <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ marginTop: 3, fontSize: 11, fontWeight: '600', color: c.secondaryLabel }}>

@@ -25,6 +25,10 @@ import {
   endsAtOnce,
   discardCard,
   endVote,
+  endDiscussion,
+  endTally,
+  pointAt,
+  resumeBetting,
   endDiscards,
   foldOutOfTurn,
   canHit,
@@ -1081,6 +1085,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      if (hand.moment?.gate && ctx.now < hand.moment.until) return fail('One moment…');
       const potBefore = potTotal(hand);
       const street = hand.street;
       const raises = preflopRaises(hand);
@@ -1105,6 +1110,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      if (hand.moment?.gate && ctx.now < hand.moment.until) return fail('One moment…');
       const error = hitCard(game, ctx);
       if (error) return fail(error);
       me.timeouts = 0;
@@ -1116,6 +1122,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
       const error = discardCard(game, me.id, action.card, ctx);
+      return error ? fail(error) : done();
+    }
+
+    case 'point': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = pointAt(game, me.id, action.playerId, ctx);
       return error ? fail(error) : done();
     }
 
@@ -1361,6 +1375,20 @@ function tick(game: Game, ctx: ActionContext): boolean {
     // Imposter: time's up for voting.
     if (hand.voting) {
       endVote(game, ctx);
+      return true;
+    }
+    // Imposter: the talking is over, or the votes have all been read out.
+    if (hand.discussing) {
+      endDiscussion(game, ctx);
+      return true;
+    }
+    if (hand.tally) {
+      endTally(game, ctx);
+      return true;
+    }
+    // A moment (a die, a red river...) is over: betting starts.
+    if (hand.bettingAt != null) {
+      resumeBetting(game, ctx);
       return true;
     }
     // A bot's word before the showdown is over: the hands turn over.

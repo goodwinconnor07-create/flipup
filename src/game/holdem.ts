@@ -3,6 +3,7 @@
 
 import { dramaPause } from './botTalk';
 import { usesEverydayBots } from './botTableMode';
+import { dealMoment, MOMENT_TIMING, scaled } from './moments';
 import { handRecord } from './record';
 import { fullDeck, isRed, shuffle, type Card } from './cards';
 import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
@@ -49,6 +50,8 @@ export const TIMING = {
   rebuyWindow: 20000,
   /** After the last bet of a street is matched, a beat before the next card so the move can be seen. */
   streetPause: 1100,
+  /** The same in the mini games, where the twist of a street needs a moment to land. */
+  variantStreetPause: 1700,
   /** Once every person is out of a hand, the bots finish it quickly: no one is watching their thinking. */
   fastBotMin: 250,
   fastBotMax: 550,
@@ -534,13 +537,14 @@ function returnUncalled(game: Game): void {
 
 const NEXT_STREET: Record<Street, Street | null> = { preflop: 'flop', flop: 'turn', turn: 'river', river: null };
 
-function dealStreet(game: Game, hand: Hand, rng: () => number): void {
+function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): void {
   const next = NEXT_STREET[hand.street]!;
   const variant = variantOf(game);
   // Crazy Pineapple: anyone who still has three cards when the turn comes (all in, out of time) keeps their best two.
   if (next === 'turn' && variant === 'pineapple') for (const s of hand.seats) if (!s.folded && s.cards.length > 2) throwAway(game, s, null);
   if (burns(variant)) hand.deck.shift(); // burn
   const count = streetCards(variant, next as 'flop' | 'turn' | 'river');
+  const from = hand.board.length;
   for (let i = 0; i < count; i++) hand.board.push(hand.deck.shift()!);
   // Bean Stalk: everyone still in gets another card of their own, starting left of the button.
   if (variant === 'beanstalk') {
@@ -559,8 +563,8 @@ function dealStreet(game: Game, hand: Hand, rng: () => number): void {
       ? `${label}: ${cardsText(hand.board)}`
       : `${label}: ${cardsText(hand.board.slice(0, -count))} ${cardsText(hand.board.slice(-count))}`,
   );
-  if (next !== 'river') return;
-  if (variant === 'dice') {
+  let redExtra = 0;
+  if (next === 'river' && variant === 'dice') {
     // Die on the River: a 1 to 5 swaps that board card (from the left) for a fresh one; a 6 leaves it.
     const roll = 1 + Math.floor(rng() * 6);
     if (roll <= 5 && hand.deck.length) {
@@ -573,13 +577,16 @@ function dealStreet(game: Game, hand: Hand, rng: () => number): void {
       hand.dice = { roll };
       hand.log.push(`The die rolls a ${roll}: the board stays`);
     }
-  } else if (variant === 'redriver') {
+  } else if (next === 'river' && variant === 'redriver') {
     // Red River: while the last card is red, another one comes.
     while (isRed(hand.board[hand.board.length - 1]) && hand.deck.length) {
       hand.board.push(hand.deck.shift()!);
+      redExtra++;
       hand.log.push(`Red river, another card: ${cardsText(hand.board.slice(-1))}`);
     }
   }
+  // The twist of the street plays out on the clock (see moments.ts); betting waits for it.
+  hand.moment = dealMoment(variant, now, from, hand.board.length - from, botsOnly(game), redExtra);
 }
 
 function endStreet(game: Game, ctx: ActionContext): void {
@@ -641,12 +648,13 @@ function askForDiscards(game: Game, ctx: ActionContext): boolean {
 }
 
 /** A beat before the next card, so the last move is seen first and nobody's cards land mid-thought. */
-function pauseBeforeNextStreet(game: Game, ctx: ActionContext): void {
+function pauseBeforeNextStreet(game: Game, ctx: ActionContext, extra = 0): void {
   const hand = game.hand!;
   hand.toAct = null;
   hand.deadline = null;
   const next = hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river';
-  hand.nextStreetAt = ctx.now + (botsOnly(game) ? TIMING.fastStreet : TIMING.streetPause) + drama(game, ctx, next);
+  const pause = variantOf(game) === 'holdem' ? TIMING.streetPause : TIMING.variantStreetPause;
+  hand.nextStreetAt = ctx.now + (botsOnly(game) ? TIMING.fastStreet : pause) + drama(game, ctx, next) + extra;
   hand.actAt = hand.nextStreetAt;
   schedule(game);
 }
@@ -666,7 +674,13 @@ function drama(game: Game, ctx: ActionContext, upcoming: 'flop' | 'turn' | 'rive
 /** The river betting is over: the hands turn over, after a word from a bot if it has one (a phone's own table). */
 export function startShowdown(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
-  const wait = drama(game, ctx, 'showdown');
+  const talk = drama(game, ctx, 'showdown');
+  // The ghost, the 21 count and the wild cards get a beat of their own before the hands turn over.
+  const v = variantOf(game);
+  const beat = v === 'ghost' ? MOMENT_TIMING.suspenseGhost : v === 'bjholdem' ? MOMENT_TIMING.suspenseBlackjack : v === 'deuces' ? MOMENT_TIMING.suspenseWild : 0;
+  const suspense = beat && !hand.imposter ? scaled(beat, botsOnly(game)) : 0;
+  const wait = talk + suspense;
+  if (suspense) hand.moment = { kind: 'suspense', at: ctx.now, until: ctx.now + wait };
   if (wait > 0) {
     hand.toAct = null;
     hand.deadline = null;
@@ -698,7 +712,23 @@ export function hitCard(game: Game, ctx: ActionContext): string | null {
   if (count21(seat.cards) > 21) {
     hand.busted = [...(hand.busted ?? []), seat.playerId];
     log(game, `${nameOf(game, seat.playerId)} busts with ${count21(seat.cards)}`);
-    return makeMove(game, 'fold', undefined, ctx);
+    // A bust is shown for a moment before the next player acts.
+    const until = ctx.now + MOMENT_TIMING.bust;
+    hand.moment = { kind: 'bust', at: ctx.now, until, gate: true, who: seat.playerId, value: count21(seat.cards) };
+    const error = makeMove(game, 'fold', undefined, ctx);
+    if (!hand.result) {
+      const hold = (t: number | null | undefined) => (t == null ? t : Math.max(t, until));
+      if (hand.deadline != null && hand.toAct) {
+        // A person's clock starts once the bust has been seen.
+        hand.deadline += Math.max(0, until - ctx.now);
+        hand.actAt = hand.deadline;
+      } else {
+        hand.actAt = hold(hand.actAt) ?? null;
+      }
+      hand.nextStreetAt = hold(hand.nextStreetAt);
+      schedule(game);
+    }
+    return error;
   }
   return null;
 }
@@ -713,7 +743,13 @@ export function pendingDiscards(game: Game): Seat[] {
 
 /** Throws one card away: the one given, or (null) the one that leaves the best two. */
 function throwAway(game: Game, seat: Seat, card: Card | null): void {
-  const keep = card ? seat.cards.filter((c) => c !== card) : keepTwo(seat.cards, game.hand!.board.slice(0, 3));
+  const hand = game.hand!;
+  const keep = card ? seat.cards.filter((c) => c !== card) : keepTwo(seat.cards, hand.board.slice(0, 3));
+  const thrown = seat.cards.find((c) => !keep.includes(c));
+  if (thrown) {
+    hand.discards = { ...hand.discards, [seat.playerId]: thrown };
+    hand.discarded = [...(hand.discarded ?? []), seat.playerId];
+  }
   seat.cards = keep;
   log(game, `${nameOf(game, seat.playerId)} throws a card away`);
 }
@@ -737,23 +773,47 @@ export function endDiscards(game: Game, ctx: ActionContext): void {
   for (const s of pendingDiscards(game)) throwAway(game, s, null);
   hand.discarding = false;
   hand.deadline = null;
+  // Everyone's thrown card is turned up together, and the table gets a moment to look at them.
+  const show = scaled(MOMENT_TIMING.discards, botsOnly(game));
+  hand.moment = { kind: 'discards', at: ctx.now, until: ctx.now + show };
   // An all-in run-out picks up where it stopped: the turn, then the river.
   if (hand.runout) {
-    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
+    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + show;
     schedule(game);
     return;
   }
-  pauseBeforeNextStreet(game, ctx);
+  pauseBeforeNextStreet(game, ctx, show);
 }
 
 /** The pause is over: deal the next street and start its betting. */
 export function dealNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.nextStreetAt = null;
-  dealStreet(game, hand, ctx.rng);
+  dealStreet(game, hand, ctx.rng, ctx.now);
+  // Imposter: the bots form hunches as the board comes.
+  if (hand.imposter) botsPoint(game, ctx.rng, 0.4);
+  // The twist plays out first (a die rolls, a red river keeps dealing...); then betting starts.
+  if (hand.moment && ctx.now < hand.moment.until) {
+    hand.toAct = null;
+    hand.deadline = null;
+    hand.bettingAt = hand.moment.until;
+    hand.actAt = hand.bettingAt;
+    schedule(game);
+    return;
+  }
+  startBetting(game, ctx);
+}
+
+function startBetting(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.bettingAt = null;
   const button = indexOf(hand, hand.buttonId);
   // After the flop the first player still in, left of the button, acts first.
   const first = nextIndex(hand, button === -1 ? hand.seats.length - 1 : button, isLive);
+  if (first === -1 || hand.seats.filter(isLive).length < 2) {
+    endStreet(game, ctx);
+    return;
+  }
   setTurn(game, first, ctx);
   holdForDice(game, ctx);
 }
@@ -772,6 +832,11 @@ function holdForDice(game: Game, ctx: ActionContext): void {
   schedule(game);
 }
 
+/** The moment is over: the betting on this street starts. */
+export function resumeBetting(game: Game, ctx: ActionContext): void {
+  startBetting(game, ctx);
+}
+
 /** One card of an all-in run-out, or the showdown once the river is out. */
 export function runoutStep(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
@@ -781,9 +846,10 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
   }
   // Crazy Pineapple: the run-out stops on the flop until everyone has thrown a card away.
   if (askForDiscards(game, ctx)) return;
-  dealStreet(game, hand, ctx.rng);
+  dealStreet(game, hand, ctx.rng, ctx.now);
   if (askForDiscards(game, ctx)) return;
-  hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep);
+  const moment = hand.moment ? Math.max(0, hand.moment.until - ctx.now) : 0;
+  hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + moment;
   holdForDice(game, ctx);
   schedule(game);
 }
@@ -815,8 +881,8 @@ export function showdown(game: Game, ctx: ActionContext): void {
   hand.deadline = null;
   // Imposter: the hand isn't decided by the cards but by the vote.
   if (hand.imposter) {
-    if (!hand.votes) startVote(game, ctx);
-    else imposterShowdown(game, ctx);
+    if (!hand.votes && !hand.discussing) startDiscussion(game, ctx);
+    else if (hand.votes) imposterShowdown(game, ctx);
     return;
   }
   const n = hand.seats.length;
@@ -940,6 +1006,68 @@ export function pendingVoters(game: Game): Seat[] {
   });
 }
 
+/** Bots point a finger at whoever they suspect (the same read they vote with). */
+function botsPoint(game: Game, rng: () => number, share: number): void {
+  const hand = game.hand!;
+  for (const s of hand.seats) {
+    if (!playerById(game, s.playerId)?.bot || rng() >= share) continue;
+    const pick = botVote(hand, s.playerId);
+    if (pick) hand.points = { ...hand.points, [s.playerId]: pick };
+  }
+}
+
+/** After the river and before the vote, the table talks it over: everyone can point a finger. */
+function startDiscussion(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  const people = hand.seats.some((s) => {
+    const p = playerById(game, s.playerId);
+    return p && !p.bot && !p.leaving;
+  });
+  hand.discussing = true;
+  botsPoint(game, ctx.rng, 1);
+  const until = ctx.now + (people ? MOMENT_TIMING.discuss : 800);
+  hand.moment = { kind: 'discuss', at: ctx.now, until };
+  hand.toAct = null;
+  hand.deadline = null;
+  hand.actAt = until;
+  log(game, 'The table talks it over');
+  schedule(game);
+}
+
+/** Discussion is over: the vote. */
+export function endDiscussion(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.discussing = false;
+  hand.moment = null;
+  startVote(game, ctx);
+}
+
+/** A player points a finger at someone (or takes it back). It changes nothing in the hand but what the table sees. */
+export function pointAt(game: Game, playerId: string, target: string | null, ctx: ActionContext): string | null {
+  const hand = game.hand;
+  if (!hand?.imposter || hand.result || hand.voting || hand.tally) return "There's nobody to point at now.";
+  if (!hand.seats.some((s) => s.playerId === playerId)) return "You weren't dealt in.";
+  if (target !== null && (target === playerId || !hand.seats.some((s) => s.playerId === target))) return "You can't point at them.";
+  const points = { ...hand.points };
+  if (target === null) delete points[playerId];
+  else points[playerId] = target;
+  hand.points = points;
+  // Once every person has picked someone, the talking wraps up soon.
+  if (hand.discussing && hand.moment) {
+    const people = hand.seats.filter((s) => {
+      const p = playerById(game, s.playerId);
+      return p && !p.bot && !p.leaving;
+    });
+    if (people.every((s) => points[s.playerId])) {
+      const until = Math.min(hand.moment.until, Math.max(ctx.now + 1500, hand.moment.at + MOMENT_TIMING.discussMin));
+      hand.moment = { ...hand.moment, until };
+      hand.actAt = until;
+    }
+  }
+  schedule(game);
+  return null;
+}
+
 /** After the river: everyone dealt in votes for who they think the imposter is. Bots vote straight away. */
 function startVote(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
@@ -980,6 +1108,19 @@ export function endVote(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.voting = false;
   hand.deadline = null;
+  // The votes are read out one at a time, then the imposter is named.
+  const step = MOMENT_TIMING.tallyStep;
+  const until = ctx.now + Object.keys(hand.votes ?? {}).length * step + MOMENT_TIMING.tallyEnd;
+  hand.tally = true;
+  hand.moment = { kind: 'tally', at: ctx.now, until, step };
+  hand.actAt = until;
+  schedule(game);
+}
+
+/** The votes have all been read out: count them and settle the pot. */
+export function endTally(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  hand.tally = false;
   hand.actAt = null;
   imposterShowdown(game, ctx);
 }

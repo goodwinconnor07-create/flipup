@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, useColorScheme, useWindowDimensions, View, type ViewStyle } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
@@ -11,7 +11,13 @@ import {
   boardSize,
   CIRCLE_HOURS,
   CROSS_CELLS,
+  explainHand,
+  momentCaption,
   pot,
+  tallyOrder,
+  tallyShown,
+  visibleBoard,
+  wildText,
   rankLabel,
   rankOf,
   seatFor,
@@ -34,6 +40,7 @@ import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { FELT_WEAVE, WOOD_GRAIN } from './textures';
 import { TurnTimer } from './turn-timer';
+import { useMomentNow } from './use-moment';
 import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -102,9 +109,21 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
       : null;
   const named = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? named(myValue) : null;
-  const pillName = hand?.result?.showdown ? highlight?.name : myHandName;
+  const basePill = hand?.result?.showdown ? highlight?.name : myHandName;
   const potNow = hand && !hand.result ? pot(hand) : 0;
   const pack = me?.cardPack;
+  const now = useMomentNow(game);
+  // Which line, river or run the hand uses, and what the wild cards became (shown beside the hand's name).
+  const explainSeat = hand?.result?.showdown ? seatFor(hand, hand.result.pots[0]?.winners[0]) : mySeat && !mySeat.folded ? mySeat : undefined;
+  const explained =
+    hand && explainSeat?.cards.length && hand.board.length >= 3 && ['deuces', 'crucifix', 'circle', 'pittsburgh'].includes(variant)
+      ? explainHand(variant, explainSeat.cards, hand.board)
+      : null;
+  const extra = explained ? [explained.note, wildText(explained)].filter(Boolean).join(' · ') : '';
+  const pillName = basePill && extra ? `${basePill} · ${extra}` : basePill;
+  // Memory Poker: after the hand, a tap brings back the 20 cards that were out.
+  const [recap, setRecap] = useState(false);
+  useEffect(() => setRecap(false), [hand?.number]);
   // The table screen never scrolls: a board that needs more room than the phone has left (the cross or the clock on
   // a small phone) keeps its layout and shrinks to fit, from the top.
   const natural = Math.min(feltHeight(variant, height), Math.max(feltHeight(variant, 0), heightLimit ?? Infinity));
@@ -125,7 +144,10 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         ...gradient(`${look.rail === 'wood' && !theme ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
       }}
     >
-      <TurnTimer game={game} mine={!!hand && !hand.result && !!me && hand.toAct === me.id} />
+      <TurnTimer
+        game={game}
+        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2) || (!!hand.voting && !hand.votes?.[me.id]))}
+      />
       <View
         style={{
           flex: 1,
@@ -201,13 +223,22 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         {game.memory ? (
           <MemoryPeek game={game} width={width} pack={pack} />
         ) : (
-          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} />
+          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} now={now} recap={recap} />
         )}
         <View style={{ minHeight: 32, justifyContent: 'center' }}>
           {game.memory ? (
             <MemoryCountdown game={game} />
           ) : hand?.result ? (
-            <WinBanner game={game} me={me} />
+            <View style={{ alignItems: 'center', gap: 4 }}>
+              <WinBanner key={hand.number} game={game} me={me} />
+              {variant === 'memory' && !!hand.removed?.length && (
+                <Pressable accessibilityRole="button" onPress={() => setRecap((r) => !r)} hitSlop={8}>
+                  <VariantPill text={recap ? '🧠 Back to the board' : '🧠 The 20 that were out'} />
+                </Pressable>
+              )}
+            </View>
+          ) : momentLine(game, now) ? (
+            <MomentLine game={game} now={now} reduce={reduce} />
           ) : pillName ? (
             <Animated.View key={pillName} entering={reduce ? FadeIn : bubblePop}>
               <HandPill text={pillName} />
@@ -235,18 +266,25 @@ function Board({
   dim,
   glow,
   pack,
+  now,
+  recap,
 }: {
   game: Game;
   width: number;
   dim: (c: Card) => boolean;
   glow: (c: Card) => boolean;
   pack?: string;
+  now: number;
+  recap?: boolean;
 }) {
   const hand = game.hand;
   const variant = variantOf(game);
   const slots = Math.max(boardSize(variant), hand?.board.length ?? 0);
+  // Cards land on the clock while a street's twist plays (see moments.ts): not-yet-dealt ones are empty slots.
+  const shown = hand ? visibleBoard(hand, now) : [];
+  if (recap && hand?.removed) return <MemoryPeek game={{ ...game, memory: { cards: hand.removed, until: 0 } }} width={width} pack={pack} />;
   const card = (i: number, w: number, style?: ViewStyle) => {
-    const c = hand?.board[i];
+    const c = shown[i];
     return (
       <View key={c ? `${hand!.number}-${c}` : `slot-${i}`} style={style}>
         {c ? (
@@ -257,7 +295,7 @@ function Board({
             dim={dim(c)}
             glow={glow(c)}
             pack={pack}
-            delay={i < streetCards(variant, 'flop') ? i * 160 : 0}
+            delay={!hand?.moment && i < streetCards(variant, 'flop') ? i * 160 : 0}
           />
         ) : (
           <CardSlot width={w} />
@@ -406,6 +444,15 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   const { width } = useWindowDimensions();
   const hand = game.hand!;
   const result = hand.result!;
+  // The ghost turns its cards over first (a beat apart), and only then is the pot named.
+  const wait = result.ghost ? 1700 : 0;
+  const [ready, setReady] = useState(wait === 0);
+  useEffect(() => {
+    if (!wait) return;
+    const t = setTimeout(() => setReady(true), wait);
+    return () => clearTimeout(t);
+  }, [wait]);
+  if (!ready) return <View style={{ minHeight: 32 }} />;
   const winners = Object.entries(result.won)
     .map(([id, amount]) => ({ p: game.players.find((x) => x.id === id), id, amount }))
     .filter((w) => w.p)
@@ -426,6 +473,8 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
         : `Innocents split ${chips(all)}`;
     how = `Imposter: ${imp?.name ?? '?'} · ${tally} of ${total} votes`;
     face = '🕵️';
+  } else if (result.blackjack && !(result.blackjack.poker[0]?.length === 1 && result.blackjack.winners[0]?.length === 1 && result.blackjack.poker[0][0] === result.blackjack.winners[0][0])) {
+    return <HalvesBanner game={game} me={me} />;
   } else if (result.blackjack) {
     // Blackjack Hold'em: who took the poker half and who took the 21 half of the main pot.
     const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
@@ -480,6 +529,85 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
           </Text>
         )}
       </View>
+    </Animated.View>
+  );
+}
+
+/** Blackjack Hold'em when the two halves went to different players: one line for each. */
+function HalvesBanner({ game, me }: { game: Game; me: Player | undefined }) {
+  const reduce = useReduceMotion();
+  const c = usePlainColors();
+  const { width } = useWindowDimensions();
+  const hand = game.hand!;
+  const bj = hand.result!.blackjack!;
+  const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+  const face = (id: string) => game.players.find((p) => p.id === id)?.emoji ?? '♠️';
+  const poker = bj.poker[0] ?? [];
+  const count = bj.winners[0] ?? [];
+  const row = (label: string, ids: string[], detail: string) => (
+    <View
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 4, paddingRight: 12, paddingVertical: 2, borderRadius: 999, backgroundColor: c.surface, boxShadow: '0 0 0 2px rgba(245,158,11,0.7)' }}
+    >
+      <Avatar emoji={face(ids[0])} size={24} />
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ maxWidth: width - 170, color: c.label, fontWeight: '700', fontSize: 13 }}>
+        {label} · {ids.map(name).join(' & ')}
+        <Text style={{ color: c.tertiaryLabel, fontWeight: '600' }}>{`  ${detail}`}</Text>
+      </Text>
+    </View>
+  );
+  return (
+    <Animated.View key={hand.number} accessibilityRole="text" accessibilityLiveRegion="polite" entering={reduce ? FadeIn : bubblePop} style={{ gap: 3, alignItems: 'center' }}>
+      {row('Best hand', poker, hand.result!.names[poker[0]] ?? '')}
+      {row('Closest to 21', count, String(bj.counts[count[0]] ?? '?'))}
+    </Animated.View>
+  );
+}
+
+/** Whether a moment has something to say in the felt's bottom slot right now. */
+function momentLine(game: Game, now: number): boolean {
+  const hand = game.hand;
+  const m = hand?.moment;
+  if (!hand || !m || hand.result || now >= m.until) return false;
+  if (m.kind === 'bust' || m.kind === 'discards' || m.kind === 'tally') return true;
+  return !!momentCaption(variantOf(game), hand, now);
+}
+
+/** The moment in words: a bust, the thrown-away cards turned up together, the vote count so far, or a caption. */
+function MomentLine({ game, now, reduce }: { game: Game; now: number; reduce: boolean }) {
+  const hand = game.hand!;
+  const m = hand.moment!;
+  const name = (id?: string) => game.players.find((p) => p.id === id)?.name ?? '?';
+  if (m.kind === 'bust') {
+    return (
+      <Animated.View key="bust" entering={reduce ? FadeIn : bubblePop}>
+        <HandPill text={`💥 ${name(m.who)} busts with ${m.value}`} />
+      </Animated.View>
+    );
+  }
+  if (m.kind === 'discards' && hand.discards) {
+    const entries = Object.entries(hand.discards);
+    return (
+      <View accessibilityLabel="Cards thrown away" style={{ flexDirection: 'row', gap: 4, alignItems: 'center' }}>
+        <Text style={{ fontSize: 16 }} accessible={false}>
+          🍍
+        </Text>
+        {entries.map(([id, card]) => (
+          <View key={id} style={{ alignItems: 'center' }}>
+            <PlayingCard card={card} size="sm" width={22} flip delay={0} dim />
+          </View>
+        ))}
+      </View>
+    );
+  }
+  if (m.kind === 'tally') {
+    const order = tallyOrder(hand);
+    const shown = tallyShown(hand, order, now);
+    return <HandPill text={`🗳 Votes read out: ${Math.min(shown, order.length)} of ${order.length}`} />;
+  }
+  const text = momentCaption(variantOf(game), hand, now);
+  return (
+    <Animated.View key={text} entering={reduce ? FadeIn : bubblePop}>
+      <HandPill text={text ?? ''} />
     </Animated.View>
   );
 }

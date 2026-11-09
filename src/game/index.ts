@@ -7,6 +7,7 @@ export * from './runoutOdds';
 export * from './types';
 export * from './holdem';
 export * from './variants';
+export * from './moments';
 export * from './selectors';
 export * from './bots';
 export * from './reducer';

@@ -107,12 +107,17 @@ const Row = ({ children }: { children: ReactNode }) => (
 export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
-  const now = useTableNow(game.fast, waiting ? 200 : 60_000);
+  const now = useTableNow(game.fast, hand?.moment?.gate || waiting ? 200 : 60_000);
 
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
   if (hand && !hand.result) {
     // Short Stack, at 12 big blinds or less: Fold, Call and a big Shove in place of the raise panel.
+    // A bust is on show: nobody acts until it has been seen.
+    if (myTurn && hand.moment?.gate && now < hand.moment.until) {
+      const who = game.players.find((p) => p.id === hand.moment!.who)?.name ?? 'Someone';
+      return <Note strong>{`💥 ${who} busts with ${hand.moment.value}`}</Note>;
+    }
     if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
     if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
@@ -128,7 +133,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         {who ? (
           <Thinking name={who.name} what={who.bot ? 'is thinking' : who.offline ? 'is offline' : 'to act'} />
         ) : (
-          <Note>{hand.showdownAt != null ? 'Showdown…' : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
+          <Note>{hand.bettingAt != null ? (hand.moment?.kind === 'dice' ? 'The die decides the river…' : hand.moment?.kind === 'rivers' ? 'Three rivers…' : hand.moment?.kind === 'redriver' ? 'Is the river red?' : 'Look at the board…') : hand.showdownAt != null ? (hand.moment?.kind === 'suspense' ? 'Hold your breath…' : 'Showdown…') : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (

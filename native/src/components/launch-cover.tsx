@@ -192,8 +192,24 @@ const VERSION = (() => {
   return v ? `Version ${v}${b ? ` (${b})` : ''}` : '';
 })();
 
-/** "Shuffling the deck" with its dots coming one, two, three and starting again. The dots keep their room, so the words never shift. */
+/**
+ * "Shuffling the deck" stays exactly as it is, centred and never re-drawn; only the three dots after it change, one,
+ * two, three and again. The dots hang off the end of the words (positioned, so they take no room in the line), so
+ * the words never shift as they come and go.
+ */
 function Shuffling({ ink, reduce }: { ink: string; reduce: boolean }) {
+  return (
+    <View style={{ marginTop: 36, alignSelf: 'center' }}>
+      <Text accessible={false} maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '600', color: ink }}>
+        Shuffling the deck
+      </Text>
+      <Dots ink={ink} reduce={reduce} />
+    </View>
+  );
+}
+
+/** The dots after the words: they count up on their own clock and only this part re-draws. */
+function Dots({ ink, reduce }: { ink: string; reduce: boolean }) {
   const [n, setN] = useState(reduce ? 3 : 1);
   useEffect(() => {
     if (reduce) return;
@@ -201,13 +217,12 @@ function Shuffling({ ink, reduce }: { ink: string; reduce: boolean }) {
     return () => clearInterval(t);
   }, [reduce]);
   return (
-    <Text accessible={false} maxFontSizeMultiplier={1.2} style={{ marginTop: 36, fontSize: 17, fontWeight: '600', color: ink }}>
-      Shuffling the deck
+    <View accessible={false} pointerEvents="none" style={{ position: 'absolute', left: '100%', top: 0, flexDirection: 'row' }}>
       {[1, 2, 3].map((i) => (
-        <Text key={i} style={{ opacity: i <= n ? 1 : 0 }}>
+        <Text key={i} maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '600', color: ink, opacity: i <= n ? 1 : 0 }}>
           .
         </Text>
       ))}
-    </Text>
+    </View>
   );
 }

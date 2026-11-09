@@ -140,7 +140,8 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         // peek take more. Memory Poker plays at that size too, so the board doesn't jump when the peek ends.
         height: natural,
         flexShrink: 0,
-        boxShadow: '0 12px 26px -14px rgba(18,18,40,0.55), inset 0 1px 0 rgba(255,255,255,0.28)',
+        // A soft shadow that fades out inside the room under the felt, so the table area's edge never cuts it into a line.
+        boxShadow: '0 8px 16px -12px rgba(18,18,40,0.5), inset 0 1px 0 rgba(255,255,255,0.28)',
         ...gradient(`${look.rail === 'wood' && !theme ? `${WOOD_GRAIN}, ` : ''}linear-gradient(165deg, ${rail[0]}, ${rail[1]})`),
       }}
     >

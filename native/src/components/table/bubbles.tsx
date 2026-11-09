@@ -58,12 +58,9 @@ function useTint(tone: Tone, ring?: string): { box: ViewStyle; ink: string } {
   return ring ? { ...t, box: { ...t.box, boxShadow: `${SHADOW}, inset 0 0 0 1.5px ${ring}` } } : t;
 }
 
-/** Whose bubble it is, by a thin ring: friendly bots blue, a legend gold, trash talkers plain; a line aimed at you gets a stronger blue. */
-export function ringFor(voice?: string, toYou?: boolean): string | undefined {
-  if (toYou) return 'rgba(10, 122, 255, 0.95)';
-  if (voice === 'legend') return 'rgba(245, 183, 0, 0.9)';
-  if (voice === 'friendly') return 'rgba(10, 122, 255, 0.45)';
-  return undefined;
+/** A thin gold ring marks a legend's bubble. Nothing else is outlined (the blue rings for friendly bots and for lines aimed at you are gone). */
+export function ringFor(voice?: string): string | undefined {
+  return voice === 'legend' ? 'rgba(245, 183, 0, 0.9)' : undefined;
 }
 
 function tint(tone: Tone, c: ReturnType<typeof usePlainColors>): { box: ViewStyle; ink: string } {
@@ -245,7 +242,7 @@ export const bubbleOut = FadeOut.duration(motion.exit).easing(EASE_OUT);
 export function Thread({ talk, room, place }: { talk: Talk; room?: number; place: ViewStyle }) {
   const reduce = useReduceMotion();
   const item: Message | null = talk.typing ? null : (talk.shown.at(-1) ?? null);
-  const ring = ringFor(item?.voice, item?.toYou);
+  const ring = ringFor(item?.voice);
   // A line aimed at you gets a light tap as it lands.
   const key = item?.key;
   useEffect(() => {

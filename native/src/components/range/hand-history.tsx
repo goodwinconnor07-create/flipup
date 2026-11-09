@@ -83,7 +83,7 @@ function PosChip({ pos, hero }: { pos: Pos; hero: boolean }) {
  * Under the table: Replay hand, or, while replaying, Back, Play, Next and Done with where you are. Right beside the
  * table so what you're stepping through stays in view.
  */
-export function ReplayStrip({ step, total, playing, onStep, onPlaying }: { step: number | null; total: number; playing: boolean; onStep: (step: number | null) => void; onPlaying: (on: boolean) => void }) {
+export function ReplayStrip({ step, total, playing, narration, onStep, onPlaying }: { step: number | null; total: number; playing: boolean; /** What just happened, in words, with the pot. */ narration?: string; onStep: (step: number | null) => void; onPlaying: (on: boolean) => void }) {
   const colors = useColors();
   if (step === null) {
     return (
@@ -107,8 +107,11 @@ export function ReplayStrip({ step, total, playing, onStep, onPlaying }: { step:
         <Pill label="Next" disabled={done} onPress={() => (onPlaying(false), onStep(Math.min(total, step + 1)))} />
         <Pill label="Done" onPress={() => (onPlaying(false), onStep(null))} />
       </View>
+      <ThemedText variant="callout" accessibilityLiveRegion="polite" style={[{ fontWeight: '700', textAlign: 'center', minHeight: 24 }, NUM]}>
+        {narration ?? ' '}
+      </ThemedText>
       <ThemedText variant="caption1" style={[{ color: colors.tertiaryLabel as string }, NUM]}>
-        Replaying · step {step} of {total}
+        Step {step} of {total}
       </ThemedText>
     </View>
   );
@@ -188,16 +191,9 @@ export function HandHistory({
               style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 34, paddingHorizontal: spacing.xs, borderRadius: radius.sm, backgroundColor: now ? colors.blueBg : 'transparent', opacity: future ? 0.3 : 1 }}
             >
               {row.moves.length > 1 ? (
-                <>
-                  <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, flexShrink: 1 }}>
-                    {row.moves.map((m, i) => (
-                      <PosChip key={i} pos={m.who} hero={m.who === hero} />
-                    ))}
-                  </View>
-                  <ThemedText variant="subhead" tone="tertiaryLabel" style={{ fontWeight: '600' }}>
-                    fold
-                  </ThemedText>
-                </>
+                <ThemedText variant="subhead" tone="tertiaryLabel" style={{ fontWeight: '600', flex: 1, paddingLeft: spacing.xs }}>
+                  {row.moves.map((m) => seatName(m.who)).join(', ')} fold
+                </ThemedText>
               ) : (
                 <>
                   <PosChip pos={first.who} hero={first.who === hero} />

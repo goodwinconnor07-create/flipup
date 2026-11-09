@@ -76,9 +76,9 @@ export function BoardTable({ scenario, view }: { scenario: Scenario; view: Board
             <View
               style={{
                 position: 'absolute',
-                left: s.x - seatW / 2,
+                left: s.x - (s.hero ? seatW + 14 : seatW) / 2,
                 top: s.y - 21,
-                width: seatW,
+                width: s.hero ? seatW + 14 : seatW,
                 height: 42,
                 borderRadius: 12,
                 borderCurve: 'continuous',

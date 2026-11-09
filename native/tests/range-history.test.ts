@@ -10,7 +10,7 @@ vi.stubGlobal('localStorage', {
 });
 vi.mock('expo-sqlite/localStorage/install', () => ({}));
 
-const { rangeStats, recordAnswer, readRangeHistory, runOf, roughPatch } = await import('../src/state/range-history');
+const { rangeStats, recordAnswer, readRangeHistory, runOf, roughPatch, longestRun } = await import('../src/state/range-history');
 const { answerHand, nextHand } = await import('../src/state/ranges');
 
 describe('range history', () => {
@@ -54,6 +54,7 @@ describe('range history', () => {
     expect(roughPatch([a('best'), a('mistake'), a('mistake'), a('best'), a('mistake')])).toBe(true);
     expect(roughPatch([a('mistake'), a('mistake'), a('mistake'), a('mistake'), a('best')])).toBe(false);
     expect(roughPatch([a('mistake'), a('mistake')])).toBe(false);
+    expect(longestRun([a('best'), a('best'), a('ok'), a('best'), a('best'), a('best')])).toBe(3);
   });
 
   it('ignores answers for hands that no longer exist', () => {

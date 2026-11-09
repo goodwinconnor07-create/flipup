@@ -51,6 +51,8 @@ export interface RangeStats {
   before: number | null;
   /** Best-play rate in each run of 10 answers, oldest first, the last 8 runs. */
   trend: number[];
+  /** Your longest run of best plays in a row. */
+  longest: number;
   byConcept: Tally[];
   byPosition: Tally[];
   byFormat: Tally[];
@@ -93,6 +95,7 @@ export function rangeStats(history: Answer[], scenarios: Scenario[] = SCENARIOS)
     recent: last.length >= 10 ? rateOf(last) : null,
     before: last.length >= 10 && prev.length >= 10 ? rateOf(prev) : null,
     trend,
+    longest: longestRun(known),
     byConcept,
     byPosition: group(known, byId, (s) => s.hero.pos, 2),
     byFormat: group(known, byId, (s) => (s.format === 'tournament' ? 'Tournament' : 'Cash'), 1),
@@ -111,4 +114,15 @@ export function runOf(history: Answer[]): number {
 export function roughPatch(history: Answer[]): boolean {
   const last = history.slice(-5);
   return last.length >= 4 && last[last.length - 1].grade === 'mistake' && last.filter((a) => a.grade === 'mistake').length >= 3;
+}
+
+/** Your longest run of best plays in a row, over all the answers kept. */
+export function longestRun(history: Answer[]): number {
+  let best = 0;
+  let run = 0;
+  for (const a of history) {
+    run = a.grade === 'best' ? run + 1 : 0;
+    best = Math.max(best, run);
+  }
+  return best;
 }

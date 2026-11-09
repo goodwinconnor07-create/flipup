@@ -12,6 +12,7 @@ import { haptic } from '@/components/haptics';
 import { BoardTable } from '@/components/range/board-table';
 import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
 import { Icon } from '@/components/icon';
+import { describeHand, rankLabel, suitOf } from '@/engine';
 import { SwapIcon } from '@/components/swap';
 import { Confetti } from '@/components/table/confetti';
 import { playSound } from '@/components/table/sounds';
@@ -192,12 +193,27 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
     if (!top) return null;
     return { pos: v.opponent.pos, label: top.group.label, hands: top.group.hands.split(',').slice(0, 3).map((x) => x.trim()).join(', ') };
   }, [views, facing]);
+  // The replay in words: what just happened and the pot after it.
+  const pretty = (c: string) => `${rankLabel(c)}${{ s: '♠', h: '♥', d: '♦', c: '♣' }[suitOf(c)]}`;
+  const lastEvent = step !== null && step > 0 ? events[step - 1] : null;
+  const narration =
+    step === null
+      ? undefined
+      : !lastEvent
+        ? 'Blinds are in'
+        : lastEvent.kind === 'deal'
+          ? `${STREET_NAME[lastEvent.street]}: ${scenario.board.slice(0, lastEvent.street === 'flop' ? 3 : lastEvent.street === 'turn' ? 4 : 5).map(pretty).join(' ')}`
+          : `${lastEvent.text} · pot ${bb(view.pot)}`;
+  // What you're holding, in words.
+  const made = describeHand([...scenario.hero.cards, ...scenario.board]).detail;
   const kind = (id: OptionId): 'fold' | 'blue' | 'raise' => (id === 'fold' ? 'fold' : id === 'call' || id === 'check' ? 'blue' : 'raise');
+  // The bigger the bet, the deeper the green: a third of the pot lightest, an overbet or all in darkest.
+  const green = (o: { id: OptionId; label: string }) => (o.id === 'bet33' ? '#2bbd68' : o.id === 'bet75' ? '#1a9a50' : o.id === 'bet125' || o.label.startsWith('All in') ? '#0f7a3b' : '#1a9a50');
   // The answer bar, pinned under the page above the tab bar: your options, then Next hand once you've answered.
   const bar = !pick ? (
     <View accessibilityLabel="Your options" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
       {options.map((o) => (
-        <AnswerButton key={o.id} label={o.label} kind={kind(o.id)} wide={options.length > 3} onPress={() => answer(o.id)} />
+        <AnswerButton key={o.id} label={o.label} kind={kind(o.id)} green={green(o)} wide={options.length > 3} onPress={() => answer(o.id)} />
       ))}
     </View>
   ) : (
@@ -451,7 +467,7 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
 
       {/* The table as it stands: everyone's seat, the pot and the whole board. Nothing deals unless you replay. */}
       <BoardTable scenario={scenario} view={view} />
-      <ReplayStrip step={step} total={events.length} playing={playing} onStep={setStep} onPlaying={setPlaying} />
+      <ReplayStrip step={step} total={events.length} playing={playing} narration={narration} onStep={setStep} onPlaying={setPlaying} />
 
       {/* Your hand, with what it costs and where you sit. */}
       <View accessibilityLabel={`Your hand ${scenario.hero.cards.join(' ')}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
@@ -463,6 +479,10 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
         <View style={{ flex: 1, gap: 2 }}>
           <ThemedText variant="title3" style={NUM}>
             {facing ? `${bb(r.toCall)} to call` : 'Checked to you'}
+          </ThemedText>
+          <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+            You have {made.charAt(0).toLowerCase()}
+            {made.slice(1)}
           </ThemedText>
           <ThemedText variant="subhead" tone="secondaryLabel" style={NUM}>
             You’re {scenario.hero.pos} · {bb(r.stacks[scenario.hero.pos] ?? 0)} behind
@@ -491,12 +511,12 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
 }
 
 /** One answer in the pinned bar: Fold in red, Call and Check in the table's blue, Bet and Raise in its green. */
-function AnswerButton({ label, kind, wide, onPress }: { label: string; kind: 'fold' | 'blue' | 'raise'; /** Four options: two to a row. */ wide: boolean; onPress: () => void }) {
+function AnswerButton({ label, kind, green, wide, onPress }: { label: string; kind: 'fold' | 'blue' | 'raise'; /** The green a bet or raise takes. */ green: string; /** Four options: two to a row. */ wide: boolean; onPress: () => void }) {
   const colors = useColors();
   const c = usePlainColors();
   const blue = useColorScheme() === 'dark' ? '#0a84ff' : '#007aff';
   const [main, sub] = splitLabel(label);
-  const look = kind === 'fold' ? { bg: c.redBg, ink: c.redInk } : kind === 'blue' ? { bg: blue, ink: '#ffffff' } : { bg: brand.raise, ink: '#ffffff' };
+  const look = kind === 'fold' ? { bg: c.redBg, ink: c.redInk } : kind === 'blue' ? { bg: blue, ink: '#ffffff' } : { bg: green, ink: '#ffffff' };
   return (
     <View style={{ flexGrow: 1, flexBasis: wide ? '47%' : '30%' }}>
     <PressableScale

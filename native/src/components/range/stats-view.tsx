@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { rangeStats, type Answer, type Tally } from '@/state/range-history';
 import { brand, radius, spacing, useColors } from '@/theme';
@@ -26,9 +27,9 @@ function Card({ title, children }: { title?: string; children: ReactNode }) {
 }
 
 /** A label, how many were best plays, and a bar. */
-function RateRow({ t, needs }: { t: Tally; /** A spot to work on: drawn in gold. */ needs?: boolean }) {
+function RateRow({ t, needs, onPress }: { t: Tally; /** A spot to work on: drawn in gold. */ needs?: boolean; /** Tapping a kind of spot practises it. */ onPress?: () => void }) {
   const colors = useColors();
-  return (
+  const row = (
     <View accessibilityLabel={`${t.label}: ${t.best} of ${t.total} best plays`} style={{ gap: 4 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs }}>
         <ThemedText variant="subhead" numberOfLines={1} style={{ flex: 1 }}>
@@ -45,6 +46,13 @@ function RateRow({ t, needs }: { t: Tally; /** A spot to work on: drawn in gold.
         <View style={{ width: `${Math.round(t.rate * 100)}%`, height: '100%', backgroundColor: needs ? brand.gold : brand.violet }} />
       </View>
     </View>
+  );
+  return onPress ? (
+    <PressableScale accessibilityRole="button" accessibilityHint="Practise this kind of spot" onPress={onPress}>
+      {row}
+    </PressableScale>
+  ) : (
+    row
   );
 }
 
@@ -79,6 +87,11 @@ export function StatsView({ history, onPractice }: { history: Answer[]; onPracti
         {move !== null && (
           <ThemedText variant="subhead" tone="secondaryLabel">
             {move === 0 ? 'Level with the 20 before.' : `${move > 0 ? 'Up' : 'Down'} ${Math.abs(move)} point${Math.abs(move) === 1 ? '' : 's'} on the 20 before.`} Last 20: {pct(st.recent!)}.
+          </ThemedText>
+        )}
+        {st.longest >= 2 && (
+          <ThemedText variant="subhead" tone="secondaryLabel">
+            Longest run: {st.longest} best plays in a row.
           </ThemedText>
         )}
         <View style={{ flexDirection: 'row', gap: spacing.xs }}>
@@ -120,7 +133,7 @@ export function StatsView({ history, onPractice }: { history: Answer[]; onPracti
       {st.weakest.length > 0 && (
         <Card title="Where you miss most">
           {st.weakest.map((t) => (
-            <RateRow key={t.label} t={t} needs />
+            <RateRow key={t.label} t={t} needs onPress={() => onPractice([t.label])} />
           ))}
           <Button title="Practise these" onPress={() => onPractice(st.weakest.map((t) => t.label))} />
         </Card>
@@ -129,8 +142,11 @@ export function StatsView({ history, onPractice }: { history: Answer[]; onPracti
       {st.byConcept.length > 0 && (
         <Card title="By kind of spot">
           {st.byConcept.map((t) => (
-            <RateRow key={t.label} t={t} />
+            <RateRow key={t.label} t={t} onPress={() => onPractice([t.label])} />
           ))}
+          <ThemedText variant="caption1" tone="tertiaryLabel">
+            Tap a kind of spot to practise it.
+          </ThemedText>
         </Card>
       )}
       {st.byPosition.length > 0 && (

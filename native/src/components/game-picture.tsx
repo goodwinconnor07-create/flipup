@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import { useState } from 'react';
+import { useMemo } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, G, Path, Rect, Text } from 'react-native-svg';
 
@@ -104,7 +104,8 @@ export function GamePicture({ variant, width, height, rounded = radius.md }: { v
  * other; the next time it appears (or the next launch) it's the picture.
  */
 export function GameThumb({ variant, size, rounded = size * 0.24 }: { variant: Variant; size: number; rounded?: number }) {
-  const [picture] = useState(() => tilePicture({ variant, size, rounded }));
+  // Looked up again when the game changes (the lobby's card keeps one thumb while the host picks another game).
+  const picture = useMemo(() => tilePicture({ variant, size, rounded }), [variant, size, rounded]);
   if (picture) {
     return (
       <Image

@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Text, View } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
 
-import { variantOf, type Game } from '@/engine';
-import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { variantOf, type Game, type Talk } from '@/engine';
 import { usePlainColors } from '@/theme';
 
-import { bubbleOut, bubblePop } from './bubbles';
+import { pinned, Thread } from './bubbles';
 import { PlayingCard } from './playing-card';
 
 // What the ghost says, a line at a time and never the same one twice in a row. All of it is for fun, picked at
@@ -27,9 +25,9 @@ const QUIET_MS = 4500;
  * Ghost Hold'em's ghost speaks now and then: at the deal, as the board comes down, when someone goes all in
  * (always) and at the showdown (always). Returns the line on show, or null.
  */
-function useGhostTalk(game: Game): string | null {
+function useGhostTalk(game: Game): Talk | null {
   const hand = game.hand;
-  const [line, setLine] = useState<string | null>(null);
+  const [talk, setTalk] = useState<Talk | null>(null);
   const last = useRef({ said: '', at: 0, number: -1, board: -1, allIn: 0, result: false });
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => () => clearTimeout(timer.current), []);
@@ -49,9 +47,14 @@ function useGhostTalk(game: Game): string | null {
       const text = fresh[Math.floor(Math.random() * fresh.length)] ?? pool[0];
       l.said = text;
       l.at = now;
-      setLine(text);
+      // Said the way a bot says it: typing dots first, then the words come through the bubble.
+      setTalk({ shown: [], typing: true });
       clearTimeout(timer.current);
-      timer.current = setTimeout(() => setLine(null), SHOW_MS);
+      timer.current = setTimeout(() => {
+        const at = Date.now();
+        setTalk({ typing: false, shown: [{ key: `ghost-${at}`, text, at, until: at + SHOW_MS, event: 'ghost', moment: 'ghost', rolling: true, who: 'Ghost' }] });
+        timer.current = setTimeout(() => setTalk(null), SHOW_MS);
+      }, 800);
     };
     if (hand.number !== l.number) {
       // A new hand: start counting again, and sometimes say hello.
@@ -70,7 +73,7 @@ function useGhostTalk(game: Game): string | null {
     l.allIn = allIn;
     l.board = board;
   }, [hand?.number, board, allIn, result]); // eslint-disable-line react-hooks/exhaustive-deps
-  return line;
+  return talk;
 }
 
 /**
@@ -80,46 +83,39 @@ function useGhostTalk(game: Game): string | null {
  */
 export function GhostSeat({ game, compact = false }: { game: Game; compact?: boolean }) {
   const c = usePlainColors();
-  const reduce = useReduceMotion();
-  const line = useGhostTalk(game);
+  const talk = useGhostTalk(game);
   const hand = game.hand;
   if (variantOf(game) !== 'ghost') return null;
   const shown = hand?.result?.ghost ?? null;
   const cards = shown?.cards ?? hand?.ghost ?? [null, null];
+  const holding = hand && !hand.result ? (hand.carry ?? 0) : (game.ghostPot ?? 0);
+  const size = compact ? 15 : 17;
+  // Laid out exactly like a bot's seat: bubble over the face, name, a line, then its cards.
   return (
-    <View accessibilityLabel="The ghost" style={{ width: 66, alignItems: 'center', zIndex: 5 }}>
+    <View accessibilityLabel="The ghost" style={{ width: 80, alignItems: 'center', zIndex: 5 }}>
       <View style={{ width: compact ? 48 : 56, height: compact ? 40 : 54, alignItems: 'center', justifyContent: 'center' }}>
         <Text maxFontSizeMultiplier={1} accessible={false} style={{ fontSize: compact ? 34 : 46 }}>
           👻
         </Text>
+        <View pointerEvents="none" style={{ position: 'absolute', bottom: compact ? 34 : 48, left: -10, right: -10, height: 0 }}>
+          {talk && <Thread talk={talk} room={150} place={pinned('center')} />}
+        </View>
       </View>
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 15, fontWeight: '600', color: c.label }}>
+      <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ fontSize: compact ? 13 : 15, lineHeight: compact ? 15 : 17, fontWeight: '700', color: c.tertiaryLabel }}>
         Ghost
       </Text>
-      {/* No chips: the ghost only holds cards. */}
-      <View style={{ flexDirection: 'row', gap: 2, marginTop: 6 }}>
-        {cards.map((card, i) => (card ? <PlayingCard key={card} card={card} size="sm" flip delay={i * 800} /> : <PlayingCard key={i} back size="sm" />))}
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: size, lineHeight: size + 1, fontWeight: '700', color: c.label }}>
+        {shown ? shown.name : holding ? `Holds ${Math.round(holding).toLocaleString('en-US')}` : ' '}
+      </Text>
+      <View style={{ alignItems: 'center', gap: 4, minHeight: 52, paddingTop: 4 }}>
+        <View style={{ flexDirection: 'row' }}>
+          {cards.map((card, i) => (
+            <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : -6 }}>
+              {card ? <PlayingCard card={card} size="sm" flip delay={i * 800} ghost /> : <PlayingCard back size="sm" ghost />}
+            </View>
+          ))}
+        </View>
       </View>
-      {shown && (
-        <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ marginTop: 3, fontSize: 11, fontWeight: '600', color: c.secondaryLabel }}>
-          {shown.name}
-        </Text>
-      )}
-      {line && (
-        <Animated.View
-          key={line}
-          entering={reduce ? FadeIn.duration(150) : bubblePop}
-          exiting={bubbleOut}
-          pointerEvents="none"
-          style={{ position: 'absolute', top: compact ? 112 : 130, left: 0, maxWidth: 190 }}
-        >
-          <View style={{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, backgroundColor: c.cell, borderWidth: 1, borderColor: c.separator }}>
-            <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 14, fontWeight: '600', color: c.label }}>
-              {line}
-            </Text>
-          </View>
-        </Animated.View>
-      )}
     </View>
   );
 }

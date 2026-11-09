@@ -3,20 +3,22 @@
 // street told you, every opponent's range broken down with how your hand does against each part of it, and what
 // each play wins on average. The numbers come from range-numbers.json (worked out ahead, see state/ranges.ts).
 import type { ReactNode } from 'react';
-import { useEffect, useMemo, useState } from 'react';
-import { Linking, useColorScheme, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Linking, useColorScheme, useWindowDimensions, View } from 'react-native';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { BoardTable } from '@/components/range/board-table';
 import { HandHistory, ReplayStrip } from '@/components/range/hand-history';
+import { Icon } from '@/components/icon';
 import { SwapIcon } from '@/components/swap';
+import { Confetti } from '@/components/table/confetti';
 import { PressableScale } from '@/components/pressable-scale';
 import { useTabFooter } from '@/components/tab-screen';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { detail, EASE_OUT, popIn } from '@/motion/presets';
+import { detail, EASE_OUT, exit, popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
 import { eventsOf, firstSentence, viewAt } from '@/state/range-view';
@@ -100,6 +102,12 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
   const [step, setStep] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
   const [more, setMore] = useState(false);
+  // A best play: a green "Best play!" pops in for a moment and confetti flies, as at a won hand.
+  const { width } = useWindowDimensions();
+  const [burst, setBurst] = useState(0);
+  const [cheer, setCheer] = useState(false);
+  const cheerTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(() => () => clearTimeout(cheerTimer.current), []);
   const [pick, setPick] = useState<OptionId | null>(null);
   // Opponents whose whole range is open (otherwise just the biggest groups show).
   const [open, setOpen] = useState<string[]>([]);
@@ -141,6 +149,14 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
     if (grade === 'mistake') haptic.failure();
     else haptic.success();
     setPick(id);
+    // The verdict is at the top of the page: bring it into view for the answer.
+    onTop?.();
+    if (grade === 'best') {
+      setBurst((b) => b + 1);
+      setCheer(true);
+      clearTimeout(cheerTimer.current);
+      cheerTimer.current = setTimeout(() => setCheer(false), 1700);
+    }
   };
   const next = () => {
     setScenario(nextHand(scenario, Math.random, focus));
@@ -160,7 +176,7 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
   const topEv = evs ? Math.max(...evs.rows.map((x) => Math.abs(x.ev)), 0.1) : 1;
   const dead = [...scenario.hero.cards, ...scenario.board];
   const gradeLook: Record<Grade, { bg: string; ink: string }> = {
-    best: { bg: colors.goldBg as string, ink: colors.goldInk as string },
+    best: { bg: brand.raise, ink: '#ffffff' },
     ok: { bg: colors.blueBg as string, ink: colors.blueInk as string },
     mistake: { bg: colors.cell as string, ink: colors.secondaryLabel as string },
   };
@@ -180,6 +196,21 @@ export function RangeTrainer({ onNext, onTop, focus, onStopFocus }: { onNext?: (
 
   return (
     <View key={scenario.id} style={{ gap: spacing.md }}>
+      <Confetti burst={burst} origin={{ x: width / 2 - spacing.md, y: 90 }} />
+      {cheer && (
+        <Animated.View
+          pointerEvents="none"
+          entering={reduce ? undefined : popIn()}
+          exiting={exit(reduce)}
+          accessibilityLiveRegion="polite"
+          style={{ position: 'absolute', top: 6, alignSelf: 'center', zIndex: 10, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.lg, borderRadius: radius.full, backgroundColor: brand.raiseDeep, boxShadow: '0 8px 24px rgba(20,132,63,0.55)' }}
+        >
+          <Icon name="checkmark.circle.fill" size={24} color="#ffffff" />
+          <ThemedText variant="title3" tone="onColor" style={{ fontWeight: '800' }}>
+            Best play!
+          </ThemedText>
+        </Animated.View>
+      )}
       {focus?.length ? (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, padding: spacing.xs, paddingLeft: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}>
           <ThemedText variant="footnote" numberOfLines={2} style={{ flex: 1, fontWeight: '600', color: colors.blueInk }}>

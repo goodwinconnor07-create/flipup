@@ -67,8 +67,10 @@ export function BoardTable({ scenario, view }: { scenario: Scenario; view: Board
         // never lands on the board.
         // The top seat sits over the pot, so its bet goes beside it.
         const top = s.y < 40;
+        // Seats at the sides keep their bet outside the board: above the upper ones, below the lower ones.
+        const side = Math.abs(s.x - width / 2) > width * 0.3;
         const bx = top ? s.x + seatW / 2 + 26 : s.x;
-        const by = top ? s.y : s.y > cy + 4 ? s.y - 36 : s.y + 36;
+        const by = top ? s.y : side ? (s.y > cy ? s.y + 36 : s.y - 36) : s.y > cy + 4 ? s.y - 36 : s.y + 36;
         return (
           <View key={s.pos} pointerEvents="none">
             <View

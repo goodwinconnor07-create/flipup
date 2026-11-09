@@ -35,6 +35,6 @@ The six-player mixed tables completed without illegal actions or chip loss, but 
 
 The automated chart audit reaches every exported spot through production game rules and checks all 59,150 spot/hand-class entries. Additional fixtures check fixed expected sizes, actor order, shallow-stack shoves, whole-chip scaling, seat gaps/rotation, unsupported histories, unequal stacks and unchanged representative postflop policies. The previous provider keeps its original candidate space for comparisons.
 
-Validation passed: 954 root tests across 47 files, root typecheck/build, 49 native tests, native typecheck/lint (21 existing warnings), Expo/Metro web export, and both browser tests for local play and online private-state redaction.
+Validation passed after merging the concurrent main update: 960 root tests across 47 files, root typecheck/build, 49 native tests, native typecheck/lint (21 existing warnings), Expo/Metro web export, and both browser tests for local play and online private-state redaction.
 
 The daily learning workflow now also runs the preflop regression comparison at 250 pairs per opponent and stores it with its existing training artifacts. It does not automatically replace strategies or learned parameters. Use another seed and larger replicated samples before making a strength claim. The most useful next extensions are unequal-stack coverage and multiplayer cold-call/squeeze lines; they require suitable strategy data or an explicitly evaluated approximation.

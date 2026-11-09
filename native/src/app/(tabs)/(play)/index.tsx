@@ -74,7 +74,8 @@ export default function Home() {
           <GameRow />
           {FRIENDS_ON && <FriendsStrip />}
           {record.hands > 0 ? <PassportCard /> : <FirstHand />}
-          {!premium && <PremiumBanner />}
+          {/* Asked for after a first finished game, not before the player has had any fun; the crowns on the game tiles say it meanwhile. */}
+          {!premium && games > 0 && <PremiumBanner />}
 
           <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
             Play chips only. They have no cash value and can&apos;t be bought or won.

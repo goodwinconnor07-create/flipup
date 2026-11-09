@@ -92,20 +92,22 @@ export function GhostSeat({ game, compact = false }: { game: Game; compact?: boo
   const size = compact ? 15 : 17;
   // Laid out exactly like a bot's seat: bubble over the face, name, a line, then its cards.
   return (
-    <View accessibilityLabel="The ghost" style={{ width: 80, alignItems: 'center', zIndex: 5 }}>
+    <View accessibilityLabel="The ghost" style={{ width: 70, alignItems: 'center', zIndex: 5 }}>
       <View style={{ width: compact ? 48 : 56, height: compact ? 40 : 54, alignItems: 'center', justifyContent: 'center' }}>
         <Text maxFontSizeMultiplier={1} accessible={false} style={{ fontSize: compact ? 34 : 46 }}>
           👻
         </Text>
-        <View pointerEvents="none" style={{ position: 'absolute', bottom: compact ? 34 : 48, left: -10, right: -10, height: 0 }}>
-          {talk && <Thread talk={talk} room={150} place={pinned('center')} />}
+        {/* The ghost sits at the left edge, so its bubble starts at the seat's left side and grows rightwards (centred, it would run off the screen). */}
+        <View pointerEvents="none" style={{ position: 'absolute', bottom: compact ? 34 : 48, left: -7, width: 180, height: 0 }}>
+          {talk && <Thread talk={talk} room={170} place={pinned('flex-start')} />}
         </View>
       </View>
       <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ fontSize: compact ? 13 : 15, lineHeight: compact ? 15 : 17, fontWeight: '700', color: c.tertiaryLabel }}>
         Ghost
       </Text>
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: size, lineHeight: size + 1, fontWeight: '700', color: c.label }}>
-        {shown ? shown.name : holding ? `Holds ${Math.round(holding).toLocaleString('en-US')}` : ' '}
+      {/* What it holds (just the number, like a stack), so it fits the seat on the smallest phone. */}
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ maxWidth: '100%', fontSize: size, lineHeight: size + 1, fontWeight: '700', color: c.label }}>
+        {holding && !shown ? Math.round(holding).toLocaleString('en-US') : ' '}
       </Text>
       <View style={{ alignItems: 'center', gap: 4, minHeight: 52, paddingTop: 4 }}>
         <View style={{ flexDirection: 'row' }}>
@@ -115,6 +117,11 @@ export function GhostSeat({ game, compact = false }: { game: Game; compact?: boo
             </View>
           ))}
         </View>
+        {shown && (
+          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ maxWidth: '100%', fontSize: 11, fontWeight: '600', color: c.secondaryLabel }}>
+            {shown.name}
+          </Text>
+        )}
       </View>
     </View>
   );

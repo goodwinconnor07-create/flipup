@@ -178,6 +178,13 @@ export function CodeCard({
           }}
         />
       ) : code ? (
+        <Pressable
+          disabled={!onChange}
+          onPress={start}
+          accessibilityRole={onChange ? 'button' : undefined}
+          accessibilityHint={onChange ? 'Change the game code' : undefined}
+          style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+        >
         <Swap id={code} kind="text" style={{ alignItems: 'flex-start' }}>
           <Text
             accessibilityLabel={`Game code ${code.split('').join(' ')}`}
@@ -189,6 +196,7 @@ export function CodeCard({
             {code}
           </Text>
         </Swap>
+        </Pressable>
       ) : (
         <View style={{ height: 56, justifyContent: 'center' }}>
           <ThemedText tone="secondaryLabel">

@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
+import { INK } from '@design/gameArt';
 import { type Variant } from '@/engine';
 import { radius, spacing } from '@/theme';
 
@@ -25,27 +26,10 @@ export function HowToPicture({ variant, name, width }: { variant: Variant; name:
       style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden' }}
     >
       <GamePicture variant={variant} width={width} height={(width * 120) / 200} rounded={radius.lg} />
-      <View
-        style={{
-          position: 'absolute',
-          left: spacing.sm,
-          bottom: spacing.sm,
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.xs,
-          minHeight: 40,
-          paddingLeft: spacing.xxs,
-          paddingRight: spacing.md,
-          borderRadius: radius.full,
-          backgroundColor: 'rgba(0, 0, 0, 0.55)',
-        }}
-      >
-        <View
-          style={{ width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}
-        >
-          <Icon name="play.fill" size={14} color="#000000" />
-        </View>
-        <Text maxFontSizeMultiplier={1.3} style={{ color: '#ffffff', fontSize: 16, fontWeight: '700' }}>
+      {/* A solid white pill in the corner: flat like the picture, and clear of the subject in the middle. */}
+      <View style={{ position: 'absolute', left: spacing.sm, bottom: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: '#ffffff' }}>
+        <Icon name="play.fill" size={12} color={INK} />
+        <Text maxFontSizeMultiplier={1.3} style={{ color: INK, fontSize: 15, fontWeight: '700' }}>
           How to play
         </Text>
       </View>

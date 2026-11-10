@@ -4,6 +4,7 @@ import { Share, Text, View } from 'react-native';
 
 import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
+import { SwapIcon } from '@/components/swap';
 import { InviteCard } from '@/components/invite-card';
 import { Menu } from '@/components/menu';
 import { ProfileMenu } from '@/components/profile-menu';
@@ -19,7 +20,7 @@ import { useRangeHistory } from '@/state/range-history';
 import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
-import { spacing, useColors } from '@/theme';
+import { brand, spacing, useColors } from '@/theme';
 
 const TABS: { id: GamesTab; label: string }[] = [
   { id: 'online', label: 'Online' },
@@ -141,18 +142,45 @@ function shareApp() {
   void Share.share({ message: `Poker night on your phones. Play FlipUp with me: ${url}`, url }).catch(() => undefined);
 }
 
-/** One game: its picture, how it's going or how it went, its name, and who was there. */
+/** The left column, as Flighty's status column: the game's picture and, under it, LIVE (with its dot), your place or LEFT. */
+function StatusColumn({ game }: { game: GameItem }) {
+  const colors = useColors();
+  return (
+    <View style={{ width: 66, alignItems: 'center', gap: 6 }}>
+      <GameThumb variant={game.variant} size={40} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+        {game.live && <LiveDot size={6} />}
+        <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit style={{ fontSize: 13, fontWeight: '500', letterSpacing: 0.4, color: game.live ? brand.raise : colors.secondaryLabel }}>
+          {game.badge}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+/** Flighty's "Arrived 20m late": a grey word, then the part that matters in bold colour. */
+function Status({ game }: { game: GameItem }) {
+  const colors = useColors();
+  const ink = { live: brand.raise, up: brand.goldDeep, down: colors.label, plain: colors.secondaryLabel }[game.tone];
+  return (
+    <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: SIZE.small, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>
+      {game.status ? `${game.status} ` : ''}
+      <Text style={{ fontWeight: '700', color: ink }}>{game.strong}</Text>
+    </Text>
+  );
+}
+
+/** One game, laid out like a Flighty flight: status column, a grey line with how it went, the name, and who was there. */
 function GameLineRow({ game, separator, onPress }: { game: GameItem; separator?: boolean; onPress: () => void }) {
   const colors = useColors();
   const { shown, more } = whoLine(game.who);
-  const people = shown.map((p) => `${p.emoji} ${p.name}`).join('   ');
-  const label = [game.title, game.eyebrow, game.when, game.live ? 'Going on now' : '', shown.length ? `With ${shown.map((p) => p.name).join(', ')}${more ? ` and ${more} more` : ''}` : ''].filter(Boolean).join('. ');
+  const label = [game.title, game.eyebrow, `${game.status} ${game.strong}`, game.live ? 'Going on now' : game.badge, shown.length ? `With ${shown.map((p) => p.name).join(', ')}${more ? ` and ${more} more` : ''}` : ''].filter(Boolean).join('. ');
   return (
     <ListRow
-      leading={<GameThumb variant={game.variant} size={44} />}
-      eyebrowLead={game.live ? <LiveDot /> : undefined}
+      leading={<StatusColumn game={game} />}
+      eyebrowLead={<SwapIcon name={game.online ? 'person.2.fill' : 'cpu.fill'} size={14} color={game.live ? colors.accent : colors.tertiaryLabel} />}
       eyebrow={game.eyebrow}
-      when={game.when}
+      when={<Status game={game} />}
       title={game.title}
       tint={game.live ? (colors.accent as string) : undefined}
       dim={!game.live}
@@ -161,8 +189,8 @@ function GameLineRow({ game, separator, onPress }: { game: GameItem; separator?:
       onPress={onPress}
       detail={
         shown.length > 0 ? (
-          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: SIZE.small, color: game.live ? colors.secondaryLabel : colors.tertiaryLabel }}>
-            {people}
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 16, lineHeight: 22, color: game.live ? colors.label : colors.secondaryLabel }}>
+            {shown.map((p) => `${p.emoji} ${p.name}`).join('   ')}
             {more > 0 ? `   +${more}` : ''}
           </Text>
         ) : undefined

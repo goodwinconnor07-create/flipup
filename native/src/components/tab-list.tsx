@@ -147,7 +147,8 @@ export function ListRow({
   eyebrow: string;
   /** Drawn before the small line (the live dot). */
   eyebrowLead?: ReactNode;
-  when?: string;
+  /** Right of the small line: a day, or Flighty's two-part status ("Arrived 20m late"). */
+  when?: ReactNode;
   title: string;
   tint?: string;
   detail?: ReactNode;
@@ -175,7 +176,7 @@ export function ListRow({
           <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: SIZE.small, color: colors.secondaryLabel, fontWeight: '500' }}>
             {eyebrow}
           </Text>
-          {when ? (
+          {when && typeof when !== 'string' ? when : when ? (
             <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: SIZE.small, color: colors.secondaryLabel, fontVariant: ['tabular-nums'] }}>
               {when}
             </Text>

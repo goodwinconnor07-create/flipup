@@ -16,10 +16,15 @@ export interface GameItem {
   online: boolean;
   variant: Variant;
   title: string;
-  /** The small grey line over the title (Flighty's flight number and route). */
+  /** The small grey line over the title (Flighty's flight number): where it's played, and the day once it's over. */
   eyebrow: string;
-  /** Right of the eyebrow: the hand you're on, or the day it was played. */
-  when: string;
+  /** Right of the grey line, in two parts like Flighty's "Arrived 20m late": a grey word and a bold one. */
+  status: string;
+  strong: string;
+  /** How the bold part is coloured: going on now, chips up, or chips down. */
+  tone: 'live' | 'up' | 'down' | 'plain';
+  /** Under the picture, in small capitals (Flighty's ARRIVED): LIVE, your place, or LEFT. */
+  badge: string;
   who: GameSeat[];
 }
 
@@ -31,15 +36,16 @@ const ordinal = (n: number) => {
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-/** Flighty's dates: "Today", "Yesterday", else "29 Sep 2026". */
-export function dayLabel(at: number, now = Date.now()): string {
+/** Flighty's dates: "Today", "Yesterday", else "29 Sep 2026" (`short` leaves this year's year off, for a tight line). */
+export function dayLabel(at: number, now = Date.now(), short = false): string {
   const d = new Date(at);
   const today = new Date(now);
   const start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
   const days = Math.round((start(today) - start(d)) / 86_400_000);
   if (days === 0) return 'Today';
   if (days === 1) return 'Yesterday';
-  return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  const year = short && d.getFullYear() === today.getFullYear() ? '' : ` ${d.getFullYear()}`;
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}${year}`;
 }
 
 /** The people at a live table other than you, in seat order. */
@@ -69,20 +75,24 @@ export function liveGames(table: { mode: 'local' | 'online' | null; code: string
         : challenge
           ? 'Challenge'
           : 'Bot game';
-    const when = !game ? 'Joining' : game.status === 'lobby' ? 'Lobby' : game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : 'Live';
-    return [{ key: 'live-table', kind: 'table', live: true, online, variant, title, eyebrow: where, when, who: game ? othersAt(game, me) : [] }];
+    const [status, strong] = !game ? ['', 'Joining'] : game.status === 'lobby' ? ['In the', 'lobby'] : game.hand && game.status === 'playing' ? ['Playing', `hand ${game.hand.number}`] : ['', 'Playing'];
+    return [{ key: 'live-table', kind: 'table', live: true, online, variant, title, eyebrow: where, status, strong, tone: 'live', badge: 'LIVE', who: game ? othersAt(game, me) : [] }];
   }
   if (party) {
-    return [{ key: 'live-party', kind: 'party', live: true, online: true, variant: 'holdem', title: 'Your party', eyebrow: `Party · ${party.code}`, when: 'Live', who: [] }];
+    return [{ key: 'live-party', kind: 'party', live: true, online: true, variant: 'holdem', title: 'Your party', eyebrow: `Party · ${party.code}`, status: '', strong: 'Playing', tone: 'live', badge: 'LIVE', who: [] }];
   }
   return [];
 }
 
-/** How a finished game went, for its grey line: "Online · 2nd of 6", or "Left" when you walked away. */
-function result(g: GameLine): string {
-  const where = g.online ? 'Online' : 'Bots';
-  if (g.left) return `${where} · Left`;
-  return `${where} · ${ordinal(g.place)} of ${g.players}`;
+const chips = (n: number) => Math.abs(n).toLocaleString('en-US');
+
+/** How a finished game went: its place under the picture, and the chips you came away with on the right. */
+function result(g: GameLine): Pick<GameItem, 'status' | 'strong' | 'tone' | 'badge'> {
+  const badge = g.left ? 'LEFT' : `${ordinal(g.place).toUpperCase()} OF ${g.players}`;
+  const status = g.left ? 'Left' : 'Finished';
+  if (typeof g.net !== 'number') return { badge, status: '', strong: status, tone: 'plain' };
+  if (g.net === 0) return { badge, status, strong: 'even', tone: 'plain' };
+  return { badge, status, strong: `${g.net > 0 ? '+' : '−'}${chips(g.net)}`, tone: g.net > 0 ? 'up' : 'down' };
 }
 
 /** The games you've played, newest first. Games noted before they carried a mode count as bot games. */
@@ -96,8 +106,8 @@ export function pastGames(games: GameLine[], now = Date.now()): GameItem[] {
       online: !!g.online,
       variant: g.variant,
       title: variantInfo(g.variant).name,
-      eyebrow: result(g),
-      when: dayLabel(g.at, now),
+      eyebrow: `${g.online ? 'Online' : 'Bots'} · ${dayLabel(g.at, now, true)}`,
+      ...result(g),
       who: g.who ?? [],
     }));
 }

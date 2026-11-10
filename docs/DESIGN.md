@@ -22,9 +22,11 @@ Passport: a white page, the title in bold SF Pro at 34pt with a share button and
 under it (the chosen one in a soft white capsule that slides, the rest grey words, 17pt) with one blue "+" action on
 the same line, and plain list rows (a 44pt picture, a 15pt grey line with the day or hand on its right, a 20pt
 semibold title, a 15pt line under it). My Games: Online and Bot Games, "+ Start a Game" (a menu: Play with friends,
-Play with bots, Join with a code); the game you're in on top with a blinking green dot and its name in blue, a thin
-edge-to-edge line, then every game you've played a little greyed, each with its game picture, how it went and who
-was there (emoji and names). Training: Practice (what to work on in blue, a thin line, every kind of spot with how
+Play with bots, Join with a code); the game you're in on top with its name in blue, a thin edge-to-edge line, then
+every game you've played a little greyed. A row copies Flighty's flight row: a status column (the game's picture and
+LIVE with a blinking green dot, your place, or LEFT), a grey line with a mode icon, online or bots and the day, a
+two-part status on its right ("Playing **hand 12**" in green, "Finished **+2,400**" in gold, a loss in plain bold),
+the game's name, and who was there (emoji and names). Training: Practice (what to work on in blue, a thin line, every kind of spot with how
 many you've mastered) and History (every hand by day), "+ Start a Set". Stats: Poker (a deep blue passport card in
 DIN capitals, a gold table-wins card, light cards for your best hand and most played game, the Premium strip, Games
 You Play) and Training (Range training's dashboard). The old Home (start tiles, game shelf, passport) is not shown.

@@ -428,3 +428,44 @@ export const gameScene = (v: Variant): Shape[] => {
     { kind: 'group', t: 'translate(42 3) scale(1.16)', shapes: SUBJECTS[id]() },
   ];
 };
+
+// ── Spot pictures ───────────────────────────────────────────────────────────
+
+/** Small pictures for screens that aren't a game, drawn the same way: Join (a ticket) and Range training (a target). */
+export type SpotId = 'join' | 'train';
+
+const BLUE = '#2557d6';
+const SPOTS: Record<SpotId, () => Shape[]> = {
+  // A ticket with a code on it.
+  join: () => [
+    {
+      kind: 'group',
+      t: 'rotate(-8 50 50)',
+      shapes: [
+        // The ticket, with a bite out of the top and bottom edge where it tears.
+        ink('M16 28H50a5 5 0 0 0 10 0H84a6 6 0 0 1 6 6V66a6 6 0 0 1 -6 6H60a5 5 0 0 0 -10 0H16a6 6 0 0 1 -6 -6V34a6 6 0 0 1 6 -6Z', WHITE),
+        { kind: 'path', d: 'M55 37V63', stroke: INK, sw: 2.2, dash: '3 4.4', opacity: 0.45 },
+        // A corner of a QR code.
+        flat(`${rr(18, 36, 12, 12, 2.5)}${rr(34, 36, 12, 12, 2.5)}${rr(18, 52, 12, 12, 2.5)}`, INK),
+        flat(`${rr(21.5, 39.5, 5, 5, 1)}${rr(37.5, 39.5, 5, 5, 1)}${rr(21.5, 55.5, 5, 5, 1)}`, WHITE),
+        flat(`${rr(34, 52, 5, 5, 1)}${rr(41, 59, 5, 5, 1)}${rr(41, 52, 5, 5, 1)}`, INK),
+        // The code.
+        flat(`${rr(62, 38, 22, 9, 3)}`, BLUE),
+        flat(`${rr(62, 52, 22, 4.5, 2.2)}${rr(62, 60, 14, 4.5, 2.2)}`, INK, { opacity: 0.25 }),
+      ],
+    },
+    sparkle(86, 22, 8),
+    sparkle(13, 80, 6, WHITE),
+  ],
+  // A target, and the hand you're aiming with.
+  train: () => [
+    ink(oval(44, 46, 32), WHITE),
+    flat(oval(44, 46, 23.5), RED),
+    flat(oval(44, 46, 15), WHITE),
+    flat(oval(44, 46, 7), RED),
+    card({ x: 72, y: 68, r: 14, rank: 'A', suit: '♠', s: 0.62 }),
+  ],
+};
+
+/** A spot picture's shapes on a 100 × 100 box, back to front, with no field behind it. */
+export const spotArt = (id: SpotId): Shape[] => SPOTS[id]();

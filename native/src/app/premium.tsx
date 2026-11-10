@@ -92,7 +92,7 @@ export default function PremiumSheet() {
         {has && <Button title="Card packs" variant="secondary" onPress={() => router.push('/card-packs')} />}
 
         <View accessible accessibilityLabel="Friends play free. Only the host needs Premium. Everyone else joins by code for free." style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center', padding: spacing.md, borderRadius: radius.md, backgroundColor: glass }}>
-          <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', ...gradient(`linear-gradient(180deg, ${party.yellow}, ${party.orange})`) }}>
+          <View style={{ width: 36, height: 36, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', backgroundColor: party.yellow }}>
             <Icon name="person.2.fill" size={18} color="white" />
           </View>
           <View style={{ flex: 1, gap: 2 }}>

@@ -9,6 +9,7 @@ import { CodePad, useCode } from '@/components/code-pad';
 import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
 import { SheetScroll } from '@/components/sheet-scroll';
+import { Sticker } from '@/components/game-picture';
 import { ThemedText } from '@/components/themed-text';
 import { isTableCode, normalizeTableCode, variantInfo, type TableInfo } from '@/engine';
 import { fetchTableInfo } from '@/state/api';
@@ -112,7 +113,8 @@ export default function JoinSheet() {
     <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xxl, paddingBottom: spacing.xxxl, gap: spacing.lg }}>
       {/* No nav bar: its title sat over the sheet's own and blurred it. The big title below is the sheet's. */}
       <Stack.Screen options={{ title: 'Join', headerShown: false }} />
-      <View style={{ gap: spacing.xxs }}>
+      <View style={{ gap: spacing.xxs, alignItems: 'center' }}>
+        {!found && !scanning && <Sticker id="join" size={112} />}
         <ThemedText variant="title1" accessibilityRole="header" style={{ textAlign: 'center' }}>
           {found ? 'Found it' : 'Join with a code'}
         </ThemedText>

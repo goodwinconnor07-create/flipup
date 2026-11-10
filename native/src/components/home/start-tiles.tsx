@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Text, useWindowDimensions, View } from 'react-native';
 
+import { INK } from '@design/gameArt';
 import { FRIENDS_ON } from '@/scope';
 import { usePals } from '@/state/pals';
 import { useProfile } from '@/state/profile';
@@ -9,22 +10,21 @@ import { brand, cardColors, radius, ROUNDED, spacing, useColors, useShadows } fr
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
-import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
 
-/** Play with bots: night blue lifted enough to stand off the black page without an outline. */
-const BOTS_TILE = ['#2a4396', '#18296a', '#0c173f'] as const;
+/** Play with bots: night blue, the quieter of the two. */
+const BOTS_TILE = cardColors.night;
 
 /** Faces a bots table might seat (bots never wear a face from the profile picker). */
 const BOT_FACES = ['🦊', '🐼', '🦉'];
 
 /**
  * The two ways to sit down, side by side and big, the first thing under the title: Play with friends (your face
- * and an open + seat, on blue) and Play with bots (three bot faces, on night blue). Faces wear a ring in their
- * tile's colour so an overlapping stack reads as separate faces.
+ * and an open + seat, on blue) and Play with bots (three bot faces, on night blue). Each is built like a
+ * game tile: a flat colour, the faces outlined in the pictures' ink, and the words on a darker band.
  */
 /** `onGo` replaces opening Setup (a game's sheet closes itself first and passes its game); `height` for a smaller pair. */
-export function StartTiles({ onGo, height = 150 }: { onGo?: (mode: 'friends' | 'bots') => void; height?: number } = {}) {
+export function StartTiles({ onGo, height = 164 }: { onGo?: (mode: 'friends' | 'bots') => void; height?: number } = {}) {
   const profile = useProfile();
   const pals = usePals();
   // Your face and friends' (with friends off, scope.ts, your face and an empty + seat: people join you).
@@ -34,7 +34,7 @@ export function StartTiles({ onGo, height = 150 }: { onGo?: (mode: 'friends' | '
     <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', gap: spacing.sm }}>
         <Tile title={'Play with\nfriends'} line="Invite up to 8 people" faces={friends} addSeat={!FRIENDS_ON} colors={cardColors.violet} height={height} go={() => (onGo ? onGo('friends') : router.push('/play-friends'))} />
-        <Tile title={'Play with\nbots'} line="Play right now" faces={BOT_FACES} colors={BOTS_TILE} glow="rgba(255, 255, 255, 0.14)" height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
+        <Tile title={'Play with\nbots'} line="Play right now" faces={BOT_FACES} colors={BOTS_TILE} height={height} go={() => (onGo ? onGo('bots') : router.push('/play-bots'))} />
       </View>
       {!onGo && <JoinCard />}
     </View>
@@ -70,47 +70,53 @@ function JoinCard() {
   );
 }
 
-function Tile({ title, line, faces, colors, glow, addSeat, height, go }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; glow?: string; /** A round + after the faces: people join you with the game code. */ addSeat?: boolean; height: number; go: () => void }) {
+function Tile({ title, line, faces, colors, addSeat, height, go }: { title: string; line: string; faces: string[]; colors: readonly [string, string, string]; /** A round + after the faces: people join you with the game code. */ addSeat?: boolean; height: number; go: () => void }) {
+  const shadows = useShadows();
   // Big enough to read on the tile: three overlapping faces fill about four fifths of a half-width tile.
   const { width } = useWindowDimensions();
-  const inner = (width - spacing.md * 2 - spacing.sm) / 2 - (spacing.sm + 2) * 2;
-  const face = Math.min(height <= 160 ? 52 : 56, Math.floor(inner / 2.6));
-  // Both titles are two lines at one size, so the tiles line up; the spoken label reads them as one.
-  const label = title.replace('\n', ' ');
+  const inner = (width - spacing.md * 2 - spacing.sm) / 2 - spacing.md * 2;
+  const face = Math.min(height <= 160 ? 52 : 56, Math.floor(inner / 2.5));
+  // "Play with" small over the one word that differs, so the two tiles read apart at a glance.
+  const [eyebrow, word] = title.split('\n');
+  const label = `${eyebrow} ${word}`;
+  const ring = { borderWidth: 3, borderColor: INK } as const;
   return (
     <View style={{ flex: 1 }}>
       <PressableTile label={`${label}. ${line}`} onPress={go}>
-        <LivingCard colors={colors} glow={glow} outerStyle={{ height }} style={{ flex: 1, padding: spacing.sm + 2, justifyContent: 'space-between' }}>
-        <View style={{ flexDirection: 'row' }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-          {faces.map((f, i) => (
-            <View
-              key={i}
-              style={{ width: face, height: face, borderRadius: face / 2, marginLeft: i ? -face * 0.2 : 0, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.2)', borderWidth: f ? 3 : 2, borderColor: f ? colors[1] : 'rgba(255,255,255,0.45)' }}
-            >
-              {f ? (
-                <Text style={{ fontSize: face * 0.58 }} maxFontSizeMultiplier={1}>
-                  {f}
-                </Text>
-              ) : (
-                <Icon name="plus" size={Math.round(face * 0.42)} color="#ffffff" />
+        {/* Built like a game tile: a flat colour with the faces as the picture, and the words on a darker band. */}
+        <View style={{ height, borderRadius: radius.xl, borderCurve: 'continuous', boxShadow: shadows.raised }}>
+          <View style={{ flex: 1, borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: colors[1] }}>
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.md }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              {faces.map((f, i) => (
+                <View key={i} style={{ width: face, height: face, borderRadius: face / 2, marginLeft: i ? -face * 0.22 : 0, alignItems: 'center', justifyContent: 'center', backgroundColor: f ? '#ffffff' : colors[0], ...ring }}>
+                  {f ? (
+                    <Text style={{ fontSize: face * 0.54 }} maxFontSizeMultiplier={1}>
+                      {f}
+                    </Text>
+                  ) : (
+                    <Icon name="plus" size={Math.round(face * 0.42)} color="#ffffff" />
+                  )}
+                </View>
+              ))}
+              {addSeat && (
+                <View style={{ width: face, height: face, borderRadius: face / 2, marginLeft: -face * 0.22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors[0], ...ring }}>
+                  <Icon name="plus" size={Math.round(face * 0.42)} color="#ffffff" />
+                </View>
               )}
             </View>
-          ))}
-          {addSeat && (
-            <View style={{ width: face, height: face, borderRadius: face / 2, marginLeft: spacing.xs, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.2)', borderWidth: 2, borderColor: 'rgba(255,255,255,0.45)' }}>
-              <Icon name="plus" size={Math.round(face * 0.42)} color="#ffffff" />
+            <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: spacing.sm, backgroundColor: colors[2] }}>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 11, lineHeight: 14, fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', color: 'rgba(255, 255, 255, 0.72)' }}>
+                {eyebrow}
+              </Text>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', color: '#ffffff' }}>
+                {word}
+              </Text>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontSize: 13, lineHeight: 16, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)' }}>
+                {line}
+              </Text>
             </View>
-          )}
+          </View>
         </View>
-        <View style={{ gap: 2 }}>
-          <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 23, fontWeight: '800', color: '#ffffff' }}>
-            {title}
-          </Text>
-          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontSize: 14, fontWeight: '600', color: 'rgba(255,255,255,0.84)' }}>
-            {line}
-          </Text>
-        </View>
-        </LivingCard>
       </PressableTile>
     </View>
   );

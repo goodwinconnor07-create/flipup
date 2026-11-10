@@ -3,7 +3,7 @@ import { useMemo, type ReactNode } from 'react';
 import { View } from 'react-native';
 import Svg, { G, Path, Text } from 'react-native-svg';
 
-import { gameLook, gameScene, gameThumb, prims, type Prim, type Shape } from '@design/gameArt';
+import { gameLook, gameScene, gameThumb, prims, spotArt, type Prim, type Shape, type SpotId } from '@design/gameArt';
 import type { Variant } from '@/engine';
 import { radius } from '@/theme';
 
@@ -93,6 +93,17 @@ export function DrawnThumb({ variant, size, rounded = size * 0.24 }: { variant: 
     >
       <Svg width={size} height={size} viewBox="0 0 100 100">
         {prims(gameThumb(variant)).map(drawPrim)}
+      </Svg>
+    </View>
+  );
+}
+
+/** A spot picture (a ticket for Join, a target for Range training): the games' drawing style, with nothing behind it. */
+export function Sticker({ id, size }: { id: SpotId; size: number }) {
+  return (
+    <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Svg width={size} height={size} viewBox="0 0 100 100">
+        {prims(spotArt(id)).map(drawPrim)}
       </Svg>
     </View>
   );

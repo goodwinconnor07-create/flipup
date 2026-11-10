@@ -26,6 +26,22 @@ small square picture with the name beside it. A new game gets a field, band and 
 `SUBJECTS`, drawn with the shared helpers so it matches the set. Overview: `docs/design/game-tiles/all-games.png`.
 Home's first-run How to play is a quiet grey row like Join a game: the two start tiles are the one loud thing there.
 
+**Flat everywhere outside the table (owner request, 10 November 2026: "the entire app's UI given this sort of
+treatment"; the table stays exactly as it is).** The game tiles' rules now hold for every screen:
+- **No gradients, glows or moving light.** `LivingCard` is one flat colour (the middle of its three; the third is
+  its darker band), `GrainBackground` is one flat night blue, and the coloured-card shadow is a plain dark shadow,
+  never a blue glow. Nothing drifts. This replaces "a moving blue light field" and "cards keep their slow glows" in
+  the box at the top.
+- **Tiles have a picture and a band.** The two start tiles are built like game tiles: faces outlined in the
+  pictures' ink on the flat colour, then a darker band with "PLAY WITH" small over FRIENDS or BOTS and one line.
+- **Rounded capitals on colour** (bands, eyebrows); sentence case everywhere else.
+- **Spot pictures** in the games' drawing style where a screen had only words: a ticket on Join, a target on Range
+  training (`spotArt()` in `gameArt.ts`, `Sticker` in the app). Add one the same way; never an emoji or a gradient
+  blob.
+- **Profile** is your face (white disc, ink ring) and name on a flat blue block with a rounded bottom edge, the
+  same in light and dark.
+Screens as built: `docs/design/flat/`.
+
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.
 

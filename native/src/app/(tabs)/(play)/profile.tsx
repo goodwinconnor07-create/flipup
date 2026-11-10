@@ -18,9 +18,12 @@ import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
-import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme';
+import { INK } from '@design/gameArt';
+import { brand, ROUNDED, spacing, useColors, useScheme, radius } from '@/theme';
 
 const PIC = 108;
+/** How far the blue block runs above the page, so a pull past the top shows blue, not the page. */
+const BLEED = 600;
 
 /**
  * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
@@ -58,14 +61,14 @@ export default function ProfileScreen() {
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: '', headerTransparent: true }} />
-      {/* The Games-app header: a deep blue glow behind your face that fades into the page. */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${colors.background as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }}
       >
-        <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md }}>
+        {/* Your face and name on a flat block of the brand blue that runs to the top and side edges (and on up, for a
+            pull past the top), with a rounded bottom edge. */}
+        <View style={{ alignItems: 'center', gap: spacing.sm, marginHorizontal: -spacing.md, marginTop: -(BLEED + spacing.md), paddingTop: BLEED + spacing.xl, paddingBottom: spacing.lg, paddingHorizontal: spacing.md, borderBottomLeftRadius: radius.xl, borderBottomRightRadius: radius.xl, borderCurve: 'continuous', backgroundColor: brand.violet }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Your emoji, ${profile.emoji}. Change it`}
@@ -78,7 +81,7 @@ export default function ProfileScreen() {
             <Animated.View
               key={profile.emoji}
               entering={reduce ? undefined : popIn()}
-              style={{ width: PIC, height: PIC, borderRadius: PIC / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.94)', boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)' }}
+              style={{ width: PIC, height: PIC, borderRadius: PIC / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', borderWidth: 4, borderColor: INK }}
             >
               <Text style={{ fontSize: PIC * 0.55 }} maxFontSizeMultiplier={1}>
                 {profile.emoji}
@@ -92,7 +95,7 @@ export default function ProfileScreen() {
             value={name}
             onChangeText={setName}
             placeholder="Your name"
-            placeholderTextColor={dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.4)'}
+            placeholderTextColor="rgba(255,255,255,0.55)"
             accessibilityLabel="Your name"
             maxLength={LIMITS.maxNameLength}
             autoComplete="given-name"
@@ -103,7 +106,7 @@ export default function ProfileScreen() {
             autoFocus={first}
             onSubmitEditing={save}
             maxFontSizeMultiplier={1.3}
-            style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
+            style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', textAlign: 'center', color: '#ffffff', minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
           />
           <Swap id={changed ? 'save' : 'hint'} kind="text">
             {changed ? (
@@ -112,22 +115,22 @@ export default function ProfileScreen() {
                 accessibilityLabel="Save your name"
                 disabled={!ok}
                 onPress={save}
-                style={{ height: 36, paddingHorizontal: 20, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? (ok ? '#ffffff' : 'rgba(255,255,255,0.3)') : ok ? brand.violet : 'rgba(0,0,0,0.12)' }}
+                style={{ height: 36, paddingHorizontal: 20, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: ok ? '#ffffff' : 'rgba(255,255,255,0.3)' }}
               >
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: dark ? brand.violetDeep : '#ffffff' }}>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: brand.violetDeep }}>
                   Save name
                 </Text>
               </PressableScale>
             ) : (
-              <View style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.06)' }}>
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: dark ? '#ffffff' : (colors.label as string) }}>
+              <View style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violetDeep }}>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: '#ffffff' }}>
                   Tap your name or face to change
                 </Text>
               </View>
             )}
           </Swap>
           {blocked && (
-            <ThemedText variant="footnote" tone="red" accessibilityLiveRegion="polite" style={{ textAlign: 'center' }}>
+            <ThemedText variant="footnote" tone="onColor" accessibilityLiveRegion="polite" style={{ textAlign: 'center', fontWeight: '600' }}>
               {NAME_BLOCKED}
             </ThemedText>
           )}

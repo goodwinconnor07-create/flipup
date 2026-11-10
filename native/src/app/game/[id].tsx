@@ -35,7 +35,7 @@ export default function GameSheet() {
       </View>
       {/* Opened from a table's game pill: only how it plays. */}
       {!rules && (
-      <StartTiles onGo={go} height={150} />
+      <StartTiles onGo={go} />
       )}
       <View style={{ gap: spacing.xs }}>
         <ThemedText variant="headline">How it plays</ThemedText>

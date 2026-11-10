@@ -4,13 +4,13 @@ import { Text, useWindowDimensions, View } from 'react-native';
 import { gameLook } from '@design/gameArt';
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
-import { gradient, party, radius, spacing, useShadows } from '@/theme';
+import { radius, ROUNDED, spacing, useShadows } from '@/theme';
 
 import { GamePicture } from '../game-picture';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { GameTile } from '../game-tile';
 import { PressableScale } from '../pressable-scale';
-import { ThemedText } from '../themed-text';
 
 const open = (v: Variant) => {
   haptic.tap();
@@ -18,45 +18,54 @@ const open = (v: Variant) => {
 };
 
 /**
- * Every game (Home's "See all"): Texas Hold'em as one big card with its How to Play a tap away, then the rest two to a row, each its
- * drawn scene over its own colours, with a crown on the Premium ones.
+ * Every game (Home's "See all"): Texas Hold'em as one big card with its How to Play a tap away, then the rest as
+ * `GameTile`s three to a row, with a crown on the Premium ones.
  */
 export function GameShelf() {
   const { width: screen } = useWindowDimensions();
   const width = Math.min(screen - spacing.md * 2, 560);
   const premium = usePremium();
   const [main, ...rest] = VARIANTS;
-  const tile = (width - spacing.sm) / 2;
+  // Three to a row, like a shelf of game boxes; the last row is centred when it isn't full.
+  const tile = Math.floor((width - spacing.sm * 2) / 3);
   return (
-    <View style={{ gap: spacing.sm }}>
+    <View style={{ gap: spacing.md }}>
       <MainCard variant={main.id} name={main.name} width={width} />
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-        {rest.map((v, i) => (
-          // An odd one out at the end takes the whole row rather than leave a gap.
-          <Tile key={v.id} variant={v.id} name={v.name} width={rest.length % 2 && i === rest.length - 1 ? width : tile} picture={Math.round(tile * 0.62)} locked={!premium && isPremiumVariant(v.id)} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: spacing.sm, rowGap: spacing.md }}>
+        {rest.map((v) => (
+          <PressableScale key={v.id} accessibilityRole="button" accessibilityLabel={`${v.name}${!premium && isPremiumVariant(v.id) ? ', Premium' : ''}. ${gameLook(v.id).hook}`} onPress={() => open(v.id)} haptics={false}>
+            <GameTile variant={v.id} name={v.name} width={tile} locked={!premium && isPremiumVariant(v.id)} />
+          </PressableScale>
         ))}
       </View>
     </View>
   );
 }
 
+/** Texas Hold'em: the wide picture, and under it a band in the game's darker colour with its name and How to play. */
 function MainCard({ variant, name, width }: { variant: Variant; name: string; width: number }) {
   const shadow = useShadows();
-  const [top, bottom] = gameLook(variant).card;
-  const height = Math.round(width * 0.5);
+  const look = gameLook(variant);
+  const height = Math.round(width * 0.6);
   return (
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel={name}
       onPress={() => open(variant)}
-      outerStyle={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadow.card }}
-      style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
+      haptics={false}
+      outerStyle={{ borderRadius: radius.xl, borderCurve: 'continuous', boxShadow: shadow.card }}
+      style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: look.card[0] }}
     >
       <GamePicture variant={variant} width={width} height={height} rounded={0} />
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md, paddingTop: spacing.sm }}>
-        <ThemedText variant="title2" tone="onColor" numberOfLines={1} style={{ flex: 1, fontWeight: '800' }}>
-          {name}
-        </ThemedText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, backgroundColor: look.band }}>
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 24, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', color: '#ffffff' }}>
+            {name}
+          </Text>
+          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, lineHeight: 16, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)' }}>
+            {look.hook}
+          </Text>
+        </View>
         <PressableScale
           accessibilityRole="button"
           accessibilityLabel={`How to play ${name}`}
@@ -64,40 +73,14 @@ function MainCard({ variant, name, width }: { variant: Variant; name: string; wi
             haptic.tap();
             router.push(`/how-to-play/${variant}`);
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#ffffff' }}
         >
-          <Icon name="play.fill" size={13} color="#ffffff" />
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+          <Icon name="play.fill" size={12} color={look.band} />
+          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: look.band }}>
             How to play
           </Text>
         </PressableScale>
       </View>
-    </PressableScale>
-  );
-}
-
-function Tile({ variant, name, width, picture, locked }: { variant: Variant; name: string; width: number; picture: number; locked: boolean }) {
-  const shadow = useShadows();
-  const [top, bottom] = gameLook(variant).card;
-  return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={`${name}${locked ? ', Premium' : ''}`}
-      onPress={() => open(variant)}
-      outerStyle={{ width, borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadow.card }}
-      style={{ borderRadius: radius.lg, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
-    >
-      <GamePicture variant={variant} width={width} height={picture} rounded={0} />
-      <View style={{ paddingHorizontal: spacing.sm, paddingTop: spacing.xxs, paddingBottom: spacing.sm, minHeight: 44, justifyContent: 'center' }}>
-        <ThemedText variant="headline" tone="onColor" numberOfLines={1} adjustsFontSizeToFit style={{ fontWeight: '800' }}>
-          {name}
-        </ThemedText>
-      </View>
-      {locked && (
-        <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.35)' }}>
-          <Icon name="crown.fill" size={14} color={party.yellow} />
-        </View>
-      )}
     </PressableScale>
   );
 }

@@ -18,7 +18,7 @@ export const SNAPS_ON = Platform.OS === 'ios';
 
 /** A short fingerprint of everything a tile is drawn from, so new art never shows an old picture. */
 function fingerprint(): string {
-  const text = JSON.stringify([PixelRatio.get(), VARIANTS.map((v) => [v.id, gameThumb(v.id), gameLook(v.id).card])]);
+  const text = JSON.stringify([PixelRatio.get(), VARIANTS.map((v) => [v.id, gameThumb(v.id), gameLook(v.id).card, gameLook(v.id).band])]);
   let h = 5381;
   for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
   return h.toString(36);

@@ -16,8 +16,6 @@ export function usePanel() {
     edge: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
     hairline: dark ? 'rgba(255, 255, 255, 0.1)' : (colors.separator as string),
     pressed: dark ? 'rgba(255, 255, 255, 0.07)' : (colors.cellPressed as string),
-    /** A small control or value chip sitting on a panel: a see-through white in dark mode, since system grey is a flat neutral that looks muddy on the blue pages. */
-    chip: dark ? 'rgba(255, 255, 255, 0.13)' : (colors.cellPressed as string),
   };
 }
 

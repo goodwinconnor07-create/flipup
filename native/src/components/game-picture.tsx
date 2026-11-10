@@ -1,62 +1,103 @@
 import { Image } from 'expo-image';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo } from 'react';
 import { View } from 'react-native';
-import Svg, { G, Path, Text } from 'react-native-svg';
+import Svg, { Circle, G, Path, Rect, Text } from 'react-native-svg';
 
-import { gameLook, gameScene, gameThumb, prims, spotArt, type Prim, type Shape, type SpotId } from '@design/gameArt';
+import { gameLook, gameScene, gameThumb, GLOW, PIPS, SUIT_COLOUR, type CardShape, type Shape } from '@design/gameArt';
 import type { Variant } from '@/engine';
-import { radius } from '@/theme';
+import { gradient, radius } from '@/theme';
 
 import { tilePicture } from './thumb-cache';
 
-/** SF Pro Rounded on iPhone, the system font elsewhere; SVG text falls back to a serif without one. */
-export const FONT = process.env.EXPO_OS === 'web' ? 'ui-rounded, "SF Pro Rounded", system-ui, -apple-system, sans-serif' : 'System';
+/** The system font (SF Pro on iPhone); SVG text falls back to a serif without it. */
+export const FONT = process.env.EXPO_OS === 'web' ? 'system-ui, -apple-system, sans-serif' : 'System';
 
-// A game's picture, the same shapes the web draws (src/design/gameArt.ts): a flat field, one outlined subject.
-// `prims()` has already turned the shapes into paths, text and groups, so this file only draws those.
+// A game's picture, the same shapes the web draws (src/design/gameArt.ts), on the game's card gradient.
 
-function drawPrim(p: Prim, key: number | string): ReactNode {
-  if (p.tag === 'g') {
-    return (
-      <G key={key} transform={p.t} opacity={p.opacity}>
-        {p.kids.map(drawPrim)}
-      </G>
-    );
-  }
-  if (p.tag === 'text') {
-    return (
-      <Text key={key} fontFamily={FONT} x={p.x} y={p.y} fontSize={p.size} fontWeight={String(p.weight) as '900'} textAnchor={p.anchor} fill={p.fill} opacity={p.opacity} letterSpacing={p.spacing}>
-        {p.text}
-      </Text>
-    );
-  }
-  return <Path key={key} d={p.d} fill={p.fill} stroke={p.stroke} strokeWidth={p.sw} strokeLinejoin="round" strokeLinecap="round" strokeDasharray={p.dash} opacity={p.opacity} transform={p.t} />;
+export function Card({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, glow, faded }: CardShape) {
+  const colour = SUIT_COLOUR[suit] ?? SUIT_COLOUR['♠'];
+  return (
+    <G transform={`translate(${x} ${y}) rotate(${r}) scale(${s})`} opacity={faded ? 0.45 : 1}>
+      <Rect x={-19} y={-26} width={42} height={60} rx={6} fill="#000" opacity={0.3} />
+      {back ? (
+        <>
+          <Rect x={-21} y={-30} width={42} height={60} rx={6} fill="#27314f" />
+          <Rect x={-16} y={-25} width={32} height={50} rx={4} fill="none" stroke="#fff" strokeOpacity={0.55} strokeWidth={2} />
+          <Path d="M-10 -14 L10 14 M10 -14 L-10 14" stroke="#fff" strokeOpacity={0.3} strokeWidth={2} />
+        </>
+      ) : (
+        <>
+          <Rect x={-21} y={-30} width={42} height={60} rx={6} fill="#fff" />
+          <Text fontFamily={FONT} x={-15} y={-13} fontSize={15} fontWeight="800" fill={colour}>
+            {rank}
+          </Text>
+          <Text fontFamily={FONT} x={0} y={17} fontSize={28} textAnchor="middle" fill={colour}>
+            {suit}
+          </Text>
+        </>
+      )}
+      {glow && <Rect x={-21} y={-30} width={42} height={60} rx={6} fill="none" stroke={GLOW} strokeWidth={3} />}
+    </G>
+  );
 }
 
-/** One shape drawn (the solo cards' pictures reuse the games' cards). */
 export function draw(shape: Shape, key: number) {
-  return <G key={key}>{prims([shape]).map(drawPrim)}</G>;
+  switch (shape.kind) {
+    case 'mark':
+      return (
+        <G key={key}>
+          <Rect width={200} height={120} fill="#000" opacity={0.18} />
+          <Text fontFamily={FONT} x={shape.x} y={shape.y} fontSize={shape.size} textAnchor="middle" fill="#fff" opacity={0.14}>
+            {shape.suit}
+          </Text>
+        </G>
+      );
+    case 'card':
+      return <Card key={key} {...shape} />;
+    case 'die':
+      return (
+        <G key={key} transform={`translate(${shape.x} ${shape.y}) rotate(${shape.r})`}>
+          <Rect x={-17} y={-15} width={38} height={38} rx={8} fill="#000" opacity={0.3} />
+          <Rect x={-19} y={-19} width={38} height={38} rx={8} fill="#fffaf0" />
+          {PIPS[shape.pips].map(([px, py], i) => (
+            <Circle key={i} cx={px} cy={py} r={3.6} fill="#c0283f" />
+          ))}
+        </G>
+      );
+    case 'label':
+      return (
+        <Text key={key} fontFamily={FONT} x={shape.x} y={shape.y} fontSize={11} fontWeight="800" textAnchor="middle" fill="#fff" letterSpacing={1.5}>
+          {shape.text}
+        </Text>
+      );
+    case 'glyph':
+      return (
+        <Text key={key} fontFamily={FONT} x={shape.x} y={shape.y} fontSize={shape.size} fontWeight={shape.bold ? '800' : undefined} textAnchor="middle" fill={shape.ink}>
+          {shape.text}
+        </Text>
+      );
+  }
 }
 
-/** The game's picture filling a box (cropped to its shape), on the game's flat field. */
+/** The game's picture filling a box (cropped to its shape), on the game's gradient. */
 export function GamePicture({ variant, width, height, rounded = radius.md }: { variant: Variant; width: number; height: number; rounded?: number }) {
-  const [field] = gameLook(variant).card;
+  const [top, bottom] = gameLook(variant).card;
   return (
     <View
-      style={{ width, height, borderRadius: rounded, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: field }}
+      style={{ width, height, borderRadius: rounded, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
       <Svg width={width} height={height} viewBox="0 0 200 120" preserveAspectRatio="xMidYMid slice">
-        {prims(gameScene(variant)).map(drawPrim)}
+        {gameScene(variant).map(draw)}
       </Svg>
     </View>
   );
 }
 
 /**
- * A game's small square picture, for lists: the game's subject (gameThumb in gameArt.ts) on its flat
- * field, made to read at 30 to 52 points. The wide picture is for the big cards and sheets.
+ * A game's small square picture, for lists: its own layout of one to three big cards (gameThumb in gameArt.ts) on
+ * the game's gradient, made to read at 30 to 52 points. The wide picture is for the big cards and sheets.
  *
  * On iPhone it's a saved picture once one exists at this size (thumb-cache.ts), which is far cheaper to show than
  * the SVG. The choice is made when the tile appears and kept, so a tile on screen never flickers from one to the
@@ -84,26 +125,15 @@ export function GameThumb({ variant, size, rounded = size * 0.24 }: { variant: V
 
 /** The tile drawn as SVG: what the saved pictures are taken from. */
 export function DrawnThumb({ variant, size, rounded = size * 0.24 }: { variant: Variant; size: number; rounded?: number }) {
-  const [field] = gameLook(variant).card;
+  const [top, bottom] = gameLook(variant).card;
   return (
     <View
-      style={{ width: size, height: size, borderRadius: rounded, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: field }}
+      style={{ width: size, height: size, borderRadius: rounded, borderCurve: 'continuous', overflow: 'hidden', ...gradient(`linear-gradient(160deg, ${top} 0%, ${bottom} 100%)`) }}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
       <Svg width={size} height={size} viewBox="0 0 100 100">
-        {prims(gameThumb(variant)).map(drawPrim)}
-      </Svg>
-    </View>
-  );
-}
-
-/** A spot picture (a ticket for Join, a target for Range training): the games' drawing style, with nothing behind it. */
-export function Sticker({ id, size }: { id: SpotId; size: number }) {
-  return (
-    <View style={{ width: size, height: size }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <Svg width={size} height={size} viewBox="0 0 100 100">
-        {prims(spotArt(id)).map(drawPrim)}
+        {gameThumb(variant).map(draw)}
       </Svg>
     </View>
   );

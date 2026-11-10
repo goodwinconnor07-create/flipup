@@ -14,7 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { EMOJIS, firstEmoji } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { saveProfile, useProfile } from '@/state/profile';
-import { radius, spacing, useColors, ROUNDED } from '@/theme';
+import { radius, spacing, useColors } from '@/theme';
 
 const PER_ROW = 8;
 
@@ -93,7 +93,7 @@ export default function EmojiSheet() {
           autoCorrect={false}
           spellCheck={false}
           maxFontSizeMultiplier={1.5}
-          style={{ flex: 1, minHeight: 44, fontFamily: ROUNDED, fontSize: 17, color: colors.label }}
+          style={{ flex: 1, minHeight: 44, fontSize: 17, color: colors.label }}
         />
       </View>
 

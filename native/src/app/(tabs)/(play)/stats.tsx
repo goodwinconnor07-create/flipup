@@ -64,7 +64,7 @@ function Card({ colors, label, onShare, children }: { colors: readonly [string, 
   return (
     <LivingCard colors={colors} style={{ padding: spacing.lg, gap: spacing.sm }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 32 }}>
-        <Text maxFontSizeMultiplier={1.2} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 13, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase' }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 1.2, color: 'rgba(255,255,255,0.75)', textTransform: 'uppercase' }}>
           {label}
         </Text>
         {onShare && (
@@ -79,12 +79,12 @@ function Card({ colors, label, onShare, children }: { colors: readonly [string, 
 }
 
 const Big = ({ children }: { children: React.ReactNode }) => (
-  <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 30, fontWeight: '700', color: '#ffffff' }}>
+  <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 24, lineHeight: 30, fontWeight: '700', color: '#ffffff' }}>
     {children}
   </Text>
 );
 const Faint = ({ children }: { children: React.ReactNode }) => (
-  <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 17, lineHeight: 22, color: 'rgba(255,255,255,0.7)' }}>
+  <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, lineHeight: 22, color: 'rgba(255,255,255,0.7)' }}>
     {children}
   </Text>
 );

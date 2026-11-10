@@ -145,14 +145,14 @@ export default function HowToPlay() {
 
         <View style={{ paddingHorizontal: spacing.lg }}>
           <Animated.View key={index} entering={reduce ? undefined : FadeIn.duration(motion.base).easing(EASE_OUT)} accessibilityLiveRegion="polite" style={{ minHeight: 118, gap: spacing.xs }}>
-            <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255, 255, 255, 0.55)', fontFamily: ROUNDED, fontSize: 13, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
+            <Text maxFontSizeMultiplier={1.2} style={{ color: 'rgba(255, 255, 255, 0.55)', fontSize: 13, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
               {info.name}
               {steps.length ? ` · ${index + 1} of ${steps.length}` : ''}
             </Text>
             <Text maxFontSizeMultiplier={1.3} accessibilityRole="header" style={{ color: '#ffffff', fontFamily: ROUNDED, fontSize: 28, lineHeight: 34, fontWeight: '700' }}>
               {step?.title ?? info.name}
             </Text>
-            <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255, 255, 255, 0.78)', fontFamily: ROUNDED, fontSize: 17, lineHeight: 24 }}>
+            <Text maxFontSizeMultiplier={1.3} style={{ color: 'rgba(255, 255, 255, 0.78)', fontSize: 17, lineHeight: 24 }}>
               {step?.text ?? info.rules[0]}
             </Text>
           </Animated.View>

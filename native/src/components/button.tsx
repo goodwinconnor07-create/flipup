@@ -1,53 +1,64 @@
-import { ActivityIndicator, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { brand, minTap, radius, spacing, useColors } from '@/theme';
+import { gradients, minTap, radius, spacing, useColors } from '@/theme';
 
-import { usePanel } from './grouped-list';
+import { LivingCard } from './living-card';
 import { PressableScale } from './pressable-scale';
 import { Swap } from './swap';
 import { ThemedText } from './themed-text';
 
 const SIZES = {
-  md: { height: Math.max(minTap, 52), paddingHorizontal: spacing.lg, text: 'headline' as const },
-  lg: { height: 58, paddingHorizontal: spacing.xl, text: 'title3' as const },
+  md: { height: Math.max(minTap, 50), paddingHorizontal: spacing.lg, text: 'headline' as const },
+  lg: { height: 60, paddingHorizontal: spacing.xl, text: 'title3' as const },
 };
 
 /**
- * The app's buttons: one flat capsule, four fills. Nothing else in the app should look like a button.
- * - `primary` (and `party`, its older name): the brand blue with white words. The one main action on a screen.
- * - `inverse`: white with blue words. The main action when the button sits on a blue or night surface.
- * - `secondary`: the grey panel with plain words. Everything that isn't the main action.
- * - `quiet`: a faint white panel with white words. A second action on a blue or night surface.
- * - `destructive`: the grey panel with red words. Deleting and leaving.
- * Every size is at least 44pt tall. States: pressed (PressableScale), disabled (dimmed), loading (a spinner).
+ * The app's buttons.
+ * - `party`: the loud one for what you tap to play: a living gradient with a faint grain (LivingCard), heavy text.
+ * - `primary`: system blue. `secondary`: a flat grey cell. `destructive`: red text on a grey cell.
+ * Every size is at least 44pt tall. States: pressed (PressableScale), disabled, loading.
  */
 export function Button({
   title,
   onPress,
   variant = 'primary',
   size = 'md',
-  tint,
+  tint = 'blue',
   disabled,
   loading,
   style,
 }: {
   title: string;
   onPress?: () => void;
-  variant?: 'party' | 'primary' | 'inverse' | 'secondary' | 'quiet' | 'destructive';
+  variant?: 'party' | 'primary' | 'secondary' | 'destructive';
   size?: keyof typeof SIZES;
-  /** `gold` makes the main button gold with dark words: Premium's, and only Premium's. Other values are the blue. */
-  tint?: string;
+  /** The party gradient. */
+  tint?: keyof typeof gradients;
   disabled?: boolean;
   loading?: boolean;
   style?: StyleProp<ViewStyle>;
 }) {
   const colors = useColors();
-  const panel = usePanel();
   const s = SIZES[size];
-  const loud = variant === 'party' || variant === 'primary';
-  const gold = loud && tint === 'gold';
-  const fill = gold ? brand.gold : loud ? brand.violet : variant === 'inverse' ? '#ffffff' : variant === 'quiet' ? 'rgba(255, 255, 255, 0.16)' : panel.fill;
-  const ink = gold ? brand.goldInk : loud || variant === 'quiet' ? '#ffffff' : variant === 'inverse' ? brand.violet : variant === 'destructive' ? (colors.red as string) : (colors.label as string);
+  const fill: ViewStyle =
+    variant === 'party'
+      ? {}
+      : variant === 'primary'
+        ? { backgroundColor: colors.accent }
+        : { backgroundColor: colors.cell };
+  const ink = variant === 'party' || variant === 'primary' ? 'onColor' : variant === 'destructive' ? 'red' : 'accent';
+  // The title and the spinner replace each other, and a title that changes (Select to Selected) slides through a mask.
+  const label = (
+    <Swap id={loading ? '\u0000busy' : title} kind="text">
+      {loading ? (
+        <ActivityIndicator color={variant === 'party' || variant === 'primary' ? '#ffffff' : undefined} />
+      ) : (
+        <ThemedText variant={s.text} tone={ink} style={variant === 'party' ? { fontWeight: '800' } : undefined}>
+          {title}
+        </ThemedText>
+      )}
+    </Swap>
+  );
   return (
     <PressableScale
       accessibilityRole="button"
@@ -55,18 +66,35 @@ export function Button({
       accessibilityState={{ disabled: !!disabled, busy: !!loading }}
       disabled={disabled}
       onPress={loading ? undefined : onPress}
-      style={[{ minHeight: s.height, paddingHorizontal: s.paddingHorizontal, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: fill }, style]}
+      style={[
+        variant === 'party'
+          ? { borderRadius: radius.md }
+          : {
+          minHeight: s.height,
+          paddingHorizontal: s.paddingHorizontal,
+          borderRadius: radius.md,
+          borderCurve: 'continuous',
+          alignItems: 'center',
+          justifyContent: 'center',
+        },
+        fill,
+        style,
+      ]}
     >
-      {/* The title and the spinner replace each other, and a title that changes (Select to Selected) slides through a mask. */}
-      <Swap id={loading ? '\u0000busy' : title} kind="text">
-        {loading ? (
-          <ActivityIndicator color={ink} />
-        ) : (
-          <ThemedText variant={s.text} numberOfLines={1} style={{ color: ink, fontWeight: '700' }}>
-            {title}
-          </ThemedText>
-        )}
-      </Swap>
+      {variant === 'party' ? (
+        <LivingCard
+          colors={[gradients[tint][0], gradients[tint][1], gradients[tint][1]]}
+          radius={radius.md}
+          shadow="soft"
+         
+          outerStyle={{ alignSelf: 'stretch' }}
+          style={{ minHeight: s.height, paddingHorizontal: s.paddingHorizontal, alignItems: 'center', justifyContent: 'center' }}
+        >
+          {label}
+        </LivingCard>
+      ) : (
+        label
+      )}
     </PressableScale>
   );
 }

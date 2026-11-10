@@ -4,7 +4,6 @@ import { useWindowDimensions, View } from 'react-native';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { HowToPicture } from '@/components/how-to-picture';
 import { StartTiles } from '@/components/home/start-tiles';
-import { Bullets } from '@/components/bullets';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
 import { isVariant, variantInfo, variantNote, type Variant } from '@/engine';
@@ -35,11 +34,16 @@ export default function GameSheet() {
       </View>
       {/* Opened from a table's game pill: only how it plays. */}
       {!rules && (
-      <StartTiles onGo={go} />
+      <StartTiles onGo={go} height={150} />
       )}
       <View style={{ gap: spacing.xs }}>
         <ThemedText variant="headline">How it plays</ThemedText>
-        <Bullets items={info.rules} />
+        {info.rules.map((r) => (
+          <ThemedText key={r} variant="body">
+            {'•  '}
+            {r}
+          </ThemedText>
+        ))}
         <ThemedText variant="footnote" tone="tertiaryLabel" style={{ marginTop: spacing.xs }}>
           {variantNote(variant)}
         </ThemedText>

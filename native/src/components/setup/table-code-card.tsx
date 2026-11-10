@@ -49,13 +49,13 @@ export function TableCodeCard({
       }}
     >
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Text maxFontSizeMultiplier={1.2} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 13, fontWeight: '700', letterSpacing: 1.2, color: dim }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ flex: 1, fontSize: 13, fontWeight: '700', letterSpacing: 1.2, color: dim }}>
           GAME CODE
         </Text>
         <View
           style={{ paddingHorizontal: spacing.sm, paddingVertical: 4, borderRadius: radius.full, backgroundColor: `${brand.violet}33` }}
         >
-          <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '700', color: brand.violetDark }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', color: brand.violetDark }}>
             You’re hosting
           </Text>
         </View>
@@ -72,7 +72,7 @@ export function TableCodeCard({
       ) : (
         <View style={{ height: 54, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           {!failed && <ActivityIndicator color={dim} />}
-          <Text style={{ fontFamily: ROUNDED, fontSize: 15, color: dim }}>
+          <Text style={{ fontSize: 15, color: dim }}>
             {failed ? 'Couldn’t open your table. Deal will try again.' : 'Opening your table…'}
           </Text>
         </View>
@@ -107,14 +107,14 @@ export function TableCodeCard({
         style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 32 }}
       >
         <Icon name="person.crop.circle.badge.plus" size={17} color={brand.violetDark} />
-        <Text maxFontSizeMultiplier={1.3} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 15, fontWeight: '600', color: brand.violetDark }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ flex: 1, fontSize: 15, fontWeight: '600', color: brand.violetDark }}>
           Invite from your contacts
         </Text>
         <Icon name="chevron.right" size={13} color={colors.tertiaryLabel as string} />
       </PressableScale>
 
       {people.length > 0 && (
-        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, color: dim }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, color: dim }}>
           <Text style={{ color: colors.label as string, fontWeight: '600' }}>{people.map((p) => `${p.emoji} ${p.name}`).join(', ')}</Text>
           {people.length === 1 ? ' is in.' : ' are in.'}
         </Text>
@@ -142,7 +142,7 @@ function Action({ icon, label, onPress }: { icon: IconName; label: string; onPre
       }}
     >
       <Icon name={icon} size={17} color={colors.label as string} />
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '600', color: colors.label as string }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: colors.label as string }}>
         {label}
       </Text>
     </PressableScale>

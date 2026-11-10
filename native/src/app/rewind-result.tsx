@@ -125,7 +125,7 @@ function Side({ title, sub, value, highlight }: { title: string; sub: string; va
       <ThemedText variant="subhead" tone="secondaryLabel" style={{ fontWeight: '600' }}>
         {title}
       </ThemedText>
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 28, lineHeight: 36, fontWeight: '800', fontVariant: ['tabular-nums'], color: colors.label }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 30, lineHeight: 36, fontWeight: '800', fontVariant: ['tabular-nums'], color: colors.label }}>
         {value}
       </Text>
       <ThemedText variant="subhead" tone="secondaryLabel">
@@ -143,7 +143,7 @@ function Line({ label, value }: { label: string; value?: number }) {
       <ThemedText variant="headline" style={{ flex: 1 }}>
         {label}
       </ThemedText>
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 20, fontWeight: '800', fontVariant: ['tabular-nums'], color: ready ? colors.label : colors.tertiaryLabel }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 20, fontWeight: '800', fontVariant: ['tabular-nums'], color: ready ? colors.label : colors.tertiaryLabel }}>
         {ready ? signed(bb1(value), ' bb') : '…'}
       </Text>
     </View>

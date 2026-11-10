@@ -387,7 +387,7 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
         ]}
       >
         <GameThumb variant={ghostGame} size={36} />
-        <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 16, fontWeight: '700', color: '#ffffff' }}>
+        <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ flex: 1, fontSize: 16, fontWeight: '700', color: '#ffffff' }}>
           {variantInfo(ghostGame).name}
         </Text>
       </Animated.View>
@@ -473,7 +473,7 @@ function PlaylistRow({
       <Animated.View style={[{ flex: 1, borderRadius: 20, borderCurve: 'continuous' }, card]}>
         <Animated.View pointerEvents="none" style={[{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, borderRadius: 20, borderCurve: 'continuous', boxShadow: '0 14px 30px rgba(0, 0, 0, 0.5)' }, shadow]} />
         <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md }}>
-          <Text maxFontSizeMultiplier={1.2} style={{ width: 22, fontFamily: ROUNDED, fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'], color: colors.tertiaryLabel as string }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ width: 22, fontSize: 15, fontWeight: '600', fontVariant: ['tabular-nums'], color: colors.tertiaryLabel as string }}>
             {index + 1}
           </Text>
           <GameThumb variant={item.v} size={THUMB} />

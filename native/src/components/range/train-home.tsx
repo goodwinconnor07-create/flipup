@@ -6,7 +6,6 @@ import { View } from 'react-native';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
-import { Sticker } from '../game-picture';
 import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
@@ -47,17 +46,12 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
       {/* The one thing to do here: play a set. */}
       <LivingCard colors={cardColors.violet} radius={radius.xl} style={{ padding: spacing.lg, gap: spacing.md }}>
         <View style={{ gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-            <View style={{ flex: 1, gap: spacing.xs }}>
-              <ThemedText variant="caption1" tone="onColor" style={{ fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>
-                {SET_SIZE} hands
-              </ThemedText>
-              <ThemedText variant="title1" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
-                {first ? 'Play your first set' : 'Play a set'}
-              </ThemedText>
-            </View>
-            <Sticker id="train" size={84} />
-          </View>
+          <ThemedText variant="caption1" tone="onColor" style={{ fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>
+            {SET_SIZE} hands
+          </ThemedText>
+          <ThemedText variant="title1" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
+            {first ? 'Play your first set' : 'Play a set'}
+          </ThemedText>
           <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>
             Real hands from pro breakdowns. Read the table, make your call, then see why.
           </ThemedText>
@@ -66,7 +60,7 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
           accessibilityRole="button"
           accessibilityLabel={`Start ${SET_SIZE} hands`}
           onPress={() => startSet()}
-          style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderRadius: radius.full, backgroundColor: brand.paper }}
+          style={{ minHeight: 52, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderRadius: radius.full, backgroundColor: brand.paper, boxShadow: '0 6px 16px rgba(8,20,51,0.28)' }}
         >
           <Icon name="play.fill" size={18} color={brand.violet} />
           <ThemedText variant="headline" style={{ color: brand.violet, fontWeight: '800' }}>

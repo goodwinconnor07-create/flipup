@@ -3,8 +3,8 @@
 > **In force now (owner, 2026-11-05, after seeing the mockups): keep the app's design as it is on TestFlight.**
 > The changes on top of it are small: no purple (the brand and action colour is a deep blue, `brand.violet` in
 > `native/src/theme/brand.ts`, keys unchanged), no film grain (pages get a moving deep blue light field,
-> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the original game pictures (`gameArt.ts`; the
-> detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
+> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the game pictures in `gameArt.ts` (redrawn flat and outlined on 10 November, below; the
+> detailed lit icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
@@ -12,6 +12,19 @@
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,
 > chevrons and text buttons only. The pinned Start game / Deal button waiting on players is a solid dim fill, never
 > a translucent one, so rows scrolling under it can't show through.
+
+**Game pictures and game tiles (owner request, 10 November 2026, from a reference of flat cartoon game tiles: "so
+they don't seem vibe coded").** One drawn system for every game (`src/design/gameArt.ts`), replacing the card
+fans on gradients: a flat colour field (one hue per game, no gradient), a lighter spot behind, and one bold subject
+(a pineapple in sunglasses, a ghost holding two cards, a die, a red river, a clock of cards...) with the same dark
+outline (`INK`, `OUTLINE`) and the same hard, unblurred shadow on every shape. No glows, no faded giant suits and no
+captions inside a picture. Suits are paths, never font glyphs. Wherever you pick a game to play it is a `GameTile`
+(`native/src/components/game-tile.tsx`): the square picture, then the name in white rounded capitals on a band of
+the game's darker shade; a Premium game has a gold crown on an ink disc. Home's shelf is tiles with one grey line
+under each; See all is the Texas Hold'em card, then tiles three to a row. Lists (lobby, playlist, Premium) keep the
+small square picture with the name beside it. A new game gets a field, band and tone in `GAME_LOOK` and a subject in
+`SUBJECTS`, drawn with the shared helpers so it matches the set. Overview: `docs/design/game-tiles/all-games.png`.
+Home's first-run How to play is a quiet grey row like Join a game: the two start tiles are the one loud thing there.
 
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.

@@ -2879,7 +2879,7 @@ export const SCENARIOS: Scenario[] = [
       by: 'Jonathan Little on CardPlayer',
       title: 'PokerCoaching.com Quiz: Bluffing Off In Multi-Way Pot',
       url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66545-chris-moneymaker-37-15/articles/25126-pokercoaching-com-quiz-bluffing-off-in-multi-way-pot',
-      note: 'The expert shoves (about 24.7bb); the biggest bet here is a 17.5bb overbet. The caller showed Q-Q and folded.',
+      note: 'The table is nine-handed (the quiz’s was seven). The expert shoves (about 24.7bb); the biggest bet here is a 17.5bb overbet. The caller showed Q-Q and folded.',
     },
   },
   {

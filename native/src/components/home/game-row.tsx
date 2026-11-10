@@ -49,13 +49,13 @@ function Tile({ variant, name, locked, again }: { variant: Variant; name: string
         router.push(`/game/${variant}`);
       }}
       haptics={false}
-      style={{ width: TILE, gap: spacing.xs }}
+      style={{ width: TILE }}
     >
       <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
         <GameThumb variant={variant} size={TILE} rounded={radius.lg} />
         {again && (
-          <View style={{ position: 'absolute', top: spacing.xs, left: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.45)' }}>
-            <Icon name="arrow.counterclockwise" size={13} color="#ffffff" />
+          <View style={{ position: 'absolute', top: spacing.xs, left: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.92)' }}>
+            <Icon name="arrow.counterclockwise" size={13} color="#1c1c1e" />
           </View>
         )}
         {locked && (
@@ -64,12 +64,15 @@ function Tile({ variant, name, locked, again }: { variant: Variant; name: string
           </View>
         )}
       </View>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ minHeight: 38, fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
+      {/* Name and hint as one block: 8pt under the picture, 2pt between them, nothing reserved (a long name wraps, never cut). */}
+      <View style={{ gap: 2, marginTop: spacing.xs }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 14, lineHeight: 18, fontWeight: '600', color: colors.label }}>
         {name}
       </Text>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, marginTop: -spacing.xs + 2 }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, }}>
         {again ? 'Play again' : gameLook(variant).hook}
       </Text>
+      </View>
     </PressableScale>
   );
 }
@@ -87,17 +90,19 @@ function Surprise() {
         router.push(`/game/${pick.id}`);
       }}
       haptics={false}
-      style={{ width: TILE, gap: spacing.xs }}
+      style={{ width: TILE }}
     >
       <View style={{ width: TILE, height: TILE, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 2, borderStyle: 'dashed', borderColor: colors.separator, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name="shuffle" size={40} color={colors.secondaryLabel} />
       </View>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ minHeight: 38, fontSize: 15, lineHeight: 19, fontWeight: '600', color: colors.label }}>
+      <View style={{ gap: 2, marginTop: spacing.xs }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 14, lineHeight: 18, fontWeight: '600', color: colors.label }}>
         Surprise me
       </Text>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, marginTop: -spacing.xs + 2 }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, }}>
         A random mode
       </Text>
+      </View>
     </PressableScale>
   );
 }

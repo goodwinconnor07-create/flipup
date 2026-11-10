@@ -3,10 +3,13 @@ import { useEffect } from 'react';
 import { Platform, ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import Svg, { Path } from 'react-native-svg';
+
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { GameCarousel } from '@/components/home/game-carousel';
 import { Icon } from '@/components/icon';
+import { MARK } from '@/components/launch-mark';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
 import { challengeById, variantInfo, variantOf } from '@/engine';
@@ -20,10 +23,12 @@ import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
 
 const INK = '#0b1533';
 const SOFT = 'rgba(255, 255, 255, 0.7)';
+/** The logo's height: the app icon's spade, in white. */
+const LOGO = 40;
 
 /**
  * Home, a minimal test that fits one screen without scrolling (owner, 10 Nov 2026, after a reference with a big greeting): the moving deep blue page, the
- * FlipUp name and your face, "Hi, <name>." as huge rounded type, one line, the games rolling past on a quiet card,
+ * FlipUp spade and your face, "Hi, <name>." as huge rounded type, one line, the games rolling past on a quiet card,
  * then Host a game (white) and Join with a code (see-through), and two quiet links under them. Your table, when
  * you're at one, sits on the same kind of card above the games.
  */
@@ -56,9 +61,11 @@ export default function Home() {
           contentContainerStyle={{ flexGrow: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: (Platform.OS === 'ios' ? 0 : insets.top) + spacing.xxs, paddingBottom: spacing.md, gap: spacing.lg }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 28, fontWeight: '900', letterSpacing: -0.5, color: '#ffffff' }}>
-              FlipUp
-            </Text>
+            <View accessible accessibilityRole="header" accessibilityLabel="FlipUp">
+              <Svg width={LOGO * (116 / 125)} height={LOGO} viewBox="-58 -60 116 125">
+                <Path d={MARK} fillRule="evenodd" fill="#ffffff" />
+              </Svg>
+            </View>
             <ProfileMenu />
           </View>
 

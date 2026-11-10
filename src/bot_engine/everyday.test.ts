@@ -15,6 +15,8 @@ import { BotService } from './service';
 import { emptyMemory } from './memory';
 import { EverydayProvider } from './everydayProvider';
 import { CalibratedProvider } from './calibratedProvider';
+import { BehavioralProvider } from './behavioralProvider';
+import { observeBehavior } from './behaviorMemory';
 
 const ctx = () => ({ deviceId: 'host', now: 0, rng: seededRng(413) });
 const table = (bots = 4) =>
@@ -141,19 +143,34 @@ describe('Everyday poker tables', () => {
     bot.legend = 'test';
     expect(everydayThought(g, bot.id)).toBeNull();
   });
-  it.each(['live', 'conservative'] as const)(
+  it.each(['live', 'conservative', 'behavior'] as const)(
     'keeps %s profiles different but much closer than the experimental extremes',
     (model) => {
       const contexts = calibrationContexts();
+      if (model === 'behavior') for (const i of contexts) i.hand = 61;
       const signatures = EVERYDAY_FOCUSES.map((f) =>
         contexts.map((info) => {
           const profile = everydayProfile(new BotFactory().generate(info.heroId, 1), 'Mick', 'casual', f);
-          return new BotService(model === 'live' ? new EverydayProvider() : new CalibratedProvider(96, 'robust')).decide(
-            info,
-            profile,
-            emptyMemory(info.heroId, info.tableId),
-            15,
-          );
+          const memory = emptyMemory(info.heroId, info.tableId);
+          if (model === 'behavior')
+            for (let hand = 1; hand <= 60; hand++)
+              for (const [actionIndex, context] of ['river|HU|facing|medium', 'flop|HU|open|none'].entries())
+                observeBehavior(memory, {
+                  observerId: info.heroId,
+                  tableId: info.tableId,
+                  targetId: info.players.find((p) => p.id !== info.heroId)!.id,
+                  hand,
+                  actionIndex,
+                  context,
+                  label: hand % 8 === 0 ? 2 : 1,
+                });
+          return new BotService(
+            model === 'live'
+              ? new EverydayProvider()
+              : model === 'behavior'
+                ? new BehavioralProvider()
+                : new CalibratedProvider(96, 'robust'),
+          ).decide(info, profile, memory, 15);
         }),
       );
       for (const row of signatures)

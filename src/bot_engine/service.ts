@@ -13,6 +13,7 @@ import { estimateActionValues } from './actionValues';
 import { decisionRisk } from './decisionRisk';
 import { everydayReference, everydayWeights, everydaySupport } from './everyday';
 import { handPlanWeights } from './handPlan';
+import { behaviorSnapshot } from './behaviorMemory';
 
 export interface DecisionTrace {
   version: 1;
@@ -58,7 +59,18 @@ export class BotService {
       !Number.isSafeInteger(samplingSeed)
     )
       throw new Error('Identity mismatch');
-    const prediction = structuredClone(this.provider.predict(info));
+    const prediction = structuredClone(
+      this.provider.predict(
+        info,
+        this.learningMode === 'off'
+          ? undefined
+          : behaviorSnapshot(
+              memory,
+              info.hand,
+              info.players.filter((p) => p.id !== info.heroId).map((p) => p.id),
+            ),
+      ),
+    );
     const legal = new Set(legalActions(info, true, true).map((a) => JSON.stringify(a)));
     if (
       !prediction.actions.length ||

@@ -31,6 +31,7 @@ export interface StrategyPrediction {
   coverage: 'abstracted' | 'fallback' | 'modelled';
   modelVersion: 'baseline-1' | 'baseline-2' | 'baseline-3' | 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7';
   calibration?: { revision: string; samples: number };
+  opponentLearning?: ({ playerId: string } & ReturnType<typeof import('./opponentModel').opponentEvidence>)[];
   modelAgreement?: {
     rule: 'lower-model-score';
     referenceValues: number[];
@@ -50,7 +51,7 @@ export interface StrategyPrediction {
   warnings: string[];
 }
 export interface StrategyProvider {
-  predict(info: InformationSet): StrategyPrediction;
+  predict(info: InformationSet, behavior?: import('./behaviorMemory').BehaviorSnapshot): StrategyPrediction;
 }
 export function normalize(weights: number[]): number[] {
   if (!weights.length || weights.some((w) => !Number.isFinite(w) || w < 0)) throw new Error('Invalid policy');

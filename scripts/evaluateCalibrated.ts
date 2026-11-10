@@ -8,7 +8,7 @@ import type { CalibrationMode } from '../src/bot_engine/calibratedProvider';
 const hands = Number(process.argv[2] ?? 100),
   destination = resolve(process.argv[3] ?? '/tmp/calibrated-comparison.json'),
   partition = process.argv[4] ?? 'holdout';
-const candidateMode = (process.argv[5] ?? 'combined') as CalibrationMode;
+const candidateMode = (process.argv[5] ?? 'combined') as CalibrationMode | 'behavior';
 const partitions: Record<string, number[]> = {
   development: [511011],
   holdout: [611021, 622037, 633049],
@@ -16,24 +16,29 @@ const partitions: Record<string, number[]> = {
   'repair-development': [941011, 941033],
   'repair-holdout': [1101011, 1101033, 1101057],
   'repair-confirmation': [1201019, 1201037, 1201061],
+  'behavior-development': [1311011],
+  'behavior-holdout': [1411011, 1411033, 1411057],
+  'behavior-confirmation': [1511019, 1511037, 1511061],
 };
 if (
   !Number.isInteger(hands) ||
   hands < 20 ||
   hands > 1000 ||
   !partitions[partition] ||
-  !['combined', 'guarded', 'nonlinear', 'robust'].includes(candidateMode)
+  !['combined', 'guarded', 'nonlinear', 'robust', 'behavior'].includes(candidateMode)
 )
   throw new Error('Invalid comparison arguments');
 const seeds = partitions[partition];
 const candidateName =
-  candidateMode === 'combined'
-    ? 'calibrated-1'
-    : candidateMode === 'guarded'
-      ? 'guarded-2'
-      : candidateMode === 'robust'
-        ? 'robust-4'
-        : 'nonlinear-3';
+  candidateMode === 'behavior'
+    ? 'public-behavior-1'
+    : candidateMode === 'combined'
+      ? 'calibrated-1'
+      : candidateMode === 'guarded'
+        ? 'guarded-2'
+        : candidateMode === 'robust'
+          ? 'robust-4'
+          : 'nonlinear-3';
 const frozenFiles = [
   'calibratedProvider.ts',
   'multiplayerPlanning.ts',
@@ -46,6 +51,15 @@ const frozenFiles = [
   'strategy.ts',
   'service.ts',
   'decisionRisk.ts',
+  'behavioralProvider.ts',
+  'behaviorMemory.ts',
+  'publicBehavior.ts',
+  'opponentModel.ts',
+  'memory.ts',
+  'simulation.ts',
+  'scriptedOpponents.ts',
+  'everydayLive.ts',
+  'live.ts',
 ];
 const fingerprint = async () => {
   const h = createHash('sha256');
@@ -79,10 +93,15 @@ const cases: { id: string; seats: number; options: SimulationOptions }[] = [
     },
   },
 ];
-if (partition.startsWith('repair-'))
+if (partition.startsWith('repair-') || partition.startsWith('behavior-'))
   cases.push(
     { id: 'HU-station', seats: 2, options: { agents: ['bot', 'calling-station'], everyday: 'casual' } },
     { id: 'HU-aggressive', seats: 2, options: { agents: ['bot', 'loose-aggressive'], everyday: 'casual' } },
+  );
+if (partition.startsWith('behavior-'))
+  cases.push(
+    { id: 'HU-changing-calls', seats: 2, options: { agents: ['bot', 'changing'], everyday: 'casual' } },
+    { id: 'HU-changing-aggression', seats: 2, options: { agents: ['bot', 'changing-aggression'], everyday: 'casual' } },
   );
 type Run = {
   version: string;

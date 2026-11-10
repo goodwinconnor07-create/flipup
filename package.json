@@ -30,6 +30,7 @@
     "bot:heads-up": "tsx scripts/diagnoseHeadsUp.ts",
     "bot:decision-worlds": "tsx scripts/reviewHeadsUpDecisions.ts",
     "bot:compare-responses": "tsx scripts/evaluateCalibrated.ts",
+    "bot:behavior": "tsx scripts/evaluatePublicBehavior.ts",
     "bot:decision-quality": "tsx scripts/auditDecisionQuality.ts",
     "bot:improve": "tsx scripts/improveBots.ts",
     "bot:persistence": "tsx scripts/botPersistence.ts",

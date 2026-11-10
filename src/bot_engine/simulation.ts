@@ -17,6 +17,8 @@ import { CalibratedProvider, type CalibrationMode } from './calibratedProvider';
 import type { BotMove } from '../game/botPlay';
 import type { InformationSet } from './information';
 import { EverydayProvider } from './everydayProvider';
+import { learnPublicBehavior } from './publicBehavior';
+import { BehavioralProvider } from './behavioralProvider';
 
 export interface SimulationOptions {
   agents?: AgentKind[];
@@ -29,7 +31,7 @@ export interface SimulationOptions {
   carryStacks?: boolean;
   revision?: 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7';
   /** Offline candidate; the production default remains V7. */
-  calibrated?: boolean | CalibrationMode;
+  calibrated?: boolean | CalibrationMode | 'behavior';
   /** Observers receive independent copies of only this actor's whitelisted information. */
   onAction?: (info: InformationSet, action: BotMove) => void;
   onDecision?: (trace: DecisionTrace) => void;
@@ -81,14 +83,16 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   });
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
   const service = new BotService(
-    config.calibrated
-      ? new CalibratedProvider(config.everyday === 'challenge' ? 160 : 96, config.calibrated === true ? 'combined' : config.calibrated)
-      : config.everyday
-        ? new EverydayProvider(
-            config.everyday === 'casual' ? 96 : 160,
-            config.revision === 'baseline-5' ? 'baseline-5' : config.revision === 'baseline-6' ? 'baseline-6' : 'baseline-7',
-          )
-        : new BaselineProvider(160, config.revision),
+    config.calibrated === 'behavior'
+      ? new BehavioralProvider(config.everyday === 'challenge' ? 160 : 96)
+      : config.calibrated
+        ? new CalibratedProvider(config.everyday === 'challenge' ? 160 : 96, config.calibrated === true ? 'combined' : config.calibrated)
+        : config.everyday
+          ? new EverydayProvider(
+              config.everyday === 'casual' ? 96 : 160,
+              config.revision === 'baseline-5' ? 'baseline-5' : config.revision === 'baseline-6' ? 'baseline-6' : 'baseline-7',
+            )
+          : new BaselineProvider(160, config.revision),
     config.learningMode ?? 'contextual',
     config.learningConfig ?? LEARNING_CONFIG,
   );
@@ -287,6 +291,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       if (config.onAction) config.onAction(structuredClone(info), { ...action });
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) throw new Error(`Illegal bot action: ${error}`);
+      learnPublicBehavior(game, memories);
       if (!info.legal.canCheck) {
         const context = publicResponses({
           actions: h.actions ?? [],

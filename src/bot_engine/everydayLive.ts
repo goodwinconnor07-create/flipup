@@ -9,6 +9,7 @@ import { BotService, type DecisionTrace } from './service';
 import { EverydayProvider } from './everydayProvider';
 import { everydayProfile, everydayThinkMs, type BotDifficulty } from './everyday';
 import { usesEverydayBots } from '../game/botTableMode';
+import { learnPublicBehavior } from './publicBehavior';
 export { usesEverydayBots } from '../game/botTableMode';
 
 export interface EverydayBotState {
@@ -75,6 +76,11 @@ export function updateEverydayMemory(game: Game): EverydayBotState | null {
             context: event.context,
           });
     }
+  if ((h.actions?.length ?? 0) > state.observedActions)
+    learnPublicBehavior(
+      game,
+      Object.values(state.players).map((p) => p.memory),
+    );
   state.observedActions = h.actions?.length ?? 0;
   return state;
 }

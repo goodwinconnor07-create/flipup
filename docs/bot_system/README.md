@@ -6,6 +6,8 @@ The [response calibration candidate and decision-quality checks](RESPONSE_CALIBR
 
 The [heads-up follow-up](HEADS_UP_REPAIR.md) isolates range/response effects, fits nonlinear hand groups, and tests a conservative model-disagreement candidate against new reserved deals. It retains failed alternatives and specified-world decision probes.
 
+The [public-behavior learner](PUBLIC_BEHAVIOR.md) adds bounded, decaying observer-specific evidence and direct response/range accuracy tests. Its offline candidate improves forecasts, but mixed fresh gameplay results keep live decisions on V7.
+
 From the repository root, use Node 22.13+ (validated here on Node 24; SQLite tooling uses the built-in Node SQLite API):
 
 ```sh

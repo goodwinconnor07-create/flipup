@@ -271,6 +271,8 @@ export type ResponsePredictor = (view: ReturnType<typeof continuationView>) => [
 export interface ContinuationPolicies {
   opponents: ResponsePredictor;
   hero?: ResponsePredictor;
+  forOpponent?: (playerId: string) => ResponsePredictor;
+  sizeForOpponent?: (playerId: string, view: ReturnType<typeof continuationView>, fraction: number) => number;
 }
 
 export function estimateMultiplayer(
@@ -335,13 +337,22 @@ export function estimateMultiplayer(
             view = continuationView(round, at, holes[at]),
             intent = continuationIntent(view);
           const predictor =
-            typeof responseModel === 'function' ? responseModel : at === hero ? responseModel?.hero : responseModel?.opponents;
+            typeof responseModel === 'function'
+              ? responseModel
+              : at === hero
+                ? responseModel?.hero
+                : (responseModel?.forOpponent?.(round.seats[at].playerId) ?? responseModel?.opponents);
           if (predictor) {
             const [fold, passive, aggressive] = predictor({ ...view, canRaise: o.canRaise && round.aggressions < maxAggressions });
             void fold;
             intent.raiseProbability = aggressive;
             intent.betProbability = aggressive;
             intent.callProbability = aggressive + passive;
+          }
+          if (typeof responseModel === 'object' && at !== hero && responseModel.sizeForOpponent) {
+            const fraction = responseModel.sizeForOpponent(round.seats[at].playerId, view, intent.fraction);
+            if (!Number.isFinite(fraction)) throw new Error('Invalid opponent sizing');
+            intent.fraction = Math.max(0.25, Math.min(1.25, fraction));
           }
           const draw = draws[streetIndex][at][Math.min(3, visits[at]++)];
           const raise =

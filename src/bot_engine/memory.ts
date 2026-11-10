@@ -1,5 +1,6 @@
 import type { Street } from '../game/types';
 import { LEARNING_CONFIG, validateLearningConfig, type LearningConfig } from './learningConfig';
+import { validateBehavior, type BehaviorMemory } from './behaviorMemory';
 
 export interface ObservationContext {
   street: Street;
@@ -36,6 +37,8 @@ export interface BotMemory {
   opponents: Record<string, OpponentBelief>;
   /** Additive v1 extension: old snapshots without this field remain valid. */
   contexts?: Record<string, Record<string, OpponentBelief>>;
+  /** Additive, private public-action learner; old v1 snapshots need no migration. */
+  behavior?: BehaviorMemory;
 }
 /** Deliberately narrow event schema: only a public response to a faced bet. */
 export interface ObservationEvent {
@@ -50,6 +53,7 @@ export function emptyMemory(botId: string, tableId: string): BotMemory {
   return { version: 1, botId, tableId, latestSequence: -1, opponents: {} };
 }
 export function validateMemory(m: BotMemory): void {
+  if (m.behavior) validateBehavior(m.behavior);
   if (
     m.version !== 1 ||
     !m.botId ||

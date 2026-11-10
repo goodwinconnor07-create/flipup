@@ -6,12 +6,13 @@ import { publicLine } from './handPlan';
 import type { ResponsePredictor } from './multiplayerPlanning';
 
 /** Replay only public commitments. Capture the context BEFORE each observed action. */
-export function publicResponseContexts(i: InformationSet) {
+export type PublicContextInput = Pick<InformationSet, 'players' | 'buttonId' | 'smallBlind' | 'bigBlind' | 'actions' | 'board'>;
+export function publicResponseContexts(i: PublicContextInput, startStacks?: Record<string, number>) {
   const seats = [...i.players].sort((a, b) => a.seat - b.seat),
     button = seats.findIndex((p) => p.id === i.buttonId);
   const sb = seats[(button + (seats.length === 2 ? 0 : 1)) % seats.length].id,
     bb = seats[(button + (seats.length === 2 ? 1 : 2)) % seats.length].id;
-  const starting = new Map(seats.map((p) => [p.id, p.stack + p.total]));
+  const starting = new Map(seats.map((p) => [p.id, startStacks?.[p.id] ?? p.stack + p.total]));
   const total = new Map(seats.map((p) => [p.id, Math.min(starting.get(p.id)!, p.id === sb ? i.smallBlind : p.id === bb ? i.bigBlind : 0)]));
   let bets = new Map(total),
     street = 'preflop',
@@ -20,8 +21,8 @@ export function publicResponseContexts(i: InformationSet) {
   const acted = new Set<string>();
   let minRaise = i.bigBlind;
   const past = [] as typeof i.actions;
-  const records = new Map<string, { view: ResponseView; label: number }[]>();
-  for (const a of i.actions) {
+  const records = new Map<string, { view: ResponseView; label: number; actionIndex: number; sizing?: 0 | 1 | 2 }[]>();
+  for (const [actionIndex, a] of i.actions.entries()) {
     if (street !== a.street) {
       const ranked = [...bets].sort((a, b) => b[1] - a[1]);
       const extra = ranked[0][1] - ranked[1][1];
@@ -62,7 +63,15 @@ export function publicResponseContexts(i: InformationSet) {
         canRaise: !acted.has(a.playerId) && remaining > call && active.some((p) => p.id !== a.playerId),
       };
       const rows = records.get(a.playerId) ?? [];
-      rows.push({ view, label: aggressive ? 2 : a.move === 'fold' ? 0 : 1 });
+      const fraction = (a.to - price) / Math.max(i.bigBlind, view.eligiblePot + call);
+      rows.push({
+        view,
+        label: aggressive ? 2 : a.move === 'fold' ? 0 : 1,
+        actionIndex,
+        ...(aggressive && a.to - current < remaining && a.to - price > minRaise
+          ? { sizing: (fraction <= 0.45 ? 0 : fraction <= 0.9 ? 1 : 2) as 0 | 1 | 2 }
+          : {}),
+      });
       records.set(a.playerId, rows);
     }
     if (a.move === 'fold') live.delete(a.playerId);

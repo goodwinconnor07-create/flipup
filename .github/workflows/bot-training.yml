@@ -18,6 +18,7 @@ on:
       - 'scripts/diagnoseHeadsUp.ts'
       - 'scripts/calibrateResponsesV2.ts'
       - 'scripts/reviewHeadsUpDecisions.ts'
+      - 'scripts/evaluatePublicBehavior.ts'
       - '.github/workflows/bot-training.yml'
   workflow_dispatch:
   schedule:
@@ -57,7 +58,8 @@ jobs:
       - run: npm run bot:planning -- 50 bot-training-output/planning-comparison.json
       - run: npm run bot:ranges -- bot-training-output/range-analysis.json
       - run: npm run bot:realism -- 50 bot-training-output/realism-comparison.json
-      - run: npm run bot:compare-responses -- 50 bot-training-output/response-comparison.json repair-holdout robust
+      - run: npm run bot:behavior -- 300 bot-training-output/public-behavior-accuracy.json test
+      - run: npm run bot:compare-responses -- 50 bot-training-output/response-comparison.json behavior-holdout behavior
       - run: npm run bot:decision-quality -- bot-training-output/decision-quality-probes.json
       - run: npm run bot:decision-worlds -- bot-training-output/specified-worlds.json
       - uses: actions/upload-artifact@v4

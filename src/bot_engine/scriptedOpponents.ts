@@ -11,6 +11,7 @@ export const SCRIPTED_OPPONENTS = [
   'river-overfolder',
   'calling-station',
   'changing',
+  'changing-aggression',
 ] as const;
 export type ScriptedOpponent = (typeof SCRIPTED_OPPONENTS)[number];
 export type AgentKind = 'bot' | 'baseline' | 'previous' | 'incumbent' | ScriptedOpponent;
@@ -24,6 +25,7 @@ export function scriptedMove(i: InformationSet, kind: ScriptedOpponent, rng: () 
   if (kind === 'random') return actions[Math.floor(rng() * actions.length)];
   if (kind === 'calling-station') return passive;
   if (kind === 'changing') kind = changed ? 'calling-station' : 'river-overfolder';
+  if (kind === 'changing-aggression') kind = changed ? 'loose-aggressive' : 'tight-passive';
   const ranks = i.hole.map(rankOf);
   const preStrength =
     ((ranks[0] + ranks[1] - 4) / 24) * 0.65 + (ranks[0] === ranks[1] ? 0.35 : 0) + (i.hole[0][1] === i.hole[1][1] ? 0.05 : 0);

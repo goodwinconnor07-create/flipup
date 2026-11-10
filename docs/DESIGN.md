@@ -7,6 +7,13 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **Game grid on Play, a test on a branch (owner, 2026-11-10; not merged until the owner has seen it on TestFlight).**
+> Build 44 with the flat game tiles from `b8cdec6` (`GameTile`, `gameArt.ts`) and a Play tab that holds only two
+> things, after a party-games app's home: Join a game as a slim blue bar (`JoinBar`), then every game as a tile, four
+> to a row on one rounded panel (`GameGrid` in `components/home/game-grid.tsx`; the last game played first with its
+> replay mark, crowns on Premium). The start tiles, the shelf and the passport card leave Play; a game's sheet is
+> where you choose friends or bots. Every other screen is as in build 44.
+
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
 > pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,

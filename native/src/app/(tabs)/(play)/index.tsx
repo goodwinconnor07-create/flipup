@@ -1,22 +1,15 @@
 import { router, Stack } from 'expo-router';
-import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { haptic } from '@/components/haptics';
-import { FriendsStrip } from '@/components/home/friends-strip';
-import { GameRow } from '@/components/home/game-row';
-import { PassportCard } from '@/components/home/passport';
-import { StartTiles } from '@/components/home/start-tiles';
-import { FirstHand } from '@/components/home/your-poker';
+import { GameGrid, JoinBar } from '@/components/home/game-grid';
 import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { RequestsPill } from '@/components/friend-requests';
 import { ProfileMenu } from '@/components/profile-menu';
 import { TabScreen } from '@/components/tab-screen';
-import { EASE_OUT } from '@/motion/presets';
-import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, FREE_VARIANTS, VARIANTS, variantInfo, variantOf } from '@/engine';
 import { FRIENDS_ON } from '@/scope';
@@ -30,7 +23,8 @@ import { usePremium } from '@/state/premium';
 import { radius, spacing, useColors, useShadows } from '@/theme';
 
 /**
- * Home. Built the way game apps that feel native do it (Apple's Games app, Chess.com, Flighty): the big title with
+ * Home, as a grid test (owner, 10 Nov 2026): Join a game as a slim blue bar, then every game as a tile on one panel,
+ * four to a row (the flat game tiles). A game's sheet is where you pick friends or bots. Earlier: built the way game apps that feel native do it (Apple's Games app, Chess.com, Flighty): the big title with
  * your avatar menu beside it, then only what gets you playing. Your table or party if you're in one, a friend's
  * invite if one's waiting, else your last game to play again; the two ways to sit down as big tiles; your friends as
  * faces; your poker on one card (How to Play before your first hand); the games as a shelf you swipe; Premium.
@@ -47,8 +41,6 @@ export default function Home() {
     const t = setTimeout(() => void maybeAskForReview(games, bestPlays), 2500);
     return () => clearTimeout(t);
   }, [games, bestPlays]);
-  const reduce = useReduceMotion();
-  const slide = reduce ? undefined : LinearTransition.duration(320).easing(EASE_OUT);
   return (
     <>
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
@@ -69,18 +61,14 @@ export default function Home() {
             ))}
           </View>
         )}
-        <StartTiles />
-        <Animated.View layout={slide} style={{ gap: spacing.lg }}>
-          <GameRow />
-          {FRIENDS_ON && <FriendsStrip />}
-          {record.hands > 0 ? <PassportCard /> : <FirstHand />}
-          {/* Asked for after a first finished game, not before the player has had any fun; the crowns on the game tiles say it meanwhile. */}
-          {!premium && games > 0 && <PremiumBanner />}
+        <JoinBar />
+        <GameGrid />
+        {/* Asked for after a first finished game, not before the player has had any fun; the crowns on the game tiles say it meanwhile. */}
+        {!premium && games > 0 && <PremiumBanner />}
 
-          <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-            Play chips only. They have no cash value and can&apos;t be bought or won.
-          </ThemedText>
-        </Animated.View>
+        <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
+          Play chips only. They have no cash value and can&apos;t be bought or won.
+        </ThemedText>
       </TabScreen>
     </>
   );

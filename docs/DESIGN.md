@@ -8,9 +8,9 @@
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
 > **Minimal Home, a test on a branch (owner, 2026-11-10, from a reference with a big greeting; not merged until the
-> owner has seen it on TestFlight).** Play is one page on the moving deep blue field (`GrainBackground`, always dark):
-> FlipUp in SF Pro Rounded heavy and your face, "Hi, <name>." at 92pt rounded heavy, one line under it, then near the
-> thumb the quiet see-through cards (white at 9%, radius 24): your live table when you're at one (a green LIVE tag),
+> owner has seen it on TestFlight).** Play is one page on a livelier moving field of its own (`LivelyBackground`: five brighter lights on 4.5 to 10s clocks over the same dark base, always dark):
+> FlipUp in SF Pro Rounded heavy and your face, "Hi, <name>." at up to 92pt rounded heavy (by screen height), one line under it, then down by the tab bar (the
+> page fits between the bars without scrolling; the room left over goes above and below the greeting) the quiet see-through cards (white at 9%, radius 24): your live table when you're at one (a green LIVE tag),
 > and every game's icon rolling slowly past (`GameCarousel`, the flat cartoon art from `b8cdec6`, 26pt a second,
 > still and swipeable under Reduce Motion), then Host a game (solid white, dark ink) and Join with a code (white at
 > 14%), and Play with bots and How it works as quiet links. Body text is SF Pro, headings and buttons SF Pro Rounded.

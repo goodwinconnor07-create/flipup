@@ -1,13 +1,13 @@
 import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { Platform, ScrollView, Text, useWindowDimensions, View } from 'react-native';
+import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Svg, { Path } from 'react-native-svg';
 
-import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { GameCarousel } from '@/components/home/game-carousel';
+import { LivelyBackground } from '@/components/home/lively-background';
 import { Icon } from '@/components/icon';
 import { MARK } from '@/components/launch-mark';
 import { PressableScale } from '@/components/pressable-scale';
@@ -25,6 +25,8 @@ const INK = '#0b1533';
 const SOFT = 'rgba(255, 255, 255, 0.7)';
 /** The logo's height: the app icon's spade, in white. */
 const LOGO = 40;
+/** The tab bar's height over the bottom safe area. */
+const TAB_BAR = 49;
 
 /**
  * Home, a minimal test that fits one screen without scrolling (owner, 10 Nov 2026, after a reference with a big greeting): the moving deep blue page, the
@@ -34,9 +36,11 @@ const LOGO = 40;
  */
 export default function Home() {
   const insets = useSafeAreaInsets();
-  // The greeting scales with the screen's height, so the whole page fits above the tab bar without scrolling.
+  // The greeting is as big as the screen allows (92pt on a big phone), and the page fits between the status bar and
+  // the tab bar without scrolling. The insets are ours ("never"): with iOS's automatic ones, a page that fills its
+  // frame is taller than the room it has and scrolls.
   const { height } = useWindowDimensions();
-  const hi = Math.round(Math.max(52, Math.min(76, height * 0.084)));
+  const hi = Math.round(Math.max(56, Math.min(92, height * 0.1)));
   const name = useProfile().name.trim();
   const record = usePokerRecord();
   // After a good moment (three finished games or ten best plays) iOS may ask for a rating, once.
@@ -54,11 +58,11 @@ export default function Home() {
   return (
     <ForceScheme scheme="dark">
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
-      <GrainBackground style={{ flex: 1 }}>
+      <LivelyBackground style={{ flex: 1 }}>
         <ScrollView
-          contentInsetAdjustmentBehavior="automatic"
+          contentInsetAdjustmentBehavior="never"
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ flexGrow: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: (Platform.OS === 'ios' ? 0 : insets.top) + spacing.xxs, paddingBottom: spacing.md, gap: spacing.lg }}
+          contentContainerStyle={{ flexGrow: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xxs, paddingBottom: insets.bottom + TAB_BAR + spacing.md, gap: spacing.lg }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <View accessible accessibilityRole="header" accessibilityLabel="FlipUp">
@@ -69,6 +73,9 @@ export default function Home() {
             <ProfileMenu />
           </View>
 
+          {/* The room left over goes above and below the greeting, so everything sits lower, down to the tab bar. */}
+          <View style={{ flex: 1 }} />
+
           <View style={{ gap: spacing.sm }}>
             <Text maxFontSizeMultiplier={1} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.5} style={{ fontFamily: ROUNDED, fontSize: hi, lineHeight: hi, fontWeight: '900', letterSpacing: -2, color: '#ffffff' }}>
               {`Hi,\n${name || 'there'}.`}
@@ -77,6 +84,8 @@ export default function Home() {
               Host a table, or join one with a friend’s code.
             </Text>
           </View>
+
+          <View style={{ flex: 1 }} />
 
           <View style={{ gap: spacing.sm }}>
             <LiveCard />
@@ -91,7 +100,7 @@ export default function Home() {
             <QuietLink label="How it works" onPress={go('/how-to-play/holdem')} />
           </View>
         </ScrollView>
-      </GrainBackground>
+      </LivelyBackground>
     </ForceScheme>
   );
 }

@@ -10,6 +10,7 @@ import { EASE_IN_OUT, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { brand, motion, spacing, useColors, useScheme } from '@/theme';
 
+import { GlassSurface } from './glass-surface';
 import { haptic } from './haptics';
 import { Icon } from './icon';
 import { PressableScale } from './pressable-scale';
@@ -18,9 +19,10 @@ import { PressableScale } from './pressable-scale';
 export const SIZE = { pill: 17, small: 15, title: 20 } as const;
 
 /**
- * Pill tabs (Flighty's Everyone / Today): the chosen one sits in a soft white capsule, the rest are grey words.
- * The capsule slides to the tab you pick (one object moving, rule 20), or jumps under Reduce Motion. `action` goes
- * after the tabs on the same line (the blue + button).
+ * Pill tabs (Flighty's Everyone / Today) on a Liquid Glass track (`GlassSurface`: real glass on iOS 26, the system
+ * blur below it). The chosen tab sits in a brighter capsule inside the track and the rest are grey words. The capsule
+ * slides to the tab you pick (one object moving, rule 20), or jumps under Reduce Motion. `action` goes after the
+ * track on the same line (the blue + button) and shrinks before anything runs off the screen.
  */
 export function PillTabs<T extends string>({ tabs, value, onChange, action }: { tabs: { id: T; label: string }[]; value: T; onChange: (id: T) => void; action?: ReactNode }) {
   const colors = useColors();
@@ -44,51 +46,65 @@ export function PillTabs<T extends string>({ tabs, value, onChange, action }: { 
     setFrames((f) => (f[id]?.x === px && f[id]?.w === width ? f : { ...f, [id]: { x: px, w: width } }));
   };
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: -spacing.sm - 4 }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }} accessibilityRole="tablist">
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            { position: 'absolute', left: 0, top: 0, bottom: 0, borderRadius: 999, borderCurve: 'continuous', backgroundColor: dark ? '#2c2c2e' : '#ffffff', boxShadow: dark ? undefined : '0 3px 14px rgba(0, 0, 0, 0.09)' },
-            capsule,
-          ]}
-        />
-        {tabs.map((t) => {
-          const on = t.id === value;
-          return (
-            <Pressable
-              key={t.id}
-              onLayout={measure(t.id)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: on }}
-              onPress={() => {
-                if (on) return;
-                haptic.select();
-                onChange(t.id);
-              }}
-              style={{ minHeight: 40, paddingHorizontal: spacing.md, justifyContent: 'center' }}
-            >
-              <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: SIZE.pill, fontWeight: on ? '500' : '400', color: on ? colors.label : colors.secondaryLabel }}>
-                {t.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-      {action ? <View style={{ marginLeft: spacing.xs }}>{action}</View> : null}
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+      <GlassSurface interactive style={{ flexShrink: 0, borderRadius: 999, borderCurve: 'continuous', padding: TRACK }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }} accessibilityRole="tablist">
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              {
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                borderRadius: 999,
+                borderCurve: 'continuous',
+                backgroundColor: dark ? 'rgba(255, 255, 255, 0.16)' : 'rgba(255, 255, 255, 0.92)',
+                boxShadow: dark ? undefined : '0 2px 8px rgba(0, 0, 0, 0.08)',
+              },
+              capsule,
+            ]}
+          />
+          {tabs.map((t) => {
+            const on = t.id === value;
+            return (
+              <Pressable
+                key={t.id}
+                onLayout={measure(t.id)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                onPress={() => {
+                  if (on) return;
+                  haptic.select();
+                  onChange(t.id);
+                }}
+                style={{ minHeight: 36, paddingHorizontal: 14, justifyContent: 'center' }}
+              >
+                <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: SIZE.pill, fontWeight: on ? '600' : '400', color: on ? colors.label : colors.secondaryLabel }}>
+                  {t.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </GlassSurface>
+      {action ? <View style={{ flexShrink: 1, minWidth: 0 }}>{action}</View> : null}
     </View>
   );
 }
+
+/** The space between the glass track's edge and the chosen tab's capsule. */
+const TRACK = 4;
 
 /** The blue action beside the pills (Flighty's "+ Add Friend"): a filled blue circle with a plus, and the words. */
 export function PlusAction({ label }: { label: string }) {
   const colors = useColors();
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 40, paddingHorizontal: spacing.xxs }}>
-      <View style={{ width: 26, height: 26, borderRadius: 13, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 40 }}>
+      <View style={{ flexShrink: 0, width: 26, height: 26, borderRadius: 13, backgroundColor: colors.accent, alignItems: 'center', justifyContent: 'center' }}>
         <Icon name="plus" size={14} color="#ffffff" weight="bold" />
       </View>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: SIZE.pill, fontWeight: '500', color: colors.accent }}>
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ flexShrink: 1, fontSize: SIZE.pill, fontWeight: '500', color: colors.accent }}>
         {label}
       </Text>
     </View>

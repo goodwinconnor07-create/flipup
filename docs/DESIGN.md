@@ -19,11 +19,12 @@ owner's answers from the November 2026 interview (nine rounds), why each was cho
 Flighty-style tabs, a test on a branch (owner request, 10 November 2026; not merged until the owner has seen it
 on TestFlight). The tab bar is My Games, Training and Stats, laid out like Flighty's My Flights, Friends and
 Passport: a white page, the title in bold SF Pro at 34pt with a share button and your emoji on its right, pill tabs
-under it (the chosen one in a soft white capsule that slides, the rest grey words, 17pt) with one blue "+" action on
-the same line, and plain list rows (a 44pt picture, a 15pt grey line with the day or hand on its right, a 20pt
-semibold title, a 15pt line under it). My Games: Online and Bot Games, "+ Start a Game" (a menu: Play with friends,
-Play with bots, Join with a code); the game you're in on top with its name in blue, a thin edge-to-edge line, then
-every game you've played a little greyed. A row copies Flighty's flight row: a status column (the game's picture and
+under it on one Liquid Glass track (`GlassSurface`; the chosen one in a brighter capsule that slides, the rest grey
+words, 17pt), never wider than the screen, with one blue "+" action on the same line that shrinks to fit, and plain list rows (a 44pt picture, a 15pt grey line with the day or hand on its right, a 20pt
+semibold title, a 15pt line under it). My Games: Online and Bot Games, "+ Join a Game" (the Join sheet); the game you're in on top, or, when
+nothing is live in that tab, a Start a Game row in the same layout (a blue plus over NEW; Online opens Play with
+friends, Bot Games Play with bots) with its name in blue, a thin edge-to-edge line, then
+every game you've played a little greyed. A row copies Flighty's flight row: a status column (the game's picture, the flat cartoon art from `b8cdec6` with no words on it, and
 LIVE with a blinking green dot, your place, or LEFT), a grey line with a mode icon, online or bots and the day, a
 two-part status on its right ("Playing **hand 12**" in green, "Finished **+2,400**" in gold, a loss in plain bold),
 the game's name, and who was there (emoji and names). Training: Practice (what to work on in blue, a thin line, every kind of spot with how

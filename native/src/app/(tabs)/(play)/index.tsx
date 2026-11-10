@@ -6,9 +6,9 @@ import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
 import { SwapIcon } from '@/components/swap';
 import { InviteCard } from '@/components/invite-card';
-import { Menu } from '@/components/menu';
 import { ProfileMenu } from '@/components/profile-menu';
-import { EmptyState, ListDivider, ListRow, LiveDot, PillTabs, PlusAction, SIZE } from '@/components/tab-list';
+import { ListDivider, ListRow, LiveDot, PillTabs, PlusButton, SIZE } from '@/components/tab-list';
+import { Icon } from '@/components/icon';
 import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { FRIENDS_ON } from '@/scope';
 import { APP_INFO } from '../../../../appInfo';
@@ -71,10 +71,6 @@ export default function MyGames() {
     else router.push(`/game/${g.variant}`);
   };
 
-  const start = [
-    { title: 'Play with friends', symbol: 'person.2.fill' as const, onPress: () => router.push('/play-friends') },
-    { title: 'Play with bots', symbol: 'cpu.fill' as const, onPress: () => router.push('/play-bots') },
-  ];
   return (
     <>
       <Stack.Screen options={{ title: 'My Games', headerShown: false }} />
@@ -92,14 +88,7 @@ export default function MyGames() {
           tabs={TABS}
           value={tab}
           onChange={setTab}
-          action={
-            <Menu
-              label="Start a game"
-              sections={[tab === 'bots' ? [...start].reverse() : start, [{ title: 'Join with a code', symbol: 'qrcode.viewfinder', onPress: () => router.push('/join') }]]}
-            >
-              <PlusAction label="Start a Game" />
-            </Menu>
-          }
+          action={<PlusButton label="Join a Game" onPress={() => router.push('/join')} />}
         />
 
         {FRIENDS_ON && box.invites.length > 0 && (
@@ -110,27 +99,18 @@ export default function MyGames() {
           </View>
         )}
 
-        {shown.live.length + shown.past.length === 0 ? (
-          <EmptyState
-            title={tab === 'online' ? 'Deal In Your Friends' : 'Let’s Play a Hand'}
-            line={tab === 'online' ? 'Tap Start a Game to host a table, or join one with a code' : 'Tap Start a Game to sit down with the bots'}
-          />
-        ) : (
-          <View>
-            {shown.live.map((g) => (
-              <GameLineRow key={g.key} game={g} onPress={() => open(g)} />
-            ))}
-            {shown.live.length > 0 && shown.past.length > 0 && <ListDivider />}
-            {shown.past.map((g, i) => (
-              <GameLineRow key={g.key} game={g} separator={i < shown.past.length - 1} onPress={() => open(g)} />
-            ))}
-            {shown.past.length > 0 && (
-              <Text maxFontSizeMultiplier={1.3} style={{ paddingTop: spacing.lg, fontSize: 13, color: colors.tertiaryLabel, textAlign: 'center' }}>
-                Play chips only. They have no cash value.
-              </Text>
-            )}
-          </View>
-        )}
+        <View>
+          {shown.live.length > 0 ? shown.live.map((g) => <GameLineRow key={g.key} game={g} onPress={() => open(g)} />) : <StartRow tab={tab} />}
+          {shown.past.length > 0 && <ListDivider />}
+          {shown.past.map((g, i) => (
+            <GameLineRow key={g.key} game={g} separator={i < shown.past.length - 1} onPress={() => open(g)} />
+          ))}
+          {shown.past.length > 0 && (
+            <Text maxFontSizeMultiplier={1.3} style={{ paddingTop: spacing.lg, fontSize: 13, color: colors.tertiaryLabel, textAlign: 'center' }}>
+              Play chips only. They have no cash value.
+            </Text>
+          )}
+        </View>
       </TabScreen>
     </>
   );
@@ -140,6 +120,50 @@ function shareApp() {
   haptic.tap();
   const url = `https://apps.apple.com/app/id${APP_INFO.appStoreId}`;
   void Share.share({ message: `Poker night on your phones. Play FlipUp with me: ${url}`, url }).catch(() => undefined);
+}
+
+/**
+ * When nothing is going on in this tab, its first row is a game waiting to be started, laid out like the others: a
+ * blue plus where the game's picture goes, NEW under it, the title in blue. Online opens Play with friends, Bot Games
+ * Play with bots.
+ */
+function StartRow({ tab }: { tab: GamesTab }) {
+  const colors = useColors();
+  const online = tab === 'online';
+  return (
+    <ListRow
+      leading={
+        <View style={{ width: 66, alignItems: 'center', gap: 6 }}>
+          <View style={{ width: 40, height: 40, borderRadius: 40 * 0.24, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
+            <Icon name="plus" size={20} color="#ffffff" weight="bold" />
+          </View>
+          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '500', letterSpacing: 0.4, color: colors.accent }}>
+            NEW
+          </Text>
+        </View>
+      }
+      eyebrowLead={<SwapIcon name={online ? 'person.2.fill' : 'cpu.fill'} size={14} color={colors.accent} />}
+      eyebrow={online ? 'Online' : 'Bot game'}
+      when={
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: SIZE.small, color: colors.secondaryLabel }}>
+          {online ? 'Up to 9 ' : 'Ready '}
+          <Text style={{ fontWeight: '700', color: colors.accent }}>{online ? 'players' : 'now'}</Text>
+        </Text>
+      }
+      title="Start a Game"
+      tint={colors.accent as string}
+      label={online ? 'Start a game. Host a table and invite friends with a code' : 'Start a game. Sit down with the bots now'}
+      onPress={() => {
+        haptic.tap();
+        router.push(online ? '/play-friends' : '/play-bots');
+      }}
+      detail={
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 16, lineHeight: 22, color: colors.label }}>
+          {online ? 'Host a table and share the code' : 'You and four bots, any game'}
+        </Text>
+      }
+    />
+  );
 }
 
 /** The left column, as Flighty's status column: the game's picture and, under it, LIVE (with its dot), your place or LEFT. */

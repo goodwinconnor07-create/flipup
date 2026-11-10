@@ -7,6 +7,14 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **Minimal Home, a test on a branch (owner, 2026-11-10, from a reference with a big greeting; not merged until the
+> owner has seen it on TestFlight).** Play is one page on the moving deep blue field (`GrainBackground`, always dark):
+> FlipUp in SF Pro Rounded heavy and your face, "Hi, <name>." at 92pt rounded heavy, one line under it, then near the
+> thumb the quiet see-through cards (white at 9%, radius 24): your live table when you're at one (a green LIVE tag),
+> and every game's icon rolling slowly past (`GameCarousel`, the flat cartoon art from `b8cdec6`, 26pt a second,
+> still and swipeable under Reduce Motion), then Host a game (solid white, dark ink) and Join with a code (white at
+> 14%), and Play with bots and How it works as quiet links. Body text is SF Pro, headings and buttons SF Pro Rounded.
+
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
 > pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,

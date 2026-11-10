@@ -96,6 +96,8 @@ export default function RootLayout() {
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />
         <Stack.Screen name="table-theme" options={{ ...sheet, title: 'Table theme' }} />
         <Stack.Screen name="table-settings" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Table settings' }} />
+        {/* Range training: a set of five hands, full screen over the tabs (Back and the set's progress on top). */}
+        <Stack.Screen name="range-session" options={{ headerShown: false, title: 'Range training' }} />
         {/* Range training: the full breakdown of the hand you just answered (the result card's Breakdown). */}
         <Stack.Screen name="range-breakdown" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Breakdown' }} />
         <Stack.Screen name="hand-rankings"options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand rankings' }} />

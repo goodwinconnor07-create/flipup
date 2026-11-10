@@ -13,7 +13,7 @@ import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 
-const SIZE = 60;
+const SIZE = 52;
 const GAP = 10;
 /** Points a second: slow enough to read each game as it passes. */
 const SPEED = 26;
@@ -70,7 +70,7 @@ export function GameCarousel() {
   );
 
   return (
-    <View style={{ borderRadius: 24, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.09)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', paddingVertical: spacing.md, gap: spacing.sm }}>
+    <View style={{ borderRadius: 24, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: 'rgba(255, 255, 255, 0.09)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', paddingVertical: spacing.sm + 4, gap: spacing.sm }}>
       <PressableScale
         accessibilityRole="button"
         accessibilityLabel={`${VARIANTS.length} game modes. See all`}

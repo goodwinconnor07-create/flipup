@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
 import { useMyUsername, usePals, type Pal } from '@/state/pals';
-import { spacing, useColors, ROUNDED } from '@/theme';
+import { spacing, useColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { useFriendActions } from '../friend-menu';
@@ -53,7 +53,7 @@ function Face({ pal }: { pal: Pal }) {
   return (
     <View style={{ width: FACE + 8, alignItems: 'center', gap: 6 }}>
       <Avatar emoji={pal.emoji} size={FACE} />
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '600', color: colors.label }}>
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: colors.label }}>
         {pal.name}
       </Text>
     </View>
@@ -76,7 +76,7 @@ function AddFace({ onPress }: { onPress: () => void }) {
       <View style={{ width: FACE, height: FACE, borderRadius: FACE / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell, borderWidth: 2, borderStyle: 'dashed', borderColor: colors.tertiaryLabel }}>
         <Icon name="plus" size={26} color={colors.accent} />
       </View>
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '600', color: colors.accent }}>
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', color: colors.accent }}>
         Add
       </Text>
     </PressableScale>

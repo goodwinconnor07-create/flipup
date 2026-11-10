@@ -1,20 +1,12 @@
-// How each game looks outside the table, shared by the web app and the iPhone app: its colours, a line that sets
-// the mood, and its picture.
-//
-// The pictures are one drawn system ("stickers"): a flat colour field, one bold subject, every shape with the same
-// dark outline and a hard flat shadow. No gradients, glows, blurs or captions inside a picture: the game's name goes
-// on the band under it (see `band`). A picture is a list of shapes; `prims()` turns the list into plain paths and
-// text that the web (src/ui/GameIllustrations.tsx) and the app (native/src/components/game-picture.tsx) draw the
-// same way. Suits are paths, never font glyphs, so they look the same on every phone.
-import { CIRCLE_HOURS, type Variant } from '../game/variants';
+// How each game looks outside the table, shared by the web app and the iPhone app: its card gradient, a line that
+// sets the mood, and its picture. A picture is a list of plain shapes on a 200 × 120 box, built from playing cards
+// in the same four-colour deck the table uses (no faces, no scenes). The web draws the shapes as SVG
+// (src/ui/GameIllustrations.tsx) and the app with react-native-svg (native/src/components/game-picture.tsx).
+import { CIRCLE_HOURS, CROSS_CELLS, type Variant } from '../game/variants';
 
 export interface GameLook {
-  /** The picture's flat field colour, as a pair (the web's CSS reads it as a gradient; both stops are the same). */
+  /** Home card: the gradient, top to bottom. */
   card: readonly [string, string];
-  /** The name band under the picture: a darker shade of the field. */
-  band: string;
-  /** The soft spot and scattered suits behind the subject: a lighter shade of the field. */
-  tone: string;
   /** A line that sets the mood. Shown on the game's start sheet. */
   mood: string;
   /** Two or three words under the game's name on Home: why it's fun. */
@@ -23,22 +15,20 @@ export interface GameLook {
   pitch: number;
 }
 
-const look = (field: string, band: string, tone: string, mood: string, hook: string, pitch: number): GameLook => ({ card: [field, field], band, tone, mood, hook, pitch });
-
 export const GAME_LOOK: Record<Variant, GameLook> = {
-  holdem: look('#1fa463', '#137347', '#35b877', 'The classic. Your felt, your rules.', 'The classic', 1),
-  pineapple: look('#19b3a6', '#0f7d76', '#33c4b8', 'Sunny, juicy and a bit silly.', 'Throw one away', 1.12),
-  deuces: look('#ef4a93', '#b32a6a', '#f46aa8', 'Wild cards, loud colours.', 'Every 2 is wild', 1.2),
-  ghost: look('#4b4fa6', '#30337a', '#6064b8', 'Cold air. Something is watching the pot.', 'Beat the ghost', 0.82),
-  pittsburgh: look('#53708f', '#374f69', '#6885a3', 'Steel, rivers and a bridge in the dark.', 'Three rivers', 0.94),
-  dice: look('#f5871f', '#c05f0c', '#f89c44', 'Craps table energy. Everything is one roll from changing.', 'A die swaps a card', 1),
-  redriver: look('#e8414f', '#ad2331', '#ee5f6b', 'The river runs red. Keep going until it stops.', 'Red keeps dealing', 0.9),
-  crucifix: look('#7b57c9', '#553a96', '#8f6fd4', 'Five cards in a cross. Read the arms.', 'Read the cross', 0.92),
-  circle: look('#2f7de0', '#1f58a6', '#4c91e6', 'Six cards round a clock. Hours matter.', 'Round the clock', 1.05),
-  memory: look('#5b63e6', '#3c42ad', '#737aec', 'Twenty cards gone. Do you remember which?', 'Remember the 20', 1.08),
-  beanstalk: look('#4db5ee', '#2b83b8', '#6ac3f2', 'Your hand keeps growing. How high can it climb?', 'Your hand grows', 1.1),
-  bjholdem: look('#2a2e3d', '#191c27', '#3a3f52', 'Hit or stand. Half for the best hand, half for 21.', 'Hit, then bet', 0.97),
-  imposter: look('#6a5f8f', '#4a4169', '#7f74a3', 'Trust nobody. Watch the bets.', 'Find the imposter', 0.88),
+  holdem: { card: ['#1f8a57', '#0a3b25'], mood: 'The classic. Your felt, your rules.', hook: 'The classic', pitch: 1 },
+  pineapple: { card: ['#f9b233', '#e8641b'], mood: 'Sunny, juicy and a bit silly.', hook: 'Throw one away', pitch: 1.12 },
+  deuces: { card: ['#ff4fa0', '#7a2cff'], mood: 'Wild cards, loud colours.', hook: 'Every 2 is wild', pitch: 1.2 },
+  ghost: { card: ['#1b2a3a', '#050a10'], mood: 'Cold air. Something is watching the pot.', hook: 'Beat the ghost', pitch: 0.82 },
+  pittsburgh: { card: ['#32465c', '#0e151d'], mood: 'Steel, rivers and a bridge in the dark.', hook: 'Three rivers', pitch: 0.94 },
+  dice: { card: ['#c0283f', '#4a0a16'], mood: 'Craps table energy. Everything is one roll from changing.', hook: 'A die swaps a card', pitch: 1 },
+  redriver: { card: ['#d92b2b', '#2a0606'], mood: 'The river runs red. Keep going until it stops.', hook: 'Red keeps dealing', pitch: 0.9 },
+  crucifix: { card: ['#5a4691', '#1a1230'], mood: 'Five cards in a cross. Read the arms.', hook: 'Read the cross', pitch: 0.92 },
+  circle: { card: ['#1d7fb8', '#0a2a45'], mood: 'Six cards round a clock. Hours matter.', hook: 'Round the clock', pitch: 1.05 },
+  memory: { card: ['#7b5cff', '#2a1670'], mood: 'Twenty cards gone. Do you remember which?', hook: 'Remember the 20', pitch: 1.08 },
+  beanstalk: { card: ['#4caf50', '#14532d'], mood: 'Your hand keeps growing. How high can it climb?', hook: 'Your hand grows', pitch: 1.1 },
+  bjholdem: { card: ['#0f6b45', '#06281a'], mood: 'Hit or stand. Half for the best hand, half for 21.', hook: 'Hit, then bet', pitch: 0.97 },
+  imposter: { card: ['#2f3441', '#0a0b10'], mood: 'Trust nobody. Watch the bets.', hook: 'Find the imposter', pitch: 0.88 },
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
@@ -46,11 +36,6 @@ export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.hold
 /** The deck's four colours: spades black, hearts red, diamonds blue, clubs green. */
 export const SUIT_COLOUR: Record<string, string> = { '♠': '#16161d', '♥': '#e5322d', '♦': '#2563eb', '♣': '#16a34a' };
 export const GLOW = '#ffc933';
-/** The outline every shape in a picture shares, and how thick it is on the 100-wide square. */
-export const INK = '#14141c';
-export const OUTLINE = 3;
-const WHITE = '#ffffff';
-const BACK = '#2b5fe3';
 
 /** A playing card centred on (x, y), tilted `r` degrees, scaled `s`. `deal` is its place in the dealing order. */
 export interface CardShape {
@@ -62,16 +47,11 @@ export interface CardShape {
   rank?: string;
   suit?: string;
   back?: boolean;
-  /** The back's colour (the deck's blue when left out). */
-  backFill?: string;
-  /** A gold frame: the card that matters. */
   glow?: boolean;
   faded?: boolean;
-  /** A small card: one big suit, no rank. */
-  mini?: boolean;
   deal?: number;
 }
-/** The big faded suit behind a picture, cropped by the edge. Only the solo cards still use it. */
+/** The big faded suit behind a picture, cropped by the edge. */
 export interface MarkShape {
   kind: 'mark';
   suit: string;
@@ -85,16 +65,15 @@ export interface DieShape {
   y: number;
   r: number;
   pips: 1 | 2 | 3 | 4 | 5 | 6;
-  s?: number;
 }
-/** White capitals across a picture. Only the solo cards still use it: a game's name goes on its band. */
+/** White capitals across the picture: "WILD", "THREE RIVERS". */
 export interface LabelShape {
   kind: 'label';
   x: number;
   y: number;
   text: string;
 }
-/** A letter or number laid over the shapes (the 21 on Blackjack Hold'em's chip). */
+/** A big glyph laid over the cards (the ? on the imposter's card, the brain on Memory). */
 export interface GlyphShape {
   kind: 'glyph';
   x: number;
@@ -102,36 +81,10 @@ export interface GlyphShape {
   text: string;
   size: number;
   bold?: boolean;
+  /** Text colour; emoji leave it out. */
   ink?: string;
 }
-/** Any drawn shape. With `fill` and no `stroke` it gets the shared outline; `flat` leaves the outline off. */
-export interface PathShape {
-  kind: 'path';
-  d: string;
-  fill?: string;
-  stroke?: string;
-  sw?: number;
-  flat?: boolean;
-  opacity?: number;
-  dash?: string;
-  /** An SVG transform. */
-  t?: string;
-  /** Leave the hard shadow off (small details drawn on top of another shape). */
-  noShadow?: boolean;
-}
-/** Shapes moved, turned or scaled together. */
-export interface GroupShape {
-  kind: 'group';
-  t: string;
-  shapes: Shape[];
-}
-export type Shape = CardShape | MarkShape | DieShape | LabelShape | GlyphShape | PathShape | GroupShape;
-
-/** What the renderers draw: paths, text and groups, nothing else. */
-export type Prim =
-  | { tag: 'path'; d: string; fill: string; stroke?: string; sw?: number; opacity?: number; dash?: string; t?: string }
-  | { tag: 'text'; x: number; y: number; text: string; size: number; weight: number; fill: string; anchor: 'start' | 'middle'; opacity?: number; spacing?: number }
-  | { tag: 'g'; t?: string; opacity?: number; deal?: number; roll?: boolean; kids: Prim[] };
+export type Shape = CardShape | MarkShape | DieShape | LabelShape | GlyphShape;
 
 /** Where the dots sit on each face of a die, around its centre. */
 export const PIPS: Record<number, [number, number][]> = {
@@ -143,329 +96,130 @@ export const PIPS: Record<number, [number, number][]> = {
   6: [[-7, -9], [7, -9], [-7, 0], [7, 0], [-7, 9], [7, 9]],
 };
 
-// ── Geometry ────────────────────────────────────────────────────────────────
-
-const n = (v: number) => Math.round(v * 100) / 100;
-/** A rounded rectangle as a path. */
-export function rr(x: number, y: number, w: number, h: number, r: number): string {
-  return `M${n(x + r)} ${n(y)}h${n(w - 2 * r)}a${r} ${r} 0 0 1 ${r} ${r}v${n(h - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${r}h${n(-(w - 2 * r))}a${r} ${r} 0 0 1 ${-r} ${-r}v${n(-(h - 2 * r))}a${r} ${r} 0 0 1 ${r} ${-r}z`;
-}
-export function oval(cx: number, cy: number, rx: number, ry = rx): string {
-  return `M${n(cx - rx)} ${n(cy)}a${rx} ${ry} 0 1 0 ${n(rx * 2)} 0a${rx} ${ry} 0 1 0 ${n(-rx * 2)} 0z`;
-}
-
-/** The four suits as paths about (0, 0), each about 20 tall. */
-export const SUIT_PATH: Record<string, string> = {
-  '♥': 'M0 9.5C-13 0-11.5-9.5-5.5-9.5C-2.6-9.5-.6-7.6 0-5.4C.6-7.6 2.6-9.5 5.5-9.5C11.5-9.5 13 0 0 9.5Z',
-  '♦': 'M0-10.5L8.2 0L0 10.5L-8.2 0Z',
-  '♠': 'M0-10.5C9.5-2 10.5 1 10.5 3.4C10.5 7.4 5.6 8.6 1.9 5.4C2.3 7.6 3.2 9 4.6 10.5H-4.6C-3.2 9-2.3 7.6-1.9 5.4C-5.6 8.6-10.5 7.4-10.5 3.4C-10.5 1-9.5-2 0-10.5Z',
-  '♣': `${oval(0, -5.3, 4.9)}${oval(-5.4, 1.9, 4.9)}${oval(5.4, 1.9, 4.9)}M1.6 0H-1.6C-1.7 5-2.6 8-4.6 10.5H4.6C2.6 8 1.7 5 1.6 0Z`,
-};
-
-// ── Shapes to primitives ────────────────────────────────────────────────────
-
-const SHADOW = 0.24;
-
-function cardPrims({ x, y, r = 0, rank = '', suit = '♠', s = 1, back, backFill = BACK, glow, faded, mini, deal }: CardShape): Prim {
-  const colour = SUIT_COLOUR[suit] ?? SUIT_COLOUR['♠'];
-  const sw = OUTLINE / s;
-  const body = rr(-21, -30, 42, 60, 6.5);
-  const kids: Prim[] = [{ tag: 'path', d: body, fill: INK, opacity: SHADOW, t: `translate(0 ${n(3.4 / s)})` }];
-  if (back) {
-    kids.push({ tag: 'path', d: body, fill: backFill, stroke: INK, sw });
-    kids.push({ tag: 'path', d: rr(-14, -23, 28, 46, 3.5), fill: 'none', stroke: WHITE, sw: 2.4, opacity: 0.6 });
-    kids.push({ tag: 'path', d: SUIT_PATH['♦'], fill: WHITE, opacity: 0.6, t: 'scale(0.9)' });
-  } else {
-    kids.push({ tag: 'path', d: body, fill: WHITE, stroke: INK, sw });
-    if (glow) kids.push({ tag: 'path', d: rr(-21 + sw / 2 + 1.6, -30 + sw / 2 + 1.6, 42 - sw - 3.2, 60 - sw - 3.2, 4.6), fill: 'none', stroke: GLOW, sw: 3.2 });
-    if (mini) kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: 'translate(0 1) scale(1.75)' });
-    else {
-      kids.push({ tag: 'text', x: rank.length > 1 ? -17 : -15.5, y: -9.5, text: rank, size: 19, weight: 900, fill: colour, anchor: 'start', spacing: rank.length > 1 ? -1.5 : 0 });
-      kids.push({ tag: 'path', d: SUIT_PATH[suit] ?? SUIT_PATH['♠'], fill: colour, t: 'translate(3.5 11) scale(1.42)' });
-    }
-  }
-  return { tag: 'g', t: `translate(${x} ${y}) rotate(${r}) scale(${s})`, opacity: faded ? 0.5 : undefined, deal, kids };
-}
-
-function diePrims({ x, y, r, pips, s = 1 }: DieShape): Prim {
-  const body = rr(-19, -19, 38, 38, 8.5);
-  return {
-    tag: 'g',
-    roll: true,
-    t: `translate(${x} ${y}) rotate(${r}) scale(${s})`,
-    kids: [
-      { tag: 'path', d: body, fill: INK, opacity: SHADOW, t: `translate(0 ${n(3.4 / s)})` },
-      { tag: 'path', d: body, fill: WHITE, stroke: INK, sw: OUTLINE / s },
-      ...PIPS[pips].map(([px, py]): Prim => ({ tag: 'path', d: oval(px, py, 3.7), fill: SUIT_COLOUR['♥'] })),
-    ],
-  };
-}
-
-function pathPrims(p: PathShape): Prim[] {
-  const outlined = !p.flat && !p.stroke && p.fill !== undefined && p.fill !== 'none';
-  const main: Prim = { tag: 'path', d: p.d, fill: p.fill ?? 'none', stroke: p.stroke ?? (outlined ? INK : undefined), sw: p.sw ?? (outlined ? OUTLINE : undefined), opacity: p.opacity, dash: p.dash, t: p.t };
-  if (!outlined || p.noShadow) return [main];
-  return [{ tag: 'path', d: p.d, fill: INK, stroke: INK, sw: p.sw ?? OUTLINE, opacity: SHADOW, t: `translate(0 3.4)${p.t ? ` ${p.t}` : ''}` }, main];
-}
-
-/** A list of shapes as the plain paths, text and groups the renderers draw, back to front. */
-export function prims(shapes: Shape[]): Prim[] {
-  return shapes.flatMap((shape): Prim[] => {
-    switch (shape.kind) {
-      case 'card':
-        return [cardPrims(shape)];
-      case 'die':
-        return [diePrims(shape)];
-      case 'path':
-        return pathPrims(shape);
-      case 'group':
-        return [{ tag: 'g', t: shape.t, kids: prims(shape.shapes) }];
-      case 'mark':
-        return [{ tag: 'path', d: SUIT_PATH[shape.suit] ?? SUIT_PATH['♠'], fill: WHITE, opacity: 0.12, t: `translate(${shape.x} ${n(shape.y - shape.size * 0.36)}) scale(${n(shape.size / 22)})` }];
-      case 'label':
-        return [{ tag: 'text', x: shape.x, y: shape.y, text: shape.text, size: 11, weight: 800, fill: WHITE, anchor: 'middle', spacing: 1.5 }];
-      case 'glyph':
-        return [{ tag: 'text', x: shape.x, y: shape.y, text: shape.text, size: shape.size, weight: shape.bold ? 900 : 400, fill: shape.ink ?? INK, anchor: 'middle' }];
-    }
-  });
-}
-
-// ── The pictures ────────────────────────────────────────────────────────────
-
+const mark = (suit: string, x = 160, y = 96, size = 150): MarkShape => ({ kind: 'mark', suit, x, y, size });
+const label = (x: number, y: number, text: string): LabelShape => ({ kind: 'label', x, y, text });
 const card = (c: Omit<CardShape, 'kind'>): CardShape => ({ kind: 'card', ...c });
-/** An outlined shape. */
-const ink = (d: string, fill: string, more: Partial<PathShape> = {}): PathShape => ({ kind: 'path', d, fill, ...more });
-/** A shape with no outline: a detail drawn on top of an outlined one. */
-const flat = (d: string, fill: string, more: Partial<PathShape> = {}): PathShape => ({ kind: 'path', d, fill, flat: true, ...more });
-/** A line of colour `c` and width `w` with the outline round it. */
-const line = (d: string, c: string, w: number): PathShape[] => [
-  { kind: 'path', d, stroke: INK, sw: w + OUTLINE * 1.6, opacity: SHADOW, t: 'translate(0 3.4)' },
-  { kind: 'path', d, stroke: INK, sw: w + OUTLINE * 1.6 },
-  { kind: 'path', d, stroke: c, sw: w },
-];
-/** A four-point sparkle. */
-const sparkle = (x: number, y: number, r: number, fill = GLOW): PathShape => {
-  const k = r * 0.3;
-  return ink(`M${x} ${y - r}L${x + k} ${y - k}L${x + r} ${y}L${x + k} ${y + k}L${x} ${y + r}L${x - k} ${y + k}L${x - r} ${y}L${x - k} ${y - k}Z`, fill, { noShadow: true });
-};
-/** A leaf growing from (x, y) at `deg` (0 points right). */
-const leaf = (x: number, y: number, deg: number, len: number, fill: string): PathShape[] => [
-  ink(`M0 0C${n(len * 0.25)} ${n(-len * 0.5)} ${n(len * 0.8)} ${n(-len * 0.42)} ${len} 0C${n(len * 0.8)} ${n(len * 0.42)} ${n(len * 0.25)} ${n(len * 0.5)} 0 0Z`, fill, { t: `translate(${x} ${y}) rotate(${deg})` }),
-  { kind: 'path', d: `M${n(len * 0.18)} 0H${n(len * 0.72)}`, stroke: INK, sw: 1.8, opacity: 0.55, t: `translate(${x} ${y}) rotate(${deg})` },
-];
-/** A row of waves running well past both edges (the wide picture shows more of it), crests at `y`, filled down to the bottom of the square. */
-const waves = (y: number, fill: string, shift = 0): PathShape => {
-  let d = `M${-80 + shift} ${y}`;
-  for (let x = -80 + shift; x < 190; x += 20) d += `q5 -7 10 0t10 0`;
-  return ink(`${d}V130H${-80 + shift}Z`, fill, { noShadow: true });
-};
 
-const GREEN = '#2fb457';
-const GREEN_DARK = '#1f8a41';
-const RED = SUIT_COLOUR['♥'];
+/** A row of cards across the middle, for the games with a long board. */
+function row(cards: [string, string][], y: number, s: number, gap: number, glowFrom?: number): CardShape[] {
+  const start = 100 - ((cards.length - 1) * gap) / 2;
+  return cards.map(([rank, suit], i) => card({ x: start + i * gap, y, rank, suit, s, glow: glowFrom !== undefined && i >= glowFrom, deal: i }));
+}
 
-/** Each game's subject on a 100 × 100 square, back to front. It keeps clear of the bottom 6 (the band overlaps it). */
-const SUBJECTS: Record<Variant, () => Shape[]> = {
-  // The hand everyone knows, and a chip to play it with.
-  holdem: () => [
-    card({ x: 36, y: 47, r: -12, rank: 'A', suit: '♠', s: 1.02, deal: 0 }),
-    card({ x: 61, y: 46, r: 9, rank: 'K', suit: '♥', s: 1.02, deal: 1 }),
-    ink(oval(76, 76, 14), RED),
-    { kind: 'path', d: oval(76, 76, 10.6), stroke: WHITE, sw: 4.2, dash: '5 6.1' },
-    flat(oval(76, 76, 4.2), WHITE),
+const SCENES: Record<Variant, () => Shape[]> = {
+  holdem: () => [mark('♠'), card({ x: 80, y: 60, r: -12, rank: 'A', suit: '♠', s: 1.35, deal: 0 }), card({ x: 122, y: 58, r: 10, rank: 'K', suit: '♥', s: 1.35, deal: 1 })],
+  pineapple: () => [
+    mark('♦', 40),
+    card({ x: 64, y: 58, r: -14, rank: 'Q', suit: '♦', s: 1.15, deal: 0 }),
+    card({ x: 102, y: 54, r: -2, rank: 'J', suit: '♣', s: 1.15, deal: 1 }),
+    card({ x: 146, y: 72, r: 24, rank: '3', suit: '♠', s: 1.05, faded: true, deal: 2 }),
+    label(146, 104, 'TOSS ONE'),
   ],
-  // A pineapple in sunglasses, and the card it's throwing away.
-  pineapple: () => {
-    const cx = 46;
-    const cy = 61;
-    const rx = 22;
-    const ry = 26;
-    // The criss-cross on the skin: diagonal lines cut off at the edge of the fruit.
-    const chord = (c: number, dir: 1 | -1) => {
-      // Points on y - cy = dir * (x - cx) + c inside the oval, pulled in a little from the edge.
-      const A = 1 / (rx * rx) + 1 / (ry * ry);
-      const B = (2 * dir * c) / (ry * ry);
-      const C = (c * c) / (ry * ry) - 0.8;
-      const disc = B * B - 4 * A * C;
-      if (disc <= 0) return '';
-      const x1 = (-B - Math.sqrt(disc)) / (2 * A);
-      const x2 = (-B + Math.sqrt(disc)) / (2 * A);
-      return `M${n(cx + x1)} ${n(cy + dir * x1 + c)}L${n(cx + x2)} ${n(cy + dir * x2 + c)}`;
-    };
-    const hatch = [-24, -8, 8, 24].map((c) => chord(c, 1) + chord(c, -1)).join('');
-    return [
-      card({ x: 77, y: 34, r: 22, rank: '3', suit: '♠', s: 0.6, deal: 0 }),
-      ...[-34, -17, 0, 17, 34].map((a) => ink('M-6 0C-6 -12 -3 -20 0 -27C3 -20 6 -12 6 0Z', a === 0 ? GREEN : Math.abs(a) === 17 ? GREEN_DARK : GREEN, { t: `translate(${cx} ${cy - ry + 5}) rotate(${a})`, noShadow: true })),
-      ink(oval(cx, cy, rx, ry), '#ffc628'),
-      { kind: 'path', d: hatch, stroke: '#e08f0a', sw: 2.2 },
-      ink(`${rr(cx - 17, cy - 11, 15, 11, 4.5)}${rr(cx + 2, cy - 11, 15, 11, 4.5)}`, INK, { noShadow: true, sw: 1 }),
-      { kind: 'path', d: `M${cx - 3} ${cy - 7}H${cx + 3}`, stroke: INK, sw: 2.6 },
-      { kind: 'path', d: `M${cx - 13} ${cy - 8}l4 -1.5M${cx + 6} ${cy - 8}l4 -1.5`, stroke: WHITE, sw: 1.8, opacity: 0.9 },
-      { kind: 'path', d: `M${cx - 7} ${cy + 8}Q${cx} ${cy + 15} ${cx + 7} ${cy + 8}`, stroke: INK, sw: 2.6 },
-    ];
-  },
-  // One big wild two.
   deuces: () => [
-    card({ x: 50, y: 49, r: -7, rank: '2', suit: '♥', s: 1.22, glow: true, deal: 0 }),
-    sparkle(17, 26, 9),
-    sparkle(85, 22, 6.5, WHITE),
-    sparkle(83, 74, 10),
-    sparkle(15, 72, 6, WHITE),
+    mark('♣'),
+    card({ x: 54, y: 62, r: -10, rank: '2', suit: '♠', s: 1.1, glow: true, deal: 0 }),
+    card({ x: 100, y: 56, r: 0, rank: '2', suit: '♥', s: 1.1, glow: true, deal: 1 }),
+    card({ x: 146, y: 62, r: 10, rank: '2', suit: '♦', s: 1.1, glow: true, deal: 2 }),
+    label(100, 108, 'WILD'),
   ],
-  // The ghost and the two cards nobody sees.
   ghost: () => [
-    ink('M25 86V44C25 28 36 16 50 16C64 16 75 28 75 44V86L66.7 78L58.3 86L50 78L41.7 86L33.3 78Z', '#f4f5ff'),
-    flat(`${oval(41, 40, 4, 5.6)}${oval(59, 40, 4, 5.6)}`, INK),
-    flat(oval(50, 52, 3.4, 4.2), INK),
-    card({ x: 41, y: 70, r: -12, s: 0.52, back: true, deal: 0 }),
-    card({ x: 59, y: 70, r: 12, s: 0.52, back: true, deal: 1 }),
+    mark('♠', 40),
+    card({ x: 58, y: 62, r: -8, rank: 'A', suit: '♠', s: 1.15, deal: 0 }),
+    card({ x: 96, y: 58, r: 4, rank: 'A', suit: '♥', s: 1.15, deal: 1 }),
+    card({ x: 150, y: 60, r: 8, rank: 'K', suit: '♦', s: 1.15, faded: true, deal: 2 }),
+    card({ x: 150, y: 60, r: 8, s: 1.15, back: true, faded: true }),
+    label(150, 106, 'THE GHOST'),
   ],
-  // Three rivers: three last cards over the water.
-  pittsburgh: () => [
-    ...line('M-4 76q6.5 -8 13 0t13 0t13 0t13 0t13 0t13 0t13 0t13 0', '#9fd4ff', 4),
-    ...line('M-10 87q6.5 -8 13 0t13 0t13 0t13 0t13 0t13 0t13 0t13 0t13 0', '#9fd4ff', 4),
-    card({ x: 22, y: 44, r: -8, rank: '9', suit: '♣', s: 0.62, deal: 0 }),
-    card({ x: 78, y: 44, r: 8, rank: '7', suit: '♦', s: 0.62, deal: 2 }),
-    card({ x: 50, y: 38, rank: 'K', suit: '♠', s: 0.68, glow: true, deal: 1 }),
+  pittsburgh: () => [mark('♥'), ...row([['9', '♣'], ['5', '♦'], ['K', '♠'], ['Q', '♥'], ['7', '♦']], 52, 0.86, 36, 2), label(100, 104, 'THREE RIVERS')],
+  dice: () => [mark('♦'), ...row([['T', '♠'], ['8', '♦'], ['4', '♣'], ['J', '♥']], 48, 0.8, 32), { kind: 'die', x: 158, y: 84, r: 14, pips: 5 }, label(64, 104, 'DIE ON THE RIVER')],
+  redriver: () => [mark('♥'), ...row([['9', '♠'], ['4', '♣'], ['K', '♥'], ['6', '♦'], ['Q', '♥'], ['2', '♦']], 52, 0.74, 29, 2), label(100, 104, 'RED KEEPS COMING')],
+  imposter: () => [
+    mark('♣', 40),
+    card({ x: 70, y: 60, r: -8, rank: 'K', suit: '♠', s: 1.15, deal: 0 }),
+    card({ x: 120, y: 58, r: 8, s: 1.15, back: true, deal: 1 }),
+    { kind: 'glyph', x: 120, y: 70, text: '?', size: 34, bold: true, ink: '#fff' },
+    label(100, 106, "WHO'S BLUFFING"),
   ],
-  // The river card and the die that swaps it.
-  dice: () => [card({ x: 37, y: 45, r: -11, rank: 'J', suit: '♥', s: 1, deal: 0 }), { kind: 'die', x: 67, y: 66, r: 14, pips: 5, s: 1.08 }],
-  // A red card riding a red river.
-  redriver: () => [
-    waves(64, '#b81c2e', 6),
-    card({ x: 50, y: 44, r: -9, rank: 'K', suit: '♥', s: 0.98, deal: 0 }),
-    waves(72, '#8f1322'),
-    { kind: 'path', d: 'M14 84q5 -5 10 0M58 88q5 -5 10 0M80 80q5 -5 10 0', stroke: WHITE, sw: 2.2, opacity: 0.55 },
+  bjholdem: () => [
+    mark('♠', 150),
+    card({ x: 52, y: 62, r: -10, rank: 'K', suit: '♠', deal: 0 }),
+    card({ x: 84, y: 58, r: 4, rank: 'A', suit: '♥', glow: true, deal: 1 }),
+    label(150, 64, '21'),
   ],
-  // The cross.
-  crucifix: () =>
-    (
-      [
-        [50, 22, '♥'],
-        [27.5, 50, '♣'],
-        [72.5, 50, '♦'],
-        [50, 78, '♥'],
-        [50, 50, '♠'],
-      ] as [number, number, string][]
-    ).map(([x, y, suit], i) => card({ x, y, suit, s: 0.43, mini: true, glow: i === 4, deal: i })),
-  // Six cards round a clock.
+  memory: () => [
+    mark('♦', 44),
+    ...Array.from({ length: 10 }, (_, i) =>
+      card({ x: 42 + (i % 5) * 29, y: 36 + Math.floor(i / 5) * 46, rank: ['A', 'K', '7', '2', 'Q', '9', 'J', '4', 'A', '5'][i], suit: ['♠', '♥', '♦', '♣'][i % 4], s: 0.62, faded: i % 3 === 1, deal: i }),
+    ),
+    { kind: 'glyph', x: 170, y: 70, text: '🧠', size: 40 },
+  ],
+  beanstalk: () => [
+    mark('♣', 150),
+    ...[0, 1, 2, 3, 4].map((i) => card({ x: 60 + i * 14, y: 96 - i * 16, r: -10 + i * 5, rank: ['9', '9', 'K', '9', 'K'][i], suit: ['♣', '♥', '♠', '♦', '♥'][i], s: 0.72, glow: i === 4, deal: i })),
+  ],
+  crucifix: () => [
+    mark('♠', 44),
+    ...CROSS_CELLS.map(([r, c], i) => card({ x: 100 + (c - 3) * 21, y: 60 + (r - 3) * 22, rank: ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6'][i], suit: ['♠', '♥', '♦', '♣'][i % 4], s: 0.34, glow: i === 0, deal: i })),
+  ],
   circle: () => [
-    ink(oval(50, 50, 15), WHITE),
-    { kind: 'path', d: 'M50 50V40M50 50L57 54', stroke: INK, sw: 3 },
-    flat(oval(50, 50, 2.4), RED),
+    mark('♥', 44),
     ...CIRCLE_HOURS.map((h, i) => {
       const a = (h / 12) * 2 * Math.PI;
-      return card({ x: n(50 + Math.sin(a) * 34), y: n(50 - Math.cos(a) * 34), suit: ['♠', '♥', '♦', '♣', '♥', '♠'][i], s: 0.35, mini: true, deal: i });
+      return card({ x: 100 + Math.sin(a) * 52, y: 60 - Math.cos(a) * 34, rank: ['A', 'K', 'Q', 'J', 'T', '9'][i], suit: ['♠', '♥', '♦', '♣', '♠', '♥'][i], s: 0.5, glow: i < 2, deal: i });
     }),
   ],
-  // Cards you saw, and the gaps where the rest were.
-  memory: () => [
-    { kind: 'path', d: rr(54.5, 12.5, 25, 35, 4.5), stroke: WHITE, sw: 2.6, dash: '5 4.2', opacity: 0.85 },
-    { kind: 'path', d: rr(20.5, 54.5, 25, 35, 4.5), stroke: WHITE, sw: 2.6, dash: '5 4.2', opacity: 0.85 },
-    { kind: 'glyph', x: 67, y: 36.5, text: '?', size: 19, bold: true, ink: WHITE },
-    { kind: 'glyph', x: 33, y: 78.5, text: '?', size: 19, bold: true, ink: WHITE },
-    card({ x: 33, y: 30, rank: 'A', suit: '♠', s: 0.6, deal: 0 }),
-    card({ x: 67, y: 72, rank: 'Q', suit: '♦', s: 0.6, deal: 1 }),
-  ],
-  // A stalk with a hand that grows as it climbs.
-  beanstalk: () => [
-    ...line('M50 104C28 90 74 72 50 56C28 41 70 28 52 6', GREEN, 7),
-    ...leaf(42, 84, 205, 17, GREEN),
-    ...leaf(59, 66, -22, 17, GREEN_DARK),
-    ...leaf(42, 47, 200, 15, GREEN),
-    card({ x: 73, y: 80, r: 10, rank: '9', suit: '♣', s: 0.4, deal: 0 }),
-    card({ x: 25, y: 62, r: -10, rank: '9', suit: '♥', s: 0.48, deal: 1 }),
-    card({ x: 72, y: 34, r: 9, rank: 'K', suit: '♥', s: 0.6, glow: true, deal: 2 }),
-  ],
-  // A blackjack, and the 21 that takes half the pot.
-  bjholdem: () => [
-    card({ x: 36, y: 46, r: -12, rank: 'A', suit: '♠', s: 1.02, deal: 0 }),
-    card({ x: 60, y: 45, r: 9, rank: 'K', suit: '♥', s: 1.02, deal: 1 }),
-    ink(oval(75, 75, 15.5), GLOW),
-    { kind: 'path', d: oval(75, 75, 11.6), stroke: INK, sw: 1.6, opacity: 0.35 },
-    { kind: 'glyph', x: 75, y: 81, text: '21', size: 17, bold: true, ink: INK },
-  ],
-  // Three cards that look the same, and the one that's watching you.
-  imposter: () => [
-    card({ x: 26, y: 53, r: -15, s: 0.82, back: true, deal: 0 }),
-    card({ x: 74, y: 53, r: 15, s: 0.82, back: true, deal: 1 }),
-    card({ x: 50, y: 48, s: 1, back: true, backFill: RED, deal: 2 }),
-    flat(rr(31, 33, 38, 22, 5), RED),
-    ink(`${oval(41.5, 43, 6.6, 7.6)}${oval(58.5, 43, 6.6, 7.6)}`, WHITE, { noShadow: true, sw: 2.4 }),
-    flat(`${oval(44, 44.5, 3)}${oval(61, 44.5, 3)}`, INK),
-    { kind: 'path', d: 'M34 33.5L47 36.5M66 33.5L53 36.5', stroke: INK, sw: 2.8 },
-  ],
 };
 
-/** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣' };
-
-/** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
-export const gameThumb = (v: Variant): Shape[] => {
-  const id = SUBJECTS[v] ? v : 'holdem';
-  return [flat(oval(50, 50, 41), gameLook(id).tone), ...SUBJECTS[id]()];
-};
+/** The shapes of a game's picture, back to front. */
+export const gameScene = (v: Variant): Shape[] => (SCENES[v] ?? SCENES.holdem)();
 
 /**
- * A game's wide picture on a 200 × 120 box, for big cards and sheets: the same subject, bigger and in the middle,
- * with the game's suit scattered in the lighter tone either side.
+ * The small square version of each game's picture, for lists (a 100 × 100 box): one to three big cards that say
+ * what the game is about, no caption, so it still reads at 30 to 52 points.
  */
-export const gameScene = (v: Variant): Shape[] => {
-  const id = SUBJECTS[v] ? v : 'holdem';
-  const { tone } = gameLook(id);
-  const suit = SUIT_PATH[SCATTER[id]];
-  const spots: [number, number, number, number][] = [
-    [22, 26, -18, 1.5],
-    [38, 92, 14, 1.1],
-    [-2, 74, 24, 1.9],
-    [178, 30, 16, 1.6],
-    [166, 96, -12, 1.2],
-    [204, 70, -22, 1.9],
-  ];
-  return [
-    flat(oval(100, 62, 58), tone),
-    ...spots.map(([x, y, r, s]) => flat(suit, tone, { t: `translate(${x} ${y}) rotate(${r}) scale(${s})` })),
-    { kind: 'group', t: 'translate(42 3) scale(1.16)', shapes: SUBJECTS[id]() },
-  ];
+const THUMBS: Record<Variant, () => Shape[]> = {
+  holdem: () => [card({ x: 38, y: 54, r: -10, rank: 'A', suit: '♠', s: 1.05 }), card({ x: 63, y: 50, r: 10, rank: 'K', suit: '♥', s: 1.05 })],
+  pineapple: () => [
+    card({ x: 29, y: 56, r: -16, rank: 'Q', suit: '♦', s: 0.9 }),
+    card({ x: 50, y: 50, rank: 'J', suit: '♣', s: 0.9 }),
+    card({ x: 72, y: 57, r: 16, rank: '3', suit: '♠', s: 0.9, faded: true }),
+  ],
+  deuces: () => [card({ x: 50, y: 52, rank: '2', suit: '♥', s: 1.2, glow: true })],
+  ghost: () => [card({ x: 37, y: 53, r: -8, rank: 'A', suit: '♠', s: 1 }), card({ x: 64, y: 50, r: 8, s: 1, back: true, faded: true })],
+  pittsburgh: () => [
+    card({ x: 22, y: 50, rank: 'Q', suit: '♥', s: 0.62 }),
+    card({ x: 50, y: 50, rank: 'K', suit: '♠', s: 0.62, glow: true }),
+    card({ x: 78, y: 50, rank: '7', suit: '♦', s: 0.62 }),
+  ],
+  dice: () => [card({ x: 38, y: 48, r: -8, rank: 'J', suit: '♥', s: 1 }), { kind: 'die', x: 70, y: 68, r: 12, pips: 5 }],
+  redriver: () => [card({ x: 38, y: 53, r: -10, rank: 'K', suit: '♥', s: 1 }), card({ x: 63, y: 50, r: 10, rank: '9', suit: '♥', s: 1, glow: true })],
+  imposter: () => [card({ x: 50, y: 50, s: 1.15, back: true }), { kind: 'glyph', x: 50, y: 63, text: '?', size: 36, bold: true, ink: '#fff' }],
+  bjholdem: () => [card({ x: 38, y: 54, r: -10, rank: 'K', suit: '♠', s: 1.05 }), card({ x: 63, y: 50, r: 10, rank: 'A', suit: '♥', s: 1.05, glow: true })],
+  memory: () => [
+    card({ x: 34, y: 30, rank: 'A', suit: '♠', s: 0.6 }),
+    card({ x: 66, y: 30, rank: 'K', suit: '♥', s: 0.6, faded: true }),
+    card({ x: 34, y: 72, rank: '7', suit: '♦', s: 0.6, faded: true }),
+    card({ x: 66, y: 72, rank: '2', suit: '♣', s: 0.6 }),
+  ],
+  beanstalk: () => [
+    card({ x: 30, y: 68, r: -10, rank: '9', suit: '♣', s: 0.75 }),
+    card({ x: 50, y: 52, rank: '9', suit: '♥', s: 0.75 }),
+    card({ x: 70, y: 36, r: 10, rank: 'K', suit: '♥', s: 0.75, glow: true }),
+  ],
+  crucifix: () =>
+    [
+      [50, 50],
+      [50, 20],
+      [50, 80],
+      [22, 50],
+      [78, 50],
+    ].map(([x, y], i) => card({ x, y, rank: ['A', 'K', 'Q', 'J', 'T'][i], suit: ['♠', '♥', '♦', '♣', '♠'][i], s: 0.42, glow: i === 0 })),
+  circle: () =>
+    CIRCLE_HOURS.map((h, i) => {
+      const a = (h / 12) * 2 * Math.PI;
+      return card({ x: 50 + Math.sin(a) * 30, y: 50 - Math.cos(a) * 30, rank: ['A', 'K', 'Q', 'J', 'T', '9'][i], suit: ['♠', '♥', '♦', '♣', '♠', '♥'][i], s: 0.42, glow: i < 2 });
+    }),
 };
 
-// ── Spot pictures ───────────────────────────────────────────────────────────
-
-/** Small pictures for screens that aren't a game, drawn the same way: Join (a ticket) and Range training (a target). */
-export type SpotId = 'join' | 'train';
-
-const BLUE = '#2557d6';
-const SPOTS: Record<SpotId, () => Shape[]> = {
-  // A ticket with a code on it.
-  join: () => [
-    {
-      kind: 'group',
-      t: 'rotate(-8 50 50)',
-      shapes: [
-        // The ticket, with a bite out of the top and bottom edge where it tears.
-        ink('M16 28H50a5 5 0 0 0 10 0H84a6 6 0 0 1 6 6V66a6 6 0 0 1 -6 6H60a5 5 0 0 0 -10 0H16a6 6 0 0 1 -6 -6V34a6 6 0 0 1 6 -6Z', WHITE),
-        { kind: 'path', d: 'M55 37V63', stroke: INK, sw: 2.2, dash: '3 4.4', opacity: 0.45 },
-        // A corner of a QR code.
-        flat(`${rr(18, 36, 12, 12, 2.5)}${rr(34, 36, 12, 12, 2.5)}${rr(18, 52, 12, 12, 2.5)}`, INK),
-        flat(`${rr(21.5, 39.5, 5, 5, 1)}${rr(37.5, 39.5, 5, 5, 1)}${rr(21.5, 55.5, 5, 5, 1)}`, WHITE),
-        flat(`${rr(34, 52, 5, 5, 1)}${rr(41, 59, 5, 5, 1)}${rr(41, 52, 5, 5, 1)}`, INK),
-        // The code.
-        flat(`${rr(62, 38, 22, 9, 3)}`, BLUE),
-        flat(`${rr(62, 52, 22, 4.5, 2.2)}${rr(62, 60, 14, 4.5, 2.2)}`, INK, { opacity: 0.25 }),
-      ],
-    },
-    sparkle(86, 22, 8),
-    sparkle(13, 80, 6, WHITE),
-  ],
-  // A target, and the hand you're aiming with.
-  train: () => [
-    ink(oval(44, 46, 32), WHITE),
-    flat(oval(44, 46, 23.5), RED),
-    flat(oval(44, 46, 15), WHITE),
-    flat(oval(44, 46, 7), RED),
-    card({ x: 72, y: 68, r: 14, rank: 'A', suit: '♠', s: 0.62 }),
-  ],
-};
-
-/** A spot picture's shapes on a 100 × 100 box, back to front, with no field behind it. */
-export const spotArt = (id: SpotId): Shape[] => SPOTS[id]();
+/** The shapes of a game's square thumbnail, back to front, on a 100 × 100 box. */
+export const gameThumb = (v: Variant): Shape[] => (THUMBS[v] ?? THUMBS.holdem)();

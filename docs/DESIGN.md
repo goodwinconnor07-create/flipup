@@ -3,8 +3,8 @@
 > **In force now (owner, 2026-11-05, after seeing the mockups): keep the app's design as it is on TestFlight.**
 > The changes on top of it are small: no purple (the brand and action colour is a deep blue, `brand.violet` in
 > `native/src/theme/brand.ts`, keys unchanged), no film grain (pages get a moving deep blue light field,
-> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the game pictures in `gameArt.ts` (redrawn flat and outlined on 10 November, below; the
-> detailed lit icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
+> `GrainBackground`, and cards keep their slow glows, `LivingCard`), the original game pictures (`gameArt.ts`; the
+> detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
@@ -12,51 +12,6 @@
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,
 > chevrons and text buttons only. The pinned Start game / Deal button waiting on players is a solid dim fill, never
 > a translucent one, so rows scrolling under it can't show through.
-
-**Game pictures and game tiles (owner request, 10 November 2026, from a reference of flat cartoon game tiles: "so
-they don't seem vibe coded").** One drawn system for every game (`src/design/gameArt.ts`), replacing the card
-fans on gradients: a flat colour field (one hue per game, no gradient), a lighter spot behind, and one bold subject
-(a pineapple in sunglasses, a ghost holding two cards, a die, a red river, a clock of cards...) with the same dark
-outline (`INK`, `OUTLINE`) and the same hard, unblurred shadow on every shape. No glows, no faded giant suits and no
-captions inside a picture. Suits are paths, never font glyphs. Wherever you pick a game to play it is a `GameTile`
-(`native/src/components/game-tile.tsx`): the square picture, then the name in white rounded capitals on a band of
-the game's darker shade; a Premium game has a gold crown on an ink disc. Home's shelf is tiles with one grey line
-under each; See all is the Texas Hold'em card, then tiles three to a row. Lists (lobby, playlist, Premium) keep the
-small square picture with the name beside it. A new game gets a field, band and tone in `GAME_LOOK` and a subject in
-`SUBJECTS`, drawn with the shared helpers so it matches the set. Overview: `docs/design/game-tiles/all-games.png`.
-Home's first-run How to play is a quiet grey row like Join a game: the two start tiles are the one loud thing there.
-
-**Flat everywhere outside the table (owner request, 10 November 2026: "the entire app's UI given this sort of
-treatment"; the table stays exactly as it is).** The game tiles' rules now hold for every screen:
-- **Flat cards on the moving page.** `LivingCard` is one flat colour (the middle of its three; the third is its
-  darker band) and the coloured-card shadow is a plain dark shadow, never a blue glow: this replaces "cards keep
-  their slow glows" in the box at the top. The page behind the dark blue screens is still `GrainBackground`, the
-  moving deep blue light field (flattened for a day, then brought back at the owner's ask the same day).
-- **Tiles have a picture and a band.** The two start tiles are built like game tiles: faces outlined in the
-  pictures' ink on the flat colour, then a darker band with "PLAY WITH" small over FRIENDS or BOTS and one line.
-- **Rounded capitals on colour** (bands, eyebrows); sentence case everywhere else.
-- **Spot pictures** in the games' drawing style where a screen had only words: a ticket on Join, a target on Range
-  training (`spotArt()` in `gameArt.ts`, `Sticker` in the app). Add one the same way; never an emoji or a gradient
-  blob.
-- **Profile** is your face (white disc, ink ring) and name on a flat blue block with a rounded bottom edge, the
-  same in light and dark.
-Premium shows its eight games as the same tiles, four to a row. Hand-typed text sizes sit on the type ramp (11,
-12, 13, 15, 16, 17, 20, 22, 28, 34); only emoji and the big display numbers are off it.
-Screens as built: `docs/design/flat/`.
-
-**One font, one button (owner, 10 November 2026: "mixed fonts and button colours" made it feel half done).** Outside
-the table:
-- **Type.** Everything is SF Pro Rounded (`ROUNDED`; every step of the ramp in `theme/typography.ts`, and every
-  hand-styled `Text`). Titles are 800, row titles and buttons 700, reading text regular. Capitals only on tile
-  bands and small eyebrow labels. No titles end in a full stop.
-- **Buttons.** `Button` is the only button: a flat capsule, 52pt tall, in five fills. `primary` is the brand blue
-  with white words, one per screen. `inverse` is white with blue words, for the main action on a blue or night
-  surface (Start game, Start a set, Save playlist). `secondary` is the grey panel with plain words (never blue
-  words: blue words with no fill are a text link). `quiet` is a faint white panel on a coloured surface.
-  `destructive` is the grey panel with red words. Gold (`tint="gold"`) is Premium's main button only. No rounded
-  rectangles, gradients, outlines or shadows on a button.
-- **Blue means tap.** Blue words with no fill are links (Change, Copy, See all); a blue fill is the main action.
-  Gold is Premium and wins. Red is delete, leave and Fold. Game tiles keep their own colours.
 
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.

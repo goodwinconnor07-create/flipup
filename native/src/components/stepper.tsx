@@ -1,7 +1,6 @@
 import { Pressable, View } from 'react-native';
 
 import { radius, useColors } from '@/theme';
-import { usePanel } from './grouped-list';
 
 import { haptic } from './haptics';
 import { Icon } from './icon';
@@ -10,7 +9,6 @@ import type { StepperProps } from './stepper.types';
 /** The − / + stepper where there's no SwiftUI (the web build). */
 export function Stepper({ label, value, min, max, step = 1, onChange }: StepperProps) {
   const colors = useColors();
-  const panel = usePanel();
   const half = (sign: -1 | 1) => {
     const next = value + sign * step;
     const off = next < min || next > max;
@@ -31,7 +29,7 @@ export function Stepper({ label, value, min, max, step = 1, onChange }: StepperP
     );
   };
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, backgroundColor: panel.chip }}>
+    <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: radius.sm, backgroundColor: colors.cellPressed }}>
       {half(-1)}
       <View style={{ width: 1, height: 18, backgroundColor: colors.separator }} />
       {half(1)}

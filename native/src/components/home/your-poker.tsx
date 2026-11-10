@@ -1,42 +1,39 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 
-import { brand, radius, spacing, useColors, useShadows } from '@/theme';
+import { brand, cardColors, radius, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { LivingCard } from '../living-card';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 
-/**
- * Before your first hand: Texas Hold'em's How to Play, step by step on the app's own table. A quiet grey row with a
- * blue badge, like Join a game: the two start tiles are the one loud thing on Home, and this is the help beside them.
- */
+/** Before your first hand: Texas Hold'em's How to Play, step by step on the app's own table. */
 export function FirstHand() {
-  const colors = useColors();
-  const shadows = useShadows();
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel="How to play Texas Hold'em, step by step"
+      accessibilityLabel="How to play Texas Hold'em"
       onPress={() => {
         haptic.tap();
         router.push('/how-to-play/holdem');
       }}
-      haptics={false}
-      outerStyle={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 72, paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}
     >
-      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet }}>
-        <Icon name="play.fill" size={18} color="#ffffff" />
+      <LivingCard colors={cardColors.violet} radius={radius.lg} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md }}>
+      <View style={{ width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff' }}>
+        <Icon name="play.fill" size={22} color={brand.violet} />
       </View>
-      <View style={{ flex: 1, gap: 2 }}>
-        <ThemedText variant="headline">New to poker?</ThemedText>
-        <ThemedText variant="subhead" tone="secondaryLabel">
+      <View style={{ flex: 1 }}>
+        <ThemedText variant="title3" tone="onColor">
+          How to play
+        </ThemedText>
+        <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.85 }}>
           Texas Hold&apos;em, step by step
         </ThemedText>
       </View>
-      <Icon name="chevron.right" size={15} color={colors.tertiaryLabel} />
+      <Icon name="chevron.right" size={16} color="#ffffff" />
+      </LivingCard>
     </PressableScale>
   );
 }

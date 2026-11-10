@@ -6,7 +6,6 @@ import { ChallengePicture } from '@/components/challenge-picture';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { SheetScroll } from '@/components/sheet-scroll';
-import { Bullets } from '@/components/bullets';
 import { ThemedText } from '@/components/themed-text';
 import { challengeById, isChallengeId } from '@/engine';
 import { useChallengeBests } from '@/state/challenges';
@@ -59,7 +58,18 @@ export default function ChallengeSheet() {
           {c.line}
         </ThemedText>
       </View>
-      <Bullets items={c.rules} />
+      <View style={{ gap: spacing.xs }}>
+        {c.rules.map((r) => (
+          <View key={r} style={{ flexDirection: 'row', gap: spacing.xs }}>
+            <ThemedText variant="body" tone="tertiaryLabel" accessible={false}>
+              •
+            </ThemedText>
+            <ThemedText variant="body" style={{ flex: 1 }}>
+              {r}
+            </ThemedText>
+          </View>
+        ))}
+      </View>
       {best && best.plays > 0 && (
         <ThemedText variant="headline" style={{ color: colors.gold }}>
           Your best: {best.best} {unit}

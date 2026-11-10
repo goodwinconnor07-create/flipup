@@ -5,7 +5,7 @@ import Animated, { Easing, Keyframe, useAnimatedStyle, useSharedValue, withRepea
 import { CODE_ALPHABET, CODE_LENGTH, isCode, normalizeTableCode, TABLE_CODE_LENGTH } from '@/engine';
 import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { radius, spacing, usePlainColors, ROUNDED } from '@/theme';
+import { radius, spacing, usePlainColors } from '@/theme';
 
 import { haptic } from './haptics';
 import { ThemedText } from './themed-text';
@@ -186,7 +186,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
               }}
             >
               {letter ? (
-                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : LETTER_IN} exiting={reduce ? undefined : LETTER_OUT} maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '700', color: c.label }}>
+                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : LETTER_IN} exiting={reduce ? undefined : LETTER_OUT} maxFontSizeMultiplier={1} style={{ fontSize: 34, fontWeight: '700', color: c.label }}>
                   {letter}
                 </Animated.Text>
               ) : next ? (
@@ -219,7 +219,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
           blurOnSubmit={false}
           caretHidden
           maxLength={state.length + 4}
-          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.02, color: 'transparent', fontFamily: ROUNDED, fontSize: 1, borderWidth: 0, backgroundColor: 'transparent', outlineWidth: 0 }}
+          style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.02, color: 'transparent', fontSize: 1, borderWidth: 0, backgroundColor: 'transparent', outlineWidth: 0 }}
         />
       </Animated.View>
 

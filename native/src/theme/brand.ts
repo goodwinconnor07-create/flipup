@@ -41,17 +41,17 @@ export const party = {
   greenLo: brand.violetDeep,
 } as const;
 
-/** The loud buttons' colours (a lighter detail, then the flat fill): blue for everything you tap to play, gold for Premium. */
+/** The big tap targets' gradients: blue for everything you tap to play, gold for Premium. */
 export const gradients = {
-  blue: ['#4a7af0', '#2557d6'],
-  green: ['#4a7af0', '#2557d6'],
-  pink: ['#4a7af0', '#2557d6'],
-  gold: ['#fbd872', '#f5b700'],
+  blue: ['#3a6ae6', '#1a3fa8'],
+  green: ['#3a6ae6', '#1a3fa8'],
+  pink: ['#3a6ae6', '#1a3fa8'],
+  gold: ['#f8d062', '#d49a1a'],
 } as const satisfies Record<string, readonly [string, string]>;
 
-/** The big cards' colours, each as lighter detail, the flat fill, and the darker band: the brand blue, night for stats, gold. */
+/** The colour pairs behind the big cards (top-left to bottom-right): the brand blue, and night for stats. */
 export const cardColors = {
-  violet: ['#4a7af0', '#2557d6', '#1a3fa8'],
-  night: ['#2a3f80', '#16285c', '#0d1a40'],
-  gold: ['#fbd872', '#f5b700', '#c98a14'],
+  violet: ['#3a6ae6', '#2149bf', '#152f86'],
+  night: ['#16285c', '#0e1b42', '#070e26'],
+  gold: ['#fbd872', '#eebb2a', '#c98a14'],
 } as const satisfies Record<string, readonly [string, string, string]>;

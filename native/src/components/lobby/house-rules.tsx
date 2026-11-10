@@ -203,6 +203,7 @@ export function Card({ children }: { children: ReactNode[] }) {
 
 /** A number: its name small and grey over the value in a little box of its own, and the stepper on the right. */
 export function NumberRow({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
+  const colors = useColors();
   const panel = usePanel();
   return (
     <View
@@ -220,7 +221,7 @@ export function NumberRow({ label, value, children }: { label: string; value: st
             paddingVertical: 4,
             borderRadius: radius.sm,
             borderCurve: 'continuous',
-            backgroundColor: panel.chip,
+            backgroundColor: colors.cellPressed,
           }}
         >
           <ThemedText variant="headline" style={{ fontWeight: '700', fontVariant: ['tabular-nums'] }}>

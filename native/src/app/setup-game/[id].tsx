@@ -7,7 +7,6 @@ import { haptic } from '@/components/haptics';
 import { HowToPicture } from '@/components/how-to-picture';
 import { Icon } from '@/components/icon';
 import { SheetScroll } from '@/components/sheet-scroll';
-import { Bullets } from '@/components/bullets';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
 import { isPremiumVariant, isVariant, variantInfo, variantNote, withVariant, type Variant } from '@/engine';
@@ -58,7 +57,12 @@ export default function SetupGameSheet() {
         </View>
         <View style={{ gap: spacing.xs }}>
           <ThemedText variant="headline">How it plays</ThemedText>
-          <Bullets items={info.rules} />
+          {info.rules.map((r) => (
+            <ThemedText key={r} variant="body">
+              {'•  '}
+              {r}
+            </ThemedText>
+          ))}
           <ThemedText variant="footnote" tone="tertiaryLabel" style={{ marginTop: spacing.xs }}>
             {variantNote(variant)}
           </ThemedText>

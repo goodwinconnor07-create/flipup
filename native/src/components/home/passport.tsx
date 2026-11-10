@@ -29,7 +29,7 @@ export function PassportCard({ full }: { full?: boolean }) {
           <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: 1.5, color: '#ffffff' }}>
             YOUR POKER
           </Text>
-          <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '600', letterSpacing: 1.2, color: 'rgba(255,255,255,0.65)' }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', letterSpacing: 1.2, color: 'rgba(255,255,255,0.65)' }}>
             ALL-TIME · ON THIS PHONE
           </Text>
         </View>
@@ -56,9 +56,9 @@ export function PassportCard({ full }: { full?: boolean }) {
             haptic.tap();
             router.push('/stats');
           }}
-          style={{ flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingHorizontal: spacing.lg, borderRadius: radius.full, backgroundColor: 'rgba(255, 255, 255, 0.16)' }}
+          style={{ flexDirection: 'row', alignItems: 'center', minHeight: 52, paddingHorizontal: spacing.md, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}
         >
-          <Text maxFontSizeMultiplier={1.3} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 17, fontWeight: '700', color: '#ffffff' }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ flex: 1, fontSize: 17, fontWeight: '600', color: '#ffffff' }}>
             All stats
           </Text>
           <Icon name="chevron.right" size={15} color="#ffffff" />
@@ -71,14 +71,14 @@ export function PassportCard({ full }: { full?: boolean }) {
 export function Stat({ label, value, note, big, grow = 1 }: { label: string; value: string; note?: string; big?: boolean; grow?: number }) {
   return (
     <View accessible accessibilityLabel={`${label}: ${value}${note ? `, ${note}` : ''}`} style={{ flex: grow, gap: 2 }}>
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '600', letterSpacing: 1, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase' }}>
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '600', letterSpacing: 1, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase' }}>
         {label}
       </Text>
       <Text maxFontSizeMultiplier={1.3} numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ROUNDED, fontSize: big ? 44 : 28, lineHeight: big ? 50 : 34, fontWeight: '800', color: '#ffffff', fontVariant: ['tabular-nums'] }}>
         {value}
       </Text>
       {note && (
-        <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>
+        <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 15, color: 'rgba(255,255,255,0.7)' }}>
           {note}
         </Text>
       )}

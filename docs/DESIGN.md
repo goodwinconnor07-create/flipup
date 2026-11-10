@@ -15,6 +15,14 @@
 > still and swipeable under Reduce Motion), then Host a game (solid white, dark ink) and Join with a code (white at
 > 14%), and Play with bots and How it works as quiet links. Body text is SF Pro, headings and buttons SF Pro Rounded.
 
+> **Game-lobby Home, a test on a branch (2026-11-10, after Oliver asked for "a normal game app home screen": bottom
+> tabs, main middle buttons, side bars; not merged until both have seen it on TestFlight).** On `LivelyBackground`,
+> nothing scrolls: a profile chip (face, name, hands played) top left and the FlipUp spade top right; the chosen game
+> big in the middle (`GameThumb`, the flat cartoon art) with arrows to flip through all thirteen, its name, hook and a
+> row of dots (`flipup.homegame` keeps the pick); a column of round see-through shortcuts each side (Games, Stats,
+> Rules; Premium in gold, Share, Settings); then PLAY (blue, with friends, the chosen game) over Play bots and Join a
+> game, with a slim LIVE strip above them when you're at a table. The tab bar stays.
+
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
 > pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,

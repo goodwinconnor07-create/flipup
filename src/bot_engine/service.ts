@@ -14,6 +14,7 @@ import { decisionRisk } from './decisionRisk';
 import { everydayReference, everydayWeights, everydaySupport } from './everyday';
 import { handPlanWeights } from './handPlan';
 import { behaviorSnapshot } from './behaviorMemory';
+import { decisionPhilosophy, describeChoice, applySizingPreferences, sharedUnbeatableBoard } from './philosophy';
 
 export interface DecisionTrace {
   version: 1;
@@ -38,6 +39,9 @@ export interface DecisionTrace {
     blend: number;
     evidence: ReturnType<typeof evaluateAdaptation>['evidence'];
   };
+  philosophy: ReturnType<typeof decisionPhilosophy>;
+  rationale: ReturnType<typeof describeChoice>;
+  experienceVersion?: 'human-table-1';
 }
 /** Backend service contract. Production must authorize the actor before constructing info. */
 export class BotService {
@@ -45,6 +49,7 @@ export class BotService {
     private provider: StrategyProvider = new BaselineProvider(),
     private learningMode: 'contextual' | 'pooled' | 'off' = 'contextual',
     private learningConfig: LearningConfig = LEARNING_CONFIG,
+    private options: { experience?: 'human-table-1' } = {},
   ) {
     validateLearningConfig(learningConfig);
   }
@@ -80,6 +85,7 @@ export class BotService {
     )
       throw new Error('Provider returned illegal action space');
     prediction.probabilities = normalize(prediction.probabilities);
+    const liveExperience = this.options.experience === 'human-table-1' && prediction.modelVersion === 'baseline-7';
     if (profile.personality || profile.everyday) prediction.unmodifiedProbabilities = [...prediction.probabilities];
     if ((profile.personality || (profile.everyday && info.street !== 'preflop')) && !prediction.values) {
       const estimate = estimateActionValues(
@@ -123,6 +129,10 @@ export class BotService {
       prediction.probabilities = everydayReference(info, prediction, profile);
       prediction.warnings.push('Everyday reference uses authored ranges and restrained tendencies, not human-data calibration.');
     }
+    if (liveExperience && sharedUnbeatableBoard(info.board)) {
+      prediction.probabilities = normalize(prediction.actions.map((a) => Number(a.move === 'check' || a.move === 'call')));
+      prediction.warnings.push('The public board locks a shared best hand; the policy stays in and avoids pointless extra betting.');
+    }
     const beliefs = info.players
       .filter((p) => p.id !== info.heroId && !p.folded)
       .map((p) => foldEstimate(Object.hasOwn(memory.opponents, p.id) ? memory.opponents[p.id] : undefined));
@@ -147,6 +157,8 @@ export class BotService {
                 : 0,
           );
     const adaptation = evaluateAdaptation(info, prediction, memory, profile, this.learningConfig);
+    const guardValues = this.learningMode === 'contextual' ? adaptation.adjustedValues : prediction.values;
+    const philosophy = decisionPhilosophy(info, { ...prediction, values: guardValues }, profile, memory, this.learningMode !== 'off');
     const exploitation =
       this.learningMode === 'contextual'
         ? adaptation.logWeights
@@ -161,12 +173,21 @@ export class BotService {
         ? personalitySupport(info, prediction)
         : prediction.probabilities;
     const coherence = prediction.modelVersion === 'baseline-7' ? handPlanWeights(info, prediction, profile) : null;
-    let finalDistribution = normalize(support.map((p, n) => p * Math.exp(identity[n] + exploitation[n] + (coherence?.logWeights[n] ?? 0))));
+    let finalDistribution = normalize(
+      support.map(
+        (p, n) =>
+          p *
+          Math.exp(
+            identity[n] + exploitation[n] + (coherence?.logWeights[n] ?? 0) + (liveExperience ? philosophy.actions[n].preference : 0),
+          ),
+      ),
+    );
     if (this.learningMode === 'contextual' && adaptation.blend > 0)
       finalDistribution = normalize(finalDistribution.map((p, n) => (1 - adaptation.blend) * p + adaptation.blend * adaptation.target[n]));
     if (profile.personality) finalDistribution = plausiblePersonalityPolicy(info, prediction, finalDistribution, profile);
     if (profile.everyday && info.street !== 'preflop')
       finalDistribution = everydayReference(info, { ...prediction, probabilities: finalDistribution }, profile);
+    if (liveExperience) finalDistribution = applySizingPreferences(finalDistribution, philosophy);
     // Observable preferences may move close decisions, but have a bounded estimated chip cost.
     // These are approximate provider values, so this is not a true regret guarantee.
     const budget = profile.everyday
@@ -182,7 +203,6 @@ export class BotService {
         : Math.max(info.bigBlind * 0.1, stateFeatures.eligiblePotBb * info.bigBlind * 0.02);
     let blend = 1,
       estimatedValueLoss: number | null = null;
-    const guardValues = this.learningMode === 'contextual' ? adaptation.adjustedValues : prediction.values;
     if (guardValues) {
       if (guardValues.length !== prediction.actions.length || guardValues.some((v) => !Number.isFinite(v)))
         throw new Error('Invalid provider values');
@@ -192,6 +212,14 @@ export class BotService {
       blend = loss > budget ? budget / loss : 1;
       finalDistribution = normalize(finalDistribution.map((p, n) => blend * p + (1 - blend) * prediction.probabilities[n]));
       estimatedValueLoss = loss * blend;
+    }
+    if (liveExperience && guardValues) {
+      const supported = finalDistribution.map((p, k) => (philosophy.actions[k].plausible ? p : 0));
+      if (supported.some((p) => p > 0)) finalDistribution = normalize(supported);
+      else throw new Error('No philosophy-supported decision');
+      const baselineValue = guardValues.reduce((s, v, k) => s + v * prediction.probabilities[k], 0);
+      estimatedValueLoss = Math.max(0, baselineValue - guardValues.reduce((s, v, k) => s + v * finalDistribution[k], 0));
+      if (estimatedValueLoss > budget + 1e-7) throw new Error('Philosophy support exceeded decision budget');
     }
     const rng = seededRng(samplingSeed);
     let draw = rng(),
@@ -217,6 +245,14 @@ export class BotService {
       deviation: { estimatedValueLoss, budget, blend },
       samplingSeed,
       action: { ...prediction.actions[selected] },
+      philosophy,
+      rationale: describeChoice(
+        philosophy,
+        selected,
+        philosophy.actions[selected].plausible && finalDistribution.filter((p) => p > 1e-9).length > 1,
+        finalDistribution,
+      ),
+      ...(liveExperience ? { experienceVersion: 'human-table-1' as const } : {}),
       latencyMs: performance.now() - start,
       ...(coherence ? { handPlan: coherence.plan, coherenceWeights: coherence.logWeights } : {}),
       adaptation: {

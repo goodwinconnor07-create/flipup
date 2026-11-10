@@ -46,12 +46,18 @@ test('play hands against the bots on one phone', async ({ page }) => {
       identities: Object.keys(game?.botTable?.players ?? {}).length,
       model: game?.botTable?.traces?.at(-1)?.identityPolicyVersion,
       strategy: game?.botTable?.traces?.at(-1)?.prediction?.modelVersion,
+      experience: game?.botTable?.traces?.at(-1)?.experienceVersion,
+      rationale: game?.botTable?.traces?.at(-1)?.rationale?.summary,
+      cast: game?.botTable?.cast?.version,
     };
   });
   expect(ordinaryEngine.difficulty).toBe('casual');
   expect(ordinaryEngine.identities).toBe(5);
   expect(ordinaryEngine.model).toBe('everyday-1');
   expect(ordinaryEngine.strategy).toBe('baseline-7');
+  expect(ordinaryEngine.experience).toBe('human-table-1');
+  expect(ordinaryEngine.rationale).toMatch(/^I /);
+  expect(ordinaryEngine.cast).toBe('table-cast-1');
   await expect(page.locator('.win-banner').first()).toBeVisible();
   await shot(page, '06-result');
 

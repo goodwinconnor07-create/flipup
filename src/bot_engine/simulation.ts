@@ -19,6 +19,9 @@ import type { InformationSet } from './information';
 import { EverydayProvider } from './everydayProvider';
 import { learnPublicBehavior } from './publicBehavior';
 import { BehavioralProvider } from './behavioralProvider';
+import { learnPublicSession } from './sessionFeel';
+import { tableCast, tableProfile, tableInstanceSeed } from './tableCast';
+import { rememberHandStory } from './handStory';
 
 export interface SimulationOptions {
   agents?: AgentKind[];
@@ -29,6 +32,7 @@ export interface SimulationOptions {
   personality?: PersonalityId;
   startingStacksBb?: number[];
   carryStacks?: boolean;
+  experience?: boolean;
   revision?: 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7';
   /** Offline candidate; the production default remains V7. */
   calibrated?: boolean | CalibrationMode | 'behavior';
@@ -70,8 +74,23 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     if (config.reverseSeats) p.seat = seats - 1 - n;
   });
   const factory = new BotFactory();
+  const cast =
+    config.experience && config.everyday
+      ? tableCast(
+          game.id,
+          game.players.filter((_, n) => agents[n] === 'bot'),
+        )
+      : undefined;
   const profiles = game.players.map((p, n) => {
-    const profile = factory.generate(p.id, 1001 + n);
+    const profile = factory.generate(p.id, config.experience && agents[n] === 'bot' ? tableInstanceSeed(game.id, p.id) : 1001 + n);
+    if (config.everyday && cast && agents[n] === 'bot')
+      return tableProfile(
+        profile,
+        p.name,
+        config.everyday,
+        game.id,
+        n === 0 && config.everydayFocus ? config.everydayFocus : cast.focuses[p.id],
+      );
     if (config.everyday)
       return everydayProfile(
         profile,
@@ -95,6 +114,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
           : new BaselineProvider(160, config.revision),
     config.learningMode ?? 'contextual',
     config.learningConfig ?? LEARNING_CONFIG,
+    config.experience ? { experience: 'human-table-1' } : {},
   );
   const previous = new BotService(new BaselineProvider(160, 'baseline-2'), 'pooled');
   const incumbent = new BotService(
@@ -217,6 +237,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       const started = performance.now();
       const agent = agents[at];
       let capturedTrace: DecisionTrace | undefined;
+      let experienceTrace: DecisionTrace | undefined;
       const sampling = seededRng(service.seedFor(info, profiles[at]));
       const action =
         agent === 'bot' || agent === 'previous' || agent === 'incumbent'
@@ -227,6 +248,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
                 memories[at],
                 service.seedFor(info, profiles[at]),
               );
+              if (config.experience && agent === 'bot') experienceTrace = trace;
               if (at === 0 && info.street === 'preflop') recordCoverage(trace.prediction);
               if (at === 0 && info.street !== 'preflop') recordPostflop(trace.prediction, info.street);
               if (at === 0 && config.onDecision) capturedTrace = trace;
@@ -291,6 +313,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       if (config.onAction) config.onAction(structuredClone(info), { ...action });
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) throw new Error(`Illegal bot action: ${error}`);
+      if (experienceTrace) rememberHandStory(memories[at], experienceTrace);
       learnPublicBehavior(game, memories);
       if (!info.legal.canCheck) {
         const context = publicResponses({
@@ -321,6 +344,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       decisions++;
     }
     if (!game.hand?.result) throw new Error('Hand did not finish');
+    if (config.experience) learnPublicSession(game, memories);
     const preflop = (game.hand.actions ?? []).filter((a) => a.street === 'preflop');
     const raised = preflop.some((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > game.settings.bigBlind));
     tableExperience.hands++;

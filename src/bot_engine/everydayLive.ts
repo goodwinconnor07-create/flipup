@@ -1,15 +1,18 @@
 import type { Game, Player } from '../game/types';
 import type { BotThought } from '../game/botPlay';
 import { BotFactory, type BotProfile } from './identity';
-import { hashString } from '../game/cards';
 import { emptyMemory, observe, type BotMemory } from './memory';
 import { publicResponses } from './observations';
 import { informationFor } from './information';
 import { BotService, type DecisionTrace } from './service';
 import { EverydayProvider } from './everydayProvider';
-import { everydayProfile, everydayThinkMs, type BotDifficulty } from './everyday';
+import { everydayThinkMs, type BotDifficulty } from './everyday';
 import { usesEverydayBots } from '../game/botTableMode';
 import { learnPublicBehavior } from './publicBehavior';
+import { tableCast, tableProfile, tableInstanceSeed, type TableCast } from './tableCast';
+import { learnPublicSession } from './sessionFeel';
+import { LEARNING_CONFIG } from './learningConfig';
+import { rememberHandStory } from './handStory';
 export { usesEverydayBots } from '../game/botTableMode';
 
 export interface EverydayBotState {
@@ -20,11 +23,12 @@ export interface EverydayBotState {
   difficulty: BotDifficulty;
   players: Record<string, { profile: BotProfile; memory: BotMemory }>;
   traces: DecisionTrace[];
+  cast?: TableCast;
 }
 const eligible = (p: Player) => p.bot && !p.legend && !p.twin && p.botKind !== 'human-poker';
 const factory = new BotFactory();
-const casual = new BotService(new EverydayProvider(96));
-const challenge = new BotService(new EverydayProvider(160));
+const casual = new BotService(new EverydayProvider(96), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });
+const challenge = new BotService(new EverydayProvider(160), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });
 
 /** All observers learn independently from public actions. No shared beliefs or holes. */
 export function updateEverydayMemory(game: Game): EverydayBotState | null {
@@ -46,9 +50,16 @@ export function updateEverydayMemory(game: Game): EverydayBotState | null {
     state.observedHand = h.number;
     state.observedActions = 0;
     state.difficulty = game.settings.botDifficulty ?? 'casual';
+    state.cast = tableCast(game.id, game.players.filter(eligible), state.cast);
     for (const p of game.players.filter(eligible)) {
       const old = Object.hasOwn(state.players, p.id) ? state.players[p.id] : undefined;
-      const profile = everydayProfile(factory.generate(p.id, hashString(p.name)), p.name, state.difficulty);
+      const profile = tableProfile(
+        factory.generate(p.id, tableInstanceSeed(game.id, p.id)),
+        p.name,
+        state.difficulty,
+        game.id,
+        state.cast.focuses[p.id],
+      );
       state.players[p.id] = { profile, memory: old?.memory ?? emptyMemory(p.id, game.id) };
     }
     for (const id of Object.keys(state.players)) if (!game.players.some((p) => p.id === id && eligible(p))) delete state.players[id];
@@ -82,6 +93,10 @@ export function updateEverydayMemory(game: Game): EverydayBotState | null {
       Object.values(state.players).map((p) => p.memory),
     );
   state.observedActions = h.actions?.length ?? 0;
+  learnPublicSession(
+    game,
+    Object.values(state.players).map((p) => p.memory),
+  );
   return state;
 }
 
@@ -96,6 +111,7 @@ export function everydayThought(game: Game, playerId: string): BotThought | null
     service = state.difficulty === 'challenge' ? challenge : casual;
   const seed = service.seedFor(info, identity.profile);
   const trace = service.decide(info, identity.profile, identity.memory, seed);
+  rememberHandStory(identity.memory, trace);
   state.traces = [...state.traces, trace].slice(-4);
-  return { move: trace.action, thinkMs: everydayThinkMs(info, identity.profile, seed) };
+  return { move: trace.action, thinkMs: everydayThinkMs(info, identity.profile, seed, trace.philosophy.session) };
 }

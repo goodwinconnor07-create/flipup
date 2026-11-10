@@ -42,6 +42,11 @@ test('invite BOT_001 and play its new engine through actual table turns', async 
     () => JSON.parse(localStorage.getItem('flipup.session') ?? 'null')?.game?.humanPoker?.profile?.personality,
   );
   expect(personality).toBe('patient');
+  const rationale = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('flipup.session') ?? 'null')?.game?.humanPoker?.traces?.at(-1),
+  );
+  expect(rationale.experienceVersion).toBe('human-table-1');
+  expect(rationale.rationale.summary).toMatch(/^I /);
 });
 
 test('online BOT_001 acts through the Worker without broadcasting its memory', async ({ page, request }) => {

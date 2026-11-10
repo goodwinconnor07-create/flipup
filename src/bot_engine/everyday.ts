@@ -147,9 +147,24 @@ export function everydaySupport(i: InformationSet, p: StrategyPrediction, profil
 }
 
 /** Decision difficulty plus an independent timing draw; neither move nor strength sets the clock. */
-export function everydayThinkMs(info: InformationSet, profile: BotProfile, seed: number): number {
+export function everydayThinkMs(
+  info: InformationSet,
+  profile: BotProfile,
+  seed: number,
+  feel?: { caution: number; confidence: number; pressure: number },
+): number {
   const rng = seededRng(hashString(`${seed}:timing`));
   const pot = info.players.reduce((s, p) => s + p.total, 0);
   const hard = info.legal.toCall > Math.max(info.bigBlind * 3, pot * 0.3);
-  return Math.round((550 + rng() * 350 + (hard ? 250 + rng() * 500 : 0)) * (profile.everyday?.tempo ?? 1));
+  const active = info.players.filter((p) => !p.folded && !p.allIn).length;
+  const raises = info.actions.filter((a) => a.street === info.street && !a.outOfTurn && ['bet', 'raise', 'allin'].includes(a.move)).length;
+  const complexity = Math.min(180, Math.max(0, active - 2) * 25 + Math.min(2, raises) * 40);
+  return Math.min(
+    1900,
+    Math.round(
+      (550 + rng() * 350 + complexity + (hard ? 250 + rng() * 500 : 0)) *
+        (profile.everyday?.tempo ?? 1) *
+        (1 + (feel?.caution ?? 0) * 0.06 + (feel?.pressure ?? 0) * 0.02 - (feel?.confidence ?? 0) * 0.03),
+    ),
+  );
 }

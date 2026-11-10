@@ -1,6 +1,6 @@
 import type { Game } from '../game/types';
 import { informationFor } from './information';
-import { BOT_001, type BotProfile } from './identity';
+import { BotFactory, type BotProfile } from './identity';
 import { withPersonality } from './personalities';
 import { emptyMemory, observe, type BotMemory } from './memory';
 import { BotService } from './service';
@@ -8,6 +8,11 @@ import type { BotThought } from '../game/botPlay';
 import type { DecisionTrace } from './service';
 import { publicResponses } from './observations';
 import { learnPublicBehavior } from './publicBehavior';
+import { learnPublicSession } from './sessionFeel';
+import { LEARNING_CONFIG } from './learningConfig';
+import { everydayThinkMs } from './everyday';
+import { rememberHandStory } from './handStory';
+import { tableInstanceSeed } from './tableCast';
 
 export interface LiveBotState {
   playerId: string;
@@ -16,11 +21,12 @@ export interface LiveBotState {
   observedActions: number;
   eventSequence: number;
   profile?: BotProfile;
+  instanceBase?: BotProfile;
   lastDecision?: { hand: number; sequence: number; model: string; source: string };
   /** Private bounded replay history; the whole LiveBotState is stripped from client/bot views. */
   traces?: DecisionTrace[];
 }
-const service = new BotService();
+const service = new BotService(undefined, 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });
 
 /** Trusted adapter. The policy receives a physically separate information set, never Game. */
 export function updateHumanPokerMemory(game: Game): LiveBotState | null {
@@ -37,14 +43,16 @@ export function updateHumanPokerMemory(game: Game): LiveBotState | null {
   }
   const state = game.humanPoker,
     h = game.hand;
+  // Created once per table; variants know only their own independently generated profile.
+  state.instanceBase ??= new BotFactory().generate(player.id, tableInstanceSeed(game.id, player.id));
   if (!h) return state;
   if (state.observedHand !== h.number) {
     state.observedHand = h.number;
     state.observedActions = 0;
     state.profile =
       game.settings.botPersonality && game.settings.botPersonality !== 'original'
-        ? withPersonality(BOT_001, game.settings.botPersonality)
-        : BOT_001;
+        ? withPersonality(state.instanceBase, game.settings.botPersonality)
+        : structuredClone(state.instanceBase);
   }
   // Replay public commitments to count actual faced-bet opportunities, not checks or blind posts.
   const responses = publicResponses({
@@ -70,6 +78,7 @@ export function updateHumanPokerMemory(game: Game): LiveBotState | null {
   });
   if ((h.actions?.length ?? 0) > state.observedActions) learnPublicBehavior(game, [state.memory]);
   state.observedActions = h.actions?.length ?? 0;
+  learnPublicSession(game, [state.memory]);
   return state;
 }
 
@@ -78,10 +87,12 @@ export function humanPokerThought(game: Game, playerId: string): BotThought | nu
   if (p?.botKind !== 'human-poker' || (game.hand?.variant ?? game.settings.variant ?? 'holdem') !== 'holdem') return null;
   const state = updateHumanPokerMemory(game)!;
   const info = informationFor(game, playerId);
-  // Persistent BOT_001 parameters; table seat IDs remain distinct from identity names.
-  const profile = { ...(state.profile ?? BOT_001), botId: playerId };
-  const trace = service.decide(info, profile, state.memory, service.seedFor(info, profile));
+  // Persistent private instance; no other identity or table roster enters the policy.
+  const profile = { ...(state.profile ?? state.instanceBase!), botId: playerId };
+  const seed = service.seedFor(info, profile);
+  const trace = service.decide(info, profile, state.memory, seed);
+  rememberHandStory(state.memory, trace);
   state.lastDecision = { hand: info.hand, sequence: info.sequence, model: trace.prediction.modelVersion, source: trace.prediction.source };
   state.traces = [...(state.traces ?? []), trace].slice(-8);
-  return { move: trace.action, thinkMs: 1200 };
+  return { move: trace.action, thinkMs: everydayThinkMs(info, profile, seed, trace.philosophy.session) };
 }

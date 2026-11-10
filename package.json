@@ -28,6 +28,7 @@
     "bot:responses": "tsx scripts/calibrateResponses.ts",
     "bot:responses-v2": "tsx scripts/calibrateResponsesV2.ts",
     "bot:heads-up": "tsx scripts/diagnoseHeadsUp.ts",
+    "bot:experience": "tsx scripts/evaluateLiveExperience.ts",
     "bot:decision-worlds": "tsx scripts/reviewHeadsUpDecisions.ts",
     "bot:compare-responses": "tsx scripts/evaluateCalibrated.ts",
     "bot:behavior": "tsx scripts/evaluatePublicBehavior.ts",

@@ -1,6 +1,6 @@
 # Public-behavior learning and validation
 
-This implements opponent-specific response, range and sizing estimates on top of each bot's existing private memory. **Live ordinary bots and BOT_001 still use V7's decision policy.** They collect the new bounded public-action memory, but the candidate policy remains an explicit offline option because its reserved gameplay results did not clear promotion. No bot analysis is added to the Range trainer review.
+This implements opponent-specific response, range and sizing estimates on top of each bot's existing private memory. **Live ordinary bots and BOT_001 still use V7's decision policy.** They collect bounded public-action memory. The [live table experience](LIVE_HUMAN_TABLE.md) now uses established public reads for modest own-sizing preferences and adds private intentions, fresh identities and temporary session dynamics. The full fitted response/range candidate described below remains an explicit offline option because its reserved gameplay results did not clear promotion. No bot analysis is added to the Range trainer review.
 
 ## Learning from observed play
 

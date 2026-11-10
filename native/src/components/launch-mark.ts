@@ -16,5 +16,12 @@ export const ICON_COLORS = {
   spadeBottom: '#e3ecff',
   shadow: '#0b1a5c',
 } as const;
+/** The icon's dark look (`appearance: dark` in assets/expo.icon/icon.json): the same spade on a night-blue gradient. */
+export const ICON_COLORS_DARK = {
+  violetTop: '#16285c',
+  violetBottom: '#070e26',
+  /** The soft light at the top of the icon (`lightDark` in the icon script). */
+  light: '#8fb0ff',
+} as const;
 /** iOS's icon corner, as a fraction of the side. */
 export const ICON_RADIUS = 0.2237;

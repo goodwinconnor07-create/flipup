@@ -24,7 +24,7 @@ test('invite BOT_001 and play its new engine through actual table turns', async 
       const session = JSON.parse(localStorage.getItem('flipup.session') ?? 'null');
       return session?.game?.humanPoker?.lastDecision?.model;
     });
-    if (model === 'baseline-5') {
+    if (model === 'baseline-7') {
       usedNewEngine = true;
       break;
     }
@@ -51,7 +51,7 @@ test('online BOT_001 acts through the Worker without broadcasting its memory', a
       deviceId,
       name: 'Host',
       emoji: '🙂',
-      bots: 0,
+      bots: 1,
       settings: {
         startingStack: 1000,
         smallBlind: 5,
@@ -80,7 +80,7 @@ test('online BOT_001 acts through the Worker without broadcasting its memory', a
           const message = JSON.parse(event.data);
           if (message.t !== 'state') return;
           const game = message.game;
-          if (game.humanPoker !== undefined) {
+          if (game.humanPoker !== undefined || game.botTable !== undefined) {
             clearTimeout(timeout);
             socket.close();
             reject(new Error('Private memory broadcast'));
@@ -94,7 +94,11 @@ test('online BOT_001 acts through the Worker without broadcasting its memory', a
           }
           const h = game.hand;
           if (!h) return;
-          if ((h.actions ?? []).some((a: { playerId: string }) => a.playerId === bot.id)) {
+          const ordinary = game.players.find((p: { id: string; bot: boolean }) => p.bot && p.id !== bot.id);
+          if (
+            (h.actions ?? []).some((a: { playerId: string }) => a.playerId === bot.id) &&
+            (h.actions ?? []).some((a: { playerId: string }) => a.playerId === ordinary?.id)
+          ) {
             clearTimeout(timeout);
             socket.close();
             resolve('acted');

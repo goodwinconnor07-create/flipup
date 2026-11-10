@@ -1,7 +1,7 @@
 // Fun versions of Hold'em the host can pick for a table. The betting is the same no-limit Hold'em everywhere
 // (pot limit at a Ghost table); what changes is how many cards you get, what's wild and how a hand is scored.
 
-import { rankName, rankOf, suitOf, SUITS, type Card } from './cards';
+import { rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 
@@ -260,6 +260,7 @@ export function wildHand(cards: Card[]): HandValue {
         name: 'Five of a kind',
         detail: `Five of a kind, ${plural}`,
         best: [...same, ...wilds].slice(0, 5),
+        wilds: [...same, ...wilds].slice(0, 5).filter(isWild).map((card) => ({ card, as: rankLabel(same[0]) })),
       };
     }
   }
@@ -270,6 +271,7 @@ export function wildHand(cards: Card[]): HandValue {
   const suits = flushSuits.length ? flushSuits : [natural.length ? suitOf(natural[0]) : SUITS[0]];
   let bestScore = -1;
   let bestSet: Card[] = cards;
+  let bestRanks: number[] = [];
   const ranks = new Array(wilds.length).fill(0);
   for (const s of suits) {
     ranks.fill(0);
@@ -279,6 +281,7 @@ export function wildHand(cards: Card[]): HandValue {
       if (score > bestScore) {
         bestScore = score;
         bestSet = concrete;
+        bestRanks = [...ranks];
       }
       let i = 0;
       while (i < ranks.length && ranks[i] === 12) i++;
@@ -287,15 +290,29 @@ export function wildHand(cards: Card[]): HandValue {
       for (let j = 0; j < i; j++) ranks[j] = ranks[i];
     }
   }
+  // With no flush in play a wild card's suit doesn't matter, so give each one a suit that isn't already in the set
+  // (two of the same card would make the best five lose one).
+  if (!flushSuits.length) {
+    const taken = new Set(natural);
+    bestSet = natural.concat(
+      bestRanks.map((r) => {
+        const pick = SUITS.find((su) => !taken.has(RANK_CHARS[r] + su)) ?? SUITS[0];
+        taken.add(RANK_CHARS[r] + pick);
+        return RANK_CHARS[r] + pick;
+      }),
+    );
+  }
   const value = describeHand(bestSet);
   // Point the best five back at the real cards: a wild card stands in for whatever it became.
   const pool = bestSet.map((c, i) => ({ c, real: i < natural.length ? natural[i] : wilds[i - natural.length], used: false }));
+  const became: { card: Card; as: string }[] = [];
   const best = value.best.map((c) => {
     const hit = pool.find((p) => !p.used && p.c === c)!;
     hit.used = true;
+    if (isWild(hit.real)) became.push({ card: hit.real, as: rankLabel(c) });
     return hit.real;
   });
-  return { ...value, best };
+  return { ...value, best, ...(became.length ? { wilds: became } : {}) };
 }
 
 // ── Crucifix and Circle boards ──────────────────────────────────────────────
@@ -391,7 +408,7 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
  */
 export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand: Hand; seat: Seat } {
   // The experimental bot's observer memory is private even from legacy bot brains.
-  if (game.humanPoker) game = { ...game, humanPoker: undefined };
+  if (game.humanPoker || game.botTable) game = { ...game, humanPoker: undefined, botTable: undefined };
   const v = variantOf(game);
   let cards = v === 'pineapple' && seat.cards.length > 2 ? keepTwo(seat.cards, hand.board.slice(0, 3)) : seat.cards;
   if (cards.length > 2) {

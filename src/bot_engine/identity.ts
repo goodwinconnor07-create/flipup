@@ -1,11 +1,13 @@
 import { seededRng } from '../game/cards';
 import { isPersonality, type PersonalityId } from './personalities';
+import { EVERYDAY_FOCUSES, isBotDifficulty, type EverydayIdentity } from './everyday';
 
 export interface BotProfile {
   version: 1;
   generatorVersion: 'latent-1';
   botId: string;
   personality?: PersonalityId;
+  everyday?: EverydayIdentity;
   seed: number;
   createdAt: string;
   latent: { discipline: number; pressure: number };
@@ -19,6 +21,13 @@ export function validateProfile(p: BotProfile): void {
     typeof p.botId !== 'string' ||
     !p.botId ||
     (p.personality !== undefined && !isPersonality(p.personality)) ||
+    (p.everyday !== undefined &&
+      (p.everyday.version !== 1 ||
+        !EVERYDAY_FOCUSES.includes(p.everyday.focus) ||
+        !isBotDifficulty(p.everyday.difficulty) ||
+        !Number.isFinite(p.everyday.tempo) ||
+        p.everyday.tempo < 0.8 ||
+        p.everyday.tempo > 1.2)) ||
     !Number.isSafeInteger(p.seed) ||
     !Number.isFinite(Date.parse(p.createdAt)) ||
     [p.latent?.discipline, p.latent?.pressure].some((x) => !Number.isFinite(x) || Math.abs(x) > 1) ||

@@ -1,13 +1,15 @@
+import * as Application from 'expo-application';
+import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, FeComposite, FeFlood, FeGaussianBlur, FeMerge, FeMergeNode, FeOffset, Filter, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { motion } from '@/theme';
+import { motion, useScheme } from '@/theme';
 
 import { GrainBackground } from './grain-background';
-import { ICON_COLORS, ICON_RADIUS, ICON_SIZE, MARK, PLACE } from './launch-mark';
+import { ICON_COLORS, ICON_COLORS_DARK, ICON_RADIUS, ICON_SIZE, MARK, PLACE } from './launch-mark';
 import { read, save } from '@/state/storage';
 
 /** The icon's size on the cover: a good deal bigger than the old 120, so it is the whole first impression. */
@@ -22,31 +24,36 @@ const SWEEP = Easing.bezier(0.45, 0, 0.25, 1);
 
 /**
  * The opening screen, over everything while the app starts: the app icon, exactly as it is on the Home Screen, on
- * the moving deep blue field. It eases in, one slow band of light crosses it, then it eases out as the app shows.
- * A later launch does the same, quicker. Under Reduce Motion the icon fades in and out with no moving light. The
- * native splash before it is the same night blue, so nothing flashes.
+ * a moving blue field that follows the phone's look (a light blue by day, a very dark blue-black at night, like
+ * Flighty's), with "Shuffling the deck" and its three dots under the icon and the version in small type at the
+ * bottom. It eases in, one slow band of light crosses the icon, then it eases out as the app shows. A later launch
+ * does the same, quicker. Under Reduce Motion the icon fades in and out with no moving light. The native splash
+ * before it is the same first colour in each mode, so nothing flashes.
  */
 export function LaunchCover() {
   const [returning] = useState(() => read<boolean>(LAUNCHED, false));
   useEffect(() => {
     save(LAUNCHED, true);
   }, []);
-  return <PrintCover total={returning ? RETURNING_MS : FIRST_MS} zIndex={1000} />;
+  return <PrintCover total={returning ? RETURNING_MS : FIRST_MS} zIndex={1000} launch />;
 }
 
 /** The app icon on a `TILE` square, drawn on the icon's own 1024 canvas with the icon script's gradient, light and lift shadow. */
-function IconArt() {
+function IconArt({ dark = false }: { dark?: boolean }) {
   const S = ICON_SIZE;
+  // At night the icon is its dark look (the one iOS shows on a dark Home Screen), a night-blue gradient.
+  const top = dark ? ICON_COLORS_DARK.violetTop : ICON_COLORS.violetTop;
+  const bottom = dark ? ICON_COLORS_DARK.violetBottom : ICON_COLORS.violetBottom;
   return (
     <Svg width={TILE} height={TILE} viewBox={`0 0 ${S} ${S}`}>
       <Defs>
         <LinearGradient id="bg" x1="0.25" y1="0" x2="0.75" y2="1">
-          <Stop offset="0" stopColor={ICON_COLORS.violetTop} />
-          <Stop offset="1" stopColor={ICON_COLORS.violetBottom} />
+          <Stop offset="0" stopColor={top} />
+          <Stop offset="1" stopColor={bottom} />
         </LinearGradient>
         <RadialGradient id="light" cx="0.5" cy="0.08" r="0.75">
-          <Stop offset="0" stopColor="#ffffff" stopOpacity="0.22" />
-          <Stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+          <Stop offset="0" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0.22" />
+          <Stop offset="1" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0" />
         </RadialGradient>
         <LinearGradient id="spade" x1="0" y1="0" x2="0" y2="1">
           <Stop offset="0" stopColor={ICON_COLORS.spadeTop} />
@@ -81,8 +88,10 @@ function IconArt() {
  * The cover itself, shared by the launch and the game's deal-in (`DealWipe`): `total` is how long the icon holds
  * before it eases out (the arrival and the shimmer scale with it), `zIndex` where it sits.
  */
-export function PrintCover({ total = FIRST_MS, zIndex = 1000 }: { total?: number; zIndex?: number }) {
+export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: { total?: number; zIndex?: number; /** The app's opening screen: light or dark by the phone's look, with the words and the version. */ launch?: boolean }) {
   const k = total / FIRST_MS;
+  const dark = useScheme() === 'dark';
+  const look = launch ? (dark ? DARK : LIGHT) : null;
   const reduce = useReduceMotion();
   const [gone, setGone] = useState(false);
   const arrive = useSharedValue(reduce ? 1 : 0);
@@ -127,10 +136,10 @@ export function PrintCover({ total = FIRST_MS, zIndex = 1000 }: { total?: number
   if (gone) return null;
   return (
     <Animated.View pointerEvents="none" style={[{ position: 'absolute', inset: 0, zIndex }, coverStyle]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-      <GrainBackground style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', boxShadow: '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
+      <GrainBackground style={{ alignItems: 'center', justifyContent: 'center' }} {...(look ? { colors: look.base, glow: look.glow, glow2: look.glow2 } : {})}>
+        <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', boxShadow: look ? look.shadow : '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
           <View style={{ flex: 1, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
-            <IconArt />
+            <IconArt dark={!!look && dark} />
             {!reduce && (
               <Animated.View style={[{ position: 'absolute', top: -TILE * 0.1, bottom: -TILE * 0.1, left: 0, width: TILE * 0.7 }, bandStyle]}>
                 <Svg width="100%" height="100%" preserveAspectRatio="none">
@@ -147,7 +156,73 @@ export function PrintCover({ total = FIRST_MS, zIndex = 1000 }: { total?: number
             )}
           </View>
         </Animated.View>
+        {look && <Shuffling ink={look.ink} reduce={reduce} />}
+        {look && (
+          <Text accessible={false} maxFontSizeMultiplier={1} style={{ position: 'absolute', bottom: 44, alignSelf: 'center', fontSize: 12, fontWeight: '500', letterSpacing: 0.3, color: look.faint }}>
+            {VERSION}
+          </Text>
+        )}
       </GrainBackground>
     </Animated.View>
+  );
+}
+
+/** The cover's two looks: a light blue field, and a very dark blue-black one with a dim blue light. */
+const LIGHT = {
+  base: ['#e3efff', '#cde2ff', '#eef5ff'] as const,
+  glow: 'rgba(60, 130, 255, 0.32)',
+  glow2: 'rgba(130, 200, 255, 0.28)',
+  shadow: '0 22px 44px -16px rgba(30, 60, 140, 0.45)',
+  ink: 'rgba(18, 40, 100, 0.72)',
+  faint: 'rgba(18, 40, 100, 0.42)',
+};
+const DARK = {
+  base: ['#02040a', '#04070f', '#010204'] as const,
+  glow: 'rgba(50, 110, 255, 0.16)',
+  glow2: 'rgba(245, 183, 0, 0.03)',
+  shadow: '0 22px 44px -16px rgba(0, 0, 0, 0.8)',
+  ink: 'rgba(255, 255, 255, 0.62)',
+  faint: 'rgba(255, 255, 255, 0.34)',
+};
+
+/** "Version 1.0.0 (27)", small, for the bottom of the cover (the build number is the phone's own). */
+const VERSION = (() => {
+  const v = Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? '';
+  const b = Application.nativeBuildVersion;
+  return v ? `Version ${v}${b ? ` (${b})` : ''}` : '';
+})();
+
+/**
+ * "Shuffling the deck" stays exactly as it is, centred and never re-drawn; only the three dots after it change, one,
+ * two, three and again. The dots hang off the end of the words (positioned, so they take no room in the line), so
+ * the words never shift as they come and go.
+ */
+function Shuffling({ ink, reduce }: { ink: string; reduce: boolean }) {
+  return (
+    <View style={{ marginTop: 36, alignSelf: 'center' }}>
+      <Text accessible={false} maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '600', color: ink }}>
+        Shuffling the deck
+      </Text>
+      <Dots ink={ink} reduce={reduce} />
+    </View>
+  );
+}
+
+/** The dots after the words: they count up on their own clock and only this part re-draws. */
+function Dots({ ink, reduce }: { ink: string; reduce: boolean }) {
+  const [n, setN] = useState(reduce ? 3 : 1);
+  useEffect(() => {
+    if (reduce) return;
+    const t = setInterval(() => setN((x) => (x % 3) + 1), 320);
+    return () => clearInterval(t);
+  }, [reduce]);
+  return (
+    <View accessible={false} pointerEvents="none" style={{ position: 'absolute', left: '100%', top: 0, flexDirection: 'row' }}>
+      {[1, 2, 3].map((i) => (
+        <Text key={i} maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '600', color: ink, opacity: i <= n ? 1 : 0 }}>
+          .
+        </Text>
+      ))}
+    </View>
   );
 }

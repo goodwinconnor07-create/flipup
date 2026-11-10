@@ -10,7 +10,7 @@ import { parseSettings } from '../game/validate';
 import { applyAction } from '../game/reducer';
 import { updateHumanPokerMemory } from './live';
 import { legalActions } from './information';
-import type { StrategyPrediction } from './strategy';
+import { BaselineProvider, type StrategyPrediction } from './strategy';
 
 describe('Persistent, distinct personalities', () => {
   it('validates the wire value and keeps old profiles readable', () => {
@@ -25,11 +25,15 @@ describe('Persistent, distinct personalities', () => {
   });
   it('changes decisions in matching contexts, stays inside its cost budget and replays identically', () => {
     const contexts = [...calibrationContexts(), decisionFixture([27, 65, 130, 40], [30, 'call']).info];
+    // Compare identities on the same independently copied strategy predictions.
+    // Strategy replay itself is covered by the planning tests.
+    const provider = new BaselineProvider();
+    const predictions = contexts.map((info) => provider.predict(info));
     const signatures: Record<string, number[][]> = {};
     for (const id of ['patient', 'curious', 'aggressive'] as const) {
-      signatures[id] = contexts.map((info) => {
+      signatures[id] = contexts.map((info, n) => {
         const profile = withPersonality(new BotFactory().generate(info.heroId, 1001), id);
-        const service = new BotService();
+        const service = new BotService({ predict: () => structuredClone(predictions[n]) });
         const memory = emptyMemory(info.heroId, info.tableId);
         const a = service.decide(info, profile, memory, 77);
         const b = service.decide(info, JSON.parse(JSON.stringify(profile)), JSON.parse(JSON.stringify(memory)), 77);
@@ -137,5 +141,7 @@ describe('Persistent, distinct personalities', () => {
     expect(a.preflopCoverage.modelledDecisions).toBeGreaterThan(0);
     expect(a.preflopCoverage.unequalStackDecisions).toBeGreaterThan(0);
     expect(a.behavior.hands).toBe(12);
-  });
+    // Two complete 12-hand sessions include multiplayer future-street inference.
+    // Per-decision latency is checked in the benchmark rather than this replay test.
+  }, 20000);
 });

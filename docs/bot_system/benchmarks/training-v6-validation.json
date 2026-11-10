@@ -1,0 +1,123 @@
+{
+  "protocol": "river-learning-2",
+  "completedCycles": 2,
+  "candidate": {
+    "version": "contextual-1",
+    "contextDecay": 0.96,
+    "minimumSamples": 8,
+    "confidenceSamples": 24,
+    "confidenceZ": 1.64,
+    "profitMargin": 0.02,
+    "maximumBlend": 0.5
+  },
+  "syntheticGatePassed": true,
+  "poker": {
+    "seed": 570087539,
+    "baselineModel": "baseline-6",
+    "matchups": [
+      {
+        "opponent": "river-overfolder",
+        "hands": 120,
+        "dealPairs": 30,
+        "deltaBbPer100": 0,
+        "descriptive95Interval": [
+          0,
+          0
+        ],
+        "candidateP95Ms": [
+          38.234069999999974,
+          26.93900399999984
+        ],
+        "candidateContextCounts": [
+          11,
+          7
+        ]
+      },
+      {
+        "opponent": "calling-station",
+        "hands": 120,
+        "dealPairs": 30,
+        "deltaBbPer100": 3.3333333333333464,
+        "descriptive95Interval": [
+          -8.112062602264752,
+          14.778729268931444
+        ],
+        "candidateP95Ms": [
+          26.210291000000325,
+          25.845570000001317
+        ],
+        "candidateContextCounts": [
+          11,
+          10
+        ]
+      },
+      {
+        "opponent": "changing",
+        "hands": 120,
+        "dealPairs": 30,
+        "deltaBbPer100": 0,
+        "descriptive95Interval": [
+          0,
+          0
+        ],
+        "candidateP95Ms": [
+          27.1063979999999,
+          26.474382000000332
+        ],
+        "candidateContextCounts": [
+          11,
+          7
+        ]
+      },
+      {
+        "opponent": "competent",
+        "hands": 120,
+        "dealPairs": 30,
+        "deltaBbPer100": 0,
+        "descriptive95Interval": [
+          0,
+          0
+        ],
+        "candidateP95Ms": [
+          26.68573699999979,
+          24.502105999999912
+        ],
+        "candidateContextCounts": [
+          12,
+          9
+        ]
+      }
+    ],
+    "hands": 480,
+    "promotionToProduction": false,
+    "limitation": "Small full-game smoke comparison; serial adaptation makes pair-based intervals descriptive. A synthetic-learning gain alone never authorizes automatic production promotion."
+  },
+  "productionConfigChanged": false,
+  "limitation": "Parameter calibration and Bayesian online learning, not neural-network training. New weights remain offline until broader representative validation. Historical checkpoints and reports can be resumed.",
+  "command": "BOT_TRAIN_PAIRS=30 npm run bot:train -- 2 /tmp/flipup-planning-training",
+  "syntheticHoldoutSummary": {
+    "observationsPerPhase": 120,
+    "meanGain": 2.0064656641170564,
+    "recovery": true,
+    "limitation": "Known-payoff synthetic river subgame with exogenous public probes. This tests learning and response reversal, not full Hold\u2019em profitability or calibrated confidence.",
+    "seeds": [
+      3541816267,
+      3525038648,
+      3575371505,
+      3558593886,
+      3608926743,
+      3592149124,
+      3642481981,
+      3625704362,
+      3407595315,
+      3390817696,
+      3385565848,
+      3402343467
+    ],
+    "descriptiveSessionInterval": [
+      1.9932390028134055,
+      2.0196923254207073
+    ]
+  },
+  "note": "Full synthetic per-trial rows remain in the reproducible local report; this checked-in summary retains aggregate synthetic results and complete poker matchup summaries."
+}

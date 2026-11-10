@@ -10,6 +10,7 @@ test('play hands against the bots on one phone', async ({ page }) => {
   await shot(page, '02-name');
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByText('You vs the bots')).toBeVisible();
+  await expect(page.getByText('Casual', { exact: true })).toBeVisible();
   await shot(page, '03-setup');
   await page.getByRole('button', { name: 'Sit down' }).click();
 
@@ -38,6 +39,19 @@ test('play hands against the bots on one phone', async ({ page }) => {
     await page.waitForTimeout(500);
   }
   await expect(next).toBeVisible();
+  const ordinaryEngine = await page.evaluate(() => {
+    const game = JSON.parse(localStorage.getItem('flipup.session') ?? 'null')?.game;
+    return {
+      difficulty: game?.botTable?.difficulty,
+      identities: Object.keys(game?.botTable?.players ?? {}).length,
+      model: game?.botTable?.traces?.at(-1)?.identityPolicyVersion,
+      strategy: game?.botTable?.traces?.at(-1)?.prediction?.modelVersion,
+    };
+  });
+  expect(ordinaryEngine.difficulty).toBe('casual');
+  expect(ordinaryEngine.identities).toBe(5);
+  expect(ordinaryEngine.model).toBe('everyday-1');
+  expect(ordinaryEngine.strategy).toBe('baseline-7');
   await expect(page.locator('.win-banner').first()).toBeVisible();
   await shot(page, '06-result');
 
@@ -59,10 +73,13 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
   await setName(page, 'Sam');
   await page.getByRole('button', { name: 'Next' }).click();
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'One less bot' }).click();
-  await page.getByRole('switch', { name: /Rebuys/ }).click();
+  const rebuys = page.getByRole('switch', { name: /Rebuys/ });
+  if (await rebuys.isChecked()) await rebuys.click();
+  await expect(rebuys).not.toBeChecked();
   // A short stack with big blinds, so the game is decided in a handful of hands.
   await page.getByRole('button', { name: 'Less Starting chips' }).click();
-  for (let i = 0; i < 10 && !(await page.getByText('25/50', { exact: true }).isVisible()); i++) await page.getByRole('button', { name: 'More Blinds', exact: true }).click();
+  for (let i = 0; i < 10 && !(await page.getByText('25/50', { exact: true }).isVisible()); i++)
+    await page.getByRole('button', { name: 'More Blinds', exact: true }).click();
   await page.getByRole('button', { name: 'Sit down' }).click();
   await page.getByRole('button', { name: 'Deal', exact: true }).click();
 
@@ -71,14 +88,17 @@ test('against a bot with rebuys off, the hand that ends the game stays on screen
   for (let i = 0; i < 900 && !decided; i++) {
     if (await page.getByText(/The game ends in/).isVisible()) decided = true;
     else if (await page.getByText('Your turn').isVisible()) {
-      const raise = page.locator('.action-buttons .btn-blue');
+      const raise = page.locator('.action-buttons').getByRole('button', { name: /^(Bet|Raise)$/ });
       if (await raise.isVisible()) {
         await raise.click();
         // A short stack has no "All in" preset: the biggest one left is the whole stack.
         const allIn = page.locator('.raise-panel .preset[aria-label="All in"]');
-        await (((await allIn.count()) > 0 ? allIn : page.locator('.raise-panel .preset').last()).first().click());
-        await page.locator('.raise-panel .btn-blue').click();
-      } else await page.locator('.action-buttons .btn-green').click();
+        await ((await allIn.count()) > 0 ? allIn : page.locator('.raise-panel .preset').last()).first().click();
+        await page
+          .locator('.raise-panel .raise-actions')
+          .getByRole('button', { name: /^(All in|Bet|Raise)$/ })
+          .click();
+      } else await checkOrCall(page);
     } else if (await page.getByRole('button', { name: 'Next hand' }).isVisible())
       await page.getByRole('button', { name: 'Next hand' }).click();
     await page.waitForTimeout(250);

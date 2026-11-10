@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { addedLine, botFace, BOTS, lineBeats, sayAndReadMs, type Message } from '@/engine';
+import { addedLine, balancedBotPool, botFace, BOTS, lineBeats, sayAndReadMs, type Message } from '@/engine';
 import { useColors } from '@/theme';
 
 import { AddFace, BotPill, BUBBLE_ROOM, Face, FaceBubble, FaceRow } from './faces';
@@ -92,7 +92,7 @@ export function randomBot(have: { name: string; emoji: string }[], you: string |
   const faces = new Set(have.map((b) => b.emoji));
   const free = BOTS.filter((b) => !names.has(b.name.toLowerCase()));
   const fresh = free.filter((b) => !faces.has(botFace(b.emoji)));
-  const pool = fresh.length ? fresh : free;
+  const pool = balancedBotPool(fresh.length ? fresh : free, have);
   if (!pool.length) return null;
   const pick = pool[Math.floor(Math.random() * pool.length)];
   return { key: `${pick.name}:${Date.now()}`, name: pick.name, emoji: botFace(pick.emoji), greet: addedLine(pick.style, you, Math.random).text };

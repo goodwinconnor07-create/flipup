@@ -46,6 +46,14 @@ export class Connection {
     return true;
   }
 
+  /** Try now, instead of waiting out the back-off (the Try again button). */
+  retryNow(): void {
+    if (this.closed || this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) return;
+    this.failures = 0;
+    clearTimeout(this.retryTimer);
+    this.open();
+  }
+
   close(): void {
     this.closed = true;
     clearTimeout(this.retryTimer);

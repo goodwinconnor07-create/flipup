@@ -100,6 +100,27 @@ export function HouseRules({ settings: s, onChange, online }: { settings: Settin
 
   const switches: ReactNode[] = [
     (s.variant ?? 'holdem') === 'holdem' && (
+      <View key="bot-level" style={{ padding: spacing.md, gap: spacing.xs }}>
+        <ThemedText>Bot level</ThemedText>
+        {edit ? (
+          <SegmentedControl
+            label="Bot level"
+            value={s.botDifficulty ?? 'casual'}
+            options={[
+              { value: 'casual', label: 'Casual' },
+              { value: 'challenge', label: 'Challenge' },
+            ]}
+            onChange={(botDifficulty) => set({ botDifficulty })}
+          />
+        ) : (
+          <ThemedText>{s.botDifficulty === 'challenge' ? 'Challenge' : 'Casual'}</ThemedText>
+        )}
+        <ThemedText variant="caption1" tone="secondaryLabel">
+          Challenge makes fewer small mistakes. Changes next hand.
+        </ThemedText>
+      </View>
+    ),
+    (s.variant ?? 'holdem') === 'holdem' && (
       <SwitchRow
         key="human-poker"
         label="Invite BOT_001"

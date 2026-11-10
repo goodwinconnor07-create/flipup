@@ -4,6 +4,8 @@
 import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { humanPokerThought, updateHumanPokerMemory } from '../bot_engine/live';
 import { isPersonality } from '../bot_engine/personalities';
+import { balancedBotPool, isBotDifficulty } from '../bot_engine/everyday';
+import { everydayThought, updateEverydayMemory, usesEverydayBots } from '../bot_engine/everydayLive';
 import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
@@ -23,6 +25,10 @@ import {
   endsAtOnce,
   discardCard,
   endVote,
+  endDiscussion,
+  endTally,
+  pointAt,
+  resumeBetting,
   endDiscards,
   foldOutOfTurn,
   canHit,
@@ -111,6 +117,7 @@ export function validSettings(s: Settings): boolean {
     s.bigBlind >= s.smallBlind &&
     // No upper bound against the stack: rising blinds can climb past it, and the host must still be able to change other settings then.
     typeof s.rebuys === 'boolean' &&
+    (s.botDifficulty === undefined || isBotDifficulty(s.botDifficulty)) &&
     (s.humanPoker === undefined || typeof s.humanPoker === 'boolean') &&
     (s.botPersonality === undefined || s.botPersonality === 'original' || isPersonality(s.botPersonality)) &&
     (!s.humanPoker || (s.variant ?? 'holdem') === 'holdem') &&
@@ -270,8 +277,15 @@ function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): v
   const fits = room?.length ? BOTS.filter((b) => room.includes(b.style)) : BOTS;
   const free = (fits.length ? fits : BOTS).filter((b) => !names.has(b.name.toLowerCase()) && !emojis.has(b.emoji));
   const pool = free.length ? free : BOTS.filter((b) => !names.has(b.name.toLowerCase()));
-  const pick = pool.length
-    ? pool[Math.floor(rng() * pool.length)]
+  const balanced =
+    usesEverydayBots(game) && !room?.length
+      ? balancedBotPool(
+          pool,
+          game.players.filter((p) => p.bot),
+        )
+      : pool;
+  const pick = balanced.length
+    ? balanced[Math.floor(rng() * balanced.length)]
     : { name: `Bot ${game.players.length}`, emoji: '🦾', style: 'pro', profile: undefined };
   game.players.push({
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
@@ -609,6 +623,7 @@ function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
 }
 
 function afterHand(game: Game, ctx: ActionContext): void {
+  updateEverydayMemory(game);
   updateHumanPokerMemory(game);
   const hand = game.hand!;
   const result = hand.result!;
@@ -743,7 +758,7 @@ function afterHand(game: Game, ctx: ActionContext): void {
     talkMs += TIMING.replyMin + 900;
   }
   // A little longer before the next deal, so the table talk can be read (but not when the game is about to end).
-  if (game.nextHandAt !== null && !(endsAtOnce(game) && lastStanding(game)))
+  if (game.nextHandAt !== null && !(endsAtOnce(game) && lastStanding(game)) && !usesEverydayBots(game))
     game.nextHandAt += botsOnly(game) ? 1000 : Math.min(TIMING.talkPauseMax, Math.max(TIMING.talkPause, talkMs - TIMING.talkSlack));
   schedule(game);
 }
@@ -793,6 +808,7 @@ function openAgain(game: Game, ctx: ActionContext): void {
     'readHand',
     'dialogue',
     'humanPoker',
+    'botTable',
   ] as const)
     delete game[k];
   schedule(game);
@@ -1004,7 +1020,10 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       const stackChanged = next.startingStack !== game.settings.startingStack;
       const minutesChanged = (next.blindMinutes ?? 0) !== (game.settings.blindMinutes ?? 0);
       // Freeze this hand's identity before a setting can change the next hand's choice.
-      if (game.hand && !game.hand.result) updateHumanPokerMemory(game);
+      if (game.hand && !game.hand.result) {
+        updateHumanPokerMemory(game);
+        updateEverydayMemory(game);
+      }
       game.settings = next;
       syncHumanPokerSeat(game);
       // Changing how often the blinds rise restarts their clock; turning it off stops it.
@@ -1066,6 +1085,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      if (hand.moment?.gate && ctx.now < hand.moment.until) return fail('One moment…');
       const potBefore = potTotal(hand);
       const street = hand.street;
       const raises = preflopRaises(hand);
@@ -1090,6 +1110,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
       if (hand.seq !== action.seq) return fail('That turn has passed.');
+      if (hand.moment?.gate && ctx.now < hand.moment.until) return fail('One moment…');
       const error = hitCard(game, ctx);
       if (error) return fail(error);
       me.timeouts = 0;
@@ -1101,6 +1122,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
       const error = discardCard(game, me.id, action.card, ctx);
+      return error ? fail(error) : done();
+    }
+
+    case 'point': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = pointAt(game, me.id, action.playerId, ctx);
       return error ? fail(error) : done();
     }
 
@@ -1238,6 +1267,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (game.status !== 'ended') return done(false);
       if (host && !action.off) {
         openAgain(game, ctx);
+        // The host picked another mode for the next game (the finish page's mode chip).
+        if (action.variant && action.variant !== game.settings.variant && validSettings({ ...game.settings, variant: action.variant })) game.settings = { ...game.settings, variant: action.variant };
         return done();
       }
       const wants = new Set(game.again ?? []);
@@ -1315,6 +1346,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
         ms &&
         !game.hand &&
         game.nextHandAt !== null &&
+        !usesEverydayBots(game) &&
         (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost' || event === 'rememberHello')
       )
         game.nextHandAt = Math.max(game.nextHandAt, ctx.now + ms + TIMING.afterHello);
@@ -1345,6 +1377,20 @@ function tick(game: Game, ctx: ActionContext): boolean {
     // Imposter: time's up for voting.
     if (hand.voting) {
       endVote(game, ctx);
+      return true;
+    }
+    // Imposter: the talking is over, or the votes have all been read out.
+    if (hand.discussing) {
+      endDiscussion(game, ctx);
+      return true;
+    }
+    if (hand.tally) {
+      endTally(game, ctx);
+      return true;
+    }
+    // A moment (a die, a red river...) is over: betting starts.
+    if (hand.bettingAt != null) {
+      resumeBetting(game, ctx);
       return true;
     }
     // A bot's word before the showdown is over: the hands turn over.
@@ -1388,7 +1434,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
       }
       // It said something a moment ago (a remark on someone's bet, say) and the table is still reading it.
       const talking = game.talkDone?.[player.id] ?? 0;
-      if (talking > ctx.now + 20 && !botsOnly(game)) {
+      if (talking > ctx.now + 20 && !botsOnly(game) && !usesEverydayBots(game)) {
         hand.actAt = talking;
         schedule(game);
         return true;
@@ -1406,7 +1452,13 @@ function tick(game: Game, ctx: ActionContext): boolean {
       // At a variant table it plays the variant's own way (botVariants.ts); plain Hold'em gets the full bot brain.
       const thought =
         humanPokerThought(game, seat.playerId) ??
-        variantDecide(game.humanPoker ? { ...game, humanPoker: undefined } : game, hand, seat, ctx.rng) ??
+        everydayThought(game, seat.playerId) ??
+        variantDecide(
+          game.humanPoker || game.botTable ? { ...game, humanPoker: undefined, botTable: undefined } : game,
+          hand,
+          seat,
+          ctx.rng,
+        ) ??
         decide(view.game, view.hand, view.seat, ctx.rng);
       const choice = thought.move;
       const fast = botsOnly(game);
@@ -1423,7 +1475,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
         game.bankroll && !fast && (choice.move === 'bet' || choice.move === 'raise' || choice.move === 'allin')
           ? rememberBotBet(game, hand, player.id, ctx)
           : 0;
-      const spoken = memo || (event && said && !fast ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0);
+      const spoken = memo || (event && said && !fast && !usesEverydayBots(game) ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0);
       if (spoken) {
         wait = Math.max(wait, spoken);
         if (event === 'allin') owe(game, player.id);

@@ -4,7 +4,7 @@ import { dealNextStreet, makeMove, runoutStep, showdown, startHand } from '../ga
 import { informationFor } from './information';
 import { BotFactory } from './identity';
 import { emptyMemory, observe } from './memory';
-import { BotService } from './service';
+import { BotService, type DecisionTrace } from './service';
 import { BaselineProvider, type StrategyPrediction } from './strategy';
 import { scriptedMove, type AgentKind, SCRIPTED_OPPONENTS } from './scriptedOpponents';
 import { LEARNING_CONFIG, type LearningConfig } from './learningConfig';
@@ -12,6 +12,13 @@ import { publicResponses } from './observations';
 import { withPersonality, type PersonalityId } from './personalities';
 import { preflopContext } from './preflopContext';
 import { handBucket } from '../game/handBucket';
+import { everydayProfile, EVERYDAY_FOCUSES, type BotDifficulty, type EverydayFocus } from './everyday';
+import { CalibratedProvider, type CalibrationMode } from './calibratedProvider';
+import type { BotMove } from '../game/botPlay';
+import type { InformationSet } from './information';
+import { EverydayProvider } from './everydayProvider';
+import { learnPublicBehavior } from './publicBehavior';
+import { BehavioralProvider } from './behavioralProvider';
 
 export interface SimulationOptions {
   agents?: AgentKind[];
@@ -22,7 +29,14 @@ export interface SimulationOptions {
   personality?: PersonalityId;
   startingStacksBb?: number[];
   carryStacks?: boolean;
-  revision?: 'baseline-4' | 'baseline-5';
+  revision?: 'baseline-4' | 'baseline-5' | 'baseline-6' | 'baseline-7';
+  /** Offline candidate; the production default remains V7. */
+  calibrated?: boolean | CalibrationMode | 'behavior';
+  /** Observers receive independent copies of only this actor's whitelisted information. */
+  onAction?: (info: InformationSet, action: BotMove) => void;
+  onDecision?: (trace: DecisionTrace) => void;
+  everyday?: BotDifficulty;
+  everydayFocus?: EverydayFocus;
 }
 
 /** Uses production rules; independently seeded policy and dealing streams. No illegal-action fallback. */
@@ -58,11 +72,27 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
   const factory = new BotFactory();
   const profiles = game.players.map((p, n) => {
     const profile = factory.generate(p.id, 1001 + n);
+    if (config.everyday)
+      return everydayProfile(
+        profile,
+        `Everyday ${n}`,
+        config.everyday,
+        n === 0 ? (config.everydayFocus ?? 'balanced') : EVERYDAY_FOCUSES[n % 4],
+      );
     return n === 0 && config.personality ? withPersonality(profile, config.personality) : profile;
   });
   const memories = profiles.map((p) => emptyMemory(p.botId, game.id));
   const service = new BotService(
-    new BaselineProvider(160, config.revision),
+    config.calibrated === 'behavior'
+      ? new BehavioralProvider(config.everyday === 'challenge' ? 160 : 96)
+      : config.calibrated
+        ? new CalibratedProvider(config.everyday === 'challenge' ? 160 : 96, config.calibrated === true ? 'combined' : config.calibrated)
+        : config.everyday
+          ? new EverydayProvider(
+              config.everyday === 'casual' ? 96 : 160,
+              config.revision === 'baseline-5' ? 'baseline-5' : config.revision === 'baseline-6' ? 'baseline-6' : 'baseline-7',
+            )
+          : new BaselineProvider(160, config.revision),
     config.learningMode ?? 'contextual',
     config.learningConfig ?? LEARNING_CONFIG,
   );
@@ -100,6 +130,34 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       preflopCoverage.fallbackReasons[reason] = (preflopCoverage.fallbackReasons[reason] ?? 0) + 1;
     }
   };
+  const postflopCoverage = {
+    decisions: 0,
+    plannedDecisions: 0,
+    rangeAnalysedDecisions: 0,
+    flopPlans: 0,
+    turnPlans: 0,
+    multiwayPlans: 0,
+    allInOpponentModels: 0,
+    riverModels: 0,
+    fallbackReasons: {} as Record<string, number>,
+  };
+  const recordPostflop = (prediction: StrategyPrediction, street: string) => {
+    postflopCoverage.decisions++;
+    if (prediction.rangeReads?.length) postflopCoverage.rangeAnalysedDecisions++;
+    if (prediction.planning) {
+      postflopCoverage.plannedDecisions++;
+      if (street === 'flop') postflopCoverage.flopPlans++;
+      if (street === 'turn') postflopCoverage.turnPlans++;
+      if (street === 'river') postflopCoverage.riverModels++;
+      if (prediction.planning.version === 'multi-street-2') {
+        if (prediction.planning.opponents > 1) postflopCoverage.multiwayPlans++;
+        if (prediction.planning.opponents > prediction.planning.activeOpponents) postflopCoverage.allInOpponentModels++;
+      }
+    } else {
+      const reason = prediction.planningFallback ?? 'historical-model';
+      postflopCoverage.fallbackReasons[reason] = (postflopCoverage.fallbackReasons[reason] ?? 0) + 1;
+    }
+  };
   const behavior = {
     hands: 0,
     vpipHands: 0,
@@ -119,6 +177,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     betSizeSum: 0,
     betSizes: 0,
   };
+  const tableExperience = { hands: 0, flops: 0, walks: 0, raisedPots: 0, preflopAllIns: 0 };
   let decisions = 0,
     eventSequence = 0;
   for (let handNo = 0; handNo < hands; handNo++) {
@@ -157,6 +216,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       const info = informationFor(game, h.toAct);
       const started = performance.now();
       const agent = agents[at];
+      let capturedTrace: DecisionTrace | undefined;
       const sampling = seededRng(service.seedFor(info, profiles[at]));
       const action =
         agent === 'bot' || agent === 'previous' || agent === 'incumbent'
@@ -168,12 +228,15 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
                 service.seedFor(info, profiles[at]),
               );
               if (at === 0 && info.street === 'preflop') recordCoverage(trace.prediction);
+              if (at === 0 && info.street !== 'preflop') recordPostflop(trace.prediction, info.street);
+              if (at === 0 && config.onDecision) capturedTrace = trace;
               return trace.action;
             })()
           : agent === 'baseline'
             ? (() => {
                 const prediction = baseline.predict(info);
                 if (at === 0 && info.street === 'preflop') recordCoverage(prediction);
+                if (at === 0 && info.street !== 'preflop') recordPostflop(prediction, info.street);
                 let draw = sampling();
                 return prediction.actions[
                   prediction.probabilities.findIndex((p, n) => {
@@ -224,8 +287,11 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
         }
       }
       const elapsed = performance.now() - started;
+      if (capturedTrace && config.onDecision) config.onDecision(structuredClone(capturedTrace));
+      if (config.onAction) config.onAction(structuredClone(info), { ...action });
       const error = makeMove(game, action.move, action.to, ctx);
       if (error) throw new Error(`Illegal bot action: ${error}`);
+      learnPublicBehavior(game, memories);
       if (!info.legal.canCheck) {
         const context = publicResponses({
           actions: h.actions ?? [],
@@ -255,6 +321,13 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
       decisions++;
     }
     if (!game.hand?.result) throw new Error('Hand did not finish');
+    const preflop = (game.hand.actions ?? []).filter((a) => a.street === 'preflop');
+    const raised = preflop.some((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > game.settings.bigBlind));
+    tableExperience.hands++;
+    if (game.hand.board.length) tableExperience.flops++;
+    if (raised) tableExperience.raisedPots++;
+    if (!raised && !game.hand.board.length) tableExperience.walks++;
+    if (preflop.some((a) => a.move === 'allin')) tableExperience.preflopAllIns++;
     if (game.players.reduce((sum, p) => sum + p.stack, 0) !== bankroll) throw new Error('Chip conservation failed');
     behavior.hands++;
     if (vpip) behavior.vpipHands++;
@@ -272,7 +345,9 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     agents,
     actionCounts,
     preflopCoverage,
+    postflopCoverage,
     behavior,
+    tableExperience,
     handReturnsBb: returns,
     dealChecksums,
     bbPer100: mean * 100,

@@ -50,6 +50,7 @@ export { PartyRoom } from './party';
 export { FriendCard } from './friendCard';
 import { askToBeFriends, type FriendCardApi } from './friendCard';
 export { BlackjackRoom } from './blackjack';
+import { safeDecode } from './safeDecode';
 export { ReportBox } from './reports';
 export { Entitlements } from './entitlement';
 export { BankrollRoom } from './bankroll';
@@ -415,7 +416,7 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
 async function usernameRoute(request: Request, env: Env, pathname: string): Promise<Response> {
   if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
   if (limited(request, 'friend-get', 60, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
-  const username = normalizeUsername(decodeURIComponent(pathname.slice('/api/usernames/'.length)));
+  const username = normalizeUsername(safeDecode(pathname.slice('/api/usernames/'.length)));
   if (!isUsername(username)) return json({ error: 'No one has that username.' }, 404);
   const code = await env.FRIEND_CARD.getByName(`@${username}`).aliasOf();
   const info = code ? await env.FRIEND_CARD.getByName(code).get(code) : null;
@@ -596,7 +597,7 @@ async function bankrollRoute(request: Request, env: Env, pathname: string, searc
  */
 async function boardRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
   if (limited(request, 'boards', 600, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
-  const [kind, when] = decodeURIComponent(pathname.slice('/api/boards/'.length)).split(':');
+  const [kind, when] = safeDecode(pathname.slice('/api/boards/'.length)).split(':');
   const name = kind === 'bankroll' && (!when || isSeason(when)) ? `bankroll:${when ?? seasonOf(Date.now())}` : kind === 'daily' && (!when || isDay(when)) ? `daily:${when ?? dayOf(Date.now())}` : null;
   if (!name) return json({ error: 'No such board.' }, 404);
   const params = new URL(`http://x/${search}`).searchParams;
@@ -695,7 +696,14 @@ export default {
       const code = match[1].toUpperCase();
       if (!isTableCode(code)) return json({ error: "That code doesn't look right." }, 400);
       const room = env.TABLE_ROOM.getByName(code);
-      if (match[2]) return sameSite(request) ? room.fetch(request) : json({ error: 'Not allowed.' }, 403);
+      if (match[2]) {
+        if (!sameSite(request)) return json({ error: 'Not allowed.' }, 403);
+        // Opening a socket to a table that isn't there is the same scan as asking for its info, so it counts as a miss too.
+        if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
+        const res = await room.fetch(request);
+        if (res.status === 404) noteMiss(request);
+        return res;
+      }
       if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
       if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
       const info = await room.info();

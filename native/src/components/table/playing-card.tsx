@@ -45,11 +45,12 @@ function useCardLook() {
 }
 
 /** The back of a card: the owner's card pack, or the plain back in the page's own shade. */
-export function CardBack({ w, pack, small, mark }: { w: number; pack?: string; small?: boolean; mark?: string }) {
+export function CardBack({ w, pack, small, mark, ghost }: { w: number; pack?: string; small?: boolean; mark?: string; ghost?: boolean }) {
   const { c, shadow } = useCardLook();
   const look = pack ? cardBack(pack) : null;
-  const base = look ? look.base.join(', ') : `${c.cardBack1}, ${c.cardBack2}`;
-  const ink = look?.ink ?? 'rgba(255,255,255,0.12)';
+  // The ghost's cards: white with a fine blue-grey weave and a small ghost in the middle.
+  const base = ghost ? '#ffffff, #e4e8f2' : look ? look.base.join(', ') : `${c.cardBack1}, ${c.cardBack2}`;
+  const ink = ghost ? 'rgba(110,125,170,0.4)' : (look?.ink ?? 'rgba(255,255,255,0.12)');
   return (
     <View
       accessibilityLabel="Face-down card"
@@ -57,9 +58,9 @@ export function CardBack({ w, pack, small, mark }: { w: number; pack?: string; s
         frame(w, small),
         {
           borderWidth: small ? 1.5 : 2,
-          borderColor: 'rgba(255,255,255,0.85)',
+          borderColor: ghost ? 'rgba(170,180,210,0.9)' : 'rgba(255,255,255,0.85)',
           boxShadow:
-            look && look.glow !== 'transparent'
+            look && !ghost && look.glow !== 'transparent'
               ? `0 0 ${small ? 8 : 12}px ${look.glow}`
               : small
                 ? '0 2px 4px -2px rgba(18,18,40,0.3)'
@@ -71,6 +72,13 @@ export function CardBack({ w, pack, small, mark }: { w: number; pack?: string; s
         ),
       ]}
     >
+      {ghost && (
+        <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <Text maxFontSizeMultiplier={1} accessible={false} style={{ fontSize: small ? 15 : w * 0.45 }}>
+            👻
+          </Text>
+        </View>
+      )}
       {mark ? <BackMark mark={mark} small={small} w={w} /> : null}
     </View>
   );
@@ -128,6 +136,7 @@ export function PlayingCard({
   width,
   pack,
   mark,
+  ghost,
 }: {
   card?: Card;
   size?: CardSize;
@@ -141,14 +150,16 @@ export function PlayingCard({
   pack?: string;
   /** A position chip (SB, BB, BTN) for a face-down card. Never drawn on a face. */
   mark?: string;
+  /** The ghost's white card back. */
+  ghost?: boolean;
 }) {
   const w = width ?? CARD_W[size];
   const small = size === 'sm';
-  if (back || !card) return <CardBack w={w} pack={pack} small={small} mark={mark} />;
+  if (back || !card) return <CardBack w={w} pack={pack} small={small} mark={mark} ghost={ghost} />;
   const face = <Face card={card} w={w} small={small} dim={dim} glow={glow} />;
   if (!flip) return face;
   return (
-    <Flip w={w} delay={delay} pack={pack} small={small}>
+    <Flip w={w} delay={delay} pack={pack} small={small} ghost={ghost}>
       {face}
     </Flip>
   );
@@ -158,7 +169,7 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
   const { edge, shadow, dimBg, dark } = useCardLook();
   const suit = suitOf(card);
   const fade = dim ? (dark ? 0.75 : 1) : 1;
-  // A wild deuce: gold with a shine sweeping across it, a gold glow round it and a "WILD" tag, so a 2 can't be missed.
+  // A wild deuce: gold with a shine sweeping across it, a gold glow round it, so a 2 can't be missed.
   const wild = useContext(WildDeuces) && card[0] === '2' && !dim;
   const ink = wild ? GOLD_INK : INK[suit];
   return (
@@ -209,11 +220,6 @@ function Face({ card, w, small, dim, glow }: { card: Card; w: number; small: boo
       >
         {SYMBOL[suit]}
       </Text>
-      {wild && !small && (
-        <Text maxFontSizeMultiplier={1} style={{ position: 'absolute', right: w * 0.1, top: w * 0.12, fontSize: Math.max(8, w * 0.13), fontWeight: '900', letterSpacing: 0.5, color: GOLD_INK }}>
-          WILD
-        </Text>
-      )}
     </View>
   );
 }
@@ -230,7 +236,7 @@ function Shine({ small }: { small: boolean }) {
 }
 
 /** Face down, lifting a little and growing 6% as it turns, face up: the web's flip-in, 0.65s. */
-function Flip({ w, delay, pack, small, children }: { w: number; delay: number; pack?: string; small: boolean; children: ReactNode }) {
+function Flip({ w, delay, pack, small, ghost, children }: { w: number; delay: number; pack?: string; small: boolean; ghost?: boolean; children: ReactNode }) {
   const reduce = useReduceMotion();
   const p = useSharedValue(reduce ? 1 : 0);
   useEffect(() => {
@@ -264,7 +270,7 @@ function Flip({ w, delay, pack, small, children }: { w: number; delay: number; p
   return (
     <View style={{ width: w, height: Math.round(w * 1.4) }}>
       <Animated.View style={[{ position: 'absolute', top: 0, left: 0 }, backStyle]}>
-        <CardBack w={w} pack={pack} small={small} />
+        <CardBack w={w} pack={pack} small={small} ghost={ghost} />
       </Animated.View>
       <Animated.View style={faceStyle}>{children}</Animated.View>
     </View>

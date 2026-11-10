@@ -16,6 +16,9 @@ export const APP_INFO = {
   /** The EAS project ID, made by the build workflow's `eas init` on 2 November 2026. */
   easProjectId: '55f84d03-0b82-48a2-9fa8-a4f76a7d112a',
 
+  /** The App Store id (App Store Connect > General > App Information), for the share link and the rating page. */
+  appStoreId: '6829639428',
+
   /** The Premium non-consumable in-app purchase, already made in App Store Connect. */
   premiumProductId: 'flipup.premium.unlock',
 

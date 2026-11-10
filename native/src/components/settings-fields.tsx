@@ -119,6 +119,23 @@ export function SettingsFields({
 
   const ruleRows = [
     (settings.variant ?? 'holdem') === 'holdem' && (
+      <View key="bot-level" style={{ padding: spacing.md, gap: spacing.xs }}>
+        <ThemedText>Bot level</ThemedText>
+        <SegmentedControl
+          label="Bot level"
+          value={settings.botDifficulty ?? 'casual'}
+          options={[
+            { value: 'casual', label: 'Casual' },
+            { value: 'challenge', label: 'Challenge' },
+          ]}
+          onChange={(botDifficulty) => set({ botDifficulty })}
+        />
+        <ThemedText variant="caption1" tone="secondaryLabel">
+          Challenge makes fewer small mistakes. Changes next hand.
+        </ThemedText>
+      </View>
+    ),
+    (settings.variant ?? 'holdem') === 'holdem' && (
       <Row
         key="human-poker"
         title="Invite BOT_001"

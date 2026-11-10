@@ -11,6 +11,7 @@ import { BOTS } from './botStyles';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
 import { isPersonality } from '../bot_engine/personalities';
+import { isBotDifficulty } from '../bot_engine/everyday';
 
 const MOVES: Move[] = ['fold', 'check', 'call', 'bet', 'raise', 'allin'];
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && Math.abs(v) <= 1e9;
@@ -22,6 +23,10 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const out: Partial<Settings> = {};
+  if (r.botDifficulty !== undefined) {
+    if (!isBotDifficulty(r.botDifficulty)) return null;
+    out.botDifficulty = r.botDifficulty;
+  }
   if (r.botPersonality !== undefined) {
     if (r.botPersonality !== 'original' && !isPersonality(r.botPersonality)) return null;
     out.botPersonality = r.botPersonality;
@@ -82,7 +87,8 @@ export function parseAction(raw: unknown): Action | null {
     case 'end':
       return { type: a.type };
     case 'playAgain':
-      return a.off === true ? { type: 'playAgain', off: true } : { type: 'playAgain' };
+      if (a.off === true) return { type: 'playAgain', off: true };
+      return isVariant(a.variant) ? { type: 'playAgain', variant: a.variant } : { type: 'playAgain' };
     case 'remove':
       return isId(a.playerId) ? { type: 'remove', playerId: a.playerId } : null;
     case 'settings': {
@@ -106,6 +112,8 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
     case 'vote':
       return isInt(a.hand) && isId(a.playerId) ? { type: 'vote', hand: a.hand, playerId: a.playerId } : null;
+    case 'point':
+      return isInt(a.hand) && (a.playerId === null || isId(a.playerId)) ? { type: 'point', hand: a.hand, playerId: a.playerId as string | null } : null;
     case 'discard':
       return isInt(a.hand) && isCard(a.card) ? { type: 'discard', hand: a.hand, card: a.card } : null;
     case 'react':

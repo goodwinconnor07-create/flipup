@@ -129,3 +129,9 @@ export function moveLabel(last: NonNullable<Seat['last']>): string {
       return `BB ${n}`;
   }
 }
+
+/** Crazy Pineapple: who the table is still waiting on to throw a card away. Works on the redacted table too. */
+export function discardWaiting(hand: Hand): Seat[] {
+  if (!hand.discarding) return [];
+  return hand.seats.filter((s) => !s.folded && !(hand.discarded ?? []).includes(s.playerId));
+}

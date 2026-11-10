@@ -82,6 +82,16 @@ export function SettingsFields({
       </Group>
       <Group title="House rules">
         {(settings.variant ?? 'holdem') === 'holdem' && (
+          <StepRow
+            label="Bot level"
+            hint="Casual is relaxed; Challenge makes fewer small mistakes. Changes next hand."
+            value={settings.botDifficulty ?? 'casual'}
+            options={['casual', 'challenge']}
+            format={(v) => (v === 'challenge' ? 'Challenge' : 'Casual')}
+            onChange={(botDifficulty) => onChange({ ...settings, botDifficulty })}
+          />
+        )}
+        {(settings.variant ?? 'holdem') === 'holdem' && (
           <SwitchRow
             label="Invite BOT_001"
             hint="Add the new experimental bot. Joins next hand; leaves after the current hand."

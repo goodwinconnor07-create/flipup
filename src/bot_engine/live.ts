@@ -7,6 +7,7 @@ import { BotService } from './service';
 import type { BotThought } from '../game/botPlay';
 import type { DecisionTrace } from './service';
 import { publicResponses } from './observations';
+import { learnPublicBehavior } from './publicBehavior';
 
 export interface LiveBotState {
   playerId: string;
@@ -67,6 +68,7 @@ export function updateHumanPokerMemory(game: Game): LiveBotState | null {
       });
     }
   });
+  if ((h.actions?.length ?? 0) > state.observedActions) learnPublicBehavior(game, [state.memory]);
   state.observedActions = h.actions?.length ?? 0;
   return state;
 }

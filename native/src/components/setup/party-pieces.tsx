@@ -38,7 +38,7 @@ export function StartPartyButton() {
         <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, lineHeight: 20, color: 'rgba(255,255,255,0.75)' }}>
           Want to play more than one game?
         </Text>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 19, lineHeight: 24, fontWeight: '800', color: '#ffffff' }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 24, fontWeight: '800', color: '#ffffff' }}>
           Start a party
         </Text>
       </View>

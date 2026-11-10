@@ -79,7 +79,7 @@ function Card({ colors, label, onShare, children }: { colors: readonly [string, 
 }
 
 const Big = ({ children }: { children: React.ReactNode }) => (
-  <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 24, lineHeight: 30, fontWeight: '700', color: '#ffffff' }}>
+  <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 30, fontWeight: '700', color: '#ffffff' }}>
     {children}
   </Text>
 );

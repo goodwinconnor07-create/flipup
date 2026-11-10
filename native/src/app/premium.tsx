@@ -1,12 +1,12 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CARD_BACKS } from '@design/premiumLooks';
 import { Button } from '@/components/button';
-import { GameThumb } from '@/components/game-picture';
+import { GameTile } from '@/components/game-tile';
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
@@ -183,14 +183,16 @@ function Heading({ children, note }: { children: string; note?: string }) {
 
 /** The eight Premium games, with the one you tapped first. A tap shows how it plays. */
 function Games({ first }: { first?: string }) {
-  const colors = useColors();
+  const { width } = useWindowDimensions();
+  const tile = Math.floor((Math.min(width, 560) - spacing.lg * 2 - spacing.xs * 3) / 4);
   const games = VARIANTS.slice(FREE_VARIANTS);
   if (first) games.sort((a, b) => (a.id === first ? -1 : b.id === first ? 1 : 0));
   return (
     <View style={{ gap: spacing.sm }}>
       <Heading note="Tap one to see how it plays.">{`${games.length} more games`}</Heading>
-      <View style={{ borderRadius: radius.md, backgroundColor: glass, overflow: 'hidden' }}>
-        {games.map((g, i) => (
+      {/* The same tiles as Home, four to a row: the eight games read as a set you're getting. */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+        {games.map((g) => (
           <PressableScale
             key={g.id}
             accessibilityRole="button"
@@ -199,18 +201,9 @@ function Games({ first }: { first?: string }) {
               haptic.select();
               router.push(`/how-to-play/${g.id}`);
             }}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderTopWidth: i ? 1 : 0, borderTopColor: 'rgba(255,255,255,0.1)', backgroundColor: g.id === first ? 'rgba(255,255,255,0.08)' : undefined }}
+            haptics={false}
           >
-            <GameThumb variant={g.id} size={44} />
-            <View style={{ flex: 1 }}>
-              <ThemedText variant="headline" tone="onColor" numberOfLines={1}>
-                {g.name}
-              </ThemedText>
-              <ThemedText variant="footnote" tone="onColor" style={{ opacity: 0.7 }} numberOfLines={2}>
-                {g.tagline}
-              </ThemedText>
-            </View>
-            <Icon name="crown.fill" size={15} color={colors.gold} />
+            <GameTile variant={g.id} name={g.name} width={tile} />
           </PressableScale>
         ))}
       </View>

@@ -242,7 +242,7 @@ export function BotPill() {
   const colors = useColors();
   return (
     <View style={{ height: 18, paddingHorizontal: 7, borderRadius: radius.full, backgroundColor: colors.label, borderWidth: 2, borderColor: colors.background, justifyContent: 'center' }}>
-      <Text maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 10, lineHeight: 12, fontWeight: '800', letterSpacing: 0.6, color: colors.background as string }}>
+      <Text maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 11, lineHeight: 12, fontWeight: '800', letterSpacing: 0.6, color: colors.background as string }}>
         BOT
       </Text>
     </View>

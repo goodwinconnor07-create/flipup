@@ -28,10 +28,10 @@ Home's first-run How to play is a quiet grey row like Join a game: the two start
 
 **Flat everywhere outside the table (owner request, 10 November 2026: "the entire app's UI given this sort of
 treatment"; the table stays exactly as it is).** The game tiles' rules now hold for every screen:
-- **No gradients, glows or moving light.** `LivingCard` is one flat colour (the middle of its three; the third is
-  its darker band), `GrainBackground` is one flat night blue, and the coloured-card shadow is a plain dark shadow,
-  never a blue glow. Nothing drifts. This replaces "a moving blue light field" and "cards keep their slow glows" in
-  the box at the top.
+- **Flat cards on the moving page.** `LivingCard` is one flat colour (the middle of its three; the third is its
+  darker band) and the coloured-card shadow is a plain dark shadow, never a blue glow: this replaces "cards keep
+  their slow glows" in the box at the top. The page behind the dark blue screens is still `GrainBackground`, the
+  moving deep blue light field (flattened for a day, then brought back at the owner's ask the same day).
 - **Tiles have a picture and a band.** The two start tiles are built like game tiles: faces outlined in the
   pictures' ink on the flat colour, then a darker band with "PLAY WITH" small over FRIENDS or BOTS and one line.
 - **Rounded capitals on colour** (bands, eyebrows); sentence case everywhere else.
@@ -40,6 +40,8 @@ treatment"; the table stays exactly as it is).** The game tiles' rules now hold 
   blob.
 - **Profile** is your face (white disc, ink ring) and name on a flat blue block with a rounded bottom edge, the
   same in light and dark.
+Premium shows its eight games as the same tiles, four to a row. Hand-typed text sizes sit on the type ramp (11,
+12, 13, 15, 16, 17, 20, 22, 28, 34); only emoji and the big display numbers are off it.
 Screens as built: `docs/design/flat/`.
 
 **One font, one button (owner, 10 November 2026: "mixed fonts and button colours" made it feel half done).** Outside

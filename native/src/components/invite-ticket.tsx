@@ -53,7 +53,7 @@ export function InviteTicket({ code, link, kind = 'table', message }: { code: st
       <View accessible accessibilityLabel={`${label} ${code.split('').join(' ')}`} style={{ flexDirection: 'row', gap: spacing.xs }}>
         {code.split('').map((ch, i) => (
           <View key={i} style={{ flex: 1, height: 68, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: 'rgba(255, 255, 255, 0.16)', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.32)', alignItems: 'center', justifyContent: 'center' }}>
-            <Text maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 36, fontWeight: '800', color: '#ffffff' }}>
+            <Text maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', color: '#ffffff' }}>
               {ch}
             </Text>
           </View>

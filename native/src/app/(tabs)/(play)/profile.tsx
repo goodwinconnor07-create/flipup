@@ -106,7 +106,7 @@ export default function ProfileScreen() {
             autoFocus={first}
             onSubmitEditing={save}
             maxFontSizeMultiplier={1.3}
-            style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', textAlign: 'center', color: '#ffffff', minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
+            style={{ fontFamily: ROUNDED, fontSize: 28, fontWeight: '800', textAlign: 'center', color: '#ffffff', minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
           />
           <Swap id={changed ? 'save' : 'hint'} kind="text">
             {changed ? (

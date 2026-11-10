@@ -16,7 +16,7 @@ const EDGE = 4;
  */
 export function OpenTableButton({ title, line, busy, disabled, onPress }: { title: string; line?: string; busy?: boolean; disabled?: boolean; onPress: () => void }) {
   const insets = useSafeAreaInsets();
-  const night = GRAIN_NIGHT[1];
+  const night = GRAIN_NIGHT[2];
   return (
     <View
       pointerEvents="box-none"

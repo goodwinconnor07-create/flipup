@@ -13,6 +13,17 @@ echo "App $APP ($BID) on $DEV"
 xcrun simctl status_bar "$DEV" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100 || true
 xcrun simctl install "$DEV" "$APP"
 
+# Let flipup:// links open without iOS asking "Open in FlipUp?" each time (the scheme approval the Simulator keeps for
+# links sent by simctl), then restart the Simulator so it reads it.
+PREFS="$HOME/Library/Developer/CoreSimulator/Devices/$DEV/data/Library/Preferences"
+mkdir -p "$PREFS"
+/usr/libexec/PlistBuddy -c "Delete :com.apple.CoreSimulator.CoreSimulatorBridge-->flipup" "$PREFS/com.apple.launchservices.schemeapproval.plist" 2>/dev/null || true
+/usr/libexec/PlistBuddy -c "Add :com.apple.CoreSimulator.CoreSimulatorBridge-->flipup string $BID" "$PREFS/com.apple.launchservices.schemeapproval.plist"
+xcrun simctl shutdown "$DEV" || true
+xcrun simctl boot "$DEV"
+xcrun simctl bootstatus "$DEV" -b
+xcrun simctl status_bar "$DEV" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100 || true
+
 seed() {
   (cd .. && npx tsx native/scripts/demoData.ts > "$RUNNER_TEMP/demo.json")
   local data

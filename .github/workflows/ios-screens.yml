@@ -97,5 +97,7 @@ jobs:
           git add docs/design/screens
           git diff --cached --quiet && exit 0
           git commit -m "iOS Simulator screenshots of ${GITHUB_SHA::7}"
+          # Prebuild and the build leave changes in native/; put them aside so the pull can rebase.
+          git stash --include-untracked || true
           for i in 1 2 3; do git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && exit 0; sleep 5; done
           exit 1

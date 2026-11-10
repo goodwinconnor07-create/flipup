@@ -52,6 +52,9 @@ Settings. Setup shows the length, what is recorded, and Start. Play uses the exi
 opponents, board, own cards, legal actions, progress, an optional “That felt odd” marker, and Pause & upload.
 Pausing shows saved/upload status, Resume, an optional note and a private review link. Records survive reloads,
 upload completed hands incrementally, and stay separate from normal games, statistics and Range trainer lessons.
+The report page also offers Copy review packet with numbered parts and selectable text for mobile chat sharing.
+It preserves the existing uploaded hands and reuses the existing fields and buttons; no new screen or motion.
+The default copy includes all hands and explanations; an optional larger copy retains exact replay checkpoints.
 Wireframe shown in the implementation chat before building: Back / Bot research; 60 hands / Start; then Hand N,
 scenario label, table, Fold/Call/Raise, That felt odd, Pause & upload. Use existing surfaces and motion.
 

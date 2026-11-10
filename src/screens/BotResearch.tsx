@@ -24,6 +24,7 @@ import {
   researchArchives,
 } from '../research/storage';
 import { reviewResearch } from '../research/review';
+import { ResearchCopy } from './ResearchCopy';
 import type { ResearchReport } from '../research/protocol';
 import type { Move } from '../game/types';
 
@@ -77,6 +78,7 @@ function ResearchReportView({ id, accessKey }: { id: string; accessKey: string }
             <button className="btn btn-blue" onClick={() => download(report, `flipup-research-${id}.json`)}>
               Download full report
             </button>
+            <ResearchCopy report={report} />
             <h2>Coverage</h2>
             {summary.byScenario
               .filter((s) => s.hands)

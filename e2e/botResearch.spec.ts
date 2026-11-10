@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { watchErrors } from './helpers';
+import { decodeResearchShare, decodeResearchPacket } from '../src/research/share';
 import type { ResearchHand } from '../src/research/engine';
 import type { ResearchMetadata } from '../src/research/protocol';
 
@@ -46,6 +47,20 @@ test('mobile research survives offline play, reload, retry and private review', 
   await expect(page.getByRole('heading', { name: '1 hands saved' })).toBeVisible();
   await expect(page.getByText('The river decision felt hesitant.', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Download full report' })).toBeVisible();
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.getByRole('button', { name: 'Copy review packet', exact: true }).click();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).not.toContain(match[2]);
+  const decoded = await decodeResearchPacket([copied]);
+  expect(decoded.hands).toHaveLength(1);
+  expect(decoded.hands[0].feedback.note).toBe('The river decision felt hesitant.');
+  expect(decoded.hands[0].decisions.length).toBeGreaterThan(0);
+  await expect(page.getByText('Copied part 1 of 1.', { exact: false })).toBeVisible();
+  await page.getByText('Full data for exact replay (larger)', { exact: true }).click();
+  await page.getByRole('button', { name: 'Copy full replay packet', exact: true }).click();
+  const full = await decodeResearchShare([await page.evaluate(() => navigator.clipboard.readText())]);
+  expect(full.hands).toHaveLength(1);
+  expect(full.hands[0].initial.botTable).toBeDefined();
 });
 
 test('research API stores large hands, enforces revisions, pages results and deletes private sessions', async ({ request, page }) => {

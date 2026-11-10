@@ -29,6 +29,35 @@ Use **That felt odd** to mark a hand. After a hand or while paused you can leave
 
 On the paused screen, check **saved** versus **uploaded**, then use **Copy private review link**. Send that full link in the chat when you want a review. Uploading does not automatically start an AI review. The reviewer can examine the saved actions, private bot decisions and notes, then replay decisions with the recorded engine release. Download saved hands provides a JSON fallback when a server or reviewer connection is unavailable. Previous sessions also offer upload retry and local download.
 
+## Sharing from a phone without a file attachment
+
+Open the existing private report link and use **Copy review packet**. Paste the text into the chat. Large reports
+have numbered parts: copy and paste each part from the same report copy. The selectable text is a fallback when
+the browser denies clipboard access. No new hands or uploads are required for this option.
+
+The default packet retains every completed hand, action history, note/rating, bot decision context and chosen
+explanation. It includes legal options, current stacks, visible cards, model choices and rounded scores/probabilities.
+Private pre-hand memories and undealt cards are omitted to reduce the amount to paste. This is sufficient for
+behavioral review; exact decision replay requires the optional **Full data for exact replay (larger)** copy, which
+preserves the complete original report.
+
+Both copies are compressed with gzip and encoded as text. Each part carries its number, part count, hand count
+and SHA-256 checksum of the original JSON. Reconstruction rejects missing, duplicated, mixed or corrupted parts.
+The fallback for browsers without CompressionStream is uncompressed base64. Parts carry up to 24,000 data
+characters; decompressed reports are bounded to 64MiB. The bearer key and private URL are excluded. Research
+records remain private hand data and should only be pasted to the intended reviewer.
+
+```sh
+npm run bot:unpack-research -- part1.txt part2.txt --out /tmp/research.json
+# Only a full replay copy can be replayed through the original review command:
+npm run bot:review-research -- /tmp/research.json /tmp/research-review.json --replay
+```
+
+The unpacker identifies whether the result is a smaller review copy or a full report. Review copies contain
+`summary` and all projected `hands` for inspection. A 40-hand synthetic transport check containing 262 bot decisions
+reconstructed without loss to the review projection in four parts; the full report required eleven parts. These
+are transport tests, not the participant's actual dataset.
+
 ## Storage, privacy and recovery
 
 IndexedDB stores each accepted action and its checkpoint before the UI advances. Finished records and their checkpoint are committed together. A revision check prevents another tab from silently overwriting the session. Upload acknowledgement is separate from play state; delayed acknowledgements cannot mark newer notes as uploaded. Uploads use revisioned, idempotent hand slots and resume on reconnection or retry. An incompatible saved engine release pauses resumption rather than silently switching policies; archived records remain downloadable.
@@ -56,3 +85,8 @@ This research provides detailed observations from one participant in deliberatel
 Release validation: 1,092 root tests across 67 files, root typecheck/build, 83 native tests, native typecheck/lint (0 errors; 19 existing warnings), and 10 browser tests passed. Browser coverage includes offline recovery, notes and ratings, private access, uploads above 128KiB, revision conflicts, pagination, deletion, two-tab conflict detection, ordinary bot games, BOT_001 and settings. Screens were inspected at 320px and 390px without horizontal overflow. Both local-file and private-server CLI review paths were exercised with exact replay. The 120-hand automated run replayed 935 bot decisions without a mismatch; its largest upload was 169,814 bytes.
 
 Web delivery uses the existing Cloudflare GitHub build connection on `main`. The manual Deploy workflow is an alternative. No native app build is needed for this browser-only entry. Direct production verification from a development environment requires network access to the app hostname; a private JSON download remains a review fallback if a reviewer cannot reach that host.
+
+Mobile copy follow-up validation: 1,096 root tests across 68 files and all three research browser tests passed.
+Tests copy both review and full packets through the browser clipboard, decode notes and decision records, replay
+full checkpoints, detect missing/mixed/corrupt parts and exclude the private access key. The report copy controls
+were inspected at 320px with no horizontal overflow. The participant's uploaded hands remain unchanged.

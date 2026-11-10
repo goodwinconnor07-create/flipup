@@ -26,6 +26,18 @@ Standard Hold'em uses a balanced automatic mix of subtly different opponents. Ad
 House rules, default Casual with Challenge as the alternative; use the existing native segmented control and web
 step row. No personality labels on seats, extra onboarding or new screens. Difficulty changes apply next hand.
 
+Range training, Read · Decide · Learn (owner request, 10 November 2026: keep it simple, make it feel finished). One
+page, the table never moves. Read: concept and title, the table at your decision, Replay hand, the hand as one line
+per street (tap a street to replay from it), then your cards with what you have and the price. Decide: the glass
+answer bar pinned at the bottom, Hint and Skip under your hand. Learn: the answer bar opens into the result card in
+the same place (rises from its bottom edge, from 95%), and the opponents' likely hands turn up on their seats. The
+card holds four things only: the verdict (Best play in gold, Also good in blue, Missed it in grey), one sentence of
+why, one picture (facing a bet, one bar of how often you win with a mark at the price; otherwise what each play wins)
+and their range as three piles (facing a bet: Beat you, You beat, Bluffs; otherwise: Fold, Call ahead, Call behind),
+then Breakdown and Next hand. Breakdown is the `range-breakdown` sheet with everything else. No full-screen
+celebration: a best play pops its verdict with a sound and a haptic; confetti only at runs of 3, 5, 10 and every 10.
+Green stays Raise only.
+
 **How this document works.** Read it before any UI change. A new decision is written here first, then built. If a
 screen and this document disagree, the document wins until the owner says otherwise; then the document is changed
 in the same commit. New screens are mocked up and shown to the owner before they're built.

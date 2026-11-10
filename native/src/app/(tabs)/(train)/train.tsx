@@ -51,7 +51,7 @@ export default function TrainTab() {
             }}
           />
         ) : (
-          <RangeTrainer key={focus?.join('|') ?? 'all'} focus={focus ?? undefined} onStopFocus={() => setFocus(null)} onNext={top} onTop={top} />
+          <RangeTrainer key={focus?.join('|') ?? 'all'} focus={focus ?? undefined} onStopFocus={() => setFocus(null)} onNext={top} onTop={top} onScrollTo={(y) => scroll.current?.scrollTo({ y, animated: true })} />
         )}
       </TabScreen>
     </>

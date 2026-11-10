@@ -1,5 +1,5 @@
 // How you're doing in Range training, as a dashboard of tiles (a gauge, a donut, rings, bars), from every answer you've
-// given. Green is good, blue is neutral, gold is where to work. Tap a kind of spot to practise it.
+// given. Deep blue is good, the lighter blue fine, gold is where to work (the app keeps green for Raise). Tap a kind of spot to practise it.
 import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
@@ -14,9 +14,9 @@ import { brand, radius, spacing, useColors } from '@/theme';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
-const GOOD = brand.raise;
+const GOOD = brand.violet;
 const WORK = brand.gold;
-const BLUE = '#0a84ff';
+const BLUE = brand.violetDark;
 const tone = (rate: number) => (rate >= 0.6 ? GOOD : WORK);
 
 function Tile({ title, children, style }: { title?: string; children: ReactNode; style?: object }) {
@@ -99,7 +99,7 @@ export function StatsView({ history, grades, onPractice }: { history: Answer[]; 
               {st.recent !== null ? pct(st.recent) : '–'}
             </ThemedText>
             {move !== null ? (
-              <View style={{ alignSelf: 'flex-start', paddingVertical: 2, paddingHorizontal: spacing.xs, borderRadius: radius.full, backgroundColor: move >= 0 ? 'rgba(34,179,94,0.2)' : colors.cellPressed }}>
+              <View style={{ alignSelf: 'flex-start', paddingVertical: 2, paddingHorizontal: spacing.xs, borderRadius: radius.full, backgroundColor: move >= 0 ? colors.blueBg : colors.cellPressed }}>
                 <ThemedText variant="caption1" style={[{ fontWeight: '800', color: move >= 0 ? GOOD : (colors.secondaryLabel as string) }, NUM]}>
                   {move === 0 ? 'Level' : `${move > 0 ? '▲' : '▼'} ${Math.abs(move)} pts`}
                 </ThemedText>

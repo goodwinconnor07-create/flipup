@@ -1,30 +1,33 @@
 import { router, Stack } from 'expo-router';
-import { useEffect } from 'react';
-import { Share, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, Share, Text, useWindowDimensions, View } from 'react-native';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { gameLook } from '@design/gameArt';
 import { Avatar } from '@/components/avatar';
-import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
-import { LivelyBackground } from '@/components/home/lively-background';
+import { GameBackdrop, shade } from '@/components/home/game-backdrop';
+import { GameSwiper } from '@/components/home/game-swiper';
+import { PlayButton } from '@/components/home/play-button';
 import { Icon, type IconName } from '@/components/icon';
 import { MARK } from '@/components/launch-mark';
 import { PressableScale } from '@/components/pressable-scale';
-import { isPremiumVariant, isVariant, VARIANTS, variantInfo, variantOf, type Variant } from '@/engine';
+import { Swap } from '@/components/swap';
+import { detail, EASE_OUT } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { isVariant, VARIANTS, variantInfo, variantOf, type Variant } from '@/engine';
 import { usePartyRef } from '@/state/party';
-import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
 import { useRangeHistory } from '@/state/range-history';
 import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { brand, ForceScheme, gradient, ROUNDED, spacing } from '@/theme';
+import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
 import { APP_INFO } from '../../../../appInfo';
 
-const INK = '#0b1533';
 const GLASS = 'rgba(255, 255, 255, 0.11)';
 const EDGE = 'rgba(255, 255, 255, 0.12)';
 /** The tab bar's height over the bottom safe area. */
@@ -33,16 +36,18 @@ const TAB_BAR = 49;
 const PICK = 'flipup.homegame';
 
 /**
- * Home as a game lobby (a test, 10 Nov 2026, after the owner's co-designer asked for "a normal game app home
- * screen": bottom tabs, main middle buttons, side bars). On the lively blue field: your face and name top left and
- * the FlipUp spade top right; the chosen game big in the middle with arrows to flip through all of them; a column
- * of round shortcuts down each side (Games, Stats, How to play; Premium, Share, Settings); then the big PLAY button
- * with Bots and Join under it. The tab bar stays at the bottom. Nothing scrolls.
+ * Home as a game lobby (a test, 10 Nov 2026: "a normal game app home screen" with bottom tabs, main middle buttons
+ * and side bars, made satisfying to open). The page takes the colour of the chosen game (`GameBackdrop`). Your face
+ * and name top left, the FlipUp spade top right; the games as big cards you swipe in the middle (`GameSwiper`), the
+ * chosen one's name, hook and dots under it; round shortcuts down each side in order of use (Stats, Rules, All
+ * games; Premium, Settings, Share); then PLAY (`PlayButton`) with Play bots and Join a game under it. The tab bar
+ * stays at the bottom. Nothing scrolls.
  */
 export default function Home() {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const premium = usePremium();
+  const reduce = useReduceMotion();
+  const [mid, setMid] = useState(0);
   const profile = useProfile();
   const record = usePokerRecord();
   // After a good moment (three finished games or ten best plays) iOS may ask for a rating, once.
@@ -57,14 +62,11 @@ export default function Home() {
   const stored = useStored<string | null>(PICK, null);
   const last = record.games.at(-1)?.variant;
   const variant: Variant = isVariant(stored) ? stored : (last ?? 'holdem');
-  const at = VARIANTS.findIndex((v) => v.id === variant);
-  const turn = (by: number) => () => {
-    haptic.select();
-    save(PICK, VARIANTS[(at + by + VARIANTS.length) % VARIANTS.length].id);
-  };
   const info = variantInfo(variant);
-  const locked = !premium && isPremiumVariant(variant);
-  const hero = Math.round(Math.max(120, Math.min(190, height * 0.2)));
+  const look = gameLook(variant);
+  // The parts arrive one after another, 30ms apart, when the app opens (phone only: the web build's layout animations misplace rows).
+  const arrive = (i: number) => (Platform.OS === 'ios' ? detail(i, reduce) : undefined);
+  const hero = Math.round(Math.max(120, Math.min(210, height * 0.235)));
 
   const go = (path: string) => () => {
     haptic.tap();
@@ -74,10 +76,10 @@ export default function Home() {
   return (
     <ForceScheme scheme="dark">
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
-      <LivelyBackground style={{ flex: 1 }}>
+      <GameBackdrop variant={variant} style={{ flex: 1 }}>
         <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.md, gap: spacing.md }}>
           {/* Top bar: you on the left, the logo on the right. */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Animated.View entering={arrive(0)} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel={named ? `${profile.name}. Open your profile` : 'Set up your profile'}
@@ -100,79 +102,54 @@ export default function Home() {
                 <Path d={MARK} fillRule="evenodd" fill="#ffffff" />
               </Svg>
             </View>
-          </View>
+          </Animated.View>
 
           {/* The middle: side bars either side of the chosen game. */}
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ gap: spacing.md }}>
-              <SideButton icon="square.grid.2x2.fill" label="Games" onPress={go('/games')} />
+          <Animated.View entering={arrive(1)} style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ gap: spacing.md, zIndex: 1 }}>
               <SideButton icon="chart.bar.xaxis" label="Stats" onPress={go('/stats')} />
               <SideButton icon="book.fill" label="Rules" onPress={go(`/how-to-play/${variant}`)} />
+              <SideButton icon="square.grid.2x2.fill" label="All games" onPress={go('/games')} />
             </View>
 
-            <View style={{ flex: 1, alignItems: 'center', gap: spacing.sm }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-                <Arrow icon="chevron.left" label="Previous game" onPress={turn(-1)} />
-                <PressableScale accessibilityRole="button" accessibilityLabel={`${info.name}${locked ? ', Premium' : ''}. About this game`} onPress={go(`/game/${variant}`)} haptics={false}>
-                  <View style={{ borderRadius: hero * 0.24, borderCurve: 'continuous', boxShadow: '0 18px 40px -12px rgba(0, 0, 0, 0.6)' }}>
-                    <GameThumb variant={variant} size={hero} />
-                  </View>
-                  {locked && (
-                    <View style={{ position: 'absolute', top: -8, right: -8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: INK, borderWidth: 2, borderColor: brand.gold }}>
-                      <Icon name="crown.fill" size={15} color={brand.gold} />
-                    </View>
-                  )}
-                </PressableScale>
-                <Arrow icon="chevron.right" label="Next game" onPress={turn(1)} />
-              </View>
+            <View style={{ flex: 1, alignItems: 'center', gap: spacing.xs }} onLayout={(e) => setMid(e.nativeEvent.layout.width)}>
+              {mid > 0 && <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={Math.min(hero, mid - 44)} width={mid} />}
               <View style={{ alignItems: 'center', gap: 2, paddingHorizontal: spacing.xs }}>
-                <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: 28, fontWeight: '900', letterSpacing: -0.4, color: '#ffffff', textAlign: 'center' }}>
-                  {info.name}
-                </Text>
-                <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '500', color: 'rgba(255, 255, 255, 0.7)', textAlign: 'center' }}>
-                  {gameLook(variant).hook}
+                <Swap id={variant} kind="text">
+                  <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: 28, fontWeight: '900', letterSpacing: -0.4, color: '#ffffff', textAlign: 'center' }}>
+                    {info.name}
+                  </Text>
+                </Swap>
+                <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)', textAlign: 'center' }}>
+                  {look.hook}
                 </Text>
               </View>
               {/* Which of the games this is. */}
-              <View accessible={false} style={{ flexDirection: 'row', gap: 5, paddingTop: 2 }}>
+              <View accessible={false} style={{ flexDirection: 'row', gap: 5, paddingTop: 4 }}>
                 {VARIANTS.map((v) => (
-                  <View key={v.id} style={{ width: v.id === variant ? 14 : 5, height: 5, borderRadius: 3, backgroundColor: v.id === variant ? '#ffffff' : 'rgba(255, 255, 255, 0.28)' }} />
+                  <Dot key={v.id} on={v.id === variant} />
                 ))}
               </View>
             </View>
 
-            <View style={{ gap: spacing.md }}>
+            <View style={{ gap: spacing.md, zIndex: 1 }}>
               <SideButton icon="crown.fill" label="Premium" tint={brand.gold} onPress={go('/premium')} />
-              <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
+              <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />
             </View>
-          </View>
+          </Animated.View>
 
           {/* The main buttons. */}
-          <View style={{ gap: spacing.sm }}>
+          <Animated.View entering={arrive(2)} style={{ gap: spacing.sm }}>
             <LiveCard />
-            <PressableScale
-              accessibilityRole="button"
-              accessibilityLabel={`Play ${info.name} with friends`}
-              onPress={go(`/play-friends?variant=${variant}`)}
-              haptics={false}
-              outerStyle={{ borderRadius: 24, borderCurve: 'continuous', boxShadow: '0 12px 28px -8px rgba(37, 87, 214, 0.8)' }}
-              style={{ minHeight: 72, borderRadius: 24, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', borderWidth: 1.5, borderColor: 'rgba(255, 255, 255, 0.35)', ...gradient('linear-gradient(180deg, #5b8cff 0%, #2557d6 100%)') }}
-            >
-              <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 30, lineHeight: 34, fontWeight: '900', letterSpacing: 1, color: '#ffffff' }}>
-                PLAY
-              </Text>
-              <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255, 255, 255, 0.85)' }}>
-                with friends · share a code
-              </Text>
-            </PressableScale>
+            <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={go(`/play-friends?variant=${variant}`)} />
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               <SmallButton icon="cpu.fill" label="Play bots" onPress={go(`/play-bots?variant=${variant}`)} />
               <SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />
             </View>
-          </View>
+          </Animated.View>
         </View>
-      </LivelyBackground>
+      </GameBackdrop>
     </ForceScheme>
   );
 }
@@ -197,13 +174,10 @@ function SideButton({ icon, label, tint = '#ffffff', onPress }: { icon: IconName
   );
 }
 
-/** Flips to the game before or after. */
-function Arrow({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
-  return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} haptics={false} hitSlop={10} style={{ width: 32, height: 44, alignItems: 'center', justifyContent: 'center' }}>
-      <Icon name={icon} size={20} color="rgba(255, 255, 255, 0.75)" />
-    </PressableScale>
-  );
+/** One dot of the row under the game: the chosen one stretches into a short bar. */
+function Dot({ on }: { on: boolean }) {
+  const style = useAnimatedStyle(() => ({ width: withTiming(on ? 16 : 5, { duration: 200, easing: EASE_OUT }), opacity: withTiming(on ? 1 : 0.35, { duration: 200, easing: EASE_OUT }) }));
+  return <Animated.View style={[{ height: 5, borderRadius: 3, backgroundColor: '#ffffff' }, style]} />;
 }
 
 /** One of the two buttons under PLAY. */

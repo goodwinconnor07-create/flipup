@@ -16,12 +16,16 @@
 > 14%), and Play with bots and How it works as quiet links. Body text is SF Pro, headings and buttons SF Pro Rounded.
 
 > **Game-lobby Home, a test on a branch (2026-11-10, after Oliver asked for "a normal game app home screen": bottom
-> tabs, main middle buttons, side bars; not merged until both have seen it on TestFlight).** On `LivelyBackground`,
-> nothing scrolls: a profile chip (face, name, hands played) top left and the FlipUp spade top right; the chosen game
-> big in the middle (`GameThumb`, the flat cartoon art) with arrows to flip through all thirteen, its name, hook and a
-> row of dots (`flipup.homegame` keeps the pick); a column of round see-through shortcuts each side (Games, Stats,
-> Rules; Premium in gold, Share, Settings); then PLAY (blue, with friends, the chosen game) over Play bots and Join a
-> game, with a slim LIVE strip above them when you're at a table. The tab bar stays.
+> tabs, main middle buttons, side bars; the owner's answers: the chosen game is the star, the page's colour follows
+> the game, all four shortcuts, lots of motion. Not merged until both have seen it on TestFlight).** Nothing scrolls.
+> The page is a dark shade of the chosen game's colour with three lights in its brighter tones (`GameBackdrop`; a
+> new game's colours fade in over the old). In order of importance: the games as big cards you swipe in the middle
+> (`GameSwiper`: the middle one full size, neighbours smaller, dimmer and tipped, a selection tick as each passes;
+> `flipup.homegame` keeps the pick), its name, hook and dots; PLAY (`PlayButton`: solid white, the game's dark ink, a
+> breathing glow and a band of the game's colour sweeping across) over Play bots and Join a game, with a slim LIVE
+> strip above when you're at a table; round see-through shortcuts down each side (Stats, Rules, All games; Premium
+> in gold, Settings, Share); a profile chip top left and the FlipUp spade top right. The parts fade in 30ms apart
+> when the app opens. The tab bar stays. Every loop stops off screen, in the background and under Reduce Motion.
 
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
 > pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:

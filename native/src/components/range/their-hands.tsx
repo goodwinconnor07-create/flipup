@@ -5,7 +5,7 @@ import { View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { rankLabel, suitOf } from '@/engine';
-import { brand, radius, spacing, useColors } from '@/theme';
+import { brand, radius, spacing, useColors, ROUNDED } from '@/theme';
 import { combosOf, type Pos, type RangeGroup, type Scenario } from '@train/ranges/model';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
@@ -45,7 +45,7 @@ export function MiniCard({ card, w = 22 }: { card: string; w?: number }) {
       accessible={false}
       style={{ width: w, height: Math.round(w * 1.3), borderRadius: 4, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}
     >
-      <ThemedText variant="caption2" style={{ color: RED[suit] ? '#d92b2b' : '#111111', fontWeight: '800', fontSize: w * 0.46, lineHeight: w * 0.52 }} numberOfLines={1}>
+      <ThemedText variant="caption2" style={{ color: RED[suit] ? '#d92b2b' : '#111111', fontWeight: '800', fontFamily: ROUNDED, fontSize: w * 0.46, lineHeight: w * 0.52 }} numberOfLines={1}>
         {rankLabel(card)}
         {SYMBOL[suit]}
       </ThemedText>

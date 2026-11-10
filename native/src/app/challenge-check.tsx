@@ -72,7 +72,7 @@ export default function ChallengeCheck() {
                       }}
                       style={{ minHeight: minTap, justifyContent: 'center', paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: on ? brand.violet : colors.cell }}
                     >
-                      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 15, fontWeight: '700', color: on ? '#ffffff' : colors.label }}>
+                      <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '700', color: on ? '#ffffff' : colors.label }}>
                         {l.name}
                       </Text>
                     </Pressable>

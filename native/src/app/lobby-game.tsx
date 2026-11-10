@@ -61,7 +61,7 @@ export default function LobbyGameSheet() {
     >
       <View style={{ gap: spacing.xxs }}>
         <ThemedText variant="title1" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
-          Change the game.
+          Change the game
         </ThemedText>
         <ThemedText variant="callout" tone="secondaryLabel">
           Pick the game for this table.

@@ -4,7 +4,7 @@ import Animated from 'react-native-reanimated';
 
 import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { radius, spacing, useColors, useShadows } from '@/theme';
+import { radius, spacing, useColors, useShadows, ROUNDED } from '@/theme';
 
 import { haptic } from './haptics';
 import type { MenuProps } from './menu.types';
@@ -40,7 +40,7 @@ export function Menu({ sections, title, children, label, fill }: MenuProps) {
               entering={reduce ? undefined : popIn()}
               style={{ position: 'absolute', top: at.y, left: Math.max(spacing.md, Math.min(at.x + at.w - width, at.x)), transformOrigin: at.x + at.w - width > at.x ? 'top left' : 'top right', width, borderRadius: radius.lg, overflow: 'hidden', backgroundColor: colors.cell, boxShadow: shadow.raised }}>
               {title && (
-                <Text style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xxs, fontSize: 13, color: colors.secondaryLabel }}>{title}</Text>
+                <Text style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, paddingBottom: spacing.xxs, fontFamily: ROUNDED, fontSize: 13, color: colors.secondaryLabel }}>{title}</Text>
               )}
               {groups.map((items, g) => (
                 <View key={g} style={{ borderTopWidth: g ? 6 : 0, borderTopColor: colors.background }}>
@@ -55,7 +55,7 @@ export function Menu({ sections, title, children, label, fill }: MenuProps) {
                       }}
                       style={({ pressed }) => ({ minHeight: 44, justifyContent: 'center', paddingHorizontal: spacing.md, borderTopWidth: i ? 0.5 : 0, borderTopColor: colors.separator, backgroundColor: pressed ? colors.cellPressed : 'transparent' })}
                     >
-                      <Text style={{ fontSize: 17, color: item.destructive ? colors.red : colors.label }}>{item.title}</Text>
+                      <Text style={{ fontFamily: ROUNDED, fontSize: 17, color: item.destructive ? colors.red : colors.label }}>{item.title}</Text>
                     </Pressable>
                   ))}
                 </View>

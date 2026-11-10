@@ -35,7 +35,7 @@ export function StartPartyButton() {
         <Icon name="party.popper.fill" size={20} color="#ffffff" />
       </View>
       <View style={{ flex: 1, gap: 2 }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, lineHeight: 20, color: 'rgba(255,255,255,0.75)' }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, lineHeight: 20, color: 'rgba(255,255,255,0.75)' }}>
           Want to play more than one game?
         </Text>
         <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 19, lineHeight: 24, fontWeight: '800', color: '#ffffff' }}>

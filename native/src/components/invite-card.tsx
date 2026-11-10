@@ -7,7 +7,7 @@ import { fetchTableInfo } from '@/state/api';
 import { declineInvite, dismissInvite } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { joinOnlineTable } from '@/state/session';
-import { party, radius, spacing, useColors, useShadows } from '@/theme';
+import { party, radius, spacing, useColors, useShadows, ROUNDED } from '@/theme';
 
 import { Avatar } from './avatar';
 import { Icon } from './icon';
@@ -106,7 +106,7 @@ export function InviteButtons({ invite, join, busy, onDecline }: { invite: BjInv
         {busy ? (
           <ActivityIndicator color={colors.onColor} />
         ) : (
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '800', color: colors.onColor }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '800', color: colors.onColor }}>
             Join
           </Text>
         )}

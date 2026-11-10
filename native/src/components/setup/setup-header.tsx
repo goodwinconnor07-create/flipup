@@ -62,7 +62,7 @@ export function BackText({ onPress = () => router.back() }: { onPress?: () => vo
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, height: 44, marginLeft: -6, opacity: pressed ? 0.35 : 1 })}
     >
       <Icon name="chevron.left" size={22} weight="semibold" color={colors.accent as string} />
-      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 17, color: colors.accent as string }}>
+      <Text maxFontSizeMultiplier={1.4} style={{ fontFamily: ROUNDED, fontSize: 17, color: colors.accent as string }}>
         Back
       </Text>
     </Pressable>

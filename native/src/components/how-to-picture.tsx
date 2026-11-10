@@ -3,7 +3,7 @@ import { Text, View } from 'react-native';
 
 import { INK } from '@design/gameArt';
 import { type Variant } from '@/engine';
-import { radius, spacing } from '@/theme';
+import { radius, spacing, ROUNDED } from '@/theme';
 
 import { GamePicture } from './game-picture';
 import { haptic } from './haptics';
@@ -29,7 +29,7 @@ export function HowToPicture({ variant, name, width }: { variant: Variant; name:
       {/* A solid white pill in the corner: flat like the picture, and clear of the subject in the middle. */}
       <View style={{ position: 'absolute', left: spacing.sm, bottom: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 36, paddingHorizontal: spacing.sm, borderRadius: radius.full, backgroundColor: '#ffffff' }}>
         <Icon name="play.fill" size={12} color={INK} />
-        <Text maxFontSizeMultiplier={1.3} style={{ color: INK, fontSize: 15, fontWeight: '700' }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ color: INK, fontFamily: ROUNDED, fontSize: 15, fontWeight: '700' }}>
           How to play
         </Text>
       </View>

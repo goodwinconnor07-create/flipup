@@ -7,7 +7,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { BLOCKED_EMOJI, BLOCKED_NAME, memberKey, useBlocked } from '@/state/blocks';
 import { FRIENDS_ON } from '@/scope';
 import { sendFriendRequest, usePals } from '@/state/pals';
-import { radius, spacing, usePlainColors } from '@/theme';
+import { radius, spacing, usePlainColors, ROUNDED } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
@@ -72,7 +72,7 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
         place,
       ]}
     >
-      <Text maxFontSizeMultiplier={1.2} style={{ width: 20, textAlign: 'center', fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'], color: r.rank === 1 ? c.goldInk : c.tertiaryLabel }}>
+      <Text maxFontSizeMultiplier={1.2} style={{ width: 20, textAlign: 'center', fontFamily: ROUNDED, fontSize: 17, fontWeight: '700', fontVariant: ['tabular-nums'], color: r.rank === 1 ? c.goldInk : c.tertiaryLabel }}>
         {r.rank}
       </Text>
       {/* Another member's face and name open Report and Block (App Store guideline 1.2). */}
@@ -86,18 +86,18 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
       <Avatar emoji={r.emoji} size={36} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-          <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ flexShrink: 1, fontSize: 17, fontWeight: '600', color: c.label }}>
+          <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ flexShrink: 1, fontFamily: ROUNDED, fontSize: 17, fontWeight: '600', color: c.label }}>
             {r.name}
           </Text>
           {me && (
             <View style={{ paddingHorizontal: 6, paddingVertical: 1, borderRadius: radius.full, backgroundColor: c.blueBg }}>
-              <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '700', color: c.blueInk }}>
+              <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 11, fontWeight: '700', color: c.blueInk }}>
                 You
               </Text>
             </View>
           )}
         </View>
-        <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ fontSize: 13, color: c.tertiaryLabel }}>
+        <Text numberOfLines={1} maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 13, color: c.tertiaryLabel }}>
           {line}
         </Text>
       </View>
@@ -105,17 +105,17 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
       {r.move !== 0 && (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <SwapIcon name={r.move > 0 ? 'arrowtriangle.up.fill' : 'arrowtriangle.down.fill'} size={10} color={r.move > 0 ? c.green : c.red} />
-          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', color: r.move > 0 ? c.green : c.red }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '700', color: r.move > 0 ? c.green : c.red }}>
             {Math.abs(r.move)}
           </Text>
         </View>
       )}
       <View style={{ alignItems: 'flex-end', minWidth: 36 }}>
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 20, lineHeight: 24, fontWeight: '700', fontVariant: ['tabular-nums'], color: c.label }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 24, fontWeight: '700', fontVariant: ['tabular-nums'], color: c.label }}>
           {r.total}
         </Text>
         {running && (
-          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'], color: c.green }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '600', fontVariant: ['tabular-nums'], color: c.green }}>
             +{r.provisional}
           </Text>
         )}
@@ -153,7 +153,7 @@ function AddFriend({ code, name, emoji }: { code: string; name: string; emoji: s
       style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, backgroundColor: c.blueBg, opacity: pressed || busy ? 0.6 : 1 })}
     >
       <Icon name="plus" size={11} color={c.blueInk} />
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', color: c.blueInk }}>
+      <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '600', color: c.blueInk }}>
         Friend
       </Text>
     </Pressable>

@@ -27,7 +27,7 @@ import { useRangeHistory } from '@/state/range-history';
 import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
 import { usePremium } from '@/state/premium';
-import { radius, spacing, useColors, useShadows } from '@/theme';
+import { radius, spacing, useColors, useShadows, ROUNDED } from '@/theme';
 
 /**
  * Home. Built the way game apps that feel native do it (Apple's Games app, Chess.com, Flighty): the big title with
@@ -113,16 +113,16 @@ function PremiumBanner() {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <View style={{ paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.gold }}>
-          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 0.8, color: '#3b2300' }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 13, fontWeight: '800', letterSpacing: 0.8, color: '#3b2300' }}>
             PREMIUM
           </Text>
         </View>
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: 17, fontWeight: '700', color: colors.goldInk }}>
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 17, fontWeight: '700', color: colors.goldInk }}>
           {PREMIUM_GAMES} more games
         </Text>
         <Icon name="chevron.right" size={15} color={colors.goldInk} />
       </View>
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, color: colors.goldInk }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, color: colors.goldInk }}>
         Plus card packs. One payment, yours to keep.
       </Text>
     </PressableScale>
@@ -156,15 +156,15 @@ function TableBanner() {
         {info?.emoji ?? (atTable ? '🃏' : '🥳')}
       </Text>
       <View style={{ flex: 1 }}>
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 17, fontWeight: '700', color: colors.label }}>
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '700', color: colors.label }}>
           {what}
         </Text>
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, color: colors.tertiaryLabel }}>
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 15, color: colors.tertiaryLabel }}>
           {where}
         </Text>
       </View>
       <View style={{ paddingHorizontal: spacing.md, minHeight: 36, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
+        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
           {atTable ? 'Rejoin' : 'Open'}
         </Text>
       </View>

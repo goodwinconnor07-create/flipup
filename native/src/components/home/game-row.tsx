@@ -5,7 +5,7 @@ import { gameLook } from '@design/gameArt';
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { usePokerRecord } from '@/state/record';
-import { spacing, useColors } from '@/theme';
+import { spacing, useColors, ROUNDED } from '@/theme';
 
 import { GameTile, tileHeight } from '../game-tile';
 import { haptic } from '../haptics';
@@ -52,7 +52,7 @@ function Tile({ variant, name, locked, again }: { variant: Variant; name: string
     >
       <GameTile variant={variant} name={name} width={TILE} locked={locked} again={again} />
       {/* The name is on the tile; under it, one quiet line on why the game is fun. */}
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 13, lineHeight: 16, fontWeight: '500', textAlign: 'center', color: colors.secondaryLabel }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 13, lineHeight: 16, fontWeight: '500', textAlign: 'center', color: colors.secondaryLabel }}>
         {again ? 'Play again' : gameLook(variant).hook}
       </Text>
     </PressableScale>
@@ -76,11 +76,11 @@ function Surprise() {
     >
       <View style={{ width: TILE, height: tileHeight(TILE), borderRadius: Math.round(TILE * 0.2), borderCurve: 'continuous', borderWidth: 2, borderStyle: 'dashed', borderColor: colors.separator, alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
         <Icon name="shuffle" size={34} color={colors.secondaryLabel} />
-        <Text maxFontSizeMultiplier={1.15} style={{ fontSize: 12, lineHeight: 14, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', color: colors.secondaryLabel }}>
+        <Text maxFontSizeMultiplier={1.15} style={{ fontFamily: ROUNDED, fontSize: 12, lineHeight: 14, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', color: colors.secondaryLabel }}>
           Surprise me
         </Text>
       </View>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 13, lineHeight: 16, fontWeight: '500', textAlign: 'center', color: colors.secondaryLabel }}>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 13, lineHeight: 16, fontWeight: '500', textAlign: 'center', color: colors.secondaryLabel }}>
         A random mode
       </Text>
     </PressableScale>

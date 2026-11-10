@@ -42,7 +42,7 @@ export function CrashScreen({
       <Text accessibilityRole="header" style={{ fontFamily: ROUNDED, fontSize: 28, fontWeight: '800', color: '#ffffff' }}>
         {title}
       </Text>
-      <Text style={{ fontSize: 17, color: 'rgba(255,255,255,0.8)' }}>{line}</Text>
+      <Text style={{ fontFamily: ROUNDED, fontSize: 17, color: 'rgba(255,255,255,0.8)' }}>{line}</Text>
       <View style={{ gap: spacing.sm, marginTop: spacing.lg }}>
         <Big title="Try again" loud onPress={() => void retry()} />
         <Big
@@ -67,16 +67,15 @@ function Big({ title, loud, onPress }: { title: string; loud?: boolean; onPress:
       accessibilityRole="button"
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 54,
-        borderRadius: radius.lg,
-        borderCurve: 'continuous',
+        minHeight: 52,
+        borderRadius: radius.full,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: loud ? brand.paper : 'rgba(255,255,255,0.14)',
+        backgroundColor: loud ? brand.paper : 'rgba(255, 255, 255, 0.16)',
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      <Text style={{ fontSize: 17, fontWeight: '700', color: loud ? brand.violet : '#ffffff' }}>{title}</Text>
+      <Text style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '700', color: loud ? brand.violet : '#ffffff' }}>{title}</Text>
     </Pressable>
   );
 }

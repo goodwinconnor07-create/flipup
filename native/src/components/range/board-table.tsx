@@ -9,7 +9,7 @@ import { MiniCard } from '@/components/range/their-hands';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { bb, seatName, seatPositions, type BoardView } from '@/state/range-view';
-import { gradient, radius, spacing } from '@/theme';
+import { gradient, radius, spacing, ROUNDED } from '@/theme';
 import { seatsOf, type Pos, type Scenario } from '@train/ranges/model';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
@@ -93,7 +93,7 @@ export function BoardTable({ scenario, view, summary, reveal }: { scenario: Scen
                 opacity: !playing ? 0.4 : folded ? 0.55 : 1,
               }}
             >
-              <Text maxFontSizeMultiplier={1.1} style={{ fontSize: nine ? 12 : 13, fontWeight: '800', color: s.hero ? '#111111' : '#ffffff' }}>
+              <Text maxFontSizeMultiplier={1.1} style={{ fontFamily: ROUNDED, fontSize: nine ? 12 : 13, fontWeight: '800', color: s.hero ? '#111111' : '#ffffff' }}>
                 {s.hero ? 'You' : seatName(s.pos)}
               </Text>
               {reveal?.[s.pos] && !s.hero ? (
@@ -102,21 +102,21 @@ export function BoardTable({ scenario, view, summary, reveal }: { scenario: Scen
                   <MiniCard card={reveal[s.pos]![1]} w={20} />
                 </View>
               ) : playing && stack !== undefined && (
-                <Text maxFontSizeMultiplier={1.1} style={[{ fontSize: 12, fontWeight: '700', color: s.hero ? '#333333' : 'rgba(255,255,255,0.85)' }, NUM]}>
+                <Text maxFontSizeMultiplier={1.1} style={[{ fontFamily: ROUNDED, fontSize: 12, fontWeight: '700', color: s.hero ? '#333333' : 'rgba(255,255,255,0.85)' }, NUM]}>
                   {bb(Math.round(stack * 10) / 10)}
                 </Text>
               )}
             </View>
             {s.pos === 'BTN' && (
               <View style={{ position: 'absolute', left: s.x + seatW / 2 - 9, top: s.y - 28, width: 18, height: 18, borderRadius: 9, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
-                <Text maxFontSizeMultiplier={1} style={{ fontSize: 9, fontWeight: '900', color: '#111111' }}>
+                <Text maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 9, fontWeight: '900', color: '#111111' }}>
                   D
                 </Text>
               </View>
             )}
             {bet !== undefined && bet > 0 && !folded && (
               <View style={{ position: 'absolute', left: bx - 18, top: by - 9, minWidth: 36, height: 18, paddingHorizontal: 5, borderRadius: 9, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
-                <Text maxFontSizeMultiplier={1} style={[{ fontSize: 11.5, fontWeight: '800', color: '#0c1d4d' }, NUM]}>
+                <Text maxFontSizeMultiplier={1} style={[{ fontFamily: ROUNDED, fontSize: 11.5, fontWeight: '800', color: '#0c1d4d' }, NUM]}>
                   {bb(bet)}
                 </Text>
               </View>

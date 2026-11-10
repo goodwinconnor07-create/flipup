@@ -10,13 +10,13 @@ import { PressableScale } from '../pressable-scale';
 const EDGE = 4;
 
 /**
- * Open table, pinned to the bottom of the grain page over a fade into its darkest colour, so rows scroll away
- * under it. A solid light button with violet ink and a pale violet edge under it (the party look): on the night
- * page it's the brightest thing there, and it never stacks a second grainy violet layer on the violet glow.
+ * Open table, pinned to the bottom of the grain page over a fade into the page's colour, so rows scroll away
+ * under it. The `inverse` button (white, blue words) as a capsule, with a second line: on the night
+ * page it's the brightest thing there.
  */
 export function OpenTableButton({ title, line, busy, disabled, onPress }: { title: string; line?: string; busy?: boolean; disabled?: boolean; onPress: () => void }) {
   const insets = useSafeAreaInsets();
-  const night = GRAIN_NIGHT[2];
+  const night = GRAIN_NIGHT[1];
   return (
     <View
       pointerEvents="box-none"
@@ -37,13 +37,12 @@ export function OpenTableButton({ title, line, busy, disabled, onPress }: { titl
         accessibilityState={{ busy: !!busy, disabled: !!disabled }}
         onPress={busy || disabled ? undefined : onPress}
         outerStyle={{ alignSelf: 'stretch' }}
-        style={{ borderRadius: radius.md, borderCurve: 'continuous', boxShadow: '0 8px 24px rgba(0,0,0,0.28)' }}
+        style={{ borderRadius: radius.full }}
       >
         <View
           style={{
             minHeight: 60,
-            borderRadius: radius.md,
-            borderCurve: 'continuous',
+            borderRadius: radius.full,
             // Waiting: a solid dim fill, never see-through, so rows scrolling under the fade can't show in it.
             backgroundColor: disabled ? '#1b2850' : brand.paper,
             borderWidth: disabled ? 1 : 0,
@@ -60,7 +59,7 @@ export function OpenTableButton({ title, line, busy, disabled, onPress }: { titl
             <>
               <Text
                 maxFontSizeMultiplier={1.3}
-                style={{ fontFamily: ROUNDED, fontSize: 21, lineHeight: 25, fontWeight: '800', color: disabled ? 'rgba(255,255,255,0.5)' : brand.violet }}
+                style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 24, fontWeight: '700', color: disabled ? 'rgba(255,255,255,0.5)' : brand.violet }}
               >
                 {title}
               </Text>
@@ -68,7 +67,7 @@ export function OpenTableButton({ title, line, busy, disabled, onPress }: { titl
                 <Text
                   maxFontSizeMultiplier={1.3}
                   numberOfLines={1}
-                  style={{ fontSize: 13, lineHeight: 17, fontWeight: '600', color: disabled ? brand.violetDark : brand.violetDeep }}
+                  style={{ fontFamily: ROUNDED, fontSize: 13, lineHeight: 17, fontWeight: '600', color: disabled ? brand.violetDark : brand.violetDeep }}
                 >
                   {line}
                 </Text>

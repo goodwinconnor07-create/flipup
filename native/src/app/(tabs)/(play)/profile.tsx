@@ -117,13 +117,13 @@ export default function ProfileScreen() {
                 onPress={save}
                 style={{ height: 36, paddingHorizontal: 20, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: ok ? '#ffffff' : 'rgba(255,255,255,0.3)' }}
               >
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: brand.violetDeep }}>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '700', color: brand.violetDeep }}>
                   Save name
                 </Text>
               </PressableScale>
             ) : (
               <View style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violetDeep }}>
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: '#ffffff' }}>
+                <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '600', color: '#ffffff' }}>
                   Tap your name or face to change
                 </Text>
               </View>

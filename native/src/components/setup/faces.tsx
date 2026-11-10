@@ -7,7 +7,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withRepe
 
 import type { Message } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { brand, radius, spacing, useColors } from '@/theme';
+import { brand, radius, spacing, useColors, ROUNDED } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
@@ -203,7 +203,7 @@ export function StatusPill({ text, color, dots }: { text: string; color: string;
         justifyContent: 'center',
       }}
     >
-      <Text maxFontSizeMultiplier={1} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '800', color: colors.onColor, fontVariant: ['tabular-nums'] }}>
+      <Text maxFontSizeMultiplier={1} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 12, lineHeight: 15, fontWeight: '800', color: colors.onColor, fontVariant: ['tabular-nums'] }}>
         {text}
       </Text>
       {dots && <Dots color={colors.onColor as string} />}
@@ -242,7 +242,7 @@ export function BotPill() {
   const colors = useColors();
   return (
     <View style={{ height: 18, paddingHorizontal: 7, borderRadius: radius.full, backgroundColor: colors.label, borderWidth: 2, borderColor: colors.background, justifyContent: 'center' }}>
-      <Text maxFontSizeMultiplier={1} style={{ fontSize: 10, lineHeight: 12, fontWeight: '800', letterSpacing: 0.6, color: colors.background as string }}>
+      <Text maxFontSizeMultiplier={1} style={{ fontFamily: ROUNDED, fontSize: 10, lineHeight: 12, fontWeight: '800', letterSpacing: 0.6, color: colors.background as string }}>
         BOT
       </Text>
     </View>

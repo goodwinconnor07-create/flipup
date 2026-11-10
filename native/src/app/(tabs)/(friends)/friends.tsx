@@ -18,7 +18,7 @@ import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
 import { removePal, syncFriends, useFriendBox, useMyUsername, usePals, useSentRequests, type Pal } from '@/state/pals';
 import { useProfile } from '@/state/profile';
-import { brand, cardColors, radius, spacing, useColors, useShadows } from '@/theme';
+import { brand, cardColors, radius, spacing, useColors, useShadows, ROUNDED } from '@/theme';
 
 /** The skeleton stays up at least this long, so a quick refresh doesn't flash. */
 const MIN_REFRESH_MS = 600;
@@ -241,7 +241,7 @@ function UsernameCard({ username, onPress }: { username: string | null; onPress:
         maxFontSizeMultiplier={1.3}
         numberOfLines={1}
         adjustsFontSizeToFit
-        style={{ fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff' }}
+        style={{ fontFamily: ROUNDED, fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff' }}
       >
         {username ? `@${username}` : 'Choose a username'}
       </Text>
@@ -279,7 +279,7 @@ function Pill({ icon, label, onPress }: { icon: 'square.and.arrow.up' | 'pencil'
       }}
     >
       <Icon name={icon} size={16} color={brand.violet} />
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: brand.violet }}>
+      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '800', color: brand.violet }}>
         {label}
       </Text>
     </PressableScale>

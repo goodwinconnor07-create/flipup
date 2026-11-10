@@ -42,6 +42,20 @@ treatment"; the table stays exactly as it is).** The game tiles' rules now hold 
   same in light and dark.
 Screens as built: `docs/design/flat/`.
 
+**One font, one button (owner, 10 November 2026: "mixed fonts and button colours" made it feel half done).** Outside
+the table:
+- **Type.** Everything is SF Pro Rounded (`ROUNDED`; every step of the ramp in `theme/typography.ts`, and every
+  hand-styled `Text`). Titles are 800, row titles and buttons 700, reading text regular. Capitals only on tile
+  bands and small eyebrow labels. No titles end in a full stop.
+- **Buttons.** `Button` is the only button: a flat capsule, 52pt tall, in five fills. `primary` is the brand blue
+  with white words, one per screen. `inverse` is white with blue words, for the main action on a blue or night
+  surface (Start game, Start a set, Save playlist). `secondary` is the grey panel with plain words (never blue
+  words: blue words with no fill are a text link). `quiet` is a faint white panel on a coloured surface.
+  `destructive` is the grey panel with red words. Gold (`tint="gold"`) is Premium's main button only. No rounded
+  rectangles, gradients, outlines or shadows on a button.
+- **Blue means tap.** Blue words with no fill are links (Change, Copy, See all); a blue fill is the main action.
+  Gold is Premium and wins. Red is delete, leave and Fold. Game tiles keep their own colours.
+
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.
 

@@ -62,7 +62,7 @@ function MainCard({ variant, name, width }: { variant: Variant; name: string; wi
           <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 24, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', color: '#ffffff' }}>
             {name}
           </Text>
-          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, lineHeight: 16, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)' }}>
+          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 13, lineHeight: 16, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)' }}>
             {look.hook}
           </Text>
         </View>
@@ -76,7 +76,7 @@ function MainCard({ variant, name, width }: { variant: Variant; name: string; wi
           style={{ flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: '#ffffff' }}
         >
           <Icon name="play.fill" size={12} color={look.band} />
-          <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: look.band }}>
+          <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '700', color: look.band }}>
             How to play
           </Text>
         </PressableScale>

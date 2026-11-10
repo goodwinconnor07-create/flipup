@@ -60,7 +60,7 @@ function JoinCard() {
           >
             <Icon name="qrcode.viewfinder" size={20} color="#ffffff" />
           </View>
-          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: '700', color: colors.label }}>
+          <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontFamily: ROUNDED, fontSize: 16, fontWeight: '700', color: colors.label }}>
             Join a game <Text style={{ fontWeight: '500', color: colors.secondaryLabel }}>· code or scan</Text>
           </Text>
           <Icon name="chevron.right" size={15} color={brand.violetDark} />
@@ -111,7 +111,7 @@ function Tile({ title, line, faces, colors, addSeat, height, go }: { title: stri
               <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 26, fontWeight: '800', letterSpacing: 0.4, textTransform: 'uppercase', color: '#ffffff' }}>
                 {word}
               </Text>
-              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontSize: 13, lineHeight: 16, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)' }}>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.85} style={{ fontFamily: ROUNDED, fontSize: 13, lineHeight: 16, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)' }}>
                 {line}
               </Text>
             </View>

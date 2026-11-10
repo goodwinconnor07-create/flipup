@@ -16,6 +16,19 @@
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.
 
+Flighty-style tabs, a test on a branch (owner request, 10 November 2026; not merged until the owner has seen it
+on TestFlight). The tab bar is My Games, Training and Stats, laid out like Flighty's My Flights, Friends and
+Passport: a white page, the title in bold SF Pro at 34pt with a share button and your emoji on its right, pill tabs
+under it (the chosen one in a soft white capsule that slides, the rest grey words, 17pt) with one blue "+" action on
+the same line, and plain list rows (a 44pt picture, a 15pt grey line with the day or hand on its right, a 20pt
+semibold title, a 15pt line under it). My Games: Online and Bot Games, "+ Start a Game" (a menu: Play with friends,
+Play with bots, Join with a code); the game you're in on top with a blinking green dot and its name in blue, a thin
+edge-to-edge line, then every game you've played a little greyed, each with its game picture, how it went and who
+was there (emoji and names). Training: Practice (what to work on in blue, a thin line, every kind of spot with how
+many you've mastered) and History (every hand by day), "+ Start a Set". Stats: Poker (a deep blue passport card in
+DIN capitals, a gold table-wins card, light cards for your best hand and most played game, the Premium strip, Games
+You Play) and Training (Range training's dashboard). The old Home (start tiles, game shelf, passport) is not shown.
+
 BOT_001 personalities (owner request, 9 November 2026): when Invite BOT_001 is on, the existing House rules panel
 shows a BOT_001 personality control: Original, Patient, Curious, Aggressive, with a short description. Reuse the
 existing segmented control in native setup/lobby and the existing step row on web. Only the host edits it; changes

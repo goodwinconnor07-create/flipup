@@ -64,6 +64,8 @@ const WEB = {
   shuffle: 'shuffle',
   'minus.circle.fill': 'do_not_disturb_on',
   'plus.circle.fill': 'add_circle',
+  'chart.bar.fill': 'bar_chart',
+  'gamecontroller.fill': 'sports_esports',
   'delete.left': 'backspace',
   'person.crop.circle.badge.plus': 'person_add',
   pencil: 'edit',

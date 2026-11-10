@@ -28,7 +28,7 @@ export function useTabFooter(node: ReactNode): void {
 }
 
 /**
- * A tab's first screen, the way Flighty draws its own: no navigation bar, the title big in SF Pro Rounded with round
+ * A tab's first screen, the way Flighty draws its own: no navigation bar, the title big in bold SF Pro with round
  * buttons on the same line, all scrolling with the page. Once the page scrolls, a blur fades in under the status bar
  * so nothing reads through the clock. The screen hides the stack's header itself (`headerShown: false`).
  */
@@ -58,7 +58,8 @@ export function TabScreen({ title, accessory, children, contentStyle, scrollRef,
         contentContainerStyle={[{ paddingTop: top + spacing.xs, paddingHorizontal: spacing.md, paddingBottom: spacing.xxxl + (footer ? footerH : 0), gap: spacing.xl, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center' }, contentStyle]}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 52 }}>
-          <ThemedText variant="largeTitle" accessibilityRole="header" numberOfLines={1} style={{ flex: 1 }}>
+          {/* Flighty's tab titles: SF Pro (not the rounded cut) in bold at Apple's large-title size. */}
+          <ThemedText variant="largeTitle" accessibilityRole="header" numberOfLines={1} style={{ flex: 1, fontFamily: undefined, fontSize: 34, lineHeight: 41, fontWeight: '700', letterSpacing: 0.37 }}>
             {title}
           </ThemedText>
           {accessory}

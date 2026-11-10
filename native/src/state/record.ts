@@ -5,6 +5,15 @@ import { bestHand, variantOf, type Card, type Game, type Variant } from '@/engin
 import { read, save, useStored } from './storage';
 
 const KEY = 'flipup.record';
+/** Games kept for My Games and Stats. */
+const MAX_GAMES = 60;
+
+/** Someone else at a table you played, as My Games lists them. */
+export interface GameSeat {
+  name: string;
+  emoji: string;
+  bot: boolean;
+}
 
 export interface GameLine {
   at: number;
@@ -12,6 +21,19 @@ export interface GameLine {
   /** Where you finished by chips, 1 for first. */
   place: number;
   players: number;
+  /** The table's id (games noted before November 2026 have none, nor the fields after it). */
+  id?: string;
+  /** An online table (it had a code), as against bots on this phone. */
+  online?: boolean;
+  code?: string;
+  /** Everyone else seated when it ended or you left, in seat order. */
+  who?: GameSeat[];
+  /** You left before the table ended. */
+  left?: boolean;
+  /** Chips up or down over what you bought in for. */
+  net?: number;
+  /** How many hands were dealt. */
+  hands?: number;
 }
 
 export interface PokerRecord {
@@ -41,7 +63,7 @@ export const usePokerRecord = (): PokerRecord => clean(useStored<Partial<PokerRe
 
 function update(fn: (r: PokerRecord) => PokerRecord | null): void {
   const next = fn(clean(read<Partial<PokerRecord> | null>(KEY, null)));
-  if (next) save(KEY, { ...next, seen: next.seen.slice(-60), games: next.games.slice(-20) });
+  if (next) save(KEY, { ...next, seen: next.seen.slice(-60), games: next.games.slice(-MAX_GAMES) });
 }
 
 /** A finished hand you were dealt into: one more hand, and what you won with what. */
@@ -68,15 +90,34 @@ export function noteHand(game: Game, myId: string): void {
   });
 }
 
-/** A game that's over: where you finished. */
-export function noteGame(game: Game, myId: string): void {
-  if (game.status !== 'ended' || !game.players.some((p) => p.id === myId)) return;
+/** A game that's over, or one you left before it ended (`left`): where you finished, and who was there. */
+export function noteGame(game: Game, myId: string, left = false): void {
+  const mine = game.players.find((p) => p.id === myId);
+  if ((game.status !== 'ended' && !left) || !mine) return;
   update((r) => {
-    if (r.seen.includes(game.id)) return null;
+    if (r.seen.includes(game.id) || r.games.some((g) => g.id === game.id)) return null;
     // Nobody dealt a hand: nothing to remember.
     if (!r.seen.some((s) => s.startsWith(`${game.id}/`))) return null;
     const order = [...game.players].sort((a, b) => b.stack - a.stack);
     const place = order.findIndex((p) => p.id === myId) + 1;
-    return { ...r, games: [...r.games, { at: Date.now(), variant: variantOf(game), place, players: game.players.length }], seen: [...r.seen, game.id] };
+    const who = [...game.players]
+      .filter((p) => p.id !== myId)
+      .sort((a, b) => a.seat - b.seat)
+      .slice(0, 8)
+      .map((p) => ({ name: p.name, emoji: p.emoji, bot: p.bot }));
+    const line: GameLine = {
+      at: Date.now(),
+      variant: variantOf(game),
+      place,
+      players: game.players.length,
+      id: game.id,
+      online: !!game.code,
+      ...(game.code ? { code: game.code } : {}),
+      who,
+      ...(left && game.status !== 'ended' ? { left: true } : {}),
+      net: mine.stack - mine.bought,
+      hands: game.hand?.number ?? 0,
+    };
+    return { ...r, games: [...r.games, line], seen: [...r.seen, game.id] };
   });
 }

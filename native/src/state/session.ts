@@ -459,6 +459,10 @@ export function joinOnlineTable(code: string, name: string, emoji: string): void
 
 /** Leaves the table. Online, you're taken off it first (a hand in play folds you on your turn). */
 export function leaveTable(): void {
+  // My Games keeps a table you walk away from too (once a hand of yours was dealt; a challenge's chips are pretend).
+  const before = session?.game;
+  const seated = before?.players.find((p) => p.deviceId === me);
+  if (before && seated && before.status !== 'ended' && !before.challenge) noteGame(before, seated.id, true);
   const mine = session?.mode === 'online' ? session.game?.players.find((p) => p.deviceId === me) : undefined;
   if (mine && session?.game?.status !== 'ended') conn?.send({ t: 'act', id: newId(8), a: { type: 'remove', playerId: mine.id } });
   const old = conn;

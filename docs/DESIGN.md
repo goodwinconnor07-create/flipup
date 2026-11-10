@@ -19,12 +19,16 @@
 > tabs, main middle buttons, side bars; the owner's answers: the chosen game is the star, the page's colour follows
 > the game, all four shortcuts, lots of motion. Not merged until both have seen it on TestFlight).** Nothing scrolls.
 > The page is a dark shade of the chosen game's colour with three lights in its brighter tones (`GameBackdrop`; a
-> new game's colours fade in over the old). In order of importance: the games as big cards you swipe in the middle
-> (`GameSwiper`: the middle one full size, neighbours smaller, dimmer and tipped, a selection tick as each passes;
-> `flipup.homegame` keeps the pick), its name, hook and dots; PLAY (`PlayButton`: solid white, the game's dark ink, a
-> breathing glow and a band of the game's colour sweeping across) over Play bots and Join a game, with a slim LIVE
-> strip above when you're at a table; round see-through shortcuts down each side (Stats, Rules, All games; Premium
-> in gold, Settings, Share); a profile chip top left and the FlipUp spade top right. The parts fade in 30ms apart
+> new game's colours fade in over the old). In order of importance: the games as a line of cards across the whole
+> screen, locked on one at a time (`GameSwiper`: the middle one full size, neighbours smaller and fainter either side,
+> the outer ones tucked under like a fanned deck; the card follows the finger, rubber-bands past the ends, and the
+> flick's speed carries into `SETTLE`, capped so it never overshoots; one swipe moves one game; a selection tick as
+> each passes; `flipup.homegame` keeps the pick), its name, hook and dots; a row of round see-through shortcuts
+> (Stats, Rules, All games, Premium in gold, Settings, Share) just over PLAY (`PlayButton`: solid white, the game's
+> dark ink, a breathing glow and a band of the game's colour sweeping across), with Play bots and Join a game under
+> it and a slim LIVE strip above when you're at a table. PLAY and Play bots open with the middle card growing to fill
+> the screen in its own colour (`Fill`, 300ms ease-out), then the page fades in over it (`fill=1`). "Play" as the
+> big title top left and your face top right, ringed, opening your profile (asked the same day: no name chip, no spade). The parts fade in 30ms apart
 > when the app opens. The tab bar stays. Every loop stops off screen, in the background and under Reduce Motion.
 
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots

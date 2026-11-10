@@ -11,6 +11,7 @@ import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
 import { ChallengeEnded, ChallengeStrip, useChallengeSheets } from '@/components/table/challenge';
 import { Confetti } from '@/components/table/confetti';
+import { ConnectionLost, useOfflineFor } from '@/components/table/connection-lost';
 import { PartyPanel } from '@/components/party/panel';
 import { Ended } from '@/components/table/ended';
 import { FeltOval, useHighlight } from '@/components/table/felt';
@@ -31,7 +32,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { tableShare } from '@/state/table-share';
 import { read, save } from '@/state/storage';
 import { forgetParty } from '@/state/party';
-import { leaveTable, dispatch, me as myDevice, useTable } from '@/state/session';
+import { leaveTable, dispatch, me as myDevice, retryConnection, useTable } from '@/state/session';
 import { EASE_OUT, exitMs } from '@/motion/presets';
 import { gradient, motion, radius, spacing, useColors, usePlainColors } from '@/theme';
 
@@ -67,6 +68,10 @@ export default function TableScreen() {
     leaveTable();
     router.dismissTo('/');
   };
+  // A connection down for 20 seconds is said in words, with Try again and Leave (see connection-lost.tsx).
+  // Every automatic retry passes through 'connecting', so that counts as down too or the 20 seconds would restart each time.
+  const down = online && (t.conn === 'offline' || t.conn === 'connecting');
+  const lost = useOfflineFor(down);
   // A challenge's own sheets (Detective's check, Rewind's result) open by themselves when they're due.
   useChallengeSheets(t.challenge);
   // Before the first deal the lobby is the whole screen, on the same grain page as Play with friends.
@@ -86,11 +91,13 @@ export default function TableScreen() {
       <TableBar game={game} online={online} code={t.code} />
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
-      {online && t.conn === 'offline' && <Pill text="Reconnecting…" />}
+      {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
       <DealWipe />
-      {!game ? (
+      {!game && lost ? (
+        <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />
+      ) : !game ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
           {t.mode ? <ActivityIndicator /> : null}
           <ThemedText tone="tertiaryLabel">

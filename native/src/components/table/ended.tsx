@@ -1,9 +1,12 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, useWindowDimensions, View } from 'react-native';
 import Svg, { Line, Path } from 'react-native-svg';
 import { tableAwards } from '@train/tableAwards';
 import { tableStats, type TableStats } from '@train/tableStats';
-import { net, standings, variantInfo, type Game } from '@/engine';
+import { net, standings, variantInfo, type Game, type Variant } from '@/engine';
+import { nextModes } from '@/state/next-mode';
+import { usePremium } from '@/state/premium';
+import { usePokerRecord } from '@/state/record';
 import { dispatch, me as myDevice, requestLogs, useTable } from '@/state/session';
 import { radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 import { Avatar } from '../avatar';
@@ -12,6 +15,7 @@ import { Icon } from '../icon';
 import { Row, Section } from '../grouped-list';
 import { ThemedText } from '../themed-text';
 import { Count } from './count';
+import { NextModeChip } from './next-mode-chip';
 import { signed, useResultShare, type ResultData } from './result-share';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -32,6 +36,14 @@ export function Ended({ game, onLeave }: { game: Game; onLeave: () => void }) {
   const rows = standings(game);
   const mine = game.players.find((p) => p.deviceId === myDevice);
   const host = game.hostDeviceId === myDevice;
+  // The host can open the next table in another mode: the chip steps through the games (see nextModes), null is the same one.
+  const premium = usePremium();
+  const gamesBefore = usePokerRecord().games;
+  const current: Variant = game.settings.variant ?? 'holdem';
+  const [now] = useState(Date.now);
+  const modes = useMemo(() => nextModes(current, gamesBefore, premium, now), [current, gamesBefore, premium, now]);
+  const [pick, setPick] = useState<Variant | null>(null);
+  const stepMode = () => setPick((p) => (p === null ? (modes[0] ?? null) : (modes[modes.indexOf(p) + 1] ?? null)));
   const rank = mine ? rows.findIndex((p) => p.id === mine.id) + 1 : 0;
   const top = rows[0];
   const records = useMemo(() => (t.logs ? t.logs.flatMap((l) => (l.record && l.record.tableId === game.id ? [l.record] : [])) : []), [t.logs, game.id]);
@@ -166,8 +178,9 @@ export function Ended({ game, onLeave }: { game: Game; onLeave: () => void }) {
             </ThemedText>
           </View>
         )}
+        {host && modes.length > 0 && <NextModeChip current={current} pick={pick} onStep={stepMode} />}
         {host ? (
-          <Button variant="party" tint="blue" size="lg" title="Play again" onPress={() => dispatch({ type: 'playAgain' })} />
+          <Button variant="party" tint="blue" size="lg" title="Play again" onPress={() => dispatch(pick ? { type: 'playAgain', variant: pick } : { type: 'playAgain' })} />
         ) : mine && game.code ? (
           <Button variant="party" tint="blue" size="lg" title={again ? "You're in for the next one" : "I'm in for another"} disabled={again} onPress={() => dispatch({ type: 'playAgain' })} />
         ) : null}

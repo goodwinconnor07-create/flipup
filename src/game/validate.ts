@@ -87,7 +87,8 @@ export function parseAction(raw: unknown): Action | null {
     case 'end':
       return { type: a.type };
     case 'playAgain':
-      return a.off === true ? { type: 'playAgain', off: true } : { type: 'playAgain' };
+      if (a.off === true) return { type: 'playAgain', off: true };
+      return isVariant(a.variant) ? { type: 'playAgain', variant: a.variant } : { type: 'playAgain' };
     case 'remove':
       return isId(a.playerId) ? { type: 'remove', playerId: a.playerId } : null;
     case 'settings': {

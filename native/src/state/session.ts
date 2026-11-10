@@ -357,6 +357,11 @@ function connect(code: string): void {
   });
 }
 
+/** The Try again button: reconnects at once instead of waiting for the next automatic try. */
+export function retryConnection(): void {
+  conn?.retryNow();
+}
+
 function closeConnection(): void {
   conn?.close();
   conn = null;

@@ -26,6 +26,15 @@ async function request(path: string, init: RequestInit = {}, timeoutMs = 8000): 
   }
 }
 
+/** The body of an answer that should be JSON. A web page instead (hotel or airport Wi-Fi sign-in, a proxy) gets a sentence, not "Unexpected token '<'". */
+async function answerJson(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    throw new Error("The server's answer didn't look right. Check your connection and try again.");
+  }
+}
+
 async function errorText(res: Response, fallback: string): Promise<string> {
   try {
     return ((await res.json()) as { error?: string }).error || fallback;
@@ -42,7 +51,7 @@ export async function createOnlineTable(body: CreateTableRequest): Promise<strin
   const res = await request('/api/tables', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting this game needs FlipUp Premium.'));
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a table. Try again."));
-  return ((await res.json()) as CreateTableResponse).code;
+  return ((await answerJson(res)) as CreateTableResponse).code;
 }
 
 /** Join details for a code, or null if there's no such table. */
@@ -50,7 +59,7 @@ export async function fetchTableInfo(code: string): Promise<TableInfo | null> {
   const res = await request(`/api/tables/${encodeURIComponent(code)}`);
   if (res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(await errorText(res, 'Something went wrong. Try again.'));
-  return (await res.json()) as TableInfo;
+  return (await answerJson(res)) as TableInfo;
 }
 
 // Friend codes and parties, the same calls as the web's (src/state/api.ts).
@@ -61,7 +70,7 @@ const json = (path: string, init: RequestInit) => request(path, { ...init, heade
 export async function createFriendCard(body: { deviceId: string; name: string; emoji: string }): Promise<string> {
   const res = await json('/api/friends', { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, "Couldn't make your friend code. Try again."));
-  return ((await res.json()) as CreateFriendCardResponse).code;
+  return ((await answerJson(res)) as CreateFriendCardResponse).code;
 }
 
 /** Sends a new name and picture. Returns false when the code has gone. */
@@ -77,7 +86,7 @@ export async function fetchFriendCard(code: string): Promise<FriendCardInfo | nu
   const res = await json(`/api/friends/${encodeURIComponent(code)}`, { method: 'GET' });
   if (res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't look that code up. Try again."));
-  return (await res.json()) as FriendCardInfo;
+  return (await answerJson(res)) as FriendCardInfo;
 }
 
 /** Deletes this phone's friend code on the server ("Delete my data"). A code that's already gone counts as deleted. */
@@ -110,7 +119,7 @@ export async function fetchInbox(code: string, deviceId: string): Promise<Inbox 
   const res = await json(`/api/friends/${encodeURIComponent(code)}/inbox?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
   if (res.status === 403 || res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't check for friend requests."));
-  return (await res.json()) as Inbox;
+  return (await answerJson(res)) as Inbox;
 }
 
 /**
@@ -122,7 +131,7 @@ export async function pollFriendCard(code: string, deviceId: string): Promise<Fr
   if (res.status === 404) return 'old';
   if (res.status === 403 || res.status === 400) return null;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't check for friend requests."));
-  const box = (await res.json()) as Partial<FriendPoll>;
+  const box = (await answerJson(res)) as Partial<FriendPoll>;
   return { requests: box.requests ?? [], invites: box.invites ?? [], friends: box.friends ?? [], sent: box.sent ?? [], declined: box.declined ?? [] };
 }
 
@@ -134,7 +143,7 @@ export async function setUsernameOnServer(code: string, body: { deviceId: string
     // A server from before usernames answers the route itself with a bare "Not found."
     throw new Error(text === 'Not found.' ? "Usernames aren't open yet. Try again soon." : text);
   }
-  return ((await res.json()) as { username: string }).username;
+  return ((await answerJson(res)) as { username: string }).username;
 }
 
 /** The person with this username, or null. */
@@ -142,14 +151,14 @@ export async function findUsername(username: string): Promise<FriendCardInfo | n
   const res = await json(`/api/usernames/${encodeURIComponent(username)}`, { method: 'GET' });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(await errorText(res, "Couldn't look that up. Try again."));
-  return (await res.json()) as FriendCardInfo;
+  return (await answerJson(res)) as FriendCardInfo;
 }
 
 /** Asks `code` to be friends. 'friends' when you already are (or they'd asked you). */
 export async function requestFriend(code: string, body: { deviceId: string; fromCode: string }): Promise<'sent' | 'friends'> {
   const res = await json(`/api/friends/${encodeURIComponent(code)}/request`, { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, "Couldn't send the request. Try again."));
-  return ((await res.json()) as { status: 'sent' | 'friends' }).status;
+  return ((await answerJson(res)) as { status: 'sent' | 'friends' }).status;
 }
 
 export async function answerFriend(myCode: string, body: { deviceId: string; from: string; accept: boolean }): Promise<void> {
@@ -184,7 +193,7 @@ export async function createPartyOnServer(body: { deviceId: string; name: string
   const res = await request('/api/parties', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, 12_000);
   if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting these games needs FlipUp Premium.'));
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a party. Try again."));
-  return ((await res.json()) as { code: string }).code;
+  return ((await answerJson(res)) as { code: string }).code;
 }
 
 /** The party as this phone sees it, or null if there's no such party. */
@@ -192,14 +201,14 @@ export async function fetchParty(code: string, deviceId: string): Promise<PartyV
   const res = await json(`/api/parties/${encodeURIComponent(code)}?device=${encodeURIComponent(deviceId)}`, { method: 'GET' });
   if (res.status === 404 || res.status === 400) return null;
   if (!res.ok) throw new Error(await errorText(res, 'Something went wrong. Try again.'));
-  return (await res.json()) as PartyView;
+  return (await answerJson(res)) as PartyView;
 }
 
 export async function partyAct(code: string, action: 'join' | 'leave' | 'start' | 'skip' | 'settings', body: Record<string, unknown>): Promise<PartyView> {
   const res = await json(`/api/parties/${encodeURIComponent(code)}/${action}`, { method: 'POST', body: JSON.stringify(body) });
   if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting these games needs FlipUp Premium.'));
   if (!res.ok) throw new Error(await errorText(res, 'Something went wrong. Try again.'));
-  return (await res.json()) as PartyView;
+  return (await answerJson(res)) as PartyView;
 }
 
 /** Reports a player at your table or party (App Store guideline 1.2). Throws with a sentence to show. */

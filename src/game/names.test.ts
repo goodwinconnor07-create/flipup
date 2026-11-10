@@ -43,4 +43,10 @@ describe('player name filter', () => {
       expect(isNameBlocked(name), name).toBe(true);
     }
   });
+
+  it('is not fooled by invisible characters splitting a word', () => {
+    for (const name of ['a\u200Bss', 'a\u00ADss', 'a\u2060ss', 'c\u200Bum', 'n\u200Dazi', 'a\u200B\u200Bss', 'a\u202Ess'])
+      expect(isNameBlocked(name), JSON.stringify(name)).toBe(true);
+    expect(isNameBlocked('Sam\u200B')).toBe(false);
+  });
 });

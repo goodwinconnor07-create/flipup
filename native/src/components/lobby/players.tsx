@@ -88,7 +88,7 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => voi
                   borderRadius: 18,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  backgroundColor: colors.cellPressed,
+                  backgroundColor: panel.chip,
                 }}
               >
                 <Icon name="plus" size={16} color={brand.violetDark} />

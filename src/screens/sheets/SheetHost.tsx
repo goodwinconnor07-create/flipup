@@ -384,6 +384,7 @@ function useYouRows(): { switches: Row[]; links: Row[] } {
       { label: 'Table theme', Icon: PaletteIcon, color: 'var(--pink)', onClick: () => openSheet({ name: 'theme' }) },
       { label: 'Card packs', Icon: SpadeIcon, color: 'var(--indigo)', onClick: () => openSheet({ name: 'packs' }) },
       { label: 'Chat bubbles', Icon: ChatIcon, color: 'var(--violet)', onClick: () => openSheet({ name: 'bubbles' }) },
+      { label: 'Bot research', Icon: SpadeIcon, color: 'var(--blue)', onClick: () => navigate({ name: 'botResearch' }) },
       { label: 'Hand rankings', Icon: HelpIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'rankings' }) },
     ],
   };

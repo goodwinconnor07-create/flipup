@@ -47,6 +47,14 @@ below as above. The fifth answer's button says See your set: dots, "4 of 5", a w
 at it), the five hands with their grades (a tap opens the breakdown), and Done / Another 5 pinned. No stars, tiers or
 modes.
 
+Bot research (owner request, 10 November 2026): a separate mobile-browser research session, entered from
+Settings. Setup shows the length, what is recorded, and Start. Play uses the existing card and button styles with
+opponents, board, own cards, legal actions, progress, an optional “That felt odd” marker, and Pause & upload.
+Pausing shows saved/upload status, Resume, an optional note and a private review link. Records survive reloads,
+upload completed hands incrementally, and stay separate from normal games, statistics and Range trainer lessons.
+Wireframe shown in the implementation chat before building: Back / Bot research; 60 hands / Start; then Hand N,
+scenario label, table, Fold/Call/Raise, That felt odd, Pause & upload. Use existing surfaces and motion.
+
 **How this document works.** Read it before any UI change. A new decision is written here first, then built. If a
 screen and this document disagree, the document wins until the owner says otherwise; then the document is changed
 in the same commit. New screens are mocked up and shown to the owner before they're built.

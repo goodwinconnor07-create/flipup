@@ -42,6 +42,8 @@ import {
   gamesNeedPremium,
   BOTS,
 } from '../src/game';
+import { botResearchRoute } from './botResearch';
+export { BotResearchRoom } from './botResearch';
 import { emailReport, type StoredReport } from './reports';
 import { forgetDevice, handleNotification, mayHostPremium, verifyPurchase, type VerifyResult } from './premium';
 
@@ -685,6 +687,12 @@ export default {
     }
     if (pathname === '/api/parties' || pathname.startsWith('/api/parties/')) return partyRoute(request, env, pathname, search);
 
+    if (pathname === '/api/bot-research' || pathname.startsWith('/api/bot-research/')) {
+      if (!sameSite(request)) return json({ error: 'Not allowed.' }, 403);
+      if (limited(request, pathname === '/api/bot-research' ? 'research-create' : 'research-data', pathname === '/api/bot-research' ? 12 : 500, 60 * 60_000))
+        return json({ error: 'Too many research requests. Try again later.' }, 429);
+      return botResearchRoute(request, env);
+    }
     if (pathname === '/api/reports') return request.method === 'POST' ? reportRoute(request, env, ctx) : json({ error: 'Use POST.' }, 405);
     if (pathname === '/api/health') return json({ ok: true });
     if (pathname === '/api/tables') {

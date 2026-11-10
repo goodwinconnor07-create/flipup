@@ -36,6 +36,7 @@ export function ResultCard({
   cheer,
   onBreakdown,
   onNext,
+  nextTitle = 'Next hand',
 }: {
   grade: Grade;
   pick: OptionId;
@@ -55,6 +56,8 @@ export function ResultCard({
   cheer: boolean;
   onBreakdown: () => void;
   onNext: () => void;
+  /** The main button's words (the last hand of a set says See your set). */
+  nextTitle?: string;
 }) {
   const colors = useColors();
   const shadows = useShadows();
@@ -124,7 +127,7 @@ export function ResultCard({
           <Button title="Breakdown" variant="secondary" onPress={onBreakdown} />
         </View>
         <View style={{ flex: 1.4 }}>
-          <Button title="Next hand" variant="primary" onPress={onNext} />
+          <Button title={nextTitle} variant="primary" onPress={onNext} />
         </View>
       </Animated.View>
 

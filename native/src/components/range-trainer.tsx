@@ -26,7 +26,7 @@ import { cheersRun, pileBet, pilesOf } from '@/state/range-result';
 import { answerHand, nextHand, numbersFor } from '@/state/ranges';
 import { eventsOf, firstSentence, viewAt } from '@/state/range-view';
 import { radius, spacing, useColors } from '@/theme';
-import { bb, gradeOf, optionsFor, replay, type OptionId, type Pos, type Scenario, type Street } from '@train/ranges/model';
+import { bb, gradeOf, optionsFor, replay, type Grade, type OptionId, type Pos, type Scenario, type Street } from '@train/ranges/model';
 
 const STREET_NAME: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
 const NUM = { fontVariant: ['tabular-nums' as const] };
@@ -41,7 +41,7 @@ const TINT = {
 } as const;
 
 /** The trainer: one hand, your answer, then why. `onNext` runs after Next hand deals the next one (to scroll up). */
-export function RangeTrainer({ onNext, onTop, onScrollTo, focus, onStopFocus }: { onNext?: () => void; /** Scrolls the page back up to the table (a street tapped replays on it). */ onTop?: () => void; /** Scrolls the page to this offset (an answer brings the table up to the top, clear of the result card). */ onScrollTo?: (y: number) => void; /** Practising only these kinds of spot (from Stats). */ focus?: string[]; onStopFocus?: () => void }) {
+export function RangeTrainer({ onNext, onTop, onScrollTo, focus, onStopFocus, onAnswer, onFinish, finishTitle }: { onNext?: () => void; /** Scrolls the page back up to the table (a street tapped replays on it). */ onTop?: () => void; /** Scrolls the page to this offset (an answer brings the table up to the top, clear of the result card). */ onScrollTo?: (y: number) => void; /** Practising only these kinds of spot (from Stats). */ focus?: string[]; onStopFocus?: () => void; /** Each answer, as it's graded (a set counts them). */ onAnswer?: (s: Scenario, pick: OptionId, grade: Grade) => void; /** Set when this was the last hand of a set: the main button ends the set instead of dealing another. */ onFinish?: () => void; finishTitle?: string }) {
   const colors = useColors();
   const router = useRouter();
   const [scenario, setScenario] = useState<Scenario>(() => nextHand(null, Math.random, focus));
@@ -98,6 +98,7 @@ export function RangeTrainer({ onNext, onTop, onScrollTo, focus, onStopFocus }: 
     setPlaying(false);
     setStep(null);
     setPick(id);
+    onAnswer?.(scenario, id, grade);
     // Their likely hands turn up on the seats: bring the table up to the top, clear of the result card below.
     // A beat later, so the page has made room for the card first.
     const y = Math.max(0, place.current.root + place.current.table - spacing.sm);
@@ -166,7 +167,8 @@ export function RangeTrainer({ onNext, onTop, onScrollTo, focus, onStopFocus }: 
         run={run.n}
         cheer={run.cheer}
         onBreakdown={() => router.push({ pathname: '/range-breakdown', params: { id: scenario.id, pick } })}
-        onNext={next}
+        onNext={onFinish ?? next}
+        nextTitle={onFinish ? (finishTitle ?? 'See your set') : 'Next hand'}
       />
     ) : (
       <View accessibilityLabel="Your options" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>

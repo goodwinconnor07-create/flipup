@@ -37,3 +37,11 @@ describe('Range training result', () => {
     expect([1, 2, 3, 4, 5, 6, 9, 10, 15, 20].filter(cheersRun)).toEqual([3, 5, 10, 20]);
   });
 });
+
+describe('Range training sets', async () => {
+  const { SET_SIZE, setVerdict } = await import('../src/state/range-result');
+  it('are five hands, with a word for each result', () => {
+    expect(SET_SIZE).toBe(5);
+    expect([5, 4, 3, 2, 1, 0].map((n) => setVerdict(n))).toEqual(['Perfect set', 'Strong set', 'Good set', 'Keep at it', 'Keep at it', 'Keep at it']);
+  });
+});

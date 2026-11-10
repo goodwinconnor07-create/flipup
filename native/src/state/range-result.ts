@@ -69,3 +69,14 @@ export function pilesOf(opponents: PileGroup[][], facing: boolean, dead: string[
 
 /** Confetti only for runs worth marking: 3, 5, 10, then every 10. A single best play just pops its verdict. */
 export const cheersRun = (run: number): boolean => run === 3 || run === 5 || (run >= 10 && run % 10 === 0);
+
+/** Hands in a set: you play five, then see how the set went. */
+export const SET_SIZE = 5;
+
+/** The end of a set in a few words, by how many of the five were the best play. */
+export function setVerdict(best: number, total = SET_SIZE): string {
+  if (best >= total) return 'Perfect set';
+  if (best >= total - 1) return 'Strong set';
+  if (best >= Math.ceil(total / 2)) return 'Good set';
+  return 'Keep at it';
+}

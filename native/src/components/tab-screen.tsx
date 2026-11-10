@@ -12,7 +12,8 @@ import { SwapIcon } from './swap';
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';
 
-const FooterContext = createContext<((node: ReactNode) => void) | null>(null);
+/** What `useTabFooter` talks to: a screen that pins a bar under its page provides it (TabScreen, Range training's set). */
+export const FooterContext = createContext<((node: ReactNode) => void) | null>(null);
 
 /**
  * Pins `node` to the bottom of the tab screen it's in, above the tab bar (Range training's answer bar). It follows the

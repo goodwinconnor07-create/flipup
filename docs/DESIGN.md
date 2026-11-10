@@ -38,6 +38,15 @@ then Breakdown and Next hand. Breakdown is the `range-breakdown` sheet with ever
 celebration: a best play pops its verdict with a sound and a haptic; confetti only at runs of 3, 5, 10 and every 10.
 Green stays Raise only.
 
+Range training, start screen and sets of 5 (owner request, 10 November 2026). The Train tab is a start screen: one
+violet card ("Play a set", a line, a white Start button), three numbers once you've played (best plays, mastered out
+of all, best run), and a Work on list (your weakest kinds of spot, Retry your misses), each starting a set of those.
+Start opens the set full screen over the tabs (`range-session`): "‹ Back" on the left, "Hand 2 of 5" over five
+progress bars in the middle (gold best, blue also good, grey missed, the current one outlined), and the trainer
+below as above. The fifth answer's button says See your set: dots, "4 of 5", a word (Perfect, Strong, Good set, Keep
+at it), the five hands with their grades (a tap opens the breakdown), and Done / Another 5 pinned. No stars, tiers or
+modes.
+
 **How this document works.** Read it before any UI change. A new decision is written here first, then built. If a
 screen and this document disagree, the document wins until the owner says otherwise; then the document is changed
 in the same commit. New screens are mocked up and shown to the owner before they're built.

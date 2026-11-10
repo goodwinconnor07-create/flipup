@@ -5,31 +5,44 @@ import { gameLook } from '@design/gameArt';
 import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { usePokerRecord } from '@/state/record';
-import { party, radius, spacing, useColors, useShadows } from '@/theme';
+import { brand, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
-import { GameThumb } from '../game-picture';
+import { GamePicture } from '../game-picture';
 import { haptic } from '../haptics';
-import { Icon } from '../icon';
+import { Icon, type IconName } from '../icon';
 import { PressableScale } from '../pressable-scale';
 import { SectionTitle } from './section-title';
 
-const TILE = 112;
+/** A card's size: wide enough that the next one peeks in from the right, so the shelf says "swipe". */
+const CARD_W = 236;
+const PICTURE_H = 168;
+const BAND_H = 72;
+const CARD_R = 28;
 
 /**
- * Every variant as a row you swipe through, like a shelf in Apple's Games app: the game's picture in a big rounded
- * square, its name under it, a crown on the Premium ones. "See all" opens them all as big cards.
+ * Every game mode as a big card you swipe through, the way the App Store and Apple's Games app show a featured
+ * shelf: the game's drawn scene on its own colours, then a darker band with the name, its hook and a white Play
+ * capsule. The game you played last comes first, tagged Play again; Premium games carry a gold tag (which is how
+ * Home asks for Premium now). "See all" opens every game.
  */
 export function GameRow() {
   const premium = usePremium();
-  // The game you played last comes first, marked Play again (no card of its own taking room above the shelf).
   const last = usePokerRecord().games.at(-1)?.variant;
   const games = last ? [...VARIANTS.filter((v) => v.id === last), ...VARIANTS.filter((v) => v.id !== last)] : VARIANTS;
   return (
     <View style={{ gap: spacing.sm }}>
       <SectionTitle title="Game modes" onMore={() => router.push('/games')} />
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -spacing.md, marginTop: -8, marginBottom: -28 }} contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 28, gap: spacing.sm }}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={CARD_W + spacing.sm}
+        snapToAlignment="start"
+        style={{ marginHorizontal: -spacing.md, marginTop: -8, marginBottom: -28 }}
+        contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: 8, paddingBottom: 28, gap: spacing.sm }}
+      >
         {games.map((v) => (
-          <Tile key={v.id} variant={v.id} name={v.name} locked={!premium && isPremiumVariant(v.id)} again={v.id === last} />
+          <GameCard key={v.id} variant={v.id} name={v.name} locked={!premium && isPremiumVariant(v.id)} again={v.id === last} />
         ))}
         <Surprise />
       </ScrollView>
@@ -37,71 +50,80 @@ export function GameRow() {
   );
 }
 
-function Tile({ variant, name, locked, again }: { variant: Variant; name: string; locked: boolean; /** The game you played last. */ again?: boolean }) {
-  const colors = useColors();
+function open(variant: Variant) {
+  haptic.tap();
+  router.push(`/game/${variant}`);
+}
+
+function GameCard({ variant, name, locked, again }: { variant: Variant; name: string; locked: boolean; /** The game you played last. */ again?: boolean }) {
   const shadows = useShadows();
+  const look = gameLook(variant);
   return (
     <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${again ? 'Play again: ' : ''}${name}${locked ? ', Premium' : ''}`}
-      onPress={() => {
-        haptic.tap();
-        router.push(`/game/${variant}`);
-      }}
+      accessibilityLabel={`${again ? 'Play again: ' : ''}${name}. ${look.hook}${locked ? '. Premium' : ''}`}
+      onPress={() => open(variant)}
       haptics={false}
-      style={{ width: TILE }}
+      style={{ width: CARD_W }}
     >
-      <View style={{ borderRadius: radius.lg, borderCurve: 'continuous', boxShadow: shadows.card }}>
-        <GameThumb variant={variant} size={TILE} rounded={radius.lg} />
-        {again && (
-          <View style={{ position: 'absolute', top: spacing.xs, left: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.92)' }}>
-            <Icon name="arrow.counterclockwise" size={13} color="#1c1c1e" />
+      <View style={{ borderRadius: CARD_R, borderCurve: 'continuous', boxShadow: shadows.raised }}>
+        <View style={{ borderRadius: CARD_R, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: look.card[1] }}>
+          <GamePicture variant={variant} width={CARD_W} height={PICTURE_H} rounded={0} />
+          <View style={{ height: BAND_H, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingHorizontal: spacing.md - 2 }}>
+            <View style={{ flex: 1, gap: 1 }}>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontFamily: ROUNDED, fontSize: 18, fontWeight: '700', color: '#ffffff' }}>
+                {name}
+              </Text>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '500', color: 'rgba(255, 255, 255, 0.72)' }}>
+                {look.hook}
+              </Text>
+            </View>
+            <View style={{ paddingHorizontal: spacing.md - 2, height: 32, borderRadius: 16, justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.94)' }}>
+              <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 15, fontWeight: '700', color: brand.violet }}>
+                Play
+              </Text>
+            </View>
           </View>
-        )}
-        {locked && (
-          <View style={{ position: 'absolute', top: spacing.xs, right: spacing.xs, width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
-            <Icon name="crown.fill" size={13} color={party.yellow} />
-          </View>
-        )}
-      </View>
-      {/* Name and hint as one block: 8pt under the picture, 2pt between them, nothing reserved (a long name wraps, never cut). */}
-      <View style={{ gap: 2, marginTop: spacing.xs }}>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 14, lineHeight: 18, fontWeight: '600', color: colors.label }}>
-        {name}
-      </Text>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, }}>
-        {again ? 'Play again' : gameLook(variant).hook}
-      </Text>
+        </View>
+        {again && <Tag icon="arrow.counterclockwise" text="Play again" side="left" />}
+        {locked && <Tag icon="crown.fill" text="Premium" side="right" gold />}
       </View>
     </PressableScale>
   );
 }
 
-/** The end of the shelf: a random game, so nobody has to choose. Opens that game's sheet like any other tile. */
+function Tag({ icon, text, side, gold }: { icon: IconName; text: string; side: 'left' | 'right'; gold?: boolean }) {
+  const ink = gold ? brand.goldInk : '#ffffff';
+  return (
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={{ position: 'absolute', top: spacing.sm, [side]: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 4, height: 26, paddingHorizontal: 10, borderRadius: 13, backgroundColor: gold ? brand.gold : 'rgba(0, 0, 0, 0.38)' }}
+    >
+      <Icon name={icon} size={11} color={ink} />
+      <Text maxFontSizeMultiplier={1.1} style={{ fontSize: 12, fontWeight: '700', color: ink }}>
+        {text}
+      </Text>
+    </View>
+  );
+}
+
+/** The end of the shelf: a random game, so nobody has to choose. Same size as a game card, a quiet dashed outline. */
 function Surprise() {
   const colors = useColors();
   return (
     <PressableScale
       accessibilityRole="button"
       accessibilityLabel="Surprise me. A random game mode"
-      onPress={() => {
-        haptic.tap();
-        const pick = VARIANTS[Math.floor(Math.random() * VARIANTS.length)];
-        router.push(`/game/${pick.id}`);
-      }}
+      onPress={() => open(VARIANTS[Math.floor(Math.random() * VARIANTS.length)].id)}
       haptics={false}
-      style={{ width: TILE }}
+      style={{ width: CARD_W * 0.62 }}
     >
-      <View style={{ width: TILE, height: TILE, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 2, borderStyle: 'dashed', borderColor: colors.separator, alignItems: 'center', justifyContent: 'center' }}>
-        <Icon name="shuffle" size={40} color={colors.secondaryLabel} />
-      </View>
-      <View style={{ gap: 2, marginTop: spacing.xs }}>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ fontSize: 14, lineHeight: 18, fontWeight: '600', color: colors.label }}>
-        Surprise me
-      </Text>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 12, lineHeight: 15, fontWeight: '500', color: colors.secondaryLabel, }}>
-        A random mode
-      </Text>
+      <View style={{ height: PICTURE_H + BAND_H, borderRadius: CARD_R, borderCurve: 'continuous', borderWidth: 2, borderStyle: 'dashed', borderColor: colors.separator, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
+        <Icon name="shuffle" size={36} color={colors.secondaryLabel} />
+        <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 16, fontWeight: '700', color: colors.label }}>
+          Surprise me
+        </Text>
       </View>
     </PressableScale>
   );

@@ -8,6 +8,7 @@ import { popIn } from '@/motion/presets';
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
 import { Row, Section } from '@/components/grouped-list';
+import { PassportCard } from '@/components/home/passport';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -133,8 +134,10 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {record.hands > 0 && <PassportCard />}
+
         <Section header="Your poker">
-          <Row title="Your stats" detail={stats} icon={{ symbol: 'chart.bar.xaxis', color: tint }} onPress={() => router.push('/stats')} />
+          {record.hands === 0 && <Row title="Your stats" detail={stats} icon={{ symbol: 'chart.bar.xaxis', color: tint }} onPress={() => router.push('/stats')} />}
           {FRIENDS_ON && (
             <Row
               title="Username"

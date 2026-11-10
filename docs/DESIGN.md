@@ -7,6 +7,10 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **Home (owner, 2026-11-10, from a mockup): one screen.** The two start tiles (SF Symbol in a soft white circle,
+> chevron, title, one line; no emoji faces) and the Join capsule lead, then the game modes as big swipeable cards
+> with a Play capsule. Stats live on Profile; Premium is a gold tag on locked games. Nothing else goes on Home.
+>
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
 > pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,

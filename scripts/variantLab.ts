@@ -58,7 +58,7 @@ function play(variant: Variant, seed: number, legacyEven: boolean): { upgraded: 
     const hand = game.hand;
     if (hand && !hand.result) {
       const seat = hand.seats.find((x) => x.playerId === host.id);
-      if (seat && pendingDiscards(game).includes(seat)) {
+      if (seat && hand.discarding && pendingDiscards(game).some((x) => x.playerId === host.id)) {
         step({ type: 'discard', hand: hand.number, card: seat.cards.find((c) => !keepTwoQuick(seat.cards, hand.board.slice(0, 3)).includes(c))! });
         continue;
       }

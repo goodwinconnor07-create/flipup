@@ -670,15 +670,15 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   // A Style Detective table is quiet too: every style has lines of its own, which would give the answer away.
   if (game.challenge?.quiet) return 0;
   const everyday = usesEverydayBots(game);
-  // At ordinary tables, speech stays incidental and never delays a routine move.
+  // At ordinary tables the talk is spaced out a little more than at the old styles' tables.
   const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
-  if (everyday && !owed && now - tableLast < 10000) return 0;
+  if (everyday && !owed && now - tableLast < 4500) return 0;
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return 0;
   const style = playerStyle(player);
   // A legend speaks in its own voice; everyone else in their style's.
   const voice = player.legend ?? style.id;
-  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId) * (everyday ? 0.4 : 1)))
+  if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId) * (everyday ? 0.8 : 1)))
     return 0;
   // A table-wide pause keeps nine seats from shouting over an ordinary decision.
   if (!owed && now - tableLast < 700) return 0;

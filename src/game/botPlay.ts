@@ -453,7 +453,7 @@ function thinkTime(
 
 export function decide(game: Game, hand: Hand, seat: Seat, rng: Rng): BotThought {
   const player = game.players.find((p) => p.id === seat.playerId);
-  const opps = opponentsOf(game, hand, seat, playerStyle(player).craft.exploit);
+  const opps = opponentsOf(game, hand, seat, playerStyle(player).craft.exploit, !!player?.ultra);
   const mind = mindOf(game, seat.playerId);
   // The grudge that matters is against whoever's betting (or anyone, heads up).
   const aggressor = hand.aggressorId && hand.aggressorId !== seat.playerId ? hand.aggressorId : opps.length === 1 ? opps[0].id : null;

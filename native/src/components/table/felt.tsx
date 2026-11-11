@@ -101,8 +101,8 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   const felt = theme?.felt ?? look.felt;
   const rail = theme?.rail ?? RAILS.find((r) => r.id === look.rail)!.colors;
   const info = variantInfo(variant);
-  // Imposter: you only learn it's you; everyone else in the hand is innocent.
-  const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
+  // Imposter: nobody is told their role (it could be you), so the pill just asks the question.
+  const role = hand?.variant === 'imposter' && hand.imposter && mySeat && !hand.result ? 'unknown' : null;
   const myValue =
     mySeat && !mySeat.folded && mySeat.cards.length && hand?.variant !== 'imposter'
       ? bestHand(variant, mySeat.cards, hand?.board ?? [])
@@ -215,8 +215,8 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
             >
               <VariantPill
-                text={role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : `${info.emoji} ${info.name}`}
-                hot={role === 'imposter'}
+                text={role === 'unknown' ? '🕵️ Imposter? Could be you' : hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : `${info.emoji} ${info.name}`}
+                hot={!!role}
               />
             </Pressable>
           )}

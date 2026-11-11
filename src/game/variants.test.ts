@@ -286,7 +286,8 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
       const host = g.players.find((p) => p.deviceId === HOST)!;
       const seen = redactForDevice(g, HOST).hand!;
       if (!hand.result) {
-        expect(seen.imposter).toBe(hand.imposter === host.id ? host.id : undefined);
+        // Nobody is told, the imposter included.
+        expect(seen.imposter).toBe('?');
         // Votes stay secret until they're read out (the tally).
         if (!hand.tally) for (const [voter, suspect] of Object.entries(seen.votes ?? {})) if (voter !== host.id) expect(suspect).toBe('');
       } else if (hand.result.imposter) {

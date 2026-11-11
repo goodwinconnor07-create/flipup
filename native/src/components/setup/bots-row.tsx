@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { addedLine, balancedBotPool, botFace, BOTS, lineBeats, sayAndReadMs, type Message } from '@/engine';
+import { knownBots } from '@/state/table-feel';
 import { useColors } from '@/theme';
 
 import { AddFace, BotPill, BUBBLE_ROOM, Face, FaceBubble, FaceRow } from './faces';
@@ -94,6 +95,9 @@ export function randomBot(have: { name: string; emoji: string }[], you: string |
   const fresh = free.filter((b) => !faces.has(botFace(b.emoji)));
   const pool = balancedBotPool(fresh.length ? fresh : free, have);
   if (!pool.length) return null;
-  const pick = pool[Math.floor(Math.random() * pool.length)];
+  // Now and then a bot you've played before sits down again, so the regulars become people you know.
+  const known = new Set(knownBots());
+  const old = pool.filter((b) => known.has(b.name.toLowerCase()));
+  const pick = old.length && Math.random() < 0.35 ? old[Math.floor(Math.random() * old.length)] : pool[Math.floor(Math.random() * pool.length)];
   return { key: `${pick.name}:${Date.now()}`, name: pick.name, emoji: botFace(pick.emoji), greet: addedLine(pick.style, you, Math.random).text };
 }

@@ -1,7 +1,8 @@
 // Fun versions of Hold'em the host can pick for a table. The betting is the same no-limit Hold'em everywhere
 // (pot limit at a Ghost table); what changes is how many cards you get, what's wild and how a hand is scored.
 
-import { rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
+import { score, toInt } from './botEval';
+import { fullDeck, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 
@@ -115,8 +116,8 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🕵️',
     tagline: 'Everyone has the same hand but one. Find the imposter.',
     rules: [
-      "Everyone gets the same two cards, except the imposter, who gets a different hand. You're told whether you're the imposter or innocent.",
-      "How strong your cards are doesn't matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table (or, as the imposter, to blend in).",
+      "Everyone gets the same two cards, except the imposter, who gets a different hand. Nobody is told who it is, not even the imposter: you might be it.",
+      "How strong your cards are doesn't matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table, and try not to stand out yourself.",
       "Everyone antes a big blind each hand, so there's money in the middle from the start.",
       'After the river everyone votes for who they think the imposter is.',
       'If the most votes go to the imposter, the innocent players still in split the pot. If not (a tie counts as not), the imposter takes it all.',
@@ -381,14 +382,14 @@ export function bestHand(v: Variant, hole: Card[], board: Card[]): HandValue {
 // ── Crazy Pineapple ─────────────────────────────────────────────────────────
 
 /** A rough preflop value for two cards: pairs first, then high, suited and connected cards. */
-function startValue(a: Card, b: Card): number {
+export function startValue(a: Card, b: Card): number {
   const [hi, lo] = rankOf(a) >= rankOf(b) ? [rankOf(a), rankOf(b)] : [rankOf(b), rankOf(a)];
   if (hi === lo) return 100 + hi * 2;
   return hi * 2 + lo + (suitOf(a) === suitOf(b) ? 3 : 0) + (hi - lo <= 2 ? 2 : 0);
 }
 
-/** The two of three cards worth keeping: the best hand with the board, or the best start before the flop. */
-export function keepTwo(hole: Card[], board: Card[]): Card[] {
+/** The quick keep, for run-outs that do it thousands of times: the best made hand now, then the best start. */
+export function keepTwoQuick(hole: Card[], board: Card[]): Card[] {
   if (hole.length <= 2) return hole;
   const pairs: Card[][] = [
     [hole[0], hole[1]],
@@ -397,6 +398,40 @@ export function keepTwo(hole: Card[], board: Card[]): Card[] {
   ];
   const value = (p: Card[]) => (board.length >= 3 ? describeHand([...p, ...board]).score * 1000 : 0) + startValue(p[0], p[1]);
   return pairs.reduce((a, b) => (value(b) > value(a) ? b : a));
+}
+
+/**
+ * The two of three cards worth keeping. Before the flop, the best start. On the flop, the pair that ends up best on
+ * average over every turn and river still to come (by hand category, then what it holds now), so a flush or straight
+ * draw can beat a weak pair: about three thousand quick evaluations.
+ */
+export function keepTwo(hole: Card[], board: Card[]): Card[] {
+  if (hole.length <= 2) return hole;
+  const pairs: Card[][] = [
+    [hole[0], hole[1]],
+    [hole[0], hole[2]],
+    [hole[1], hole[2]],
+  ];
+  if (board.length < 3) return pairs.reduce((a, b) => (startValue(b[0], b[1]) > startValue(a[0], a[1]) ? b : a));
+  const flop = board.slice(0, 3);
+  const seen = new Set([...hole, ...flop]);
+  const rest = fullDeck()
+    .filter((c) => !seen.has(c))
+    .map(toInt);
+  const value = (p: Card[]) => {
+    const base = [...p, ...flop].map(toInt);
+    let sum = 0;
+    let n = 0;
+    for (let i = 0; i < rest.length; i++)
+      for (let j = i + 1; j < rest.length; j++) {
+        sum += Math.floor(score([...base, rest[i], rest[j]]) / 1048576);
+        n++;
+      }
+    // Now: the made hand's category and kickers, then the preflop value, so ties fall to the stronger cards.
+    return sum / n + describeHand([...p, ...flop]).score * 1e-9 + startValue(p[0], p[1]) * 1e-12;
+  };
+  const scored = pairs.map((p) => ({ p, v: value(p) }));
+  return scored.reduce((a, b) => (b.v > a.v ? b : a)).p;
 }
 
 // ── What a bot sees ─────────────────────────────────────────────────────────
@@ -442,15 +477,32 @@ function pushiness(hand: Hand): Map<string, number> {
   return score;
 }
 
+/** How many fingers point at each player (from everyone but `skip`). */
+function fingers(hand: Hand, skip: string): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const [from, at] of Object.entries(hand.points ?? {})) if (from !== skip) out.set(at, (out.get(at) ?? 0) + 1);
+  return out;
+}
+
 /**
- * A bot's vote. Innocent, it suspects whoever played most differently from itself (it holds the same cards as every
- * other innocent). As the imposter it points at whoever stood out most, to throw the others off.
+ * A bot's vote. Nobody knows their own role, so a bot plays the odds that it's innocent: the innocents all hold the
+ * same cards and should play alike, so it suspects whoever played least like the rest of the table (their pushiness
+ * against the middle of everyone else's), and listens a little to where the table is pointing. It never reads
+ * `hand.imposter`: a person in its seat couldn't.
  */
 export function botVote(hand: Hand, botId: string): string | null {
   const others = hand.seats.map((s) => s.playerId).filter((id) => id !== botId);
   if (!others.length) return null;
   const push = pushiness(hand);
-  const mine = push.get(botId) ?? 0;
-  const odd = (id: string) => (botId === hand.imposter ? (push.get(id) ?? 0) : Math.abs((push.get(id) ?? 0) - mine));
+  const crowd = fingers(hand, botId);
+  const middle = (id: string) => {
+    const rest = hand.seats
+      .map((s) => s.playerId)
+      .filter((x) => x !== id)
+      .map((x) => push.get(x) ?? 0)
+      .sort((a, b) => a - b);
+    return rest.length ? rest[Math.floor(rest.length / 2)] : 0;
+  };
+  const odd = (id: string) => Math.abs((push.get(id) ?? 0) - middle(id)) + (crowd.get(id) ?? 0) * 0.75;
   return others.reduce((a, b) => (odd(b) > odd(a) ? b : a));
 }

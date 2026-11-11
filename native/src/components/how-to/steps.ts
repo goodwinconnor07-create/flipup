@@ -118,7 +118,7 @@ const STEPS: Record<Variant, Step[]> = {
     { ...showdown, text: 'Half the pot to the best poker hand, half to whoever is closest to 21.' },
   ],
   imposter: [
-    { ...cards, title: 'One imposter', text: 'Everyone gets the same two cards, except one secret imposter.' },
+    { ...cards, title: 'One imposter', text: 'Everyone gets the same two cards, except one imposter. Nobody knows who, not even them.' },
     { ...flop, zoom: 'seats', title: 'No folding', text: 'Nobody can fold. Watch how everyone bets to work out who’s different.' },
     { shot: 'vote', zoom: 'vote', title: 'Vote', text: 'After the river, everyone votes for who they think the imposter is.' },
     { shot: 'reveal', zoom: 'showdown', title: 'The reveal', text: 'Catch the imposter and everyone else shares the pot. Miss, and the imposter takes it.' },

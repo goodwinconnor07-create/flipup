@@ -57,7 +57,10 @@ import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { noteRun } from './challenges';
 import { noteGame, noteHand } from './record';
+import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
+import { forgetLastHand, noteReplay } from './replays';
+import { saveUltraMemory, ultraMemory } from './ultra';
 import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
@@ -141,6 +144,8 @@ function set(next: Session | null): void {
   });
   schedule();
   noteDay(state.game);
+  if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online');
+  if (next?.mode === 'local' && next.game.ultra) saveUltraMemory(next.game, me);
   syncLook();
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
@@ -162,8 +167,8 @@ export function syncLook(): void {
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine || game.status === 'ended') return;
   const want = wornLook();
-  const key = `${game.id}:${want.cardPack ?? ''}`;
-  if ((mine.cardPack ?? '') === (want.cardPack ?? '') || lookSent === key) return;
+  const key = `${game.id}:${want.cardPack ?? ''}:${want.gold ? 'g' : ''}`;
+  if (((mine.cardPack ?? '') === (want.cardPack ?? '') && !!mine.gold === !!want.gold) || lookSent === key) return;
   lookSent = key;
   // After this update has gone out, so a bots-only table doesn't change inside its own set().
   setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
@@ -184,6 +189,8 @@ function noteDay(game: Game | null): void {
   }
   // Home's record of your games: where you finished, once the table is over.
   if (game.status === 'ended' && !challenge) noteGame(game, mine.id);
+  // How the table felt (hands, rebuys, coming back) and the bots you've now met, on this phone only.
+  recordFeel(game, mine.id);
 }
 
 /** The table as it is right now, outside a component (the setup page waits on its new lobby with it). */
@@ -379,9 +386,12 @@ export function requestLogs(): void {
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */
-export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): void {
+export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[], opts: { ultra?: boolean } = {}): void {
   closeConnection();
   const fast = isFast();
+  // ULTRA bots (Premium) remember you from your last ULTRA tables.
+  const ultra = !!opts.ultra && hasPremium();
+  const memory = ultra ? ultraMemory() : undefined;
   const game = createTable({
     hostDeviceId: me,
     name: cleanName(name) || 'You',
@@ -389,10 +399,14 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     settings,
     bots,
     ...(botNames?.length ? { botNames } : {}),
+    ...(ultra ? { ultra: true, ...(memory ? { memory } : {}) } : {}),
     code: null,
     now: toTableTime(Date.now(), fast),
   });
   if (fast) game.fast = true;
+  // Bots you've played on this phone before know you: one greets you as a regular.
+  const rivals = rivalsFor(game.players.filter((p) => p.bot).map((p) => p.name));
+  if (Object.keys(rivals).length) game.rivals = rivals;
   set({ mode: 'local', code: null, game });
 }
 
@@ -459,6 +473,7 @@ export function joinOnlineTable(code: string, name: string, emoji: string): void
 
 /** Leaves the table. Online, you're taken off it first (a hand in play folds you on your turn). */
 export function leaveTable(): void {
+  forgetLastHand();
   const mine = session?.mode === 'online' ? session.game?.players.find((p) => p.deviceId === me) : undefined;
   if (mine && session?.game?.status !== 'ended') conn?.send({ t: 'act', id: newId(8), a: { type: 'remove', playerId: mine.id } });
   const old = conn;

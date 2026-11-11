@@ -12,6 +12,7 @@ import {
   type Settings,
   PERSONALITIES,
 } from '@/engine';
+import { useSuggestChallenge } from '@/state/table-feel';
 import { party, spacing, useColors } from '@/theme';
 
 import { Row, Section } from './grouped-list';
@@ -43,6 +44,7 @@ export function SettingsFields({
   tint?: string;
 }) {
   const colors = useColors();
+  const beatingCasual = useSuggestChallenge();
   const set = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
   const levels = levelsFor(settings.startingStack);
   const blindIndex = Math.max(
@@ -131,7 +133,9 @@ export function SettingsFields({
           onChange={(botDifficulty) => set({ botDifficulty })}
         />
         <ThemedText variant="caption1" tone="secondaryLabel">
-          Challenge makes fewer small mistakes. Changes next hand.
+          {beatingCasual && (settings.botDifficulty ?? 'casual') === 'casual'
+            ? "You've beaten Casual three tables running. Try Challenge."
+            : 'Challenge makes fewer small mistakes. Changes next hand.'}
         </ThemedText>
       </View>
     ),

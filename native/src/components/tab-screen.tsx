@@ -7,7 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, useScheme } from '@/theme';
 
 import { GlassSurface } from './glass-surface';
-import type { IconName } from './icon';
+import { Icon, type IconName } from './icon';
 import { SwapIcon } from './swap';
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';
@@ -85,11 +85,11 @@ export function TabScreen({ title, accessory, children, contentStyle, scrollRef,
 }
 
 /** A round button in a tab's title row (Flighty's share and "…" buttons): glass, 44pt, one SF Symbol. */
-export function RoundButton({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+export function RoundButton({ icon, label, onPress, tint }: { icon: IconName; label: string; onPress: () => void; tint?: string }) {
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ width: 44, height: 44, borderRadius: 22, overflow: 'hidden' }}>
       <GlassSurface interactive style={{ flex: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 22 }}>
-        <IconInk name={icon} />
+        {tint ? <Icon name={icon} size={19} color={tint} /> : <IconInk name={icon} />}
       </GlassSurface>
     </PressableScale>
   );

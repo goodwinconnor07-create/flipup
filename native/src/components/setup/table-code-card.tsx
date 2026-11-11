@@ -18,13 +18,11 @@ import { QRCode } from '../qr-code';
 export function TableCodeCard({
   code,
   failed,
-  username,
   people,
   onContacts,
 }: {
   code: string | null;
   failed?: boolean;
-  username: string | null;
   people: { name: string; emoji: string }[];
   onContacts: () => void;
 }) {
@@ -35,7 +33,7 @@ export function TableCodeCard({
   const share = () => {
     if (!code) return;
     haptic.tap();
-    void Share.share({ message: inviteMessage({ username, code }), url: inviteLink(code) });
+    void Share.share({ message: inviteMessage({ code }), url: inviteLink(code) });
   };
   return (
     <View

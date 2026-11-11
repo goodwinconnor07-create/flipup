@@ -63,6 +63,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   plugins: [
     'expo-router',
     'expo-iap',
+    // The five FlipUp Premium app icons (Settings > App icon), drawn by scripts/makeAltIcons.mjs. Ids in state/app-icon.ts.
+    [
+      'expo-alternate-app-icons',
+      ['royal', 'chip', 'gold', 'neon', 'aces'].map((id) => ({ name: id, ios: `./assets/icons/${id}.png` })),
+    ],
     ['expo-contacts', { contactsPermission: 'FlipUp shows your contacts so you can text a friend an invite. They stay on your phone and are never uploaded.' }],
     ['expo-camera', { cameraPermission: 'FlipUp uses the camera to scan a table or party QR code so you can join it.', microphonePermission: false, recordAudioAndroid: false }],
     ['expo-build-properties', { ios: { deploymentTarget: APP_INFO.iosDeploymentTarget } }],

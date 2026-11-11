@@ -207,15 +207,27 @@ export interface TransactionPayload {
   ownershipType?: string;
   revocationDate?: number;
   signedDate?: number;
+  /** An auto-renewing subscription's end of the paid period (ms). Missing on a one-time purchase. */
+  expiresDate?: number;
 }
 
-/** The Apple account's original transaction id if this is a live purchase of our product, or null. */
-export function premiumTransactionId(payload: TransactionPayload | null, bundleId: string, productId: string): string | null {
-  if (!payload || payload.bundleId !== bundleId || payload.productId !== productId) return null;
+/**
+ * The Apple account's original transaction id if this is a live purchase of one of our Premium products (the old
+ * one-time purchase or a subscription), or null. A subscription's expiry is read with `premiumExpiry()`.
+ */
+export function premiumTransactionId(payload: TransactionPayload | null, bundleId: string, productId: string | readonly string[]): string | null {
+  const products = typeof productId === 'string' ? [productId] : productId;
+  if (!payload || payload.bundleId !== bundleId || !payload.productId || !products.includes(payload.productId)) return null;
   if (payload.revocationDate !== undefined) return null;
   // Family Sharing is off, so only the buyer's own purchase counts.
   if (payload.ownershipType !== undefined && payload.ownershipType !== 'PURCHASED') return null;
   if (payload.environment !== 'Production' && payload.environment !== 'Sandbox') return null;
   const id = payload.originalTransactionId;
   return typeof id === 'string' && /^\d{1,24}$/.test(id) ? id : null;
+}
+
+/** When a subscription's paid period ends (ms), or null for a one-time purchase that never does. */
+export function premiumExpiry(payload: TransactionPayload | null): number | null {
+  const at = payload?.expiresDate;
+  return typeof at === 'number' && Number.isFinite(at) && at > 0 ? at : null;
 }

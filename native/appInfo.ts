@@ -19,14 +19,23 @@ export const APP_INFO = {
   /** The App Store id (App Store Connect > General > App Information), for the share link and the rating page. */
   appStoreId: '6829639428',
 
-  /** The Premium non-consumable in-app purchase, already made in App Store Connect. */
+  /** The old one-time Premium purchase. No longer sold; people who bought it keep Premium for good. */
   premiumProductId: 'flipup.premium.unlock',
+  /**
+   * FlipUp Premium as auto-renewing subscriptions, one subscription group ("FlipUp Premium") in App Store Connect:
+   * monthly at $7.00 and yearly at $50.00. Each has an introductory offer: pay up front, $1.00 for 14 days. The prices on screen always come from the App Store. TODO(owner): make both in App Store
+   * Connect with these ids and offers before the next build (docs/APP_STORE.md).
+   */
+  premiumMonthlyId: 'flipup.premium.monthly',
+  premiumYearlyId: 'flipup.premium.yearly',
 
   /** The server the app talks to (the same Cloudflare Worker as the web app). The domain will change later. */
   apiOrigin: 'https://gtoduel.online',
   /** Public pages the store listing and the app link to. */
   privacyUrl: 'https://gtoduel.online/privacy',
   supportUrl: 'https://gtoduel.online/support',
+  /** Terms of use for the subscriptions: Apple's standard licence agreement (App Store Review 3.1.2 asks for a link). */
+  termsUrl: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
 
   /** TODO(before launch): placeholder address. Replace before submitting (listed in docs/APP_STORE.md). */
   supportEmail: 'goodwinconnor007@gmail.com',

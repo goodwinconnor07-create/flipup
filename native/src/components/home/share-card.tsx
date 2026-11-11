@@ -2,7 +2,6 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Platform, Share, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
-import { useMyUsername } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
 import { brand, cardColors, ROUNDED } from '@/theme';
@@ -58,7 +57,6 @@ export function useStatsShare(): { share: () => Promise<void>; card: ReactNode; 
 export function StatsPicture() {
   const record = usePokerRecord();
   const profile = useProfile();
-  const { username } = useMyUsername();
   return (
     <LivingCard colors={cardColors.night} radius={0} shadow={false} still outerStyle={{ width: W, height: H }} style={{ flex: 1, padding: 28, justifyContent: 'space-between' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -77,7 +75,6 @@ export function StatsPicture() {
           <Text numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 24, fontWeight: '700', color: '#ffffff' }}>
             {profile.name || 'Me'}
           </Text>
-          {username && <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)' }}>@{username}</Text>}
         </View>
       </View>
 

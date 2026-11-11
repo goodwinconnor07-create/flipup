@@ -53,6 +53,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
       emoji: p.emoji,
       line: p.bot ? 'Bot' : you ? (theHost ? 'You · Host' : 'You') : theHost ? 'Host' : p.offline ? 'Offline' : 'Ready',
       you,
+      gold: p.gold,
       onMore:
         you || (!host && p.bot)
           ? undefined

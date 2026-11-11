@@ -12,8 +12,6 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useFriendWatch } from '@/state/pals';
 import { FRIENDS_ON } from '@/scope';
 import { startStore } from '@/state/purchase';
-import { usePremium } from '@/state/premium';
-import { resetIconIfLocked } from '@/state/app-icon';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { useColors, usePlainColors } from '@/theme';
 
@@ -57,8 +55,6 @@ export default function RootLayout() {
   const appearance = useAppearance();
   useEffect(() => applyAppearance(appearance), [appearance]);
   // A subscription that ends puts FlipUp's own icon back.
-  const premium = usePremium();
-  useEffect(() => resetIconIfLocked(premium), [premium]);
   const dark = useColorScheme() === 'dark';
   const reduce = useReduceMotion();
   const colors = useColors();
@@ -108,7 +104,6 @@ export default function RootLayout() {
         <Stack.Screen name="share-card" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Share card' }} />
         <Stack.Screen name="replays" options={{ headerShown: false, title: 'Hand bank', statusBarStyle: 'light' }} />
         <Stack.Screen name="replay/[id]" options={{ headerShown: false, title: 'Replay', statusBarStyle: 'light' }} />
-        <Stack.Screen name="app-icon" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'App icon' }} />
         <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />
         <Stack.Screen name="table-theme" options={{ ...sheet, title: 'Table theme' }} />

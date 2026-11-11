@@ -4,7 +4,6 @@ import { View } from 'react-native';
 import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { setGoldName, useGoldName, useProfile, wornLook } from '@/state/profile';
-import { ALT_ICONS, currentIcon } from '@/state/app-icon';
 import { useReplays } from '@/state/replays';
 import { setAppearance, setCalm, setFast, setMuted, setTalkOn, useAppearance, useCalm, useFast, useMuted, useTalkOn, type AppearancePref } from '@/state/prefs';
 import { spacing, useColors } from '@/theme';
@@ -31,7 +30,6 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
   const pack = CARD_PACKS.find((p) => p.id === worn.cardPack)?.name ?? 'Classic';
   const gold = useGoldName();
   const bank = useReplays().length;
-  const icon = ALT_ICONS.find((i) => i.id === currentIcon())?.name ?? 'FlipUp';
   const locked = (go: () => void, reason: string) => () => (premium ? go() : router.push({ pathname: '/premium', params: { reason } }));
   return (
     <>
@@ -79,7 +77,6 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
           detail={premium ? undefined : 'Premium'}
           onPress={premium ? undefined : () => router.push({ pathname: '/premium', params: { reason: 'gold' } })}
         />
-        {!online && <Row title="App icon" detail={icon} icon={{ symbol: 'app.badge.fill', color: colors.indigo as string }} onPress={() => router.push('/app-icon')} />}
         {!online && <Row title="Share cards" icon={{ symbol: 'square.and.arrow.up', color: colors.violet as string }} onPress={() => router.push('/share')} />}
         <Row title="Hand bank" detail={bank ? String(bank) : undefined} icon={{ symbol: 'film.stack.fill', color: colors.violet as string }} onPress={locked(() => router.push('/replays'), 'replay')} />
       </Section>

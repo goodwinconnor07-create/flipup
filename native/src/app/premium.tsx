@@ -1,7 +1,7 @@
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { Alert, Image, Linking, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -16,7 +16,6 @@ import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { botFace, BOTS, CARD_PACKS, FREE_BOT_NAMES, isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { ALT_ICONS } from '@/state/app-icon';
 import { usePremium } from '@/state/premium';
 import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
 import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
@@ -115,7 +114,6 @@ const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
   games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },
   replay: { title: 'Replay any hand', line: 'Save it at the table, watch it back move by move.' },
   share: { title: 'Share cards', line: 'Your best hands and nights, as a picture.' },
-  icons: { title: 'App icons', line: 'Five new looks for your home screen.' },
   gold: { title: 'Gold name', line: 'Everyone at the table sees it.' },
   packs: { title: 'Card backs', line: 'On your cards, for the whole table to see.' },
 };
@@ -277,14 +275,6 @@ function HeroPicture({ id }: { id: PerkId }) {
         </View>
       );
     }
-    case 'icons':
-      return (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.md, maxWidth: 320 }}>
-          {ALT_ICONS.slice(0, 5).map((i) => (
-            <Image key={i.id} source={i.preview} accessibilityLabel={`${i.name} icon`} style={[{ width: 84, height: 84, borderRadius: 19 }, LIFT]} />
-          ))}
-        </View>
-      );
     case 'gold':
       return (
         <View style={[{ flexDirection: 'row', gap: spacing.lg, padding: spacing.lg, borderRadius: 28, backgroundColor: 'rgba(5,10,30,0.75)' }, LIFT]}>

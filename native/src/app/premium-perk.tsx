@@ -1,5 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Image, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -13,7 +13,6 @@ import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/des
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { BOTS, CARD_PACKS, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
-import { ALT_ICONS } from '@/state/app-icon';
 import { usePremium } from '@/state/premium';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
 
@@ -25,7 +24,7 @@ const SAMPLE = statsData(
 
 /**
  * One Premium perk shown properly, from a tile on the Premium page: what it is and a look at it (the games, every
- * card back, the five icons, the five share designs, a gold name at the table). With Premium it also
+ * card back, the five share designs, a gold name at the table). With Premium it also
  * takes you there (pick an icon, open your hand bank, set up an ULTRA table...).
  */
 export default function PerkSheet() {
@@ -64,7 +63,6 @@ const GO: Partial<Record<PerkId, { title: string; run: () => void }>> = {
   ultra: { title: 'Play ULTRA bots', run: () => router.push('/play-bots') },
   replay: { title: 'Open my hand bank', run: () => router.push('/replays') },
   share: { title: 'Make a share card', run: () => router.push('/share') },
-  icons: { title: 'Pick an icon', run: () => router.push('/app-icon') },
   packs: { title: 'Pick a card back', run: () => router.push('/card-packs') },
   range: { title: 'Start training', run: () => router.push('/range-session') },
   gold: { title: 'Gold name settings', run: () => router.push('/settings') },
@@ -164,19 +162,6 @@ function Preview({ id }: { id: PerkId }) {
         </ScrollView>
       );
     }
-    case 'icons':
-      return (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, justifyContent: 'center' }}>
-          {ALT_ICONS.map((i) => (
-            <View key={i.id} style={{ alignItems: 'center', gap: 4, width: 90 }}>
-              <Image source={i.preview} style={{ width: 72, height: 72, borderRadius: 16 }} accessibilityLabel={`${i.name} icon`} />
-              <ThemedText variant="caption1" style={{ color: '#ffffff' }}>
-                {i.name}
-              </ThemedText>
-            </View>
-          ))}
-        </View>
-      );
     case 'gold':
       return (
         <View style={{ ...box, alignItems: 'center', gap: spacing.md }}>

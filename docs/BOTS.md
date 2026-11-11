@@ -187,6 +187,27 @@ bets small, and has a base `adapt` of 0 (individual profiles now add a small amo
 because it played tight and folded at the right times; it now loses a little (-44 bb/100) and an
 honest player beats it. A bot that gets rattled gets more scared on tilt, never less.
 
+## ULTRA bots (FlipUp Premium, bots-only tables)
+
+A table opened with ULTRA on (`createTable({ ultra })`, `game.ultra`) plays every bot through `ultraStyle()`: the
+shark's numbers with the leaks removed (no chasing, no overrating one pair, no fear of big bets, no size tells, no
+tilt or grudges), sense 1, a third less wobble, more hero calls and fewer lay-downs. They read people with
+`readOf(r, quick)`: priors about a third the size, and the last few hands weighted harder, so a habit shows up in a
+handful of hands. The phone keeps your read from every ULTRA table (`native/src/state/ultra.ts`, at most 300 hands of
+evidence) and seeds the next ULTRA table with it, so they remember you.
+
+`npx tsx scripts/ultraLab.ts 3000 3` compares one seat as a regular shark and as ULTRA (bb/100, all-in luck out):
+
+| Table | Shark | ULTRA |
+| --- | --- | --- |
+| 6-max mixed (pro, tag, lag, station, gambler) | 166 | 243 |
+| Against a folder | 27 | 54 |
+| Against a calling station | 529 | 704 |
+| Against a constant bluffer | 126 | 33 |
+
+The bluffer is the weak spot: quick reads overreact to how often a bluffer folds to raises. `exploit` at 1.5 lost to
+it outright; halving the quick reads fixes the bluffer (116) but costs the mixed table (97), so they stay quick.
+
 ## Moods (`src/game/botMind.ts`)
 
 Bad beats, losing a lead on the river, big losses and finding out it was bluffed put a bot on tilt.

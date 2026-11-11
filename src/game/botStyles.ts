@@ -364,8 +364,38 @@ export function dulled(style: Style, d: number): Style {
   return out;
 }
 
-/** How a seat plays: an AI twin's fitted style, or the bot's own (with its individual quirks), dulled at an easy campaign table. */
-export const playerStyle = (p: { style?: string; botProfile?: string; twin?: { style: Style }; dull?: number } | undefined): Style => {
+/**
+ * ULTRA (a FlipUp Premium bot, bots-only tables): the shark's game with every leak taken out. It reads ranges fully,
+ * barely wobbles, never tilts or holds a grudge, gives nothing away with its bet sizes, calls down lighter against a
+ * story that smells of a bluff and lays down less. It learns faster than any other bot: `readOf(.., quick)` trusts a
+ * few hands of evidence, and the phone carries what it learned about you into the next ULTRA table (`memory` in
+ * `createTable()`). It keeps the seat's own tempo and voice, so a familiar name still talks the same way.
+ * scripts/ultraLab.ts (3 seeds × 3,000 hands, all-in luck taken out, bb/100 for one seat as a regular shark, then as
+ * ULTRA): 6-max mixed 166 → 243, against a folder 27 → 54, against a calling station 529 → 704; against a constant
+ * bluffer 126 → 33, its one weak spot (quick reads overreact to a bluffer's folds to raises). Pushing `exploit` to 1.5
+ * lost to the bluffer outright, so it stays at 1.
+ */
+export function ultraStyle(style: Style): Style {
+  const have = ULTRA.get(style);
+  if (have) return have;
+  const shark = STYLES.shark;
+  const out: Style = {
+    ...style,
+    pre: { ...shark.pre, open: 2.3, iso: 0.75, shove: 1.05, callShove: 0, survival: 0.25 },
+    post: { ...shark.post, sense: 1, sizes: [0.33, 0.66, 1, 1.5], tell: 0, chase: 0, pairs: 0, scared: 0, sticky: 0, gto: 0.25, wobble: 0.03 },
+    adapt: 0.9,
+    craft: { ...shark.craft, float: 0.45, probe: 0.3, checkRaise: 0.3, polar: 0.5, thin: 0.4, hero: 0.55, layDown: 0.25, fourBet: 0.25, threeBet: 0.35, texture: 0.5, exploit: 1, pets: [], petRate: 0 },
+    mind: { tilt: 0, grudge: 0 },
+    show: { bluffs: 0.1, strong: 0.02, folds: 0 },
+  };
+  ULTRA.set(style, out);
+  return out;
+}
+const ULTRA = new WeakMap<Style, Style>();
+
+/** How a seat plays: an AI twin's fitted style, or the bot's own (with its individual quirks), dulled at an easy campaign table, or ULTRA. */
+export const playerStyle = (p: { style?: string; botProfile?: string; twin?: { style: Style }; dull?: number; ultra?: boolean } | undefined): Style => {
   const s = p?.twin?.style ?? styleOf(p?.style, p?.botProfile);
+  if (p?.ultra) return ultraStyle(s);
   return p?.dull ? dulled(s, p.dull) : s;
 };

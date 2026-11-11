@@ -43,9 +43,16 @@ export function saveProfile(patch: Partial<Profile>): void {
 }
 
 /** The bubble effect and card back this phone shows at a table: only what it may use (Premium, or the free Green). */
-export function wornLook(p: Profile = readProfile(), premium = hasPremium()): { bubble?: string; cardPack?: string } {
+export function wornLook(p: Profile = readProfile(), premium = hasPremium()): { bubble?: string; cardPack?: string; gold?: boolean } {
   return {
     ...(p.bubble && (premium || bubbleById(p.bubble)?.free) ? { bubble: p.bubble } : {}),
     ...(p.cardPack && premium ? { cardPack: p.cardPack } : {}),
+    ...(premium && goldNameOn() ? { gold: true } : {}),
   };
 }
+
+/** Gold name (Premium): your name shows in gold at online tables. On for Premium until turned off in Settings. */
+const GOLD = 'flipup.goldname';
+export const useGoldName = (): boolean => useStored<boolean>(GOLD, true) !== false;
+export const goldNameOn = (): boolean => readStored<boolean>(GOLD, true) !== false;
+export const setGoldName = (on: boolean): void => save(GOLD, on);

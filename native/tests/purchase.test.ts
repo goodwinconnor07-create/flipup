@@ -11,13 +11,20 @@ const store = vi.hoisted(() => ({
   grant: vi.fn(),
   pass: vi.fn(),
   end: vi.fn(),
+  request: vi.fn(),
+  eligible: true,
 }));
 vi.mock('expo-iap', () => ({
   initConnection: store.init,
   endConnection: store.end,
   finishTransaction: store.finish,
   getAvailablePurchases: store.owned,
-  fetchProducts: async () => [{ id: 'flipup.premium.unlock', displayPrice: '$1' }],
+  fetchProducts: async () => [
+    { id: 'flipup.premium.monthly', displayPrice: '$7.00', price: 7, introductoryPriceIOS: '$1.00', introductoryPriceNumberOfPeriodsIOS: '2', introductoryPriceSubscriptionPeriodIOS: 'week', subscriptionGroupIdIOS: 'g' },
+    { id: 'flipup.premium.yearly', displayPrice: '$50.00', price: 50, introductoryPriceIOS: '$1.00', introductoryPriceNumberOfPeriodsIOS: '2', introductoryPriceSubscriptionPeriodIOS: 'week', subscriptionGroupIdIOS: 'g' },
+  ],
+  isEligibleForIntroOfferIOS: async () => store.eligible,
+  deepLinkToSubscriptions: vi.fn(async () => undefined),
   purchaseUpdatedListener: (fn: (p: Purchase) => void) => {
     store.updates.add(fn);
     return { remove: () => store.updates.delete(fn) };
@@ -26,7 +33,7 @@ vi.mock('expo-iap', () => ({
     store.errors.add(fn);
     return { remove: () => store.errors.delete(fn) };
   },
-  requestPurchase: vi.fn(),
+  requestPurchase: store.request,
   restorePurchases: vi.fn(),
   isUserCancelledError: () => false,
 }));
@@ -48,6 +55,8 @@ beforeEach(() => {
   store.init.mockResolvedValue(true);
   store.finish.mockResolvedValue(undefined);
   store.owned.mockResolvedValue([]);
+  store.request.mockResolvedValue(undefined);
+  store.eligible = true;
 });
 const purchase = (state: Purchase['purchaseState'], id = 'tx1') =>
   ({ id, transactionId: id, productId: 'flipup.premium.unlock', purchaseState: state }) as Purchase;
@@ -124,4 +133,33 @@ it('ignores another product and grants a pending transaction only after approval
   expect(store.grant).not.toHaveBeenCalled();
   await emit(purchase('purchased'));
   expect(store.grant).toHaveBeenCalledTimes(1);
+});
+
+const sub = (productId: string, expirationDateIOS: number, id = 'sub1') => ({ ...purchase('purchased', id), productId, expirationDateIOS }) as unknown as Purchase;
+
+it('buys the chosen plan as a subscription and works out the yearly saving', async () => {
+  const { startStore, buyPremium, yearlySaving } = await import('../src/state/purchase');
+  await startStore();
+  void buyPremium('yearly');
+  await vi.waitFor(() => expect(store.request).toHaveBeenCalledWith({ type: 'subs', request: { apple: { sku: 'flipup.premium.yearly' } } }));
+  expect(yearlySaving({ monthly: { price: '$7.00', amount: 7, intro: null, introDays: null }, yearly: { price: '$50.00', amount: 50, intro: null, introDays: null } })).toBe(40);
+  expect(yearlySaving({ monthly: null, yearly: null })).toBeNull();
+});
+
+it('grants a live subscription and the old lifetime purchase, never an expired one', async () => {
+  const { startStore } = await import('../src/state/purchase');
+  await startStore();
+  store.updates.forEach((fn) => fn(sub('flipup.premium.monthly', Date.now() - 1000, 'old')));
+  await Promise.resolve();
+  expect(store.grant).not.toHaveBeenCalled();
+  await emit(sub('flipup.premium.monthly', Date.now() + 86_400_000));
+  expect(store.grant).toHaveBeenCalledTimes(1);
+});
+
+it('turns Premium off at launch when the subscription has ended', async () => {
+  store.premium = true;
+  store.owned.mockResolvedValue([sub('flipup.premium.yearly', Date.now() - 1000)]);
+  const { startStore } = await import('../src/state/purchase');
+  await startStore();
+  expect(store.premium).toBe(false);
 });

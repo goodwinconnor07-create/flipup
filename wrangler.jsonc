@@ -57,6 +57,8 @@
     "PREMIUM_ENFORCED": "0",
     "APPLE_BUNDLE_ID": "com.goodwin.flipup",
     "APPLE_PREMIUM_PRODUCT_ID": "flipup.premium.unlock",
+    // FlipUp Premium's monthly and yearly subscriptions (native/appInfo.ts), comma separated.
+    "APPLE_PREMIUM_SUB_IDS": "flipup.premium.monthly,flipup.premium.yearly",
   },
   "observability": { "enabled": true },
 }

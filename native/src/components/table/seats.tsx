@@ -190,7 +190,7 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
                   <Text style={{ fontSize: 24 }} maxFontSizeMultiplier={1}>
                     {p.emoji}
                   </Text>
-                  <ThemedText variant="body" numberOfLines={1} style={{ flex: 1, fontWeight: '600' }}>
+                  <ThemedText variant="body" numberOfLines={1} style={{ flex: 1, fontWeight: '600', ...(p.gold ? { color: brand.gold } : {}) }}>
                     {p.name}
                   </ThemedText>
                   <ThemedText variant="body" style={{ fontWeight: '700', fontVariant: ['tabular-nums'] }}>
@@ -343,8 +343,9 @@ function SeatPod({
           maxWidth: '100%',
           fontSize: compact ? 13 : 15,
           lineHeight: compact ? 15 : 17,
-          fontWeight: '700',
-          color: turn ? c.label : c.tertiaryLabel,
+          fontWeight: player.gold ? '800' : '700',
+          // A Premium player's gold name (Settings > Gold name).
+          color: player.gold ? brand.gold : turn ? c.label : c.tertiaryLabel,
           opacity: out ? 0.35 : 1,
         }}
       >
@@ -373,7 +374,8 @@ function SeatPod({
                     {/* A bot's cards say so on the back: a small robot, in place of a BOT pill on the face. The card with the position chip keeps the chip alone. */}
                     {player.bot && !(i === cards.length - 1 && mark) && (
                       <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
-                        <Icon name="cpu.fill" size={13} color="rgba(255, 255, 255, 0.7)" />
+                        {/* An ULTRA bot's robot is gold. */}
+                        <Icon name="cpu.fill" size={13} color={player.ultra ? brand.gold : 'rgba(255, 255, 255, 0.7)'} />
                       </View>
                     )}
                   </View>

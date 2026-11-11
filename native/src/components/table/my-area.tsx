@@ -7,7 +7,7 @@ import Animated from 'react-native-reanimated';
 
 import { holeCount, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
 import { save, useStored } from '@/state/storage';
-import { usePlainColors } from '@/theme';
+import { brand, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
@@ -163,7 +163,7 @@ export function MyArea({
             <Text
               numberOfLines={1}
               maxFontSizeMultiplier={1.2}
-              style={{ flexShrink: 1, fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}
+              style={{ flexShrink: 1, fontSize: 13, fontWeight: me.gold ? '800' : '600', color: me.gold ? brand.gold : c.tertiaryLabel }}
             >
               {me.name}
             </Text>

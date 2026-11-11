@@ -54,12 +54,14 @@ export function parseAction(raw: unknown): Action | null {
       if (!isText(a.name, LIMITS.maxNameLength * 4) || !isEmoji(a.emoji)) return null;
       if (a.bubble !== undefined && !isBubbleId(a.bubble)) return null;
       if (a.cardPack !== undefined && !isPackId(a.cardPack)) return null;
+      if (a.gold !== undefined && typeof a.gold !== 'boolean') return null;
       return {
         type: 'setLook',
         name: a.name,
         emoji: a.emoji,
         ...(a.bubble !== undefined ? { bubble: a.bubble as string } : {}),
         ...(a.cardPack !== undefined ? { cardPack: a.cardPack as string } : {}),
+        ...(a.gold === true ? { gold: true } : {}),
       };
     case 'addBot':
       if (a.name !== undefined) return a.legend === undefined && typeof a.name === 'string' && BOTS.some((b) => b.name === a.name) ? { type: 'addBot', name: a.name } : null;

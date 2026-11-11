@@ -6,6 +6,11 @@
 > `GrainBackground`, and cards keep their slow glows, `LivingCard`), the original game pictures (`gameArt.ts`; the
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
+>
+> **Premium page (owner, 2026-11-11):** rebuilt so you can see everything you get without scrolling much: every perk
+> is a small tile in a two-column grid (a tap opens a detail sheet), and the plans sit in a bar pinned at the bottom.
+> The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
+> they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
 
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.

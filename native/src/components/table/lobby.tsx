@@ -150,6 +150,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
                   label={`${p.name}${you ? ', you' : ''}${theHost ? ', host' : ''}`}
                   onPress={host && !you ? () => removePerson(p.id, p.name) : undefined}
                   selected={you ? (colors.accent as string) : undefined}
+                  gold={p.gold}
                 />
               );
             })}

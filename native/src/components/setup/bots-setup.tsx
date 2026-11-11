@@ -17,6 +17,7 @@ import { SetupGameRow } from './game-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { SettingsTable } from './settings-table';
 import { SetupHeader, SetupRowTitle } from './setup-header';
+import { UltraRow } from './ultra-row';
 
 /** Bots already sitting when the page opens, so Deal works at once. */
 const START_BOTS = 4;
@@ -50,12 +51,14 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
     return out;
   });
   const full = 1 + bots.length >= MAX_SEATS;
+  const [ultraOn, setUltra] = useState(false);
+  const ultra = ultraOn && premium;
 
   const deal = () => {
     if (!bots.length) return;
     if (!unlockToHost([variant], premium)) return;
     saveSettings(s);
-    openLocalTable(s, bots.length, profile.name, profile.emoji, bots.map((b) => b.name));
+    openLocalTable(s, bots.length, profile.name, profile.emoji, bots.map((b) => b.name), { ultra });
     // Straight to the deal ("Dealing in 3…"): the bots are already picked here, so no second lobby.
     dispatch({ type: 'start' });
     router.push('/table');
@@ -80,6 +83,8 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           detail={full ? `Table full · ${MAX_SEATS} seats` : bots.length ? undefined : 'Add at least one bot'}
         />
 
+        <UltraRow on={ultra} premium={premium} onChange={setUltra} />
+
         <View style={{ gap: spacing.xs }}>
           <SetupRowTitle title="Game" detail={variantInfo(variant).name} />
           <SetupGameRow selected={variant} />
@@ -87,7 +92,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 
         <SettingsTable settings={s} onChange={setDraft} tint={colors.accent as string} online={false} />
       </ScrollView>
-      <OpenTableButton title="Deal" line={bots.length ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}` : 'Add a bot first'} onPress={deal} />
+      <OpenTableButton title="Deal" line={bots.length ? `You and ${bots.length} ${ultra ? 'ULTRA ' : ''}${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}` : 'Add a bot first'} onPress={deal} />
     </GrainBackground>
   );
 }

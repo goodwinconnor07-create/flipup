@@ -13,6 +13,7 @@ import { Confetti } from '@/components/table/confetti';
 import { PartyPanel } from '@/components/party/panel';
 import { BankrollEnded, BankrollStrip } from '@/components/table/bankroll-strip';
 import { Ended } from '@/components/table/ended';
+import { SaveHandButton, ScreenshotPrompt, ShareButton } from '@/components/table/hand-tools';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
 import { MyArea } from '@/components/table/my-area';
@@ -64,6 +65,7 @@ export default function TableScreen() {
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
       <TableBar game={game} online={online} code={game?.bankroll ? null : t.code} />
+      <ScreenshotPrompt />
       {game?.bankroll && game.status !== 'ended' && <BankrollStrip game={game} />}
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
@@ -187,6 +189,11 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
       >
         <Icon name="line.3.horizontal" size={18} color={colors.label} />
       </Pressable>
+      {game && game.status !== 'lobby' && (
+        <View style={{ marginLeft: spacing.xs }}>
+          <SaveHandButton />
+        </View>
+      )}
       <View style={{ flex: 1, alignItems: 'center' }}>
         {game && (
           <>
@@ -200,6 +207,11 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
           </>
         )}
       </View>
+      {game && game.status !== 'lobby' && (
+        <View style={{ marginRight: spacing.xs }}>
+          <ShareButton />
+        </View>
+      )}
       {game?.party ? (
         <Pressable
           accessibilityRole="button"

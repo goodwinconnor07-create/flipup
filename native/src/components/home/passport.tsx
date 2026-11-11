@@ -9,7 +9,6 @@ import { haptic } from '../haptics';
 import { LivingCard } from '../living-card';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
-import { useStatsShare } from './share-card';
 
 const n = (v: number) => v.toLocaleString('en-US');
 const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) * 100) : 0);
@@ -22,10 +21,8 @@ export function PassportCard({ full }: { full?: boolean }) {
   const record = usePokerRecord();
   const streak = useStreak();
   const wins = record.games.filter((g) => g.place === 1).length;
-  const { share, card, busy } = useStatsShare();
   return (
     <LivingCard colors={cardColors.night} style={{ padding: spacing.lg, gap: spacing.lg }}>
-      {card}
       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
         <View style={{ flex: 1, gap: 2 }}>
           <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 22, lineHeight: 28, fontWeight: '700', letterSpacing: 1.5, color: '#ffffff' }}>
@@ -35,7 +32,7 @@ export function PassportCard({ full }: { full?: boolean }) {
             ALL-TIME · ON THIS PHONE
           </Text>
         </View>
-        <PressableScale accessibilityRole="button" accessibilityLabel="Share your stats as a picture" haptics={false} onPress={() => void share()} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)', opacity: busy ? 0.5 : 1 }}>
+        <PressableScale accessibilityRole="button" accessibilityLabel="Share cards: your stats, top hands and games" onPress={() => router.push('/share')} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)' }}>
           <Icon name="square.and.arrow.up" size={19} color="#ffffff" />
         </PressableScale>
       </View>

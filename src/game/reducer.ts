@@ -159,6 +159,12 @@ export function createTable(opts: {
   now: number;
   /** Picks the random bots. Tests pass a seeded one so every run seats the same bots. */
   rng?: () => number;
+  /** Every bot is an ULTRA bot (Premium, bots-only tables). */
+  ultra?: boolean;
+  /** What ULTRA bots remember of the host from earlier games, seeded into `game.reads` under the host's new id. */
+  memory?: PlayerRead;
+  /** The host shows their name in gold (Premium). */
+  gold?: boolean;
 }): Game {
   const game: Game = {
     id: newId(16),
@@ -177,11 +183,13 @@ export function createTable(opts: {
     logs: [],
     reactions: {},
     ...(opts.campaign ? { campaign: structuredClone(opts.campaign) } : {}),
+    ...(opts.ultra && !opts.campaign && !opts.code ? { ultra: true } : {}),
   };
   game.players.push({
     ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }),
     ...(isBubbleId(opts.bubble) ? { bubble: opts.bubble } : {}),
     ...(isPackId(opts.cardPack) ? { cardPack: opts.cardPack } : {}),
+    ...(opts.gold ? { gold: true } : {}),
   });
   for (const name of opts.botNames ?? []) {
     const legend = LEGENDS.find((l) => l.short === name);
@@ -193,6 +201,7 @@ export function createTable(opts: {
   }
   while (game.players.length - 1 < opts.bots && game.players.length < MAX_SEATS) addBot(game, opts.botStyles, opts.rng);
   if (game.campaign) seatBoss(game);
+  if (game.ultra && opts.memory) game.reads = { [game.players[0].id]: structuredClone(opts.memory) };
   return game;
 }
 
@@ -215,6 +224,7 @@ function seatBotNamed(game: Game, name: string): boolean {
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
     style: pick.style,
     botProfile: pick.profile?.id,
+    ...(game.ultra ? { ultra: true } : {}),
   });
   return true;
 }
@@ -237,6 +247,7 @@ function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): v
     botProfile: pick.profile?.id,
     // A campaign room's bots play below their full strength.
     ...(game.campaign && campaignDull(game.campaign) > 0 ? { dull: campaignDull(game.campaign) } : {}),
+    ...(game.ultra ? { ultra: true } : {}),
   });
 }
 
@@ -827,6 +838,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       else delete me.bubble;
       if (isPackId(action.cardPack)) me.cardPack = action.cardPack;
       else delete me.cardPack;
+      if (action.gold === true) me.gold = true;
+      else delete me.gold;
       return done();
     }
 

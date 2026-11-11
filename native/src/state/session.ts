@@ -57,6 +57,7 @@ import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { noteRun } from './challenges';
 import { noteGame, noteHand } from './record';
+import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
 import { save, subscribe } from './storage';
 
@@ -184,6 +185,8 @@ function noteDay(game: Game | null): void {
   }
   // Home's record of your games: where you finished, once the table is over.
   if (game.status === 'ended' && !challenge) noteGame(game, mine.id);
+  // How the table felt (hands, rebuys, coming back) and the bots you've now met, on this phone only.
+  recordFeel(game, mine.id);
 }
 
 /** The table as it is right now, outside a component (the setup page waits on its new lobby with it). */
@@ -393,6 +396,9 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     now: toTableTime(Date.now(), fast),
   });
   if (fast) game.fast = true;
+  // Bots you've played on this phone before know you: one greets you as a regular.
+  const rivals = rivalsFor(game.players.filter((p) => p.bot).map((p) => p.name));
+  if (Object.keys(rivals).length) game.rivals = rivals;
   set({ mode: 'local', code: null, game });
 }
 

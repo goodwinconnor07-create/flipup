@@ -432,6 +432,11 @@ export interface Game {
   legendGame?: string;
   /** With `legendGame`: this person has beaten them before ('won') or only lost to them ('lost'), so they greet them differently. */
   rematch?: 'won' | 'lost';
+  /**
+   * A phone's own table: the bots here you've played before, by lower-case name, from the phone's memory (tables
+   * shared, and showdowns you've won and lost against them). A bot you know greets you as a regular.
+   */
+  rivals?: Record<string, Rival>;
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
@@ -524,3 +529,11 @@ export interface ActionContext {
 }
 
 export type ActionResult = { ok: true; game: Game; changed: boolean } | { ok: false; error: string };
+
+/** What a phone remembers about one bot across tables (`Game.rivals`). */
+export interface Rival {
+  tables: number;
+  /** Showdowns you won against this bot, and lost to it. */
+  beat: number;
+  lost: number;
+}

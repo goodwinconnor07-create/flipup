@@ -2,6 +2,7 @@ import { router, Stack } from 'expo-router';
 import { Alert, Pressable, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { DealWipe } from '@/components/deal-wipe';
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { PartyPanel } from '@/components/party/panel';
@@ -64,6 +65,7 @@ export default function PartyRoom() {
             </ThemedText>
           )}
         </ScrollView>
+        <DealWipe />
       </GrainBackground>
     </ForceScheme>
   );

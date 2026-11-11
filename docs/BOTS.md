@@ -51,6 +51,24 @@ argument points to a preserved pre-change game directory for comparison. `BOT_ON
 `BOT_SEEDS` and `BOT_REPORT` select reproducible additional samples. Simulation win rates are
 exploratory; perceived realism and enjoyment still need human playtesting.
 
+## Game modes and table feel (November 2026)
+
+**Game-mode bots** (`src/game/botVariants.ts`). On top of the run-outs, each mini game's bots now read a bettor as
+holding the best of a few random hands (`draws()`), want more before betting for value where big hands are common
+(`SENSE`: wild deuces, three rivers, the cross, Bean Stalk), never bluff the ghost, call a little lighter where cards
+still to come can turn a hand over, work out Blackjack Hold'em's real bust chance and risk less with a good poker
+hand, keep Crazy Pineapple's two cards by every turn and river still to come (`keepTwo()`; run-outs use the quick
+`keepTwoQuick()`), and in Imposter the innocents vote for whoever played least like the table while the imposter
+only checks and calls and backs the innocent the table suspects. `scripts/variantLab.ts` plays half the bots the old
+way (`lab.legacy`) and swaps halves on the same seeds.
+
+**Everyday Hold'em tables** (the shared engine in `src/bot_engine`) talk again (the 0.4 damping and the 10s table gap
+are now 0.8 and 4.5s), hold a card back for a bot's line, and tank up to about 5s on a big call
+(`everydayThinkMs()`); Casual personalities sit 2.5 times wider round the centre (`tableProfile()`), Challenge 1.5
+times. A pressing bot tilts after a big loss and a curious one hero-calls a river after being pushed around, both
+inside the close-choice band (`philosophy.ts`). Bots you've met on this phone greet you as a regular
+(`Game.rivals`, `knownRival()`), and the phone keeps table counters for enjoyment (`native/src/state/table-feel.ts`).
+
 ## Fair play
 
 A bot decides from its own two cards, the board, everyone's chips and the public moves. It never

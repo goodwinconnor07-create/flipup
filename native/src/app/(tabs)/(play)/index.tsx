@@ -31,6 +31,8 @@ const GLASS = 'rgba(255, 255, 255, 0.11)';
 const EDGE = 'rgba(255, 255, 255, 0.12)';
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
+/** The button block sits this much lower than the tab bar's clearance, so Play bots and Join a game rest just above it. */
+const TUCK = 12;
 /** With the LIVE card over PLAY, the buttons sit this much lower (into the room above the tab bar) so the card doesn't push them into the game slider. */
 const LIVE_DROP = 24;
 /** The game shown in the middle, kept between launches. */
@@ -70,7 +72,7 @@ export default function Home() {
   // At 320pt wide (an SE with Display Zoom) there's no room for the hook line and a full-size card: the card shrinks
   // and the hook goes, so the page dots never sit on the shortcuts.
   const narrow = width < 350;
-  const hero = Math.round(Math.max(narrow ? 100 : 120, Math.min(200, height * (narrow ? 0.18 : 0.23))));
+  const hero = Math.round(Math.max(narrow ? 100 : 120, Math.min(narrow ? 200 : 224, height * (narrow ? 0.18 : 0.26))));
   const card = Math.min(hero, width - spacing.md * 2 - 80);
 
   // PLAY opens the page straight away; no colour fills the screen. A Premium game without Premium opens its sheet
@@ -97,7 +99,7 @@ export default function Home() {
     <ForceScheme scheme="dark">
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
       <GameBackdrop variant={variant} style={{ flex: 1 }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.xs - (live.atTable || live.party ? LIVE_DROP : 0), gap: spacing.md }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.xs - TUCK - (live.atTable || live.party ? LIVE_DROP : 0), gap: spacing.md }}>
           {/* Top bar: the page's name on the left, you on the right. */}
           <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
             <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', letterSpacing: -0.4, color: '#ffffff' }}>
@@ -121,7 +123,7 @@ export default function Home() {
             </View>
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>
               <Swap id={variant} kind="text">
-                <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '900', letterSpacing: -0.4, color: '#ffffff', textAlign: 'center' }}>
+                <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: 33, fontWeight: '900', letterSpacing: -0.4, color: '#ffffff', textAlign: 'center' }}>
                   {info.name}
                 </Text>
               </Swap>
@@ -132,7 +134,7 @@ export default function Home() {
                 </Text>
               )}
               {!narrow && (
-                <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)', textAlign: 'center' }}>
+                <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 16, lineHeight: 20, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)', textAlign: 'center' }}>
                   {look.hook}
                 </Text>
               )}

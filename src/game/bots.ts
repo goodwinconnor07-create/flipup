@@ -7,7 +7,7 @@
 import { decide, type BotMove } from './botPlay';
 import type { Game, Hand, Seat } from './types';
 
-export { BOTS, STYLES, type StyleId } from './botStyles';
+export { BOTS, FAMILIAR_COUNT, STYLES, type StyleId } from './botStyles';
 export type { BotMove } from './botPlay';
 
 /** What the bot whose turn it is does. */

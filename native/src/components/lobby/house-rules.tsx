@@ -12,7 +12,6 @@ import {
   timerLabel,
   withStack,
   type Settings,
-  PERSONALITIES,
 } from '@/engine';
 import { radius, ROUNDED, spacing, useColors } from '@/theme';
 
@@ -27,7 +26,7 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
  * The house rules, laid out like the lobby in the owner's reference (no presets, the owner's call): each number as a
  * row with its name over its value and the − + stepper on the right, then the switches. `onChange` is the host's; without it (everyone else) the rows only show the values.
  */
-export function HouseRules({ settings: s, onChange, online }: { settings: Settings; onChange?: (s: Settings) => void; online: boolean }) {
+export function HouseRules({ settings: s, onChange, online, bots = 0, started = false }: { settings: Settings; onChange?: (s: Settings) => void; online: boolean; bots?: number; started?: boolean }) {
   const set = (patch: Partial<Settings>) => onChange?.({ ...s, ...patch });
   const levels = levelsFor(s.startingStack);
   const blindIndex = Math.max(
@@ -99,51 +98,22 @@ export function HouseRules({ settings: s, onChange, online }: { settings: Settin
   ].filter(Boolean);
 
   const switches: ReactNode[] = [
-    (s.variant ?? 'holdem') === 'holdem' && (
+    // Bot level only means something to the host of a table with bots in it: a guest, or a lobby of people only,
+    // never sees settings for players who aren't there.
+    (s.variant ?? 'holdem') === 'holdem' && edit && bots > 0 && (
       <View key="bot-level" style={{ padding: spacing.md, gap: spacing.xs }}>
         <ThemedText>Bot level</ThemedText>
-        {edit ? (
-          <SegmentedControl
-            label="Bot level"
-            value={s.botDifficulty ?? 'casual'}
-            options={[
-              { value: 'casual', label: 'Casual' },
-              { value: 'challenge', label: 'Challenge' },
-            ]}
-            onChange={(botDifficulty) => set({ botDifficulty })}
-          />
-        ) : (
-          <ThemedText>{s.botDifficulty === 'challenge' ? 'Challenge' : 'Casual'}</ThemedText>
-        )}
+        <SegmentedControl
+          label="Bot level"
+          value={s.botDifficulty ?? 'casual'}
+          options={[
+            { value: 'casual', label: 'Casual' },
+            { value: 'challenge', label: 'Challenge' },
+          ]}
+          onChange={(botDifficulty) => set({ botDifficulty })}
+        />
         <ThemedText variant="caption1" tone="secondaryLabel">
-          Challenge makes fewer small mistakes. Changes next hand.
-        </ThemedText>
-      </View>
-    ),
-    (s.variant ?? 'holdem') === 'holdem' && (
-      <SwitchRow
-        key="human-poker"
-        label="Invite BOT_001"
-        line="New experimental bot. Joins next hand; leaves after this hand."
-        value={!!s.humanPoker}
-        onChange={edit ? (humanPoker) => set({ humanPoker }) : undefined}
-      />
-    ),
-    (s.variant ?? 'holdem') === 'holdem' && s.humanPoker && (
-      <View key="bot-personality" style={{ padding: spacing.md, gap: spacing.xs }}>
-        <ThemedText>BOT_001 personality</ThemedText>
-        {edit ? (
-          <SegmentedControl
-            label="BOT_001 personality"
-            value={s.botPersonality ?? 'original'}
-            options={[{ value: 'original' as const, label: 'Original' }, ...PERSONALITIES.map((p) => ({ value: p.id, label: p.label }))]}
-            onChange={(botPersonality) => set({ botPersonality })}
-          />
-        ) : (
-          <ThemedText>{PERSONALITIES.find((p) => p.id === s.botPersonality)?.label ?? 'Original'}</ThemedText>
-        )}
-        <ThemedText variant="caption1" tone="secondaryLabel">
-          {PERSONALITIES.find((p) => p.id === s.botPersonality)?.description ?? 'The original experimental profile.'} Changes next hand.
+          {started ? 'Challenge bots make fewer small mistakes. Changes next hand.' : 'Casual bots play a relaxed game. Challenge bots make fewer small mistakes.'}
         </ThemedText>
       </View>
     ),
@@ -204,7 +174,6 @@ export function Card({ children }: { children: ReactNode[] }) {
 /** A number: its name small and grey over the value in a little box of its own, and the stepper on the right. */
 export function NumberRow({ label, value, children }: { label: string; value: string; children?: ReactNode }) {
   const colors = useColors();
-  const panel = usePanel();
   return (
     <View
       accessible={!children}

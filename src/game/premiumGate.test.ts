@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { BOTS } from './botStyles';
 import { BUBBLE_STYLES } from './bubbles';
 import { CARD_PACKS } from './cardPacks';
-import { botsNeedPremium, FREE_BOT_NAMES, gamesNeedPremium, isFreeBot, premiumBubble, premiumPack, rangeSetNeedsPremium, withoutPremiumLook } from './premiumGate';
+import { botsNeedPremium, FREE_BOT_NAMES, freeThisWeek, freeWeekEnds, gamesNeedPremium, isFreeBot, premiumBubble, premiumPack, rangeSetNeedsPremium, withoutPremiumLook } from './premiumGate';
 import { VARIANTS } from './variants';
 
 describe('Premium gate', () => {
@@ -24,9 +24,14 @@ describe('Premium gate', () => {
   });
 
   it("asks for Premium for every game but Texas Hold'em", () => {
-    expect(gamesNeedPremium([VARIANTS[0].id])).toBe(false);
-    expect(gamesNeedPremium([VARIANTS[1].id])).toBe(true);
-    expect(gamesNeedPremium([VARIANTS[0].id, VARIANTS[5].id])).toBe(true);
+    const now = Date.UTC(2026, 10, 11);
+    const paid = VARIANTS.slice(1).find((v) => v.id !== freeThisWeek(now))!.id;
+    expect(gamesNeedPremium([VARIANTS[0].id], now)).toBe(false);
+    expect(gamesNeedPremium([paid], now)).toBe(true);
+    expect(gamesNeedPremium([VARIANTS[0].id, paid], now)).toBe(true);
+    // This week's free game can be hosted without Premium; in a party with another Premium game it still needs it.
+    expect(gamesNeedPremium([freeThisWeek(now)], now)).toBe(false);
+    expect(gamesNeedPremium([freeThisWeek(now), paid], now)).toBe(true);
   });
 
   it('keeps free tables to the free bots', () => {
@@ -41,5 +46,17 @@ describe('Premium gate', () => {
   it('gives a free player one daily range quiz and nothing else', () => {
     expect(rangeSetNeedsPremium(true)).toBe(false);
     expect(rangeSetNeedsPremium(false)).toBe(true);
+  });
+});
+
+describe('free this week', () => {
+  it('is a Premium game, changes on Monday at midnight UTC, and visits every Premium game in turn', () => {
+    const monday = Date.UTC(2026, 10, 9);
+    expect(freeThisWeek(monday)).toBe(freeThisWeek(monday + 6 * 86_400_000 + 86_399_000));
+    expect(freeThisWeek(monday)).not.toBe(freeThisWeek(monday + 7 * 86_400_000));
+    expect(freeWeekEnds(monday + 1000)).toBe(monday + 7 * 86_400_000);
+    const paid = VARIANTS.slice(1).map((v) => v.id);
+    const seen = new Set(paid.map((_, w) => freeThisWeek(monday + w * 7 * 86_400_000)));
+    expect([...seen].sort()).toEqual([...paid].sort());
   });
 });

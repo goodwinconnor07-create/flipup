@@ -1,13 +1,10 @@
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
-import { View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 
-import { ROUNDED, spacing } from '@/theme';
-
-import { Pressable, Text } from 'react-native';
+import { ROUNDED, spacing, useColors } from '@/theme';
 
 import { Icon } from '../icon';
-import { useColors } from '@/theme';
 import { ThemedText } from '../themed-text';
 
 /**

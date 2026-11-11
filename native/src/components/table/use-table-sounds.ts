@@ -33,6 +33,12 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
   const hand = game.hand;
   const variant = variantOf(game);
   useEffect(() => setSoundMood(gameLook(variant).pitch), [variant]);
+  // The table's speed and the hand as it is now, read by the sound effects below when they fire. They only re-run
+  // on what they watch (a new move, a die, a vote), never because the clock speed or the moment changed.
+  const latest = useRef({ fast: game.fast, hand });
+  useEffect(() => {
+    latest.current = { fast: game.fast, hand };
+  });
 
   useEffect(() => {
     if (!hand) {
@@ -60,7 +66,7 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
       // The flop is three cards one after another; the turn and river are one.
       // In the mini games the cards land on the moment's clock (see moments.ts), so the sounds follow it.
       const m = hand.moment;
-      const sinceDeal = m ? toTableTime(Date.now(), game.fast) - m.at : 0;
+      const sinceDeal = m ? toTableTime(Date.now(), latest.current.fast) - m.at : 0;
       // A soft tap as each lands, while you're still in the hand.
       const inHand = hand.seats.some((x) => x.playerId === myId && !x.folded);
       for (let i = 0; i < snap.board - before.board; i++) {
@@ -101,13 +107,14 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     const before = seen.current;
     seen.current = now;
     if (!before) return;
+    const { hand, fast } = latest.current;
     if (dice && dice !== before.dice) playSound('dice');
     if (kept && kept !== before.kept) playSound('spook');
     if (voting && voting !== before.voting) playSound('sting');
     if (reds && reds !== before.reds) {
       // One splash for every extra card, as each lands.
       const m = hand?.moment;
-      const since = m ? toTableTime(Date.now(), game.fast) - m.at : 0;
+      const since = m ? toTableTime(Date.now(), fast) - m.at : 0;
       (m?.offsets?.slice(1) ?? [0]).forEach((o) => playSound('splash', Math.max(0, o - since)));
     }
     if (tally && tally !== before.tally && hand?.moment) {

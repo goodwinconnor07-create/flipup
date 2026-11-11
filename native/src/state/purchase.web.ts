@@ -1,7 +1,7 @@
 // The web build has no App Store: Premium isn't sold here (the web app's own PREMIUM_ON_SALE is false too).
 import type { Plan, StoreState } from './purchase';
 
-const STATE: StoreState = { plans: { monthly: null, yearly: null }, owned: null, busy: false, error: null, pending: false };
+const STATE: StoreState = { plans: { monthly: null, yearly: null }, owned: null, busy: false, error: null, pending: false, period: null };
 
 export type { Plan, PlanPrice, StoreState } from './purchase';
 export const useStore = (): StoreState => STATE;

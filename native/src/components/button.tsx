@@ -1,4 +1,4 @@
-import { ActivityIndicator, View, type StyleProp, type ViewStyle } from 'react-native';
+import { ActivityIndicator, type StyleProp, type ViewStyle } from 'react-native';
 
 import { gradients, minTap, radius, spacing, useColors } from '@/theme';
 

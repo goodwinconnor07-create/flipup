@@ -6,9 +6,10 @@ import { usePremium } from '@/state/premium';
 import { setGoldName, useGoldName, useProfile, wornLook } from '@/state/profile';
 import { useReplays } from '@/state/replays';
 import { setAppearance, setCalm, setFast, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
-import { spacing, useColors } from '@/theme';
+import { brand, spacing, useColors } from '@/theme';
 
 import { Row, Section } from './grouped-list';
+import { Icon } from './icon';
 import { SegmentedControl } from './segmented-control';
 import { Switch } from './switch';
 import { ThemedText } from './themed-text';
@@ -91,13 +92,21 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
           title="Gold name"
           icon={{ symbol: 'signature', color: colors.gold as string }}
           chevron={false}
-          trailing={premium ? <Switch label="Gold name" value={gold} onValueChange={setGoldName} /> : undefined}
-          detail={premium ? undefined : 'Premium'}
+          trailing={premium ? <Switch label="Gold name" value={gold} onValueChange={setGoldName} /> : <Crown />}
           onPress={premium ? undefined : () => router.push({ pathname: '/premium', params: { reason: 'gold' } })}
         />
         {!online && <Row title="Share cards" icon={{ symbol: 'square.and.arrow.up', color: colors.violet as string }} onPress={() => router.push('/share')} />}
-        <Row title="Saved hands" detail={bank ? String(bank) : undefined} icon={{ symbol: 'film.stack.fill', color: colors.violet as string }} onPress={locked(() => router.push('/replays'), 'replay')} />
+        <Row title="Saved hands" detail={bank ? String(bank) : undefined} trailing={premium ? undefined : <Crown />} icon={{ symbol: 'film.stack.fill', color: colors.violet as string }} onPress={locked(() => router.push('/replays'), 'replay')} />
       </Section>
     </>
+  );
+}
+
+/** The one sign of a locked row, the same everywhere: a small gold crown (never the word "Premium"). */
+function Crown() {
+  return (
+    <View accessible accessibilityLabel="Premium">
+      <Icon name="crown.fill" size={15} color={brand.gold} />
+    </View>
   );
 }

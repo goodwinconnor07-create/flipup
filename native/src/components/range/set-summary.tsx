@@ -27,7 +27,7 @@ export function useGradeInk(): Record<Grade, string> {
   return { best: brand.gold, ok: colors.accent as string, mistake: colors.quaternaryLabel as string };
 }
 
-export function SetSummary({ answers, still }: { answers: SetAnswer[]; /** No entrance (a finished daily quiz opened again to see your answers). */ still?: boolean }) {
+export function SetSummary({ answers, still, onShare }: { answers: SetAnswer[]; /** No entrance (a finished daily quiz opened again to see your answers). */ still?: boolean; /** The daily quiz: Share sits right by the result, while the pride is fresh. */ onShare?: () => void }) {
   const colors = useColors();
   const reduce = useReduceMotion() || !!still;
   const ink = useGradeInk();
@@ -47,6 +47,20 @@ export function SetSummary({ answers, still }: { answers: SetAnswer[]; /** No en
           {setVerdict(best, answers.length)}
         </ThemedText>
       </Animated.View>
+      {onShare && (
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel="Share your result"
+          onPress={onShare}
+          outerStyle={{ alignSelf: 'center' }}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 44, paddingHorizontal: spacing.lg, borderRadius: radius.full, backgroundColor: colors.accent as string, marginTop: -spacing.sm }}
+        >
+          <Icon name="square.and.arrow.up" size={17} color="#ffffff" />
+          <ThemedText variant="headline" style={{ color: '#ffffff' }}>
+            Share your result
+          </ThemedText>
+        </PressableScale>
+      )}
 
       <View style={{ gap: spacing.xs }}>
         {answers.map((a, i) => (

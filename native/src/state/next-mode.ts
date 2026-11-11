@@ -1,5 +1,5 @@
 // The finish page's mode chip: which games the host can step through for the next table. Pure, so it's tested.
-import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
+import { variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
 
 /** Games played this long ago still count as "tonight". */
 export const TONIGHT_MS = 12 * 60 * 60 * 1000;
@@ -14,6 +14,6 @@ export function nextModes(current: Variant, played: readonly { variant: Variant;
   const start = ids.indexOf(current);
   const ring = [...ids.slice(start + 1), ...ids.slice(0, Math.max(0, start))];
   const tonight = new Set(played.filter((g) => now - g.at < TONIGHT_MS).map((g) => g.variant));
-  const open = ring.filter((id) => premium || !isPremiumVariant(id));
+  const open = ring.filter((id) => premium || !variantNeedsPremium(id, now));
   return [...open.filter((id) => !tonight.has(id)), ...open.filter((id) => tonight.has(id))];
 }

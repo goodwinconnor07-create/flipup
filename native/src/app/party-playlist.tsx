@@ -6,7 +6,7 @@ import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { PlaylistEditor, playlistItem, type PlaylistItem } from '@/components/party/playlist-editor';
 import { OpenTableButton } from '@/components/setup/open-table-button';
-import { isPremiumVariant, PARTY_MAX_GAMES, PARTY_MIN_GAMES, shufflePlaylist, VARIANTS, type Variant } from '@/engine';
+import { variantNeedsPremium, PARTY_MAX_GAMES, PARTY_MIN_GAMES, shufflePlaylist, VARIANTS, type Variant } from '@/engine';
 import { readPartyDraft, setPartyGames } from '@/state/party-draft';
 import { usePremium } from '@/state/premium';
 import { ForceScheme } from '@/theme';
@@ -32,7 +32,7 @@ function Playlist() {
   const [items, setItems] = useState<PlaylistItem[]>(() => {
     // A first playlist is Hold'em and five random games, and only free ones unless you have Premium: saving a list
     // with a crowned game opens the Premium offer, which shouldn't be what a fresh list does.
-    const pool = ALL.filter((v) => v !== 'holdem' && (premium || !isPremiumVariant(v)));
+    const pool = ALL.filter((v) => v !== 'holdem' && (premium || !variantNeedsPremium(v)));
     const games: Variant[] = readPartyDraft()?.games ?? ['holdem', ...shufflePlaylist(pool, 5)];
     return games.map(playlistItem);
   });

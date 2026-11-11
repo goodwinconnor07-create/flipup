@@ -27,7 +27,13 @@ export const REACTIONS: Reaction[] = [
   { id: 'cool', text: '😎' },
   { id: 'cry', text: '😭' },
   { id: 'pray', text: '🙏' },
+  { id: 'eyes', text: '👀' },
+  { id: 'mindblown', text: '🤯' },
+  { id: 'shrug', text: '🤷' },
 ];
+
+/** The emoji reactions, sent with one tap from the row along the top of the quick messages. */
+export const EMOJI_REACTIONS: Reaction[] = REACTIONS.filter((r) => !/[A-Za-z]/.test(r.text));
 
 /** Extra messages for an Imposter table: accusations and alibis, all fixed lines like the rest. */
 export const IMPOSTER_REACTIONS: Reaction[] = [

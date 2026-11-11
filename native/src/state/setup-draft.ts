@@ -13,7 +13,8 @@ const listeners = new Set<() => void>();
 
 /** Starts a fresh draft for a table with friends or with bots, optionally with a game already picked. */
 export function startDraft(saved: Settings | null, mode: 'friends' | 'bots', variant?: Variant): void {
-  const s = { ...DEFAULT_SETTINGS, ...(saved ?? {}) };
+  // BOT_001 (the experimental bot) isn't in the app: a table saved with it on opens without it.
+  const s = { ...DEFAULT_SETTINGS, ...(saved ?? {}), humanPoker: false };
   // Old saved settings that don't fit today's choices fall back to the defaults' shape.
   const fits = STACK_CHOICES.includes(s.startingStack) && levelsFor(s.startingStack).some(([sb, bb]) => sb === s.smallBlind && bb === s.bigBlind);
   const fitted = fits ? s : { ...s, startingStack: 1000, smallBlind: 5, bigBlind: 10 };

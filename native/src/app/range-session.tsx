@@ -98,14 +98,7 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
 
   const finish = daily ? (
     <View style={{ gap: spacing.xs }}>
-      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-        <View style={{ flex: 1 }}>
-          <Button title="Share" variant="secondary" onPress={shareQuiz} />
-        </View>
-        <View style={{ flex: 1.6 }}>
-          <Button title={premium ? 'Play a set' : 'Come back tomorrow'} variant="primary" onPress={premium ? again : () => router.back()} />
-        </View>
-      </View>
+      <Button title={premium ? 'Play a set' : 'Come back tomorrow'} variant="primary" onPress={premium ? again : () => router.back()} />
       {!premium && (
         <PressableScale accessibilityRole="button" onPress={() => router.push({ pathname: '/premium', params: { reason: 'training' } })} hitSlop={8} outerStyle={{ alignSelf: 'center' }} style={{ paddingVertical: 6 }}>
           <ThemedText variant="subhead" style={{ color: colors.accent as string, fontWeight: '600' }}>
@@ -149,7 +142,7 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
 
       <PinnedPage scrollRef={scroll} fixed={done ? finish : undefined}>
         {done ? (
-          <SetSummary answers={answers} still={!!quiz?.finished} />
+          <SetSummary answers={answers} still={!!quiz?.finished} onShare={daily ? shareQuiz : undefined} />
         ) : (
           <RangeTrainer
             key={round}

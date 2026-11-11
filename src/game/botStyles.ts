@@ -332,6 +332,8 @@ const FAMILIAR_BOTS: { name: string; emoji: string; style: StyleId }[] = [
 
 // Keep the original names addressable for saved quick games, alongside 600 new regulars.
 export const BOTS = makeRoster(FAMILIAR_BOTS);
+/** The named characters (the rest of `BOTS` are regulars with generated names). */
+export const FAMILIAR_COUNT = FAMILIAR_BOTS.length;
 const PROFILE_STYLES = new Map(BOTS.map((bot) => [bot.profile.id, individualStyle(STYLES[bot.style], bot.profile)]));
 
 export const styleOf = (id: string | undefined, profileId?: string): Style => {

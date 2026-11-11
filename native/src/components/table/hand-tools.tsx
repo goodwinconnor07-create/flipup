@@ -101,14 +101,17 @@ export function HandToolsTip() {
   const hand = useLastHand();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const [shown, setShown] = useState(false);
+  // Read once when the table opens: a tip already seen on this phone never comes back.
+  const [due] = useState(() => !read<boolean>(TIP_KEY, false));
+  const [closed, setClosed] = useState(false);
+  const shown = due && !!hand && !closed;
   useEffect(() => {
-    if (!hand || read<boolean>(TIP_KEY, false)) return;
+    if (!shown) return;
     store(TIP_KEY, true);
-    setShown(true);
-    const t = setTimeout(() => setShown(false), 7000);
+    const t = setTimeout(() => setClosed(true), 7000);
     return () => clearTimeout(t);
-  }, [hand]);
+  }, [shown]);
+  const setShown = (on: boolean) => setClosed(!on);
   if (!shown) return null;
   return (
     <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(160)} style={{ position: 'absolute', top: insets.top + 60, left: spacing.md, right: spacing.md, zIndex: 19 }}>

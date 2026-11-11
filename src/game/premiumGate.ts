@@ -5,7 +5,7 @@ import { BUBBLE_STYLES } from './bubbles';
 import { BOTS } from './botStyles';
 import { CARD_PACKS } from './cardPacks';
 import type { Action } from './types';
-import { isPremiumVariant, type Variant } from './variants';
+import { isPremiumVariant, VARIANTS, type Variant } from './variants';
 
 /** A chat bubble that only Premium may wear. The free ones, and the plain default, are open to everyone. */
 export const premiumBubble = (id: string | undefined): boolean => id !== undefined && BUBBLE_STYLES.some((b) => b.id === id && !b.free);
@@ -13,8 +13,30 @@ export const premiumBubble = (id: string | undefined): boolean => id !== undefin
 /** A card pack that only Premium may use. A campaign trophy back is won, not bought, so it isn't one. */
 export const premiumPack = (id: string | undefined): boolean => id !== undefined && CARD_PACKS.some((p) => p.id === id && !p.venue);
 
+const WEEK = 7 * 24 * 60 * 60 * 1000;
+/** Monday 5 January 2026, 00:00 UTC: weeks are counted from here, the same on every phone and on the server. */
+const FIRST_MONDAY = Date.UTC(2026, 0, 5);
+
+/**
+ * Free this week: one Premium mini game anyone may host, a different one each week (Monday to Sunday, UTC), in
+ * the order of `VARIANTS`. Playing one sells the others better than any picture.
+ */
+export function freeThisWeek(now: number = Date.now()): Variant {
+  const paid = VARIANTS.map((v) => v.id).filter(isPremiumVariant);
+  const week = Math.floor((now - FIRST_MONDAY) / WEEK);
+  return paid[((week % paid.length) + paid.length) % paid.length];
+}
+
+/** When this week's free game changes over to the next (the coming Monday, 00:00 UTC). */
+export function freeWeekEnds(now: number = Date.now()): number {
+  return FIRST_MONDAY + (Math.floor((now - FIRST_MONDAY) / WEEK) + 1) * WEEK;
+}
+
+/** Hosting this game needs Premium right now: a Premium game that isn't this week's free one. */
+export const variantNeedsPremium = (v: Variant, now: number = Date.now()): boolean => isPremiumVariant(v) && v !== freeThisWeek(now);
+
 /** Hosting a table or a party with any of these games needs Premium. Joining one never does. */
-export const gamesNeedPremium = (games: readonly Variant[]): boolean => games.some(isPremiumVariant);
+export const gamesNeedPremium = (games: readonly Variant[], now: number = Date.now()): boolean => games.some((v) => variantNeedsPremium(v, now));
 
 /**
  * The bots a free host can seat: the ten original ones, one of each playing style. Premium opens the whole roster.
@@ -37,9 +59,9 @@ export const rangeSetNeedsPremium = (daily: boolean): boolean => !daily;
  * Whether this action is the host opening a Premium game: changing a table's mode to one, or playing again in one.
  * The table room refuses it from a phone that hasn't shown it owns Premium, the same rule as opening a table.
  */
-export function actionNeedsPremium(action: Action): boolean {
-  if (action.type === 'settings') return gamesNeedPremium(action.settings.variant ? [action.settings.variant] : []);
-  if (action.type === 'playAgain') return gamesNeedPremium(action.variant ? [action.variant] : []);
+export function actionNeedsPremium(action: Action, now: number = Date.now()): boolean {
+  if (action.type === 'settings') return gamesNeedPremium(action.settings.variant ? [action.settings.variant] : [], now);
+  if (action.type === 'playAgain') return gamesNeedPremium(action.variant ? [action.variant] : [], now);
   return false;
 }
 

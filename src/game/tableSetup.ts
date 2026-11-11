@@ -7,9 +7,11 @@ import type { Variant } from './variants';
 /** The longest wait between blind rises the host can pick (0 is never). */
 export const BLIND_MINUTE_MAX = 20;
 
-/** Ghost Hold'em plays best deep: picking it gives everyone at least this many big blinds. */
-const GHOST_DEPTH = 500;
-const GHOST_STACKS = [5000, 10000];
+/**
+ * Ghost Hold'em starts at 2,000 chips and 10/20: 100 big blinds, deep enough that a pot the ghost keeps doesn't
+ * wipe anyone out, shallow enough that something is at stake (at 500 big blinds nothing ever was).
+ */
+const GHOST_START: Pick<Settings, 'startingStack' | 'smallBlind' | 'bigBlind'> = { startingStack: 2000, smallBlind: 10, bigBlind: 20 };
 
 /** No tiny blinds on big stacks (no 1/2 at 5,000, no 5/10 either at 10,000). */
 const smallestBigBlind = (stack: number) => (stack >= 10_000 ? 20 : stack >= 5_000 ? 10 : 0);
@@ -33,11 +35,8 @@ export function withStack(settings: Settings, startingStack: number): Settings {
 /** The settings a game plays best with: Ghost wants deep stacks, Imposter bigger blinds. */
 export function withVariant(settings: Settings, variant: Variant): Settings {
   let next: Settings = { ...settings, variant, ...(variant !== 'holdem' && settings.humanPoker ? { humanPoker: false } : {}) };
-  // Deep stacks for the ghost, so a pot it keeps doesn't wipe anyone out.
-  if (variant === 'ghost' && settings.startingStack < settings.bigBlind * GHOST_DEPTH) {
-    const stack = GHOST_STACKS.find((s) => s >= settings.bigBlind * GHOST_DEPTH) ?? GHOST_STACKS[GHOST_STACKS.length - 1];
-    next = { ...next, startingStack: stack, ...(settings.bigBlind * GHOST_DEPTH > stack ? { smallBlind: 10, bigBlind: 20 } : {}) };
-  }
+  // The ghost's own start (the host can still change it after picking the game).
+  if (variant === 'ghost' && settings.variant !== 'ghost') next = { ...next, ...GHOST_START };
   // Imposter plays for bigger blinds (about 50 big blinds deep), so every hand matters.
   if (variant === 'imposter' && settings.bigBlind < next.startingStack / 50) {
     const [smallBlind, bigBlind] = [...BLIND_LEVELS].reverse().find(([, bb]) => bb <= next.startingStack / 50) ?? [

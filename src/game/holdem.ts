@@ -1019,13 +1019,14 @@ function botsPoint(game: Game, rng: () => number, share: number): void {
 /** After the river and before the vote, the table talks it over: everyone can point a finger. */
 function startDiscussion(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
-  const people = hand.seats.some((s) => {
+  const people = hand.seats.filter((s) => {
     const p = playerById(game, s.playerId);
     return p && !p.bot && !p.leaving;
-  });
+  }).length;
   hand.discussing = true;
   botsPoint(game, ctx.rng, 1);
-  const until = ctx.now + (people ? MOMENT_TIMING.discuss : 800);
+  // Fourteen seconds with friends; with only you and the bots, a short beat to see who they point at.
+  const until = ctx.now + (people > 1 ? MOMENT_TIMING.discuss : people === 1 ? MOMENT_TIMING.discussSolo : 800);
   hand.moment = { kind: 'discuss', at: ctx.now, until };
   hand.toAct = null;
   hand.deadline = null;

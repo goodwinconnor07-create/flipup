@@ -129,6 +129,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
             setDraft(next);
           }}
           online={false}
+          bots={bots.length}
         />
       </ScrollView>
       <OpenTableButton
@@ -212,7 +213,6 @@ function BotsCard({
         </View>
         <View style={{ height: 0.5, marginLeft: spacing.md, backgroundColor: panel.hairline }} />
         <SeatLine emoji={profile.emoji || '🙂'} name={profile.name || 'You'} line={profile.name ? 'You' : "That's you"} />
-        {humanPoker && <SeatLine emoji="🤖" name="BOT_001" line="New experimental bot" />}
         {bots.map((b) => (
           <View key={b.key}>
             <View style={{ height: 0.5, marginLeft: 68, backgroundColor: panel.hairline }} />

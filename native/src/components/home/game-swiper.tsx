@@ -3,7 +3,7 @@ import { useMemo, useRef } from 'react';
 import { PanResponder, View } from 'react-native';
 import Animated, { cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 
-import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
+import { variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
 import { rubber, SETTLE } from '@/motion/presets';
 import { useDrift } from '@/motion/use-drift';
 import { usePremium } from '@/state/premium';
@@ -91,8 +91,8 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
         onPanResponderRelease: (_, g) => release(g.vx),
         onPanResponderTerminate: (_, g) => release(g.vx),
       }),
-    // `step` and the count are all it reads; the shared value and the ref are stable.
-    [step, last],
+    // `step` and the count are all it reads; the shared value, the ref and `release` (which reads only those) are stable.
+    [step, last], // eslint-disable-line react-hooks/exhaustive-deps
   );
   function release(vx: number) {
     drag.current.ended = Date.now();
@@ -132,7 +132,7 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
           size={size}
           left={(width - size) / 2}
           offsets={offsets}
-          locked={!premium && isPremiumVariant(v.id)}
+          locked={!premium && variantNeedsPremium(v.id)}
           onPress={() => {
             // The web build can still deliver the tap a drag began with.
             if (Date.now() - drag.current.ended < 300) return;

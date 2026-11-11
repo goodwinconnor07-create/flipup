@@ -3,7 +3,7 @@ import { Alert, Pressable, ScrollView, Text, View, type GestureResponderEvent, t
 import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withSpring, withTiming, type SharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { isPremiumVariant, PARTY_MAX_GAMES, PARTY_MIN_GAMES, variantInfo, VARIANTS, type Variant } from '@/engine';
+import { variantNeedsPremium, PARTY_MAX_GAMES, PARTY_MIN_GAMES, variantInfo, VARIANTS, type Variant } from '@/engine';
 import { EASE_OUT, enter, exit, SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
@@ -93,7 +93,6 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
   }, [count, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
   const panelStyle = useAnimatedStyle(() => ({ height: listH.get() }));
 
-  const full = items.length >= PARTY_MAX_GAMES;
   const full_alert = () => {
     haptic.failure();
     Alert.alert('The playlist is full', `A party has at most ${PARTY_MAX_GAMES} games.`);
@@ -301,7 +300,7 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
               held={drag?.kind === 'row' && drag.id === item.id}
               dragTop={dragTop}
               heldId={heldId}
-              crown={!premium && isPremiumVariant(item.v)}
+              crown={!premium && variantNeedsPremium(item.v)}
               reduce={reduce}
               onRemove={() => remove(item.id)}
               touches={grab({ kind: 'row', id: item.id })}
@@ -349,7 +348,7 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
                 <ThemedText variant="subhead" numberOfLines={2} style={{ flex: 1, fontWeight: '600' }}>
                   {v.name}
                 </ThemedText>
-                {!premium && isPremiumVariant(v.id) && <Icon name="crown.fill" size={12} color={brand.gold} />}
+                {!premium && variantNeedsPremium(v.id) && <Icon name="crown.fill" size={12} color={brand.gold} />}
                 <Icon name="plus" size={15} color={colors.accent as string} />
               </View>
             ))}

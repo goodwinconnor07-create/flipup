@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 
-import { isPremiumVariant, VARIANTS } from '../src/engine';
+import { freeThisWeek, isPremiumVariant, VARIANTS } from '../src/engine';
 import { nextModes, TONIGHT_MS } from '../src/state/next-mode';
 
 const NOW = 1_000_000_000_000;
@@ -19,9 +19,8 @@ it('never offers the mode just played', () => {
 
 it('leaves out Premium games unless the host has Premium', () => {
   const free = nextModes('holdem', [], false, NOW);
-  // Only Texas Hold'em is free, so a free host has no other game to step to.
-  expect(free).toEqual([]);
-  expect(free.some(isPremiumVariant)).toBe(false);
+  // Only Texas Hold'em and this week's free game are free, so that's the one other game a free host can step to.
+  expect(free).toEqual([freeThisWeek(NOW)]);
   expect(nextModes('holdem', [], true, NOW).some(isPremiumVariant)).toBe(true);
 });
 

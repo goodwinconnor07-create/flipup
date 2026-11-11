@@ -1,5 +1,7 @@
 import '@/polyfills';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
+
+import { useReminderTaps } from '@/state/reminder';
 import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
@@ -54,6 +56,8 @@ function FriendWatch() {
 export default function RootLayout() {
   const appearance = useAppearance();
   useEffect(() => applyAppearance(appearance), [appearance]);
+  // The daily quiz reminder opens the Train tab.
+  useReminderTaps((url) => router.navigate(url as never));
   const dark = useColorScheme() === 'dark';
   const reduce = useReduceMotion();
   const colors = useColors();

@@ -53,9 +53,11 @@ export interface StoreState {
   error: string | null;
   /** Ask to Buy: a parent has to approve the purchase. Premium turns on by itself once they do. */
   pending: boolean;
+  /** The live subscription's current period: when it ends, and whether it renews then (null when StoreKit didn't say). */
+  period: { ends: number; renews: boolean | null } | null;
 }
 
-let state: StoreState = { plans: { monthly: null, yearly: null }, owned: null, busy: false, error: null, pending: false };
+let state: StoreState = { plans: { monthly: null, yearly: null }, owned: null, busy: false, error: null, pending: false, period: null };
 const listeners = new Set<() => void>();
 let ready: Promise<boolean> | null = null;
 let subscriptions: { remove(): void }[] = [];
@@ -83,6 +85,14 @@ function expired(p: Purchase): boolean {
   const at = (p as { expirationDateIOS?: number | null }).expirationDateIOS;
   return typeof at === 'number' && at > 0 && at < Date.now();
 }
+/** A subscription's period from StoreKit: the renewal date if it gave one, else the expiry. Null for the old lifetime purchase. */
+function periodOf(p: Purchase): StoreState['period'] {
+  const q = p as { expirationDateIOS?: number | null; renewalInfoIOS?: { renewalDate?: number | null; willAutoRenew?: boolean } | null };
+  const ends = q.renewalInfoIOS?.renewalDate ?? q.expirationDateIOS;
+  if (typeof ends !== 'number' || ends <= 0) return null;
+  return { ends, renews: typeof q.renewalInfoIOS?.willAutoRenew === 'boolean' ? q.renewalInfoIOS.willAutoRenew : null };
+}
+
 const planOf = (productId: string): Plan | 'lifetime' | null =>
   productId === SKU.monthly ? 'monthly' : productId === SKU.yearly ? 'yearly' : productId === LIFETIME ? 'lifetime' : null;
 
@@ -92,7 +102,7 @@ function grant(p: Purchase): Promise<void> {
   if (existing) return existing;
   if (!hasPremium()) setPremium(true);
   const plan = planOf(p.productId);
-  if (plan && state.owned !== 'lifetime') publish({ owned: plan });
+  if (plan && state.owned !== 'lifetime') publish({ owned: plan, ...(plan !== 'lifetime' && periodOf(p) ? { period: periodOf(p) } : {}) });
   // Every renewal is a new signed transaction with a later expiry: the server keeps the latest.
   void bindPurchase(p.purchaseToken);
   const task = (async () => {
@@ -213,7 +223,7 @@ async function loadPrices(): Promise<void> {
 async function checkOwned(): Promise<boolean> {
   const owned = (await getAvailablePurchases()).filter(live);
   const best = owned.find((p) => p.productId === LIFETIME) ?? owned.find((p) => p.productId === SKU.yearly) ?? owned[0];
-  publish({ owned: best ? planOf(best.productId) : null });
+  publish({ owned: best ? planOf(best.productId) : null, period: best && planOf(best.productId) !== 'lifetime' ? periodOf(best) : null });
   for (const p of owned) await grant(p);
   return owned.length > 0;
 }

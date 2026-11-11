@@ -22,6 +22,7 @@
     "expo-iap": "^6.4.1",
     "expo-image": "~58.0.18",
     "expo-linking": "~58.0.15",
+    "expo-notifications": "~58.1.9",
     "expo-router": "~58.0.29",
     "expo-screen-capture": "~58.0.6",
     "expo-splash-screen": "~58.0.12",

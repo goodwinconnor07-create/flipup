@@ -266,8 +266,17 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
   const need = preflop ? price * (0.62 - style.pre.loose * 0.25) : price - style.post.sticky * 0.5 - sense.draw;
   // Strong enough to bet or raise for value: better than an even share of the pot, more so against a crowd.
   const fair = 1 / (opponents + 1);
-  const strong = eq > Math.max(0.55, fair * 1.6) + sense.value - style.post.value;
-  const monster = eq > Math.max(0.75, fair * 2.4) + sense.value;
+  // Before the flop nothing is a favourite against a crowd (aces win about half the time six ways), so a hand is
+  // strong when it's well ahead of its share. After the flop a hand that hit bets: the bar drops a little for each
+  // extra player, since a pair or better that leads the field is worth charging. Without this the mini games
+  // checked down tiny pots.
+  const smartBar = smart && v !== 'imposter';
+  const strong = smartBar
+    ? preflop
+      ? eq > fair * 1.7 - style.pre.aggro * 0.15 * fair
+      : eq > Math.max(0.42, fair * 1.5) + sense.value - style.post.value
+    : eq > Math.max(0.55, fair * 1.6) + sense.value - style.post.value;
+  const monster = smartBar ? (preflop ? eq > fair * 2.4 : eq > Math.max(0.66, fair * 2.2) + sense.value) : eq > Math.max(0.75, fair * 2.4) + sense.value;
   const stakes = Math.min(1, (o.toCall || pot * 0.5) / Math.max(1, stack));
   const done = (move: BotThought['move']): BotThought => ({ move, thinkMs: think(game, seat, rng, stakes) });
   const raiseTo = (to: number) => {
@@ -292,6 +301,9 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
     return done({ move: 'check' });
   }
   if (eq < need) return done(o.canFold ? { move: 'fold' } : { move: 'call' });
+  // First in before the flop (only the blinds to call): a strong hand opens rather than limps.
+  const firstIn = preflop && hand.currentBet <= bb;
+  if (smartBar && firstIn && strong && o.canRaise) return raiseTo(Math.max(bb * style.pre.open, bb * 2.5) + bb * Math.max(0, hand.seats.filter((x) => x.bet >= bb && x.playerId !== seat.playerId).length - 1));
   if (o.canRaise && (monster || (strong && rng() < 0.35 + style.pre.aggro * 0.3))) {
     const to = preflop ? hand.currentBet * 3 : hand.currentBet + (pot + o.toCall) * Math.max(size, 0.6);
     return raiseTo(to);

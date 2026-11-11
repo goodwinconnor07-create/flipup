@@ -223,14 +223,6 @@ export function PartyPanel({ code, onGone, place }: { code: string; onGone: () =
   );
 }
 
-function SectionTitle({ text }: { text: string }) {
-  return (
-    <ThemedText variant="footnote" tone="tertiaryLabel" accessibilityRole="header" style={{ textTransform: 'uppercase', paddingHorizontal: spacing.md, marginBottom: -spacing.sm }}>
-      {text}
-    </ThemedText>
-  );
-}
-
 function GameHeader({ eyebrow, variant, line }: { eyebrow: string; variant: Variant | undefined; line: string }) {
   const info = variant ? variantInfo(variant) : null;
   return (

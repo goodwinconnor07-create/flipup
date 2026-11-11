@@ -27,6 +27,8 @@ export const MOMENT_TIMING = {
   discards: 3000,
   /** Imposter: the table talks it over this long before the vote (or less when everyone has pointed). */
   discuss: 14000,
+  /** Only one person at the table (the rest are bots): nobody to talk it over with, so a short beat. */
+  discussSolo: 6000,
   discussMin: 5000,
   /** Imposter: each vote is read out, then the imposter is named. */
   tallyStep: 1100,

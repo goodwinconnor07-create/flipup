@@ -43,7 +43,7 @@ function Bank() {
     haptic.select();
     Alert.alert(`Hand ${r.number}`, undefined, [
       { text: 'Share', onPress: () => router.push({ pathname: '/share-card', params: { kind: 'hand', id: r.id } }) },
-      { text: 'Remove from bank', style: 'destructive', onPress: () => removeReplay(r.id) },
+      { text: 'Remove', style: 'destructive', onPress: () => removeReplay(r.id) },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
@@ -58,8 +58,33 @@ function Bank() {
               No saved hands yet
             </ThemedText>
             <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center' }}>
-              After a hand at any table, tap Save hand. It comes here to watch back and share.
+              After a hand at any table, tap the bookmark in the table bar. It comes here to watch back and share.
             </ThemedText>
+            {/* What one looks like once it's here: a saved hand row, marked as an example. */}
+            <View accessible accessibilityLabel="Example: a saved hand, a flush in Texas Hold'em, up 420 chips" style={{ alignSelf: 'stretch', gap: spacing.xxs, marginTop: spacing.xs }}>
+              <ThemedText variant="caption1" tone="tertiaryLabel" style={{ fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
+                Example
+              </ThemedText>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.lg, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderStyle: 'dashed', borderColor: 'rgba(255,255,255,0.2)' }}>
+                <View style={{ flexDirection: 'row', gap: 2 }}>
+                  <PlayingCard card="As" size="sm" width={30} />
+                  <PlayingCard card="Ks" size="sm" width={30} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                    <Icon name="star.fill" size={12} color={brand.gold} />
+                    <ThemedText variant="callout" numberOfLines={1} style={{ fontWeight: '700' }}>
+                      Flush
+                    </ThemedText>
+                  </View>
+                  <ThemedText variant="caption1" tone="secondaryLabel" numberOfLines={1}>
+                    Texas Hold’em · Hand 12 · Today
+                  </ThemedText>
+                </View>
+                <ThemedText style={{ fontFamily: ROUNDED, fontSize: 19, fontWeight: '800', color: brand.gold }}>+420</ThemedText>
+                <Icon name="play.fill" size={14} color="rgba(255,255,255,0.6)" />
+              </View>
+            </View>
           </View>
         )}
         <View style={{ gap: spacing.xs }}>

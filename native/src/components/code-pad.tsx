@@ -81,9 +81,8 @@ export function useCode(run: (code: string) => Promise<string | null>, kind: Cod
       haptic.success();
       return;
     }
-    // A wrong code starts over, so there's nothing to backspace through.
+    // A wrong code stays in the boxes, with the sentence under them, so one wrong letter can be fixed in place.
     setBusy(false);
-    setCode('');
     setError(problem);
     setMisses((n) => n + 1);
     haptic.failure();

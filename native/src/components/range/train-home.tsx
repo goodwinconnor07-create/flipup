@@ -7,10 +7,12 @@
 // Nothing is dealt here; sets play full screen in app/range-session.tsx.
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Share, View } from 'react-native';
+import { Platform, Share, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { Row, Section, usePanel } from '@/components/grouped-list';
+import { Switch } from '@/components/switch';
+import { setReminder, useReminder } from '@/state/reminder';
 import { haptic } from '@/components/haptics';
 import { Icon, type IconName } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
@@ -189,6 +191,7 @@ export function TrainHome({ history, grades, onOpenStats }: { history: Answer[];
   const missed = missedHands(history);
   const first = history.length === 0;
   const premium = usePremium();
+  const reminder = useReminder();
   const q = useDaily();
   const left = useCountdown(premium && q.finished);
   const crown = premium ? undefined : <Icon name="crown.fill" size={15} color={brand.gold} />;
@@ -222,11 +225,34 @@ export function TrainHome({ history, grades, onOpenStats }: { history: Answer[];
     </View>
   );
 
+  // Optional, off until turned on: a nudge at six each evening, so a streak survives its first week.
+  const remind =
+    Platform.OS === 'web' ? null : (
+      <Section footer="One notification a day at 6 pm when the new quiz is ready. Nothing else.">
+        <Row
+          title="Daily reminder"
+          icon={{ symbol: 'bell.fill', color: brand.violet }}
+          chevron={false}
+          trailing={
+            <Switch
+              label="Daily reminder"
+              value={reminder.on}
+              onValueChange={(on) => {
+                haptic.select();
+                void setReminder(on);
+              }}
+            />
+          }
+        />
+      </Section>
+    );
+
   if (!premium)
     return (
       <View style={{ gap: spacing.xl }}>
         <DailyCard q={q} premium={false} />
         {numbers}
+        {remind}
         {workOn}
         <Footnote />
       </View>
@@ -246,6 +272,7 @@ export function TrainHome({ history, grades, onOpenStats }: { history: Answer[];
         />
       </Section>
       {numbers}
+      {remind}
       <Footnote />
     </View>
   );

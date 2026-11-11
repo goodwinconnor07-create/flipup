@@ -313,6 +313,12 @@ PNG or JPEG, no transparency, 1 to 10 per size.
 Smaller sizes fall back to these, so a 6.9" set and a 6.1" set cover every iPhone. The 13" iPad set comes with
 the iPad release.
 
+**Order (11 November 2026).** Lead with a mini game table, not Texas Hold'em: the variants are what no other poker
+app has. Suggested order: 1. a Crucifix or Pittsburgh table mid-hand (the cross or three rivers on the felt), 2.
+Die on the River's roll, 3. Home's game swiper on a mini game, 4. the Play with friends lobby with the game code, 5.
+a Ghost Hold'em showdown, 6. the Range training daily quiz, 7. Texas Hold'em with bots talking, 8. Saved hands and a
+share card (Premium). Every one from the real native build (2.3.3).
+
 ### App icon
 
 - One 1024 × 1024 square, no transparency and no rounded corners (the system masks it).

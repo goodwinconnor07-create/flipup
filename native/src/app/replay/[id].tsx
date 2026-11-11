@@ -6,7 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { SwapIcon } from '@/components/swap';
-import { Icon, type IconName } from '@/components/icon';
+import { type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { RoundButton } from '@/components/tab-screen';
 import { n, signed } from '@/components/share/data';

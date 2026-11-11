@@ -55,6 +55,7 @@ const WEB = {
   'rectangle.portrait.and.arrow.right': 'logout',
   'square.and.arrow.up': 'ios_share',
   'app.badge.fill': 'apps',
+  'bell.fill': 'notifications',
   bookmark: 'bookmark_border',
   circle: 'radio_button_unchecked',
   'bookmark.fill': 'bookmark',

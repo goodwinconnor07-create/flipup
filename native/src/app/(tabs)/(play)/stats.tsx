@@ -1,7 +1,8 @@
-import { Stack } from 'expo-router';
+import { router, Stack } from 'expo-router';
 import { PANEL_RADIUS, usePanel } from '@/components/grouped-list';
 import { ScrollView, Share, Text, View } from 'react-native';
 
+import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { PassportCard } from '@/components/home/passport';
 import { Icon } from '@/components/icon';
@@ -12,7 +13,7 @@ import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo, type Variant } from '@/engine';
 import { usePokerRecord, type PokerRecord } from '@/state/record';
-import { cardColors, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
+import { brand, cardColors, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 const n = (v: number) => v.toLocaleString('en-US');
 const place = (p: number) => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd' : `${p}th`);
@@ -25,12 +26,11 @@ const place = (p: number) => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd
 export default function StatsScreen() {
   const record = usePokerRecord();
   const colors = useColors();
-  const panel = usePanel();
   return (
     <>
       <Stack.Screen options={{ title: 'Your stats', headerLargeTitleEnabled: false }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.md, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center' }}>
-        <PassportCard full />
+        {record.hands === 0 ? <NoHandsYet /> : <PassportCard full />}
 
         {record.best && (
           <Card colors={cardColors.violet} label="Best hand" onShare={() => share(`My best hand on FlipUp: ${record.best?.name}.`)}>
@@ -44,13 +44,38 @@ export default function StatsScreen() {
           </Card>
         )}
 
-        <GamesYouPlay record={record} />
+        {record.hands > 0 && <GamesYouPlay record={record} />}
 
         <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center', paddingTop: spacing.sm, color: colors.tertiaryLabel }}>
           Counted on this phone. Play chips only.
         </ThemedText>
       </ScrollView>
     </>
+  );
+}
+
+/** Before your first hand: no grid of zeros, just what will be here and the way to get it. */
+function NoHandsYet() {
+  const panel = usePanel();
+  return (
+    <View style={{ padding: spacing.lg, gap: spacing.md, alignItems: 'center', borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge }}>
+      <Icon name="chart.bar.xaxis" size={34} color={brand.violet} />
+      <View style={{ gap: spacing.xxs }}>
+        <ThemedText variant="title3" style={{ fontFamily: ROUNDED, fontWeight: '800', textAlign: 'center' }}>
+          No hands yet
+        </ThemedText>
+        <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center' }}>
+          Play a few hands and your win rate, biggest pot and best hand show up here.
+        </ThemedText>
+      </View>
+      <Button
+        title="Play bots"
+        onPress={() => {
+          haptic.tap();
+          router.push('/play-bots');
+        }}
+      />
+    </View>
   );
 }
 

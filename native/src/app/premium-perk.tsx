@@ -12,7 +12,7 @@ import { statsData } from '@/components/share/data';
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { BOTS, CARD_PACKS, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
+import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
 
@@ -205,7 +205,7 @@ function Preview({ id }: { id: PerkId }) {
             Free: {FREE_BOT_NAMES.join(', ')}.
           </ThemedText>
           <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            Premium: all {BOTS.length} bots, in every playing style.
+            Premium: all {FAMILIAR_COUNT} characters and hundreds of regulars, in every playing style.
           </ThemedText>
         </View>
       );

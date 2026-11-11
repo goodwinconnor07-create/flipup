@@ -6,7 +6,7 @@
 // The numbers come from range-numbers.json (worked out ahead, see state/ranges.ts).
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
@@ -75,7 +75,7 @@ export function RangeTrainer({
   // Your run counting this answer, and whether it's one worth confetti.
   const [run, setRun] = useState({ n: 0, cheer: false });
   // Where the table is on the page (the trainer's own place plus the table's place in it), to scroll it into view.
-  const place = useRef({ root: 0, table: 0 });
+  const place = useRef({ root: 0, table: 0, lesson: 0 });
   const r = useMemo(() => replay(scenario), [scenario]);
   const options = useMemo(() => optionsFor(scenario, r), [scenario, r]);
   const facing = r.toCall > 0;
@@ -126,9 +126,10 @@ export function RangeTrainer({
     setStep(null);
     setPick(id);
     onAnswer?.(scenario, id, grade);
-    // Their likely hands turn up on the seats: bring the table up to the top, clear of the result card below.
-    // A beat later, so the page has made room for the card first.
-    const y = Math.max(0, place.current.root + place.current.table - spacing.sm);
+    // Their likely hands turn up on the seats: bring the lesson and the table up to the top, clear of the result
+    // card below, with a little room over THE LESSON so the top bar never clips it. A beat later, so the page has
+    // made room for the card first.
+    const y = Math.max(0, place.current.root + place.current.lesson - spacing.lg);
     if (onScrollTo) setTimeout(() => onScrollTo(y), 60);
     else onTop?.();
   };
@@ -254,6 +255,7 @@ export function RangeTrainer({
 
       {/* No heading before you answer (the line under the table says where you are); the hand's lesson and name come
           out with the answer (rules 16 and 17), so they never give it away. */}
+      <View onLayout={(e) => (place.current.lesson = e.nativeEvent.layout.y)}>
       <Swap id={pick ? 'lesson' : null} kind="text" style={{ alignItems: 'stretch' }}>
         <View style={{ gap: 2 }}>
           <ThemedText variant="caption2" tone="accent" style={{ fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
@@ -264,6 +266,7 @@ export function RangeTrainer({
           </ThemedText>
         </View>
       </Swap>
+      </View>
 
       {/* Read: the table as it stands at your decision, your two cards on your seat, then the decision in one line. */}
       <View onLayout={(e) => (place.current.table = e.nativeEvent.layout.y)} style={{ gap: spacing.sm }}>
@@ -357,6 +360,21 @@ function AnswerButton({
   onPress: () => void;
 }) {
   const [main, sub] = splitLabel(label);
+  // At 320pt wide (an SE with Display Zoom) the amount goes under the move instead of being cut off beside it.
+  const narrow = useWindowDimensions().width < 350;
+  if (narrow && sub)
+    return (
+      <View style={{ flexGrow: 1, flexBasis: wide ? '47%' : '30%' }}>
+        <GlassButton tint={tint} label={label} onPress={onPress} minHeight={52}>
+          <ThemedText variant="subhead" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: '#ffffff', fontWeight: '800', textAlign: 'center' }}>
+            {main}
+          </ThemedText>
+          <ThemedText variant="caption1" numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={{ color: '#ffffff', fontWeight: '500', opacity: 0.8, textAlign: 'center' }}>
+            {sub}
+          </ThemedText>
+        </GlassButton>
+      </View>
+    );
   return (
     <View style={{ flexGrow: 1, flexBasis: wide ? '47%' : '30%' }}>
       <GlassButton tint={tint} label={label} onPress={onPress} minHeight={42}>

@@ -238,7 +238,7 @@ describe('the conversation', () => {
     const seen = new Set<string>();
     for (let i = 0; i < 400; i++) {
       lane.advance(now);
-      for (const w of ['a', 'b']) for (const m of lane.talk(w, now)?.shown ?? []) seen.add(w);
+      for (const w of ['a', 'b']) if (lane.talk(w, now)?.shown.length) seen.add(w);
       const due = lane.nextDue(now);
       if (due === null) break;
       now = Math.max(now + 1, due);

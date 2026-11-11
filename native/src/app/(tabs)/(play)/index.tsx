@@ -15,8 +15,9 @@ import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
 import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { isVariant, VARIANTS, variantInfo, variantOf, type Variant } from '@/engine';
+import { freeThisWeek, isPremiumVariant, variantNeedsPremium, isVariant, VARIANTS, variantInfo, variantOf, type Variant } from '@/engine';
 import { usePartyRef } from '@/state/party';
+import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
 import { useRangeHistory } from '@/state/range-history';
 import { usePokerRecord } from '@/state/record';
@@ -64,12 +65,22 @@ export default function Home() {
   const look = gameLook(variant);
   // The parts arrive one after another, 30ms apart, when the app opens (phone only: the web build's layout animations misplace rows).
   const arrive = (i: number) => (Platform.OS === 'ios' ? detail(i, reduce) : undefined);
-  const hero = Math.round(Math.max(120, Math.min(200, height * 0.23)));
+  // At 320pt wide (an SE with Display Zoom) there's no room for the hook line and a full-size card: the card shrinks
+  // and the hook goes, so the page dots never sit on the shortcuts.
+  const narrow = width < 350;
+  const hero = Math.round(Math.max(narrow ? 100 : 120, Math.min(200, height * (narrow ? 0.18 : 0.23))));
   const card = Math.min(hero, width - spacing.md * 2 - 80);
 
-  // PLAY opens the page straight away; no colour fills the screen.
+  // PLAY opens the page straight away; no colour fills the screen. A Premium game without Premium opens its sheet
+  // instead, which explains the game before any setup and leads to the offer.
+  const premium = usePremium();
   const start = (path: string, buzz = false) => () => {
     if (buzz) haptic.turn();
+    if (!premium && variantNeedsPremium(variant)) {
+      haptic.tap();
+      router.push(`/game/${variant}`);
+      return;
+    }
     router.push(path as never);
   };
 
@@ -111,9 +122,17 @@ export default function Home() {
                   {info.name}
                 </Text>
               </Swap>
-              <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)', textAlign: 'center' }}>
-                {look.hook}
-              </Text>
+              {/* Free this week: one Premium game anyone can host, said where the game is picked. */}
+              {!premium && isPremiumVariant(variant) && variant === freeThisWeek() && (
+                <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 0.6, color: brand.gold, textTransform: 'uppercase' }}>
+                  Free this week
+                </Text>
+              )}
+              {!narrow && (
+                <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)', textAlign: 'center' }}>
+                  {look.hook}
+                </Text>
+              )}
             </View>
             {/* Which of the games this is. */}
             <View accessible={false} style={{ flexDirection: 'row', gap: 5, paddingTop: 4 }}>
@@ -127,9 +146,10 @@ export default function Home() {
           <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm }]}>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: spacing.xxs }}>
               <SideButton icon="chart.bar.xaxis" label="Stats" onPress={go('/stats')} />
-              <SideButton icon="book.fill" label="Rules" onPress={go(`/how-to-play/${variant}`)} />
+              <SideButton icon="book.fill" label="How to play" onPress={go(`/how-to-play/${variant}`)} />
               <SideButton icon="film.stack.fill" label="Saved" say="Saved hands" onPress={go('/replays')} />
-              <SideButton icon="crown.fill" label="Premium" tint={brand.gold} onPress={go('/premium')} />
+              {/* A subscriber's shortcut is what they've unlocked (the Premium page lists it for them), not an offer. */}
+              <SideButton icon="crown.fill" label={premium ? 'Unlocked' : 'Premium'} say={premium ? 'Your Premium' : undefined} tint={brand.gold} onPress={go('/premium')} />
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
               <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />
             </View>
@@ -159,7 +179,7 @@ function SideButton({ icon, label, say, tint = '#ffffff', onPress }: { icon: Ico
       <View style={{ width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}>
         <Icon name={icon} size={21} color={tint} />
       </View>
-      <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255, 255, 255, 0.8)' }}>
+      <Text maxFontSizeMultiplier={1.1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8} style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255, 255, 255, 0.8)' }}>
         {label}
       </Text>
     </PressableScale>

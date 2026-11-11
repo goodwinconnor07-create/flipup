@@ -1,8 +1,10 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Linking, View } from 'react-native';
+import { Alert, AppState, Linking, Platform, View } from 'react-native';
 
+import { gameLook } from '@design/gameArt';
 import { Avatar } from '@/components/avatar';
 import { Button } from '@/components/button';
 import { CodePad, useCode } from '@/components/code-pad';
@@ -61,7 +63,7 @@ export default function JoinSheet() {
         await intoParty(value);
         return null;
       }
-      return "There's no table or party with that code. Check it and try again.";
+      return 'No table or party with that code. Check the letters and fix it above.';
     } catch (e) {
       return e instanceof Error ? e.message : 'Something went wrong. Try again.';
     }
@@ -151,10 +153,61 @@ export default function JoinSheet() {
       ) : (
         <>
           <CodePad state={state} label="Table or party code" focus={focused} />
+          <PasteOffer
+            onText={(text) => {
+              const code = codeFromScan(text);
+              if (!code) {
+                state.setError("That isn't a FlipUp code or link.");
+                return;
+              }
+              haptic.tap();
+              state.fill(code);
+            }}
+          />
           <Button title="Scan a QR code" variant="party" tint="pink" onPress={() => void scan()} />
         </>
       )}
     </SheetScroll>
+  );
+}
+
+/**
+ * When something is copied (a code from Messages, a join link), a Paste button under the boxes. On iPhone it's
+ * Apple's own paste control, which reads the clipboard only when tapped, so there's no "pasted from" prompt; the
+ * check that something is there doesn't read it either.
+ */
+function PasteOffer({ onText }: { onText: (text: string) => void }) {
+  const colors = useColors();
+  const [has, setHas] = useState(false);
+  useEffect(() => {
+    const check = () => void Clipboard.hasStringAsync().then(setHas, () => setHas(false));
+    check();
+    const sub = AppState.addEventListener('change', (s) => s === 'active' && check());
+    return () => sub.remove();
+  }, []);
+  if (!has) return null;
+  const native = Platform.OS === 'ios' && Clipboard.isPasteButtonAvailable;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
+      <ThemedText variant="subhead" tone="tertiaryLabel">
+        Copied a code or link?
+      </ThemedText>
+      {native ? (
+        <Clipboard.ClipboardPasteButton
+          acceptedContentTypes={['plain-text']}
+          displayMode="iconAndLabel"
+          cornerStyle="capsule"
+          backgroundColor={colors.accent as string}
+          foregroundColor="#ffffff"
+          style={{ width: 100, height: 36 }}
+          onPress={(data) => {
+            if (data.type === 'text') onText(data.text);
+          }}
+        />
+      ) : (
+        <Button title="Paste" variant="secondary" onPress={() => void Clipboard.getStringAsync().then(onText, () => undefined)} />
+      )}
+    </View>
   );
 }
 
@@ -167,18 +220,27 @@ function TableCard({ info, onSit, onBack }: { info: TableInfo; onSit: () => void
   const bots = info.players.length - people;
   const full = info.seatsLeft <= 0;
   const over = info.status === 'ended';
+  const host = info.players.find((p) => !p.bot && p.name === info.hostName) ?? info.players.find((p) => !p.bot);
   return (
     <View style={{ gap: spacing.md }}>
       <View style={{ padding: spacing.md, gap: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: shadows.card }}>
+        {/* The host first and big, so a guest knows it's the right table before sitting down. */}
+        <View accessible accessibilityLabel={`Hosted by ${info.hostName}`} style={{ alignItems: 'center', gap: spacing.xs, paddingTop: spacing.xs }}>
+          <Avatar emoji={host?.emoji} size={84} />
+          <ThemedText variant="title2" style={{ fontWeight: '800', textAlign: 'center' }}>
+            {info.hostName}
+          </ThemedText>
+          <ThemedText variant="subhead" tone="tertiaryLabel">
+            is hosting · {info.code}
+          </ThemedText>
+        </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
           <GameThumb variant={game.id} size={56} />
           <View style={{ flex: 1, gap: 2 }}>
             <ThemedText variant="title3" style={{ fontWeight: '700' }}>
               {game.name}
             </ThemedText>
-            <ThemedText tone="tertiaryLabel">
-              {info.hostName}&apos;s table · {info.code}
-            </ThemedText>
+            <ThemedText tone="tertiaryLabel">{gameLook(game.id).mood}</ThemedText>
           </View>
         </View>
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>

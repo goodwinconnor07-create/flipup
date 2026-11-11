@@ -81,8 +81,11 @@ export function everydayReference(i: InformationSet, p: StrategyPrediction, prof
           : context.raiseCount === 2
             ? 0.1
             : 0.045;
-    width += shift + (e.difficulty === 'casual' ? 0.025 : 0);
-    if (i.legal.toCall > context.effectiveTo * 0.25) width *= 0.6;
+    // Casual bots see more flops: they call an open or a limp wider (a new player's table should see more flops
+    // than folds) and are put off less by a big price. Challenge keeps the authored ranges.
+    const casual = e.difficulty === 'casual';
+    width += shift + (casual ? (context.raiseCount <= 1 ? 0.075 : 0.025) : 0);
+    if (i.legal.toCall > context.effectiveTo * 0.25) width *= casual ? 0.75 : 0.6;
     const play = top <= 0.01 ? 1 : 1 / (1 + Math.exp((top - width) / 0.045));
     const raiseShare = context.raiseCount === 0 ? 0.78 : Math.max(0.12, Math.min(0.8, (0.1 - top) * 7 + 0.2));
     const raises = p.actions.map((a, k) => ({ a, k })).filter(({ a }) => a.to !== undefined);

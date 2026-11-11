@@ -1,7 +1,7 @@
 // What FlipUp Premium gives you, as one list: the Premium page's grid, the detail sheet (`premium-perk`) and the
 // reasons a locked thing opens the page with (`?reason=`) all read it.
 import type { IconName } from '@/components/icon';
-import { BOTS, CARD_PACKS, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
+import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
 
 export type PerkId = 'games' | 'range' | 'bots' | 'ultra' | 'replay' | 'share' | 'gold' | 'packs';
 
@@ -20,7 +20,7 @@ const packs = CARD_PACKS.filter((p) => !p.venue).length;
 
 export const PERKS: Perk[] = [
   { id: 'range', icon: 'chart.line.uptrend.xyaxis', title: 'Every range hand', short: 'Free: 1 quiz a day', about: 'Free gets one set of five hands a day. Premium opens every hand, as many sets as you like, and practice on the spots you miss.' },
-  { id: 'bots', icon: 'person.3.fill', title: `${BOTS.length - FREE_BOT_NAMES.length}+ more bots`, short: `Free: ${FREE_BOT_NAMES.length} bots`, about: `Free tables use the original ${FREE_BOT_NAMES.length} bots, one of each style. Premium opens the whole roster, every style and every name.` },
+  { id: 'bots', icon: 'person.3.fill', title: 'The whole roster', short: `Free: ${FREE_BOT_NAMES.length} bots`, about: `Free tables use the original ${FREE_BOT_NAMES.length} bots, one of each style. Premium opens all ${FAMILIAR_COUNT} characters and hundreds of regulars.` },
   { id: 'games', icon: 'suit.spade.fill', title: `${games} more games`, short: 'Host every mini game', about: 'Host Pineapple, Ghost, Pittsburgh, Imposter and the rest. Friends join them free.' },
   { id: 'replay', icon: 'film.stack.fill', title: 'Replay', short: 'Save and rewatch hands', about: 'Tap Save hand at any table, bots or online, and watch it back move by move from Saved hands.' },
   { id: 'share', icon: 'square.and.arrow.up', title: 'Share cards', short: '4 more designs', about: 'Turn your best hands, games and stats into a picture: Felt, Gold Foil, Receipt and Poster.' },

@@ -5,7 +5,7 @@ import Animated from 'react-native-reanimated';
 import { MAX_SEATS } from '@/engine';
 import { enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { brand, radius, ROUNDED, spacing, useColors, useShadows } from '@/theme';
+import { brand, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
@@ -113,7 +113,6 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => voi
 
 function Row({ row: r }: { row: PlayerLine }) {
   const colors = useColors();
-  const panel = usePanel();
   return (
     <View
       style={{

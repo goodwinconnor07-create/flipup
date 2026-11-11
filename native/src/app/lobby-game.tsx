@@ -9,17 +9,17 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
-import { isPremiumVariant, VARIANTS, withVariant, type VariantInfo } from '@/engine';
+import { freeThisWeek, isPremiumVariant, VARIANTS, withVariant, type VariantInfo } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { dispatch, useTable } from '@/state/session';
 import { setDraft, useDraft } from '@/state/setup-draft';
-import { needsUnlock, unlockToHost } from '@/state/unlock';
-import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
+import { needsUnlock } from '@/state/unlock';
+import { brand, ROUNDED, spacing, useColors } from '@/theme';
 
 /**
  * Play with friends' Change on the game card: every game in one scrolling list, the free ones first, then a gold
  * line with a crown that sets the Premium games apart. A tap picks the game and closes the sheet; a Premium game
- * without Premium is still picked and the offer opens (the same gate as Start game, `unlockToHost()`).
+ * without Premium isn't picked: its game sheet explains it, and Continue there opens the offer (`unlockToHost()`).
  */
 export default function LobbyGameSheet() {
   const colors = useColors();
@@ -36,12 +36,17 @@ export default function LobbyGameSheet() {
 
   const pick = (v: VariantInfo) => {
     haptic.select();
+    // A locked game isn't picked: its sheet explains it first, and Continue there opens the offer.
+    if (needsUnlock([v.id], premium)) {
+      router.back();
+      router.push(`/game/${v.id}`);
+      return;
+    }
     if (v.id !== current) {
       if (table && tableSettings) dispatch({ type: 'settings', settings: withVariant(tableSettings, v.id) });
       else setDraft(withVariant(draft, v.id));
     }
     router.back();
-    if (needsUnlock([v.id], premium)) unlockToHost([v.id], premium);
   };
 
   const list = (games: VariantInfo[]) => (
@@ -106,7 +111,6 @@ export default function LobbyGameSheet() {
 
 function GameRow({ info, chosen, locked, onPress }: { info: VariantInfo; chosen: boolean; locked: boolean; onPress: () => void }) {
   const colors = useColors();
-  const panel = usePanel();
   return (
     <Pressable
       accessibilityRole="button"
@@ -130,6 +134,11 @@ function GameRow({ info, chosen, locked, onPress }: { info: VariantInfo; chosen:
         <ThemedText variant="footnote" tone="secondaryLabel" numberOfLines={2}>
           {info.tagline}
         </ThemedText>
+        {isPremiumVariant(info.id) && info.id === freeThisWeek() && (
+          <ThemedText variant="caption1" style={{ color: brand.gold, fontWeight: '700' }}>
+            Free this week
+          </ThemedText>
+        )}
       </View>
       {chosen ? (
         <Icon name="checkmark" size={18} color={colors.accent} weight="bold" />

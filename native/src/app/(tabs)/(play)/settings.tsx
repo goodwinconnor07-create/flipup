@@ -11,7 +11,7 @@ import { YouSettings } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
 import { usePremium } from '@/state/premium';
-import { manageSubscription, ON_SALE, restorePremium, storeError, useStore } from '@/state/purchase';
+import { manageSubscription, ON_SALE, restorePremium, storeError, useStore, type StoreState } from '@/state/purchase';
 import { ThemedText } from '@/components/themed-text';
 import { spacing, useColors } from '@/theme';
 
@@ -87,7 +87,7 @@ export default function SettingsScreen() {
       <YouSettings />
 
       {ON_SALE && (
-        <Section header="FlipUp Premium" footer={premium ? 'Unlocked on this phone.' : 'Bought Premium before, or on another iPhone? Restore brings it back.'}>
+        <Section header="FlipUp Premium" footer={premium ? planLine(store) : 'Bought Premium before, or on another iPhone? Restore brings it back.'}>
           <Row
             title={store.busy ? 'Restoring…' : 'Restore Purchases'}
             icon={{ symbol: 'arrow.clockwise', color: colors.gold as string }}
@@ -137,4 +137,14 @@ export default function SettingsScreen() {
       </ThemedText>
     </ScrollView>
   );
+}
+
+/** "Yearly plan · renews 12 Dec 2026", "Monthly plan · ends 3 Jan 2027", or the old one-time purchase. */
+function planLine(store: StoreState): string {
+  if (store.owned === 'lifetime') return 'Premium for good, from the one-time purchase.';
+  if (store.owned !== 'monthly' && store.owned !== 'yearly') return 'Unlocked on this phone.';
+  const plan = store.owned === 'yearly' ? 'Yearly plan' : 'Monthly plan';
+  if (!store.period) return plan + '.';
+  const day = new Date(store.period.ends).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+  return `${plan} · ${store.period.renews === false ? 'ends' : 'renews'} ${day}.`;
 }

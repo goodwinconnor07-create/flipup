@@ -27,7 +27,6 @@ import { GameCard } from '../lobby/game-card';
 import { HouseRules } from '../lobby/house-rules';
 import { Players, type PlayerLine } from '../lobby/players';
 import { openPlayerMenu } from '../player-menu';
-import { RoundButton } from '../tab-screen';
 import { ThemedText } from '../themed-text';
 import { randomBot, type RowBot } from './bots-row';
 import { InviteFriendsRow } from './invite-friends-row';
@@ -194,8 +193,9 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     return () => {
       live = false;
       // Going back without starting ends the party too (anyone already in it is handed to the next person).
-      if (party.current.code && !party.current.started) void leaveParty(party.current.code);
-      const m = made.current;
+      // The refs are read at cleanup on purpose: what matters is the party and lobby as they are when the page goes.
+      if (party.current.code && !party.current.started) void leaveParty(party.current.code); // eslint-disable-line react-hooks/exhaustive-deps
+      const m = made.current; // eslint-disable-line react-hooks/exhaustive-deps
       if (!m.code || m.opened) return;
       void takeBackInvites(waitingInvites(), m.code);
       abandonLobby(m.code);
@@ -290,7 +290,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   };
   const rows: PlayerLine[] = [
     { key: 'you', name: profile.name || 'You', emoji: profile.emoji || '🙂', line: 'You · Host', you: true },
-    ...(s.humanPoker ? [{ key: 'human-poker', name: 'BOT_001', emoji: '🤖', line: 'New experimental bot' }] : []),
     ...others.map((p) => {
       const key = seatKey(p);
       const remove = () => dispatch({ type: 'remove', playerId: p.id });
@@ -398,6 +397,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
                 setDraft(next);
               }}
               online
+              bots={bots.length}
             />
 
             <Players rows={rows} onAdd={addBot} />

@@ -1,7 +1,8 @@
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import { Alert, Linking, Modal, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -12,10 +13,11 @@ import { isReason, PERKS, REASON_PERK, type Perk, type PerkId } from '@/componen
 import { PressableScale } from '@/components/pressable-scale';
 import { statsData } from '@/components/share/data';
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
+import { Confetti } from '@/components/table/confetti';
 import { PlayingCard } from '@/components/table/playing-card';
 import { Swap } from '@/components/swap';
 import { ThemedText } from '@/components/themed-text';
-import { botFace, BOTS, CARD_PACKS, FREE_BOT_NAMES, isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
+import { botFace, BOTS, CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
 import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, storeError, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
@@ -51,6 +53,9 @@ export default function PremiumSheet() {
   const lit = reason ? REASON_PERK[reason] : undefined;
   const perks = lit ? [...PERKS.filter((p) => p.id === lit), ...PERKS.filter((p) => p.id !== lit)] : PERKS;
 
+  // Just bought: a moment to enjoy it before the page closes.
+  const [celebrate, setCelebrate] = useState(0);
+
   const restore = async () => {
     const ok = await restorePremium();
     if (ok) {
@@ -75,9 +80,13 @@ export default function PremiumSheet() {
           </PressableScale>
         </View>
 
-        <HeroPager perks={perks} wanted={reason === 'game' ? wanted : undefined} />
+        {/* With Premium there's nothing to sell: the plan card, then what's unlocked. */}
+        {!has && <HeroPager perks={perks} wanted={reason === 'game' ? wanted : undefined} />}
 
-        <Plans store={store} has={has} />
+        <View style={{ height: has ? spacing.lg : 0 }} />
+        <Plans store={store} has={has} onBought={() => setCelebrate(Date.now())} />
+
+        <PerkList has={has} />
 
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm }}>
           {!has && ON_SALE && (
@@ -94,8 +103,100 @@ export default function PremiumSheet() {
           )}
         </View>
       </ScrollView>
+      <Celebration at={celebrate} />
     </View>
   );
+}
+
+/**
+ * After a purchase: the whole screen says thank you, with confetti (none under Reduce Motion) and what just
+ * unlocked, and Done closes the page.
+ */
+function Celebration({ at }: { at: number }) {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  return (
+    <Modal visible={!!at} transparent animationType="fade" onRequestClose={() => router.back()}>
+      <View style={[{ flex: 1, paddingTop: insets.top + spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, paddingHorizontal: spacing.lg, gap: spacing.lg }, gradient(PAGE)]}>
+        <View style={{ alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
+            <Icon name="crown.fill" size={40} color={brand.gold} />
+          </View>
+          <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff', textAlign: 'center' }}>
+            Premium is on
+          </Text>
+          <ThemedText variant="body" style={{ color: 'rgba(255,255,255,0.85)', textAlign: 'center' }}>
+            Thanks for backing FlipUp. Here’s what just unlocked.
+          </ThemedText>
+        </View>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ gap: spacing.xs }} showsVerticalScrollIndicator={false}>
+          {PERKS.map((p) => (
+            <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.sm, paddingHorizontal: spacing.md, borderRadius: 18, borderCurve: 'continuous', backgroundColor: 'rgba(0,0,0,0.35)' }}>
+              <Icon name={p.icon} size={20} color={brand.gold} />
+              <ThemedText variant="headline" style={{ flex: 1, color: '#ffffff' }}>
+                {p.title}
+              </ThemedText>
+              <Icon name="checkmark" size={16} color="rgba(255,255,255,0.8)" />
+            </View>
+          ))}
+        </ScrollView>
+        <BlueButton title="Done" onPress={() => router.back()} />
+        <Confetti burst={at} origin={{ x: width / 2, y: height * 0.25 }} amount={90} />
+      </View>
+    </Modal>
+  );
+}
+
+/**
+ * Every perk in one place under the plans (the pictures above show one at a time): its icon, its name and a line.
+ * A tap opens the perk's own page, which with Premium has a button to go there.
+ */
+function PerkList({ has }: { has: boolean }) {
+  return (
+    <View style={{ marginHorizontal: spacing.md, marginTop: spacing.lg, gap: spacing.sm }}>
+      <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 22, fontWeight: '800', color: '#ffffff' }}>
+        {has ? 'Your Premium' : 'Everything in Premium'}
+      </Text>
+      <View style={{ borderRadius: 26, borderCurve: 'continuous', backgroundColor: CARD_BG, overflow: 'hidden' }}>
+        {PERKS.map((p, i) => (
+          <Pressable
+            key={p.id}
+            accessibilityRole="button"
+            accessibilityLabel={`${p.title}. ${p.about}`}
+            onPress={() => {
+              haptic.select();
+              router.push({ pathname: '/premium-perk', params: { id: p.id } });
+            }}
+            style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.md, borderTopWidth: i ? 1 : 0, borderTopColor: 'rgba(255,255,255,0.08)', backgroundColor: pressed ? 'rgba(255,255,255,0.06)' : 'transparent' })}
+          >
+            <View style={{ width: 28, alignItems: 'center' }}>
+              <Icon name={p.icon} size={20} color={brand.gold} />
+            </View>
+            <View style={{ flex: 1, gap: 2 }}>
+              <ThemedText variant="headline" style={{ color: '#ffffff' }}>
+                {p.title}
+              </ThemedText>
+              <ThemedText variant="subhead" style={{ color: MUTED }}>
+                {p.about}
+              </ThemedText>
+            </View>
+            <Icon name="chevron.right" size={14} color="rgba(255,255,255,0.35)" />
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+/** A soft block that breathes while the App Store's price is on its way (still under Reduce Motion). */
+function Shimmer({ width, height }: { width: number; height: number }) {
+  const reduce = useReduceMotion();
+  const glow = useSharedValue(0.18);
+  useEffect(() => {
+    if (!reduce) glow.set(withRepeat(withTiming(0.34, { duration: 850, easing: Easing.out(Easing.quad) }), -1, true));
+  }, [reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+  const style = useAnimatedStyle(() => ({ backgroundColor: `rgba(255,255,255,${glow.get()})` }));
+  return <Animated.View accessible accessibilityLabel="Loading the price" style={[{ width, height, borderRadius: 8 }, style]} />;
 }
 
 /** "FlipUp" on a dark grey capsule, then PREMIUM on black, as one pill. */
@@ -111,7 +212,7 @@ function BrandPill() {
 /** The words over each perk's picture: shorter and louder than the grid's. */
 const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
   range: { title: 'Every range hand', line: 'Every real spot, as many sets as you like.' },
-  bots: { title: 'The whole roster', line: `${BOTS.length} bots in every style. Free tables get ${FREE_BOT_NAMES.length}.` },
+  bots: { title: 'The whole roster', line: `${FAMILIAR_COUNT} characters and hundreds of regulars. Free tables get ${FREE_BOT_NAMES.length}.` },
   games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },
   replay: { title: 'Replay any hand', line: 'Save it at the table, watch it back move by move.' },
   share: { title: 'Share cards', line: 'Your best hands and nights, as a picture.' },
@@ -348,7 +449,7 @@ interface PlanInfo {
  * then Monthly (Most flexible). With Premium it's one card with your plan; while the store is busy or can't sell,
  * one card says so.
  */
-function Plans({ store, has }: { store: StoreState; has: boolean }) {
+function Plans({ store, has, onBought }: { store: StoreState; has: boolean; onBought: () => void }) {
   const { width } = useWindowDimensions();
   const cardW = Math.min(width - spacing.md * 2 - 20, 420);
   const gap = spacing.sm;
@@ -357,7 +458,7 @@ function Plans({ store, has }: { store: StoreState; has: boolean }) {
   const buy = async (plan: Plan) => {
     if (await buyPremium(plan)) {
       haptic.success();
-      router.back();
+      onBought();
     }
   };
 
@@ -452,13 +553,23 @@ function Plans({ store, has }: { store: StoreState; has: boolean }) {
               </View>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
                 <View style={{ flex: 1 }}>
-                  <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff' }}>
-                    <Text style={{ fontSize: 32, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{price?.price ?? '—'}</Text>
-                    <Text style={{ fontSize: 22 }}> / {c.per}</Text>
-                  </Text>
-                  <ThemedText variant="body" style={{ color: MUTED }}>
-                    {price ? c.under : 'Loading the App Store’s price…'}
-                  </ThemedText>
+                  {/* Until the App Store answers, soft blocks where the price and its line will be, not dashes. */}
+                  {price ? (
+                    <>
+                      <Text maxFontSizeMultiplier={1.2} style={{ color: '#ffffff' }}>
+                        <Text style={{ fontSize: 32, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{price.price}</Text>
+                        <Text style={{ fontSize: 22 }}> / {c.per}</Text>
+                      </Text>
+                      <ThemedText variant="body" style={{ color: MUTED }}>
+                        {c.under}
+                      </ThemedText>
+                    </>
+                  ) : (
+                    <View style={{ gap: 10, paddingVertical: 4 }}>
+                      <Shimmer width={150} height={30} />
+                      <Shimmer width={110} height={16} />
+                    </View>
+                  )}
                 </View>
                 {c.plan === 'yearly' && saving && (
                   <View style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 9, backgroundColor: brand.gold }}>
@@ -466,7 +577,13 @@ function Plans({ store, has }: { store: StoreState; has: boolean }) {
                   </View>
                 )}
               </View>
-              <BlueButton title={price ? c.button : 'Loading…'} loading={store.busy} disabled={!price} onPress={() => void buy(c.plan)} />
+              {price ? (
+                <BlueButton title={c.button} loading={store.busy} onPress={() => void buy(c.plan)} />
+              ) : (
+                <View style={{ minHeight: 56, borderRadius: radius.full, overflow: 'hidden' }}>
+                  <Shimmer width={cardW - spacing.lg * 2} height={56} />
+                </View>
+              )}
               <View style={{ gap: spacing.sm }}>
                 {c.points.map((p) => (
                   <View key={p.text} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>

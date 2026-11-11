@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Text, useWindowDimensions, View } from 'react-native';
 
 import { gameLook } from '@design/gameArt';
-import { isPremiumVariant, VARIANTS, type Variant } from '@/engine';
+import { variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { radius, ROUNDED, spacing, useShadows } from '@/theme';
 
@@ -33,8 +33,8 @@ export function GameShelf() {
       <MainCard variant={main.id} name={main.name} width={width} />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: spacing.sm, rowGap: spacing.md }}>
         {rest.map((v) => (
-          <PressableScale key={v.id} accessibilityRole="button" accessibilityLabel={`${v.name}${!premium && isPremiumVariant(v.id) ? ', Premium' : ''}. ${gameLook(v.id).hook}`} onPress={() => open(v.id)} haptics={false}>
-            <GameTile variant={v.id} name={v.name} width={tile} locked={!premium && isPremiumVariant(v.id)} />
+          <PressableScale key={v.id} accessibilityRole="button" accessibilityLabel={`${v.name}${!premium && variantNeedsPremium(v.id) ? ', Premium' : ''}. ${gameLook(v.id).hook}`} onPress={() => open(v.id)} haptics={false}>
+            <GameTile variant={v.id} name={v.name} width={tile} locked={!premium && variantNeedsPremium(v.id)} />
           </PressableScale>
         ))}
       </View>

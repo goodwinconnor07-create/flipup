@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 
-import { IMPOSTER_REACTIONS, REACTIONS } from '@/engine';
+import { EMOJI_REACTIONS, IMPOSTER_REACTIONS, REACTIONS } from '@/engine';
 import { dispatch } from '@/state/session';
 import { radius, spacing, useColors } from '@/theme';
 
@@ -39,24 +39,42 @@ export function QuickMessages({ imposter = false }: { imposter?: boolean }) {
       </PressableScale>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'flex-end', padding: spacing.md, paddingBottom: 180 }} onPress={() => setOpen(false)}>
-          <View accessibilityRole="menu" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, padding: spacing.sm, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: '0 16px 40px rgba(0,0,0,0.3)' }}>
-            {(imposter ? [...IMPOSTER_REACTIONS, ...REACTIONS] : REACTIONS).map((r) => {
-              const emoji = !/[A-Za-z]/.test(r.text);
-              return (
+          <View accessibilityRole="menu" style={{ gap: spacing.sm, padding: spacing.sm, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: '0 16px 40px rgba(0,0,0,0.3)' }}>
+            {/* Emoji first, one tap each: quicker than picking a sentence. All fixed, nothing typed. */}
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+              {EMOJI_REACTIONS.map((r) => (
                 <PressableScale
                   key={r.id}
                   accessibilityRole="menuitem"
                   accessibilityLabel={r.text}
                   disabled={cooling}
                   onPress={() => send(r.id)}
-                  style={{ minHeight: 44, minWidth: 44, paddingHorizontal: emoji ? spacing.xs : spacing.sm, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed }}
+                  style={{ width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed }}
                 >
-                  <Text maxFontSizeMultiplier={1.3} style={{ fontSize: emoji ? 24 : 16, fontWeight: '700', color: colors.label }}>
+                  <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 26 }}>
                     {r.text}
                   </Text>
                 </PressableScale>
-              );
-            })}
+              ))}
+            </View>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
+              {(imposter ? [...IMPOSTER_REACTIONS, ...REACTIONS] : REACTIONS)
+                .filter((r) => /[A-Za-z]/.test(r.text))
+                .map((r) => (
+                  <PressableScale
+                    key={r.id}
+                    accessibilityRole="menuitem"
+                    accessibilityLabel={r.text}
+                    disabled={cooling}
+                    onPress={() => send(r.id)}
+                    style={{ minHeight: 44, minWidth: 44, paddingHorizontal: spacing.sm, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cellPressed }}
+                  >
+                    <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 16, fontWeight: '700', color: colors.label }}>
+                      {r.text}
+                    </Text>
+                  </PressableScale>
+                ))}
+            </View>
           </View>
         </Pressable>
       </Modal>

@@ -22,7 +22,7 @@ import { useSyncExternalStore } from 'react';
 
 import { APP_INFO } from '../../appInfo';
 import { bindPurchase } from './entitlement';
-import { hasPremium, setPremium } from './premium';
+import { premiumStored, setPremium } from './premium';
 
 export type Plan = 'monthly' | 'yearly';
 const SKU: Record<Plan, string> = { monthly: APP_INFO.premiumMonthlyId, yearly: APP_INFO.premiumYearlyId };
@@ -100,7 +100,7 @@ function grant(p: Purchase): Promise<void> {
   const key = p.transactionId || p.id;
   const existing = granting.get(key);
   if (existing) return existing;
-  if (!hasPremium()) setPremium(true);
+  if (!premiumStored()) setPremium(true);
   const plan = planOf(p.productId);
   if (plan && state.owned !== 'lifetime') publish({ owned: plan, ...(plan !== 'lifetime' && periodOf(p) ? { period: periodOf(p) } : {}) });
   // Every renewal is a new signed transaction with a later expiry: the server keeps the latest.
@@ -152,7 +152,7 @@ export function startStore(): Promise<boolean> {
       await initConnection();
       const [, owned] = await Promise.all([loadPrices(), checkOwned()]);
       // The App Store answered and this Apple Account has nothing live: the subscription ended or was refunded.
-      if (!owned && hasPremium()) setPremium(false);
+      if (!owned && premiumStored()) setPremium(false);
       return true;
     } catch {
       publish({ error: "Couldn't reach the App Store." });

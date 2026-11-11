@@ -1,8 +1,8 @@
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
-import { Alert, Linking, Modal, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { Alert, Linking, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
+import Animated, { Easing, FadeIn, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -115,8 +115,11 @@ export default function PremiumSheet() {
 function Celebration({ at }: { at: number }) {
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  // Mounted only after a purchase, and drawn over the page itself rather than in a native Modal (a Modal inside a
+  // form sheet can fail to present, and an empty one is a risk for nothing).
+  if (!at) return null;
   return (
-    <Modal visible={!!at} transparent animationType="fade" onRequestClose={() => router.back()}>
+    <Animated.View entering={FadeIn.duration(250)} style={{ position: 'absolute', inset: 0, zIndex: 50 }}>
       <View style={[{ flex: 1, paddingTop: insets.top + spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, paddingHorizontal: spacing.lg, gap: spacing.lg }, gradient(PAGE)]}>
         <View style={{ alignItems: 'center', gap: spacing.sm }}>
           <View style={{ width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)' }}>
@@ -143,7 +146,7 @@ function Celebration({ at }: { at: number }) {
         <BlueButton title="Done" onPress={() => router.back()} />
         <Confetti burst={at} origin={{ x: width / 2, y: height * 0.25 }} amount={90} />
       </View>
-    </Modal>
+    </Animated.View>
   );
 }
 

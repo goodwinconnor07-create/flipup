@@ -7,10 +7,11 @@ import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share } from '
 
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
+import { Switch } from '@/components/switch';
 import { YouSettings } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
-import { usePremium } from '@/state/premium';
+import { setPreviewFree, usePremium, usePreviewFree } from '@/state/premium';
 import { manageSubscription, ON_SALE, restorePremium, storeError, useStore, type StoreState } from '@/state/purchase';
 import { ThemedText } from '@/components/themed-text';
 import { spacing, useColors } from '@/theme';
@@ -26,6 +27,7 @@ export default function SettingsScreen() {
   const colors = useColors();
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
+  const previewFree = usePreviewFree();
   const blocked = useBlocked();
   const store = useStore();
   const restore = async () => {
@@ -99,6 +101,17 @@ export default function SettingsScreen() {
           {premium && (store.owned === 'monthly' || store.owned === 'yearly') && (
             <Row title="Manage subscription" icon={{ symbol: 'creditcard.fill', color: colors.accent as string }} onPress={() => void manageSubscription()} />
           )}
+        </Section>
+      )}
+
+      {APP_INFO.testingTools && (
+        <Section header="Testing" footer="TestFlight only. Hides Premium on this phone so you can see the locked screens while subscribed. Switch it off to get Premium back.">
+          <Row
+            title="View as a free player"
+            icon={{ symbol: 'eye.fill', color: colors.accent as string }}
+            chevron={false}
+            trailing={<Switch label="View as a free player" value={previewFree} onValueChange={setPreviewFree} />}
+          />
         </Section>
       )}
 

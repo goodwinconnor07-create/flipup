@@ -29,6 +29,12 @@ export const APP_INFO = {
   premiumMonthlyId: 'flipup.premium.monthly',
   premiumYearlyId: 'flipup.premium.yearly',
 
+  /**
+   * Testing tools for TestFlight builds: Settings gets "View as a free player", which hides Premium on this phone so
+   * the locked screens can be checked while subscribed. TODO(owner): set to false before the App Store build.
+   */
+  testingTools: true,
+
   /** The server the app talks to (the same Cloudflare Worker as the web app). The domain will change later. */
   apiOrigin: 'https://playflipup.com',
   /** Public pages the store listing and the app link to. */

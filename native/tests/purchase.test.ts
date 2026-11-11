@@ -39,6 +39,7 @@ vi.mock('expo-iap', () => ({
 }));
 vi.mock('../src/state/premium', () => ({
   hasPremium: () => store.premium,
+  premiumStored: () => store.premium,
   setPremium: (on: boolean) => {
     store.premium = on;
     store.grant(on);

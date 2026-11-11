@@ -1,45 +1,53 @@
 import { router, Stack } from 'expo-router';
-import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useEffect } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Share, Text, useWindowDimensions, View } from 'react-native';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { gameLook } from '@design/gameArt';
+import { Avatar } from '@/components/avatar';
 import { haptic } from '@/components/haptics';
-import { FriendsStrip } from '@/components/home/friends-strip';
-import { GameRow } from '@/components/home/game-row';
-import { PassportCard } from '@/components/home/passport';
-import { StartTiles } from '@/components/home/start-tiles';
-import { FirstHand } from '@/components/home/your-poker';
-import { Icon } from '@/components/icon';
-import { InviteCard } from '@/components/invite-card';
+import { GameBackdrop, shade } from '@/components/home/game-backdrop';
+import { GameSwiper } from '@/components/home/game-swiper';
+import { PlayButton } from '@/components/home/play-button';
+import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
-import { RequestsPill } from '@/components/friend-requests';
-import { ProfileMenu } from '@/components/profile-menu';
-import { TabScreen } from '@/components/tab-screen';
-import { EASE_OUT } from '@/motion/presets';
+import { Swap } from '@/components/swap';
+import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { ThemedText } from '@/components/themed-text';
-import { challengeById, FREE_VARIANTS, VARIANTS, variantInfo, variantOf } from '@/engine';
-import { FRIENDS_ON } from '@/scope';
-import { useFriendBox } from '@/state/pals';
+import { isVariant, VARIANTS, variantInfo, variantOf, type Variant } from '@/engine';
 import { usePartyRef } from '@/state/party';
-import { usePokerRecord } from '@/state/record';
+import { useProfile } from '@/state/profile';
 import { useRangeHistory } from '@/state/range-history';
+import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
-import { usePremium } from '@/state/premium';
-import { radius, spacing, useColors, useShadows } from '@/theme';
+import { save, useStored } from '@/state/storage';
+import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
+import { APP_INFO } from '../../../../appInfo';
+
+const GLASS = 'rgba(255, 255, 255, 0.11)';
+const EDGE = 'rgba(255, 255, 255, 0.12)';
+/** The tab bar's height over the bottom safe area. */
+const TAB_BAR = 49;
+/** The game shown in the middle, kept between launches. */
+const PICK = 'flipup.homegame';
 
 /**
- * Home. Built the way game apps that feel native do it (Apple's Games app, Chess.com, Flighty): the big title with
- * your avatar menu beside it, then only what gets you playing. Your table or party if you're in one, a friend's
- * invite if one's waiting, else your last game to play again; the two ways to sit down as big tiles; your friends as
- * faces; your poker on one card (How to Play before your first hand); the games as a shelf you swipe; Premium.
+ * Home as a game lobby (a test, 10 Nov 2026: "a normal game app home screen" with bottom tabs and main middle
+ * buttons, made satisfying to open). The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left
+ * and your face top right (a tap opens your profile); the games as a line of cards across the whole screen, locked
+ * on one at a time (`GameSwiper`), the chosen one's name, hook and dots under it; a row of round shortcuts (Stats,
+ * Rules, All games, Premium, Settings, Share) just over PLAY (`PlayButton`), with Play bots and Join a game under
+ * it. PLAY and Play bots open their page straight away. The tab bar stays at
+ * the bottom. Nothing scrolls.
  */
 export default function Home() {
-  const premium = usePremium();
+  const insets = useSafeAreaInsets();
+  const { height, width } = useWindowDimensions();
+  const reduce = useReduceMotion();
+  const profile = useProfile();
   const record = usePokerRecord();
-  const box = useFriendBox();
-  const banner = useHasBanner();
   // After a good moment (three finished games or ten best plays) iOS may ask for a rating, once.
   const games = record.games.length;
   const bestPlays = useRangeHistory().filter((a) => a.grade === 'best').length;
@@ -47,127 +55,170 @@ export default function Home() {
     const t = setTimeout(() => void maybeAskForReview(games, bestPlays), 2500);
     return () => clearTimeout(t);
   }, [games, bestPlays]);
-  const reduce = useReduceMotion();
-  const slide = reduce ? undefined : LinearTransition.duration(320).easing(EASE_OUT);
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Play', headerShown: false }} />
-      <TabScreen
-        title="Play"
-        accessory={
-          <>
-            {FRIENDS_ON && <RequestsPill />}
-            <ProfileMenu />
-          </>
-        }
-      >
-        {(banner || (FRIENDS_ON && box.invites.length > 0)) && (
-          <View style={{ gap: spacing.sm }}>
-            <TableBanner />
-            {FRIENDS_ON && box.invites.slice(0, 2).map((i) => (
-              <InviteCard key={`${i.from}:${i.at}`} invite={i} />
-            ))}
-          </View>
-        )}
-        <StartTiles />
-        <Animated.View layout={slide} style={{ gap: spacing.lg }}>
-          <GameRow />
-          {FRIENDS_ON && <FriendsStrip />}
-          {record.hands > 0 ? <PassportCard /> : <FirstHand />}
-          {/* Asked for after a first finished game, not before the player has had any fun; the crowns on the game tiles say it meanwhile. */}
-          {!premium && games > 0 && <PremiumBanner />}
 
-          <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-            Play chips only. They have no cash value and can&apos;t be bought or won.
-          </ThemedText>
-        </Animated.View>
-      </TabScreen>
-    </>
+  // The game in the middle: the one you picked here, else the one you played last, else Texas Hold'em.
+  const stored = useStored<string | null>(PICK, null);
+  const last = record.games.at(-1)?.variant;
+  const variant: Variant = isVariant(stored) ? stored : (last ?? 'holdem');
+  const info = variantInfo(variant);
+  const look = gameLook(variant);
+  // The parts arrive one after another, 30ms apart, when the app opens (phone only: the web build's layout animations misplace rows).
+  const arrive = (i: number) => (Platform.OS === 'ios' ? detail(i, reduce) : undefined);
+  const hero = Math.round(Math.max(120, Math.min(200, height * 0.23)));
+  const card = Math.min(hero, width - spacing.md * 2 - 80);
+
+  // PLAY opens the page straight away; no colour fills the screen.
+  const start = (path: string, buzz = false) => () => {
+    if (buzz) haptic.turn();
+    router.push(path as never);
+  };
+
+  const go = (path: string) => () => {
+    haptic.tap();
+    router.push(path as never);
+  };
+  const named = profile.name.trim().length > 0;
+  const pad = { paddingHorizontal: spacing.md };
+  return (
+    <ForceScheme scheme="dark">
+      <Stack.Screen options={{ title: 'Play', headerShown: false }} />
+      <GameBackdrop variant={variant} style={{ flex: 1 }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.xs, gap: spacing.md }}>
+          {/* Top bar: the page's name on the left, you on the right. */}
+          <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+            <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', letterSpacing: -0.4, color: '#ffffff' }}>
+              Play
+            </Text>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel={named ? `${profile.name}. Open your profile` : 'Set up your profile'}
+              onPress={go('/profile')}
+              haptics={false}
+              style={{ padding: 3, borderRadius: 999, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.85)', boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
+            >
+              <Avatar emoji={named ? profile.emoji : undefined} size={50} />
+            </PressableScale>
+          </Animated.View>
+
+          {/* The middle: the games in a line across the whole screen. */}
+          <Animated.View entering={arrive(1)} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+            <View>
+              <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} />
+            </View>
+            <View style={[pad, { alignItems: 'center', gap: 2 }]}>
+              <Swap id={variant} kind="text">
+                <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '900', letterSpacing: -0.4, color: '#ffffff', textAlign: 'center' }}>
+                  {info.name}
+                </Text>
+              </Swap>
+              <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 15, lineHeight: 19, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)', textAlign: 'center' }}>
+                {look.hook}
+              </Text>
+            </View>
+            {/* Which of the games this is. */}
+            <View accessible={false} style={{ flexDirection: 'row', gap: 5, paddingTop: 4 }}>
+              {VARIANTS.map((v) => (
+                <Dot key={v.id} on={v.id === variant} />
+              ))}
+            </View>
+          </Animated.View>
+
+          {/* The shortcuts, then the main buttons. */}
+          <Animated.View entering={arrive(2)} style={[pad, { gap: spacing.sm }]}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: spacing.xxs }}>
+              <SideButton icon="chart.bar.xaxis" label="Stats" onPress={go('/stats')} />
+              <SideButton icon="book.fill" label="Rules" onPress={go(`/how-to-play/${variant}`)} />
+              <SideButton icon="square.grid.2x2.fill" label="All games" onPress={go('/games')} />
+              <SideButton icon="crown.fill" label="Premium" tint={brand.gold} onPress={go('/premium')} />
+              <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
+              <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />
+            </View>
+            <LiveCard />
+            <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={start(`/play-friends?variant=${variant}`)} />
+            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+              <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
+              <SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />
+            </View>
+          </Animated.View>
+        </View>
+      </GameBackdrop>
+    </ForceScheme>
   );
 }
 
-/** How many games Premium adds (every game after the free ones). */
-const PREMIUM_GAMES = VARIANTS.length - FREE_VARIANTS;
-
-/** Whether Home has a table or party to get back to (the banner shows). */
-function useHasBanner(): boolean {
-  const t = useTable();
-  const partyRef = usePartyRef();
-  const atTable = !!t.mode && !(t.game && t.game.status === 'ended' && !t.game.party);
-  return atTable || !!partyRef;
+function shareApp() {
+  haptic.tap();
+  const url = `https://apps.apple.com/app/id${APP_INFO.appStoreId}`;
+  void Share.share({ message: `Poker night on your phones. Play FlipUp with me: ${url}`, url }).catch(() => undefined);
 }
 
-/** Premium, the way Flighty asks for Pro: a slim outlined banner, a badge, what it adds and a chevron. */
-function PremiumBanner() {
-  const colors = useColors();
-  const shadows = useShadows();
+/** A shortcut over PLAY: a round see-through button with its name under it. */
+function SideButton({ icon, label, tint = '#ffffff', onPress }: { icon: IconName; label: string; tint?: string; onPress: () => void }) {
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={`FlipUp Premium. ${PREMIUM_GAMES} more games and card packs`}
-      onPress={() => {
-        haptic.tap();
-        router.push('/premium');
-      }}
-      style={{ gap: spacing.xxs, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', borderWidth: 1.5, borderColor: colors.gold, backgroundColor: colors.goldBg, boxShadow: shadows.card }}
-    >
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <View style={{ paddingHorizontal: spacing.xs, paddingVertical: 2, borderRadius: radius.sm, backgroundColor: colors.gold }}>
-          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 0.8, color: '#3b2300' }}>
-            PREMIUM
-          </Text>
-        </View>
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: 17, fontWeight: '700', color: colors.goldInk }}>
-          {PREMIUM_GAMES} more games
-        </Text>
-        <Icon name="chevron.right" size={15} color={colors.goldInk} />
+    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} haptics={false} outerStyle={{ flex: 1 }} style={{ alignItems: 'center', gap: 4 }}>
+      <View style={{ width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}>
+        <Icon name={icon} size={21} color={tint} />
       </View>
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, color: colors.goldInk }}>
-        Plus card packs. One payment, yours to keep.
+      <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 11, fontWeight: '600', color: 'rgba(255, 255, 255, 0.8)' }}>
+        {label}
       </Text>
     </PressableScale>
   );
 }
 
-/** The one clear next step, as on the web: a table you're still at (bots-only or online) with Rejoin, or your open party. */
-function TableBanner() {
-  const colors = useColors();
-  const shadows = useShadows();
+/** One dot of the row under the game: the chosen one stretches into a short bar. */
+function Dot({ on }: { on: boolean }) {
+  const style = useAnimatedStyle(() => ({ width: withTiming(on ? 16 : 5, { duration: 200, easing: EASE_OUT }), opacity: withTiming(on ? 1 : 0.35, { duration: 200, easing: EASE_OUT }) }));
+  return <Animated.View style={[{ height: 5, borderRadius: 3, backgroundColor: '#ffffff' }, style]} />;
+}
+
+/** One of the two buttons under PLAY. */
+function SmallButton({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      haptics={false}
+      outerStyle={{ flex: 1 }}
+      style={{ minHeight: 54, flexDirection: 'row', gap: spacing.xs, borderRadius: 20, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.14)', borderWidth: 1, borderColor: EDGE }}
+    >
+      <Icon name={icon} size={18} color="#ffffff" />
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
+        {label}
+      </Text>
+    </PressableScale>
+  );
+}
+
+/** The table or party you're in: a slim strip over the buttons with a green LIVE tag. */
+function LiveCard() {
   const t = useTable();
   const game = t.game;
   const partyRef = usePartyRef();
   const atTable = !!t.mode && !(game && game.status === 'ended' && !game.party);
   if (!atTable && !partyRef) return null;
-  const info = atTable && game ? variantInfo(variantOf(game)) : null;
-  const challenge = game?.challenge ? challengeById(game.challenge.id) : undefined;
-  const what = !atTable ? 'Your party' : challenge ? challenge.name : game?.party ? `Party · game ${game.party.round + 1} of ${game.party.total}` : t.mode === 'online' ? `Online table${t.code ? ` · ${t.code}` : ''}` : 'You vs the bots';
-  const where = !atTable ? `Code ${partyRef?.code}` : game?.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : game?.status === 'lobby' ? 'In the lobby' : 'Your table';
+  const what = !atTable ? 'your party' : game ? variantInfo(variantOf(game)).name : 'your table';
   return (
-    <Pressable
+    <PressableScale
       accessibilityRole="button"
-      accessibilityLabel={`${what}. ${where}. ${atTable ? 'Rejoin' : 'Open'}`}
+      accessibilityLabel={`Back to ${what}`}
       onPress={() => {
         haptic.tap();
         router.push(atTable ? '/table' : '/party-room');
       }}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingLeft: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: pressed ? colors.cellPressed : colors.cell, boxShadow: shadows.card })}
+      haptics={false}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingHorizontal: spacing.md, borderRadius: 16, borderCurve: 'continuous', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}
     >
-      <Text style={{ fontSize: 26 }} maxFontSizeMultiplier={1} accessible={false}>
-        {info?.emoji ?? (atTable ? '🃏' : '🥳')}
+      <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: brand.raise }}>
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: brand.raise }}>
+          LIVE
+        </Text>
+      </View>
+      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: '600', color: '#ffffff' }}>
+        Back to {what}
       </Text>
-      <View style={{ flex: 1 }}>
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 17, fontWeight: '700', color: colors.label }}>
-          {what}
-        </Text>
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ fontSize: 15, color: colors.tertiaryLabel }}>
-          {where}
-        </Text>
-      </View>
-      <View style={{ paddingHorizontal: spacing.md, minHeight: 36, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent }}>
-        <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: '#ffffff' }}>
-          {atTable ? 'Rejoin' : 'Open'}
-        </Text>
-      </View>
-    </Pressable>
+      <Icon name="chevron.right" size={14} color="rgba(255, 255, 255, 0.85)" />
+    </PressableScale>
   );
 }

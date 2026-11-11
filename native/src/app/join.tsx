@@ -8,6 +8,7 @@ import { Button } from '@/components/button';
 import { CodePad, useCode } from '@/components/code-pad';
 import { GameThumb } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
+import { Icon } from '@/components/icon';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import { isTableCode, normalizeTableCode, variantInfo, type TableInfo } from '@/engine';
@@ -16,7 +17,7 @@ import { joinParty, readParty } from '@/state/party';
 import { askForName } from '@/state/ask-name';
 import { readProfile } from '@/state/profile';
 import { joinOnlineTable } from '@/state/session';
-import { radius, spacing, useColors, useShadows } from '@/theme';
+import { brand, gradient, radius, spacing, useColors, useShadows } from '@/theme';
 
 /** The code inside a scanned QR: the join link ends in it (a table's or a party's), or the text is just the code (the web's `codeFromScan`). */
 function codeFromScan(text: string): string | null {
@@ -112,6 +113,7 @@ export default function JoinSheet() {
     <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingTop: spacing.xxl, paddingBottom: spacing.xxxl, gap: spacing.lg }}>
       {/* No nav bar: its title sat over the sheet's own and blurred it. The big title below is the sheet's. */}
       <Stack.Screen options={{ title: 'Join', headerShown: false }} />
+      {!found && <JoinBadge />}
       <View style={{ gap: spacing.xxs }}>
         <ThemedText variant="title1" accessibilityRole="header" style={{ textAlign: 'center' }}>
           {found ? 'Found it' : 'Join with a code'}
@@ -191,6 +193,51 @@ function TableCard({ info, onSit, onBack }: { info: TableInfo; onSit: () => void
       </View>
       <Button title={over ? 'This table has finished' : full ? 'The table is full' : 'Sit down'} variant="party" tint="green" size="lg" disabled={over || full} onPress={onSit} />
       <Button title="Use another code" variant="secondary" onPress={onBack} />
+    </View>
+  );
+}
+
+/**
+ * The sheet's picture, over its title: an app-icon tile in the icon's own blue gradient with two people on it and a
+ * small green plus on its corner, for sitting down at someone else's table.
+ */
+function JoinBadge() {
+  const colors = useColors();
+  const size = 76;
+  const plus = 30;
+  return (
+    <View accessible={false} style={{ alignSelf: 'center', width: size, height: size, marginBottom: -spacing.xs }}>
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: size * 0.2237,
+          borderCurve: 'continuous',
+          alignItems: 'center',
+          justifyContent: 'center',
+          boxShadow: '0 10px 24px -8px rgba(21, 47, 134, 0.7)',
+          ...gradient('linear-gradient(160deg, #4a7bf0 0%, #152f86 100%)'),
+        }}
+      >
+        <Icon name="person.2.fill" size={36} color="#ffffff" />
+      </View>
+      <View
+        style={{
+          position: 'absolute',
+          right: -plus / 3,
+          bottom: -plus / 3,
+          width: plus,
+          height: plus,
+          borderRadius: plus / 2,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: brand.raise,
+          borderWidth: 3,
+          borderColor: colors.background,
+        }}
+      >
+        <Icon name="plus" size={14} color="#ffffff" weight="bold" />
+      </View>
     </View>
   );
 }

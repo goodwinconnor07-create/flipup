@@ -10,6 +10,7 @@ import { Legend } from './screens/Legend';
 import { PartyScreen } from './screens/Party';
 import { PartySetup } from './screens/PartySetup';
 import { CashSeat } from './screens/CashSeat';
+import { BotResearch } from './screens/BotResearch';
 import { RangeTrainer } from './screens/RangeTrainer';
 import { useEffect } from 'react';
 import { Roulette } from './screens/Roulette';
@@ -63,6 +64,9 @@ export function App() {
       break;
     case 'cashSeat':
       screen = CAMPAIGN_ON ? <CashSeat /> : <Home />;
+      break;
+    case 'botResearch':
+      screen = <BotResearch review={route.review} />;
       break;
     case 'ranges':
       screen = <RangeTrainer />;

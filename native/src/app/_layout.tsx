@@ -5,6 +5,7 @@ import { Appearance, useColorScheme } from 'react-native';
 
 import { CrashScreen } from '@/components/crash-screen';
 import { InviteBanner } from '@/components/invite-banner';
+import { RequestTimeoutPopup } from '@/components/request-timeout-popup';
 import { LaunchCover } from '@/components/launch-cover';
 import { ThumbSnapper } from '@/components/thumb-snaps';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -40,6 +41,11 @@ void startStore();
  * Friends, requests and table invites stay fresh on every screen, so an invite's banner moves on wherever you are.
  * Only while friends are on (scope.ts).
  */
+/** Opened from Home's PLAY, whose card has already grown to fill the screen: the page fades in over it instead of sliding. */
+function fadeAfterFill(route: { params?: object }) {
+  return (route.params as { fill?: string } | undefined)?.fill ? { animation: 'fade' as const, animationDuration: 200 } : {};
+}
+
 function FriendWatch() {
   useFriendWatch();
   return <InviteBanner />;
@@ -70,12 +76,11 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
         {/* Play with friends: its own dark grain page, over the tabs so the tab bar never covers Open table. */}
-        <Stack.Screen name="play-friends" options={{ headerShown: false, title: 'Play with friends', statusBarStyle: 'light' }} />
+        <Stack.Screen name="play-friends" options={({ route }) => ({ headerShown: false, title: 'Play with friends', statusBarStyle: 'light', ...fadeAfterFill(route) })} />
         {/* A party's playlist, pushed from Play with friends; Save takes it back there. */}
         <Stack.Screen name="party-playlist" options={{ headerShown: false, title: 'Party playlist', statusBarStyle: 'light' }} />
-        <Stack.Screen name="play-bots" options={{ headerShown: false, title: 'Play with bots', statusBarStyle: 'light' }} />
+        <Stack.Screen name="play-bots" options={({ route }) => ({ headerShown: false, title: 'Play with bots', statusBarStyle: 'light', ...fadeAfterFill(route) })} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
-        {/* The fade is short because the table's own DealWipe does the moving. */}
         {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
         {/* Play with friends: a game's popup with Select and Close. */}
@@ -121,6 +126,7 @@ export default function RootLayout() {
       </Stack>
       {/* A friend's table invite drops in over any screen. */}
       {FRIENDS_ON && <FriendWatch />}
+      <RequestTimeoutPopup />
       <LaunchCover />
       {/* Saves the game tiles as pictures in the background, so lists of games show images, not SVGs. */}
       <ThumbSnapper />

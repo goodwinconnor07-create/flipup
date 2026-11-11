@@ -16,6 +16,7 @@ import './styles/premium.css';
 import './styles/campaign.css';
 import './styles/blackjack.css';
 import './styles/ranges.css';
+import './styles/research.css';
 import './styles/desktop-shell.css';
 
 boot();

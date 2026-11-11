@@ -126,7 +126,7 @@ describe('game-mode sense', () => {
     expect(draws(hand, 'b', () => 0.99)).toBe(1);
   });
 
-  it('votes in Imposter: innocents find the odd one out, the imposter backs the crowd', () => {
+  it('votes in Imposter: finds the odd one out and listens to the table, without knowing its own role', () => {
     const act = (playerId: string, move: string) => ({ street: 'flop', playerId, move, to: 0 });
     const hand = {
       imposter: 'd',
@@ -136,7 +136,7 @@ describe('game-mode sense', () => {
     } as unknown as Hand;
     // a's own read and the crowd disagree here; d stands out by play most.
     expect(botVote({ ...hand, points: {} }, 'a')).toBe('d');
-    // The imposter piles on the innocent the table is pointing at.
+    // The imposter doesn't know it is one: it votes like anyone, here with the two fingers already pointing at b.
     expect(botVote(hand, 'd')).toBe('b');
   });
 

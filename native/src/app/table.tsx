@@ -454,14 +454,13 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
     save('flipup.rulesseen', [...seen, variant]);
     router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } });
   }, [variant]); // eslint-disable-line react-hooks/exhaustive-deps
-  // Imposter: your role, announced as each hand is dealt.
-  const role = hand?.variant === 'imposter' && mySeat && me ? (hand.imposter === me.id ? 'imposter' : 'innocent') : null;
+  // Imposter: as each hand is dealt, a reminder that nobody (you included) knows who the imposter is.
+  const role = hand?.variant === 'imposter' && hand.imposter && !hand.result && mySeat && me ? 'unknown' : null;
   const roleKey = role && hand ? `${game.id}:${hand.number}:${role}` : '';
   const [dismissedRole, setDismissedRole] = useState('');
   const flash = roleKey && roleKey !== dismissedRole ? role : null;
   useEffect(() => {
     if (!roleKey) return;
-    if (role === 'imposter') haptic.turn();
     const t = setTimeout(() => setDismissedRole(roleKey), 2800);
     return () => clearTimeout(t);
   }, [roleKey, role]);
@@ -536,11 +535,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
           exiting={FadeOut}
           style={{ position: 'absolute', top: '30%', left: 0, right: 0, zIndex: 20, alignItems: 'center' }}
         >
-          <View style={{ paddingHorizontal: 22, paddingVertical: 14, borderRadius: 22, borderCurve: 'continuous', backgroundColor: flash === 'imposter' ? 'rgba(180,30,30,0.94)' : 'rgba(20,90,50,0.94)', alignItems: 'center', gap: 2 }}>
-            <Text style={{ fontSize: 34 }}>{flash === 'imposter' ? '🕵️' : '😇'}</Text>
-            <Text style={{ color: '#ffffff', fontSize: 20, fontWeight: '800' }}>{flash === 'imposter' ? "You're the imposter" : "You're innocent"}</Text>
+          <View style={{ paddingHorizontal: 22, paddingVertical: 14, borderRadius: 22, borderCurve: 'continuous', backgroundColor: 'rgba(40,40,60,0.94)', alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 34 }}>🕵️</Text>
+            <Text style={{ color: '#ffffff', fontSize: 20, fontWeight: '800' }}>One of you is the imposter</Text>
             <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
-              {flash === 'imposter' ? 'Your cards are different. Blend in.' : 'You hold what the other innocents hold. Find the odd one out.'}
+              {"Nobody knows who. It could be you. Don't stand out."}
             </Text>
           </View>
         </Animated.View>

@@ -116,8 +116,8 @@ export const VARIANTS: VariantInfo[] = [
     emoji: '🕵️',
     tagline: 'Everyone has the same hand but one. Find the imposter.',
     rules: [
-      "Everyone gets the same two cards, except the imposter, who gets a different hand. You're told whether you're the imposter or innocent.",
-      "How strong your cards are doesn't matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table (or, as the imposter, to blend in).",
+      "Everyone gets the same two cards, except the imposter, who gets a different hand. Nobody is told who it is, not even the imposter: you might be it.",
+      "How strong your cards are doesn't matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table, and try not to stand out yourself.",
       "Everyone antes a big blind each hand, so there's money in the middle from the start.",
       'After the river everyone votes for who they think the imposter is.',
       'If the most votes go to the imposter, the innocent players still in split the pot. If not (a tie counts as not), the imposter takes it all.',
@@ -485,20 +485,16 @@ function fingers(hand: Hand, skip: string): Map<string, number> {
 }
 
 /**
- * A bot's vote. Innocent, it knows every other innocent holds its own cards, so they should play alike: it suspects
- * whoever played least like the rest of the table (their pushiness against the middle of everyone else's), and
- * listens a little to where the table is pointing. As the imposter it backs the innocent the table already suspects
- * most, so the innocents' votes split or land on the wrong person (a tie keeps the pot for the imposter).
+ * A bot's vote. Nobody knows their own role, so a bot plays the odds that it's innocent: the innocents all hold the
+ * same cards and should play alike, so it suspects whoever played least like the rest of the table (their pushiness
+ * against the middle of everyone else's), and listens a little to where the table is pointing. It never reads
+ * `hand.imposter`: a person in its seat couldn't.
  */
 export function botVote(hand: Hand, botId: string): string | null {
   const others = hand.seats.map((s) => s.playerId).filter((id) => id !== botId);
   if (!others.length) return null;
   const push = pushiness(hand);
   const crowd = fingers(hand, botId);
-  if (botId === hand.imposter) {
-    const most = (id: string) => (crowd.get(id) ?? 0) * 10 + (push.get(id) ?? 0);
-    return others.reduce((a, b) => (most(b) > most(a) ? b : a));
-  }
   const middle = (id: string) => {
     const rest = hand.seats
       .map((s) => s.playerId)

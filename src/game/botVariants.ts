@@ -5,7 +5,7 @@
 //
 // On top of the run-outs, each bot knows a little about how its game is won (`variantDecide()`): players who bet
 // and raise hold better than random cards (`rangeDraws()`), Pot-limit Ghost and its rolling pot, the wild deuces,
-// Blackjack Hold'em's bust risk, Crazy Pineapple's draws and Imposter's crowd. `lab.legacy` plays a seat the old way,
+// Blackjack Hold'em's bust risk, Crazy Pineapple's draws and Imposter's crowd (nobody, bots included, knows the imposter). `lab.legacy` plays a seat the old way,
 // for scripts/variantLab.ts only.
 
 import type { BotThought } from './botPlay';
@@ -222,7 +222,7 @@ export function variantDecide(game: Game, hand: Hand, seat: Seat, rng: () => num
   const v = variantOf(game);
   if (v === 'holdem') return null;
   const legacy = lab.legacy.has(seat.playerId);
-  if (v === 'imposter' && hand.imposter) return blendIn(game, hand, seat, rng, !legacy);
+  if (v === 'imposter' && hand.imposter) return blendIn(game, hand, seat, rng);
   return byEquity(game, hand, seat, rng, !legacy);
 }
 
@@ -300,26 +300,20 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
 }
 
 /**
- * Imposter: the cards don't decide the pot and nobody can fold. Innocent or not, the bot mostly checks and calls
- * like the crowd, now and then makes a small probing bet, and never builds a huge pot on its own.
+ * Imposter: the cards don't decide the pot, nobody can fold, and nobody knows who the imposter is (the bot included:
+ * it never reads `hand.imposter`). So every bot plays to look ordinary: it mostly checks and calls like the crowd, now
+ * and then makes a small probing bet to see who reacts, and never builds a huge pot on its own.
  */
-function blendIn(game: Game, hand: Hand, seat: Seat, rng: () => number, smart = false): BotThought {
+function blendIn(game: Game, hand: Hand, seat: Seat, rng: () => number): BotThought {
   const player = game.players.find((p) => p.id === seat.playerId);
   const style = playerStyle(player);
   const o = options(game, hand, seat);
   const pot = potTotal(hand);
   const stack = player?.stack ?? 0;
   const thinkMs = think(game, seat, rng, Math.min(1, o.toCall / Math.max(1, stack)));
-  // The imposter fidgets a little more: it's trying to look like it belongs.
-  // A smart imposter does the opposite: it never bets or raises, only checks and calls like the quietest player at
-  // the table. Building a pot it then gets voted out of is the worst thing it can do (the lab showed it).
-  const imposter = seat.playerId === hand.imposter;
-  if (smart && imposter) return { move: o.canCheck ? { move: 'check' } : { move: 'call' }, thinkMs };
-  const nerves = imposter ? 0.06 : 0;
-  const probe = 0.14 + Math.max(-0.08, style.post.bluff) + nerves;
+  const probe = 0.14 + Math.max(-0.08, style.post.bluff);
   const small = hand.currentBet + Math.max(game.settings.bigBlind, pot * 0.33);
-  const quiet = quietOk(o.toCall, stack);
-  if (o.canRaise && quiet && rng() < probe) {
+  if (o.canRaise && quietOk(o.toCall, stack) && rng() < probe) {
     const to = Math.round(Math.max(o.minTo, Math.min(o.maxTo, small)));
     if (to < o.maxTo) return { move: { move: o.word === 'Bet' ? 'bet' : 'raise', to }, thinkMs };
   }

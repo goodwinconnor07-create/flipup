@@ -154,7 +154,7 @@ export function HandStory({
   return (
     <View accessibilityLabel="How the hand went" style={{ gap: spacing.xs }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xxs }}>
-        <ThemedText variant="headline" accessibilityRole="header">
+        <ThemedText variant="caption1" tone="secondaryLabel" accessibilityRole="header" style={{ fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }}>
           How it went
         </ThemedText>
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
@@ -192,7 +192,7 @@ export function HandStory({
               }}
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 24 }}>
-                <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+                <ThemedText variant="footnote" style={{ fontWeight: '700' }}>
                   {STREET[street]}
                 </ThemedText>
                 {cards.length > 0 && (
@@ -256,7 +256,7 @@ function TextLink({ label, onPress }: { label: string; onPress: () => void }) {
         onPress();
       }}
     >
-      <ThemedText variant="subhead" tone="accent" style={{ fontWeight: '600' }}>
+      <ThemedText variant="footnote" tone="accent" style={{ fontWeight: '600' }}>
         {label}
       </ThemedText>
     </PressableScale>

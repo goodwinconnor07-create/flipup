@@ -85,14 +85,14 @@ export function ResultCard({
         accessibilityLabel={`${VERDICT[grade]}. ${sub}.${run >= 2 ? ` ${run} in a row.` : ''}`}
         style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
       >
-        <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: tone.bg }}>
-          <Icon name={ICON[grade]} size={22} color={tone.ink} />
+        <View style={{ width: 30, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center', backgroundColor: tone.bg }}>
+          <Icon name={ICON[grade]} size={18} color={tone.ink} />
         </View>
         <View style={{ flex: 1 }}>
-          <ThemedText variant="title3" style={{ fontWeight: '800', color: tone.ink }}>
+          <ThemedText variant="headline" style={{ fontWeight: '800', color: tone.ink }}>
             {VERDICT[grade]}
           </ThemedText>
-          <ThemedText variant="subhead" tone="secondaryLabel" numberOfLines={1} style={NUM}>
+          <ThemedText variant="footnote" tone="secondaryLabel" numberOfLines={1} style={NUM}>
             {sub}
           </ThemedText>
         </View>
@@ -117,7 +117,7 @@ export function ResultCard({
       </View>
 
       <Animated.View entering={detail(0, reduce)}>
-        <ThemedText variant="subhead">{why}</ThemedText>
+        <ThemedText variant="footnote">{why}</ThemedText>
       </Animated.View>
 
       <Animated.View entering={detail(1, reduce)} style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xxs }}>
@@ -185,7 +185,7 @@ function Odds({ numbers }: { numbers: HandNumbers }) {
   return (
     <View accessible accessibilityLabel={`You win ${pct(numbers.equity)}. You need ${pct(numbers.price)} to call.`} style={{ gap: 6 }}>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between' }}>
-        <ThemedText variant="subhead" style={[{ fontWeight: '700' }, NUM]}>
+        <ThemedText variant="footnote" style={[{ fontWeight: '700' }, NUM]}>
           You win {pct(numbers.equity)}
         </ThemedText>
         <ThemedText variant="footnote" tone="secondaryLabel" style={NUM}>
@@ -292,7 +292,7 @@ function Piles({ piles, caption }: { piles: Pile[]; caption: string }) {
         <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
           {caption}
         </ThemedText>
-        <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
+        <ThemedText variant="footnote" style={{ fontWeight: '600' }}>
           {ONE_PILE[piles[0].key]}
         </ThemedText>
       </View>

@@ -185,7 +185,7 @@ export function RangeTrainer({
   // What the street is and what's on you, said before you answer instead of the hand's lesson (which would give it away).
   const street: Street =
     scenario.board.length >= 5 ? 'river' : scenario.board.length === 4 ? 'turn' : scenario.board.length === 3 ? 'flop' : 'preflop';
-  const spot = `${STREET_NAME[street]} · ${facing ? `${bb(r.toCall)} to call` : 'checked to you'}`;
+  const spot = `${STREET_NAME[street]}: ${facing ? `${bb(r.toCall)} to call` : 'checked to you'}`;
   // The piles answer the bet you made; if you didn't bet and betting wasn't best either, the bet the hand compares.
   const pilesFor: OptionId = pick && pick.startsWith('bet') ? pick : pileBet(scenario);
   const shownPiles = useMemo(
@@ -252,14 +252,15 @@ export function RangeTrainer({
         </View>
       ) : null}
 
-      {/* Before you answer, only where you are; the hand's lesson and name come out with the answer (rules 16 and 17). */}
-      <Swap id={pick ? 'lesson' : 'spot'} kind="text" style={{ alignItems: 'stretch' }}>
+      {/* No heading before you answer (the line under the table says where you are); the hand's lesson and name come
+          out with the answer (rules 16 and 17), so they never give it away. */}
+      <Swap id={pick ? 'lesson' : null} kind="text" style={{ alignItems: 'stretch' }}>
         <View style={{ gap: 2 }}>
-          <ThemedText variant="caption1" tone="accent" style={{ fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
-            {pick ? `The lesson · ${scenario.concept}` : spot}
+          <ThemedText variant="caption2" tone="accent" style={{ fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' }}>
+            The lesson · {scenario.concept}
           </ThemedText>
-          <ThemedText variant="title2" accessibilityRole="header">
-            {pick ? scenario.title : 'Your move'}
+          <ThemedText variant="headline" accessibilityRole="header">
+            {scenario.title}
           </ThemedText>
         </View>
       </Swap>
@@ -273,18 +274,16 @@ export function RangeTrainer({
           accessibilityLabel={`${facing ? `${bb(r.toCall)} to call` : 'Checked to you'}. You have ${made}. ${scenario.hero.pos}, ${bb(r.stacks[scenario.hero.pos] ?? 0)} behind.`}
           style={{ gap: 2 }}
         >
-          <ThemedText variant="title3" style={NUM}>
-            {facing ? `${bb(r.toCall)} to call` : 'Checked to you'}
-            <ThemedText variant="title3" tone="secondaryLabel" style={{ fontWeight: '400' }}>
-              {' · You have '}
+          <ThemedText variant="subhead" style={[{ fontWeight: '700' }, NUM]}>
+            {spot}
+            <ThemedText variant="subhead" tone="secondaryLabel" style={{ fontWeight: '400' }}>
+              {' · '}
               {made}
             </ThemedText>
           </ThemedText>
-          <ThemedText variant="footnote" tone="secondaryLabel" style={NUM}>
-            {scenario.hero.pos} · {bb(r.stacks[scenario.hero.pos] ?? 0)} behind ·{' '}
-            {scenario.format === 'tournament' ? 'Tournament' : scenario.table === 9 ? 'Live cash' : 'Cash'},{' '}
-            {scenario.table === 9 ? '9' : '6'}-handed ·{' '}
-            {inPot.map((o, i) => `${i > 0 ? ', ' : 'against '}${o.pos} ${o.type.toLowerCase()}`).join('')}
+          <ThemedText variant="caption1" tone="tertiaryLabel" numberOfLines={1} style={NUM}>
+            {scenario.hero.pos} · {bb(r.stacks[scenario.hero.pos] ?? 0)} · {scenario.table === 9 ? '9-max' : '6-max'} {scenario.format === 'tournament' ? 'tournament' : 'cash'} · vs{' '}
+            {inPot.map((o) => `${o.pos} (${o.type.toLowerCase()})`).join(', ')}
           </ThemedText>
         </View>
       </View>
@@ -321,8 +320,8 @@ export function RangeTrainer({
               style={{ gap: spacing.xxs, padding: spacing.sm, borderRadius: radius.sm, backgroundColor: colors.blueBg }}
             >
               {scenario.clues.slice(0, hints).map((c, i) => (
-                <ThemedText key={i} variant="subhead" style={{ color: colors.blueInk }}>
-                  <ThemedText variant="subhead" style={{ fontWeight: '800', color: colors.blueInk }}>
+                <ThemedText key={i} variant="footnote" style={{ color: colors.blueInk }}>
+                  <ThemedText variant="footnote" style={{ fontWeight: '800', color: colors.blueInk }}>
                     {STREET_NAME[c.street]}{' '}
                   </ThemedText>
                   {c.text}
@@ -360,9 +359,9 @@ function AnswerButton({
   const [main, sub] = splitLabel(label);
   return (
     <View style={{ flexGrow: 1, flexBasis: wide ? '47%' : '30%' }}>
-      <GlassButton tint={tint} label={label} onPress={onPress} minHeight={46}>
+      <GlassButton tint={tint} label={label} onPress={onPress} minHeight={42}>
         <ThemedText
-          variant="callout"
+          variant="subhead"
           numberOfLines={1}
           adjustsFontSizeToFit
           minimumFontScale={0.75}
@@ -370,7 +369,7 @@ function AnswerButton({
         >
           {main}
           {sub ? (
-            <ThemedText variant="callout" style={{ color: '#ffffff', fontWeight: '600', opacity: 0.85 }}>
+            <ThemedText variant="subhead" style={{ color: '#ffffff', fontWeight: '500', opacity: 0.8 }}>
               {'  '}
               {sub}
             </ThemedText>
@@ -402,7 +401,7 @@ function SmallButton({ label, onPress, quiet }: { label: string; onPress: () => 
         onPress();
       }}
       style={{
-        minHeight: 40,
+        minHeight: 34,
         paddingHorizontal: spacing.md,
         borderRadius: radius.full,
         alignItems: 'center',
@@ -411,7 +410,7 @@ function SmallButton({ label, onPress, quiet }: { label: string; onPress: () => 
       }}
     >
       <ThemedText
-        variant="subhead"
+        variant="footnote"
         style={{ fontWeight: '700', color: quiet ? (colors.tertiaryLabel as string) : (colors.blueInk as string) }}
       >
         {label}

@@ -134,7 +134,7 @@ function DailyCard({ q, premium }: { q: DailyQuiz; premium: boolean }) {
         <ThemedText variant="caption1" tone="onColor" style={{ fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>
           Daily quiz · {date}
         </ThemedText>
-        <ThemedText variant="title1" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
+        <ThemedText variant="title2" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
           {title}
         </ThemedText>
       </View>
@@ -171,7 +171,7 @@ function SetCard({ first }: { first: boolean }) {
         <ThemedText variant="caption1" tone="onColor" style={{ fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>
           {SET_SIZE} hands
         </ThemedText>
-        <ThemedText variant="title1" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
+        <ThemedText variant="title2" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
           {first ? 'Play your first set' : 'Play a set'}
         </ThemedText>
         <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>

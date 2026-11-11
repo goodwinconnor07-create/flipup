@@ -61,7 +61,7 @@
   "vars": {
     // "1" makes the server refuse Premium games and looks to phones that haven't shown a purchase. Leave it "0" until the
     // iPhone app is the only client that can host them (the web app has no payment yet) and the App Store Server Notifications URL is set.
-    "PREMIUM_ENFORCED": "0",
+    "PREMIUM_ENFORCED": "1",
     "APPLE_BUNDLE_ID": "com.goodwin.flipup",
     // Your Apple Developer Team ID (10 characters, Membership details in the developer portal; the same value as the
     // APPLE_TEAM_ID GitHub secret). Join links open the app only once this is set and the Worker is deployed.

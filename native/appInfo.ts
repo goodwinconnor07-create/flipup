@@ -37,7 +37,6 @@ export const APP_INFO = {
   /** Terms of use for the subscriptions: Apple's standard licence agreement (App Store Review 3.1.2 asks for a link). */
   termsUrl: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
 
-  /** TODO(before launch): placeholder address. Replace before submitting (listed in docs/APP_STORE.md). */
   supportEmail: 'support@playflipup.com',
 
   /** The oldest iOS the app runs on. */

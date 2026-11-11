@@ -20,7 +20,7 @@ import { saveProfile, useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
 import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme';
 
-const PIC = 108;
+const PIC = 150;
 
 /**
  * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
@@ -102,7 +102,7 @@ export default function ProfileScreen() {
             autoFocus={first}
             onSubmitEditing={save}
             maxFontSizeMultiplier={1.3}
-            style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
+            style={{ fontFamily: ROUNDED, fontSize: 40, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
           />
           <Swap id={changed ? 'save' : 'hint'} kind="text">
             {changed ? (

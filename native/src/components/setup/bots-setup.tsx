@@ -22,7 +22,6 @@ import { Stepper } from '../stepper';
 import { ThemedText } from '../themed-text';
 import { randomBot, type RowBot } from './bots-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
-import { UltraRow } from './ultra-row';
 
 /** Bots already sitting when the page opens, so Start game works at once. */
 const START_BOTS = 4;
@@ -57,8 +56,6 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
     }
     return out;
   });
-  const [ultraOn, setUltra] = useState(false);
-  const ultra = ultraOn && premium;
   const [busy, setBusy] = useState(false);
   const extra = Number(!!s.humanPoker);
   const room = MAX_SEATS - 1 - extra - bots.length;
@@ -90,7 +87,6 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
       profile.name,
       profile.emoji,
       bots.map((b) => b.name),
-      { ultra },
     );
     // Straight to the deal ("Dealing in 3…"): the bots are already picked here, so no second lobby.
     dispatch({ type: 'start' });
@@ -123,8 +119,6 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           }}
         />
 
-        <UltraRow on={ultra} premium={premium} onChange={setUltra} />
-
         <GameCard variant={variant} host />
 
         <HouseRules
@@ -140,7 +134,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
         title="Start game"
         line={
           bots.length + extra
-            ? `You and ${bots.length + extra} ${ultra ? 'ULTRA ' : ''}${bots.length + extra === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
+            ? `You and ${bots.length + extra} ${bots.length + extra === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
             : 'Add a bot first'
         }
         busy={busy}

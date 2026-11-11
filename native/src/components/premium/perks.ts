@@ -20,7 +20,6 @@ const packs = CARD_PACKS.filter((p) => !p.venue).length;
 
 export const PERKS: Perk[] = [
   { id: 'games', icon: 'suit.spade.fill', title: `${games} more games`, short: 'Host every mini game', about: 'Host Pineapple, Ghost, Pittsburgh, Imposter and the rest. Friends join them free.' },
-  { id: 'ultra', icon: 'cpu.fill', title: 'ULTRA bots', short: 'Hardest bots, learn you', about: 'No leaks, no tilt. They read your habits in a few hands and remember them next game.' },
   { id: 'replay', icon: 'film.stack.fill', title: 'Replay', short: 'Save and rewatch hands', about: 'Tap Save hand at any table, bots or online, and watch it back move by move from your hand bank.' },
   { id: 'share', icon: 'square.and.arrow.up', title: 'Share cards', short: '4 more designs', about: 'Turn your best hands, games and stats into a picture: Felt, Gold Foil, Receipt and Poster.' },
   { id: 'icons', icon: 'app.badge.fill', title: '5 app icons', short: 'Royal Flush, Neon…', about: 'Swap FlipUp’s home screen icon for one of five: Royal Flush, High Roller, Gold Foil, Neon and Pocket Aces.' },

@@ -110,7 +110,7 @@ export default function Home() {
               accessibilityLabel={named ? `${profile.name}. Open your profile` : 'Set up your profile'}
               onPress={go('/profile')}
               haptics={false}
-              style={{ padding: 3, borderRadius: 999, borderWidth: 2, borderColor: 'rgba(255, 255, 255, 0.85)', boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
+              style={{ borderRadius: 999, boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
             >
               <Avatar emoji={named ? profile.emoji : undefined} size={50} />
             </PressableScale>

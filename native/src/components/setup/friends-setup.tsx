@@ -21,6 +21,7 @@ import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
+import { LoadingCover } from '../launch-cover';
 import { haptic } from '../haptics';
 import { CodeCard } from '../lobby/code-card';
 import { GameCard } from '../lobby/game-card';
@@ -72,6 +73,12 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   const [busy, setBusy] = useState(false);
   const [lobby, setLobby] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  // The loading screen holds for at least a moment, so it never flashes, and goes once the lobby exists (or failed).
+  const [held, setHeld] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setHeld(false), 900);
+    return () => clearTimeout(t);
+  }, []);
   const partyDraft = usePartyDraft();
   // The party made for a saved playlist: its code, whether it's being made, and whether Start party has run.
   const party = useRef<{ code: string | null; making: boolean; started: boolean }>({ code: null, making: false, started: false });
@@ -422,6 +429,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         disabled={partyDraft ? !partyReady : inNow < 2}
         onPress={() => void open()}
       />
+      <LoadingCover visible={held || (!lobby && !failed && !invite)} text={invite ? 'Opening your lobby' : 'Creating your lobby'} />
     </GrainBackground>
   );
 }

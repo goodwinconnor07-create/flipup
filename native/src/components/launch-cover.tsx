@@ -2,7 +2,7 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
-import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, FeComposite, FeFlood, FeGaussianBlur, FeMerge, FeMergeNode, FeOffset, Filter, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -197,11 +197,11 @@ const VERSION = (() => {
  * two, three and again. The dots hang off the end of the words (positioned, so they take no room in the line), so
  * the words never shift as they come and go.
  */
-function Shuffling({ ink, reduce }: { ink: string; reduce: boolean }) {
+function Shuffling({ ink, reduce, text = 'Shuffling the deck' }: { ink: string; reduce: boolean; text?: string }) {
   return (
     <View style={{ marginTop: 36, alignSelf: 'center' }}>
       <Text accessible={false} maxFontSizeMultiplier={1.2} style={{ fontSize: 17, fontWeight: '600', color: ink }}>
-        Shuffling the deck
+        {text}
       </Text>
       <Dots ink={ink} reduce={reduce} />
     </View>
@@ -224,5 +224,73 @@ function Dots({ ink, reduce }: { ink: string; reduce: boolean }) {
         </Text>
       ))}
     </View>
+  );
+}
+
+/**
+ * The loading screen over the Play with friends page while its lobby is being made: the same icon, shimmer and
+ * dots as the launch cover on the app's own moving blue field, dimmed so it reads as "not ready yet". The shimmer
+ * keeps crossing the icon until `visible` goes false, then the whole screen eases out in 200ms (rule 15). Under
+ * Reduce Motion the icon sits still. It takes touches while it is up, so nothing underneath can be pressed.
+ */
+export function LoadingCover({ visible, text = 'Creating your lobby' }: { visible: boolean; text?: string }) {
+  const reduce = useReduceMotion();
+  const [gone, setGone] = useState(false);
+  const arrive = useSharedValue(reduce ? 1 : 0);
+  const sweep = useSharedValue(0);
+  const cover = useSharedValue(1);
+
+  useEffect(() => {
+    if (!reduce) {
+      arrive.set(withTiming(1, { duration: motion.base, easing: EASE_OUT }));
+      sweep.set(withRepeat(withSequence(withTiming(1, { duration: 1400, easing: SWEEP }), withTiming(1, { duration: 500 })), -1, false));
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (visible) return;
+    cover.set(withTiming(0, { duration: motion.exit, easing: EASE_OUT }, (finished) => finished && runOnJS(setGone)(true)));
+  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const coverStyle = useAnimatedStyle(() => ({ opacity: cover.get() }));
+  const tileStyle = useAnimatedStyle(() => ({
+    opacity: arrive.get(),
+    transform: [{ translateY: -12 * (1 - arrive.get()) }, { scale: motion.popFrom + (1 - motion.popFrom) * arrive.get() }],
+  }));
+  const bandStyle = useAnimatedStyle(() => ({ transform: [{ translateX: (-0.9 + 1.8 * sweep.get()) * TILE }, { skewX: '-16deg' }] }));
+
+  if (gone) return null;
+  return (
+    <Animated.View
+      pointerEvents={visible ? 'auto' : 'none'}
+      accessibilityViewIsModal
+      accessibilityLabel={`${text}…`}
+      accessibilityLiveRegion="polite"
+      style={[{ position: 'absolute', inset: 0, zIndex: 900 }, coverStyle]}
+    >
+      <GrainBackground style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', boxShadow: '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
+          <View style={{ flex: 1, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
+            <IconArt />
+            {!reduce && (
+              <Animated.View style={[{ position: 'absolute', top: -TILE * 0.1, bottom: -TILE * 0.1, left: 0, width: TILE * 0.7 }, bandStyle]}>
+                <Svg width="100%" height="100%" preserveAspectRatio="none">
+                  <Defs>
+                    <LinearGradient id="loadband" x1="0" y1="0" x2="1" y2="0">
+                      <Stop offset="0" stopColor="#ffffff" stopOpacity="0" />
+                      <Stop offset="0.5" stopColor="#ffffff" stopOpacity="0.42" />
+                      <Stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+                    </LinearGradient>
+                  </Defs>
+                  <Rect width="100%" height="100%" fill="url(#loadband)" />
+                </Svg>
+              </Animated.View>
+            )}
+          </View>
+        </Animated.View>
+        <Shuffling ink="rgba(255, 255, 255, 0.82)" reduce={reduce} text={text} />
+        {/* A little less bright than the page under it, so it reads as a loading screen. */}
+        <View pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.38)' }} />
+      </GrainBackground>
+    </Animated.View>
   );
 }

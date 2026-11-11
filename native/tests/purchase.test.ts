@@ -142,7 +142,7 @@ it('buys the chosen plan as a subscription and works out the yearly saving', asy
   await startStore();
   void buyPremium('yearly');
   await vi.waitFor(() => expect(store.request).toHaveBeenCalledWith({ type: 'subs', request: { apple: { sku: 'flipup.premium.yearly' } } }));
-  expect(yearlySaving({ monthly: { price: '$7.00', amount: 7, intro: null, introDays: null }, yearly: { price: '$50.00', amount: 50, intro: null, introDays: null } })).toBe(40);
+  expect(yearlySaving({ monthly: { price: '$7.00', amount: 7, intro: null, introDays: null, introFree: false }, yearly: { price: '$50.00', amount: 50, intro: null, introDays: null, introFree: false } })).toBe(40);
   expect(yearlySaving({ monthly: null, yearly: null })).toBeNull();
 });
 
@@ -163,3 +163,17 @@ it('turns Premium off at launch when the subscription has ended', async () => {
   await startStore();
   expect(store.premium).toBe(false);
 });
+
+it("reads an introductory offer's length from StoreKit's own description of it", async () => {
+  const { introDaysOf } = await import('../src/state/purchase');
+  const product = (period: string, numOfPeriods: number, type = 'IntroOffer') => JSON.stringify({ attributes: { offers: [{ discounts: [{ type, numOfPeriods, recurringSubscriptionPeriod: period, modeType: 'PayUpFront' }] }] } });
+  // Two weeks paid up front is one period of two weeks: the flat fields alone would say seven days.
+  expect(introDaysOf(product('P2W', 1), 1, 'week')).toBe(14);
+  expect(introDaysOf(product('P1W', 2), 2, 'week')).toBe(14);
+  expect(introDaysOf(product('P1M', 1), 1, 'month')).toBe(30);
+  // No offer in the JSON, or no JSON at all: the flat fields, and null when they say nothing.
+  expect(introDaysOf(product('P1Y', 1, 'Promotional'), 2, 'week')).toBe(14);
+  expect(introDaysOf('not json', 3, 'day')).toBe(3);
+  expect(introDaysOf(null, 1, '')).toBeNull();
+});
+

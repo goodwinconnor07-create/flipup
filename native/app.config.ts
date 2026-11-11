@@ -45,6 +45,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         collected('NSPrivacyCollectedDataTypeDeviceID'),
         collected('NSPrivacyCollectedDataTypeOtherUserContent'),
         collected('NSPrivacyCollectedDataTypeGameplayContent'),
+        // The server keeps Apple's purchase id with the device id, so Premium works at online tables (worker/entitlement.ts).
+        collected('NSPrivacyCollectedDataTypePurchaseHistory'),
       ],
       // Required-reason APIs used by React Native and Expo modules that link statically.
       NSPrivacyAccessedAPITypes: [

@@ -11,7 +11,7 @@ import { YouSettings } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
 import { usePremium } from '@/state/premium';
-import { ON_SALE, restorePremium, useStore } from '@/state/purchase';
+import { manageSubscription, ON_SALE, restorePremium, storeError, useStore } from '@/state/purchase';
 import { ThemedText } from '@/components/themed-text';
 import { spacing, useColors } from '@/theme';
 
@@ -32,7 +32,11 @@ export default function SettingsScreen() {
     if (await restorePremium()) {
       haptic.success();
       Alert.alert('Premium is back', 'Thanks for backing FlipUp.');
-    } else Alert.alert(store.error ? "Couldn't reach the App Store" : 'Nothing to restore', store.error ?? 'This Apple Account hasn’t bought FlipUp Premium.');
+    } else {
+      // Read after the restore ran: `store` here is the state from before it.
+      const error = storeError();
+      Alert.alert(error ? "Couldn't reach the App Store" : 'Nothing to restore', error ?? 'This Apple Account hasn’t bought FlipUp Premium.');
+    }
   };
   // The app's link for sharing and for the rating page.
   const storeUrl = `https://apps.apple.com/app/id${APP_INFO.appStoreId}`;
@@ -64,7 +68,7 @@ export default function SettingsScreen() {
       setDeleting(false);
     }
   };
-  const ASK = 'This deletes your friend code, leaves any party or table you’re in, and clears your name, emoji, friends and settings from this phone. It can’t be undone. Premium stays: Restore brings it back.';
+  const ASK = 'This deletes what FlipUp’s server keeps about this phone, leaves any party or table you’re in, and clears your name, emoji, stats, saved hands and settings from this phone. It can’t be undone. Premium stays: Restore brings it back.';
   const confirmDelete = () => {
     // The web build's Alert has no buttons, so it asks with the browser's own confirm.
     if (process.env.EXPO_OS === 'web') {
@@ -91,6 +95,10 @@ export default function SettingsScreen() {
             trailing={store.busy ? <ActivityIndicator /> : undefined}
             onPress={store.busy ? undefined : () => void restore()}
           />
+          {/* Apple's own page for changing or cancelling the plan (App Store Review 3.1.2: easy to find). */}
+          {premium && (store.owned === 'monthly' || store.owned === 'yearly') && (
+            <Row title="Manage subscription" icon={{ symbol: 'creditcard.fill', color: colors.accent as string }} onPress={() => void manageSubscription()} />
+          )}
         </Section>
       )}
 
@@ -112,7 +120,7 @@ export default function SettingsScreen() {
         />
       </Section>
 
-      <Section footer="Deletes your friend code from FlipUp's server and everything the app keeps on this phone.">
+      <Section footer="Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.">
         <Row
           title={deleting ? 'Deleting…' : 'Delete my data'}
           icon={{ symbol: 'trash.fill', color: colors.red as string }}

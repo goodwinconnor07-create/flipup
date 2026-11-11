@@ -18,6 +18,7 @@ const WEB = {
   'qrcode.viewfinder': 'qr_code_scanner',
   keyboard: 'keyboard',
   'hand.raised.slash.fill': 'block',
+  'creditcard.fill': 'credit_card',
   'bubble.left.fill': 'chat_bubble',
   'bubble.left': 'chat_bubble_outline',
   'chevron.right': 'chevron_right',

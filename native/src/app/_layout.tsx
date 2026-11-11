@@ -54,7 +54,6 @@ function FriendWatch() {
 export default function RootLayout() {
   const appearance = useAppearance();
   useEffect(() => applyAppearance(appearance), [appearance]);
-  // A subscription that ends puts FlipUp's own icon back.
   const dark = useColorScheme() === 'dark';
   const reduce = useReduceMotion();
   const colors = useColors();
@@ -84,8 +83,6 @@ export default function RootLayout() {
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
-        {/* Play with friends: a game's popup with Select and Close. */}
-        <Stack.Screen name="setup-game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Game' }} />
         {/* Play with friends' Change on the game card: every game in a list, Premium under a gold line. */}
         <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
         {/* How to Play: a story on black, full screen so its bars sit at the top edge; the X closes it. */}

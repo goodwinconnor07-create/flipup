@@ -87,7 +87,11 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'What does Premium unlock?',
-        a: 'A one-time purchase that unlocks the extra games for hosting and the card backs. Five games are free. Only the person hosting a table needs Premium; friends who join play every game free.',
+        a: 'Premium is a subscription, monthly or yearly, bought through your Apple Account. It unlocks hosting every mini game, the whole bot roster, every Range training hand, saved hands with Replay, share card designs, the gold name and the card backs. Texas Hold’em with ten bots and the daily quiz are free. Only the person hosting a table needs Premium; friends who join play every game free.',
+      },
+      {
+        q: 'How do I cancel Premium?',
+        a: 'Open your profile, then Settings, then Manage subscription, or open the iPhone’s Settings app, tap your name, then Subscriptions. Cancel at least a day before it renews. You keep Premium until the end of the time you’ve paid for.',
       },
       {
         q: 'I bought Premium. How do I get it back?',
@@ -137,7 +141,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'How do I delete my data?',
-        a: 'Open your profile, then Settings, then Delete my data. It clears your friend code from our server and everything FlipUp keeps on your phone. Premium stays with your Apple Account and Restore Purchases brings it back.',
+        a: 'Open your profile, then Settings, then Delete my data. It clears what our server keeps about your phone and everything FlipUp keeps on it. Premium stays with your Apple Account and Restore Purchases brings it back.',
       },
       {
         q: 'What does FlipUp keep about me?',

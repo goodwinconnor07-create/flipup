@@ -207,9 +207,11 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
             </Text>
           </View>
         )}
-        <View style={{ flexDirection: 'row', gap: spacing.xs, minHeight: 28 }}>
+        {/* The pot always shows whole: a long game pill ("Imposter? Could be you") gives way and is cut short instead. */}
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, minHeight: 28, maxWidth: '100%', paddingHorizontal: spacing.md }}>
           {variant !== 'holdem' && (
             <Pressable
+              style={{ flexShrink: 1 }}
               accessibilityRole="button"
               accessibilityLabel={`${info.name}: how it plays`}
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
@@ -432,7 +434,7 @@ function VariantPill({ text, hot }: { text: string; hot?: boolean }) {
         backgroundColor: hot ? c.redBg : dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.75)',
       }}
     >
-      <Text maxFontSizeMultiplier={1.2} style={{ color: hot ? c.redInk : c.label, fontWeight: '600', fontSize: 13 }}>
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: hot ? c.redInk : c.label, fontWeight: '600', fontSize: 13 }}>
         {text}
       </Text>
     </View>

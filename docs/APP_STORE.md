@@ -250,7 +250,7 @@ Not collected by FlipUp itself: contact info, location, health, financial info, 
 diagnostics, usage data, purchases (Apple handles the purchase; if the server later checks StoreKit transactions and keeps them, add
 **Purchases > Purchase History**). Bots-only games never leave the phone.
 
-`native/app.config.ts` writes the same four types into the privacy manifest. Keep the two in step.
+`native/app.config.ts` writes these types into the privacy manifest, plus Purchases > Purchase History (the server keeps Apple's purchase id with the device id). Keep the two in step, and tick Purchase History on the App Privacy label.
 
 ### Privacy manifest (`PrivacyInfo.xcprivacy`)
 
@@ -269,17 +269,21 @@ after upload when a reason is missing.
 
 ### Review access (draft review notes)
 
-> FlipUp needs no account or login. To play right away, tap **Play with bots** on Home, then **Deal**. The bots
-> fill the table and the game runs on the phone, so no second device is needed. To see an online table, tap
-> **Play with friends**: it opens a table with a 5-letter code, and **Add bot** fills the seats. Party mode is on
-> the same page: **Start a party**, pick the games, **Save playlist**, then **Open the party**.
+> FlipUp needs no account or login. To play right away, tap **Play bots** on the Play screen, then **Start game**.
+> The bots fill the table and the game runs on the phone, so no second device is needed. To see an online table, tap
+> **PLAY**: it opens a lobby with a six-character game code, **Add a bot** fills the seats, and **Start game** deals.
+> A second device joins with **Join a game** and that code. Party mode is on the same lobby page: **Start a party**,
+> pick the games, **Save**, then **Start party**. The Train tab's daily quiz (five hands) is free.
 >
 > Chips are play chips only. They can't be bought, cashed out or exchanged, and there's no real-money play.
 >
-> Premium is an auto-renewing subscription (`flipup.premium.monthly`, `flipup.premium.yearly`, each with a 14-day $1 introductory offer). Open it from Settings > FlipUp Premium, or by
-> tapping any locked card back, bubble colour or game. Buy it with a sandbox account; **Restore Purchases** is on
-> the same sheet. Five game modes are free. The other eight need Premium to host; anyone can join one with a code
-> for free, so only the host needs it. There are no ads and no referral rewards. To check account deletion: Settings > Delete my data.
+> Premium is an auto-renewing subscription (`flipup.premium.monthly`, `flipup.premium.yearly`, each with an
+> introductory offer). Open it from the crown button on the Play screen, or by picking any game other than Texas
+> Hold'em and tapping Start game. Buy it with a sandbox account; **Restore** is on the same page and in Settings, and
+> **Manage subscription** is in Settings once subscribed. Texas Hold'em, ten bots and the daily quiz are free. The
+> other twelve games, the rest of the bots and the other training sets need Premium to host or open; anyone can join
+> any game with a code for free, so only the host needs it. There are no ads and no referral rewards. To check
+> account deletion: profile (top right) > Settings > Delete my data.
 >
 > Reporting and blocking: tap a player's seat at an online table, then Report or Block.
 

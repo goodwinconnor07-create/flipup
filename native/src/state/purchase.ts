@@ -38,6 +38,8 @@ export interface PlanPrice {
   intro: string | null;
   /** How long the introductory offer lasts, in days. */
   introDays: number | null;
+  /** The introductory offer is a free trial (nothing is charged until it ends). */
+  introFree: boolean;
 }
 
 export interface StoreState {
@@ -153,6 +155,26 @@ export function startStore(): Promise<boolean> {
 
 const DAYS: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
 
+/**
+ * How many days the introductory offer runs, from StoreKit's own description of the product. StoreKit gives an offer
+ * as a period ("P2W") times a count, and the flat fields don't always carry the period's own number (a two-week
+ * offer paid up front is one period of two weeks), so the product's JSON is read first and the flat fields are the
+ * fallback. Null when it can't be told.
+ */
+export function introDaysOf(json: string | null | undefined, periods: number, unit: string): number | null {
+  try {
+    const offers = (JSON.parse(json ?? 'null') as { attributes?: { offers?: { discounts?: { type?: string; numOfPeriods?: number; recurringSubscriptionPeriod?: string }[] }[] } } | null)?.attributes?.offers ?? [];
+    for (const o of offers)
+      for (const d of o.discounts ?? []) {
+        const m = d.type === 'IntroOffer' ? /^P(\d+)([DWMY])$/.exec(d.recurringSubscriptionPeriod ?? '') : null;
+        if (m) return Number(m[1]) * { D: 1, W: 7, M: 30, Y: 365 }[m[2] as 'D' | 'W' | 'M' | 'Y'] * (d.numOfPeriods || 1);
+      }
+  } catch {
+    // Not JSON: use the flat fields.
+  }
+  return DAYS[unit] ? periods * DAYS[unit] : null;
+}
+
 async function loadPrices(): Promise<void> {
   const products = (await fetchProducts({ skus: [SKU.monthly, SKU.yearly], type: 'subs' })) ?? [];
   const plans: Record<Plan, PlanPrice | null> = { monthly: null, yearly: null };
@@ -162,6 +184,8 @@ async function loadPrices(): Promise<void> {
           introductoryPriceIOS?: string | null;
           introductoryPriceNumberOfPeriodsIOS?: string | null;
           introductoryPriceSubscriptionPeriodIOS?: string | null;
+          introductoryPricePaymentModeIOS?: string | null;
+          jsonRepresentationIOS?: string | null;
           subscriptionGroupIdIOS?: string | null;
         }
       | undefined;
@@ -178,7 +202,8 @@ async function loadPrices(): Promise<void> {
       price: p.displayPrice,
       amount: typeof p.price === 'number' ? p.price : null,
       intro: eligible && p.introductoryPriceIOS ? p.introductoryPriceIOS : null,
-      introDays: eligible && p.introductoryPriceIOS ? periods * (DAYS[unit] ?? 1) : null,
+      introDays: eligible && p.introductoryPriceIOS ? introDaysOf(p.jsonRepresentationIOS, periods, unit) : null,
+      introFree: p.introductoryPricePaymentModeIOS === 'free-trial',
     };
   }
   publish({ plans, error: plans.monthly || plans.yearly ? null : 'Premium isn’t on sale right now.' });
@@ -210,6 +235,9 @@ export async function buyPremium(plan: Plan = 'yearly'): Promise<boolean> {
     });
   });
 }
+
+/** The store's last error, read after a restore (a component's own copy of the state is from before it ran). */
+export const storeError = (): string | null => state.error;
 
 /** Restore Purchases: asks the App Store for this Apple Account's purchases. Resolves true if Premium is among them. */
 export async function restorePremium(): Promise<boolean> {

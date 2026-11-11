@@ -71,6 +71,7 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
 
   const pan = useMemo(
     () =>
+      // eslint-disable-next-line react-hooks/refs -- the handlers read the ref only while a finger moves, never while drawing
       PanResponder.create({
         onStartShouldSetPanResponder: () => true,
         // Taps go to the cards; a sideways drag is taken from them.

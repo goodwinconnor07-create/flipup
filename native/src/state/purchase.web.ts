@@ -11,4 +11,6 @@ export const restorePremium = async (): Promise<boolean> => false;
 export const manageSubscription = async (): Promise<void> => {};
 export const yearlySaving = (_plans: StoreState['plans']): number | null => null;
 export const stopStore = (): void => {};
+export const storeError = (): string | null => null;
+export const introDaysOf = (_json: string | null | undefined, _periods: number, _unit: string): number | null => null;
 export const ON_SALE = false;

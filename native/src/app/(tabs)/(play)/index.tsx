@@ -128,7 +128,7 @@ export default function Home() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: spacing.xxs }}>
               <SideButton icon="chart.bar.xaxis" label="Stats" onPress={go('/stats')} />
               <SideButton icon="book.fill" label="Rules" onPress={go(`/how-to-play/${variant}`)} />
-              <SideButton icon="film.stack.fill" label="Saved hands" onPress={go('/replays')} />
+              <SideButton icon="film.stack.fill" label="Saved" say="Saved hands" onPress={go('/replays')} />
               <SideButton icon="crown.fill" label="Premium" tint={brand.gold} onPress={go('/premium')} />
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
               <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />
@@ -153,9 +153,9 @@ function shareApp() {
 }
 
 /** A shortcut over PLAY: a round see-through button with its name under it. */
-function SideButton({ icon, label, tint = '#ffffff', onPress }: { icon: IconName; label: string; tint?: string; onPress: () => void }) {
+function SideButton({ icon, label, say, tint = '#ffffff', onPress }: { icon: IconName; label: string; say?: string; tint?: string; onPress: () => void }) {
   return (
-    <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} haptics={false} outerStyle={{ flex: 1 }} style={{ alignItems: 'center', gap: 4 }}>
+    <PressableScale accessibilityRole="button" accessibilityLabel={say ?? label} onPress={onPress} haptics={false} outerStyle={{ flex: 1 }} style={{ alignItems: 'center', gap: 4 }}>
       <View style={{ width: 50, height: 50, borderRadius: 25, alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}>
         <Icon name={icon} size={21} color={tint} />
       </View>

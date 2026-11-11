@@ -59,12 +59,12 @@ function Viewer() {
   const last = r ? r.actions.length + 1 : 0;
 
   useEffect(() => {
-    if (!playing || !r) return;
-    if (step >= last) {
-      setPlaying(false);
-      return;
-    }
-    const t = setTimeout(() => setStep((s) => s + 1), STEP_MS);
+    if (!playing || !r || step >= last) return;
+    const t = setTimeout(() => {
+      setStep(step + 1);
+      // The last move has been shown: playback stops by itself.
+      if (step + 1 >= last) setPlaying(false);
+    }, STEP_MS);
     return () => clearTimeout(t);
   }, [playing, step, last, r]);
 
@@ -72,7 +72,7 @@ function Viewer() {
     return (
       <GrainBackground>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg }}>
-          <ThemedText variant="title3">That hand isn't in your bank.</ThemedText>
+          <ThemedText variant="title3">That hand isn’t in your bank.</ThemedText>
           <PressableScale accessibilityRole="button" onPress={() => router.back()}>
             <ThemedText style={{ color: brand.violetDark, fontWeight: '700' }}>Back</ThemedText>
           </PressableScale>

@@ -18,7 +18,7 @@ import { ThemedText } from '@/components/themed-text';
 import { botFace, BOTS, CARD_PACKS, FREE_BOT_NAMES, isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
-import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
+import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, storeError, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
 import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
 
 import { APP_INFO } from '../../appInfo';
@@ -56,7 +56,7 @@ export default function PremiumSheet() {
     if (ok) {
       haptic.success();
       Alert.alert('Premium is back', 'Thanks for backing FlipUp.');
-    } else if (!store.error) Alert.alert('Nothing to restore', 'This Apple Account has no FlipUp Premium.');
+    } else if (!storeError()) Alert.alert('Nothing to restore', 'This Apple Account has no FlipUp Premium.');
   };
 
   return (
@@ -367,7 +367,7 @@ function Plans({ store, has }: { store: StoreState; has: boolean }) {
         <Badge text={store.owned === 'lifetime' ? 'YOURS FOR GOOD' : 'ACTIVE'} />
         <ThemedText style={{ fontSize: 32, lineHeight: 38, color: '#ffffff' }}>You have Premium</ThemedText>
         <ThemedText variant="body" style={{ color: MUTED }}>
-          {store.owned === 'lifetime' ? 'Thank you for backing FlipUp.' : `On the ${store.owned === 'monthly' ? 'monthly' : 'yearly'} plan. Thank you for backing FlipUp.`}
+          {store.owned === 'monthly' || store.owned === 'yearly' ? `On the ${store.owned} plan. Thank you for backing FlipUp.` : 'Thank you for backing FlipUp.'}
         </ThemedText>
         <BlueButton title="Done" onPress={() => router.back()} />
         {store.owned && store.owned !== 'lifetime' && <Button title="Manage subscription" variant="secondary" onPress={() => void manageSubscription()} />}
@@ -394,7 +394,10 @@ function Plans({ store, has }: { store: StoreState; has: boolean }) {
 
   const yearly = store.plans.yearly;
   const monthly = store.plans.monthly;
-  const trialOf = (p: StoreState['plans'][Plan]) => (p?.intro ? `${p.introDays ?? 14} days for ${p.intro}, then ` : '');
+  // The offer in the App Store's own terms: a free trial says free, a paid one its price, and the length only when StoreKit gave one.
+  const offerOf = (p: StoreState['plans'][Plan]) => (!p?.intro ? null : `${p.introDays ? `${p.introDays} days` : 'your first period'} ${p.introFree ? 'free' : `for ${p.intro}`}`);
+  const trialOf = (p: StoreState['plans'][Plan]) => (offerOf(p) ? `${offerOf(p)}, then ` : '');
+  const tryOf = (p: StoreState['plans'][Plan], plain: string) => (!p?.intro ? plain : p.introDays ? `Try ${offerOf(p)}` : p.introFree ? 'Start free trial' : `Start for ${p.intro}`);
   const cards: PlanInfo[] = [
     {
       plan: 'yearly',
@@ -402,8 +405,8 @@ function Plans({ store, has }: { store: StoreState; has: boolean }) {
       name: 'Yearly',
       line: 'Every game, every bot and every range hand, all year.',
       per: 'year',
-      under: yearly?.intro ? `${trialOf(yearly)}billed yearly` : 'Billed yearly',
-      button: yearly?.intro ? `Try ${yearly.introDays ?? 14} days for ${yearly.intro}` : 'Continue',
+      under: yearly?.intro ? `${trialOf(yearly)}${yearly.price} a year` : 'Billed yearly',
+      button: tryOf(yearly, 'Continue'),
       points: [
         { icon: 'crown', text: 'The most for your money' },
         { icon: 'infinity', text: 'Everything in Premium' },
@@ -415,8 +418,8 @@ function Plans({ store, has }: { store: StoreState; has: boolean }) {
       name: 'Monthly',
       line: 'Everything in Premium, a month at a time.',
       per: 'month',
-      under: monthly?.intro ? `${trialOf(monthly)}cancel anytime` : 'Cancel anytime',
-      button: monthly?.intro ? `Try ${monthly.introDays ?? 14} days for ${monthly.intro}` : 'Get Monthly',
+      under: monthly?.intro ? `${trialOf(monthly)}${monthly.price} a month` : 'Cancel anytime',
+      button: tryOf(monthly, 'Get Monthly'),
       points: [
         { icon: 'calendar', text: 'Stop whenever you like' },
         { icon: 'infinity', text: 'Everything in Premium' },

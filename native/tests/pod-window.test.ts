@@ -55,4 +55,45 @@ describe('the seat row with more players than fit', () => {
     const [row] = run([{ focus: 'b', speaking: ['e'] }]);
     expect(row).toContain('b');
   });
+
+  it('settles when two players speak at once from opposite ends (it used to swing for ever and close the table)', () => {
+    // Ghost Hold'em before the deal: four others, three fit, nobody to act, the first and the last both talking.
+    const four = ['a', 'b', 'c', 'd'];
+    let anchor: WindowAnchor = { id: null, idx: 0 };
+    const seen: number[] = [];
+    for (let i = 0; i < 6; i++) {
+      const p = planWindow({ others: four, folded: null, justFolded: none, speaking: new Set(['a', 'd']), focus: undefined, max: 3, anchor });
+      anchor = { id: p.live[p.s] ?? null, idx: p.s };
+      seen.push(p.s);
+    }
+    expect(new Set(seen.slice(1)).size).toBe(1);
+  });
+
+  it('always comes to rest, whoever is speaking, folded or acting', () => {
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const all = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    for (let t = 0; t < 4000; t++) {
+      const list = all.slice(0, 4 + Math.floor(rnd() * 5));
+      const pick = (chance: number) => new Set(list.filter(() => rnd() < chance));
+      const folded = pick(0.3);
+      const speaking = pick(0.35);
+      const justFolded = new Set([...folded].filter(() => rnd() < 0.3));
+      const focus = rnd() < 0.3 ? undefined : list[Math.floor(rnd() * list.length)];
+      const max = rnd() < 0.5 ? 3 : 4;
+      let anchor: WindowAnchor = { id: rnd() < 0.5 ? null : list[Math.floor(rnd() * list.length)], idx: Math.floor(rnd() * list.length) };
+      const starts: number[] = [];
+      // React gives up after 25 draws in a row; the window has to be still long before that.
+      for (let i = 0; i < 8; i++) {
+        const p = planWindow({ others: list, folded, justFolded, speaking, focus, max, anchor });
+        anchor = { id: p.live[p.s] ?? null, idx: p.s };
+        starts.push(p.s);
+      }
+      expect(starts[7], `case ${t}`).toBe(starts[6]);
+      expect(starts[6], `case ${t}`).toBe(starts[5]);
+      // And whoever is acting is in view once it has come to rest.
+      const live = list.filter((id) => !folded.has(id) || speaking.has(id) || justFolded.has(id));
+      if (focus && live.includes(focus)) expect(live.slice(starts[7], starts[7] + Math.min(max, live.length))).toContain(focus);
+    }
+  });
 });

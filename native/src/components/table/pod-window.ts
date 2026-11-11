@@ -39,10 +39,17 @@ export function planWindow(a: {
     if (at < s) s = at;
     else if (at > s + n - 1) s = at - n + 1;
   }
-  const speaker = live.findIndex((id, i) => a.speaking.has(id) && (i < s || i > s + n - 1));
-  if (speaker >= 0) {
-    const to = speaker < s ? speaker : speaker - n + 1;
-    if (at < 0 || (at >= to && at <= to + n - 1)) s = to;
+  // A speaker out of view pulls the window over, but never at the cost of the player in focus or of a speaker already
+  // in view. Without that second rule two speakers at opposite ends pulled it back and forth for ever, each draw
+  // asking for another, which closed the table ("too many re-renders").
+  const inView = (i: number, from: number) => i >= from && i <= from + n - 1;
+  const speakers = live.flatMap((id, i) => (a.speaking.has(id) ? [i] : []));
+  for (const i of speakers) {
+    if (inView(i, s)) continue;
+    const to = i < s ? i : i - n + 1;
+    if (at >= 0 && !inView(at, to)) continue;
+    if (speakers.some((j) => inView(j, s) && !inView(j, to))) continue;
+    s = to;
   }
   return { live, n, s };
 }

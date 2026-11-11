@@ -30,10 +30,10 @@ export function RequestTimeoutPopup() {
             <Icon name="wifi.slash" size={28} color={colors.secondaryLabel} />
           </View>
           <ThemedText variant="title3" style={{ textAlign: 'center' }}>
-            That's taking a while
+            That’s taking a while
           </ThemedText>
           <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center' }}>
-            We couldn't get an answer. Check your connection and try again in a moment.
+            We couldn’t get an answer. Check your connection and try again in a moment.
           </ThemedText>
           <Button title="Cancel" variant="secondary" onPress={cancel} />
         </View>

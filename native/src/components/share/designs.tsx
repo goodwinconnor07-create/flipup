@@ -206,19 +206,23 @@ function Gold({ data }: { data: ShareData }) {
 
 // ── Receipt ─────────────────────────────────────────────────────────────────
 
-function Receipt({ data }: { data: ShareData }) {
-  const ink = '#1b1b1b';
-  const t: TextStyle = { fontFamily: MONO, fontSize: 11, lineHeight: 15, color: ink };
-  // The hand line by line, cut to what fits with the total at the bottom.
-  const all = data.lines ?? [];
-  const lines = all.length > 13 ? [...all.slice(0, 6), { left: '…' }, ...all.slice(-6)] : all;
-  const Tear = ({ flip }: { flip?: boolean }) => (
+/** The receipt's torn edge: a row of paper teeth. */
+function Tear({ flip }: { flip?: boolean }) {
+  return (
     <View style={{ flexDirection: 'row', height: 8, transform: flip ? [{ rotate: '180deg' }] : undefined }}>
       {Array.from({ length: 24 }, (_, i) => (
         <View key={i} style={{ width: 0, height: 0, borderLeftWidth: 6, borderRightWidth: 6, borderBottomWidth: 8, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: '#faf7ef' }} />
       ))}
     </View>
   );
+}
+
+function Receipt({ data }: { data: ShareData }) {
+  const ink = '#1b1b1b';
+  const t: TextStyle = { fontFamily: MONO, fontSize: 11, lineHeight: 15, color: ink };
+  // The hand line by line, cut to what fits with the total at the bottom.
+  const all = data.lines ?? [];
+  const lines = all.length > 13 ? [...all.slice(0, 6), { left: '…' }, ...all.slice(-6)] : all;
   return (
     <View style={{ flex: 1, backgroundColor: '#2b2d33', alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ width: 288, transform: [{ rotate: '-2deg' }] }}>

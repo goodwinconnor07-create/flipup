@@ -69,6 +69,8 @@ export const CHAT = {
   staleAfterOwed: 5200,
   /** At most this many lines wait their turn. */
   maxQueued: 3,
+  /** Time spent waiting for another speaker to finish doesn't count toward going stale, up to this much. */
+  queueGrace: 6000,
 } as const;
 
 /** The longest a message may be and still sit on one line in a seat's bubble (the narrowest seat on a phone). */
@@ -496,7 +498,7 @@ export class ChatLane {
       }
       // Lines that waited too long are dropped.
       const before = this.queue.length;
-      this.queue = this.queue.filter((q) => q.expires > now);
+      this.queue = this.queue.filter((q) => this.expiry(q) > now);
       if (this.queue.length !== before) moved = true;
       if (!moved) break;
       changed = true;
@@ -515,7 +517,7 @@ export class ChatLane {
     for (const q of this.queue) {
       const busy = this.scripts.has(q.who);
       if (!busy) due = Math.min(due, q.instant ? q.notBefore : Math.max(q.notBefore, this.freeAt));
-      due = Math.min(due, q.expires);
+      due = Math.min(due, this.expiry(q));
     }
     return Number.isFinite(due) ? due : null;
   }
@@ -540,6 +542,16 @@ export class ChatLane {
   /** True when nobody is talking and nothing waits. */
   get idle(): boolean {
     return !this.queue.length && !this.scripts.size && !this.seats.size;
+  }
+
+  /**
+   * When a waiting line goes stale. Two bots talking at once on a crowded table: the second waits its turn, and the
+   * time the lane was busy with the first doesn't count against it, so it's queued rather than dropped. A person's
+   * quick message never waits, so it keeps its own time.
+   */
+  private expiry(q: Say): number {
+    if (q.instant) return q.expires;
+    return q.expires + Math.min(CHAT.queueGrace, Math.max(0, this.freeAt - q.notBefore));
   }
 
   private nextToStart(now: number): Say | undefined {

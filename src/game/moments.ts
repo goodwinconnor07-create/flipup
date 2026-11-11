@@ -123,7 +123,7 @@ export function tallyShown(hand: Hand, order: string[], now: number): number {
 export interface HandExplain {
   /** Board indexes the hand is made from. */
   board: number[];
-  /** "Down the cross", "River 2", "10-12-2 on the clock". */
+  /** "The column", "River 2", "10-12-2 on the clock". */
   note?: string;
   /** Deuces: each wild 2 in the best five and what it became ("K"). */
   wilds?: { card: Card; as: string }[];
@@ -146,7 +146,7 @@ export function explainHand(v: Variant, hole: Card[], board: Card[]): HandExplai
         at = i;
       }
     });
-    return { board: CROSS_LINES[at].filter((i) => i < board.length), note: at === 0 ? 'down the cross' : 'across the cross' };
+    return { board: CROSS_LINES[at].filter((i) => i < board.length), note: at === 0 ? 'the column' : 'the row' };
   }
   if (v === 'pittsburgh' && board.length > 5) {
     const used = board.slice(4).findIndex((c) => best.best.includes(c));

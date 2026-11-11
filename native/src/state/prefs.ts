@@ -3,9 +3,22 @@ import { cleanLook, type TableLook } from '@design/tableLooks';
 
 import { save, useStored } from './storage';
 
-/** The bots' table talk. On until the player turns it off. */
-export const useTalkOn = (): boolean => useStored<boolean>('flipup.talk', true) !== false;
-export const setTalkOn = (on: boolean): void => save('flipup.talk', on);
+/**
+ * How much the bots say at the table: Off, Some (about two lines in five, and always anything said to you) or
+ * Chatty (everything). Older phones stored a switch under the same key: on reads as Chatty, off as Off.
+ */
+export type TalkLevel = 'off' | 'some' | 'chatty';
+const talkLevel = (v: unknown): TalkLevel => (v === false || v === 'off' ? 'off' : v === 'some' ? 'some' : 'chatty');
+export const useTalkLevel = (): TalkLevel => talkLevel(useStored<unknown>('flipup.talk', 'chatty'));
+export const setTalkLevel = (level: TalkLevel): void => save('flipup.talk', level);
+/** Whether a bot's line is shown at this level. `n` is the line's count for that seat, so the pick is steady. */
+export function talkPasses(level: TalkLevel, who: string, n: number, toYou: boolean): boolean {
+  if (level === 'off') return false;
+  if (level === 'chatty' || toYou) return true;
+  let h = n;
+  for (const c of who) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  return h % 5 < 2;
+}
 
 /** Table sounds. On until muted. */
 export const useMuted = (): boolean => useStored<boolean>('flipup.muted', false) === true;

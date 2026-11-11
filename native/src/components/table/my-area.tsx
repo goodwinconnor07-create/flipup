@@ -49,7 +49,8 @@ export function MyArea({
   const count = seat?.cards.length || holeCount(variantOf(game));
   // Two cards at full size; three or more step down so they still fit beside the box.
   const w = count > 2 || compact ? 72 : 100;
-  const last = seat?.last;
+  // Your last move clears once a new street's cards land (an all in stays, it's still true).
+  const last = seat?.last && (!hand || seat.last.street === hand.street || seat.last.move === 'allin') ? seat.last : null;
   const bb = Math.max(game.settings.bigBlind, 1);
   const myTurn = !!me && !!hand && !hand.result && hand.toAct === me.id;
   const big = compact ? 32 : 38;

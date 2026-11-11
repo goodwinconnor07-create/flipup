@@ -167,12 +167,15 @@ function Ticker({ text, room, pauses, who, ring }: { text: string; room?: number
   // About 7.2pt a letter at this size: a narrow seat shows fewer letters at a time, so nothing is cut off.
   const chars = room ? Math.max(6, Math.min(CHAT.windowChars, Math.floor((room - 20) / 7.2))) : CHAT.windowChars;
   const [first, last] = windowAt(words, shown, chars, CHAT.windowWords);
+  // The words stay hidden until the bubble has its width: on the first frame a word could be laid out in less room
+  // than it needs and show as a fragment ("th…") before the line rolled in.
+  const [ready, setReady] = useState(false);
   return (
     <View accessibilityLabel={text} style={[{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, overflow: 'hidden' }, box]}>
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={[FONT, { opacity: 0 }]}>
+      <Text onLayout={() => setReady(true)} maxFontSizeMultiplier={1.2} numberOfLines={1} style={[FONT, { opacity: 0 }]}>
         {widestWindow(words, chars, CHAT.windowWords)}
       </Text>
-      <View style={{ position: 'absolute', top: 4, bottom: 4, left: 10, right: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+      <View style={{ position: 'absolute', top: 4, bottom: 4, left: 10, right: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', overflow: 'hidden', opacity: ready ? 1 : 0 }}>
         {words.slice(0, last + 1).map((w, i) => (
           <Word key={i} text={w} ink={ink} gone={i < first} lead={i > first} />
         ))}
@@ -201,15 +204,16 @@ function Word({ text, ink, gone, lead }: { text: string; ink: string; gone: bool
       opacity: enter.get() * (1 - out.get()),
       marginLeft: lead ? 3.6 * (1 - out.get()) : 0,
       transform: [{ translateX: 6 * (1 - enter.get()) }],
-      ...(w >= 0 ? { width: w * (1 - out.get()) } : {}),
+      ...(w > 0 ? { width: w * (1 - out.get()) } : {}),
     };
   });
   const measure = (e: LayoutChangeEvent) => {
-    if (width.get() < 0) width.set(e.nativeEvent.layout.width);
+    if (width.get() <= 0) width.set(e.nativeEvent.layout.width);
   };
   return (
     <Animated.View style={[{ flexShrink: 0, overflow: 'hidden' }, style]}>
-      <Text onLayout={measure} maxFontSizeMultiplier={1.2} numberOfLines={1} style={[FONT, { color: ink }]}>
+      {/* Clipped, never "…": a word is either whole or closing to nothing. */}
+      <Text onLayout={measure} maxFontSizeMultiplier={1.2} numberOfLines={1} ellipsizeMode="clip" style={[FONT, { color: ink }]}>
         {text}
       </Text>
     </Animated.View>

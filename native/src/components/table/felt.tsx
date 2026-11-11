@@ -127,7 +127,10 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   const recap = !!recapKey && recapHand === recapKey;
   // The table screen never scrolls: a board that needs more room than the phone has left (the cross or the clock on
   // a small phone) keeps its layout and shrinks to fit, from the top.
-  const natural = Math.min(feltHeight(variant, height), Math.max(feltHeight(variant, 0), heightLimit ?? Infinity));
+  // At 320pt wide (an SE with Display Zoom) the stadium may get shorter, down to 160pt, before anything is scaled,
+  // so the board keeps its full-size cards instead of the whole oval shrinking to half.
+  const floor = width < 350 && feltHeight(variant, 0) < 300 ? 160 : feltHeight(variant, 0);
+  const natural = Math.min(feltHeight(variant, height), Math.max(floor, heightLimit ?? Infinity));
   const fit = heightLimit && heightLimit > 0 && heightLimit < natural ? Math.max(0.6, heightLimit / natural) : 1;
 
   const oval = (
@@ -384,12 +387,15 @@ function HandPill({ text }: { text: string }) {
       style={{
         paddingHorizontal: 14,
         paddingVertical: 5,
-        borderRadius: 999,
+        borderRadius: 16,
+        borderCurve: 'continuous',
+        maxWidth: '100%',
         backgroundColor: c.surface,
         boxShadow: '0 1px 2px rgba(18,18,40,0.12)',
       }}
     >
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.label, fontWeight: '600', fontSize: 15 }}>
+      {/* A long name ("Pair of aces · the column") shrinks a little, then wraps to a second line rather than cut off. */}
+      <Text maxFontSizeMultiplier={1.2} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.85} style={{ color: c.label, fontWeight: '600', fontSize: 15, lineHeight: 18, textAlign: 'center' }}>
         {text}
       </Text>
     </View>

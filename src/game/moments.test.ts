@@ -151,7 +151,7 @@ describe('Imposter', () => {
 describe('explaining a hand', () => {
   it('names the Crucifix line, the Pittsburgh river and the Circle run, and says what a wild 2 became', () => {
     const cross = explainHand('crucifix', ['Ah', 'Kh'], ['2c', 'Qh', '3d', 'Jh', '4s', 'Th', '9c', '5d', '8s']);
-    expect(cross.note).toBe('down the cross');
+    expect(cross.note).toBe('the column');
     const river = explainHand('pittsburgh', ['Ah', 'Ad'], ['2c', '7d', '9h', 'Ks', '3c', 'Ac', '4d']);
     expect(river.note).toBe('river 2');
     const circle = explainHand('circle', ['Ah', 'Ad'], ['Ac', '7d', '9h', 'Ks', '3c', '5d']);

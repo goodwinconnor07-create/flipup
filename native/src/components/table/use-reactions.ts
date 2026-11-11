@@ -17,7 +17,7 @@ import {
   type Seat,
   type Talk,
 } from '@/engine';
-import { useTalkOn } from '@/state/prefs';
+import { talkPasses, useTalkLevel } from '@/state/prefs';
 
 import { playSound } from './sounds';
 
@@ -34,11 +34,11 @@ export function useReactions(game: Game, canShow: (id: string) => boolean, meId?
   const [chat] = useState(() => new ChatLane());
   const [now, redraw] = useReducer((_previous: number, at: number) => at, 0);
   const [quiet, setQuiet] = useState<Record<string, string>>({});
-  const talkOn = useTalkOn();
-  const talkRef = useRef(talkOn);
+  const talkLevel = useTalkLevel();
+  const talkRef = useRef(talkLevel);
   useEffect(() => {
-    talkRef.current = talkOn;
-  }, [talkOn]);
+    talkRef.current = talkLevel;
+  }, [talkLevel]);
   const gameRef = useRef(game);
   useEffect(() => {
     gameRef.current = game;
@@ -130,7 +130,7 @@ export function useReactions(game: Game, canShow: (id: string) => boolean, meId?
         playSound('pop');
         continue;
       }
-      if (!talkRef.current || !canShowRef.current(who)) continue;
+      if (!talkPasses(talkRef.current, who, r.n, !!r.to && r.to === meRef.current) || !canShowRef.current(who)) continue;
       const name = gameRef.current.players.find((p) => p.id === r.to)?.name;
       chat.push(
         botSay({

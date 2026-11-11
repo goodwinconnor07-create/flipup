@@ -99,7 +99,7 @@ export default function RootLayout() {
         {/* Share cards, the hand bank and Replay. */}
         <Stack.Screen name="share" options={{ headerShown: false, title: 'Share', statusBarStyle: 'light' }} />
         <Stack.Screen name="share-card" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Share card' }} />
-        <Stack.Screen name="replays" options={{ headerShown: false, title: 'Hand bank', statusBarStyle: 'light' }} />
+        <Stack.Screen name="replays" options={{ headerShown: false, title: 'Saved hands', statusBarStyle: 'light' }} />
         <Stack.Screen name="replay/[id]" options={{ headerShown: false, title: 'Replay', statusBarStyle: 'light' }} />
         <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />

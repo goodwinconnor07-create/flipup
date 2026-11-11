@@ -14,7 +14,7 @@ import { Confetti } from '@/components/table/confetti';
 import { ConnectionLost, useOfflineFor } from '@/components/table/connection-lost';
 import { PartyPanel } from '@/components/party/panel';
 import { Ended } from '@/components/table/ended';
-import { SaveHandButton, ScreenshotPrompt, ShareButton } from '@/components/table/hand-tools';
+import { HandToolsTip, SaveHandButton, ScreenshotPrompt, ShareButton } from '@/components/table/hand-tools';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
 import { MyArea } from '@/components/table/my-area';
@@ -90,6 +90,7 @@ export default function TableScreen() {
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
       <TableBar game={game} online={online} code={t.code} />
+      <HandToolsTip />
       <ScreenshotPrompt />
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
@@ -511,7 +512,12 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const compact = available > 0 && available < 700;
   // Reserve the action area and hole cards before sizing the felt; a board that can't fit shrinks to the room left.
   const pointing = variantOf(game) === 'imposter';
-  const feltBudget = available > 0 ? available - (compact ? 260 : 310) - 180 - (pointing ? 44 : 0) : undefined;
+  // Measured, not guessed: the room the seats and the felt share, less the seat row. On a 320pt phone (an SE with
+  // Display Zoom) the old fixed reserve left the felt at its 60% floor; now it gets exactly what's there.
+  const [upper, setUpper] = useState({ room: 0, seats: 0 });
+  const narrow = width < 350;
+  const guess = available > 0 ? available - (compact ? 260 : 310) - 180 - (pointing ? 44 : 0) : undefined;
+  const feltBudget = upper.room > 0 && upper.seats > 0 ? upper.room - upper.seats - (compact ? 8 : 24) - (narrow ? 4 : 20) : guess;
 
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
   const speakerOk = useRef<(id: string) => boolean>(() => true);
@@ -551,12 +557,25 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
         </Animated.View>
       )}
       {/* The table is locked: it never scrolls or bounces (the felt shrinks to fit instead, see FeltOval). */}
-      <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 20 }}>
-        <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
+      <View
+        onLayout={(e) => {
+          const room = Math.round(e.nativeEvent.layout.height);
+          setUpper((u) => (u.room === room ? u : { ...u, room }));
+        }}
+        style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: narrow ? 4 : 20 }}
+      >
+        <View
+          onLayout={(e) => {
+            const seats = Math.round(e.nativeEvent.layout.height);
+            setUpper((u) => (u.seats === seats ? u : { ...u, seats }));
+          }}
+        >
+          <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
+        </View>
         <FeltOval game={game} me={me} heightLimit={feltBudget} />
       </View>
       <View style={{ gap: 4, paddingTop: 4 }}>
-        <View style={{ paddingHorizontal: spacing.md, minHeight: 112, justifyContent: 'flex-end' }}>
+        <View style={{ paddingHorizontal: spacing.md, minHeight: narrow ? 96 : 112, justifyContent: 'flex-end' }}>
           {/* Imposter: point a finger at someone while the betting goes on. */}
           {showPointing && me && <SuspectBar game={game} me={me} />}
           {hand?.tally ? (

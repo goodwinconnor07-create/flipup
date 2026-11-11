@@ -72,7 +72,7 @@ function Viewer() {
     return (
       <GrainBackground>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.md, padding: spacing.lg }}>
-          <ThemedText variant="title3">That hand isn’t in your bank.</ThemedText>
+          <ThemedText variant="title3">That hand isn’t in Saved hands.</ThemedText>
           <PressableScale accessibilityRole="button" onPress={() => router.back()}>
             <ThemedText style={{ color: brand.violetDark, fontWeight: '700' }}>Back</ThemedText>
           </PressableScale>

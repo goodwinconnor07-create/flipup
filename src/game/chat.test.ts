@@ -230,6 +230,22 @@ describe('the conversation', () => {
     expect(lane.talk('a', two.land)?.typing).toBe(false);
   });
 
+  it('queues a second bot that spoke at the same moment instead of dropping it', () => {
+    const lane = new ChatLane();
+    lane.push(say('a', 'Well well well, look who decided to show up to the table tonight.'));
+    lane.push(say('b', 'Good luck all.', 0, { expires: 3200 }));
+    let now = 0;
+    const seen = new Set<string>();
+    for (let i = 0; i < 400; i++) {
+      lane.advance(now);
+      for (const w of ['a', 'b']) for (const m of lane.talk(w, now)?.shown ?? []) seen.add(w);
+      const due = lane.nextDue(now);
+      if (due === null) break;
+      now = Math.max(now + 1, due);
+    }
+    expect([...seen].sort()).toEqual(['a', 'b']);
+  });
+
   it('shows one message at a seat at any moment, however long the line', () => {
     const lane = new ChatLane();
     lane.push(say('a', 'One. Two. Three.'));

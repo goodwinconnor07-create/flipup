@@ -61,7 +61,7 @@ export default function PerkSheet() {
 
 const GO: Partial<Record<PerkId, { title: string; run: () => void }>> = {
   ultra: { title: 'Play ULTRA bots', run: () => router.push('/play-bots') },
-  replay: { title: 'Open my hand bank', run: () => router.push('/replays') },
+  replay: { title: 'Open Saved hands', run: () => router.push('/replays') },
   share: { title: 'Make a share card', run: () => router.push('/share') },
   packs: { title: 'Pick a card back', run: () => router.push('/card-packs') },
   range: { title: 'Start training', run: () => router.push('/range-session') },

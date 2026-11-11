@@ -165,7 +165,7 @@ export function SeatRow({
   );
 }
 
-/** "+3": the players not in the row right now. A tap lists them with their chips. */
+/** "+3 more": the players not in the row right now. A tap lists them with their chips. */
 function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
   const c = usePlainColors();
   const [open, setOpen] = useState(false);
@@ -183,14 +183,22 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
           position: 'absolute',
           right: -2,
           bottom: 0,
-          paddingHorizontal: 10,
-          paddingVertical: 4,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 4,
+          minHeight: 30,
+          paddingHorizontal: 12,
+          paddingVertical: 5,
           borderRadius: 999,
-          backgroundColor: c.cell,
+          backgroundColor: c.surface,
+          borderWidth: 1,
+          borderColor: c.separator,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.25)',
         }}
       >
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', color: c.tertiaryLabel }}>
-          +{players.length}
+        <Icon name="person.2.fill" size={14} color={c.label} />
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 15, fontWeight: '700', color: c.label }}>
+          +{players.length} more
         </Text>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -285,7 +293,9 @@ function SeatPod({
   const won = hand?.result?.won[player.id] ?? 0;
   const status = player.stack === 0 && !seat ? 'Out' : player.sittingOut ? 'Away' : null;
   const thinking = turn && player.bot && !hand?.runout;
-  const last = seat?.last;
+  // A move from an earlier street clears once the new cards land, so last street's "Raise 25" never sits over this
+  // one. An all in stays: it's still true.
+  const last = seat?.last && (!hand || seat.last.street === hand.street || seat.last.move === 'allin') ? seat.last : null;
   // A move whose talk has run its course stays hidden, so it doesn't look like they moved again.
   const hush = !!hand && !!quiet && quiet === moveSig(hand.number, last);
   // Once the hand is over, the host can tap a bot's face-down cards to turn them over.

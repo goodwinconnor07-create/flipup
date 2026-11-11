@@ -41,31 +41,13 @@ Billy Bobby Ronnie Reggie Sonny Archie Alfie Harry George Charlie Arthur Walter 
 Darren Dennis Derek Graham Gordon Bruce Keith Kevin Wayne Warren Russell Roger Ralph Leonard Lewis Logan
 Marcus Marco Andre Anton Ivan Omar Ravi Ali Hassan Luis Carlos Diego Miguel Sara Kate Jess`.split(/\s+/);
 const INITIALS = ['B', 'C', 'D', 'H', 'M', 'W'];
+// Regulars' faces: animals and a few objects, never a person (🧔 👨 🧑 can be picked by friends, so a bot could pass
+// for one) and never a suit, trophy or 8-ball (they read as an icon, not a character).
+// prettier-ignore
 const AVATARS = [
-  '😎',
-  '🤠',
-  '🥸',
-  '🧔',
-  '👨',
-  '🧑',
-  '👨‍🦱',
-  '👨‍🦲',
-  '👨‍🦳',
-  '🧓',
-  '🦈',
-  '🦅',
-  '🐺',
-  '🦁',
-  '🐻',
-  '♠️',
-  '♦️',
-  '♣️',
-  '🎯',
-  '🃏',
-  '🏆',
-  '🎱',
-  '🗿',
-  '🔥',
+  '🦝', '🦬', '🦧', '🦜', '🦡', '🦥', '🐆', '🦌',
+  '🦑', '🐴', '🦦', '🦨', '🦘', '🦔', '🦩', '🦫',
+  '🦅', '🐺', '🐗', '🦀', '🐌', '🦚', '🗿', '⚡',
 ];
 const STYLES: StyleId[] = ['pro', 'shark', 'tag', 'lag', 'maniac', 'rock', 'station', 'gambler', 'trapper', 'nervous'];
 

@@ -9,6 +9,7 @@ import { haptic } from '@/components/haptics';
 import { SwapIcon } from '@/components/swap';
 import { Icon, type IconName } from '@/components/icon';
 import { usePremium } from '@/state/premium';
+import { read, save as store } from '@/state/storage';
 import { lastHand, saveLastHand, useLastHand, useLastSaved } from '@/state/replays';
 import { brand, radius, spacing, useColors } from '@/theme';
 
@@ -57,7 +58,7 @@ export function SaveHandButton() {
   return (
     <BarButton
       icon={saved ? 'bookmark.fill' : 'bookmark'}
-      label={!can ? 'Save hand: no finished hand yet' : saved ? `Hand ${hand?.number} is in your bank` : `Save hand ${hand?.number} to your bank`}
+      label={!can ? 'Save hand: no finished hand yet' : saved ? `Hand ${hand?.number} is in Saved hands` : `Save hand ${hand?.number}`}
       tint={saved ? brand.gold : undefined}
       dim={!can}
       onPress={() => {
@@ -88,6 +89,43 @@ function shareMenu(can: boolean, saved: boolean, save: () => void): void {
   if (Platform.OS === 'ios') {
     ActionSheetIOS.showActionSheetWithOptions({ options: [...items.map((i) => i.title), 'Cancel'], cancelButtonIndex: items.length }, (i) => items[i]?.go());
   } else Alert.alert('Share', undefined, [...items.map((i) => ({ text: i.title, onPress: i.go })), { text: 'Cancel', style: 'cancel' as const }]);
+}
+
+const TIP_KEY = 'flipup.handtoolstip';
+
+/**
+ * The first time a hand finishes at a table, a small card under the bar says what the two unlabelled icons do:
+ * the bookmark saves the hand, the arrow shares it. Shown once on this phone, gone after 7 seconds or a tap.
+ */
+export function HandToolsTip() {
+  const hand = useLastHand();
+  const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const [shown, setShown] = useState(false);
+  useEffect(() => {
+    if (!hand || read<boolean>(TIP_KEY, false)) return;
+    store(TIP_KEY, true);
+    setShown(true);
+    const t = setTimeout(() => setShown(false), 7000);
+    return () => clearTimeout(t);
+  }, [hand]);
+  if (!shown) return null;
+  return (
+    <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(160)} style={{ position: 'absolute', top: insets.top + 60, left: spacing.md, right: spacing.md, zIndex: 19 }}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Tip: the bookmark saves the hand you just played, the share button turns it into a card. Tap to close."
+        onPress={() => setShown(false)}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, paddingHorizontal: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}
+      >
+        <Icon name="bookmark" size={18} color={brand.gold} />
+        <Text style={{ flex: 1, fontSize: 15, lineHeight: 20, fontWeight: '600', color: colors.label }}>
+          Tap the bookmark to save that hand, or share it as a card.
+        </Text>
+        <Icon name="square.and.arrow.up" size={18} color={colors.label} />
+      </Pressable>
+    </Animated.View>
+  );
 }
 
 /**

@@ -5,7 +5,7 @@ import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { setGoldName, useGoldName, useProfile, wornLook } from '@/state/profile';
 import { useReplays } from '@/state/replays';
-import { setAppearance, setCalm, setFast, setMuted, setTalkOn, useAppearance, useCalm, useFast, useMuted, useTalkOn, type AppearancePref } from '@/state/prefs';
+import { setAppearance, setCalm, setFast, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
 import { spacing, useColors } from '@/theme';
 
 import { Row, Section } from './grouped-list';
@@ -21,7 +21,7 @@ import { ThemedText } from './themed-text';
 export function YouSettings({ header, online = false }: { header?: string; online?: boolean }) {
   const colors = useColors();
   const muted = useMuted();
-  const talk = useTalkOn();
+  const talk = useTalkLevel();
   const calm = useCalm();
   const fast = useFast();
   const appearance = useAppearance();
@@ -55,7 +55,25 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
         />
         <Row title="Sound" icon={{ symbol: 'speaker.wave.2.fill', color: colors.violet as string }} chevron={false} trailing={<Switch label="Sound" value={!muted} onValueChange={(on) => setMuted(!on)} />} />
         <Row title="Animations" icon={{ symbol: 'bolt.fill', color: colors.gold as string }} chevron={false} trailing={<Switch label="Animations" value={!calm} onValueChange={(on) => setCalm(!on)} />} />
-        <Row title="Bot talk" icon={{ symbol: 'bubble.left.fill', color: colors.green as string }} chevron={false} trailing={<Switch label="Bot talk" value={talk} onValueChange={setTalkOn} />} />
+        <Row
+          title="Bot talk"
+          icon={{ symbol: 'bubble.left.fill', color: colors.green as string }}
+          chevron={false}
+          trailing={
+            <View style={{ width: 186 }}>
+              <SegmentedControl<TalkLevel>
+                label="Bot talk"
+                value={talk}
+                onChange={setTalkLevel}
+                options={[
+                  { value: 'off', label: 'Off' },
+                  { value: 'some', label: 'Some' },
+                  { value: 'chatty', label: 'Chatty' },
+                ]}
+              />
+            </View>
+          }
+        />
         <Row title="Fast bot games" icon={{ symbol: 'clock.fill', color: colors.gold as string }} chevron={false} trailing={<Switch label="Fast bot games" value={fast} onValueChange={setFast} />} />
       </Section>
       {fast && !online && (
@@ -78,7 +96,7 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
           onPress={premium ? undefined : () => router.push({ pathname: '/premium', params: { reason: 'gold' } })}
         />
         {!online && <Row title="Share cards" icon={{ symbol: 'square.and.arrow.up', color: colors.violet as string }} onPress={() => router.push('/share')} />}
-        <Row title="Hand bank" detail={bank ? String(bank) : undefined} icon={{ symbol: 'film.stack.fill', color: colors.violet as string }} onPress={locked(() => router.push('/replays'), 'replay')} />
+        <Row title="Saved hands" detail={bank ? String(bank) : undefined} icon={{ symbol: 'film.stack.fill', color: colors.violet as string }} onPress={locked(() => router.push('/replays'), 'replay')} />
       </Section>
     </>
   );

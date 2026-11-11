@@ -54,7 +54,7 @@ function Hub() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <SetupRowTitle title="Top hands" detail={replays.length ? `${replays.length} in your bank` : undefined} />
+          <SetupRowTitle title="Top hands" detail={replays.length ? `${replays.length} saved` : undefined} />
           {moments.length ? (
             moments.map((m) => <MomentRow key={`${m.kind}:${m.replay.id}`} m={m} />)
           ) : (

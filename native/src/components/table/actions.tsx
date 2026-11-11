@@ -54,7 +54,8 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
     >
       {fill !== undefined && <View style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: `${fill * 100}%`, backgroundColor: 'rgba(255,255,255,0.85)' }} />}
       <Swap id={label} kind="text">
-        <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
+        {/* Pre-actions stay on one line (shrinking a little if they must), so Check / Fold never stands taller than its neighbours. */}
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={tone === 'pre' || tone === 'preOn' ? 1 : 2} adjustsFontSizeToFit={tone === 'pre' || tone === 'preOn'} minimumFontScale={0.75} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
           {label}
           {sub ? ` ${sub}` : ''}
         </Text>

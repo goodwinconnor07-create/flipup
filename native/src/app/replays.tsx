@@ -50,7 +50,7 @@ function Bank() {
   return (
     <GrainBackground>
       <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}>
-        <SetupHeader title="Hand bank" line={list.length ? `${list.length} saved ${list.length === 1 ? 'hand' : 'hands'}. Tap one to watch it back.` : undefined} />
+        <SetupHeader title="Saved hands" line={list.length ? `${list.length} saved ${list.length === 1 ? 'hand' : 'hands'}. Tap one to watch it back.` : undefined} />
         {!list.length && (
           <View style={{ padding: spacing.lg, gap: spacing.sm, borderRadius: radius.lg, backgroundColor: 'rgba(255,255,255,0.06)', alignItems: 'center' }}>
             <Icon name="film.stack.fill" size={28} color={brand.violetDark} />

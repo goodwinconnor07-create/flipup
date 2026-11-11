@@ -112,7 +112,6 @@ export default function RootLayout() {
         {/* Asked on top of joining or opening a table when the player has no name yet (state/ask-name.ts). */}
         <Stack.Screen name="your-name" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Your name' }} />
         <Stack.Screen name="emoji" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Your emoji' }} />
-        <Stack.Screen name="username" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Username' }} />
         <Stack.Screen name="friend/[code]" options={{ ...sheet, sheetAllowedDetents: [0.7, 1], title: 'Friend' }} />
         <Stack.Screen name="friend-requests" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'Friend requests' }} />
         <Stack.Screen name="invite-contacts" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Invite friends' }} />

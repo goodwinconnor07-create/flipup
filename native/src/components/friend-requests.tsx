@@ -53,7 +53,7 @@ function RequestRow({ request, first }: { request: FriendRequest; first: boolean
             {request.name}
           </ThemedText>
           <ThemedText variant="subhead" tone="tertiaryLabel" numberOfLines={1}>
-            {request.username ? `@${request.username}` : 'Wants to be friends'}
+            Wants to be friends
           </ThemedText>
         </View>
         <View style={{ flexDirection: 'row', gap: spacing.xs }}>

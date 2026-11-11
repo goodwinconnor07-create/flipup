@@ -35,11 +35,6 @@ export default function FriendProfile() {
           <ThemedText variant="title1" accessibilityRole="header" style={{ textAlign: 'center' }}>
             {pal.name}
           </ThemedText>
-          {pal.username && (
-            <ThemedText variant="body" tone="secondaryLabel">
-              @{pal.username}
-            </ThemedText>
-          )}
         </View>
       </View>
       <Button

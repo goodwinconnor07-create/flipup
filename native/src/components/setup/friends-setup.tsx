@@ -429,7 +429,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         disabled={partyDraft ? !partyReady : inNow < 2}
         onPress={() => void open()}
       />
-      <LoadingCover visible={held || (!lobby && !failed && !invite)} text={invite ? 'Opening your lobby' : 'Creating your lobby'} />
+      <LoadingCover variant={variant} visible={held || (!lobby && !failed && !invite)} text={invite ? 'Opening your lobby' : 'Creating your lobby'} />
     </GrainBackground>
   );
 }

@@ -5,10 +5,13 @@ import { Text, View } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 import Svg, { Defs, FeComposite, FeFlood, FeGaussianBlur, FeMerge, FeMergeNode, FeOffset, Filter, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
+import type { Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { motion, useScheme } from '@/theme';
 
 import { GrainBackground } from './grain-background';
+import { GameThumb } from './game-picture';
+import { GameBackdrop } from './home/game-backdrop';
 import { ICON_COLORS, ICON_COLORS_DARK, ICON_RADIUS, ICON_SIZE, MARK, PLACE } from './launch-mark';
 import { read, save } from '@/state/storage';
 
@@ -228,12 +231,13 @@ function Dots({ ink, reduce }: { ink: string; reduce: boolean }) {
 }
 
 /**
- * The loading screen over the Play with friends page while its lobby is being made: the same icon, shimmer and
- * dots as the launch cover on the app's own moving blue field, dimmed so it reads as "not ready yet". The shimmer
+ * The loading screen over the Play with friends page while its lobby is being made: the game's own icon (the one
+ * picked on Home) with the launch cover's shimmer and dots, on that game's colours (`GameBackdrop`, as on Home),
+ * dimmed so it reads as "not ready yet". The shimmer
  * keeps crossing the icon until `visible` goes false, then the whole screen eases out in 200ms (rule 15). Under
  * Reduce Motion the icon sits still. It takes touches while it is up, so nothing underneath can be pressed.
  */
-export function LoadingCover({ visible, text = 'Creating your lobby' }: { visible: boolean; text?: string }) {
+export function LoadingCover({ visible, variant, text = 'Creating your lobby' }: { visible: boolean; /** The game being set up: its icon and its colours, as on Home. */ variant: Variant; text?: string }) {
   const reduce = useReduceMotion();
   const [gone, setGone] = useState(false);
   const arrive = useSharedValue(reduce ? 1 : 0);
@@ -267,10 +271,10 @@ export function LoadingCover({ visible, text = 'Creating your lobby' }: { visibl
       accessibilityLiveRegion="polite"
       style={[{ position: 'absolute', inset: 0, zIndex: 900 }, coverStyle]}
     >
-      <GrainBackground style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', boxShadow: '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
-          <View style={{ flex: 1, borderRadius: TILE * ICON_RADIUS, borderCurve: 'continuous', overflow: 'hidden' }}>
-            <IconArt />
+      <GameBackdrop variant={variant} style={{ alignItems: 'center', justifyContent: 'center' }}>
+        <Animated.View style={[{ width: TILE, height: TILE, borderRadius: TILE * 0.24, borderCurve: 'continuous', boxShadow: '0 22px 44px -16px rgba(0, 0, 0, 0.7)' }, tileStyle]}>
+          <View style={{ flex: 1, borderRadius: TILE * 0.24, borderCurve: 'continuous', overflow: 'hidden' }}>
+            <GameThumb variant={variant} size={TILE} />
             {!reduce && (
               <Animated.View style={[{ position: 'absolute', top: -TILE * 0.1, bottom: -TILE * 0.1, left: 0, width: TILE * 0.7 }, bandStyle]}>
                 <Svg width="100%" height="100%" preserveAspectRatio="none">
@@ -290,7 +294,7 @@ export function LoadingCover({ visible, text = 'Creating your lobby' }: { visibl
         <Shuffling ink="rgba(255, 255, 255, 0.82)" reduce={reduce} text={text} />
         {/* A little less bright than the page under it, so it reads as a loading screen. */}
         <View pointerEvents="none" style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.38)' }} />
-      </GrainBackground>
+      </GameBackdrop>
     </Animated.View>
   );
 }

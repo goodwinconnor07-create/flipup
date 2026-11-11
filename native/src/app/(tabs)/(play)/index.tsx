@@ -1,6 +1,6 @@
 import { router, Stack } from 'expo-router';
-import { useEffect } from 'react';
-import { Platform, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -16,7 +16,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
 import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { freeThisWeek, isPremiumVariant, variantNeedsPremium, isVariant, VARIANTS, variantInfo, variantOf, type Variant } from '@/engine';
+import { freeThisWeek, isPremiumVariant, variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } from '@/engine';
 import { usePartyRef } from '@/state/party';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
@@ -33,8 +33,6 @@ const EDGE = 'rgba(255, 255, 255, 0.12)';
 const TAB_BAR = 49;
 /** The button block sits this much lower than the tab bar's clearance, so Play bots and Join a game rest just above it. */
 const TUCK = 12;
-/** With the LIVE card over PLAY, the buttons sit this much lower (into the room above the tab bar) so the card doesn't push them into the game slider. */
-const LIVE_DROP = 24;
 /** The game shown in the middle, kept between launches. */
 const PICK = 'flipup.homegame';
 
@@ -78,7 +76,6 @@ export default function Home() {
   // PLAY opens the page straight away; no colour fills the screen. A Premium game without Premium opens its sheet
   // instead, which explains the game before any setup and leads to the offer.
   const premium = usePremium();
-  const live = useLive();
   const start = (path: string, buzz = false) => () => {
     if (buzz) haptic.turn();
     if (!premium && variantNeedsPremium(variant)) {
@@ -99,7 +96,7 @@ export default function Home() {
     <ForceScheme scheme="dark">
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
       <GameBackdrop variant={variant} style={{ flex: 1 }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.xs - TUCK - (live.atTable || live.party ? LIVE_DROP : 0), gap: spacing.md }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.xs - TUCK, gap: spacing.md }}>
           {/* Top bar: the page's name on the left, you on the right. */}
           <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
             <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', letterSpacing: -0.4, color: '#ffffff' }}>
@@ -157,11 +154,11 @@ export default function Home() {
               <SideButton icon="crown.fill" label={premium ? 'Unlocked' : 'Premium'} say={premium ? 'Your Premium' : undefined} tint={brand.gold} onPress={go('/premium')} />
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
             </View>
-            <LiveCard />
             <PlayButton label="Host a game" line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
-              <SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />
+              {/* Where Join a game is. While you're at a table or in a party, the way back to it takes this spot. */}
+              <JoinOrLive join={<SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />} />
             </View>
           </Animated.View>
         </View>
@@ -191,41 +188,52 @@ function Dot({ on }: { on: boolean }) {
 }
 
 /** The table or party you're in: a slim strip over the buttons with a green LIVE tag. */
-/** Whether you're at a table or in a party right now, which is when the LIVE card shows over PLAY. */
-function useLive(): { atTable: boolean; party: boolean } {
+/**
+ * The second small button under Host a game: Join a game, or, while you're at a table or in a party (you can't join
+ * two games at once), a LIVE button in the same spot that takes you back to it. A small x on its corner puts it away
+ * for this game and brings Join a game back; the next table or party shows it again.
+ */
+function JoinOrLive({ join }: { join: ReactNode }) {
   const t = useTable();
   const game = t.game;
   const partyRef = usePartyRef();
   const atTable = !!t.mode && !(game && game.status === 'ended' && !game.party);
-  return { atTable, party: !!partyRef };
-}
-
-function LiveCard() {
-  const t = useTable();
-  const game = t.game;
-  const { atTable, party } = useLive();
-  if (!atTable && !party) return null;
-  const what = !atTable ? 'your party' : game ? variantInfo(variantOf(game)).name : 'your table';
+  const key = atTable ? `table:${game?.id ?? ''}` : partyRef ? 'party' : '';
+  const [away, setAway] = useState('');
+  if (!key || away === key) return <>{join}</>;
   return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={`Back to ${what}`}
-      onPress={() => {
-        haptic.tap();
-        router.push(atTable ? '/table' : '/party-room');
-      }}
-      haptics={false}
-      style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44, paddingHorizontal: spacing.md, borderRadius: 16, borderCurve: 'continuous', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}
-    >
-      <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 1.5, borderColor: brand.raise }}>
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: brand.raise }}>
-          LIVE
+    <View style={{ flex: 1 }}>
+      <PressableScale
+        accessibilityRole="button"
+        accessibilityLabel={atTable ? 'Back to your table' : 'Back to your party'}
+        onPress={() => {
+          haptic.tap();
+          router.push(atTable ? '/table' : '/party-room');
+        }}
+        haptics={false}
+        style={{ minHeight: 54, flexDirection: 'row', gap: spacing.xs, borderRadius: 20, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}
+      >
+        <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7, borderWidth: 1.5, borderColor: brand.raise }}>
+          <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: brand.raise }}>
+            LIVE
+          </Text>
+        </View>
+        <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
+          Rejoin
         </Text>
-      </View>
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={1} style={{ flex: 1, fontSize: 16, fontWeight: '600', color: '#ffffff' }}>
-        Back to {what}
-      </Text>
-      <Icon name="chevron.right" size={14} color="rgba(255, 255, 255, 0.85)" />
-    </PressableScale>
+      </PressableScale>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Hide this and show Join a game"
+        hitSlop={10}
+        onPress={() => {
+          haptic.tap();
+          setAway(key);
+        }}
+        style={{ position: 'absolute', top: -8, right: -6, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', boxShadow: '0 3px 8px -2px rgba(0, 0, 0, 0.5)' }}
+      >
+        <Icon name="xmark" size={11} color="#0b1533" />
+      </Pressable>
+    </View>
   );
 }

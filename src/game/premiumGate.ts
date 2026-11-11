@@ -25,10 +25,10 @@ export function actionNeedsPremium(action: Action): boolean {
   return false;
 }
 
-/** A `setLook` with its Premium parts taken out, for a phone that hasn't shown it owns Premium. Anything else passes through. */
+/** A `setLook` with its Premium parts (bubble, card pack, gold name) taken out, for a phone that hasn't shown it owns Premium. Anything else passes through. */
 export function withoutPremiumLook(action: Action): Action {
   if (action.type !== 'setLook') return action;
-  const { bubble, cardPack, ...rest } = action;
+  const { bubble, cardPack, gold: _gold, ...rest } = action;
   return {
     ...rest,
     ...(bubble !== undefined && !premiumBubble(bubble) ? { bubble } : {}),

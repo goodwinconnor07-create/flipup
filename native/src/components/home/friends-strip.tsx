@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 
-import { useMyUsername, usePals, type Pal } from '@/state/pals';
+import { usePals, type Pal } from '@/state/pals';
 import { spacing, useColors } from '@/theme';
 
 import { Avatar } from '../avatar';
@@ -21,9 +21,8 @@ const FACE = 64;
  */
 export function FriendsStrip() {
   const pals = usePals();
-  const { username } = useMyUsername();
   const actions = useFriendActions();
-  const add = () => router.push(username ? '/add-friend' : '/username');
+  const add = () => router.push('/add-friend');
   return (
     <View style={{ gap: spacing.sm }}>
       <SectionTitle title="Friends" onMore={pals.length ? () => router.navigate('/friends') : undefined} />
@@ -38,7 +37,7 @@ export function FriendsStrip() {
           </View>
         ) : (
           pals.map((pal) => (
-            <Menu key={pal.code} label={`${pal.name}. Invite, profile`} title={pal.username ? `${pal.name} · @${pal.username}` : pal.name} sections={actions.sections(pal)}>
+            <Menu key={pal.code} label={`${pal.name}. Invite, profile`} title={pal.name} sections={actions.sections(pal)}>
               <Face pal={pal} />
             </Menu>
           ))

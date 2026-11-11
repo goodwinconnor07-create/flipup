@@ -130,9 +130,9 @@ export function exploitRead(read: Read, k: number): Read {
 }
 
 /** What a bot has seen of a player, eased towards an average pub player until there are enough hands. */
-function summary(r: PlayerRead | undefined, priorHands = PRIOR.hands): Read {
+function summary(r: PlayerRead | undefined, priorHands = PRIOR.hands, scale = 1): Read {
   const h = r?.hands ?? 0;
-  const mix = (seen: number, n: number, prior: number, k = priorHands) => (seen + prior * k) / (n + k);
+  const mix = (seen: number, n: number, prior: number, k = priorHands) => (seen + prior * k * scale) / (n + k * scale);
   return {
     vpip: mix(r?.vpip ?? 0, h, PRIOR.vpip),
     pfr: mix(r?.pfr ?? 0, h, PRIOR.pfr),
@@ -161,12 +161,17 @@ function summary(r: PlayerRead | undefined, priorHands = PRIOR.hands): Read {
   };
 }
 
-/** A fast recent read is blended with lifetime evidence, rather than forgetting the whole table. */
-export function readOf(r: PlayerRead | undefined): Read {
-  const long = summary(r);
+/**
+ * A fast recent read is blended with lifetime evidence, rather than forgetting the whole table. `quick` is how an
+ * ULTRA bot reads: it trusts what it has seen after far fewer hands and leans harder on the last few.
+ */
+export const QUICK_READ = { scale: 0.35, recentPrior: 1, recentMax: 0.85, recentEase: 1 };
+
+export function readOf(r: PlayerRead | undefined, quick = false): Read {
+  const long = quick ? summary(r, PRIOR.hands, QUICK_READ.scale) : summary(r);
   if (!r?.recent) return long;
-  const recent = summary(r.recent, 3);
-  const weight = (0.65 * r.recent.hands) / (r.recent.hands + 2);
+  const recent = quick ? summary(r.recent, QUICK_READ.recentPrior) : summary(r.recent, 3);
+  const weight = quick ? (QUICK_READ.recentMax * r.recent.hands) / (r.recent.hands + QUICK_READ.recentEase) : (0.65 * r.recent.hands) / (r.recent.hands + 2);
   const mixed: Read = { ...long, foldStreet: { ...long.foldStreet } };
   const blend = (a: number, b: number) => a * (1 - weight) + b * weight;
   for (const key of Object.keys(long) as (keyof Read)[]) {
@@ -758,8 +763,8 @@ export const intsOf = (cards: string[]) => cards.map(toInt);
 export const boardCards = (hand: Hand) => hand.board.slice(0, STREET_CARDS[hand.street]).map(toInt);
 
 /** The opponents still in the hand, with their stories and reads. */
-export function opponentsOf(game: Game, hand: Hand, seat: Seat, exploit = 0): Opponent[] {
+export function opponentsOf(game: Game, hand: Hand, seat: Seat, exploit = 0, quick = false): Opponent[] {
   return hand.seats
     .filter((s) => s !== seat && !s.folded)
-    .map((s) => ({ id: s.playerId, read: exploitRead(readOf(game.reads?.[s.playerId]), exploit), story: storyOf(game, hand, s.playerId), allIn: s.allIn }));
+    .map((s) => ({ id: s.playerId, read: exploitRead(readOf(game.reads?.[s.playerId], quick), exploit), story: storyOf(game, hand, s.playerId), allIn: s.allIn }));
 }

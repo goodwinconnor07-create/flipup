@@ -50,6 +50,7 @@ export function Face({
   bubble,
   dim,
   selected,
+  gold,
 }: {
   emoji: string;
   name: string;
@@ -65,6 +66,8 @@ export function Face({
   dim?: boolean;
   /** An outline in this colour: invited or joined. */
   selected?: string;
+  /** A Premium player's gold name. */
+  gold?: boolean;
 }) {
   const colors = useColors();
   const face = (
@@ -90,7 +93,7 @@ export function Face({
         {pill && <View style={{ position: 'absolute', bottom: -spacing.xs, alignItems: 'center', left: -spacing.md, right: -spacing.md }}>{pill}</View>}
         {bubble && <View pointerEvents="none" style={{ position: 'absolute', top: -spacing.xxs, left: -60, right: -60, height: 0 }}>{bubble}</View>}
       </View>
-      <ThemedText variant="subhead" numberOfLines={1} style={{ fontWeight: '600', maxWidth: SLOT, marginTop: pill ? spacing.xxs : 0 }}>
+      <ThemedText variant="subhead" numberOfLines={1} style={{ fontWeight: gold ? '800' : '600', maxWidth: SLOT, marginTop: pill ? spacing.xxs : 0, ...(gold ? { color: brand.gold } : {}) }}>
         {name}
       </ThemedText>
     </View>

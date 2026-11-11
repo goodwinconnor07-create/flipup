@@ -38,7 +38,7 @@ const PICK = 'flipup.homegame';
  * buttons, made satisfying to open). The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left
  * and your face top right (a tap opens your profile); the games as a line of cards across the whole screen, locked
  * on one at a time (`GameSwiper`), the chosen one's name, hook and dots under it; a row of round shortcuts (Stats,
- * Rules, All games, Premium, Settings, Share) just over PLAY (`PlayButton`), with Play bots and Join a game under
+ * Rules, Saved hands, Premium, Settings, Share) just over PLAY (`PlayButton`), with Play bots and Join a game under
  * it. PLAY and Play bots open their page straight away. The tab bar stays at
  * the bottom. Nothing scrolls.
  */
@@ -128,7 +128,7 @@ export default function Home() {
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingBottom: spacing.xxs }}>
               <SideButton icon="chart.bar.xaxis" label="Stats" onPress={go('/stats')} />
               <SideButton icon="book.fill" label="Rules" onPress={go(`/how-to-play/${variant}`)} />
-              <SideButton icon="square.grid.2x2.fill" label="All games" onPress={go('/games')} />
+              <SideButton icon="film.stack.fill" label="Saved hands" onPress={go('/replays')} />
               <SideButton icon="crown.fill" label="Premium" tint={brand.gold} onPress={go('/premium')} />
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
               <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />

@@ -38,7 +38,7 @@ export const APP_INFO = {
   termsUrl: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
 
   /** TODO(before launch): placeholder address. Replace before submitting (listed in docs/APP_STORE.md). */
-  supportEmail: 'goodwinconnor007@gmail.com',
+  supportEmail: 'support@playflipup.com',
 
   /** The oldest iOS the app runs on. */
   iosDeploymentTarget: '18.0',

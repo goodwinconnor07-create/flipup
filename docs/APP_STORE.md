@@ -340,7 +340,7 @@ share card (Premium). Every one from the real native build (2.3.3).
 | 1 | GitHub secrets: done. The Expo token is `EXPO_API_TOKEN` | Done |
 | 2 | Bundle ID `com.goodwin.flipup`, in `native/appInfo.ts` | Done |
 | 3 | EAS project ID `55f84d03-0b82-48a2-9fa8-a4f76a7d112a`, in `native/appInfo.ts` | Done |
-| 4 | **Support email `goodwinconnor007@gmail.com` is a placeholder** (`TODO(before launch)` in `native/appInfo.ts`). Replace it before submitting | Owner |
+| 4 | Support email is `support@playflipup.com` (Cloudflare Email Routing to the owner's inbox). Done | Owner |
 | 5 | Real static pages at `/privacy` and `/support` (today both return the web app) | Claude, Phase 2 |
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |
 | 7 | `eas submit` may need the App Store Connect app ID (the number in the app's URL) if it can't find the app from the bundle ID | Owner, if asked |

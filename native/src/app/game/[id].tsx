@@ -69,7 +69,7 @@ export default function GameSheet() {
       {!rules && (
         <View style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: shade(look.card[0], 0.5) }}>
           <View style={{ padding: spacing.md, gap: spacing.sm }}>
-            <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={() => go('friends')} />
+            <PlayButton label="Host a game" line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={() => go('friends')} />
             <View style={{ flexDirection: 'row' }}>
               <SmallButton icon="cpu.fill" label="Play bots" onPress={() => go('bots')} />
             </View>

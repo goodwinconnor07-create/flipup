@@ -156,7 +156,7 @@ export default function Home() {
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
             </View>
             <LiveCard />
-            <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={start(`/play-friends?variant=${variant}`)} />
+            <PlayButton label="Host a game" line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={start(`/play-friends?variant=${variant}`)} />
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
               <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
               <SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />

@@ -30,10 +30,10 @@ export const APP_INFO = {
   premiumYearlyId: 'flipup.premium.yearly',
 
   /** The server the app talks to (the same Cloudflare Worker as the web app). The domain will change later. */
-  apiOrigin: 'https://gtoduel.online',
+  apiOrigin: 'https://playflipup.com',
   /** Public pages the store listing and the app link to. */
-  privacyUrl: 'https://gtoduel.online/privacy',
-  supportUrl: 'https://gtoduel.online/support',
+  privacyUrl: 'https://playflipup.com/privacy',
+  supportUrl: 'https://playflipup.com/support',
   /** Terms of use for the subscriptions: Apple's standard licence agreement (App Store Review 3.1.2 asks for a link). */
   termsUrl: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',
 

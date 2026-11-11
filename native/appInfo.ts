@@ -16,6 +16,9 @@ export const APP_INFO = {
   /** The EAS project ID, made by the build workflow's `eas init` on 2 November 2026. */
   easProjectId: '55f84d03-0b82-48a2-9fa8-a4f76a7d112a',
 
+  /** The App Store id (App Store Connect > General > App Information), for the share link and the rating page. */
+  appStoreId: '6829639428',
+
   /** The old one-time Premium purchase. No longer sold; people who bought it keep Premium for good. */
   premiumProductId: 'flipup.premium.unlock',
   /**
@@ -30,9 +33,6 @@ export const APP_INFO = {
   apiOrigin: 'https://gtoduel.online',
   /** Public pages the store listing and the app link to. */
   privacyUrl: 'https://gtoduel.online/privacy',
-  /** What the privacy policy says about the public boards (add it to the hosted page at privacyUrl too). */
-  privacyBoards:
-    'Bankroll and Today’s three show your username, emoji, score and any badge on public leaderboards. Your country shows only if you turn it on in Settings. Delete my data removes you from every board.',
   supportUrl: 'https://gtoduel.online/support',
   /** Terms of use for the subscriptions: Apple's standard licence agreement (App Store Review 3.1.2 asks for a link). */
   termsUrl: 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/',

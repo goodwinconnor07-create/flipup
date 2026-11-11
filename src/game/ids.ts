@@ -47,6 +47,42 @@ export function isCode(value: unknown): value is string {
   return typeof value === 'string' && value.length === CODE_LENGTH && normalizeCode(value) === value;
 }
 
+/**
+ * Table codes: a short poker word and two numbers (ACES42, FLOP07), six characters a friend can say across the
+ * room. A host can also pick their own six letters or numbers. Tables opened before this (and parties) still use
+ * the five consonants above, so `isTableCode` takes those too.
+ */
+export const TABLE_CODE_LENGTH = 6;
+export const TABLE_CODE_WORDS = [
+  'ACES', 'KING', 'JACK', 'FLOP', 'TURN', 'DEAL', 'FOLD', 'CALL', 'BETS', 'POTS', 'CHIP', 'NUTS', 'SUIT', 'CLUB',
+  'HAND', 'RAKE', 'ANTE', 'DRAW', 'PAIR', 'SHOW', 'BUST', 'DECK', 'CARD', 'WILD', 'HIGH', 'TELL', 'FISH', 'RAIL',
+  'FELT', 'LUCK', 'HERO', 'SPOT', 'SHIP', 'TILT', 'QUAD', 'TRIP', 'FOUR', 'FIVE', 'NINE',
+] as const;
+
+export function newTableCode(): string {
+  const [w, a, b] = randomIndexes(3, 1 << 16);
+  return `${TABLE_CODE_WORDS[w % TABLE_CODE_WORDS.length]}${a % 10}${b % 10}`;
+}
+
+/** Uppercases and keeps only letters and numbers, at most six. */
+export function normalizeTableCode(input: string): string {
+  return input.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, TABLE_CODE_LENGTH);
+}
+
+/** A table's join code: six letters or numbers, or one of the older five-consonant codes. */
+export function isTableCode(value: unknown): value is string {
+  return typeof value === 'string' && (/^[A-Z0-9]{6}$/.test(value) || isCode(value));
+}
+
+/** Why a code the host typed can't be used, or null when it can. Rude words are checked by the caller (names.ts). */
+export function tableCodeProblem(code: string): string | null {
+  if (code.length < TABLE_CODE_LENGTH) {
+    const left = TABLE_CODE_LENGTH - code.length;
+    return `Codes are ${TABLE_CODE_LENGTH} characters. Add ${left} more.`;
+  }
+  return isTableCode(code) ? null : 'Use only letters and numbers.';
+}
+
 /** Friend codes are numbers, so they never look like a table or party code. */
 export const FRIEND_CODE_LENGTH = 6;
 
@@ -64,8 +100,8 @@ export function isFriendCode(value: unknown): value is string {
   return (typeof value === 'string' && value.length === FRIEND_CODE_LENGTH && normalizeFriendCode(value) === value) || isCode(value);
 }
 
-/** Usernames: 3 to 20 lowercase letters, digits, dots or underscores, starting with a letter. How friends find you. */
-export const USERNAME_MIN = 3;
+/** Usernames: 2 to 20 lowercase letters, digits, dots or underscores, starting with a letter. How friends find you. */
+export const USERNAME_MIN = 2;
 export const USERNAME_MAX = 20;
 /** A username can change once in this long. */
 export const USERNAME_CHANGE_MS = 30 * 24 * 60 * 60 * 1000;

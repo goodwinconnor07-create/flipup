@@ -1,20 +1,24 @@
 import { router } from 'expo-router';
+import type { ReactNode } from 'react';
 import { View } from 'react-native';
 
 import { ROUNDED, spacing } from '@/theme';
 
-import { RoundButton } from '../tab-screen';
+import { Pressable, Text } from 'react-native';
+
+import { Icon } from '../icon';
+import { useColors } from '@/theme';
 import { ThemedText } from '../themed-text';
 
 /**
- * The page's own header on the dark grain pages: a round glass back button, then the title big and white in SF Pro
+ * The page's own header on the dark grain pages: Apple's "‹ Back", then the title big and white in SF Pro
  * Rounded with a line under it. No navigation bar, so nothing paints over the grain.
  */
 export function SetupHeader({ title, line }: { title: string; line?: string }) {
   return (
     <View style={{ gap: spacing.sm }}>
       <View style={{ flexDirection: 'row' }}>
-        <RoundButton icon="chevron.left" label="Back" onPress={() => router.back()} />
+        <BackText />
       </View>
       <View style={{ gap: spacing.xxs }}>
         <ThemedText variant="largeTitle" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
@@ -42,6 +46,40 @@ export function SetupRowTitle({ title, detail, big }: { title: string; detail?: 
           {detail}
         </ThemedText>
       )}
+    </View>
+  );
+}
+
+/** Apple's own back control, drawn for pages with no navigation bar: a chevron and "Back" in the accent blue. */
+export function BackText({ onPress = () => router.back() }: { onPress?: () => void }) {
+  const colors = useColors();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Back"
+      hitSlop={12}
+      onPress={onPress}
+      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 4, height: 44, marginLeft: -6, opacity: pressed ? 0.35 : 1 })}
+    >
+      <Icon name="chevron.left" size={22} weight="semibold" color={colors.accent as string} />
+      <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 17, color: colors.accent as string }}>
+        Back
+      </Text>
+    </Pressable>
+  );
+}
+
+/** A page's top row with no navigation bar: "‹ Back" on the left and the title in the middle, as iOS draws it. */
+export function NavRow({ title, left, right }: { title: string; left?: ReactNode; right?: ReactNode }) {
+  return (
+    <View style={{ height: 44, flexDirection: 'row', alignItems: 'center' }}>
+      <View style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
+        <ThemedText variant="headline" accessibilityRole="header">
+          {title}
+        </ThemedText>
+      </View>
+      {left ?? <BackText />}
+      {right && <View style={{ marginLeft: 'auto' }}>{right}</View>}
     </View>
   );
 }

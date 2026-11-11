@@ -1,5 +1,21 @@
 import { useEffect, useState } from 'react';
-import { BLIND_CAP_CHOICES, BLIND_MINUTE_MAX, blindsLabel, DEFAULT_SETTINGS, levelsFor, timerLabel, withStack, withVariant, LEGENDS, MAX_SEATS, STACK_CHOICES, TIMER_CHOICES, type Settings, type Variant } from '../game';
+import {
+  BLIND_CAP_CHOICES,
+  BLIND_MINUTE_MAX,
+  blindsLabel,
+  DEFAULT_SETTINGS,
+  levelsFor,
+  timerLabel,
+  withStack,
+  withVariant,
+  LEGENDS,
+  MAX_SEATS,
+  STACK_CHOICES,
+  TIMER_CHOICES,
+  type Settings,
+  type Variant,
+  PERSONALITIES,
+} from '../game';
 import { loadSettings } from '../state/persist';
 import { openTable, useApp } from '../state/store';
 import { BackBar, Choice, chips, Group, StepRow, SwitchRow } from '../ui/components';
@@ -65,10 +81,49 @@ export function SettingsFields({
         )}
       </Group>
       <Group title="House rules">
-        {timer && (
-          <StepRow label="Time to act" value={settings.turnSeconds} options={TIMER_CHOICES} format={timerLabel} onChange={(turnSeconds) => onChange({ ...settings, turnSeconds })} />
+        {(settings.variant ?? 'holdem') === 'holdem' && (
+          <StepRow
+            label="Bot level"
+            hint="Casual is relaxed; Challenge makes fewer small mistakes. Changes next hand."
+            value={settings.botDifficulty ?? 'casual'}
+            options={['casual', 'challenge']}
+            format={(v) => (v === 'challenge' ? 'Challenge' : 'Casual')}
+            onChange={(botDifficulty) => onChange({ ...settings, botDifficulty })}
+          />
         )}
-        <SwitchRow label="Rebuys" hint="Busted players can buy back in" on={settings.rebuys} onChange={(rebuys) => onChange({ ...settings, rebuys })} />
+        {(settings.variant ?? 'holdem') === 'holdem' && (
+          <SwitchRow
+            label="Invite BOT_001"
+            hint="Add the new experimental bot. Joins next hand; leaves after the current hand."
+            on={!!settings.humanPoker}
+            onChange={(humanPoker) => onChange({ ...settings, humanPoker })}
+          />
+        )}
+        {(settings.variant ?? 'holdem') === 'holdem' && settings.humanPoker && (
+          <StepRow
+            label="BOT_001 personality"
+            hint={`${PERSONALITIES.find((p) => p.id === settings.botPersonality)?.description ?? 'The original experimental profile.'} Changes next hand.`}
+            value={settings.botPersonality ?? 'original'}
+            options={['original', ...PERSONALITIES.map((p) => p.id)]}
+            format={(id) => PERSONALITIES.find((p) => p.id === id)?.label ?? 'Original'}
+            onChange={(botPersonality) => onChange({ ...settings, botPersonality })}
+          />
+        )}
+        {timer && (
+          <StepRow
+            label="Time to act"
+            value={settings.turnSeconds}
+            options={TIMER_CHOICES}
+            format={timerLabel}
+            onChange={(turnSeconds) => onChange({ ...settings, turnSeconds })}
+          />
+        )}
+        <SwitchRow
+          label="Rebuys"
+          hint="Busted players can buy back in"
+          on={settings.rebuys}
+          onChange={(rebuys) => onChange({ ...settings, rebuys })}
+        />
         {timer && (
           <SwitchRow
             label="Busted players peek"
@@ -100,13 +155,16 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
   const [picked, setPicked] = useState<string[]>([]);
   const [picking, setPicking] = useState(false);
   const busy = useApp((s) => s.busy);
-  const minBots = mode === 'local' ? 1 : 0;
+  const minBots = mode === 'local' && !settings.humanPoker ? 1 : 0;
   // Each of the two screens starts at its top, not wherever the long list left the page.
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [picking]);
   const choosing = mode === 'local' && how === PICK;
-  const faces = new Map<string, string>([...BOTS.map((b) => [b.name, b.emoji] as const), ...LEGENDS.map((l) => [l.short, l.emoji] as const)]);
+  const faces = new Map<string, string>([
+    ...BOTS.map((b) => [b.name, b.emoji] as const),
+    ...LEGENDS.map((l) => [l.short, l.emoji] as const),
+  ]);
 
   if (picking) {
     return (
@@ -138,19 +196,45 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
           </button>
         ) : (
           <Group footer={mode === 'online' ? 'Bots fill seats your friends leave empty.' : 'Computer players at your table.'}>
-            <StepRow label="Bots" value={bots} options={Array.from({ length: MAX_SEATS - 1 - minBots }, (_, i) => i + minBots)} onChange={setBots} buttons={['One less bot', 'One more bot']} />
+            <StepRow
+              label="Bots"
+              value={bots}
+              options={Array.from({ length: MAX_SEATS - 1 - minBots }, (_, i) => i + minBots)}
+              onChange={setBots}
+              buttons={['One less bot', 'One more bot']}
+            />
           </Group>
         )}
-        <SettingsFields settings={settings} onChange={setSettings} timer={mode === 'online'} />
+        <SettingsFields
+          settings={settings}
+          onChange={(s) => {
+            setSettings(s);
+            if (s.humanPoker) setBots((b) => Math.min(b, MAX_SEATS - 2));
+          }}
+          timer={mode === 'online'}
+        />
+        {settings.humanPoker && <p className="muted">BOT_001 will join in an extra bot seat.</p>}
+        {settings.humanPoker && choosing && picked.length > MAX_SEATS - 2 && (
+          <p role="alert">Pick at most seven other bots to leave a seat for BOT_001.</p>
+        )}
       </div>
       <div className="screen-foot">
         <button
           type="button"
           className="btn btn-xl btn-dark"
-          disabled={!!busy || (choosing && picked.length === 0)}
+          disabled={
+            !!busy ||
+            (choosing && ((!settings.humanPoker && picked.length === 0) || (!!settings.humanPoker && picked.length > MAX_SEATS - 2)))
+          }
           onClick={() => void (choosing ? openTable(mode, settings, picked.length, picked) : openTable(mode, settings, bots))}
         >
-          {busy ? 'Opening…' : mode === 'online' ? 'Open the table' : choosing && picked.length === 0 ? 'Pick your bots first' : 'Sit down'}
+          {busy
+            ? 'Opening…'
+            : mode === 'online'
+              ? 'Open the table'
+              : choosing && picked.length === 0 && !settings.humanPoker
+                ? 'Pick your bots first'
+                : 'Sit down'}
         </button>
       </div>
     </div>

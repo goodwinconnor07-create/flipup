@@ -26,6 +26,8 @@ export interface HandValue {
   detail: string;
   /** The five cards that make the hand, best first. */
   best: Card[];
+  /** Crazy Deuces: each wild 2 among the best five and the rank it stands in for ("K"). */
+  wilds?: { card: Card; as: string }[];
 }
 
 /** category, then up to five tie-break ranks, packed so plain number comparison works. */

@@ -2,10 +2,8 @@
 // street told you, every opponent's range broken down with how your hand does against each part of it, and what
 // each play wins on average.
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { read, write } from '../state/persist';
-import { loadHands } from '../train/ranges/library';
-import { narrate } from '../train/ranges/narrate';
 import {
   analyse,
   bb,
@@ -76,33 +74,13 @@ function respond(g: RangeGroup, facing: boolean, dead: string[]): string {
 }
 
 export function RangeTrainer() {
-  const [all, setAll] = useState<Scenario[]>(SCENARIOS);
   const [scenario, setScenario] = useState(() => nextHand(SCENARIOS, null));
-  // The generated hands download once; until they're in, the hand-written ones are there to play. A quick download
-  // swaps the first hand for one from the whole set; a slow one leaves the hand you're reading alone.
-  const opened = useRef(Date.now());
-  const pickedRef = useRef(false);
-  useEffect(() => {
-    let live = true;
-    loadHands()
-      .then((hands) => {
-        if (!live) return;
-        setAll(hands);
-        if (!pickedRef.current && Date.now() - opened.current < 1200) setScenario(nextHand(hands, null));
-      })
-      .catch(() => {});
-    return () => {
-      live = false;
-    };
-  }, []);
   const [pick, setPick] = useState<OptionId | null>(null);
   // Opponents whose whole range is open (otherwise just the biggest groups show).
   const [open, setOpen] = useState<string[]>([]);
   const r = useMemo(() => replay(scenario), [scenario]);
   const options = useMemo(() => optionsFor(scenario, r), [scenario, r]);
   const views = useMemo(() => (pick ? analyse(scenario, r) : []), [scenario, r, pick]);
-  // Each street's two questions (their range, and what you want), once you've answered.
-  const reads = useMemo(() => (pick ? narrate(scenario) : []), [scenario, pick]);
   // What each play wins on average (worked out once you've answered).
   const evs = useMemo(() => {
     if (!pick) return null;
@@ -131,11 +109,10 @@ export function RangeTrainer() {
     const grade = gradeOf(scenario, id);
     saveGrade(scenario.id, grade);
     haptic(grade === 'mistake' ? 'error' : 'success');
-    pickedRef.current = true;
     setPick(id);
   };
   const next = () => {
-    setScenario(nextHand(all, scenario));
+    setScenario(nextHand(SCENARIOS, scenario));
     setOpen([]);
     setPick(null);
     window.scrollTo({ top: 0 });
@@ -241,7 +218,7 @@ export function RangeTrainer() {
                       {l.left !== undefined && <small className="rt-left num"> · {l.left > 0 ? `${bb(l.left)} behind` : 'all in'}</small>}
                     </li>
                   ))}
-                {st === decision && <li className="rt-now">{facing ? 'Your move: call, fold or raise?' : 'Your move'}</li>}
+                {st === decision && <li className="rt-now">{facing ? (options.some((o) => o.id === 'raise') ? 'Your move: fold, call or raise?' : 'Your move: fold or call?') : 'Your move'}</li>}
               </ul>
             </div>
           ))}
@@ -262,6 +239,13 @@ export function RangeTrainer() {
               <span>{pick === scenario.best ? best.label : `Best: ${best.label}`}</span>
             </div>
             <p className="rt-why">{scenario.why}</p>
+            <p className="rt-source">
+              From {scenario.source.by}:{' '}
+              <a href={scenario.source.url} target="_blank" rel="noreferrer">
+                {scenario.source.title}
+              </a>
+              {scenario.source.note ? ` (${scenario.source.note})` : ''}
+            </p>
 
             {evs && (
               <div className="rt-numbers">
@@ -296,22 +280,11 @@ export function RangeTrainer() {
 
             <h2 className="rt-h">What each street told you</h2>
             <ol className="rt-clues">
-              {scenario.clues.map((c, i) => {
-                const read = reads.find((x) => x.street === c.street);
-                return (
-                  <li key={i}>
-                    <b>{STREET_NAME[c.street]}</b> {c.text}
-                    {read && (
-                      <dl className="rt-read">
-                        <dt>Their range</dt>
-                        <dd>{read.theirs}</dd>
-                        <dt>What you want</dt>
-                        <dd>{read.ours}</dd>
-                      </dl>
-                    )}
-                  </li>
-                );
-              })}
+              {scenario.clues.map((c, i) => (
+                <li key={i}>
+                  <b>{STREET_NAME[c.street]}</b> {c.text}
+                </li>
+              ))}
             </ol>
 
             {views.map((v) => {

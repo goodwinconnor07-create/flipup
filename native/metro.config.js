@@ -6,7 +6,7 @@ const path = require('path');
 const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
-const shared = ['../src/game', '../src/design', '../src/train'].map((dir) => path.resolve(__dirname, dir));
+const shared = ['../src/game', '../src/bot_engine', '../src/design', '../src/train'].map((dir) => path.resolve(__dirname, dir));
 
 config.watchFolders = [...(config.watchFolders ?? []), ...shared];
 // The engine has no packages of its own; anything it needs resolves from this app's node_modules.

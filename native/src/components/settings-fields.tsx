@@ -10,6 +10,7 @@ import {
   timerLabel,
   withStack,
   type Settings,
+  PERSONALITIES,
 } from '@/engine';
 import { party, spacing, useColors } from '@/theme';
 
@@ -117,6 +118,47 @@ export function SettingsFields({
   ];
 
   const ruleRows = [
+    (settings.variant ?? 'holdem') === 'holdem' && (
+      <View key="bot-level" style={{ padding: spacing.md, gap: spacing.xs }}>
+        <ThemedText>Bot level</ThemedText>
+        <SegmentedControl
+          label="Bot level"
+          value={settings.botDifficulty ?? 'casual'}
+          options={[
+            { value: 'casual', label: 'Casual' },
+            { value: 'challenge', label: 'Challenge' },
+          ]}
+          onChange={(botDifficulty) => set({ botDifficulty })}
+        />
+        <ThemedText variant="caption1" tone="secondaryLabel">
+          Challenge makes fewer small mistakes. Changes next hand.
+        </ThemedText>
+      </View>
+    ),
+    (settings.variant ?? 'holdem') === 'holdem' && (
+      <Row
+        key="human-poker"
+        title="Invite BOT_001"
+        subtitle="New experimental bot. Joins next hand; leaves after this hand."
+        icon={{ symbol: 'person.fill', color: color(party.blue) }}
+        accessory={<Switch label="Invite BOT_001" value={!!settings.humanPoker} onValueChange={(humanPoker) => set({ humanPoker })} />}
+      />
+    ),
+    (settings.variant ?? 'holdem') === 'holdem' && settings.humanPoker && (
+      <View key="bot-personality" style={{ padding: spacing.md, gap: spacing.xs }}>
+        <ThemedText>BOT_001 personality</ThemedText>
+        <SegmentedControl
+          label="BOT_001 personality"
+          value={settings.botPersonality ?? 'original'}
+          options={[{ value: 'original' as const, label: 'Original' }, ...PERSONALITIES.map((p) => ({ value: p.id, label: p.label }))]}
+          onChange={(botPersonality) => set({ botPersonality })}
+        />
+        <ThemedText variant="caption1" tone="secondaryLabel">
+          {PERSONALITIES.find((p) => p.id === settings.botPersonality)?.description ?? 'The original experimental profile.'} Changes next
+          hand.
+        </ThemedText>
+      </View>
+    ),
     online && (
       <View key="clock" style={{ padding: spacing.md, paddingBottom: spacing.sm, gap: spacing.xs }}>
         <ThemedText>Time to act</ThemedText>

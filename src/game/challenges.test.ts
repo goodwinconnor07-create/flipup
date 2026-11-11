@@ -241,6 +241,9 @@ describe('Rewind', () => {
       stopAt: (g) => {
         const me = heroOf(g)!;
         if (!g.hand || g.hand.result || g.hand.toAct !== me.id || g.hand.runout) return false;
+        // A call fixture needs an actual price; a free check is the same effect as
+        // the synthetic call and is correctly removed from Rewind alternatives.
+        if (options(g, g.hand, g.hand.seats.find((s) => s.playerId === me.id)!).canCheck) return false;
         point = decisionPoint(g, me.id, { move: 'call' });
         return true;
       },

@@ -287,6 +287,8 @@ export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb 
     code: null,
     now: clock,
   });
+  // This laboratory explicitly benchmarks legacy styles/crafts/twins; everyday tables have their own benchmark.
+  game.legacyBotSimulation = true;
   // Every bot seat plays a style. The host stays a person (a table needs one to deal), and the sim
   // makes the host's moves with the same bot brain, or with a script.
   const styleOfAgent = (a: Agent) => (a.includes(':') ? a.split(':')[1] : a);

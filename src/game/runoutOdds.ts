@@ -6,7 +6,7 @@
 import { finishBoard, variantScore } from './botVariants';
 import { fullDeck, hashString, isRed, seededRng, type Card } from './cards';
 import { equity, type Equity } from './equity';
-import { boardSize, count21, holeCountAt, keepTwo, type Variant } from './variants';
+import { boardSize, count21, holeCountAt, keepTwoQuick, type Variant } from './variants';
 
 /** How many run-outs to play for a mini game; wild deuces take longest to score. */
 const samplesFor = (v: Variant) => (v === 'deuces' ? 700 : 1500);
@@ -37,7 +37,7 @@ export function runoutOdds(v: Variant, hands: Card[][], board: Card[], ghost?: C
     // Bean Stalk: everyone still in gets a card of their own on each street to come.
     const cards = hands.map((h) => (v === 'beanstalk' && h.length < full ? [...h, ...deck.splice(-(full - h.length))] : h));
     const out = finishBoard(v, board, deck, rng);
-    const play = (h: Card[]) => (v === 'pineapple' && h.length > 2 ? keepTwo(h, out.slice(0, 3)) : h);
+    const play = (h: Card[]) => (v === 'pineapple' && h.length > 2 ? keepTwoQuick(h, out.slice(0, 3)) : h);
     const scores = cards.map((h) => variantScore(v, play(h), out));
     if (v === 'bjholdem') {
       // Half the pot to the best hand, half to closest to 21 (its ties go to the best hand among them).

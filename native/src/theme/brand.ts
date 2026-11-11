@@ -1,5 +1,5 @@
 // FlipUp's palette in the app: black, white and Apple's greys, plus two colours. Deep blue is the brand and every
-// action (buttons, links, selected things, the big cards); gold is for wins, Premium, streaks and highlights. Red
+// action (buttons, links, selected things, the big cards); gold is for wins, Premium and highlights. Red
 // is kept for Fold and for actions that delete or leave, never as decoration. Game pictures keep their own colours
 // (src/design/gameArt.ts) so games stay easy to tell apart.
 //

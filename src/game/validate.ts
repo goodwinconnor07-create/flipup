@@ -10,6 +10,8 @@ import { legendById } from './legends';
 import { BOTS } from './botStyles';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
+import { isPersonality } from '../bot_engine/personalities';
+import { isBotDifficulty } from '../bot_engine/everyday';
 
 const MOVES: Move[] = ['fold', 'check', 'call', 'bet', 'raise', 'allin'];
 const isInt = (v: unknown): v is number => typeof v === 'number' && Number.isInteger(v) && Math.abs(v) <= 1e9;
@@ -21,6 +23,18 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (typeof raw !== 'object' || raw === null) return null;
   const r = raw as Record<string, unknown>;
   const out: Partial<Settings> = {};
+  if (r.botDifficulty !== undefined) {
+    if (!isBotDifficulty(r.botDifficulty)) return null;
+    out.botDifficulty = r.botDifficulty;
+  }
+  if (r.botPersonality !== undefined) {
+    if (r.botPersonality !== 'original' && !isPersonality(r.botPersonality)) return null;
+    out.botPersonality = r.botPersonality;
+  }
+  if (r.humanPoker !== undefined) {
+    if (typeof r.humanPoker !== 'boolean') return null;
+    out.humanPoker = r.humanPoker;
+  }
   for (const key of ['startingStack', 'smallBlind', 'bigBlind', 'turnSeconds', 'blindMinutes', 'blindCap', 'blindHands'] as const) {
     if (r[key] === undefined) continue;
     if (!isInt(r[key])) return null;
@@ -64,7 +78,10 @@ export function parseAction(raw: unknown): Action | null {
         ...(a.gold === true ? { gold: true } : {}),
       };
     case 'addBot':
-      if (a.name !== undefined) return a.legend === undefined && typeof a.name === 'string' && BOTS.some((b) => b.name === a.name) ? { type: 'addBot', name: a.name } : null;
+      if (a.name !== undefined)
+        return a.legend === undefined && typeof a.name === 'string' && BOTS.some((b) => b.name === a.name)
+          ? { type: 'addBot', name: a.name }
+          : null;
       if (a.legend === undefined) return { type: 'addBot' };
       return typeof a.legend === 'string' && legendById(a.legend) ? { type: 'addBot', legend: a.legend } : null;
     case 'start':
@@ -72,7 +89,8 @@ export function parseAction(raw: unknown): Action | null {
     case 'end':
       return { type: a.type };
     case 'playAgain':
-      return a.off === true ? { type: 'playAgain', off: true } : { type: 'playAgain' };
+      if (a.off === true) return { type: 'playAgain', off: true };
+      return isVariant(a.variant) ? { type: 'playAgain', variant: a.variant } : { type: 'playAgain' };
     case 'remove':
       return isId(a.playerId) ? { type: 'remove', playerId: a.playerId } : null;
     case 'settings': {
@@ -89,11 +107,15 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) && isInt(a.seq) ? { type: 'hit', hand: a.hand, seq: a.seq } : null;
     case 'revealBots':
       if (a.playerId !== undefined && !isId(a.playerId)) return null;
-      return isInt(a.hand) ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) } : null;
+      return isInt(a.hand)
+        ? { type: 'revealBots', hand: a.hand, ...(a.playerId !== undefined ? { playerId: a.playerId as string } : {}) }
+        : null;
     case 'show':
       return isInt(a.hand) ? { type: a.type, hand: a.hand } : null;
     case 'vote':
       return isInt(a.hand) && isId(a.playerId) ? { type: 'vote', hand: a.hand, playerId: a.playerId } : null;
+    case 'point':
+      return isInt(a.hand) && (a.playerId === null || isId(a.playerId)) ? { type: 'point', hand: a.hand, playerId: a.playerId as string | null } : null;
     case 'discard':
       return isInt(a.hand) && isCard(a.card) ? { type: 'discard', hand: a.hand, card: a.card } : null;
     case 'react':

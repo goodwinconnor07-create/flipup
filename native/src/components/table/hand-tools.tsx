@@ -6,6 +6,7 @@ import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { haptic } from '@/components/haptics';
+import { SwapIcon } from '@/components/swap';
 import { Icon, type IconName } from '@/components/icon';
 import { usePremium } from '@/state/premium';
 import { lastHand, saveLastHand, useLastHand, useLastSaved } from '@/state/replays';
@@ -44,7 +45,7 @@ function BarButton({ icon, label, onPress, tint, dim }: { icon: IconName; label:
       hitSlop={4}
       style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cell, alignItems: 'center', justifyContent: 'center', opacity: dim ? 0.4 : pressed ? 0.6 : 1 })}
     >
-      <Icon name={icon} size={17} color={tint ?? colors.label} />
+      <SwapIcon name={icon} size={17} color={tint ?? colors.label} />
     </Pressable>
   );
 }

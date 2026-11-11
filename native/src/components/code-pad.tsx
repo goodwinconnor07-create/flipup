@@ -1,20 +1,45 @@
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, TextInput, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming, ZoomIn } from 'react-native-reanimated';
+import Animated, { Easing, Keyframe, useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
 
-import { CODE_ALPHABET, CODE_LENGTH } from '@/engine';
+import { CODE_ALPHABET, CODE_LENGTH, isCode, normalizeTableCode, TABLE_CODE_LENGTH } from '@/engine';
+import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { radius, spacing, usePlainColors } from '@/theme';
 
 import { haptic } from './haptics';
 import { ThemedText } from './themed-text';
 
-// Typing a 5-letter code (a table, a party or a friend): five boxes over the iPhone's own keyboard. A hidden text
-// field takes the typing (and a pasted code); the boxes show it. Codes never use vowels or Y, so those letters are
-// dropped as you type, with a word under the boxes saying why.
+// Typing a code over the iPhone's own keyboard: a hidden text field takes the typing (and a pasted code); the boxes
+// show it. A table code is six letters or numbers (ACES42); a party code is five letters with no vowels or Y, so
+// those are dropped as you type, with a word under the boxes saying why. An older five-letter code (a party, or a
+// table opened on the web) still goes in at a table code's boxes: type it and press Go.
+
+
+/**
+ * A typed letter grows into its box and settles (the owner's reference: the iOS passcode feel), ease-out with no
+ * overshoot; a deleted one shrinks away a little quicker (rule 15). It grows from 60% rather than the usual 95%
+ * so each keystroke reads at a glance, and never from nothing (rule 10).
+ */
+const LETTER_IN = new Keyframe({
+  0: { opacity: 0, transform: [{ scale: 0.6 }, { translateY: 6 }] },
+  100: { opacity: 1, transform: [{ scale: 1 }, { translateY: 0 }], easing: EASE_OUT },
+}).duration(220);
+const LETTER_OUT = new Keyframe({
+  0: { opacity: 1, transform: [{ scale: 1 }] },
+  100: { opacity: 0, transform: [{ scale: 0.6 }], easing: EASE_OUT },
+}).duration(160);
+
+/** Which code the boxes take. */
+export type CodeKind = 'table' | 'party';
 
 export interface CodeState {
   code: string;
+  /** How many boxes. */
+  length: number;
+  kind: CodeKind;
+  /** The keyboard's Go: looks up an older five-letter code at a table code's six boxes. */
+  go: () => void;
   busy: boolean;
   error: string;
   /** Counts wrong codes, so each one shakes the boxes again. */
@@ -31,7 +56,9 @@ export interface CodeState {
 }
 
 /** The code typed so far. `run` is called once all five letters are in, and returns an error sentence, or null when it worked. */
-export function useCode(run: (code: string) => Promise<string | null>): CodeState {
+export function useCode(run: (code: string) => Promise<string | null>, kind: CodeKind = 'party'): CodeState {
+  const length = kind === 'table' ? TABLE_CODE_LENGTH : CODE_LENGTH;
+  const allowed = (ch: string) => (kind === 'table' ? /^[A-Z0-9]$/.test(ch) : CODE_ALPHABET.includes(ch));
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -63,11 +90,11 @@ export function useCode(run: (code: string) => Promise<string | null>): CodeStat
   };
 
   const type = (letter: string) => {
-    if (busy || code.length >= CODE_LENGTH || !CODE_ALPHABET.includes(letter)) return;
+    if (busy || code.length >= length || !allowed(letter)) return;
     const next = code + letter;
     setCode(next);
     setError('');
-    if (next.length === CODE_LENGTH) void submit(next);
+    if (next.length === length) void submit(next);
   };
 
   const erase = () => {
@@ -85,10 +112,10 @@ export function useCode(run: (code: string) => Promise<string | null>): CodeStat
   const setText = (text: string) => {
     if (busy) return;
     const upper = text.toUpperCase();
-    const next = upper.split('').filter((ch) => CODE_ALPHABET.includes(ch)).join('').slice(0, CODE_LENGTH);
-    setError(/[A-Z]/.test(upper) && upper.length > next.length && next.length < CODE_LENGTH ? 'Codes have no vowels or Y.' : '');
+    const next = kind === 'table' ? normalizeTableCode(upper) : upper.split('').filter((ch) => CODE_ALPHABET.includes(ch)).join('').slice(0, CODE_LENGTH);
+    setError(kind === 'party' && /[A-Z]/.test(upper) && upper.length > next.length && next.length < CODE_LENGTH ? 'Party codes have no vowels or Y.' : '');
     setCode(next);
-    if (next.length === CODE_LENGTH && next !== code) void submit(next);
+    if (next.length === length && next !== code) void submit(next);
   };
 
   const reset = () => {
@@ -98,7 +125,13 @@ export function useCode(run: (code: string) => Promise<string | null>): CodeStat
     setError('');
   };
 
-  return { code, busy, error, misses, type, erase, fill, setText, setError, reset };
+  const go = () => {
+    if (busy || code.length === length) return;
+    if (kind === 'table' && isCode(code)) void submit(code);
+    else if (code.length) setError(kind === 'table' ? `Codes are ${length} letters or numbers.` : `Codes are ${length} letters.`);
+  };
+
+  return { code, length, kind, go, busy, error, misses, type, erase, fill, setText, setError, reset };
 }
 
 /** The five boxes over a hidden text field, so the iPhone keyboard types into them, and the spinner or error under them. */
@@ -133,7 +166,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
   return (
     <View style={{ gap: spacing.md }}>
       <Animated.View style={[{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs }, shaking]}>
-        {Array.from({ length: CODE_LENGTH }, (_, i) => {
+        {Array.from({ length: state.length }, (_, i) => {
           const letter = code[i];
           const next = i === code.length && !busy;
           return (
@@ -141,7 +174,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
               key={i}
               style={{
                 flex: 1,
-                maxWidth: 60,
+                maxWidth: state.length > 5 ? 54 : 60,
                 height: 72,
                 borderRadius: radius.md,
                 borderCurve: 'continuous',
@@ -153,7 +186,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
               }}
             >
               {letter ? (
-                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : ZoomIn.springify().mass(1).stiffness(450).damping(22)} maxFontSizeMultiplier={1} style={{ fontSize: 34, fontWeight: '700', color: c.label }}>
+                <Animated.Text key={`${i}-${letter}`} entering={reduce ? undefined : LETTER_IN} exiting={reduce ? undefined : LETTER_OUT} maxFontSizeMultiplier={1} style={{ fontSize: 34, fontWeight: '700', color: c.label }}>
                   {letter}
                 </Animated.Text>
               ) : next ? (
@@ -167,19 +200,25 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
           ref={input}
           autoFocus={focus}
           value={code}
-          onChangeText={state.setText}
+          onChangeText={(t) => {
+            // A light tick for each letter in, like a key click you can feel.
+            if (t.length !== code.length) haptic.select();
+            state.setText(t);
+          }}
           editable={!busy}
           accessibilityLabel={label}
-          accessibilityHint="Five letters"
+          accessibilityHint={state.kind === 'table' ? 'Six letters or numbers' : 'Five letters'}
           autoCapitalize="characters"
           autoCorrect={false}
           spellCheck={false}
           autoComplete="off"
           textContentType="none"
           keyboardType="ascii-capable"
-          returnKeyType="done"
+          returnKeyType="go"
+          onSubmitEditing={state.go}
+          blurOnSubmit={false}
           caretHidden
-          maxLength={CODE_LENGTH + 4}
+          maxLength={state.length + 4}
           style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, opacity: 0.02, color: 'transparent', fontSize: 1, borderWidth: 0, backgroundColor: 'transparent', outlineWidth: 0 }}
         />
       </Animated.View>
@@ -193,7 +232,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
           </ThemedText>
         ) : (
           <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }}>
-            Five letters, no vowels.
+            {state.kind === 'table' ? 'Six letters or numbers, like ACES42.' : 'Five letters, no vowels.'}
           </ThemedText>
         )}
       </View>

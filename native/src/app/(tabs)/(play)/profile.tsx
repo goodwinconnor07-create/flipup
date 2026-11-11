@@ -1,35 +1,39 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, TextInput, View } from 'react-native';
-import Animated, { ZoomIn } from 'react-native-reanimated';
+import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
-import { Avatar } from '@/components/avatar';
-import { Button } from '@/components/button';
+import { popIn } from '@/motion/presets';
+
+import { PressableScale } from '@/components/pressable-scale';
+import { Swap } from '@/components/swap';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
+import { FRIENDS_ON } from '@/scope';
+import { ensureMyCode, myPalCode } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
-import { useStreak } from '@/state/streak';
-import { party, radius, spacing, typography, useColors } from '@/theme';
+import { usePokerRecord } from '@/state/record';
+import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme';
 
-const PIC = 140;
+const PIC = 108;
 
 /**
  * Your profile, as on the web: your emoji (tap it to pick another) and your name, which everyone at the table sees;
- * then your streak and Settings, and FlipUp Premium. The name is saved with Save; the emoji as you pick it.
+ * then Settings, and FlipUp Premium. The name is saved with Save; the emoji as you pick it.
  */
 export default function ProfileScreen() {
   const colors = useColors();
+  const dark = useScheme() === 'dark';
+  // Row glyphs: a pale blue over the dark panels, the brand blue on light ones.
+  const tint = dark ? '#cfe0ff' : brand.violet;
   const reduce = useReduceMotion();
   const profile = useProfile();
   const premium = usePremium();
-  const { username } = useMyUsername();
-  const streak = useStreak();
   const [name, setName] = useState(profile.name);
   const clean = cleanName(name);
   const blocked = isNameBlocked(clean);
@@ -41,16 +45,26 @@ export default function ProfileScreen() {
     saveProfile({ name: clean, emoji: profile.emoji });
     haptic.success();
     // Friends see the new name on your friend code.
-    if (myPalCode()) void ensureMyCode().catch(() => undefined);
+    if (FRIENDS_ON && myPalCode()) void ensureMyCode().catch(() => undefined);
     // Stay here: a new player still has their emoji to pick, and Back is one tap away.
     Keyboard.dismiss();
   };
 
+  const record = usePokerRecord();
+  const changed = clean !== profile.name;
+  const stats = record.hands ? `${record.hands.toLocaleString('en-US')} hands · ${Math.round((record.won / record.hands) * 100)}% won` : 'Play a hand to start';
+
   return (
-    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-      <Stack.Screen options={{ title: first ? 'Your profile' : 'Profile' }} />
-      <ScrollView contentInsetAdjustmentBehavior="automatic" keyboardShouldPersistTaps="handled" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
-        <View style={{ alignItems: 'center', gap: spacing.lg }}>
+    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
+      <Stack.Screen options={{ title: '', headerTransparent: true }} />
+      {/* The Games-app header: a deep blue glow behind your face that fades into the page. */}
+      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${colors.background as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }}
+      >
+        <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md }}>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={`Your emoji, ${profile.emoji}. Change it`}
@@ -58,76 +72,72 @@ export default function ProfileScreen() {
               haptic.tap();
               router.push('/emoji');
             }}
-            style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            style={({ pressed }) => ({ width: PIC, height: PIC, opacity: pressed ? 0.8 : 1 })}
           >
-            <Animated.View key={profile.emoji} entering={reduce ? undefined : ZoomIn.springify().mass(1).stiffness(300).damping(18)}>
-              <Avatar emoji={profile.emoji} size={PIC} />
+            <Animated.View
+              key={profile.emoji}
+              entering={reduce ? undefined : popIn()}
+              style={{ width: PIC, height: PIC, borderRadius: PIC / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.94)', borderWidth: dark ? 1 : 0, borderColor: 'rgba(255,255,255,0.18)', boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)' }}
+            >
+              <Text style={{ fontSize: PIC * 0.55 }} maxFontSizeMultiplier={1}>
+                {profile.emoji}
+              </Text>
             </Animated.View>
-            <View style={{ position: 'absolute', right: 4, bottom: 4, width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.accent, borderWidth: 3, borderColor: colors.background }}>
-              <Icon name="pencil" size={17} color={colors.onColor} />
+            <View style={{ position: 'absolute', right: 0, bottom: 0, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, borderWidth: 3, borderColor: dark ? brand.violetDeep : '#ffffff' }}>
+              <Icon name="pencil" size={14} color="#ffffff" />
             </View>
           </Pressable>
-          <View style={{ alignSelf: 'stretch', gap: spacing.xs }}>
-            <TextInput
-              value={name}
-              onChangeText={setName}
-              placeholder="Your name"
-              placeholderTextColor={colors.tertiaryLabel}
-              accessibilityLabel="Your name"
-              maxLength={LIMITS.maxNameLength}
-              autoComplete="given-name"
-              textContentType="givenName"
-              autoCapitalize="words"
-              autoCorrect={false}
-              returnKeyType="done"
-              autoFocus={first}
-              onSubmitEditing={save}
-              maxFontSizeMultiplier={1.4}
-              style={{
-                ...typography.title1,
-                textAlign: 'center',
-                color: colors.label,
-                minHeight: 60,
-                paddingHorizontal: spacing.md,
-                borderRadius: radius.md,
-                borderCurve: 'continuous',
-                backgroundColor: colors.cell,
-                borderWidth: 2,
-                borderColor: blocked ? colors.red : 'transparent',
-              }}
-            />
-            <ThemedText variant="footnote" tone={blocked ? 'red' : 'tertiaryLabel'} accessibilityLiveRegion="polite" style={{ textAlign: 'center' }}>
-              {blocked ? NAME_BLOCKED : 'Everyone at the table sees your name and emoji.'}
+          <TextInput
+            value={name}
+            onChangeText={setName}
+            placeholder="Your name"
+            placeholderTextColor={dark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.4)'}
+            accessibilityLabel="Your name"
+            maxLength={LIMITS.maxNameLength}
+            autoComplete="given-name"
+            textContentType="givenName"
+            autoCapitalize="words"
+            autoCorrect={false}
+            returnKeyType="done"
+            autoFocus={first}
+            onSubmitEditing={save}
+            maxFontSizeMultiplier={1.3}
+            style={{ fontFamily: ROUNDED, fontSize: 30, fontWeight: '800', textAlign: 'center', color: dark ? '#ffffff' : (colors.label as string), minWidth: 200, paddingVertical: spacing.xxs, borderWidth: 0 }}
+          />
+          <Swap id={changed ? 'save' : 'hint'} kind="text">
+            {changed ? (
+              <PressableScale
+                accessibilityRole="button"
+                accessibilityLabel="Save your name"
+                disabled={!ok}
+                onPress={save}
+                style={{ height: 36, paddingHorizontal: 20, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? (ok ? '#ffffff' : 'rgba(255,255,255,0.3)') : ok ? brand.violet : 'rgba(0,0,0,0.12)' }}
+              >
+                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '700', color: dark ? brand.violetDeep : '#ffffff' }}>
+                  Save name
+                </Text>
+              </PressableScale>
+            ) : (
+              // Plain text, not a pill: a filled capsule here read as a button that did nothing.
+              <ThemedText variant="subhead" style={{ height: 36, lineHeight: 36, color: dark ? 'rgba(255,255,255,0.7)' : (colors.secondaryLabel as string) }}>
+                Tap your name to change it
+              </ThemedText>
+            )}
+          </Swap>
+          {blocked && (
+            <ThemedText variant="footnote" tone="red" accessibilityLiveRegion="polite" style={{ textAlign: 'center' }}>
+              {NAME_BLOCKED}
             </ThemedText>
-          </View>
-          <View style={{ alignSelf: 'stretch' }}>
-            <Button variant="party" tint="blue" size="lg" title="Save" disabled={!ok || clean === profile.name} onPress={save} />
-          </View>
+          )}
         </View>
 
-        <Section>
-          <Row
-            title="Username"
-            subtitle="Friends add you by it"
-            detail={username ? `@${username}` : 'Choose'}
-            icon={{ symbol: 'person.badge.plus', color: colors.pink as string }}
-            onPress={() => router.push('/username')}
-          />
-          <Row
-            title="Streak"
-            subtitle={streak.today ? 'You played today.' : 'Play a hand today to keep it.'}
-            detail={`${streak.days} ${streak.days === 1 ? 'day' : 'days'}`}
-            icon={{ symbol: 'flame.fill', color: party.orange }}
-            onPress={() => router.push('/streak')}
-          />
-          <Row title="Settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/settings')} />
-        </Section>
-
-        <Section>
+        <Section header="Your poker">
+          <Row title="Your stats" detail={stats} icon={{ symbol: 'chart.bar.xaxis', color: tint }} onPress={() => router.push('/stats')} />
+          <Row title="Settings" detail="Sound, looks and your data" icon={{ symbol: 'gearshape.fill', color: tint }} onPress={() => router.push('/settings')} />
           <Row
             title="FlipUp Premium"
-            subtitle={premium ? 'Unlocked. Thank you for backing FlipUp.' : `Card packs, bubble effects and ${VARIANTS.length - FREE_VARIANTS} more games`}
-            icon={{ symbol: 'crown.fill', color: colors.gold as string }}
+            detail={premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`}
+            icon={{ symbol: 'crown.fill', color: brand.gold }}
             onPress={() => router.push('/premium')}
           />
         </Section>

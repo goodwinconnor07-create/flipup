@@ -10,10 +10,9 @@ import { perkById, type PerkId } from '@/components/premium/perks';
 import { PressableScale } from '@/components/pressable-scale';
 import { statsData } from '@/components/share/data';
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
-import { MoveBubble } from '@/components/table/bubbles';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { BUBBLE_STYLES, CARD_PACKS, FREE_VARIANTS, VARIANTS } from '@/engine';
+import { CARD_PACKS, FREE_VARIANTS, VARIANTS } from '@/engine';
 import { ALT_ICONS } from '@/state/app-icon';
 import { usePremium } from '@/state/premium';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
@@ -26,7 +25,7 @@ const SAMPLE = statsData(
 
 /**
  * One Premium perk shown properly, from a tile on the Premium page: what it is and a look at it (the games, every
- * card back and bubble, the five icons, the five share designs, a gold name at the table). With Premium it also
+ * card back, the five icons, the five share designs, a gold name at the table). With Premium it also
  * takes you there (pick an icon, open your hand bank, set up an ULTRA table...).
  */
 export default function PerkSheet() {
@@ -67,7 +66,6 @@ const GO: Partial<Record<PerkId, { title: string; run: () => void }>> = {
   share: { title: 'Make a share card', run: () => router.push('/share') },
   icons: { title: 'Pick an icon', run: () => router.push('/app-icon') },
   packs: { title: 'Pick a card back', run: () => router.push('/card-packs') },
-  bubbles: { title: 'Pick a bubble', run: () => router.push('/chat-bubbles') },
   gold: { title: 'Gold name settings', run: () => router.push('/settings') },
 };
 
@@ -211,19 +209,6 @@ function Preview({ id }: { id: PerkId }) {
               <PlayingCard back size="md" pack={p.id} />
               <ThemedText variant="caption2" numberOfLines={1} style={{ color: '#ffffff' }}>
                 {p.name}
-              </ThemedText>
-            </View>
-          ))}
-        </View>
-      );
-    case 'bubbles':
-      return (
-        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'center' }}>
-          {BUBBLE_STYLES.filter((b) => !b.free).map((b) => (
-            <View key={b.id} style={{ alignItems: 'center', gap: 4, width: 100 }}>
-              <MoveBubble text="Raise 40" tone="blue" fx={b.id} big />
-              <ThemedText variant="caption2" style={{ color: '#ffffff' }}>
-                {b.name}
               </ThemedText>
             </View>
           ))}

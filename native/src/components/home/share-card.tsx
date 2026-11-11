@@ -2,10 +2,8 @@ import { useRef, useState, type ReactNode } from 'react';
 import { Platform, Share, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
-import { useMyUsername } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
-import { useStreak } from '@/state/streak';
 import { brand, cardColors, ROUNDED } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -58,9 +56,7 @@ export function useStatsShare(): { share: () => Promise<void>; card: ReactNode; 
 
 export function StatsPicture() {
   const record = usePokerRecord();
-  const streak = useStreak();
   const profile = useProfile();
-  const { username } = useMyUsername();
   return (
     <LivingCard colors={cardColors.night} radius={0} shadow={false} still outerStyle={{ width: W, height: H }} style={{ flex: 1, padding: 28, justifyContent: 'space-between' }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -79,7 +75,6 @@ export function StatsPicture() {
           <Text numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 24, fontWeight: '700', color: '#ffffff' }}>
             {profile.name || 'Me'}
           </Text>
-          {username && <Text style={{ fontSize: 14, color: 'rgba(255,255,255,0.65)' }}>@{username}</Text>}
         </View>
       </View>
 
@@ -91,7 +86,7 @@ export function StatsPicture() {
         <View style={{ flexDirection: 'row' }}>
           <Small label="BIGGEST POT" value={n(record.biggestPot)} />
           <Small label="POTS WON" value={n(record.won)} />
-          {streak.days > 0 ? <Small label="STREAK" value={`${streak.days} days`} gold /> : <Small label="GAMES" value={n(record.games.length)} />}
+          <Small label="GAMES" value={n(record.games.length)} />
         </View>
       </View>
 

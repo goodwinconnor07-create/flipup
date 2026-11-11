@@ -35,6 +35,10 @@ export const CHARTS: Record<ChartKey, string> = {
   // Calling a 3-bet: medium pairs, suited aces and broadways that play well in a big pot. No small pairs or small
   // suited connectors: they can't call the bets that follow, so a 3-bet pot has few straight draws.
   'Call a 3-bet': '66-QQ, ATs+, A5s-A4s, KTs+, QTs+, JTs, AQo+, KQo',
+  // Wider 3-bets from players who 3-bet light (online regulars, blind against steal), and 4-bets.
+  'Light 3-bet': '22+, A2s+, KTs+, QTs+, JTs, T9s, 98s, 87s, 76s, 65s, 54s, AJo+, KQo',
+  '4-bet': 'QQ+, AK, AQs, AQo, A5s-A4s, KQs',
+  'Light 4-bet': 'QQ+, AK, AQ, AJs, KQs, KJs, KTs, A5s-A2s, 87s, 76s, 65s, 54s',
 
   // ── Live iso-raises over limpers (raise bigger, play tighter: a good live regular's range) ──
   'Live iso-raise': '22+, A2s+, K9s+, QTs+, JTs, T9s, 98s, A9o+, KJo+, QJo',
@@ -51,6 +55,8 @@ export const CHARTS: Record<ChartKey, string> = {
 
   // ── Live limped pots ──
   'Live limp': '22+, A2s+, K2s+, Q5s+, J7s+, T7s+, 96s+, 85s+, 75s+, 64s+, 54s, A2o+, KTo+, QTo+, JTo, T9o, 98o',
+  // Loose live limpers: small suited connectors and gappers, small offsuit connectors too.
+  'Loose live limp': '22+, A2s+, K2s+, Q2s+, J5s+, T6s+, 95s+, 84s+, 74s+, 63s+, 52s+, 42s+, 32s, A2o+, K8o+, Q9o+, J9o+, T8o+, 97o+, 86o+, 75o+, 65o, 54o',
   'Any two cards': '22+, A2s+, K2s+, Q2s+, J2s+, T2s+, 92s+, 82s+, 72s+, 62s+, 52s+, 42s+, 32s, A2o+, K2o+, Q2o+, J2o+, T2o+, 92o+, 82o+, 72o+, 62o+, 52o+, 42o+, 32o',
 };
 

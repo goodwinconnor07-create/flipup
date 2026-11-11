@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 
-import { REACTIONS } from '@/engine';
+import { IMPOSTER_REACTIONS, REACTIONS } from '@/engine';
 import { dispatch } from '@/state/session';
 import { radius, spacing, useColors } from '@/theme';
 
@@ -11,7 +11,7 @@ import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 
-export function QuickMessages() {
+export function QuickMessages({ imposter = false }: { imposter?: boolean }) {
   const colors = useColors();
   const [open, setOpen] = useState(false);
   const [cooling, setCooling] = useState(false);
@@ -40,7 +40,7 @@ export function QuickMessages() {
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'flex-end', padding: spacing.md, paddingBottom: 180 }} onPress={() => setOpen(false)}>
           <View accessibilityRole="menu" style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs, padding: spacing.sm, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: '0 16px 40px rgba(0,0,0,0.3)' }}>
-            {REACTIONS.map((r) => {
+            {(imposter ? [...IMPOSTER_REACTIONS, ...REACTIONS] : REACTIONS).map((r) => {
               const emoji = !/[A-Za-z]/.test(r.text);
               return (
                 <PressableScale

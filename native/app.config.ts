@@ -21,6 +21,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     ...(APP_INFO.bundleId ? { bundleIdentifier: APP_INFO.bundleId } : {}),
     // iPhone first: the iPad layout comes after the iPhone version is approved. Until then iPads run it in iPhone mode.
     supportsTablet: false,
+    // Join links (gtoduel.online/ACES42) open the app when it's installed. The Worker serves the matching file at
+    // /.well-known/apple-app-site-association once APPLE_TEAM_ID is set in wrangler.jsonc.
+    associatedDomains: [`applinks:${new URL(APP_INFO.apiOrigin).host}`],
     config: {
       // Only standard HTTPS (system networking), so the app is exempt from export documentation.
       usesNonExemptEncryption: false,
@@ -71,10 +74,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-splash-screen',
       {
-        // The night blue of the launch cover (components/launch-cover.tsx), with no picture, so it hands over seamlessly.
-        backgroundColor: '#070f2a',
+        // The first colour of the launch cover (components/launch-cover.tsx) in each mode, with no picture, so it
+        // hands over seamlessly: a light blue, and a very dark blue-black in dark mode.
+        backgroundColor: '#e3efff',
         image: './assets/images/splash-icon.png',
         imageWidth: 1,
+        dark: { backgroundColor: '#02040a', image: './assets/images/splash-icon.png' },
       },
     ],
   ],

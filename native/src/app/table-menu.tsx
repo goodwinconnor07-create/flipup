@@ -8,7 +8,7 @@ import { SheetScroll } from '@/components/sheet-scroll';
 import { Row, Section } from '@/components/grouped-list';
 import { YouSettings } from '@/components/you-settings';
 import { myPlayer } from '@/engine';
-import { joinLink } from '@/state/api';
+import { tableShare } from '@/state/table-share';
 import { dispatch, leaveTable, me as myDevice, requestLogs, useTable } from '@/state/session';
 import { spacing, useColors } from '@/theme';
 
@@ -105,7 +105,7 @@ export default function TableMenu() {
             title="Invite friends"
             detail={t.code}
             icon={{ symbol: 'square.and.arrow.up', color: colors.green as string }}
-            onPress={() => void Share.share({ message: `Come play poker with me on FlipUp. Code ${t.code}: ${joinLink(t.code!)}`, url: joinLink(t.code!) })}
+            onPress={() => void Share.share(tableShare(game, t.code!))}
           />
         )}
         {host && !ended && !challenge && <Row title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}

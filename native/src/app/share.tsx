@@ -14,7 +14,6 @@ import { variantInfo } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { usePokerRecord } from '@/state/record';
 import { momentsOf, useReplays, useStars, type Moment } from '@/state/replays';
-import { useStreakInfo } from '@/state/streak';
 import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
 const open = (params: Record<string, string>) => {
@@ -23,7 +22,7 @@ const open = (params: Record<string, string>) => {
 };
 
 /**
- * Share cards: everything worth sending in one place. Your stats, your streak, the top hands from your hand bank
+ * Share cards: everything worth sending in one place. Your stats, the top hands from your hand bank
  * (biggest wins, best hands, bluffs that worked, coolers, starred ones), and your recent games. Each opens the
  * composer (`share-card`) with five designs to pick from. Reached from Home's passport and Settings.
  */
@@ -38,7 +37,6 @@ export default function ShareHub() {
 function Hub() {
   const insets = useSafeAreaInsets();
   const record = usePokerRecord();
-  const streak = useStreakInfo();
   const replays = useReplays();
   const stars = useStars();
   const premium = usePremium();
@@ -52,7 +50,7 @@ function Hub() {
 
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <BigTile icon="chart.bar.xaxis" title="My stats" value={`${record.hands ? Math.round((record.won / record.hands) * 100) : 0}%`} line={`${n(record.hands)} hands`} onPress={() => open({ kind: 'stats' })} />
-          <BigTile icon="flame.fill" title="Streak" value={`${streak.days}`} line={`Best ${streak.best} days`} gold onPress={() => open({ kind: 'streak' })} />
+          <BigTile icon="trophy.fill" title="Best pot" value={record.biggestPot.toLocaleString('en-US')} line={`${n(record.won)} pots won`} gold onPress={() => open({ kind: 'stats' })} />
         </View>
 
         <View style={{ gap: spacing.sm }}>

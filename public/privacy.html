@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlipUp privacy policy</title>
+<meta name="description" content="What FlipUp keeps, for how long, who processes it, and how to delete it.">
+<style>
+  :root { color-scheme: light dark; --bg: #ffffff; --ink: #111114; --soft: #5c5c66; --line: #e4e4ea; --accent: #1f46d4; --cell: #f4f4f8; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #000000; --ink: #f2f2f7; --soft: #a0a0ab; --line: #26262b; --accent: #6b8cff; --cell: #1c1c1e; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.55 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif; }
+  main { max-width: 680px; margin: 0 auto; padding: 32px 20px 80px; }
+  nav { display: flex; gap: 16px; font-size: 15px; margin-bottom: 28px; }
+  a { color: var(--accent); }
+  h1 { font-size: 34px; line-height: 1.15; margin: 0 0 6px; letter-spacing: -0.5px; }
+  h2 { font-size: 21px; margin: 36px 0 8px; }
+  p, li { margin: 0 0 12px; }
+  ul { padding-left: 22px; margin: 0 0 12px; }
+  .date { color: var(--soft); font-size: 15px; margin-bottom: 20px; }
+  .box { background: var(--cell); border-radius: 14px; padding: 14px 16px; margin: 16px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 16px; margin: 8px 0 16px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--soft); font-weight: 600; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<nav><a href="/">FlipUp</a><a href="/support">Support</a></nav>
+
+<h1>Privacy policy</h1>
+<p class="date">FlipUp for iPhone · Last updated 10 November 2026</p>
+
+<p>FlipUp is poker night on your phones: no-limit Texas Hold'em and a set of mini games, played for play chips with friends or against bots. This page says what FlipUp keeps, why, for how long, who helps us run it, and how to delete it.</p>
+
+<div class="box"><strong>In short.</strong> There are no accounts, no logins, no ads, no background analytics and no tracking. Optional bot research records only the sessions you explicitly start. Your poker record and settings stay on your phone. Online tables and parties send what they need to run; optional bot research sends only the research sessions you choose to start. Game tables are deleted automatically after a few days. The few things we keep longer are listed below.</div>
+
+<h2>Play chips only</h2>
+<p>Chips in FlipUp are play chips. They have no cash value and can't be bought, sold, won or exchanged for anything. FlipUp is not real-money gambling.</p>
+
+<h2>Optional bot research</h2>
+<p>If you start a Bot research session in the mobile browser, FlipUp saves its selected poker hands, your moves and active timing, optional ratings and notes, and the bots' private decision records. Completed hands upload to our Cloudflare server to help us review bot behaviour. These records use a random research-session identifier; they do not include your device identity, profile name or regular game history. Your browser keeps a resumable local copy in IndexedDB.</p>
+<p>Research is separate from normal games and Range training. Server copies expire after 30 days. The private review link grants access to your uploaded records, so share it only with someone you want to review them. The research API also supports deleting a session with its private key. Clear this site's stored data to remove local research copies. An upload does not automatically start an AI review.</p>
+
+<h2>What stays on your phone</h2>
+<ul>
+  <li>Your poker record (hands played and won, biggest pot, best hand, recent games).</li>
+  <li>Your Range training answers and statistics.</li>
+  <li>Your settings, your name and emoji, your blocked players, and any bots-only table you left open.</li>
+</ul>
+<p>None of this is sent to us. "Delete my data" in Settings, or deleting the app, removes it.</p>
+
+<h2>What we receive and keep</h2>
+<p>Only when you host or join an online table or a party:</p>
+<ul>
+  <li><strong>A random device ID.</strong> The app makes it on your phone the first time it opens. It proves that a seat is yours. Other players never see it; at a table everyone else sees only a one-way scrambled version.</li>
+  <li><strong>The name and emoji you chose</strong>, and your card back if you have Premium. Other players at the table or party see these. Names are checked against a filter.</li>
+  <li><strong>What you do at the table:</strong> your bets and other moves, the quick messages you send (chosen from a fixed list; nothing you type is sent), and whether your phone is connected. The table needs this to run the game.</li>
+  <li><strong>A friend code</strong> if you use friend features: a short code with your name, emoji and device ID that others can look up.</li>
+  <li><strong>Reports.</strong> If you report a player, we keep the reason, the table or party code, the name and emoji shown, and both phones' device IDs, so we can act on it. We read reports and respond within 24 hours.</li>
+  <li><strong>Premium.</strong> If you buy FlipUp Premium, Apple handles the payment and never gives us your name, email or card. To unlock Premium on your phone we keep Apple's purchase identifier together with your phone's random device ID.</li>
+</ul>
+
+<h2>Camera and contacts</h2>
+<ul>
+  <li>The <strong>camera</strong> is used only to scan a table or party QR code. Nothing is recorded, saved or sent.</li>
+  <li><strong>Contacts</strong> (only if you tap Invite from your contacts) are read on your phone to find a name to message. They are never uploaded.</li>
+</ul>
+
+<h2>How long we keep it</h2>
+<table>
+  <tr><th>What</th><th>How long</th></tr>
+  <tr><td>An online table</td><td>Deleted 3 days after its last activity</td></tr>
+  <tr><td>A party</td><td>Deleted 2 days after its last activity</td></tr>
+  <tr><td>A friend code</td><td>Deleted 120 days after it was last used</td></tr>
+  <tr><td>A report about a player</td><td>Kept 180 days, then deleted</td></tr>
+  <tr><td>The record that your phone has Premium</td><td>Kept so Restore Purchases keeps working; you can ask us to delete it</td></tr>
+</table>
+
+<h2>Who helps us run FlipUp</h2>
+<ul>
+  <li><strong>Cloudflare</strong> hosts FlipUp's server and the online tables, so it processes the data above on our behalf.</li>
+  <li><strong>Resend</strong> sends the email that tells us about a report.</li>
+  <li><strong>Apple</strong> handles the App Store, purchases and Restore Purchases.</li>
+</ul>
+<p>We don't sell your data, share it for advertising, or use it to track you across other apps or websites. FlipUp contains no advertising or analytics code.</p>
+
+<h2>Deleting your data</h2>
+<p>In the app, open your profile, then Settings, then <strong>Delete my data</strong>. It deletes your friend code from our server, leaves any open table or party, and clears everything FlipUp keeps on your phone, including the device ID. Premium stays with your Apple Account, and Restore Purchases brings it back.</p>
+<p>You can also email <a href="mailto:goodwinconnor007@gmail.com?subject=FlipUp%20data%20request">goodwinconnor007@gmail.com</a> to ask what we hold about your phone or to have anything deleted, including a Premium record or a report you are named in. Include your friend code or a table code if you have one, so we can find it.</p>
+
+<h2>Children</h2>
+<p>FlipUp isn't directed at children under 13, and we don't knowingly collect personal information from them. If you think a child has given us information, email us and we'll delete it.</p>
+
+<h2>Changes</h2>
+<p>If we change how FlipUp handles data, we'll update this page and its date before the change takes effect.</p>
+
+<h2>Contact</h2>
+<p>Questions about this policy or your data: <a href="mailto:goodwinconnor007@gmail.com">goodwinconnor007@gmail.com</a>.</p>
+</main>
+</body>
+</html>

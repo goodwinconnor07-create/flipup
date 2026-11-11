@@ -1,28 +1,19 @@
-// Range training on the phone. Grades are kept in `flipup.ranges` ({ [hand id]: 'best' | 'ok' | 'mistake' }, your
-// best grade on each), the same key and shape as the web's RangeTrainer.tsx. Nothing here touches the server, your
-// poker record or Home's last game; a finished session marks the daily streak (see `finishSession()`).
+// Range training on the phone: the web's RangeTrainer.tsx, the same hands and the same rules. Grades are kept in
+// `flipup.ranges` ({ [hand id]: 'best' | 'ok' | 'mistake' }, your best grade on each), the same key and shape as the
+// web. Nothing here touches the server or your poker record.
 //
 // The hands and every number come from the shared model (src/train/ranges). Working the numbers out takes up to a
 // second in a browser and several on the phone's JavaScript engine (a 40,000-deal sample for multiway pots), so
 // they're worked out ahead in src/data/range-numbers.json; tests/ranges.test.ts checks that file against the model
 // (`UPDATE_RANGES=1 npm test` writes it again). A hand that isn't in it is worked out on the phone.
-import { cleanDays, dayKey, streakOf, withToday } from '@/engine';
 import { analyse, gradeOf, spotOf, type Grade, type OptionId, type Pos, type Replay, type Scenario } from '@train/ranges/model';
-import { SCENARIOS as WRITTEN, unpack } from '@train/ranges/scenarios';
+import { SCENARIOS } from '@train/ranges/scenarios';
 
-import { DAILY_SIZE, dailyIds, type Level, type Mode } from './range-logic';
+import { readRangeHistory, recordAnswer, roughPatch } from './range-history';
 import { read, save, useStored } from './storage';
-import { markPlayedToday } from './streak';
 
-let ALL: Scenario[] | null = null;
-/**
- * Every hand: the hand-written ones, then the generated ones (src/train/ranges/generate.ts). The generated list is
- * big, so it's required the first time it's needed, not when the app starts.
- */
-export function allHands(): Scenario[] {
-  ALL ??= [...WRITTEN, ...unpack(require('../../../src/train/ranges/generated.json') as Scenario[])];
-  return ALL;
-}
+/** Every hand, the same list as the web: each one from a published hand breakdown (src/train/ranges/scenarios.ts). */
+export const allHands = (): Scenario[] => SCENARIOS;
 
 const KEY = 'flipup.ranges';
 const EMPTY: Record<string, Grade> = {};
@@ -39,30 +30,41 @@ export function useRangeGrades(): Record<string, Grade> {
   return clean(useStored<unknown>(KEY, EMPTY));
 }
 
-/** The grades, read once (to deal a round). */
+/** Your best grade on each hand, read once. */
 export const readRangeGrades = (): Record<string, Grade> => clean(read<unknown>(KEY, EMPTY));
-
-/** How many hands you've played the best way. */
-export const solvedCount = (grades: Record<string, Grade>) => Object.values(grades).filter((g) => g === 'best').length;
 
 /** Grades an answer and keeps it if it's your best on that hand. */
 export function answerHand(s: Scenario, pick: OptionId): Grade {
   const grade = gradeOf(s, pick);
-  const all = clean(read<unknown>(KEY, EMPTY));
+  const all = readRangeGrades();
   if (all[s.id] === undefined || RANK[grade] > RANK[all[s.id]]) save(KEY, { ...all, [s.id]: grade });
+  recordAnswer(s, pick, grade);
   return grade;
 }
 
-/** The next hand: ones you haven't played the best way yet first, in order, then the rest (as on the web). */
-export function nextHand(after: string | null): Scenario {
-  const done = clean(read<unknown>(KEY, EMPTY));
-  const all = allHands();
-  const start = after ? all.findIndex((s) => s.id === after) + 1 : 0;
-  const order = [...all.slice(start), ...all.slice(0, start)];
-  return order.find((s) => done[s.id] !== 'best' && s.id !== after) ?? order[0];
+/**
+ * The next hand, as on the web: a random one you haven't got right yet (the whole set once they're all done), never
+ * the same kind of spot twice running.
+ */
+export function nextHand(after: Scenario | null, rng: () => number = Math.random, focus?: readonly string[]): Scenario {
+  // Practising the spots you miss: only hands of those concepts (every hand of them once you've got them all).
+  // A focus entry is a kind of spot (its concept) or one hand ('id:<hand id>', from Retry your misses).
+  const inFocus = (s: Scenario) => !!focus && (focus.includes(s.concept) || focus.includes(`id:${s.id}`));
+  const all = focus?.length && allHands().some(inFocus) ? allHands().filter(inFocus) : allHands();
+  const done = readRangeGrades();
+  // After a rough patch (a miss, and three of the last five), an easy one: a hand you've already got right, of another kind.
+  if (!focus?.length && after && roughPatch(readRangeHistory())) {
+    const easy = all.filter((s) => s !== after && done[s.id] === 'best' && s.concept !== after.concept);
+    if (easy.length) return easy[Math.floor(rng() * easy.length)];
+  }
+  const fresh = all.filter((s) => s !== after && done[s.id] !== 'best');
+  const pool = fresh.length ? fresh : all.filter((s) => s !== after);
+  const varied = after ? pool.filter((s) => s.concept !== after.concept || s.hero.pos !== after.hero.pos) : pool;
+  const from = varied.length ? varied : pool;
+  return from[Math.floor(rng() * from.length)] ?? all[0];
 }
 
-/** Everything the "why" page shows, in numbers. */
+/** Everything the review shows, in numbers. */
 export interface HandNumbers {
   /** Your share of the pot at a showdown now, against everyone still in. */
   equity: number;
@@ -95,152 +97,4 @@ function numbers(): Record<string, HandNumbers> {
 /** The numbers for a hand: from the file when it has them, else worked out here. */
 export function numbersFor(s: Scenario, r: Replay): HandNumbers {
   return numbers()[s.id] ?? computeNumbers(s, r);
-}
-
-export const hasStoredNumbers = (id: string) => id in numbers();
-
-
-export const scenarioById = (id: string): Scenario | undefined => allHands().find((s) => s.id === id);
-
-// ── Play: your level, the daily three, the flame, Blitz and round bests ────────
-//
-// `flipup.rangeplay` holds everything the modes need on top of the grades. A finished round, daily or Blitz marks
-// the day for Range training's own flame (`days`) and for the app's daily streak too (`markPlayedToday()`, the
-// owner's call). It never touches the server or your poker record.
-
-const PLAY_KEY = 'flipup.rangeplay';
-
-export interface RangePlay {
-  /** Easy keeps the numbers out of the way; Pro shows them, and adds Lock it in and Guess your odds. */
-  level: Level;
-  /** Days with a finished round, daily or Blitz, as local dates. */
-  days: string[];
-  /** The daily three, by day: the grades so far, in order. */
-  daily: Record<string, Grade[]>;
-  blitzBest: number;
-  roundBest: number;
-  rounds: number;
-  /** Every point you've scored. */
-  points: number;
-  /** How many times you've swiped your cards to answer: the swipe hint goes once you have a few times. */
-  swipes: number;
-  /** Points scored each day, as local dates: the Train tab's daily goal. The last 60 days are kept. */
-  xp: Record<string, number>;
-}
-
-const START: RangePlay = { level: 'easy', days: [], daily: {}, blitzBest: 0, roundBest: 0, rounds: 0, points: 0, swipes: 0, xp: {} };
-const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
-
-function cleanPlay(raw: unknown): RangePlay {
-  if (!raw || typeof raw !== 'object') return START;
-  const r = raw as Partial<Record<keyof RangePlay, unknown>>;
-  const daily: Record<string, Grade[]> = {};
-  if (r.daily && typeof r.daily === 'object')
-    for (const [day, list] of Object.entries(r.daily as Record<string, unknown>))
-      if (/^\d{4}-\d{2}-\d{2}$/.test(day) && Array.isArray(list)) daily[day] = list.filter((g): g is Grade => g === 'best' || g === 'ok' || g === 'mistake').slice(0, DAILY_SIZE);
-  const xp: Record<string, number> = {};
-  if (r.xp && typeof r.xp === 'object')
-    for (const [day, n] of Object.entries(r.xp as Record<string, unknown>)) if (/^\d{4}-\d{2}-\d{2}$/.test(day) && num(n) > 0) xp[day] = num(n);
-  return {
-    level: r.level === 'pro' ? 'pro' : 'easy',
-    days: cleanDays(r.days),
-    daily,
-    blitzBest: num(r.blitzBest),
-    roundBest: num(r.roundBest),
-    rounds: num(r.rounds),
-    points: num(r.points),
-    swipes: num(r.swipes),
-    xp,
-  };
-}
-
-const readPlay = () => cleanPlay(read<unknown>(PLAY_KEY, null));
-/** The play record, read once (to start a session). */
-export const readRangePlay = readPlay;
-const writePlay = (patch: Partial<RangePlay>) => save(PLAY_KEY, { ...readPlay(), ...patch });
-
-export const useRangePlay = (): RangePlay => cleanPlay(useStored<unknown>(PLAY_KEY, null));
-
-export const setLevel = (level: Level) => writePlay({ level });
-export const noteSwipe = () => writePlay({ swipes: readPlay().swipes + 1 });
-
-/** Range training's own flame: days in a row with a finished session. */
-export const flameOf = (play: RangePlay, now = new Date()) => streakOf(play.days, now);
-
-/** Today's three hands, and how far you've got with them. */
-export function dailyToday(play: RangePlay, now = new Date()): { day: string; ids: string[]; grades: Grade[]; done: boolean } {
-  const day = dayKey(now);
-  const ids = dailyIds(day, allHands());
-  const grades = play.daily[day] ?? [];
-  return { day, ids, grades, done: grades.length >= ids.length };
-}
-
-/** Keeps a daily answer as it's made, so leaving halfway picks up where you were. Old days are let go after 60. */
-export function noteDaily(day: string, grade: Grade): void {
-  const play = readPlay();
-  const have = play.daily[day] ?? [];
-  if (have.length >= DAILY_SIZE) return;
-  const days = Object.keys(play.daily).sort().slice(-59);
-  const kept = Object.fromEntries(days.filter((d) => d !== day).map((d) => [d, play.daily[d]]));
-  writePlay({ daily: { ...kept, [day]: [...have, grade] } });
-}
-
-/** A finished session: marks today (here and on the app's streak), keeps bests, adds the points. Says what's new. */
-export function finishSession(mode: Mode, score: number, now = new Date()): { newBest: boolean } {
-  const play = readPlay();
-  const newBest = (mode === 'blitz' && score > play.blitzBest) || (mode === 'round' && score > play.roundBest);
-  const day = dayKey(now);
-  const kept = Object.keys(play.xp).sort().filter((d) => d !== day).slice(-59);
-  writePlay({
-    xp: { ...Object.fromEntries(kept.map((d) => [d, play.xp[d]])), [day]: (play.xp[day] ?? 0) + Math.max(0, score) },
-    days: withToday(play.days, now),
-    blitzBest: mode === 'blitz' ? Math.max(play.blitzBest, score) : play.blitzBest,
-    roundBest: mode === 'round' ? Math.max(play.roundBest, score) : play.roundBest,
-    rounds: play.rounds + 1,
-    points: play.points + Math.max(0, score),
-  });
-  markPlayedToday();
-  return { newBest };
-}
-
-/** Points a day that meet the Train tab's daily goal: about one good round. */
-export const DAILY_GOAL = 300;
-
-/** Points scored today. */
-export const xpToday = (play: RangePlay, now = new Date()): number => play.xp[dayKey(now)] ?? 0;
-
-/** Best plays a trick needs before it's collected and the next lesson on the path opens (fewer if it has fewer hands). */
-export const LESSON_GOAL = 3;
-
-export interface TrickProgress {
-  /** Best plays, with half credit for also good, up to `goal`. */
-  done: number;
-  /** Best plays it needs: `LESSON_GOAL`, or every hand when it has fewer. */
-  goal: number;
-  /** How many hands it has. */
-  total: number;
-  /** Collected: `goal` best plays. */
-  best: boolean;
-  /** Played at least once. */
-  started: boolean;
-  ids: string[];
-}
-
-/** Each concept's progress: collected once `LESSON_GOAL` of its hands (or all, if fewer) are best plays. */
-export function trickProgress(grades: Record<string, Grade>): Record<string, TrickProgress> {
-  const out: Record<string, TrickProgress & { bests: number; oks: number }> = {};
-  for (const s of allHands()) {
-    const t = (out[s.concept] ??= { done: 0, goal: 0, total: 0, best: false, started: false, ids: [], bests: 0, oks: 0 });
-    t.total++;
-    t.ids.push(s.id);
-    if (grades[s.id] === 'best') t.bests++;
-    else if (grades[s.id] === 'ok') t.oks++;
-    if (grades[s.id]) t.started = true;
-  }
-  for (const t of Object.values(out)) {
-    t.goal = Math.min(LESSON_GOAL, t.total);
-    t.best = t.bests >= t.goal;
-    t.done = Math.min(t.goal, t.bests + t.oks * 0.5);
-  }
-  return out;
 }

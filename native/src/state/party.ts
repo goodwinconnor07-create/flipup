@@ -39,6 +39,9 @@ export async function joinParty(code: string): Promise<PartyView> {
   return view;
 }
 
+/** The host changes the playlist and rules while the party is still a lobby. */
+export const configureParty = (code: string, settings: PartySettings): Promise<PartyView> => partyAct(code, 'settings', { deviceId: deviceId(), settings });
+
 export const readParty = (code: string): Promise<PartyView | null> => fetchParty(code, deviceId());
 export const startParty = (code: string): Promise<PartyView> => partyAct(code, 'start', { deviceId: deviceId() });
 export const skipBreak = (code: string): Promise<PartyView> => partyAct(code, 'skip', { deviceId: deviceId() });

@@ -8,6 +8,7 @@ import { CARD_BACKS } from '@design/premiumLooks';
 import { Button } from '@/components/button';
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
+import { SwapIcon } from '@/components/swap';
 import { Icon } from '@/components/icon';
 import { isReason, PERKS, REASON_PERK, type Perk } from '@/components/premium/perks';
 import { PressableScale } from '@/components/pressable-scale';
@@ -200,7 +201,7 @@ function PlanCard({ name, price, per, badge, on, onPress }: { name: string; pric
         <ThemedText variant="subhead" style={{ color: '#ffffff', fontWeight: '700' }}>
           {name}
         </ThemedText>
-        <Icon name={on ? 'checkmark.circle.fill' : 'circle'} size={18} color={on ? brand.gold : 'rgba(255,255,255,0.4)'} />
+        <SwapIcon name={on ? 'checkmark.circle.fill' : 'circle'} size={18} color={on ? brand.gold : 'rgba(255,255,255,0.4)'} />
       </View>
       <ThemedText style={{ fontFamily: ROUNDED, fontSize: 20, lineHeight: 24, fontWeight: '800', color: '#ffffff' }}>
         {price ?? '—'}

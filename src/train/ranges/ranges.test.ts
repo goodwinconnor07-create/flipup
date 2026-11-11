@@ -1,13 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { isCard } from '../../game/cards';
 import { CHARTS, inChart } from './charts';
-import { narrate } from './narrate';
 import { analyse, combosOf, comboKey, expandHand, expandRange, optionsFor, replay, spotOf, streetOfBoard, type OptionId, type Scenario } from './model';
-import { readFileSync } from 'node:fs';
-import { SCENARIOS as WRITTEN, unpack } from './scenarios';
-
-/** Every hand: the hand-written ones and the generated ones. */
-const SCENARIOS: Scenario[] = [...WRITTEN, ...unpack(JSON.parse(readFileSync(new URL('./generated.json', import.meta.url), 'utf8')))];
+import { SCENARIOS } from './scenarios';
 
 describe('hands', () => {
   it('reads pairs, suited, offsuit, exact combos and one-suit hands', () => {
@@ -41,6 +36,9 @@ describe('hands', () => {
     expect(size('BB vs early open')).toBeLessThan(size('BB vs late open'));
   });
 });
+
+/** Words that only make sense with cards still to come: protection, charging draws, free cards, outs. */
+const RIVER_WORDS = /protect|charg|free card|outdraw|to come|next card|draw out|outs\b|semi-bluff|equity to/i;
 
 /** The best play has to beat the alternative by at least this much: 3% of the pot, or 3 points of equity. */
 const MARGIN = 0.03;
@@ -131,6 +129,18 @@ describe('every scenario', () => {
         expect(streetOfBoard(s.board)).not.toBe('flop');
       });
 
+      it('comes from a published breakdown, with a link', () => {
+        expect(s.source.by.length, s.id).toBeGreaterThan(2);
+        expect(s.source.title.length, s.id).toBeGreaterThan(5);
+        expect(s.source.url, s.id).toMatch(/^https:\/\/[^ ]+$/);
+      });
+
+      it('never talks about cards to come once the river is out', () => {
+        if (s.board.length !== 5) return;
+        const river = [s.why, ...s.clues.filter((c) => c.street === 'river').map((c) => c.text)].join(' ');
+        expect(river, s.id).not.toMatch(RIVER_WORDS);
+      });
+
       it('gives the answer the numbers back up, by a clear margin', () => {
         check(s);
       });
@@ -150,15 +160,15 @@ describe('every scenario', () => {
 
 describe('the hand log', () => {
   it('reads like a hand history, with the pot right on every street', () => {
-    const r = replay(SCENARIOS.find((s) => s.id === 'ace-overbet')!);
-    expect(r.lines.map((l) => l.text).slice(0, 7)).toEqual(['UTG folds', 'HJ folds', 'CO raises to 2.5bb', 'BTN folds', 'SB folds', 'You call 2.5bb', 'You check']);
-    expect(r.potAt).toEqual({ flop: 5.5, turn: 9.1, river: 22.7 });
-    expect(r.pot).toBeCloseTo(50.7);
-    expect(r.toCall).toBe(28);
+    const r = replay(SCENARIOS.find((s) => s.id === 'aq-blank-river')!);
+    expect(r.lines.map((l) => l.text).slice(0, 7)).toEqual(['UTG folds', 'You raise to 3bb', 'CO folds', 'BTN folds', 'SB raises to 13.5bb', 'BB folds', 'You call 13.5bb']);
+    expect(r.potAt).toEqual({ flop: 28, turn: 48, river: 92 });
+    expect(r.pot).toBeCloseTo(159);
+    expect(r.toCall).toBe(67);
   });
 
   it('refuses a move out of turn', () => {
-    const s = SCENARIOS.find((x) => x.id === 'ace-overbet')!;
+    const s = SCENARIOS.find((x) => x.id === 'aq-blank-river')!;
     const bad: Scenario = { ...s, actions: [s.actions[1], s.actions[0], ...s.actions.slice(2)] };
     expect(() => replay(bad)).toThrow(/turn/);
   });
@@ -187,25 +197,10 @@ describe('facing an all-in', () => {
       best: 'call',
       clues: [],
       why: '',
+      source: { by: '', title: '', url: '' },
     };
     const r = replay(s);
     expect(r.stacks.BTN).toBe(0);
     expect(optionsFor(s, r).map((o) => o.id)).toEqual(['fold', 'call']);
   });
-});
-
-describe('street by street', () => {
-  // Every hand-written hand and a spread of generated ones (the narration replays the whole hand, so not all 1,600).
-  const sample = [...WRITTEN, ...SCENARIOS.slice(WRITTEN.length).filter((_, i) => i % 15 === 0)];
-  it('says what their range is and what you want on every street', () => {
-    for (const s of sample) {
-      const reads = narrate(s);
-      const streets = ['preflop', 'flop', 'turn', 'river'].slice(0, s.board.length - 1);
-      expect(reads.map((x) => x.street), s.id).toEqual(streets);
-      for (const x of reads) {
-        expect(x.theirs.length, `${s.id} ${x.street}`).toBeGreaterThan(20);
-        expect(x.ours.length, `${s.id} ${x.street}`).toBeGreaterThan(20);
-      }
-    }
-  }, 120_000);
 });

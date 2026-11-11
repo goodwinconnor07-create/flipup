@@ -11,6 +11,14 @@ Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mi
 - Bots with ten playing styles. AI Legends (bots in the style of famous players) are built but switched off for launch: `LEGENDS_ON` in `src/game/legends.ts`
 - Every mini game dresses the table in its own colours, cards, moving background and sounds
 
+Ordinary Hold’em bots use fresh, independent table personalities, public-action reads and private decision plans. See [the live bot experience and validation](docs/bot_system/LIVE_HUMAN_TABLE.md).
+
+Mobile-browser bot research is available from **Settings → Bot research**, or `/#bot-research`: guided hands, pause/resume, optional feedback and private uploaded reports. See [the research workflow](docs/bot_system/BOT_RESEARCH.md).
+
+## Try BOT_001
+
+For standard Texas Hold’em, turn on **Invite BOT_001** in setup or the host’s table settings. It adds the experimental bot in one extra seat. Choose zero other bots to play it heads up. The setting is off by default. See [behaviour and validation](docs/bot_system/PLAY_BOT_001.md) and [contextual learning experiments](docs/bot_system/LEARNING_LOOP.md).
+
 ## Running it
 
 ```sh

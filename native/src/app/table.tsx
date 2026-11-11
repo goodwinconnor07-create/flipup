@@ -1,17 +1,18 @@
-import { router } from 'expo-router';
+import { router, type ErrorBoundaryProps } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, ScrollView, Share, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, SlideInUp, SlideOutUp } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { CrashScreen } from '@/components/crash-screen';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
 import { ChallengeEnded, ChallengeStrip, useChallengeSheets } from '@/components/table/challenge';
 import { Confetti } from '@/components/table/confetti';
+import { ConnectionLost, useOfflineFor } from '@/components/table/connection-lost';
 import { PartyPanel } from '@/components/party/panel';
-import { BankrollEnded, BankrollStrip } from '@/components/table/bankroll-strip';
 import { Ended } from '@/components/table/ended';
 import { SaveHandButton, ScreenshotPrompt, ShareButton } from '@/components/table/hand-tools';
 import { FeltOval, useHighlight } from '@/components/table/felt';
@@ -23,16 +24,36 @@ import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
-import { Discard, Vote } from '@/components/table/variant-steps';
+import { Discard, Discuss, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
+import { DiceRoll } from '@/components/table/dice-roll';
+import { WildDeuces } from '@/components/table/playing-card';
 import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { joinLink } from '@/state/api';
+import { tableShare } from '@/state/table-share';
+import { read, save } from '@/state/storage';
 import { forgetParty } from '@/state/party';
-import { leaveTable, dispatch, me as myDevice, useTable } from '@/state/session';
-import { gradient, radius, spacing, useColors, usePlainColors } from '@/theme';
+import { leaveTable, dispatch, me as myDevice, retryConnection, useTable } from '@/state/session';
+import { EASE_OUT, exitMs } from '@/motion/presets';
+import { gradient, motion, radius, spacing, useColors, usePlainColors } from '@/theme';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
+
+/**
+ * The table hit an error while drawing: Try again redraws it (a bots-only table's clock keeps going underneath), and
+ * Leave the table puts it away and goes Home, so a broken table can't keep failing.
+ */
+export function ErrorBoundary(props: ErrorBoundaryProps) {
+  return (
+    <CrashScreen
+      {...props}
+      title="The table hit a snag"
+      line="Sorry about that. Try again, or leave this table and start a new one."
+      leaveTitle="Leave the table"
+      onLeave={leaveTable}
+    />
+  );
+}
 
 /**
  * The table, laid out as on the web: the bar (menu, blinds, hand number), the other players along the top, the
@@ -48,6 +69,10 @@ export default function TableScreen() {
     leaveTable();
     router.dismissTo('/');
   };
+  // A connection down for 20 seconds is said in words, with Try again and Leave (see connection-lost.tsx).
+  // Every automatic retry passes through 'connecting', so that counts as down too or the 20 seconds would restart each time.
+  const down = online && (t.conn === 'offline' || t.conn === 'connecting');
+  const lost = useOfflineFor(down);
   // A challenge's own sheets (Detective's check, Rewind's result) open by themselves when they're due.
   useChallengeSheets(t.challenge);
   // Before the first deal the lobby is the whole screen, on the same grain page as Play with friends.
@@ -64,16 +89,17 @@ export default function TableScreen() {
     <View
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
-      <TableBar game={game} online={online} code={game?.bankroll ? null : t.code} />
+      <TableBar game={game} online={online} code={t.code} />
       <ScreenshotPrompt />
-      {game?.bankroll && game.status !== 'ended' && <BankrollStrip game={game} />}
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
-      {online && t.conn === 'offline' && <Pill text="Reconnecting…" />}
+      {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
       <DealWipe />
-      {!game ? (
+      {!game && lost ? (
+        <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />
+      ) : !game ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.sm }}>
           {t.mode ? <ActivityIndicator /> : null}
           <ThemedText tone="tertiaryLabel">
@@ -94,9 +120,11 @@ export default function TableScreen() {
       ) : (
         <>
           {game.status === 'playing' && <Playing game={game} sending={t.sending} />}
-          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : game.bankroll ? <BankrollEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
+          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>
       )}
+      {/* Die on the River's roll covers the whole screen, the bar and the notch included. */}
+      {game?.status === 'playing' && <DiceRoll game={game} />}
     </View>
   );
 }
@@ -149,8 +177,8 @@ function Notice({ notice }: { notice: { id: number; text: string } }) {
   return (
     <Animated.View
       key={notice.id}
-      entering={FadeIn}
-      exiting={FadeOut}
+      entering={FadeIn.duration(motion.base).easing(EASE_OUT)}
+      exiting={FadeOut.duration(motion.exit).easing(EASE_OUT)}
       style={{ position: 'absolute', top: 110, left: spacing.md, right: spacing.md, zIndex: 10, alignItems: 'center' }}
     >
       <Pill text={notice.text} />
@@ -244,7 +272,7 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
           accessibilityLabel={`Invite: code ${code}`}
           onPress={() => {
             haptic.tap();
-            void Share.share({ message: `Come play poker with me on FlipUp. Code ${code}: ${joinLink(code)}`, url: joinLink(code) });
+            void Share.share(tableShare(game, code));
           }}
           style={{
             minWidth: 48,
@@ -293,8 +321,8 @@ function BlindNews({ game }: { game: Game }) {
       key={news.id}
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
-      entering={reduce ? FadeIn : SlideInUp.duration(380)}
-      exiting={reduce ? FadeOut : SlideOutUp.duration(320)}
+      entering={reduce ? FadeIn : SlideInUp.duration(380).easing(EASE_OUT)}
+      exiting={reduce ? FadeOut : SlideOutUp.duration(exitMs(380)).easing(EASE_OUT)}
       pointerEvents="none"
       style={{
         position: 'absolute',
@@ -343,7 +371,7 @@ function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: 
             backgroundColor: c.surface,
           }}
         >
-          <Text style={{ fontSize: 22, fontWeight: '800', color: c.label, textAlign: 'center' }}>Nobody in the lobby</Text>
+          <Text style={{ fontSize: 22, fontWeight: '800', color: c.label, textAlign: 'center' }}>Everyone else left</Text>
           <Text style={{ fontSize: 15, color: c.tertiaryLabel, textAlign: 'center' }}>
             Closing game in <Text style={{ fontWeight: '700', color: c.label, fontVariant: ['tabular-nums'] }}>{secs}s</Text>
           </Text>
@@ -417,6 +445,27 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [raiseTurn, setRaiseTurn] = useState('');
   const [selection, setSelection] = useState<{ street: string; action: PreAction } | null>(null);
 
+  // The first time you sit at a mini game, how it plays opens by itself (once per game, never again).
+  const variant = variantOf(game);
+  useEffect(() => {
+    if (variant === 'holdem' || game.challenge || game.bankroll) return;
+    const seen = read<string[]>('flipup.rulesseen', []);
+    if (seen.includes(variant)) return;
+    save('flipup.rulesseen', [...seen, variant]);
+    router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } });
+  }, [variant]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Imposter: your role, announced as each hand is dealt.
+  const role = hand?.variant === 'imposter' && mySeat && me ? (hand.imposter === me.id ? 'imposter' : 'innocent') : null;
+  const roleKey = role && hand ? `${game.id}:${hand.number}:${role}` : '';
+  const [dismissedRole, setDismissedRole] = useState('');
+  const flash = roleKey && roleKey !== dismissedRole ? role : null;
+  useEffect(() => {
+    if (!roleKey) return;
+    if (role === 'imposter') haptic.turn();
+    const t = setTimeout(() => setDismissedRole(roleKey), 2800);
+    return () => clearTimeout(t);
+  }, [roleKey, role]);
+
   // A buzz when it's your turn; the raise panel closes when it isn't.
   const turnKey = myTurn ? `${game.id}-${hand!.number}-${hand!.seq}` : '';
   const raising = !!turnKey && raiseTurn === turnKey;
@@ -456,11 +505,12 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [available, setAvailable] = useState(0);
   const compact = available > 0 && available < 700;
   // Reserve the action area and hole cards before sizing the felt; a board that can't fit shrinks to the room left.
-  const feltBudget = available > 0 ? available - (compact ? 260 : 310) - 180 : undefined;
+  const pointing = variantOf(game) === 'imposter';
+  const feltBudget = available > 0 ? available - (compact ? 260 : 310) - 180 - (pointing ? 44 : 0) : undefined;
 
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
   const speakerOk = useRef<(id: string) => boolean>(() => true);
-  const { say, quiet } = useReactions(game, (id) => id === me?.id || speakerOk.current(id));
+  const { say, quiet } = useReactions(game, (id) => id === me?.id || speakerOk.current(id), me?.id);
   const others = othersInOrder(game, me);
   const slots = usePodSlots(game, others, say);
   useEffect(() => {
@@ -469,6 +519,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   useTableSounds(game, me?.id);
   const odds = useOdds(hand, showsOdds(variantOf(game)), variantOf(game));
   // At a showdown the winning five lift and glow and the rest grey out. Never while the hand is being played.
+  const showPointing = pointing && !!hand && !hand.result && !hand.voting && !hand.tally && !hand.discussing && !!mySeat;
   const highlight = useHighlight(game, me);
   const lit = new Set(highlight?.best ?? []);
   const showdown = !!hand?.result?.showdown && !!highlight;
@@ -476,15 +527,38 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const glow = (card: Card) => showdown && lit.has(card);
 
   return (
+    <WildDeuces.Provider value={variantOf(game) === 'deuces'}>
     <View style={{ flex: 1 }} onLayout={(e) => setAvailable(e.nativeEvent.layout.height)}>
+      {flash && (
+        <Animated.View
+          pointerEvents="none"
+          entering={FadeIn}
+          exiting={FadeOut}
+          style={{ position: 'absolute', top: '30%', left: 0, right: 0, zIndex: 20, alignItems: 'center' }}
+        >
+          <View style={{ paddingHorizontal: 22, paddingVertical: 14, borderRadius: 22, borderCurve: 'continuous', backgroundColor: flash === 'imposter' ? 'rgba(180,30,30,0.94)' : 'rgba(20,90,50,0.94)', alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontSize: 34 }}>{flash === 'imposter' ? '🕵️' : '😇'}</Text>
+            <Text style={{ color: '#ffffff', fontSize: 20, fontWeight: '800' }}>{flash === 'imposter' ? "You're the imposter" : "You're innocent"}</Text>
+            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
+              {flash === 'imposter' ? 'Your cards are different. Blend in.' : 'You hold what the other innocents hold. Find the odd one out.'}
+            </Text>
+          </View>
+        </Animated.View>
+      )}
       {/* The table is locked: it never scrolls or bounces (the felt shrinks to fit instead, see FeltOval). */}
-      <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 8 }}>
+      <View style={{ flex: 1, minHeight: 0, overflow: 'hidden', gap: compact ? 4 : 12, justifyContent: 'space-evenly', paddingBottom: 20 }}>
         <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
         <FeltOval game={game} me={me} heightLimit={feltBudget} />
       </View>
       <View style={{ gap: 4, paddingTop: 4 }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: 112, justifyContent: 'flex-end' }}>
-          {hand?.voting && mySeat && me ? (
+          {/* Imposter: point a finger at someone while the betting goes on. */}
+          {showPointing && me && <SuspectBar game={game} me={me} />}
+          {hand?.tally ? (
+            <Tally game={game} />
+          ) : hand?.discussing && mySeat && me ? (
+            <Discuss game={game} me={me} />
+          ) : hand?.voting && mySeat && me ? (
             <Vote game={game} me={me} />
           ) : hand?.discarding && mySeat && !mySeat.folded ? (
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />
@@ -525,5 +599,6 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
         </>
       )}
     </View>
+    </WildDeuces.Provider>
   );
 }

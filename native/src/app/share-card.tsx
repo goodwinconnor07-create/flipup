@@ -7,7 +7,7 @@ import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
-import { gameData, handData, statsData, streakData, type ShareData } from '@/components/share/data';
+import { gameData, handData, statsData, type ShareData } from '@/components/share/data';
 import { CARD_H, CARD_W, DesignSwatch, isShareDesign, SHARE_DESIGNS, ShareCard, type ShareDesignId } from '@/components/share/designs';
 import { useShareCapture, useWho } from '@/components/share/use-share';
 import { ThemedText } from '@/components/themed-text';
@@ -15,14 +15,13 @@ import { usePremium } from '@/state/premium';
 import { usePokerRecord } from '@/state/record';
 import { lastHand, replayById } from '@/state/replays';
 import { read, save } from '@/state/storage';
-import { useStreakInfo } from '@/state/streak';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
 
 const LAST_DESIGN = 'flipup.sharedesign';
 
 /**
  * The share card composer: the card as it will be sent, the five designs under it, and Share. Opened from the Share
- * hub, a saved hand, the table's share button and the screenshot prompt. Params: `kind` (stats, streak, game, hand),
+ * hub, a saved hand, the table's share button and the screenshot prompt. Params: `kind` (stats, game, hand),
  * `id` (a saved hand's id, or `last` for the table's last hand; a game's index), `title` (a hand's moment).
  * Night is free; the other designs show with a crown and Share opens the Premium offer for them.
  */
@@ -30,7 +29,6 @@ export default function ShareCardSheet() {
   const p = useLocalSearchParams<{ kind?: string; id?: string; title?: string; design?: string }>();
   const premium = usePremium();
   const record = usePokerRecord();
-  const streak = useStreakInfo();
   const who = useWho();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
@@ -47,8 +45,8 @@ export default function ShareCardSheet() {
   } else if (p.kind === 'game') {
     const g = record.games[Number(p.id)] ?? record.games.at(-1);
     if (g) data = gameData(g, who);
-  } else if (p.kind === 'streak') data = streakData(streak.days, streak.best, who);
-  if (!data) data = statsData(record, streak.days, who);
+  }
+  if (!data) data = statsData(record, 0, who);
 
   const scale = Math.min(1, (width - spacing.lg * 2) / CARD_W);
   const locked = !premium && SHARE_DESIGNS.find((d) => d.id === design)?.premium;

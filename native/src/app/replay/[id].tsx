@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
+import { SwapIcon } from '@/components/swap';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { RoundButton } from '@/components/tab-screen';
@@ -204,7 +205,7 @@ function Control({ icon, label, onPress, big }: { icon: IconName; label: string;
   const size = big ? 64 : 48;
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} style={{ width: size, height: size, borderRadius: size / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: big ? '#ffffff' : 'rgba(255,255,255,0.12)' }}>
-      <Icon name={icon} size={big ? 26 : 18} color={big ? brand.violet : '#ffffff'} />
+      <SwapIcon name={icon} size={big ? 26 : 18} color={big ? brand.violet : '#ffffff'} />
     </PressableScale>
   );
 }

@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
+import { SwapIcon } from '@/components/swap';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { SetupHeader } from '@/components/setup/setup-header';
@@ -89,7 +90,7 @@ function Bank() {
                 </ThemedText>
               </View>
               <ThemedText style={{ fontFamily: ROUNDED, fontSize: 19, fontWeight: '800', color: r.net > 0 ? brand.gold : '#ffffff' }}>{signed(r.net)}</ThemedText>
-              <Icon name={premium ? 'play.fill' : 'lock.fill'} size={14} color="rgba(255,255,255,0.6)" />
+              <SwapIcon name={premium ? 'play.fill' : 'lock.fill'} size={14} color="rgba(255,255,255,0.6)" />
             </PressableScale>
           ))}
         </View>

@@ -1,4 +1,4 @@
-import { bubbleById, cleanName, DEFAULT_EMOJI, isBubbleId, isEmoji, isPackId, packById } from '@/engine';
+import { cleanName, DEFAULT_EMOJI, isEmoji, isPackId, packById } from '@/engine';
 
 import { read as readStored, save, useStored } from './storage';
 import { hasPremium } from './premium';
@@ -6,8 +6,6 @@ import { hasPremium } from './premium';
 export interface Profile {
   name: string;
   emoji: string;
-  /** Chat bubble effect (`BUBBLE_STYLES`); missing is the plain blue and grey. Green is free, the rest Premium. */
-  bubble?: string;
   /** Card back (`CARD_PACKS`, never a campaign trophy here); missing is the plain back. Premium. */
   cardPack?: string;
 }
@@ -19,7 +17,6 @@ function clean(p: Partial<Profile> | null | undefined): Profile {
   return {
     name: typeof p?.name === 'string' ? p.name : '',
     emoji: isEmoji(p?.emoji) ? p.emoji : DEFAULT_EMOJI,
-    ...(isBubbleId(p?.bubble) ? { bubble: p.bubble } : {}),
     ...(isPackId(p?.cardPack) && !packById(p.cardPack)?.venue ? { cardPack: p.cardPack } : {}),
   };
 }
@@ -37,15 +34,13 @@ export function readProfile(): Profile {
 export function saveProfile(patch: Partial<Profile>): void {
   const next = { ...readProfile(), ...patch };
   if (next.name) next.name = cleanName(next.name);
-  if (!next.bubble) delete next.bubble;
   if (!next.cardPack) delete next.cardPack;
   save(KEY, next);
 }
 
-/** The bubble effect and card back this phone shows at a table: only what it may use (Premium, or the free Green). */
-export function wornLook(p: Profile = readProfile(), premium = hasPremium()): { bubble?: string; cardPack?: string; gold?: boolean } {
+/** The card back and gold name this phone shows at a table: only with Premium. (Bubbles are coloured by the move, for everyone.) */
+export function wornLook(p: Profile = readProfile(), premium = hasPremium()): { cardPack?: string; gold?: boolean } {
   return {
-    ...(p.bubble && (premium || bubbleById(p.bubble)?.free) ? { bubble: p.bubble } : {}),
     ...(p.cardPack && premium ? { cardPack: p.cardPack } : {}),
     ...(premium && goldNameOn() ? { gold: true } : {}),
   };

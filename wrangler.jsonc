@@ -16,8 +16,9 @@
   "assets": {
     // Unknown paths (like /ABCDE join links) fall back to index.html.
     "not_found_handling": "single-page-application",
-    // Only API calls reach the Worker code; everything else is served as a static file.
-    "run_worker_first": ["/api/*"],
+    // Only API calls (and the app-links file) reach the Worker code; everything else is served as a static file.
+    "run_worker_first": ["/api/*", "/.well-known/*"],
+    "binding": "ASSETS",
   },
   "durable_objects": {
     "bindings": [
@@ -26,6 +27,7 @@
       { "name": "FRIEND_CARD", "class_name": "FriendCard" },
       { "name": "BLACKJACK_ROOM", "class_name": "BlackjackRoom" },
       { "name": "REPORT_BOX", "class_name": "ReportBox" },
+      { "name": "BOT_RESEARCH", "class_name": "BotResearchRoom" },
       { "name": "ENTITLEMENTS", "class_name": "Entitlements" },
       { "name": "BANKROLL_ROOM", "class_name": "BankrollRoom" },
       { "name": "LEADERBOARD", "class_name": "Leaderboard" },
@@ -48,6 +50,8 @@
     { "tag": "v8", "new_sqlite_classes": ["Entitlements"] },
     // Bankroll: one room per player per month, and the boards (bankroll by month, Today's three by day).
     { "tag": "v9", "new_sqlite_classes": ["BankrollRoom", "Leaderboard"] },
+    // Private, opt-in bot research sessions. Each expires after 30 days.
+    { "tag": "v10", "new_sqlite_classes": ["BotResearchRoom"] },
   ],
   // Every hour: the Sunday cut once it's due, and closing last month's board (badges) on the 1st. Both are safe to run twice.
   "triggers": { "crons": ["0 * * * *"] },
@@ -56,6 +60,9 @@
     // iPhone app is the only client that can host them (the web app has no payment yet) and the App Store Server Notifications URL is set.
     "PREMIUM_ENFORCED": "0",
     "APPLE_BUNDLE_ID": "com.goodwin.flipup",
+    // Your Apple Developer Team ID (10 characters, Membership details in the developer portal; the same value as the
+    // APPLE_TEAM_ID GitHub secret). Join links open the app only once this is set and the Worker is deployed.
+    "APPLE_TEAM_ID": "",
     "APPLE_PREMIUM_PRODUCT_ID": "flipup.premium.unlock",
     // FlipUp Premium's monthly and yearly subscriptions (native/appInfo.ts), comma separated.
     "APPLE_PREMIUM_SUB_IDS": "flipup.premium.monthly,flipup.premium.yearly",

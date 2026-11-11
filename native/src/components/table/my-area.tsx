@@ -11,7 +11,7 @@ import { brand, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
 import { haptic } from '../haptics';
-import { bubbleOut, bubblePop, MoveBubble, pinned, Thread } from './bubbles';
+import { bubbleOut, bubblePop, MoveBubble, moveTone, pinnedTop, Thread } from './bubbles';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
 import { QuickMessages } from './quick-messages';
@@ -50,7 +50,6 @@ export function MyArea({
   // Two cards at full size; three or more step down so they still fit beside the box.
   const w = count > 2 || compact ? 72 : 100;
   const last = seat?.last;
-  const money = !!last && last.move !== 'fold' && last.move !== 'check' && last.move !== 'sb' && last.move !== 'bb';
   const bb = Math.max(game.settings.bigBlind, 1);
   const myTurn = !!me && !!hand && !hand.result && hand.toAct === me.id;
   const big = compact ? 32 : 38;
@@ -172,17 +171,17 @@ export function MyArea({
         {/* Quick messages: top-left corner, half over the box's edge. */}
         {me && (
           <View style={{ position: 'absolute', top: -15, left: -9 }}>
-            <QuickMessages />
+            <QuickMessages imposter={variantOf(game) === 'imposter'} />
           </View>
         )}
-        {/* What you just did or said: a small pill on the top-right corner, half over the box's edge, mirroring the
+        {/* What you just did or said: a small pill whose top is pinned to the top-right corner, a little outside the box's edge, mirroring the
             quick-messages button on the left. */}
-        <View pointerEvents="none" style={{ position: 'absolute', right: -9, bottom: '100%', marginBottom: -17, width: 150, height: 0 }}>
+        <View pointerEvents="none" style={{ position: 'absolute', right: -9, top: -17, width: 150, height: 0 }}>
           {talk ? (
-            <Thread talk={talk} fx={me?.bubble} room={140} place={pinned('flex-end')} />
+            <Thread talk={talk} room={140} place={pinnedTop('flex-end')} />
           ) : last && hand && quiet !== moveSig(hand.number, last) ? (
-            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinned('flex-end')}>
-              <MoveBubble text={moveLabel(last)} tone={money ? 'blue' : 'grey'} fx={me?.bubble} old={last.street !== hand.street} />
+            <Animated.View key={`${hand.number}-${moveLabel(last)}`} entering={bubblePop} exiting={bubbleOut} style={pinnedTop('flex-end')}>
+              <MoveBubble text={moveLabel(last)} tone={moveTone(last.move, hand, me?.id, game.settings.bigBlind)} old={last.street !== hand.street} />
             </Animated.View>
           ) : null}
         </View>

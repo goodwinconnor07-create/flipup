@@ -35,8 +35,6 @@ export class Connection {
     readonly code: string,
     private readonly deviceId: string,
     private readonly h: ConnectionHandlers,
-    /** A Bankroll table lives in the player's own room (`code` is their friend code), not in a TableRoom. */
-    private readonly room: 'table' | 'bankroll' = 'table',
   ) {
     this.appState = AppState.addEventListener('change', this.onAppState);
     this.open();
@@ -46,6 +44,14 @@ export class Connection {
     if (this.ws?.readyState !== WebSocket.OPEN) return false;
     this.ws.send(JSON.stringify(msg));
     return true;
+  }
+
+  /** Try now, instead of waiting out the back-off (the Try again button). */
+  retryNow(): void {
+    if (this.closed || this.ws?.readyState === WebSocket.OPEN || this.ws?.readyState === WebSocket.CONNECTING) return;
+    this.failures = 0;
+    clearTimeout(this.retryTimer);
+    this.open();
   }
 
   close(): void {
@@ -64,7 +70,7 @@ export class Connection {
     this.h.onStatus('connecting');
     let ws: WebSocket;
     try {
-      ws = new WebSocket(socketUrl(`/api/${this.room === 'bankroll' ? 'bankroll' : 'tables'}/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}`));
+      ws = new WebSocket(socketUrl(`/api/tables/${this.code}/ws?device=${encodeURIComponent(this.deviceId)}`));
     } catch {
       this.retryLater();
       return;
@@ -105,7 +111,7 @@ export class Connection {
     if (this.closed) return;
     this.failures += 1;
     // A refused upgrade looks like a network drop, so after a few failures check the table still exists.
-    if (this.failures === 3 && this.room === 'table') {
+    if (this.failures === 3) {
       fetchTableInfo(this.code)
         .then((info) => {
           if (!info && !this.closed) {

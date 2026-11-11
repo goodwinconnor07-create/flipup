@@ -33,9 +33,9 @@ import {
   createTable,
   cryptoRng,
   DEFAULT_SETTINGS,
-  isCode,
+  isTableCode,
+  normalizeTableCode,
   newId,
-  normalizeCode,
   redactForDevice,
   dressAsLegend,
   LEGENDS_ON,
@@ -114,7 +114,8 @@ export type Route =
   /** Cash game: the blinds your bankroll plays, and how much to sit down with. */
   | { name: 'cashSeat' }
   /** Range training: read the opponent's hand from the action and make the decision. */
-  | { name: 'ranges' };
+  | { name: 'ranges' }
+  | { name: 'botResearch'; review?: { id: string; key: string } };
 
 export type Sheet =
   | { name: 'menu' }
@@ -301,7 +302,10 @@ function syncHistory(): void {
   }
 }
 
+let researchHash = location.hash;
 function onPopState(): void {
+  // A new research fragment is a link navigation; its hash handler selects the destination.
+  if (location.hash !== researchHash && location.hash.startsWith('#bot-research')) return;
   if (ignoreNextPop) {
     ignoreNextPop = false;
     return;
@@ -1146,7 +1150,9 @@ export function closeTable(): void {
 export function boot(): void {
   window.addEventListener('popstate', onPopState);
   const s = state.session;
-  const linked = normalizeCode(location.pathname.replace(/^\/+/, ''));
+  // A join link is the code as the whole path (/ACES42, or an older /BCDFG).
+  const path = location.pathname.replace(/^\/+|\/+$/g, '');
+  const linked = /^[A-Za-z0-9]{5,6}$/.test(path) ? normalizeTableCode(path) : '';
   if (location.pathname.length > 1) {
     try {
       history.replaceState(null, '', '/');
@@ -1156,7 +1162,14 @@ export function boot(): void {
   }
   if (s?.mode === 'online' && s.code) connect(s.code);
   if (s?.mode === 'local') scheduleLocal();
-  if (isCode(linked) && !(s?.mode === 'online' && s.code === linked)) {
+  const followResearch = () => {
+    researchHash = location.hash;
+    const research = location.hash.match(/^#bot-research(?:=([a-f0-9-]{36})\.([a-f0-9]{64}))?$/i);
+    if (research) resetTo({ name: 'botResearch', ...(research[1] ? { review: { id: research[1], key: research[2] } } : {}) });
+  };
+  window.addEventListener('hashchange', followResearch);
+  followResearch();
+  if (isTableCode(linked) && !(s?.mode === 'online' && s.code === linked)) {
     resetTo({ name: 'join', code: linked });
   }
 }

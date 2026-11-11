@@ -1,14 +1,16 @@
 import { Children, useState, type ReactNode } from 'react';
 import { Pressable, Text, useColorScheme, View } from 'react-native';
-import Animated, { FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 import { count21, lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
+import { detail, rise, sink } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { dispatch, me as myDevice } from '@/state/session';
 import { brand, minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
+import { Swap } from '../swap';
 import { PressableScale } from '../pressable-scale';
 import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
@@ -51,10 +53,12 @@ function TableButton({ label, sub, tone, onPress, disabled, fill, height = 60, b
       style={{ minHeight: height, borderRadius: radius.md, borderCurve: 'continuous', overflow: 'hidden', alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xs, backgroundColor: look[tone].bg }}
     >
       {fill !== undefined && <View style={{ position: 'absolute', left: 0, bottom: 0, height: 4, width: `${fill * 100}%`, backgroundColor: 'rgba(255,255,255,0.85)' }} />}
-      <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
-        {label}
-        {sub ? ` ${sub}` : ''}
-      </Text>
+      <Swap id={label} kind="text">
+        <Text maxFontSizeMultiplier={1.3} numberOfLines={2} style={{ color: look[tone].ink, fontSize: big ? 20 : 17, lineHeight: big ? 24 : 20, textAlign: 'center', fontWeight: big ? '800' : tone === 'pre' || tone === 'preOn' ? '600' : '700', fontVariant: ['tabular-nums'] }}>
+          {label}
+          {sub ? ` ${sub}` : ''}
+        </Text>
+      </Swap>
     </PressableScale>
   );
 }
@@ -103,12 +107,17 @@ const Row = ({ children }: { children: ReactNode }) => (
 export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRaise }: { game: Game; me?: Player; seat?: Seat; myTurn: boolean; sending: boolean; pre: PreAction; setPre: (p: PreAction) => void; onRaise: () => void }) {
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
-  const now = useTableNow(game.fast, waiting ? 200 : 60_000);
+  const now = useTableNow(game.fast, hand?.moment?.gate || waiting ? 200 : 60_000);
 
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
   if (hand && !hand.result) {
     // Short Stack, at 12 big blinds or less: Fold, Call and a big Shove in place of the raise panel.
+    // A bust is on show: nobody acts until it has been seen.
+    if (myTurn && hand.moment?.gate && now < hand.moment.until) {
+      const who = game.players.find((p) => p.id === hand.moment!.who)?.name ?? 'Someone';
+      return <Note strong>{`💥 ${who} busts with ${hand.moment.value}`}</Note>;
+    }
     if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
     if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
@@ -124,7 +133,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         {who ? (
           <Thinking name={who.name} what={who.bot ? 'is thinking' : who.offline ? 'is offline' : 'to act'} />
         ) : (
-          <Note>{hand.showdownAt != null ? 'Showdown…' : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
+          <Note>{hand.bettingAt != null ? (hand.moment?.kind === 'rivers' ? 'Three rivers…' : hand.moment?.kind === 'redriver' ? 'Is the river red?' : 'Look at the board…') : hand.showdownAt != null ? (hand.moment?.kind === 'suspense' ? 'Hold your breath…' : 'Showdown…') : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
@@ -170,7 +179,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   const next = <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn
   // them over. Tapping sends the `show` action; the greyed cards turn white as the answer. Never during play.
-  const canShow = !!seat && !seat.shown && seat.cards.length === 2;
+  const canShow = !!seat && !seat.shown && seat.cards.length > 0;
   if (!canShow) return next;
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
@@ -216,7 +225,13 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
         ) : (
           <TableButton label={o.callIsAllIn ? 'All in' : 'Call'} sub={chips(o.toCall)} tone="blue" disabled={sending} onPress={() => act('call')} />
         )}
-        {o.canRaise && <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />}
+        {o.canRaise &&
+          (o.minTo >= o.maxTo ? (
+            // The smallest raise is already everything you have: no sizer, just All in.
+            <TableButton label="All in" sub={chips(o.maxTo)} tone="raise" disabled={sending} onPress={() => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move: 'allin' })} />
+          ) : (
+            <TableButton label={o.word} tone="raise" disabled={sending} onPress={onRaise} />
+          ))}
       </Row>
     </View>
   );
@@ -258,12 +273,12 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
   };
   return (
     <Animated.View
-      entering={reduce ? FadeIn.duration(150) : SlideInDown.duration(250)}
-      exiting={reduce ? FadeOut.duration(120) : SlideOutDown.duration(160)}
+      entering={rise(reduce)}
+      exiting={sink(reduce)}
       accessibilityViewIsModal
-      style={{ position: 'absolute', left: 0, right: 0, bottom: -inset, padding: spacing.md, paddingBottom: inset + spacing.sm, gap: spacing.md, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
+      style={{ transformOrigin: '50% 100%', position: 'absolute', left: 0, right: 0, bottom: -inset, padding: spacing.md, paddingBottom: inset + spacing.sm, gap: spacing.md, backgroundColor: colors.background, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg, boxShadow: shadow.raised }}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: spacing.xs }}>
+      <Animated.View entering={detail(0, reduce)} style={{ flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', gap: spacing.xs }}>
         <ThemedText tone="tertiaryLabel">{o.word} to</ThemedText>
         <ThemedText variant="title1" style={{ fontWeight: '800', fontVariant: ['tabular-nums'] }}>
           {chips(to)}
@@ -272,7 +287,8 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={onCancel} hitSlop={12} style={{ position: 'absolute', right: 0, top: 4 }}>
           <Icon name="xmark" size={20} color={colors.label} />
         </Pressable>
-      </View>
+      </Animated.View>
+      <Animated.View entering={detail(1, reduce)}>
       <Row>
         {presets.map((p) => {
           const on = p.to === to;
@@ -298,7 +314,8 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
           );
         })}
       </Row>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+      </Animated.View>
+      <Animated.View entering={detail(2, reduce)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
         <Pressable accessibilityRole="button" accessibilityLabel="Less" disabled={to <= o.minTo} onPress={() => nudge(-1)} hitSlop={10} style={{ opacity: to <= o.minTo ? 0.3 : 1 }}>
           <Icon name="minus" size={22} color={colors.label} />
         </Pressable>
@@ -308,8 +325,8 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         <Pressable accessibilityRole="button" accessibilityLabel="More" disabled={to >= o.maxTo} onPress={() => nudge(1)} hitSlop={10} style={{ opacity: to >= o.maxTo ? 0.3 : 1 }}>
           <Icon name="plus" size={22} color={colors.label} />
         </Pressable>
-      </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+      </Animated.View>
+      <Animated.View entering={detail(3, reduce)} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
         {/* Imposter has no folding: the panel follows the action row and leaves Fold out. */}
         {o.canFold && (
           <View style={{ flex: 1 }}>
@@ -322,7 +339,7 @@ export function RaisePanel({ game, hand, seat, inset, onClose }: { game: Game; h
         <View style={{ flex: 1 }}>
           <TableButton label={o.canCheck ? 'Check' : o.callIsAllIn ? 'All in' : 'Call'} sub={!o.canCheck && !o.callIsAllIn ? chips(o.toCall) : undefined} tone="quietCall" height={52} onPress={onCall} />
         </View>
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }

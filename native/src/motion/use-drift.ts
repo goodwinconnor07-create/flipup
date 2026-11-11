@@ -17,7 +17,7 @@ function useAppActive(): boolean {
 
 /**
  * The slow clock behind every drifting gradient: a shared value that eases between 0 and 1 on the UI thread, one
- * `duration` each way (use 20s or more; nothing here should ever be noticed as movement, only as life). It runs
+ * `duration` each way (cards use 20s or more and are never noticed as movement, only as life; the page background uses 9 to 16s so you can see it drift). It runs
  * only while the screen is focused, the app is in the foreground and Reduce Motion is off (`enabled` lets a
  * caller opt out too), and is cancelled otherwise, so a hidden card costs nothing. Nothing re-renders per frame:
  * the caller reads `.get()` inside `useAnimatedStyle` and animates transform or opacity only.

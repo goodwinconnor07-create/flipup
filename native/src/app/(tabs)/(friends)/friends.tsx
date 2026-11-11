@@ -1,6 +1,6 @@
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Alert, RefreshControl, Share, Text, View } from 'react-native';
+import { Alert, RefreshControl, View } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
 import { useFriendActions } from '@/components/friend-menu';
@@ -10,15 +10,14 @@ import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { InviteCard } from '@/components/invite-card';
-import { LivingCard } from '@/components/living-card';
 import { Menu } from '@/components/menu';
 import { PressableScale } from '@/components/pressable-scale';
 import { ProfileMenu } from '@/components/profile-menu';
 import { RoundButton, TabScreen } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
-import { removePal, syncFriends, useFriendBox, useMyUsername, usePals, useSentRequests, type Pal } from '@/state/pals';
+import { removePal, syncFriends, useFriendBox, usePals, useSentRequests, type Pal } from '@/state/pals';
 import { useProfile } from '@/state/profile';
-import { brand, cardColors, radius, spacing, useColors, useShadows } from '@/theme';
+import { brand, radius, spacing, useColors, useShadows } from '@/theme';
 
 /** The skeleton stays up at least this long, so a quick refresh doesn't flash. */
 const MIN_REFRESH_MS = 600;
@@ -55,7 +54,6 @@ export default function FriendsTab() {
       void syncFriends();
     }, []),
   );
-  const { username } = useMyUsername();
   const actions = useFriendActions();
 
   const needName = (): boolean => {
@@ -68,7 +66,7 @@ export default function FriendsTab() {
   };
   const addFriend = () => {
     if (needName()) return;
-    router.push(username ? '/add-friend' : '/username');
+    router.push('/add-friend');
   };
 
   return (
@@ -91,8 +89,6 @@ export default function FriendsTab() {
             <RequestList requests={box.requests} />
           </View>
         )}
-
-        <UsernameCard username={username} onPress={() => !needName() && router.push('/username')} />
 
         {box.invites.length > 0 && (
           <View style={{ gap: spacing.sm }}>
@@ -123,7 +119,7 @@ export default function FriendsTab() {
                     key={pal.code}
                     fill
                     label={`${pal.name}. Invite, profile`}
-                    title={pal.username ? `${pal.name} · @${pal.username}` : pal.name}
+                    title={pal.name}
                     sections={actions.sections(pal)}
                   >
                     <FriendRow pal={pal} first={i === 0} />
@@ -226,65 +222,6 @@ function Heading({ text }: { text: string }) {
   );
 }
 
-/** Your username on a loud card with Share, or the button to choose one. */
-function UsernameCard({ username, onPress }: { username: string | null; onPress: () => void }) {
-  return (
-    <LivingCard colors={cardColors.violet} style={{ padding: spacing.lg, gap: spacing.sm }}>
-      <ThemedText
-        variant="footnote"
-        tone="onColor"
-        style={{ textTransform: 'uppercase', fontWeight: '700', letterSpacing: 0.6, opacity: 0.85 }}
-      >
-        {username ? 'Your username' : 'Get found by friends'}
-      </ThemedText>
-      <Text
-        maxFontSizeMultiplier={1.3}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        style={{ fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff' }}
-      >
-        {username ? `@${username}` : 'Choose a username'}
-      </Text>
-      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-        {username && (
-          <Pill
-            icon="square.and.arrow.up"
-            label="Share"
-            onPress={() => void Share.share({ message: `Add me on FlipUp: my username is @${username}` })}
-          />
-        )}
-        <Pill icon={username ? 'pencil' : 'plus'} label={username ? 'Change' : 'Choose'} onPress={onPress} />
-      </View>
-    </LivingCard>
-  );
-}
-
-function Pill({ icon, label, onPress }: { icon: 'square.and.arrow.up' | 'pencil' | 'plus'; label: string; onPress: () => void }) {
-  return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={() => {
-        haptic.tap();
-        onPress();
-      }}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        minHeight: 44,
-        paddingHorizontal: spacing.md,
-        borderRadius: radius.full,
-        backgroundColor: '#ffffff',
-      }}
-    >
-      <Icon name={icon} size={16} color={brand.violet} />
-      <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 17, fontWeight: '800', color: brand.violet }}>
-        {label}
-      </Text>
-    </PressableScale>
-  );
-}
 
 /**
  * Someone you've asked who hasn't answered: their face, name and a Pending tag. A tap offers to take the request

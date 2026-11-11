@@ -1,11 +1,10 @@
 import { router, Stack } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, ScrollView } from 'react-native';
+import * as Application from 'expo-application';
+import Constants from 'expo-constants';
+import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share } from 'react-native';
 
-import { flagOf } from '@/components/board-row';
-import { COUNTRY_KEY } from '@/state/pals';
-import { useStored } from '@/state/storage';
 import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { YouSettings } from '@/components/you-settings';
@@ -13,6 +12,7 @@ import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
 import { usePremium } from '@/state/premium';
 import { ON_SALE, restorePremium, useStore } from '@/state/purchase';
+import { ThemedText } from '@/components/themed-text';
 import { spacing, useColors } from '@/theme';
 
 import { APP_INFO } from '../../../../appInfo';
@@ -27,7 +27,6 @@ export default function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
   const blocked = useBlocked();
-  const country = useStored<string | null>(COUNTRY_KEY, null);
   const store = useStore();
   const restore = async () => {
     if (await restorePremium()) {
@@ -35,6 +34,20 @@ export default function SettingsScreen() {
       Alert.alert('Premium is back', 'Thanks for backing FlipUp.');
     } else Alert.alert(store.error ? "Couldn't reach the App Store" : 'Nothing to restore', store.error ?? 'This Apple Account hasn’t bought FlipUp Premium.');
   };
+  // The app's link for sharing and for the rating page.
+  const storeUrl = `https://apps.apple.com/app/id${APP_INFO.appStoreId}`;
+  const share = () => {
+    haptic.tap();
+    void Share.share({ message: `Poker night on your phones. Play FlipUp with me: ${storeUrl}`, url: storeUrl }).catch(() => undefined);
+  };
+  const rate = () => {
+    haptic.tap();
+    const review = `itms-apps://apps.apple.com/app/id${APP_INFO.appStoreId}?action=write-review`;
+    void Linking.openURL(Platform.OS === 'ios' ? review : storeUrl).catch(() => Linking.openURL(storeUrl));
+  };
+  // Version and build, so a screenshot sent to support says which one it is.
+  const version = Application.nativeApplicationVersion ?? Constants.expoConfig?.version ?? '1.0.0';
+  const build = Application.nativeBuildVersion;
   const open = (url: string) => void openBrowserAsync(url).catch(() => Linking.openURL(url));
 
   const run = async () => {
@@ -51,7 +64,7 @@ export default function SettingsScreen() {
       setDeleting(false);
     }
   };
-  const ASK = 'This deletes your friend code, leaves any party or table you’re in, and clears your name, emoji, friends, streak and settings from this phone. It can’t be undone. Premium stays: Restore brings it back.';
+  const ASK = 'This deletes your friend code, leaves any party or table you’re in, and clears your name, emoji, friends and settings from this phone. It can’t be undone. Premium stays: Restore brings it back.';
   const confirmDelete = () => {
     // The web build's Alert has no buttons, so it asks with the browser's own confirm.
     if (process.env.EXPO_OS === 'web') {
@@ -82,12 +95,14 @@ export default function SettingsScreen() {
       )}
 
       <Section footer="To report or block someone, tap their seat at a table or their row on a party board.">
-        <Row title="Show my country" detail={country ? flagOf(country) : 'Off'} icon={{ symbol: 'globe', color: colors.accent as string }} onPress={() => router.push('/country')} />
         <Row title="Blocked players" detail={blocked.length ? String(blocked.length) : undefined} icon={{ symbol: 'hand.raised.slash.fill', color: colors.red as string }} onPress={() => router.push('/blocked')} />
       </Section>
 
       <Section header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
         <Row title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />
+        <Row title="Help" icon={{ symbol: 'questionmark.circle.fill', color: colors.accent as string }} onPress={() => router.push('/help')} />
+        <Row title="Share FlipUp" icon={{ symbol: 'square.and.arrow.up', color: colors.accent as string }} chevron={false} onPress={share} />
+        <Row title="Rate FlipUp" icon={{ symbol: 'star.fill', color: colors.gold as string }} onPress={rate} />
         <Row title="Support" icon={{ symbol: 'lifepreserver.fill', color: colors.green as string }} onPress={() => open(APP_INFO.supportUrl)} />
         <Row
           title="Email us"
@@ -107,6 +122,11 @@ export default function SettingsScreen() {
           onPress={deleting ? undefined : confirmDelete}
         />
       </Section>
+
+      <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }} selectable>
+        FlipUp {version}
+        {build ? ` (${build})` : ''}
+      </ThemedText>
     </ScrollView>
   );
 }

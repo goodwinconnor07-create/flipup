@@ -1,6 +1,10 @@
 import {
   createTable,
   isCode,
+  isTableCode,
+  newTableCode,
+  normalizeTableCode,
+  tableCodeProblem,
   isFriendCode,
   isUsername,
   normalizeUsername,
@@ -38,6 +42,8 @@ import {
   gamesNeedPremium,
   BOTS,
 } from '../src/game';
+import { botResearchRoute } from './botResearch';
+export { BotResearchRoom } from './botResearch';
 import { emailReport, type StoredReport } from './reports';
 import { forgetDevice, handleNotification, mayHostPremium, verifyPurchase, type VerifyResult } from './premium';
 
@@ -46,6 +52,7 @@ export { PartyRoom } from './party';
 export { FriendCard } from './friendCard';
 import { askToBeFriends, type FriendCardApi } from './friendCard';
 export { BlackjackRoom } from './blackjack';
+import { safeDecode } from './safeDecode';
 export { ReportBox } from './reports';
 export { Entitlements } from './entitlement';
 export { BankrollRoom } from './bankroll';
@@ -143,6 +150,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     return json({ error: 'Hosting this game needs FlipUp Premium.', premium: true }, 402);
   }
   let bots = typeof body.bots === 'number' && Number.isInteger(body.bots) ? Math.max(0, Math.min(MAX_SEATS - 1, body.bots)) : 0;
+  if (settings.humanPoker && bots > MAX_SEATS - 2) return json({ error: 'Leave one bot seat free for BOT_001.' }, 400);
   // Bots the host picked by name (the setup page's bots row): only names from the roster, one seat each.
   let botNames = Array.isArray(body.botNames)
     ? [...new Set(body.botNames.filter((n): n is string => typeof n === 'string' && BOTS.some((b) => b.name === n)))].slice(0, MAX_SEATS - 1)
@@ -163,9 +171,16 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     botNames = [];
   }
 
-  // Codes are random, so a clash is rare. Try a few before giving up.
-  for (let attempt = 0; attempt < 6; attempt++) {
-    const code = newCode();
+  // The host's own code (the lobby's Change): exactly that one, or an answer saying why not.
+  let own: string | undefined;
+  if (body.code !== undefined) {
+    own = typeof body.code === 'string' ? normalizeTableCode(body.code) : '';
+    const problem = tableCodeProblem(own) ?? (isNameBlocked(own) ? 'Pick a different code.' : null);
+    if (problem) return json({ error: problem }, 400);
+  }
+  // Random codes are a poker word and two numbers, so a clash is rare. Try a few before giving up.
+  for (let attempt = 0; attempt < (own ? 1 : 8); attempt++) {
+    const code = own ?? newTableCode();
     const game = createTable({
       hostDeviceId: body.deviceId,
       name,
@@ -180,6 +195,7 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
     const created = await env.TABLE_ROOM.getByName(code).create(game);
     if (created) return json({ code } satisfies CreateTableResponse, 201);
   }
+  if (own) return json({ error: 'That code is taken. Try another.' }, 409);
   return json({ error: "Couldn't find a free code. Try again." }, 503);
 }
 
@@ -278,7 +294,7 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
     if (limited(request, 'invite-answer', 120, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
-    if (!isCode(body.table)) return json({ error: 'That table has closed.' }, 404);
+    if (!isTableCode(body.table)) return json({ error: 'That table has closed.' }, 404);
     if (kind === 'decline') {
       // `code` is the person saying no, who proves it with their device id; the inviter hears on their next check.
       if (!isFriendCode(body.from)) return json({ error: "That code doesn't look right." }, 400);
@@ -300,7 +316,7 @@ async function inviteRoute(request: Request, env: Env, code: string, kind: strin
   if (!from) return json({ error: 'Get your own friend code first.' }, 403);
   const me = await env.FRIEND_CARD.getByName(from).get(from);
   if (!me) return json({ error: 'Get your own friend code first.' }, 403);
-  if (!isCode(body.table)) return json({ error: 'That table has closed.' }, 404);
+  if (!isTableCode(body.table)) return json({ error: 'That table has closed.' }, 404);
   let invite: BjInvite;
   if (body.kind === 'table') {
     // A poker table: only friends can ask each other, and only to a table that's still open.
@@ -353,7 +369,7 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
 
   if (kind === 'username') {
     const username = typeof body.username === 'string' ? normalizeUsername(body.username) : '';
-    if (!isUsername(username)) return json({ error: 'Usernames are 3 to 20 letters, numbers, dots or underscores, starting with a letter.' }, 400);
+    if (!isUsername(username)) return json({ error: 'Usernames are 2 to 20 letters, numbers, dots or underscores, starting with a letter.' }, 400);
     if (isNameBlocked(username)) return json({ error: "That username isn't allowed. Try another." }, 400);
     if ((await card.owner()) !== body.deviceId) return json({ error: 'That code belongs to another phone.' }, 403);
     const wait = await card.usernameFree(USERNAME_CHANGE_MS);
@@ -402,7 +418,7 @@ async function friendshipRoute(request: Request, env: Env, code: string, kind: s
 async function usernameRoute(request: Request, env: Env, pathname: string): Promise<Response> {
   if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
   if (limited(request, 'friend-get', 60, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
-  const username = normalizeUsername(decodeURIComponent(pathname.slice('/api/usernames/'.length)));
+  const username = normalizeUsername(safeDecode(pathname.slice('/api/usernames/'.length)));
   if (!isUsername(username)) return json({ error: 'No one has that username.' }, 404);
   const code = await env.FRIEND_CARD.getByName(`@${username}`).aliasOf();
   const info = code ? await env.FRIEND_CARD.getByName(code).get(code) : null;
@@ -426,7 +442,7 @@ async function createBlackjackRoute(request: Request, env: Env): Promise<Respons
 
 /** POST /api/parties opens a party. GET /api/parties/:code?device= reads it; POST /api/parties/:code/join|leave|start|skip changes it. */
 async function partyRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
-  const match = pathname.match(/^\/api\/parties(?:\/([^/]+)(?:\/(join|leave|start|skip))?)?$/);
+  const match = pathname.match(/^\/api\/parties(?:\/([^/]+)(?:\/(join|leave|start|skip|settings))?)?$/);
   if (!match) return json({ error: 'Not found.' }, 404);
   const code = match[1]?.toUpperCase();
   const action = match[2];
@@ -445,7 +461,10 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     }
     const person = { ...look, friendCode: await ownedCode(env, body.friendCode, body.deviceId) };
     for (let attempt = 0; attempt < 6; attempt++) {
-      const fresh = newCode();
+      // Same look as a table's code (ACES42), so a party's code reads like a game's. A code a table already has is skipped,
+      // so the Join sheet never has to guess which one a code means.
+      const fresh = newTableCode();
+      if (await env.TABLE_ROOM.getByName(fresh).info()) continue;
       if (await env.PARTY_ROOM.getByName(fresh).create(fresh, body.deviceId, person, { games: settings.games, startingStack: settings.startingStack, blindHands: settings.blindHands, fillTo: settings.fillTo })) {
         return json({ code: fresh }, 201);
       }
@@ -453,7 +472,7 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     return json({ error: "Couldn't find a free code. Try again." }, 503);
   }
 
-  if (!isCode(code)) return json({ error: "That code doesn't look right." }, 400);
+  if (!isTableCode(code)) return json({ error: "That code doesn't look right." }, 400);
   const room = env.PARTY_ROOM.getByName(code);
 
   if (!action) {
@@ -475,7 +494,15 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
     if ('error' in look) return json({ error: look.error }, 400);
     result = await room.join(code, body.deviceId, { ...look, friendCode: await ownedCode(env, body.friendCode, body.deviceId) });
   } else if (action === 'leave') result = await room.leave(code, body.deviceId);
-  else if (action === 'start') result = await room.start(code, body.deviceId);
+  else if (action === 'settings') {
+    // The host changes the playlist and rules while everyone is still in the lobby.
+    const settings = body.settings as PartySettings | undefined;
+    if (!settings || !validPartySettings(settings, isVariant)) return json({ error: "Those party settings don't work." }, 400);
+    if (gamesNeedPremium(settings.games) && !(await mayHostPremium(env, body.deviceId))) {
+      return json({ error: 'Hosting these games needs FlipUp Premium.', premium: true }, 402);
+    }
+    result = await room.configure(code, body.deviceId, { games: settings.games, startingStack: settings.startingStack, blindHands: settings.blindHands, fillTo: settings.fillTo });
+  } else if (action === 'start') result = await room.start(code, body.deviceId);
   else result = await room.skip(code, body.deviceId);
   return result.ok ? json(result.view) : json({ error: result.error }, result.error.startsWith('No party') ? 404 : 400);
 }
@@ -572,7 +599,7 @@ async function bankrollRoute(request: Request, env: Env, pathname: string, searc
  */
 async function boardRoute(request: Request, env: Env, pathname: string, search: string): Promise<Response> {
   if (limited(request, 'boards', 600, 10 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
-  const [kind, when] = decodeURIComponent(pathname.slice('/api/boards/'.length)).split(':');
+  const [kind, when] = safeDecode(pathname.slice('/api/boards/'.length)).split(':');
   const name = kind === 'bankroll' && (!when || isSeason(when)) ? `bankroll:${when ?? seasonOf(Date.now())}` : kind === 'daily' && (!when || isDay(when)) ? `daily:${when ?? dayOf(Date.now())}` : null;
   if (!name) return json({ error: 'No such board.' }, 404);
   const params = new URL(`http://x/${search}`).searchParams;
@@ -611,12 +638,36 @@ async function scheduled(env: Env): Promise<void> {
   for (const { code, place } of top) await env.FRIEND_CARD.getByName(code).addBadge(last, place);
 }
 
+/**
+ * /.well-known/apple-app-site-association: tells iOS which links open the FlipUp app instead of Safari. A table's
+ * link is `/ACES42` (six characters, or the older five), a party's is `/party/ABCDE`. It needs the team id, so
+ * until `APPLE_TEAM_ID` is set in wrangler.jsonc there is no file and links keep opening the web app.
+ */
+function appSiteAssociation(env: Env): Response {
+  const team = env.APPLE_TEAM_ID;
+  if (!/^[A-Z0-9]{10}$/.test(team)) return json({ error: 'Not set up.' }, 404);
+  const body = {
+    applinks: {
+      details: [
+        {
+          appIDs: [`${team}.${env.APPLE_BUNDLE_ID}`],
+          components: [{ '/': '/??????' }, { '/': '/?????' }, { '/': '/party/?????' }, { '/': '/party/??????' }],
+        },
+      ],
+    },
+  };
+  return new Response(JSON.stringify(body), { headers: { 'content-type': 'application/json', 'cache-control': 'public, max-age=3600' } });
+}
+
 export default {
   async scheduled(_controller, env, ctx): Promise<void> {
     ctx.waitUntil(scheduled(env));
   },
   async fetch(request, env, ctx): Promise<Response> {
     const { pathname, search } = new URL(request.url);
+
+    if (pathname === '/.well-known/apple-app-site-association') return appSiteAssociation(env);
+    if (pathname.startsWith('/.well-known/')) return env.ASSETS.fetch(request);
 
     if (pathname.startsWith('/api/bankroll/')) return bankrollRoute(request, env, pathname, search);
     if (pathname.startsWith('/api/boards/')) return request.method === 'GET' ? boardRoute(request, env, pathname, search) : json({ error: 'Use GET.' }, 405);
@@ -636,6 +687,12 @@ export default {
     }
     if (pathname === '/api/parties' || pathname.startsWith('/api/parties/')) return partyRoute(request, env, pathname, search);
 
+    if (pathname === '/api/bot-research' || pathname.startsWith('/api/bot-research/')) {
+      if (!sameSite(request)) return json({ error: 'Not allowed.' }, 403);
+      if (limited(request, pathname === '/api/bot-research' ? 'research-create' : 'research-data', pathname === '/api/bot-research' ? 12 : 500, 60 * 60_000))
+        return json({ error: 'Too many research requests. Try again later.' }, 429);
+      return botResearchRoute(request, env);
+    }
     if (pathname === '/api/reports') return request.method === 'POST' ? reportRoute(request, env, ctx) : json({ error: 'Use POST.' }, 405);
     if (pathname === '/api/health') return json({ ok: true });
     if (pathname === '/api/tables') {
@@ -645,9 +702,16 @@ export default {
     const match = pathname.match(/^\/api\/tables\/([^/]+)(\/ws)?$/);
     if (match) {
       const code = match[1].toUpperCase();
-      if (!isCode(code)) return json({ error: "That code doesn't look right." }, 400);
+      if (!isTableCode(code)) return json({ error: "That code doesn't look right." }, 400);
       const room = env.TABLE_ROOM.getByName(code);
-      if (match[2]) return sameSite(request) ? room.fetch(request) : json({ error: 'Not allowed.' }, 403);
+      if (match[2]) {
+        if (!sameSite(request)) return json({ error: 'Not allowed.' }, 403);
+        // Opening a socket to a table that isn't there is the same scan as asking for its info, so it counts as a miss too.
+        if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
+        const res = await room.fetch(request);
+        if (res.status === 404) noteMiss(request);
+        return res;
+      }
       if (request.method !== 'GET') return json({ error: 'Use GET.' }, 405);
       if (tooManyMisses(request)) return json({ error: 'Slow down a little.' }, 429);
       const info = await room.info();

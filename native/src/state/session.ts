@@ -57,7 +57,6 @@ import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { noteRun } from './challenges';
 import { noteGame, noteHand } from './record';
-import { markPlayedToday } from './streak';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
 import { forgetLastHand, noteReplay } from './replays';
 import { saveUltraMemory, ultraMemory } from './ultra';
@@ -65,7 +64,7 @@ import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
 
-type Session = { mode: 'local'; code: null; game: Game; challenge?: ChallengeRun & { result?: ChallengeResult } } | { mode: 'online'; code: string; game: Game | null; joining?: boolean; room?: 'bankroll' };
+type Session = { mode: 'local'; code: null; game: Game; challenge?: ChallengeRun & { result?: ChallengeResult } } | { mode: 'online'; code: string; game: Game | null; joining?: boolean};
 
 /** How a finished challenge run came out. */
 export interface ChallengeResult {
@@ -128,12 +127,15 @@ function publish(patch: Partial<TableState>): void {
 }
 
 function set(next: Session | null): void {
+  // A notice belongs to the table it was about: a refusal from an earlier lobby ("You need at least two players") must not greet the next one.
+  const fresh = session?.game?.id !== next?.game?.id || session?.mode !== next?.mode;
   session = next;
   if (next?.mode === 'local' && next.challenge) {
     watchWhatIf();
     finishRun(next);
   }
   publish({
+    ...(fresh ? { notice: null } : {}),
     mode: next?.mode ?? null,
     code: next?.code ?? null,
     game: !next?.game ? null : maskBlocked(next.mode === 'local' ? redactForDevice(next.game, me) : next.game),
@@ -155,7 +157,7 @@ subscribe(BLOCKED_KEY, () => {
 });
 
 /**
- * Keeps your bubble effect and card back on your seat (the web's `syncLook()`): a table you just opened or joined
+ * Keeps your card back on your seat (the web's `syncLook()`): a table you just opened or joined
  * doesn't know them yet, and picking a new one mid-game should show at once. Sent once per table and look.
  */
 let lookSent = '';
@@ -164,35 +166,28 @@ export function syncLook(): void {
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine || game.status === 'ended') return;
   const want = wornLook();
-  const key = `${game.id}:${want.bubble ?? ''}:${want.cardPack ?? ''}:${want.gold ? 'g' : ''}`;
-  if (((mine.bubble ?? '') === (want.bubble ?? '') && (mine.cardPack ?? '') === (want.cardPack ?? '') && !!mine.gold === !!want.gold) || lookSent === key) return;
+  const key = `${game.id}:${want.cardPack ?? ''}:${want.gold ? 'g' : ''}`;
+  if (((mine.cardPack ?? '') === (want.cardPack ?? '') && !!mine.gold === !!want.gold) || lookSent === key) return;
   lookSent = key;
   // After this update has gone out, so a bots-only table doesn't change inside its own set().
   setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
 }
 
-/** A finished hand you were dealt into counts today toward the daily streak (once per hand, as on the web). */
+/** A finished hand you were dealt into counts once toward your poker record; a table that ends is noted once. */
 let lastCounted = '';
 function noteDay(game: Game | null): void {
   const hand = game?.hand;
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine) return;
   const key = `${game.id}/${hand?.number}`;
-  // A challenge's chips are pretend: its hands count for the streak, never for your poker record.
+  // A challenge's chips are pretend: its hands never count for your poker record.
   const challenge = !!game.challenge;
   if (hand?.result && key !== lastCounted && hand.seats.some((s) => s.playerId === mine.id && s.cards.length > 0)) {
     lastCounted = key;
-    markPlayedToday();
     if (!challenge) noteHand(game, mine.id);
   }
   // Home's record of your games: where you finished, once the table is over.
   if (game.status === 'ended' && !challenge) noteGame(game, mine.id);
-}
-
-// The How to Play shooter (scripts/shootHowTo.mjs) reads the bots table it photographs through this. It only exists in
-// a web build exported with EXPO_PUBLIC_RECORDER=1; every other build compiles it away.
-if (process.env.EXPO_PUBLIC_RECORDER === '1' && typeof window !== 'undefined') {
-  (window as unknown as { __flipupTable: () => Game | null }).__flipupTable = () => session?.game ?? null;
 }
 
 /** The table as it is right now, outside a component (the setup page waits on its new lobby with it). */
@@ -209,7 +204,7 @@ export function useTable(): TableState {
 }
 
 /** A bots-only table's clock: one timer for the next thing that's due. Online, the server keeps the clock. */
-function schedule(): void {
+function schedule(minDelay = 0): void {
   clearTimeout(timer);
   const wakeAt = session?.mode === 'local' ? session.game.wakeAt : null;
   if (wakeAt == null || session?.mode !== 'local') return;
@@ -222,12 +217,44 @@ function schedule(): void {
       if (session?.mode !== 'local') return;
       const now = toTableTime(Date.now(), session.game.fast);
       if (session.challenge && dealDue(session.game, now) && !readyToDeal()) return;
-      const r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now, rng: rngFor(session.game) });
+      let r: ReturnType<typeof applyAction>;
+      try {
+        r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now, rng: rngFor(session.game) });
+      } catch (e) {
+        clockFailed(e);
+        return;
+      }
+      clockFails = 0;
       if (r.ok && r.changed) set({ ...session, game: r.game });
-      else schedule();
+      // Nothing changed though it was due: wait a beat rather than spin on a 0ms timer.
+      else schedule(wakeAt <= now ? IDLE_RETRY_MS : 0);
     },
-    Math.max(0, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
+    Math.max(minDelay, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
   );
+}
+
+/** How long the clock waits before looking again when a tick that was due changed nothing. */
+const IDLE_RETRY_MS = 250;
+/** A tick that throws is tried again this many times, a second apart, before the table is put away. */
+const CLOCK_RETRIES = 3;
+let clockFails = 0;
+
+/**
+ * A bots-only table's clock hit an error in the engine. An error thrown from a timer closes the app in a release
+ * build (and a saved table would do it again at every launch), so it's caught here: tried again a few times, then
+ * the table is put away with a note, and nothing else is lost.
+ */
+function clockFailed(e: unknown): void {
+  clockFails++;
+  console.warn('[table clock]', e);
+  if (clockFails <= CLOCK_RETRIES) {
+    clearTimeout(timer);
+    timer = setTimeout(schedule, 1000);
+    return;
+  }
+  clockFails = 0;
+  set(null);
+  notify('Something went wrong at that table, so it was closed. Sorry! Start a new one from Play.');
 }
 
 function notify(text: string): void {
@@ -261,7 +288,15 @@ export function dispatch(action: Action): string | null {
     if (action.type === 'next' && !readyToDeal()) return null;
     if (action.type === 'act') notePoint(action.move, action.to);
   }
-  const r = applyAction(session.game, action, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: rngFor(session.game) });
+  let r: ReturnType<typeof applyAction>;
+  try {
+    r = applyAction(session.game, action, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: rngFor(session.game) });
+  } catch (e) {
+    // A tap that hits an engine error is turned down, never thrown into the screen that sent it.
+    console.warn('[table move]', action.type, e);
+    notify("That didn't work. Try again.");
+    return 'error';
+  }
   if (!r.ok) {
     notify(r.error);
     return r.error;
@@ -307,7 +342,7 @@ function sendJoin(): void {
   conn?.send({ t: 'act', id: newId(8), a: { type: 'join', name: cleanName(profile.name) || 'Player', emoji: profile.emoji } });
 }
 
-function connect(code: string, room: 'table' | 'bankroll' = session?.mode === 'online' && session.room ? session.room : 'table'): void {
+function connect(code: string): void {
   conn?.close();
   joinSent = false;
   publish({ conn: 'connecting' });
@@ -323,14 +358,12 @@ function connect(code: string, room: 'table' | 'bankroll' = session?.mode === 'o
       set(null);
       notify(message);
     },
-  }, room);
+  });
 }
 
-/** Goes to your Bankroll table, which the server has just set up in your own room (`code` is your friend code). */
-export function openBankrollTable(code: string): void {
-  if (session?.mode === 'online' && session.room === 'bankroll' && session.code === code && conn) return;
-  set({ mode: 'online', code, game: null, room: 'bankroll' });
-  connect(code, 'bankroll');
+/** The Try again button: reconnects at once instead of waiting for the next automatic try. */
+export function retryConnection(): void {
+  conn?.retryNow();
 }
 
 function closeConnection(): void {
@@ -392,6 +425,33 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
   set({ mode: 'online', code, game: null });
   connect(code);
   return code;
+}
+
+/**
+ * The lobby's Change: the host picks their own game code. A table's code is its name on the server, so this opens
+ * the same table again at the new code (the settings and the bots come along) and ends the old one; anyone who'd
+ * sat down there sees it close. Throws with the server's sentence when the code is taken or can't be used.
+ */
+export async function changeTableCode(code: string): Promise<string> {
+  const old = session?.mode === 'online' ? session.game : null;
+  if (!old || session?.mode !== 'online' || old.status !== 'lobby' || old.hostDeviceId !== me) throw new Error('Only the host can change the code, before the deal.');
+  if (old.code === code) return code;
+  const host = old.players.find((p) => p.deviceId === me);
+  const fresh = await createOnlineTable({
+    deviceId: me,
+    name: cleanName(host?.name ?? profile.name) || 'Host',
+    emoji: host?.emoji ?? profile.emoji,
+    settings: old.settings,
+    bots: 0,
+    botNames: old.players.filter((p) => p.bot).map((p) => p.name),
+    code,
+  });
+  if (session?.mode !== 'online' || session.code !== old.code) return fresh;
+  conn?.send({ t: 'act', id: newId(8), a: { type: 'end' } });
+  // The old lobby stays on screen under the new code until the new table's first update replaces it.
+  set({ mode: 'online', code: fresh, game: { ...old, code: fresh } });
+  connect(fresh);
+  return fresh;
 }
 
 /** Sits down at an online table by its code (or goes back to the one this phone is at). */
@@ -461,8 +521,8 @@ try {
   profile = { name: p?.name ?? '', emoji: p?.emoji ?? '' };
   if (saved?.mode === 'local' && saved.game) set(saved);
   else if (saved?.mode === 'online' && saved.code) {
-    set({ mode: 'online', code: saved.code, game: saved.game, ...(saved.room ? { room: saved.room } : {}) });
-    connect(saved.code, saved.room ?? 'table');
+    set({ mode: 'online', code: saved.code, game: saved.game });
+    connect(saved.code);
   }
 } catch {
   // A broken saved table is dropped.

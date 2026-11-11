@@ -128,7 +128,7 @@ function play(variant: Variant, hands: number, check: (g: Game) => void = () => 
       r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[Math.floor(rng() * others.length)].playerId }, { deviceId: HOST, now: clock, rng });
     } else if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
       r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
-    } else if (hand && !hand.result && hand.toAct === host.id && mine) {
+    } else if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {
       const o = options(game, hand, mine);
       const move = o.canCheck ? 'check' : o.toCall <= game.settings.bigBlind * 3 || !o.canFold ? 'call' : 'fold';
       r = applyAction(game, { type: 'act', hand: hand.number, seq: hand.seq, move }, { deviceId: HOST, now: clock, rng });
@@ -247,6 +247,21 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
     expect(rolled).toBeGreaterThan(0);
   });
 
+  it('Die on the River holds the river betting while the roll is shown', () => {
+    const firstSeen = new Set<number>();
+    let held = 0;
+    play('dice', 40, (g) => {
+      const hand = g.hand;
+      if (!hand?.dice || firstSeen.has(hand.number)) return;
+      firstSeen.add(hand.number);
+      if (!hand.dice.until) return;
+      held++;
+      // Nothing happens at the table before the show is over.
+      if (hand.actAt != null) expect(hand.actAt).toBeGreaterThanOrEqual(hand.dice.until);
+    });
+    expect(held).toBeGreaterThan(0);
+  });
+
   it('Red River keeps dealing until a black card', () => {
     let rivers = 0;
     play('redriver', 60, (g) => {
@@ -272,7 +287,8 @@ describe('the second batch', { timeout: TABLE_MS }, () => {
       const seen = redactForDevice(g, HOST).hand!;
       if (!hand.result) {
         expect(seen.imposter).toBe(hand.imposter === host.id ? host.id : undefined);
-        for (const [voter, suspect] of Object.entries(seen.votes ?? {})) if (voter !== host.id) expect(suspect).toBe('');
+        // Votes stay secret until they're read out (the tally).
+        if (!hand.tally) for (const [voter, suspect] of Object.entries(seen.votes ?? {})) if (voter !== host.id) expect(suspect).toBe('');
       } else if (hand.result.imposter) {
         settled++;
         expect(seen.imposter).toBe(hand.imposter);
@@ -426,7 +442,7 @@ describe("Blackjack Hold'em", { timeout: TABLE_MS }, () => {
       const host = g.players.find((p) => p.deviceId === HOST)!;
       const mine = hand?.seats.find((s) => s.playerId === host.id);
       let r;
-      if (hand && !hand.result && hand.toAct === host.id && mine) {
+      if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {
         if (hand.street === 'preflop' && !hitPreflop) {
           // Not on the flop: turned down.
           expect(applyAction(g, { type: 'hit', hand: hand.number, seq: hand.seq }, { deviceId: HOST, now: clock, rng }).ok).toBe(false);

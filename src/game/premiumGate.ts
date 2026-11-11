@@ -15,6 +15,16 @@ export const premiumPack = (id: string | undefined): boolean => id !== undefined
 /** Hosting a table or a party with any of these games needs Premium. Joining one never does. */
 export const gamesNeedPremium = (games: readonly Variant[]): boolean => games.some(isPremiumVariant);
 
+/**
+ * Whether this action is the host opening a Premium game: changing a table's mode to one, or playing again in one.
+ * The table room refuses it from a phone that hasn't shown it owns Premium, the same rule as opening a table.
+ */
+export function actionNeedsPremium(action: Action): boolean {
+  if (action.type === 'settings') return gamesNeedPremium(action.settings.variant ? [action.settings.variant] : []);
+  if (action.type === 'playAgain') return gamesNeedPremium(action.variant ? [action.variant] : []);
+  return false;
+}
+
 /** A `setLook` with its Premium parts (bubble, card pack, gold name) taken out, for a phone that hasn't shown it owns Premium. Anything else passes through. */
 export function withoutPremiumLook(action: Action): Action {
   if (action.type !== 'setLook') return action;

@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
-import { Icon } from '@/components/icon';
+import { SwapIcon } from '@/components/swap';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import type { Choice } from '@/engine';
@@ -100,7 +100,7 @@ export default function RewindSheet() {
                 <ThemedText variant="headline" style={{ flex: 1 }} tone={fold ? 'red' : 'label'}>
                   {c.label}
                 </ThemedText>
-                {on && <Icon name="checkmark" size={18} color={brand.violet} />}
+                <SwapIcon name={on ? 'checkmark' : null} size={18} color={brand.violet} />
               </Pressable>
             );
           })}

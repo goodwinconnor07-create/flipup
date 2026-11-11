@@ -25,6 +25,8 @@ export interface CreateTableRequest {
   botNames?: string[];
   /** A campaign table for friends: the server sets its stakes (and draws a tournament's prize) from this. */
   campaign?: { kind: 'cash' | 'sng'; id: string };
+  /** The host's own game code (six letters or numbers). The server opens the table at exactly this code, or says why not. */
+  code?: string;
 }
 
 export interface CreateTableResponse {

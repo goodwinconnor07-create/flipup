@@ -75,7 +75,6 @@ export default function RootLayout() {
         <Stack.Screen name="party-playlist" options={{ headerShown: false, title: 'Party playlist', statusBarStyle: 'light' }} />
         <Stack.Screen name="play-bots" options={{ headerShown: false, title: 'Play with bots', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
-        {/* The fade is short because the table's own DealWipe does the moving. */}
         {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
         {/* Play with friends: a game's popup with Select and Close. */}

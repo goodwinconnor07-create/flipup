@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GrainBackground } from '@/components/grain-background';
@@ -137,7 +137,12 @@ function Viewer() {
             const net = (r.won[p.id] ?? 0) - (putIn(r)[p.id] ?? 0);
             return (
               <View key={p.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.sm, borderRadius: radius.lg, borderWidth: 1.5, borderColor: turn ? brand.gold : 'transparent', backgroundColor: p.id === r.me ? 'rgba(91,139,255,0.16)' : 'rgba(255,255,255,0.07)', opacity: folded ? 0.45 : 1 }}>
-                <ThemedText style={{ fontSize: 26 }}>{p.emoji}</ThemedText>
+                {/* A line height taller than the emoji, or its head is clipped (the body type's line is shorter than 26pt). */}
+                <View style={{ width: 36, height: 36, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text maxFontSizeMultiplier={1} style={{ fontSize: 26, lineHeight: 34 }}>
+                    {p.emoji}
+                  </Text>
+                </View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
                     <ThemedText variant="callout" numberOfLines={1} style={{ fontWeight: '700', color: p.gold ? brand.gold : '#ffffff', flexShrink: 1 }}>

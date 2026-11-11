@@ -33,6 +33,8 @@ const WEB = {
   sparkles: 'auto_awesome',
   'person.fill': 'person',
   'crown.fill': 'workspace_premium',
+  crown: 'workspace_premium',
+  infinity: 'all_inclusive',
   'circle.grid.3x3.fill': 'dialpad',
   'person.3.fill': 'groups',
   'lock.fill': 'lock',

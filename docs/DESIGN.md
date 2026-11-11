@@ -36,8 +36,11 @@
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,
 > chevrons and text buttons only. The pinned Start game / Deal button waiting on players is a solid dim fill, never
 > a translucent one, so rows scrolling under it can't show through.
-> **Premium page (owner, 2026-11-11):** rebuilt so you can see everything you get without scrolling much: every perk
-> is a small tile in a two-column grid (a tap opens a detail sheet), and the plans sit in a bar pinned at the bottom.
+> **Premium page (owner, 2026-11-11, after Flighty Pro's page):** a FlipUp | PREMIUM pill and a round close button;
+> every perk as its own big picture (drawn from the app's pieces) with a rounded title and a line, sliding on every
+> 4.2s and swipeable (still under Reduce Motion), on a night-to-bright-blue light that falls to black; then the plans
+> as big dark cards you swipe between (Yearly, Best value, with the gold Save pill; Monthly, Most flexible): badge,
+> name, line, the App Store's price, one big blue button, two lines of what's in it. A tap on a picture opens `premium-perk`.
 > The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
 > they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
 

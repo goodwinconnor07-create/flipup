@@ -31,6 +31,8 @@ const GLASS = 'rgba(255, 255, 255, 0.11)';
 const EDGE = 'rgba(255, 255, 255, 0.12)';
 /** The tab bar's height over the bottom safe area. */
 const TAB_BAR = 49;
+/** With the LIVE card over PLAY, the buttons sit this much lower (into the room above the tab bar) so the card doesn't push them into the game slider. */
+const LIVE_DROP = 24;
 /** The game shown in the middle, kept between launches. */
 const PICK = 'flipup.homegame';
 
@@ -74,6 +76,7 @@ export default function Home() {
   // PLAY opens the page straight away; no colour fills the screen. A Premium game without Premium opens its sheet
   // instead, which explains the game before any setup and leads to the offer.
   const premium = usePremium();
+  const live = useLive();
   const start = (path: string, buzz = false) => () => {
     if (buzz) haptic.turn();
     if (!premium && variantNeedsPremium(variant)) {
@@ -94,7 +97,7 @@ export default function Home() {
     <ForceScheme scheme="dark">
       <Stack.Screen options={{ title: 'Play', headerShown: false }} />
       <GameBackdrop variant={variant} style={{ flex: 1 }}>
-        <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.xs, gap: spacing.md }}>
+        <View style={{ flex: 1, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center', paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + TAB_BAR + spacing.xs - (live.atTable || live.party ? LIVE_DROP : 0), gap: spacing.md }}>
           {/* Top bar: the page's name on the left, you on the right. */}
           <Animated.View entering={arrive(0)} style={[pad, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
             <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 34, fontWeight: '800', letterSpacing: -0.4, color: '#ffffff' }}>
@@ -212,12 +215,20 @@ function SmallButton({ icon, label, onPress }: { icon: IconName; label: string; 
 }
 
 /** The table or party you're in: a slim strip over the buttons with a green LIVE tag. */
-function LiveCard() {
+/** Whether you're at a table or in a party right now, which is when the LIVE card shows over PLAY. */
+function useLive(): { atTable: boolean; party: boolean } {
   const t = useTable();
   const game = t.game;
   const partyRef = usePartyRef();
   const atTable = !!t.mode && !(game && game.status === 'ended' && !game.party);
-  if (!atTable && !partyRef) return null;
+  return { atTable, party: !!partyRef };
+}
+
+function LiveCard() {
+  const t = useTable();
+  const game = t.game;
+  const { atTable, party } = useLive();
+  if (!atTable && !party) return null;
   const what = !atTable ? 'your party' : game ? variantInfo(variantOf(game)).name : 'your table';
   return (
     <PressableScale

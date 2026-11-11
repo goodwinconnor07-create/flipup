@@ -7,7 +7,8 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 /** The made-in-code sounds the table uses. The four recorded ones are copied from public/sounds as they are. */
-const SOUNDS = ['deal', 'flip', 'check', 'fold', 'turn', 'tick', 'win', 'collect', 'pop', 'spook', 'dice', 'sting', 'splash'];
+// deal, flip, check and fold are recordings now (scripts/recordedSounds.sh), so they aren't rendered here.
+const SOUNDS = ['turn', 'tick', 'win', 'collect', 'pop', 'spook', 'dice', 'sting', 'splash'];
 const OUT = new URL('../native/assets/sounds/', import.meta.url);
 const RATE = 44100;
 

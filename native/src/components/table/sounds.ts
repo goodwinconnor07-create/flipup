@@ -9,8 +9,13 @@ export type SoundName = 'deal' | 'flip' | 'shuffle' | 'place' | 'chip' | 'chips'
 
 const FILES = {
   allin: require('../../../assets/sounds/all-in.mp3'),
-  chip: require('../../../assets/sounds/betting-calling.mp3'),
-  place: require('../../../assets/sounds/card-placed.mp3'),
+  bet: require('../../../assets/sounds/betting-calling.mp3'),
+  'chip-1': require('../../../assets/sounds/chip-1.wav'),
+  'chip-2': require('../../../assets/sounds/chip-2.wav'),
+  'chip-3': require('../../../assets/sounds/chip-3.wav'),
+  'place-1': require('../../../assets/sounds/place-1.wav'),
+  'place-2': require('../../../assets/sounds/place-2.wav'),
+  'place-3': require('../../../assets/sounds/place-3.wav'),
   shuffle: require('../../../assets/sounds/cards-shuffled.mp3'),
   deal: require('../../../assets/sounds/deal.wav'),
   flip: require('../../../assets/sounds/flip.wav'),
@@ -72,15 +77,26 @@ function play(file: File, volume = 1, rate = 1): void {
   }
 }
 
+/** One of a sound's three recorded takes, never the same one twice running. */
+const lastTake: Record<string, number> = {};
+function take(kind: 'chip' | 'place'): File {
+  let n = 1 + Math.floor(Math.random() * 3);
+  if (n === lastTake[kind]) n = (n % 3) + 1;
+  lastTake[kind] = n;
+  return `${kind}-${n}` as File;
+}
+
 /** Plays a table sound, `offsetMs` from now. Nothing plays while muted. */
 export function playSound(name: SoundName, offsetMs = 0): void {
   if (isMuted()) return;
   const go = () => {
-    if (name === 'chips') {
-      // A bigger bet: the chips go down twice.
-      play('chip');
-      setTimeout(() => play('chip', 0.7, 1.06), 180);
-    } else play(name, name === 'allin' ? 0.95 : name === 'chip' ? 0.85 : 0.8);
+    if (name === 'chip') play(take('chip'), 0.85);
+    else if (name === 'place') play(take('place'), 0.8);
+    else if (name === 'chips') {
+      // A bigger bet: a handful of chips, then one more lands on top.
+      play('bet', 0.8);
+      setTimeout(() => play(take('chip'), 0.7, 1.06), 180);
+    } else play(name, name === 'allin' ? 0.95 : 0.8);
   };
   if (offsetMs > 0) setTimeout(go, offsetMs);
   else go();

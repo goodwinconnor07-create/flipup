@@ -494,9 +494,15 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const won = hand?.result && me ? (hand.result.won[me.id] ?? 0) : 0;
   const gained = won - (mySeat?.total ?? 0);
   const winKey = won > 0 && (hand?.result?.showdown ? gained > 0 : gained >= game.settings.bigBlind) ? hand!.number : 0;
+  const wonBigBlinds = gained / game.settings.bigBlind;
   useEffect(() => {
-    if (winKey) haptic.success();
-  }, [winKey]);
+    if (winKey) haptic.win(wonBigBlinds);
+  }, [winKey]); // eslint-disable-line react-hooks/exhaustive-deps
+  // An all-in run-out you're still in: the rumble builds while the cards come (Core Haptics, once a hand).
+  const runoutKey = hand?.runout && !hand.result && mySeat && !mySeat.folded ? `${game.id}-${hand.number}` : '';
+  useEffect(() => {
+    if (runoutKey) haptic.runout();
+  }, [runoutKey]);
   const { width, height } = useWindowDimensions();
   // The screen's own bottom padding (see TableScreen), which the raise panel covers to reach the edge.
   const bottomInset = Math.max(useSafeAreaInsets().bottom, spacing.sm);

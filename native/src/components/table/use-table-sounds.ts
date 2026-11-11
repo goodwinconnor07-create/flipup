@@ -6,6 +6,7 @@ import { useEffect, useRef } from 'react';
 import { gameLook } from '@design/gameArt';
 import { toTableTime, variantOf, type Game, type Seat } from '@/engine';
 
+import { haptic } from '../haptics';
 import { playSound, setSoundMood, type SoundName } from './sounds';
 
 interface Snapshot {
@@ -50,19 +51,33 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     if (newHand) {
       playSound('shuffle');
       const mine = hand.seats.find((x) => x.playerId === myId);
-      mine?.cards.forEach((_, i) => playSound('place', 300 + i * 180));
+      mine?.cards.forEach((_, i) => {
+        playSound('place', 300 + i * 180);
+        haptic.card(300 + i * 180);
+      });
       delay = 650;
     } else if (snap.board > before.board) {
       // The flop is three cards one after another; the turn and river are one.
       // In the mini games the cards land on the moment's clock (see moments.ts), so the sounds follow it.
       const m = hand.moment;
       const sinceDeal = m ? toTableTime(Date.now(), game.fast) - m.at : 0;
-      for (let i = 0; i < snap.board - before.board; i++) playSound('place', m?.offsets ? Math.max(0, (m.offsets[i] ?? i * 160) - sinceDeal) : i * 160);
+      // A soft tap as each lands, while you're still in the hand.
+      const inHand = hand.seats.some((x) => x.playerId === myId && !x.folded);
+      for (let i = 0; i < snap.board - before.board; i++) {
+        const at = m?.offsets ? Math.max(0, (m.offsets[i] ?? i * 160) - sinceDeal) : i * 160;
+        playSound('place', at);
+        if (inHand) haptic.card(at);
+      }
     }
     let k = 0;
     for (const s of hand.seats) {
       const was = newHand ? '' : (before.last[s.playerId] ?? '');
-      if (s.last && keyOf(s) !== was) playSound(moveSound(s.last.move, s.last.amount, game.settings.bigBlind), delay + k++ * 120);
+      if (!s.last || keyOf(s) === was) continue;
+      const sound = moveSound(s.last.move, s.last.amount, game.settings.bigBlind);
+      const at = delay + k++ * 120;
+      playSound(sound, at);
+      // Your own chips going in (blinds too); other players' bets are sound only.
+      if (s.playerId === myId && sound !== 'fold' && sound !== 'check') haptic.chip(at);
     }
     if (snap.resulted && !before.resulted && hand.result) {
       const mine = myId ? (hand.result.won[myId] ?? 0) : 0;
@@ -111,7 +126,13 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     const timers: ReturnType<typeof setTimeout>[] = [];
     for (let s = 5; s >= 1; s--) {
       const at = (deadline - s * 1000 - toTableTime(Date.now(), game.fast)) / (game.fast ? 2 : 1);
-      if (at > 0) timers.push(setTimeout(() => playSound('tick'), at));
+      if (at > 0)
+        timers.push(
+          setTimeout(() => {
+            playSound('tick');
+            haptic.countdown(s);
+          }, at),
+        );
     }
     return () => timers.forEach(clearTimeout);
   }, [deadline]); // eslint-disable-line react-hooks/exhaustive-deps

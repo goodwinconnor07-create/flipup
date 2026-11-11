@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { readOf } from './botRange';
 import { playerStyle, styleOf, ultraStyle } from './botStyles';
 import { withoutPremiumLook } from './premiumGate';
+import { usesEverydayBots } from './botTableMode';
 import { applyAction, createTable, DEFAULT_SETTINGS } from './reducer';
 import { redactForDevice } from './redact';
 import type { PlayerRead } from './types';
@@ -12,6 +13,11 @@ const table = (opts: Partial<Parameters<typeof createTable>[0]> = {}) =>
   createTable({ hostDeviceId: 'host-device-0001', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS }, bots: 3, code: null, now: 0, rng: () => 0.3, ...opts });
 
 describe('ULTRA bots', () => {
+  it('play their own brain at a Hold\'em table, not the everyday engine', () => {
+    expect(usesEverydayBots(table())).toBe(true);
+    expect(usesEverydayBots(table({ ultra: true }))).toBe(false);
+  });
+
   it('seats every bot as ULTRA, including bots added later, and shows it on the table', () => {
     const g = table({ ultra: true });
     expect(g.ultra).toBe(true);

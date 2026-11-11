@@ -1,9 +1,17 @@
+import { withEntitlementsPlist, type ConfigPlugin } from 'expo/config-plugins';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 import { APP_INFO } from './appInfo.ts';
 
 // The EAS project: from appInfo.ts, or from the build workflow until the ID has been copied there.
 const projectId = APP_INFO.easProjectId || process.env.EAS_PROJECT_ID || '';
+
+/** Takes `aps-environment` back out of the entitlements, whatever added it. */
+const withoutPush: ConfigPlugin = (config) =>
+  withEntitlementsPlist(config, (c) => {
+    delete c.modResults['aps-environment'];
+    return c;
+  });
 
 // The iPhone and iPad app. iOS only: there's no Google Play release.
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -64,6 +72,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
+    // The daily reminder is a local notification: no push, so no Push Notifications capability (the signing profile
+    // doesn't have it). expo-notifications adds `aps-environment` on its own; this takes it back out.
+    withoutPush,
     'expo-iap',
     ['expo-contacts', { contactsPermission: 'FlipUp shows your contacts so you can text a friend an invite. They stay on your phone and are never uploaded.' }],
     ['expo-camera', { cameraPermission: 'FlipUp uses the camera to scan a table or party QR code so you can join it.', microphonePermission: false, recordAudioAndroid: false }],

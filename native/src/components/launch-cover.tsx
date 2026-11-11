@@ -85,7 +85,7 @@ function IconArt({ dark = false }: { dark?: boolean }) {
 }
 
 /**
- * The cover itself, shared by the launch and the game's deal-in (`DealWipe`): `total` is how long the icon holds
+ * The cover itself, shared by the launch: `total` is how long the icon holds
  * before it eases out (the arrival and the shimmer scale with it), `zIndex` where it sits.
  */
 export function PrintCover({ total = FIRST_MS, zIndex = 1000, launch = false }: { total?: number; zIndex?: number; /** The app's opening screen: light or dark by the phone's look, with the words and the version. */ launch?: boolean }) {

@@ -22,7 +22,6 @@ import { playSound } from '@/components/table/sounds';
 import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
-import { DealWipe } from '@/components/deal-wipe';
 import { Discard, Discuss, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { DiceRoll } from '@/components/table/dice-roll';
@@ -80,7 +79,6 @@ export default function TableScreen() {
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         <Lobby game={game} online={online} conn={t.conn} />
         {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
-        <DealWipe />
       </View>
     );
   }
@@ -94,7 +92,6 @@ export default function TableScreen() {
       {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
-      <DealWipe />
       {!game && lost ? (
         <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />
       ) : !game ? (

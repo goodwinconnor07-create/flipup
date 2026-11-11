@@ -1,6 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { useEffect } from 'react';
-import { Platform, Share, Text, useWindowDimensions, View } from 'react-native';
+import { Platform, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,7 +26,6 @@ import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
 import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
-import { APP_INFO } from '../../../../appInfo';
 
 const GLASS = 'rgba(255, 255, 255, 0.11)';
 const EDGE = 'rgba(255, 255, 255, 0.12)';
@@ -42,7 +41,7 @@ const PICK = 'flipup.homegame';
  * buttons, made satisfying to open). The page takes the colour of the chosen game (`GameBackdrop`). "Play" top left
  * and your face top right (a tap opens your profile); the games as a line of cards across the whole screen, locked
  * on one at a time (`GameSwiper`), the chosen one's name, hook and dots under it; a row of round shortcuts (Stats,
- * Rules, Saved hands, Premium, Settings, Share) just over PLAY (`PlayButton`), with Play bots and Join a game under
+ * How to play, Saved hands, Premium, Settings) just over PLAY (`PlayButton`), with Play bots and Join a game under
  * it. PLAY and Play bots open their page straight away. The tab bar stays at
  * the bottom. Nothing scrolls.
  */
@@ -155,7 +154,6 @@ export default function Home() {
               {/* A subscriber's shortcut is what they've unlocked (the Premium page lists it for them), not an offer. */}
               <SideButton icon="crown.fill" label={premium ? 'Unlocked' : 'Premium'} say={premium ? 'Your Premium' : undefined} tint={brand.gold} onPress={go('/premium')} />
               <SideButton icon="gearshape.fill" label="Settings" onPress={go('/settings')} />
-              <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />
             </View>
             <LiveCard />
             <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={start(`/play-friends?variant=${variant}`)} />
@@ -168,12 +166,6 @@ export default function Home() {
       </GameBackdrop>
     </ForceScheme>
   );
-}
-
-function shareApp() {
-  haptic.tap();
-  const url = `https://apps.apple.com/app/id${APP_INFO.appStoreId}`;
-  void Share.share({ message: `Poker night on your phones. Play FlipUp with me: ${url}`, url }).catch(() => undefined);
 }
 
 /** A shortcut over PLAY: a round see-through button with its name under it. */

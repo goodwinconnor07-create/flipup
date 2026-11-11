@@ -185,7 +185,7 @@ function SetCard({ first }: { first: boolean }) {
   );
 }
 
-export function TrainHome({ history, grades, onOpenStats }: { history: Answer[]; grades: Record<string, Grade>; /** Opens the Stats view (every kind of spot with its progress). */ onOpenStats: () => void }) {
+export function TrainHome({ history, grades }: { history: Answer[]; grades: Record<string, Grade> }) {
   const st = rangeStats(history);
   const lib = libraryProgress(grades);
   const missed = missedHands(history);
@@ -263,7 +263,7 @@ export function TrainHome({ history, grades, onOpenStats }: { history: Answer[];
       <SetCard first={first} />
       {workOn}
       <Section header="Library">
-        <Row title={`${lib.best} of ${lib.total} mastered`} subtitle="Every kind of spot, with your progress" accessory={<LibraryBar share={lib.total ? lib.best / lib.total : 0} />} icon={{ symbol: 'book.fill', color: brand.violet }} onPress={onOpenStats} />
+        <Row title={`${lib.best} of ${lib.total} mastered`} subtitle="Hands you've played the best way" accessory={<LibraryBar share={lib.total ? lib.best / lib.total : 0} />} icon={{ symbol: 'book.fill', color: brand.violet }} />
         <Row
           title="Today’s quiz"
           detail={q.finished ? `${q.answers.filter((a) => a.grade === 'best').length}/${q.answers.length} · next in ${left}` : q.started ? `${q.answers.length} of ${q.hands.length}` : 'Same for everyone'}

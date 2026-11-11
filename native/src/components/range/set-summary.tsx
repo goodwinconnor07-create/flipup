@@ -27,9 +27,9 @@ export function useGradeInk(): Record<Grade, string> {
   return { best: brand.gold, ok: colors.accent as string, mistake: colors.quaternaryLabel as string };
 }
 
-export function SetSummary({ answers }: { answers: SetAnswer[] }) {
+export function SetSummary({ answers, still }: { answers: SetAnswer[]; /** No entrance (a finished daily quiz opened again to see your answers). */ still?: boolean }) {
   const colors = useColors();
-  const reduce = useReduceMotion();
+  const reduce = useReduceMotion() || !!still;
   const ink = useGradeInk();
   const best = answers.filter((a) => a.grade === 'best').length;
   return (

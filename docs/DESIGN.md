@@ -31,6 +31,10 @@
 > big title top left and your face top right, ringed, opening your profile (asked the same day: no name chip, no spade). The parts fade in 30ms apart
 > when the app opens. The tab bar stays. Every loop stops off screen, in the background and under Reduce Motion.
 
+> **Range training (owner, 2026-11-11):** always dark, on a dimmer, slower light field that answers how you're doing
+> (warm for a best play, cool for a miss, a calm gold once the daily quiz is done) and stands still while you read a
+> hand. Free players see the daily quiz as the whole screen; Premium players see Play a set first. Details in CLAUDE.md.
+
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
 > pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,

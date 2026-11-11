@@ -5,8 +5,6 @@ import { router } from 'expo-router';
 
 import { gamesNeedPremium, isPremiumVariant, rangeSetNeedsPremium, type Variant } from '@/engine';
 
-import { freeSetsUsedToday } from './range-free';
-
 /** Whether hosting these games needs Premium that this phone doesn't have. */
 export const needsUnlock = (games: readonly Variant[], premium: boolean): boolean => !premium && gamesNeedPremium(games);
 
@@ -22,11 +20,11 @@ export function unlockToHost(games: readonly Variant[], premium: boolean): boole
 }
 
 /**
- * The gate before a Range training set. Free is one set of five a day; practice on chosen spots and every set after
- * the day's free one open the Premium offer instead, and this returns false.
+ * The gate before a Range training set. The daily quiz is free for everyone; any other set (a plain set of five, or
+ * practice on chosen spots and misses) opens the Premium offer without Premium, and this returns false.
  */
-export function unlockToTrain(focused: boolean, premium: boolean): boolean {
-  if (premium || !rangeSetNeedsPremium(focused, freeSetsUsedToday())) return true;
+export function unlockToTrain(daily: boolean, premium: boolean): boolean {
+  if (premium || !rangeSetNeedsPremium(daily)) return true;
   router.push({ pathname: '/premium', params: { reason: 'training' } });
   return false;
 }

@@ -28,12 +28,10 @@ export const botsNeedPremium = (names: readonly string[]): boolean => names.some
 export const botsFor = (premium: boolean): typeof BOTS => (premium ? BOTS : BOTS.filter((b) => isFreeBot(b.name)));
 
 /**
- * Range training: without Premium you get one daily quiz, a single set of five hands a day. Premium has every
- * hand, as many sets as you like, and the practice sets built from your stats and misses.
+ * Range training: without Premium you get the daily quiz, the same five hands for everyone each day. Every other set
+ * (a plain set of five, practice on chosen spots or your misses) is Premium.
  */
-export const FREE_RANGE_SETS_PER_DAY = 1;
-/** Whether starting this set needs Premium: practice on chosen spots always does, a plain set once the day's free one is used. */
-export const rangeSetNeedsPremium = (focused: boolean, usedToday: number): boolean => focused || usedToday >= FREE_RANGE_SETS_PER_DAY;
+export const rangeSetNeedsPremium = (daily: boolean): boolean => !daily;
 
 /**
  * Whether this action is the host opening a Premium game: changing a table's mode to one, or playing again in one.

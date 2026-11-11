@@ -39,8 +39,7 @@ describe('Premium gate', () => {
   });
 
   it('gives a free player one daily range quiz and nothing else', () => {
-    expect(rangeSetNeedsPremium(false, 0)).toBe(false);
-    expect(rangeSetNeedsPremium(false, 1)).toBe(true);
-    expect(rangeSetNeedsPremium(true, 0)).toBe(true);
+    expect(rangeSetNeedsPremium(true)).toBe(false);
+    expect(rangeSetNeedsPremium(false)).toBe(true);
   });
 });

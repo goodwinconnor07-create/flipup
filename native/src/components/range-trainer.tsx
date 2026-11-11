@@ -41,10 +41,11 @@ const TINT = {
 } as const;
 
 /** The trainer: one hand, your answer, then why. `onNext` runs after Next hand deals the next one (to scroll up). */
-export function RangeTrainer({ onNext, onTop, onScrollTo, focus, onStopFocus, onAnswer, onFinish, finishTitle }: { onNext?: () => void; /** Scrolls the page back up to the table (a street tapped replays on it). */ onTop?: () => void; /** Scrolls the page to this offset (an answer brings the table up to the top, clear of the result card). */ onScrollTo?: (y: number) => void; /** Practising only these kinds of spot (from Stats). */ focus?: string[]; onStopFocus?: () => void; /** Each answer, as it's graded (a set counts them). */ onAnswer?: (s: Scenario, pick: OptionId, grade: Grade) => void; /** Set when this was the last hand of a set: the main button ends the set instead of dealing another. */ onFinish?: () => void; finishTitle?: string }) {
+export function RangeTrainer({ onNext, onTop, onScrollTo, focus, queue, onStopFocus, onAnswer, onFinish, finishTitle }: { /** Deal exactly these hands in order (the daily quiz) instead of picking. */ queue?: Scenario[]; onNext?: () => void; /** Scrolls the page back up to the table (a street tapped replays on it). */ onTop?: () => void; /** Scrolls the page to this offset (an answer brings the table up to the top, clear of the result card). */ onScrollTo?: (y: number) => void; /** Practising only these kinds of spot (from Stats). */ focus?: string[]; onStopFocus?: () => void; /** Each answer, as it's graded (a set counts them). */ onAnswer?: (s: Scenario, pick: OptionId, grade: Grade) => void; /** Set when this was the last hand of a set: the main button ends the set instead of dealing another. */ onFinish?: () => void; finishTitle?: string }) {
   const colors = useColors();
   const router = useRouter();
-  const [scenario, setScenario] = useState<Scenario>(() => nextHand(null, Math.random, focus));
+  const [scenario, setScenario] = useState<Scenario>(() => queue?.[0] ?? nextHand(null, Math.random, focus));
+  const [at, setAt] = useState(0);
   // Replaying the hand on the table (only when asked).
   const [step, setStep] = useState<number | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -106,7 +107,9 @@ export function RangeTrainer({ onNext, onTop, onScrollTo, focus, onStopFocus, on
     else onTop?.();
   };
   const next = () => {
-    setScenario(nextHand(scenario, Math.random, focus));
+    const following = queue?.[at + 1];
+    setAt(at + 1);
+    setScenario(following ?? nextHand(scenario, Math.random, focus));
     setPick(null);
     setStep(null);
     setPlaying(false);

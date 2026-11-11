@@ -1,7 +1,7 @@
-import { router, Stack, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { router, Stack } from 'expo-router';
+import { useEffect } from 'react';
 import { Platform, Share, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { gameLook } from '@design/gameArt';
@@ -11,7 +11,6 @@ import { GameBackdrop, shade } from '@/components/home/game-backdrop';
 import { GameSwiper } from '@/components/home/game-swiper';
 import { PlayButton } from '@/components/home/play-button';
 import { Icon, type IconName } from '@/components/icon';
-import { GameThumb } from '@/components/game-picture';
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
 import { detail, EASE_OUT } from '@/motion/presets';
@@ -24,7 +23,7 @@ import { usePokerRecord } from '@/state/record';
 import { maybeAskForReview } from '@/state/review';
 import { useTable } from '@/state/session';
 import { save, useStored } from '@/state/storage';
-import { brand, ForceScheme, motion, ROUNDED, spacing } from '@/theme';
+import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
 import { APP_INFO } from '../../../../appInfo';
 
 const GLASS = 'rgba(255, 255, 255, 0.11)';
@@ -68,13 +67,10 @@ export default function Home() {
   const hero = Math.round(Math.max(120, Math.min(200, height * 0.23)));
   const card = Math.min(hero, width - spacing.md * 2 - 80);
 
-  // Opening a game: the middle card grows to fill the screen, then the page fades in over it.
-  const swiper = useRef<{ measureInWindow: (cb: (x: number, y: number, w: number, h: number) => void) => void } | null>(null);
-  const [fill, setFill] = useState<{ x: number; y: number; path: string; variant: Variant } | null>(null);
+  // PLAY opens the page straight away; no colour fills the screen.
   const start = (path: string, buzz = false) => () => {
     if (buzz) haptic.turn();
-    if (reduce || !swiper.current) return router.push(path as never);
-    swiper.current.measureInWindow((sx, sy, sw) => setFill({ x: sx + (sw - card) / 2, y: sy + 18, path, variant }));
+    router.push(path as never);
   };
 
   const go = (path: string) => () => {
@@ -138,14 +134,13 @@ export default function Home() {
               <SideButton icon="square.and.arrow.up" label="Share" onPress={shareApp} />
             </View>
             <LiveCard />
-            <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={start(`/play-friends?variant=${variant}&fill=1`)} />
+            <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={start(`/play-friends?variant=${variant}`)} />
             <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}&fill=1`, true)} />
+              <SmallButton icon="cpu.fill" label="Play bots" onPress={start(`/play-bots?variant=${variant}`, true)} />
               <SmallButton icon="qrcode.viewfinder" label="Join a game" onPress={go('/join')} />
             </View>
           </Animated.View>
         </View>
-        {fill && <Fill key={`${fill.path}:${fill.x}`} {...fill} size={card} onDone={() => setFill(null)} />}
       </GameBackdrop>
     </ForceScheme>
   );
@@ -155,52 +150,6 @@ function shareApp() {
   haptic.tap();
   const url = `https://apps.apple.com/app/id${APP_INFO.appStoreId}`;
   void Share.share({ message: `Poker night on your phones. Play FlipUp with me: ${url}`, url }).catch(() => undefined);
-}
-
-/**
- * The chosen game's card growing to fill the screen: it starts exactly where the middle card sits and opens into the
- * page in 300ms, ease-out (one object opening into itself, rule 20), its picture fading as the card's own colour
- * takes the screen. The page is pushed as it lands and fades in over it; coming back, the colour fades away.
- */
-function Fill({ x, y, size, path, variant, onDone }: { x: number; y: number; size: number; path: string; variant: Variant; onDone: () => void }) {
-  const { width, height } = useWindowDimensions();
-  const p = useSharedValue(0);
-  const gone = useSharedValue(1);
-  const pushed = useRef(false);
-  const push = () => {
-    pushed.current = true;
-    router.push(path as never);
-  };
-  useEffect(() => {
-    p.set(withTiming(1, { duration: motion.base + 50, easing: EASE_OUT }, (done) => done && runOnJS(push)()));
-    // Started once, as it mounts.
-  }, []);
-  // Back on Home after the page: let the colour go.
-  useFocusEffect(
-    useCallback(() => {
-      if (!pushed.current) return;
-      gone.set(withTiming(0, { duration: motion.exit, easing: EASE_OUT }, (done) => done && runOnJS(onDone)()));
-    }, [gone, onDone]),
-  );
-  const box = useAnimatedStyle(() => {
-    const k = p.get();
-    return {
-      left: x * (1 - k),
-      top: y * (1 - k),
-      width: size + (width - size) * k,
-      height: size + (height - size) * k,
-      borderRadius: size * 0.24 * (1 - k),
-      opacity: gone.get(),
-    };
-  });
-  const picture = useAnimatedStyle(() => ({ opacity: 1 - Math.min(1, p.get() * 1.6), transform: [{ scale: 1 + p.get() * 0.5 }] }));
-  return (
-    <Animated.View pointerEvents="auto" style={[{ position: 'absolute', overflow: 'hidden', borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: gameLook(variant).card[0], zIndex: 50 }, box]}>
-      <Animated.View style={picture}>
-        <GameThumb variant={variant} size={size} />
-      </Animated.View>
-    </Animated.View>
-  );
 }
 
 /** A shortcut over PLAY: a round see-through button with its name under it. */

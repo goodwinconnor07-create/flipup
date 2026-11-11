@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { addedLine, balancedBotPool, botFace, BOTS, lineBeats, sayAndReadMs, type Message } from '@/engine';
+import { addedLine, balancedBotPool, botFace, botsFor, lineBeats, sayAndReadMs, type Message } from '@/engine';
 import { knownBots } from '@/state/table-feel';
 import { useColors } from '@/theme';
 
@@ -88,10 +88,10 @@ function BotFace({ bot, onRemove }: { bot: RowBot; onRemove: () => void }) {
  * A random bot for the row: one from `BOTS` nobody has picked yet, with a face nobody at the table has (always the
  * bot face, never a picker emoji), and the line it says on sitting down, to `you` by name.
  */
-export function randomBot(have: { name: string; emoji: string }[], you: string | undefined): RowBot | null {
+export function randomBot(have: { name: string; emoji: string }[], you: string | undefined, premium = true): RowBot | null {
   const names = new Set(have.map((b) => b.name.toLowerCase()));
   const faces = new Set(have.map((b) => b.emoji));
-  const free = BOTS.filter((b) => !names.has(b.name.toLowerCase()));
+  const free = botsFor(premium).filter((b) => !names.has(b.name.toLowerCase()));
   const fresh = free.filter((b) => !faces.has(botFace(b.emoji)));
   const pool = balancedBotPool(fresh.length ? fresh : free, have);
   if (!pool.length) return null;

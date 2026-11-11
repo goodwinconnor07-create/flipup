@@ -45,6 +45,8 @@ import {
   type ServerMessage,
   type Settings,
   type StyleId,
+  FREE_BOT_NAMES,
+  isFreeBot,
 } from '@/engine';
 
 import { createOnlineTable, PremiumRequiredError } from './api';
@@ -267,6 +269,22 @@ function notify(text: string): void {
 /** Applies a move from this phone: right away on a bots-only table, through the server online. */
 export function dispatch(action: Action): string | null {
   if (!session) return 'No table.';
+  // Without Premium the host's bots come from the free ten, even when the button asks for a random one.
+  if (action.type === 'addBot' && !hasPremium()) {
+    if (action.legend !== undefined || (action.name !== undefined && !isFreeBot(action.name))) {
+      notify('That bot needs FlipUp Premium.');
+      return 'premium';
+    }
+    if (action.name === undefined) {
+      const seated = new Set((session.game?.players ?? []).map((p) => p.name));
+      const name = FREE_BOT_NAMES.find((n) => !seated.has(n));
+      if (!name) {
+        notify('Those are all the free bots. Premium has the rest.');
+        return 'premium';
+      }
+      action = { ...action, name };
+    }
+  }
   if (session.mode === 'online') {
     const id = newId(8);
     if (!conn?.send({ t: 'act', id, a: action })) {

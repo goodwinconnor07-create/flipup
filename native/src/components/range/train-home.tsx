@@ -9,6 +9,9 @@ import { Icon } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
+import { hasPremium, usePremium } from '@/state/premium';
+import { useFreeSetsUsedToday } from '@/state/range-free';
+import { unlockToTrain } from '@/state/unlock';
 import { libraryProgress, longestRun, missedHands, rangeStats, type Answer } from '@/state/range-history';
 import { SET_SIZE } from '@/state/range-result';
 import { brand, cardColors, radius, ROUNDED, spacing, useColors } from '@/theme';
@@ -19,6 +22,8 @@ const NUM = { fontVariant: ['tabular-nums' as const] };
 /** Opens a set of five hands, full screen; `focus` limits it to some kinds of spot or single hands. */
 export function startSet(focus?: string[]) {
   haptic.select();
+  // Free is one set a day; practising chosen spots is Premium.
+  if (!unlockToTrain(!!focus?.length, hasPremium())) return;
   router.push(focus?.length ? { pathname: '/range-session', params: { focus: JSON.stringify(focus) } } : '/range-session');
 }
 
@@ -41,6 +46,8 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
   const lib = libraryProgress(grades);
   const missed = missedHands(history);
   const first = history.length === 0;
+  const premium = usePremium();
+  const spent = !premium && useFreeSetsUsedToday() >= 1;
   return (
     <View style={{ gap: spacing.xl }}>
       {/* The one thing to do here: play a set. */}
@@ -50,10 +57,14 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
             {SET_SIZE} hands
           </ThemedText>
           <ThemedText variant="title1" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
-            {first ? 'Play your first set' : 'Play a set'}
+            {spent ? 'Today’s quiz is done' : first ? 'Play your first set' : 'Play a set'}
           </ThemedText>
           <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>
-            Real hands from pro breakdowns. Read the table, make your call, then see why.
+            {premium
+              ? 'Real hands from pro breakdowns. Read the table, make your call, then see why.'
+              : spent
+                ? 'You’ve played today’s free quiz. Premium opens every hand, any time.'
+                : 'Today’s free quiz: five real hands from pro breakdowns. Premium opens every hand.'}
           </ThemedText>
         </View>
         <PressableScale
@@ -64,7 +75,7 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
         >
           <Icon name="play.fill" size={18} color={brand.violet} />
           <ThemedText variant="headline" style={{ color: brand.violet, fontWeight: '800' }}>
-            Start
+            {spent ? 'Get Premium' : 'Start'}
           </ThemedText>
         </PressableScale>
       </LivingCard>
@@ -80,10 +91,10 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
       {(st.weakest.length > 0 || missed.length > 0) && (
         <Section header="Work on">
           {st.weakest.map((t) => (
-            <Row key={t.label} title={t.label} detail={`${t.best} of ${t.total} best plays so far`} icon={{ symbol: 'lightbulb.fill', color: brand.violet }} onPress={() => startSet([t.label])} />
+            <Row key={t.label} title={t.label} detail={`${t.best} of ${t.total} best plays so far`} icon={{ symbol: 'lightbulb.fill', color: brand.violet }} trailing={premium ? undefined : <Icon name="crown.fill" size={15} color={brand.gold} />} onPress={() => startSet([t.label])} />
           ))}
           {missed.length > 0 && (
-            <Row title="Retry your misses" detail={`${missed.length} hand${missed.length === 1 ? '' : 's'} to try again`} icon={{ symbol: 'arrow.counterclockwise', color: brand.violet }} onPress={() => startSet(missed.map((m) => `id:${m.id}`))} />
+            <Row title="Retry your misses" detail={`${missed.length} hand${missed.length === 1 ? '' : 's'} to try again`} icon={{ symbol: 'arrow.counterclockwise', color: brand.violet }} trailing={premium ? undefined : <Icon name="crown.fill" size={15} color={brand.gold} />} onPress={() => startSet(missed.map((m) => `id:${m.id}`))} />
           )}
         </Section>
       )}

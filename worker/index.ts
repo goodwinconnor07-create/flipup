@@ -39,7 +39,9 @@ import {
   type CreateBjResponse,
   newId,
   parseReport,
+  FREE_BOT_NAMES,
   gamesNeedPremium,
+  isFreeBot,
   BOTS,
 } from '../src/game';
 import { botResearchRoute } from './botResearch';
@@ -155,6 +157,13 @@ async function createTableRoute(request: Request, env: Env): Promise<Response> {
   let botNames = Array.isArray(body.botNames)
     ? [...new Set(body.botNames.filter((n): n is string => typeof n === 'string' && BOTS.some((b) => b.name === n)))].slice(0, MAX_SEATS - 1)
     : [];
+  // Without Premium the host seats only the free bots, the picked ones and the random fill alike.
+  if (!(await mayHostPremium(env, body.deviceId))) {
+    if (botNames.some((n) => !isFreeBot(n))) return json({ error: 'Those bots need FlipUp Premium.', premium: true }, 402);
+    const open = FREE_BOT_NAMES.filter((n) => !botNames.includes(n));
+    botNames = [...botNames, ...open.slice(0, Math.max(0, bots - botNames.length))];
+    bots = botNames.length;
+  }
   // A campaign table with friends: the stakes come from the campaign, never from the phone, and the prize is drawn here.
   let campaign: Game['campaign'];
   const pick = body.campaign as { kind?: unknown; id?: unknown } | undefined;

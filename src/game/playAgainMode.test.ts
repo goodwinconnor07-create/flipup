@@ -50,8 +50,8 @@ describe('opening a Premium game after the table is made', () => {
     expect(actionNeedsPremium({ type: 'playAgain', variant: 'imposter' })).toBe(true);
     expect(actionNeedsPremium({ type: 'settings', settings: { variant: 'imposter' } })).toBe(true);
   });
-  it('does not need it for the free modes or when no mode changes', () => {
-    expect(actionNeedsPremium({ type: 'playAgain', variant: 'pineapple' })).toBe(false);
+  it('does not need it for the free mode or when no mode changes', () => {
+    expect(actionNeedsPremium({ type: 'playAgain', variant: 'holdem' })).toBe(false);
     expect(actionNeedsPremium({ type: 'playAgain' })).toBe(false);
     expect(actionNeedsPremium({ type: 'settings', settings: { bigBlind: 40 } })).toBe(false);
     expect(actionNeedsPremium({ type: 'act', hand: 1, seq: 1, move: 'fold' })).toBe(false);

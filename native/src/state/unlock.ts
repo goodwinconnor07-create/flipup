@@ -1,9 +1,11 @@
-// Hosting a Premium game. The first five games are free for everyone. The other eight need FlipUp Premium on the
+// Hosting a Premium game. Only Texas Hold'em is free for everyone. The other games need FlipUp Premium on the
 // phone that hosts; people who join by code never need it, and anyone can pick any game while setting one up.
 // The server checks this too (worker/index.ts), so this is the polite version: it asks before trying.
 import { router } from 'expo-router';
 
-import { gamesNeedPremium, isPremiumVariant, type Variant } from '@/engine';
+import { gamesNeedPremium, isPremiumVariant, rangeSetNeedsPremium, type Variant } from '@/engine';
+
+import { freeSetsUsedToday } from './range-free';
 
 /** Whether hosting these games needs Premium that this phone doesn't have. */
 export const needsUnlock = (games: readonly Variant[], premium: boolean): boolean => !premium && gamesNeedPremium(games);
@@ -16,5 +18,15 @@ export function unlockToHost(games: readonly Variant[], premium: boolean): boole
   if (!needsUnlock(games, premium)) return true;
   const game = games.find(isPremiumVariant);
   router.push({ pathname: '/premium', params: { reason: 'game', ...(game ? { game } : {}) } });
+  return false;
+}
+
+/**
+ * The gate before a Range training set. Free is one set of five a day; practice on chosen spots and every set after
+ * the day's free one open the Premium offer instead, and this returns false.
+ */
+export function unlockToTrain(focused: boolean, premium: boolean): boolean {
+  if (premium || !rangeSetNeedsPremium(focused, freeSetsUsedToday())) return true;
+  router.push({ pathname: '/premium', params: { reason: 'training' } });
   return false;
 }

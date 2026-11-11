@@ -520,8 +520,8 @@ describe('network input', () => {
 });
 
 describe('free and Premium games', () => {
-  it("the first five are free: Hold'em, Pineapple, Deuces, Ghost, Pittsburgh", () => {
-    expect(VARIANTS.filter((v) => !isPremiumVariant(v.id)).map((v) => v.id)).toEqual(['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh']);
-    expect(VARIANTS.filter((v) => isPremiumVariant(v.id))).toHaveLength(8);
+  it("only Texas Hold'em is free; every other game needs Premium to host", () => {
+    expect(VARIANTS.filter((v) => !isPremiumVariant(v.id)).map((v) => v.id)).toEqual(['holdem']);
+    expect(VARIANTS.filter((v) => isPremiumVariant(v.id))).toHaveLength(VARIANTS.length - 1);
   });
 });

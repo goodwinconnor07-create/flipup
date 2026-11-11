@@ -350,7 +350,7 @@ Native build:
 2. Premium through StoreKit only, the price from StoreKit, a working Restore Purchases button on the Premium
    sheet and in Settings, no stand-in purchase code.
 3. Never sell or give chips for money; Premium unlocks looks and modes only.
-3a. Game modes: the first five free, the other eight need Premium to host. Only the host needs it; people joining
+3a. Game modes: only normal Texas Hold'em free, the other games need Premium to host (free hosts also seat only the ten original bots; Range training is one set of five hands a day, and Premium has every hand). Only the host needs it; people joining
    by code don't. The server checks it (see "Premium, checked on the server"). No ads.
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
@@ -386,7 +386,7 @@ Store listing:
 ## Questions for the owner (answered 2 November 2026)
 
 1. Should Premium include the variants as paid modes, or only cosmetics?
-   **Answer:** Yes. The first five game modes are free; the rest are Premium, and anyone without Premium can
+   **Answer:** Yes. (Changed 11 November 2026: only normal Texas Hold'em is free, with the ten original bots and one daily range quiz; everything else is Premium.) The game modes past Hold'em are Premium, and anyone without Premium can
    (changed 4 November 2026: no ads) host a Premium game without Premium. When someone joins a Premium game with a
    code, only the host needs Premium; the people joining don't.
    - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Ghost Hold'em, Pittsburgh.

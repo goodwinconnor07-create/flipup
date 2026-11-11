@@ -192,10 +192,10 @@ export const variantOf = (game: Game): Variant => game.hand?.variant ?? game.set
 export const variantInfo = (v: Variant | undefined): VariantInfo => VARIANTS.find((x) => x.id === v) ?? VARIANTS[0];
 
 /**
- * In the iPhone app the first five games in VARIANTS are free; the rest need Premium to host, and
+ * In the iPhone app only the first game in VARIANTS, normal Texas Hold'em, is free; the rest need Premium to host, and
  * only the host of a table needs the unlock (docs/APP_STORE.md). The web doesn't lock any game yet.
  */
-export const FREE_VARIANTS = 5;
+export const FREE_VARIANTS = 1;
 export const isPremiumVariant = (v: Variant): boolean => VARIANTS.findIndex((x) => x.id === v) >= FREE_VARIANTS;
 export const isVariant = (v: unknown): v is Variant => VARIANTS.some((x) => x.id === v);
 

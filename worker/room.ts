@@ -13,6 +13,8 @@ import {
   liveOf,
   actionNeedsPremium,
   withoutPremiumLook,
+  FREE_BOT_NAMES,
+  isFreeBot,
   type Action,
   type Game,
   type ServerMessage,
@@ -134,6 +136,21 @@ export class TableRoom extends DurableObject<Env> {
     if (!action) return this.send(ws, { t: 'reject', id, error: "The server didn't understand that." });
     // Opening a Premium game is for Premium hosts: changing the table's mode (or playing again in another) needs it too, not only opening the table.
     if (premium === false && actionNeedsPremium(action)) return this.send(ws, { t: 'reject', id, error: 'Hosting this game needs FlipUp Premium.' });
+    // A host without Premium seats only the free bots.
+    if (premium === false) {
+      if (action.type === 'addBot') {
+        if (action.legend !== undefined || (action.name !== undefined && !isFreeBot(action.name))) {
+          return this.send(ws, { t: 'reject', id, error: 'That bot needs FlipUp Premium.' });
+        }
+        // No name asked for: pick a free bot that isn't seated yet, never a random one from the whole roster.
+        if (action.name === undefined) {
+          const seated = new Set(game.players.map((p) => p.name));
+          const name = FREE_BOT_NAMES.find((n) => !seated.has(n));
+          if (!name) return this.send(ws, { t: 'reject', id, error: 'All the free bots are already seated.' });
+          action.name = name;
+        }
+      }
+    }
     // A phone that doesn't own Premium gets the plain look: the Premium bubble and card back are dropped, the name and emoji kept.
     await this.apply(premium !== false ? action : withoutPremiumLook(action), deviceId, ws, id);
   }

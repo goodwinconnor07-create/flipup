@@ -2,6 +2,7 @@
 // (worker/index.ts, worker/room.ts); the phone uses them to show a crown and to ask for Premium before it tries.
 
 import { BUBBLE_STYLES } from './bubbles';
+import { BOTS } from './botStyles';
 import { CARD_PACKS } from './cardPacks';
 import type { Action } from './types';
 import { isPremiumVariant, type Variant } from './variants';
@@ -14,6 +15,25 @@ export const premiumPack = (id: string | undefined): boolean => id !== undefined
 
 /** Hosting a table or a party with any of these games needs Premium. Joining one never does. */
 export const gamesNeedPremium = (games: readonly Variant[]): boolean => games.some(isPremiumVariant);
+
+/**
+ * The bots a free host can seat: the ten original ones, one of each playing style. Premium opens the whole roster.
+ * Sitting at someone else's table never needs this; only the host picks the bots.
+ */
+export const FREE_BOT_NAMES: readonly string[] = ['Luna', 'Eli', 'Remi', 'Emma', 'Anna', 'Max', 'Zoe', 'Theo', 'Ivy', 'Kai'];
+export const isFreeBot = (name: string): boolean => FREE_BOT_NAMES.includes(name);
+/** Seating any bot outside the free ten needs Premium. Names that aren't in the roster (legends) count as Premium. */
+export const botsNeedPremium = (names: readonly string[]): boolean => names.some((n) => !isFreeBot(n));
+/** The roster a host may pick from. */
+export const botsFor = (premium: boolean): typeof BOTS => (premium ? BOTS : BOTS.filter((b) => isFreeBot(b.name)));
+
+/**
+ * Range training: without Premium you get one daily quiz, a single set of five hands a day. Premium has every
+ * hand, as many sets as you like, and the practice sets built from your stats and misses.
+ */
+export const FREE_RANGE_SETS_PER_DAY = 1;
+/** Whether starting this set needs Premium: practice on chosen spots always does, a plain set once the day's free one is used. */
+export const rangeSetNeedsPremium = (focused: boolean, usedToday: number): boolean => focused || usedToday >= FREE_RANGE_SETS_PER_DAY;
 
 /**
  * Whether this action is the host opening a Premium game: changing a table's mode to one, or playing again in one.

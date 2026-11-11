@@ -2,7 +2,7 @@
 // Back and the set's progress (a dot a hand, coloured by its grade once answered); the trainer's answer bar and result
 // card pin to the bottom of the screen, as they did on the tab. Opened from the Train tab's start screen (params:
 // `focus`, a JSON list of kinds of spot or 'id:<hand>' entries to practise, from Stats or Work on).
-import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState, type ComponentRef, type ReactNode, type RefObject } from 'react';
 import { ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,10 +13,22 @@ import { SetSummary, useGradeInk, type SetAnswer } from '@/components/range/set-
 import { BackText } from '@/components/setup/setup-header';
 import { FooterContext } from '@/components/tab-screen';
 import { ThemedText } from '@/components/themed-text';
+import { usePremium } from '@/state/premium';
+import { noteFreeSet, freeSetsUsedToday } from '@/state/range-free';
 import { SET_SIZE } from '@/state/range-result';
+import { unlockToTrain } from '@/state/unlock';
 import { spacing, useColors } from '@/theme';
 
-export default function RangeSession() {
+export default function RangeSessionScreen() {
+  const premium = usePremium();
+  const { focus } = useLocalSearchParams<{ focus?: string }>();
+  // Without Premium this opens only for the day's free set, however it was reached.
+  const [blocked] = useState(() => !premium && (!!focus || freeSetsUsedToday() >= 1));
+  if (blocked) return <Redirect href={{ pathname: '/premium', params: { reason: 'training' } }} />;
+  return <RangeSession premium={premium} />;
+}
+
+function RangeSession({ premium }: { premium: boolean }) {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const ink = useGradeInk();
@@ -35,6 +47,7 @@ export default function RangeSession() {
   const [done, setDone] = useState(false);
   const top = () => scroll.current?.scrollTo({ y: 0, animated: false });
   const again = () => {
+    if (!unlockToTrain(false, premium)) return;
     setAnswers([]);
     setDone(false);
     setRound(round + 1);
@@ -79,7 +92,7 @@ export default function RangeSession() {
                 <Button title="Done" variant="secondary" onPress={() => router.back()} />
               </View>
               <View style={{ flex: 1.4 }}>
-                <Button title="Another 5" variant="primary" onPress={again} />
+                <Button title={premium ? 'Another 5' : 'Get Premium for more'} variant="primary" onPress={again} />
               </View>
             </View>
           ) : undefined
@@ -95,7 +108,10 @@ export default function RangeSession() {
             onNext={top}
             onTop={top}
             onScrollTo={(y) => scroll.current?.scrollTo({ y, animated: true })}
-            onAnswer={(scenario, pick, grade) => setAnswers((xs) => [...xs, { scenario, pick, grade }])}
+            onAnswer={(scenario, pick, grade) => {
+              if (!premium) noteFreeSet();
+              setAnswers((xs) => [...xs, { scenario, pick, grade }]);
+            }}
             onFinish={
               full
                 ? () => {

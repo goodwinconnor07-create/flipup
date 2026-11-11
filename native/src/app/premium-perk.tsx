@@ -12,7 +12,7 @@ import { statsData } from '@/components/share/data';
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { CARD_PACKS, FREE_VARIANTS, VARIANTS } from '@/engine';
+import { BOTS, CARD_PACKS, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
 import { ALT_ICONS } from '@/state/app-icon';
 import { usePremium } from '@/state/premium';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
@@ -66,6 +66,7 @@ const GO: Partial<Record<PerkId, { title: string; run: () => void }>> = {
   share: { title: 'Make a share card', run: () => router.push('/share') },
   icons: { title: 'Pick an icon', run: () => router.push('/app-icon') },
   packs: { title: 'Pick a card back', run: () => router.push('/card-packs') },
+  range: { title: 'Start training', run: () => router.push('/range-session') },
   gold: { title: 'Gold name settings', run: () => router.push('/settings') },
 };
 
@@ -198,6 +199,28 @@ function Preview({ id }: { id: PerkId }) {
           </View>
           <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.65)', textAlign: 'center' }}>
             How the table sees you. Settings › Gold name turns it off.
+          </ThemedText>
+        </View>
+      );
+    case 'range':
+      return (
+        <View style={{ ...box, gap: spacing.xs }}>
+          <ThemedText variant="callout" style={{ color: '#ffffff', fontWeight: '700' }}>
+            Free: one set of five hands a day.
+          </ThemedText>
+          <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            Premium: every hand, any number of sets, and practice sets built from the spots you miss.
+          </ThemedText>
+        </View>
+      );
+    case 'bots':
+      return (
+        <View style={{ ...box, gap: spacing.xs }}>
+          <ThemedText variant="callout" style={{ color: '#ffffff', fontWeight: '700' }}>
+            Free: {FREE_BOT_NAMES.join(', ')}.
+          </ThemedText>
+          <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            Premium: all {BOTS.length} bots, in every playing style.
           </ThemedText>
         </View>
       );

@@ -19,7 +19,8 @@ it('never offers the mode just played', () => {
 
 it('leaves out Premium games unless the host has Premium', () => {
   const free = nextModes('holdem', [], false, NOW);
-  expect(free.length).toBeGreaterThan(0);
+  // Only Texas Hold'em is free, so a free host has no other game to step to.
+  expect(free).toEqual([]);
   expect(free.some(isPremiumVariant)).toBe(false);
   expect(nextModes('holdem', [], true, NOW).some(isPremiumVariant)).toBe(true);
 });

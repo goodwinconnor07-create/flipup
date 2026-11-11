@@ -205,8 +205,9 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
 
   const addBot = () => {
     if (full) return;
-    const bot = randomBot(bots, profile.name || undefined);
+    const bot = randomBot(bots, profile.name || undefined, premium);
     if (bot) setBots((have) => [...have, bot]);
+    else if (!premium) router.push({ pathname: '/premium', params: { reason: 'bots' } });
   };
 
   /** Starts the party: the final playlist and rules go up first, then round one. The lobby made for invites ends with this page. */

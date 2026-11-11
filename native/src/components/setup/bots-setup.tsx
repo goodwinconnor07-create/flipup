@@ -51,7 +51,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   const [bots, setBots] = useState<RowBot[]>(() => {
     const out: RowBot[] = [];
     for (let i = 0; i < START_BOTS; i++) {
-      const b = randomBot(out, undefined);
+      const b = randomBot(out, undefined, premium);
       if (b) out.push({ ...b, greet: undefined });
     }
     return out;
@@ -62,14 +62,15 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 
   const addBot = () => {
     if (room <= 0) return;
-    const bot = randomBot(bots, profile.name || undefined);
+    const bot = randomBot(bots, profile.name || undefined, premium);
     if (bot) setBots((have) => [...have, bot]);
+    else if (!premium) router.push({ pathname: '/premium', params: { reason: 'bots' } });
   };
   // Every empty seat at once; only the first new bot says hello, so the row isn't a wall of bubbles.
   const fill = () => {
     const out = [...bots];
     while (out.length < MAX_SEATS - 1 - extra) {
-      const b = randomBot(out, profile.name || undefined);
+      const b = randomBot(out, profile.name || undefined, premium);
       if (!b) break;
       out.push(out.length === bots.length ? b : { ...b, key: `${b.key}:${out.length}`, greet: undefined });
     }

@@ -36,13 +36,10 @@
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,
 > chevrons and text buttons only. The pinned Start game / Deal button waiting on players is a solid dim fill, never
 > a translucent one, so rows scrolling under it can't show through.
-<<<<<<< HEAD
 > **Premium page (owner, 2026-11-11):** rebuilt so you can see everything you get without scrolling much: every perk
 > is a small tile in a two-column grid (a tap opens a detail sheet), and the plans sit in a bar pinned at the bottom.
 > The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
 > they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
-=======
->>>>>>> origin/main
 
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.

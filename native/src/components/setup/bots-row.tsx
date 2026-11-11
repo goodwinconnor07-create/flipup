@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { addedLine, balancedBotPool, botFace, BOTS, lineBeats, sayAndReadMs, type Message } from '@/engine';
-<<<<<<< HEAD
-=======
 import { knownBots } from '@/state/table-feel';
->>>>>>> origin/main
 import { useColors } from '@/theme';
 
 import { AddFace, BotPill, BUBBLE_ROOM, Face, FaceBubble, FaceRow } from './faces';

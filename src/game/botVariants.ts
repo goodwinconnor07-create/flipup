@@ -311,26 +311,10 @@ function blendIn(game: Game, hand: Hand, seat: Seat, rng: () => number, smart = 
   const stack = player?.stack ?? 0;
   const thinkMs = think(game, seat, rng, Math.min(1, o.toCall / Math.max(1, stack)));
   // The imposter fidgets a little more: it's trying to look like it belongs.
-<<<<<<< HEAD
-  // A smart imposter does the opposite: it copies the table (bets only if most of this street already has) and
-  // probes far less, since standing out is what gets it voted out.
-  const imposter = seat.playerId === hand.imposter;
-  if (smart && imposter) {
-    const street = (hand.actions ?? []).filter((a) => a.street === hand.street && a.playerId !== seat.playerId);
-    const pushed = street.filter((a) => a.move === 'bet' || a.move === 'raise').length;
-    const copy = street.length >= 2 && pushed * 2 > street.length;
-    if (o.canRaise && copy && quietOk(o.toCall, stack) && rng() < 0.5) {
-      const to = Math.round(Math.max(o.minTo, Math.min(o.maxTo, hand.currentBet + Math.max(game.settings.bigBlind, pot * 0.33))));
-      if (to < o.maxTo) return { move: { move: o.word === 'Bet' ? 'bet' : 'raise', to }, thinkMs };
-    }
-    return { move: o.canCheck ? { move: 'check' } : { move: 'call' }, thinkMs };
-  }
-=======
   // A smart imposter does the opposite: it never bets or raises, only checks and calls like the quietest player at
   // the table. Building a pot it then gets voted out of is the worst thing it can do (the lab showed it).
   const imposter = seat.playerId === hand.imposter;
   if (smart && imposter) return { move: o.canCheck ? { move: 'check' } : { move: 'call' }, thinkMs };
->>>>>>> origin/main
   const nerves = imposter ? 0.06 : 0;
   const probe = 0.14 + Math.max(-0.08, style.post.bluff) + nerves;
   const small = hand.currentBet + Math.max(game.settings.bigBlind, pot * 0.33);

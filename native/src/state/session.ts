@@ -57,10 +57,7 @@ import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { noteRun } from './challenges';
 import { noteGame, noteHand } from './record';
-<<<<<<< HEAD
-=======
 import { recordFeel, rivalsFor } from './table-feel';
->>>>>>> origin/main
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
 import { forgetLastHand, noteReplay } from './replays';
 import { saveUltraMemory, ultraMemory } from './ultra';
@@ -170,13 +167,8 @@ export function syncLook(): void {
   const mine = game?.players.find((p) => p.deviceId === me);
   if (!game || !mine || game.status === 'ended') return;
   const want = wornLook();
-<<<<<<< HEAD
   const key = `${game.id}:${want.cardPack ?? ''}:${want.gold ? 'g' : ''}`;
   if (((mine.cardPack ?? '') === (want.cardPack ?? '') && !!mine.gold === !!want.gold) || lookSent === key) return;
-=======
-  const key = `${game.id}:${want.cardPack ?? ''}`;
-  if ((mine.cardPack ?? '') === (want.cardPack ?? '') || lookSent === key) return;
->>>>>>> origin/main
   lookSent = key;
   // After this update has gone out, so a bots-only table doesn't change inside its own set().
   setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
@@ -197,11 +189,8 @@ function noteDay(game: Game | null): void {
   }
   // Home's record of your games: where you finished, once the table is over.
   if (game.status === 'ended' && !challenge) noteGame(game, mine.id);
-<<<<<<< HEAD
-=======
   // How the table felt (hands, rebuys, coming back) and the bots you've now met, on this phone only.
   recordFeel(game, mine.id);
->>>>>>> origin/main
 }
 
 /** The table as it is right now, outside a component (the setup page waits on its new lobby with it). */

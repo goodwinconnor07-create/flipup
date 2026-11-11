@@ -159,12 +159,6 @@ export function everydayThinkMs(
   const active = info.players.filter((p) => !p.folded && !p.allIn).length;
   const raises = info.actions.filter((a) => a.street === info.street && !a.outOfTurn && ['bet', 'raise', 'allin'].includes(a.move)).length;
   const complexity = Math.min(180, Math.max(0, active - 2) * 25 + Math.min(2, raises) * 40);
-<<<<<<< HEAD
-  return Math.min(
-    1900,
-    Math.round(
-      (550 + rng() * 350 + complexity + (hard ? 250 + rng() * 500 : 0)) *
-=======
   // A tank: a big bet against a real share of the stack, or an all-in to answer. People take their time there, and
   // the table feels it. Public information only, so the wait never says what the bot holds.
   const hero = info.players.find((p) => p.id === info.heroId);
@@ -174,7 +168,6 @@ export function everydayThinkMs(
     tank ? 5200 : 1900,
     Math.round(
       (550 + rng() * 350 + complexity + (hard ? 250 + rng() * 500 : 0) + (tank ? 1800 + rng() * 2400 : 0)) *
->>>>>>> origin/main
         (profile.everyday?.tempo ?? 1) *
         (1 + (feel?.caution ?? 0) * 0.06 + (feel?.pressure ?? 0) * 0.02 - (feel?.confidence ?? 0) * 0.03),
     ),

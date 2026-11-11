@@ -90,10 +90,7 @@ export default function TableScreen() {
       style={{ flex: 1, backgroundColor: colors.background, paddingTop: insets.top, paddingBottom: Math.max(insets.bottom, spacing.sm) }}
     >
       <TableBar game={game} online={online} code={t.code} />
-<<<<<<< HEAD
       <ScreenshotPrompt />
-=======
->>>>>>> origin/main
       {game && <BlindNews game={game} />}
       {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
       {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}

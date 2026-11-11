@@ -35,29 +35,19 @@ export function tableProfile(base: BotProfile, name: string, difficulty: BotDiff
   const p = everydayProfile(base, name, difficulty, focus),
     seed = tableInstanceSeed(tableId, base.botId),
     rng = seededRng(seed);
-<<<<<<< HEAD
-  const micro = () => (rng() - 0.5) * 0.08;
-=======
   // How far each focus pulls from the shared centre. Wide enough at Casual that a table has a visible presser, a
   // curious caller and a patient folder (the owner wanted characters, not one player nine times); Challenge keeps
   // them closer to the strong centre.
   const width = difficulty === 'challenge' ? 1.5 : 2.5;
   const micro = () => (rng() - 0.5) * 0.12;
->>>>>>> origin/main
   return {
     ...p,
     seed,
     everyday: { ...p.everyday!, tempo: 0.9 + rng() * 0.2 },
     traits: {
-<<<<<<< HEAD
-      aggression: 0.5 + (focus === 'patient' ? -0.06 : focus === 'pressure' ? 0.06 : 0) + micro(),
-      curiosity: 0.5 + (focus === 'curious' ? 0.07 : focus === 'patient' ? -0.04 : 0) + micro(),
-      riverCaution: 0.5 + (focus === 'patient' ? 0.06 : 0) + micro(),
-=======
       aggression: 0.5 + (focus === 'patient' ? -0.06 : focus === 'pressure' ? 0.06 : 0) * width + micro(),
       curiosity: 0.5 + (focus === 'curious' ? 0.07 : focus === 'patient' ? -0.04 : 0) * width + micro(),
       riverCaution: 0.5 + (focus === 'patient' ? 0.06 : 0) * width + micro(),
->>>>>>> origin/main
       adaptation: 0.55 + micro(),
     },
   };

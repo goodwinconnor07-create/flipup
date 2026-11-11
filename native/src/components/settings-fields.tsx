@@ -133,13 +133,9 @@ export function SettingsFields({
           onChange={(botDifficulty) => set({ botDifficulty })}
         />
         <ThemedText variant="caption1" tone="secondaryLabel">
-<<<<<<< HEAD
-          Challenge makes fewer small mistakes. Changes next hand.
-=======
           {beatingCasual && (settings.botDifficulty ?? 'casual') === 'casual'
             ? "You've beaten Casual three tables running. Try Challenge."
             : 'Challenge makes fewer small mistakes. Changes next hand.'}
->>>>>>> origin/main
         </ThemedText>
       </View>
     ),

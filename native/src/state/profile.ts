@@ -38,13 +38,8 @@ export function saveProfile(patch: Partial<Profile>): void {
   save(KEY, next);
 }
 
-<<<<<<< HEAD
 /** The card back and gold name this phone shows at a table: only with Premium. (Bubbles are coloured by the move, for everyone.) */
 export function wornLook(p: Profile = readProfile(), premium = hasPremium()): { cardPack?: string; gold?: boolean } {
-=======
-/** The card back this phone shows at a table: only with Premium. (Bubbles are coloured by the move, for everyone.) */
-export function wornLook(p: Profile = readProfile(), premium = hasPremium()): { cardPack?: string } {
->>>>>>> origin/main
   return {
     ...(p.cardPack && premium ? { cardPack: p.cardPack } : {}),
     ...(premium && goldNameOn() ? { gold: true } : {}),

@@ -30,14 +30,11 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
   const premium = usePremium();
   const worn = wornLook(useProfile(), premium);
   const pack = CARD_PACKS.find((p) => p.id === worn.cardPack)?.name ?? 'Classic';
-<<<<<<< HEAD
   const gold = useGoldName();
   const bank = useReplays().length;
   const ultraHands = useUltraHands();
   const icon = ALT_ICONS.find((i) => i.id === currentIcon())?.name ?? 'FlipUp';
   const locked = (go: () => void, reason: string) => () => (premium ? go() : router.push({ pathname: '/premium', params: { reason } }));
-=======
->>>>>>> origin/main
   return (
     <>
       <Section header={header}>

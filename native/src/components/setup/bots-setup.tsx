@@ -22,10 +22,7 @@ import { Stepper } from '../stepper';
 import { ThemedText } from '../themed-text';
 import { randomBot, type RowBot } from './bots-row';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
-<<<<<<< HEAD
 import { UltraRow } from './ultra-row';
-=======
->>>>>>> origin/main
 
 /** Bots already sitting when the page opens, so Start game works at once. */
 const START_BOTS = 4;
@@ -60,11 +57,8 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
     }
     return out;
   });
-<<<<<<< HEAD
   const [ultraOn, setUltra] = useState(false);
   const ultra = ultraOn && premium;
-=======
->>>>>>> origin/main
   const [busy, setBusy] = useState(false);
   const extra = Number(!!s.humanPoker);
   const room = MAX_SEATS - 1 - extra - bots.length;
@@ -96,10 +90,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
       profile.name,
       profile.emoji,
       bots.map((b) => b.name),
-<<<<<<< HEAD
       { ultra },
-=======
->>>>>>> origin/main
     );
     // Straight to the deal ("Dealing in 3…"): the bots are already picked here, so no second lobby.
     dispatch({ type: 'start' });
@@ -132,15 +123,10 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           }}
         />
 
-<<<<<<< HEAD
         <UltraRow on={ultra} premium={premium} onChange={setUltra} />
 
         <GameCard variant={variant} host />
 
-=======
-        <GameCard variant={variant} host />
-
->>>>>>> origin/main
         <HouseRules
           settings={s}
           onChange={(next) => {
@@ -154,11 +140,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
         title="Start game"
         line={
           bots.length + extra
-<<<<<<< HEAD
             ? `You and ${bots.length + extra} ${ultra ? 'ULTRA ' : ''}${bots.length + extra === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
-=======
-            ? `You and ${bots.length + extra} ${bots.length + extra === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
->>>>>>> origin/main
             : 'Add a bot first'
         }
         busy={busy}

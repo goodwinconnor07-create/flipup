@@ -1,6 +1,8 @@
 import type { Street } from '../game/types';
 import { LEARNING_CONFIG, validateLearningConfig, type LearningConfig } from './learningConfig';
 import { validateBehavior, type BehaviorMemory } from './behaviorMemory';
+import { validateSessionFeel, type SessionFeel } from './sessionFeel';
+import { validateHandStory, type HandStory } from './handStory';
 
 export interface ObservationContext {
   street: Street;
@@ -39,6 +41,9 @@ export interface BotMemory {
   contexts?: Record<string, Record<string, OpponentBelief>>;
   /** Additive, private public-action learner; old v1 snapshots need no migration. */
   behavior?: BehaviorMemory;
+  sessionFeel?: SessionFeel;
+  handStory?: HandStory;
+  pendingHandStory?: HandStory;
 }
 /** Deliberately narrow event schema: only a public response to a faced bet. */
 export interface ObservationEvent {
@@ -54,6 +59,9 @@ export function emptyMemory(botId: string, tableId: string): BotMemory {
 }
 export function validateMemory(m: BotMemory): void {
   if (m.behavior) validateBehavior(m.behavior);
+  if (m.sessionFeel) validateSessionFeel(m.sessionFeel);
+  if (m.handStory) validateHandStory(m.handStory);
+  if (m.pendingHandStory) validateHandStory(m.pendingHandStory);
   if (
     m.version !== 1 ||
     !m.botId ||

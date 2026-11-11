@@ -97,9 +97,10 @@ describe('the app source', () => {
     const need = ['components/button.tsx', 'components/table/actions.tsx'];
     for (const f of need) expect(files.find((x) => x.f === f)?.text, f).toContain('<Swap ');
   });
-  it('rules 6 and 10: the trainer pops its verdict in and settles the parts under it', () => {
-    const text = files.find((x) => x.f === 'components/range-trainer.tsx')?.text ?? '';
-    expect(text).toContain('popIn()');
+  it('rules 6, 10 and 20: the trainer’s result rises out of the answer bar and settles the parts under it', () => {
+    const text = files.find((x) => x.f === 'components/range/result-card.tsx')?.text ?? '';
+    expect(text).toContain('rise(reduce)');
+    expect(text).toContain("transformOrigin: '50% 100%'");
     expect(text).toContain('detail(');
   });
   it('rule 13: every spring written out in numbers is damped enough not to wobble', () => {

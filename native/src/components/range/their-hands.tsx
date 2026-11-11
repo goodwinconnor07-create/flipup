@@ -96,7 +96,7 @@ export function TheirHands({ scenario, opponents, facing, dead, nextTime }: { sc
             </View>
           </View>
           <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.cellPressed, overflow: 'hidden' }}>
-            <View style={{ width: `${Math.round(g.equity * 100)}%`, height: '100%', borderRadius: 3, backgroundColor: g.equity >= 0.5 ? brand.raise : brand.gold }} />
+            <View style={{ width: `${Math.round(g.equity * 100)}%`, height: '100%', borderRadius: 3, backgroundColor: g.equity >= 0.5 ? brand.violet : (colors.quaternaryLabel as string) }} />
           </View>
         </View>
       ))}

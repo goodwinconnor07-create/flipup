@@ -6,9 +6,11 @@ The subsequent [baseline-6 update](LOOKAHEAD_V6.md) adds one-street heads-up pla
 
 The current [baseline-7 update](MULTIPLAYER_V7.md) extends planning to multiplayer pots and all remaining streets, adds reconstructible hand plans, and checks whole-hand repetition and sizing tells. Its measurements are recorded separately from these historical release results.
 
+The [live table experience](LIVE_HUMAN_TABLE.md) now adds pre-sampling intentions, confirmed hand stories, temporary session dynamics and fresh independent identities. The policy provider remains V7; the original measurements below remain historical.
+
 ## Table and individual behavior
 
-Automatic selection prefers the least represented of four internal tendencies: balanced, slightly patient, slightly curious and slightly inclined to pressure. The preference is derived from a stable name hash; micro-traits and thinking tempo also come from that name. Four automatically picked ordinary bots cover all four tendencies, and eight cover each twice when available. Manually chosen opponents retain their own identities rather than being reassigned to fill a quota. Native setup and engine-created lineups use the same pool selection function.
+Automatic selection prefers the least represented of four internal tendencies: balanced, slightly patient, slightly curious and slightly inclined to pressure. The original lineup selection uses a name-hash preference. Live table identities now derive their own micro-traits and thinking tempo from table and seat identity. Four automatically picked ordinary bots cover all four tendencies, and eight cover each twice when available. The live table coordinator also balances manually chosen rosters, then preserves each seated individual for the session. Native setup and engine-created lineups use the same pool selection function.
 
 All ordinary players share the same baseline. Individual traits stay in a narrow band around its center, with small context-specific preferences for calls, raises, river caution and bet sizing. The experimental Patient/Curious/Aggressive extremes are not used in default lineups. Each bot has independent, private table-session memory, learns only from public response opportunities and retains that memory through hands, reloads and rebuys. Adaptation remains the existing conservative, context-specific river adjustment; this is not general opponent-model training or lifetime memory across tables.
 

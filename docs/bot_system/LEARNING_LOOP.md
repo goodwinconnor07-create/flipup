@@ -8,7 +8,7 @@ Old version-1 memory snapshots remain readable. New contextual posteriors are an
 
 The first contextual exploit is deliberately narrow: a weak river hand, one non-all-in opponent, a matched bet-size/raise context, and an investment no larger than 1.25 pots or the opponent can cover. A conservative normal approximation to the fold posterior must exceed the bluff's break-even fold frequency by a margin. The calculation assumes the bluff loses whenever called. Personality, sample confidence and a maximum blend limit control how far the final action mix moves. Supported calling-station reads damp bluff preference; unsupported contexts leave the strategy/identity baseline intact.
 
-The old controller's blanket pooled log-weight adjustment is retained as `learningMode: 'pooled'`; `'off'` enables ablations. The live default is `'contextual'`. Only the existing opt-in BOT_001 seat uses this system. The shared preflop/rollout/coarse blueprint remains `baseline-3`; the learning configuration is separately versioned `contextual-1`.
+The old controller's blanket pooled log-weight adjustment is retained as `learningMode: 'pooled'`; `'off'` enables ablations. The live default is `'contextual'`. The original release applied this to opt-in BOT_001 on `baseline-3`. Ordinary bots now share the contextual learner on V7, with the additional [live table experience](LIVE_HUMAN_TABLE.md); the learning configuration is separately versioned `contextual-1`.
 
 The estimated-value guard uses conservative evidence-adjusted values for supported bluffs. It is not a Nash or true-regret guarantee: posterior calibration, unmodelled context and range estimation can still be wrong. Beliefs need enough recent evidence to reverse as an opponent changes.
 
@@ -16,7 +16,7 @@ The estimated-value guard uses conservative evidence-adjusted values for support
 
 The live table retains the last eight actual decision traces, including sanitized information, input beliefs, baseline/final distributions, evidence and numeric transformations. This bounded history is persisted with the table and stripped from every online client and legacy bot view. It contains the bot's own cards and no opponent's hidden cards or real deck. The SQL development repository also persists contextual observations, atomically and without copying private extras. Replay requires the recorded policy/configuration version.
 
-This is table-session memory, retained across reconnects and reloads. Global cross-table lifetime memory and stable cross-table opponent identity mapping remain unfinished.
+This is table-session memory, retained across reconnects and reloads. New tables deliberately use fresh bot identities and empty memories; cross-table opponent recognition is not part of the live design.
 
 ## Executable training loop
 

@@ -2,7 +2,7 @@
 
 This follows the [original response-calibration candidate](RESPONSE_CALIBRATION.md). It separates the two changes, reviews costly decisions, and evaluates repairs with new reserved deals. The purpose is intelligent, varied opponents; none of these models is a GTO solver or a human-data model. The Range trainer review and normal settings/play flow are unchanged.
 
-**Live ordinary bots and BOT_001 remain on V7.** The conservative candidate repairs the controlled optimistic-call failure, but its fresh gameplay returns do not clear promotion. It is an explicit offline option, not a setting silently enabled in the app.
+**Live ordinary bots and BOT_001 retain the V7 provider**, now with the separately validated [live table experience](LIVE_HUMAN_TABLE.md) for private plans and restrained table behavior. The conservative candidate repairs the controlled optimistic-call failure, but its fresh gameplay returns do not clear promotion. It is an explicit offline option, not a setting silently enabled in the app.
 
 ## What the ablation found
 

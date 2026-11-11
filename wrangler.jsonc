@@ -27,6 +27,7 @@
       { "name": "FRIEND_CARD", "class_name": "FriendCard" },
       { "name": "BLACKJACK_ROOM", "class_name": "BlackjackRoom" },
       { "name": "REPORT_BOX", "class_name": "ReportBox" },
+      { "name": "BOT_RESEARCH", "class_name": "BotResearchRoom" },
       { "name": "ENTITLEMENTS", "class_name": "Entitlements" },
       { "name": "BANKROLL_ROOM", "class_name": "BankrollRoom" },
       { "name": "LEADERBOARD", "class_name": "Leaderboard" },
@@ -49,6 +50,8 @@
     { "tag": "v8", "new_sqlite_classes": ["Entitlements"] },
     // Bankroll: one room per player per month, and the boards (bankroll by month, Today's three by day).
     { "tag": "v9", "new_sqlite_classes": ["BankrollRoom", "Leaderboard"] },
+    // Private, opt-in bot research sessions. Each expires after 30 days.
+    { "tag": "v10", "new_sqlite_classes": ["BotResearchRoom"] },
   ],
   // Every hour: the Sunday cut once it's due, and closing last month's board (badges) on the 1st. Both are safe to run twice.
   "triggers": { "crons": ["0 * * * *"] },

@@ -7,6 +7,30 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **Minimal Home, a test on a branch (owner, 2026-11-10, from a reference with a big greeting; not merged until the
+> owner has seen it on TestFlight).** Play is one page on a livelier moving field of its own (`LivelyBackground`: five brighter lights on 4.5 to 10s clocks over the same dark base, always dark):
+> FlipUp in SF Pro Rounded heavy and your face, "Hi, <name>." at up to 92pt rounded heavy (by screen height), one line under it, then down by the tab bar (the
+> page fits between the bars without scrolling; the room left over goes above and below the greeting) the quiet see-through cards (white at 9%, radius 24): your live table when you're at one (a green LIVE tag),
+> and every game's icon rolling slowly past (`GameCarousel`, the flat cartoon art from `b8cdec6`, 26pt a second,
+> still and swipeable under Reduce Motion), then Host a game (solid white, dark ink) and Join with a code (white at
+> 14%), and Play with bots and How it works as quiet links. Body text is SF Pro, headings and buttons SF Pro Rounded.
+
+> **Game-lobby Home, a test on a branch (2026-11-10, after Oliver asked for "a normal game app home screen": bottom
+> tabs, main middle buttons, side bars; the owner's answers: the chosen game is the star, the page's colour follows
+> the game, all four shortcuts, lots of motion. Not merged until both have seen it on TestFlight).** Nothing scrolls.
+> The page is a dark shade of the chosen game's colour with three lights in its brighter tones (`GameBackdrop`; a
+> new game's colours fade in over the old). In order of importance: the games as a line of cards across the whole
+> screen, locked on one at a time (`GameSwiper`: the middle one full size, neighbours smaller and fainter either side,
+> the outer ones tucked under like a fanned deck; the card follows the finger, rubber-bands past the ends, and the
+> flick's speed carries into `SETTLE`, capped so it never overshoots; one swipe moves one game; a selection tick as
+> each passes; `flipup.homegame` keeps the pick), its name, hook and dots; a row of round see-through shortcuts
+> (Stats, Rules, All games, Premium in gold, Settings, Share) just over PLAY (`PlayButton`: solid white, the game's
+> dark ink, a breathing glow and a band of the game's colour sweeping across), with Play bots and Join a game under
+> it and a slim LIVE strip above when you're at a table. PLAY and Play bots open with the middle card growing to fill
+> the screen in its own colour (`Fill`, 300ms ease-out), then the page fades in over it (`fill=1`). "Play" as the
+> big title top left and your face top right, ringed, opening your profile (asked the same day: no name chip, no spade). The parts fade in 30ms apart
+> when the app opens. The tab bar stays. Every loop stops off screen, in the background and under Reduce Motion.
+
 > **Cards on the dark blue pages (owner, 2026-11-09): one surface.** Every card on the lobby and Play with friends/bots
 > pages (Game code, Game mode, Start a party, the party playlist, House rules, Players) is the same see-through panel:
 > `usePanel()` fill and edge at `PANEL_RADIUS`, no solid grey `colors.cell`, no blue outline. Blue lives in icons,
@@ -25,6 +49,38 @@ Everyday bot tables (owner request, 9 November 2026): Play with bots keeps its e
 Standard Hold'em uses a balanced automatic mix of subtly different opponents. Add one optional Bot level row to
 House rules, default Casual with Challenge as the alternative; use the existing native segmented control and web
 step row. No personality labels on seats, extra onboarding or new screens. Difficulty changes apply next hand.
+
+Range training, Read · Decide · Learn (owner request, 10 November 2026: keep it simple, make it feel finished). One
+page, the table never moves. Read: concept and title, the table at your decision, Replay hand, the hand as one line
+per street (tap a street to replay from it), then your cards with what you have and the price. Decide: the glass
+answer bar pinned at the bottom, Hint and Skip under your hand. Learn: the answer bar opens into the result card in
+the same place (rises from its bottom edge, from 95%), and the opponents' likely hands turn up on their seats. The
+card holds four things only: the verdict (Best play in gold, Also good in blue, Missed it in grey), one sentence of
+why, one picture (facing a bet, one bar of how often you win with a mark at the price; otherwise what each play wins)
+and their range as three piles (facing a bet: Beat you, You beat, Bluffs; otherwise: Fold, Call ahead, Call behind),
+then Breakdown and Next hand. Breakdown is the `range-breakdown` sheet with everything else. No full-screen
+celebration: a best play pops its verdict with a sound and a haptic; confetti only at runs of 3, 5, 10 and every 10.
+Green stays Raise only.
+
+Range training, start screen and sets of 5 (owner request, 10 November 2026). The Train tab is a start screen: one
+violet card ("Play a set", a line, a white Start button), three numbers once you've played (best plays, mastered out
+of all, best run), and a Work on list (your weakest kinds of spot, Retry your misses), each starting a set of those.
+Start opens the set full screen over the tabs (`range-session`): "‹ Back" on the left, "Hand 2 of 5" over five
+progress bars in the middle (gold best, blue also good, grey missed, the current one outlined), and the trainer
+below as above. The fifth answer's button says See your set: dots, "4 of 5", a word (Perfect, Strong, Good set, Keep
+at it), the five hands with their grades (a tap opens the breakdown), and Done / Another 5 pinned. No stars, tiers or
+modes.
+
+Bot research (owner request, 10 November 2026): a separate mobile-browser research session, entered from
+Settings. Setup shows the length, what is recorded, and Start. Play uses the existing card and button styles with
+opponents, board, own cards, legal actions, progress, an optional “That felt odd” marker, and Pause & upload.
+Pausing shows saved/upload status, Resume, an optional note and a private review link. Records survive reloads,
+upload completed hands incrementally, and stay separate from normal games, statistics and Range trainer lessons.
+The report page also offers Copy review packet with numbered parts and selectable text for mobile chat sharing.
+It preserves the existing uploaded hands and reuses the existing fields and buttons; no new screen or motion.
+The default copy includes all hands and explanations; an optional larger copy retains exact replay checkpoints.
+Wireframe shown in the implementation chat before building: Back / Bot research; 60 hands / Start; then Hand N,
+scenario label, table, Fold/Call/Raise, That felt odd, Pause & upload. Use existing surfaces and motion.
 
 **How this document works.** Read it before any UI change. A new decision is written here first, then built. If a
 screen and this document disagree, the document wins until the owner says otherwise; then the document is changed

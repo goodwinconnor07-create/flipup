@@ -78,13 +78,13 @@ export default function ProfileScreen() {
             <Animated.View
               key={profile.emoji}
               entering={reduce ? undefined : popIn()}
-              style={{ width: PIC, height: PIC, borderRadius: PIC / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.94)', boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)' }}
+              style={{ width: PIC, height: PIC, borderRadius: PIC / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? 'rgba(255,255,255,0.12)' : 'rgba(255,255,255,0.94)', borderWidth: dark ? 1 : 0, borderColor: 'rgba(255,255,255,0.18)', boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)' }}
             >
               <Text style={{ fontSize: PIC * 0.55 }} maxFontSizeMultiplier={1}>
                 {profile.emoji}
               </Text>
             </Animated.View>
-            <View style={{ position: 'absolute', right: 0, bottom: 0, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, borderWidth: 3, borderColor: '#ffffff' }}>
+            <View style={{ position: 'absolute', right: 0, bottom: 0, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, borderWidth: 3, borderColor: dark ? brand.violetDeep : '#ffffff' }}>
               <Icon name="pencil" size={14} color="#ffffff" />
             </View>
           </Pressable>
@@ -119,11 +119,10 @@ export default function ProfileScreen() {
                 </Text>
               </PressableScale>
             ) : (
-              <View style={{ height: 36, paddingHorizontal: 16, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: dark ? 'rgba(255,255,255,0.18)' : 'rgba(0,0,0,0.06)' }}>
-                <Text maxFontSizeMultiplier={1.3} style={{ fontSize: 15, fontWeight: '600', color: dark ? '#ffffff' : (colors.label as string) }}>
-                  Tap your name or face to change
-                </Text>
-              </View>
+              // Plain text, not a pill: a filled capsule here read as a button that did nothing.
+              <ThemedText variant="subhead" style={{ height: 36, lineHeight: 36, color: dark ? 'rgba(255,255,255,0.7)' : (colors.secondaryLabel as string) }}>
+                {FRIENDS_ON && username ? `@${username}` : 'Tap your name to change it'}
+              </ThemedText>
             )}
           </Swap>
           {blocked && (
@@ -144,12 +143,9 @@ export default function ProfileScreen() {
             />
           )}
           <Row title="Settings" detail="Sound, looks and your data" icon={{ symbol: 'gearshape.fill', color: tint }} onPress={() => router.push('/settings')} />
-        </Section>
-
-        <Section header="Premium">
           <Row
             title="FlipUp Premium"
-            detail={premium ? 'Unlocked. Thank you for backing FlipUp.' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`}
+            detail={premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`}
             icon={{ symbol: 'crown.fill', color: brand.gold }}
             onPress={() => router.push('/premium')}
           />

@@ -21,8 +21,11 @@ export interface PlayerLine {
   /** Under the name: You · Host, Bot, Ready. */
   line: string;
   you?: boolean;
+<<<<<<< HEAD
   /** A Premium player's gold name. */
   gold?: boolean;
+=======
+>>>>>>> origin/main
   /** The … on the row: Remove, and Report or Block for a person. */
   onMore?: () => void;
 }
@@ -127,7 +130,11 @@ function Row({ row: r }: { row: PlayerLine }) {
     >
       <Avatar emoji={r.emoji} size={36} />
       <View style={{ flex: 1, gap: 1 }}>
+<<<<<<< HEAD
         <ThemedText numberOfLines={1} style={{ fontWeight: r.gold ? '800' : '600', ...(r.gold ? { color: brand.gold } : {}) }}>
+=======
+        <ThemedText numberOfLines={1} style={{ fontWeight: '600' }}>
+>>>>>>> origin/main
           {r.name}
         </ThemedText>
         <ThemedText variant="footnote" tone="secondaryLabel" style={r.you ? { color: brand.violetDark } : undefined}>

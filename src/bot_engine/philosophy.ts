@@ -125,6 +125,15 @@ export function decisionPhilosophy(i: InformationSet, p: StrategyPrediction, pro
       principle = plan?.draw !== 'none' ? 'continue-draw-at-price' : 'defend-showdown-at-model-price';
       factors.push('facing-bet', `price-${Number(f.simplifiedCallThreshold.toFixed(2))}`);
       preference = (focus === 'curious' ? 0.05 : 0) + (plan?.facingStrength ? -0.03 : 0);
+<<<<<<< HEAD
+=======
+      // A hero call: a curious bot that has been pushed around lately ("I don't believe you") looks a river bet up
+      // with a hand that can beat a bluff. Only inside the close-choice band, so it never calls off with nothing.
+      if (focus === 'curious' && i.street === 'river' && mood.pressure > 0.1 && plan!.level >= 1) {
+        factors.push('hero-call-after-being-pushed-around');
+        preference += 0.07;
+      }
+>>>>>>> origin/main
     } else {
       const thinValue = plan!.level >= 5 && plan!.level <= 6 && (p.equity ?? 0) > 0.65 && !plan!.facingStrength;
       principle =
@@ -195,9 +204,20 @@ export function decisionPhilosophy(i: InformationSet, p: StrategyPrediction, pro
         factors.push(fraction <= 0.75 ? 'established-folding-tendency' : 'folding-read-favors-a-smaller-alternative');
       }
       sizePreference = -Math.min(0.3, Math.abs(fraction - target) * 0.3) || 0;
+<<<<<<< HEAD
       preference +=
         (focus === 'pressure' ? 0.06 : 0.035) * mood.confidence -
         (focus === 'patient' ? 0.12 : focus === 'pressure' ? 0.07 : 0.1) * mood.caution -
+=======
+      // After losing a big pot most players tighten up; a pressing one tilts instead and fires more for a few hands,
+      // which the table can see and punish (it fades with the caution, about 0.7 a hand).
+      const tilt = focus === 'pressure' ? 0.1 * mood.caution : 0;
+      if (tilt > 0.01) factors.push('tilting-after-a-big-loss');
+      preference +=
+        (focus === 'pressure' ? 0.06 : 0.035) * mood.confidence -
+        (focus === 'patient' ? 0.12 : focus === 'pressure' ? 0 : 0.1) * mood.caution +
+        tilt -
+>>>>>>> origin/main
         (focus === 'pressure' ? 0.03 : 0.05) * mood.pressure;
     }
     if (story && i.street !== story.street && plan) {

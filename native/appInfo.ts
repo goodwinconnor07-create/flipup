@@ -19,7 +19,11 @@ export const APP_INFO = {
   /** The App Store id (App Store Connect > General > App Information), for the share link and the rating page. */
   appStoreId: '6829639428',
 
+<<<<<<< HEAD
   /** The old one-time Premium purchase. No longer sold; people who bought it keep Premium for good. */
+=======
+  /** The Premium non-consumable in-app purchase, already made in App Store Connect. */
+>>>>>>> origin/main
   premiumProductId: 'flipup.premium.unlock',
   /**
    * FlipUp Premium as auto-renewing subscriptions, one subscription group ("FlipUp Premium") in App Store Connect:

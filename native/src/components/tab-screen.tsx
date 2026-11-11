@@ -7,7 +7,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { spacing, useScheme } from '@/theme';
 
 import { GlassSurface } from './glass-surface';
+<<<<<<< HEAD
 import { Icon, type IconName } from './icon';
+=======
+import type { IconName } from './icon';
+>>>>>>> origin/main
 import { SwapIcon } from './swap';
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';

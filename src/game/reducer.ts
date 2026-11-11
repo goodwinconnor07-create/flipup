@@ -182,6 +182,8 @@ export function createTable(opts: {
   campaign?: Game['campaign'];
   code: string | null;
   now: number;
+  /** The bots you've met before, from the phone's memory (a phone's own table only). */
+  rivals?: Game['rivals'];
   /** Picks the random bots. Tests pass a seeded one so every run seats the same bots. */
   rng?: () => number;
   /** Every bot is an ULTRA bot (Premium, bots-only tables). */
@@ -208,7 +210,11 @@ export function createTable(opts: {
     logs: [],
     reactions: {},
     ...(opts.campaign ? { campaign: structuredClone(opts.campaign) } : {}),
+<<<<<<< HEAD
     ...(opts.ultra && !opts.campaign && !opts.code ? { ultra: true } : {}),
+=======
+    ...(opts.rivals && !opts.code ? { rivals: structuredClone(opts.rivals) } : {}),
+>>>>>>> origin/main
   };
   game.players.push({
     ...newPlayer(game, { name: cleanName(opts.name), emoji: opts.emoji, deviceId: opts.hostDeviceId, bot: false }),
@@ -229,7 +235,10 @@ export function createTable(opts: {
   while (game.players.length - 1 < opts.bots && game.players.length < botSeatLimit) addBot(game, opts.botStyles, opts.rng);
   if (game.campaign) seatBoss(game);
   syncHumanPokerSeat(game);
+<<<<<<< HEAD
   if (game.ultra && opts.memory) game.reads = { [game.players[0].id]: structuredClone(opts.memory) };
+=======
+>>>>>>> origin/main
   return game;
 }
 
@@ -1080,8 +1089,15 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
         // A Bankroll regular is greeted as one: the bots have been watching all month.
         const regular = !!game.bankroll && people.length === 1 && memoryNotes(game.reads?.[people[0].id]).has('again') && ctx.rng() < 0.6;
         if (regular) game.bankroll!.remembered = ['again'];
+        // A bot you've played at another table on this phone greets you as someone it knows.
+        const known = people.length === 1 && !game.bankroll ? knownRival(game, bots) : null;
         game.pendingTalk = regular
           ? { at: ctx.now + greetWait(game), playerId: who.id, event: 'rememberHello', forId: people[0].id }
+<<<<<<< HEAD
+=======
+          : known && ctx.rng() < 0.8
+            ? { at: ctx.now + greetWait(game), playerId: known.id, event: 'rememberHello', forId: people[0].id }
+>>>>>>> origin/main
           : {
               at: ctx.now + greetWait(game),
               playerId: who.id,
@@ -1359,7 +1375,10 @@ function tick(game: Game, ctx: ActionContext): boolean {
         ms &&
         !game.hand &&
         game.nextHandAt !== null &&
+<<<<<<< HEAD
         !usesEverydayBots(game) &&
+=======
+>>>>>>> origin/main
         (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost' || event === 'rememberHello')
       )
         game.nextHandAt = Math.max(game.nextHandAt, ctx.now + ms + TIMING.afterHello);
@@ -1488,7 +1507,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
         game.bankroll && !fast && (choice.move === 'bet' || choice.move === 'raise' || choice.move === 'allin')
           ? rememberBotBet(game, hand, player.id, ctx)
           : 0;
+<<<<<<< HEAD
       const spoken = memo || (event && said && !fast && !usesEverydayBots(game) ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0);
+=======
+      const spoken = memo || (event && said && !fast ? botSays(game, player.id, said, ctx.rng, ctx.now) : 0);
+>>>>>>> origin/main
       if (spoken) {
         wait = Math.max(wait, spoken);
         if (event === 'allin') owe(game, player.id);
@@ -1519,4 +1542,16 @@ function tick(game: Game, ctx: ActionContext): boolean {
   if (sleepy && chatty.length) botSays(game, chatty[Math.floor(ctx.rng() * chatty.length)].id, 'idle', ctx.rng, ctx.now);
   else dealTalk(game, ctx.rng, ctx.now);
   return true;
+}
+
+/** The seated bot you know best from other tables on this phone, if any (most tables shared, then most showdowns). */
+export function knownRival(game: Game, bots: Player[]): Player | null {
+  const r = game.rivals;
+  if (!r) return null;
+  const known = bots.filter((b) => !b.legend && r[b.name.toLowerCase()]);
+  const weight = (b: Player) => {
+    const x = r[b.name.toLowerCase()]!;
+    return x.tables * 10 + x.beat + x.lost;
+  };
+  return known.reduce<Player | null>((a, b) => (!a || weight(b) > weight(a) ? b : a), null);
 }

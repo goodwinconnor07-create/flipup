@@ -55,7 +55,7 @@ export async function emailReport(env: Env, r: StoredReport): Promise<void> {
     method: 'POST',
     headers: { authorization: `Bearer ${vars.RESEND_API_KEY}`, 'content-type': 'application/json' },
     body: JSON.stringify({
-      from: vars.REPORT_FROM ?? 'FlipUp reports <onboarding@resend.dev>',
+      from: vars.REPORT_FROM ?? 'FlipUp <reports@mail.playflipup.com>',
       to: [vars.REPORT_TO],
       subject: `FlipUp report: ${reasonLabel(r.reason)} (${r.where} ${r.code})`,
       text: lines.join('\n'),

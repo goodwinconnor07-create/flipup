@@ -378,7 +378,7 @@ Native build:
 
 Server (Cloudflare Worker):
 14. `DELETE /api/friends/:code` for the owning device. Done (Phase 5, step 5), with Delete my data in the app's Settings.
-15. `POST /api/reports`, stored and emailed to the support address. Done (`worker/reports.ts`, the `ReportBox` Durable Object, kept 180 days). Email needs the Worker secrets `RESEND_API_KEY` and `REPORT_TO` (and `REPORT_FROM` on a domain verified in Resend); without them reports are only stored.
+15. `POST /api/reports`, stored and emailed to the support address. Done (`worker/reports.ts`, the `ReportBox` Durable Object, kept 180 days). Email needs the Worker secrets `RESEND_API_KEY` and `REPORT_TO` (and `REPORT_FROM` on a domain verified in Resend; live: `FlipUp <reports@mail.playflipup.com>`, `mail.playflipup.com` is verified for sending and receiving, the Worker's key is sending-only and limited to it); without them reports are only stored.
 16. Check a signed StoreKit transaction before honouring Premium looks or modes at an online table. Done in code
     (`worker/appleJws.ts`, `worker/premium.ts`, `worker/entitlement.ts`, enforced by `worker/index.ts` and
     `worker/room.ts`); switched on by `PREMIUM_ENFORCED` once the owner's steps in row 11 are done.

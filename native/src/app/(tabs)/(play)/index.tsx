@@ -10,6 +10,7 @@ import { haptic } from '@/components/haptics';
 import { GameBackdrop, shade } from '@/components/home/game-backdrop';
 import { GameSwiper } from '@/components/home/game-swiper';
 import { PlayButton } from '@/components/home/play-button';
+import { SmallButton } from '@/components/home/small-button';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
@@ -193,25 +194,6 @@ function SideButton({ icon, label, say, tint = '#ffffff', onPress }: { icon: Ico
 function Dot({ on }: { on: boolean }) {
   const style = useAnimatedStyle(() => ({ width: withTiming(on ? 16 : 5, { duration: 200, easing: EASE_OUT }), opacity: withTiming(on ? 1 : 0.35, { duration: 200, easing: EASE_OUT }) }));
   return <Animated.View style={[{ height: 5, borderRadius: 3, backgroundColor: '#ffffff' }, style]} />;
-}
-
-/** One of the two buttons under PLAY. */
-function SmallButton({ icon, label, onPress }: { icon: IconName; label: string; onPress: () => void }) {
-  return (
-    <PressableScale
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      onPress={onPress}
-      haptics={false}
-      outerStyle={{ flex: 1 }}
-      style={{ minHeight: 54, flexDirection: 'row', gap: spacing.xs, borderRadius: 20, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.14)', borderWidth: 1, borderColor: EDGE }}
-    >
-      <Icon name={icon} size={18} color="#ffffff" />
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '800', color: '#ffffff' }}>
-        {label}
-      </Text>
-    </PressableScale>
-  );
 }
 
 /** The table or party you're in: a slim strip over the buttons with a green LIVE tag. */

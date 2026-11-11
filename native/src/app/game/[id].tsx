@@ -1,17 +1,21 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useWindowDimensions, View } from 'react-native';
+import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
-import { Button } from '@/components/button';
+import { BlurView } from 'expo-blur';
+
+import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
+import { shade } from '@/components/home/game-backdrop';
+import { PlayButton } from '@/components/home/play-button';
+import { SmallButton } from '@/components/home/small-button';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { HowToPicture } from '@/components/how-to-picture';
-import { StartTiles } from '@/components/home/start-tiles';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
 import { freeThisWeek, freeWeekEnds, isPremiumVariant, variantNeedsPremium, isVariant, variantInfo, variantNote, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { unlockToHost } from '@/state/unlock';
-import { brand, spacing } from '@/theme';
+import { brand, radius, ROUNDED, spacing } from '@/theme';
 
 /**
  * A game's sheet from Home: its picture and mood, the two ways to start it, then how it plays. A Premium game
@@ -29,6 +33,7 @@ export default function GameSheet() {
     router.back();
     unlockToHost([variant], premium);
   };
+  const look = gameLook(variant);
   const go = (mode: 'friends' | 'bots') => {
     router.back();
     router.push({ pathname: mode === 'friends' ? '/play-friends' : '/play-bots', params: { variant } });
@@ -59,18 +64,39 @@ export default function GameSheet() {
           </View>
         )}
       </View>
-      {/* Opened from a table's game pill: only how it plays. */}
-      {!rules &&
-        (locked ? (
-          <View style={{ gap: spacing.sm }}>
-            <ThemedText variant="body" tone="secondaryLabel">
-              Hosting {info.name} needs FlipUp Premium. Friends who join your table play it free.
-            </ThemedText>
-            <Button title="Continue" onPress={unlock} />
+      {/* Opened from a table's game pill: only how it plays. Otherwise the same buttons as Home, on the game's own
+          colour; without Premium a blur and a lock sit over them, and a tap anywhere on it opens the offer. */}
+      {!rules && (
+        <View style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: shade(look.card[0], 0.5) }}>
+          <View style={{ padding: spacing.md, gap: spacing.sm }}>
+            <PlayButton label={`Play ${info.name} with friends`} line="with friends · share a code" ink={shade(look.band, 0.35)} tint={`${look.card[0]}40`} onPress={() => go('friends')} />
+            <View style={{ flexDirection: 'row' }}>
+              <SmallButton icon="cpu.fill" label="Play bots" onPress={() => go('bots')} />
+            </View>
           </View>
-        ) : (
-          <StartTiles onGo={go} height={150} />
-        ))}
+          {locked && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Unlock Premium to play"
+              onPress={() => {
+                haptic.tap();
+                unlock();
+              }}
+              style={{ position: 'absolute', inset: 0 }}
+            >
+              <BlurView intensity={40} tint="dark" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}>
+                <Icon name="lock.fill" size={30} color="#ffffff" />
+                <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 20, fontWeight: '800', color: '#ffffff' }}>
+                  Unlock Premium to play
+                </Text>
+                <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255, 255, 255, 0.8)' }}>
+                  Friends who join play {info.name} free
+                </Text>
+              </BlurView>
+            </Pressable>
+          )}
+        </View>
+      )}
       <View style={{ gap: spacing.xs }}>
         <ThemedText variant="headline">How it plays</ThemedText>
         {info.rules.map((r) => (

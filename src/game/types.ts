@@ -68,6 +68,10 @@ export interface Player {
   bubble?: string;
   /** Their card back (see cardPacks.ts), a FlipUp Premium extra. Public: the table sees it on the back of their cards. */
   cardPack?: string;
+  /** A FlipUp Premium player who shows their name in gold (Settings > Gold name). Public: everyone at the table sees it. */
+  gold?: boolean;
+  /** An ULTRA bot (Premium, bots-only tables): plays without leaks and learns your habits fast. Public: the table shows it. */
+  ultra?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
   twin?: TwinBrain;
   /** Stable bot identity, private on online tables. */
@@ -384,6 +388,8 @@ export interface Game {
   blindsRaiseAt?: number | null;
   /** What the bots have seen each player do. Never sent to phones. */
   reads?: Record<string, PlayerRead>;
+  /** An ULTRA table (Premium, bots-only): every bot that sits down here is an ULTRA bot. */
+  ultra?: boolean;
   /** When each bot last spoke (table clock), so nobody chatters non-stop. Never sent to phones. */
   talkAt?: Record<string, number>;
   /** When each bot's last line is done being said and read: it doesn't move before then. */
@@ -432,6 +438,11 @@ export interface Game {
   legendGame?: string;
   /** With `legendGame`: this person has beaten them before ('won') or only lost to them ('lost'), so they greet them differently. */
   rematch?: 'won' | 'lost';
+  /**
+   * A phone's own table: the bots here you've played before, by lower-case name, from the phone's memory (tables
+   * shared, and showdowns you've won and lost against them). A bot you know greets you as a regular.
+   */
+  rivals?: Record<string, Rival>;
   /** The last hand the bots took notes on. */
   readHand?: number;
   /** How each bot feels (tilt, confidence, grudges). Never sent to phones. */
@@ -484,7 +495,7 @@ export interface Game {
 export type Action =
   /** This phone takes a seat (or updates its name and picture). */
   | { type: 'join'; name: string; emoji: string }
-  | { type: 'setLook'; name: string; emoji: string; bubble?: string; cardPack?: string }
+  | { type: 'setLook'; name: string; emoji: string; bubble?: string; cardPack?: string; gold?: boolean }
   /** `legend` seats that AI Legend instead of a random bot. */
   | { type: 'addBot'; legend?: string; /** A bot from `BOTS` by name (the setup page's picks). */ name?: string }
   /** Host removes a player or bot; anyone can remove themselves. */
@@ -524,3 +535,11 @@ export interface ActionContext {
 }
 
 export type ActionResult = { ok: true; game: Game; changed: boolean } | { ok: false; error: string };
+
+/** What a phone remembers about one bot across tables (`Game.rivals`). */
+export interface Rival {
+  tables: number;
+  /** Showdowns you won against this bot, and lost to it. */
+  beat: number;
+  lost: number;
+}

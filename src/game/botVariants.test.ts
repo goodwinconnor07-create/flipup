@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { variantDecide, variantEquity, variantScore } from './botVariants';
+import { botHits, draws, variantDecide, variantEquity, variantScore } from './botVariants';
+import type { Hand } from './types';
+import { botVote, keepTwo } from './variants';
 import { applyAction, bestHand, createTable, DEFAULT_SETTINGS, fullDeck, makeMove, seededRng, type Game, type Variant } from './index';
 
 const HOST = 'host-device';
@@ -105,5 +107,45 @@ describe('the bots\' quick scoring', () => {
       const [hole, board] = [d.slice(0, 2), d.slice(2, 2 + boardSize)];
       expect(variantScore(v, hole, board)).toBe(bestHand(v, hole, board).score);
     }
+  });
+});
+
+describe('game-mode sense', () => {
+  const cards = (s: string) => s.split(' ');
+
+  it('keeps a flush draw over a weak pair in Crazy Pineapple', () => {
+    // 3c pairs the board's three; Ah Kh are four hearts with the flop.
+    expect([...keepTwo(cards('Ah Kh 3c'), cards('Qh 7h 3d'))].sort()).toEqual(['Ah', 'Kh']);
+    // Trips still beat everything.
+    expect([...keepTwo(cards('Ah Kd 7c'), cards('7d 7s 2h'))].sort()).toEqual(['7c', 'Ah']);
+  });
+
+  it('reads a bettor as stronger than random', () => {
+    const hand = { actions: [{ street: 'flop', playerId: 'a', move: 'raise', to: 100 }, { street: 'turn', playerId: 'a', move: 'bet', to: 200 }] } as unknown as Hand;
+    expect(draws(hand, 'a', () => 0.99)).toBe(3);
+    expect(draws(hand, 'b', () => 0.99)).toBe(1);
+  });
+
+  it('votes in Imposter: finds the odd one out and listens to the table, without knowing its own role', () => {
+    const act = (playerId: string, move: string) => ({ street: 'flop', playerId, move, to: 0 });
+    const hand = {
+      imposter: 'd',
+      seats: ['a', 'b', 'c', 'd'].map((playerId) => ({ playerId })),
+      actions: [act('a', 'check'), act('b', 'check'), act('c', 'check'), act('d', 'bet'), act('a', 'call'), act('b', 'call'), act('c', 'call')],
+      points: { a: 'b', c: 'b' },
+    } as unknown as Hand;
+    // a's own read and the crowd disagree here; d stands out by play most.
+    expect(botVote({ ...hand, points: {} }, 'a')).toBe('d');
+    // The imposter doesn't know it is one: it votes like anyone, here with the two fingers already pointing at b.
+    expect(botVote(hand, 'd')).toBe('b');
+  });
+
+  it('risks less on a hit in Blackjack Hold\'em when its poker hand is good', () => {
+    const g = dealt('bjholdem');
+    const hand = { ...g.hand!, board: cards('Kd Kc 6h') };
+    const game = { ...g, hand };
+    const seat = { ...hand.seats[0], cards: cards('Ks 6c') }; // 16, and a full house
+    const hits = Array.from({ length: 40 }, (_, i) => botHits(game, seat, seededRng(i))).filter(Boolean).length;
+    expect(hits).toBe(0);
   });
 });

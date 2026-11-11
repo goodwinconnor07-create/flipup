@@ -8,7 +8,6 @@ import { haptic } from '@/components/haptics';
 import { SheetScroll } from '@/components/sheet-scroll';
 import { ThemedText } from '@/components/themed-text';
 import { inviteMessage } from '@/state/invite-message';
-import { useMyUsername } from '@/state/pals';
 import { brand, radius, spacing, useColors } from '@/theme';
 
 interface Person {
@@ -26,7 +25,6 @@ interface Person {
 export default function InviteContactsSheet() {
   const colors = useColors();
   const { code } = useLocalSearchParams<{ code?: string }>();
-  const { username } = useMyUsername();
   const [people, setPeople] = useState<Person[] | null>(null);
   const [state, setState] = useState<'idle' | 'denied' | 'none'>('idle');
   const [query, setQuery] = useState('');
@@ -56,12 +54,12 @@ export default function InviteContactsSheet() {
 
   const text = (p: Person) => {
     haptic.tap();
-    const body = encodeURIComponent(inviteMessage({ first: p.first, username, code }));
+    const body = encodeURIComponent(inviteMessage({ first: p.first, code }));
     Linking.openURL(`sms:${p.phone}&body=${body}`).catch(() => Alert.alert("Couldn't open Messages", 'Try Share a link instead.'));
   };
   const share = () => {
     haptic.tap();
-    void Share.share({ message: inviteMessage({ username, code }) });
+    void Share.share({ message: inviteMessage({ code }) });
   };
 
   const q = query.trim().toLowerCase();

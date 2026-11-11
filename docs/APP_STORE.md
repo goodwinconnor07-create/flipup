@@ -75,7 +75,22 @@ in version 1. If it's added later, it's only for bug fixes, never new features.
 purchase. Apps may not use their own mechanisms to unlock content or functionality." And: "you should make sure
 you have a restore mechanism for any restorable in-app purchases."
 
-**What we'll do:**
+**Subscriptions (November 2026, the owner's call): Premium is now sold as auto-renewing subscriptions.**
+- One subscription group, "FlipUp Premium", with two products: `flipup.premium.monthly` at $7.00 a month and
+  `flipup.premium.yearly` at $50.00 a year (`native/appInfo.ts`). Each has an introductory offer, **pay up front,
+  $1.00 for 14 days** (set it per product in App Store Connect > Subscriptions > Subscription Prices > Introductory
+  Offers). **TODO(owner): make the group, both products and both offers in App Store Connect before the next build**,
+  and add the two ids to the review build's sandbox testers.
+- The old one-time `flipup.premium.unlock` is no longer sold. Anyone who bought it keeps Premium for good (the app and
+  the server both still accept it); don't remove it from sale in a way that breaks Restore.
+- 3.1.2 asks for the price, the period, what renews and how to cancel next to Subscribe, plus links to the terms of
+  use and the privacy policy: the Premium sheet's pinned bar has all of it (Apple's standard EULA at
+  `APP_INFO.termsUrl`). Manage subscription (`deepLinkToSubscriptions`) is on the sheet once you have Premium.
+- The server (`worker/premium.ts`, `entitlement.ts`) keeps each subscription's expiry from the signed transaction and
+  from App Store Server Notifications (renewals move it on), with a day's grace. Set the notifications URL
+  (`/api/apple/notifications`, version 2) in App Store Connect so renewals and expiries reach it.
+
+**Before November 2026:**
 - Premium is the non-consumable `flipup.premium.unlock`, sold through StoreKit (`react-native-iap` or
   `expo-iap`, whichever supports SDK 58 when we get there). The price shown comes from StoreKit, never a
   hard-coded "$9".
@@ -261,7 +276,7 @@ after upload when a reason is missing.
 >
 > Chips are play chips only. They can't be bought, cashed out or exchanged, and there's no real-money play.
 >
-> Premium is a one-time in-app purchase (`flipup.premium.unlock`). Open it from Settings > FlipUp Premium, or by
+> Premium is an auto-renewing subscription (`flipup.premium.monthly`, `flipup.premium.yearly`, each with a 14-day $1 introductory offer). Open it from Settings > FlipUp Premium, or by
 > tapping any locked card back, bubble colour or game. Buy it with a sandbox account; **Restore Purchases** is on
 > the same sheet. Five game modes are free. The other eight need Premium to host; anyone can join one with a code
 > for free, so only the host needs it. There are no ads and no referral rewards. To check account deletion: Settings > Delete my data.

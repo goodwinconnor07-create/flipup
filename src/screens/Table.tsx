@@ -279,8 +279,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const variant = variantOf(game);
   const odds = useOdds(hand, showsOdds(variant), variant);
   const themed = variant !== 'holdem';
-  // Imposter: you only learn it's you; everyone else in the hand is innocent.
-  const role = hand?.variant === 'imposter' && mySeat ? (hand.imposter === me?.id ? 'imposter' : 'innocent') : null;
+  // Imposter: nobody is told their role (it could be you), so the badge just asks the question.
+  const role = hand?.variant === 'imposter' && hand.imposter && mySeat && !hand.result ? 'unknown' : null;
   // Pittsburgh always has room for three rivers, the cross for nine and the circle for six; Red River grows as the
   // red cards come.
   const boardSlots = Math.max(boardSize(variant), hand?.board.length ?? 0);
@@ -457,11 +457,11 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 // In an Imposter hand the badge tells you your role instead of the game's name.
                 <button
                   type="button"
-                  className={`variant-pill press${role === 'imposter' ? ' imposter' : ''}`}
+                  className={`variant-pill press${role ? ' imposter' : ''}`}
                   onClick={() => openSheet({ name: 'rules', variant })}
                   aria-label={`${variantInfo(variant).name}: how it plays`}
                 >
-                  {role === 'imposter' ? '🕵️ Imposter: you' : role === 'innocent' ? '😇 Innocent' : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
+                  {role === 'unknown' ? '🕵️ Imposter? Could be you' : `${variantInfo(variant).emoji} ${variantInfo(variant).name}`}
                 </button>
               )}
               {hand && !game.memory && (

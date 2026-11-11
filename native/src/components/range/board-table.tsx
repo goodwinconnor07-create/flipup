@@ -13,8 +13,22 @@ import { gradient, radius, spacing } from '@/theme';
 import { seatsOf, type Pos, type Scenario } from '@train/ranges/model';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
+/** Your seat's width: two cards, then You and your stack. */
+const HERO_W = 112;
 
-export function BoardTable({ scenario, view, summary, reveal }: { scenario: Scenario; view: BoardView; /** The table in a sentence, for VoiceOver. */ summary?: string; /** An example hand for opponents (after a miss), shown on their seats in place of the stack. */ reveal?: Partial<Record<Pos, [string, string]>> }) {
+export function BoardTable({
+  scenario,
+  view,
+  summary,
+  reveal,
+}: {
+  scenario: Scenario;
+  view: BoardView;
+  /** The table in a sentence, for VoiceOver. */ summary?: string;
+  /** An example hand for opponents (after a miss), shown on their seats in place of the stack. */ reveal?: Partial<
+    Record<Pos, [string, string]>
+  >;
+}) {
   const [width, setWidth] = useState(0);
   const nine = seatsOf(scenario).length > 6;
   const height = nine ? 250 : 214;
@@ -42,7 +56,19 @@ export function BoardTable({ scenario, view, summary, reveal }: { scenario: Scen
       }}
     >
       {/* The pot and the board, in the middle. */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          bottom: 0,
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.xs,
+        }}
+      >
         <View style={{ paddingHorizontal: 12, paddingVertical: 3, borderRadius: radius.full, backgroundColor: 'rgba(0,0,0,0.42)' }}>
           <ThemedText variant="footnote" tone="onColor" style={[{ fontWeight: '700' }, NUM]}>
             Pot {bb(view.pot)}
@@ -54,13 +80,25 @@ export function BoardTable({ scenario, view, summary, reveal }: { scenario: Scen
             return c ? (
               <PlayingCard key={c} card={c} size="md" width={cardW} />
             ) : (
-              <View key={i} style={{ width: cardW, height: Math.round(cardW * 1.4), borderRadius: cardW * 0.18, borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.22)' }} />
+              <View
+                key={i}
+                style={{
+                  width: cardW,
+                  height: Math.round(cardW * 1.4),
+                  borderRadius: cardW * 0.18,
+                  borderWidth: 1.5,
+                  borderColor: 'rgba(255,255,255,0.22)',
+                }}
+              />
             );
           })}
         </View>
       </View>
 
       {seats.map((s) => {
+        // Your seat is wider: your two cards on it, like every other seat would hold theirs, then You and your stack.
+        const w = s.hero ? HERO_W : seatW;
+        const h = s.hero ? 50 : 42;
         const playing = inHand.includes(s.pos);
         const folded = view.folded.includes(s.pos);
         const acting = view.acting === s.pos;
@@ -79,43 +117,93 @@ export function BoardTable({ scenario, view, summary, reveal }: { scenario: Scen
             <View
               style={{
                 position: 'absolute',
-                left: s.x - (s.hero ? seatW + 14 : seatW) / 2,
-                top: s.y - 21,
-                width: s.hero ? seatW + 14 : seatW,
-                height: 42,
+                left: s.x - w / 2,
+                top: s.y - h / 2,
+                width: w,
+                height: h,
+                flexDirection: s.hero ? 'row' : 'column',
+                gap: s.hero ? 6 : 0,
                 borderRadius: 12,
                 borderCurve: 'continuous',
                 alignItems: 'center',
                 justifyContent: 'center',
-                backgroundColor: s.hero ? 'rgba(255,255,255,0.96)' : playing ? 'rgba(0,0,0,0.46)' : 'rgba(0,0,0,0.16)',
+                backgroundColor: s.hero ? 'rgba(5,12,40,0.88)' : playing ? 'rgba(0,0,0,0.46)' : 'rgba(0,0,0,0.16)',
                 borderWidth: acting || s.hero ? 2.5 : 0,
                 borderColor: acting ? '#8fd0ff' : '#ffffff',
-                opacity: !playing ? 0.4 : folded ? 0.55 : 1,
+                // Folded seats (before the flop or since) step right back, so the players still in stand out.
+                opacity: !playing || folded ? 0.38 : 1,
               }}
             >
-              <Text maxFontSizeMultiplier={1.1} style={{ fontSize: nine ? 12 : 13, fontWeight: '800', color: s.hero ? '#111111' : '#ffffff' }}>
-                {s.hero ? 'You' : seatName(s.pos)}
-              </Text>
-              {reveal?.[s.pos] && !s.hero ? (
-                <View style={{ flexDirection: 'row', gap: 2, marginTop: 1 }}>
-                  <MiniCard card={reveal[s.pos]![0]} w={20} />
-                  <MiniCard card={reveal[s.pos]![1]} w={20} />
+              {s.hero && (
+                <View style={{ flexDirection: 'row', gap: 2 }}>
+                  <MiniCard card={scenario.hero.cards[0]} w={26} />
+                  <MiniCard card={scenario.hero.cards[1]} w={26} />
                 </View>
-              ) : playing && stack !== undefined && (
-                <Text maxFontSizeMultiplier={1.1} style={[{ fontSize: 12, fontWeight: '700', color: s.hero ? '#333333' : 'rgba(255,255,255,0.85)' }, NUM]}>
-                  {bb(Math.round(stack * 10) / 10)}
-                </Text>
               )}
+              <View style={{ alignItems: 'center' }}>
+                <Text
+                  maxFontSizeMultiplier={1.1}
+                  style={{ fontSize: nine ? 12 : 13, fontWeight: '800', color: '#ffffff' }}
+                >
+                  {s.hero ? 'You' : seatName(s.pos)}
+                </Text>
+                {!s.hero && (!playing || folded) ? (
+                  <Text maxFontSizeMultiplier={1.1} style={{ fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.75)' }}>
+                    Fold
+                  </Text>
+                ) : reveal?.[s.pos] && !s.hero ? (
+                  <View style={{ flexDirection: 'row', gap: 2, marginTop: 1 }}>
+                    <MiniCard card={reveal[s.pos]![0]} w={20} />
+                    <MiniCard card={reveal[s.pos]![1]} w={20} />
+                  </View>
+                ) : (
+                  playing &&
+                  stack !== undefined && (
+                    <Text
+                      maxFontSizeMultiplier={1.1}
+                      style={[{ fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.85)' }, NUM]}
+                    >
+                      {bb(Math.round(stack * 10) / 10)}
+                    </Text>
+                  )
+                )}
+              </View>
             </View>
             {s.pos === 'BTN' && (
-              <View style={{ position: 'absolute', left: s.x + seatW / 2 - 9, top: s.y - 28, width: 18, height: 18, borderRadius: 9, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
+              // On the seat's outer corner, so it never lands on the board.
+              <View
+                style={{
+                  position: 'absolute',
+                  left: s.x < width / 2 - 4 ? s.x - w / 2 - 9 : s.x + w / 2 - 9,
+                  top: s.y - h / 2 - 7,
+                  width: 18,
+                  height: 18,
+                  borderRadius: 9,
+                  backgroundColor: '#ffffff',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <Text maxFontSizeMultiplier={1} style={{ fontSize: 9, fontWeight: '900', color: '#111111' }}>
                   D
                 </Text>
               </View>
             )}
             {bet !== undefined && bet > 0 && !folded && (
-              <View style={{ position: 'absolute', left: bx - 18, top: by - 9, minWidth: 36, height: 18, paddingHorizontal: 5, borderRadius: 9, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}>
+              <View
+                style={{
+                  position: 'absolute',
+                  left: bx - 18,
+                  top: by - 9,
+                  minWidth: 36,
+                  height: 18,
+                  paddingHorizontal: 5,
+                  borderRadius: 9,
+                  backgroundColor: '#ffffff',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
                 <Text maxFontSizeMultiplier={1} style={[{ fontSize: 11.5, fontWeight: '800', color: '#0c1d4d' }, NUM]}>
                   {bb(bet)}
                 </Text>

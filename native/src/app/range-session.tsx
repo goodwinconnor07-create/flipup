@@ -7,7 +7,8 @@
 // with each answer, and drifts again on the finish page.
 import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useRef, useState, type ComponentRef, type ReactNode, type RefObject } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { ScrollView, View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
@@ -17,12 +18,16 @@ import { TrainBackground, type TrainMood } from '@/components/range/train-backgr
 import { shareDaily } from '@/components/range/train-home';
 import { BackText } from '@/components/setup/setup-header';
 import { FooterContext } from '@/components/tab-screen';
+import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
+import { EASE_OUT } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
 import { noteDailyAnswer, readDaily } from '@/state/range-daily';
 import { SET_SIZE } from '@/state/range-result';
 import { unlockToTrain } from '@/state/unlock';
 import { ForceScheme, spacing, useColors } from '@/theme';
+import type { Grade } from '@train/ranges/model';
 
 /** How long the room stays warm or cool after an answer. */
 const MOOD_MS = 2600;
@@ -65,10 +70,11 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
   const [round, setRound] = useState(0);
   const [answers, setAnswers] = useState<SetAnswer[]>(prior);
   const [done, setDone] = useState(() => !!quiz?.finished);
+  // The hand on screen (1-based): it moves on with Next hand, not with the answer, so the header never runs ahead.
+  const [dealt, setDealt] = useState(prior.length + 1);
   const [mood, setMood] = useState<TrainMood>(quiz?.finished ? 'done' : 'idle');
   useEffect(() => {
-    if (done) return setMood('done');
-    if (mood === 'idle') return;
+    if (done || mood === 'idle') return;
     const t = setTimeout(() => setMood('idle'), MOOD_MS);
     return () => clearTimeout(t);
   }, [mood, done]);
@@ -80,13 +86,12 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
       return;
     }
     setAnswers([]);
+    setDealt(1);
     setDone(false);
-    setMood('idle');
     setRound(round + 1);
     top();
   };
-  // The hand you're on: one past the answers, until the last one is answered.
-  const at = Math.min(answers.length + 1, size);
+  const at = Math.min(dealt, size);
   const full = answers.length >= size;
   const best = answers.filter((a) => a.grade === 'best').length;
   const shareQuiz = () => shareDaily({ ...readDaily(), answers: answers.map((a) => ({ id: a.scenario.id, pick: a.pick, grade: a.grade })) });
@@ -102,11 +107,11 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
         </View>
       </View>
       {!premium && (
-        <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: '/premium', params: { reason: 'training' } })} hitSlop={8} style={{ alignSelf: 'center', paddingVertical: 6 }}>
+        <PressableScale accessibilityRole="button" onPress={() => router.push({ pathname: '/premium', params: { reason: 'training' } })} hitSlop={8} outerStyle={{ alignSelf: 'center' }} style={{ paddingVertical: 6 }}>
           <ThemedText variant="subhead" style={{ color: colors.accent as string, fontWeight: '600' }}>
             Play more with Premium
           </ThemedText>
-        </Pressable>
+        </PressableScale>
       )}
     </View>
   ) : (
@@ -121,7 +126,7 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
   );
 
   return (
-    <TrainBackground mood={mood} still={!done}>
+    <TrainBackground mood={done ? 'done' : mood} still={!done}>
       <Stack.Screen options={{ headerShown: false, title: daily ? 'Daily quiz' : 'Range training' }} />
       {/* Back on the left, the set's progress in the middle. */}
       <View style={{ paddingTop: insets.top, paddingHorizontal: spacing.md }}>
@@ -133,13 +138,8 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
             <View accessible accessibilityLabel={`${answers.length} of ${size} hands played`} style={{ flexDirection: 'row', gap: 6 }}>
               {Array.from({ length: size }, (_, i) => {
                 const a = answers[i];
-                const current = !done && !a && i === answers.length;
-                return (
-                  <View
-                    key={i}
-                    style={{ width: 22, height: 6, borderRadius: 3, backgroundColor: a ? ink[a.grade] : colors.cellPressed, borderWidth: current ? 1.5 : 0, borderColor: colors.accent as string }}
-                  />
-                );
+                const current = !done && i === at - 1;
+                return <ProgressDot key={i} grade={a?.grade} ink={a ? ink[a.grade] : (colors.cellPressed as string)} current={current} ring={colors.accent as string} />;
               })}
             </View>
           </View>
@@ -156,7 +156,10 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
             focus={focus}
             queue={queue}
             onStopFocus={() => router.back()}
-            onNext={top}
+            onNext={() => {
+              setDealt((d) => d + 1);
+              top();
+            }}
             onTop={top}
             onScrollTo={(y) => scroll.current?.scrollTo({ y, animated: true })}
             onAnswer={(scenario, pick, grade) => {
@@ -180,12 +183,29 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
 }
 
 /**
+ * One hand in the header's progress: grey to come, ringed while it's on screen, its grade's colour once answered.
+ * A best play pulses as it fills (rule 8: out to 108% and back, ease-out, never a bounce; still under Reduce Motion).
+ */
+function ProgressDot({ grade, ink, current, ring }: { grade?: Grade; ink: string; current: boolean; ring: string }) {
+  const reduce = useReduceMotion();
+  const scale = useSharedValue(1);
+  const was = useRef(grade);
+  useEffect(() => {
+    if (grade === 'best' && was.current !== 'best' && !reduce) {
+      scale.set(withSequence(withTiming(1.08, { duration: 100, easing: EASE_OUT }), withTiming(1, { duration: 160, easing: EASE_OUT })));
+    }
+    was.current = grade;
+  }, [grade, reduce, scale]);
+  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.get() }] }));
+  return <Animated.View style={[{ width: 22, height: 6, borderRadius: 3, backgroundColor: ink, borderWidth: current ? 1.5 : 0, borderColor: ring }, style]} />;
+}
+
+/**
  * The page under the top bar, with a bar pinned to the bottom of the screen: the trainer's own (through
  * `useTabFooter`), or `fixed` when given. The footer's state lives here, not in the screen, so a new footer only
  * redraws this frame and never the trainer that set it (that would loop).
  */
 function PinnedPage({ children, fixed, scrollRef }: { children: ReactNode; fixed?: ReactNode; scrollRef: RefObject<ComponentRef<typeof ScrollView> | null> }) {
-  const colors = useColors();
   const insets = useSafeAreaInsets();
   const [footer, setFooter] = useState<ReactNode>(null);
   const [footerH, setFooterH] = useState(0);

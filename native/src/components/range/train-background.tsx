@@ -8,6 +8,7 @@ import { View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import { GrainBackground } from '@/components/grain-background';
+import { EASE_OUT } from '@/motion/presets';
 import { gradient } from '@/theme';
 
 export type TrainMood = 'idle' | 'best' | 'ok' | 'mistake' | 'done';
@@ -20,8 +21,8 @@ export function TrainBackground({ mood = 'idle', still, children }: { mood?: Tra
   const warm = useSharedValue(WARM[mood]);
   const cool = useSharedValue(COOL[mood]);
   useEffect(() => {
-    warm.set(withTiming(WARM[mood], { duration: FADE_MS }));
-    cool.set(withTiming(COOL[mood], { duration: FADE_MS }));
+    warm.set(withTiming(WARM[mood], { duration: FADE_MS, easing: EASE_OUT }));
+    cool.set(withTiming(COOL[mood], { duration: FADE_MS, easing: EASE_OUT }));
   }, [mood, warm, cool]);
   const warmStyle = useAnimatedStyle(() => ({ opacity: warm.get() }));
   const coolStyle = useAnimatedStyle(() => ({ opacity: cool.get() }));

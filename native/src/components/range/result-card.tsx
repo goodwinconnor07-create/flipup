@@ -1,7 +1,8 @@
 // The answer's result, risen out of the answer bar it replaces (motion rules 10 and 20: the bar opens into it from
-// the bottom, from 95%), so the table above never moves while you take it in. Four things and no more: the verdict,
-// one sentence of why, one picture (your odds against the price, or what each play wins), and their range as three
-// piles. Everything else is one tap away in the `range-breakdown` sheet.
+// the bottom, from 95%), so the table above never moves while you take it in. Pinned, it stays short so it never
+// covers the page: the verdict, one sentence of why, Breakdown and Next hand. Its numbers (`ResultDetails`: your odds
+// against the price or what each play wins against the best, and their range as piles) sit in the page under the
+// table. Everything else is one tap away in the `range-breakdown` sheet.
 import { useState } from 'react';
 import { View } from 'react-native';
 import Animated from 'react-native-reanimated';
@@ -28,10 +29,6 @@ export function ResultCard({
   best,
   label,
   why,
-  numbers,
-  facing,
-  piles,
-  bet,
   run,
   cheer,
   onBreakdown,
@@ -45,11 +42,6 @@ export function ResultCard({
   label: (id: OptionId) => string;
   /** The first sentence of why. */
   why: string;
-  numbers: HandNumbers;
-  facing: boolean;
-  piles: Pile[];
-  /** The bet the piles answer, when you could bet. */
-  bet: OptionId;
   /** Best plays in a row, counting this one. */
   run: number;
   /** A run worth confetti (3, 5, 10...). */
@@ -88,7 +80,11 @@ export function ResultCard({
       }}
     >
       {/* The verdict, with the run when you're on one. */}
-      <View accessible accessibilityLabel={`${VERDICT[grade]}. ${sub}.${run >= 2 ? ` ${run} in a row.` : ''}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+      <View
+        accessible
+        accessibilityLabel={`${VERDICT[grade]}. ${sub}.${run >= 2 ? ` ${run} in a row.` : ''}`}
+        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+      >
         <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center', backgroundColor: tone.bg }}>
           <Icon name={ICON[grade]} size={22} color={tone.ink} />
         </View>
@@ -101,7 +97,17 @@ export function ResultCard({
           </ThemedText>
         </View>
         {run >= 2 && (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4, paddingHorizontal: spacing.xs, borderRadius: radius.full, backgroundColor: look.best.bg }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              paddingVertical: 4,
+              paddingHorizontal: spacing.xs,
+              borderRadius: radius.full,
+              backgroundColor: look.best.bg,
+            }}
+          >
             <Icon name="flame.fill" size={14} color={brand.gold} />
             <ThemedText variant="footnote" style={[{ fontWeight: '800' }, NUM]}>
               {run}
@@ -114,15 +120,7 @@ export function ResultCard({
         <ThemedText variant="subhead">{why}</ThemedText>
       </Animated.View>
 
-      <Animated.View entering={detail(1, reduce)}>{facing ? <Odds numbers={numbers} /> : <Plays numbers={numbers} best={best} pick={pick} label={label} />}</Animated.View>
-
-      {piles.length > 0 && (
-        <Animated.View entering={detail(2, reduce)}>
-          <Piles piles={piles} caption={facing ? 'Their hands now' : `Their hands against ${BET_WORDS[bet] ?? 'a bet'}`} />
-        </Animated.View>
-      )}
-
-      <Animated.View entering={detail(3, reduce)} style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xxs }}>
+      <Animated.View entering={detail(1, reduce)} style={{ flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xxs }}>
         <View style={{ flex: 1 }}>
           <Button title="Breakdown" variant="secondary" onPress={onBreakdown} />
         </View>
@@ -134,6 +132,48 @@ export function ResultCard({
       {/* A run worth marking: confetti from the verdict, over the page (the card doesn't clip). */}
       {width > 0 && <Confetti burst={cheer ? 1 : 0} origin={{ x: 34, y: 34 }} amount={70} />}
     </Animated.View>
+  );
+}
+
+/**
+ * The result's numbers, in the page under the table: your odds against the price (facing a bet) or what each play wins
+ * against the best (when you could bet), then their range as piles, answering the bet you made, or the one you could
+ * have made. A range that's all one pile is said in words; one bar at 100% says nothing.
+ */
+export function ResultDetails({
+  numbers,
+  facing,
+  best,
+  pick,
+  label,
+  piles,
+  bet,
+}: {
+  numbers: HandNumbers;
+  facing: boolean;
+  best: OptionId;
+  pick: OptionId;
+  label: (id: OptionId) => string;
+  piles: Pile[];
+  bet: OptionId;
+}) {
+  const colors = useColors();
+  const reduce = useReduceMotion();
+  const words = BET_WORDS[bet] ?? 'a bet';
+  const caption = facing ? 'Their hands now' : pick === bet ? `Their hands against your bet` : `If you’d made ${words}`;
+  return (
+    <View
+      style={{ gap: spacing.md, padding: spacing.md, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}
+    >
+      <Animated.View entering={detail(0, reduce)}>
+        {facing ? <Odds numbers={numbers} /> : <Plays numbers={numbers} best={best} pick={pick} label={label} />}
+      </Animated.View>
+      {piles.length > 0 && (
+        <Animated.View entering={detail(1, reduce)}>
+          <Piles piles={piles} caption={caption} />
+        </Animated.View>
+      )}
+    </View>
   );
 }
 
@@ -153,41 +193,78 @@ function Odds({ numbers }: { numbers: HandNumbers }) {
         </ThemedText>
       </View>
       <View style={{ height: 10, borderRadius: 5, backgroundColor: colors.cellPressed }}>
-        <View style={{ width: `${Math.round(Math.min(1, numbers.equity) * 100)}%`, height: '100%', borderRadius: 5, backgroundColor: fill }} />
+        <View
+          style={{ width: `${Math.round(Math.min(1, numbers.equity) * 100)}%`, height: '100%', borderRadius: 5, backgroundColor: fill }}
+        />
         {/* The price: a short line standing a little proud of the bar. */}
-        <View style={{ position: 'absolute', left: `${Math.round(numbers.price * 100)}%`, top: -3, width: 2, height: 16, marginLeft: -1, borderRadius: 1, backgroundColor: colors.label as string }} />
+        <View
+          style={{
+            position: 'absolute',
+            left: `${Math.round(numbers.price * 100)}%`,
+            top: -3,
+            width: 2,
+            height: 16,
+            marginLeft: -1,
+            borderRadius: 1,
+            backgroundColor: colors.label as string,
+          }}
+        />
       </View>
     </View>
   );
 }
 
-/** When you can bet: what each play wins on average, the best in gold and yours marked. */
+/**
+ * When you can bet: every play, the best first, as a bar that's full for the best and shorter the more a play gives
+ * up, with what it loses against the best. Long always means good.
+ */
 function Plays({ numbers, best, pick, label }: { numbers: HandNumbers; best: OptionId; pick: OptionId; label: (id: OptionId) => string }) {
   const colors = useColors();
-  const top = Math.max(...numbers.rows.map((r) => Math.abs(r.ev)), 0.1);
+  const top = numbers.rows.find((r) => r.id === best)?.ev ?? Math.max(...numbers.rows.map((r) => r.ev));
+  const low = Math.min(...numbers.rows.map((r) => r.ev));
+  const spread = Math.max(top - low, 0.1);
+  const rows = [...numbers.rows].sort((a, b) => (a.id === best ? -1 : b.id === best ? 1 : b.ev - a.ev));
   return (
-    <View style={{ gap: 4 }}>
-      {numbers.rows.map((r) => {
+    <View style={{ gap: 6 }}>
+      <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
+        Each play against the best
+      </ThemedText>
+      {rows.map((r) => {
         const isBest = r.id === best;
         const isPick = r.id === pick;
         const short = label(r.id).replace(/\s*\(.*\)$/, '');
+        const share = isBest ? 1 : Math.max(0.06, 1 - (top - r.ev) / spread);
+        const diff = r.ev - top;
         return (
-          <View key={r.id} accessible accessibilityLabel={`${short}: ${signed(r.ev)} on average${isBest ? ', the best play' : ''}${isPick ? ', your answer' : ''}`} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+          <View
+            key={r.id}
+            accessible
+            accessibilityLabel={`${short}: ${isBest ? 'the best play' : `${signed(diff)} against the best`}${isPick ? ', your answer' : ''}`}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}
+          >
             <ThemedText variant="footnote" numberOfLines={1} style={{ width: 92, fontWeight: isBest || isPick ? '700' : '400' }}>
               {short}
             </ThemedText>
             <View style={{ flex: 1, height: 8, borderRadius: 4, backgroundColor: colors.cellPressed, overflow: 'hidden' }}>
-              <View style={{ width: `${Math.round((Math.abs(r.ev) / top) * 100)}%`, height: '100%', borderRadius: 4, backgroundColor: isBest ? brand.gold : r.ev >= 0 ? brand.violet : (colors.quaternaryLabel as string) }} />
+              <View
+                style={{
+                  width: `${Math.round(share * 100)}%`,
+                  height: '100%',
+                  borderRadius: 4,
+                  backgroundColor: isBest ? brand.gold : (colors.quaternaryLabel as string),
+                }}
+              />
             </View>
-            <ThemedText variant="footnote" style={[{ width: 58, textAlign: 'right', fontWeight: '700' }, NUM]}>
-              {signed(r.ev)}
+            <ThemedText
+              variant="footnote"
+              style={[{ width: 64, textAlign: 'right', fontWeight: '700', color: isBest ? brand.gold : (colors.label as string) }, NUM]}
+            >
+              {isBest ? 'Best' : signed(diff)}
             </ThemedText>
             <View style={{ width: 28 }}>
-              {isPick && (
-                <ThemedText variant="caption2" tone="secondaryLabel" style={{ fontWeight: '700' }}>
-                  You
-                </ThemedText>
-              )}
+              <ThemedText variant="caption2" tone="secondaryLabel" style={{ fontWeight: '700', opacity: isPick ? 1 : 0 }}>
+                You
+              </ThemedText>
             </View>
           </View>
         );
@@ -196,10 +273,32 @@ function Plays({ numbers, best, pick, label }: { numbers: HandNumbers; best: Opt
   );
 }
 
+/** A range that's all one pile, in words. */
+const ONE_PILE: Record<Pile['key'], string> = {
+  beats: 'Every hand they have beats you.',
+  beaten: 'You beat every hand they have.',
+  bluffs: 'They’re always bluffing here.',
+  folds: 'They’d fold every hand.',
+  ahead: 'Every hand that calls is worse than yours.',
+  behind: 'Every hand that would call has you beat.',
+};
+
 /** Their range as one bar in three parts, with a key under it. */
 function Piles({ piles, caption }: { piles: Pile[]; caption: string }) {
   const colors = useColors();
-  const fill = (p: Pile) => (!p.good ? (colors.quaternaryLabel as string) : p.key === 'bluffs' || p.key === 'folds' ? brand.gold : brand.violet);
+  if (piles.length === 1)
+    return (
+      <View accessible style={{ gap: 4 }}>
+        <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>
+          {caption}
+        </ThemedText>
+        <ThemedText variant="subhead" style={{ fontWeight: '600' }}>
+          {ONE_PILE[piles[0].key]}
+        </ThemedText>
+      </View>
+    );
+  const fill = (p: Pile) =>
+    !p.good ? (colors.quaternaryLabel as string) : p.key === 'bluffs' || p.key === 'folds' ? brand.gold : brand.violet;
   return (
     <View accessible accessibilityLabel={`${caption}: ${piles.map((p) => `${p.label} ${pct(p.share)}`).join(', ')}`} style={{ gap: 6 }}>
       <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600' }}>

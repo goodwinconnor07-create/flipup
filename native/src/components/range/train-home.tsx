@@ -8,13 +8,17 @@
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Share, View } from 'react-native';
+import Animated from 'react-native-reanimated';
 
 import { Row, Section, usePanel } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon, type IconName } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
 import { PressableScale } from '@/components/pressable-scale';
+import { Swap, SwapIcon } from '@/components/swap';
 import { ThemedText } from '@/components/themed-text';
+import { popIn } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { countdown, DAILY_HANDS, msUntilTomorrow, shareText } from '@/state/daily-quiz';
 import { hasPremium, usePremium } from '@/state/premium';
 import { useDaily, type DailyQuiz } from '@/state/range-daily';
@@ -99,11 +103,14 @@ function CardButton({ title, icon, onPress, label }: { title?: string; icon: Ico
       outerStyle={title ? { flex: 1 } : undefined}
       style={{ minHeight: 52, minWidth: 52, paddingHorizontal: title ? spacing.md : 0, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, borderRadius: radius.full, backgroundColor: brand.paper, boxShadow: '0 6px 16px rgba(8,20,51,0.28)' }}
     >
-      <Icon name={icon} size={18} color={brand.violet} />
+      {/* Start, Continue and Your answers swap in place (rules 16 to 18): the icon crossfades, the word slides through. */}
+      <SwapIcon name={icon} size={18} color={brand.violet} />
       {title && (
-        <ThemedText variant="headline" style={{ color: brand.violet, fontWeight: '800' }}>
-          {title}
-        </ThemedText>
+        <Swap id={title} kind="text">
+          <ThemedText variant="headline" style={{ color: brand.violet, fontWeight: '800' }}>
+            {title}
+          </ThemedText>
+        </Swap>
       )}
     </PressableScale>
   );
@@ -111,6 +118,7 @@ function CardButton({ title, icon, onPress, label }: { title?: string; icon: Ico
 
 /** The daily quiz as the screen's hero: the date, the five dots, and one thing to do. */
 function DailyCard({ q, premium }: { q: DailyQuiz; premium: boolean }) {
+  const reduce = useReduceMotion();
   const left = useCountdown(q.finished);
   const best = q.answers.filter((a) => a.grade === 'best').length;
   const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
@@ -134,14 +142,15 @@ function DailyCard({ q, premium }: { q: DailyQuiz; premium: boolean }) {
       <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>
         {line}
       </ThemedText>
-      {q.finished ? (
-        <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-          <CardButton title="Your answers" icon="list.bullet" onPress={startDaily} />
-          <CardButton icon="square.and.arrow.up" label="Share your result" onPress={() => shareDaily(q)} />
-        </View>
-      ) : (
-        <CardButton title={q.started ? 'Continue' : 'Start'} icon="play.fill" onPress={startDaily} />
-      )}
+      {/* One button that becomes the next thing to do (rule 20), with Share popping in beside it once you're done. */}
+      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+        <CardButton title={q.finished ? 'Your answers' : q.started ? 'Continue' : 'Start'} icon={q.finished ? 'list.bullet' : 'play.fill'} onPress={startDaily} />
+        {q.finished && (
+          <Animated.View entering={reduce ? undefined : popIn()}>
+            <CardButton icon="square.and.arrow.up" label="Share your result" onPress={() => shareDaily(q)} />
+          </Animated.View>
+        )}
+      </View>
       {!premium && q.finished && (
         <PressableScale accessibilityRole="button" onPress={() => router.push({ pathname: '/premium', params: { reason: 'training' } })} style={{ alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 4 }}>
           <Icon name="crown.fill" size={13} color={brand.gold} />

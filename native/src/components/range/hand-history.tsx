@@ -1,6 +1,8 @@
 // The hand, written out a street to a line so it reads in one pass: the street, its new cards and the pot, then
-// everyone's moves as one sentence, folds in a row together. "Replay hand" steps through it on the table above, but
-// only when you ask; otherwise the table just shows the hand as it stands at your decision.
+// everyone's moves as one sentence, folds in a row together. It opens on the street you're deciding on, with the rest
+// a tap away, so the story never pushes your decision down the page. Replay (a small text button by its heading) steps
+// through it on the table above, but only when you ask; otherwise the table shows the hand as it stands now.
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { haptic } from '@/components/haptics';
@@ -27,7 +29,15 @@ function Pill({ label, onPress, strong, disabled }: { label: string; onPress: ()
         haptic.select();
         onPress();
       }}
-      style={{ minHeight: 36, paddingHorizontal: spacing.sm, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: strong ? colors.accent : colors.cellPressed, opacity: disabled ? 0.4 : 1 }}
+      style={{
+        minHeight: 36,
+        paddingHorizontal: spacing.sm,
+        borderRadius: radius.full,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: strong ? colors.accent : colors.cellPressed,
+        opacity: disabled ? 0.4 : 1,
+      }}
     >
       <ThemedText variant="footnote" tone={strong ? 'onColor' : 'accent'} style={{ fontWeight: '700' }}>
         {label}
@@ -37,34 +47,45 @@ function Pill({ label, onPress, strong, disabled }: { label: string; onPress: ()
 }
 
 /**
- * Under the table: Replay hand, or, while replaying, Back, Play, Next and Done with where you are. Right beside the
+ * Under the table while replaying: Back, Play, Next and Done with where you are. Right beside the
  * table so what you're stepping through stays in view.
  */
-export function ReplayStrip({ step, total, playing, narration, onStep, onPlaying }: { step: number | null; total: number; playing: boolean; /** What just happened, in words, with the pot. */ narration?: string; onStep: (step: number | null) => void; onPlaying: (on: boolean) => void }) {
+export function ReplayStrip({
+  step,
+  total,
+  playing,
+  narration,
+  onStep,
+  onPlaying,
+}: {
+  step: number | null;
+  total: number;
+  playing: boolean;
+  /** What just happened, in words, with the pot. */ narration?: string;
+  onStep: (step: number | null) => void;
+  onPlaying: (on: boolean) => void;
+}) {
   const colors = useColors();
-  if (step === null) {
-    return (
-      <View style={{ flexDirection: 'row', justifyContent: 'center' }}>
-        <Pill
-          label="Replay hand"
-          onPress={() => {
-            onStep(0);
-            onPlaying(true);
-          }}
-        />
-      </View>
-    );
-  }
+  // Not replaying: nothing here (Replay is a small button by the story's heading, so it never pulls the eye first).
+  if (step === null) return null;
   const done = step >= total;
   return (
     <View style={{ gap: 4, alignItems: 'center' }}>
       <View style={{ flexDirection: 'row', gap: spacing.xs }}>
         <Pill label="Back" disabled={step === 0} onPress={() => (onPlaying(false), onStep(Math.max(0, step - 1)))} />
-        <Pill label={playing ? 'Pause' : done ? 'Again' : 'Play'} strong onPress={() => (done ? (onStep(0), onPlaying(true)) : onPlaying(!playing))} />
+        <Pill
+          label={playing ? 'Pause' : done ? 'Again' : 'Play'}
+          strong
+          onPress={() => (done ? (onStep(0), onPlaying(true)) : onPlaying(!playing))}
+        />
         <Pill label="Next" disabled={done} onPress={() => (onPlaying(false), onStep(Math.min(total, step + 1)))} />
         <Pill label="Done" onPress={() => (onPlaying(false), onStep(null))} />
       </View>
-      <ThemedText variant="callout" accessibilityLiveRegion="polite" style={[{ fontWeight: '700', textAlign: 'center', minHeight: 24 }, NUM]}>
+      <ThemedText
+        variant="callout"
+        accessibilityLiveRegion="polite"
+        style={[{ fontWeight: '700', textAlign: 'center', minHeight: 24 }, NUM]}
+      >
         {narration ?? ' '}
       </ThemedText>
       <ThemedText variant="caption1" style={[{ color: colors.tertiaryLabel as string }, NUM]}>
@@ -87,7 +108,12 @@ function lineOf(events: HandEvent[], street: Street, hero: Pos): { who: string; 
       continue;
     }
     const verb = you ? { fold: 'fold', check: 'check', call: 'call', bet: 'bet', raise: 'raise to' }[e.action] : VERB[e.action];
-    out.push({ who, what: `${verb}${e.amount !== undefined && e.action !== 'fold' && e.action !== 'check' ? ` ${bb(e.amount)}` : ''}${e.allIn ? ' all in' : ''}`, you, fold: e.action === 'fold' && !you });
+    out.push({
+      who,
+      what: `${verb}${e.amount !== undefined && e.action !== 'fold' && e.action !== 'check' ? ` ${bb(e.amount)}` : ''}${e.allIn ? ' all in' : ''}`,
+      you,
+      fold: e.action === 'fold' && !you,
+    });
   }
   // "CO, BTN fold" reads as one phrase, so the verb follows the group.
   return out.map((m) => (m.fold && m.who.includes(',') ? { ...m, what: 'fold' } : m));
@@ -102,6 +128,8 @@ export function HandStory({
   events,
   pot,
   step,
+  replaying,
+  onReplay,
   onJump,
 }: {
   scenario: Scenario;
@@ -110,63 +138,127 @@ export function HandStory({
   pot: Replay['potAt'];
   /** Where the replay is (null: not replaying), to light the street being replayed. */
   step: number | null;
+  /** Whether the hand is being replayed on the table (every street shows, to light the one being played). */
+  replaying: boolean;
+  /** Starts the replay from the beginning. */
+  onReplay: () => void;
   /** Tapping a street replays from there. */
   onJump: (step: number) => void;
 }) {
   const colors = useColors();
   const hero = scenario.hero.pos;
   const streets = streetsOf(scenario);
+  const [all, setAll] = useState(false);
+  const open = all || replaying || streets.length <= 1;
+  const shown = open ? streets : streets.slice(-1);
   return (
-    <View accessibilityLabel="How the hand went" style={{ gap: 2, padding: spacing.xs, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}>
-      {streets.map((street, i) => {
-        const cards = boardAt(scenario, street);
-        const dealt = street === 'preflop' ? 0 : events.findIndex((e) => e.kind === 'deal' && e.street === street);
-        const end = i + 1 < streets.length ? events.findIndex((e) => e.kind === 'deal' && e.street === streets[i + 1]) : events.length;
-        const now = step !== null && step > dealt && step <= end;
-        const moves = lineOf(events, street, hero);
-        const said = moves.map((m) => `${m.who} ${m.what}`).join(', ');
-        return (
-          <PressableScale
-            key={street}
-            accessibilityRole="button"
-            accessibilityLabel={`${STREET[street]}${cards.length ? `, ${(street === 'flop' ? cards : cards.slice(-1)).join(' ')}` : ''}: ${said || 'no moves'}. Replay from here.`}
-            onPress={() => {
-              haptic.select();
-              onJump(Math.max(0, dealt));
-            }}
-            style={{ gap: 4, paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: now ? colors.blueBg : 'transparent' }}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 24 }}>
-              <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
-                {STREET[street]}
+    <View accessibilityLabel="How the hand went" style={{ gap: spacing.xs }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.xxs }}>
+        <ThemedText variant="headline" accessibilityRole="header">
+          How it went
+        </ThemedText>
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          {streets.length > 1 && !replaying && (
+            <TextLink label={all ? 'Less' : `All ${streets.length} streets`} onPress={() => setAll(!all)} />
+          )}
+          {!replaying && <TextLink label="Replay" onPress={onReplay} />}
+        </View>
+      </View>
+      <View style={{ gap: 2, padding: spacing.xs, borderRadius: radius.lg, borderCurve: 'continuous', backgroundColor: colors.cell }}>
+        {shown.map((street) => {
+          const i = streets.indexOf(street);
+          const cards = boardAt(scenario, street);
+          const dealt = street === 'preflop' ? 0 : events.findIndex((e) => e.kind === 'deal' && e.street === street);
+          const end = i + 1 < streets.length ? events.findIndex((e) => e.kind === 'deal' && e.street === streets[i + 1]) : events.length;
+          const now = step !== null && step > dealt && step <= end;
+          const moves = lineOf(events, street, hero);
+          const said = moves.map((m) => `${m.who} ${m.what}`).join(', ');
+          return (
+            <PressableScale
+              key={street}
+              accessibilityRole="button"
+              accessibilityLabel={`${STREET[street]}${cards.length ? `, ${(street === 'flop' ? cards : cards.slice(-1)).join(' ')}` : ''}: ${said || 'no moves'}. Replay from here.`}
+              onPress={() => {
+                haptic.select();
+                onJump(Math.max(0, dealt));
+              }}
+              style={{
+                gap: 4,
+                paddingVertical: spacing.xs,
+                paddingHorizontal: spacing.sm,
+                borderRadius: radius.md,
+                borderCurve: 'continuous',
+                backgroundColor: now ? colors.blueBg : 'transparent',
+              }}
+            >
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, minHeight: 24 }}>
+                <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+                  {STREET[street]}
+                </ThemedText>
+                {cards.length > 0 && (
+                  <View style={{ flexDirection: 'row', gap: 2 }}>
+                    {(street === 'flop' ? cards : cards.slice(-1)).map((c) => (
+                      <PlayingCard key={c} card={c} size="sm" />
+                    ))}
+                  </View>
+                )}
+                <ThemedText variant="footnote" tone="tertiaryLabel" style={[{ marginLeft: 'auto' }, NUM]}>
+                  {street === 'preflop'
+                    ? `Blinds 0.5 / 1bb${scenario.ante ? ` · ante ${bb(scenario.ante)}` : ''}`
+                    : pot[street] !== undefined
+                      ? `Pot ${bb(Math.round(pot[street]! * 10) / 10)}`
+                      : ''}
+                </ThemedText>
+              </View>
+              <ThemedText variant="footnote" tone="secondaryLabel" style={NUM}>
+                {moves.length === 0
+                  ? 'No moves yet'
+                  : moves.map((m, k) => (
+                      <ThemedText
+                        key={k}
+                        variant="footnote"
+                        style={[
+                          {
+                            color: m.you ? (colors.label as string) : (colors.secondaryLabel as string),
+                            fontWeight: m.you ? '700' : '400',
+                          },
+                          NUM,
+                        ]}
+                      >
+                        {k > 0 ? ' · ' : ''}
+                        <ThemedText
+                          variant="footnote"
+                          style={{ fontWeight: '700', color: m.you ? (colors.accent as string) : (colors.label as string) }}
+                        >
+                          {m.who}
+                        </ThemedText>{' '}
+                        {m.what}
+                      </ThemedText>
+                    ))}
               </ThemedText>
-              {cards.length > 0 && (
-                <View style={{ flexDirection: 'row', gap: 2 }}>
-                  {(street === 'flop' ? cards : cards.slice(-1)).map((c) => (
-                    <PlayingCard key={c} card={c} size="sm" />
-                  ))}
-                </View>
-              )}
-              <ThemedText variant="footnote" tone="tertiaryLabel" style={[{ marginLeft: 'auto' }, NUM]}>
-                {street === 'preflop' ? `Blinds 0.5 / 1bb${scenario.ante ? ` · ante ${bb(scenario.ante)}` : ''}` : pot[street] !== undefined ? `Pot ${bb(Math.round(pot[street]! * 10) / 10)}` : ''}
-              </ThemedText>
-            </View>
-            <ThemedText variant="footnote" tone="secondaryLabel" style={NUM}>
-              {moves.length === 0
-                ? 'No moves yet'
-                : moves.map((m, k) => (
-                    <ThemedText key={k} variant="footnote" style={[{ color: m.you ? (colors.label as string) : (colors.secondaryLabel as string), fontWeight: m.you ? '700' : '400' }, NUM]}>
-                      {k > 0 ? ' · ' : ''}
-                      <ThemedText variant="footnote" style={{ fontWeight: '700', color: m.you ? (colors.accent as string) : (colors.label as string) }}>
-                        {m.who}
-                      </ThemedText>{' '}
-                      {m.what}
-                    </ThemedText>
-                  ))}
-            </ThemedText>
-          </PressableScale>
-        );
-      })}
+            </PressableScale>
+          );
+        })}
+      </View>
     </View>
+  );
+}
+
+/** A small text button by a heading (rule 4: it still dips to 0.97 when pressed). */
+function TextLink({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={8}
+      onPress={() => {
+        haptic.select();
+        onPress();
+      }}
+    >
+      <ThemedText variant="subhead" tone="accent" style={{ fontWeight: '600' }}>
+        {label}
+      </ThemedText>
+    </PressableScale>
   );
 }

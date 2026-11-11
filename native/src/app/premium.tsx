@@ -13,6 +13,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { statsData } from '@/components/share/data';
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
 import { PlayingCard } from '@/components/table/playing-card';
+import { Swap } from '@/components/swap';
 import { ThemedText } from '@/components/themed-text';
 import { botFace, BOTS, CARD_PACKS, FREE_BOT_NAMES, isVariant, VARIANTS, variantInfo, FREE_VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -63,15 +64,15 @@ export default function PremiumSheet() {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md }} showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md }}>
           <BrandPill />
-          <Pressable
+          <PressableScale
             accessibilityRole="button"
             accessibilityLabel="Close"
             hitSlop={12}
             onPress={() => router.back()}
-            style={({ pressed }) => ({ width: 44, height: 44, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(20,24,40,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)', opacity: pressed ? 0.6 : 1 })}
+            style={{ width: 44, height: 44, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(20,24,40,0.7)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}
           >
             <Icon name="xmark" size={17} color="white" />
-          </Pressable>
+          </PressableScale>
         </View>
 
         <HeroPager perks={perks} wanted={reason === 'game' ? wanted : undefined} />
@@ -507,9 +508,12 @@ function BlueButton({ title, onPress, loading, disabled }: { title: string; onPr
       onPress={onPress}
       style={{ minHeight: 56, borderRadius: radius.full, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.violet, opacity: disabled ? 0.5 : 1 }}
     >
-      <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 20, fontWeight: '700', color: '#ffffff' }}>
-        {loading ? '…' : title}
-      </Text>
+      {/* Loading… turns into the price, and Try into Continue, in place (rules 16 and 17). */}
+      <Swap id={loading ? '…' : title} kind="text">
+        <Text maxFontSizeMultiplier={1.3} style={{ fontFamily: ROUNDED, fontSize: 20, fontWeight: '700', color: '#ffffff' }}>
+          {loading ? '…' : title}
+        </Text>
+      </Swap>
     </PressableScale>
   );
 }

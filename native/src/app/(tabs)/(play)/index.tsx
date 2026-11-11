@@ -39,7 +39,7 @@ const PICK = 'flipup.homegame';
  * and your face top right (a tap opens your profile); the games as a line of cards across the whole screen, locked
  * on one at a time (`GameSwiper`), the chosen one's name, hook and dots under it; a row of round shortcuts (Stats,
  * Rules, All games, Premium, Settings, Share) just over PLAY (`PlayButton`), with Play bots and Join a game under
- * it. PLAY and Play bots open with the chosen game's card growing to fill the screen (`Fill`). The tab bar stays at
+ * it. PLAY and Play bots open their page straight away. The tab bar stays at
  * the bottom. Nothing scrolls.
  */
 export default function Home() {
@@ -102,7 +102,7 @@ export default function Home() {
 
           {/* The middle: the games in a line across the whole screen. */}
           <Animated.View entering={arrive(1)} style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs }}>
-            <View ref={swiper as never} collapsable={false}>
+            <View>
               <GameSwiper variant={variant} onChange={(v) => save(PICK, v)} size={card} width={Math.min(width, 560 + spacing.md * 2)} />
             </View>
             <View style={[pad, { alignItems: 'center', gap: 2 }]}>

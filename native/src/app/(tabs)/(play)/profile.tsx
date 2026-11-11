@@ -14,7 +14,7 @@ import { ThemedText } from '@/components/themed-text';
 import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { FRIENDS_ON } from '@/scope';
-import { ensureMyCode, myPalCode, useMyUsername } from '@/state/pals';
+import { ensureMyCode, myPalCode } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
@@ -34,7 +34,6 @@ export default function ProfileScreen() {
   const reduce = useReduceMotion();
   const profile = useProfile();
   const premium = usePremium();
-  const { username } = useMyUsername();
   const [name, setName] = useState(profile.name);
   const clean = cleanName(name);
   const blocked = isNameBlocked(clean);
@@ -121,7 +120,7 @@ export default function ProfileScreen() {
             ) : (
               // Plain text, not a pill: a filled capsule here read as a button that did nothing.
               <ThemedText variant="subhead" style={{ height: 36, lineHeight: 36, color: dark ? 'rgba(255,255,255,0.7)' : (colors.secondaryLabel as string) }}>
-                {FRIENDS_ON && username ? `@${username}` : 'Tap your name to change it'}
+                Tap your name to change it
               </ThemedText>
             )}
           </Swap>
@@ -134,14 +133,6 @@ export default function ProfileScreen() {
 
         <Section header="Your poker">
           <Row title="Your stats" detail={stats} icon={{ symbol: 'chart.bar.xaxis', color: tint }} onPress={() => router.push('/stats')} />
-          {FRIENDS_ON && (
-            <Row
-              title="Username"
-              detail={username ? `@${username}` : 'Choose one so friends can add you'}
-              icon={{ symbol: 'person.badge.plus', color: tint }}
-              onPress={() => router.push('/username')}
-            />
-          )}
           <Row title="Settings" detail="Sound, looks and your data" icon={{ symbol: 'gearshape.fill', color: tint }} onPress={() => router.push('/settings')} />
           <Row
             title="FlipUp Premium"

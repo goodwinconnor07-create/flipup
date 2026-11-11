@@ -3,6 +3,7 @@
 // how many big blinds per 100 hands the upgraded bots win from the old ones at each game.
 //
 //   npx tsx scripts/variantLab.ts [hands per run] [runs] [game,game...]
+// ALL_LEGACY=1 plays every bot the old way, to see the noise. Imposter is mostly noise: nobody can fold, so pots are huge.
 
 import { lab, variantDecide } from '../src/game/botVariants';
 import { pendingDiscards, pendingVoters } from '../src/game/holdem';
@@ -41,7 +42,7 @@ function play(variant: Variant, seed: number, legacyEven: boolean): { upgraded: 
   };
   const bots = game.players.filter((p) => p.bot);
   lab.legacy.clear();
-  bots.forEach((p, i) => (i % 2 === 0) === legacyEven && lab.legacy.add(p.id));
+  bots.forEach((p, i) => (process.env.ALL_LEGACY || (i % 2 === 0) === legacyEven) && lab.legacy.add(p.id));
   // The host is a person to the table (a table needs one); the lab plays its seat the old way and doesn't score it.
   const host = game.players.find((p) => !p.bot)!;
   lab.legacy.add(host.id);

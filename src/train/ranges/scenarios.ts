@@ -3358,7 +3358,7 @@ export const SCENARIOS: Scenario[] = [
       by: 'Jonathan Little on CardPlayer',
       title: 'PokerCoaching.com Quiz: Flopping Top Pair',
       url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66539-chris-brewer-37-9/articles/25069-pokercoaching-com-quiz-flopping-top-pair',
-      note: 'The opponent mucked.',
+      note: 'The table is nine-handed (the quiz’s was eight). The opponent mucked.',
     },
   },
   {
@@ -3522,7 +3522,7 @@ export const SCENARIOS: Scenario[] = [
       by: 'Jonathan Little on CardPlayer',
       title: 'PokerCoaching.com Quiz: Turning A Straight',
       url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66537-global-poker-37-7/articles/25048-pokercoaching-com-quiz-turning-a-straight',
-      note: 'The flop and later folds aren’t all spelled out; everyone checks the flop and the others fold the turn. The big blind’s stack is set to yours. They showed 8♥7♦.',
+      note: 'The flop and later folds aren’t all spelled out; everyone checks the flop and the others fold the turn. No ante is given; a 1bb big blind ante matches the pot sizes the article’s percentages imply. The big blind’s stack is set to yours. They showed 8♥7♦.',
     },
   },
   {
@@ -3583,7 +3583,7 @@ export const SCENARIOS: Scenario[] = [
       by: 'Jonathan Little on CardPlayer',
       title: 'PokerCoaching Quiz: Small Pair With A Weak Flush Draw',
       url: 'https://www.cardplayer.com/cardplayer-poker-magazines/66527-isaac-haxton-36-23/articles/24945-pokercoaching-quiz-small-pair-with-a-weak-flush-draw',
-      note: 'The table is nine-handed (the quiz’s was eight). They showed Q♥T♦.',
+      note: 'The table is nine-handed (the quiz’s was eight). No ante is given; a 1bb big blind ante matches the pot sizes the article’s percentages imply. They showed Q♥T♦.',
     },
   },
   {

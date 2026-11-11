@@ -74,7 +74,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     // The daily reminder is a local notification: no push, so no Push Notifications capability (the signing profile
     // doesn't have it). expo-notifications adds `aps-environment` on its own; this takes it back out.
-    withoutPush,
+    withoutPush as never,
     'expo-iap',
     ['expo-contacts', { contactsPermission: 'FlipUp shows your contacts so you can text a friend an invite. They stay on your phone and are never uploaded.' }],
     ['expo-camera', { cameraPermission: 'FlipUp uses the camera to scan a table or party QR code so you can join it.', microphonePermission: false, recordAudioAndroid: false }],

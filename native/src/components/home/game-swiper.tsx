@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, Text, View } from 'react-native';
-import Animated, { cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
+import Animated, { FadeOut, cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 
 import { freeThisWeek, isPremiumVariant, variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
-import { rubber, SETTLE } from '@/motion/presets';
+import { popIn, rubber, SETTLE } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useDrift } from '@/motion/use-drift';
 import { usePremium } from '@/state/premium';
 import { brand } from '@/theme';
@@ -16,6 +17,8 @@ import { PressableScale } from '../pressable-scale';
 
 /** How big each card is by its distance from the middle (0 is the chosen one)... */
 const SCALES = [1, 0.62, 0.46, 0.36];
+/** How long one game sits untouched before the hint pill shows. */
+const HINT_MS = 3000;
 /** ...how far from the middle it sits, in card widths (the outer ones tuck under the inner ones, like a fanned deck)... */
 const PLACES = [0, 0.86, 1.24, 1.5];
 /** ...and how much of it shows. */
@@ -46,6 +49,18 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
   // The position along the line, in points: index × step.
   const x = useSharedValue(start * step);
   const drag = useRef({ base: 0, from: 0, ended: 0 });
+  // After 3 seconds on one game with nothing touched, a small pill over the top of its icon says what a tap does.
+  // A new game (or a finger on the slider) starts the count again and takes it away.
+  const reduce = useReduceMotion();
+  const [touched, setTouched] = useState(0);
+  // The hint is "shown for this game and touch count": a new game or touch makes the old answer stale at once.
+  const key = `${variant}:${touched}`;
+  const [shownFor, setShownFor] = useState('');
+  const hint = shownFor === key;
+  useEffect(() => {
+    const t = setTimeout(() => setShownFor(key), HINT_MS);
+    return () => clearTimeout(t);
+  }, [key]);
 
   const pick = (i: number) => {
     const next = VARIANTS[Math.max(0, Math.min(last, i))];
@@ -78,6 +93,7 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
         onMoveShouldSetPanResponderCapture: (_, g) => Math.abs(g.dx) > 6 && Math.abs(g.dx) > Math.abs(g.dy),
         onPanResponderTerminationRequest: () => false,
         onPanResponderGrant: () => {
+          setTouched((n) => n + 1);
           cancelAnimation(x);
           const base = x.get();
           drag.current = { base, from: Math.round(base / step), ended: 0 };
@@ -144,6 +160,27 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
           }}
         />
       ))}
+      {/* The hint: a small pill over the top edge of the chosen icon. A tap on it opens the game's page (how to play). */}
+      {hint && (
+        <View pointerEvents="box-none" style={{ position: 'absolute', top: 18 - 17, left: 0, right: 0, alignItems: 'center', zIndex: 40 }}>
+          <Animated.View entering={reduce ? undefined : popIn()} exiting={reduce ? undefined : FadeOut.duration(160)}>
+            <PressableScale
+              accessibilityRole="button"
+              accessibilityLabel="Learn how to play"
+              haptics={false}
+              onPress={() => {
+                haptic.tap();
+                router.push(`/game/${variant}`);
+              }}
+              style={{ paddingHorizontal: 14, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
+            >
+              <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 14, fontWeight: '800', color: '#0b1533' }}>
+                Click me to learn how to play
+              </Text>
+            </PressableScale>
+          </Animated.View>
+        </View>
+      )}
     </Animated.View>
   );
 }

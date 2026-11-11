@@ -519,7 +519,7 @@ export function PositionChip({ pos }: { pos: Position | null }) {
  * A seat's emoji: plain, no reactions. On their turn a soft gold glow breathes behind it (a slow 3.2s cycle at low
  * opacity; still under Reduce Motion). Only other players' seats use it; your own box has its own.
  */
-function SeatFace({ emoji, size, turn }: { emoji: string; size: number; turn: boolean }) {
+export function SeatFace({ emoji, size, turn }: { emoji: string; size: number; turn: boolean }) {
   const reduce = useReduceMotion();
   const glow = useSharedValue(0.5);
   useEffect(() => {

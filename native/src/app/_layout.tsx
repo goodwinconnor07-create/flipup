@@ -5,6 +5,7 @@ import { Appearance, useColorScheme } from 'react-native';
 
 import { CrashScreen } from '@/components/crash-screen';
 import { InviteBanner } from '@/components/invite-banner';
+import { RequestTimeoutPopup } from '@/components/request-timeout-popup';
 import { LaunchCover } from '@/components/launch-cover';
 import { ThumbSnapper } from '@/components/thumb-snaps';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -125,6 +126,7 @@ export default function RootLayout() {
       </Stack>
       {/* A friend's table invite drops in over any screen. */}
       {FRIENDS_ON && <FriendWatch />}
+      <RequestTimeoutPopup />
       <LaunchCover />
       {/* Saves the game tiles as pictures in the background, so lists of games show images, not SVGs. */}
       <ThumbSnapper />

@@ -4,6 +4,7 @@ import type { BjInvite, FriendRequest, InviteDeclined, CreateFriendCardResponse,
 
 import { APP_INFO } from '../../appInfo';
 import { deviceId } from './device';
+import { noteRequestTimeout, REQUEST_TIMEOUT_MS } from './request-timeout';
 
 export const API_ORIGIN = process.env.EXPO_PUBLIC_API_ORIGIN || APP_INFO.apiOrigin;
 
@@ -14,12 +15,17 @@ export const joinLink = (code: string) => `${APP_INFO.apiOrigin}/${code}`;
 /** A party's link, for its QR code: the Join sheet reads the /party/ in it, and `app/party/[code].tsx` opens it. */
 export const partyLink = (code: string) => `${APP_INFO.apiOrigin}/party/${code}`;
 
-async function request(path: string, init: RequestInit = {}, timeoutMs = 8000): Promise<Response> {
+async function request(path: string, init: RequestInit = {}, timeoutMs = REQUEST_TIMEOUT_MS): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, Math.min(timeoutMs, REQUEST_TIMEOUT_MS));
   try {
     return await fetch(API_ORIGIN + path, { ...init, signal: controller.signal });
   } catch {
+    if (timedOut) noteRequestTimeout();
     throw new Error("Couldn't reach the server. Check your connection and try again.");
   } finally {
     clearTimeout(timer);
@@ -64,7 +70,7 @@ export async function fetchTableInfo(code: string): Promise<TableInfo | null> {
 
 // Friend codes and parties, the same calls as the web's (src/state/api.ts).
 
-const json = (path: string, init: RequestInit) => request(path, { ...init, headers: { 'content-type': 'application/json' } }, 12_000);
+const json = (path: string, init: RequestInit) => request(path, { ...init, headers: { 'content-type': 'application/json' } });
 
 /** Claims a friend code for this phone. */
 export async function createFriendCard(body: { deviceId: string; name: string; emoji: string }): Promise<string> {
@@ -190,7 +196,7 @@ export async function inviteToTable(friend: string, body: { deviceId: string; fr
 }
 
 export async function createPartyOnServer(body: { deviceId: string; name: string; emoji: string; friendCode?: string; settings: PartySettings }): Promise<string> {
-  const res = await request('/api/parties', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }, 12_000);
+  const res = await request('/api/parties', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
   if (res.status === 402) throw new PremiumRequiredError(await errorText(res, 'Hosting these games needs FlipUp Premium.'));
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a party. Try again."));
   return ((await answerJson(res)) as { code: string }).code;

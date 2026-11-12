@@ -6,6 +6,7 @@ import Animated, { FadeIn } from 'react-native-reanimated';
 import { RAILS } from '@design/tableLooks';
 import { tableThemes } from '@design/tokens';
 import { useTableLook } from '@/state/prefs';
+import { peekCard, powerPill } from '@/state/power-view';
 import {
   bestHand,
   boardSize,
@@ -31,9 +32,10 @@ import {
 } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { stagger } from '@/motion/presets';
-import { gradient, radius, spacing, usePlainColors } from '@/theme';
+import { brand, gradient, radius, spacing, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
+import { Icon } from '../icon';
 import { bubblePop } from './bubbles';
 import { PotChips } from './pot-chips';
 import { Count } from './count';
@@ -234,7 +236,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
             >
               <VariantPill
-                text={role === 'unknown' ? '🕵️ Imposter? Could be you' : hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : `${info.emoji} ${info.name}`}
+                text={role === 'unknown' ? '🕵️ Imposter? Could be you' : hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : (powerPill(hand, width < 350) ?? `${info.emoji} ${info.name}`)}
                 hot={!!role}
               />
             </Pressable>
@@ -244,7 +246,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         {game.memory ? (
           <MemoryPeek game={game} width={width} pack={pack} />
         ) : (
-          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} now={now} recap={recap} />
+          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} now={now} recap={recap} peek={peekCard(hand, me?.id)} />
         )}
         <View style={{ minHeight: 32, justifyContent: 'center' }}>
           {game.memory ? (
@@ -289,6 +291,7 @@ function Board({
   pack,
   now,
   recap,
+  peek,
 }: {
   game: Game;
   width: number;
@@ -297,10 +300,14 @@ function Board({
   pack?: string;
   now: number;
   recap?: boolean;
+  /** Power Cards: the next board card your Peek showed you, drawn faintly in the slot it will land in. */
+  peek?: Card | null;
 }) {
   const hand = game.hand;
   const variant = variantOf(game);
-  const slots = Math.max(boardSize(variant), hand?.board.length ?? 0);
+  // A Peek's card waits in the next slot, which an Extra Card can push past the usual five.
+  const peekAt = peek && hand ? hand.board.length : -1;
+  const slots = Math.max(boardSize(variant), hand?.board.length ?? 0, peekAt + 1);
   // Cards land on the clock while a street's twist plays (see moments.ts): not-yet-dealt ones are empty slots.
   const shown = hand ? visibleBoard(hand, now) : [];
   if (recap && hand?.removed) return <MemoryPeek game={{ ...game, memory: { cards: hand.removed, until: 0 } }} width={width} pack={pack} />;
@@ -318,6 +325,8 @@ function Board({
             pack={pack}
             delay={!hand?.moment && i < streetCards(variant, 'flop') ? i * 160 : 0}
           />
+        ) : i === peekAt && peek ? (
+          <PeekGhost card={peek} width={w} />
         ) : (
           <CardSlot width={w} />
         )}
@@ -363,6 +372,23 @@ function Board({
   return (
     <View accessibilityLabel="Board" style={{ flexDirection: 'row', gap, rowGap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
       {Array.from({ length: slots }, (_, i) => card(i, w, variant === 'pittsburgh' && i === 4 ? { marginLeft: 8 } : undefined))}
+    </View>
+  );
+}
+
+/**
+ * Power Cards: the card your Peek showed you, faint in the slot where it will land, with a gold eye. Only your phone
+ * has it (the server sends a Peek's card to nobody else); it goes once the card is dealt for real.
+ */
+function PeekGhost({ card, width }: { card: Card; width: number }) {
+  return (
+    <View accessibilityLabel={`Your Peek: the next card is ${short(card)}`}>
+      <View style={{ opacity: 0.5 }}>
+        <PlayingCard card={card} width={width} />
+      </View>
+      <View pointerEvents="none" style={{ position: 'absolute', top: -6, right: -6, width: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.gold }}>
+        <Icon name="eye.fill" size={10} color={brand.goldInk} />
+      </View>
     </View>
   );
 }

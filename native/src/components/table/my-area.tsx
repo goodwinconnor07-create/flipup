@@ -2,7 +2,7 @@
 // show; and your box beside them, outlined in the separator colour (gold glow on your turn): your chip count biggest,
 // your position, emoji and name at the very bottom, the quick messages button half over the top-left corner, and what
 // you said as a small pill over the top-right corner. During an all-in run-out the box shows your odds instead.
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { holeCount, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Talk } from '@/engine';
@@ -14,6 +14,7 @@ import { haptic } from '../haptics';
 import { bubbleOut, bubblePop, MoveBubble, moveTone, pinnedTop, Thread } from './bubbles';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
+import { PowerCard, powerCardWidth } from './power-card';
 import { QuickMessages } from './quick-messages';
 import { pct, PositionChip } from './seats';
 import { moveSig } from './use-reactions';
@@ -31,9 +32,12 @@ export function MyArea({
   dim,
   glow,
   odds,
+  onPower,
 }: {
   game: Game;
   compact?: boolean;
+  /** Power Cards: a tap on your power card opens its panel. */
+  onPower?: () => void;
   me: Player | undefined;
   talk?: Talk;
   quiet?: string;
@@ -47,13 +51,18 @@ export function MyArea({
   const inBB = useStored<boolean>('flipup.bb', false) === true;
   const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
   const count = seat?.cards.length || holeCount(variantOf(game));
+  const { width: screen } = useWindowDimensions();
+  // Power Cards: your power is a card beside your two, so the hole cards step down to leave the box room (it keeps
+  // about 130pt for the chip count). The size depends only on the screen, so it's the same every hand.
+  const powered = variantOf(game) === 'power';
+  const powerHole = Math.max(56, Math.min(compact ? 72 : 84, Math.floor((screen - 160) / 2.8)));
   // Two cards at full size; three or more step down so they still fit beside the box.
-  const w = count > 2 || compact ? 72 : 100;
+  const w = powered ? powerHole : count > 2 || compact ? 72 : 100;
   // Your last move clears once a new street's cards land (an all in stays, it's still true).
   const last = seat?.last && (!hand || seat.last.street === hand.street || seat.last.move === 'allin') ? seat.last : null;
   const bb = Math.max(game.settings.bigBlind, 1);
   const myTurn = !!me && !!hand && !hand.result && hand.toAct === me.id;
-  const big = compact ? 32 : 38;
+  const big = compact || powered ? 32 : 38;
   return (
     <View
       style={{
@@ -85,6 +94,11 @@ export function MyArea({
                 <CardSlot width={w} />
               </View>
             ))}
+        {powered && (
+          <View style={{ marginLeft: 8, justifyContent: 'center' }}>
+            <PowerCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
+          </View>
+        )}
       </View>
       <View
         style={{

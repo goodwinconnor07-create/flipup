@@ -26,7 +26,8 @@ export interface PlayerLine {
 /**
  * Who's at the table, as the same small floating group as Play with bots (12 Nov 2026, the owner's ask): every face
  * in a filled circle with its name, evenly spaced, drifting softly, with an Add Bot button the same size at the end
- * for the host. A tap on a person opens their menu; holding a bot pops it off. Friends come in with the game code.
+ * for the host. People come first and wear a solid white ring (you, gold); bots follow with a faint one. A tap on a
+ * person opens their menu; holding a bot pops it off. Friends come in with the game code.
  */
 export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => void }) {
   const panel = usePanel();
@@ -37,6 +38,9 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => voi
   const bots = rows.length - people;
   const room = MAX_SEATS - rows.length;
   const canHold = rows.some((r) => r.onRemove);
+  // People always come first (you at the front), then the bots, each group in the order they sat down.
+  const rank = (r: PlayerLine) => (r.you ? 0 : r.line === 'Bot' ? 2 : 1);
+  const ordered = rows.map((r, i) => ({ r, i })).sort((a, b) => rank(a.r) - rank(b.r) || a.i - b.i).map((x) => x.r);
   const detail = [`${people} ${people === 1 ? 'person' : 'people'}`, bots ? `${bots} ${bots === 1 ? 'bot' : 'bots'}` : '']
     .filter(Boolean)
     .join(' · ');
@@ -67,12 +71,13 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => voi
           }}
         >
           <FloatTable
-            seats={rows.map((r) => ({
+            seats={ordered.map((r) => ({
               key: r.key,
               emoji: r.emoji,
               name: r.name,
               you: r.you,
               gold: r.gold,
+              person: !r.you && r.line !== 'Bot',
               removable: !!r.onRemove,
               onPress: r.onRemove || r.you ? undefined : r.onMore,
               leaving: leaving.includes(r.key),

@@ -36,6 +36,8 @@ export interface FloatSeat {
   onPress?: () => void;
   /** A Premium player's gold name. */
   gold?: boolean;
+  /** A real person (not you): a solid white ring, where a bot's is faint, so people and bots tell apart at a glance. */
+  person?: boolean;
 }
 
 const FACE = 48;
@@ -251,8 +253,9 @@ function Floater({
             alignItems: 'center',
             justifyContent: 'center',
             backgroundColor: held ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.16)',
-            borderWidth: seat.you ? 2 : 1,
-            borderColor: seat.you ? brand.gold : 'rgba(255,255,255,0.26)',
+            // You in gold, other people in solid white, bots in a faint ring.
+            borderWidth: seat.you || seat.person ? 2 : 1,
+            borderColor: seat.you ? brand.gold : seat.person ? 'rgba(255,255,255,0.92)' : 'rgba(255,255,255,0.26)',
             boxShadow: '0 6px 14px -6px rgba(0,0,0,0.6)',
             transform: [{ scale: held ? 0.97 : 1 }],
           }}

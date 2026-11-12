@@ -40,6 +40,8 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     minds: undefined,
     dialogue: undefined,
     card: undefined,
+    // Secret Missions: everyone's progress is public; only your own mission is sent to you.
+    missions: game.missions && { ...game.missions, players: Object.fromEntries(Object.entries(game.missions.players).map(([id, p]) => [id, mine.has(id) ? p : { ...p, mission: null }])) },
     logs: [],
     hand: hand && {
       ...hand,

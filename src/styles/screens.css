@@ -1828,6 +1828,13 @@ html[data-theme='dark'] .btn-dark {
   --theme-glow: var(--theme-power-glow);
 }
 
+.theme-missions {
+  --theme-felt: var(--theme-missions-felt);
+  --theme-rail-a: var(--theme-missions-rail-a);
+  --theme-rail-b: var(--theme-missions-rail-b);
+  --theme-glow: var(--theme-missions-glow);
+}
+
 /* Power Cards: your power for the hand, one line over the move buttons (Play on your turn), and a banner across
    the felt when anyone plays one. A flat cell like the rest; the gold edge only when it can be played. */
 .power-strip {
@@ -1896,6 +1903,49 @@ html[data-theme='dark'] .btn-dark {
 
 .power-play:disabled {
   opacity: 0.5;
+}
+
+.mission-dots {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.mission-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--ink-2);
+  opacity: 0.25;
+}
+
+.mission-strip .power-text small {
+  white-space: normal;
+}
+
+.mission-dots i.on {
+  background: var(--gold);
+  opacity: 1;
+}
+
+.mission-toast {
+  margin: 0 auto 8px;
+  padding: 4px 12px;
+  max-width: 92%;
+  border-radius: var(--r-md);
+  background: var(--glass-tint-dark);
+  color: var(--on-color);
+  text-align: center;
+  font-size: var(--fs-caption);
+}
+
+.mission-toast p {
+  margin: 4px 0;
+}
+
+.mission-toast b {
+  color: var(--gold);
+  font-weight: 600;
 }
 
 .power-ranks {

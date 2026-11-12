@@ -9,13 +9,9 @@ on:
   workflow_dispatch:
     inputs:
       games:
-        description: "Games to shoot, separated by spaces (holdem pineapple ...). Empty: all 13."
+        description: "Games to shoot, separated by spaces (holdem pineapple ...). Empty: all 14."
         type: string
         default: ""
-  # While this workflow is being set up on a branch (workflow_dispatch only works once it's on main). Remove before merging.
-  push:
-    branches: [claude/sweet-fermat-y2mf3j]
-    paths: ["native/scripts/howto/**"]
 
 concurrency:
   group: howto-shots-${{ github.ref }}
@@ -108,7 +104,6 @@ jobs:
           GAMES: ${{ inputs.games }}
           SHOTS_WORK: ${{ runner.temp }}/howto-work
         run: |
-          if [ -z "$GAMES" ] && [ -f scripts/howto/try-games ]; then GAMES=$(cat scripts/howto/try-games); fi
           node scripts/howto/host.mjs "$UDID" $GAMES > "$RUNNER_TEMP/host.log" 2>&1 &
           host=$!
           sleep 2

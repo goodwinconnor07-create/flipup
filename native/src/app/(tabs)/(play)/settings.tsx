@@ -119,6 +119,10 @@ export default function SettingsScreen() {
         <Row title="Blocked players" detail={blocked.length ? String(blocked.length) : undefined} icon={{ symbol: 'hand.raised.slash.fill', color: colors.red as string }} onPress={() => router.push('/blocked')} />
       </Section>
 
+      <Section>
+        <Row title="What’s New" detail={`Version ${version}${build ? ` (${build})` : ''}`} icon={{ symbol: 'sparkles', color: colors.gold as string }} onPress={() => router.push('/whats-new')} />
+      </Section>
+
       <Section header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
         <Row title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />
         <Row title="Help" icon={{ symbol: 'questionmark.circle.fill', color: colors.accent as string }} onPress={() => router.push('/help')} />

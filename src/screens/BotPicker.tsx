@@ -1,11 +1,9 @@
 import { useMemo, useRef, useState } from 'react';
-import { LEGEND_NOTE, LEGENDS, MAX_SEATS, LEGENDS_ON } from '../game';
+import { MAX_SEATS } from '../game';
 import { BOTS, type StyleId } from '../game/botStyles';
-import { openPremium, toast, useApp } from '../state/store';
+import { toast } from '../state/store';
 import { BackBar } from '../ui/components';
 import { haptic } from '../ui/effects';
-import { CrownIcon, LockIcon } from '../ui/Icons';
-import { LegendFace } from './sheets/PremiumSheet';
 
 /** The most bots at a table: every seat but yours. */
 export const MAX_PICKS = MAX_SEATS - 1;
@@ -29,7 +27,6 @@ const GROUPS: { id: StyleId; title: string; blurb: string }[] = [
  * playstyles, then Save to take them back to the table setup.
  */
 export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave: (names: string[]) => void; onBack: () => void }) {
-  const premium = useApp((s) => s.premium);
   const [chosen, setChosen] = useState<string[]>(picked);
   const [query, setQuery] = useState('');
   const sections = useRef<Record<string, HTMLElement | null>>({});
@@ -44,15 +41,6 @@ export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave
     [q],
   );
 
-  const legends = useMemo(() => (LEGENDS_ON ? LEGENDS : []).filter((l) => !q || l.short.toLowerCase().includes(q) || l.name.toLowerCase().includes(q)), [q]);
-
-  // AI Legends are Premium: without it, a tap opens the offer, and the legend sits down once it's bought.
-  const toggleLegend = (name: string) => {
-    if (premium || chosen.includes(name)) return toggle(name);
-    haptic('light');
-    openPremium('legends', () => toggle(name));
-  };
-
   const toggle = (name: string) => {
     if (chosen.includes(name)) {
       haptic('light');
@@ -66,7 +54,7 @@ export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave
     }
   };
   const jump = (id: string) => sections.current[id]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  const faces = new Map<string, string>([...BOTS.map((b) => [b.name, b.emoji] as const), ...LEGENDS.map((l) => [l.short, l.emoji] as const)]);
+  const faces = new Map<string, string>(BOTS.map((b) => [b.name, b.emoji] as const));
 
   return (
     <div className="screen bot-picker">
@@ -103,11 +91,6 @@ export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave
           onChange={(e) => setQuery(e.target.value)}
         />
         <nav className="picker-jump" aria-label="Jump to a playstyle">
-          {LEGENDS_ON && (
-            <button type="button" className="chip-btn chip-gold press" onClick={() => jump('legends')}>
-              AI Legends
-            </button>
-          )}
           {GROUPS.map((g) => (
             <button key={g.id} type="button" className="chip-btn press" onClick={() => jump(g.id)}>
               {g.title}
@@ -117,40 +100,6 @@ export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave
       </div>
 
       <div className="picker-body">
-        {legends.length > 0 && (
-          <section className="picker-group picker-legends" ref={(el) => void (sections.current.legends = el)}>
-            <header className="picker-head">
-              <h2 className="h3">
-                <CrownIcon width={16} height={16} aria-hidden /> AI Legends
-              </h2>
-              <span className="prem-pill">{premium ? 'Premium' : 'FlipUp Premium'}</span>
-            </header>
-            <p className="muted picker-blurb">Bots in the style of famous players, each with their own habits and table talk.</p>
-            <div className="picker-grid">
-              {legends.map((l) => {
-                const on = chosen.includes(l.short);
-                return (
-                  <button key={l.id} type="button" className={`picker-bot picker-legend press${on ? ' on' : ''}`} aria-pressed={on} onClick={() => toggleLegend(l.short)}>
-                    <LegendFace legend={l} size={48} />
-                    <span className="picker-name">{l.short}</span>
-                    {on ? (
-                      <span className="picker-tick" aria-hidden>
-                        ✓
-                      </span>
-                    ) : (
-                      !premium && (
-                        <span className="picker-lock" aria-hidden>
-                          <LockIcon width={11} height={11} />
-                        </span>
-                      )
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-            <p className="muted legend-note">{LEGEND_NOTE}</p>
-          </section>
-        )}
         {groups.map((g) =>
           g.shown.length === 0 ? null : (
             <section key={g.id} className="picker-group" ref={(el) => void (sections.current[g.id] = el)}>
@@ -186,7 +135,7 @@ export function BotPicker({ picked, onSave, onBack }: { picked: string[]; onSave
             </section>
           ),
         )}
-        {legends.length === 0 && groups.every((g) => g.shown.length === 0) && <p className="muted picker-none">No bot has a name like “{query.trim()}”.</p>}
+        {groups.every((g) => g.shown.length === 0) && <p className="muted picker-none">No bot has a name like “{query.trim()}”.</p>}
       </div>
 
       <div className="screen-foot">

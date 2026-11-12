@@ -8,7 +8,7 @@
 import type { Bets } from './roulette';
 import { payout, pocketColour, totalBet } from './roulette';
 import type { Blackjack } from './blackjack';
-import type { Game, PlayerRead } from './types';
+import type { Game } from './types';
 
 /** What the daily salary tops a bankroll up to on the first day. Days you don't open the app pay nothing. */
 export const SALARY = 1000;
@@ -134,8 +134,6 @@ export interface Venue {
   unlock: number;
   /** 0 to 1: how much less well the bots here play than their styles (see `dulled()`). The Garage is the softest. */
   dull: number;
-  /** The legend who runs the venue: one seat at every tournament here. Knock them out yourself to beat them. */
-  boss?: string;
   /** The bot styles that sit here: the Garage gets the loose ones, the Yacht the sharks. */
   styles: string[];
 }
@@ -143,12 +141,12 @@ export interface Venue {
 export const VENUES: Venue[] = [
   { id: 'garage', name: 'The Garage', emoji: '🔧', line: 'A folding table and loose calls.', format: 'sng', buyIn: 100, unlock: 0, dull: 0.85, styles: ['station', 'gambler', 'nervous', 'maniac'] },
   { id: 'backroom', name: 'The Back Room', emoji: '🎱', line: 'Three in, one out.', format: 'jackpot', buyIn: 250, unlock: 0, dull: 0.75, styles: ['station', 'gambler', 'nervous', 'rock', 'maniac'] },
-  { id: 'riverboat', name: 'The Riverboat', emoji: '🛳️', line: 'Slow river, fast money.', format: 'sng', buyIn: 1000, unlock: 2500, dull: 0.6, boss: 'brunson', styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
-  { id: 'casino', name: 'Downtown Casino', emoji: '🎰', line: 'Bright lights, sharper players.', format: 'jackpot', buyIn: 5000, unlock: 15000, dull: 0.45, boss: 'hellmuth', styles: ['rock', 'tag', 'lag', 'trapper', 'maniac'] },
-  { id: 'strip', name: 'The Strip', emoji: '🌃', line: 'Big stacks under neon.', format: 'sng', buyIn: 25000, unlock: 75000, dull: 0.3, boss: 'negreanu', styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
-  { id: 'monaco', name: 'Monte Carlo', emoji: '🏎️', line: 'Old money and cold reads.', format: 'jackpot', buyIn: 100000, unlock: 400000, dull: 0.2, boss: 'ivey', styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
-  { id: 'penthouse', name: 'The Penthouse', emoji: '🏙️', line: 'Invite only. Nobody’s bluffing. Probably.', format: 'sng', buyIn: 500000, unlock: 2000000, dull: 0.1, boss: 'dwan', styles: ['pro', 'shark', 'lag'] },
-  { id: 'yacht', name: 'The Yacht', emoji: '🛥️', line: 'The biggest game on the water.', format: 'jackpot', buyIn: 2500000, unlock: 10000000, dull: 0, boss: 'rampage', styles: ['shark', 'pro'] },
+  { id: 'riverboat', name: 'The Riverboat', emoji: '🛳️', line: 'Slow river, fast money.', format: 'sng', buyIn: 1000, unlock: 2500, dull: 0.6, styles: ['gambler', 'rock', 'station', 'tag', 'lag', 'trapper'] },
+  { id: 'casino', name: 'Downtown Casino', emoji: '🎰', line: 'Bright lights, sharper players.', format: 'jackpot', buyIn: 5000, unlock: 15000, dull: 0.45, styles: ['rock', 'tag', 'lag', 'trapper', 'maniac'] },
+  { id: 'strip', name: 'The Strip', emoji: '🌃', line: 'Big stacks under neon.', format: 'sng', buyIn: 25000, unlock: 75000, dull: 0.3, styles: ['tag', 'lag', 'trapper', 'pro', 'shark'] },
+  { id: 'monaco', name: 'Monte Carlo', emoji: '🏎️', line: 'Old money and cold reads.', format: 'jackpot', buyIn: 100000, unlock: 400000, dull: 0.2, styles: ['lag', 'trapper', 'tag', 'pro', 'shark'] },
+  { id: 'penthouse', name: 'The Penthouse', emoji: '🏙️', line: 'Invite only. Nobody’s bluffing. Probably.', format: 'sng', buyIn: 500000, unlock: 2000000, dull: 0.1, styles: ['pro', 'shark', 'lag'] },
+  { id: 'yacht', name: 'The Yacht', emoji: '🛥️', line: 'The biggest game on the water.', format: 'jackpot', buyIn: 2500000, unlock: 10000000, dull: 0, styles: ['shark', 'pro'] },
 ];
 
 export const venueById = (id: string | undefined): Venue | undefined => VENUES.find((v) => v.id === id);
@@ -248,10 +246,8 @@ export interface CampaignResult {
   format?: FormatId;
   /** Never got going: the buy-in came back. */
   refunded?: boolean;
-  /** A bounty collected, and a boss beaten for the first time with what it paid. Both are in `back`. */
+  /** A bounty collected (it's in `back`). */
   bounty?: number;
-  boss?: string;
-  bossPay?: number;
   /** The first tournament won at this venue (its card back is yours now). */
   firstWin?: boolean;
   at: number;
@@ -280,8 +276,6 @@ export interface CampaignStats {
   bestDraw: number;
   /** Tournaments won with a friend at the table. */
   friendWins: number;
-  /** Bosses you've knocked out yourself (legend ids), each counted once. */
-  bosses: string[];
   bounties: number;
   /** Most days in a row you've collected the salary. */
   bestStreak: number;
@@ -299,12 +293,12 @@ export interface BjLedger {
   done: boolean;
 }
 
-/** Something friends hear about: a big prize drawn, a boss beaten, a tournament won. */
+/** Something friends hear about: a big prize drawn or a tournament won. */
 export interface Brag {
-  kind: 'draw' | 'boss' | 'win';
+  kind: 'draw' | 'win';
   /** The prize multiple for a draw, the chips won for a win. */
   value: number;
-  /** The venue, or the boss's legend id. */
+  /** The venue. */
   where: string;
   at: number;
 }
@@ -350,8 +344,6 @@ export interface Campaign {
   week: { key: string; won: number } | null;
   lastWeek: { key: string; won: number } | null;
   brag: Brag | null;
-  /** What each boss has seen you do, kept between tables so they remember how you play. */
-  bossReads: Record<string, PlayerRead>;
   bj: BjLedger | null;
 }
 
@@ -365,7 +357,7 @@ export function newCampaign(): Campaign {
     intro: false,
     seat: null,
     last: null,
-    stats: { sngs: 0, sngWins: 0, sngCashes: 0, winRun: 0, bestRun: 0, wonAt: [], cashSessions: 0, bestCash: 0, bestCashX: 0, spins: 0, bestSpin: 0, straightHits: 0, bestDraw: 0, friendWins: 0, bosses: [], bounties: 0, bestStreak: 0, bjRounds: 0, bjBlackjacks: 0, bestBj: 0 },
+    stats: { sngs: 0, sngWins: 0, sngCashes: 0, winRun: 0, bestRun: 0, wonAt: [], cashSessions: 0, bestCash: 0, bestCashX: 0, spins: 0, bestSpin: 0, straightHits: 0, bestDraw: 0, friendWins: 0, bounties: 0, bestStreak: 0, bjRounds: 0, bjBlackjacks: 0, bestBj: 0 },
     claimed: [],
     spins: [],
     streak: 0,
@@ -375,7 +367,6 @@ export function newCampaign(): Campaign {
     week: null,
     lastWeek: null,
     brag: null,
-    bossReads: {},
     bj: null,
   };
 }
@@ -464,9 +455,6 @@ export function bountyReward(v: Venue, rng: () => number): number {
   const times = [1, 1, 1, 2, 2, 3];
   return v.buyIn * times[Math.floor(rng() * times.length)];
 }
-
-/** What knocking out a venue's boss pays the first time you do it. */
-export const bossReward = (v: Venue): number => v.buyIn * 3;
 
 export interface Mission {
   id: string;
@@ -603,25 +591,20 @@ export function seatPrize(seat: CampaignSeat, place: number | undefined): number
 
 /**
  * A tournament is over for you: finished in `place`, or left early (no place, no prize). `bounty` is what the bounty
- * paid if you knocked its bot out, and `boss` the legend you knocked out yourself: the first time, that pays the
- * venue's boss reward.
+ * paid if you knocked its bot out.
  */
-export function finishSng(c: Campaign, gameId: string, place: number | undefined, now: number, extra: { bounty?: number; boss?: string } = {}): Campaign {
+export function finishSng(c: Campaign, gameId: string, place: number | undefined, now: number, extra: { bounty?: number } = {}): Campaign {
   const seat = c.seat;
   if (seat?.gameId !== gameId || seat.kind !== 'sng') return c;
-  const venue = venueById(seat.venue);
   const prize = seatPrize(seat, place);
   const bounty = Math.max(0, Math.floor(extra.bounty ?? 0));
-  const newBoss = !!extra.boss && !!venue && venue.boss === extra.boss && !c.stats.bosses.includes(extra.boss);
-  const bossPay = newBoss && venue ? bossReward(venue) : 0;
-  const back = prize + bounty + bossPay;
+  const back = prize + bounty;
   const s = c.stats;
   const won = place === 1;
   const draw = seat.prize && seat.paid ? Math.round(seat.prize / seat.paid) : 0;
-  // What friends hear about: a boss beaten first, then a win, then a big draw.
-  const brag: Brag | null = newBoss
-    ? { kind: 'boss', value: bossPay, where: extra.boss!, at: now }
-    : won && prize >= 1000
+  // What friends hear about: a win, then a big draw.
+  const brag: Brag | null =
+    won && prize >= 1000
       ? { kind: 'win', value: prize, where: seat.venue, at: now }
       : draw >= 10
         ? { kind: 'draw', value: draw, where: seat.venue, at: now }
@@ -631,7 +614,7 @@ export function finishSng(c: Campaign, gameId: string, place: number | undefined
     chips: c.chips + back,
     seat: null,
     brag,
-    last: { gameId, kind: 'sng', venue: seat.venue, paid: seat.paid, back, place, prize: seat.prize, format: seat.format, at: now, ...(bounty ? { bounty } : {}), ...(newBoss ? { boss: extra.boss, bossPay } : {}), ...(won && !s.wonAt.includes(seat.venue) ? { firstWin: true } : {}) },
+    last: { gameId, kind: 'sng', venue: seat.venue, paid: seat.paid, back, place, prize: seat.prize, format: seat.format, at: now, ...(bounty ? { bounty } : {}), ...(won && !s.wonAt.includes(seat.venue) ? { firstWin: true } : {}) },
     stats: {
       ...s,
       sngs: s.sngs + 1,
@@ -641,7 +624,6 @@ export function finishSng(c: Campaign, gameId: string, place: number | undefined
       bestRun: Math.max(s.bestRun, won ? s.winRun + 1 : 0),
       wonAt: won && !s.wonAt.includes(seat.venue) ? [...s.wonAt, seat.venue] : s.wonAt,
       friendWins: s.friendWins + (won && seat.friends ? 1 : 0),
-      bosses: newBoss ? [...s.bosses, extra.boss!] : s.bosses,
       bounties: s.bounties + (bounty ? 1 : 0),
     },
   });
@@ -754,7 +736,6 @@ const GOALS: ((c: Campaign) => Goal)[] = [
   (c) => ({ id: 'friendWin', emoji: '🤝', title: 'Bragging rights', line: 'Win a tournament with a friend at the table.', reward: 2500, have: c.stats.friendWins, need: 1 }),
   (c) => ({ id: 'itm5', emoji: '🥈', title: 'In the money', line: 'Get paid in five tournaments.', reward: 1000, have: c.stats.sngCashes, need: 5 }),
   (c) => ({ id: 'week', emoji: '📅', title: 'Payday regular', line: 'Collect your salary on seven days.', reward: 2000, have: c.days, need: 7 }),
-  (c) => ({ id: 'boss1', emoji: '😈', title: 'Boss fight', line: 'Knock out a venue’s boss yourself.', reward: 2500, have: c.stats.bosses.length, need: 1 }),
   (c) => ({ id: 'streak7', emoji: '🔁', title: 'Seven in a row', line: 'Collect your salary seven days in a row.', reward: 5000, have: c.stats.bestStreak, need: 7 }),
   reach('casino', '🎲', 'Big time', 20000, 2500),
   (c) => ({ id: 'run3', emoji: '🔥', title: 'Hot streak', line: 'Win three tournaments in a row.', reward: 5000, have: c.stats.bestRun, need: 3 }),
@@ -763,7 +744,6 @@ const GOALS: ((c: Campaign) => Goal)[] = [
   (c) => ({ id: 'jackpot50', emoji: '💥', title: 'Jackpot', line: 'Draw a prize of 50× the buy-in or more.', reward: 25000, have: c.stats.bestDraw >= 50 ? 1 : 0, need: 1 }),
   reach('million', '🤑', 'Millionaire', 1000000, 100000),
   (c) => ({ id: 'tour8', emoji: '🌍', title: 'Every table', line: 'Win a tournament at every venue.', reward: 250000, have: c.stats.wonAt.length, need: VENUES.length }),
-  (c) => ({ id: 'bossAll', emoji: '👹', title: 'Boss of bosses', line: 'Knock out every venue’s boss.', reward: 250000, have: c.stats.bosses.length, need: VENUES.filter((v) => v.boss).length }),
   (c) => ({ id: 'captain', emoji: '⚓', title: 'Captain', line: 'Win a tournament on the Yacht.', reward: 2500000, have: c.stats.wonAt.includes('yacht') ? 1 : 0, need: 1 }),
   reach('whale', '🐋', 'Whale', 10000000, 1000000),
   reach('billion', '🚀', 'Billionaire', 1000000000, 100000000),
@@ -817,7 +797,7 @@ export function parseCampaignCard(raw: unknown): CampaignCard | undefined {
   if (day(r.week) && won(r.weekWon)) Object.assign(out, { week: r.week, weekWon: Math.round(r.weekWon as number) });
   if (day(r.lastWeek) && won(r.lastWeekWon)) Object.assign(out, { lastWeek: r.lastWeek, lastWeekWon: Math.round(r.lastWeekWon as number) });
   const b = r.brag as Record<string, unknown> | undefined;
-  if (b && (b.kind === 'draw' || b.kind === 'boss' || b.kind === 'win') && n(b.value) && typeof b.where === 'string' && b.where.length <= 20 && /^[a-z0-9.-]+$/.test(b.where) && n(b.at))
+  if (b && (b.kind === 'draw' || b.kind === 'win') && n(b.value) && typeof b.where === 'string' && b.where.length <= 20 && /^[a-z0-9.-]+$/.test(b.where) && n(b.at))
     out.brag = { kind: b.kind, value: Math.floor(b.value as number), where: b.where, at: Math.floor(b.at as number) };
   return out;
 }
@@ -862,7 +842,6 @@ export function cleanCampaign(raw: unknown): Campaign {
     week: r.week && typeof r.week.key === 'string' && typeof r.week.won === 'number' ? r.week : null,
     lastWeek: r.lastWeek && typeof r.lastWeek.key === 'string' && typeof r.lastWeek.won === 'number' ? r.lastWeek : null,
     brag: r.brag && typeof r.brag.kind === 'string' ? r.brag : null,
-    bossReads: r.bossReads && typeof r.bossReads === 'object' ? r.bossReads : {},
     bj: r.bj && typeof r.bj.table === 'string' && Number.isInteger(r.bj.round) && num(r.bj.paid) === r.bj.paid ? { table: r.bj.table, round: r.bj.round, paid: r.bj.paid, done: !!r.bj.done } : null,
   };
 }
@@ -892,5 +871,3 @@ export const campaignStyles = (c: NonNullable<Game['campaign']>): string[] | und
 /** How dull the bots at a campaign table play (0 is their full strength). */
 export const campaignDull = (c: NonNullable<Game['campaign']>): number => (c.kind === 'cash' ? stakeById(c.venue)?.dull : venueById(c.venue)?.dull) ?? 0;
 
-/** A boss plays sharper than the room around them, but not at full strength until the top. */
-export const BOSS_DULL = 0.5;

@@ -1,28 +1,13 @@
 import { type CSSProperties, type ReactNode } from 'react';
-import { BUBBLE_STYLES, CARD_PACKS, LEGENDS, type Legend } from '../../game';
+import { BUBBLE_STYLES, CARD_PACKS } from '../../game';
 import { PREMIUM_ON_SALE, PREMIUM_PERKS, PREMIUM_PRICE, type PremiumReason } from '../../state/premium';
 import { closeSheet, openSheet, useApp } from '../../state/store';
 import { PlayingCard, Sheet } from '../../ui/components';
 import { CheckIcon, CloseIcon, CrownIcon } from '../../ui/Icons';
-import { LEGEND_SCENES } from '../botScenes';
 
 /** A sample chat bubble in one of the Premium colours. */
 export function BubbleChip({ id, children }: { id: string; children: string }) {
   return <span className={`bubble-chip bubble-fx fx-${id}`}>{children}</span>;
-}
-
-/** A legend's emoji in a round frame, on their backdrop colour. */
-export function LegendFace({ legend, size }: { legend: Legend; size: number }) {
-  const scene = LEGEND_SCENES[legend.id];
-  return (
-    <span
-      className="legend-face"
-      style={{ width: size, height: size, background: `linear-gradient(180deg, ${scene.bg[0]}, ${scene.bg[1]})` }}
-      aria-hidden
-    >
-      <span style={{ fontSize: size * 0.6 }}>{legend.emoji}</span>
-    </span>
-  );
 }
 
 /** Every Premium card back fanned out in an arc that sways, each card bobbing in turn, with a gold glow behind. */
@@ -68,16 +53,6 @@ function Showcase({ reason }: { reason?: PremiumReason }) {
           ))}
       </div>
     ),
-    legends: (
-      <div className="show-legends">
-        {LEGENDS.map((l) => (
-          <span key={l.id}>
-            <LegendFace legend={l} size={46} />
-            <small>{l.short}</small>
-          </span>
-        ))}
-      </div>
-    ),
   };
   const order = [...PREMIUM_PERKS].sort((a, b) => (a.id === reason ? -1 : b.id === reason ? 1 : 0));
   return (
@@ -97,7 +72,6 @@ const LEAD: Record<PremiumReason | 'none', string> = {
   none: 'Make every table yours.',
   bubbles: 'Colour your bubbles. Everyone at the table sees them.',
   packs: 'Deal with a card back that shines.',
-  legends: 'Sit the AI Legends down at your table.',
 };
 
 /** FlipUp Premium: opens when someone taps a Premium extra, or from Profile. One payment of $9. */

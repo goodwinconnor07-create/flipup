@@ -4,8 +4,7 @@ import { loadLastTable, loadStats, saveLastTable } from '../state/persist';
 import { homeView, navigate, openSheet, toast, useApp } from '../state/store';
 import { Avatar } from '../ui/components';
 import { GameShelf } from './HomeGames';
-import { LegendShelf } from './HomeLegends';
-import { CAMPAIGN_ON, LEGENDS_ON, variantInfo } from '../game';
+import { CAMPAIGN_ON, variantInfo } from '../game';
 import { PartyTab } from './HomeParty';
 import { CampaignTab } from './HomeCampaign';
 import { loadPartyRef } from '../state/party';
@@ -207,7 +206,6 @@ export function Home() {
                     <ChevronIcon className="gr-chev" width={16} height={16} />
                   </button>
                 </div>
-                {LEGENDS_ON && <LegendShelf />}
               </>
             )}
             {CAMPAIGN_ON && tab === 'campaign' && <CampaignTab />}

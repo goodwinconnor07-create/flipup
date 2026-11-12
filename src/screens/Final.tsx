@@ -1,14 +1,12 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { LEGENDS_ON, legendById, net, standings, type Game } from '../game';
-import { finishLine } from '../game/botTalk';
-import { badgeById, legendBefore, loadProgress, nextLegend, settleTable, type TableReport } from '../state/progress';
-import { closeTable, dispatch, openLog, startLegend, useApp } from '../state/store';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { net, standings, type Game } from '../game';
+import { badgeById, settleTable, type TableReport } from '../state/progress';
+import { closeTable, dispatch, openLog, useApp } from '../state/store';
 import { shareCard } from '../ui/shareCard';
 import { shareText } from './sheets/InviteSheet';
 import { Avatar, PlayingCard, chips } from '../ui/components';
 import { confetti, CONFETTI, haptic, reducedMotion } from '../ui/effects';
 import { playSound } from '../ui/sound';
-import { LegendArt } from './HomeLegends';
 
 export function signed(n: number): string {
   return n > 0 ? `+${chips(n)}` : n < 0 ? `−${chips(-n)}` : '0';
@@ -143,7 +141,7 @@ function Meter({ label, value, tip }: { label: string; value: number; tip: strin
   );
 }
 
-/** One big announcement: a badge, an unlocked legend, a comeback. It pops and throws confetti when it appears. */
+/** One big announcement: a badge or a comeback. It pops and throws confetti when it appears. */
 function Announce({ icon, title, text, tone = 'gold', burst = true, children }: { icon: ReactNode; title: string; text: string; tone?: 'gold' | 'blue' | 'green'; burst?: boolean; children?: ReactNode }) {
   return (
     <Reveal
@@ -181,15 +179,6 @@ export function Final({ game }: { game: Game }) {
   // A table ended before any hand finished has no winner: nobody won a chip.
   const played = (stats?.hands ?? 0) > 0 || !!game.hand?.result;
   const iWon = played && top?.deviceId === deviceId;
-  const progress = useMemo(() => loadProgress(), [report]);
-  const legend = game.legendGame ? legendById(game.legendGame) : undefined;
-  const next = report && LEGENDS_ON ? nextLegend(progress) : null;
-  const [pick] = useState(() => Math.floor(Math.random() * 8));
-  const myName = me?.name;
-  const line = useMemo(() => {
-    if (!legend || !myName) return null;
-    return finishLine(legend.id, iWon ? 'finishLost' : 'finishWon', myName, pick);
-  }, [legend, myName, iWon, pick]);
 
   useEffect(() => {
     // Once per table: coming back to a finished table doesn't throw another party.
@@ -202,7 +191,7 @@ export function Final({ game }: { game: Game }) {
 
   const headline = !top ? 'Table closed' : !played ? 'No hands played' : iWon ? 'You win!' : `${top.name} wins!`;
   const hands = stats?.hands ?? game.hand?.number ?? 0;
-  const announced = report && (report.newBadges.length > 0 || report.firstBeat || report.unlocked || report.comeback || report.rival);
+  const announced = report && (report.newBadges.length > 0 || report.comeback);
 
   const send = async () => {
     if (!me) return;
@@ -238,39 +227,15 @@ export function Final({ game }: { game: Game }) {
           {played && me && !iWon && place > 0 && <p className="fin-place">{`You finished ${ordinal(place)}`}</p>}
           {played && <Big value={Math.abs(myNet)} format={(n) => `${myNet < 0 ? '−' : myNet > 0 ? '+' : ''}${chips(n)}`} className={`fin-big ${myNet > 0 ? 'good' : myNet < 0 ? 'bad' : ''}`} />}
           {played && <p className="fin-sub">{`chips after ${hands} hand${hands === 1 ? '' : 's'}`}</p>}
-          {line && legend && (
-            <p className="fin-quote">
-              <b>{legend.short}:</b> “{line}”
-            </p>
-          )}
         </section>
 
         {announced && report && (
           <section className="fin-section" aria-label="What you earned">
-            {report.firstBeat && report.beat && legendById(report.beat) && (
-              <Announce icon="⚔️" title={`You beat ${legendById(report.beat)!.short}!`} text="Knocked out heads-up. That's a first.">
-                <LegendArt legend={legendById(report.beat)!} size={56} className="announce-art" />
-              </Announce>
-            )}
-            {report.unlocked && legendById(report.unlocked) && (
-              <Announce icon="🔓" title={`${legendById(report.unlocked)!.short} is open`} text={`${legendById(report.unlocked)!.name} is next on the ladder.`} tone="blue">
-                <LegendArt legend={legendById(report.unlocked)!} size={56} className="announce-art" />
-              </Announce>
-            )}
             {report.newBadges.map((id) => {
               const b = badgeById(id);
               return b ? <Announce key={id} icon={b.emoji} title={`Badge: ${b.name}`} text={b.text} /> : null;
             })}
             {report.comeback && <Announce icon="🎢" title="What a comeback" text={`You were down to ${Math.round((stats?.lowest ?? 0) * 100)}% of your chips and still won.`} tone="green" />}
-            {report.rival && (
-              <Announce
-                icon={legend?.emoji ?? '⚔️'}
-                title={`${legend?.short}: ${report.rival.record.w}–${report.rival.record.l}`}
-                text={report.rival.record.w > report.rival.record.l ? 'You lead the series.' : report.rival.record.w < report.rival.record.l ? 'They lead the series. Rematch?' : 'All square.'}
-                tone="blue"
-                burst={false}
-              />
-            )}
           </section>
         )}
 
@@ -357,22 +322,6 @@ export function Final({ game }: { game: Game }) {
           </section>
         )}
 
-        {next && !report?.firstBeat && (
-          <section className="fin-section" aria-label="Next up">
-            <Reveal className="fin-card next-up">
-              <LegendArt legend={next} size={48} className="announce-art" />
-              <span>
-                <small>Next on the ladder</small>
-                <b>{next.name}</b>
-                {legendBefore(next.id) && <em>{`After ${legendBefore(next.id)!.short}.`}</em>}
-              </span>
-              <button type="button" className="btn btn-sm btn-blue" onClick={() => startLegend(next.id)}>
-                Play
-              </button>
-            </Reveal>
-          </section>
-        )}
-
         <section className="fin-section" aria-label="Final standings">
           <h2 className="fin-h">Final standings</h2>
           {rows.length >= 2 && (
@@ -395,8 +344,8 @@ export function Final({ game }: { game: Game }) {
         {me && (
           <>
             {host ? (
-              <button type="button" className="btn btn-xl btn-blue" onClick={() => (game.legendGame ? startLegend(game.legendGame) : dispatch({ type: 'playAgain' }))}>
-                {game.legendGame && report?.beat ? `Rematch ${legend?.short ?? ''}`.trim() : 'Play again'}
+              <button type="button" className="btn btn-xl btn-blue" onClick={() => dispatch({ type: 'playAgain' })}>
+                Play again
                 {waiting > 0 ? ` · ${waiting} waiting` : ''}
               </button>
             ) : asked ? (

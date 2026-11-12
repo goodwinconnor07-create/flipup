@@ -80,7 +80,7 @@ export async function fetchFriendCard(code: string): Promise<FriendCardInfo | nu
   return (await res.json()) as FriendCardInfo;
 }
 
-export async function createPartyOnServer(body: { deviceId: string; name: string; emoji: string; friendCode?: string; twinCode?: string; settings: PartySettings }): Promise<string> {
+export async function createPartyOnServer(body: { deviceId: string; name: string; emoji: string; friendCode?: string; settings: PartySettings }): Promise<string> {
   const res = await jsonRequest('/api/parties', { method: 'POST', body: JSON.stringify(body) });
   if (!res.ok) throw new Error(await errorText(res, "Couldn't open a party. Try again."));
   return ((await res.json()) as { code: string }).code;

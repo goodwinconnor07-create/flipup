@@ -37,14 +37,10 @@ import {
   normalizeTableCode,
   newId,
   redactForDevice,
-  dressAsLegend,
-  LEGENDS_ON,
-  legendById,
   redactLogs,
   type HandLog,
   type Action,
   type Game,
-  type Player,
   type ServerMessage,
   type Settings,
   type Variant,
@@ -57,7 +53,6 @@ import { Connection, type ConnStatus } from './connection';
 import { setMuted } from '../ui/sound';
 import { captureFinishedHand } from './training';
 import { FAST, toTableTime } from './clock';
-import { legendBefore, legendOpen, loadProgress } from './progress';
 import { getCampaign, setCampaign, subscribeCampaign, today } from './campaign';
 import { shareCampaignSoon } from './pals';
 import {
@@ -101,8 +96,6 @@ export type Route =
   | { name: 'join'; code: string }
   | { name: 'joinTable'; info: TableInfo }
   | { name: 'table' }
-  /** A legend's profile: how they play, and a game against them. */
-  | { name: 'legend'; id: string }
   /** Set up a party tournament: pick the games and the pace. */
   | { name: 'partySetup' }
   /** The party this phone is in: lobby, leaderboard and the way to the table. */
@@ -145,8 +138,6 @@ export type Sheet =
   | { name: 'bubbles' }
   /** Pick a card back. */
   | { name: 'packs' }
-  /** Pick an AI Legend to seat at this table. */
-  | { name: 'legends' }
   | { name: 'player'; playerId: string }
   /** Type a friend code to add them to your friends. */
   | { name: 'addPal' }
@@ -487,41 +478,6 @@ function setSession(session: Session | null): void {
   captureFinishedHand(state.game, state.deviceId);
   if (session?.mode === 'local') scheduleLocal();
   else clearTimeout(localTimer);
-}
-
-/** Sits down heads-up against one bot, which `prepare` can change first, and deals. */
-function startHeadsUp(bot: string | undefined, prepare: (them: Player, game: Game) => void): void {
-  const name = cleanName(state.profile.name);
-  if (!name) return navigate({ name: 'profile', then: 'bots' });
-  const settings: Settings = { ...DEFAULT_SETTINGS, turnSeconds: 0 };
-  const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings, bots: 1, botNames: bot ? [bot] : undefined, ...premiumLook(), code: null, now: Date.now() });
-  const them = game.players.find((p) => p.bot);
-  if (state.fast) game.fast = true;
-  if (them) prepare(them, game);
-  closeConnection();
-  setSession({ mode: 'local', code: null, game });
-  resetTo({ name: 'table' });
-  dispatch({ type: 'start' });
-}
-
-/** A heads-up game against a legend: a bot seat dressed as them. */
-export function startLegend(id: string): void {
-  if (!LEGENDS_ON || state.busy) return;
-  const legend = legendById(id);
-  if (!legend) return;
-  const progress = loadProgress();
-  if (!legendOpen(progress, legend.id)) {
-    toast(`Beat ${legendBefore(legend.id)?.short ?? 'the one before'} first.`, 'error');
-    return;
-  }
-  if (state.game?.legendGame) recordFinished();
-  const seen = progress.rivals.legends[legend.id];
-  startHeadsUp(undefined, (them, game) => {
-    game.legendGame = legend.id;
-    if (progress.beaten[legend.id]) game.rematch = 'won';
-    else if (seen && seen.l > 0) game.rematch = 'lost';
-    dressAsLegend(them, legend);
-  });
 }
 
 /** Fast tables run their clock at twice the speed: the same waits, half as long. Fixed per table, so nothing moves mid-game. */
@@ -868,20 +824,15 @@ function settleCampaign(prev: Game | null | undefined, next: Game | null | undef
     // A tournament that ended without placing you was called off: the buy-in comes back.
     if (place === undefined && here && game.status === 'ended') return setCampaign(refundSeat(c, seat.gameId, now));
     if (place === undefined && !gone) return;
-    // A bounty or the boss counts if this phone's player won a pot that put them out.
+    // A bounty counts if this phone's player won a pot that put them out.
     const knocked = game.knocked ?? {};
     const mineOut = (id: string | undefined) => !!me && !!id && (knocked[id] ?? []).includes(me.id);
     const bounty = game.campaign?.bounty;
-    const boss = game.campaign?.boss;
-    let done = finishSng(c, seat.gameId, place, now, { bounty: mineOut(bounty?.playerId) ? bounty!.reward : 0, boss: mineOut(boss?.playerId) ? boss!.legend : undefined });
-    // The boss remembers how you played them (tables on this phone keep what the bots have seen).
-    const read = boss && me ? game.reads?.[me.id] : undefined;
-    if (read) done = { ...done, bossReads: { ...done.bossReads, [boss!.legend]: read } };
+    let done = finishSng(c, seat.gameId, place, now, { bounty: mineOut(bounty?.playerId) ? bounty!.reward : 0 });
     if ((done.last?.back ?? 0) > 0 && place) done = noteMission(done, today(), 'itm');
     setCampaign(done);
     const last = done.last;
-    if (last?.boss) toast(`You beat ${legendById(last.boss)?.short ?? 'the boss'}! +${n0(last.bossPay ?? 0)}`, 'success');
-    else if (last?.bounty) toast(`Bounty collected: +${n0(last.bounty)}`, 'success');
+    if (last?.bounty) toast(`Bounty collected: +${n0(last.bounty)}`, 'success');
     // Out of a tournament with friends still playing: say how it went now; the finish page comes when it ends.
     const paid = getCampaign().last;
     if (here && place && game.status !== 'ended' && paid) toast(paid.back > 0 ? `You finished ${ordinal(place)} and won ${n0(paid.back)}.` : `You finished ${ordinal(place)}.`, paid.back > 0 ? 'success' : 'info');
@@ -947,8 +898,7 @@ export function reconcileCampaign(): void {
 let prepared: { kind: 'cash' | 'sng'; id: string; amount?: number; game: Game } | null = null;
 
 /**
- * Sets up a campaign table against the bots on this phone: the seats, the venue's boss (who remembers how you've
- * played them) and sometimes a bounty on one bot. Returns what the confirm sheet should say about the bounty.
+ * Sets up a campaign table against the bots on this phone: the seats and sometimes a bounty on one bot. Returns what the confirm sheet should say about the bounty.
  */
 export function prepareCampaign(kind: 'cash' | 'sng', id: string, amount?: number): { name: string; emoji: string; reward: number } | null {
   const name = cleanName(state.profile.name);
@@ -963,18 +913,9 @@ export function prepareCampaign(kind: 'cash' | 'sng', id: string, amount?: numbe
   const game = createTable({ hostDeviceId: state.deviceId, name, emoji: state.profile.emoji, settings: table.settings, bots: table.campaign.seats - 1, campaign: table.campaign, ...premiumLook(), code: null, now: Date.now() });
   // The bots at a cash table sit with 100 big blinds, whatever you sat down with.
   if (stake) for (const p of game.players) if (p.bot) p.stack = p.bought = cashMax(stake);
-  const me = game.players.find((p) => p.deviceId === state.deviceId);
-  const boss = game.campaign?.boss;
-  if (boss && me) {
-    // A boss you've met greets you as a rematch, and still knows how you play.
-    if (c.stats.bosses.includes(boss.legend)) game.rematch = 'won';
-    else if (c.bossReads[boss.legend]) game.rematch = 'lost';
-    const read = c.bossReads[boss.legend];
-    if (read) game.reads = { ...(game.reads ?? {}), [me.id]: structuredClone(read) };
-  }
   let bounty: { name: string; emoji: string; reward: number } | null = null;
   if (venue && game.campaign && cryptoRng() < bountyChance) {
-    const marks = game.players.filter((p) => p.bot && p.id !== boss?.playerId);
+    const marks = game.players.filter((p) => p.bot);
     const mark = marks[Math.floor(cryptoRng() * marks.length)];
     if (mark) {
       const reward = bountyReward(venue, cryptoRng);
@@ -1106,7 +1047,7 @@ function recordFinished(): void {
     tables: stats.tables + 1,
     hands: stats.hands + played,
     counted: [...stats.counted, game.id],
-    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, variant: game.settings.variant ?? 'holdem', ...(game.legendGame ? { legend: game.legendGame } : {}) }],
+    games: [...stats.games, { at: Date.now(), net: me.stack - me.bought, hands: played, players: game.players.length, place, variant: game.settings.variant ?? 'holdem' }],
   });
 }
 

@@ -87,7 +87,7 @@ Every mini game is slower than Hold'em where it has something to show (`src/game
 
 - The next hand deals by itself (5 seconds after a fold-out, 9 after a showdown), or straight away once every person at the table taps **Next hand**.
 - **Busting:** with rebuys on, a busted player can buy back in for another starting stack. Without rebuys they're out. Bots that bust leave the table.
-- **Game over:** without rebuys, the game ends when one player has all the chips (or only bots have chips left). The host can end the game at any time; a hand in progress is called off and bets go back. The deciding hand stays up for 3 seconds before the winner's page for games without rebuys, legend games and online tables. A table on one phone with rebuys on waits 20 seconds for anyone to rebuy first.
+- **Game over:** without rebuys, the game ends when one player has all the chips (or only bots have chips left). The host can end the game at any time; a hand in progress is called off and bets go back. The deciding hand stays up for 3 seconds before the winner's page for games without rebuys and online tables. A table on one phone with rebuys on waits 20 seconds for anyone to rebuy first.
 - **Standings** show each player's chips minus everything they've bought in for.
 
 ## Being away
@@ -133,7 +133,6 @@ One player's bankroll against the bots, kept on the phone (`flipup.campaign`) fr
 - **Tournaments** are venues, each with one format at one buy-in. Each venue opens for good the first time your bankroll reaches its mark. Bots come from the venue's styles, loose ones at the Garage and the sharks on the Yacht, and play below their full strength in the easier rooms (more mistakes, less reading of hands and people): the Garage's are 85% dulled, then 75, 60, 45, 30, 20 and 10%, and the Yacht's play at full strength. Cash stakes are dulled the same way, step for step. No rebuys.
   - **Sit & Go:** six players, 1,500 chips, blinds from 10/20 doubling every ten hands. 1st wins 70% of the prize, 2nd 30%.
   - **Jackpot:** three players, 1,000 chips, blinds from 10/20 doubling every six hands. The winner takes it all.
-  - **Bosses.** From the Riverboat up, one seat at every tournament is the venue's boss, a legend (Brunson, Hellmuth, Negreanu, Ivey, Dwan, Rampage, in that order), playing half as dulled as the room. Knock a boss out yourself (win a pot that puts them out) and the first time pays three buy-ins and counts towards the goals. A boss remembers you: they greet you as a rematch, and the table starts with what that boss saw you do last time.
   - **Bounties.** About three tournaments in ten put a bounty on one bot (never the boss), named before you buy in: one, two or three buy-ins if you knock it out yourself. It shows only as a small 🎯 by its name in the table's header.
 
   | Venue | Format | Buy-in | Opens at |

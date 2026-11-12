@@ -23,8 +23,8 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   return {
     ...game,
     hostDeviceId: shown(game.hostDeviceId),
-    // Bots' styles and identities (and what an AI twin remembers) and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, twin: _twin, botProfile: _profile, botKind: _kind, dull: _dull, ...p }) =>
+    // Bots' styles and identities and their notes on players stay on the server.
+    players: game.players.map(({ style: _style, labStyle: _labStyle, botProfile: _profile, botKind: _kind, dull: _dull, ...p }) =>
       p.deviceId ? { ...p, deviceId: shown(p.deviceId) } : p,
     ),
     humanPoker: undefined,

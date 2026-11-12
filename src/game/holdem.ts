@@ -65,8 +65,8 @@ export const TIMING = {
   endPause: 3000,
 };
 
-/** Games that end as soon as one player has all the chips: no rebuys, a legend, or an online table. Other tables (bots-only on one phone, rebuys on) wait the rebuy window. */
-export const endsAtOnce = (game: Game): boolean => !game.settings.rebuys || !!game.legendGame || !!game.code;
+/** Games that end as soon as one player has all the chips: no rebuys, or an online table. Other tables (bots-only on one phone, rebuys on) wait the rebuy window. */
+export const endsAtOnce = (game: Game): boolean => !game.settings.rebuys || !!game.code;
 
 /** How long a new game waits before its first greeting. */
 export const greetWait = (_game: Game): number => TIMING.greeting;

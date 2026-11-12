@@ -23,7 +23,7 @@ const ORDINAL = ['1st', '2nd', '3rd'];
 const place = (n: number) => ORDINAL[n - 1] ?? `${n}th`;
 
 /**
- * The finish page (the web's `Final`, without legends or badges): one scrolling page with the result up top, then
+ * The finish page (the web's `Final`, without badges): one scrolling page with the result up top, then
  * big stat tiles that count up, the chips line, how you played, the table's awards, and the standings (chips won or
  * lost, not raw stacks). Play again, Share and Home are pinned under it, with who's in for another game. Share sends
  * a picture of the result. The stats come from this table's hand log (`tableStats()`, shared with the web).

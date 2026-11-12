@@ -366,8 +366,8 @@ export function dulled(style: Style, d: number): Style {
   return out;
 }
 
-/** How a seat plays: an AI twin's fitted style, or the bot's own (with its individual quirks), or dulled at an easy campaign table. */
-export const playerStyle = (p: { style?: string; botProfile?: string; twin?: { style: Style }; dull?: number } | undefined): Style => {
-  const s = p?.twin?.style ?? styleOf(p?.style, p?.botProfile);
+/** How a seat plays: the bot lab's style for it, or the bot's own (with its individual quirks), or dulled at an easy campaign table. */
+export const playerStyle = (p: { style?: string; botProfile?: string; labStyle?: Style; dull?: number } | undefined): Style => {
+  const s = p?.labStyle ?? styleOf(p?.style, p?.botProfile);
   return p?.dull ? dulled(s, p.dull) : s;
 };

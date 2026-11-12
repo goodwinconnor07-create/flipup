@@ -1,5 +1,5 @@
 import { useState, type ComponentType, type SVGProps } from 'react';
-import { myPlayer, seatFor, type Settings, LEGENDS_ON } from '../../game';
+import { myPlayer, seatFor, type Settings } from '../../game';
 import {
   closeSheet,
   closeTable,
@@ -14,7 +14,6 @@ import {
   setProfile,
   setTableLook,
   toggleCalm,
-  withPremium,
   toggleFast,
   toggleTalk,
   setAppearance,
@@ -31,7 +30,6 @@ import {
   ChatIcon,
   ChevronIcon,
   ClockIcon,
-  CrownIcon,
   ExitIcon,
   GearIcon,
   HelpIcon,
@@ -58,7 +56,7 @@ import { RankingsSheet } from './RankingsSheet';
 import { LogSheet } from './LogSheet';
 import { AddPalSheet, JoinPartySheet } from './CodeSheets';
 import { PremiumSheet } from './PremiumSheet';
-import { BubbleSheet, LegendsSheet, PackSheet } from './PremiumPickers';
+import { BubbleSheet, PackSheet } from './PremiumPickers';
 import { CampaignIntroSheet } from './CampaignIntroSheet';
 import { BjInviteSheet, BjStartSheet } from './BlackjackSheets';
 import { CampaignFriendsSheet, CampaignGoalsSheet, DailySpinSheet } from './CampaignSheets';
@@ -100,8 +98,6 @@ export function SheetHost({ sheet }: { sheet: SheetSpec }) {
       return <BubbleSheet />;
     case 'packs':
       return <PackSheet />;
-    case 'legends':
-      return <LegendsSheet />;
     case 'player':
       return <PlayerSheet playerId={sheet.playerId} />;
     case 'addPal':
@@ -429,8 +425,6 @@ function MenuSheet() {
     table.push({ label: 'Table settings', Icon: GearIcon, color: 'var(--slate-hi)', onClick: () => openSheet({ name: 'settings' }) });
   if (host && playing && game.players.length < 9 && !campaign)
     table.push({ label: 'Add a bot', Icon: PlusIcon, color: 'var(--green)', onClick: quick(() => dispatch({ type: 'addBot' })) });
-  if (LEGENDS_ON && host && !ended && game.players.length < 9)
-    table.push({ label: 'Add an AI Legend', Icon: CrownIcon, color: 'var(--gold)', onClick: () => withPremium('legends', () => openSheet({ name: 'legends' })) });
 
   const { switches, links } = useYouRows();
   links.splice(1, 0, { label: 'Name and emoji', Icon: PencilIcon, color: 'var(--pink)', onClick: () => navigate({ name: 'profile', then: 'done' }) });

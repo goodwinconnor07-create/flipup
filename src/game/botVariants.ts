@@ -15,7 +15,7 @@ import { fullDeck, isRed, type Card } from './cards';
 import { potTotal } from './holdem';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
-import { boardSize, count21, handSets, holeCountAt, isWild, keepTwoQuick, startValue, variantOf, wildHand, type Variant } from './variants';
+import { boardSize, count21, handSets, holeCountAt, isWild, keepTwoQuick, startValue, variantOf, wildHand, type Variant, cardsToCome } from './variants';
 
 /** Seats that play the way bots did before the game-mode upgrade (the lab compares the two). */
 export const lab = { legacy: new Set<string>() };
@@ -39,9 +39,10 @@ export function variantScore(v: Variant, hole: Card[], board: Card[]): number {
 }
 
 /** The rest of the board, dealt by the variant's rules. */
-export function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => number): Card[] {
+export function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => number, toCome?: number): Card[] {
   const out = board.slice();
-  const target = boardSize(v);
+  // Power Cards: an Extra Card makes the board longer, so the cards still to come are counted by street instead.
+  const target = toCome !== undefined ? board.length + toCome : boardSize(v);
   const hadRiver = out.length >= 5;
   while (out.length < target && deck.length) out.push(deck.pop()!);
   if (!hadRiver && v === 'dice') {
@@ -95,7 +96,7 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
     }
     const own = more > 0 ? [...seat.cards, ...Array.from({ length: more }, () => deck.pop()!)] : seat.cards;
     const ghostHand = ghost ? [deck.pop()!, deck.pop()!] : null;
-    const board = finishBoard(v, hand.board, deck, rng);
+    const board = finishBoard(v, hand.board, deck, rng, v === 'power' ? cardsToCome(hand.street) : undefined);
     const mine = variantScore(v, myCards(v, own, board), board);
     let best = 0;
     let ties = 0;
@@ -171,7 +172,7 @@ function blackjackEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, 
       // Over 21 they'd have busted and folded.
       if (count21(cards) <= 21) theirs.push(cards);
     }
-    const board = finishBoard(v, hand.board, deck, rng);
+    const board = finishBoard(v, hand.board, deck, rng, v === 'power' ? cardsToCome(hand.street) : undefined);
     const mine = { poker: variantScore(v, own, board), count: count21(own) };
     const field = theirs.map((h) => ({ poker: variantScore(v, h, board), count: count21(h) }));
     const all = [mine, ...field];

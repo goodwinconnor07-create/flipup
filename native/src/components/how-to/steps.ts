@@ -146,6 +146,12 @@ const STEPS: Record<Variant, Step[]> = {
     step('hit', 'hand', 'It counts twice', 'A card you hit plays in your poker hand too.'),
     step('showdown', 'showdown', 'Two winners', "Half the pot to the best hand, half to whoever's closest to 21."),
   ],
+  power: [
+    { ...cards, title: 'A secret power', text: 'With your two cards you get one power at random. Only you know what it is.' },
+    { ...yourMove, title: 'Play it on your turn', text: 'Tap Play before your move. Peek at the next card, X-ray an opponent, swap a card, add a card to the board and more.' },
+    { ...flop, zoom: 'seats', title: 'Everyone sees it', text: 'When a power is played the whole table sees which one and who it hit. What a Peek or X-ray shows stays with you.' },
+    { ...showdown, text: 'Best five wins, as usual. A Shield, a Bounty or a Fold Tax can still move some chips.' },
+  ],
   imposter: [
     step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
     step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),

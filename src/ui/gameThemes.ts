@@ -25,6 +25,7 @@ const ART: Record<Variant, GameArt> = {
   beanstalk: { ...GAME_LOOK.beanstalk, sting: null },
   bjholdem: { ...GAME_LOOK.bjholdem, sting: null },
   imposter: { ...GAME_LOOK.imposter, sting: 'sting' },
+  power: { ...GAME_LOOK.power, sting: 'pop' },
 };
 
 export const cardArt = (v: Variant): GameArt => ART[v] ?? ART.holdem;

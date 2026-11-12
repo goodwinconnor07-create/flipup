@@ -33,6 +33,7 @@ import {
   foldOutOfTurn,
   canHit,
   hitCard,
+  playPower,
   lastStanding,
   makeMove,
   MAX_SEATS,
@@ -49,6 +50,7 @@ import {
 import { cryptoRng, newId } from './ids';
 import { botView, isVariant } from './variants';
 import { botHits, variantDecide } from './botVariants';
+import { botPowerPlan, playablePower } from './powers';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
@@ -186,10 +188,6 @@ export function createTable(opts: {
   rivals?: Game['rivals'];
   /** Picks the random bots. Tests pass a seeded one so every run seats the same bots. */
   rng?: () => number;
-  /** Every bot is an ULTRA bot (Premium, bots-only tables). */
-  ultra?: boolean;
-  /** What ULTRA bots remember of the host from earlier games, seeded into `game.reads` under the host's new id. */
-  memory?: PlayerRead;
   /** The host shows their name in gold (Premium). */
   gold?: boolean;
 }): Game {
@@ -210,7 +208,6 @@ export function createTable(opts: {
     logs: [],
     reactions: {},
     ...(opts.campaign ? { campaign: structuredClone(opts.campaign) } : {}),
-    ...(opts.ultra && !opts.campaign && !opts.code ? { ultra: true } : {}),
     ...(opts.rivals && !opts.code ? { rivals: structuredClone(opts.rivals) } : {}),
   };
   game.players.push({
@@ -232,7 +229,6 @@ export function createTable(opts: {
   while (game.players.length - 1 < opts.bots && game.players.length < botSeatLimit) addBot(game, opts.botStyles, opts.rng);
   if (game.campaign) seatBoss(game);
   syncHumanPokerSeat(game);
-  if (game.ultra && opts.memory) game.reads = { [game.players[0].id]: structuredClone(opts.memory) };
   return game;
 }
 
@@ -276,7 +272,6 @@ function seatBotNamed(game: Game, name: string): boolean {
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
     style: pick.style,
     botProfile: pick.profile?.id,
-    ...(game.ultra ? { ultra: true } : {}),
   });
   return true;
 }
@@ -306,7 +301,6 @@ function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): v
     botProfile: pick.profile?.id,
     // A campaign room's bots play below their full strength.
     ...(game.campaign && campaignDull(game.campaign) > 0 ? { dull: campaignDull(game.campaign) } : {}),
-    ...(game.ultra ? { ultra: true } : {}),
   });
 }
 
@@ -1137,6 +1131,17 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return done();
     }
 
+    case 'power': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand || hand.toAct !== me.id) return fail("It's not your turn.");
+      if (hand.seq !== action.seq) return fail('That turn has passed.');
+      const error = playPower(game, { target: action.target, card: action.card, rank: action.rank }, ctx);
+      if (error) return fail(error);
+      me.timeouts = 0;
+      return done();
+    }
+
     case 'discard': {
       const hand = game.hand;
       if (!me) return fail("You're not at this table.");
@@ -1457,6 +1462,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
         hand.actAt = talking;
         schedule(game);
         return true;
+      }
+      // Power Cards: it may play its power first. The table stops for a moment to show it, then the bot moves.
+      if (playablePower(game, hand, seat)) {
+        const plan = botPowerPlan(game, hand, seat, ctx.rng);
+        if (plan && !playPower(game, plan, ctx)) return true;
       }
       // Blackjack Hold'em: on the flop it takes its hits first. Going over 21 folds it, and that's its turn.
       while (canHit(game, hand, seat) && botHits(game, seat, ctx.rng)) {

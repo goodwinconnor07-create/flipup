@@ -70,8 +70,6 @@ export interface Player {
   cardPack?: string;
   /** A FlipUp Premium player who shows their name in gold (Settings > Gold name). Public: everyone at the table sees it. */
   gold?: boolean;
-  /** An ULTRA bot (Premium, bots-only tables): plays without leaks and learns your habits fast. Public: the table shows it. */
-  ultra?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
   twin?: TwinBrain;
   /** Stable bot identity, private on online tables. */
@@ -306,9 +304,40 @@ export interface Hand {
   discarded?: string[];
   /** Crazy Pineapple: the cards thrown away. Phones see their own until everyone is done. */
   discards?: Record<string, Card>;
+  /** Power Cards: the power each player was dealt this hand. Phones see only their own until it's played or the hand is over. */
+  powers?: Record<string, PowerId>;
+  /** Power Cards: every power played this hand, in order (public, except what a Peek or an X-ray showed). */
+  powerUses?: PowerUse[];
+  /** Power Cards: players who can't bet or raise, and on which street (Silence). */
+  silenced?: Record<string, Street>;
 }
 
-export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust';
+export type PowerId = 'peek' | 'xray' | 'swap' | 'reroll' | 'extra' | 'passleft' | 'shield' | 'silence' | 'bounty' | 'foldtax' | 'copycat';
+
+/** One power played in a Power Cards hand. */
+export interface PowerUse {
+  by: string;
+  power: PowerId;
+  /** Copycat: the power it copied (the effect is that power's). */
+  as?: PowerId;
+  street: Street;
+  /** X-ray and Silence: who it was aimed at. */
+  target?: string;
+  /** Peek and X-ray: what it showed. Only the player who played it ever sees this. */
+  seen?: Card[];
+  /** Reroll: the board card that went (out) and the one that came (in). Public. */
+  out?: Card;
+  in?: Card;
+  /** Bounty: the rank called (2 to 14), the board when it was called, and who paid what at the end. */
+  rank?: number;
+  board?: Card[];
+  paid?: Record<string, number>;
+  /** Shield: what the player had put in when it went up, and what came back at the showdown. */
+  from?: number;
+  refund?: number;
+}
+
+export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power';
 
 /**
  * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
@@ -323,7 +352,7 @@ export interface Moment {
   gate?: boolean;
   /** Imposter's tally: ms between votes. */
   step?: number;
-  /** Bust: who, and with what count. */
+  /** Bust: who, and with what count. Power: who played it. */
   who?: string;
   value?: number;
 }
@@ -388,8 +417,6 @@ export interface Game {
   blindsRaiseAt?: number | null;
   /** What the bots have seen each player do. Never sent to phones. */
   reads?: Record<string, PlayerRead>;
-  /** An ULTRA table (Premium, bots-only): every bot that sits down here is an ULTRA bot. */
-  ultra?: boolean;
   /** When each bot last spoke (table clock), so nobody chatters non-stop. Never sent to phones. */
   talkAt?: Record<string, number>;
   /** When each bot's last line is done being said and read: it doesn't move before then. */
@@ -506,6 +533,8 @@ export type Action =
   | { type: 'next'; hand: number }
   /** Blackjack Hold'em: on your turn on the flop, take another card. */
   | { type: 'hit'; hand: number; seq: number }
+  /** Power Cards: play your power on your turn, before your move. `target` (X-ray, Silence), `card` (Swap: yours; Reroll: the board's), `rank` (Bounty). */
+  | { type: 'power'; hand: number; seq: number; target?: string; card?: Card; rank?: number }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
   /** Imposter: who you think the imposter is. */

@@ -54,6 +54,10 @@ export function redactForDevice(game: Game, deviceId: string): Game {
       votes: hand.votes && (hand.result || hand.tally ? hand.votes : Object.fromEntries(Object.keys(hand.votes).map((k) => [k, mine.has(k) ? hand.votes![k] : '']))),
       // Crazy Pineapple: the cards thrown away are turned up together, once everyone has chosen.
       discards: hand.discards && (hand.discarding ? Object.fromEntries(Object.entries(hand.discards).filter(([k]) => mine.has(k))) : hand.discards),
+      // Power Cards: other players' powers stay secret until they're played (or the hand is over), and what a Peek or
+      // an X-ray showed is only for the player who played it.
+      powers: hand.powers && (hand.result ? hand.powers : Object.fromEntries(Object.entries(hand.powers).filter(([k]) => mine.has(k) || hand.powerUses?.some((u) => u.by === k)))),
+      powerUses: hand.powerUses?.map((u) => (mine.has(u.by) || !u.seen ? u : { ...u, seen: undefined })),
       seats: hand.seats.map((s) => (peek || mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
     },
   };

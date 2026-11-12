@@ -16,6 +16,7 @@ import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
 import { shoveTime, ShoveTurn } from './challenge';
 import { RaiseSlider } from './raise-slider';
+import { powerNote, PowerStrip } from './powers';
 import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -115,12 +116,21 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   if (hand && !hand.result) {
     // Short Stack, at 12 big blinds or less: Fold, Call and a big Shove in place of the raise panel.
     // A bust is on show: nobody acts until it has been seen.
+    // Power Cards: everyone sees the power being played while the table waits for it.
+    const played = hand.moment?.gate && now < hand.moment.until ? powerNote(game) : null;
+    if (played) return <Note strong>{played}</Note>;
     if (myTurn && hand.moment?.gate && now < hand.moment.until) {
       const who = game.players.find((p) => p.id === hand.moment!.who)?.name ?? 'Someone';
       return <Note strong>{`💥 ${who} busts with ${hand.moment.value}`}</Note>;
     }
     if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
-    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />;
+    if (myTurn && seat)
+      return (
+        <View style={{ gap: spacing.sm }}>
+          <PowerStrip game={game} me={me} seat={seat} myTurn sending={sending} />
+          <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />
+        </View>
+      );
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <Note>Running it out…</Note>;
     const canPre = !!seat && !seat.folded && !seat.allIn && !me.sittingOut;
@@ -136,6 +146,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         ) : (
           <Note>{hand.bettingAt != null ? (hand.moment?.kind === 'rivers' ? 'Three rivers…' : hand.moment?.kind === 'redriver' ? 'Is the river red?' : 'Look at the board…') : hand.showdownAt != null ? (hand.moment?.kind === 'suspense' ? 'Hold your breath…' : 'Showdown…') : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
+        <PowerStrip game={game} me={me} seat={seat} myTurn={false} sending={sending} />
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
           <Row>

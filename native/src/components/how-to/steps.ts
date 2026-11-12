@@ -11,7 +11,6 @@ export type Shot =
   | 'peek'
   | 'cards'
   | 'yourturn'
-  | 'deal'
   | 'flop'
   | 'turn'
   | 'river'

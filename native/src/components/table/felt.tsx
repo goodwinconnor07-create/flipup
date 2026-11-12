@@ -84,6 +84,12 @@ export function feltHeight(variant: string, screen: number): number {
   return Math.max(196, Math.min(240, Math.round(screen * 0.3)));
 }
 
+/**
+ * The felt's height that isn't the board: the rail (11 each side), the felt's padding (lg on top, md below), the pot
+ * row (28), the hand's name (32) and the two gaps between them (xs).
+ */
+const BOARD_CHROME = 22 + spacing.lg + spacing.md + 28 + 32 + spacing.xs * 2;
+
 /** The oval: a rail round the felt, the pot at the top, the board in the middle, the hand or the winner at the bottom. */
 export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | undefined; heightLimit?: number }) {
   const reduce = useReduceMotion();
@@ -230,7 +236,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         {game.memory ? (
           <MemoryPeek game={game} width={width} pack={pack} />
         ) : (
-          <Board game={game} width={width} dim={dim} glow={glow} pack={pack} now={now} recap={recap} />
+          <Board game={game} width={width} room={natural - BOARD_CHROME} dim={dim} glow={glow} pack={pack} now={now} recap={recap} />
         )}
         <View style={{ minHeight: 32, justifyContent: 'center' }}>
           {game.memory ? (
@@ -270,6 +276,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
 function Board({
   game,
   width,
+  room: roomHeight,
   dim,
   glow,
   pack,
@@ -278,6 +285,8 @@ function Board({
 }: {
   game: Game;
   width: number;
+  /** The height the felt leaves for the board. */
+  room: number;
   dim: (c: Card) => boolean;
   glow: (c: Card) => boolean;
   pack?: string;
@@ -345,7 +354,10 @@ function Board({
   const gap = wide ? 4 : 6;
   // Five cards across the felt, smaller on a narrow phone; boards with more cards use the smaller size and wrap.
   const room = width - spacing.md * 2 - 22 - spacing.lg * 2 - (variant === 'pittsburgh' ? 8 : 0);
-  const w = Math.min(wide ? 44 : 56, Math.floor((room - (perRow - 1) * gap) / perRow));
+  const rows = Math.ceil(slots / perRow);
+  // A board that wraps (Red River's long runs) takes smaller cards, so both rows and the hand's name fit the felt.
+  const tall = rows > 1 ? Math.floor((roomHeight - (rows - 1) * 4) / rows / 1.4) : Infinity;
+  const w = Math.min(wide ? 44 : 56, tall, Math.floor((room - (perRow - 1) * gap) / perRow));
   return (
     <View accessibilityLabel="Board" style={{ flexDirection: 'row', gap, rowGap: 4, flexWrap: 'wrap', justifyContent: 'center' }}>
       {Array.from({ length: slots }, (_, i) => card(i, w, variant === 'pittsburgh' && i === 4 ? { marginLeft: 8 } : undefined))}

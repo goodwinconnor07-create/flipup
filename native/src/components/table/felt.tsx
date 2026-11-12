@@ -157,7 +157,6 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
         style={{
           flex: 1,
           borderRadius: radius.full,
-          overflow: 'hidden',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: spacing.xs,
@@ -165,51 +164,66 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           paddingTop: spacing.lg,
           paddingBottom: spacing.md,
           paddingHorizontal: spacing.lg,
-          boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)',
-          ...gradient(
-            `${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`,
-          ),
         }}
       >
+        {/* The felt itself, on its own layer: what's on it isn't clipped to the oval, so when a board runs long (Red
+            River's two rows) the hand's name hangs over the rail instead of being cut off (the owner's call). */}
         <View
           pointerEvents="none"
           style={{
             position: 'absolute',
-            top: 9,
-            left: 9,
-            right: 9,
-            bottom: 9,
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
             borderRadius: radius.full,
-            borderWidth: 2,
-            borderColor: 'rgba(255,255,255,0.16)',
+            overflow: 'hidden',
+            boxShadow: 'inset 0 3px 12px rgba(0,0,0,0.45)',
+            ...gradient(
+              `${FELT_WEAVE}, radial-gradient(ellipse at 50% 38%, ${shade(felt, 0.14)} 0%, ${felt} 42%, ${shade(felt, -0.42)} 100%)`,
+            ),
           }}
-        />
-        {!theme && look.logo && (
-          // Texas Hold'em's own mark: the FlipUp wordmark, faded into the felt like the mini games' emoji.
+        >
           <View
             pointerEvents="none"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text
-              style={{ fontSize: 64, fontWeight: '800', letterSpacing: -1.5, color: '#ffffff', opacity: 0.09 }}
-              maxFontSizeMultiplier={1}
-              accessible={false}
+            style={{
+              position: 'absolute',
+              top: 9,
+              left: 9,
+              right: 9,
+              bottom: 9,
+              borderRadius: radius.full,
+              borderWidth: 2,
+              borderColor: 'rgba(255,255,255,0.16)',
+            }}
+          />
+          {!theme && look.logo && (
+            // Texas Hold'em's own mark: the FlipUp wordmark, faded into the felt like the mini games' emoji.
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
             >
-              FlipUp
-            </Text>
-          </View>
-        )}
-        {theme && (
-          // The game's emoji, faded into the felt.
-          <View
-            pointerEvents="none"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
-          >
-            <Text style={{ fontSize: 120, opacity: 0.16 }} maxFontSizeMultiplier={1} accessible={false}>
-              {info.emoji}
-            </Text>
-          </View>
-        )}
+              <Text
+                style={{ fontSize: 64, fontWeight: '800', letterSpacing: -1.5, color: '#ffffff', opacity: 0.09 }}
+                maxFontSizeMultiplier={1}
+                accessible={false}
+              >
+                FlipUp
+              </Text>
+            </View>
+          )}
+          {theme && (
+            // The game's emoji, faded into the felt.
+            <View
+              pointerEvents="none"
+              style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Text style={{ fontSize: 120, opacity: 0.16 }} maxFontSizeMultiplier={1} accessible={false}>
+                {info.emoji}
+              </Text>
+            </View>
+          )}
+        </View>
         {/* The pot always shows whole: a long game pill ("Imposter? Could be you") gives way and is cut short instead. */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, minHeight: 28, maxWidth: '100%', paddingHorizontal: spacing.md }}>
           {variant !== 'holdem' && (

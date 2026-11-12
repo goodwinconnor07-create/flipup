@@ -155,6 +155,12 @@ const STEPS: Record<Variant, Step[]> = {
     step('played', 'showdown', 'Everyone sees it', 'The table stops while a power is played, so everyone knows who used what.'),
     step('showdown', 'showdown', 'Showdown', 'Best five still wins. A Shield or a Bounty can still move some chips.'),
   ],
+  missions: [
+    step('cards', 'mine', 'A secret mission', 'Every hand you hold a mission only you can see, like "win a pot with one pair or less".'),
+    step('yourturn', 'lower', 'Play for it', 'Play the hand as normal, with your mission in mind. Everyone else has one too.'),
+    step('showdown', 'showdown', 'Mission complete', 'Pull it off and every other player pays you 5 to 10 big blinds. Then you get a new one.'),
+    step('river', 'showdown', 'The race', 'First to five missions wins the race: up to +150% on your stack. The last places lose chips.', 'showdown'),
+  ],
   imposter: [
     step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
     step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),

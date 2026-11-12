@@ -7,6 +7,7 @@ import { dealMoment, MOMENT_TIMING, scaled } from './moments';
 import { handRecord } from './record';
 import { fullDeck, isRed, rankName, rankOf, shuffle, type Card } from './cards';
 import { effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
+import { drawMission, MISSION_GOAL, MISSION_SWAP_AFTER, missionDone, secretMission, raceChange, raceNeeds, raceOrder, rewardOf } from './missions';
 import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, PowerUse, Seat, Street } from './types';
 
@@ -317,6 +318,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
   };
   game.hand = hand;
   game.hands = (game.hands ?? 0) + 1;
+  if (variant === 'missions') dealMissions(game, hand, ctx.rng);
   log(game, `-- Hand #${hand.number} (dealer: ${button.name}) --`);
   if (raised) log(game, `Blinds go up to ${n0(game.settings.smallBlind)}/${n0(game.settings.bigBlind)}`);
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
@@ -697,6 +699,83 @@ export function startShowdown(game: Game, ctx: ActionContext): void {
     return;
   }
   showdown(game, ctx);
+}
+
+// ── Secret Missions ─────────────────────────────────────────────────────────
+
+/**
+ * At the deal: everyone without a mission (new to the race, or completed one last hand) gets one, and a mission held
+ * for `MISSION_SWAP_AFTER` hands without being completed is swapped for a new one.
+ */
+export function dealMissions(game: Game, hand: Hand, rng: () => number): void {
+  const m = (game.missions ??= { race: 1, players: {}, finished: [] });
+  for (const s of hand.seats) {
+    const cur = m.players[s.playerId];
+    if (!cur) m.players[s.playerId] = { mission: drawMission(rng), since: hand.number, done: 0 };
+    else if (!cur.mission) Object.assign(cur, { mission: drawMission(rng), since: hand.number });
+    else if (hand.number - cur.since >= MISSION_SWAP_AFTER) {
+      Object.assign(cur, { mission: drawMission(rng, cur.mission), since: hand.number });
+      log(game, `${nameOf(game, s.playerId)}'s mission is swapped for a new one`);
+    }
+  }
+}
+
+/**
+ * At the end of a hand: every mission completed in it is paid (each other player dealt in pays its reward, or what
+ * they have left), and once half the table has completed the goal the race is settled: each place changes that
+ * player's stack by its share (chips are made or taken away here, and only here), and a new race starts.
+ * Returns whether a race was settled.
+ */
+export function settleMissions(game: Game, hand: Hand): boolean {
+  const m = game.missions;
+  if (!m || !hand.result) return false;
+  // Who completed theirs, worked out before anyone pays (paying can't change what happened in the hand).
+  const done = hand.seats.filter((s) => {
+    const mine = m.players[s.playerId];
+    return !!mine?.mission && missionDone(game, hand, s.playerId, mine.mission);
+  });
+  for (const s of done) {
+    const mine = m.players[s.playerId];
+    const mission = mine.mission!;
+    const hunter = playerById(game, s.playerId);
+    if (!hunter) continue;
+    const reward = rewardOf(mission) * game.settings.bigBlind;
+    const paid: Record<string, number> = {};
+    for (const o of hand.seats) {
+      if (o.playerId === s.playerId) continue;
+      const p = playerById(game, o.playerId);
+      const chips = p ? Math.min(reward, p.stack) : 0;
+      if (!p || !chips) continue;
+      p.stack -= chips;
+      hunter.stack += chips;
+      paid[o.playerId] = chips;
+    }
+    (hand.missionsDone ??= []).push({ by: s.playerId, mission, paid });
+    mine.done += 1;
+    mine.mission = null;
+    const total = Object.values(paid).reduce((a, b) => a + b, 0);
+    log(game, `${hunter.name} completes the mission ${secretMission(mission).name} (${mine.done}/${MISSION_GOAL}) and collects ${n0(total)}`);
+    if (mine.done >= MISSION_GOAL && !m.finished.includes(s.playerId)) {
+      m.finished.push(s.playerId);
+      log(game, `${hunter.name} finishes race ${m.race} in place ${m.finished.length}`);
+    }
+  }
+  const racers = Object.keys(m.players).filter((id) => game.players.some((p) => p.id === id && !p.leaving));
+  if (!m.finished.length || m.finished.length < raceNeeds(racers.length)) return false;
+  // The race is over: places, then each stack moves by its place's share.
+  const places = raceOrder(game).map((id, i) => {
+    const p = playerById(game, id)!;
+    const pct = raceChange(i);
+    const before = p.stack;
+    p.stack = Math.max(0, Math.round(before * (1 + pct)));
+    return { id, pct, chips: p.stack - before };
+  });
+  m.last = { race: m.race, hand: hand.number, places };
+  log(game, `Race ${m.race} is over: ${places.map((x, i) => `${i + 1}. ${nameOf(game, x.id)} ${x.pct > 0 ? '+' : ''}${Math.round(x.pct * 100)}%`).join(' · ')}`);
+  m.race += 1;
+  m.finished = [];
+  for (const id of Object.keys(m.players)) Object.assign(m.players[id], { done: 0, mission: null });
+  return true;
 }
 
 // ── Power Cards ─────────────────────────────────────────────────────────────
@@ -1384,6 +1463,13 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   if (usesEverydayBots(game) && !game.code) usualPause = Math.min(usualPause, usualPause === TIMING.afterFold ? 2500 : 5000);
   const hand = game.hand!;
   if (hand.variant === 'power') payBounties(game, hand);
+  // Secret Missions: completed missions are paid, and a finished race changes everyone's stack. The table waits a
+  // little longer so the stamps (and the race result) can be seen.
+  if (hand.variant === 'missions') {
+    const settled = settleMissions(game, hand);
+    if (hand.missionsDone?.length) usualPause += 2000;
+    if (settled) usualPause += 3500;
+  }
   const pause = botsOnly(game) ? Math.round(usualPause * TIMING.fastAfter) : usualPause;
   for (const s of hand.seats) s.bet = 0;
   hand.runout = false;

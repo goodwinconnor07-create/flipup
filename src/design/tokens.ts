@@ -143,6 +143,7 @@ export const tableThemes = {
   beanstalk: { felt: '#1f5f2e', rail: ['#9c6b3c', '#3d2410'] },
   bjholdem: { felt: '#0d5a3a', rail: ['#2b2b31', '#0a0a0d'] },
   power: { felt: '#101a3a', rail: ['#3ee0ff', '#0b4d6b'] },
+  missions: { felt: '#123a2e', rail: ['#d4a94e', '#5a4214'] },
 } as const satisfies Record<string, { felt: string; rail: readonly [string, string] }>;
 
 /**

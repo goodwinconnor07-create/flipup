@@ -40,6 +40,7 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   bjholdem: look('#2a2e3d', '#191c27', '#3a3f52', 'Hit or stand. Half for the best hand, half for 21.', 'Hit, then bet', 0.97),
   imposter: look('#6a5f8f', '#4a4169', '#7f74a3', 'Trust nobody. Watch the bets.', 'Find the imposter', 0.88),
   power: look('#d99a00', '#9e6f00', '#e8b02a', 'Everyone has a secret power. Pick your moment.', 'Secret powers', 1.08),
+  missions: look('#1f7a5c', '#13513d', '#2f9273', 'Your mission, should you choose to accept it.', 'Secret missions', 0.94),
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
@@ -404,10 +405,19 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     { kind: 'path', d: rr(38.5, 22.5, 23, 41, 3.5), stroke: GLOW, sw: 1.6, opacity: 0.6, t: 'rotate(-4 50 43)' },
     ink('M55 21L39 47H49L44 66L62 37H51Z', GLOW, { sw: 2.6 }),
   ],
+  // A sealed mission envelope with a red wax seal, and the card that's the mission.
+  missions: () => [
+    card({ x: 70, y: 38, r: 16, rank: 'A', suit: '♠', s: 0.62, deal: 0 }),
+    ink(rr(18, 40, 60, 40, 5), '#f4e7c8', { t: 'rotate(-6 48 60)' }),
+    { kind: 'path', d: 'M20 43L48 64L76 43', stroke: INK, sw: 2.6, t: 'rotate(-6 48 60)' },
+    ink(oval(48, 62, 9), RED, { t: 'rotate(-6 48 60)' }),
+    { kind: 'path', d: oval(48, 62, 5.6), stroke: '#ffffff', sw: 1.4, opacity: 0.55, t: 'rotate(-6 48 60)' },
+    { kind: 'glyph', x: 48, y: 66, text: '★', size: 9, bold: true, ink: '#ffffff' },
+  ],
 };
 
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦' };
+const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦', missions: '♠' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

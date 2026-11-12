@@ -17,6 +17,7 @@ import { Dot } from './bubbles';
 import { shoveTime, ShoveTurn } from './challenge';
 import { RaiseSlider } from './raise-slider';
 import { powerNote, PowerStrip } from './powers';
+import { missionNote, MissionStrip } from './missions';
 import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -128,6 +129,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
       return (
         <View style={{ gap: spacing.sm }}>
           <PowerStrip game={game} me={me} seat={seat} myTurn sending={sending} />
+          <MissionStrip game={game} me={me} />
           <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />
         </View>
       );
@@ -147,6 +149,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
           <Note>{hand.bettingAt != null ? (hand.moment?.kind === 'rivers' ? 'Three rivers…' : hand.moment?.kind === 'redriver' ? 'Is the river red?' : 'Look at the board…') : hand.showdownAt != null ? (hand.moment?.kind === 'suspense' ? 'Hold your breath…' : 'Showdown…') : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
         <PowerStrip game={game} me={me} seat={seat} myTurn={false} sending={sending} />
+        <MissionStrip game={game} me={me} />
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
           <Row>
@@ -185,6 +188,8 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
     );
   }
   const ready = game.ready.includes(me.id);
+  // Secret Missions: who completed one this hand, and a race's result, over the Next hand button.
+  const missions = missionNote(game);
   // The next hand deals itself when the bar along the bottom of the button runs out.
   const total = waitFor(hand.number, game.nextHandAt - now);
   const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
@@ -192,8 +197,17 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn
   // them over. Tapping sends the `show` action; the greyed cards turn white as the answer. Never during play.
   const canShow = !!seat && !seat.shown && seat.cards.length > 0;
-  if (!canShow) return next;
-  return (
+  const withMissions = (el: ReactNode) =>
+    missions ? (
+      <View style={{ gap: spacing.sm }}>
+        <Note>{missions}</Note>
+        {el}
+      </View>
+    ) : (
+      el
+    );
+  if (!canShow) return withMissions(next);
+  return withMissions(
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
       <View>
         <TableButton
@@ -206,7 +220,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         />
       </View>
       <View style={{ flex: 1 }}>{next}</View>
-    </View>
+    </View>,
   );
 }
 

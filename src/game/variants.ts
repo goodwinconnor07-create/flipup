@@ -5,6 +5,7 @@ import { score, toInt } from './botEval';
 import { fullDeck, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
+import { POWERS } from './powerList';
 
 export type Variant =
   | 'holdem'
@@ -19,7 +20,8 @@ export type Variant =
   | 'circle'
   | 'memory'
   | 'beanstalk'
-  | 'bjholdem';
+  | 'bjholdem'
+  | 'power';
 
 export interface VariantInfo {
   id: Variant;
@@ -185,6 +187,20 @@ export const VARIANTS: VariantInfo[] = [
       'At the showdown half the pot goes to the best poker hand and half to whoever is closest to 21. If players tie on 21, that half goes to the best poker hand among them.',
     ],
   },
+  {
+    id: 'power',
+    name: 'Power Cards',
+    emoji: '⚡',
+    tagline: 'A secret power for everyone, every hand. Play it at the right moment.',
+    rules: [
+      "Normal Texas Hold'em, plus powers.",
+      'At the start of every hand everyone is dealt one power at random. Nobody else knows what yours is.',
+      "Play it on your turn, before your move (then check, bet, call or fold as usual). Once per hand, and if you don't play it, it's gone when the hand ends.",
+      'When a power is played the whole table sees which one, who played it and who it was aimed at. What a Peek or an X-ray shows stays with the player who played it.',
+      'Some powers only work on certain streets, and none can be played during an all-in run-out.',
+      ...POWERS.map((p) => `${p.emoji} ${p.name}: ${p.rule}`),
+    ],
+  },
 ];
 
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
@@ -228,6 +244,8 @@ export function streetCards(v: Variant, street: 'flop' | 'turn' | 'river'): numb
   if (v === 'circle') return 2;
   return street === 'flop' ? 3 : street === 'river' && v === 'pittsburgh' ? 3 : 1;
 }
+/** Power Cards: board cards still to come, by street (an Extra Card makes the board longer than five). */
+export const cardsToCome = (street: 'preflop' | 'flop' | 'turn' | 'river'): number => (street === 'preflop' ? 5 : street === 'flop' ? 2 : street === 'turn' ? 1 : 0);
 /** Board cards once the river is out (Red River can add more). */
 export const boardSize = (v: Variant) => streetCards(v, 'flop') + streetCards(v, 'turn') + streetCards(v, 'river');
 /** Bets are capped at the size of the pot. */

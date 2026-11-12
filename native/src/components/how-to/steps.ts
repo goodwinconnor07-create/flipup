@@ -117,6 +117,12 @@ const STEPS: Record<Variant, Step[]> = {
     { ...river, text: 'The turn and the river come as normal. Your hits count in your poker hand too.' },
     { ...showdown, text: 'Half the pot to the best poker hand, half to whoever is closest to 21.' },
   ],
+  power: [
+    { ...cards, title: 'A secret power', text: 'With your two cards you get one power at random. Only you know what it is.' },
+    { ...yourMove, title: 'Play it on your turn', text: 'Tap Play before your move. Peek at the next card, X-ray an opponent, swap a card, add a card to the board and more.' },
+    { ...flop, zoom: 'seats', title: 'Everyone sees it', text: 'When a power is played the whole table sees which one and who it hit. What a Peek or X-ray shows stays with you.' },
+    { ...showdown, text: 'Best five wins, as usual. A Shield, a Bounty or a Fold Tax can still move some chips.' },
+  ],
   imposter: [
     { ...cards, title: 'One imposter', text: 'Everyone gets the same two cards, except one imposter. Nobody knows who, not even them.' },
     { ...flop, zoom: 'seats', title: 'No folding', text: 'Nobody can fold. Watch how everyone bets to work out who’s different.' },

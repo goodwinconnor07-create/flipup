@@ -7,6 +7,7 @@ import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
+import { SheetScroll } from '@/components/sheet-scroll';
 import { gameData, handData, statsData, type ShareData } from '@/components/share/data';
 import { CARD_H, CARD_W, designsFor, DesignSwatch, isShareDesign, ShareCard, type ShareDesignId } from '@/components/share/designs';
 import { useShareCapture, useWho } from '@/components/share/use-share';
@@ -55,8 +56,9 @@ export default function ShareCardSheet() {
   const locked = !premium && designs.find((d) => d.id === design)?.premium;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#05070f' }}>
-      <ScrollView contentContainerStyle={{ alignItems: 'center', paddingTop: spacing.lg, paddingBottom: spacing.lg, gap: spacing.lg }}>
+    // The scroll view is the screen itself, like every other sheet: a plain View around it left iOS drawing a blank sheet.
+    <SheetScroll style={{ backgroundColor: '#05070f' }} contentContainerStyle={{ flexGrow: 1, alignItems: 'center', paddingTop: spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, gap: spacing.lg }}>
+      <>
         <View style={{ width: CARD_W * scale, height: CARD_H * scale, borderRadius: 18, overflow: 'hidden' }}>
           <View style={{ width: CARD_W, height: CARD_H, transform: [{ scale }], transformOrigin: 'top left' }}>
             <View ref={ref} collapsable={false}>
@@ -104,9 +106,9 @@ export default function ShareCardSheet() {
             );
           })}
         </ScrollView>
-      </ScrollView>
-
-      <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: Math.max(insets.bottom, spacing.md), gap: spacing.xs }}>
+      </>
+      <View style={{ flex: 1 }} />
+      <View style={{ alignSelf: 'stretch', paddingHorizontal: spacing.lg, gap: spacing.xs }}>
         {locked ? (
           <Button title="Unlock this design" variant="party" tint="gold" size="lg" onPress={() => router.push({ pathname: '/premium', params: { reason: 'share' } })} />
         ) : (
@@ -116,6 +118,6 @@ export default function ShareCardSheet() {
           Saved as a picture for Messages, Instagram or your camera roll.
         </ThemedText>
       </View>
-    </View>
+    </SheetScroll>
   );
 }

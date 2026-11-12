@@ -55,6 +55,7 @@ export default function PremiumSheet() {
 
   // Just bought: a moment to enjoy it before the page closes.
   const [celebrate, setCelebrate] = useState(0);
+  const pageRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
   const restore = async () => {
     const ok = await restorePremium();
@@ -65,10 +66,17 @@ export default function PremiumSheet() {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#000000' }}>
-      {/* The gradient is its own layer behind the scroll view, never the style of the view that holds it: on iOS a form sheet drew only the gradient and none of the content. */}
-      <View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, gradient(PAGE)]} />
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md }} showsVerticalScrollIndicator={false}>
+    // The scroll view is the screen itself, like every other sheet: a View around it left iOS drawing a blank sheet.
+    <ScrollView
+      ref={pageRef}
+      contentInsetAdjustmentBehavior="automatic"
+      scrollEnabled={!celebrate}
+      style={{ backgroundColor: '#000000' }}
+      contentContainerStyle={{ paddingTop: spacing.md, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* The gradient is a layer at the top of the content, tall enough to reach the plans; black takes over below it. */}
+      <View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: 1100 }, gradient(PAGE)]} />
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md }}>
           <BrandPill />
           <PressableScale
@@ -86,7 +94,7 @@ export default function PremiumSheet() {
         {!has && <HeroPager perks={perks} wanted={reason === 'game' ? wanted : undefined} />}
 
         <View style={{ height: has ? spacing.lg : 0 }} />
-        <Plans store={store} has={has} onBought={() => setCelebrate(Date.now())} />
+        <Plans store={store} has={has} onBought={() => (pageRef.current?.scrollTo({ y: 0, animated: false }), setCelebrate(Date.now()))} />
 
         <PerkList has={has} />
 
@@ -104,9 +112,8 @@ export default function PremiumSheet() {
             </View>
           )}
         </View>
-      </ScrollView>
       <Celebration at={celebrate} />
-    </View>
+    </ScrollView>
   );
 }
 
@@ -121,7 +128,7 @@ function Celebration({ at }: { at: number }) {
   // form sheet can fail to present, and an empty one is a risk for nothing).
   if (!at) return null;
   return (
-    <Animated.View entering={FadeIn.duration(250)} style={{ position: 'absolute', inset: 0, zIndex: 50 }}>
+    <Animated.View entering={FadeIn.duration(250)} style={{ position: 'absolute', top: 0, left: 0, right: 0, height, zIndex: 50 }}>
       <View style={{ flex: 1, backgroundColor: '#000000', paddingTop: insets.top + spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, paddingHorizontal: spacing.lg, gap: spacing.lg }}>
         <View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }, gradient(PAGE)]} />
         <View style={{ alignItems: 'center', gap: spacing.sm }}>

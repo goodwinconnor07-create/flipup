@@ -1,4 +1,4 @@
-// The daily quiz: five hands a day, the same on every phone (state/daily-quiz.ts), free for everyone; it's the whole of
+// The daily hand: one hand a day (DAILY_HANDS), the same on every phone (state/daily-quiz.ts), free for everyone; it's the whole of
 // Range training without Premium. Your answers for the day are kept so you can leave and pick up where you were, and
 // the days you finished it make a streak. Nothing here leaves the phone.
 import { dayKey, streakOf } from '@/engine';

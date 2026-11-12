@@ -121,9 +121,9 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
 
         <GameCard variant={variant} host={host} table />
 
-        <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot).length} />
-
         <Players rows={rows} onAdd={host ? () => dispatch({ type: 'addBot' }) : undefined} />
+
+        <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot).length} />
       </ScrollView>
       {host && (
         <OpenTableButton

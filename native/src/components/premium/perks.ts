@@ -19,7 +19,7 @@ const games = VARIANTS.length - FREE_VARIANTS;
 const packs = CARD_PACKS.filter((p) => !p.venue).length;
 
 export const PERKS: Perk[] = [
-  { id: 'range', icon: 'chart.line.uptrend.xyaxis', title: 'Every range hand', short: 'Free: 1 quiz a day', about: 'Free gets one set of five hands a day. Premium opens every hand, as many sets as you like, and practice on the spots you miss.' },
+  { id: 'range', icon: 'chart.line.uptrend.xyaxis', title: 'Every range hand', short: 'Free: 1 hand a day', about: 'Free gets one hand a day. Premium opens every hand: Endless, as many sets as you like, and Gaps, practice on the spots you miss.' },
   { id: 'bots', icon: 'person.3.fill', title: 'The whole roster', short: `Free: ${FREE_BOT_NAMES.length} bots`, about: `Free tables use the original ${FREE_BOT_NAMES.length} bots, one of each style. Premium opens all ${FAMILIAR_COUNT} characters and hundreds of regulars.` },
   { id: 'games', icon: 'suit.spade.fill', title: `${games} more games`, short: 'Host every mini game', about: 'Host Pineapple, Ghost, Pittsburgh, Imposter and the rest. Friends join them free.' },
   { id: 'replay', icon: 'film.stack.fill', title: 'Replay', short: 'Save and rewatch hands', about: 'Tap Save hand at any table, bots or online, and watch it back move by move from Saved hands.' },

@@ -40,7 +40,19 @@ Shane Troy Trent Glen Ross Sean Liam Owen Ryan Kyle Josh Jake Nick Vince Victor 
 Billy Bobby Ronnie Reggie Sonny Archie Alfie Harry George Charlie Arthur Walter Martin Simon David Brian
 Darren Dennis Derek Graham Gordon Bruce Keith Kevin Wayne Warren Russell Roger Ralph Leonard Lewis Logan
 Marcus Marco Andre Anton Ivan Omar Ravi Ali Hassan Luis Carlos Diego Miguel Sara Kate Jess`.split(/\s+/);
+// The surname initials regulars have worn. Only B, D and H are still dealt (`KEPT_INITIALS`): the others gave way to
+// first names on their own, so a table isn't a wall of "Dave B, Mick H, Steve D". Their place in this list still sets
+// each kept name's face and style, so a regular you've met keeps both.
 const INITIALS = ['B', 'C', 'D', 'H', 'M', 'W'];
+const KEPT_INITIALS = new Set(['B', 'D', 'H']);
+// Regulars who go by a first name only: the 100 names above on their own, then these. Each one is a name a person
+// might really have at a home game; at most ten letters, none shared with a familiar bot (`FAMILIAR_BOTS`).
+const ONLY_FIRST = `Maya Priya Chloe Grace Lily Mia Ruby Isla Freya Hazel Olive Daisy Poppy Rosie Nina Lena Clara Elsie Iris
+Jade Leah Megan Holly Amber Bella Carmen Lucia Elena Sofia Mei Aiko Hiro Kenji Yusuf Tariq Amir Farah Leila Zara Noor
+Aisha Kofi Femi Tunde Nia Imani Jamal Malik Darius Rafael Mateo Pablo Javier Nico Luca Enzo Paolo Bruno Hugo Felix
+Oscar Jasper Rufus Monty Percy Hector Otto Lars Sven Nils Erik Olga Dasha Yara Tomas Pavel Dmitri Ines Rita Gloria
+Mabel Edna Fern Gwen Bonnie Trixie Lola Vera Joy Stella Cleo Ruth Marge Dex Rocco Vinnie Sal Lou Benny Duke Hank Earl
+Floyd Cyrus Ezra Reuben`.split(/\s+/);
 // Regulars' faces: animals and a few objects, never a person (🧔 👨 🧑 can be picked by friends, so a bot could pass
 // for one) and never a suit, trophy or 8-ball (they read as an icon, not a character).
 // prettier-ignore
@@ -85,19 +97,33 @@ const BOT_FACES: Record<string, string> = {
 export const botFace = (emoji: string): string => BOT_FACES[emoji] ?? emoji;
 
 export function makeRoster(familiar: { name: string; emoji: string; style: StyleId }[]): BotIdentity[] {
-  // 100 first names × 6 surname initials. Initials keep names within the existing ten-character limit.
+  // 100 first names × 3 surname initials, then 200 first names on their own, so a good share of any table has no
+  // surname at all. Initials keep names within the ten-character limit.
   const regulars = FIRST.slice(0, 100).flatMap((first, i) =>
-    INITIALS.map((initial, j) => {
+    INITIALS.flatMap((initial, j) => {
+      if (!KEPT_INITIALS.has(initial)) return [];
       const name = `${first} ${initial}`;
-      return {
-        name,
-        emoji: botFace(AVATARS[(i * 7 + j * 11) % AVATARS.length]),
-        style: STYLES[(i + j * 3) % STYLES.length],
-        profile: profile(name),
-      };
+      return [
+        {
+          name,
+          emoji: botFace(AVATARS[(i * 7 + j * 11) % AVATARS.length]),
+          style: STYLES[(i + j * 3) % STYLES.length],
+          profile: profile(name),
+        },
+      ];
     }),
   );
-  return [...regulars, ...familiar.map((b) => ({ ...b, emoji: botFace(b.emoji), profile: profile(b.name) }))];
+  const taken = new Set(familiar.map((b) => b.name.toLowerCase()));
+  const plain = [...FIRST.slice(0, 100), ...ONLY_FIRST]
+    .filter((name) => !taken.has(name.toLowerCase()))
+    .slice(0, 200)
+    .map((name, k) => ({
+      name,
+      emoji: botFace(AVATARS[(k * 5 + 3) % AVATARS.length]),
+      style: STYLES[k % STYLES.length],
+      profile: profile(name),
+    }));
+  return [...regulars, ...plain, ...familiar.map((b) => ({ ...b, emoji: botFace(b.emoji), profile: profile(b.name) }))];
 }
 
 const clamp = (x: number, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));

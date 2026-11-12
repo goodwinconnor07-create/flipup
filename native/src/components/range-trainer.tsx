@@ -314,7 +314,7 @@ export function RangeTrainer({
         }}
       />
 
-      {/* Decide: a hint a street at a time, or skip (not in the daily quiz, which is five set hands). */}
+      {/* Decide: a hint a street at a time, or skip (not in the daily hand, which is set for everyone). */}
       {!pick && (
         <View style={{ gap: spacing.xs }}>
           {hints > 0 && (

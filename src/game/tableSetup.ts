@@ -1,6 +1,6 @@
 // The rules behind a table's setup screen, shared by the web app and the iPhone app: which blinds fit a starting
 // stack, the settings a game plays best with, and how settings read in a row.
-import { BLIND_LEVELS } from './reducer';
+import { BLIND_CAP_CHOICES, BLIND_LEVELS } from './reducer';
 import type { Settings } from './types';
 import type { Variant } from './variants';
 
@@ -29,7 +29,17 @@ export function withStack(settings: Settings, startingStack: number): Settings {
   const fits = levelsFor(startingStack);
   const keep = fits.some(([sb, bb]) => sb === settings.smallBlind && bb === settings.bigBlind);
   const [smallBlind, bigBlind] = keep ? [settings.smallBlind, settings.bigBlind] : fits[fits.length - 1];
-  return { ...settings, startingStack, smallBlind, bigBlind };
+  return withBlindCap({ ...settings, startingStack, smallBlind, bigBlind });
+}
+
+/**
+ * Keeps "Blinds stop at" above the blinds: a cap at or under the big blind (after the blinds or the stack changed)
+ * moves up to the next choice over it, or to no limit when there's none. No cap (0) stays as it is.
+ */
+export function withBlindCap(settings: Settings): Settings {
+  const cap = settings.blindCap ?? 0;
+  if (!cap || cap > settings.bigBlind) return settings;
+  return { ...settings, blindCap: BLIND_CAP_CHOICES.find((c) => c > settings.bigBlind) ?? 0 };
 }
 
 /** The settings a game plays best with: Ghost wants deep stacks, Imposter bigger blinds. */
@@ -45,7 +55,7 @@ export function withVariant(settings: Settings, variant: Variant): Settings {
     ];
     next = { ...next, smallBlind, bigBlind };
   }
-  return next;
+  return withBlindCap(next);
 }
 
 /** A game's note under its rules: who it's best with. */

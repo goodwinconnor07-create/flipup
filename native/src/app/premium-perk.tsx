@@ -170,10 +170,10 @@ function Preview({ id }: { id: PerkId }) {
       return (
         <View style={{ ...box, gap: spacing.xs }}>
           <ThemedText variant="callout" style={{ color: '#ffffff', fontWeight: '700' }}>
-            Free: one set of five hands a day.
+            Free: one hand a day.
           </ThemedText>
           <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            Premium: every hand, any number of sets, and practice sets built from the spots you miss.
+            Premium: every hand, Endless mode, any number of sets, and Gaps, practice built from the spots you miss.
           </ThemedText>
         </View>
       );

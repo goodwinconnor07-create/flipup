@@ -1,10 +1,11 @@
-// The daily quiz, as pure functions (no storage, no screen): which five hands a day deals, the same on every phone,
+// The daily hand, as pure functions (no storage, no screen): which hand a day deals (one, since 12 Nov 2026: free
+// players get a single hand a day), the same on every phone,
 // how long until the next one, and the result as text to share. The stored state is state/range-daily.ts.
 import { hash, seeded } from '@train/ranges/daily';
 import type { Grade } from '@train/ranges/model';
 
-/** How many hands the daily quiz deals. */
-export const DAILY_HANDS = 5;
+/** How many hands the daily quiz deals: one, the daily hand (the owner's call, 12 Nov 2026; it was five). */
+export const DAILY_HANDS = 1;
 
 /** The day's hand ids, the same on every phone for that date ("2026-11-11"): a seeded shuffle of every hand. */
 export function dailySetIds(day: string, ids: readonly string[], n = DAILY_HANDS): string[] {
@@ -39,5 +40,10 @@ export const SQUARE: Record<Grade, string> = { best: '🟨', ok: '🟦', mistake
 export function shareText(date: Date, grades: readonly Grade[]): string {
   const best = grades.filter((g) => g === 'best').length;
   const day = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  return `FlipUp daily quiz · ${day}\n${grades.map((g) => SQUARE[g]).join('')}\n${best}/${grades.length} best plays`;
+  const squares = grades.map((g) => SQUARE[g]).join('');
+  if (grades.length === 1) return `FlipUp daily hand · ${day}\n${squares}\n${GRADE_WORDS[grades[0]]}`;
+  return `FlipUp daily quiz · ${day}\n${squares}\n${best}/${grades.length} best plays`;
 }
+
+/** How a single answer went, in words. */
+export const GRADE_WORDS: Record<Grade, string> = { best: 'Best play', ok: 'Also good', mistake: 'Missed it' };

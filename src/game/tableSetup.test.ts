@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, levelsFor, withStack, withVariant } from '.';
+import { DEFAULT_SETTINGS, levelsFor, withBlindCap, withStack, withVariant } from '.';
 
 describe('table setup rules', () => {
+  it('keeps the blind cap above the blinds', () => {
+    const s = { ...DEFAULT_SETTINGS, blindMinutes: 10, blindCap: 100, smallBlind: 50, bigBlind: 100 };
+    expect(withBlindCap(s).blindCap).toBe(200);
+    expect(withBlindCap({ ...s, smallBlind: 1000, bigBlind: 2000 }).blindCap).toBe(0);
+    expect(withBlindCap({ ...s, blindCap: 0 }).blindCap).toBe(0);
+    expect(withBlindCap({ ...s, blindCap: 500 }).blindCap).toBe(500);
+    const deep = withStack({ ...s, blindCap: 100 }, 10000);
+    expect(!deep.blindCap || deep.blindCap > deep.bigBlind).toBe(true);
+  });
+
   it('offers only blinds at least 10 big blinds deep, and no tiny blinds on big stacks', () => {
     expect(levelsFor(500)).toEqual([[1, 2], [5, 10], [10, 20], [25, 50]]);
     expect(levelsFor(10_000).map(([, bb]) => bb)).toEqual([20, 50, 100, 200]);

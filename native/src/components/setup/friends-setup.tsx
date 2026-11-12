@@ -359,10 +359,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               share={partyCode ? { message: `Join my FlipUp party. Game code ${partyCode}`, url: joinLink(partyCode) } : undefined}
             />
             <PartyCard games={partyDraft.games} host />
-            <PartyRules
-              rules={{ stack: partyDraft.stack, blindHands: partyDraft.blindHands, fill: partyDraft.fill }}
-              onChange={setPartyRules}
-            />
             <View style={{ gap: spacing.xs }}>
               <Players rows={partyRows} />
               <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
@@ -371,6 +367,10 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
                   : 'Friends join from Join on the Play tab with the game code. No bots in this party.'}
               </ThemedText>
             </View>
+            <PartyRules
+              rules={{ stack: partyDraft.stack, blindHands: partyDraft.blindHands, fill: partyDraft.fill }}
+              onChange={setPartyRules}
+            />
           </>
         ) : (
           <>
@@ -393,6 +393,8 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               <StartPartyButton />
             </View>
 
+            <Players rows={rows} onAdd={addBot} />
+
             {FRIENDS_ON && (
               <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
             )}
@@ -406,8 +408,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               online
               bots={bots.length}
             />
-
-            <Players rows={rows} onAdd={addBot} />
           </>
         )}
       </ScrollView>

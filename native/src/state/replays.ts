@@ -50,7 +50,7 @@ export interface Replay {
   holes: Record<string, Card[]>;
   /** True when `holes` has every player's cards (a bots-only table). */
   allCards?: boolean;
-  /** Ghost Hold'em: the ghost's two cards (bots-only tables, or a showdown online). */
+  /** Haunted Pot: the ghost's two cards (bots-only tables, or a showdown online). */
   ghost?: Card[];
   /** Each pot and who took it, main pot first. */
   pots?: { amount: number; winners: string[] }[];

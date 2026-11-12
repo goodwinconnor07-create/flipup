@@ -5,7 +5,7 @@
 //
 // On top of the run-outs, each bot knows a little about how its game is won (`variantDecide()`): players who bet
 // and raise hold better than random cards (`rangeDraws()`), Pot-limit Ghost and its rolling pot, the wild deuces,
-// Blackjack Hold'em's bust risk, Crazy Pineapple's draws and Imposter's crowd (nobody, bots included, knows the imposter). `lab.legacy` plays a seat the old way,
+// Hit Me's bust risk, Crazy Pineapple's draws and Imposter's crowd (nobody, bots included, knows the imposter). `lab.legacy` plays a seat the old way,
 // for scripts/variantLab.ts only.
 
 import type { BotThought } from './botPlay';
@@ -54,7 +54,7 @@ export function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => 
 }
 
 /**
- * How often this hand wins against the other players still in (and the ghost, in Ghost Hold'em), playing the rest
+ * How often this hand wins against the other players still in (and the ghost, in Haunted Pot), playing the rest
  * out by the table's rules. Ties count as a share. Only what this seat can see is used: its cards and the board.
  */
 export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, runs?: number, ranges = false): number {
@@ -145,7 +145,7 @@ const hitUp = (cards: Card[], deck: Card[]) => {
 };
 
 /**
- * Blackjack Hold'em: half of each pot goes to the best poker hand and half to whoever is closest to 21 (a tie on the
+ * Hit Me: half of each pot goes to the best poker hand and half to whoever is closest to 21 (a tie on the
  * count goes to the best poker hand among them). Each run-out deals the others their cards (and as many hits as
  * they've taken, or would take if the flop is still to come), plays it out and counts what this hand would win.
  */
@@ -189,7 +189,7 @@ function blackjackEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, 
 }
 
 /**
- * Blackjack Hold'em: whether a bot takes another card on the flop. Always under 12 (it can't bust), never from 17.
+ * Hit Me: whether a bot takes another card on the flop. Always under 12 (it can't bust), never from 17.
  * In between it works out its real chance of busting from the cards it can't see, and a bust folds the whole hand, so
  * the better its poker hand already is (half the pot rides on that), the less it will risk.
  */

@@ -41,6 +41,7 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   imposter: look('#6a5f8f', '#4a4169', '#7f74a3', 'Trust nobody. Watch the bets.', 'Find the imposter', 0.88),
   power: look('#d99a00', '#9e6f00', '#e8b02a', 'Everyone has a secret power. Pick your moment.', 'Secret powers', 1.08),
   missions: look('#1f7a5c', '#13513d', '#2f9273', 'Your mission, should you choose to accept it.', 'Secret missions', 0.94),
+  slide: look('#74b72e', '#4f8a1c', '#8cc84b', 'Nothing stays yours for long. Pass it on.', 'Slide a card left', 1.06),
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
@@ -96,7 +97,7 @@ export interface LabelShape {
   y: number;
   text: string;
 }
-/** A letter or number laid over the shapes (the 21 on Blackjack Hold'em's chip). */
+/** A letter or number laid over the shapes (the 21 on Hit Me's chip). */
 export interface GlyphShape {
   kind: 'glyph';
   x: number;
@@ -438,10 +439,19 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     sparkle(86, 22, 7, WHITE),
     sparkle(84, 80, 9),
   ],
+  // Your two cards, one of them on its way to the player on your left: a curved arrow sweeping under them to the left.
+  slide: () => [
+    card({ x: 64, y: 46, r: 11, rank: 'K', suit: '♥', s: 0.96, deal: 0 }),
+    card({ x: 33, y: 43, r: -18, rank: 'A', suit: '♠', s: 0.96, deal: 1 }),
+    ...line('M84 72C72 88 44 90 26 80', WHITE, 5.5),
+    ink('M13 77L29 70L28 88Z', WHITE, { noShadow: true }),
+    sparkle(88, 20, 7, WHITE),
+    sparkle(12, 24, 6),
+  ],
 };
 
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦', missions: '♠' };
+const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦', missions: '♠', slide: '♥' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

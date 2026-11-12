@@ -10,6 +10,7 @@ import { peekCard, powerPill } from '@/state/power-view';
 import {
   bestHand,
   boardSize,
+  shortCard,
   CIRCLE_HOURS,
   CROSS_CELLS,
   explainHand,
@@ -153,7 +154,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
     >
       <TurnTimer
         game={game}
-        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2) || (!!hand.voting && !hand.votes?.[me.id]))}
+        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2) || (!!hand.sliding && !!mySeat && !mySeat.folded && !hand.slides?.[me.id]) || (!!hand.voting && !hand.votes?.[me.id]))}
       />
       <View
         style={{
@@ -261,7 +262,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
               )}
             </View>
           ) : momentLine(game, now) ? (
-            <MomentLine game={game} now={now} reduce={reduce} />
+            <MomentLine game={game} now={now} reduce={reduce} meId={me?.id} />
           ) : pillName ? (
             <Animated.View key={pillName} entering={reduce ? FadeIn : bubblePop}>
               <HandPill text={pillName} />
@@ -526,7 +527,7 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   } else if (result.blackjack && !(result.blackjack.poker[0]?.length === 1 && result.blackjack.winners[0]?.length === 1 && result.blackjack.poker[0][0] === result.blackjack.winners[0][0])) {
     return <HalvesBanner game={game} me={me} />;
   } else if (result.blackjack) {
-    // Blackjack Hold'em: who took the poker half and who took the 21 half of the main pot.
+    // Hit Me: who took the poker half and who took the 21 half of the main pot.
     const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
     const poker = result.blackjack.poker[0] ?? [];
     const count = result.blackjack.winners[0] ?? [];
@@ -583,7 +584,7 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   );
 }
 
-/** Blackjack Hold'em when the two halves went to different players: one line for each. */
+/** Hit Me when the two halves went to different players: one line for each. */
 function HalvesBanner({ game, me }: { game: Game; me: Player | undefined }) {
   const reduce = useReduceMotion();
   const c = usePlainColors();
@@ -623,10 +624,19 @@ function momentLine(game: Game, now: number): boolean {
 }
 
 /** The moment in words: a bust, the thrown-away cards turned up together, the vote count so far, or a caption. */
-function MomentLine({ game, now, reduce }: { game: Game; now: number; reduce: boolean }) {
+function MomentLine({ game, now, reduce, meId }: { game: Game; now: number; reduce: boolean; meId?: string }) {
   const hand = game.hand!;
   const m = hand.moment!;
   const name = (id?: string) => game.players.find((p) => p.id === id)?.name ?? '?';
+  // Slide Switch: the card that just came to you, and who from.
+  const got = m.kind === 'slides' ? hand.slid?.filter((x) => x.street === hand.street && x.to === meId && x.card).at(-1) : undefined;
+  if (got) {
+    return (
+      <Animated.View key={`slide-${hand.street}`} entering={reduce ? FadeIn : bubblePop}>
+        <HandPill text={`🔄 ${name(got.from)} slid you the ${shortCard(got.card as Card)}`} />
+      </Animated.View>
+    );
+  }
   if (m.kind === 'bust') {
     return (
       <Animated.View key="bust" entering={reduce ? FadeIn : bubblePop}>

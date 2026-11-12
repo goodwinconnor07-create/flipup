@@ -23,6 +23,8 @@ import {
   showdown,
   endsAtOnce,
   discardCard,
+  endSlides,
+  slideCard,
   endVote,
   endDiscussion,
   endTally,
@@ -1098,6 +1100,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return error ? fail(error) : done();
     }
 
+    case 'slide': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = slideCard(game, me.id, action.card, ctx);
+      return error ? fail(error) : done();
+    }
+
     case 'point': {
       const hand = game.hand;
       if (!me) return fail("You're not at this table.");
@@ -1341,6 +1351,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (hand && !hand.result) {
     if (!due(hand.actAt)) return false;
+    // Slide Switch: time's up for picking a card to slide.
+    if (hand.sliding) {
+      endSlides(game, ctx);
+      return true;
+    }
     // Crazy Pineapple: time's up for throwing a card away.
     if (hand.discarding) {
       endDiscards(game, ctx);
@@ -1416,7 +1431,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
         const plan = botPowerPlan(game, hand, seat, ctx.rng);
         if (plan && !playPower(game, plan, ctx)) return true;
       }
-      // Blackjack Hold'em: on the flop it takes its hits first. Going over 21 folds it, and that's its turn.
+      // Hit Me: on the flop it takes its hits first. Going over 21 folds it, and that's its turn.
       while (canHit(game, hand, seat) && botHits(game, seat, ctx.rng)) {
         hitCard(game, ctx);
         if (seat.folded) return true;

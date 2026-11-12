@@ -43,7 +43,7 @@ Zooms: **mine** (your cards and box), **lower** (the bottom half), **hand** (you
 | 3 | River | board | Wilds for everyone | A 2 on the board is wild for every player. |
 | 4 | Showdown | showdown | Monster hands | Wilds make huge hands. Five of a kind beats even a royal flush. |
 
-## Ghost Hold'em
+## Haunted Pot
 
 | # | Moment | Zoom | Title | Line |
 |---|---|---|---|---|
@@ -90,7 +90,7 @@ Zooms: **mine** (your cards and box), **lower** (the bottom half), **hand** (you
 | 4 | River | round | The river | The last two finish the cross. Nine cards in all. |
 | 5 | Showdown | round | Pick a line | Your two cards plus one line, across or down. Never mix them. |
 
-## Circle Hold'em
+## Round the Clock
 
 | # | Moment | Zoom | Title | Line |
 |---|---|---|---|---|
@@ -120,7 +120,7 @@ Zooms: **mine** (your cards and box), **lower** (the bottom half), **hand** (you
 | 4 | River | full | Five each | By the river you hold five, with five on the board. |
 | 5 | Showdown | showdown | Huge hands | Best five from all ten. Big hands show up a lot. |
 
-## Blackjack Hold'em
+## Hit Me
 
 | # | Moment | Zoom | Title | Line |
 |---|---|---|---|---|

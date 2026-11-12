@@ -7,7 +7,7 @@ import { SeatFace } from './seats';
 import { PlayingCard } from './playing-card';
 
 /**
- * Ghost Hold'em's ghost, locked in at the left end of the seat row behind a divider while the other players cycle
+ * Haunted Pot's ghost, locked in at the left end of the seat row behind a divider while the other players cycle
  * past on the right of it. It has no chips and no turn: its face, its two cards (face down until a showdown) and,
  * no speech: the ghost never talks. It is drawn the same size as the bots' seats.
  */

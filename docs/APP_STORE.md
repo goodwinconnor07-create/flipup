@@ -316,7 +316,7 @@ the iPad release.
 **Order (11 November 2026).** Lead with a mini game table, not Texas Hold'em: the variants are what no other poker
 app has. Suggested order: 1. a Crucifix or Pittsburgh table mid-hand (the cross or three rivers on the felt), 2.
 Die on the River's roll, 3. Home's game swiper on a mini game, 4. the Play with friends lobby with the game code, 5.
-a Ghost Hold'em showdown, 6. the Range training daily quiz, 7. Texas Hold'em with bots talking, 8. Saved hands and a
+a Haunted Pot showdown, 6. the Range training daily quiz, 7. Texas Hold'em with bots talking, 8. Saved hands and a
 share card (Premium). Every one from the real native build (2.3.3).
 
 ### App icon
@@ -399,8 +399,8 @@ Store listing:
    **Answer:** Yes. (Changed 11 November 2026: only normal Texas Hold'em is free, with the ten original bots and one daily range quiz; everything else is Premium.) The game modes past Hold'em are Premium, and anyone without Premium can
    (changed 4 November 2026: no ads) host a Premium game without Premium. When someone joins a Premium game with a
    code, only the host needs Premium; the people joining don't.
-   - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Ghost Hold'em, Pittsburgh.
-   - Premium: Die on the River, Red River, Imposter, Crucifix, Circle Hold'em, Memory Poker, Bean
+   - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Haunted Pot, Pittsburgh.
+   - Premium: Die on the River, Red River, Imposter, Crucifix, Round the Clock, Memory Poker, Bean
      Stalk.
 2. Does the desktop version need its own layout changes beyond sharing the new tokens?
    **Answer:** Yes. Parts of it are laid out like the phone app and don't use the whole screen. The board is good,

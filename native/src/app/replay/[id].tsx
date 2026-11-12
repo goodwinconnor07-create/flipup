@@ -14,6 +14,7 @@ import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { noteWatched } from '@/state/record';
 import { putIn, toggleStar, useReplays, useStars, type Replay } from '@/state/replays';
 import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
@@ -57,6 +58,12 @@ function Viewer() {
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(!reduce);
   const last = r ? r.actions.length + 1 : 0;
+
+  // Counts toward "Hands replayed" on the Stats page, once each time a saved hand opens.
+  const found = !!r;
+  useEffect(() => {
+    if (found) noteWatched();
+  }, [id, found]);
 
   useEffect(() => {
     if (!playing || !r || step >= last) return;

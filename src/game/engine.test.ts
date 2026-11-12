@@ -355,7 +355,8 @@ describe('betting', () => {
     expect(hands).toBeGreaterThan(5);
     // This covers up to 60 complete hands through production bot inference.
     // Per-decision latency is measured separately by the bot benchmarks.
-  }, 20000);
+    // It takes 17 to 20s on a laptop, so it gets the 30s every bot simulation has (vitest.config.ts) rather than 20s.
+  }, 30_000);
 });
 
 describe('all-ins, side pots and showdowns', () => {

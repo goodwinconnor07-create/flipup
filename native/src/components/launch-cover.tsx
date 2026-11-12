@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { Easing, runOnJS, useAnimatedStyle, useSharedValue, withDelay, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
-import Svg, { Defs, FeComposite, FeFlood, FeGaussianBlur, FeMerge, FeMergeNode, FeOffset, Filter, G, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, LinearGradient, Path, Rect, Stop } from 'react-native-svg';
 
 import type { Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
@@ -12,7 +12,7 @@ import { motion, useScheme } from '@/theme';
 import { GrainBackground } from './grain-background';
 import { GameThumb } from './game-picture';
 import { GameBackdrop } from './home/game-backdrop';
-import { ICON_COLORS, ICON_COLORS_DARK, ICON_RADIUS, ICON_SIZE, MARK, PLACE } from './launch-mark';
+import { ICON_ART, ICON_COLORS, ICON_RADIUS, ICON_SIZE } from './launch-mark';
 import { read, save } from '@/state/storage';
 
 /** The icon's size on the cover: a good deal bigger than the old 120, so it is the whole first impression. */
@@ -41,48 +41,16 @@ export function LaunchCover() {
   return <PrintCover total={returning ? RETURNING_MS : FIRST_MS} zIndex={1000} launch />;
 }
 
-/** The app icon on a `TILE` square, drawn on the icon's own 1024 canvas with the icon script's gradient, light and lift shadow. */
+/** The app icon on a `TILE` square: the icon's own art (launch-mark.ts) on its 1024 canvas, flat like a game picture. */
 function IconArt({ dark = false }: { dark?: boolean }) {
   const S = ICON_SIZE;
-  // At night the icon is its dark look (the one iOS shows on a dark Home Screen), a night-blue gradient.
-  const top = dark ? ICON_COLORS_DARK.violetTop : ICON_COLORS.violetTop;
-  const bottom = dark ? ICON_COLORS_DARK.violetBottom : ICON_COLORS.violetBottom;
+  // At night the icon is its dark look (the one iOS shows on a dark Home Screen), a night-blue field.
   return (
     <Svg width={TILE} height={TILE} viewBox={`0 0 ${S} ${S}`}>
-      <Defs>
-        <LinearGradient id="bg" x1="0.25" y1="0" x2="0.75" y2="1">
-          <Stop offset="0" stopColor={top} />
-          <Stop offset="1" stopColor={bottom} />
-        </LinearGradient>
-        <RadialGradient id="light" cx="0.5" cy="0.08" r="0.75">
-          <Stop offset="0" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0.22" />
-          <Stop offset="1" stopColor={dark ? ICON_COLORS_DARK.light : '#ffffff'} stopOpacity="0" />
-        </RadialGradient>
-        <LinearGradient id="spade" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={ICON_COLORS.spadeTop} />
-          <Stop offset="1" stopColor={ICON_COLORS.spadeBottom} />
-        </LinearGradient>
-        <Filter id="lift" x="-30%" y="-30%" width="160%" height="160%">
-          <FeGaussianBlur in="SourceAlpha" stdDeviation="28" result="b" />
-          <FeOffset in="b" dy="24" result="o" />
-          <FeFlood floodColor={ICON_COLORS.shadow} floodOpacity="0.5" />
-          <FeComposite in2="o" operator="in" result="s" />
-          <FeGaussianBlur in="SourceAlpha" stdDeviation="3" result="b2" />
-          <FeOffset in="b2" dy="4" result="o2" />
-          <FeFlood floodColor={ICON_COLORS.shadow} floodOpacity="0.25" />
-          <FeComposite in2="o2" operator="in" result="s2" />
-          <FeMerge>
-            <FeMergeNode in="s" />
-            <FeMergeNode in="s2" />
-            <FeMergeNode in="SourceGraphic" />
-          </FeMerge>
-        </Filter>
-      </Defs>
-      <Rect width={S} height={S} fill="url(#bg)" />
-      <Rect width={S} height={S} fill="url(#light)" />
-      <G filter="url(#lift)">
-        <Path d={MARK} transform={PLACE} fillRule="evenodd" fill="url(#spade)" />
-      </G>
+      <Rect width={S} height={S} fill={dark ? ICON_COLORS.fieldDark : ICON_COLORS.field} />
+      {ICON_ART.map((p, i) => (
+        <Path key={i} d={p.d} fill={p.fill} fillOpacity={p.opacity} fillRule={p.evenOdd ? 'evenodd' : undefined} transform={p.t} />
+      ))}
     </Svg>
   );
 }

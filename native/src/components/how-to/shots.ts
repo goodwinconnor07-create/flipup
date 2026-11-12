@@ -113,4 +113,10 @@ export const SHOTS: Partial<Record<Variant, Partial<Record<Shot, number>>>> = {
     vote: require('../../../assets/howto/imposter/vote.webp'),
     yourturn: require('../../../assets/howto/imposter/yourturn.webp'),
   },
+  power: {
+    cards: require('../../../assets/howto/power/cards.webp'),
+    played: require('../../../assets/howto/power/played.webp'),
+    showdown: require('../../../assets/howto/power/showdown.webp'),
+    yourturn: require('../../../assets/howto/power/yourturn.webp'),
+  },
 };

@@ -39,6 +39,7 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   beanstalk: look('#4db5ee', '#2b83b8', '#6ac3f2', 'Your hand keeps growing. How high can it climb?', 'Your hand grows', 1.1),
   bjholdem: look('#2a2e3d', '#191c27', '#3a3f52', 'Hit or stand. Half for the best hand, half for 21.', 'Hit, then bet', 0.97),
   imposter: look('#6a5f8f', '#4a4169', '#7f74a3', 'Trust nobody. Watch the bets.', 'Find the imposter', 0.88),
+  power: look('#d99a00', '#9e6f00', '#e8b02a', 'Everyone has a secret power. Pick your moment.', 'Secret powers', 1.08),
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
@@ -395,10 +396,18 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     flat(`${oval(44, 44.5, 3)}${oval(61, 44.5, 3)}`, INK),
     { kind: 'path', d: 'M34 33.5L47 36.5M66 33.5L53 36.5', stroke: INK, sw: 2.8 },
   ],
+  // A power card with a lightning bolt across it, and the hand it's about to change.
+  power: () => [
+    card({ x: 30, y: 58, r: -16, rank: 'Q', suit: '♦', s: 0.66, deal: 0 }),
+    card({ x: 72, y: 60, r: 14, rank: '7', suit: '♣', s: 0.66, deal: 1 }),
+    ink(rr(34, 18, 32, 50, 6), '#3a2a8f', { t: 'rotate(-4 50 43)' }),
+    { kind: 'path', d: rr(38.5, 22.5, 23, 41, 3.5), stroke: GLOW, sw: 1.6, opacity: 0.6, t: 'rotate(-4 50 43)' },
+    ink('M55 21L39 47H49L44 66L62 37H51Z', GLOW, { sw: 2.6 }),
+  ],
 };
 
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣' };
+const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

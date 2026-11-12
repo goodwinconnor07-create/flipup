@@ -87,9 +87,10 @@ export function useThemeMoments(game: Game | null): void {
   const kept = hand?.result?.ghost?.kept ? `${hand.number}` : '';
   const voting = hand?.variant === 'imposter' && hand.result?.imposter ? `${hand.number}` : '';
   const reds = hand?.variant === 'redriver' && hand.board.length > 5 ? `${hand.number}:${hand.board.length}` : '';
+  const powered = hand?.variant === 'power' && hand.powerUses?.length ? `${hand.number}:${hand.powerUses.length}` : '';
   const seen = useRef<Record<string, string> | null>(null);
   useEffect(() => {
-    const now = { dice, kept, voting, reds };
+    const now = { dice, kept, voting, reds, powered };
     const before = seen.current;
     seen.current = now;
     // The first look is whatever was on the table when this phone arrived.
@@ -98,5 +99,6 @@ export function useThemeMoments(game: Game | null): void {
     if (kept && kept !== before.kept) playSound('spook');
     if (voting && voting !== before.voting) playSound('sting');
     if (reds && reds !== before.reds) playSound('splash');
-  }, [dice, kept, voting, reds]);
+    if (powered && powered !== before.powered) playSound('pop');
+  }, [dice, kept, voting, reds, powered]);
 }

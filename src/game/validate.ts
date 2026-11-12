@@ -105,6 +105,19 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) ? { type: 'next', hand: a.hand } : null;
     case 'hit':
       return isInt(a.hand) && isInt(a.seq) ? { type: 'hit', hand: a.hand, seq: a.seq } : null;
+    case 'power':
+      if (!isInt(a.hand) || !isInt(a.seq)) return null;
+      if (a.target !== undefined && !isId(a.target)) return null;
+      if (a.card !== undefined && !isCard(a.card)) return null;
+      if (a.rank !== undefined && (!isInt(a.rank) || (a.rank as number) < 2 || (a.rank as number) > 14)) return null;
+      return {
+        type: 'power',
+        hand: a.hand,
+        seq: a.seq,
+        ...(a.target !== undefined ? { target: a.target as string } : {}),
+        ...(a.card !== undefined ? { card: a.card as string } : {}),
+        ...(a.rank !== undefined ? { rank: a.rank as number } : {}),
+      };
     case 'revealBots':
       if (a.playerId !== undefined && !isId(a.playerId)) return null;
       return isInt(a.hand)

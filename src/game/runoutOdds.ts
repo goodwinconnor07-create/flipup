@@ -12,11 +12,12 @@ import { boardSize, count21, holeCountAt, keepTwoQuick, type Variant } from './v
 const samplesFor = (v: Variant) => (v === 'deuces' ? 700 : 1500);
 
 /**
- * Each face-up hand's chance to win (and to split) from here, in the order given. `ghost` is the Ghost's two cards
+ * Each face-up hand's chance to win (and to split) from here, in the order given. `toCome` (Power Cards) is how many
+ * board cards are still to come, when the board can be longer than usual. `ghost` is the Ghost's two cards
  * once they're turned over at the showdown: until then the odds leave the ghost out (the owner's call), and once
  * it shows, a hand that doesn't beat it outright has no chance.
  */
-export function runoutOdds(v: Variant, hands: Card[][], board: Card[], ghost?: Card[]): Equity {
+export function runoutOdds(v: Variant, hands: Card[][], board: Card[], ghost?: Card[], toCome?: number): Equity {
   if (v === 'holdem') return equity(hands, board);
   const used = new Set([...hands.flat(), ...board, ...(ghost ?? [])]);
   const pool = fullDeck().filter((c) => !used.has(c));
@@ -24,7 +25,7 @@ export function runoutOdds(v: Variant, hands: Card[][], board: Card[], ghost?: C
   const rng = seededRng(hashString(`${v}${hands.flat().join('')}${board.join('')}`));
   const full = holeCountAt(v, 5);
   // Nothing left to come: one look is the answer.
-  const done = board.length >= boardSize(v) && !(v === 'redriver' && isRed(board[board.length - 1])) && hands.every((h) => v !== 'beanstalk' || h.length >= full);
+  const done = (toCome !== undefined ? toCome === 0 : board.length >= boardSize(v)) && !(v === 'redriver' && isRed(board[board.length - 1])) && hands.every((h) => v !== 'beanstalk' || h.length >= full);
   const samples = done ? 1 : samplesFor(v);
   const win = new Array<number>(hands.length).fill(0);
   const tie = new Array<number>(hands.length).fill(0);
@@ -36,7 +37,7 @@ export function runoutOdds(v: Variant, hands: Card[][], board: Card[], ghost?: C
     }
     // Bean Stalk: everyone still in gets a card of their own on each street to come.
     const cards = hands.map((h) => (v === 'beanstalk' && h.length < full ? [...h, ...deck.splice(-(full - h.length))] : h));
-    const out = finishBoard(v, board, deck, rng);
+    const out = finishBoard(v, board, deck, rng, toCome);
     const play = (h: Card[]) => (v === 'pineapple' && h.length > 2 ? keepTwoQuick(h, out.slice(0, 3)) : h);
     const scores = cards.map((h) => variantScore(v, play(h), out));
     if (v === 'bjholdem') {

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { bestHand, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, runoutOdds, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Player, type Seat, type Variant } from '../game';
+import { bestHand, cardsToCome, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, runoutOdds, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Player, type Seat, type Variant } from '../game';
 import { closeTable, dispatch, leaveTable, navigate, openSheet, useApp } from '../state/store';
 import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -21,6 +21,7 @@ import { ActionArea, type PreAction } from './table/Actions';
 import { useReactions } from './table/Bubbles';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { PotChips } from './table/PotChips';
+import { PowerStrip, PowerToast } from './table/Powers';
 import { soundMoodFor } from '../ui/gameThemes';
 import { setSoundMood } from '../ui/sound';
 import { useThemeMoments } from '../ui/useTableSounds';
@@ -254,7 +255,7 @@ function TableBar({ game }: { game: Game | null }) {
 function useOdds(hand: Hand | null, ok: boolean, variant: Variant): Map<string, { win: number; tie: number }> | null {
   const live = hand?.runout && ok ? hand.seats.filter((s) => !s.folded && s.cards.length >= 2) : [];
   const ghost = hand?.ghost?.length ? hand.ghost : undefined;
-  const key = hand?.runout ? `${variant}/${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}/${ghost?.join('') ?? ''}` : '';
+  const key = hand?.runout ? `${variant}/${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}/${ghost?.join('') ?? ''}/${hand.street}` : '';
   return useMemo(() => {
     if (!hand?.runout || live.length < 2) return null;
     const e = runoutOdds(
@@ -262,6 +263,8 @@ function useOdds(hand: Hand | null, ok: boolean, variant: Variant): Map<string, 
       live.map((s) => s.cards),
       hand.board,
       ghost,
+      // Power Cards: an Extra Card can make the board longer, so the cards to come go by street.
+      variant === 'power' ? cardsToCome(hand.street) : undefined,
     );
     return new Map(live.map((s, i) => [s.playerId, { win: e.win[i], tie: e.tie[i] }]));
   }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -472,6 +475,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
               )}
             </div>
             <Ghost game={game} />
+            <PowerToast game={game} />
             {hand?.dice && (
               <p className="dice-note pop" key={`dice-${hand.number}`}>
                 🎲 {hand.dice.out ? <CardText text={`Rolled ${hand.dice.roll}: [${hand.dice.out}] → [${hand.dice.in}]`} /> : `Rolled ${hand.dice.roll}: the board stays`}
@@ -525,7 +529,12 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <Vote game={game} me={me} />
         ) : hand?.discarding && mySeat && !mySeat.folded ? (
           <Discard game={game} seat={mySeat} />
-        ) : bare && (!hand || hand.result) ? null : <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} pre={pre} setPre={setPre} canShow={canShow} />}
+        ) : bare && (!hand || hand.result) ? null : (
+          <>
+            <PowerStrip game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} />
+            <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} pre={pre} setPre={setPre} canShow={canShow} />
+          </>
+        )}
       </div>
 
       <div className="me-area">

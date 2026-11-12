@@ -35,6 +35,8 @@ export const MOMENT_TIMING = {
   tallyEnd: 2600,
   /** Blackjack Hold'em: a bust is shown for this long before the next player acts. */
   bust: 2000,
+  /** Power Cards: the table stops this long when a power is played, so everyone sees it. */
+  power: 1800,
   /** When only bots are left in the hand. */
   fastShare: 0.2,
 } as const;

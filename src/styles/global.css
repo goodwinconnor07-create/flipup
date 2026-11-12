@@ -303,6 +303,10 @@
   --theme-bjholdem-rail-a: #2b2b31;
   --theme-bjholdem-rail-b: #0a0a0d;
   --theme-bjholdem-glow: rgba(255, 201, 51, 0.18);
+  --theme-power-felt: #101a3a;
+  --theme-power-rail-a: #3ee0ff;
+  --theme-power-rail-b: #0b4d6b;
+  --theme-power-glow: rgba(255, 214, 10, 0.24);
   --gold: #ff9f0a;
   --gold-lo: #d97706;
   --gold-hi: #fde68a;

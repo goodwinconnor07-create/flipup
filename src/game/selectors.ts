@@ -1,7 +1,8 @@
 // Read-only questions about a table, shared by the screens and the bots.
 
 import { canHit, canRaise, maxRaiseTo, playerById, potTotal } from './holdem';
-import type { Game, Hand, Player, Seat } from './types';
+import { playablePower } from './powers';
+import type { Game, Hand, Player, PowerId, Seat } from './types';
 
 export interface Options {
   toCall: number;
@@ -18,6 +19,8 @@ export interface Options {
   canFold: boolean;
   /** Blackjack Hold'em: on the flop they can take another card before moving. */
   canHit: boolean;
+  /** Power Cards: the power they can play now (and, for Copycat, the one it copies), or null. */
+  power?: { power: PowerId; effect: PowerId } | null;
 }
 
 /** What the player whose turn it is can do. */
@@ -38,6 +41,7 @@ export function options(game: Game, hand: Hand, seat: Seat): Options {
     word: hand.currentBet > 0 ? 'Raise' : 'Bet',
     canFold: !hand.imposter,
     canHit: canHit(game, hand, seat),
+    power: playablePower(game, hand, seat),
   };
 }
 

@@ -35,11 +35,14 @@ export function ActionArea({
   const host = game.hostDeviceId === deviceId;
   // Only the between-hands countdowns need a clock, and it lives here so the rest of the table isn't redrawn with it.
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
-  const now = toTableTime(useNow(waiting ? 200 : 60_000), game.fast);
+  // A moment everyone waits on (a power being played, a bust): the buttons come back when it's over.
+  const gated = !!hand?.moment?.gate && !hand.result;
+  const now = toTableTime(useNow(waiting || gated ? 200 : 60_000), game.fast);
 
   if (!me) return <p className="table-note">You're watching this table.</p>;
 
   if (hand && !hand.result) {
+    if (myTurn && seat && gated && now < hand.moment!.until) return <p className="table-note your-turn">{hand.moment!.kind === 'power' ? 'Your power is in play…' : 'One moment…'}</p>;
     if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <p className="table-note">Running it out…</p>;

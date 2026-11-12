@@ -5,9 +5,10 @@ import { dramaPause } from './botTalk';
 import { usesEverydayBots } from './botTableMode';
 import { dealMoment, MOMENT_TIMING, scaled } from './moments';
 import { handRecord } from './record';
-import { fullDeck, isRed, shuffle, type Card } from './cards';
+import { fullDeck, isRed, rankName, rankOf, shuffle, type Card } from './cards';
+import { effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
 import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
-import type { ActionContext, Game, Hand, Move, Player, PotResult, Seat, Street } from './types';
+import type { ActionContext, Game, Hand, Move, Player, PotResult, PowerUse, Seat, Street } from './types';
 
 export const TIMING = {
   /** Bots take a moment to look at the spot before deciding (then think for as long as the spot needs, see botPlay.ts). */
@@ -158,6 +159,8 @@ function roundOver(hand: Hand): boolean {
 /** Can this seat raise right now? Not after a short all-in they've already acted on, and not with nobody left to call. */
 export function canRaise(hand: Hand, seat: Seat): boolean {
   if (seat.acted) return false;
+  // Power Cards: a silenced player can't bet or raise for the rest of the street.
+  if (hand.silenced?.[seat.playerId] === hand.street) return false;
   return hand.seats.some((s) => s !== seat && isLive(s));
 }
 
@@ -309,6 +312,8 @@ export function startHand(game: Game, ctx: ActionContext): void {
     ...(removed ? { removed } : {}),
     ...(ghost ? { ghost } : {}),
     ...(carry ? { carry } : {}),
+    // Power Cards: everyone dealt in gets one power at random, a fresh one every hand.
+    ...(variant === 'power' ? { powers: Object.fromEntries(seats.map((s) => [s.playerId, POWER_IDS[Math.floor(ctx.rng() * POWER_IDS.length)]])) } : {}),
   };
   game.hand = hand;
   game.hands = (game.hands ?? 0) + 1;
@@ -381,6 +386,7 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
     case 'fold':
       seat.folded = true;
       seat.last = { move: 'fold', amount: 0, street: hand.street };
+      payFoldTax(game, hand, seat);
       break;
     case 'check':
       if (toCall > 0) return `You can't check. It's ${toCall} to call.`;
@@ -460,6 +466,7 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   }
   seat.folded = true;
   seat.last = { move: 'fold', amount: 0, street: hand.street };
+  payFoldTax(game, hand, seat);
   (hand.actions ??= []).push({ street: hand.street, playerId, move: 'fold', to: 0, outOfTurn: true });
   log(game, `${nameOf(game, playerId)} leaves and folds`);
   hand.seq += 1;
@@ -692,6 +699,173 @@ export function startShowdown(game: Game, ctx: ActionContext): void {
   showdown(game, ctx);
 }
 
+// ── Power Cards ─────────────────────────────────────────────────────────────
+
+/** Fold Tax: every Fold Tax someone else has played this hand costs a player who folds a big blind (or what they have left), into the pot. */
+function payFoldTax(game: Game, hand: Hand, seat: Seat): void {
+  if (hand.variant !== 'power') return;
+  const player = playerById(game, seat.playerId);
+  if (!player) return;
+  for (const use of hand.powerUses ?? []) {
+    if (effectOf(use) !== 'foldtax' || use.by === seat.playerId) continue;
+    const chips = Math.min(game.settings.bigBlind, player.stack);
+    if (!chips) break;
+    player.stack -= chips;
+    seat.total += chips;
+    log(game, `${player.name} pays ${n0(chips)} fold tax`);
+  }
+}
+
+/**
+ * Shield: a player who played it, reached the showdown and wins nothing gets back half of what they put in after it
+ * went up. The chips come out of the pots they were in, the last side pot first, before anything is paid.
+ */
+function shieldRefunds(game: Game, hand: Hand, pots: PotResult[], values: Map<string, { score: number }>, won: Record<string, number>): void {
+  for (const use of hand.powerUses ?? []) {
+    if (effectOf(use) !== 'shield') continue;
+    const seat = hand.seats.find((s) => s.playerId === use.by);
+    if (!seat || seat.folded) continue;
+    const mine = values.get(use.by)!.score;
+    const wins = pots.some((p) => p.eligible.includes(use.by) && mine === Math.max(...p.eligible.map((id) => values.get(id)!.score)));
+    if (wins) continue;
+    let owed = Math.floor((seat.total - (use.from ?? 0)) / 2);
+    let back = 0;
+    for (let i = pots.length - 1; i >= 0 && owed > 0; i--) {
+      if (!pots[i].eligible.includes(use.by)) continue;
+      const take = Math.min(owed, pots[i].amount);
+      pots[i].amount -= take;
+      owed -= take;
+      back += take;
+    }
+    use.refund = back;
+    if (back) {
+      won[use.by] = (won[use.by] ?? 0) + back;
+      log(game, `${nameOf(game, use.by)}'s shield gives back ${n0(back)}`);
+    }
+  }
+}
+
+/**
+ * Bounty: if a card of the called rank came on the board after it was called and is there at the end, and the player
+ * who called it didn't fold, every other player dealt in pays them a big blind (or what they have left).
+ */
+function payBounties(game: Game, hand: Hand): void {
+  for (const use of hand.powerUses ?? []) {
+    if (effectOf(use) !== 'bounty' || !use.rank) continue;
+    const seat = hand.seats.find((s) => s.playerId === use.by);
+    const hunter = playerById(game, use.by);
+    if (!seat || seat.folded || !hunter) continue;
+    const before = new Set(use.board ?? []);
+    if (!hand.board.some((c) => !before.has(c) && rankOf(c) === use.rank)) continue;
+    const paid: Record<string, number> = {};
+    for (const s of hand.seats) {
+      if (s.playerId === use.by) continue;
+      const p = playerById(game, s.playerId);
+      const chips = p ? Math.min(game.settings.bigBlind, p.stack) : 0;
+      if (!p || !chips) continue;
+      p.stack -= chips;
+      hunter.stack += chips;
+      paid[s.playerId] = chips;
+    }
+    use.paid = paid;
+    const total = Object.values(paid).reduce((a, b) => a + b, 0);
+    log(game, `The bounty on ${rankName(use.rank, true)} pays ${hunter.name} ${n0(total)}`);
+  }
+}
+
+/**
+ * The player to act plays their power (Power Cards), before their move. Checks it can be played now and that the
+ * choice fits, changes the table, and holds the table for a moment so everyone sees it. Returns an error, or null.
+ */
+export function playPower(game: Game, plan: PowerPlan, ctx: ActionContext): string | null {
+  const hand = game.hand!;
+  const seat = hand.seats.find((s) => s.playerId === hand.toAct);
+  if (!seat) return "It's not your turn.";
+  if (hand.moment?.gate && ctx.now < hand.moment.until) return 'One moment…';
+  const can = playablePower(game, hand, seat);
+  if (!can) return "You can't play your power right now.";
+  const { power, effect } = can;
+  const use: PowerUse = { by: seat.playerId, power, ...(power === 'copycat' ? { as: effect } : {}), street: hand.street };
+  const aimed = () => powerTargets(hand, seat, effect).find((s) => s.playerId === plan.target);
+  switch (effect) {
+    case 'peek':
+      // The next board card: after the burn card, at the top of the deck. (Powers that need a new card take it from
+      // the bottom, so what a Peek shows is what comes.)
+      use.seen = [hand.deck[burns('power') ? 1 : 0]];
+      break;
+    case 'xray': {
+      const target = aimed();
+      if (!target) return 'Pick an opponent still in the hand.';
+      use.target = target.playerId;
+      use.seen = [target.cards[Math.floor(ctx.rng() * target.cards.length)]];
+      break;
+    }
+    case 'swap': {
+      if (!plan.card || !seat.cards.includes(plan.card)) return 'Pick one of your cards.';
+      const fresh = hand.deck.pop()!;
+      seat.cards = seat.cards.map((c) => (c === plan.card ? fresh : c));
+      break;
+    }
+    case 'reroll': {
+      const at = plan.card ? hand.board.indexOf(plan.card) : -1;
+      if (at < 0) return 'Pick a card on the board.';
+      const fresh = hand.deck.pop()!;
+      use.out = hand.board[at];
+      use.in = fresh;
+      hand.board[at] = fresh;
+      break;
+    }
+    case 'extra': {
+      const fresh = hand.deck.pop()!;
+      hand.board.push(fresh);
+      use.in = fresh;
+      break;
+    }
+    case 'passleft': {
+      // Everyone still in gives a random card to the next player still in, clockwise, all at once.
+      const live = hand.seats.filter((s) => !s.folded);
+      const given = live.map((s) => s.cards[Math.floor(ctx.rng() * s.cards.length)]);
+      live.forEach((s, i) => (s.cards = s.cards.filter((c) => c !== given[i])));
+      live.forEach((s, i) => s.cards.push(given[(i - 1 + live.length) % live.length]));
+      break;
+    }
+    case 'shield':
+      use.from = seat.total;
+      break;
+    case 'silence': {
+      const target = aimed();
+      if (!target) return 'Pick an opponent who can still bet.';
+      use.target = target.playerId;
+      hand.silenced = { ...hand.silenced, [target.playerId]: hand.street };
+      break;
+    }
+    case 'bounty':
+      if (!plan.rank || !Number.isInteger(plan.rank) || plan.rank < 2 || plan.rank > 14) return 'Call a rank, 2 to ace.';
+      use.rank = plan.rank;
+      use.board = [...hand.board];
+      break;
+    case 'foldtax':
+      break;
+    default:
+      return "That power can't be played.";
+  }
+  (hand.powerUses ??= []).push(use);
+  hand.seq += 1;
+  log(game, powerLine(use, (id) => nameOf(game, id)).replace(/^\S+ /, ''));
+  // The table stops for a moment while everyone sees it; the player's clock waits too.
+  const wait = scaled(MOMENT_TIMING.power, botsOnly(game));
+  const until = ctx.now + wait;
+  hand.moment = { kind: 'power', at: ctx.now, until, gate: true, who: seat.playerId };
+  if (hand.deadline != null) {
+    hand.deadline += wait;
+    hand.actAt = hand.deadline;
+  } else if (playerById(game, seat.playerId)?.bot) {
+    hand.actAt = until;
+  }
+  schedule(game);
+  return null;
+}
+
 // ── Blackjack Hold'em hits ──────────────────────────────────────────────────
 
 /** Whether the player to act can take another card: Blackjack Hold'em, on the flop, before their move. */
@@ -907,6 +1081,8 @@ export function showdown(game: Game, ctx: ActionContext): void {
       if (odd > 0) odd--;
     }
   };
+  // Power Cards: a Shield that wins nothing gets half of what went in after it went up back, out of the pots it was in.
+  if (variant === 'power') shieldRefunds(game, hand, pots, values, won);
   // Blackjack Hold'em: each pot is split, half to the best poker hand and half to whoever is closest to 21.
   const counts = variant === 'bjholdem' ? new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, count21(s.cards)])) : null;
   const bjWinners: string[][] = [];
@@ -1207,6 +1383,7 @@ function winWithoutShowdown(game: Game, ctx: ActionContext): void {
 function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   if (usesEverydayBots(game) && !game.code) usualPause = Math.min(usualPause, usualPause === TIMING.afterFold ? 2500 : 5000);
   const hand = game.hand!;
+  if (hand.variant === 'power') payBounties(game, hand);
   const pause = botsOnly(game) ? Math.round(usualPause * TIMING.fastAfter) : usualPause;
   for (const s of hand.seats) s.bet = 0;
   hand.runout = false;

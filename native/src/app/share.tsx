@@ -11,7 +11,6 @@ import { SetupHeader, SetupRowTitle } from '@/components/setup/setup-header';
 import { n, signed } from '@/components/share/data';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo } from '@/engine';
-import { usePremium } from '@/state/premium';
 import { usePokerRecord } from '@/state/record';
 import { momentOf } from '@/state/hand-moments';
 import { momentsOf, useReplays, useStars, type Moment } from '@/state/replays';
@@ -40,7 +39,6 @@ function Hub() {
   const record = usePokerRecord();
   const replays = useReplays();
   const stars = useStars();
-  const premium = usePremium();
   const moments = momentsOf(replays, stars);
   const games = record.games.map((g, i) => ({ g, i })).reverse().slice(0, 6);
 
@@ -60,8 +58,7 @@ function Hub() {
             moments.map((m) => <MomentRow key={`${m.kind}:${m.replay.id}`} m={m} />)
           ) : (
             <Empty
-              line={premium ? 'Tap Save hand at the table after a hand you want to keep. It lands here.' : 'Save hands at the table with Premium, then share your best ones from here.'}
-              action={premium ? undefined : { title: 'See Premium', go: () => router.push({ pathname: '/premium', params: { reason: 'replay' } }) }}
+              line="Tap Save hand at the table after a hand you want to keep. It lands here."
             />
           )}
           {replays.length > 0 && (

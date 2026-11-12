@@ -12,12 +12,11 @@ import { signed } from '@/components/share/data';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo } from '@/engine';
-import { usePremium } from '@/state/premium';
 import { removeReplay, useReplays, useStars, type Replay } from '@/state/replays';
 import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
 /**
- * Your hand bank (Premium): every hand you saved at the table with Save hand, newest first, starred ones on top.
+ * Saved hands (free): every hand you saved at the table with Save hand, newest first, starred ones on top.
  * A tap plays it back (`replay/[id]`); a long press offers Share and Remove.
  */
 export default function HandBank() {
@@ -32,12 +31,10 @@ function Bank() {
   const insets = useSafeAreaInsets();
   const replays = useReplays();
   const stars = useStars();
-  const premium = usePremium();
   const list = [...replays.filter((r) => stars.includes(r.id)), ...replays.filter((r) => !stars.includes(r.id))];
   const open = (r: Replay) => {
     haptic.tap();
-    if (!premium) router.push({ pathname: '/premium', params: { reason: 'replay' } });
-    else router.push({ pathname: '/replay/[id]', params: { id: r.id } });
+    router.push({ pathname: '/replay/[id]', params: { id: r.id } });
   };
   const more = (r: Replay) => {
     haptic.select();
@@ -115,7 +112,7 @@ function Bank() {
                 </ThemedText>
               </View>
               <ThemedText style={{ fontFamily: ROUNDED, fontSize: 19, fontWeight: '800', color: r.net > 0 ? brand.gold : '#ffffff' }}>{signed(r.net)}</ThemedText>
-              <SwapIcon name={premium ? 'play.fill' : 'lock.fill'} size={14} color="rgba(255,255,255,0.6)" />
+              <SwapIcon name="play.fill" size={14} color="rgba(255,255,255,0.6)" />
             </PressableScale>
           ))}
         </View>

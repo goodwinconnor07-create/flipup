@@ -124,6 +124,7 @@ export function validSettings(s: Settings): boolean {
     (s.botPersonality === undefined || s.botPersonality === 'original' || isPersonality(s.botPersonality)) &&
     (!s.humanPoker || (s.variant ?? 'holdem') === 'holdem') &&
     (s.showToBusted === undefined || typeof s.showToBusted === 'boolean') &&
+    (s.replayEachHand === undefined || typeof s.replayEachHand === 'boolean') &&
     (s.variant === undefined || isVariant(s.variant)) &&
     (s.blindCap === undefined || (int(s.blindCap) && s.blindCap >= 0 && s.blindCap <= 1_000_000_000)) &&
     (s.blindHands === undefined || (int(s.blindHands) && s.blindHands >= 0 && s.blindHands <= 100)) &&

@@ -126,6 +126,16 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
       value={s.rebuys}
       onChange={edit ? (rebuys) => set({ rebuys }) : undefined}
     />,
+    // Bots-only: a short recap after each hand you played, with Replay; the deal waits for Next hand.
+    !online && (
+      <SwitchRow
+        key="replay"
+        label="Replay after every hand"
+        line="See what you won or lost and who took the pot, then watch it back"
+        value={!!s.replayEachHand}
+        onChange={edit ? (replayEachHand) => set({ replayEachHand }) : undefined}
+      />
+    ),
     online && (
       <SwitchRow
         key="peek"

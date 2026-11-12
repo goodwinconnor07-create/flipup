@@ -16,6 +16,7 @@ import { Confetti } from '@/components/table/confetti';
 import { ConnectionLost, useOfflineFor } from '@/components/table/connection-lost';
 import { PartyPanel } from '@/components/party/panel';
 import { Ended } from '@/components/table/ended';
+import { HandRecap } from '@/components/table/hand-recap';
 import { HandToolsTip, SaveHandButton, ScreenshotPrompt, ShareButton } from '@/components/table/hand-tools';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
@@ -99,6 +100,7 @@ export default function TableScreen() {
       {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
+      <HandRecap />
       <DealWipe />
       {!game && lost ? (
         <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />

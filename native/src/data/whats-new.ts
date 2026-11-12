@@ -21,6 +21,8 @@ export const RELEASES: Release[] = [
     version: '1.0.0',
     label: 'November 2026',
     items: [
+      { icon: 'film.stack.fill', title: 'Replay after every hand', text: 'A new house rule for bot games. After each hand you play, see what you won or lost and who took the pot, then watch it back. The next hand waits for you.' },
+      { icon: 'bookmark.fill', title: 'Saved hands are free', text: 'Save any hand at the table and watch it back move by move. Replays now show every bot’s cards and a full hand log.' },
       { icon: 'graduationcap.fill', title: 'Ways to train', text: 'Range training has a free daily hand, plus Endless, Sets and Gaps with Premium. New here? How it works explains it in four steps.' },
       { icon: 'person.3.fill', title: 'A livelier bots lobby', text: 'Your table floats on a little felt. New bots pop in, and holding one takes it off. More bot names, and not all of them have a surname.' },
       { icon: 'sparkles', title: 'Secret Missions', text: 'A new game. Everyone holds a secret mission each hand. Complete yours and the table pays you. First to five missions wins the race.' },

@@ -6,7 +6,8 @@ vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 import { DEFAULT_SETTINGS, applyAction, createTable, type Game } from '@game/index';
 
 import { handData, shareText, statsData } from '../src/components/share/data';
-import { lastHand, momentsOf, noteReplay, putIn, saveLastHand, allReplays, type Replay } from '../src/state/replays';
+import { forgetLastHand, lastHand, momentsOf, netOf, noteReplay, playedPastPreflop, putIn, saveLastHand, allReplays, winnersOf, type Replay } from '../src/state/replays';
+import { redactForDevice } from '@game/index';
 
 beforeEach(() => {
   const mem = new Map<string, string>();
@@ -56,10 +57,15 @@ describe('hand bank', () => {
     saveLastHand();
     expect(allReplays()).toHaveLength(1);
     const r = allReplays()[0];
-    // Chips add up: what everyone put in is the pot, and your net is what you got back less what you put in.
+    // Chips add up: what everyone put in is the pot plus any uncalled bet that came back, and your net is your
+    // chips after the hand less your chips before.
     const put = putIn(r);
-    expect(Object.values(put).reduce((a, b) => a + b, 0)).toBe(r.pot);
-    expect(r.net).toBe((r.won[r.me] ?? 0) - (put[r.me] ?? 0));
+    expect(Object.values(put).reduce((a, b) => a + b, 0)).toBeGreaterThanOrEqual(r.pot);
+    const me = r.players.find((p) => p.id === r.me)!;
+    expect(r.net).toBe(r.after![r.me] - me.stack);
+    expect(netOf(r, r.me)).toBe(r.net);
+    // Nobody's chips appear or vanish: the nets add up to nothing.
+    expect(r.players.reduce((sum, p) => sum + netOf(r, p.id), 0)).toBe(0);
     expect(r.holes[r.me]).toHaveLength(2);
   });
 
@@ -90,5 +96,43 @@ describe('share card data', () => {
     const d = statsData({ hands: 10, won: 4, biggestPot: 300, best: null, games: [], played: [], seen: [] }, 3, who);
     expect(d.headline).toBe('40%');
     expect(d.stats?.find((s) => s.label === 'STREAK')?.value).toBe('3d');
+  });
+});
+
+describe('replay after every hand', () => {
+  it('records every bot\'s cards from a bots-only table, but only what you saw from the redacted view', () => {
+    const game = finishedHand();
+    forgetLastHand();
+    noteReplay(redactForDevice(game, ME), ME, 'online');
+    const seen = lastHand()!;
+    expect(seen.allCards).toBeUndefined();
+    const me = game.players.find((p) => p.deviceId === ME)!;
+    expect(seen.holes[me.id]).toHaveLength(2);
+    forgetLastHand();
+    noteReplay(redactForDevice(game, ME), ME, 'bots', game);
+    const all = lastHand()!;
+    expect(all.allCards).toBe(true);
+    for (const s of game.hand!.seats) expect(all.holes[s.playerId]).toEqual(s.cards);
+  });
+
+  it('knows who won each pot', () => {
+    const game = finishedHand();
+    forgetLastHand();
+    noteReplay(game, ME, 'bots', game);
+    const r = lastHand()!;
+    expect(r.pots?.length).toBe(game.hand!.result!.pots.length);
+    expect(winnersOf(r)).toEqual([...new Set(game.hand!.result!.pots.flatMap((p) => p.winners))]);
+    // An older saved hand without pots: whoever got back more than they put in.
+    const old = { ...r, pots: undefined };
+    const put = putIn(old);
+    for (const id of winnersOf(old)) expect(old.won[id]).toBeGreaterThan(put[id] ?? 0);
+  });
+
+  it('skips the recap only when you folded before the flop', () => {
+    const base = { me: 'a', actions: [] as Replay['actions'] };
+    expect(playedPastPreflop(base)).toBe(true);
+    expect(playedPastPreflop({ ...base, actions: [{ street: 'preflop', playerId: 'a', move: 'fold', to: 0 }] })).toBe(false);
+    expect(playedPastPreflop({ ...base, actions: [{ street: 'preflop', playerId: 'b', move: 'fold', to: 0 }] })).toBe(true);
+    expect(playedPastPreflop({ ...base, actions: [{ street: 'flop', playerId: 'a', move: 'fold', to: 0 }] })).toBe(true);
   });
 });

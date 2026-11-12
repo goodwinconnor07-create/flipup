@@ -314,7 +314,35 @@ export interface Hand {
   missionsDone?: { by: string; mission: MissionId; paid: Record<string, number> }[];
 }
 
-export type MissionId = 'smallball' | 'silent' | 'slowroll' | 'herocall' | 'pressure' | 'lucky7' | 'biggame' | 'relentless' | 'monster' | 'knockout' | 'bluffmaster';
+export type MissionId =
+  | 'smallball'
+  | 'silent'
+  | 'slowroll'
+  | 'herocall'
+  | 'pressure'
+  | 'lucky7'
+  | 'biggame'
+  | 'relentless'
+  | 'monster'
+  | 'knockout'
+  | 'bluffmaster'
+  | 'suited'
+  | 'twins'
+  | 'red'
+  | 'royalty'
+  | 'button'
+  | 'defender'
+  | 'steal'
+  | 'riverrat'
+  | 'underdog'
+  | 'connected'
+  | 'twopair'
+  | 'trapdoor'
+  | 'shove'
+  | 'crowd'
+  | 'deuce'
+  | 'bully'
+  | 'chop';
 
 /** Secret Missions: the race in progress, kept from hand to hand. Phones see only their own mission (others' are null). */
 export interface MissionRace {

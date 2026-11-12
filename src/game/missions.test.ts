@@ -83,21 +83,22 @@ function chipsInPlay(game: Game): number {
 }
 
 /** A made-up finished hand for checking one mission: who won, how, the cards and the moves. */
-function finished(over: { cards?: string[]; board?: string[]; won?: boolean; showdown?: boolean; amount?: number; actions?: HandAction[]; otherOut?: boolean }): { game: Game; hand: Hand } {
+function finished(over: { cards?: string[]; board?: string[]; won?: boolean; showdown?: boolean; amount?: number; actions?: HandAction[]; otherOut?: boolean; button?: boolean; bb?: boolean; chop?: boolean; crowd?: boolean; allIn?: boolean }): { game: Game; hand: Hand } {
   const game = createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, variant: 'missions' }, bots: 0, code: 'BCDFG', now: clock });
   game.players.push({ ...game.players[0], id: 'other', name: 'Other', deviceId: 'device-other', seat: 1, stack: over.otherOut ? 0 : 1000 });
   const me = game.players[0].id;
   const amount = over.amount ?? 100;
   const hand: Hand = {
-    number: 1, seq: 0, buttonId: me, sbId: me, bbId: 'other',
+    number: 1, seq: 0, buttonId: over.button === false ? 'other' : me, sbId: me, bbId: over.bb ? me : 'other',
     seats: [
-      { playerId: me, cards: over.cards ?? ['Ah', 'Kd'], bet: 0, total: 50, folded: false, allIn: false, acted: true, shown: false, last: null },
+      { playerId: me, cards: over.cards ?? ['Ah', 'Kd'], bet: 0, total: 50, folded: false, allIn: !!over.allIn, acted: true, shown: false, last: null },
       { playerId: 'other', cards: ['2c', '3d'], bet: 0, total: 50, folded: !over.showdown, allIn: false, acted: true, shown: false, last: null },
+      ...(over.crowd ? ['x1', 'x2'].map((id) => ({ playerId: id, cards: [], bet: 0, total: 10, folded: true, allIn: false, acted: true, shown: false, last: null })) : []),
     ],
     deck: [], board: over.board ?? ['Qs', '9h', '4c', '8d', '2s'], street: 'river', toAct: null, currentBet: 0, minRaise: 20, aggressorId: null,
     runout: false, actAt: null, deadline: null, log: [], actions: (over.actions ?? []).map((a) => (a.playerId === 'ME' ? { ...a, playerId: me } : a)), startStacks: { [me]: 1000, other: 1000 },
     result: {
-      pots: [{ amount, eligible: [me, 'other'], winners: over.won === false ? ['other'] : [me] }],
+      pots: [{ amount, eligible: [me, 'other'], winners: over.won === false ? ['other'] : over.chop ? [me, 'other'] : [me] }],
       won: over.won === false ? { other: amount } : { [me]: amount },
       names: {}, showdown: !!over.showdown,
     },
@@ -147,6 +148,42 @@ describe('Secret Missions', () => {
     expect(check('bluffmaster', { cards: ['Ah', 'Kd'], board: ['Qs', '9h', '4c', '8d', '2s'] })).toBe(true);
     expect(check('bluffmaster', { cards: ['Ah', 'Kd'], board: ['As', '9h', '4c', '8d', '2s'] })).toBe(false);
     expect(check('smallball', { won: false })).toBe(false);
+    // The newer, lighter missions.
+    expect(check('suited', { cards: ['Ah', 'Kh'] })).toBe(true);
+    expect(check('suited', { cards: ['Ah', 'Kd'] })).toBe(false);
+    expect(check('twins', { cards: ['8h', '8d'] })).toBe(true);
+    expect(check('twins', { cards: ['8h', '9d'] })).toBe(false);
+    expect(check('red', { cards: ['Ah', 'Kd'] })).toBe(true);
+    expect(check('red', { cards: ['Ah', 'Ks'] })).toBe(false);
+    expect(check('royalty', { cards: ['Jh', '4d'] })).toBe(true);
+    expect(check('royalty', { cards: ['Ah', '4d'] })).toBe(false);
+    expect(check('button', {})).toBe(true);
+    expect(check('button', { button: false })).toBe(false);
+    expect(check('defender', { bb: true })).toBe(true);
+    expect(check('defender', {})).toBe(false);
+    expect(check('steal', { board: [], actions: me([A('preflop', 'raise')], host) })).toBe(true);
+    expect(check('steal', { board: ['Qs', '9h', '4c'], actions: me([A('preflop', 'raise')], host) })).toBe(false);
+    expect(check('riverrat', {})).toBe(true);
+    expect(check('riverrat', { board: ['Qs', '9h', '4c', '8d'] })).toBe(false);
+    expect(check('underdog', { cards: ['9h', '4d'] })).toBe(true);
+    expect(check('underdog', { cards: ['Th', '4d'] })).toBe(false);
+    expect(check('connected', { cards: ['8h', '7d'] })).toBe(true);
+    expect(check('connected', { cards: ['Ah', '2d'] })).toBe(true);
+    expect(check('connected', { cards: ['8h', '6d'] })).toBe(false);
+    expect(check('twopair', { showdown: true, cards: ['Qh', '9d'] })).toBe(true);
+    expect(check('twopair', { showdown: true, cards: ['Qh', '5d'] })).toBe(false);
+    expect(check('trapdoor', { won: false, actions: me([A('turn', 'check'), A('turn', 'raise')], host) })).toBe(true);
+    expect(check('trapdoor', { actions: me([A('turn', 'bet'), A('turn', 'raise')], host) })).toBe(false);
+    expect(check('shove', { allIn: true })).toBe(true);
+    expect(check('shove', {})).toBe(false);
+    expect(check('crowd', { crowd: true })).toBe(true);
+    expect(check('crowd', {})).toBe(false);
+    expect(check('deuce', { cards: ['2h', 'Kd'] })).toBe(true);
+    expect(check('deuce', { cards: ['3h', 'Kd'] })).toBe(false);
+    expect(check('bully', { won: false, actions: me([A('preflop', 'raise'), A('flop', 'bet'), A('turn', 'bet')], host) })).toBe(true);
+    expect(check('bully', { actions: me([A('preflop', 'raise'), A('flop', 'bet')], host) })).toBe(false);
+    expect(check('chop', { showdown: true, chop: true })).toBe(true);
+    expect(check('chop', { showdown: true })).toBe(false);
   });
 
   it('pays a completed mission from every other player and gives a new one next hand', () => {

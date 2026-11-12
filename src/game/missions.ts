@@ -65,6 +65,50 @@ export function missionDone(game: Game, hand: Hand, playerId: string, mission: M
     }
     case 'bluffmaster':
       return wonPot && strength() === 0;
+    case 'suited':
+      return wonPot && seat.cards.length === 2 && seat.cards[0][1] === seat.cards[1][1];
+    case 'twins':
+      return wonPot && seat.cards.length === 2 && rankOf(seat.cards[0]) === rankOf(seat.cards[1]);
+    case 'red':
+      return wonPot && seat.cards.length === 2 && seat.cards.every((c) => c[1] === 'h' || c[1] === 'd');
+    case 'royalty':
+      return wonPot && seat.cards.some((c) => rankOf(c) >= 11 && rankOf(c) <= 13);
+    case 'button':
+      return wonPot && hand.buttonId === playerId;
+    case 'defender':
+      return wonPot && hand.bbId === playerId;
+    case 'steal':
+      return wonPot && !result.showdown && hand.board.length === 0 && mine.some((a) => a.street === 'preflop' && (a.move === 'raise' || a.move === 'allin'));
+    case 'riverrat':
+      return wonPot && hand.board.length >= 5;
+    case 'underdog':
+      return wonPot && seat.cards.length > 0 && seat.cards.every((c) => rankOf(c) <= 9);
+    case 'connected': {
+      if (!wonPot || seat.cards.length !== 2) return false;
+      const [a, b] = seat.cards.map(rankOf).sort((x, y) => x - y);
+      return b - a === 1 || (a === 2 && b === 14);
+    }
+    case 'twopair':
+      return wonPot && strength() === 2;
+    case 'trapdoor':
+      // On some street: a check, and later a raise.
+      return ['flop', 'turn', 'river'].some((st) => {
+        const moves = mine.filter((a) => a.street === st).map((a) => a.move);
+        const checked = moves.indexOf('check');
+        return checked >= 0 && moves.slice(checked + 1).some((mv) => mv === 'raise' || mv === 'allin');
+      });
+    case 'shove':
+      return wonPot && (seat.allIn || mine.some((a) => a.move === 'allin'));
+    case 'crowd': {
+      const foldedPre = new Set((hand.actions ?? []).filter((a) => a.street === 'preflop' && a.move === 'fold').map((a) => a.playerId));
+      return wonPot && hand.board.length >= 3 && hand.seats.filter((s) => !foldedPre.has(s.playerId)).length >= 4;
+    }
+    case 'deuce':
+      return wonPot && seat.cards.some((c) => rankOf(c) === 2);
+    case 'bully':
+      return mine.filter((a) => aggressive(a.move)).length >= 3;
+    case 'chop':
+      return result.pots.some((p) => p.winners.length >= 2 && p.winners.includes(playerId));
     default:
       return false;
   }

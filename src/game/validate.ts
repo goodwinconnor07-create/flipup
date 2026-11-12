@@ -6,7 +6,6 @@ import { isCard } from './cards';
 import { isVariant } from './variants';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
-import { legendById } from './legends';
 import { BOTS } from './botStyles';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
@@ -78,12 +77,10 @@ export function parseAction(raw: unknown): Action | null {
         ...(a.gold === true ? { gold: true } : {}),
       };
     case 'addBot':
-      if (a.name !== undefined)
-        return a.legend === undefined && typeof a.name === 'string' && BOTS.some((b) => b.name === a.name)
-          ? { type: 'addBot', name: a.name }
-          : null;
-      if (a.legend === undefined) return { type: 'addBot' };
-      return typeof a.legend === 'string' && legendById(a.legend) ? { type: 'addBot', legend: a.legend } : null;
+      // (A legend used to be seatable here; there are none now, so anything naming one is refused.)
+      if (a.legend !== undefined) return null;
+      if (a.name !== undefined) return typeof a.name === 'string' && BOTS.some((b) => b.name === a.name) ? { type: 'addBot', name: a.name } : null;
+      return { type: 'addBot' };
     case 'start':
     case 'rebuy':
     case 'end':

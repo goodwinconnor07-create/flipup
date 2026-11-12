@@ -1,7 +1,7 @@
-// What you've earned on this phone: legends beaten (which opens the next one), badges and your record
-// against each legend. Kept in `flipup.progress`. Nothing here takes anything away.
+// What you've earned on this phone: badges and the totals they read. Kept in `flipup.progress`. Nothing here takes
+// anything away.
 
-import { LEGENDS, legendById, type Game, type HandRecord } from '../game';
+import type { Game, HandRecord } from '../game';
 import { loadStats, loadStreak, read, write } from './persist';
 import { loadHistory } from './training';
 import { tableStats, type TableStats } from '../train/tableStats';
@@ -25,21 +25,14 @@ export interface TableReport {
   knockedOut: boolean;
   stats: TableStats;
   newBadges: string[];
-  /** A legend this table opened, and the legend beaten (first time only counts for the first). */
-  unlocked: string | null;
-  beat: string | null;
-  firstBeat: boolean;
-  rival: { id: string; record: Tally; won: boolean } | null;
   comeback: boolean;
   /** Streak after this table. */
   streak: number;
 }
 
 export interface Progress {
-  beaten: Record<string, { wins: number; first: number }>;
   badges: Record<string, number>;
   totals: Record<'bluffs' | 'allInsWon' | 'tablesWon' | 'bigPots' | 'showdownsWon' | 'comebacks', number>;
-  rivals: { legends: Record<string, Tally> };
   settled: string[];
   reports: Record<string, TableReport>;
 }
@@ -55,19 +48,9 @@ export interface BadgeDef {
   has: (p: Progress, lifetimeHands: number, streakDays: number) => boolean;
 }
 
-const legendBadges: BadgeDef[] = LEGENDS.map((l) => ({
-  id: `beat-${l.id}`,
-  name: `Beat ${l.short}`,
-  emoji: l.emoji,
-  text: `Knock out ${l.name} heads-up.`,
-  has: (p) => !!p.beaten[l.id],
-}));
-
 export const BADGES: BadgeDef[] = [
   { id: 'first-win', name: 'First win', emoji: '🏆', text: 'Win a table.', has: (p) => p.totals.tablesWon >= 1 },
   { id: 'wins-5', name: 'Five wins', emoji: '🥇', text: 'Win 5 tables.', has: (p) => p.totals.tablesWon >= 5 },
-  ...legendBadges,
-  { id: 'ladder', name: 'Top of the ladder', emoji: '👑', text: 'Beat every legend.', has: (p) => LEGENDS.every((l) => !!p.beaten[l.id]) },
   { id: 'bluff-1', name: 'First bluff', emoji: '🎭', text: 'Win a pot with nothing.', has: (p) => p.totals.bluffs >= 1 },
   { id: 'bluff-10', name: 'Bluff artist', emoji: '🃏', text: 'Win 10 pots with a bluff.', has: (p) => p.totals.bluffs >= 10 },
   { id: 'big-pot', name: 'Big pot', emoji: '💰', text: 'Win a pot of 20 big blinds or more.', has: (p) => p.totals.bigPots >= 1 },
@@ -85,28 +68,15 @@ export const badgeById = (id: string): BadgeDef | undefined => BADGES.find((b) =
 // ── Storage ─────────────────────────────────────────────────────────────────
 
 const num = (n: unknown) => (typeof n === 'number' && Number.isFinite(n) && n >= 0 ? n : 0);
-const rec = (r: unknown): Tally => ({ w: num((r as Tally | undefined)?.w), l: num((r as Tally | undefined)?.l) });
 
-/** Reads what's saved. Legends you'd already beaten before the ladder existed count as beaten. */
+/** Reads what's saved (anything it doesn't know any more, like the legends ladder, is dropped). */
 export function loadProgress(): Progress {
   const s = read<Partial<Progress>>(KEY);
-  const beaten: Progress['beaten'] = {};
-  for (const [id, v] of Object.entries(s?.beaten ?? {})) if (legendById(id)) beaten[id] = { wins: Math.max(1, num(v?.wins)), first: num(v?.first) };
-  const first = !s;
-  if (first) {
-    for (const g of loadStats().games) if (g.legend && legendById(g.legend) && g.place === 1) beaten[g.legend] = { wins: (beaten[g.legend]?.wins ?? 0) + 1, first: beaten[g.legend]?.first ?? g.at };
-  }
   const badges: Progress['badges'] = Object.fromEntries(Object.entries(s?.badges ?? {}).filter(([id]) => badgeById(id)).map(([id, at]) => [id, num(at)]));
-  // A legend beaten before, read from the old table history, already has its badge: don't announce it again.
-  if (first) for (const id of Object.keys(beaten)) badges[`beat-${id}`] ??= beaten[id].first;
   const t = s?.totals ?? ({} as Progress['totals']);
   return {
-    beaten,
     badges,
     totals: { bluffs: num(t.bluffs), allInsWon: num(t.allInsWon), tablesWon: num(t.tablesWon), bigPots: num(t.bigPots), showdownsWon: num(t.showdownsWon), comebacks: num(t.comebacks) },
-    rivals: {
-      legends: Object.fromEntries(Object.entries(s?.rivals?.legends ?? {}).filter(([k]) => legendById(k)).map(([k, v]) => [k, rec(v)])),
-    },
     settled: Array.isArray(s?.settled) ? s.settled.filter((x) => typeof x === 'string') : [],
     reports: s?.reports && typeof s.reports === 'object' ? (s.reports as Progress['reports']) : {},
   };
@@ -117,32 +87,10 @@ export function saveProgress(p: Progress): void {
   write(KEY, { ...p, settled: p.settled.slice(-40), reports: Object.fromEntries(keep) });
 }
 
-// ── Ladder ──────────────────────────────────────────────────────────────────
-
-/** The first legend is open; each next one opens when you knock out the one before. */
-export function legendOpen(p: Progress, id: string): boolean {
-  const l = legendById(id);
-  if (!l) return false;
-  if (l.rung <= 1) return true;
-  const before = LEGENDS.find((x) => x.rung === l.rung - 1);
-  return !before || !!p.beaten[before.id];
-}
-
-/** The legend whose beating opens `id` (null for the first rung). */
-export function legendBefore(id: string) {
-  const l = legendById(id);
-  return l ? LEGENDS.find((x) => x.rung === l.rung - 1) ?? null : null;
-}
-
-/** The next legend you haven't beaten that's open, or null when you've done them all. */
-export function nextLegend(p: Progress) {
-  return LEGENDS.find((l) => !p.beaten[l.id] && legendOpen(p, l.id)) ?? null;
-}
-
 // ── Counting a table ────────────────────────────────────────────────────────
 
 /**
- * Counts a table once: the numbers from the hands you saved, what you earned and what it opened.
+ * Counts a table once: the numbers from the hands you saved and what you earned.
  * Safe to call again for the same table: it gives back the same report.
  */
 export function settleTable(game: Game, deviceId: string, history: { key: string; record: HandRecord }[] = loadHistory()): TableReport | null {
@@ -171,26 +119,6 @@ export function settleTable(game: Game, deviceId: string, history: { key: string
   if (won) p.totals.tablesWon++;
   if (comeback) p.totals.comebacks++;
 
-  // The ladder and the rivalries.
-  let beat: string | null = null;
-  let firstBeat = false;
-  let unlocked: string | null = null;
-  let rival: TableReport['rival'] = null;
-  if (game.legendGame && legendById(game.legendGame)) {
-    const id = game.legendGame;
-    const r = p.rivals.legends[id] ?? { w: 0, l: 0 };
-    if (knockedOut && place === 1) {
-      r.w++;
-      beat = id;
-      firstBeat = !p.beaten[id];
-      p.beaten[id] = { wins: (p.beaten[id]?.wins ?? 0) + 1, first: p.beaten[id]?.first ?? Date.now() };
-      const after = LEGENDS.find((l) => l.rung === legendById(id)!.rung + 1);
-      if (firstBeat && after) unlocked = after.id;
-    } else if (place !== 1) r.l++;
-    p.rivals.legends[id] = r;
-    rival = { id, record: r, won: place === 1 };
-  }
-
   const streak = loadStreak().days;
   const lifetime = loadStats().hands + played;
   const newBadges: string[] = [];
@@ -199,7 +127,7 @@ export function settleTable(game: Game, deviceId: string, history: { key: string
     newBadges.push(b.id);
   }
 
-  const report: TableReport = { id: game.id, at: Date.now(), place, players: game.players.length, won, knockedOut, stats, newBadges, unlocked, beat, firstBeat, rival, comeback, streak };
+  const report: TableReport = { id: game.id, at: Date.now(), place, players: game.players.length, won, knockedOut, stats, newBadges, comeback, streak };
   p.settled = [...p.settled, game.id];
   p.reports = { ...p.reports, [game.id]: report };
   saveProgress(p);

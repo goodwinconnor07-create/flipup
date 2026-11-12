@@ -22,8 +22,8 @@ type ContextEvent =
   | 'replyLaugh'
   | 'replyThanks'
   | 'replyGoodGame';
-/** Moments the legends and AI twins speak to that the planner has no phrasing for: they use the fixed lines in botTalk.ts. */
-export type FixedLineEvent = 'cheer' | 'commiserate' | 'finishWon' | 'finishLost' | 'rematchWon' | 'rematchLost' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg' | 'signature'
+/** Moments the dialogue planner has no phrasing for: they use the fixed lines in botTalk.ts. */
+export type FixedLineEvent = 'cheer' | 'commiserate' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg'
   | 'flop' | 'turn' | 'river' | 'bigPot' | 'longHand' | 'shortStack' | 'chipLead' | 'button' | 'bigBlind' | 'handMilestone'
   | 'beforeFlop' | 'beforeTurn' | 'beforeRiver' | 'beforeShowdown' | 'addedToTable'
   | 'rememberHello' | 'rememberBluffs' | 'rememberFold3bet' | 'rememberBigBet' | 'rememberCheckRaise' | 'rememberFolds' | 'rememberCalls';

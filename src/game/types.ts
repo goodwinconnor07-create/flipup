@@ -1,8 +1,8 @@
 // The table and everything in it. One Game is one table, from lobby to the last hand.
 
 import type { BankrollTag } from './bankroll';
+import type { Style } from './botStyles';
 import type { Card } from './cards';
-import type { TwinBrain } from './twinFit';
 import type { Variant } from './variants';
 import type { LiveBotState } from '../bot_engine/live';
 import type { PersonalityId } from '../bot_engine/personalities';
@@ -62,16 +62,14 @@ export interface Player {
   offline?: boolean;
   /** A bot's way of playing (see botStyles.ts). Stripped before the table is sent to any phone. */
   style?: string;
-  /** Plays in the style of a legend (see legends.ts). Public: the table shows who it is. */
-  legend?: string;
   /** Their chat bubble colour (see bubbles.ts), a FlipUp Premium extra. Public: everyone at the table sees it. */
   bubble?: string;
   /** Their card back (see cardPacks.ts), a FlipUp Premium extra. Public: the table sees it on the back of their cards. */
   cardPack?: string;
   /** A FlipUp Premium player who shows their name in gold (Settings > Gold name). Public: everyone at the table sees it. */
   gold?: boolean;
-  /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
-  twin?: TwinBrain;
+  /** Bot lab only (botSim.ts): the style this seat plays instead of its own. Stripped before the table is sent to any phone. */
+  labStyle?: Style;
   /** Stable bot identity, private on online tables. */
   botProfile?: string;
   /** Private choice of decision engine, independent of legacy style identity. */
@@ -432,8 +430,6 @@ export interface Game {
       | 'tank'
       | 'hello'
       | 'welcome'
-      | 'rematchWon'
-      | 'rematchLost'
       | 'rememberHello'
       | 'greetBack'
       | 'thanks'
@@ -457,14 +453,6 @@ export interface Game {
   first?: { settings: Settings; bots: number };
   /** A bots-only table on this phone that runs on a faster clock (set when it's dealt, so it can't change mid-table). */
   fast?: boolean;
-  /** A heads-up game against the player's own AI twin: "Play again" deals a new one from what the twin has learned since. */
-  twinGame?: boolean;
-  /** With `twinGame`: the twin is a friend's, whose twin code this is. */
-  friendTwin?: string;
-  /** A heads-up game against a legend (their id): "Play again" sits down against them again. */
-  legendGame?: string;
-  /** With `legendGame`: this person has beaten them before ('won') or only lost to them ('lost'), so they greet them differently. */
-  rematch?: 'won' | 'lost';
   /**
    * A phone's own table: the bots here you've played before, by lower-case name, from the phone's memory (tables
    * shared, and showdowns you've won and lost against them). A bot you know greets you as a regular.
@@ -500,8 +488,6 @@ export interface Game {
     prize?: number;
     /** What it costs to sit down: a tournament's buy-in, or an online cash table's fixed stack. */
     buyIn?: number;
-    /** A tournament's boss: the legend who runs the venue, in this seat. */
-    boss?: { playerId: string; legend: string };
     /** Sometimes a tournament puts a bounty on one bot: knock it out yourself for the reward. */
     bounty?: { playerId: string; reward: number };
   };
@@ -523,8 +509,8 @@ export type Action =
   /** This phone takes a seat (or updates its name and picture). */
   | { type: 'join'; name: string; emoji: string }
   | { type: 'setLook'; name: string; emoji: string; bubble?: string; cardPack?: string; gold?: boolean }
-  /** `legend` seats that AI Legend instead of a random bot. */
-  | { type: 'addBot'; legend?: string; /** A bot from `BOTS` by name (the setup page's picks). */ name?: string }
+  /** `name` seats a bot from `BOTS` by name (the setup page's picks). */
+  | { type: 'addBot'; name?: string }
   /** Host removes a player or bot; anyone can remove themselves. */
   | { type: 'remove'; playerId: string }
   | { type: 'settings'; settings: Partial<Settings> }

@@ -9,12 +9,11 @@ import { everydayThought, updateEverydayMemory, usesEverydayBots } from '../bot_
 import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
-import { BOTS, playerStyle, styleOf } from './botStyles';
+import { BOTS, styleOf } from './botStyles';
 import { botSays, dealTalk, streetTalk, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
-import { dressAsLegend, legendById, LEGENDS } from './legends';
 import {
   botsOnly,
   canDeal,
@@ -54,7 +53,7 @@ import { botPowerPlan, playablePower } from './powers';
 import { isReactionId } from './reactions';
 import { isNameBlocked, NAME_BLOCKED } from './names';
 import { options, seatFor } from './selectors';
-import { BOSS_DULL, campaignDull, campaignStyles, venueById } from './campaign';
+import { campaignDull, campaignStyles } from './campaign';
 import {
   BANKROLL,
   BANKROLL_CAP,
@@ -172,7 +171,7 @@ export function createTable(opts: {
   emoji: string;
   settings: Settings;
   bots: number;
-  /** Bots to seat by name first (Home's quick games); the rest are random. A legend's short name seats that AI Legend. */
+  /** Bots to seat by name first (Home's quick games); the rest are random. */
   botNames?: string[];
   /** The host's chat bubble colour (a Premium extra). */
   bubble?: string;
@@ -180,7 +179,7 @@ export function createTable(opts: {
   cardPack?: string;
   /** The random bots come only from these styles (campaign venues). */
   botStyles?: string[];
-  /** A campaign table: set before the bots sit down, so they come from its room (and its boss takes a seat). */
+  /** A campaign table: set before the bots sit down, so they come from its room. */
   campaign?: Game['campaign'];
   code: string | null;
   now: number;
@@ -219,15 +218,9 @@ export function createTable(opts: {
   const botSeatLimit = MAX_SEATS - (game.settings.humanPoker && !game.campaign ? 1 : 0);
   for (const name of opts.botNames ?? []) {
     if (game.players.length >= botSeatLimit) break;
-    const legend = LEGENDS.find((l) => l.short === name);
-    if (legend) {
-      if (game.players.length < MAX_SEATS && !game.players.some((p) => p.legend === legend.id)) addLegend(game, legend.id);
-      continue;
-    }
     seatBotNamed(game, name);
   }
   while (game.players.length - 1 < opts.bots && game.players.length < botSeatLimit) addBot(game, opts.botStyles, opts.rng);
-  if (game.campaign) seatBoss(game);
   syncHumanPokerSeat(game);
   return game;
 }
@@ -251,17 +244,6 @@ function syncHumanPokerSeat(game: Game): void {
     delete game.humanPoker;
   }
   if (!enabled && !existing) delete game.humanPoker;
-}
-
-/** Seats an AI Legend: a bot dressed as them, with their style and voice. */
-function addLegend(game: Game, id: string): void {
-  const legend = legendById(id);
-  if (!legend) return;
-  const bot: Player = newPlayer(game, { name: legend.short, emoji: legend.emoji, deviceId: null, bot: true });
-  dressAsLegend(bot, legend);
-  // Names are unique at a table: a person who got there first keeps theirs.
-  bot.name = uniqueName(game, bot.name);
-  game.players.push(bot);
 }
 
 /** Seats the bot from `BOTS` with this name, if it's free and there's a seat. Returns whether it sat down. */
@@ -304,26 +286,6 @@ function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): v
   });
 }
 
-/** A campaign tournament's boss takes a bot seat (or a free one): the venue's legend, sharper than the room. Once per table. */
-export function seatBoss(game: Game): void {
-  const tag = game.campaign;
-  const venue = tag?.kind === 'sng' ? venueById(tag.venue) : undefined;
-  const legend = venue?.boss ? legendById(venue.boss) : undefined;
-  if (!tag || !venue || !legend || tag.boss) return;
-  let seat = game.players.find((p) => p.bot && !p.legend && p.id !== tag.bounty?.playerId);
-  if (!seat) {
-    if (game.players.length >= MAX_SEATS) return;
-    addBot(game);
-    seat = game.players[game.players.length - 1];
-  }
-  dressAsLegend(seat, legend);
-  seat.name = uniqueName(game, seat.name, seat.id);
-  const dull = venue.dull * BOSS_DULL;
-  if (dull > 0) seat.dull = dull;
-  else delete seat.dull;
-  tag.boss = { playerId: seat.id, legend: legend.id };
-}
-
 /** Bot lines that are about a person at the table, so they use their name ({you}). */
 const ADDRESSED = new Set<TalkEvent>(['lostToYou', 'tiltJab', 'revenge', 'bluffCaught', 'badBeat', 'bluffWon']);
 
@@ -335,8 +297,6 @@ const BAD_NEWS = new Set<TalkEvent>(['sweatLose', 'badBeat', 'lostToYou', 'bluff
 const SURE_THINGS = new Set<string>([
   'hello',
   'welcome',
-  'rematchWon',
-  'rematchLost',
   'rememberHello',
   'greetBack',
   'thanks',
@@ -678,14 +638,6 @@ function afterHand(game: Game, ctx: ActionContext): void {
     (s) => !isBot(s.playerId) && !winners.includes(s.playerId) && s.total > bb && (streaks[s.playerId] ?? 0) >= 2,
   );
 
-  // A bot that won with its signature hand (Brunson's ten-deuce) says so.
-  for (const id of winners) {
-    const p = playerById(game, id);
-    const seat = hand.seats.find((s) => s.playerId === id);
-    if (!p?.bot || !seat || seat.cards.length !== 2 || !playerStyle(p).craft.pets.includes(handClassOf(seat.cards))) continue;
-    if (say(id, 'signature', true)) spoke.push(id);
-  }
-
   // Now and then a bot turns its cards over when it didn't have to: a bluff that worked, a monster
   // nobody paid off, or a good hand it laid down. Its own cards only, so nothing hidden leaks.
   for (const id of showOffs(game, hand, ctx))
@@ -977,11 +929,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'addBot': {
       if (!host) return fail('Only the host can add bots.');
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      if (action.legend !== undefined) {
-        if (!legendById(action.legend)) return fail('No such legend.');
-        if (game.players.some((p) => p.legend === action.legend)) return fail('That legend is already at the table.');
-        addLegend(game, action.legend);
-      } else if (action.name !== undefined) {
+      if (action.name !== undefined) {
         // A bot picked by name on the setup page. A campaign table seats only its room's bots.
         if (game.campaign) return fail('A campaign table picks its own bots.');
         if (!seatBotNamed(game, action.name)) return fail('That bot is already at the table.');
@@ -1056,7 +1004,6 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       // A campaign tournament fills its empty seats with the venue's bots, and is as big as it is when it deals.
       if (game.campaign?.kind === 'sng') {
         while (game.players.length < Math.min(game.campaign.seats, MAX_SEATS)) addBot(game, campaignStyles(game.campaign), ctx.rng);
-        seatBoss(game);
         game.campaign.seats = game.players.length;
       }
       if (game.players.length < 2) return fail('You need at least two players. Add a bot or invite a friend.');
@@ -1086,7 +1033,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
           : {
               at: ctx.now + greetWait(game),
               playerId: who.id,
-              event: !headsUp ? 'welcome' : game.rematch === 'won' ? 'rematchWon' : game.rematch === 'lost' ? 'rematchLost' : 'hello',
+              event: !headsUp ? 'welcome' : 'hello',
               forId: headsUp ? people[0].id : undefined,
             };
       }
@@ -1371,7 +1318,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
         ms &&
         !game.hand &&
         game.nextHandAt !== null &&
-        (event === 'hello' || event === 'welcome' || event === 'rematchWon' || event === 'rematchLost' || event === 'rememberHello')
+        (event === 'hello' || event === 'welcome' || event === 'rememberHello')
       )
         game.nextHandAt = Math.max(game.nextHandAt, ctx.now + ms + TIMING.afterHello);
       // Someone else at the table says hi back, before the cards come.
@@ -1541,7 +1488,7 @@ function tick(game: Game, ctx: ActionContext): boolean {
 export function knownRival(game: Game, bots: Player[]): Player | null {
   const r = game.rivals;
   if (!r) return null;
-  const known = bots.filter((b) => !b.legend && r[b.name.toLowerCase()]);
+  const known = bots.filter((b) => r[b.name.toLowerCase()]);
   const weight = (b: Player) => {
     const x = r[b.name.toLowerCase()]!;
     return x.tables * 10 + x.beat + x.lost;

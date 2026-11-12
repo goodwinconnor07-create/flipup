@@ -378,7 +378,7 @@ export interface Say {
   sig: string;
   /** A person's quick message: it's up at once, no typing, whatever else is being said. */
   instant?: boolean;
-  /** How the bubble is dressed: the speaker's tone ('trash' or 'friendly') or 'legend'. Empty for a person. */
+  /** How the bubble is dressed: the speaker's tone ('trash' or 'friendly'). Empty for a person. */
   voice?: string;
   /** The line is aimed at the person on this phone. */
   toYou?: boolean;

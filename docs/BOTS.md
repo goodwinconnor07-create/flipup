@@ -147,8 +147,7 @@ the options it fits:
 | `pets`, `petRate` | A signature hand it plays when the chart says fold (Brunson's ten-deuce). |
 | `exploit` | How hard it acts on the reads below. |
 
-A twin has no craft (`NO_CRAFT`): it plays its person's own habits. `scripts/craftLab.ts freq` shows how often
-each style and legend uses each technique, `ab` and `big` play a style with its craft against the same without it.
+`scripts/craftLab.ts freq` shows how often each style uses each technique, `ab` and `big` play a style with its craft against the same without it.
 
 **How to test it.** A heads-up match run for thousands of hands is not a fair test of a craft: the adaptive bots work
 each other out and the result follows who did that first (the same config gave -63, -46 and +43 bb/100 on three seeds

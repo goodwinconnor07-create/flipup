@@ -44,7 +44,7 @@ export const gamesNeedPremium = (games: readonly Variant[], now: number = Date.n
  */
 export const FREE_BOT_NAMES: readonly string[] = ['Luna', 'Eli', 'Remi', 'Emma', 'Anna', 'Max', 'Zoe', 'Theo', 'Ivy', 'Kai'];
 export const isFreeBot = (name: string): boolean => FREE_BOT_NAMES.includes(name);
-/** Seating any bot outside the free ten needs Premium. Names that aren't in the roster (legends) count as Premium. */
+/** Seating any bot outside the free ten needs Premium. Names that aren't in the roster count as Premium. */
 export const botsNeedPremium = (names: readonly string[]): boolean => names.some((n) => !isFreeBot(n));
 /** The roster a host may pick from. */
 export const botsFor = (premium: boolean): typeof BOTS => (premium ? BOTS : BOTS.filter((b) => isFreeBot(b.name)));

@@ -510,13 +510,6 @@ describe('table', () => {
     expect(game.wakeAt).toBe(clock + 3000);
   });
 
-  it('ends a legend game three seconds after the deciding hand, even with rebuys on and no code', () => {
-    let game: Game = { ...table(2, { startingStack: 100, smallBlind: 5, bigBlind: 10, rebuys: true }), code: null, legendGame: 'legend-test' };
-    game = decidingHand(game);
-    expect(game.hand!.result).not.toBeNull();
-    expect(game.wakeAt).toBe(clock + 3000);
-  });
-
   it('keeps a busted bot on the table when the game is over, and drops it once the next hand deals', () => {
     let game = begin(createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0, rebuys: false }, bots: 1, code: null, now: clock }), 1);
     const bot = game.players.find((p) => p.bot)!;

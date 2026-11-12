@@ -25,7 +25,6 @@ import {
   REMEMBER_TRASH,
 } from './botLines';
 import { lineBeats, sayAndReadMs } from './chat';
-import { LEGEND_VOICES, type LegendId } from './legendTalk';
 import type { Game } from './types';
 
 export type TalkEvent =
@@ -87,12 +86,6 @@ export type TalkEvent =
   | 'watched'
   /** A new heads-up game is about to start: a word to the one person across the table, by name ({you}). */
   | 'hello'
-  /** A legend meets someone who has already beaten them / only lost to them. */
-  | 'rematchWon'
-  | 'rematchLost'
-  /** The game is over: the legend won, or lost. Said on the finish screen. */
-  | 'finishWon'
-  | 'finishLost'
   /** A new game with several players is about to start: a word to the table. */
   | 'welcome'
   /** A person said something nice ("Nice hand!", 👏): a bot says thanks. */
@@ -109,8 +102,6 @@ export type TalkEvent =
   | 'commiserate'
   /** The first bot has greeted the table: another says hi. */
   | 'greetBack'
-  /** Won a pot with its signature hand (see `Craft.pets`). */
-  | 'signature'
   /** The flop, turn or river has just come down. */
   | 'flop'
   | 'turn'
@@ -195,10 +186,6 @@ const TRASH: Lines = {
     'Nice to meet you, {you}. Nice chips.',
     'Evening, {you}.',
   ],
-  rematchWon: [],
-  rematchLost: [],
-  finishWon: [],
-  finishLost: [],
   welcome: ['Welcome to the table.', 'Fresh chips. Lovely.', 'Hope you all brought chips.', 'Take a seat, fish.', 'Let’s play.'],
   thanks: [],
   ribbed: [],
@@ -207,7 +194,6 @@ const TRASH: Lines = {
   cheer: [],
   commiserate: [],
   greetBack: [],
-  signature: [],
   flop: [],
   turn: [],
   river: [],
@@ -278,10 +264,6 @@ const FRIENDLY: Lines = {
     'Good to see you, {you}!',
     'Hi {you}! Be gentle 😅',
   ],
-  rematchWon: [],
-  rematchLost: [],
-  finishWon: [],
-  finishLost: [],
   welcome: ['Welcome to the table!', 'Hi everyone!', 'Good luck, all!', 'Glad you’re here!', 'Let’s have a good one!'],
   thanks: [],
   ribbed: [],
@@ -290,7 +272,6 @@ const FRIENDLY: Lines = {
   cheer: [],
   commiserate: [],
   greetBack: [],
-  signature: [],
   flop: [],
   turn: [],
   river: [],
@@ -503,14 +484,13 @@ for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
 const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
 
 /**
- * How a bot's line should be dressed: its tone ('trash' or 'friendly'), or 'legend' for one of the named players.
+ * How a bot's line should be dressed: its tone, 'trash' or 'friendly'.
  * Read from the line id (`b:<voice>:<event>:<i>`), so the screen needs nothing else about the bot. '' for anything that isn't a bot's line.
  */
-export function voiceKind(lineId: string): 'trash' | 'friendly' | 'legend' | '' {
+export function voiceKind(lineId: string): 'trash' | 'friendly' | '' {
   const [b, voice] = lineId.split(':');
   if (b !== 'b' || !voice || voice === 'local') return '';
   if (voice === 'trash' || voice === 'friendly') return voice;
-  if (Object.hasOwn(LEGEND_VOICES, voice)) return 'legend';
   return Object.hasOwn(VOICES, voice) ? (styleOf(voice as StyleId).talk.tone === 'trash' ? 'trash' : 'friendly') : '';
 }
 
@@ -533,22 +513,10 @@ export function addedLine(style: StyleId, you: string | undefined, rng: () => nu
   return { id: lineId, text: reactionText(lineId, you) };
 }
 
-/** A line a legend says when the game is over (null for anyone else). `name` is who they played. */
-export function finishLine(legend: string, event: 'finishWon' | 'finishLost', name: string, pick: number): string | null {
-  if (!(legend in LEGEND_VOICES)) return null;
-  const lines = LEGEND_VOICES[legend as LegendId].lines[event] ?? [];
-  return lines.length ? lines[pick % lines.length].replace('{you}', name) : null;
-}
-
 /** Every line a voice can say for an event: its tone's pool, then the style's own lines. Old ids name just the tone. */
 function pool(voice: string, event: TalkEvent): string[] {
   if (voice === 'trash') return TRASH[event] ?? [];
   if (voice === 'friendly') return FRIENDLY[event] ?? [];
-  // A legend: its tone's pool, then its own lines.
-  if (Object.hasOwn(LEGEND_VOICES, voice)) {
-    const legend = LEGEND_VOICES[voice as LegendId];
-    return [...((legend.tone === 'trash' ? TRASH : FRIENDLY)[event] ?? []), ...(legend.lines[event] ?? [])];
-  }
   const style = Object.hasOwn(VOICES, voice) ? styleOf(voice as StyleId) : null;
   if (!style) return [];
   return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
@@ -558,7 +526,7 @@ function pool(voice: string, event: TalkEvent): string[] {
 export function allLines(): { voice: string; event: TalkEvent; text: string }[] {
   const out: { voice: string; event: TalkEvent; text: string }[] = [];
   const events = Object.keys(CHANCE) as TalkEvent[];
-  const voices = ['trash', 'friendly', ...(Object.keys(VOICES) as StyleId[]), ...(Object.keys(LEGEND_VOICES) as LegendId[])];
+  const voices = ['trash', 'friendly', ...(Object.keys(VOICES) as StyleId[])];
   for (const voice of voices) for (const event of events) for (const text of pool(voice, event)) out.push({ voice, event, text });
   return out;
 }
@@ -594,10 +562,6 @@ const CHANCE: Record<TalkEvent, number> = {
   gotBluffed: 0.9,
   watched: 1,
   hello: 1,
-  rematchWon: 1,
-  rematchLost: 1,
-  finishWon: 1,
-  finishLost: 1,
   welcome: 1,
   // Answering a person or another bot is what makes it a conversation: a bot nearly always does when asked to.
   thanks: 0.9,
@@ -607,7 +571,6 @@ const CHANCE: Record<TalkEvent, number> = {
   cheer: 0.8,
   commiserate: 0.8,
   greetBack: 1,
-  signature: 1,
   flop: 0.22,
   turn: 0.2,
   river: 0.25,
@@ -676,15 +639,13 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   const last = game.talkAt?.[playerId] ?? -Infinity;
   if (!owed && now - last < COOLDOWN) return 0;
   const style = playerStyle(player);
-  // A legend speaks in its own voice; everyone else in their style's.
-  const voice = player.legend ?? style.id;
+  const voice = style.id;
   if (!owed && rng() > Math.min(1, CHANCE[event] * (0.35 + style.talk.chatty) * TALKATIVE * share(game, playerId) * (everyday ? 0.8 : 1)))
     return 0;
   // A table-wide pause keeps nine seats from shouting over an ordinary decision.
   if (!owed && now - tableLast < 700) return 0;
   // A regular with a profile talks through the dialogue planner (its own phrasing, aimed at whoever bet).
-  // A legend, or an AI twin, keeps the fixed lines of its own voice.
-  const planned = !player.legend && !!player.botProfile && Object.hasOwn(DIALOGUE, event);
+  const planned = !!player.botProfile && Object.hasOwn(DIALOGUE, event);
   const target = planned ? (to ?? (game.hand?.aggressorId !== playerId ? (game.hand?.aggressorId ?? undefined) : undefined)) : to;
   let line: string;
   if (planned) {

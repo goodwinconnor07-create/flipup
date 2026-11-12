@@ -11,7 +11,6 @@ const SIMS = [
   'src/game/chat.test.ts',
   'src/game/variants.test.ts',
   'src/game/bots.test.ts',
-  'src/game/twinFit.test.ts',
   'src/game/crafts.test.ts',
   'src/game/engine.test.ts',
   'src/game/redactLeaks.test.ts',

@@ -8,7 +8,6 @@ import {
   timerLabel,
   withStack,
   withVariant,
-  LEGENDS,
   MAX_SEATS,
   STACK_CHOICES,
   TIMER_CHOICES,
@@ -161,10 +160,7 @@ export function Setup({ mode, variant }: { mode: 'online' | 'local'; variant?: V
     window.scrollTo(0, 0);
   }, [picking]);
   const choosing = mode === 'local' && how === PICK;
-  const faces = new Map<string, string>([
-    ...BOTS.map((b) => [b.name, b.emoji] as const),
-    ...LEGENDS.map((l) => [l.short, l.emoji] as const),
-  ]);
+  const faces = new Map<string, string>(BOTS.map((b) => [b.name, b.emoji] as const));
 
   if (picking) {
     return (

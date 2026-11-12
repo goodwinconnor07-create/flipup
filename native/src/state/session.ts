@@ -269,7 +269,7 @@ export function dispatch(action: Action): string | null {
   if (!session) return 'No table.';
   // Without Premium the host's bots come from the free ten, even when the button asks for a random one.
   if (action.type === 'addBot' && !hasPremium()) {
-    if (action.legend !== undefined || (action.name !== undefined && !isFreeBot(action.name))) {
+    if (action.name !== undefined && !isFreeBot(action.name)) {
       notify('That bot needs FlipUp Premium.');
       return 'premium';
     }

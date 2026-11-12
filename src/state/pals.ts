@@ -1,6 +1,5 @@
 // Friends you play parties with. Each phone claims a five letter friend code (a name and a picture on
 // the server, no account); you add a friend by typing their code, or with one tap from a party you're in.
-// The list lives on this phone. (Friends' AI twins are separate: see friends.ts.)
 
 import { campaignCard, parseCampaignCard, type CampaignCard } from '../game';
 import { fetchFriendCard, createFriendCard, updateFriendCard } from './api';

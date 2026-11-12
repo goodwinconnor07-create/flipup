@@ -4,13 +4,12 @@
 
 import { boardTexture, decide, handBucket } from './botPlay';
 import { seededRng, type Card } from './cards';
-import type { StyleId } from './botStyles';
+import type { Style, StyleId } from './botStyles';
 import { equity, strengthVsRandom } from './equity';
 import { botsOnly, potTotal } from './holdem';
 import { createTable, DEFAULT_SETTINGS, applyAction } from './reducer';
 import { options } from './selectors';
 import { handRecord } from './record';
-import type { TwinBrain } from './twinFit';
 import type { Action, Game, Hand, HandRecord, Move, Seat } from './types';
 
 /**
@@ -258,9 +257,10 @@ export function simulate(agents: Agent[], hands: number, seed = 1, stackBb = 100
   return simulateTable(agents, hands, seed, stackBb).seats;
 }
 
-/** For the AI twin lab: seats played by a twin (by index), and a look at every finished hand with all the cards. */
+/** For the labs: seats that play a given style (by index), and a look at every finished hand with all the cards. */
 export interface SimExtras {
-  twins?: Record<number, TwinBrain>;
+  /** Seats that play a given style instead of their own (the craft lab). */
+  styles?: Record<number, Style>;
   onHand?: (record: HandRecord) => void;
   /**
    * Counts a heads-up all-in run-out at its equity instead of how the cards fell, so a match's bb/100 settles on far
@@ -285,7 +285,7 @@ export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb 
     code: null,
     now: clock,
   });
-  // This laboratory explicitly benchmarks legacy styles/crafts/twins; everyday tables have their own benchmark.
+  // This laboratory explicitly benchmarks legacy styles and crafts; everyday tables have their own benchmark.
   game.legacyBotSimulation = true;
   // Every bot seat plays a style. The host stays a person (a table needs one to deal), and the sim
   // makes the host's moves with the same bot brain, or with a script.
@@ -299,7 +299,7 @@ export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb 
     if (!r.ok) throw new Error(`${action.type}: ${r.error}`);
     game = r.game;
   };
-  for (const [i, brain] of Object.entries(extras.twins ?? {})) game.players[Number(i)].twin = brain;
+  for (const [i, style] of Object.entries(extras.styles ?? {})) game.players[Number(i)].labStyle = style;
   scripts.forEach((s, i) => step(`script${i}`, { type: 'join', name: `${s}${i}`.slice(0, 16), emoji: '🤖' }));
   // Seats played by another brain still need a style for it to play.
   for (const p of game.players) if (p.deviceId?.startsWith('script')) p.style = styleOfAgent(scripts[Number(p.deviceId.slice(6))]);

@@ -1,13 +1,14 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, Text, View } from 'react-native';
-import Animated, { FadeOut, cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
+import Animated, { FadeIn, FadeOut, withTiming, type EntryExitAnimationFunction, cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 
 import { freeThisWeek, isPremiumVariant, variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
-import { popIn, rubber, SETTLE } from '@/motion/presets';
+import { EASE_OUT, rubber, SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useDrift } from '@/motion/use-drift';
 import { usePremium } from '@/state/premium';
+import { hasPlayed, usePokerRecord } from '@/state/record';
 import { brand } from '@/theme';
 
 import { GameThumb } from '../game-picture';
@@ -33,6 +34,19 @@ const FLICK = 0.3;
 const OMEGA = Math.sqrt(SETTLE.stiffness / SETTLE.mass);
 
 /**
+ * The hint pill arrives from the icon below it: it fades up out of 95% (rule 10, never from 0) and rises 6 points,
+ * scaling from its bottom edge, on 250ms ease-out. It leaves 20% shorter, as a plain fade (rule 15).
+ */
+const hintIn: EntryExitAnimationFunction = () => {
+  'worklet';
+  const timing = { duration: 250, easing: EASE_OUT };
+  return {
+    initialValues: { opacity: 0, transform: [{ translateY: 6 }, { scale: 0.95 }] },
+    animations: { opacity: withTiming(1, timing), transform: [{ translateY: withTiming(0, timing) }, { scale: withTiming(1, timing) }] },
+  } as never;
+};
+
+/**
  * The games in a line across the whole screen, locked on one at a time: the chosen game big in the middle, its
  * neighbours smaller and fainter either side, all from one shared position. The card is exactly under the finger
  * while it drags (rule 14), meets a rubber band past the first and last game (rule 19), and on release the flick's
@@ -56,7 +70,9 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
   // The hint is "shown for this game and touch count": a new game or touch makes the old answer stale at once.
   const key = `${variant}:${touched}`;
   const [shownFor, setShownFor] = useState('');
-  const hint = shownFor === key;
+  // The hint is for a game you haven't played yet; once a hand has been dealt in it, it never shows.
+  const record = usePokerRecord();
+  const hint = shownFor === key && !hasPlayed(record, variant);
   useEffect(() => {
     const t = setTimeout(() => setShownFor(key), HINT_MS);
     return () => clearTimeout(t);
@@ -149,6 +165,8 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
           left={(width - size) / 2}
           offsets={offsets}
           locked={!premium && variantNeedsPremium(v.id)}
+          // The pill sits over the crown on the chosen icon, so the crown steps aside while it shows.
+          hideBadge={hint && i === start}
           freeWeek={!premium && isPremiumVariant(v.id) && v.id === freeThisWeek()}
           onPress={() => {
             // The web build can still deliver the tap a drag began with.
@@ -163,7 +181,7 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
       {/* The hint: a small pill over the top edge of the chosen icon. A tap on it opens the game's page (how to play). */}
       {hint && (
         <View pointerEvents="box-none" style={{ position: 'absolute', top: 18 - 17, left: 0, right: 0, alignItems: 'center', zIndex: 40 }}>
-          <Animated.View entering={reduce ? undefined : popIn()} exiting={reduce ? undefined : FadeOut.duration(160)}>
+          <Animated.View style={{ transformOrigin: 'bottom' }} entering={reduce ? FadeIn.duration(200) : hintIn} exiting={FadeOut.duration(200)}>
             <PressableScale
               accessibilityRole="button"
               accessibilityLabel="Learn how to play"
@@ -185,7 +203,7 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
   );
 }
 
-function Card({ variant, index, x, step, size, left, offsets, locked, freeWeek, onPress }: { variant: Variant; index: number; x: SharedValue<number>; step: number; size: number; left: number; offsets: number[]; locked: boolean; /** This week's free Premium game, for a player without Premium. */ freeWeek: boolean; onPress: () => void }) {
+function Card({ variant, index, x, step, size, left, offsets, locked, hideBadge, freeWeek, onPress }: { variant: Variant; index: number; x: SharedValue<number>; step: number; size: number; left: number; offsets: number[]; locked: boolean; hideBadge: boolean; /** This week's free Premium game, for a player without Premium. */ freeWeek: boolean; onPress: () => void }) {
   const style = useAnimatedStyle(() => {
     const d = index - x.get() / step;
     const a = Math.abs(d);
@@ -213,10 +231,10 @@ function Card({ variant, index, x, step, size, left, offsets, locked, freeWeek, 
             </View>
           )}
         </View>
-        {locked && (
-          <View style={{ position: 'absolute', top: -8, right: -8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b1533', borderWidth: 2, borderColor: brand.gold }}>
+        {locked && !hideBadge && (
+          <Animated.View entering={FadeIn.duration(250)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', top: -8, right: -8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b1533', borderWidth: 2, borderColor: brand.gold }}>
             <Icon name="crown.fill" size={15} color={brand.gold} />
-          </View>
+          </Animated.View>
         )}
       </PressableScale>
     </Animated.View>

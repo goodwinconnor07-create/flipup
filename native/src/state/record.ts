@@ -21,6 +21,8 @@ export interface PokerRecord {
   biggestPot: number;
   best: { score: number; name: string; cards: Card[]; variant: Variant } | null;
   games: GameLine[];
+  /** Every game you've been dealt a hand of, so Home can stop explaining one you know. */
+  played: Variant[];
   /** Hands and games already counted ("game/hand" and "game"), so a redraw never counts one twice. */
   seen: string[];
 }
@@ -33,8 +35,14 @@ function clean(r: Partial<PokerRecord> | null): PokerRecord {
     biggestPot: n(r?.biggestPot),
     best: r?.best && Array.isArray(r.best.cards) && typeof r.best.name === 'string' ? r.best : null,
     games: Array.isArray(r?.games) ? r.games.filter((g) => g && typeof g.variant === 'string' && typeof g.place === 'number') : [],
+    played: Array.isArray(r?.played) ? r.played.filter((v): v is Variant => typeof v === 'string') : [],
     seen: Array.isArray(r?.seen) ? r.seen.filter((s) => typeof s === 'string') : [],
   };
+}
+
+/** Whether you've played this game before: a hand dealt in it, a finished game or your best hand. */
+export function hasPlayed(r: PokerRecord, variant: Variant): boolean {
+  return r.played.includes(variant) || r.games.some((g) => g.variant === variant) || r.best?.variant === variant;
 }
 
 export const usePokerRecord = (): PokerRecord => clean(useStored<Partial<PokerRecord> | null>(KEY, null));
@@ -64,7 +72,8 @@ export function noteHand(game: Game, myId: string): void {
         // A board this game can't score yet: leave the best hand as it was.
       }
     }
-    return { ...r, hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mine), best, seen: [...r.seen, key] };
+    const v: Variant = hand.variant ?? 'holdem';
+    return { ...r, played: r.played.includes(v) ? r.played : [...r.played, v], hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mine), best, seen: [...r.seen, key] };
   });
 }
 

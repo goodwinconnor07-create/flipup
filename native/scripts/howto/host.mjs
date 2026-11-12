@@ -6,7 +6,9 @@
 //   node scripts/howto/host.mjs <simulator udid> [game ...]
 // Needs Xcode's simctl and cwebp (brew install webp).
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { Buffer } from 'node:buffer';
+import { inflateSync } from 'node:zlib';
+import { existsSync, mkdirSync, readFileSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -44,8 +46,17 @@ const server = createServer((req, res) => {
       case '/shot': {
         const dir = join(WORK, safe(q.game), safe(q.hand));
         mkdirSync(dir, { recursive: true });
-        execFileSync('xcrun', ['simctl', 'io', udid, 'screenshot', '--type=png', join(dir, `${safe(q.name)}.png`)], { stdio: 'ignore' });
-        console.log(`[${stamp()}] ${q.game} ${q.hand} ${q.name}`);
+        const file = join(dir, `${safe(q.name)}.png`);
+        // A system notification over the top of the screen spoils the picture: try again for a few seconds.
+        let clear = false;
+        for (let i = 0; i < 6 && !clear; i++) {
+          if (i) execFileSync('sleep', ['0.7']);
+          execFileSync('xcrun', ['simctl', 'io', udid, 'screenshot', '--type=png', file], { stdio: 'ignore' });
+          clear = !hasBanner(file);
+        }
+        if (!clear) rmSync(file, { force: true });
+        console.log(`[${stamp()}] ${q.game} ${q.hand} ${q.name}${clear ? '' : ' (a system banner covered it every time: dropped)'}`);
+        answer = clear ? 'ok' : 'banner';
         break;
       }
       case '/window': {
@@ -64,8 +75,8 @@ const server = createServer((req, res) => {
           execFileSync('xcrun', ['simctl', 'io', udid, 'screenshot', '--type=png', tmp], { stdio: 'ignore' });
           const end = Date.now();
           tries.push(`${start - from}..${end - from}`);
-          got = start >= from && end <= to;
-          // Only a picture inside the window replaces the one already kept.
+          got = start >= from && end <= to && !hasBanner(tmp);
+          // Only a picture inside the window (and with no system banner over it) replaces the one already kept.
           if (got) renameSync(tmp, join(dir, `${safe(q.name)}.png`));
           else rmSync(tmp, { force: true });
         }
@@ -92,6 +103,64 @@ const server = createServer((req, res) => {
   res.end(answer);
 });
 server.listen(8123, '127.0.0.1', () => console.log('How to Play host listening on 127.0.0.1:8123'));
+
+/**
+ * Whether an iOS notification banner (a fresh simulator's "Ready for Apple Intelligence") covers the top of a
+ * screenshot: the table's screen is black across the row just under the nav bar, a banner is grey all the way.
+ * Decodes the PNG simctl writes (8-bit RGB or RGBA, not interlaced) with zlib alone.
+ */
+function hasBanner(file) {
+  const png = readFileSync(file);
+  let at = 8;
+  let width = 0;
+  let height = 0;
+  let channels = 4;
+  const idat = [];
+  while (at < png.length) {
+    const len = png.readUInt32BE(at);
+    const type = png.toString('ascii', at + 4, at + 8);
+    const data = png.subarray(at + 8, at + 8 + len);
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      channels = data[9] === 2 ? 3 : 4;
+    } else if (type === 'IDAT') idat.push(data);
+    at += 12 + len;
+  }
+  const raw = inflateSync(Buffer.concat(idat));
+  const stride = width * channels;
+  const row = Math.round(height * 0.145);
+  // Unfilter rows up to the one we need.
+  let prev = Buffer.alloc(stride);
+  let line = prev;
+  for (let y = 0; y <= row; y++) {
+    const start = y * (stride + 1);
+    const filter = raw[start];
+    line = Buffer.from(raw.subarray(start + 1, start + 1 + stride));
+    for (let x = 0; x < stride; x++) {
+      const a = x >= channels ? line[x - channels] : 0;
+      const b = prev[x];
+      const c = x >= channels ? prev[x - channels] : 0;
+      const add = filter === 1 ? a : filter === 2 ? b : filter === 3 ? (a + b) >> 1 : filter === 4 ? paeth(a, b, c) : 0;
+      line[x] = (line[x] + add) & 0xff;
+    }
+    prev = line;
+  }
+  let darkest = 255;
+  for (let i = 15; i <= 85; i += 2) {
+    const x = Math.round((width * i) / 100) * channels;
+    darkest = Math.min(darkest, Math.round(0.299 * line[x] + 0.587 * line[x + 1] + 0.114 * line[x + 2]));
+  }
+  return darkest > 20;
+}
+
+function paeth(a, b, c) {
+  const p = a + b - c;
+  const pa = Math.abs(p - a);
+  const pb = Math.abs(p - b);
+  const pc = Math.abs(p - c);
+  return pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+}
 
 /** The chosen hand's pictures become the game's set, replacing the old one. */
 function keep(game, hand, score) {

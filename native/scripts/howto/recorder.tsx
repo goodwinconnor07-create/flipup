@@ -162,7 +162,7 @@ async function shootGame(v: Variant): Promise<void> {
       const key = `${tables}-${(h?.number ?? 0) + 1}`;
       if (needed.has('peek') && peekFor !== key && t.memory.until - tableNow < 7600) {
         peekFor = key;
-        await call('/shot', { game: v, hand: key, name: 'peek' });
+        if ((await call('/shot', { game: v, hand: key, name: 'peek' })) !== 'ok') peekFor = null;
       }
     }
 
@@ -246,8 +246,7 @@ async function shootGame(v: Variant): Promise<void> {
         }
         plan = plan.filter((x) => x !== shot);
         if (shot.mine && myTurn) await sleep(500);
-        await call('/shot', { game: v, hand: p.key, name: shot.name });
-        p.shots.add(shot.name);
+        if ((await call('/shot', { game: v, hand: p.key, name: shot.name })) === 'ok') p.shots.add(shot.name);
       }
 
       // The hand is over and pictured: score it, then deal on.

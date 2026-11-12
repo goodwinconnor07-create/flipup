@@ -99,6 +99,9 @@ jobs:
           xcrun simctl ui "$udid" appearance dark
           xcrun simctl status_bar "$udid" override --time "9:41" --dataNetwork wifi --wifiMode active --wifiBars 3 --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100
           xcrun simctl install "$udid" "$APP"
+          # A fresh simulator drops in a one-off "Ready for Apple Intelligence" notification a little after it boots:
+          # let that come and go before the app opens (host.mjs also retakes any picture a banner covers).
+          sleep 90
 
       - name: Shoot
         env:

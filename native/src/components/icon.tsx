@@ -115,6 +115,7 @@ const WEB = {
   'chevron.up': 'expand_less',
   'graduationcap.fill': 'school',
   'arrow.up': 'arrow_upward',
+  'arrow.right': 'arrow_forward',
   'arrow.down': 'arrow_downward',
   'lock.open.fill': 'lock_open',
   'gauge.with.needle.fill': 'speed',

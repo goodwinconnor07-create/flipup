@@ -13,6 +13,7 @@ import { ThemedText } from '@/components/themed-text';
 import { variantInfo } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { usePokerRecord } from '@/state/record';
+import { momentOf } from '@/state/hand-moments';
 import { momentsOf, useReplays, useStars, type Moment } from '@/state/replays';
 import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
@@ -24,7 +25,7 @@ const open = (params: Record<string, string>) => {
 /**
  * Share cards: everything worth sending in one place. Your stats, the top hands from your hand bank
  * (biggest wins, best hands, bluffs that worked, coolers, starred ones), and your recent games. Each opens the
- * composer (`share-card`) with five designs to pick from. Reached from Home's passport and Settings.
+ * composer (`share-card`) with its designs to pick from. Reached from Home's passport and Settings.
  */
 export default function ShareHub() {
   return (
@@ -131,7 +132,7 @@ function MomentRow({ m }: { m: Moment }) {
           {m.title.toUpperCase()}
         </ThemedText>
         <ThemedText variant="callout" numberOfLines={1} style={{ color: '#ffffff', fontWeight: '600' }}>
-          {r.myHand ?? (r.showdown ? 'Showdown' : 'No showdown')}
+          {momentOf(r, { odds: false })?.headline ?? r.myHand ?? (r.showdown ? 'Showdown' : 'No showdown')}
         </ThemedText>
         <ThemedText variant="caption1" numberOfLines={1} style={{ color: 'rgba(255,255,255,0.55)' }}>
           {variantInfo(r.variant).name} · {r.mode === 'online' ? 'Online' : 'Bots'}

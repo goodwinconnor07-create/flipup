@@ -60,8 +60,6 @@ export const SHOTS: Partial<Record<Variant, Partial<Record<Shot, number>>>> = {
     flop: require('../../../assets/howto/redriver/flop.webp'),
     river: require('../../../assets/howto/redriver/river.webp'),
     showdown: require('../../../assets/howto/redriver/showdown.webp'),
-    turn: require('../../../assets/howto/redriver/turn.webp'),
-    yourturn: require('../../../assets/howto/redriver/yourturn.webp'),
   },
   crucifix: {
     cards: require('../../../assets/howto/crucifix/cards.webp'),

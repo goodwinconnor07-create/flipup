@@ -43,7 +43,7 @@ export const ZOOMS = {
   /** The board on the felt. */
   board: { top: 0.355, height: 0.275 },
   /** A board that runs long: Pittsburgh's rivers, Red River's extra cards. */
-  bigBoard: { top: 0.345, height: 0.295 },
+  bigBoard: { top: 0.345, height: 0.33 },
   /** The round felt: the cross, the circle, Memory's twenty cards. */
   round: { top: 0.352, height: 0.282, left: 0.17, width: 0.66 },
   /** The players, the board and who won, with your cards. */
@@ -132,7 +132,7 @@ const STEPS: Record<Variant, Step[]> = {
     step('cards', 'mine', 'Your two cards', "Dealt from what's left. None of those twenty can turn up."),
     step('flop', 'round', 'Use your memory', 'Could they have the ace? Not if you saw it leave.'),
     step('river', 'round', 'The river', 'Last card, last bet. Trust what you remember.'),
-    step('showdown', 'showdown', 'Showdown', 'Best five wins. A good memory makes for better reads.'),
+    step('showdown', 'round', 'Showdown', 'Best five wins. A good memory makes for better reads.'),
   ],
   beanstalk: [
     step('cards', 'mine', 'Two to start', "Just like Hold'em. Don't get used to it."),
@@ -150,7 +150,7 @@ const STEPS: Record<Variant, Step[]> = {
   imposter: [
     step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
     step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),
-    step('discuss', 'full', 'Point a finger', 'After the river, point at who you think it is. The bots will too.'),
+    step('discuss', 'showdown', 'Point a finger', 'After the river, point at who you think it is. The bots will too.'),
     step('vote', 'vote', 'Vote', "Everyone votes in secret. You can't vote for yourself."),
     step('reveal', 'showdown', 'The reveal', 'Catch the imposter and the rest share the pot. Miss, and they take it all.'),
   ],

@@ -48,6 +48,18 @@
 > The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
 > they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
 
+> **Power Cards table (owner, 2026-11-12, built without a mockup at the owner's ask, after playing it):** the power is
+> a card, not a strip. It sits beside your two cards (`PowerCard`: gold foil frame, deep blue face, the power's
+> picture and name; face down between hands so its place never moves), and the hole cards step down to make room.
+> It lifts 6pt and glows gold when it can be played (PLAY on a gold capsule); played, folded or over, it fades. A tap
+> opens a panel that rises from the bottom like the raise panel (`PowerPanel`): the rule, where it stands, and on
+> your turn the choice drawn as the real thing (faces for a player, the cards themselves, a row of ranks) with one
+> gold button that says what will happen ("X-ray Sam", "Reroll the 5♣"). Nothing about a power ever sits in the
+> action area, which keeps one height. A played power is a banner along the bottom of the felt for its 1.8s; what
+> it does shows where it happens: your X-ray's card face up on that seat (ringed gold, an eye), your Peek's card
+> faint in the next board slot, 🤐 and 🛡️ on seats, a live bounty or fold tax in the game pill, and after the hand
+> everyone's power on their seat.
+
 The one source of truth for how the iPhone app looks, reads and moves outside the game table. It records the
 owner's answers from the November 2026 interview (nine rounds), why each was chosen, and what was rejected.
 

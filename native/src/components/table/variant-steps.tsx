@@ -4,6 +4,7 @@
 import { Text, View } from 'react-native';
 
 import { cardName, discardWaiting, pendingVoters, tallyOrder, tallyShown, type Game, type Player, type Seat } from '@/engine';
+import { seatPowerBadge } from '@/state/power-view';
 import { dispatch } from '@/state/session';
 import { radius, spacing, useColors, usePlainColors } from '@/theme';
 
@@ -235,6 +236,13 @@ export function SeatBadge({ game, playerId }: { game: Game; playerId: string }) 
     } else {
       const n = Object.values(hand.points ?? {}).filter((at) => at === playerId).length;
       if (n) text = `👆${n}`;
+    }
+  } else if (hand.variant === 'power') {
+    // Power Cards: 🤐 while silenced, 🛡️ once a shield is up, and after the hand the power each player was dealt.
+    const badge = seatPowerBadge(hand, playerId);
+    if (badge) {
+      text = badge.text;
+      hot = badge.hot;
     }
   } else if (hand.variant === 'bjholdem') {
     if (hand.busted?.includes(playerId)) {

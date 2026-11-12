@@ -9,6 +9,8 @@ import { CrashScreen } from '@/components/crash-screen';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
+import { PowerBanner } from '@/components/table/power-banner';
+import { PowerPanel } from '@/components/table/power-panel';
 import { ChallengeEnded, ChallengeStrip, useChallengeSheets } from '@/components/table/challenge';
 import { Confetti } from '@/components/table/confetti';
 import { ConnectionLost, useOfflineFor } from '@/components/table/connection-lost';
@@ -469,6 +471,10 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   // A buzz when it's your turn; the raise panel closes when it isn't.
   const turnKey = myTurn ? `${game.id}-${hand!.number}-${hand!.seq}` : '';
   const raising = !!turnKey && raiseTurn === turnKey;
+  // Power Cards: the power panel, open for the hand it was opened in (the next deal closes it).
+  const handKey = hand ? `${game.id}-${hand.number}` : '';
+  const [powerFor, setPowerFor] = useState('');
+  const powerOpen = !!handKey && powerFor === handKey && variantOf(game) === 'power';
   useEffect(() => {
     if (turnKey) haptic.turn();
   }, [turnKey]);
@@ -572,7 +578,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
         >
           <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
         </View>
-        <FeltOval game={game} me={me} heightLimit={feltBudget} />
+        <View>
+          <FeltOval game={game} me={me} heightLimit={feltBudget} />
+          {/* A power being played: a banner over the felt, so nothing under it moves. */}
+          <PowerBanner game={game} meId={me?.id} />
+        </View>
       </View>
       <View style={{ gap: 4, paddingTop: 4 }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: narrow ? 96 : 112, justifyContent: 'flex-end' }}>
@@ -595,7 +605,10 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
               sending={sending}
               pre={pre}
               setPre={setPre}
-              onRaise={() => setRaiseTurn(turnKey)}
+              onRaise={() => {
+                setPowerFor('');
+                setRaiseTurn(turnKey);
+              }}
             />
           )}
         </View>
@@ -608,6 +621,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
           dim={dim}
           glow={glow}
           odds={me ? odds?.get(me.id) : undefined}
+          onPower={() => {
+            haptic.tap();
+            setRaiseTurn('');
+            setPowerFor(handKey);
+          }}
         />
       </View>
       <Confetti burst={winKey} origin={{ x: width / 2, y: height * 0.7 }} />
@@ -620,6 +638,16 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }}
           />
           <RaisePanel game={game} hand={hand} seat={mySeat} inset={bottomInset} onClose={() => setRaiseTurn('')} />
+        </>
+      )}
+      {powerOpen && !raising && (
+        <>
+          <Pressable
+            accessibilityLabel="Close the power panel"
+            onPress={() => setPowerFor('')}
+            style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }}
+          />
+          <PowerPanel game={game} meId={me?.id} inset={bottomInset} sending={sending} onClose={() => setPowerFor('')} />
         </>
       )}
     </View>

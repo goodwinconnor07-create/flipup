@@ -16,7 +16,6 @@ import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
 import { shoveTime, ShoveTurn } from './challenge';
 import { RaiseSlider } from './raise-slider';
-import { powerNote, PowerStrip } from './powers';
 import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -116,21 +115,15 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   if (hand && !hand.result) {
     // Short Stack, at 12 big blinds or less: Fold, Call and a big Shove in place of the raise panel.
     // A bust is on show: nobody acts until it has been seen.
-    // Power Cards: everyone sees the power being played while the table waits for it.
-    const played = hand.moment?.gate && now < hand.moment.until ? powerNote(game) : null;
-    if (played) return <Note strong>{played}</Note>;
-    if (myTurn && hand.moment?.gate && now < hand.moment.until) {
+    // Power Cards: a power on show has its own banner over the felt (power-banner.tsx). The buttons stay where they
+    // are, greyed until it's been seen, so the bottom of the table never changes height.
+    const onShow = !!hand.moment?.gate && now < hand.moment.until;
+    if (myTurn && onShow && hand.moment?.kind === 'bust') {
       const who = game.players.find((p) => p.id === hand.moment!.who)?.name ?? 'Someone';
       return <Note strong>{`💥 ${who} busts with ${hand.moment.value}`}</Note>;
     }
     if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
-    if (myTurn && seat)
-      return (
-        <View style={{ gap: spacing.sm }}>
-          <PowerStrip game={game} me={me} seat={seat} myTurn sending={sending} />
-          <MyTurn game={game} hand={hand} seat={seat} sending={sending} onRaise={onRaise} />
-        </View>
-      );
+    if (myTurn && seat) return <MyTurn game={game} hand={hand} seat={seat} sending={sending || onShow} onRaise={onRaise} />;
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <Note>Running it out…</Note>;
     const canPre = !!seat && !seat.folded && !seat.allIn && !me.sittingOut;
@@ -146,7 +139,6 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         ) : (
           <Note>{hand.bettingAt != null ? (hand.moment?.kind === 'rivers' ? 'Three rivers…' : hand.moment?.kind === 'redriver' ? 'Is the river red?' : 'Look at the board…') : hand.showdownAt != null ? (hand.moment?.kind === 'suspense' ? 'Hold your breath…' : 'Showdown…') : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
-        <PowerStrip game={game} me={me} seat={seat} myTurn={false} sending={sending} />
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
           <Row>
@@ -221,9 +213,11 @@ function waitFor(hand: number, remaining: number): number {
 function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand; seat: Seat; sending: boolean; onRaise: () => void }) {
   const o = options(game, hand, seat);
   const act = (move: 'fold' | 'check' | 'call') => dispatch({ type: 'act', hand: hand.number, seq: hand.seq, move });
+  // Power Cards: silenced players can only check, call or fold this street, so the line says why Raise is gone.
+  const silenced = hand.silenced?.[seat.playerId] === hand.street;
   return (
     <View style={{ gap: spacing.sm }}>
-      <Note strong>Your turn</Note>
+      <Note strong>{silenced ? 'Your turn · 🤐 no betting this street' : 'Your turn'}</Note>
       {o.canHit && (
         // Blackjack Hold'em: take another card before your move. Over 21 folds your hand.
         <Row>

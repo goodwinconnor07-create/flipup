@@ -1,6 +1,6 @@
 // Power Cards at the table, as on the web (src/screens/table/Powers.tsx): your power for this hand, the Play button
 // on your turn, the choice a power needs (who, which card, which rank), and the line everyone sees when one is played.
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { effectOf, options, powerInfo, powerLine, powerTargets, rankName, type Game, type Player, type PowerId, type Seat } from '@/engine';
@@ -43,9 +43,11 @@ export function PowerStrip({ game, me, seat, myTurn, sending }: { game: Game; me
   const colors = useColors();
   const c = usePlainColors();
   const hand = game.hand;
-  const [choosing, setChoosing] = useState(false);
+  // The choice stays open only for the turn it was opened on: a new move (or hand) closes it.
   const key = hand ? `${hand.number}-${hand.seq}` : '';
-  useEffect(() => setChoosing(false), [key]);
+  const [openFor, setOpenFor] = useState('');
+  const choosing = openFor === key;
+  const setChoosing = (on: boolean) => setOpenFor(on ? key : '');
   if (!hand || hand.variant !== 'power' || !me || !seat || hand.result) return null;
   const mine = hand.powers?.[me.id];
   if (!mine) return null;

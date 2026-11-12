@@ -14,6 +14,7 @@ import { haptic } from '../haptics';
 import { bubbleOut, bubblePop, MoveBubble, moveTone, pinnedTop, Thread } from './bubbles';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
+import { MissionCard } from './mission-card';
 import { PowerCard, powerCardWidth } from './power-card';
 import { QuickMessages } from './quick-messages';
 import { pct, PositionChip } from './seats';
@@ -36,7 +37,7 @@ export function MyArea({
 }: {
   game: Game;
   compact?: boolean;
-  /** Power Cards: a tap on your power card opens its panel. */
+  /** Power Cards and Secret Missions: a tap on your power or mission card opens its panel. */
   onPower?: () => void;
   me: Player | undefined;
   talk?: Talk;
@@ -53,8 +54,10 @@ export function MyArea({
   const count = seat?.cards.length || holeCount(variantOf(game));
   const { width: screen } = useWindowDimensions();
   // Power Cards: your power is a card beside your two, so the hole cards step down to leave the box room (it keeps
-  // about 130pt for the chip count). The size depends only on the screen, so it's the same every hand.
-  const powered = variantOf(game) === 'power';
+  // about 130pt for the chip count). The size depends only on the screen, so it's the same every hand. Secret
+  // Missions lays out the same way, with your mission as the third card.
+  const special = variantOf(game);
+  const powered = special === 'power' || special === 'missions';
   const powerHole = Math.max(56, Math.min(compact ? 72 : 84, Math.floor((screen - 160) / 2.8)));
   // Two cards at full size; three or more step down so they still fit beside the box.
   const w = powered ? powerHole : count > 2 || compact ? 72 : 100;
@@ -96,7 +99,11 @@ export function MyArea({
             ))}
         {powered && (
           <View style={{ marginLeft: 8, justifyContent: 'center' }}>
-            <PowerCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
+            {special === 'missions' ? (
+              <MissionCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
+            ) : (
+              <PowerCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
+            )}
           </View>
         )}
       </View>

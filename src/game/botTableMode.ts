@@ -8,10 +8,9 @@ export function usesEverydayBots(game: Game): boolean {
     !game.campaign &&
     !game.party &&
     !game.challenge &&
-    !game.legendGame &&
     !game.bankroll &&
     !game.legacyBotSimulation &&
     !game.card &&
-    !game.players.some((p) => p.twin || p.legend)
+    !game.players.some((p) => p.labStyle)
   );
 }

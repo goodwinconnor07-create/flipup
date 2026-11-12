@@ -22,10 +22,8 @@ import {
   topDraw,
   venueById,
   VENUES,
-  bossReward,
   claimMission,
   dailyFor,
-  legendById,
   missionBonus,
   missionReward,
   MISSIONS,
@@ -120,9 +118,7 @@ export function CampaignTab() {
     const f = FORMATS[v.format];
     // The table is set up now, so its bounty (if it has one) can be named before you buy in.
     const bounty = prepareCampaign('sng', v.id);
-    const boss = v.boss ? legendById(v.boss) : undefined;
     const extra = [
-      boss ? ` ${boss.emoji} ${boss.short} runs this room${c.stats.bosses.includes(boss.id) ? ' (you’ve beaten them)' : `: knock them out for ${n0(bossReward(v))} the first time`}.` : '',
       bounty ? ` 🎯 Bounty: knock out ${bounty.emoji} ${bounty.name} for +${n0(bounty.reward)}.` : '',
     ].join('');
     confirm({
@@ -240,7 +236,6 @@ export function CampaignTab() {
         <Stat label="Tournaments won" value={n0(c.stats.sngWins)} />
         <Stat label="Best cash-out" value={c.stats.bestCash > 0 ? `+${short(c.stats.bestCash)}` : '–'} />
         <Stat label="Best prize draw" value={c.stats.bestDraw ? `${c.stats.bestDraw}×` : '–'} />
-        <Stat label="Bosses beaten" value={`${c.stats.bosses.length} of ${VENUES.filter((v) => v.boss).length}`} />
         <Stat label="Longest streak" value={`${c.stats.bestStreak} ${c.stats.bestStreak === 1 ? 'day' : 'days'}`} />
       </div>
 
@@ -409,7 +404,6 @@ function TourneyCard({ v, c, seated, onPlay }: { v: Venue; c: Campaign; seated: 
       <span className="tourney-buyin">
         Buy-in <b>{short(v.buyIn)}</b>
       </span>
-      {v.boss && <BossTag id={v.boss} beaten={c.stats.bosses.includes(v.boss)} />}
       <span className="tourney-go">{open ? (c.chips >= v.buyIn ? 'Play' : `Need ${short(v.buyIn)}`) : 'Locked'}</span>
       {!open && (
         <span className="tourney-lock" aria-hidden>
@@ -607,21 +601,8 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 /** What a friend's card says they did, as a line under their name. */
 function bragText(b: Brag): string {
-  if (b.kind === 'boss') return `knocked out ${legendById(b.where)?.short ?? 'a boss'} 💥`;
   const where = venueById(b.where)?.name ?? 'a tournament';
   return b.kind === 'draw' ? `drew a ${b.value}× prize at ${where} 🎰` : `won ${short(b.value)} at ${where} 🏆`;
-}
-
-/** A venue's boss on its card: their face and name, ticked once you've knocked them out. */
-function BossTag({ id, beaten }: { id: string; beaten: boolean }) {
-  const boss = legendById(id);
-  if (!boss) return null;
-  return (
-    <span className={`tourney-boss${beaten ? ' beaten' : ''}`}>
-      {boss.emoji} {boss.short}
-      {beaten ? ' ✓' : ''}
-    </span>
-  );
 }
 
 /** Today's free spin: a small bar above the bankroll, only while it's there to take. */

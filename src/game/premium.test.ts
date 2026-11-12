@@ -7,8 +7,6 @@ import {
   CARD_PACKS,
   createTable,
   DEFAULT_SETTINGS,
-  legendById,
-  LEGENDS,
   parseAction,
   redactForDevice,
   seededRng,
@@ -16,7 +14,7 @@ import {
   type Game,
 } from './index';
 
-// What FlipUp Premium adds to a table: a bubble colour on a player, and AI Legends in the bot seats.
+// What FlipUp Premium adds to a table: a bubble colour on a player and a card back.
 
 const HOST = 'dhost';
 const NOW = 1_700_000_000_000;
@@ -92,58 +90,19 @@ describe('card packs', () => {
   });
 });
 
-describe('AI Legends at the table', () => {
-  it('sit down by name when a table is made, with their style and their face', () => {
+describe('AI Legends are gone', () => {
+  it('a legend’s name seats nobody when a table is made', () => {
     const g = table({ botNames: ['Ivey', 'Brunson'] });
-    const ivey = g.players.find((p) => p.legend === 'ivey')!;
-    expect(ivey).toBeDefined();
-    expect(ivey.bot).toBe(true);
-    expect(ivey.name).toBe('Ivey');
-    expect(ivey.emoji).toBe(legendById('ivey')!.emoji);
-    expect(ivey.twin).toBeDefined();
-    expect(g.players.some((p) => p.legend === 'brunson')).toBe(true);
+    expect(g.players.some((p) => p.name === 'Ivey' || p.name === 'Brunson')).toBe(false);
   });
 
-  it('are added one at a time by the host, once each', () => {
-    let g = run(table({ bots: 1 }), { type: 'addBot', legend: 'dwan' });
-    expect(g.players.filter((p) => p.legend === 'dwan')).toHaveLength(1);
-    const again = applyAction(g, { type: 'addBot', legend: 'dwan' }, { deviceId: HOST, now: NOW, rng: seededRng(5) });
-    expect(again.ok).toBe(false);
-    const stranger = applyAction(g, { type: 'addBot', legend: 'ivey' }, { deviceId: 'dother', now: NOW, rng: seededRng(5) });
-    expect(stranger.ok).toBe(false);
-  });
-
-  it('are checked against the list when they come over the network', () => {
+  it('are refused when they come over the network, and bots by name are still checked against the list', () => {
     expect(parseAction({ type: 'addBot' })).toEqual({ type: 'addBot' });
-    expect(parseAction({ type: 'addBot', legend: 'ivey' })).toEqual({ type: 'addBot', legend: 'ivey' });
+    expect(parseAction({ type: 'addBot', legend: 'ivey' })).toBeNull();
     expect(parseAction({ type: 'addBot', name: BOTS[0].name })).toEqual({ type: 'addBot', name: BOTS[0].name });
     expect(parseAction({ type: 'addBot', name: 'Nobody At All' })).toBeNull();
     expect(parseAction({ type: 'addBot', name: 7 })).toBeNull();
-    expect(parseAction({ type: 'addBot', legend: 'nobody' })).toBeNull();
     expect(parseAction({ type: 'addBot', legend: 7 })).toBeNull();
-  });
-
-  it('play a whole game without losing a chip', () => {
-    let g = table({ botNames: LEGENDS.slice(0, 3).map((l) => l.short) });
-    g = run(g, { type: 'start' });
-    const total = () => g.players.reduce((sum, p) => sum + p.stack, 0) + (g.hand ? g.hand.seats.reduce((sum, s) => sum + s.bet, 0) : 0);
-    const before = total();
-    for (let i = 0; i < 400 && g.wakeAt != null; i++) {
-      const r = applyAction(g, { type: 'tick' }, { deviceId: 'clock', now: g.wakeAt, rng: seededRng(i) });
-      if (!r.ok) break;
-      g = r.game;
-      const human = g.hand && g.players.find((p) => p.deviceId === HOST);
-      if (human && g.hand && !g.hand.result && g.hand.toAct === human.id) {
-        const r2 = applyAction(
-          g,
-          { type: 'act', hand: g.hand.number, seq: g.hand.seq, move: 'fold' },
-          { deviceId: HOST, now: g.wakeAt ?? NOW, rng: seededRng(i) },
-        );
-        if (r2.ok) g = r2.game;
-      }
-    }
-    expect(g.hand?.number ?? 0).toBeGreaterThan(1);
-    expect(total()).toBe(before);
   });
 });
 

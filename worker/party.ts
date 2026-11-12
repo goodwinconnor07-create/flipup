@@ -23,7 +23,6 @@ interface Member {
   name: string;
   emoji: string;
   friendCode?: string;
-  twinCode?: string;
   points: number[];
 }
 
@@ -44,7 +43,6 @@ export interface PartyPerson {
   name: string;
   emoji: string;
   friendCode?: string;
-  twinCode?: string;
 }
 
 type Result = { ok: true; view: PartyView } | { ok: false; error: string };
@@ -84,7 +82,7 @@ export class PartyRoom extends DurableObject<Env> {
     if (!data) return { ok: false, error: 'No party with that code.' };
     const have = data.members.find((m) => m.deviceId === deviceId);
     if (have) {
-      Object.assign(have, { name: this.uniqueName(data, cleanName(person.name), have.id), emoji: person.emoji, friendCode: person.friendCode, twinCode: person.twinCode });
+      Object.assign(have, { name: this.uniqueName(data, cleanName(person.name), have.id), emoji: person.emoji, friendCode: person.friendCode });
     } else {
       if (data.status !== 'lobby') return { ok: false, error: 'That party has already started.' };
       if (data.members.length >= PARTY_MAX_PLAYERS) return { ok: false, error: 'That party is full.' };
@@ -198,7 +196,7 @@ export class PartyRoom extends DurableObject<Env> {
 
   private member(deviceId: string, person: PartyPerson): Member {
     const name = cleanName(person.name);
-    return { id: newId(8), deviceId, name: isNameBlocked(name) ? 'Player' : name, emoji: person.emoji, friendCode: person.friendCode, twinCode: person.twinCode, points: [] };
+    return { id: newId(8), deviceId, name: isNameBlocked(name) ? 'Player' : name, emoji: person.emoji, friendCode: person.friendCode, points: [] };
   }
 
   private uniqueName(data: Stored, name: string, exceptId: string): string {
@@ -224,7 +222,7 @@ export class PartyRoom extends DurableObject<Env> {
   /** Opens the table for round `n`, with everyone seated. Returns an error sentence, or null when it worked. */
   private async startRound(code: string, data: Stored, n: number): Promise<string | null> {
     const host = data.members.find((m) => m.id === data.hostId) ?? data.members[0];
-    const people = [host, ...data.members.filter((m) => m !== host)].map((m) => ({ deviceId: m.deviceId, name: m.name, emoji: m.emoji, twinCode: m.twinCode }));
+    const people = [host, ...data.members.filter((m) => m !== host)].map((m) => ({ deviceId: m.deviceId, name: m.name, emoji: m.emoji }));
     for (let attempt = 0; attempt < 6; attempt++) {
       const tableCode = newCode();
       const game = buildPartyGame({ tableCode, partyCode: code, round: n, settings: data.settings, people, now: Date.now() });

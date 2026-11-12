@@ -2092,23 +2092,6 @@ html.calm .daily-wheel > g {
 
 /* ── Bosses, bounties, brags and the weekly board ─────────────────────────────────── */
 
-.tourney-boss {
-  position: relative;
-  z-index: 1;
-  margin-top: 4px;
-  padding: 4px 8px;
-  border-radius: var(--r-pill);
-  font-size: var(--fs-caption);
-  font-weight: 700;
-  color: var(--rl-black);
-  background: var(--gold-hi);
-}
-
-.tourney-boss.beaten {
-  color: var(--on-color);
-  background: rgba(0, 0, 0, 0.28);
-}
-
 .camp-brag {
   display: flex;
   align-items: center;
@@ -2135,11 +2118,6 @@ html.calm .daily-wheel > g {
   font-size: var(--fs-small);
   font-weight: 600;
   background: var(--gold-bg);
-}
-
-.camp-result-extra.boss {
-  color: var(--on-color);
-  background: linear-gradient(150deg, var(--gold), var(--gold-lo));
 }
 
 /* Today's missions sit first in the goals, in green: the day's to-do, apart from the long-term goals under it. */

@@ -37,7 +37,7 @@ function leaks(game: Game): string[] {
   for (const [card, what] of secret) if (new RegExp(`"${card}"`).test(wire)) found.push(`${what}: ${card}`);
   // Raw device ids of other people, bot internals and the host's own secret on someone else's view.
   for (const p of game.players) if (p.deviceId && p.deviceId !== HOST && wire.includes(p.deviceId)) found.push(`raw device id of ${p.id}`);
-  for (const key of ['"style"', '"botProfile"', '"botKind"', '"twin"', '"reads"', '"minds"', '"botPlan"', '"deck":["', '"dull"']) if (wire.includes(key)) found.push(`internal field ${key}`);
+  for (const key of ['"style"', '"botProfile"', '"botKind"', '"labStyle"', '"reads"', '"minds"', '"botPlan"', '"deck":["', '"dull"']) if (wire.includes(key)) found.push(`internal field ${key}`);
   if (!hand.result && hand.imposter && view.hand?.imposter && view.hand.imposter !== '?') found.push('imposter id');
   // The hand log: only its own cards and shown ones.
   for (const l of redactLogs(game, HOST)) for (const id of Object.keys(l.holes)) if (!l.shown.includes(id) && id !== host.id) found.push(`log hole cards of ${id}`);

@@ -185,7 +185,6 @@ export interface PartyPerson {
   deviceId: string;
   name: string;
   emoji: string;
-  twinCode?: string;
 }
 
 /**
@@ -221,7 +220,7 @@ export function buildPartyGame(opts: {
     if (r.ok) game = r.game;
     return r.ok;
   };
-  for (const p of rest) if (!step({ type: 'join', name: p.name, emoji: p.emoji, ...(p.twinCode ? { twinCode: p.twinCode } : {}) }, p.deviceId)) return null;
+  for (const p of rest) if (!step({ type: 'join', name: p.name, emoji: p.emoji }, p.deviceId)) return null;
   // One person alone still plays against at least one bot.
   const want = Math.max(settings.fillTo, people.length === 1 ? 2 : 0);
   while (game.players.length < Math.min(want, MAX_SEATS)) if (!step({ type: 'addBot' }, host.deviceId)) break;

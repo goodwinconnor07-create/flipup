@@ -91,7 +91,7 @@ export function noteFeel(
   const tables = store.tables.slice();
   let seen = store.seen;
   let line = tables.find((t) => t.id === game.id);
-  const bots = game.players.filter((p) => p.bot && !p.legend);
+  const bots = game.players.filter((p) => p.bot);
   const variant = game.settings.variant ?? 'holdem';
   const nextRivals: Rivals = { ...rivals };
   if (!line) {

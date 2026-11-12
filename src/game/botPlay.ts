@@ -23,7 +23,6 @@ import { betOutcome, boardCards, CHARTS, CLASS_INDEX, DIGITS, equityOf, imagine,
 import trained from './botPostflop.json';
 import { playerStyle, type Style } from './botStyles';
 import { options } from './selectors';
-import { blendKinds, postKinds, preKinds, twinLook } from './twinMix';
 import type { Game, Hand, Move, PlayerRead, Seat } from './types';
 
 export interface BotMove {
@@ -405,8 +404,6 @@ export function traceBots(fn: typeof tracer): void {
   tracer = fn;
 }
 
-type TwinLook = NonNullable<ReturnType<typeof twinLook>>;
-
 export interface BotThought {
   move: BotMove;
   /** For the bot's comments: what it held and what it did. */
@@ -459,9 +456,7 @@ export function decide(game: Game, hand: Hand, seat: Seat, rng: Rng): BotThought
   const aggressor = hand.aggressorId && hand.aggressorId !== seat.playerId ? hand.aggressorId : opps.length === 1 ? opps[0].id : null;
   const grudge = aggressor ? (mind.grudges?.[aggressor] ?? 0) : 0;
   const style = inTheMoment(playerStyle(player), mind, grudge);
-  // An AI twin also remembers what the person did in spots like this one.
-  const look = twinLook(game, hand, seat);
-  return hand.street === 'preflop' ? preflop(game, hand, seat, style, opps, rng, look) : postflop(game, hand, seat, style, opps, rng, look);
+  return hand.street === 'preflop' ? preflop(game, hand, seat, style, opps, rng) : postflop(game, hand, seat, style, opps, rng);
 }
 
 /** Helpers for turning an intention into a legal move. */
@@ -482,7 +477,7 @@ function mover(game: Game, hand: Hand, seat: Seat, rng: Rng, allInAt = 0.8) {
   return { o, check, call, raiseTo };
 }
 
-function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponent[], rng: Rng, look: TwinLook | null): BotThought {
+function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponent[], rng: Rng): BotThought {
   const bb = game.settings.bigBlind;
   const { o, check, call, raiseTo } = mover(game, hand, seat, rng, 0.75);
   const cls = handClass(seat.cards);
@@ -496,7 +491,6 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
   const pot = contestablePot(hand, seat, chipsOf(game, seat.playerId));
   const callPot = contestablePot(hand, seat, o.toCall);
   // Before the flop the three choices are fold or check, call, and raise or move in.
-  const twinned = (probs: number[]) => (look ? blendKinds(probs, probs.map((_, i) => i), preKinds(look.p), look.w) : probs);
   const think = (probs: number[], chosen: number, amount: number) =>
     thinkTime(style, rng, {
       street: 'preflop',
@@ -514,7 +508,7 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
     const shove = Math.max(0, Math.min(1, (width - TOP[ci]) / 0.04 + 0.5));
     // Limpy styles limp the near-misses instead of folding them.
     const limp = o.toCall <= bb ? (1 - shove) * style.pre.limp * (TOP[ci] < width * 2 ? 1 : 0.2) : 0;
-    const probs = twinned([Math.max(0, 1 - shove - limp), limp, shove]);
+    const probs = [Math.max(0, 1 - shove - limp), limp, shove];
     const c = pick(rng, probs);
     const move = c === 2 ? ({ move: 'allin' } as BotMove) : c === 1 ? call() : check();
     return { move, thinkMs: think(probs, c, c === 2 ? myStack : 0) };
@@ -545,7 +539,7 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
       const out = jamOutcome(im, opps, prices);
       values.push(out.fold * pot + (1 - out.fold) * ((out.eqCalled + style.pre.callShove) * finalPot - put) + style.post.raise * pot);
     }
-    const probs = twinned(softmax(values, temp));
+    const probs = softmax(values, temp);
     const c = pick(rng, probs);
     const move = c === 0 ? check() : c === 1 ? call() : ({ move: 'allin' } as BotMove);
     tracer?.({
@@ -565,7 +559,7 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
 
   const canLimp = hand.currentBet <= bb;
   const f = styledPreflop(style, cls, g, raiserRead, canLimp);
-  const probs = twinned([Math.max(0, 1 - f.call - f.raise), f.call, f.raise]);
+  const probs = [Math.max(0, 1 - f.call - f.raise), f.call, f.raise];
   const c = pick(rng, probs);
   if (c === 0) return { move: check(), thinkMs: think(probs, c, 0) };
   if (c === 1) return { move: call(), thinkMs: think(probs, c, o.toCall) };
@@ -584,7 +578,7 @@ function preflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponen
   return { move: raiseTo(target), thinkMs: think(probs, c, target) };
 }
 
-function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponent[], rng: Rng, look: TwinLook | null): BotThought {
+function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Opponent[], rng: Rng): BotThought {
   const bb = game.settings.bigBlind;
   const { o, check, call, raiseTo } = mover(game, hand, seat, rng);
   const s = style.post;
@@ -808,8 +802,6 @@ function postflop(game: Game, hand: Hand, seat: Seat, style: Style, opps: Oppone
   // Nor a hand that's far ahead of the price: when the call costs a small part of the pot and its chance of winning
   // is several times what the call needs, folding is a blunder, whatever the style (choice noise and nerves included).
   if (!o.canCheck && eqRange > 0.5 && eqRange > 3 * (o.toCall / (callPot + o.toCall))) probs[0] = 0;
-  // An AI twin does what the person tends to do, mistakes included: those guards are the bots' own.
-  if (look) probs = blendKinds(probs, opts.map((x) => x.kind), postKinds(look.p, o.canCheck), look.w);
   const c = pick(rng, probs);
   const chosen = opts[c];
   tracer?.({

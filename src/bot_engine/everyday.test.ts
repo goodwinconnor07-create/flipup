@@ -4,6 +4,7 @@ import { balancedBotPool, everydayProfile, EVERYDAY_FOCUSES, focusForName, every
 import { everydayThought, updateEverydayMemory } from './everydayLive';
 import { createTable, applyAction, DEFAULT_SETTINGS } from '../game/reducer';
 import { seededRng } from '../game/cards';
+import { STYLES } from '../game/botStyles';
 import { startHand, makeMove, dealNextStreet } from '../game/holdem';
 import { decisionFixture } from './testFixtures';
 import { informationFor } from './information';
@@ -140,7 +141,7 @@ describe('Everyday poker tables', () => {
     g.settings.variant = 'ghost';
     expect(everydayThought(g, bot.id)).toBeNull();
     g.settings.variant = 'holdem';
-    bot.legend = 'test';
+    bot.labStyle = STYLES.pro;
     expect(everydayThought(g, bot.id)).toBeNull();
   });
   it.each(['live', 'conservative', 'behavior'] as const)(

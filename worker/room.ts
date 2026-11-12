@@ -139,7 +139,7 @@ export class TableRoom extends DurableObject<Env> {
     // A host without Premium seats only the free bots.
     if (premium === false) {
       if (action.type === 'addBot') {
-        if (action.legend !== undefined || (action.name !== undefined && !isFreeBot(action.name))) {
+        if (action.name !== undefined && !isFreeBot(action.name)) {
           return this.send(ws, { t: 'reject', id, error: 'That bot needs FlipUp Premium.' });
         }
         // No name asked for: pick a free bot that isn't seated yet, never a random one from the whole roster.

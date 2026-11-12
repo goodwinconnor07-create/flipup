@@ -6,7 +6,6 @@ import { Setup } from './screens/Setup';
 import { Join, JoinTable } from './screens/Join';
 import { Table } from './screens/Table';
 import { SheetHost } from './screens/sheets/SheetHost';
-import { Legend } from './screens/Legend';
 import { PartyScreen } from './screens/Party';
 import { PartySetup } from './screens/PartySetup';
 import { CashSeat } from './screens/CashSeat';
@@ -17,7 +16,7 @@ import { Roulette } from './screens/Roulette';
 import { Blackjack } from './screens/Blackjack';
 import { BjInviteBanner } from './screens/sheets/BlackjackSheets';
 import { watchInvites } from './state/blackjack';
-import { CAMPAIGN_ON, LEGENDS_ON } from './game';
+import { CAMPAIGN_ON } from './game';
 
 export function App() {
   const route = useApp((s) => s.stack[s.stack.length - 1]);
@@ -52,9 +51,6 @@ export function App() {
       break;
     case 'party':
       screen = <PartyScreen />;
-      break;
-    case 'legend':
-      screen = LEGENDS_ON ? <Legend key={route.id} id={route.id} /> : <Home />;
       break;
     case 'roulette':
       screen = CAMPAIGN_ON ? <Roulette /> : <Home />;

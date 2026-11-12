@@ -148,8 +148,7 @@ the options it fits:
 | `pets`, `petRate` | A signature hand it plays when the chart says fold (Brunson's ten-deuce). |
 | `exploit` | How hard it acts on the reads below. |
 
-A twin has no craft (`NO_CRAFT`): it plays its person's own habits. `scripts/craftLab.ts freq` shows how often
-each style and legend uses each technique, `ab` and `big` play a style with its craft against the same without it.
+`scripts/craftLab.ts freq` shows how often each style uses each technique, `ab` and `big` play a style with its craft against the same without it.
 
 **How to test it.** A heads-up match run for thousands of hands is not a fair test of a craft: the adaptive bots work
 each other out and the result follows who did that first (the same config gave -63, -46 and +43 bb/100 on three seeds
@@ -169,10 +168,6 @@ what their bet size has meant when shown down (are their big bets real hands?). 
 `exploitRead(read, k)`, scaled by its `exploit`: street-specific folds change how often a bet works, the c-bet
 fold read changes its c-bets, the 3-bet fold read changes its 3-bets and 4-bet bluffs, and a size tell changes the
 range it imagines behind a bet. A style with `exploit` 0 sees every player as an average one in these spots.
-
-Legends also **study you across games** (`Legend.scouting`, `scoutRead()` in `legends.ts`): they start a game with
-the reads your AI twin's memory gives (scaled to at most 50 hands, by how much that legend studies people, from
-Hellmuth 0.15 to Ivey 1), so Ivey and Negreanu come in already aiming at your habits. Their profile page says so.
 
 ## Reading a player who bets or folds a lot
 

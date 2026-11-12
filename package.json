@@ -13,6 +13,7 @@
     "test:watch": "vitest",
     "e2e": "playwright test",
     "check": "npm run typecheck && npm run test && npm run build",
+    "dead": "node scripts/deadCode.mjs",
     "deploy": "npm run build && wrangler deploy",
     "cf-typegen": "wrangler types",
     "test:native": "vitest run --config native/vitest.config.mts",

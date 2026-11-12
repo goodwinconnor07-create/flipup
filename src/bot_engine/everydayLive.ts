@@ -25,7 +25,7 @@ export interface EverydayBotState {
   traces: DecisionTrace[];
   cast?: TableCast;
 }
-const eligible = (p: Player) => p.bot && !p.legend && !p.twin && p.botKind !== 'human-poker';
+const eligible = (p: Player) => p.bot && !p.labStyle && p.botKind !== 'human-poker';
 const factory = new BotFactory();
 const casual = new BotService(new EverydayProvider(96), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });
 const challenge = new BotService(new EverydayProvider(160), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });

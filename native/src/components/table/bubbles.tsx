@@ -51,16 +51,8 @@ function allinRaised(hand: Hand, playerId: string, bigBlind: number): boolean {
 }
 
 /** The capsule's paint for each tone. */
-function useTint(tone: Tone, ring?: string): { box: ViewStyle; ink: string } {
-  const c = usePlainColors();
-  const t = tint(tone, c);
-  // A thin ring marks who is talking (see `ringFor`); it sits inside the capsule so the size never changes.
-  return ring ? { ...t, box: { ...t.box, boxShadow: `${SHADOW}, inset 0 0 0 1.5px ${ring}` } } : t;
-}
-
-/** A thin gold ring marks a legend's bubble. Nothing else is outlined (the blue rings for friendly bots and for lines aimed at you are gone). */
-export function ringFor(voice?: string): string | undefined {
-  return voice === 'legend' ? 'rgba(245, 183, 0, 0.9)' : undefined;
+function useTint(tone: Tone): { box: ViewStyle; ink: string } {
+  return tint(tone, usePlainColors());
 }
 
 function tint(tone: Tone, c: ReturnType<typeof usePlainColors>): { box: ViewStyle; ink: string } {
@@ -88,8 +80,8 @@ export function MoveBubble({ text, tone, old, big }: { text: string; tone: Tone;
  * Talk said whole (a person's quick message): semibold, wrapping inside the seat's share of the row. An emoji on its
  * own isn't a message in a bubble but a sticker: big, no capsule, popping in where the bubble would.
  */
-function TalkBubble({ text, room, ring }: { text: string; room?: number; ring?: string }) {
-  const { box, ink } = useTint('grey', ring);
+function TalkBubble({ text, room }: { text: string; room?: number }) {
+  const { box, ink } = useTint('grey');
   if (emojiOnly(text)) return <Sticker text={text} />;
   return (
     <View style={[{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 999, maxWidth: room }, box]}>
@@ -150,8 +142,8 @@ export function Dot({ delay, color, size, lift }: { delay: number; color: string
  * invisible copy of its widest few words, and the real words come in at the right, each sliding 6pt as it fades in,
  * while the oldest fades and its place closes up, so the rest slide left like a conveyor.
  */
-function Ticker({ text, room, pauses, who, ring }: { text: string; room?: number; pauses?: Record<number, number>; who?: string; ring?: string }) {
-  const { box, ink } = useTint('grey', ring);
+function Ticker({ text, room, pauses, who }: { text: string; room?: number; pauses?: Record<number, number>; who?: string }) {
+  const { box, ink } = useTint('grey');
   const { words, at } = ticker(text, pauses);
   const [shown, setShown] = useState(0);
   useEffect(() => {
@@ -246,7 +238,6 @@ export const bubbleOut = FadeOut.duration(motion.exit).easing(EASE_OUT);
 export function Thread({ talk, room, place }: { talk: Talk; room?: number; place: ViewStyle }) {
   const reduce = useReduceMotion();
   const item: Message | null = talk.typing ? null : (talk.shown.at(-1) ?? null);
-  const ring = ringFor(item?.voice);
   // A line aimed at you gets a light tap as it lands.
   const key = item?.key;
   useEffect(() => {
@@ -259,9 +250,9 @@ export function Thread({ talk, room, place }: { talk: Talk; room?: number; place
       {!item ? (
         <TypingBubble />
       ) : item.rolling && !emojiOnly(item.text) ? (
-        <Ticker text={item.text} room={room} pauses={item.pauses} who={item.who} ring={ring} />
+        <Ticker text={item.text} room={room} pauses={item.pauses} who={item.who} />
       ) : (
-        <TalkBubble text={item.text} room={room} ring={ring} />
+        <TalkBubble text={item.text} room={room} />
       )}
     </Animated.View>
   );

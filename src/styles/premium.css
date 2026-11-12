@@ -264,19 +264,6 @@
   gap: 6px;
 }
 
-.picker-legends .picker-head svg {
-  color: var(--gold);
-}
-
-.picker-legend {
-  gap: 6px;
-  padding-top: 10px;
-}
-
-.picker-legend .legend-face {
-  flex: none;
-}
-
 .picker-lock {
   position: absolute;
   top: 6px;
@@ -288,37 +275,6 @@
   border-radius: 50%;
   background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
   color: var(--prem-ink);
-}
-
-.legend-note {
-  margin: 10px 0 0;
-  font-size: var(--fs-caption);
-}
-
-.legend-row .gr-text small {
-  white-space: normal;
-}
-
-.legend-row:disabled {
-  opacity: 0.5;
-}
-
-.legend-face {
-  position: relative;
-  flex: none;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  border-radius: 50%;
-  box-shadow: 0 0 0 2px var(--prem-gold-2);
-}
-
-/* The gold "Add legend" button in the lobby. */
-
-.add-legend .add-bot-circle {
-  background: linear-gradient(180deg, var(--prem-gold-1), var(--prem-gold-2));
-  color: var(--prem-ink);
-  box-shadow: 0 0 14px var(--prem-gold-glow);
 }
 
 /* ── The gold card on Profile, under Settings ────────────────────────────────────────────────── */
@@ -408,8 +364,8 @@
 }
 
 /* ── The offer ───────────────────────────────────────────────────────────────────────────────────
-   A dark purple night with a fan of every card back swaying at the bottom of it, and the prizes floating round it (legends,
-   bubble colours, emoji), which then float where they land. Under it: what you get, the price once, the button. */
+   A dark purple night with a fan of every card back swaying at the bottom of it, and the prizes floating round it (bubble
+   colours, emoji), which then float where they land. Under it: what you get, the price once, the button. */
 
 /* The glass rules in global.css give every sheet a sheen and blur; the offer is its own dark night instead. */
 html .sheet.sheet-premium,
@@ -538,8 +494,7 @@ html.no-glass .sheet.sheet-premium {
   color: rgba(255, 255, 255, 0.7);
 }
 
-.show-bubbles,
-.show-legends {
+.show-bubbles {
   height: 100px;
 }
 
@@ -548,27 +503,6 @@ html.no-glass .sheet.sheet-premium {
   flex-wrap: wrap;
   align-content: space-between;
   gap: 8px;
-}
-
-.show-legends {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  align-content: space-between;
-  justify-items: center;
-}
-
-.show-legends span {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-}
-
-.show-legends small {
-  font-size: var(--fs-micro);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
 }
 
 .prem-checks {

@@ -38,8 +38,6 @@ import {
   VENUES,
   WHEEL,
   cleanCampaign,
-  BOSS_DULL,
-  bossReward,
   campaignCard,
   claimMission,
   dailyFor,
@@ -391,19 +389,13 @@ describe('campaign extras', () => {
     expect(dailyFor(c, '2026-10-06').claimed).toEqual([]);
   });
 
-  it('pays a bounty, and a boss the first time only', () => {
+  it('pays a bounty on top of the prize', () => {
     const start = { ...fresh(), chips: 10000, peak: 10000 };
     const sat = ok(sitDown(start, { kind: 'sng', venue: riverboat, prize: 3000 }, 'g', 0));
-    const won = finishSng(sat, 'g', 3, 0, { bounty: 1000, boss: 'brunson' });
-    expect(won.chips).toBe(10000 - 1000 + 1000 + bossReward(riverboat));
-    expect(won.stats.bosses).toEqual(['brunson']);
-    expect(won.last).toMatchObject({ bounty: 1000, boss: 'brunson' });
-    expect(won.brag).toMatchObject({ kind: 'boss', where: 'brunson' });
-    const again = finishSng(ok(sitDown(won, { kind: 'sng', venue: riverboat, prize: 3000 }, 'h', 0)), 'h', 3, 0, { boss: 'brunson' });
-    expect(again.chips).toBe(won.chips - 1000);
-    // Only the venue's own boss counts.
-    const wrong = finishSng(ok(sitDown(start, { kind: 'sng', venue: riverboat, prize: 3000 }, 'i', 0)), 'i', 3, 0, { boss: 'rampage' });
-    expect(wrong.stats.bosses).toEqual([]);
+    const won = finishSng(sat, 'g', 3, 0, { bounty: 1000 });
+    expect(won.chips).toBe(10000 - 1000 + 1000);
+    expect(won.last).toMatchObject({ bounty: 1000 });
+    expect(won.stats.bounties).toBe(1);
   });
 
   it('keeps this week’s winnings, and moves them to last week when a new week starts', () => {
@@ -425,7 +417,7 @@ describe('campaign extras', () => {
     expect(rouletteLimit({ ...c, peak: 20000 })).toBe(2 * 5000);
   });
 
-  it('dulls bots in the easy rooms, and seats each venue’s boss', () => {
+  it('dulls bots in the easy rooms', () => {
     const pro = STYLES.pro;
     const dull = dulled(pro, 0.8);
     expect(dull.post.wobble).toBeGreaterThan(pro.post.wobble);
@@ -436,15 +428,9 @@ describe('campaign extras', () => {
     const table = campaignTable({ kind: 'sng', venue: riverboat, prize: 3000 }, false);
     const game = createTable({ hostDeviceId: 'd0000000000000000000a', name: 'Me', emoji: '🙂', settings: table.settings, bots: table.campaign.seats - 1, campaign: table.campaign, code: null, now: 0 });
     expect(game.players).toHaveLength(6);
-    const boss = game.players.find((p) => p.id === game.campaign?.boss?.playerId)!;
-    expect(boss.legend).toBe('brunson');
-    expect(boss.dull).toBeCloseTo(riverboat.dull * BOSS_DULL);
-    expect(game.players.filter((p) => p.bot && !p.legend).every((p) => p.dull === riverboat.dull)).toBe(true);
+    expect(game.players.filter((p) => p.bot).every((p) => p.dull === riverboat.dull)).toBe(true);
     // Phones never see how dull a bot plays.
     expect(redactForDevice(game, 'd0000000000000000000a').players.every((p) => p.dull === undefined)).toBe(true);
-    // No boss in the warm-up rooms.
-    const g2 = campaignTable({ kind: 'sng', venue: garage, prize: 300 }, false);
-    expect(createTable({ hostDeviceId: 'x', name: 'Me', emoji: '🙂', settings: g2.settings, bots: 5, campaign: g2.campaign, code: null, now: 0 }).campaign?.boss).toBeUndefined();
   });
 });
 

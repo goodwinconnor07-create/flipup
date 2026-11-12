@@ -610,11 +610,11 @@ describe('a window never runs two sentences together', () => {
 });
 
 describe('how a bot’s line is dressed', () => {
-  it('reads the tone off the line id, a legend as its own', () => {
+  it('reads the tone off the line id', () => {
     expect(voiceKind('b:trash:win:0')).toBe('trash');
     expect(voiceKind('b:friendly:win:0')).toBe('friendly');
     expect(voiceKind('nice')).toBe('');
     expect(voiceKind('b:local:x')).toBe('');
-    for (const { voice } of allLines().slice(0, 400)) expect(['trash', 'friendly', 'legend']).toContain(voiceKind(`b:${voice}:win:0`));
+    for (const { voice } of allLines().slice(0, 400)) expect(['trash', 'friendly']).toContain(voiceKind(`b:${voice}:win:0`));
   });
 });

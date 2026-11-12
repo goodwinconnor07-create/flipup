@@ -1,9 +1,9 @@
-import { FORMATS, MAX_SEATS, stakeById, variantInfo, venueById, LEGENDS_ON, timerLabel, type Game } from '../game';
+import { FORMATS, MAX_SEATS, stakeById, variantInfo, venueById, timerLabel, type Game } from '../game';
 import { joinLinkLabel } from '../state/platform';
-import { closeTable, confirm, dispatch, openSheet, useApp, withPremium } from '../state/store';
+import { closeTable, confirm, dispatch, openSheet, useApp } from '../state/store';
 import { Avatar, chips } from '../ui/components';
 import { colourWipe } from '../ui/effects';
-import { CrownIcon, PlusIcon, QrIcon, ShareIcon } from '../ui/Icons';
+import { PlusIcon, QrIcon, ShareIcon } from '../ui/Icons';
 import { CodeTiles, shareInvite } from './sheets/InviteSheet';
 
 export function Lobby({ game }: { game: Game }) {
@@ -135,16 +135,6 @@ export function Lobby({ game }: { game: Game }) {
                 </span>
               </span>
               <span className="roster-name">Add bot</span>
-            </button>
-          )}
-          {LEGENDS_ON && host && !tag && game.players.length < MAX_SEATS && (
-            <button type="button" className="roster-item add-bot add-legend" onClick={() => withPremium('legends', () => openSheet({ name: 'legends' }))}>
-              <span className="roster-pic">
-                <span className="add-bot-circle">
-                  <CrownIcon width={28} height={28} />
-                </span>
-              </span>
-              <span className="roster-name">Add legend</span>
             </button>
           )}
         </div>

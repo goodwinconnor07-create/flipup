@@ -30,6 +30,12 @@ export interface FloatSeat {
   leaving?: boolean;
   /** The Add a bot button, drawn the same size as a face and floating with them. */
   add?: boolean;
+  /** False for someone who can't be held off (a person at an online table: they have `onPress` for their menu). */
+  removable?: boolean;
+  /** A tap: a person's menu (Report, Block, Remove). */
+  onPress?: () => void;
+  /** A Premium player's gold name. */
+  gold?: boolean;
 }
 
 const FACE = 48;
@@ -99,7 +105,7 @@ export function FloatTable({
             seat={s}
             spot={spotOf.get(s.key) ?? spots[0] ?? { x: width / 2, y: PAD + FACE / 2 }}
             phase={i}
-            canRemove={canRemove && !s.you && !s.add}
+            canRemove={canRemove && !s.you && !s.add && s.removable !== false}
             onAdd={s.add ? onAdd : undefined}
             onHold={() => onHold(s.key)}
             onGone={() => onGone(s.key)}
@@ -201,8 +207,8 @@ function Floater({
           >
             <Icon name="plus" size={20} color={brand.violetDark} />
           </View>
-          <Text maxFontSizeMultiplier={1.1} style={{ marginTop: 4, width: FACE + 14, textAlign: 'center', fontSize: 11, lineHeight: LABEL - 2, fontWeight: '700', color: brand.violetDark }}>
-            Add
+          <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ marginTop: 4, width: FACE + 14, textAlign: 'center', fontSize: 11, lineHeight: LABEL - 2, fontWeight: '700', color: brand.violetDark }}>
+            Add Bot
           </Text>
         </Pressable>
       </Animated.View>
@@ -210,16 +216,24 @@ function Floater({
   return (
     <Animated.View pointerEvents={seat.leaving ? 'none' : 'auto'} style={[{ position: 'absolute', left: 0, top: 0, width: FACE, alignItems: 'center' }, style]}>
       <Pressable
-        accessibilityRole={seat.you ? undefined : 'button'}
-        accessibilityLabel={seat.you ? `${seat.name}, you` : `${seat.name}, bot`}
+        accessibilityRole={seat.you && !seat.onPress ? undefined : 'button'}
+        accessibilityLabel={seat.you ? `${seat.name}, you` : seat.removable === false ? seat.name : `${seat.name}, bot`}
         accessibilityHint={canRemove ? 'Hold to take this bot off the table' : undefined}
         accessibilityActions={canRemove ? [{ name: 'longpress', label: 'Take off the table' }] : undefined}
         onAccessibilityAction={canRemove ? onHold : undefined}
         delayLongPress={HOLD_MS}
-        onPressIn={() => !seat.you && setHeld(true)}
+        onPressIn={() => (!seat.you || seat.onPress) && setHeld(true)}
         onPressOut={() => setHeld(false)}
+        onPress={
+          seat.onPress
+            ? () => {
+                haptic.tap();
+                seat.onPress?.();
+              }
+            : undefined
+        }
         onLongPress={() => {
-          if (seat.you) return;
+          if (seat.you || seat.removable === false) return;
           if (!canRemove) {
             haptic.failure();
             return;
@@ -250,7 +264,7 @@ function Floater({
         <Text
           numberOfLines={1}
           maxFontSizeMultiplier={1.1}
-          style={{ marginTop: 4, width: FACE + 14, textAlign: 'center', fontSize: 11, lineHeight: LABEL - 2, fontWeight: '700', color: seat.you ? brand.gold : '#ffffff', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}
+          style={{ marginTop: 4, width: FACE + 14, textAlign: 'center', fontSize: 11, lineHeight: LABEL - 2, fontWeight: '700', color: seat.you || seat.gold ? brand.gold : '#ffffff', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}
         >
           {seat.name}
         </Text>

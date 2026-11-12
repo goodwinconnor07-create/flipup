@@ -54,8 +54,10 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
       line: p.bot ? 'Bot' : you ? (theHost ? 'You · Host' : 'You') : theHost ? 'Host' : p.offline ? 'Offline' : 'Ready',
       you,
       gold: p.gold,
+      // The host holds a bot to take it off; a tap on a person opens their menu.
+      onRemove: host && p.bot ? () => remove(p.id) : undefined,
       onMore:
-        you || (!host && p.bot)
+        you || p.bot
           ? undefined
           : () =>
               !p.bot && key && game.code

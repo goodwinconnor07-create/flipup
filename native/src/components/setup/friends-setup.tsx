@@ -22,7 +22,6 @@ import { ForceScheme, spacing } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
 import { LoadingCover } from '../launch-cover';
-import { haptic } from '../haptics';
 import { CodeCard } from '../lobby/code-card';
 import { GameCard } from '../lobby/game-card';
 import { HouseRules } from '../lobby/house-rules';
@@ -292,7 +291,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   };
 
   const removeBot = (b: RowBot) => {
-    haptic.tap();
     setBots((have) => have.filter((x) => x.key !== b.key));
   };
   const rows: PlayerLine[] = [
@@ -321,11 +319,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
       name: b.name,
       emoji: b.emoji,
       line: 'Bot',
-      onMore: () =>
-        Alert.alert(b.name, undefined, [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: () => removeBot(b) },
-        ]),
+      onRemove: () => removeBot(b),
     })),
   ];
 

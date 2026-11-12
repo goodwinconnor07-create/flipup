@@ -8,16 +8,16 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 
 import { shotsNeeded } from '@/components/how-to/steps';
-import { count21, DEFAULT_SETTINGS, rankOf, toTableTime, withVariant, type Hand, type Variant } from '@/engine';
+import { count21, DEFAULT_SETTINGS, options, powerInfo, powerTargets, rankOf, toTableTime, withVariant, type Game, type Hand, type Variant } from '@/engine';
 import { currentTable, dispatch, leaveTable, me, openLocalTable } from '@/state/session';
 import { save } from '@/state/storage';
 
 const HOST = 'http://127.0.0.1:8123';
-const ALL: Variant[] = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'imposter'];
+const ALL: Variant[] = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'imposter', 'power'];
 /** How long each game may play for its best hand. */
 const BUDGET_MS = 7 * 60_000;
 /** A hand scoring this much is as good as it gets: stop there. */
-const ENOUGH: Partial<Record<Variant, number>> = { deuces: 5, redriver: 9, dice: 5, imposter: 2 };
+const ENOUGH: Partial<Record<Variant, number>> = { deuces: 5, redriver: 9, dice: 5, imposter: 2, power: 6 };
 
 const sleep = (ms: number) => new Promise<void>((ok) => setTimeout(ok, ms));
 
@@ -84,6 +84,10 @@ interface Played {
   key: string;
   number: number;
   shots: Set<string>;
+  /** Power Cards: powers played so far, whether you tried yours, and whether the picture is of yours. */
+  powersSeen?: number;
+  powerTried?: boolean;
+  playedMine?: boolean;
   street: string;
   dice?: number;
   hitDone?: boolean;
@@ -201,6 +205,19 @@ async function shootGame(v: Variant): Promise<void> {
             if ((await call('/window', { game: v, hand: key, name, from: t0 + from, to: t0 + to })) === 'ok') p.shots.add(name);
           }
         }
+        // Power Cards: a power being played stops the table for 1.8s; take it inside that moment, and prefer yours.
+        const uses = h.powerUses ?? [];
+        if (uses.length > (p.powersSeen ?? 0)) {
+          p.powersSeen = uses.length;
+          const yours = uses[uses.length - 1].by === mine?.id;
+          if (needed.has('played') && h.moment && h.moment.until > tableNow && (!p.shots.has('played') || (yours && !p.playedMine))) {
+            const from = Math.max(Date.now(), h.moment.at + 250);
+            if ((await call('/window', { game: v, hand: key, name: 'played', from, to: h.moment.until - 80 })) === 'ok') {
+              p.shots.add('played');
+              if (yours) p.playedMine = true;
+            }
+          }
+        }
         if (h.discarding && !p.shots.has('discard') && !plan.some((x) => x.name === 'discard')) want('discard', 1100);
         if (h.discussing && !p.pointed) {
           p.pointed = true;
@@ -253,7 +270,7 @@ async function shootGame(v: Variant): Promise<void> {
             turnKey = k;
             turnSince = now;
           }
-          if (act(v, h, p, mine?.id ?? '', myTurn, now - turnSince) === 'hit') want('hit', 1900);
+          if (act(v, t, h, p, mine?.id ?? '', myTurn, now - turnSince) === 'hit') want('hit', 1900);
         }
       }
     }
@@ -265,7 +282,7 @@ async function shootGame(v: Variant): Promise<void> {
   await sleep(1200);
 }
 
-function act(v: Variant, h: Hand, p: Played, myId: string, myTurn: boolean, waited: number): 'hit' | void {
+function act(v: Variant, t: Game, h: Hand, p: Played, myId: string, myTurn: boolean, waited: number): 'hit' | void {
   const seat = h.seats.find((s) => s.playerId === myId);
   if (!seat) return;
   if (h.discarding && !p.discarded && seat.cards.length > 2 && !seat.folded) {
@@ -289,6 +306,19 @@ function act(v: Variant, h: Hand, p: Played, myId: string, myTurn: boolean, wait
     p.hitDone = true;
     dispatch({ type: 'hit', hand: h.number, seq: h.seq });
     return 'hit';
+  }
+  // Power Cards: play yours the first time you can (one that needs no choice, or one aimed at a player).
+  if (v === 'power' && !p.powerTried) {
+    const can = options(t, h, seat).power;
+    if (can) {
+      p.powerTried = true;
+      const needs = powerInfo(can.effect).needs;
+      const target = needs === 'player' ? powerTargets(h, seat, can.effect)[0]?.playerId : undefined;
+      if (needs === null || target) {
+        dispatch({ type: 'power', hand: h.number, seq: h.seq, ...(target ? { target } : {}) });
+        return;
+      }
+    }
   }
   const toCall = Math.max(0, h.currentBet - seat.bet);
   dispatch({ type: 'act', hand: h.number, seq: h.seq, move: toCall === 0 ? 'check' : 'call' });
@@ -330,6 +360,8 @@ function scoreOf(v: Variant, p: Played, h: Hand): number {
       return need('flop', 'hit') ? 1 + won : -1;
     case 'imposter':
       return need('discuss', 'vote') ? 2 : -1;
+    case 'power':
+      return need('yourturn', 'played') ? 1 + (p.playedMine ? 2 : 0) + won : -1;
   }
   return 0;
 }

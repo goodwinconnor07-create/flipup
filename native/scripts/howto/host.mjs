@@ -6,7 +6,7 @@
 //   node scripts/howto/host.mjs <simulator udid> [game ...]
 // Needs Xcode's simctl and cwebp (brew install webp).
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,7 +18,7 @@ if (!udid) {
   console.error('Usage: node scripts/howto/host.mjs <simulator udid> [game ...]');
   process.exit(1);
 }
-const ALL = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'imposter'];
+const ALL = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'imposter', 'power'];
 const OUT = join(root, 'assets', 'howto');
 const LIST = join(root, 'src', 'components', 'how-to', 'shots.ts');
 const WORK = process.env.SHOTS_WORK ?? join(root, '..', 'howto-work');
@@ -60,10 +60,14 @@ const server = createServer((req, res) => {
         while (Date.now() < to && !got) {
           if (Date.now() < from) execFileSync('sleep', [String((from - Date.now()) / 1000)]);
           const start = Date.now();
-          execFileSync('xcrun', ['simctl', 'io', udid, 'screenshot', '--type=png', join(dir, `${safe(q.name)}.png`)], { stdio: 'ignore' });
+          const tmp = join(dir, `${safe(q.name)}.try.png`);
+          execFileSync('xcrun', ['simctl', 'io', udid, 'screenshot', '--type=png', tmp], { stdio: 'ignore' });
           const end = Date.now();
           tries.push(`${start - from}..${end - from}`);
           got = start >= from && end <= to;
+          // Only a picture inside the window replaces the one already kept.
+          if (got) renameSync(tmp, join(dir, `${safe(q.name)}.png`));
+          else rmSync(tmp, { force: true });
         }
         console.log(`[${stamp()}] ${q.game} ${q.hand} ${q.name} ${got ? 'in its window' : 'MISSED its window'} (ms after it opened: ${tries.join(', ')})`);
         answer = got ? 'ok' : 'missed';

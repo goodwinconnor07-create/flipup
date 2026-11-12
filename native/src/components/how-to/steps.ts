@@ -20,6 +20,7 @@ export type Shot =
   | 'dice'
   | 'hit'
   | 'discuss'
+  | 'played'
   | 'vote'
   | 'showdown'
   | 'ghost'
@@ -35,6 +36,8 @@ export const ZOOMS = {
   full: { top: 0, height: 1 },
   /** Your cards and your box. */
   mine: { top: 0.792, height: 0.188 },
+  /** The bottom half: the line over the buttons (Power Cards' power), the buttons, your cards and your box. */
+  lower: { top: 0.5, height: 0.48 },
   /** The buttons, your cards and your box. */
   hand: { top: 0.625, height: 0.355 },
   /** The players along the top and what they did. */
@@ -147,10 +150,10 @@ const STEPS: Record<Variant, Step[]> = {
     step('showdown', 'showdown', 'Two winners', "Half the pot to the best hand, half to whoever's closest to 21."),
   ],
   power: [
-    { ...cards, title: 'A secret power', text: 'With your two cards you get one power at random. Only you know what it is.' },
-    { ...yourMove, title: 'Play it on your turn', text: 'Tap Play before your move. Peek at the next card, X-ray an opponent, swap a card, add a card to the board and more.' },
-    { ...flop, zoom: 'seats', title: 'Everyone sees it', text: 'When a power is played the whole table sees which one and who it hit. What a Peek or X-ray shows stays with you.' },
-    { ...showdown, text: 'Best five wins, as usual. A Shield, a Bounty or a Fold Tax can still move some chips.' },
+    step('cards', 'mine', 'A secret power', 'Every hand, you get two cards and one power. Only you know which.'),
+    step('yourturn', 'lower', 'Use it or lose it', 'On your turn, tap Play before you move. Peek at the next card, X-ray a player, and more.'),
+    step('played', 'showdown', 'Everyone sees it', 'The table stops while a power is played, so everyone knows who used what.'),
+    step('showdown', 'showdown', 'Showdown', 'Best five still wins. A Shield or a Bounty can still move some chips.'),
   ],
   imposter: [
     step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),

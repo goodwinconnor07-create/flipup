@@ -9,7 +9,7 @@ a moment of that hand, zoomed in on what it's about, with a short title and one 
 - **Short.** A title is one to four words. A line is one or two short sentences, under about 16 words.
 - **True.** Every line matches `docs/RULES.md` and what's in the picture.
 
-Zooms: **mine** (your cards and box), **hand** (your cards, box and buttons), **seats** (the players along the top), **board** (the felt),
+Zooms: **mine** (your cards and box), **lower** (the bottom half), **hand** (your cards, box and buttons), **seats** (the players along the top), **board** (the felt),
 **big board** (Pittsburgh's rivers, Red River's long board), **round** (the cross, the circle and Memory's twenty, cropped sideways too), **full** (the whole screen), **showdown** (the seats, the board and who won).
 
 ## Texas Hold'em
@@ -138,3 +138,12 @@ Zooms: **mine** (your cards and box), **hand** (your cards, box and buttons), **
 | 3 | Talk it over | showdown | Point a finger | After the river, point at who you think it is. The bots will too. |
 | 4 | Vote | vote | Vote | Everyone votes in secret. You can't vote for yourself. |
 | 5 | Reveal | showdown | The reveal | Catch the imposter and the rest share the pot. Miss, and they take it all. |
+
+## Power Cards
+
+| # | Moment | Zoom | Title | Line |
+|---|---|---|---|---|
+| 1 | Deal | mine | A secret power | Every hand, you get two cards and one power. Only you know which. |
+| 2 | Your turn | lower | Use it or lose it | On your turn, tap Play before you move. Peek at the next card, X-ray a player, and more. |
+| 3 | A power played | showdown | Everyone sees it | The table stops while a power is played, so everyone knows who used what. |
+| 4 | Showdown | showdown | Showdown | Best five still wins. A Shield or a Bounty can still move some chips. |

@@ -152,6 +152,9 @@ describe('twin memory', () => {
     const rng = seededRng(7);
     let clock = 1_000_000;
     let game: Game = createTable({ hostDeviceId: 'me', name: 'Me', emoji: '🙂', settings: { ...DEFAULT_SETTINGS, turnSeconds: 0, rebuys: true }, bots: 2, code: null, now: clock });
+    // The style bots, as the bot lab plays them (botSim.ts): real hands for the memory to learn from, at a few ms a
+    // decision. The everyday Hold'em bots think for ~200ms a hand, which put this test near its limit on CI.
+    game.legacyBotSimulation = true;
     const step = (deviceId: string, action: Action) => {
       const r = applyAction(game, action, { deviceId, now: clock, rng });
       if (r.ok) game = r.game;

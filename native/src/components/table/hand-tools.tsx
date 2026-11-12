@@ -8,28 +8,19 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '@/components/haptics';
 import { SwapIcon } from '@/components/swap';
 import { Icon, type IconName } from '@/components/icon';
-import { usePremium } from '@/state/premium';
 import { read, save as store } from '@/state/storage';
 import { lastHand, saveLastHand, useLastHand, useLastSaved } from '@/state/replays';
 import { brand, radius, spacing, useColors } from '@/theme';
 
-const openPremium = () => router.push({ pathname: '/premium', params: { reason: 'replay' } });
-
-/** Puts the last finished hand in your hand bank (Premium). Returns what to tell the player. */
+/** Puts the last finished hand in Saved hands (free). */
 export function useSaveHand(): { can: boolean; saved: boolean; save: () => void } {
   const hand = useLastHand();
   const saved = useLastSaved();
-  const premium = usePremium();
   return {
     can: !!hand,
     saved,
     save: () => {
       if (!hand) return;
-      if (!premium) {
-        haptic.tap();
-        openPremium();
-        return;
-      }
       if (saveLastHand()) haptic.success();
     },
   };

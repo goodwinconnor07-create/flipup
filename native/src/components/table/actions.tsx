@@ -16,7 +16,7 @@ import { ThemedText } from '../themed-text';
 import { Dot } from './bubbles';
 import { shoveTime, ShoveTurn } from './challenge';
 import { RaiseSlider } from './raise-slider';
-import { missionNote, MissionStrip } from './missions';
+import { missionNote } from './missions';
 import { useTableNow } from './use-now';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
@@ -126,10 +126,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
     if (myTurn && seat && shoveTime(game, seat)) return <ShoveTurn game={game} hand={hand} seat={seat} sending={sending} />;
     if (myTurn && seat)
       return (
-        <View style={{ gap: spacing.sm }}>
-          <MissionStrip game={game} me={me} />
-          <MyTurn game={game} hand={hand} seat={seat} sending={sending || onShow} onRaise={onRaise} />
-        </View>
+        <MyTurn game={game} hand={hand} seat={seat} sending={sending || onShow} onRaise={onRaise} />
       );
     const who = game.players.find((p) => p.id === hand.toAct);
     if (hand.runout) return <Note>Running it out…</Note>;
@@ -146,7 +143,6 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
         ) : (
           <Note>{hand.bettingAt != null ? (hand.moment?.kind === 'rivers' ? 'Three rivers…' : hand.moment?.kind === 'redriver' ? 'Is the river red?' : 'Look at the board…') : hand.showdownAt != null ? (hand.moment?.kind === 'suspense' ? 'Hold your breath…' : 'Showdown…') : hand.nextStreetAt != null ? `Dealing the ${hand.street === 'preflop' ? 'flop' : hand.street === 'flop' ? 'turn' : 'river'}…` : '…'}</Note>
         )}
-        <MissionStrip game={game} me={me} />
         {me.sittingOut && <TableButton label="I'm back" tone="pre" onPress={() => dispatch({ type: 'sitOut', out: false })} />}
         {o && (
           <Row>

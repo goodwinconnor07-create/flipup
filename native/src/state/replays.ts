@@ -1,8 +1,10 @@
 // Replay (FlipUp Premium): your hand bank. Nothing is recorded on its own: the table keeps only the last finished
 // hand you were dealt into (in memory, `useLastHand()`), and the Save hand button at the table puts it in the bank
 // (`saveLastHand()`, `flipup.replays`), at a bots table or online. From the bank a hand can be watched back move by
-// move and turned into a share card. Built from the table view this phone already sees (`redactForDevice()`), so a
-// saved hand never holds a card you couldn't see: your own and any that were shown.
+// move and turned into a share card. Online it's built from the table view this phone already sees
+// (`redactForDevice()`): your own cards and any that were shown. At a bots-only table (not a challenge) the phone
+// holds the whole hand, so once it's over every bot's cards go in too, folded ones included (the owner's call:
+// a replay always shows what the bots had). Saved hands are free (12 Nov 2026).
 import { useSyncExternalStore } from 'react';
 
 import { bestHand, streetCards, type Card, type Game, type HandAction, type Variant } from '@/engine';
@@ -44,10 +46,18 @@ export interface Replay {
   board: Card[];
   /** Board cards out after each street. */
   streets: { flop: number; turn: number; river: number };
-  /** Hole cards you could see: yours and any shown. */
+  /** Hole cards: yours and any shown; at a bots-only table, everyone's. */
   holes: Record<string, Card[]>;
+  /** True when `holes` has every player's cards (a bots-only table). */
+  allCards?: boolean;
+  /** Ghost Hold'em: the ghost's two cards (bots-only tables, or a showdown online). */
+  ghost?: Card[];
+  /** Each pot and who took it, main pot first. */
+  pots?: { amount: number; winners: string[] }[];
   /** Chips each player took back at the end. */
   won: Record<string, number>;
+  /** Each player's chips once the hand was paid (missing on older hands). */
+  after?: Record<string, number>;
   /** Hand names for everyone who showed. */
   names: Record<string, string>;
   showdown: boolean;
@@ -66,6 +76,31 @@ const clean = (v: unknown): Replay[] => (Array.isArray(v) ? v.filter((r): r is R
 export const useReplays = (): Replay[] => clean(useStored<Replay[] | null>(KEY, null));
 export const allReplays = (): Replay[] => clean(read<Replay[] | null>(KEY, null));
 export const replayById = (id: string | undefined): Replay | undefined => (id ? allReplays().find((r) => r.id === id) : undefined);
+
+/** Who took chips home: every pot's winners, in pot order, without repeats (falls back to `won` on older hands). */
+export function winnersOf(r: Pick<Replay, 'pots' | 'won' | 'actions' | 'sbId' | 'bbId' | 'smallBlind' | 'bigBlind'>): string[] {
+  if (r.pots?.length) return [...new Set(r.pots.flatMap((p) => p.winners))];
+  // Older hands: anyone who got back more than they put in.
+  const put = putIn(r);
+  return Object.entries(r.won)
+    .filter(([id, v]) => v > (put[id] ?? 0))
+    .map(([id]) => id);
+}
+
+/**
+ * What a player won or lost in the hand: their chips after it less their chips before. Older hands without `after`
+ * fall back to what they got back less what they put in, which misses an uncalled bet that came back.
+ */
+export function netOf(r: Pick<Replay, 'after' | 'players' | 'won' | 'actions' | 'sbId' | 'bbId' | 'smallBlind' | 'bigBlind'>, id: string): number {
+  const start = r.players.find((p) => p.id === id)?.stack;
+  if (r.after && r.after[id] !== undefined && start !== undefined) return r.after[id] - start;
+  return (r.won[id] ?? 0) - (putIn(r)[id] ?? 0);
+}
+
+/** True if you were still in the hand when the flop came (or it never needed one: everyone else folded to you). */
+export function playedPastPreflop(r: Pick<Replay, 'actions' | 'me'>): boolean {
+  return !r.actions.some((a) => a.playerId === r.me && a.move === 'fold' && a.street === 'preflop');
+}
 
 export const useStars = (): string[] => {
   const v = useStored<string[] | null>(STARS, null);
@@ -141,7 +176,7 @@ let lastKey = '';
  * again while the result is on the table, because a player can tap Show cards after the hand ends: their cards
  * join the last hand, and the saved copy too if you've already saved it.
  */
-export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' | 'online'): void {
+export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' | 'online', full?: Game | null): void {
   const hand = game?.hand;
   const result = hand?.result;
   if (!game || !hand || !result || !hand.actions) return;
@@ -159,6 +194,10 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
   const again = last?.id === id;
   lastKey = key;
   const variant: Variant = hand.variant ?? game.settings.variant ?? 'holdem';
+  // A bots-only table hands over the whole game: every seat's cards and the ghost's, now the hand is over.
+  const whole = full?.id === game.id && full.hand?.number === hand.number && full.hand.result ? full.hand : null;
+  const holeSeats = (whole ?? hand).seats.filter((s) => s.cards.length > 0);
+  const ghost = whole?.ghost ?? hand.ghost ?? result.ghost?.cards;
   const flop = streetCards(variant, 'flop');
   const turn = flop + streetCards(variant, 'turn');
   const players: ReplayPlayer[] = hand.seats
@@ -199,11 +238,16 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
     players,
     board: [...hand.board],
     streets: { flop, turn, river: hand.board.length },
-    holes: Object.fromEntries(hand.seats.filter((s) => s.cards.length > 0).map((s) => [s.playerId, [...s.cards]])),
+    holes: Object.fromEntries(holeSeats.map((s) => [s.playerId, [...s.cards]])),
+    ...(whole ? { allCards: true } : {}),
+    ...(ghost?.length ? { ghost: [...ghost] } : {}),
+    pots: result.pots.map((p) => ({ amount: p.amount, winners: [...p.winners] })),
     won: { ...result.won },
-    names: shownNames(variant, hand.seats, hand.board, result.names ?? {}),
+    after: Object.fromEntries(players.map((p) => [p.id, game.players.find((q) => q.id === p.id)?.stack ?? p.stack])),
+    names: shownNames(variant, holeSeats, hand.board, result.names ?? {}),
     showdown: result.showdown,
-    net: (result.won[mine.id] ?? 0) - (put[mine.id] ?? 0),
+    // Chips after less chips before: counts an uncalled bet that came back (a walk in the big blind is +SB, not 0).
+    net: hand.startStacks?.[mine.id] !== undefined ? mine.stack - hand.startStacks[mine.id] : (result.won[mine.id] ?? 0) - (put[mine.id] ?? 0),
     pot,
     ...(myHand ? { myHand, myScore } : {}),
   };

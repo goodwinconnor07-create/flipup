@@ -157,6 +157,17 @@ export function SettingsFields({
       icon={{ symbol: 'arrow.clockwise', color: color(party.green) }}
       accessory={<Switch label="Rebuys" value={settings.rebuys} onValueChange={(rebuys) => set({ rebuys })} />}
     />,
+    !online && (
+      <Row
+        key="replay"
+        title="Replay after every hand"
+        subtitle="See what you won or lost and who took the pot, then watch it back"
+        icon={{ symbol: 'film.stack.fill', color: color(party.blue) }}
+        accessory={
+          <Switch label="Replay after every hand" value={!!settings.replayEachHand} onValueChange={(replayEachHand) => set({ replayEachHand })} />
+        }
+      />
+    ),
     online && (
       <Row
         key="peek"

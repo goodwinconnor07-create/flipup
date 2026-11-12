@@ -63,6 +63,8 @@ const WEB = {
   'film.stack.fill': 'movie',
   'camera.viewfinder': 'screenshot',
   'backward.fill': 'fast_rewind',
+  'backward.end.fill': 'skip_previous',
+  'forward.end.fill': 'skip_next',
   'photo.fill': 'image',
   qrcode: 'qr_code_2',
   link: 'link',

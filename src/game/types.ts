@@ -34,6 +34,9 @@ export interface Settings {
   blindCap?: number;
   /** Online tables: a busted player (no chips) sees every hole card. */
   showToBusted?: boolean;
+  /** Bots-only tables: after each hand you played past preflop, a small recap (what you won or lost, who won) waits
+   * for Next hand or Replay. The phone holds the deal; the engine and server ignore it. */
+  replayEachHand?: boolean;
   /** Seconds a person gets to act before they're checked or folded. 0 = no limit. */
   turnSeconds: number;
   /** Which game the table plays (see variants.ts). Missing = Texas Hold'em. */

@@ -48,7 +48,7 @@ import { useTableNow } from './use-now';
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
 /** Mixes a #rrggbb colour toward white (amount > 0) or black (amount < 0). */
-function shade(hex: string, amount: number): string {
+export function shade(hex: string, amount: number): string {
   const n = parseInt(hex.slice(1), 16);
   const to = amount > 0 ? 255 : 0;
   const a = Math.abs(amount);

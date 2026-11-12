@@ -31,7 +31,6 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
   const pack = CARD_PACKS.find((p) => p.id === worn.cardPack)?.name ?? 'Classic';
   const gold = useGoldName();
   const bank = useReplays().length;
-  const locked = (go: () => void, reason: string) => () => (premium ? go() : router.push({ pathname: '/premium', params: { reason } }));
   return (
     <>
       <Section header={header}>
@@ -83,7 +82,8 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
         </ThemedText>
       )}
       <Section>
- <Row title="Card packs" detail={pack} icon={{ symbol: 'suit.spade.fill', color: colors.indigo as string }} onPress={() => router.push('/card-packs')} />
+        <Row title="Saved hands" detail={bank ? String(bank) : undefined} icon={{ symbol: 'film.stack.fill', color: colors.violet as string }} onPress={() => router.push('/replays')} />
+        <Row title="Card packs" detail={pack} icon={{ symbol: 'suit.spade.fill', color: colors.indigo as string }} onPress={() => router.push('/card-packs')} />
         <Row title="Table theme" icon={{ symbol: 'paintpalette.fill', color: colors.pink as string }} onPress={() => router.push('/table-theme')} />
         <Row title="Hand rankings" icon={{ symbol: 'questionmark.circle.fill', color: colors.slate as string }} onPress={() => router.push('/hand-rankings')} />
       </Section>
@@ -96,7 +96,6 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
           onPress={premium ? undefined : () => router.push({ pathname: '/premium', params: { reason: 'gold' } })}
         />
         {!online && <Row title="Share cards" icon={{ symbol: 'square.and.arrow.up', color: colors.violet as string }} onPress={() => router.push('/share')} />}
-        <Row title="Saved hands" detail={bank ? String(bank) : undefined} trailing={premium ? undefined : <Crown />} icon={{ symbol: 'film.stack.fill', color: colors.violet as string }} onPress={locked(() => router.push('/replays'), 'replay')} />
       </Section>
     </>
   );

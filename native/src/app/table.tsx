@@ -10,12 +10,14 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
 import { PowerBanner } from '@/components/table/power-banner';
+import { MissionPanel } from '@/components/table/mission-card';
 import { PowerPanel } from '@/components/table/power-panel';
 import { ChallengeEnded, ChallengeStrip, useChallengeSheets } from '@/components/table/challenge';
 import { Confetti } from '@/components/table/confetti';
 import { ConnectionLost, useOfflineFor } from '@/components/table/connection-lost';
 import { PartyPanel } from '@/components/party/panel';
 import { Ended } from '@/components/table/ended';
+import { HandRecap } from '@/components/table/hand-recap';
 import { HandToolsTip, SaveHandButton, ScreenshotPrompt, ShareButton } from '@/components/table/hand-tools';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
@@ -99,6 +101,7 @@ export default function TableScreen() {
       {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
+      <HandRecap />
       <DealWipe />
       {!game && lost ? (
         <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />
@@ -474,7 +477,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   // Power Cards: the power panel, open for the hand it was opened in (the next deal closes it).
   const handKey = hand ? `${game.id}-${hand.number}` : '';
   const [powerFor, setPowerFor] = useState('');
-  const powerOpen = !!handKey && powerFor === handKey && variantOf(game) === 'power';
+  // Secret Missions uses the same slot for the mission panel.
+  const powerOpen = !!handKey && powerFor === handKey && (variantOf(game) === 'power' || variantOf(game) === 'missions');
   useEffect(() => {
     if (turnKey) haptic.turn();
   }, [turnKey]);
@@ -647,7 +651,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             onPress={() => setPowerFor('')}
             style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }}
           />
-          <PowerPanel game={game} meId={me?.id} inset={bottomInset} sending={sending} onClose={() => setPowerFor('')} />
+          {variantOf(game) === 'missions' ? (
+            <MissionPanel game={game} meId={me?.id} inset={bottomInset} onClose={() => setPowerFor('')} />
+          ) : (
+            <PowerPanel game={game} meId={me?.id} inset={bottomInset} sending={sending} onClose={() => setPowerFor('')} />
+          )}
         </>
       )}
     </View>

@@ -62,7 +62,6 @@ import { noteGame, noteHand } from './record';
 import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
 import { forgetLastHand, noteReplay } from './replays';
-import { saveUltraMemory, ultraMemory } from './ultra';
 import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
@@ -147,7 +146,6 @@ function set(next: Session | null): void {
   schedule();
   noteDay(state.game);
   if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online');
-  if (next?.mode === 'local' && next.game.ultra) saveUltraMemory(next.game, me);
   syncLook();
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
@@ -404,12 +402,9 @@ export function requestLogs(): void {
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */
-export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[], opts: { ultra?: boolean } = {}): void {
+export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): void {
   closeConnection();
   const fast = isFast();
-  // ULTRA bots (Premium) remember you from your last ULTRA tables.
-  const ultra = !!opts.ultra && hasPremium();
-  const memory = ultra ? ultraMemory() : undefined;
   const game = createTable({
     hostDeviceId: me,
     name: cleanName(name) || 'You',
@@ -417,7 +412,6 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     settings,
     bots,
     ...(botNames?.length ? { botNames } : {}),
-    ...(ultra ? { ultra: true, ...(memory ? { memory } : {}) } : {}),
     code: null,
     now: toTableTime(Date.now(), fast),
   });

@@ -186,10 +186,6 @@ export function createTable(opts: {
   rivals?: Game['rivals'];
   /** Picks the random bots. Tests pass a seeded one so every run seats the same bots. */
   rng?: () => number;
-  /** Every bot is an ULTRA bot (Premium, bots-only tables). */
-  ultra?: boolean;
-  /** What ULTRA bots remember of the host from earlier games, seeded into `game.reads` under the host's new id. */
-  memory?: PlayerRead;
   /** The host shows their name in gold (Premium). */
   gold?: boolean;
 }): Game {
@@ -210,7 +206,6 @@ export function createTable(opts: {
     logs: [],
     reactions: {},
     ...(opts.campaign ? { campaign: structuredClone(opts.campaign) } : {}),
-    ...(opts.ultra && !opts.campaign && !opts.code ? { ultra: true } : {}),
     ...(opts.rivals && !opts.code ? { rivals: structuredClone(opts.rivals) } : {}),
   };
   game.players.push({
@@ -232,7 +227,6 @@ export function createTable(opts: {
   while (game.players.length - 1 < opts.bots && game.players.length < botSeatLimit) addBot(game, opts.botStyles, opts.rng);
   if (game.campaign) seatBoss(game);
   syncHumanPokerSeat(game);
-  if (game.ultra && opts.memory) game.reads = { [game.players[0].id]: structuredClone(opts.memory) };
   return game;
 }
 
@@ -276,7 +270,6 @@ function seatBotNamed(game: Game, name: string): boolean {
     ...newPlayer(game, { name: pick.name, emoji: pick.emoji, deviceId: null, bot: true }),
     style: pick.style,
     botProfile: pick.profile?.id,
-    ...(game.ultra ? { ultra: true } : {}),
   });
   return true;
 }
@@ -306,7 +299,6 @@ function addBot(game: Game, styles?: string[], rng: () => number = cryptoRng): v
     botProfile: pick.profile?.id,
     // A campaign room's bots play below their full strength.
     ...(game.campaign && campaignDull(game.campaign) > 0 ? { dull: campaignDull(game.campaign) } : {}),
-    ...(game.ultra ? { ultra: true } : {}),
   });
 }
 

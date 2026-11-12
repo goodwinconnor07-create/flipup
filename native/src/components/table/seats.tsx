@@ -418,8 +418,7 @@ function SeatPod({
                     {/* A bot's cards say so on the back: a small robot, in place of a BOT pill on the face. The card with the position chip keeps the chip alone. */}
                     {player.bot && !(i === cards.length - 1 && mark) && (
                       <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
-                        {/* An ULTRA bot's robot is gold. */}
-                        <Icon name="cpu.fill" size={13} color={player.ultra ? brand.gold : 'rgba(255, 255, 255, 0.7)'} />
+                        <Icon name="cpu.fill" size={13} color="rgba(255, 255, 255, 0.7)" />
                       </View>
                     )}
                   </View>

@@ -70,8 +70,6 @@ export interface Player {
   cardPack?: string;
   /** A FlipUp Premium player who shows their name in gold (Settings > Gold name). Public: everyone at the table sees it. */
   gold?: boolean;
-  /** An ULTRA bot (Premium, bots-only tables): plays without leaks and learns your habits fast. Public: the table shows it. */
-  ultra?: boolean;
   /** An AI twin: a bot that plays like a real person, from what their memory holds. Stripped before the table is sent to any phone. */
   twin?: TwinBrain;
   /** Stable bot identity, private on online tables. */
@@ -388,8 +386,6 @@ export interface Game {
   blindsRaiseAt?: number | null;
   /** What the bots have seen each player do. Never sent to phones. */
   reads?: Record<string, PlayerRead>;
-  /** An ULTRA table (Premium, bots-only): every bot that sits down here is an ULTRA bot. */
-  ultra?: boolean;
   /** When each bot last spoke (table clock), so nobody chatters non-stop. Never sent to phones. */
   talkAt?: Record<string, number>;
   /** When each bot's last line is done being said and read: it doesn't move before then. */

@@ -12,8 +12,6 @@ export function usesEverydayBots(game: Game): boolean {
     !game.bankroll &&
     !game.legacyBotSimulation &&
     !game.card &&
-    // An ULTRA table (Premium) plays its own sharpened brain (`ultraStyle()` through botPlay.ts).
-    !game.ultra &&
     !game.players.some((p) => p.twin || p.legend)
   );
 }

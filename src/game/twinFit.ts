@@ -1,23 +1,18 @@
-// Turns what a twin has learned about a person into something that plays: a bot style fitted to
-// their numbers (how many hands they play, how often they raise, fold to bets, bluff, how big they
-// bet), plus the memory of what they did in each spot (see twinMix.ts, which copies it).
+// Turns a set of poker numbers (a legend's targets, or what a style measured) into something that plays: a bot style
+// fitted to them (how many hands they play, how often they raise, fold to bets, bluff, how big they bet).
 //
 // The fit starts from the ten bot styles. Each is weighted by how close its numbers are to the
 // person's (twinRef.json holds how each one really plays, measured by scripts/twinLab.ts), the
 // weighted styles are blended, and what's left of the gap is closed by nudging the knobs that move
 // each number.
 
-import { POST_BUCKETS, twinNumbers, type SpotCounts, type TwinNumbers, type TwinProfile } from './twin';
+import { POST_BUCKETS, twinNumbers, type TwinNumbers, type TwinProfile } from './twin';
 import { NO_CRAFT, STYLES, type Style, type StyleId } from './botStyles';
 import ref from './twinRef.json';
 
-/** What a bot needs to play like a person: the fitted style and the memory of their spots. Lives on the player at the table; never sent to a phone. */
+/** What a bot needs to play as a fitted style (a legend): the style. Lives on the player at the table; never sent to a phone. */
 export interface TwinBrain {
   style: Style;
-  /** The memory: counts per spot, in `TWIN_MOVES` order. */
-  spots: Record<string, SpotCounts>;
-  /** Hands it learned from. */
-  hands: number;
 }
 
 const REF = ref as unknown as Record<StyleId, TwinNumbers>;
@@ -124,11 +119,4 @@ export function fitStyle(twin: TwinProfile): Style {
   const weak = meanSize(twin, ['air', 'weak', 'draw', 'mid']);
   if (strong !== null && weak !== null) post.tell = clamp((strong - weak) * 1.2, 0, 0.8);
   return style;
-}
-
-/** Everything a bot needs to play as this person. */
-export function buildBrain(twin: TwinProfile): TwinBrain {
-  const spots: Record<string, SpotCounts> = {};
-  for (const [key, counts] of Object.entries(twin.spots)) if (counts.some((c) => c > 0)) spots[key] = [...counts];
-  return { style: fitStyle(twin), spots, hands: twin.hands };
 }

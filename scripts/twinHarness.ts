@@ -1,9 +1,10 @@
-// Plays bot tables for the AI twin lab: the first seat is the player being learned (or its twin).
+// Plays bot tables for the twin lab: the first seat is the player being measured (or a fitted style).
 
 import { simulateTable, type Agent } from '../src/game/botSim';
 import type { StyleId } from '../src/game/botStyles';
-import { addHandToTwin, emptyTwin, type TwinProfile } from '../src/game/twin';
+import type { TwinProfile } from '../src/game/twin';
 import type { TwinBrain } from '../src/game/twinFit';
+import { addHandToTwin, emptyCounted } from './twinCount';
 
 /** Tables the tracked seat (always first) plays at: mixes of the other styles. */
 const FIELDS: StyleId[][] = [
@@ -14,7 +15,7 @@ const FIELDS: StyleId[][] = [
 
 /** Plays `hands` hands per table with the first seat as `agent` (or `twin`) and returns what it did. */
 export function heroProfile(agent: Agent, hands: number, seed: number, twin?: TwinBrain, fields = FIELDS): TwinProfile {
-  const profile = emptyTwin();
+  const profile = emptyCounted();
   fields.forEach((field, i) => {
     let heroId = '';
     simulateTable([agent, ...field], hands, seed + i * 101, 100, {}, {

@@ -169,10 +169,6 @@ what their bet size has meant when shown down (are their big bets real hands?). 
 fold read changes its c-bets, the 3-bet fold read changes its 3-bets and 4-bet bluffs, and a size tell changes the
 range it imagines behind a bet. A style with `exploit` 0 sees every player as an average one in these spots.
 
-Legends also **study you across games** (`Legend.scouting`, `scoutRead()` in `legends.ts`): they start a game with
-the reads your AI twin's memory gives (scaled to at most 50 hands, by how much that legend studies people, from
-Hellmuth 0.15 to Ivey 1), so Ivey and Negreanu come in already aiming at your habits. Their profile page says so.
-
 ## Reading a player who bets or folds a lot
 
 Bots keep a note on every player (`game.reads`, only from public moves). Two of the things they

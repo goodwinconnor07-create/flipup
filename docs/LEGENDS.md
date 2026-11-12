@@ -97,6 +97,6 @@ Added after stage 3. His numbers are prototype dials for the fit (aggressive, a 
 Each legend now also has a `craft` (see BOTS.md): Brunson plays ten-deuce and says so when it wins; Hellmuth waits, traps
 and lays down good hands; Negreanu floats, probes, check-raises, reads and calls down; Ivey bets big on the river with the
 best hands and with blocker bluffs, bets thin and adjusts fastest; Dwan fires barrels, floats and 3-bets and 4-bets light;
-Rampage overbets the river, check-raises and traps. Their profile bullets say so. A legend that studies players
-(`scouting`) also starts a game knowing what your AI twin knows about you. Daily goals are paused (`DAILY_GOALS`), so the
+Rampage overbets the river, check-raises and traps. Their profile bullets say so. (A legend once also started a game
+knowing what your AI twin knew about you, `scouting`; AI twins are gone and so is that.) Daily goals are paused (`DAILY_GOALS`), so the
 page with the ladder and badges is "Badges and ladder".

@@ -21,8 +21,8 @@ const secs = () => `${Math.round((Date.now() - started) / 1000)}s`;
 const ALL = Object.keys(STYLES) as StyleId[];
 const FIELD: StyleId[] = ['pro', 'shark', 'tag', 'lag', 'station'];
 
-const plain = (id: StyleId): TwinBrain => ({ style: { ...STYLES[id], craft: { ...NO_CRAFT, pets: [] } }, spots: {}, hands: 0 });
-const withCraft = (id: StyleId): TwinBrain => ({ style: STYLES[id], spots: {}, hands: 0 });
+const plain = (id: StyleId): TwinBrain => ({ style: { ...STYLES[id], craft: { ...NO_CRAFT, pets: [] } } });
+const withCraft = (id: StyleId): TwinBrain => ({ style: STYLES[id] });
 const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 
 if (MODE === 'freq') {
@@ -108,7 +108,7 @@ if (MODE === 'single') {
   const matches = Number(process.argv[6] ?? 200);
   console.log(`${style} with one technique against the plain ${style}, heads-up, bb/100 over ${matches} fresh matches of ${HANDS} hands\n`);
   for (const name of todo) {
-    const on: TwinBrain = { style: { ...STYLES[style], craft: { ...NO_CRAFT, pets: [], ...variants[name] } }, spots: {}, hands: 0 };
+    const on: TwinBrain = { style: { ...STYLES[style], craft: { ...NO_CRAFT, pets: [], ...variants[name] } } };
     const runs: number[] = [];
     for (let i = 0; i < matches; i++) {
       const flip = i % 2 === 1;

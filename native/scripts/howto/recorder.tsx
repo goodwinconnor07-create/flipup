@@ -7,6 +7,7 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 
+import { shotsNeeded } from '@/components/how-to/steps';
 import { count21, DEFAULT_SETTINGS, rankOf, toTableTime, withVariant, type Hand, type Variant } from '@/engine';
 import { currentTable, dispatch, leaveTable, me, openLocalTable } from '@/state/session';
 import { save } from '@/state/storage';
@@ -118,7 +119,10 @@ async function shootGame(v: Variant): Promise<void> {
   router.push('/table');
   await sleep(1500);
 
+  // Only the pictures this game's steps use, so one never waits behind another it doesn't need.
+  const needed = new Set<string>(shotsNeeded(v));
   const want = (name: string, wait: number, opts: { mine?: boolean; deadline?: number } = {}) => {
+    if (!needed.has(name)) return;
     const now = Date.now();
     plan = plan.filter((p) => p.name !== name);
     plan.push({ name, at: now + wait, mine: opts.mine, deadline: now + (opts.deadline ?? wait) });
@@ -152,7 +156,7 @@ async function shootGame(v: Variant): Promise<void> {
     // Memory Poker: the 20 cards before the hand is dealt.
     if (t.memory && t.memory.until > tableNow && (!h || h.result)) {
       const key = `${tables}-${(h?.number ?? 0) + 1}`;
-      if (peekFor !== key && t.memory.until - tableNow < 7600) {
+      if (needed.has('peek') && peekFor !== key && t.memory.until - tableNow < 7600) {
         peekFor = key;
         await call('/shot', { game: v, hand: key, name: 'peek' });
       }
@@ -188,8 +192,8 @@ async function shootGame(v: Variant): Promise<void> {
           const start = h.dice.until - 6000 - tableNow;
           // The simulator on CI draws a beat behind, so these sit late in their part of the show (the die
           // tumbles from 2.4s to 4.3s, then the result).
-          want('rolling', Math.max(0, start + 3700));
-          want('dice', Math.max(0, start + 5000));
+          want('rolling', Math.max(0, start + 3100));
+          want('dice', Math.max(0, start + 4900));
         }
         if (h.discarding && !p.shots.has('discard') && !plan.some((x) => x.name === 'discard')) want('discard', 1100);
         if (h.discussing && !p.pointed) {
@@ -299,7 +303,8 @@ function scoreOf(v: Variant, p: Played, h: Hand): number {
     case 'pineapple':
       return need('flop', 'discard', 'turn') ? 1 + won : -1;
     case 'deuces':
-      if (!need('flop', 'river')) return -1;
+      // Every 2 is wild: the hand has to show one on the board.
+      if (!need('flop', 'river') || !p.deuceBoard) return -1;
       return (p.deuceHole ? 2 : 0) + (p.deuceFlop ? 2 : 0) + (p.deuceBoard ? 1 : 0);
     case 'ghost':
       return need('flop', 'river') && h.result?.ghost ? 1 + won : -1;

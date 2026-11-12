@@ -27,24 +27,27 @@ export type Shot =
   | 'reveal';
 
 /**
- * Where a step looks: a full-width strip of the picture (an iPhone 17 Pro screen), from `top` down `height` (fractions of its
- * height). The screen shows just that strip as big as it fits, so a short strip (your cards, the board) comes out
- * much bigger than the whole phone would, and nothing is cut off at the sides.
+ * Where a step looks: a part of the picture (an iPhone 17 Pro screen), from `top` down `height` and, for the round
+ * boards, from `left` across `width` (fractions of the picture; the whole width when they're left out). The screen
+ * shows just that part as big as it fits, so a short strip (your cards, the board) comes out much bigger than the
+ * whole phone would.
  */
 export const ZOOMS = {
   full: { top: 0, height: 1 },
   /** Your cards and your box. */
-  mine: { top: 0.775, height: 0.205 },
+  mine: { top: 0.792, height: 0.188 },
   /** The buttons, your cards and your box. */
   hand: { top: 0.625, height: 0.355 },
   /** The players along the top and what they did. */
   seats: { top: 0.135, height: 0.215 },
   /** The board on the felt. */
   board: { top: 0.355, height: 0.275 },
-  /** A big board: the cross, the circle, Red River's extra cards, the cards to remember. */
-  bigBoard: { top: 0.3, height: 0.42 },
-  /** The board and who won, with your cards. */
-  showdown: { top: 0.35, height: 0.63 },
+  /** A board that runs long: Pittsburgh's rivers, Red River's extra cards. */
+  bigBoard: { top: 0.345, height: 0.295 },
+  /** The round felt: the cross, the circle, Memory's twenty cards. */
+  round: { top: 0.352, height: 0.282, left: 0.17, width: 0.66 },
+  /** The players, the board and who won, with your cards. */
+  showdown: { top: 0.13, height: 0.85 },
   /** The board and the vote under it. */
   vote: { top: 0.35, height: 0.45 },
 } as const;
@@ -112,23 +115,23 @@ const STEPS: Record<Variant, Step[]> = {
   ],
   crucifix: [
     step('cards', 'mine', 'Your two cards', "Dealt like Hold'em. The board is where it gets strange."),
-    step('flop', 'bigBoard', 'A cross', 'The flop is five cards: the middle and one on each arm.'),
-    step('turn', 'bigBoard', 'The turn', 'Two more, on the top and right arms.'),
-    step('river', 'bigBoard', 'The river', 'The last two finish the cross. Nine cards in all.'),
-    step('showdown', 'showdown', 'Pick a line', 'Your two cards plus one line, across or down. Never mix them.'),
+    step('flop', 'round', 'A cross', 'The flop is five cards: the middle and one on each arm.'),
+    step('turn', 'round', 'The turn', 'Two more, on the top and right arms.'),
+    step('river', 'round', 'The river', 'The last two finish the cross. Nine cards in all.'),
+    step('showdown', 'round', 'Pick a line', 'Your two cards plus one line, across or down. Never mix them.'),
   ],
   circle: [
     step('cards', 'mine', 'Your two cards', 'Both always play here, so start strong.'),
-    step('flop', 'bigBoard', 'Round the clock', 'The board is a circle. The flop lands at 12 and 6.'),
-    step('turn', 'bigBoard', 'The turn', "Two more, at 2 and 8 o'clock."),
-    step('river', 'bigBoard', 'Close the circle', 'The river fills 4 and 10. Six cards round the clock.'),
-    step('showdown', 'showdown', 'Three in a row', 'Your two cards plus three board cards side by side.'),
+    step('flop', 'round', 'Round the clock', 'The board is a circle. The flop lands at 12 and 6.'),
+    step('turn', 'round', 'The turn', "Two more, at 2 and 8 o'clock."),
+    step('river', 'round', 'Close the circle', 'The river fills 4 and 10. Six cards round the clock.'),
+    step('showdown', 'round', 'Three in a row', 'Your two cards plus three board cards side by side.'),
   ],
   memory: [
-    step('peek', 'bigBoard', 'Remember these', 'Twenty cards flash up, then leave the deck. You get nine seconds.'),
+    step('peek', 'round', 'Remember these', 'Twenty cards flash up, then leave the deck. You get nine seconds.'),
     step('cards', 'mine', 'Your two cards', "Dealt from what's left. None of those twenty can turn up."),
-    step('flop', 'board', 'Use your memory', 'Could they have the ace? Not if you saw it leave.'),
-    step('river', 'board', 'The river', 'Last card, last bet. Trust what you remember.'),
+    step('flop', 'round', 'Use your memory', 'Could they have the ace? Not if you saw it leave.'),
+    step('river', 'round', 'The river', 'Last card, last bet. Trust what you remember.'),
     step('showdown', 'showdown', 'Showdown', 'Best five wins. A good memory makes for better reads.'),
   ],
   beanstalk: [
@@ -146,7 +149,7 @@ const STEPS: Record<Variant, Step[]> = {
   ],
   imposter: [
     step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
-    step('flop', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),
+    step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),
     step('discuss', 'full', 'Point a finger', 'After the river, point at who you think it is. The bots will too.'),
     step('vote', 'vote', 'Vote', "Everyone votes in secret. You can't vote for yourself."),
     step('reveal', 'showdown', 'The reveal', 'Catch the imposter and the rest share the pot. Miss, and they take it all.'),
@@ -160,4 +163,9 @@ export function stepsFor(v: Variant): (Step & { image: number })[] {
     const image = pictures[s.shot] ?? (s.or ? pictures[s.or] : undefined);
     return image ? [{ ...s, image }] : [];
   });
+}
+
+/** Every picture a game's steps use, for the recorder that shoots them (native/scripts/howto). */
+export function shotsNeeded(v: Variant): Shot[] {
+  return [...new Set(STEPS[v].flatMap((s) => (s.or ? [s.shot, s.or] : [s.shot])))];
 }

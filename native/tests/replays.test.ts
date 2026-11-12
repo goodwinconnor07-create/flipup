@@ -87,7 +87,7 @@ describe('share card data', () => {
     expect(shareText(d)).toContain('FlipUp');
   });
   it('turns your record into a card', () => {
-    const d = statsData({ hands: 10, won: 4, biggestPot: 300, best: null, games: [], seen: [] }, 3, who);
+    const d = statsData({ hands: 10, won: 4, biggestPot: 300, best: null, games: [], played: [], seen: [] }, 3, who);
     expect(d.headline).toBe('40%');
     expect(d.stats?.find((s) => s.label === 'STREAK')?.value).toBe('3d');
   });

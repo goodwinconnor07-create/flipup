@@ -22,6 +22,7 @@ import { useReactions } from './table/Bubbles';
 import { HiddenPlayers, MyBox, othersInOrder, Pod, usePodSlots } from './table/Pods';
 import { PotChips } from './table/PotChips';
 import { PowerStrip, PowerToast } from './table/Powers';
+import { MissionStrip, MissionToast } from './table/Missions';
 import { soundMoodFor } from '../ui/gameThemes';
 import { setSoundMood } from '../ui/sound';
 import { useThemeMoments } from '../ui/useTableSounds';
@@ -476,6 +477,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
             </div>
             <Ghost game={game} />
             <PowerToast game={game} />
+            <MissionToast game={game} />
             {hand?.dice && (
               <p className="dice-note pop" key={`dice-${hand.number}`}>
                 🎲 {hand.dice.out ? <CardText text={`Rolled ${hand.dice.roll}: [${hand.dice.out}] → [${hand.dice.in}]`} /> : `Rolled ${hand.dice.roll}: the board stays`}
@@ -532,6 +534,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
         ) : bare && (!hand || hand.result) ? null : (
           <>
             <PowerStrip game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} />
+            <MissionStrip game={game} me={me} />
             <ActionArea game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} pre={pre} setPre={setPre} canShow={canShow} />
           </>
         )}

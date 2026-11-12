@@ -308,6 +308,50 @@ export interface Hand {
   powerUses?: PowerUse[];
   /** Power Cards: players who can't bet or raise, and on which street (Silence). */
   silenced?: Record<string, Street>;
+  /** Secret Missions: missions completed in this hand, in the order they were paid (public). */
+  missionsDone?: { by: string; mission: MissionId; paid: Record<string, number> }[];
+}
+
+export type MissionId =
+  | 'smallball'
+  | 'silent'
+  | 'slowroll'
+  | 'herocall'
+  | 'pressure'
+  | 'lucky7'
+  | 'biggame'
+  | 'relentless'
+  | 'monster'
+  | 'knockout'
+  | 'bluffmaster'
+  | 'suited'
+  | 'twins'
+  | 'red'
+  | 'royalty'
+  | 'button'
+  | 'defender'
+  | 'steal'
+  | 'riverrat'
+  | 'underdog'
+  | 'connected'
+  | 'twopair'
+  | 'trapdoor'
+  | 'shove'
+  | 'crowd'
+  | 'deuce'
+  | 'bully'
+  | 'chop';
+
+/** Secret Missions: the race in progress, kept from hand to hand. Phones see only their own mission (others' are null). */
+export interface MissionRace {
+  /** 1 for the first race at the table. */
+  race: number;
+  /** Each player's current mission (null once completed, until the next deal), the hand it was dealt on, and missions completed this race. */
+  players: Record<string, { mission: MissionId | null; since: number; done: number }>;
+  /** Players who reached the goal this race, in the order they did. */
+  finished: string[];
+  /** The last race that was settled: each player's place, the change to their stack (a share) and in chips. */
+  last?: { race: number; hand: number; places: { id: string; pct: number; chips: number }[] };
 }
 
 export type PowerId = 'peek' | 'xray' | 'swap' | 'reroll' | 'extra' | 'passleft' | 'shield' | 'silence' | 'bounty' | 'foldtax' | 'copycat';
@@ -466,6 +510,8 @@ export interface Game {
   dialogue?: Record<string, { recent: string[]; lastIntent: string }>;
   /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
   card?: CardScene;
+  /** Secret Missions: the race and everyone's missions. */
+  missions?: MissionRace;
   /** Ghost Hold'em: chips the ghost is holding, which go into the next hand's pot. */
   ghostPot?: number;
   /** Memory Poker: the cards being taken out for the next hand, shown to everyone until it's dealt at `until`. Public. */

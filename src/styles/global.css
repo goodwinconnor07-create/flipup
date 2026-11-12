@@ -307,6 +307,10 @@
   --theme-power-rail-a: #3ee0ff;
   --theme-power-rail-b: #0b4d6b;
   --theme-power-glow: rgba(255, 214, 10, 0.24);
+  --theme-missions-felt: #123a2e;
+  --theme-missions-rail-a: #d4a94e;
+  --theme-missions-rail-b: #5a4214;
+  --theme-missions-glow: rgba(212, 169, 78, 0.22);
   --gold: #ff9f0a;
   --gold-lo: #d97706;
   --gold-hi: #fde68a;

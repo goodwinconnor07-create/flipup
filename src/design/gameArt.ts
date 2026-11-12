@@ -40,6 +40,7 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   bjholdem: look('#2a2e3d', '#191c27', '#3a3f52', 'Hit or stand. Half for the best hand, half for 21.', 'Hit, then bet', 0.97),
   imposter: look('#6a5f8f', '#4a4169', '#7f74a3', 'Trust nobody. Watch the bets.', 'Find the imposter', 0.88),
   power: look('#d99a00', '#9e6f00', '#e8b02a', 'Everyone has a secret power. Pick your moment.', 'Secret powers', 1.08),
+  missions: look('#1f7a5c', '#13513d', '#2f9273', 'Your mission, should you choose to accept it.', 'Secret missions', 0.94),
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
@@ -264,6 +265,9 @@ const waves = (y: number, fill: string, shift = 0): PathShape => {
 const GREEN = '#2fb457';
 const GREEN_DARK = '#1f8a41';
 const RED = SUIT_COLOUR['♥'];
+/** Power Cards' own card: the game's midnight felt, framed in its electric rail (tableThemes.power in tokens.ts). */
+const POWER_CARD = '#1b2556';
+const POWER_FRAME = '#3ee0ff';
 
 /** Each game's subject on a 100 × 100 square, back to front. It keeps clear of the bottom 6 (the band overlaps it). */
 const SUBJECTS: Record<Variant, () => Shape[]> = {
@@ -396,18 +400,35 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     flat(`${oval(44, 44.5, 3)}${oval(61, 44.5, 3)}`, INK),
     { kind: 'path', d: 'M34 33.5L47 36.5M66 33.5L53 36.5', stroke: INK, sw: 2.8 },
   ],
-  // A power card with a lightning bolt across it, and the hand it's about to change.
+  // Your hand, and the power card dealt with it: a midnight card (the table's felt) with the rail's electric frame and
+  // a gold bolt. Laid out like Hold'em's two cards so it reads as one of the family.
   power: () => [
-    card({ x: 30, y: 58, r: -16, rank: 'Q', suit: '♦', s: 0.66, deal: 0 }),
-    card({ x: 72, y: 60, r: 14, rank: '7', suit: '♣', s: 0.66, deal: 1 }),
-    ink(rr(34, 18, 32, 50, 6), '#3a2a8f', { t: 'rotate(-4 50 43)' }),
-    { kind: 'path', d: rr(38.5, 22.5, 23, 41, 3.5), stroke: GLOW, sw: 1.6, opacity: 0.6, t: 'rotate(-4 50 43)' },
-    ink('M55 21L39 47H49L44 66L62 37H51Z', GLOW, { sw: 2.6 }),
+    card({ x: 35, y: 48, r: -13, rank: 'A', suit: '♠', s: 0.94, deal: 0 }),
+    {
+      kind: 'group',
+      t: 'translate(62 50) rotate(9) scale(1.06)',
+      shapes: [
+        ink(rr(-21, -30, 42, 60, 6.5), POWER_CARD, { sw: OUTLINE / 1.06 }),
+        { kind: 'path', d: rr(-15.5, -24.5, 31, 49, 3.5), stroke: POWER_FRAME, sw: 2.2, opacity: 0.85 },
+        ink('M4.5 -21L-11 3H-1.5L-5.5 21L11.5 -5H1.5Z', GLOW, { noShadow: true, sw: OUTLINE / 1.06 }),
+      ],
+    },
+    sparkle(86, 22, 7, WHITE),
+    sparkle(84, 80, 9),
+  ],
+  // A sealed mission envelope with a red wax seal, and the card that's the mission.
+  missions: () => [
+    card({ x: 70, y: 38, r: 16, rank: 'A', suit: '♠', s: 0.62, deal: 0 }),
+    ink(rr(18, 40, 60, 40, 5), '#f4e7c8', { t: 'rotate(-6 48 60)' }),
+    { kind: 'path', d: 'M20 43L48 64L76 43', stroke: INK, sw: 2.6, t: 'rotate(-6 48 60)' },
+    ink(oval(48, 62, 9), RED, { t: 'rotate(-6 48 60)' }),
+    { kind: 'path', d: oval(48, 62, 5.6), stroke: '#ffffff', sw: 1.4, opacity: 0.55, t: 'rotate(-6 48 60)' },
+    { kind: 'glyph', x: 48, y: 66, text: '★', size: 9, bold: true, ink: '#ffffff' },
   ],
 };
 
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦' };
+const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦', missions: '♠' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

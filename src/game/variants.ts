@@ -6,6 +6,7 @@ import { fullDeck, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from 
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
 import { POWERS } from './powerList';
+import { MISSION_GOAL, MISSION_REWARD, MISSION_SWAP_AFTER, SECRET_MISSIONS } from './missionList';
 
 export type Variant =
   | 'holdem'
@@ -21,7 +22,8 @@ export type Variant =
   | 'memory'
   | 'beanstalk'
   | 'bjholdem'
-  | 'power';
+  | 'power'
+  | 'missions';
 
 export interface VariantInfo {
   id: Variant;
@@ -199,6 +201,20 @@ export const VARIANTS: VariantInfo[] = [
       'When a power is played the whole table sees which one, who played it and who it was aimed at. What a Peek or an X-ray shows stays with the player who played it.',
       'Some powers only work on certain streets, and none can be played during an all-in run-out.',
       ...POWERS.map((p) => `${p.emoji} ${p.name}: ${p.rule}`),
+    ],
+  },
+  {
+    id: 'missions',
+    name: 'Secret Missions',
+    emoji: '🕶️',
+    tagline: 'A secret mission each. Pull it off and everyone pays you.',
+    rules: [
+      "Normal Texas Hold'em, plus a secret mission for everyone, like \"win a pot with one pair or less\". Nobody else knows yours.",
+      `Complete it in a hand and every other player pays you: ${MISSION_REWARD[1]} big blinds for an easy one, ${MISSION_REWARD[2]} for a medium one, ${MISSION_REWARD[3]} for a hard one (or what they have left). Then you get a new mission next hand.`,
+      `Didn't manage it? You keep the same mission until you do. A mission nobody completes in ${MISSION_SWAP_AFTER} hands is swapped for a new one.`,
+      `It's a race to ${MISSION_GOAL} missions. Once half the table has finished, the race is over and it changes everyone's stack: 1st +150%, 2nd +100%, 3rd +50%, 4th +25%, 5th no change, 6th −25%, 7th −50%, 8th and 9th −75%. Players who didn't finish are placed by missions completed, then chips.`,
+      'Then everyone gets a new mission and a new race starts.',
+      ...SECRET_MISSIONS.map((m) => `${m.emoji} ${m.name} (${MISSION_REWARD[m.tier]} big blinds from each player): ${m.text}`),
     ],
   },
 ];

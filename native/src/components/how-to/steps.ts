@@ -1,5 +1,5 @@
-// How to Play's steps: for each game, the moments of one real hand (scripts/shootHowTo.mjs takes a picture of each
-// on the app's own table), each with a short title, a line, and where to look: a step can zoom in on part of the
+// How to Play's steps: for each game, the moments of one real hand (scripts/howto takes a picture of each on the app's
+// own table, on an iPhone simulator), each with a short title, a line, and where to look: a step can zoom in on part of the
 // picture (your cards, the board, the seats) so what it's talking about is big. Games take as many steps as they
 // need, not a fixed five. A step whose picture is missing is left out.
 import type { Variant } from '@/engine';
@@ -7,27 +7,51 @@ import type { Variant } from '@/engine';
 import { SHOTS } from './shots';
 
 /** A moment in a hand that has a picture. */
-export type Shot = 'peek' | 'deal' | 'flop' | 'turn' | 'river' | 'more' | 'discard' | 'dice' | 'vote' | 'showdown' | 'ghost' | 'reveal';
+export type Shot =
+  | 'peek'
+  | 'cards'
+  | 'yourturn'
+  | 'flop'
+  | 'turn'
+  | 'river'
+  | 'more'
+  | 'discard'
+  | 'rolling'
+  | 'dice'
+  | 'hit'
+  | 'discuss'
+  | 'played'
+  | 'vote'
+  | 'showdown'
+  | 'ghost'
+  | 'reveal';
 
 /**
- * Where a step looks: a full-width strip of the 390 × 844 picture, from `top` down `height` (fractions of its
- * height). The screen shows just that strip as big as it fits, so a short strip (your cards, the board) comes out
- * much bigger than the whole phone would, and nothing is cut off at the sides.
+ * Where a step looks: a part of the picture (an iPhone 17 Pro screen), from `top` down `height` and, for the round
+ * boards, from `left` across `width` (fractions of the picture; the whole width when they're left out). The screen
+ * shows just that part as big as it fits, so a short strip (your cards, the board) comes out much bigger than the
+ * whole phone would.
  */
 export const ZOOMS = {
   full: { top: 0, height: 1 },
+  /** Your cards and your box. */
+  mine: { top: 0.792, height: 0.188 },
+  /** The bottom half: the line over the buttons (Power Cards' power), the buttons, your cards and your box. */
+  lower: { top: 0.5, height: 0.48 },
   /** The buttons, your cards and your box. */
-  hand: { top: 0.58, height: 0.42 },
+  hand: { top: 0.625, height: 0.355 },
   /** The players along the top and what they did. */
-  seats: { top: 0.0, height: 0.3 },
+  seats: { top: 0.135, height: 0.215 },
   /** The board on the felt. */
-  board: { top: 0.24, height: 0.34 },
-  /** A big board: the cross, the circle, Red River's extra cards, the cards to remember. */
-  bigBoard: { top: 0.15, height: 0.52 },
-  /** The board and who won, with your cards. */
-  showdown: { top: 0.22, height: 0.78 },
+  board: { top: 0.355, height: 0.275 },
+  /** A board that runs long: Pittsburgh's rivers, Red River's extra cards. */
+  bigBoard: { top: 0.345, height: 0.33 },
+  /** The round felt: the cross, the circle, Memory's twenty cards. */
+  round: { top: 0.352, height: 0.282, left: 0.17, width: 0.66 },
+  /** The players, the board and who won, with your cards. */
+  showdown: { top: 0.13, height: 0.85 },
   /** The board and the vote under it. */
-  vote: { top: 0.24, height: 0.5 },
+  vote: { top: 0.35, height: 0.45 },
 } as const;
 export type Zoom = keyof typeof ZOOMS;
 
@@ -40,94 +64,109 @@ export interface Step {
   text: string;
 }
 
-const cards: Step = { shot: 'deal', zoom: 'hand', title: 'Your two cards', text: 'Everyone gets two cards only they can see. These are yours.' };
-const turnToAct: Step = { shot: 'deal', zoom: 'seats', title: 'Take turns', text: 'Round the table, each player checks, bets, calls, raises or folds. Their move shows over their face.' };
-const yourMove: Step = { shot: 'deal', zoom: 'hand', title: 'Your move', text: 'On your turn: Fold to drop out, Call to match the bet, Raise to bet more.' };
-const flop: Step = { shot: 'flop', zoom: 'board', title: 'The flop', text: 'Three cards everyone shares. Another round of betting.' };
-const turn: Step = { shot: 'turn', zoom: 'board', title: 'The turn', text: 'A fourth shared card, and more betting.' };
-const river: Step = { shot: 'river', zoom: 'board', title: 'The river', text: 'The fifth and last shared card, and the last round of betting.' };
-const showdown: Step = { shot: 'showdown', zoom: 'showdown', title: 'Showdown', text: 'Best five from your two cards and the board. The best hand takes the pot.' };
+// The words are docs/HOW_TO_PLAY.md's script: show, don't explain; each mini game gets to its twist early.
+const step = (shot: Shot, zoom: Zoom, title: string, text: string, or?: Shot): Step => ({ shot, zoom, title, text, ...(or ? { or } : {}) });
 
 const STEPS: Record<Variant, Step[]> = {
-  holdem: [cards, turnToAct, yourMove, flop, turn, river, showdown],
+  holdem: [
+    step('cards', 'mine', 'Two cards, all yours', 'Nobody else sees them. Poker face on.'),
+    step('yourturn', 'seats', 'Read the table', 'Everyone checks, bets, calls, raises or folds in turn. Every move tells you something.', 'cards'),
+    step('yourturn', 'hand', 'Your move', 'Fold and wait for the next one, call to stay in, or raise and make them sweat.'),
+    step('flop', 'board', 'The flop', 'Three cards everyone shares. Now hands start to take shape.'),
+    step('turn', 'board', 'The turn', 'Card number four. Pots tend to grow from here.'),
+    step('river', 'board', 'The river', 'The last card and the last bet. Bluff, or get paid.'),
+    step('showdown', 'showdown', 'Showdown', 'Cards up. Best five from your two and the board takes it all.'),
+  ],
   pineapple: [
-    { ...cards, title: 'Three cards', text: 'You get three cards instead of two. Bet as usual.' },
-    flop,
-    { shot: 'discard', zoom: 'hand', title: 'Throw one away', text: 'After the flop betting, everyone drops one card. Keep the two that work best with the board.' },
-    { ...turn, text: 'From here it’s Hold’em with the two you kept.' },
-    showdown,
+    step('cards', 'mine', 'Three cards', "One more than Hold'em, so big hands come round more often."),
+    step('flop', 'board', 'The flop', 'Bet with all three still in your hand.'),
+    step('discard', 'hand', 'Throw one away', 'After the flop betting, everyone tosses a card. Keep the two that hit.'),
+    step('turn', 'board', 'Back to two', "It's Hold'em from here, and people usually have something."),
+    step('showdown', 'showdown', 'Showdown', 'Best five from your two and the board wins.'),
   ],
   deuces: [
-    { ...cards, title: 'Deuces are wild', text: 'Every 2 becomes whatever card helps you most.' },
-    flop,
-    river,
-    { ...showdown, text: 'Wild cards count as anything, so five of a kind can happen. It beats everything.' },
+    step('cards', 'mine', 'Every 2 is wild', 'A 2 becomes whatever card helps you most, in your hand or on the board.'),
+    step('flop', 'board', 'Look for gold', 'Wild 2s shine gold, so you never miss one.'),
+    step('river', 'board', 'Wilds for everyone', 'A 2 on the board is wild for every player.'),
+    step('showdown', 'showdown', 'Monster hands', 'Wilds make huge hands. Five of a kind beats even a royal flush.'),
   ],
   ghost: [
-    { ...cards, title: 'A ghost sits in', text: 'The ghost gets two cards too. Nobody sees them until the end.' },
-    flop,
-    river,
-    { shot: 'ghost', zoom: 'showdown', title: 'Beat the ghost', text: 'At the showdown you have to beat the ghost as well. If it wins, the pot stays for the next hand.' },
+    step('cards', 'seats', 'A ghost sits in', 'It gets two cards face down. It never bets. It just waits.'),
+    step('flop', 'board', 'Play the table', 'Bet against the players as usual. Bets go up to the size of the pot.'),
+    step('river', 'board', 'Good enough?', 'Your hand might beat the table. But can it beat the ghost?'),
+    step('showdown', 'showdown', 'Beat the ghost', 'The ghost turns over. Beat it too, or it keeps the pot for next hand.', 'ghost'),
   ],
-  pittsburgh: [cards, flop, { ...river, title: 'Three rivers', text: 'Three river cards land instead of one.' }, { ...showdown, text: 'Your hand uses whichever river suits it best.' }],
+  pittsburgh: [
+    step('cards', 'mine', 'Your two cards', "Same start as Hold'em. The surprise comes at the end."),
+    step('flop', 'board', 'The flop', 'Three shared cards, then the turn, just like normal.'),
+    step('river', 'bigBoard', 'Three rivers', 'Three river cards land at once. Three chances to hit.'),
+    step('showdown', 'showdown', 'Pick your river', 'Your hand uses whichever river suits it best. The app picks it for you.'),
+  ],
   dice: [
-    cards,
-    flop,
-    turn,
-    { shot: 'dice', zoom: 'board', title: 'Roll the die', text: 'With the river, a die rolls. A 1 to 5 swaps that board card for a new one.' },
-    { ...showdown, text: 'The new board is the one that counts.' },
+    step('cards', 'mine', 'Your two cards', "It plays like Hold'em, right up to the river."),
+    step('turn', 'board', 'Feeling safe?', "Four cards out and you like your hand. Don't get too comfortable."),
+    step('rolling', 'full', 'Roll the die', 'The river lands and a die rolls. Everyone waits.'),
+    step('dice', 'full', 'Swap!', 'A 1 to 5 swaps that board card for a new one. A 6 leaves it.'),
+    step('showdown', 'showdown', 'New board', 'Only the new board counts. One roll can change the winner.'),
   ],
   redriver: [
-    cards,
-    flop,
-    { shot: 'more', or: 'river', zoom: 'bigBoard', title: 'Red keeps coming', text: 'If the river is red, another card comes, and another, until a black one lands.' },
-    { ...showdown, text: 'Every board card counts. Best five from all of them wins.' },
+    step('cards', 'mine', 'Your two cards', "Plain Hold'em, until the river. Then watch its colour."),
+    step('flop', 'board', 'The flop', 'Three shared cards, then the turn.'),
+    step('river', 'bigBoard', 'Red keeps coming', 'A red river deals another card, then another, until a black one lands.', 'more'),
+    step('showdown', 'showdown', 'Every card counts', 'Best five from your two and the whole board, however long it got.'),
   ],
   crucifix: [
-    cards,
-    { ...flop, zoom: 'bigBoard', title: 'A cross', text: 'The board is a cross. The flop is the middle and one card on each arm.' },
-    { ...turn, zoom: 'bigBoard', text: 'The turn adds to the top arm and the right arm.' },
-    { ...river, zoom: 'bigBoard', text: 'The river finishes the cross.' },
-    { ...showdown, text: 'Your hand is your two cards with one line of the cross: across or down.' },
+    step('cards', 'mine', 'Your two cards', "Dealt like Hold'em. The board is where it gets strange."),
+    step('flop', 'round', 'A cross', 'The flop is five cards: the middle and one on each arm.'),
+    step('turn', 'round', 'The turn', 'Two more, on the top and right arms.'),
+    step('river', 'round', 'The river', 'The last two finish the cross. Nine cards in all.'),
+    step('showdown', 'round', 'Pick a line', 'Your two cards plus one line, across or down. Never mix them.'),
   ],
   circle: [
-    cards,
-    { ...flop, zoom: 'bigBoard', title: 'A clock', text: 'The board is a circle. The flop lands at 12 and 6 o’clock.' },
-    { ...turn, zoom: 'bigBoard', text: 'The turn adds 2 and 8 o’clock.' },
-    { ...river, zoom: 'bigBoard', text: 'The river closes the circle.' },
-    { ...showdown, text: 'Use both your cards plus three board cards next to each other.' },
+    step('cards', 'mine', 'Your two cards', 'Both always play here, so start strong.'),
+    step('flop', 'round', 'Round the clock', 'The board is a circle. The flop lands at 12 and 6.'),
+    step('turn', 'round', 'The turn', "Two more, at 2 and 8 o'clock."),
+    step('river', 'round', 'Close the circle', 'The river fills 4 and 10. Six cards round the clock.'),
+    step('showdown', 'round', 'Three in a row', 'Your two cards plus three board cards side by side.'),
   ],
   memory: [
-    { shot: 'peek', zoom: 'bigBoard', title: 'Remember these', text: 'Twenty cards are shown, then taken out of the deck. Nobody can be dealt them.' },
-    { ...cards, text: 'The hand is dealt from the cards that are left.' },
-    flop,
-    river,
-    { ...showdown, text: 'Nobody can hold a card that was taken out. Use what you remember to read hands.' },
+    step('peek', 'round', 'Remember these', 'Twenty cards flash up, then leave the deck. You get nine seconds.'),
+    step('cards', 'mine', 'Your two cards', "Dealt from what's left. None of those twenty can turn up."),
+    step('flop', 'round', 'Use your memory', 'Could they have the ace? Not if you saw it leave.'),
+    step('river', 'round', 'The river', 'Last card, last bet. Trust what you remember.'),
+    step('showdown', 'round', 'Showdown', 'Best five wins. A good memory makes for better reads.'),
   ],
   beanstalk: [
-    cards,
-    { ...flop, zoom: 'hand', title: 'Your hand grows', text: 'With the flop, everyone still in gets another card of their own.' },
-    { ...turn, zoom: 'hand', text: 'One more card each, with the turn.' },
-    { ...river, zoom: 'full', text: 'By the river you hold five cards.' },
-    { ...showdown, text: 'Best five from all ten: yours and the board.' },
+    step('cards', 'mine', 'Two to start', "Just like Hold'em. Don't get used to it."),
+    step('flop', 'hand', 'Your hand grows', 'With the flop, everyone still in gets a card of their own.'),
+    step('turn', 'hand', 'And grows', 'Another one with the turn.'),
+    step('river', 'full', 'Five each', 'By the river you hold five, with five on the board.'),
+    step('showdown', 'showdown', 'Huge hands', 'Best five from all ten. Big hands show up a lot.'),
   ],
   bjholdem: [
-    cards,
-    { ...flop, zoom: 'hand', title: 'Hit on the flop', text: 'On your turn on the flop, tap Hit for another card of your own. Over 21 and your hand is folded.' },
-    { ...river, text: 'The turn and the river come as normal. Your hits count in your poker hand too.' },
-    { ...showdown, text: 'Half the pot to the best poker hand, half to whoever is closest to 21.' },
+    step('cards', 'mine', 'Count to 21', 'Count your cards like blackjack, play them like poker.'),
+    step('flop', 'hand', 'Hit or stand', "On the flop, tap Hit for another card. Go over 21 and you're out."),
+    step('hit', 'hand', 'It counts twice', 'A card you hit plays in your poker hand too.'),
+    step('showdown', 'showdown', 'Two winners', "Half the pot to the best hand, half to whoever's closest to 21."),
   ],
   power: [
-    { ...cards, title: 'A secret power', text: 'With your two cards you get one power at random. Only you know what it is.' },
-    { ...yourMove, title: 'Play it on your turn', text: 'Tap Play before your move. Peek at the next card, X-ray an opponent, swap a card, add a card to the board and more.' },
-    { ...flop, zoom: 'seats', title: 'Everyone sees it', text: 'When a power is played the whole table sees which one and who it hit. What a Peek or X-ray shows stays with you.' },
-    { ...showdown, text: 'Best five wins, as usual. A Shield, a Bounty or a Fold Tax can still move some chips.' },
+    step('cards', 'mine', 'A secret power', 'Every hand, you get two cards and one power. Only you know which.'),
+    step('yourturn', 'lower', 'Use it or lose it', 'On your turn, tap Play before you move. Peek at the next card, X-ray a player, and more.'),
+    step('played', 'showdown', 'Everyone sees it', 'The table stops while a power is played, so everyone knows who used what.'),
+    step('showdown', 'showdown', 'Showdown', 'Best five still wins. A Shield or a Bounty can still move some chips.'),
+  ],
+  missions: [
+    step('cards', 'mine', 'A secret mission', 'Every hand you hold a mission only you can see, like "win a pot with one pair or less".'),
+    step('yourturn', 'lower', 'Play for it', 'Play the hand as normal, with your mission in mind. Everyone else has one too.'),
+    step('showdown', 'showdown', 'Mission complete', 'Pull it off and every other player pays you 5 to 10 big blinds. Then you get a new one.'),
+    step('river', 'showdown', 'The race', 'First to five missions wins the race: up to +150% on your stack. The last places lose chips.', 'showdown'),
   ],
   imposter: [
-    { ...cards, title: 'One imposter', text: 'Everyone gets the same two cards, except one imposter. Nobody knows who, not even them.' },
-    { ...flop, zoom: 'seats', title: 'No folding', text: 'Nobody can fold. Watch how everyone bets to work out who’s different.' },
-    { shot: 'vote', zoom: 'vote', title: 'Vote', text: 'After the river, everyone votes for who they think the imposter is.' },
-    { shot: 'reveal', zoom: 'showdown', title: 'The reveal', text: 'Catch the imposter and everyone else shares the pot. Miss, and the imposter takes it.' },
+    step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
+    step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),
+    step('discuss', 'showdown', 'Point a finger', 'After the river, point at who you think it is. The bots will too.'),
+    step('vote', 'vote', 'Vote', "Everyone votes in secret. You can't vote for yourself."),
+    step('reveal', 'showdown', 'The reveal', 'Catch the imposter and the rest share the pot. Miss, and they take it all.'),
   ],
 };
 
@@ -138,4 +177,9 @@ export function stepsFor(v: Variant): (Step & { image: number })[] {
     const image = pictures[s.shot] ?? (s.or ? pictures[s.or] : undefined);
     return image ? [{ ...s, image }] : [];
   });
+}
+
+/** Every picture a game's steps use, for the recorder that shoots them (native/scripts/howto). */
+export function shotsNeeded(v: Variant): Shot[] {
+  return [...new Set(STEPS[v].flatMap((s) => (s.or ? [s.shot, s.or] : [s.shot])))];
 }

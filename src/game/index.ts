@@ -8,6 +8,7 @@ export * from './types';
 export * from './holdem';
 export * from './variants';
 export * from './powers';
+export * from './missions';
 export * from './moments';
 export * from './selectors';
 export * from './bots';

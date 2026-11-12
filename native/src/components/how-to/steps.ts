@@ -117,11 +117,15 @@ const STEPS: Record<Variant, Step[]> = {
     { ...river, text: 'The turn and the river come as normal. Your hits count in your poker hand too.' },
     { ...showdown, text: 'Half the pot to the best poker hand, half to whoever is closest to 21.' },
   ],
+  // Written for now: Power Cards has no pictures yet, so its steps show the game's own drawing (see stepsFor).
   power: [
-    { ...cards, title: 'A secret power', text: 'With your two cards you get one power at random. Only you know what it is.' },
-    { ...yourMove, title: 'Play it on your turn', text: 'Tap Play before your move. Peek at the next card, X-ray an opponent, swap a card, add a card to the board and more.' },
-    { ...flop, zoom: 'seats', title: 'Everyone sees it', text: 'When a power is played the whole table sees which one and who it hit. What a Peek or X-ray shows stays with you.' },
-    { ...showdown, text: 'Best five wins, as usual. A Shield, a Bounty or a Fold Tax can still move some chips.' },
+    { ...cards, title: 'A secret power', text: 'With your two cards you get one power at random. Only you know what it is, and you get a new one every hand.' },
+    { ...yourMove, title: 'Play it on your turn', text: 'Tap Play before your move, then check, bet, call or fold as usual. Once a hand. Don’t use it and it’s gone.' },
+    { ...flop, title: 'See more', text: 'Peek shows you the next board card. X-ray shows you one of an opponent’s cards. Only you see what they show.' },
+    { ...turn, title: 'Change the cards', text: 'Swap one of your cards, Reroll a board card, add an Extra Card to the board, or make everyone Pass Left.' },
+    { ...flop, zoom: 'seats', title: 'Bend the betting', text: 'Silence stops an opponent betting this street. Fold Tax makes folding cost a big blind. Bounty pays you if your rank lands.' },
+    { ...flop, zoom: 'seats', title: 'Everyone sees it', text: 'The table sees which power was played and who it hit. Copycat plays the last power someone else used.' },
+    { ...showdown, text: 'Best five cards win, as usual. Lose with a Shield up and you get half your bets back.' },
   ],
   imposter: [
     { ...cards, title: 'One imposter', text: 'Everyone gets the same two cards, except one imposter. Nobody knows who, not even them.' },
@@ -131,9 +135,17 @@ const STEPS: Record<Variant, Step[]> = {
   ],
 };
 
-/** A game's steps that have a picture, each with it. */
-export function stepsFor(v: Variant): (Step & { image: number })[] {
-  const pictures = SHOTS[v] ?? {};
+/** A game's step, with its picture when it has one. */
+export type ShownStep = Step & { image?: number };
+
+/**
+ * A game's steps that have a picture, each with it. A game with no pictures yet (a new one, before
+ * scripts/shootHowTo.mjs has been run for it) gets every step written, with no picture: How to Play shows the game's
+ * own drawing in their place.
+ */
+export function stepsFor(v: Variant): ShownStep[] {
+  const pictures = SHOTS[v];
+  if (!pictures || !Object.keys(pictures).length) return STEPS[v];
   return STEPS[v].flatMap((s) => {
     const image = pictures[s.shot] ?? (s.or ? pictures[s.or] : undefined);
     return image ? [{ ...s, image }] : [];

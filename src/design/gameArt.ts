@@ -264,6 +264,9 @@ const waves = (y: number, fill: string, shift = 0): PathShape => {
 const GREEN = '#2fb457';
 const GREEN_DARK = '#1f8a41';
 const RED = SUIT_COLOUR['♥'];
+/** Power Cards' own card: the game's midnight felt, framed in its electric rail (tableThemes.power in tokens.ts). */
+const POWER_CARD = '#1b2556';
+const POWER_FRAME = '#3ee0ff';
 
 /** Each game's subject on a 100 × 100 square, back to front. It keeps clear of the bottom 6 (the band overlaps it). */
 const SUBJECTS: Record<Variant, () => Shape[]> = {
@@ -396,13 +399,21 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     flat(`${oval(44, 44.5, 3)}${oval(61, 44.5, 3)}`, INK),
     { kind: 'path', d: 'M34 33.5L47 36.5M66 33.5L53 36.5', stroke: INK, sw: 2.8 },
   ],
-  // A power card with a lightning bolt across it, and the hand it's about to change.
+  // Your hand, and the power card dealt with it: a midnight card (the table's felt) with the rail's electric frame and
+  // a gold bolt. Laid out like Hold'em's two cards so it reads as one of the family.
   power: () => [
-    card({ x: 30, y: 58, r: -16, rank: 'Q', suit: '♦', s: 0.66, deal: 0 }),
-    card({ x: 72, y: 60, r: 14, rank: '7', suit: '♣', s: 0.66, deal: 1 }),
-    ink(rr(34, 18, 32, 50, 6), '#3a2a8f', { t: 'rotate(-4 50 43)' }),
-    { kind: 'path', d: rr(38.5, 22.5, 23, 41, 3.5), stroke: GLOW, sw: 1.6, opacity: 0.6, t: 'rotate(-4 50 43)' },
-    ink('M55 21L39 47H49L44 66L62 37H51Z', GLOW, { sw: 2.6 }),
+    card({ x: 35, y: 48, r: -13, rank: 'A', suit: '♠', s: 0.94, deal: 0 }),
+    {
+      kind: 'group',
+      t: 'translate(62 50) rotate(9) scale(1.06)',
+      shapes: [
+        ink(rr(-21, -30, 42, 60, 6.5), POWER_CARD, { sw: OUTLINE / 1.06 }),
+        { kind: 'path', d: rr(-15.5, -24.5, 31, 49, 3.5), stroke: POWER_FRAME, sw: 2.2, opacity: 0.85 },
+        ink('M4.5 -21L-11 3H-1.5L-5.5 21L11.5 -5H1.5Z', GLOW, { noShadow: true, sw: OUTLINE / 1.06 }),
+      ],
+    },
+    sparkle(86, 22, 7, WHITE),
+    sparkle(84, 80, 9),
   ],
 };
 

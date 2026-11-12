@@ -6,6 +6,7 @@ import Animated, { cancelAnimation, Easing, FadeIn, useAnimatedStyle, useSharedV
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
+import { GamePicture } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
 import { stepsFor, ZOOMS } from '@/components/how-to/steps';
 import { Icon } from '@/components/icon';
@@ -24,7 +25,7 @@ const STEP_MS = 6500;
  * matters, zoomed in on what the step is about, with a title and a line under it. Bars along the very top fill and
  * move on by themselves; tap anywhere on the right for the next step, on the left for the one before, and hold to
  * pause. Full screen, so the bars and the close button sit at the top edge. The layout is measured: the picture takes
- * the room between the bars and the words.
+ * the room between the bars and the words. A game with no pictures yet shows its steps written, over its drawing.
  */
 export default function HowToPlay() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
@@ -134,7 +135,11 @@ export default function HowToPlay() {
         style={{ flex: 1, gap: spacing.lg }}
       >
         <View onLayout={measure} style={{ flex: 1, minHeight: 0, marginHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center' }}>
-          {step && roomW > 0 && (
+          {step && roomW > 0 && !step.image && (
+            // Written steps (no pictures recorded for this game yet): the game's own drawing, as big as fits.
+            <GamePicture variant={variant} width={Math.min(roomW, (roomH * 200) / 120)} height={Math.min(roomW, (roomH * 200) / 120) * 0.6} rounded={radius.xl} />
+          )}
+          {step?.image && roomW > 0 && (
             <Animated.View style={[{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: '#111114', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.16)' }, frame]}>
               <Animated.View style={strip}>
                 <Image source={step.image} style={{ width: '100%', height: '100%' }} contentFit="cover" transition={reduce ? 0 : 180} accessible={false} />

@@ -149,7 +149,6 @@ function Viewer() {
                       {p.id === r.me ? 'You' : p.name}
                     </ThemedText>
                     {p.id === r.buttonId && <Tag text="BTN" />}
-                    {p.ultra && <Tag text="ULTRA" gold />}
                   </View>
                   <ThemedText variant="caption1" tone="secondaryLabel">
                     {n(stack)} chips{(f.put[p.id] ?? 0) > 0 && !f.done ? ` · ${n(f.put[p.id])} in` : ''}

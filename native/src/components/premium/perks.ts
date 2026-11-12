@@ -3,7 +3,7 @@
 import type { IconName } from '@/components/icon';
 import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
 
-export type PerkId = 'games' | 'range' | 'bots' | 'ultra' | 'replay' | 'share' | 'gold' | 'packs';
+export type PerkId = 'games' | 'range' | 'bots' | 'replay' | 'share' | 'gold' | 'packs';
 
 export interface Perk {
   id: PerkId;
@@ -31,6 +31,6 @@ export const PERKS: Perk[] = [
 export const perkById = (id: string | undefined): Perk | undefined => PERKS.find((p) => p.id === id);
 
 /** What a locked tap opens the page with, and the perk it puts first. */
-export type Reason = 'game' | 'training' | 'bots' | 'pack' | 'ultra' | 'replay' | 'share' | 'gold';
-export const REASON_PERK: Record<Reason, PerkId> = { game: 'games', training: 'range', bots: 'bots', pack: 'packs', ultra: 'ultra', replay: 'replay', share: 'share', gold: 'gold' };
+export type Reason = 'game' | 'training' | 'bots' | 'pack' | 'replay' | 'share' | 'gold';
+export const REASON_PERK: Record<Reason, PerkId> = { game: 'games', training: 'range', bots: 'bots', pack: 'packs', replay: 'replay', share: 'share', gold: 'gold' };
 export const isReason = (v: unknown): v is Reason => typeof v === 'string' && v in REASON_PERK;

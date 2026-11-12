@@ -267,8 +267,6 @@ export interface SimExtras {
    * fewer hands (the luck of an all-in is most of the noise). Off by default: the sim's numbers are the real results.
    */
   evAdjust?: boolean;
-  /** Seats (by index) played as ULTRA bots. */
-  ultra?: number[];
 }
 
 /** Plays `hands` hands. The first agent sits in the host's seat; scripts join as people. */
@@ -302,7 +300,6 @@ export function simulateTable(agents: Agent[], hands: number, seed = 1, stackBb 
     game = r.game;
   };
   for (const [i, brain] of Object.entries(extras.twins ?? {})) game.players[Number(i)].twin = brain;
-  for (const i of extras.ultra ?? []) if (game.players[i]) game.players[i].ultra = true;
   scripts.forEach((s, i) => step(`script${i}`, { type: 'join', name: `${s}${i}`.slice(0, 16), emoji: '🤖' }));
   // Seats played by another brain still need a style for it to play.
   for (const p of game.players) if (p.deviceId?.startsWith('script')) p.style = styleOfAgent(scripts[Number(p.deviceId.slice(6))]);

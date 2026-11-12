@@ -21,7 +21,6 @@ export interface ReplayPlayer {
   /** Chips before the blinds. */
   stack: number;
   bot?: boolean;
-  ultra?: boolean;
   gold?: boolean;
 }
 
@@ -160,7 +159,6 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
       emoji: p.emoji,
       stack: hand.startStacks?.[p.id] ?? p.stack,
       ...(p.bot ? { bot: true } : {}),
-      ...(p.ultra ? { ultra: true } : {}),
       ...(p.gold ? { gold: true } : {}),
     }));
   const base = { actions: hand.actions.map((a) => ({ ...a })), sbId: hand.sbId, bbId: hand.bbId, smallBlind: game.settings.smallBlind, bigBlind: game.settings.bigBlind };

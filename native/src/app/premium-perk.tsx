@@ -25,7 +25,7 @@ const SAMPLE = statsData(
 /**
  * One Premium perk shown properly, from a tile on the Premium page: what it is and a look at it (the games, every
  * card back, the five share designs, a gold name at the table). With Premium it also
- * takes you there (pick an icon, open your hand bank, set up an ULTRA table...).
+ * takes you there (open your saved hands, pick a card back...).
  */
 export default function PerkSheet() {
   const { id } = useLocalSearchParams<{ id?: string }>();
@@ -60,7 +60,6 @@ export default function PerkSheet() {
 }
 
 const GO: Partial<Record<PerkId, { title: string; run: () => void }>> = {
-  ultra: { title: 'Play ULTRA bots', run: () => router.push('/play-bots') },
   replay: { title: 'Open Saved hands', run: () => router.push('/replays') },
   share: { title: 'Make a share card', run: () => router.push('/share') },
   packs: { title: 'Pick a card back', run: () => router.push('/card-packs') },
@@ -93,30 +92,6 @@ function Preview({ id }: { id: PerkId }) {
               </View>
               <Icon name="chevron.right" size={13} color="rgba(255,255,255,0.4)" />
             </PressableScale>
-          ))}
-        </View>
-      );
-    case 'ultra':
-      return (
-        <View style={{ ...box, gap: spacing.sm }}>
-          {[
-            ['eye.fill', 'Reads you fast', 'Trusts what it sees after a handful of hands, not dozens.'],
-            ['clock.fill', 'Remembers you', 'What it learned carries into your next ULTRA game.'],
-            ['shield.fill', 'No leaks, no tilt', 'Never chases, never pays off big bets out of spite, gives nothing away with its bet sizes.'],
-            ['bolt.fill', 'Punishes habits', 'Fold too much and it bluffs you. Call too much and it value bets you.'],
-            ['cpu.fill', 'Gold robot', 'An ULTRA bot has a gold robot on the back of its cards.'],
-          ].map(([icon, t, l]) => (
-              <View key={t} style={{ flexDirection: 'row', gap: spacing.sm }}>
-                <Icon name={icon as never} size={18} color={brand.gold} />
-                <View style={{ flex: 1 }}>
-                  <ThemedText variant="headline" style={{ color: '#ffffff' }}>
-                    {t}
-                  </ThemedText>
-                  <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                    {l}
-                  </ThemedText>
-                </View>
-              </View>
           ))}
         </View>
       );

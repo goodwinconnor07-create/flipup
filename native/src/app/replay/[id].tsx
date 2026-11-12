@@ -20,6 +20,7 @@ import { ThemedText } from '@/components/themed-text';
 import { variantInfo, type Card, type HandAction, type Street } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useTableLook } from '@/state/prefs';
+import { noteWatched } from '@/state/record';
 import { netOf, putIn, saveLastHand, toggleStar, useLastHand, useReplays, useStars, winnersOf, type Replay } from '@/state/replays';
 import { brand, ForceScheme, gradient, radius, ROUNDED, spacing } from '@/theme';
 
@@ -115,6 +116,12 @@ function Viewer() {
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(!reduce);
   const last = r ? r.actions.length + 1 : 0;
+
+  // Counts toward "Hands replayed" on the Stats page, once each time a hand opens here (saved, or the last one at the table).
+  const found = !!r;
+  useEffect(() => {
+    if (found) noteWatched();
+  }, [id, found]);
 
   useEffect(() => {
     if (!playing || !r || step >= last) return;

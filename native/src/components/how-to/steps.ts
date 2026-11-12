@@ -33,18 +33,20 @@ export type Shot =
  */
 export const ZOOMS = {
   full: { top: 0, height: 1 },
+  /** Your cards and your box. */
+  mine: { top: 0.775, height: 0.205 },
   /** The buttons, your cards and your box. */
-  hand: { top: 0.58, height: 0.42 },
+  hand: { top: 0.625, height: 0.355 },
   /** The players along the top and what they did. */
-  seats: { top: 0.0, height: 0.3 },
+  seats: { top: 0.135, height: 0.215 },
   /** The board on the felt. */
-  board: { top: 0.24, height: 0.34 },
+  board: { top: 0.355, height: 0.275 },
   /** A big board: the cross, the circle, Red River's extra cards, the cards to remember. */
-  bigBoard: { top: 0.15, height: 0.52 },
+  bigBoard: { top: 0.3, height: 0.42 },
   /** The board and who won, with your cards. */
-  showdown: { top: 0.22, height: 0.78 },
+  showdown: { top: 0.35, height: 0.63 },
   /** The board and the vote under it. */
-  vote: { top: 0.24, height: 0.5 },
+  vote: { top: 0.35, height: 0.45 },
 } as const;
 export type Zoom = keyof typeof ZOOMS;
 
@@ -62,7 +64,7 @@ const step = (shot: Shot, zoom: Zoom, title: string, text: string, or?: Shot): S
 
 const STEPS: Record<Variant, Step[]> = {
   holdem: [
-    step('cards', 'hand', 'Two cards, all yours', 'Nobody else sees them. Poker face on.'),
+    step('cards', 'mine', 'Two cards, all yours', 'Nobody else sees them. Poker face on.'),
     step('yourturn', 'seats', 'Read the table', 'Everyone checks, bets, calls, raises or folds in turn. Every move tells you something.', 'cards'),
     step('yourturn', 'hand', 'Your move', 'Fold and wait for the next one, call to stay in, or raise and make them sweat.'),
     step('flop', 'board', 'The flop', 'Three cards everyone shares. Now hands start to take shape.'),
@@ -71,14 +73,14 @@ const STEPS: Record<Variant, Step[]> = {
     step('showdown', 'showdown', 'Showdown', 'Cards up. Best five from your two and the board takes it all.'),
   ],
   pineapple: [
-    step('cards', 'hand', 'Three cards', "One more than Hold'em, so big hands come round more often."),
+    step('cards', 'mine', 'Three cards', "One more than Hold'em, so big hands come round more often."),
     step('flop', 'board', 'The flop', 'Bet with all three still in your hand.'),
     step('discard', 'hand', 'Throw one away', 'After the flop betting, everyone tosses a card. Keep the two that hit.'),
     step('turn', 'board', 'Back to two', "It's Hold'em from here, and people usually have something."),
     step('showdown', 'showdown', 'Showdown', 'Best five from your two and the board wins.'),
   ],
   deuces: [
-    step('cards', 'hand', 'Every 2 is wild', 'A 2 becomes whatever card helps you most, in your hand or on the board.'),
+    step('cards', 'mine', 'Every 2 is wild', 'A 2 becomes whatever card helps you most, in your hand or on the board.'),
     step('flop', 'board', 'Look for gold', 'Wild 2s shine gold, so you never miss one.'),
     step('river', 'board', 'Wilds for everyone', 'A 2 on the board is wild for every player.'),
     step('showdown', 'showdown', 'Monster hands', 'Wilds make huge hands. Five of a kind beats even a royal flush.'),
@@ -90,33 +92,33 @@ const STEPS: Record<Variant, Step[]> = {
     step('showdown', 'showdown', 'Beat the ghost', 'The ghost turns over. Beat it too, or it keeps the pot for next hand.', 'ghost'),
   ],
   pittsburgh: [
-    step('cards', 'hand', 'Your two cards', "Same start as Hold'em. The surprise comes at the end."),
+    step('cards', 'mine', 'Your two cards', "Same start as Hold'em. The surprise comes at the end."),
     step('flop', 'board', 'The flop', 'Three shared cards, then the turn, just like normal.'),
     step('river', 'bigBoard', 'Three rivers', 'Three river cards land at once. Three chances to hit.'),
     step('showdown', 'showdown', 'Pick your river', 'Your hand uses whichever river suits it best. The app picks it for you.'),
   ],
   dice: [
-    step('cards', 'hand', 'Your two cards', "It plays like Hold'em, right up to the river."),
+    step('cards', 'mine', 'Your two cards', "It plays like Hold'em, right up to the river."),
     step('turn', 'board', 'Feeling safe?', "Four cards out and you like your hand. Don't get too comfortable."),
     step('rolling', 'full', 'Roll the die', 'The river lands and a die rolls. Everyone waits.'),
     step('dice', 'full', 'Swap!', 'A 1 to 5 swaps that board card for a new one. A 6 leaves it.'),
     step('showdown', 'showdown', 'New board', 'Only the new board counts. One roll can change the winner.'),
   ],
   redriver: [
-    step('cards', 'hand', 'Your two cards', "Plain Hold'em, until the river. Then watch its colour."),
+    step('cards', 'mine', 'Your two cards', "Plain Hold'em, until the river. Then watch its colour."),
     step('flop', 'board', 'The flop', 'Three shared cards, then the turn.'),
     step('river', 'bigBoard', 'Red keeps coming', 'A red river deals another card, then another, until a black one lands.', 'more'),
     step('showdown', 'showdown', 'Every card counts', 'Best five from your two and the whole board, however long it got.'),
   ],
   crucifix: [
-    step('cards', 'hand', 'Your two cards', "Dealt like Hold'em. The board is where it gets strange."),
+    step('cards', 'mine', 'Your two cards', "Dealt like Hold'em. The board is where it gets strange."),
     step('flop', 'bigBoard', 'A cross', 'The flop is five cards: the middle and one on each arm.'),
     step('turn', 'bigBoard', 'The turn', 'Two more, on the top and right arms.'),
     step('river', 'bigBoard', 'The river', 'The last two finish the cross. Nine cards in all.'),
     step('showdown', 'showdown', 'Pick a line', 'Your two cards plus one line, across or down. Never mix them.'),
   ],
   circle: [
-    step('cards', 'hand', 'Your two cards', 'Both always play here, so start strong.'),
+    step('cards', 'mine', 'Your two cards', 'Both always play here, so start strong.'),
     step('flop', 'bigBoard', 'Round the clock', 'The board is a circle. The flop lands at 12 and 6.'),
     step('turn', 'bigBoard', 'The turn', "Two more, at 2 and 8 o'clock."),
     step('river', 'bigBoard', 'Close the circle', 'The river fills 4 and 10. Six cards round the clock.'),
@@ -124,26 +126,26 @@ const STEPS: Record<Variant, Step[]> = {
   ],
   memory: [
     step('peek', 'bigBoard', 'Remember these', 'Twenty cards flash up, then leave the deck. You get nine seconds.'),
-    step('cards', 'hand', 'Your two cards', "Dealt from what's left. None of those twenty can turn up."),
+    step('cards', 'mine', 'Your two cards', "Dealt from what's left. None of those twenty can turn up."),
     step('flop', 'board', 'Use your memory', 'Could they have the ace? Not if you saw it leave.'),
     step('river', 'board', 'The river', 'Last card, last bet. Trust what you remember.'),
     step('showdown', 'showdown', 'Showdown', 'Best five wins. A good memory makes for better reads.'),
   ],
   beanstalk: [
-    step('cards', 'hand', 'Two to start', "Just like Hold'em. Don't get used to it."),
+    step('cards', 'mine', 'Two to start', "Just like Hold'em. Don't get used to it."),
     step('flop', 'hand', 'Your hand grows', 'With the flop, everyone still in gets a card of their own.'),
     step('turn', 'hand', 'And grows', 'Another one with the turn.'),
     step('river', 'full', 'Five each', 'By the river you hold five, with five on the board.'),
     step('showdown', 'showdown', 'Huge hands', 'Best five from all ten. Big hands show up a lot.'),
   ],
   bjholdem: [
-    step('cards', 'hand', 'Count to 21', 'Count your cards like blackjack, play them like poker.'),
+    step('cards', 'mine', 'Count to 21', 'Count your cards like blackjack, play them like poker.'),
     step('flop', 'hand', 'Hit or stand', "On the flop, tap Hit for another card. Go over 21 and you're out."),
     step('hit', 'hand', 'It counts twice', 'A card you hit plays in your poker hand too.'),
     step('showdown', 'showdown', 'Two winners', "Half the pot to the best hand, half to whoever's closest to 21."),
   ],
   imposter: [
-    step('cards', 'hand', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
+    step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
     step('flop', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),
     step('discuss', 'full', 'Point a finger', 'After the river, point at who you think it is. The bots will too.'),
     step('vote', 'vote', 'Vote', "Everyone votes in secret. You can't vote for yourself."),

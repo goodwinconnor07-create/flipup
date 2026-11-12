@@ -139,5 +139,5 @@ jobs:
           git add assets/howto src/components/how-to/shots.ts
           if git diff --cached --quiet; then echo "No new pictures."; exit 0; fi
           git commit -m "How to Play: new pictures from the iPhone 17 Pro simulator"
-          git pull --rebase origin "$BRANCH"
+          git pull --rebase --autostash origin "$BRANCH"
           git push origin "HEAD:$BRANCH"

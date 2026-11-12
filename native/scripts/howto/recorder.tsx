@@ -16,7 +16,7 @@ const ALL: Variant[] = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 
 /** How long each game may play for its best hand. */
 const BUDGET_MS = 7 * 60_000;
 /** A hand scoring this much is as good as it gets: stop there. */
-const ENOUGH: Partial<Record<Variant, number>> = { deuces: 5, redriver: 8, dice: 3 };
+const ENOUGH: Partial<Record<Variant, number>> = { deuces: 5, redriver: 9, dice: 5, imposter: 2 };
 
 const sleep = (ms: number) => new Promise<void>((ok) => setTimeout(ok, ms));
 
@@ -96,6 +96,8 @@ interface Played {
   deuceBoard?: boolean;
   board: number;
   won?: boolean;
+  /** Other players whose cards are face up at the end. */
+  shown?: number;
   reachedShowdown?: boolean;
   doneAt?: number;
 }
@@ -184,7 +186,9 @@ async function shootGame(v: Variant): Promise<void> {
         if (h.dice && p.dice === undefined && h.dice.until) {
           p.dice = h.dice.roll;
           const start = h.dice.until - 6000 - tableNow;
-          want('rolling', Math.max(0, start + 3300));
+          // The simulator on CI draws a beat behind, so these sit late in their part of the show (the die
+          // tumbles from 2.4s to 4.3s, then the result).
+          want('rolling', Math.max(0, start + 3700));
           want('dice', Math.max(0, start + 5000));
         }
         if (h.discarding && !p.shots.has('discard') && !plan.some((x) => x.name === 'discard')) want('discard', 1100);
@@ -199,6 +203,7 @@ async function shootGame(v: Variant): Promise<void> {
           p.doneAt = now;
           p.reachedShowdown = h.result.showdown && !!seat && !seat.folded;
           p.won = !!mine && (h.result.won[mine.id] ?? 0) > 0;
+          p.shown = h.seats.filter((x) => x.playerId !== mine?.id && x.cards.length > 0).length;
           plan = plan.filter((x) => x.name !== 'yourturn' || p.shots.has('yourturn'));
           want(h.result.imposter ? 'reveal' : 'showdown', settle + 2600);
         }
@@ -224,7 +229,7 @@ async function shootGame(v: Variant): Promise<void> {
         const score = scoreOf(v, p, h);
         await log(`${v}: hand ${p.key} score ${score} (${[...p.shots].join(' ')})`);
         if (score > best.score) best = { key: p.key, score };
-        if (score >= (ENOUGH[v] ?? 2)) break;
+        if (score >= (ENOUGH[v] ?? 4)) break;
         await sleep(800);
         dispatch({ type: 'next', hand: h.number });
       }
@@ -286,7 +291,8 @@ function scoreOf(v: Variant, p: Played, h: Hand): number {
   const need = (...names: string[]) => names.every((n) => s.has(n));
   if (!p.reachedShowdown && !h.result?.imposter) return -1;
   if (!need('cards', v === 'imposter' ? 'reveal' : 'showdown')) return -1;
-  const won = p.won ? 1 : 0;
+  // A showdown worth showing: someone else's cards face up, and you winning.
+  const won = (p.shown ? 2 : 0) + (p.won ? 1 : 0);
   switch (v) {
     case 'holdem':
       return need('yourturn', 'flop', 'turn', 'river') ? 1 + won : -1;
@@ -300,9 +306,9 @@ function scoreOf(v: Variant, p: Played, h: Hand): number {
     case 'pittsburgh':
       return need('flop', 'river') ? 1 + won : -1;
     case 'dice':
-      return need('turn', 'rolling', 'dice') ? 1 + (p.dice !== undefined && p.dice <= 5 ? 2 : 0) : -1;
+      return need('turn', 'rolling', 'dice') ? 1 + (p.dice !== undefined && p.dice <= 5 ? 3 : 0) + (p.shown ? 1 : 0) : -1;
     case 'redriver':
-      return need('flop', 'river') && p.board > 5 ? p.board : -1;
+      return need('flop', 'river') && p.board > 5 ? p.board + (p.shown ? 2 : 0) : -1;
     case 'crucifix':
     case 'circle':
     case 'beanstalk':

@@ -136,7 +136,11 @@ export function putIn(r: Pick<Replay, 'actions' | 'sbId' | 'bbId' | 'smallBlind'
 }
 
 let lastKey = '';
-/** Called with every table update: the first time a hand you were dealt into is over, it becomes the last hand. */
+/**
+ * Called with every table update: once a hand you were dealt into is over, it becomes the last hand. It's looked at
+ * again while the result is on the table, because a player can tap Show cards after the hand ends: their cards
+ * join the last hand, and the saved copy too if you've already saved it.
+ */
 export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' | 'online'): void {
   const hand = game?.hand;
   const result = hand?.result;
@@ -145,8 +149,15 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
   const seat = mine && hand.seats.find((s) => s.playerId === mine.id);
   if (!mine || !seat || seat.cards.length === 0) return;
   const id = `${game.id}/${hand.number}`;
-  if (id === lastKey) return;
-  lastKey = id;
+  // Whose cards this phone can see: a show after the hand changes it.
+  const key = `${id}|${hand.seats
+    .filter((s) => s.cards.length > 0)
+    .map((s) => s.playerId)
+    .sort()
+    .join(',')}`;
+  if (key === lastKey) return;
+  const again = last?.id === id;
+  lastKey = key;
   const variant: Variant = hand.variant ?? game.settings.variant ?? 'holdem';
   const flop = streetCards(variant, 'flop');
   const turn = flop + streetCards(variant, 'turn');
@@ -190,14 +201,36 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
     streets: { flop, turn, river: hand.board.length },
     holes: Object.fromEntries(hand.seats.filter((s) => s.cards.length > 0).map((s) => [s.playerId, [...s.cards]])),
     won: { ...result.won },
-    names: { ...(result.names ?? {}) },
+    names: shownNames(variant, hand.seats, hand.board, result.names ?? {}),
     showdown: result.showdown,
     net: (result.won[mine.id] ?? 0) - (put[mine.id] ?? 0),
     pot,
     ...(myHand ? { myHand, myScore } : {}),
   };
+  if (again && last) {
+    // Someone showed after the hand: keep when it was first seen, and bring a saved copy up to date.
+    replay.at = last.at;
+    const bank = allReplays();
+    const i = bank.findIndex((r) => r.id === id);
+    if (i >= 0) save(KEY, bank.map((r, j) => (j === i ? { ...r, holes: replay.holes, names: { ...replay.names, ...r.names } } : r)));
+  }
   last = replay;
   lastListeners.forEach((fn) => fn());
+}
+
+/** Hand names for everyone whose cards you can see: the showdown's, plus anyone who showed after it. */
+function shownNames(variant: Variant, seats: { playerId: string; cards: Card[] }[], board: Card[], names: Record<string, string>): Record<string, string> {
+  const out = { ...names };
+  if (variant === 'imposter' || board.length < 5) return out;
+  for (const s of seats) {
+    if (out[s.playerId] || s.cards.length === 0) continue;
+    try {
+      out[s.playerId] = bestHand(variant, s.cards, board).detail;
+    } catch {
+      // A board this game can't score: no name.
+    }
+  }
+  return out;
 }
 
 /** Leaving a table forgets its last hand. */
@@ -239,7 +272,7 @@ export function momentsOf(replays: Replay[], stars: string[] = []): Moment[] {
   return out;
 }
 
-function isAir(r: Replay): boolean {
+export function isAir(r: Replay): boolean {
   const mine = r.holes[r.me] ?? [];
   const ranks = new Set(r.board.map((c) => c[0]));
   // No pocket pair and neither card pairs the board.

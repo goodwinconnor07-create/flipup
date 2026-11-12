@@ -24,4 +24,3 @@ the web and stay where they are. Plan: `docs/BANKROLL.md`.
 ## Development-only screens and hooks
 `(tabs)/(play)/design.tsx` (design catalogue, was linked from Home under `__DEV__`), `(tabs)/(play)/motion.tsx`,
 `app/sample-sheet.tsx`, `components/ranges/teaser.tsx` (imports the old Range training game's pieces, now gone) and `components/play-tile.tsx` (unused).
-`recorder.patch.md`: the `window.__flipupTable` hook `scripts/shootHowTo.mjs` needs.

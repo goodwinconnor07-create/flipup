@@ -1,4 +1,4 @@
-// How to Play's pictures, one real hand of each game on the app's own table (scripts/shootHowTo.mjs writes this
+// How to Play's pictures, one real hand of each game on the app's own table (native/scripts/howto writes this
 // file). Bundled with the app, so they show with no connection.
 import type { Variant } from '@/engine';
 

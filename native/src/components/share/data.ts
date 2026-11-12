@@ -61,7 +61,7 @@ const place = (p: number): string => `${p}${p % 10 === 1 && p % 100 !== 11 ? 'st
 const SUIT: Record<string, string> = { s: '♠', h: '♥', d: '♦', c: '♣' };
 export const cardText = (c: Card): string => `${c[0] === 'T' ? '10' : c[0]}${SUIT[c[1]] ?? ''}`;
 
-export function statsData(record: PokerRecord, streak: number, who: ShareWho): ShareData {
+export function statsData(record: Omit<PokerRecord, 'more'>, streak: number, who: ShareWho): ShareData {
   return {
     kind: 'stats',
     eyebrow: 'MY POKER',

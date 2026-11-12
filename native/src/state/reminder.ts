@@ -1,4 +1,4 @@
-// The daily quiz reminder (off until you turn it on): one local notification a day, "Today's five are ready", at
+// The daily quiz reminder (off until you turn it on): one local notification a day, "Today's hand is ready", at
 // the hour you pick. Scheduled on the phone with expo-notifications; nothing goes to a server and there's no push.
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
@@ -39,7 +39,7 @@ export async function setReminder(on: boolean, hour: number = REMINDER_HOUR): Pr
     }
     await Notifications.scheduleNotificationAsync({
       identifier: ID,
-      content: { title: 'Today’s five are ready', body: 'Five new hands, the same for everyone. Keep your streak going.', data: { url: '/train' } },
+      content: { title: 'Today’s hand is ready', body: 'A new hand, the same for everyone. Keep your streak going.', data: { url: '/train' } },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute: 0 },
     });
     save(KEY, { on: true, hour });

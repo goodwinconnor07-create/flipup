@@ -7,6 +7,13 @@
 > detailed icons were tried and dropped), fewer spinners and faster screens. Everything below this box is the paper, ink and
 > red direction from the interview: **parked, not in effect**. Don't build it unless the owner asks again.
 >
+> **12 Nov 2026 (owner): consistency between Play and Train, and a lighter bots lobby.** Range training's ways to train
+> (Daily hand, Endless, Sets, Gaps) are tiles in exactly the style of Play's game tiles: a flat field, a sticker picture
+> from gameArt's shapes (`src/design/trainArt.ts`), the name in white rounded capitals on a darker band, the same crown.
+> Play with bots shows who's at the table as a small group of faces floating softly (filled circles, names under them,
+> evenly spaced on equal columns, a same-sized dashed Add button at the end), not a list and not a drawn table, so the
+> game card stays on screen; new bots pop in, holding one pops it out. The online lobbies' Players section is the same group, with an "Add Bot" button; a tap on a person opens their menu. People come first and wear a solid white ring (you, gold); bots follow with a faint ring. The LIVE tag on Rejoin has a pulsing dot.
+
 > **Minimal Home, a test on a branch (owner, 2026-11-10, from a reference with a big greeting; not merged until the
 > owner has seen it on TestFlight).** Play is one page on a livelier moving field of its own (`LivelyBackground`: five brighter lights on 4.5 to 10s clocks over the same dark base, always dark):
 > FlipUp in SF Pro Rounded heavy and your face, "Hi, <name>." at up to 92pt rounded heavy (by screen height), one line under it, then down by the tab bar (the

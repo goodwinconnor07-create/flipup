@@ -61,7 +61,7 @@ import { noteRun } from './challenges';
 import { noteGame, noteHand } from './record';
 import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
-import { forgetLastHand, noteReplay } from './replays';
+import { forgetLastHand, lastHand, noteReplay, playedPastPreflop } from './replays';
 import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
@@ -109,13 +109,16 @@ export interface TableState {
   logs: HandLog[] | null;
   /** A solo challenge at this table, if it is one. */
   challenge: ChallengeView | null;
+  /** Replay after every hand (a bots-only house rule): the finished hand the table is waiting on, by its replay id.
+   * The next deal holds until `releaseRecap()`. */
+  recap: string | null;
 }
 
 export let me = deviceId();
 
 let session: Session | null = null;
 let identityVersion = 0;
-let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, challenge: null };
+let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, challenge: null, recap: null };
 let conn: Connection | null = null;
 let sendingId: string | null = null;
 let profile = { name: '', emoji: '' };
@@ -145,7 +148,8 @@ function set(next: Session | null): void {
   });
   schedule();
   noteDay(state.game);
-  if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online');
+  if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online', next.mode === 'local' && !next.challenge ? next.game : null);
+  holdForRecap(next);
   syncLook();
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
@@ -220,6 +224,8 @@ function schedule(minDelay = 0): void {
       if (session?.mode !== 'local') return;
       const now = toTableTime(Date.now(), session.game.fast);
       if (session.challenge && dealDue(session.game, now) && !readyToDeal()) return;
+      // Replay after every hand: the recap is up, so the deal waits for Next hand (bots may still talk).
+      if (recapHeld && dealDue(session.game, now)) return;
       let r: ReturnType<typeof applyAction>;
       try {
         r = applyAction(session.game, { type: 'tick' }, { deviceId: 'clock', now, rng: rngFor(session.game) });
@@ -234,6 +240,58 @@ function schedule(minDelay = 0): void {
     },
     Math.max(minDelay, (wakeAt - toTableTime(Date.now(), fast)) / (fast ? 2 : 1)),
   );
+}
+
+// ── Replay after every hand ─────────────────────────────────────────────────
+// A bots-only house rule (`settings.replayEachHand`): once a hand you played past preflop is over, the recap card
+// comes up and the deal waits for you. Held in memory only: a table reopened after the app was closed just deals.
+
+/** True while the recap is up and the next deal waits. */
+let recapHeld = false;
+/** The last hand a recap was shown for, so it comes up once per hand. */
+let recapDone = '';
+
+function holdForRecap(next: Session | null): void {
+  const hand = lastHand();
+  const game = next?.mode === 'local' && !next.challenge ? next.game : null;
+  const on = !!game?.settings.replayEachHand && game.status === 'playing' && !!game.hand?.result;
+  if (!on || !hand || hand.tableId !== game!.id || hand.number !== game!.hand!.number || recapDone === hand.id) {
+    // The rule switched off (or the table went) while the recap was up: let it deal.
+    if (recapHeld && !game?.settings.replayEachHand) releaseRecap();
+    return;
+  }
+  recapDone = hand.id;
+  if (!playedPastPreflop(hand)) return;
+  recapHeld = true;
+  publish({ recap: hand.id });
+}
+
+/** Next hand on the recap: it goes away and the table deals as soon as it's due (at once if it already was). */
+export function releaseRecap(): void {
+  if (!recapHeld && !state.recap) return;
+  recapHeld = false;
+  publish({ recap: null });
+  if (session?.mode !== 'local') return;
+  const hand = session.game.hand;
+  // You've seen it: deal now rather than wait out the rest of the pause.
+  if (hand?.result && session.game.status === 'playing') {
+    try {
+      const r = applyAction(session.game, { type: 'next', hand: hand.number }, { deviceId: me, now: toTableTime(Date.now(), session.game.fast), rng: rngFor(session.game) });
+      if (r.ok && r.changed) {
+        set({ ...session, game: r.game });
+        return;
+      }
+    } catch (e) {
+      console.warn('[recap next]', e);
+    }
+  }
+  schedule();
+}
+
+function forgetRecap(): void {
+  recapHeld = false;
+  recapDone = '';
+  if (state.recap) publish({ recap: null });
 }
 
 /** How long the clock waits before looking again when a tick that was due changed nothing. */
@@ -298,6 +356,11 @@ export function dispatch(action: Action): string | null {
         publish({ sending: false });
       }
     }, 5000);
+    return null;
+  }
+  // The table's own Next hand while the recap is up goes through the recap.
+  if (action.type === 'next' && recapHeld) {
+    releaseRecap();
     return null;
   }
   if (session.challenge) {
@@ -486,6 +549,7 @@ export function joinOnlineTable(code: string, name: string, emoji: string): void
 /** Leaves the table. Online, you're taken off it first (a hand in play folds you on your turn). */
 export function leaveTable(): void {
   forgetLastHand();
+  forgetRecap();
   const mine = session?.mode === 'online' ? session.game?.players.find((p) => p.deviceId === me) : undefined;
   if (mine && session?.game?.status !== 'ended') conn?.send({ t: 'act', id: newId(8), a: { type: 'remove', playerId: mine.id } });
   const old = conn;
@@ -529,7 +593,8 @@ export function resetSessionIdentity(): void {
   lastCounted = '';
   joinSent = false;
   me = deviceId();
-  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, challenge: null });
+  forgetRecap();
+  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, challenge: null, recap: null });
 }
 
 // A table you were at comes back after the app is closed: a bots-only one as it was, an online one by reconnecting.

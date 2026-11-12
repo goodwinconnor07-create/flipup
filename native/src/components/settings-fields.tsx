@@ -8,6 +8,7 @@ import {
   STACK_CHOICES,
   TIMER_CHOICES,
   timerLabel,
+  withBlindCap,
   withStack,
   type Settings,
 } from '@/engine';
@@ -44,7 +45,7 @@ export function SettingsFields({
 }) {
   const colors = useColors();
   const beatingCasual = useSuggestChallenge();
-  const set = (patch: Partial<Settings>) => onChange({ ...settings, ...patch });
+  const set = (patch: Partial<Settings>) => onChange(withBlindCap({ ...settings, ...patch }));
   const levels = levelsFor(settings.startingStack);
   const blindIndex = Math.max(
     0,
@@ -152,10 +153,21 @@ export function SettingsFields({
     <Row
       key="rebuys"
       title="Rebuys"
-      subtitle="Busted players can buy back in"
+      subtitle={online ? 'Busted players can buy back in' : 'If you bust, you can buy back in and keep playing'}
       icon={{ symbol: 'arrow.clockwise', color: color(party.green) }}
       accessory={<Switch label="Rebuys" value={settings.rebuys} onValueChange={(rebuys) => set({ rebuys })} />}
     />,
+    !online && (
+      <Row
+        key="replay"
+        title="Replay after every hand"
+        subtitle="See what you won or lost and who took the pot, then watch it back"
+        icon={{ symbol: 'film.stack.fill', color: color(party.blue) }}
+        accessory={
+          <Switch label="Replay after every hand" value={!!settings.replayEachHand} onValueChange={(replayEachHand) => set({ replayEachHand })} />
+        }
+      />
+    ),
     online && (
       <Row
         key="peek"

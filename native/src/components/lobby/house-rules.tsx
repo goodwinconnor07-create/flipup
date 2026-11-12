@@ -10,6 +10,7 @@ import {
   STACK_CHOICES,
   TIMER_CHOICES,
   timerLabel,
+  withBlindCap,
   withStack,
   type Settings,
 } from '@/engine';
@@ -27,7 +28,8 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
  * row with its name over its value and the − + stepper on the right, then the switches. `onChange` is the host's; without it (everyone else) the rows only show the values.
  */
 export function HouseRules({ settings: s, onChange, online, bots = 0, started = false }: { settings: Settings; onChange?: (s: Settings) => void; online: boolean; bots?: number; started?: boolean }) {
-  const set = (patch: Partial<Settings>) => onChange?.({ ...s, ...patch });
+  // Every change keeps "Blinds stop at" above the blinds (`withBlindCap`), as a new stack keeps the blinds in reach.
+  const set = (patch: Partial<Settings>) => onChange?.(withBlindCap({ ...s, ...patch }));
   const levels = levelsFor(s.startingStack);
   const blindIndex = Math.max(
     0,
@@ -120,10 +122,20 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
     <SwitchRow
       key="rebuys"
       label="Rebuys"
-      line="Busted players can buy back in"
+      line={online ? 'Busted players can buy back in' : 'If you bust, you can buy back in and keep playing'}
       value={s.rebuys}
       onChange={edit ? (rebuys) => set({ rebuys }) : undefined}
     />,
+    // Bots-only: a short recap after each hand you played, with Replay; the deal waits for Next hand.
+    !online && (
+      <SwitchRow
+        key="replay"
+        label="Replay after every hand"
+        line="See what you won or lost and who took the pot, then watch it back"
+        value={!!s.replayEachHand}
+        onChange={edit ? (replayEachHand) => set({ replayEachHand }) : undefined}
+      />
+    ),
     online && (
       <SwitchRow
         key="peek"

@@ -54,8 +54,10 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
       line: p.bot ? 'Bot' : you ? (theHost ? 'You · Host' : 'You') : theHost ? 'Host' : p.offline ? 'Offline' : 'Ready',
       you,
       gold: p.gold,
+      // The host holds a bot to take it off; a tap on a person opens their menu.
+      onRemove: host && p.bot ? () => remove(p.id) : undefined,
       onMore:
-        you || (!host && p.bot)
+        you || p.bot
           ? undefined
           : () =>
               !p.bot && key && game.code
@@ -121,9 +123,9 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
 
         <GameCard variant={variant} host={host} table />
 
-        <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot).length} />
-
         <Players rows={rows} onAdd={host ? () => dispatch({ type: 'addBot' }) : undefined} />
+
+        <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot).length} />
       </ScrollView>
       {host && (
         <OpenTableButton

@@ -51,6 +51,10 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
     if (typeof r.showToBusted !== 'boolean') return null;
     out.showToBusted = r.showToBusted;
   }
+  if (r.replayEachHand !== undefined) {
+    if (typeof r.replayEachHand !== 'boolean') return null;
+    out.replayEachHand = r.replayEachHand;
+  }
   if (!partial && !validSettings({ ...DEFAULT_SETTINGS, ...out })) return null;
   return out;
 }

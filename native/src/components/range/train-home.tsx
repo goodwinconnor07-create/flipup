@@ -1,9 +1,9 @@
 // Range training's start screen, the Train tab. Two layouts:
-// - Free: the daily quiz is the whole screen. A dated card with five dots that fill in as you answer (Start, then
-//   Continue, then your result and the countdown to tomorrow's), your streak and numbers, then what Premium would
-//   teach you from your own answers, greyed with a crown.
-// - Premium: Play a set first, then the spots worth working on, how much of the library you've mastered, and the daily
-//   quiz as one row, so the streak and sharing work for everyone.
+// - Free: one hand a day (the daily hand, since 12 Nov 2026) is the hero: a dated card (Start, then your result and
+//   the countdown to tomorrow's), then the ways to train as tiles (`ModeTiles`: the daily hand free, Endless, Sets and
+//   Gaps with a crown), How it works, your streak and numbers.
+// - Premium: the tiles first, then the spots worth working on, how much of the library you've mastered, and the daily
+//   hand as one row, so the streak and sharing work for everyone.
 // Nothing is dealt here; sets play full screen in app/range-session.tsx.
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -21,14 +21,15 @@ import { Swap, SwapIcon } from '@/components/swap';
 import { ThemedText } from '@/components/themed-text';
 import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { countdown, DAILY_HANDS, msUntilTomorrow, shareText } from '@/state/daily-quiz';
+import { countdown, DAILY_HANDS, GRADE_WORDS, msUntilTomorrow, shareText } from '@/state/daily-quiz';
 import { hasPremium, usePremium } from '@/state/premium';
 import { useDaily, type DailyQuiz } from '@/state/range-daily';
 import { libraryProgress, longestRun, missedHands, rangeStats, type Answer } from '@/state/range-history';
-import { SET_SIZE } from '@/state/range-result';
 import { unlockToTrain } from '@/state/unlock';
 import { brand, cardColors, radius, ROUNDED, spacing } from '@/theme';
 import type { Grade } from '@train/ranges/model';
+
+import { ModeTiles, type TrainMode } from './mode-tiles';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
 const DOT: Record<Grade, string> = { best: brand.gold, ok: brand.violetDark, mistake: 'rgba(255,255,255,0.28)' };
@@ -40,7 +41,14 @@ export function startSet(focus?: string[]) {
   router.push(focus?.length ? { pathname: '/range-session', params: { focus: JSON.stringify(focus) } } : '/range-session');
 }
 
-/** Opens today's quiz: from the hand you're on, or your answers once it's done. Free for everyone. */
+/** Endless mode: hand after hand until you go back. Premium only. */
+export function startEndless() {
+  haptic.select();
+  if (!unlockToTrain(false, hasPremium())) return;
+  router.push({ pathname: '/range-session', params: { endless: '1' } });
+}
+
+/** Opens today's hand, or your answer once it's done. Free for everyone. */
 export function startDaily() {
   haptic.select();
   router.push({ pathname: '/range-session', params: { daily: '1' } });
@@ -124,29 +132,41 @@ function DailyCard({ q, premium }: { q: DailyQuiz; premium: boolean }) {
   const left = useCountdown(q.finished);
   const best = q.answers.filter((a) => a.grade === 'best').length;
   const date = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-  const title = q.finished ? `${best} of ${q.answers.length} best plays` : q.started ? 'Keep going' : 'Today’s five';
+  const one = q.hands.length <= 1;
+  const title = q.finished
+    ? one
+      ? GRADE_WORDS[q.answers[0]?.grade ?? 'mistake']
+      : `${best} of ${q.answers.length} best plays`
+    : q.started
+      ? 'Keep going'
+      : one
+        ? 'Today’s hand'
+        : 'Today’s five';
   const line = q.finished
-    ? `Next quiz in ${left}.`
+    ? `Next hand in ${left}.`
     : q.started
       ? `${q.answers.length} of ${q.hands.length} done. Pick up where you left off.`
-      : 'The same five hands for everyone today. Read the spot, make your call, see why.';
+      : one
+        ? 'One free hand a day, the same for everyone. Read the spot, make your call, see why.'
+        : 'The same five hands for everyone today. Read the spot, make your call, see why.';
   return (
     <LivingCard colors={q.finished ? cardColors.night : cardColors.violet} radius={radius.xl} style={{ padding: spacing.lg, gap: spacing.md }}>
       <View style={{ gap: spacing.xs }}>
         <ThemedText variant="caption1" tone="onColor" style={{ fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>
-          Daily quiz · {date}
+          {one ? 'Daily hand' : 'Daily quiz'} · {date}
         </ThemedText>
         <ThemedText variant="title2" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
           {title}
         </ThemedText>
       </View>
-      <QuizDots q={q} />
+      {/* One hand a day: no row of dots to fill until there's an answer to colour. */}
+      {(!one || q.finished) && <QuizDots q={q} />}
       <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>
         {line}
       </ThemedText>
       {/* One button that becomes the next thing to do (rule 20), with Share popping in beside it once you're done. */}
       <View style={{ flexDirection: 'row', gap: spacing.xs }}>
-        <CardButton title={q.finished ? 'Your answers' : q.started ? 'Continue' : 'Start'} icon={q.finished ? 'list.bullet' : 'play.fill'} onPress={startDaily} />
+        <CardButton title={q.finished ? (one ? 'Your answer' : 'Your answers') : q.started ? 'Continue' : 'Start'} icon={q.finished ? 'list.bullet' : 'play.fill'} onPress={startDaily} />
         {q.finished && (
           <Animated.View entering={reduce ? undefined : popIn()}>
             <CardButton icon="square.and.arrow.up" label="Share your result" onPress={() => shareDaily(q)} />
@@ -165,26 +185,6 @@ function DailyCard({ q, premium }: { q: DailyQuiz; premium: boolean }) {
   );
 }
 
-/** Premium's hero: play a set of five, as many as you like. */
-function SetCard({ first }: { first: boolean }) {
-  return (
-    <LivingCard colors={cardColors.violet} radius={radius.xl} style={{ padding: spacing.lg, gap: spacing.md }}>
-      <View style={{ gap: spacing.xs }}>
-        <ThemedText variant="caption1" tone="onColor" style={{ fontWeight: '800', letterSpacing: 1, textTransform: 'uppercase', opacity: 0.85 }}>
-          {SET_SIZE} hands
-        </ThemedText>
-        <ThemedText variant="title2" tone="onColor" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
-          {first ? 'Play your first set' : 'Play a set'}
-        </ThemedText>
-        <ThemedText variant="subhead" tone="onColor" style={{ opacity: 0.9 }}>
-          Real hands from pro breakdowns. Read the table, make your call, then see why.
-        </ThemedText>
-      </View>
-      <CardButton title="Start" icon="play.fill" onPress={() => startSet()} />
-    </LivingCard>
-  );
-}
-
 export function TrainHome({ history, grades }: { history: Answer[]; grades: Record<string, Grade> }) {
   const st = rangeStats(history);
   const lib = libraryProgress(grades);
@@ -199,6 +199,16 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
     haptic.select();
     router.push({ pathname: '/premium', params: { reason: 'training' } });
   };
+  // Gaps: a set from the kinds of spot you get wrong most and the hands you missed (a plain set until there are any).
+  const gaps = [...st.weakest.map((w) => w.label), ...missed.map((m) => `id:${m.id}`)];
+  const pick = (mode: TrainMode) => {
+    if (mode === 'daily') return startDaily();
+    if (!premium) return locked();
+    if (mode === 'endless') return startEndless();
+    if (mode === 'sets') return startSet();
+    return startSet(gaps.length ? gaps : undefined);
+  };
+  const tiles = <ModeTiles locked={!premium} done={q.finished} onPick={pick} />;
 
   const numbers = (
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
@@ -251,22 +261,24 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
     return (
       <View style={{ gap: spacing.xl }}>
         <DailyCard q={q} premium={false} />
+        {tiles}
+        <HowItWorks />
         {numbers}
         {remind}
-        {workOn}
         <Footnote />
       </View>
     );
 
   return (
     <View style={{ gap: spacing.xl }}>
-      <SetCard first={first} />
+      {tiles}
+      <HowItWorks />
       {workOn}
       <Section header="Library">
         <Row title={`${lib.best} of ${lib.total} mastered`} subtitle="Hands you've played the best way" accessory={<LibraryBar share={lib.total ? lib.best / lib.total : 0} />} icon={{ symbol: 'book.fill', color: brand.violet }} />
         <Row
-          title="Today’s quiz"
-          detail={q.finished ? `${q.answers.filter((a) => a.grade === 'best').length}/${q.answers.length} · next in ${left}` : q.started ? `${q.answers.length} of ${q.hands.length}` : 'Same for everyone'}
+          title="Today’s hand"
+          detail={q.finished ? `${q.answers.length === 1 ? GRADE_WORDS[q.answers[0].grade] : `${q.answers.filter((a) => a.grade === 'best').length}/${q.answers.length}`} · next in ${left}` : q.started ? `${q.answers.length} of ${q.hands.length}` : 'Same for everyone'}
           icon={{ symbol: 'calendar', color: brand.gold }}
           onPress={startDaily}
         />
@@ -283,6 +295,29 @@ function LibraryBar({ share }: { share: number }) {
     <View style={{ width: 56, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.14)', overflow: 'hidden' }}>
       <View style={{ width: `${Math.round(share * 100)}%`, height: 6, borderRadius: 3, backgroundColor: brand.gold }} />
     </View>
+  );
+}
+
+/** A small, quiet button for anyone new: what Range training is, in four steps (the `range-how` sheet). */
+function HowItWorks() {
+  const panel = usePanel();
+  return (
+    <PressableScale
+      accessibilityRole="button"
+      accessibilityLabel="How Range training works"
+      onPress={() => {
+        haptic.select();
+        router.push('/range-how');
+      }}
+      outerStyle={{ alignSelf: 'flex-start' }}
+      style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 40, paddingHorizontal: spacing.md, borderRadius: radius.full, backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge }}
+    >
+      <Icon name="questionmark.circle.fill" size={17} color={brand.gold} />
+      <ThemedText variant="subhead" style={{ fontWeight: '700' }}>
+        New here? How it works
+      </ThemedText>
+      <Icon name="chevron.right" size={12} color="rgba(255,255,255,0.5)" />
+    </PressableScale>
   );
 }
 

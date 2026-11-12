@@ -63,6 +63,8 @@ const WEB = {
   'film.stack.fill': 'movie',
   'camera.viewfinder': 'screenshot',
   'backward.fill': 'fast_rewind',
+  'backward.end.fill': 'skip_previous',
+  'forward.end.fill': 'skip_next',
   'photo.fill': 'image',
   qrcode: 'qr_code_2',
   link: 'link',
@@ -119,6 +121,12 @@ const WEB = {
   'arrow.down': 'arrow_downward',
   'lock.open.fill': 'lock_open',
   'gauge.with.needle.fill': 'speed',
+  // Stats.
+  'arrow.down.right': 'south_east',
+  'arrow.uturn.up': 'u_turn_right',
+  'heart.slash.fill': 'heart_broken',
+  snowflake: 'ac_unit',
+  'sun.max.fill': 'sunny',
 } as const satisfies Partial<Record<SFSymbol, string>>;
 
 export type IconName = keyof typeof WEB;

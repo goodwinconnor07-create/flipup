@@ -22,7 +22,6 @@ import { ForceScheme, spacing } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
 import { LoadingCover } from '../launch-cover';
-import { haptic } from '../haptics';
 import { CodeCard } from '../lobby/code-card';
 import { GameCard } from '../lobby/game-card';
 import { HouseRules } from '../lobby/house-rules';
@@ -292,7 +291,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
   };
 
   const removeBot = (b: RowBot) => {
-    haptic.tap();
     setBots((have) => have.filter((x) => x.key !== b.key));
   };
   const rows: PlayerLine[] = [
@@ -321,11 +319,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
       name: b.name,
       emoji: b.emoji,
       line: 'Bot',
-      onMore: () =>
-        Alert.alert(b.name, undefined, [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Remove', style: 'destructive', onPress: () => removeBot(b) },
-        ]),
+      onRemove: () => removeBot(b),
     })),
   ];
 
@@ -359,10 +353,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               share={partyCode ? { message: `Join my FlipUp party. Game code ${partyCode}`, url: joinLink(partyCode) } : undefined}
             />
             <PartyCard games={partyDraft.games} host />
-            <PartyRules
-              rules={{ stack: partyDraft.stack, blindHands: partyDraft.blindHands, fill: partyDraft.fill }}
-              onChange={setPartyRules}
-            />
             <View style={{ gap: spacing.xs }}>
               <Players rows={partyRows} />
               <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.xxs }}>
@@ -371,6 +361,10 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
                   : 'Friends join from Join on the Play tab with the game code. No bots in this party.'}
               </ThemedText>
             </View>
+            <PartyRules
+              rules={{ stack: partyDraft.stack, blindHands: partyDraft.blindHands, fill: partyDraft.fill }}
+              onChange={setPartyRules}
+            />
           </>
         ) : (
           <>
@@ -393,6 +387,8 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               <StartPartyButton />
             </View>
 
+            <Players rows={rows} onAdd={addBot} />
+
             {FRIENDS_ON && (
               <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
             )}
@@ -406,8 +402,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
               online
               bots={bots.length}
             />
-
-            <Players rows={rows} onAdd={addBot} />
           </>
         )}
       </ScrollView>

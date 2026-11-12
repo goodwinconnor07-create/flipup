@@ -220,7 +220,6 @@ const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
   range: { title: 'Every range hand', line: 'Every real spot, as many sets as you like.' },
   bots: { title: 'The whole roster', line: `${FAMILIAR_COUNT} characters and hundreds of regulars. Free tables get ${FREE_BOT_NAMES.length}.` },
   games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },
-  replay: { title: 'Replay any hand', line: 'Save it at the table, watch it back move by move.' },
   share: { title: 'Share cards', line: 'Your best hands and nights, as a picture.' },
   gold: { title: 'Gold name', line: 'Everyone at the table sees it.' },
   packs: { title: 'Card backs', line: 'On your cards, for the whole table to see.' },
@@ -366,8 +365,6 @@ function HeroPicture({ id }: { id: PerkId }) {
           </View>
         </View>
       );
-    case 'replay':
-      return <HandStack />;
     case 'share': {
       const k = 0.36;
       const designs = SHARE_DESIGNS.filter((d) => d.premium).slice(0, 3);
@@ -404,40 +401,6 @@ function HeroPicture({ id }: { id: PerkId }) {
   }
 }
 
-/** Saved hands as a stack of rows getting smaller into the distance, the front one ticked, like a hand bank. */
-function HandStack() {
-  const rows = 5;
-  return (
-    <View style={{ alignItems: 'center' }}>
-      {Array.from({ length: rows }, (_, i) => {
-        const front = i === rows - 1;
-        const w = 200 + i * 28;
-        return (
-          <View
-            key={i}
-            style={[
-              { width: w, height: front ? 96 : 40, marginTop: i ? -14 : 0, borderRadius: 16, paddingHorizontal: 14, flexDirection: 'row', alignItems: front ? 'center' : 'flex-end', paddingBottom: front ? 0 : 7, gap: 10, backgroundColor: `rgba(${226 - (rows - 1 - i) * 10},${232 - (rows - 1 - i) * 8},255,${0.55 + i * 0.1})` },
-              front ? LIFT : null,
-            ]}
-          >
-            {front && (
-              <View style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: '#3a3f55' }}>
-                <Icon name="play.fill" size={16} color="#ffffff" />
-              </View>
-            )}
-            <View style={{ flex: 1, gap: 8 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                <View style={{ width: front ? 70 : 44, height: front ? 12 : 8, borderRadius: 6, backgroundColor: '#5a6078' }} />
-                <View style={{ width: front ? 86 : 54, height: front ? 12 : 8, borderRadius: 6, backgroundColor: '#5a6078' }} />
-              </View>
-              {front && <View style={{ height: 12, borderRadius: 6, backgroundColor: '#5a6078' }} />}
-            </View>
-          </View>
-        );
-      })}
-    </View>
-  );
-}
 
 interface PlanInfo {
   plan: Plan;

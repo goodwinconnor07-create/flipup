@@ -64,7 +64,6 @@ export default function PerkSheet() {
 }
 
 const GO: Partial<Record<PerkId, { title: string; run: () => void }>> = {
-  replay: { title: 'Open Saved hands', run: () => router.push('/replays') },
   share: { title: 'Make a share card', run: () => router.push('/share') },
   packs: { title: 'Pick a card back', run: () => router.push('/card-packs') },
   range: { title: 'Start training', run: () => router.push('/range-session') },
@@ -96,28 +95,6 @@ function Preview({ id }: { id: PerkId }) {
               </View>
               <Icon name="chevron.right" size={13} color="rgba(255,255,255,0.4)" />
             </PressableScale>
-          ))}
-        </View>
-      );
-    case 'replay':
-      return (
-        <View style={{ ...box, gap: spacing.sm }}>
-          {[
-            ['bookmark.fill', 'Save hand', 'The bookmark in the table bar keeps the hand that just finished.'],
-            ['play.fill', 'Watch it back', 'Every move in order, the board street by street, the cards that were shown.'],
-            ['star.fill', 'Star the big ones', 'Starred hands sit at the top of Share, ready to send.'],
-          ].map(([icon, t, l]) => (
-            <View key={t} style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <Icon name={icon as never} size={18} color={brand.gold} />
-              <View style={{ flex: 1 }}>
-                <ThemedText variant="headline" style={{ color: '#ffffff' }}>
-                  {t}
-                </ThemedText>
-                <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                  {l}
-                </ThemedText>
-              </View>
-            </View>
           ))}
         </View>
       );
@@ -170,10 +147,10 @@ function Preview({ id }: { id: PerkId }) {
       return (
         <View style={{ ...box, gap: spacing.xs }}>
           <ThemedText variant="callout" style={{ color: '#ffffff', fontWeight: '700' }}>
-            Free: one set of five hands a day.
+            Free: one hand a day.
           </ThemedText>
           <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            Premium: every hand, any number of sets, and practice sets built from the spots you miss.
+            Premium: every hand, Endless mode, any number of sets, and Gaps, practice built from the spots you miss.
           </ThemedText>
         </View>
       );

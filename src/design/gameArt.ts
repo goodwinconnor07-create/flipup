@@ -268,6 +268,9 @@ const RED = SUIT_COLOUR['♥'];
 /** Power Cards' own card: the game's midnight felt, framed in its electric rail (tableThemes.power in tokens.ts). */
 const POWER_CARD = '#1b2556';
 const POWER_FRAME = '#3ee0ff';
+/** Secret Missions' own card: the game's green felt, a shade lighter so it reads on the green field, in its gold rail (tableThemes.missions). */
+const MISSION_CARD = '#174a3a';
+const MISSION_FRAME = '#d4a94e';
 
 /** Each game's subject on a 100 × 100 square, back to front. It keeps clear of the bottom 6 (the band overlaps it). */
 const SUBJECTS: Record<Variant, () => Shape[]> = {
@@ -416,14 +419,24 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     sparkle(86, 22, 7, WHITE),
     sparkle(84, 80, 9),
   ],
-  // A sealed mission envelope with a red wax seal, and the card that's the mission.
+  // Your hand, and the mission card dealt with it, laid out exactly like Power Cards: the mission card is the game's
+  // green felt (tableThemes.missions) in its gold rail, with a target on it. Every mark is a path, no font glyphs.
   missions: () => [
-    card({ x: 70, y: 38, r: 16, rank: 'A', suit: '♠', s: 0.62, deal: 0 }),
-    ink(rr(18, 40, 60, 40, 5), '#f4e7c8', { t: 'rotate(-6 48 60)' }),
-    { kind: 'path', d: 'M20 43L48 64L76 43', stroke: INK, sw: 2.6, t: 'rotate(-6 48 60)' },
-    ink(oval(48, 62, 9), RED, { t: 'rotate(-6 48 60)' }),
-    { kind: 'path', d: oval(48, 62, 5.6), stroke: '#ffffff', sw: 1.4, opacity: 0.55, t: 'rotate(-6 48 60)' },
-    { kind: 'glyph', x: 48, y: 66, text: '★', size: 9, bold: true, ink: '#ffffff' },
+    card({ x: 35, y: 48, r: -13, rank: 'A', suit: '♠', s: 0.94, deal: 0 }),
+    {
+      kind: 'group',
+      t: 'translate(62 50) rotate(9) scale(1.06)',
+      shapes: [
+        ink(rr(-21, -30, 42, 60, 6.5), MISSION_CARD, { sw: OUTLINE / 1.06 }),
+        { kind: 'path', d: rr(-15.5, -24.5, 31, 49, 3.5), stroke: MISSION_FRAME, sw: 2.2, opacity: 0.9 },
+        ink(oval(0, 0, 11.5), WHITE, { noShadow: true, sw: OUTLINE / 1.06 }),
+        flat(oval(0, 0, 7.6), RED),
+        flat(oval(0, 0, 4.4), WHITE),
+        flat(oval(0, 0, 2), RED),
+      ],
+    },
+    sparkle(86, 22, 7, WHITE),
+    sparkle(84, 80, 9),
   ],
 };
 

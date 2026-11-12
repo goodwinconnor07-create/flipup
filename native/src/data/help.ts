@@ -87,7 +87,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'What does Premium unlock?',
-        a: 'Premium is a subscription, monthly or yearly, bought through your Apple Account. It unlocks hosting every mini game, the whole bot roster, every Range training hand, saved hands with Replay, share card designs, the gold name and the card backs. Texas Hold’em with ten bots and the daily quiz are free. Only the person hosting a table needs Premium; friends who join play every game free.',
+        a: 'Premium is a subscription, monthly or yearly, bought through your Apple Account. It unlocks hosting every mini game, the whole bot roster, every Range training hand, saved hands with Replay, share card designs, the gold name and the card backs. Texas Hold’em with ten bots and Range training’s daily hand are free. Only the person hosting a table needs Premium; friends who join play every game free.',
       },
       {
         q: 'How do I cancel Premium?',
@@ -113,6 +113,10 @@ export const HELP: HelpSection[] = [
         a: 'Real hands from published poker strategy breakdowns. You see the table and the action, choose a play, then see why it’s best and how often each play wins.',
       },
       {
+        q: 'What are the ways to train?',
+        a: 'Daily hand is one free hand a day, the same for everyone. With Premium: Endless deals hand after hand until you stop, Sets are five hands scored at the end, and Gaps builds a set from the spots you miss. New here? Tap How it works on the Train tab.',
+      },
+      {
         q: 'What do Best play, Also good and Missed mean?',
         a: 'Best play is the answer the expert chose. Also good is close to it. Missed is the rest. A miss is never a failure: it shows you what they could have had so you can spot it next time.',
       },
@@ -122,7 +126,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'Where are my stats?',
-        a: 'Tap the chart button at the top right of Range training. It shows your best-play rate, your trend, and which kinds of spot you miss most, and you can practise those straight from there. Everything stays on your phone.',
+        a: 'On the Train tab: your day streak, best-play rate and best run, how many hands you’ve mastered, and Work on, the kinds of spot you miss most. Everything stays on your phone.',
       },
     ],
   },

@@ -32,19 +32,23 @@ export function SetSummary({ answers, still, onShare }: { answers: SetAnswer[]; 
   const reduce = useReduceMotion() || !!still;
   const ink = useGradeInk();
   const best = answers.filter((a) => a.grade === 'best').length;
+  // A single hand (the daily hand) says how it went in words, not "1 of 1".
+  const one = answers.length === 1 ? answers[0] : null;
+  const headline = one ? VERDICT[one.grade] : `${best} of ${answers.length}`;
+  const verdict = one ? 'Today’s hand · a new one tomorrow' : setVerdict(best, answers.length);
   return (
     <View style={{ gap: spacing.lg }}>
-      <Animated.View entering={reduce ? undefined : popIn()} accessible accessibilityLabel={`${setVerdict(best, answers.length)}. ${best} of ${answers.length} best plays.`} style={{ alignItems: 'center', gap: spacing.xs, paddingTop: spacing.lg }}>
+      <Animated.View entering={reduce ? undefined : popIn()} accessible accessibilityLabel={one ? `${headline}. ${verdict}.` : `${verdict}. ${best} of ${answers.length} best plays.`} style={{ alignItems: 'center', gap: spacing.xs, paddingTop: spacing.lg }}>
         <View style={{ flexDirection: 'row', gap: spacing.xs }}>
           {answers.map((a, i) => (
             <View key={i} style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: ink[a.grade] }} />
           ))}
         </View>
         <ThemedText variant="largeTitle" style={{ fontWeight: '800', marginTop: spacing.xs }}>
-          {best} of {answers.length}
+          {headline}
         </ThemedText>
         <ThemedText variant="title3" tone="secondaryLabel">
-          {setVerdict(best, answers.length)}
+          {verdict}
         </ThemedText>
       </Animated.View>
       {onShare && (

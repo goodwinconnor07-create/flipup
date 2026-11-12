@@ -7,11 +7,12 @@ they were tuned. The rules they follow are in [RULES.md](RULES.md#bots).
 
 ## Offline player expansion
 
-The roster now has **640 stable identities**: 600 pub/tournament-style names (Dave B, Mick C,
-Steve D, etc.) and the original 40 names for saved quick-game compatibility. Each has an independent
+The roster now has **540 stable identities**: 300 pub/tournament-style names with a surname initial
+(Dave B, Mick H, Steve D, etc.), 200 regulars who go by a first name only (so not every bot at a table has
+a surname; 12 Nov 2026) and the original 40 names for saved quick-game compatibility. Each has an independent
 profile for discipline, curiosity, pressure, patience, composure, sociability, vocabulary and cadence.
-The ten existing poker foundations remain, with 64 identities per foundation. Profiles vary strategy,
-timing, adaptation and emotion continuously; they are not 640 independently trained poker models.
+The ten existing poker foundations remain, with 54 identities per foundation. Profiles vary strategy,
+timing, adaptation and emotion continuously; they are not 540 independently trained poker models.
 New profiles use understated faces and poker-themed emojis through the existing avatar field.
 No screen, component, CSS, input control or layout was changed.
 

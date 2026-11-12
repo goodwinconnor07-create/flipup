@@ -1,8 +1,9 @@
 // A Range training set, full screen over the tabs: five hands, one at a time, then how the set went. The top bar has
 // Back and the set's progress (a dot a hand, coloured by its grade once answered); the trainer's answer bar and result
 // card pin to the bottom of the screen, as they did on the tab. Opened from the Train tab (params: `daily=1` for the
-// daily quiz, free for everyone, which picks up at the hand you're on and shows your answers once it's done; or
-// `focus`, a JSON list of kinds of spot or 'id:<hand>' entries to practise, Premium like every other set).
+// daily hand, free for everyone, which shows your answer once it's done; `endless=1`, hand after hand with no end and
+// your run of best plays in the header; or `focus`, a JSON list of kinds of spot or 'id:<hand>' entries to practise;
+// everything but the daily hand is Premium).
 // Always dark, on Range training's light field: it stands still while you read a hand, warms or cools for a moment
 // with each answer, and drifts again on the finish page.
 import { Redirect, router, Stack, useLocalSearchParams } from 'expo-router';
@@ -34,13 +35,66 @@ const MOOD_MS = 2600;
 
 export default function RangeSessionScreen() {
   const premium = usePremium();
-  const { daily } = useLocalSearchParams<{ daily?: string }>();
-  // Without Premium only the daily quiz opens here, however the screen was reached.
+  const { daily, endless } = useLocalSearchParams<{ daily?: string; endless?: string }>();
+  // Without Premium only the daily hand opens here, however the screen was reached.
   if (!premium && daily !== '1') return <Redirect href={{ pathname: '/premium', params: { reason: 'training' } }} />;
   return (
     <ForceScheme scheme="dark">
-      <RangeSession premium={premium} daily={daily === '1'} />
+      {endless === '1' && daily !== '1' ? <EndlessSession /> : <RangeSession premium={premium} daily={daily === '1'} />}
     </ForceScheme>
+  );
+}
+
+/**
+ * Endless mode: hand after hand until you go back, no set and no summary. The header counts the hands and your run of
+ * best plays in a row (and the best run this sitting), so there's still something to chase.
+ */
+function EndlessSession() {
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null);
+  const insets = useSafeAreaInsets();
+  const [played, setPlayed] = useState(0);
+  const [{ run, bestRun }, setRuns] = useState({ run: 0, bestRun: 0 });
+  const [mood, setMood] = useState<TrainMood>('idle');
+  useEffect(() => {
+    if (mood === 'idle') return;
+    const t = setTimeout(() => setMood('idle'), MOOD_MS);
+    return () => clearTimeout(t);
+  }, [mood]);
+  const top = () => scroll.current?.scrollTo({ y: 0, animated: false });
+  return (
+    <TrainBackground mood={mood} still>
+      <Stack.Screen options={{ headerShown: false, title: 'Endless' }} />
+      <View style={{ paddingTop: insets.top, paddingHorizontal: spacing.md }}>
+        <View style={{ height: 52, flexDirection: 'row', alignItems: 'center' }}>
+          <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 2 }}>
+            <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }} accessibilityRole="header">
+              Endless · {played} {played === 1 ? 'hand' : 'hands'}
+            </ThemedText>
+            <ThemedText variant="caption1" tone="tertiaryLabel" style={{ fontVariant: ['tabular-nums'] }}>
+              {run > 0 ? `${run} best in a row` : 'No run yet'}
+              {bestRun > 1 ? ` · best ${bestRun}` : ''}
+            </ThemedText>
+          </View>
+          <BackText />
+        </View>
+      </View>
+      <PinnedPage scrollRef={scroll}>
+        <RangeTrainer
+          onStopFocus={() => router.back()}
+          onNext={top}
+          onTop={top}
+          onScrollTo={(y) => scroll.current?.scrollTo({ y, animated: true })}
+          onAnswer={(_scenario, _pick, grade) => {
+            setMood(grade);
+            setPlayed((n) => n + 1);
+            setRuns((r) => {
+              const next = grade === 'best' ? r.run + 1 : 0;
+              return { run: next, bestRun: Math.max(r.bestRun, next) };
+            });
+          }}
+        />
+      </PinnedPage>
+    </TrainBackground>
   );
 }
 
@@ -120,13 +174,19 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
 
   return (
     <TrainBackground mood={done ? 'done' : mood} still={!done}>
-      <Stack.Screen options={{ headerShown: false, title: daily ? 'Daily quiz' : 'Range training' }} />
+      <Stack.Screen options={{ headerShown: false, title: daily ? 'Daily hand' : 'Range training' }} />
       {/* Back on the left, the set's progress in the middle. */}
       <View style={{ paddingTop: insets.top, paddingHorizontal: spacing.md }}>
         <View style={{ height: 52, flexDirection: 'row', alignItems: 'center' }}>
           <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, alignItems: 'center', gap: 6 }}>
             <ThemedText variant="footnote" tone="secondaryLabel" style={{ fontWeight: '600', fontVariant: ['tabular-nums'] }} accessibilityRole="header">
-              {done ? (daily ? `Daily quiz · ${best} of ${size} best plays` : 'Set done') : `${daily ? 'Daily quiz · ' : ''}Hand ${at} of ${size}`}
+              {daily && size === 1
+                ? 'Daily hand'
+                : done
+                  ? daily
+                    ? `Daily quiz · ${best} of ${size} best plays`
+                    : 'Set done'
+                  : `${daily ? 'Daily quiz · ' : ''}Hand ${at} of ${size}`}
             </ThemedText>
             <View accessible accessibilityLabel={`${answers.length} of ${size} hands played`} style={{ flexDirection: 'row', gap: 6 }}>
               {Array.from({ length: size }, (_, i) => {
@@ -149,6 +209,7 @@ function RangeSession({ premium, daily }: { premium: boolean; daily: boolean }) 
             focus={focus}
             queue={queue}
             onStopFocus={() => router.back()}
+            finishTitle={daily && size === 1 ? 'Done' : undefined}
             onNext={() => {
               setDealt((d) => d + 1);
               top();

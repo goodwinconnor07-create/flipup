@@ -2,6 +2,7 @@
 // the last few games. Counted from the table view this phone sees, once per hand and once per game.
 import { bestHand, variantOf, type Card, type Game, type Variant } from '@/engine';
 
+import { cleanStats, tallyGame, tallyHand, type MoreStats } from './record-stats';
 import { read, save, useStored } from './storage';
 
 const KEY = 'flipup.record';
@@ -25,6 +26,8 @@ export interface PokerRecord {
   played: Variant[];
   /** Hands and games already counted ("game/hand" and "game"), so a redraw never counts one twice. */
   seen: string[];
+  /** The bigger stats (style, chips line, all-ins and luck, streaks, starting hands), counted since they came in. */
+  more: MoreStats;
 }
 
 function clean(r: Partial<PokerRecord> | null): PokerRecord {
@@ -37,6 +40,7 @@ function clean(r: Partial<PokerRecord> | null): PokerRecord {
     games: Array.isArray(r?.games) ? r.games.filter((g) => g && typeof g.variant === 'string' && typeof g.place === 'number') : [],
     played: Array.isArray(r?.played) ? r.played.filter((v): v is Variant => typeof v === 'string') : [],
     seen: Array.isArray(r?.seen) ? r.seen.filter((s) => typeof s === 'string') : [],
+    more: cleanStats(r?.more),
   };
 }
 
@@ -73,7 +77,8 @@ export function noteHand(game: Game, myId: string): void {
       }
     }
     const v: Variant = hand.variant ?? 'holdem';
-    return { ...r, played: r.played.includes(v) ? r.played : [...r.played, v], hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mine), best, seen: [...r.seen, key] };
+    const more = tallyHand(r.more, game, myId, new Date());
+    return { ...r, more, played: r.played.includes(v) ? r.played : [...r.played, v], hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mine), best, seen: [...r.seen, key] };
   });
 }
 
@@ -86,6 +91,11 @@ export function noteGame(game: Game, myId: string): void {
     if (!r.seen.some((s) => s.startsWith(`${game.id}/`))) return null;
     const order = [...game.players].sort((a, b) => b.stack - a.stack);
     const place = order.findIndex((p) => p.id === myId) + 1;
-    return { ...r, games: [...r.games, { at: Date.now(), variant: variantOf(game), place, players: game.players.length }], seen: [...r.seen, game.id] };
+    return { ...r, more: tallyGame(r.more, game, myId, place), games: [...r.games, { at: Date.now(), variant: variantOf(game), place, players: game.players.length }], seen: [...r.seen, game.id] };
   });
+}
+
+/** A saved hand watched back (once each time its replay opens). */
+export function noteWatched(): void {
+  update((r) => ({ ...r, more: { ...r.more, watched: r.more.watched + 1 } }));
 }

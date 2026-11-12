@@ -66,10 +66,10 @@ function hand(game: Game): Hand {
 const rng = () => 0;
 
 describe('individual offline players', () => {
-  it('has 600 new regulars and 40 compatible names, valid for existing tables', () => {
-    expect(BOTS.length).toBe(640);
-    expect(new Set(BOTS.map((b) => b.name.toLowerCase())).size).toBe(640);
-    expect(new Set(BOTS.map((b) => b.profile.id)).size).toBe(640);
+  it('has 500 regulars (200 with no surname) and 40 familiar names, valid for existing tables', () => {
+    expect(BOTS.length).toBe(540);
+    expect(new Set(BOTS.map((b) => b.name.toLowerCase())).size).toBe(540);
+    expect(new Set(BOTS.map((b) => b.profile.id)).size).toBe(540);
     expect(new Set(BOTS.map((b) => b.profile.voice)).size).toBe(VOICE_NAMES.length);
     for (const b of BOTS) {
       expect(b.name.length).toBeLessThanOrEqual(10);
@@ -89,7 +89,7 @@ describe('individual offline players', () => {
       expect(s.post.wobble).toBeGreaterThan(0);
       expect(styleOf(b.style, b.profile.id)).toBe(s);
     }
-    expect(fingerprints.size).toBe(640);
+    expect(fingerprints.size).toBe(540);
     expect(JSON.stringify(STYLES)).toBe(before);
   });
   it('keeps identity, dialogue and learning state private and compatible with old games', () => {

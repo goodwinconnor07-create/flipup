@@ -1,7 +1,7 @@
 // After a miss (or a good-but-not-best answer): what they could have, laid out against what you held. Real example
 // hands as little cards, how often you win against each kind of hand, and one line to look for next time. The same
 // example hands are shown on the opponents' seats on the table.
-import { View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { rankLabel, suitOf } from '@/engine';
@@ -37,18 +37,29 @@ export function exampleOf(g: GroupView, dead: string[]): [string, string] | null
   return combosOf(g.group, dead)[0] ?? null;
 }
 
-/** A card too small for the real card component: rank and suit on white. */
+/**
+ * A card too small for the real card component: the rank over its suit on white, like a card's corner. Stacked, so
+ * a 10 fits whole (on one line it ran out of room and showed as "1…"), and fixed in size so Dynamic Type can't cut it.
+ */
 export function MiniCard({ card, w = 22 }: { card: string; w?: number }) {
   const suit = suitOf(card);
+  const color = RED[suit] ? '#d92b2b' : '#111111';
+  const rank = rankLabel(card);
   return (
     <View
       accessible={false}
       style={{ width: w, height: Math.round(w * 1.3), borderRadius: 4, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center' }}
     >
-      <ThemedText variant="caption2" style={{ color: RED[suit] ? '#d92b2b' : '#111111', fontWeight: '800', fontSize: w * 0.46, lineHeight: w * 0.52 }} numberOfLines={1}>
-        {rankLabel(card)}
+      <Text
+        maxFontSizeMultiplier={1}
+        numberOfLines={1}
+        style={{ color, fontWeight: '800', fontSize: w * (rank.length > 1 ? 0.42 : 0.48), lineHeight: w * 0.52, letterSpacing: rank.length > 1 ? -0.6 : 0 }}
+      >
+        {rank}
+      </Text>
+      <Text maxFontSizeMultiplier={1} style={{ color, fontSize: w * 0.42, lineHeight: w * 0.46 }}>
         {SYMBOL[suit]}
-      </ThemedText>
+      </Text>
     </View>
   );
 }

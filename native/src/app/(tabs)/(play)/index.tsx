@@ -1,7 +1,7 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { gameLook } from '@design/gameArt';
@@ -187,7 +187,32 @@ function Dot({ on }: { on: boolean }) {
   return <Animated.View style={[{ height: 5, borderRadius: 3, backgroundColor: '#ffffff' }, style]} />;
 }
 
-/** The table or party you're in: a slim strip over the buttons with a green LIVE tag. */
+/**
+ * The on-air light in the LIVE tag: a green dot that blinks softly, with a ring that grows out of it and fades, so
+ * the game you're in reads as running. Transform and opacity only; under Reduce Motion the dot just stays lit.
+ */
+function LiveDot() {
+  const reduce = useReduceMotion();
+  const beat = useSharedValue(0);
+  useEffect(() => {
+    if (reduce) {
+      cancelAnimation(beat);
+      beat.set(0);
+      return;
+    }
+    beat.set(withRepeat(withTiming(1, { duration: 1400, easing: Easing.out(Easing.quad) }), -1, false));
+    return () => cancelAnimation(beat);
+  }, [reduce]); // eslint-disable-line react-hooks/exhaustive-deps
+  const ring = useAnimatedStyle(() => ({ opacity: 0.7 * (1 - beat.get()), transform: [{ scale: 1 + 1.4 * beat.get() }] }));
+  const dot = useAnimatedStyle(() => ({ opacity: 1 - 0.45 * Math.sin(Math.PI * beat.get()) }));
+  return (
+    <View style={{ width: 7, height: 7 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+      <Animated.View style={[{ position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: brand.raise }, ring]} />
+      <Animated.View style={[{ width: 7, height: 7, borderRadius: 4, backgroundColor: brand.raise }, dot]} />
+    </View>
+  );
+}
+
 /**
  * The second small button under Host a game: Join a game, or, while you're at a table or in a party (you can't join
  * two games at once), a LIVE button in the same spot that takes you back to it. A small x on its corner puts it away
@@ -213,7 +238,8 @@ function JoinOrLive({ join }: { join: ReactNode }) {
         haptics={false}
         style={{ minHeight: 54, flexDirection: 'row', gap: spacing.xs, borderRadius: 20, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: GLASS, borderWidth: 1, borderColor: EDGE }}
       >
-        <View style={{ paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7, borderWidth: 1.5, borderColor: brand.raise }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 7, borderWidth: 1.5, borderColor: brand.raise }}>
+          <LiveDot />
           <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 11, fontWeight: '800', letterSpacing: 0.8, color: brand.raise }}>
             LIVE
           </Text>

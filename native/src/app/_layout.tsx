@@ -113,6 +113,8 @@ export default function RootLayout() {
         <Stack.Screen name="range-session" options={{ headerShown: false, title: 'Range training' }} />
         {/* Range training: the full breakdown of the hand you just answered (the result card's Breakdown). */}
         <Stack.Screen name="range-breakdown" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Breakdown' }} />
+        {/* Range training explained in four steps (the Train tab's How it works). */}
+        <Stack.Screen name="range-how" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'How it works' }} />
         <Stack.Screen name="hand-rankings"options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand rankings' }} />
         <Stack.Screen name="table-log" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand log' }} />
         <Stack.Screen name="card-packs" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Card packs' }} />

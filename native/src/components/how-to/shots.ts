@@ -4,6 +4,9 @@ import type { Variant } from '@/engine';
 
 import type { Shot } from './steps';
 
+/** The pictures' shape. */
+export const SHOT_ASPECT = 390 / 844;
+
 export const SHOTS: Partial<Record<Variant, Partial<Record<Shot, number>>>> = {
   holdem: {
     deal: require('../../../assets/howto/holdem/deal.webp'),

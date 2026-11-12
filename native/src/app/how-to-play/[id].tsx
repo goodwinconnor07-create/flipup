@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/button';
 import { haptic } from '@/components/haptics';
+import { SHOT_ASPECT } from '@/components/how-to/shots';
 import { stepsFor, ZOOMS } from '@/components/how-to/steps';
 import { Icon } from '@/components/icon';
 import { isVariant, variantInfo, type Variant } from '@/engine';
@@ -14,8 +15,8 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { EASE_OUT } from '@/motion/presets';
 import { motion, radius, ROUNDED, spacing } from '@/theme';
 
-/** The pictures are a 390 × 844 phone screen. */
-const ASPECT = 390 / 844;
+/** The pictures are a phone screen, this shape. */
+const ASPECT = SHOT_ASPECT;
 /** How long a step stays before the next, like a story. */
 const STEP_MS = 6500;
 

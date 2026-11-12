@@ -355,8 +355,9 @@ describe('betting', () => {
     expect(hands).toBeGreaterThan(5);
     // This covers up to 60 complete hands through production bot inference.
     // Per-decision latency is measured separately by the bot benchmarks.
-    // It takes 17 to 20s on a laptop, so it gets the 30s every bot simulation has (vitest.config.ts) rather than 20s.
-  }, 30_000);
+    // About 14s of one CPU, so it runs in the `sims` group with a core to itself and takes the suite's 30s limit
+    // (vitest.config.ts); its own 20s limit timed out on CI when it shared the runner with the other sims.
+  });
 });
 
 describe('all-ins, side pots and showdowns', () => {

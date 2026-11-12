@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { holeCountAt, moveLabel, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
+import { holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { me as myDevice, dispatch, useTable } from '@/state/session';
 import { EASE_OUT } from '@/motion/presets';
@@ -18,6 +18,7 @@ import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { openPlayerMenu } from '../player-menu';
 import { seatKey } from '@/state/blocks';
+import { xrayCard } from '@/state/power-view';
 import { ThemedText } from '../themed-text';
 import { bubbleOut, bubblePop, MoveBubble, moveTone, pinned, Thread, TypingBubble } from './bubbles';
 import { TagChip } from './challenge';
@@ -306,6 +307,8 @@ function SeatPod({
   // The dealer button and blinds sit on the back of the last face-down card (BTN, SB, BB); heads-up the button shows BTN.
   const pos = positionOf(hand, player.id);
   const mark = pos && pos.kind !== 'other' ? (pos.kind === 'btn' ? 'BTN' : pos.label) : undefined;
+  // Power Cards: the card your X-ray showed you sits face up in place of their first face-down card (only on your phone).
+  const xray = xrayCard(hand, myPlayer(game, myDevice)?.id, player.id);
   // A seat's share of the row, for wrapping its talk.
   const room = Math.floor((width + 8) / Math.max(n, 1)) - 4;
   return (
@@ -412,6 +415,14 @@ function SeatPod({
               <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length > 3 ? -12 : -6 }}>
                 {card ? (
                   <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} />
+                ) : xray && i === 0 ? (
+                  // Ringed in gold with an eye: you know this one, nobody else at the table does.
+                  <View accessibilityLabel="The card your X-ray showed you" style={{ borderRadius: 6, boxShadow: `0 0 0 2px ${brand.gold}` }}>
+                    <PlayingCard card={xray} size="sm" flip />
+                    <View pointerEvents="none" style={{ position: 'absolute', bottom: -6, right: -6, width: 16, height: 16, borderRadius: 8, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.gold }}>
+                      <Icon name="eye.fill" size={9} color={brand.goldInk} />
+                    </View>
+                  </View>
                 ) : (
                   <View>
                     <PlayingCard back size="sm" pack={player.cardPack} mark={i === cards.length - 1 ? mark : undefined} />

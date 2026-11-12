@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/button';
 import { GamePicture } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
+import { SHOT_ASPECT } from '@/components/how-to/shots';
 import { stepsFor, ZOOMS } from '@/components/how-to/steps';
 import { Icon } from '@/components/icon';
 import { isVariant, variantInfo, type Variant } from '@/engine';
@@ -15,8 +16,8 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { EASE_OUT } from '@/motion/presets';
 import { motion, radius, ROUNDED, spacing } from '@/theme';
 
-/** The pictures are a 390 × 844 phone screen. */
-const ASPECT = 390 / 844;
+/** The pictures are a phone screen, this shape. */
+const ASPECT = SHOT_ASPECT;
 /** How long a step stays before the next, like a story. */
 const STEP_MS = 6500;
 
@@ -67,10 +68,10 @@ export default function HowToPlay() {
   }, [index, paused, last, steps.length, progress]);
   const filling = useAnimatedStyle(() => ({ width: `${progress.get() * 100}%` }));
 
-  // The zoom: the frame takes the shape of the step's strip of the picture, as big as the room allows.
-  const zoom = useSharedValue<{ top: number; height: number }>({ top: 0, height: 1 });
+  // The zoom: the frame takes the shape of the step's part of the picture, as big as the room allows.
+  const zoom = useSharedValue({ top: 0, height: 1, left: 0, width: 1 });
   useEffect(() => {
-    const z = ZOOMS[steps[index]?.zoom ?? 'full'];
+    const z = { left: 0, width: 1, ...ZOOMS[steps[index]?.zoom ?? 'full'] };
     zoom.set(reduce ? z : withTiming(z, { duration: 520, easing: Easing.inOut(Easing.cubic) }));
   }, [index, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -86,16 +87,17 @@ export default function HowToPlay() {
   const roomW = room?.width ?? 0;
   const roomH = room?.height ?? 0;
   const frame = useAnimatedStyle(() => {
-    const { height } = zoom.get();
-    const aspect = ASPECT / height;
+    const { height, width } = zoom.get();
+    const aspect = (ASPECT * width) / height;
     const w = Math.min(roomW, roomH * aspect);
     return { width: w, height: w / aspect };
   });
   const strip = useAnimatedStyle(() => {
-    const { top, height } = zoom.get();
-    const w = Math.min(roomW, roomH * (ASPECT / height));
-    const full = w / ASPECT;
-    return { width: w, height: full, transform: [{ translateY: -top * full }] };
+    const { top, height, left, width } = zoom.get();
+    const w = Math.min(roomW, roomH * ((ASPECT * width) / height));
+    const fullW = w / width;
+    const fullH = fullW / ASPECT;
+    return { width: fullW, height: fullH, transform: [{ translateX: -left * fullW }, { translateY: -top * fullH }] };
   });
   // Tap anywhere: the left third goes back, the rest goes on.
   const tap = (pageX: number) => go(pageX < screenW / 3 ? index - 1 : index + 1);

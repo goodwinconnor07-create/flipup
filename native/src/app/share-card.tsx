@@ -8,7 +8,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { gameData, handData, statsData, type ShareData } from '@/components/share/data';
-import { CARD_H, CARD_W, DesignSwatch, isShareDesign, SHARE_DESIGNS, ShareCard, type ShareDesignId } from '@/components/share/designs';
+import { CARD_H, CARD_W, designsFor, DesignSwatch, isShareDesign, ShareCard, type ShareDesignId } from '@/components/share/designs';
 import { useShareCapture, useWho } from '@/components/share/use-share';
 import { ThemedText } from '@/components/themed-text';
 import { usePremium } from '@/state/premium';
@@ -20,7 +20,7 @@ import { brand, radius, ROUNDED, spacing } from '@/theme';
 const LAST_DESIGN = 'flipup.sharedesign';
 
 /**
- * The share card composer: the card as it will be sent, the five designs under it, and Share. Opened from the Share
+ * The share card composer: the card as it will be sent, the designs that can draw it under it, and Share. Opened from the Share
  * hub, a saved hand, the table's share button and the screenshot prompt. Params: `kind` (stats, game, hand),
  * `id` (a saved hand's id, or `last` for the table's last hand; a game's index), `title` (a hand's moment).
  * Night is free; the other designs show with a crown and Share opens the Premium offer for them.
@@ -32,7 +32,7 @@ export default function ShareCardSheet() {
   const who = useWho();
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
-  const [design, setDesign] = useState<ShareDesignId>(() => {
+  const [picked, setDesign] = useState<ShareDesignId>(() => {
     const want = isShareDesign(p.design) ? p.design : read<string>(LAST_DESIGN, 'night');
     return isShareDesign(want) ? want : 'night';
   });
@@ -47,9 +47,12 @@ export default function ShareCardSheet() {
     if (g) data = gameData(g, who);
   }
   if (!data) data = statsData(record, 0, who);
+  // Only the designs that can draw this card (the odds chart needs odds); the last one used if it can.
+  const designs = designsFor(data);
+  const design = designs.some((d) => d.id === picked) ? picked : 'night';
 
   const scale = Math.min(1, (width - spacing.lg * 2) / CARD_W);
-  const locked = !premium && SHARE_DESIGNS.find((d) => d.id === design)?.premium;
+  const locked = !premium && designs.find((d) => d.id === design)?.premium;
 
   return (
     <View style={{ flex: 1, backgroundColor: '#05070f' }}>
@@ -71,7 +74,7 @@ export default function ShareCardSheet() {
         </View>
 
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.lg }} accessibilityRole="radiogroup">
-          {SHARE_DESIGNS.map((d) => {
+          {designs.map((d) => {
             const on = d.id === design;
             return (
               <PressableScale

@@ -8,13 +8,17 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { perkById, type PerkId } from '@/components/premium/perks';
 import { PressableScale } from '@/components/pressable-scale';
-import { statsData } from '@/components/share/data';
+import { sampleHandData, statsData, type ShareData } from '@/components/share/data';
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
+
+/** The designs that need a hand show this one, made the first time it's needed (its odds take a moment). */
+let sampleHand: ShareData | null = null;
+const handSample = () => (sampleHand ??= sampleHandData({ name: 'You', emoji: '😎', username: 'you' }));
 
 const SAMPLE = statsData(
   { hands: 1284, won: 402, biggestPot: 6420, best: { score: 0, name: 'Full house', cards: ['Ks', 'Kd', 'Kh', '5c', '5s'], variant: 'holdem' }, games: [], played: [], seen: [] },
@@ -24,7 +28,7 @@ const SAMPLE = statsData(
 
 /**
  * One Premium perk shown properly, from a tile on the Premium page: what it is and a look at it (the games, every
- * card back, the five share designs, a gold name at the table). With Premium it also
+ * card back, every share design, a gold name at the table). With Premium it also
  * takes you there (open your saved hands, pick a card back...).
  */
 export default function PerkSheet() {
@@ -125,7 +129,7 @@ function Preview({ id }: { id: PerkId }) {
             <View key={d.id} style={{ alignItems: 'center', gap: 4 }}>
               <View style={{ width: CARD_W * k, height: CARD_H * k, borderRadius: 10, overflow: 'hidden' }}>
                 <View style={{ width: CARD_W, height: CARD_H, transform: [{ scale: k }], transformOrigin: 'top left' }}>
-                  <ShareCard design={d.id} data={SAMPLE} />
+                  <ShareCard design={d.id} data={d.fits ? handSample() : SAMPLE} />
                 </View>
               </View>
               <ThemedText variant="caption1" style={{ color: '#ffffff' }}>

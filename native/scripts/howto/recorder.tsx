@@ -189,11 +189,17 @@ async function shootGame(v: Variant): Promise<void> {
         }
         if (h.dice && p.dice === undefined && h.dice.until) {
           p.dice = h.dice.roll;
-          const start = h.dice.until - 6000 - tableNow;
-          // The simulator on CI draws a beat behind, so these sit late in their part of the show (the die
-          // tumbles from 2.4s to 4.3s, then the result).
-          want('rolling', Math.max(0, start + 3100));
-          want('dice', Math.max(0, start + 4900));
+          // The roll is a 6s show (dice-roll.tsx): a count from three to 2.4s, the die tumbling to 4.3s, then the
+          // result. The host takes each picture wholly inside its part (the table's clock is real time here).
+          const t0 = h.dice.until - 6000;
+          const parts: [string, number, number][] = [
+            ['rolling', 2600, 4250],
+            ['dice', 4500, 5950],
+          ];
+          for (const [name, from, to] of parts) {
+            if (!needed.has(name)) continue;
+            if ((await call('/window', { game: v, hand: key, name, from: t0 + from, to: t0 + to })) === 'ok') p.shots.add(name);
+          }
         }
         if (h.discarding && !p.shots.has('discard') && !plan.some((x) => x.name === 'discard')) want('discard', 1100);
         if (h.discussing && !p.pointed) {

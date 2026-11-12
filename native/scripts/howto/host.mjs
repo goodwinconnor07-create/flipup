@@ -48,6 +48,27 @@ const server = createServer((req, res) => {
         console.log(`[${stamp()}] ${q.game} ${q.hand} ${q.name}`);
         break;
       }
+      case '/window': {
+        // A picture taken wholly inside [from, to] (ms since 1970, the simulator's clock is the Mac's): the
+        // screenshot itself takes a varying time on CI, so keep trying until one starts and ends inside it.
+        const dir = join(WORK, safe(q.game), safe(q.hand));
+        mkdirSync(dir, { recursive: true });
+        const from = Number(q.from);
+        const to = Number(q.to);
+        let got = false;
+        const tries = [];
+        while (Date.now() < to && !got) {
+          if (Date.now() < from) execFileSync('sleep', [String((from - Date.now()) / 1000)]);
+          const start = Date.now();
+          execFileSync('xcrun', ['simctl', 'io', udid, 'screenshot', '--type=png', join(dir, `${safe(q.name)}.png`)], { stdio: 'ignore' });
+          const end = Date.now();
+          tries.push(`${start - from}..${end - from}`);
+          got = start >= from && end <= to;
+        }
+        console.log(`[${stamp()}] ${q.game} ${q.hand} ${q.name} ${got ? 'in its window' : 'MISSED its window'} (ms after it opened: ${tries.join(', ')})`);
+        answer = got ? 'ok' : 'missed';
+        break;
+      }
       case '/keep':
         keep(safe(q.game), safe(q.hand), q.score);
         break;

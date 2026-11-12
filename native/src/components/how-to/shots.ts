@@ -31,8 +31,6 @@ export const SHOTS: Partial<Record<Variant, Partial<Record<Shot, number>>>> = {
     flop: require('../../../assets/howto/deuces/flop.webp'),
     river: require('../../../assets/howto/deuces/river.webp'),
     showdown: require('../../../assets/howto/deuces/showdown.webp'),
-    turn: require('../../../assets/howto/deuces/turn.webp'),
-    yourturn: require('../../../assets/howto/deuces/yourturn.webp'),
   },
   ghost: {
     cards: require('../../../assets/howto/ghost/cards.webp'),
@@ -53,12 +51,9 @@ export const SHOTS: Partial<Record<Variant, Partial<Record<Shot, number>>>> = {
   dice: {
     cards: require('../../../assets/howto/dice/cards.webp'),
     dice: require('../../../assets/howto/dice/dice.webp'),
-    flop: require('../../../assets/howto/dice/flop.webp'),
-    river: require('../../../assets/howto/dice/river.webp'),
     rolling: require('../../../assets/howto/dice/rolling.webp'),
     showdown: require('../../../assets/howto/dice/showdown.webp'),
     turn: require('../../../assets/howto/dice/turn.webp'),
-    yourturn: require('../../../assets/howto/dice/yourturn.webp'),
   },
   redriver: {
     cards: require('../../../assets/howto/redriver/cards.webp'),

@@ -278,7 +278,19 @@ function Flip({ w, delay, pack, small, ghost, children }: { w: number; delay: nu
 }
 
 /** Where a card will land: a faint outline on the felt. */
-export function CardSlot({ size = 'lg', width }: { size?: CardSize; width?: number }) {
+export function CardSlot({
+  size = 'lg',
+  width,
+  fill,
+  dashed,
+}: {
+  size?: CardSize;
+  width?: number;
+  /** Painted with the page's colour, so slots that overlap read as stacked cards, not crossing outlines. */
+  fill?: string;
+  /** A card still to come (Bean Stalk's hand grows into these): fainter, with a dashed edge. */
+  dashed?: boolean;
+}) {
   const w = width ?? CARD_W[size];
   return (
     <View
@@ -287,8 +299,10 @@ export function CardSlot({ size = 'lg', width }: { size?: CardSize; width?: numb
         height: Math.round(w * 1.4),
         borderRadius: w * 0.2,
         borderCurve: 'continuous',
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.2)',
+        borderWidth: dashed ? 1.5 : 2,
+        borderStyle: dashed ? 'dashed' : 'solid',
+        borderColor: dashed ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.2)',
+        backgroundColor: fill,
       }}
     />
   );

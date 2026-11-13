@@ -49,6 +49,8 @@ export function recordedHand(seed: number, hole: Card[] = ['9h', '9d'], flopBet 
     now: 0,
     rng: ctx.rng,
   });
+  // A fixed table id: the bots' personalities are seeded from it, so every run seats the same bots.
+  game.id = `recorded-${seed}`;
   game.players.forEach((p) => (p.stack = 10000));
   startHand(game, ctx);
   const h = game.hand!;

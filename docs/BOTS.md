@@ -161,8 +161,26 @@ fifth of the pot or less went from 11.5% to 4.4% (the new `foldCheap` band, 0 to
 to 80% of the pot from 44.7% (outside its band) to 34.2%, top pair from 8.3% to 1.4%, and one flop bet folded to from
 44% to 37% (band 35 to 50). Everything else moved by noise. `potOdds.test.ts` replays the recorded hand.
 
-Still to do (the plan of 13 Nov 2026): weak hands shouldn't bet into several players on scary boards; a file of known
-spots with right answers; a blunder counter in the lab; and a script that prints every bot decision in a saved hand.
+The plan of 13 Nov 2026 is done; its last three steps (known spots, the blunder count and `bot:explain`) are below.
+
+## Multiway restraint (13 Nov 2026)
+
+In the recorded hand pocket fives bet into two players on A-J-10, on the flop and the turn. Against two callers on a
+board like that nearly every hand that continues has the fives beaten, and nothing better folds. The bots already left
+nothing and overcards alone there (1.8% and 9.2% of the time), but a pocket pair under two or more board cards bet 25%
+of the time: `handBucket()` calls it middle pair, so the "bet when checked to" habit pushed it.
+
+`src/bot_engine/multiway.ts` runs after the habits (Casual and Challenge, after the flop). When nobody has bet, two or
+more other players are live, the board is scary (`scaryBoard()`: connected, three of a suit, or two cards ten or higher)
+and the bot holds a weak hand with no draw (`weakNoDraw()`: a pocket pair under two or more board cards, overcards or a
+gutshot, or nothing), its bets together keep at most 6% against two players and 3% against three or more (`KEEP`); the
+rest goes to the check, and the bet sizes keep their mix. Draws, real pairs, heads-up pots and calm boards are left
+alone. The trace notes it (`multiway`), and research decisions name it in `habit` like the other layers.
+
+Measured with `npm run bot:feel 400`, before and after: a weak hand betting into two or more on a scary board went from
+10.3% to 4.1% (the new `weakIntoMany` band, 0 to 8%). Stabbing with nothing into several players went from 10.3% to
+8.6% (band 8 to 24, n=35; calm boards still get their stabs) and the flop c-bet into two from 39.3% to 35.8% (band 30 to
+52). Everything else stayed in its band. `multiway.test.ts` replays the fives' spot.
 
 ## Reading a bet by its size (13 Nov 2026)
 
@@ -207,6 +225,26 @@ Measured with `npm run bot:feel 400`, before and after: the minimum bet into a r
 the pot went from 34.2% to 37.5% (band 0 to 38), because the bets it faces are now real ones. With few cheap bets left
 the `foldCheap` count is too small to grade (n=20); `potOdds.test.ts` still holds it. `betSizing.test.ts` replays the
 fives' spot.
+
+## Catching bad bot play (13 Nov 2026)
+
+- **Known spots** (`src/bot_engine/knownSpots.test.ts`, part of `npm test`): hands with a plain right answer played up to
+  one Casual bot's decision and checked through the whole pipeline, with room for a bot's style: the recorded hand's
+  nines and fives, aces facing a raise, seven-two first in, a set and top pair facing a flop bet, the nut flush checked
+  to on the river, nothing facing a pot-sized river bet, and a king-high flush facing a third-pot river bet. A spot is a
+  saved hand cut short, so a bad hand from the app goes straight in.
+- **Blunder count** in `npm run bot:feel`: folding when the hand wins at least twice as often as the price needs (the
+  pot-odds check's own equity and discount, bets up to 30% of the pot after calling; band 0 to 3%) and folding three of
+  a kind or better that isn't on the board (0 to 2%). Its first run found the king-high flush above: the pot-odds check
+  left river calls over a third of the stack to the model, which folded 13% of the time with 31% against a 20% price.
+  On the river the call is the last chip in, so that limit now applies only before the river (`potOdds.ts`). After it:
+  0.4% and 0%.
+- **`npm run bot:explain <file>`** (`src/bot_engine/explainHand.ts`): rebuilds a saved hand through the real engine and,
+  before each bot move, prints every option with its chance, the layers that changed it (sizing, habit, multiway, pot
+  odds) and the bot's equity. In the app: Saved hands, long press a hand, Copy hand data, then paste into a file. A
+  rebuilt table starts with fresh bot memories, so a bot that had learned about you over many hands may lean a little
+  differently; plain Texas Hold'em only. `recordedHand()` in `testFixtures.ts` now has a fixed table id, because the
+  bots' personalities are seeded from it and a random one made the hand tests flaky.
 
 ## Table director (13 Nov 2026)
 

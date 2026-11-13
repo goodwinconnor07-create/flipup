@@ -16,12 +16,13 @@ import { inferRanges, sampleDeal } from './ranges';
  * public ranges of everyone still in, discount that for streets still to come and players still to act behind, and when
  * the hand clears the price with room to spare, take away nearly all of the fold. The fold goes to the call, never a
  * raise. It only ever lowers a fold, it reads only public information and the bot's own cards, and it leaves big
- * commitments (over a third of the bot's chips, or a price over 30%) to the model, which has more to go on there.
+ * commitments (a price over 30%, or before the river a call of over a third of the bot's chips) to the model, which has
+ * more to go on there.
  */
 
 /** The dearest price this checks: a bet of about three quarters of the pot. */
 export const MAX_PRICE = 0.3;
-/** Calls bigger than this share of the bot's chips are left to the model. */
+/** Before the river, calls bigger than this share of the bot's chips are left to the model. */
 export const MAX_STACK_SHARE = 1 / 3;
 /** How far over the price the hand must be before the check steps in, in equity. */
 export const MARGIN = 0.025;
@@ -81,7 +82,9 @@ export function applyPotOdds(i: InformationSet, actions: BotMove[], distribution
   if (!hero || toCall <= 0) return same;
   const pot = i.players.reduce((s, p) => s + p.total, 0);
   const price = toCall / (pot + toCall);
-  if (price > MAX_PRICE || toCall > (hero.stack + hero.bet) * MAX_STACK_SHARE) return same;
+  // Before the river a big call can lead to bigger bets later, which the model weighs; on the river the call is the last
+  // chip in, so only the price counts (a king-high flush folded for 38% of its stack on the river in the feel lab).
+  if (price > MAX_PRICE || (i.street !== 'river' && toCall > (hero.stack + hero.bet) * MAX_STACK_SHARE)) return same;
   // Opponents who still have to answer the bet after us could raise and take the rest of the hand away.
   const behind = i.players.filter((p) => p.id !== hero.id && !p.folded && !p.allIn && p.bet < i.currentBet).length;
   const equity = rangeEquity(i);

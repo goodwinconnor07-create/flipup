@@ -24,7 +24,13 @@ export type Variant =
   | 'bjholdem'
   | 'power'
   | 'missions'
-  | 'slide';
+  | 'slide'
+  | 'headband'
+  | 'belt'
+  | 'onion'
+  | 'chain'
+  | 'elevator'
+  | 'plo';
 
 export interface VariantInfo {
   id: Variant;
@@ -233,6 +239,83 @@ export const VARIANTS: VariantInfo[] = [
       "No win odds during an all-in run-out here: the slides still to come can change everyone's hand.",
     ],
   },
+  {
+    id: 'headband',
+    name: 'Headband',
+    emoji: '🤕',
+    tagline: 'One card on your forehead: everyone can see it but you.',
+    rules: [
+      'You get two cards. One is your secret card: only you can see it.',
+      "The other is your headband card. It faces out, so everyone else at the table can see it, but you can't.",
+      "Everything else is normal Texas Hold'em: your hand is the best five from both your cards and the board, the one you can't see included.",
+      "Read the table: how everyone bets at you tells you what's on your head.",
+      'At the showdown every card turns over and you finally see your headband card. If everyone is all in, the cards turn over then, yours too.',
+    ],
+  },
+  {
+    id: 'belt',
+    name: 'Conveyor Belt',
+    emoji: '🛤️',
+    tagline: 'Three cards on a moving belt. One in, one off, every street.',
+    rules: [
+      'You get four cards.',
+      'The flop puts three cards on the belt. On the turn a new card comes in on the right and the card on the left end falls off. The same again on the river, and once more on the last stop: four rounds of betting after the deal.',
+      "Cards that fall off are gone: they don't count for anyone.",
+      'Your hand is the best five from your four cards and the three cards on the belt at the end.',
+      'No win odds during an all-in run-out here.',
+    ],
+  },
+  {
+    id: 'onion',
+    name: 'Onion',
+    emoji: '🧅',
+    tagline: 'Start with five cards. Peel one off, face up, every street.',
+    rules: [
+      'You get five cards.',
+      'After the flop betting, everyone still in peels one card off, face up for everyone to see. Everyone picks at the same time and the peeled cards turn over together. The same again after the turn betting.',
+      'When the river lands, everyone peels their last spare card before the river betting, so you play the river with two.',
+      "At the showdown your hand is your last two cards and the board, like normal Hold'em.",
+      'Out of time? The app peels the card that helps you least.',
+    ],
+  },
+  {
+    id: 'chain',
+    name: 'Chain Reaction',
+    emoji: '🔗',
+    tagline: 'Every board card has to link to the one before it.',
+    rules: [
+      "Normal Hold'em, but the board snowballs.",
+      "Every board card after the first has to share a rank or a suit with the card before it. A card that doesn't link is burned face up beside the board and the next one is tried.",
+      'So boards come out flushy and paired: big hands are everywhere.',
+      "The burned cards stay face up, so everyone knows they can't come.",
+    ],
+  },
+  {
+    id: 'elevator',
+    name: 'Elevator',
+    emoji: '⬆️',
+    tagline: 'Every time a card lands, the board goes up a floor.',
+    rules: [
+      "Normal Hold'em, but the board climbs.",
+      'When the turn lands, the three flop cards first go up one rank each: a 7 becomes an 8, a king an ace, an ace a 2. When the river lands, the four cards already out go up again.',
+      'The new card lands as it is, and your own cards never change.',
+      "Two board cards are never the same: a card the board's climbing cards already show is skipped when the next one is dealt. The board can show a card someone is holding.",
+      'Your hand is the best five from your two cards and the final board.',
+    ],
+  },
+  {
+    id: 'plo',
+    name: 'Double Board PLO',
+    emoji: '♦️',
+    tagline: 'Five cards, two boards, pot limit. Half the pot on each board.',
+    rules: [
+      'Pot Limit Omaha with five cards each: you can raise at most the size of the pot.',
+      'Two boards are dealt side by side, each with its own flop, turn and river.',
+      "On each board your hand is exactly two of your five cards and exactly three of that board's cards, no more and no fewer. The app finds your best two and three.",
+      'Every pot is split: half to the best hand on board one, half to the best hand on board two. Win both to scoop.',
+      "With nine players everyone gets four cards: one deck isn't enough for nine hands of five.",
+    ],
+  },
 ];
 
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
@@ -247,8 +330,11 @@ export const FREE_VARIANTS = 1;
 export const isPremiumVariant = (v: Variant): boolean => VARIANTS.findIndex((x) => x.id === v) >= FREE_VARIANTS;
 export const isVariant = (v: unknown): v is Variant => VARIANTS.some((x) => x.id === v);
 
-/** Hole cards dealt to each player. */
-export const holeCount = (v: Variant) => (v === 'pineapple' ? 3 : 2);
+/** Hole cards dealt to each player (`players` dealt in: Double Board PLO deals four each to nine). */
+export const holeCount = (v: Variant, players = 0) =>
+  v === 'pineapple' ? 3 : v === 'belt' ? 4 : v === 'onion' ? 5 : v === 'plo' ? (players > PLO_FULL ? 4 : 5) : 2;
+/** Double Board PLO: five cards each up to this many players. */
+export const PLO_FULL = 8;
 /** Hole cards each player has once the board has this many cards: Bean Stalk adds one on every street. */
 export function holeCountAt(v: Variant, boardLength: number): number {
   if (v !== 'beanstalk') return holeCount(v);
@@ -269,11 +355,12 @@ export function count21(cards: Card[]): number {
 /** Memory Poker: cards taken out of the deck before each hand. */
 export const MEMORY_REMOVED = 20;
 /** A card is burned before each street (not in Bean Stalk, which needs them: nine players use up 50 cards). */
-export const burns = (v: Variant) => v !== 'beanstalk';
+export const burns = (v: Variant) => v !== 'beanstalk' && v !== 'plo' && v !== 'onion' && v !== 'chain';
 /** Board cards dealt on each street. */
 export function streetCards(v: Variant, street: 'flop' | 'turn' | 'river'): number {
   if (v === 'crucifix') return street === 'flop' ? 5 : 2;
   if (v === 'circle') return 2;
+  if (v === 'plo') return street === 'flop' ? 6 : 2;
   return street === 'flop' ? 3 : street === 'river' && v === 'pittsburgh' ? 3 : 1;
 }
 /** Power Cards: board cards still to come, by street (an Extra Card makes the board longer than five). */
@@ -281,9 +368,9 @@ export const cardsToCome = (street: 'preflop' | 'flop' | 'turn' | 'river'): numb
 /** Board cards once the river is out (Red River can add more). */
 export const boardSize = (v: Variant) => streetCards(v, 'flop') + streetCards(v, 'turn') + streetCards(v, 'river');
 /** Bets are capped at the size of the pot. */
-export const potLimit = (v: Variant) => v === 'ghost';
+export const potLimit = (v: Variant) => v === 'ghost' || v === 'plo';
 /** Win odds can be worked out for the all-in run-out (only plain Hold'em: the others score hands differently). */
-export const showsOdds = (v: Variant) => v !== 'imposter' && v !== 'slide';
+export const showsOdds = (v: Variant) => v !== 'imposter' && v !== 'slide' && v !== 'belt' && v !== 'plo';
 /** Everyone puts in this many big blinds before the blinds (dead money in the middle). */
 export const anteBigBlinds = (v: Variant) => (v === 'imposter' ? 1 : 0);
 /** Imposter needs three players to be a guessing game. */
@@ -400,7 +487,41 @@ export const CIRCLE_RING = [0, 3, 5, 1, 2, 4];
  * The card sets a hand can be made from, by the table's rules: hole cards plus the whole board, or plus each
  * Pittsburgh river, each Crucifix line, or each three-in-a-row on the Circle (only lines and runs that are out so far).
  */
+/**
+ * Double Board PLO: the board is dealt as both boards' flops (three each), then both turns, then both rivers:
+ * board one is cards 0, 1, 2, 6 and 8, board two 3, 4, 5, 7 and 9.
+ */
+export const PLO_BOARDS = [
+  [0, 1, 2, 6, 8],
+  [3, 4, 5, 7, 9],
+] as const;
+export const ploBoards = (board: Card[]): Card[][] => PLO_BOARDS.map((idx) => idx.filter((i) => i < board.length).map((i) => board[i]));
+
+const choose = <T,>(xs: T[], k: number): T[][] => (k === 0 ? [[]] : xs.flatMap((x, i) => choose(xs.slice(i + 1), k - 1).map((c) => [x, ...c])));
+
+/** Omaha: every hand of exactly two hole cards and exactly three board cards (before the flop, the hole pairs). */
+export function omahaSets(hole: Card[], board: Card[]): Card[][] {
+  const pairs = choose(hole, 2);
+  if (board.length < 3) return pairs;
+  const threes = choose(board, 3);
+  return pairs.flatMap((p) => threes.map((t) => [...p, ...t]));
+}
+
+/** Double Board PLO: a player's best hand on one board (0 or 1). */
+export function ploBest(hole: Card[], board: Card[], which: 0 | 1): HandValue {
+  let best: HandValue | null = null;
+  for (const cards of omahaSets(hole, ploBoards(board)[which])) {
+    const value = describeHand(cards);
+    if (!best || value.score > best.score) best = value;
+  }
+  return best!;
+}
+
 export function handSets(v: Variant, hole: Card[], board: Card[]): Card[][] {
+  if (v === 'plo') {
+    const [one, two] = ploBoards(board);
+    return one.length >= 3 ? [...omahaSets(hole, one), ...omahaSets(hole, two)] : omahaSets(hole, []);
+  }
   if (v === 'pittsburgh' && board.length > 5) return board.slice(4).map((river) => [...hole, ...board.slice(0, 4), river]);
   if (v === 'crucifix' && board.length >= 5) {
     // Before the river a line has three or four cards out; a hand is made from what's there.

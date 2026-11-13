@@ -19,6 +19,7 @@ const SIMS = [
   'src/game/powers.test.ts',
   'src/game/missions.test.ts',
   'src/game/slide.test.ts',
+  'src/game/twists.test.ts',
   'src/research/research.test.ts',
   'src/bot_engine/everyday.test.ts',
   'src/bot_engine/personalities.test.ts',

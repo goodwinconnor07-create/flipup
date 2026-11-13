@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
+import { holeCount, holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { me as myDevice, dispatch, useTable } from '@/state/session';
 import { EASE_OUT } from '@/motion/presets';
@@ -251,10 +251,13 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
 }
 
 /** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk (Hit Me's hits are added per seat). */
-function faceDown(game: Game): number {
+function faceDown(game: Game, playerId?: string): number {
   const v = variantOf(game);
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
   const hand = game.hand;
+  // Onion: five, less what they've peeled; Conveyor Belt four; Double Board PLO five (four at a full table of nine).
+  if (v === 'onion') return 5 - (playerId ? (hand?.peeled?.[playerId]?.length ?? 0) : 0);
+  if (v === 'belt' || v === 'plo') return holeCount(v, hand?.seats.length ?? 0);
   const three =
     !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && hand.showdownAt == null && !hand.result));
   return v === 'pineapple' && three ? 3 : 2;
@@ -303,7 +306,16 @@ function SeatPod({
   // Another person (not a bot, not you) at an online table can be reported or blocked.
   const other = !player.bot && !!game.code && !!player.deviceId && player.deviceId !== myDevice;
   const canPeek = host && !!hand?.result && player.bot && !!seat && !seat.shown && seat.cards.length === 0;
-  const cards = seat && (!seat.folded || seat.cards.length > 0) ? (seat.cards.length ? seat.cards : Array.from({ length: faceDown(game) + (hand?.hits?.[player.id] ?? 0) }, () => null)) : [];
+  // Headband: their forehead card faces you (the second of the two).
+  const forehead = hand?.headbands?.[player.id];
+  const cards: (Card | null)[] =
+    seat && (!seat.folded || seat.cards.length > 0)
+      ? seat.cards.length
+        ? seat.cards
+        : Array.from({ length: faceDown(game, player.id) + (hand?.hits?.[player.id] ?? 0) }, (_, i) => (i === 1 && forehead ? forehead : null))
+      : [];
+  // Onion: the cards they've peeled off, face up beside the rest.
+  const peeled = hand?.peeled?.[player.id] ?? [];
   // The dealer button and blinds sit on the back of the last face-down card (BTN, SB, BB); heads-up the button shows BTN.
   const pos = positionOf(hand, player.id);
   const mark = pos && pos.kind !== 'other' ? (pos.kind === 'btn' ? 'BTN' : pos.label) : undefined;
@@ -436,6 +448,13 @@ function SeatPod({
                 )}
               </View>
             ))}
+            {peeled.length > 0 && (
+              <View accessibilityLabel={`Peeled: ${peeled.join(' ')}`} style={{ flexDirection: 'row', marginLeft: 4, gap: 1, alignSelf: 'flex-end' }}>
+                {peeled.map((p) => (
+                  <PlayingCard key={p} card={p} size="sm" width={16} dim />
+                ))}
+              </View>
+            )}
           </View>
         )}
         {/* A fixed slot, so a tag coming or going never changes the row's height and moves the table. */}

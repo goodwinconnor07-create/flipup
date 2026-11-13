@@ -27,6 +27,8 @@ export const MOMENT_TIMING = {
   discards: 3000,
   /** Slide Switch: the cards slide round the table for this long before the street's betting. */
   slides: 1600,
+  /** Onion: the peeled cards turn over together and stay up this long. */
+  peels: 2200,
   /** Imposter: the table talks it over this long before the vote (or less when everyone has pointed). */
   discuss: 14000,
   /** Only one person at the table (the rest are bots): nobody to talk it over with, so a short beat. */
@@ -112,8 +114,14 @@ export function momentCaption(variant: Variant, hand: Hand, now: number): string
       return '🍍 Cards thrown away';
     case 'slides':
       return '🔄 Cards slide to the left';
+    case 'peels':
+      return '🧅 Everyone peels a card';
     case 'reveal':
-      return variant === 'beanstalk' && hand.board.length >= 3 ? '🌱 Everyone grows a card' : null;
+      if (variant === 'beanstalk' && hand.board.length >= 3) return '🌱 Everyone grows a card';
+      if (variant === 'elevator' && hand.board.length >= 4) return '⬆️ The board goes up a floor';
+      if (variant === 'belt' && hand.dropped?.length) return hand.lastStop ? '🛤️ Last stop: one more falls off' : '🛤️ One card in, one falls off';
+      if (variant === 'chain' && hand.burned?.length) return "🔗 Cards that don't link burn";
+      return null;
     default:
       return null;
   }

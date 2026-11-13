@@ -1849,6 +1849,48 @@ html[data-theme='dark'] .btn-dark {
   --theme-glow: var(--theme-slide-glow);
 }
 
+.theme-headband {
+  --theme-felt: var(--theme-headband-felt);
+  --theme-rail-a: var(--theme-headband-rail-a);
+  --theme-rail-b: var(--theme-headband-rail-b);
+  --theme-glow: var(--theme-headband-glow);
+}
+
+.theme-belt {
+  --theme-felt: var(--theme-belt-felt);
+  --theme-rail-a: var(--theme-belt-rail-a);
+  --theme-rail-b: var(--theme-belt-rail-b);
+  --theme-glow: var(--theme-belt-glow);
+}
+
+.theme-onion {
+  --theme-felt: var(--theme-onion-felt);
+  --theme-rail-a: var(--theme-onion-rail-a);
+  --theme-rail-b: var(--theme-onion-rail-b);
+  --theme-glow: var(--theme-onion-glow);
+}
+
+.theme-chain {
+  --theme-felt: var(--theme-chain-felt);
+  --theme-rail-a: var(--theme-chain-rail-a);
+  --theme-rail-b: var(--theme-chain-rail-b);
+  --theme-glow: var(--theme-chain-glow);
+}
+
+.theme-elevator {
+  --theme-felt: var(--theme-elevator-felt);
+  --theme-rail-a: var(--theme-elevator-rail-a);
+  --theme-rail-b: var(--theme-elevator-rail-b);
+  --theme-glow: var(--theme-elevator-glow);
+}
+
+.theme-plo {
+  --theme-felt: var(--theme-plo-felt);
+  --theme-rail-a: var(--theme-plo-rail-a);
+  --theme-rail-b: var(--theme-plo-rail-b);
+  --theme-glow: var(--theme-plo-glow);
+}
+
 /* Power Cards: your power for the hand, one line over the move buttons (Play on your turn), and a banner across
    the felt when anyone plays one. A flat cell like the rest; the gold edge only when it can be played. */
 .power-strip {
@@ -2051,6 +2093,67 @@ html[data-theme='dark'] .btn-dark {
   grid-template-columns: repeat(5, var(--cw));
   grid-auto-rows: calc(var(--cw) * 1.4);
   gap: 3px;
+}
+
+/* Double Board PLO: two boards of five, one above the other (spots from PLO_BOARDS). */
+.board.board-two {
+  --cw: 40px;
+  display: grid;
+  grid-template-columns: repeat(5, var(--cw));
+  grid-auto-rows: calc(var(--cw) * 1.4);
+  gap: 4px 4px;
+}
+
+.table-oval .board-two .pcard {
+  --w: var(--cw);
+}
+
+/* Cards that left the board, face up and small: Conveyor Belt's fallen cards, Chain Reaction's burned ones. */
+.side-cards {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+  opacity: 0.85;
+}
+
+.side-cards small {
+  margin-right: 4px;
+  font-size: var(--fs-micro);
+  color: var(--on-color);
+  opacity: 0.75;
+}
+
+.side-cards .pcard,
+.pod-peeled .pcard {
+  --w: 18px;
+}
+
+/* Onion: the cards a player has peeled off, face up under their cards. */
+.pod-peeled {
+  display: inline-flex;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+/* Headband: their forehead card, face up for you, with the headband's colour round it. */
+.headband-card {
+  box-shadow: 0 0 0 2px var(--theme-rail-a);
+}
+
+/* Headband: your own forehead card, face down, with a note. */
+.my-headband {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.my-headband small {
+  font-size: var(--fs-caption);
+  font-weight: 600;
+  color: var(--ink-3);
 }
 
 /* Circle: six cards round a clock face (each card's --x and --y come from its hour). */

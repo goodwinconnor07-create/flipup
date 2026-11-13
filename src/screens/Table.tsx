@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { bestHand, cardsToCome, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, runoutOdds, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingSlides, pendingVoters, shortCard, slideTargets, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Player, type Seat, type Variant } from '../game';
+import { bestHand, cardsToCome, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, runoutOdds, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingPeels, pendingSlides, pendingVoters, peelers, ploBest, PLO_BOARDS, shortCard, slideTargets, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Player, type Seat, type Variant } from '../game';
 import { closeTable, dispatch, leaveTable, navigate, openSheet, useApp } from '../state/store';
 import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -287,11 +287,16 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const role = hand?.variant === 'imposter' && hand.imposter && mySeat && !hand.result ? 'unknown' : null;
   // Pittsburgh always has room for three rivers, the cross for nine and the circle for six; Red River grows as the
   // red cards come.
-  const boardSlots = Math.max(boardSize(variant), hand?.board.length ?? 0);
+  // Conveyor Belt keeps three; Double Board PLO lays its ten out as two boards of five.
+  const boardSlots = variant === 'belt' ? 3 : Math.max(boardSize(variant), hand?.board.length ?? 0);
   // The cross and the circle lay their cards out in a shape instead of a row.
-  const shape = variant === 'crucifix' ? 'cross' : variant === 'circle' ? 'circle' : null;
+  const shape = variant === 'crucifix' ? 'cross' : variant === 'circle' ? 'circle' : variant === 'plo' ? 'two' : null;
   const place = (i: number): CSSProperties | undefined => {
     if (shape === 'cross') return { gridRow: CROSS_CELLS[i][0], gridColumn: CROSS_CELLS[i][1] };
+    if (shape === 'two') {
+      const b = PLO_BOARDS[0].includes(i as never) ? 0 : 1;
+      return { gridRow: b + 1, gridColumn: (PLO_BOARDS[b] as readonly number[]).indexOf(i) + 1 };
+    }
     if (shape !== 'circle') return undefined;
     const a = (CIRCLE_HOURS[i] / 12) * 2 * Math.PI;
     return { '--x': Math.sin(a).toFixed(3), '--y': (-Math.cos(a)).toFixed(3) } as CSSProperties;
@@ -385,7 +390,12 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? short(myValue) : null;
   // Hit Me: your 21 count rides along with your hand's name.
   const myCount = variant === 'bjholdem' && mySeat && !mySeat.folded && mySeat.cards.length && !hand?.result ? count21(mySeat.cards) : null;
-  const pillName = hand?.result?.showdown ? highlight?.name : myCount !== null ? `${myHandName ? `${myHandName} · ` : ''}${myCount} to 21` : myHandName;
+  // Double Board PLO: your hand on each board.
+  const ploName =
+    variant === 'plo' && mySeat && !mySeat.folded && mySeat.cards.length && hand && hand.board.length >= 6 && !hand.result
+      ? `1: ${short(ploBest(mySeat.cards, hand.board, 0))} · 2: ${short(ploBest(mySeat.cards, hand.board, 1))}`
+      : null;
+  const pillName = hand?.result?.showdown ? highlight?.name : ploName ?? (myCount !== null ? `${myHandName ? `${myHandName} · ` : ''}${myCount} to 21` : myHandName);
   // The pot counts down to nothing as it's pushed to the winner.
   const potNow = hand && !hand.result ? pot(hand) : 0;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): you can turn them over.
@@ -511,6 +521,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
                 })}
               </div>
             )}
+            <SideCards hand={hand} />
             <div className="table-foot">
               {game.memory ? (
                 <MemoryCountdown game={game} />
@@ -533,6 +544,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <Discard game={game} seat={mySeat} />
         ) : hand?.sliding && mySeat && !mySeat.folded && mySeat.cards.length ? (
           <Slide game={game} seat={mySeat} />
+        ) : hand?.peeling && mySeat && !mySeat.folded ? (
+          <Peel game={game} seat={mySeat} />
         ) : bare && (!hand || hand.result) ? null : (
           <>
             <PowerStrip game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} />
@@ -545,19 +558,30 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
       <div className="me-area">
         <div className={`my-cards${(mySeat?.cards.length ?? 0) > 3 ? ' my-cards-many' : ''}`}>
           {mySeat?.cards.length ? (
-            mySeat.cards.map((c, i) => (
-              <PlayingCard
-                key={`${hand!.number}-${c}`}
-                card={c}
-                size="xl"
-                dim={!mySeat.shown && (mySeat.folded || dim(c))}
-                glow={glow(c)}
-                flip
-                pack={me?.cardPack}
-                delay={i * 180}
-                className={`my-card my-card-${i}`}
-              />
-            ))
+            [
+              ...mySeat.cards.map((c, i) => (
+                <PlayingCard
+                  key={`${hand!.number}-${c}`}
+                  card={c}
+                  size="xl"
+                  dim={!mySeat.shown && (mySeat.folded || dim(c))}
+                  glow={glow(c)}
+                  flip
+                  pack={me?.cardPack}
+                  delay={i * 180}
+                  className={`my-card my-card-${i}`}
+                />
+              )),
+              // Headband: your forehead card, face down for you until the cards turn over.
+              ...(variant === 'headband' && mySeat.cards.length === 1
+                ? [
+                    <span key="headband" className="my-headband" aria-label="Your headband card: everyone else can see it">
+                      <PlayingCard back size="xl" pack={me?.cardPack} className="my-card my-card-1" />
+                      <small>🤕 On your head</small>
+                    </span>,
+                  ]
+                : []),
+            ]
           ) : (
             Array.from({ length: holeCount(variant) }, (_, i) => <CardSlot key={i} size="xl" />)
           )}
@@ -615,6 +639,45 @@ function Slide({ game, seat }: { game: Game; seat: Seat }) {
         ))}
       </div>
       <p className="slide-note">{`Everyone slides one left on the ${street}. You get one from the right.`}</p>
+    </div>
+  );
+}
+
+/** Onion: tap the card you peel off. Everyone's peel turns over together, face up for the whole table. */
+function Peel({ game, seat }: { game: Game; seat: Seat }) {
+  const hand = game.hand!;
+  const mine = hand.peels?.[seat.playerId];
+  const due = peelers(hand).some((s) => s.playerId === seat.playerId);
+  if (mine || !due) {
+    const waiting = pendingPeels(game).length;
+    return <p className="discard-wait">{waiting ? `Waiting for ${waiting === 1 ? 'one player' : `${waiting} players`} to peel…` : 'Here they come…'}</p>;
+  }
+  return (
+    <div className="discard">
+      <p className="discard-title">Peel a card off</p>
+      <div className="discard-cards">
+        {seat.cards.map((c) => (
+          <button key={c} type="button" className="discard-card press" aria-label={`Peel the ${cardName(c)}`} onClick={() => dispatch({ type: 'peel', hand: hand.number, card: c })}>
+            <PlayingCard card={c} size={seat.cards.length > 3 ? 'md' : 'lg'} />
+          </button>
+        ))}
+      </div>
+      <p className="slide-note">Everyone sees the card you peel.</p>
+    </div>
+  );
+}
+
+/** Cards that left the board, face up: Conveyor Belt's fallen cards and Chain Reaction's burned ones. */
+function SideCards({ hand }: { hand: Hand | null | undefined }) {
+  const cards = hand?.dropped ?? hand?.burned ?? [];
+  if (!cards.length) return null;
+  const label = hand?.dropped ? 'Fell off the belt' : 'Burned: no link';
+  return (
+    <div className="side-cards" aria-label={`${label}: ${cards.map(cardName).join(', ')}`}>
+      <small>{label}</small>
+      {cards.slice(-8).map((c) => (
+        <PlayingCard key={c} card={c} size="sm" dim />
+      ))}
     </div>
   );
 }
@@ -792,6 +855,22 @@ function WinBanner({ game }: { game: Game }) {
         <span className="win-text">
           <b>{both ? `${name(poker[0])} ${name(poker[0]) === 'You' ? 'win' : 'wins'} both halves` : `Hand: ${poker.map(name).join(' & ')} · 21: ${count.map(name).join(' & ')}`}</b>
           <small>{`${result.names[poker[0]] ?? ''} · closest to 21: ${result.blackjack.counts[count[0]] ?? '?'}`}</small>
+        </span>
+      </div>
+    );
+  }
+  if (result.plo) {
+    // Double Board PLO: who won each board's half of the main pot.
+    const name = (id: string) => (game.players.find((p) => p.id === id)?.deviceId === deviceId ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
+    const [one, two] = [result.plo.winners[0][0] ?? [], result.plo.winners[1][0] ?? []];
+    const scoop = one.length === 1 && two.length === 1 && one[0] === two[0];
+    const top = winners[0];
+    return (
+      <div key={hand.number} className="win-banner pop" role="status">
+        <Avatar emoji={top?.p?.emoji ?? '♦️'} size={34} />
+        <span className="win-text">
+          <b>{scoop ? `${name(one[0])} ${name(one[0]) === 'You' ? 'scoop' : 'scoops'} both boards` : `Board 1: ${one.map(name).join(' & ')} · Board 2: ${two.map(name).join(' & ')}`}</b>
+          <small>{`${result.plo.names[0][one[0]] ?? ''} · ${result.plo.names[1][two[0]] ?? ''}`}</small>
         </span>
       </div>
     );

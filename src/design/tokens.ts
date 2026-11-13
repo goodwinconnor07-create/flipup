@@ -145,6 +145,12 @@ export const tableThemes = {
   power: { felt: '#101a3a', rail: ['#3ee0ff', '#0b4d6b'] },
   missions: { felt: '#123a2e', rail: ['#d4a94e', '#5a4214'] },
   slide: { felt: '#13414a', rail: ['#9be15d', '#3c6e1b'] },
+  headband: { felt: '#2c1640', rail: ['#ff4fd8', '#5c0f52'] },
+  belt: { felt: '#2b2f36', rail: ['#f5c518', '#3a3200'] },
+  onion: { felt: '#4a2a1c', rail: ['#d98c4a', '#5a3115'] },
+  chain: { felt: '#3a1f1a', rail: ['#c9ccd6', '#3c3c46'] },
+  elevator: { felt: '#1e2a3a', rail: ['#d9b26f', '#6a4d1f'] },
+  plo: { felt: '#3a1020', rail: ['#e8c37a', '#5c3d10'] },
 } as const satisfies Record<string, { felt: string; rail: readonly [string, string] }>;
 
 /**

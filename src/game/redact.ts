@@ -64,7 +64,22 @@ export function redactForDevice(game: Game, deviceId: string): Game {
       // an X-ray showed is only for the player who played it.
       powers: hand.powers && (hand.result ? hand.powers : Object.fromEntries(Object.entries(hand.powers).filter(([k]) => mine.has(k) || hand.powerUses?.some((u) => u.by === k)))),
       powerUses: hand.powerUses?.map((u) => (mine.has(u.by) || !u.seen ? u : { ...u, seen: undefined })),
-      seats: hand.seats.map((s) => (peek || mine.has(s.playerId) || s.shown ? s : { ...s, cards: [] })),
+      // Onion: a peel stays with its player until everyone's turns over together.
+      peels: hand.peels && Object.fromEntries(Object.entries(hand.peels).filter(([k]) => mine.has(k))),
+      // Headband: everyone's forehead card faces the rest of the table, never its owner, until the cards turn over.
+      headbands:
+        hand.variant === 'headband'
+          ? Object.fromEntries(hand.seats.filter((s) => s.cards[1] && (peek || s.shown || hand.result || !mine.has(s.playerId))).map((s) => [s.playerId, s.cards[1]]))
+          : undefined,
+      seats: hand.seats.map((s) =>
+        peek || s.shown
+          ? s
+          : mine.has(s.playerId)
+            ? hand.variant === 'headband' && !hand.result
+              ? { ...s, cards: s.cards.slice(0, 1) }
+              : s
+            : { ...s, cards: [] },
+      ),
     },
   };
 }

@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { holeCountAt, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
+import { holeCount, holeCountAt, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Seat, type Talk } from '../../game';
 import { dispatch, openSheet, useApp } from '../../state/store';
 import { Avatar, chips, Count, PlayingCard, PositionChips } from '../../ui/components';
 import { useDesktop } from '../../ui/useDesktop';
@@ -212,9 +212,22 @@ export function Pod({
           <span className={`pod-cards${turn ? ' shimmer' : ''}${Math.max(seat.cards.length, cardsHeld(game, seat.playerId)) > 3 ? ' pod-cards-many' : ''}`}>
             {seat.cards.length
               ? seat.cards.map((c) => <PlayingCard key={c} card={c} size="sm" dim={dimCard(c)} glow={glowCard(c)} flip pack={player.cardPack} />)
-              : Array.from({ length: held }, (_, i) => (
-                  <PlayingCard key={i} back size="sm" pack={player.cardPack} mark={i === held - 1 && chipKind ? (chipKind.kind === 'btn' ? 'BTN' : chipKind.label) : undefined} />
-                ))}
+              : Array.from({ length: held }, (_, i) =>
+                  // Headband: their forehead card faces you.
+                  i === 1 && hand?.headbands?.[seat.playerId] ? (
+                    <PlayingCard key={i} card={hand.headbands[seat.playerId]} size="sm" flip className="headband-card" />
+                  ) : (
+                    <PlayingCard key={i} back size="sm" pack={player.cardPack} mark={i === held - 1 && chipKind ? (chipKind.kind === 'btn' ? 'BTN' : chipKind.label) : undefined} />
+                  ),
+                )}
+          </span>
+        )}
+        {/* Onion: what they've peeled off, face up. */}
+        {!self && seat && (hand?.peeled?.[seat.playerId]?.length ?? 0) > 0 && (
+          <span className="pod-peeled" aria-label={`Peeled: ${hand!.peeled![seat.playerId].join(' ')}`}>
+            {hand!.peeled![seat.playerId].map((c) => (
+              <PlayingCard key={c} card={c} size="sm" dim />
+            ))}
           </span>
         )}
         {won > 0 ? (
@@ -307,14 +320,18 @@ export function MyBox({
 
 /** Crazy Pineapple: everyone still holds three cards (before the flop, and during the flop betting; bots throw theirs away as soon as it ends). */
 /** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk. */
-const faceDown = (game: Game) => {
+const faceDown = (game: Game, playerId?: string) => {
   const v = variantOf(game);
-  if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
+  const hand = game.hand;
+  if (v === 'beanstalk') return holeCountAt(v, hand?.board.length ?? 0);
+  // Onion: five, less the cards peeled off; Conveyor Belt four; Double Board PLO five (four at a nine-player table).
+  if (v === 'onion') return 5 - (playerId ? (hand?.peeled?.[playerId]?.length ?? 0) : 0);
+  if (v === 'belt' || v === 'plo') return holeCount(v, hand?.seats.length ?? 0);
   return v === 'pineapple' && threeCardsLeft(game) ? 3 : 2;
 };
 
 /** Hit Me: two cards plus however many this player has hit. */
-const cardsHeld = (game: Game, playerId: string) => faceDown(game) + (game.hand?.hits?.[playerId] ?? 0);
+const cardsHeld = (game: Game, playerId: string) => faceDown(game, playerId) + (game.hand?.hits?.[playerId] ?? 0);
 
 const threeCardsLeft = (game: Game) => {
   const hand = game.hand;

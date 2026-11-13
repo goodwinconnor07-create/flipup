@@ -348,7 +348,21 @@ const normalize = (t) => String(t ?? '')
 /** Drawn this way on purpose (the owner's design): position marks on card backs, the small bold labels on the power
  * and mission cards. Also Reanimated's web warning for the app's own entering worklets (bubblePop and friends), which
  * only the web preview can't play. KNOWN=0 shows them anyway. */
-const INTENDED = [/Face-down card/, /Couldn't load entering\/exiting animation/, /^tiny-text\|"(BTN|BB|SB|MISSION|POWER|PLAY|DONE)"/];
+const INTENDED = [
+  /Face-down card/,
+  // Shows over the table on purpose: the Imposter's role card and the die roll.
+  /One of you is the imposter|Nobody knows who|Rolling the die/,
+  // A seat's or your own hand of cards overlap like a fanned hand; dashed Bean Stalk slots stack the same way.
+  /^(covered|text-on-text)\|"(10|[2-9JQKA]|[♠♥♦♣])" (under|×) "(10|[2-9JQKA]|[♠♥♦♣])/,
+  // Game pictures sit cropped inside their tiles; the Home shelf scrolls sideways.
+  /\|Game$|Premium\. /,
+  // The Premium page's share-card previews are shrunk copies of the real cards: their lines touch at that size.
+  /Share cards\. Your best hands/,
+  // The web build's stand-in for the iPhone's tab bar sits over the page; the real one is Apple's.
+  /\| Main$|^text-on-text\|"Play( Train)?" ×/,
+  // The game pill gives way so the pot always shows whole (felt.tsx); its tap area is widened with hitSlop.
+  /how it plays/,
+  /Couldn't load entering\/exiting animation/, /^tiny-text\|"(BTN|BB|SB|MISSION|POWER|PLAY|DONE)"/];
 const intended = (f) => process.env.KNOWN !== '0' && INTENDED.some((r) => r.test(`${f.check}|${f.detail}|${f.extra ?? ''}`));
 const signature = (f) => `${f.check}|${normalize(f.detail)}|${normalize(f.extra)}`;
 

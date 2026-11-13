@@ -242,6 +242,8 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
           {variant !== 'holdem' && (
             <Pressable
               style={{ flexShrink: 1 }}
+              // The pill is 24pt tall: the slop makes it a full-size target without moving anything.
+              hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel={`${info.name}: how it plays`}
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}

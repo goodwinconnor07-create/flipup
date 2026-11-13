@@ -631,6 +631,10 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   );
 }
 
+/** A hand's name without its detail ("Full house, threes full of queens" → "Full house"), for a one-line banner that
+ * also names the board or half and the winner: the full name was cut off on every phone. */
+const shortName = (name: string | undefined) => (name ?? '').split(',')[0];
+
 /** Hit Me when the two halves went to different players: one line for each. */
 function HalvesBanner({ game, me }: { game: Game; me: Player | undefined }) {
   const reduce = useReduceMotion();
@@ -655,7 +659,7 @@ function HalvesBanner({ game, me }: { game: Game; me: Player | undefined }) {
   );
   return (
     <Animated.View key={hand.number} accessibilityRole="text" accessibilityLiveRegion="polite" entering={reduce ? FadeIn : bubblePop} style={{ gap: 3, alignItems: 'center' }}>
-      {row('Best hand', poker, hand.result!.names[poker[0]] ?? '')}
+      {row('Best hand', poker, shortName(hand.result!.names[poker[0]]))}
       {row('Closest to 21', count, String(bj.counts[count[0]] ?? '?'))}
     </Animated.View>
   );
@@ -683,7 +687,7 @@ function BoardsBanner({ game, me }: { game: Game; me: Player | undefined }) {
             <Avatar emoji={face(ids[0])} size={24} />
             <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ maxWidth: width - 170, color: c.label, fontWeight: '700', fontSize: 13 }}>
               {`Board ${b + 1} · ${ids.map(name).join(' & ')}`}
-              <Text style={{ color: c.tertiaryLabel, fontWeight: '600' }}>{`  ${plo.names[b][ids[0]] ?? ''}`}</Text>
+              <Text style={{ color: c.tertiaryLabel, fontWeight: '600' }}>{`  ${shortName(plo.names[b][ids[0]])}`}</Text>
             </Text>
           </View>
         );

@@ -16,6 +16,7 @@
 //   MAX=12                       kinds of problem listed per check (the rest are counted)
 //   REPORT=/some/file.json       groups a saved JSON again without opening a browser
 //   KNOWN=0                      also lists what's drawn that way on purpose (INTENDED)
+//   EVAL='js expression'         prints what it returns on every page (to measure something by hand)
 //   PROBE=regex                  prints the markup round the first text matching it (to find which component drew it)
 //   CHROMIUM_PATH                if Playwright's Chromium isn't at /opt/pw-browsers/chromium
 // Exit code 1 when anything was found. Local files only.
@@ -164,6 +165,14 @@ function audit(probe) {
     byEl.set(el, leaf);
     leaves.push(leaf);
   }
+  // Reanimated's web build lifts a view with an entering animation out of the layout (position: absolute), so it
+  // shrinks to its words and wraps or cuts them. The phone lays it out normally: size checks skip those views.
+  const lifted = (el) => {
+    for (let e = el; e && e !== document.body; e = e.parentElement) {
+      if (/animation-name: REA-/.test(e.getAttribute('style') ?? '') && style(e).position === 'absolute') return true;
+    }
+    return false;
+  };
   const shown = leaves.filter((l) => opacity(l.el) > 0.3);
   const rectOf = (b) => ({ x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.right - b.left), h: Math.round(b.bottom - b.top) });
 
@@ -177,9 +186,9 @@ function audit(probe) {
     // Cut by a parent that clips: partly visible.
     const clip = clipOf(l.el);
     const full = area(l.box), vis = area(intersect(l.box, clip));
-    if (full > 0 && vis > 0 && vis / full < 0.9) add('clipped', `"${t}" (${Math.round((100 * vis) / full)}% shows)`, rectOf(l.box), label(l.el));
+    if (full > 0 && vis > 0 && vis / full < 0.9 && !lifted(l.el)) add('clipped', `"${t}" (${Math.round((100 * vis) / full)}% shows)`, rectOf(l.box), label(l.el));
     // Cut short: text-overflow, or a single line wider than its box with no room to wrap.
-    if (l.el.scrollWidth > l.el.clientWidth + 1 && s.overflowX !== 'visible' && l.el.clientWidth > 0) add('truncated', `"${t}" (needs ${l.el.scrollWidth}px, has ${l.el.clientWidth})`, rectOf(l.box), label(l.el));
+    if (l.el.scrollWidth > l.el.clientWidth + 1 && s.overflowX !== 'visible' && l.el.clientWidth > 0 && !lifted(l.el)) add('truncated', `"${t}" (needs ${l.el.scrollWidth}px, has ${l.el.clientWidth})`, rectOf(l.box), label(l.el));
     if (parseFloat(s.fontSize) < 9) add('tiny-text', `"${t}" at ${s.fontSize}`, rectOf(l.box), label(l.el));
   }
 
@@ -289,6 +298,7 @@ async function visit({ path, w, h, scheme, storage, at, tag }) {
     await page.goto(`${base}${path}`, { waitUntil: 'load', timeout: 30000 });
     await page.waitForTimeout(3000);
     res = await page.evaluate(audit, process.env.PROBE ?? '');
+    if (process.env.EVAL) console.log(`${tag}: ${await page.evaluate(process.env.EVAL)}`);
   } catch (e) {
     res = { found: [{ check: 'load-failed', detail: String(e.message).split('\n')[0].slice(0, 120) }], text: '' };
   }
@@ -336,8 +346,9 @@ const normalize = (t) => String(t ?? '')
   .replace(/\p{Extended_Pictographic}(\u200d\p{Extended_Pictographic}|\ufe0f|[\u{1F3FB}-\u{1F3FF}])*/gu, '☺')
   .replace(/[\d,.]+/g, '#');
 /** Drawn this way on purpose (the owner's design): position marks on card backs, the small bold labels on the power
- * and mission cards. KNOWN=0 shows them anyway. */
-const INTENDED = [/Face-down card/, /^tiny-text\|"(BTN|BB|SB|MISSION|POWER|PLAY|DONE)"/];
+ * and mission cards. Also Reanimated's web warning for the app's own entering worklets (bubblePop and friends), which
+ * only the web preview can't play. KNOWN=0 shows them anyway. */
+const INTENDED = [/Face-down card/, /Couldn't load entering\/exiting animation/, /^tiny-text\|"(BTN|BB|SB|MISSION|POWER|PLAY|DONE)"/];
 const intended = (f) => process.env.KNOWN !== '0' && INTENDED.some((r) => r.test(`${f.check}|${f.detail}|${f.extra ?? ''}`));
 const signature = (f) => `${f.check}|${normalize(f.detail)}|${normalize(f.extra)}`;
 

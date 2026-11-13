@@ -335,7 +335,7 @@ export function SeatBadge({ game, playerId }: { game: Game; playerId: string }) 
   }
   if (!text) return null;
   return (
-    <View pointerEvents="none" style={{ position: 'absolute', right: -14, top: -4, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999, backgroundColor: hot ? c.redBg : c.surface, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
+    <View pointerEvents="none" style={{ position: 'absolute', right: -14, bottom: 2, paddingHorizontal: 6, paddingVertical: 1, borderRadius: 999, backgroundColor: hot ? c.redBg : c.surface, boxShadow: '0 1px 3px rgba(0,0,0,0.3)' }}>
       <Text maxFontSizeMultiplier={1.1} style={{ fontSize: 11, fontWeight: '800', color: hot ? c.redInk : c.label }}>
         {text}
       </Text>

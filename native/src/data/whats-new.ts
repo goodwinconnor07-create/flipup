@@ -21,6 +21,7 @@ export const RELEASES: Release[] = [
     version: '1.0.0',
     label: 'November 2026',
     items: [
+      { icon: 'person.2.fill', title: 'A tidier table', text: 'The players out of view are a small button at the end of the row, so it never covers anyone’s cards or winnings. Onion’s peeled cards stay inside their seat, and every board’s winning hand fits on its line.' },
       { icon: 'questionmark.circle.fill', title: 'Rules before your first hand', text: 'The first time you play a new game, a short card sums up the rules. Against bots, the game waits until you tap Continue. Online, it shows for five seconds and you can close it sooner.' },
       { icon: 'suit.spade.fill', title: 'Room for five cards', text: 'In Onion and Double Board PLO your five cards sit in a neat fan beside your chips, and the board stays full size. Bean Stalk saves the room from the deal, so nothing shifts as your hand grows.' },
       { icon: 'person.3.fill', title: 'Hold to take a bot off', text: 'Holding a bot in the lobby draws a ring round it. Let go early and it unwinds; hold until it closes and the bot leaves.' },

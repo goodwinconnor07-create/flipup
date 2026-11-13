@@ -305,9 +305,9 @@ const FRIENDLY: Lines = {
 const VOICES: Record<StyleId, Partial<Lines>> = {
   // The Menace: cocky, loves rubbing it in.
   shark: {
-    hello: ['Hello, {you}. I’ve read you already.', '{you}. Nice stack. Mine soon.'],
-    welcome: ['Welcome. Sit. Lose.'],
-    thinkEasy: ['Light work.', 'Calculated.'],
+    hello: ['Hello, {you}. I’ve read you already.', '{you}.|I’ll take those chips.'],
+    welcome: ['Sit down.|Pay up.'],
+    thinkEasy: ['Routine.', 'By the book.'],
     raise: ['Pay me.', 'Sit down.'],
     bluffWon: ['Folded 😂', 'Scared money.', 'Nice fold.'],
     bigWin: ['Free money 💸', 'Delicious pot.', 'Mine now.'],
@@ -315,11 +315,11 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     lostToYou: ['Lucky bastard.', 'Read you.'],
     tiltJab: ['I’ve studied you.', 'You’re transparent.', 'Free read.', 'Classic you.'],
     yourBigBet: ['That’s your move?', 'Interesting raise.'],
-    idle: ['Hello, fish.', 'Feeling dangerous.'],
+    idle: ['Clock’s running.', 'Feeling dangerous.'],
     tank: ['He’s buffering…', 'Solver time.'],
     showBluff: ['Read that.', 'Scared money.'],
     revenge: ['Owned.', 'Back in my pocket.'],
-    tilted: ['Whatever.'],
+    tilted: ['Variance.'],
   },
   lag: {
     hello: ['{you}! Buckle up.', 'Hey {you}. No brakes tonight.'],
@@ -330,8 +330,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     bigWin: ['Printing 💸', 'Cha-ching.', 'Payday.'],
     win: ['Cry more.', 'Another victim.'],
     badBeat: ['Rigged.', 'Disgusting.'],
-    tiltJab: ['Again, bro?', 'Keep donating.', 'Too emotional.'],
-    bluffCaught: ['Worth it.', 'We move.'],
+    tiltJab: ['Tilted, bro?', 'Tilt much?', 'Too emotional.'],
+    bluffCaught: ['No regrets.', 'We move.'],
     tank: ['Windows update.', 'We have jobs.'],
     showBluff: ['Cinema 🎬', 'Nothing. Again.'],
     revenge: ['Run it back?'],
@@ -342,7 +342,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     welcome: ['WELCOME! Chaos time!'],
     allin: ['Trust me.', 'Chaos time.', 'Call the FBI.'],
     raise: ['Believe me?', 'Trust me.'],
-    sweatLose: ['Scripted 🎬', 'Rigged.', 'That’s illegal.'],
+    sweatLose: ['Scripted 🎬', 'This deck!', 'That’s illegal.'],
     bluffWon: ['Never had it.', 'So obvious.', '🫵😂'],
     bigWin: ['Retirement fund.', 'Generational wealth.', 'I’m eating.'],
     badBeat: ['PokerPrime moment.', 'Unreal runout.', 'I’m reporting.'],
@@ -376,10 +376,10 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     thinkEasy: ['Clean.', 'Standard.'],
     bluffWon: ['Respectfully, no.', 'Good boy.'],
     bigWin: ['Beautiful.', 'Thank you.', 'Easy game.'],
-    lostToYou: ['Well played.', 'Fair play.', 'Not bad.'],
+    lostToYou: ['Good hand.', 'Nicely done.', 'Not bad.'],
     badBeat: ['Brutal.', 'Unlucky.'],
     tiltJab: ['Character building.', 'Hold that.'],
-    idle: ['Stay sharp.', 'Lock in.'],
+    idle: ['Focus up.', 'Lock in.'],
     tank: ['Need assistance?', 'It’s one hand.'],
     showStrong: ['Standard.', 'Always have it.'],
     showFold: ['Disciplined.'],
@@ -439,8 +439,8 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     sweatLose: ['I’m sick.', 'No shot.', 'Excuse me?!', 'I’m reporting.'],
     badBeat: ['WHAT?!', 'Disgusting river.', 'That’s personal.', 'Uncalled for.'],
     lostToYou: ['You win.', 'I folded.', 'Don’t celebrate.'],
-    bluffCaught: ['I panicked 😭', 'Lag moment.', 'Delete that.'],
-    idle: ['Nervous already.', 'Anyone home?'],
+    bluffCaught: ['Oh no 🙈', 'Lag moment.', 'Delete that.'],
+    idle: ['Nervous already.', 'Um… hello?'],
     tank: ['Hurry, I’m sweating.', 'Please don’t.'],
     showFold: ['Was I right?!', 'I panicked 😭'],
     tilted: ['Why me?', 'I’m sweating.', 'I’m sick.'],
@@ -452,10 +452,10 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
     thinkHard: ['I’m calling anyway.', 'Hmm.'],
     sweatLose: ['Rigged.', 'Of course.', 'Naturally.'],
     badBeat: ['No way.', 'You’re joking.', 'Again?!'],
-    lostToYou: ['Whatever.', 'You got me.', 'Fair enough.'],
+    lostToYou: ['Whatever.', 'Fair enough.', 'Can’t win ’em all.'],
     bigWin: ['I knew.', 'Told you.', 'Never worried.'],
     bluffCaught: ['I meant that.', 'Fair enough.'],
-    idle: ['Coffee break? ☕', 'Bored already.'],
+    idle: ['Snack time? 🍿', 'Bored already.'],
     tank: ['Just call.', 'Bro is thinking.'],
     showFold: ['First fold today.'],
     tilted: ['Of course.', 'Naturally.'],
@@ -664,7 +664,16 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   } else {
     const lines = pool(voice, event);
     if (!lines.length) return 0;
-    const i = Math.floor(rng() * lines.length);
+    let i = Math.floor(rng() * lines.length);
+    // Not the line this bot said last, nor one the table has just heard: the game modes' lists are short (three to six
+    // lines), so a plain random pick said "No help here." twice in two hands. Another pick only when it would repeat,
+    // so the random numbers (and every seeded table) stay the same otherwise.
+    const heard = new Set(Object.values(game.reactions ?? {}).map((r) => botLineText(r.id)));
+    const repeats = (k: number) => heard.has(lines[k]);
+    if (lines.length > 1 && repeats(i)) {
+      const others = lines.map((_, k) => k).filter((k) => !repeats(k));
+      if (others.length) i = others[Math.floor(rng() * others.length)];
+    }
     line = id(voice, event, i);
   }
   game.reactions = {

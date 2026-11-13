@@ -89,9 +89,12 @@ export function MyArea({
   // With that many cards the box is narrow: the chip count shrinks to fit and your name goes (your face and position
   // stay; everyone knows their own name).
   const tight = many;
+  // Bean Stalk: how many more cards your hand will get this hand (none once you've folded or the hand is over).
+  const dealtIn = seat && !seat.folded && !hand?.result;
+  const growing = variant === 'beanstalk' && (dealtIn || !seat?.cards.length) ? Math.max(0, room - (seat?.cards.length || count)) : 0;
   // The box's room for the count (less its padding and border), and a size that fits the number in it: the digits of
-  // SF Pro bold are about 0.62 of the font size wide. iOS would shrink the text by itself; this keeps the web build
-  // (and the first frame) right too.
+  // SF Pro bold are about 0.62 of the font size wide. Worked out here rather than with adjustsFontSizeToFit: on iOS
+  // that drew nothing at all in a box whose text has no set width (Bean Stalk on TestFlight, 13 Nov 2026).
   const bb = Math.max(game.settings.bigBlind, 1);
   const boxInner = screen - 32 - 12 - (w + (room - 1) * (w + overlap)) - 22;
   const label = me ? (inBB ? `${bigBlinds(me.stack / bb)} BB` : chips(me.stack)) : '';
@@ -129,9 +132,16 @@ export function MyArea({
             ))
           : Array.from({ length: count }, (_, i) => (
               <View key={i} style={{ marginLeft: i === 0 ? 0 : overlap, transform: fanned(i, count) }}>
-                <CardSlot width={w} />
+                <CardSlot width={w} fill={c.background} />
               </View>
             ))}
+        {/* Bean Stalk: the cards your hand will grow into this hand, as faint dashed slots in the room kept for them. */}
+        {growing > 0 &&
+          Array.from({ length: growing }, (_, i) => (
+            <View key={`grow-${i}`} accessible={false} style={{ marginLeft: overlap }}>
+              <CardSlot width={w} fill={c.background} dashed />
+            </View>
+          ))}
         {forehead && (
           // Headband: your forehead card, face down for you, with a headband over it.
           <View accessibilityLabel="Your headband card. Everyone else can see it, you can't." style={{ marginLeft: overlap }}>
@@ -189,9 +199,8 @@ export function MyArea({
           </View>
         ) : (
           // The chip count is the biggest thing in the box, sat a little low so the corner bubbles have room above it.
-          <View style={{ flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', paddingTop: compact ? 10 : 14 }}>
+          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: compact ? 10 : 14 }}>
             <Pressable
-              style={tight ? { alignSelf: 'stretch', alignItems: 'center' } : undefined}
               accessibilityRole="button"
               accessibilityLabel={`${inBB ? 'Stack in big blinds' : 'Stack in chips'}, tap to switch`}
               onPress={() => {
@@ -206,16 +215,13 @@ export function MyArea({
               ) : inBB ? (
                 <Text
                   maxFontSizeMultiplier={1.2}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit={tight}
-                  minimumFontScale={0.6}
                   style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label, fontVariant: ['tabular-nums'] }}
                 >
                   {bigBlinds(me.stack / bb)}
                   <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}> BB</Text>
                 </Text>
               ) : (
-                <Count value={me.stack} fit={tight} style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label }} />
+                <Count value={me.stack} style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label }} />
               )}
             </Pressable>
             {/* A fixed slot, so the win line coming or going never changes the box's height and moves the table. */}

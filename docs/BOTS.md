@@ -138,6 +138,34 @@ Still to do from the same research: isolation raises over limpers, squeeze plays
 (live players call a raise far more than online ones do), check-raising narrow and value-heavy, and a table
 director for the variants (the Hold'em one is above).
 
+## Pot-odds check (13 Nov 2026)
+
+The owner's recording: five-handed at 10/20, the small blind raised to 70 with pocket nines, two calls, an A-J-10 flop.
+The big blind bet 20 into 210, a call, and the nines folded, getting 250 to 20. They needed to win 7.4% of the time and
+won 12 to 19% against the bettors' public ranges. In the engine they folded 83 to 100% of the time on every table we
+tried. The cause: the multi-street look-ahead prices a call as if the bot will keep paying on every later street, so
+the call scored as losing about 70 chips, and the pair habit above steps aside when the model gives a call next to no
+chance.
+
+`src/bot_engine/potOdds.ts` runs after the habits, last before the bot draws its move (Casual and Challenge, after the
+flop). Facing a bet, it works out the price (the call over the pot after calling) and the hand's showdown equity against
+the public ranges of everyone still in (400 deals, seeded by what's visible only). It discounts that for streets to come
+(85% on the flop, 90% on the turn, all of it on the river) and for each player still to answer the bet behind (8% each,
+never below 60%). When what's left clears the price by 2.5 points, the fold drops to 8% at most, and to 1% once the hand
+clears twice the price. The fold goes to the call, never a raise. It only ever lowers a fold, and it leaves big
+commitments to the model: a price over 30% (a bet of about three quarters of the pot) or a call of over a third of the
+bot's chips. The trace keeps the numbers (`potOdds`: price, equity, realised, note).
+
+Measured with `npm run bot:feel 400` (1,200 Casual hands), before and after: a pair or a draw folding to a bet of a
+fifth of the pot or less went from 11.5% to 4.4% (the new `foldCheap` band, 0 to 12%), middle pair folding to a bet up
+to 80% of the pot from 44.7% (outside its band) to 34.2%, top pair from 8.3% to 1.4%, and one flop bet folded to from
+44% to 37% (band 35 to 50). Everything else moved by noise. `potOdds.test.ts` replays the recorded hand.
+
+Still to do (the plan of 13 Nov 2026): the minimum bet is about 30% of the bots' bets after the flop (it should be a
+few percent); a bet's size should change what the bot thinks the bettor holds; weak hands shouldn't bet into several
+players on scary boards; a file of known spots with right answers; a blunder counter in the lab; and a script that
+prints every bot decision in a saved hand.
+
 ## Table director (13 Nov 2026)
 
 `src/bot_engine/director.ts` keeps a Casual table lively without touching a card. After every hand the reducer's

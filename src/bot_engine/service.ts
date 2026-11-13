@@ -13,6 +13,7 @@ import { estimateActionValues } from './actionValues';
 import { decisionRisk } from './decisionRisk';
 import { everydayReference, everydayWeights, everydaySupport } from './everyday';
 import { applyHabits } from './habits';
+import { applyPotOdds, type PotOddsResult } from './potOdds';
 import { handPlanWeights } from './handPlan';
 import { behaviorSnapshot } from './behaviorMemory';
 import { decisionPhilosophy, describeChoice, applySizingPreferences, sharedUnbeatableBoard } from './philosophy';
@@ -45,6 +46,8 @@ export interface DecisionTrace {
   experienceVersion?: 'human-table-1';
   /** An everyday habit that moved the final distribution (habits.ts), for diagnosis. */
   habit?: string;
+  /** The pot-odds check (potOdds.ts): the price, the hand's equity and what it keeps of it, for diagnosis. */
+  potOdds?: NonNullable<PotOddsResult['check']> & { note: string | null };
 }
 /** Backend service contract. Production must authorize the actor before constructing info. */
 export class BotService {
@@ -237,6 +240,13 @@ export class BotService {
       finalDistribution = result.distribution;
       habit = result.note;
     }
+    // Last word on a fold: a hand that clears the price with room to spare calls (see potOdds.ts).
+    let potOdds: DecisionTrace['potOdds'];
+    if (profile.everyday && info.street !== 'preflop') {
+      const result = applyPotOdds(info, prediction.actions, finalDistribution);
+      finalDistribution = result.distribution;
+      if (result.check) potOdds = { ...result.check, note: result.note };
+    }
     const rng = seededRng(samplingSeed);
     let draw = rng(),
       selected = finalDistribution.length - 1;
@@ -270,6 +280,7 @@ export class BotService {
       ),
       ...(liveExperience ? { experienceVersion: 'human-table-1' as const } : {}),
       ...(habit ? { habit } : {}),
+      ...(potOdds ? { potOdds } : {}),
       latencyMs: performance.now() - start,
       ...(coherence ? { handPlan: coherence.plan, coherenceWeights: coherence.logWeights } : {}),
       adaptation: {

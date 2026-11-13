@@ -5,12 +5,13 @@ import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { humanPokerThought, updateHumanPokerMemory } from '../bot_engine/live';
 import { isPersonality } from '../bot_engine/personalities';
 import { balancedBotPool, isBotDifficulty } from '../bot_engine/everyday';
-import { everydayThought, updateEverydayMemory, usesEverydayBots } from '../bot_engine/everydayLive';
+import { everydayThought, noteEverydayHand, updateEverydayMemory, usesEverydayBots } from '../bot_engine/everydayLive';
 import { boardInfo, tierWith, toInt } from './botEval';
+import { hashString, seededRng } from './cards';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
 import { BOTS, styleOf } from './botStyles';
-import { botSays, dealTalk, streetTalk, type TalkEvent } from './botTalk';
+import { botSays, dealTalk, streetTalk, variantTalk, type TalkEvent } from './botTalk';
 import { DEFAULT_EMOJI, isEmoji } from './emoji';
 import { isBubbleId } from './bubbles';
 import { isPackId } from './cardPacks';
@@ -25,6 +26,8 @@ import {
   discardCard,
   endSlides,
   slideCard,
+  endPeels,
+  peelCard,
   endVote,
   endDiscussion,
   endTally,
@@ -595,6 +598,7 @@ function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
 
 function afterHand(game: Game, ctx: ActionContext): void {
   updateEverydayMemory(game);
+  noteEverydayHand(game);
   updateHumanPokerMemory(game);
   const hand = game.hand!;
   const result = hand.result!;
@@ -884,6 +888,8 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     if (!changed) return { ok: true, game: input, changed: false };
     if (game.hand?.result && game.readHand !== game.hand.number) afterHand(game, ctx);
     watchEmpty(game, ctx);
+    // Bot talk about the game gets its own dice, derived from the table, so a comment can never move a deal or any other roll.
+    variantTalk(game, seededRng(hashString(`${game.id}:${game.version}:game-talk`)), ctx.now);
     game.version += 1;
     return { ok: true, game, changed: true };
   };
@@ -1105,6 +1111,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       if (!me) return fail("You're not at this table.");
       if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
       const error = slideCard(game, me.id, action.card, ctx);
+      return error ? fail(error) : done();
+    }
+
+    case 'peel': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = peelCard(game, me.id, action.card, ctx);
       return error ? fail(error) : done();
     }
 
@@ -1351,6 +1365,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (hand && !hand.result) {
     if (!due(hand.actAt)) return false;
+    // Onion: time's up for picking a card to peel.
+    if (hand.peeling) {
+      endPeels(game, ctx);
+      return true;
+    }
     // Slide Switch: time's up for picking a card to slide.
     if (hand.sliding) {
       endSlides(game, ctx);

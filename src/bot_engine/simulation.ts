@@ -22,6 +22,7 @@ import { BehavioralProvider } from './behavioralProvider';
 import { learnPublicSession } from './sessionFeel';
 import { tableCast, tableProfile, tableInstanceSeed } from './tableCast';
 import { rememberHandStory } from './handStory';
+import { emptyDirector, noteHand, pulseOf } from './director';
 
 export interface SimulationOptions {
   agents?: AgentKind[];
@@ -41,6 +42,8 @@ export interface SimulationOptions {
   onDecision?: (trace: DecisionTrace) => void;
   everyday?: BotDifficulty;
   everydayFocus?: EverydayFocus;
+  /** Casual only. true: the table director reads the table and sets the lift; a number: hold the lift at that value. Missing: no director. */
+  director?: boolean | number;
 }
 
 /** Uses production rules; independently seeded policy and dealing streams. No illegal-action fallback. */
@@ -198,6 +201,8 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     betSizes: 0,
   };
   const tableExperience = { hands: 0, flops: 0, walks: 0, raisedPots: 0, preflopAllIns: 0 };
+  const director = emptyDirector();
+  const liveliness = { hands: 0, flops: 0, showdowns: 0, dead: 0, potBb: 0, liftSum: 0, lifted: 0 };
   let decisions = 0,
     eventSequence = 0;
   for (let handNo = 0; handNo < hands; handNo++) {
@@ -210,6 +215,12 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     let vpip = false,
       pfr = false;
     game.status = 'playing';
+    if (config.director !== undefined && config.everyday === 'casual') {
+      const lift = typeof config.director === 'number' ? config.director : director.lift;
+      for (const p of profiles) if (p.everyday) p.everyday.lift = lift;
+      liveliness.liftSum += lift;
+      if (lift > 0.3) liveliness.lifted++;
+    }
     if (config.pairedDecks) ctx.rng = seededRng(hashString(`${seed}:${handNo}:deck`));
     startHand(game, ctx);
     // Evaluator-only digest lets paired experiments verify identical physical seat deals.
@@ -348,6 +359,13 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     const preflop = (game.hand.actions ?? []).filter((a) => a.street === 'preflop');
     const raised = preflop.some((a) => a.move === 'raise' || a.move === 'bet' || (a.move === 'allin' && a.to > game.settings.bigBlind));
     tableExperience.hands++;
+    const pulse = pulseOf(game.hand, game.settings.bigBlind);
+    liveliness.hands++;
+    if (pulse.flop) liveliness.flops++;
+    if (pulse.showdown) liveliness.showdowns++;
+    if (pulse.dead) liveliness.dead++;
+    liveliness.potBb += pulse.potBb;
+    noteHand(director, pulse);
     if (game.hand.board.length) tableExperience.flops++;
     if (raised) tableExperience.raisedPots++;
     if (!raised && !game.hand.board.length) tableExperience.walks++;
@@ -372,6 +390,7 @@ export function simulate(hands = 20, seed = 7, seats = 2, config: SimulationOpti
     postflopCoverage,
     behavior,
     tableExperience,
+    liveliness,
     handReturnsBb: returns,
     dealChecksums,
     bbPer100: mean * 100,

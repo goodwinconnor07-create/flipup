@@ -8,8 +8,9 @@ import { handRecord } from './record';
 import { fullDeck, isRed, rankName, rankOf, shuffle, type Card } from './cards';
 import { effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
 import { afterSlides, slideChoice, sliders, slideTargets } from './slide';
+import { climb, nextLink, peelChoice, peelers } from './twists';
 import { drawMission, MISSION_GOAL, MISSION_SWAP_AFTER, missionDone, secretMission, raceChange, raceNeeds, raceOrder, rewardOf } from './missions';
-import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
+import { anteBigBlinds, bestHand, botVote, ploBest, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, PowerUse, Seat, Street } from './types';
 
 export const TIMING = {
@@ -273,7 +274,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     const at = Math.floor(ctx.rng() * n);
     imposter = seats[at].playerId;
     seats.forEach((s, i) => (s.cards = [...(i === at ? own : same)]));
-  } else for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
+  } else for (let round = 0; round < holeCount(variant, n); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
   // Haunted Pot: the ghost's two cards come last, face down.
   const ghost = variant === 'ghost' ? [deck.shift()!, deck.shift()!] : undefined;
   // Whatever the ghost kept goes into this pot (even if the table has since switched to another game).
@@ -477,8 +478,12 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
     hand.sliding = false;
     hand.slides = undefined;
     hand.picked = undefined;
+    hand.peeling = false;
+    hand.peels = undefined;
+    hand.peelPicked = undefined;
     winWithoutShowdown(game, ctx);
   } else if (hand.sliding && !pendingSlides(game).length) endSlides(game, ctx);
+  else if (hand.peeling && !pendingPeels(game).length) endPeels(game, ctx);
   else if (hand.discarding && !pendingDiscards(game).length) endDiscards(game, ctx);
   else if (hand.voting && !pendingVoters(game).length) endVote(game, ctx);
 }
@@ -553,14 +558,38 @@ function returnUncalled(game: Game): void {
 const NEXT_STREET: Record<Street, Street | null> = { preflop: 'flop', flop: 'turn', turn: 'river', river: null };
 
 function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): void {
-  const next = NEXT_STREET[hand.street]!;
   const variant = variantOf(game);
+  // Conveyor Belt: after the river comes the last stop, one more card and one more round, still called the river.
+  const lastStop = variant === 'belt' && hand.street === 'river';
+  const next = lastStop ? 'river' : NEXT_STREET[hand.street]!;
   // Crazy Pineapple: anyone who still has three cards when the turn comes (all in, out of time) keeps their best two.
   if (next === 'turn' && variant === 'pineapple') for (const s of hand.seats) if (!s.folded && s.cards.length > 2) throwAway(game, s, null);
   if (burns(variant)) hand.deck.shift(); // burn
   const count = streetCards(variant, next as 'flop' | 'turn' | 'river');
+  // Elevator: every card already out goes up a rank before the new one lands.
+  if (variant === 'elevator' && hand.board.length) {
+    hand.board = climb(hand.board);
+    hand.log.push(`The board goes up a floor: ${cardsText(hand.board)}`);
+  }
+  // Conveyor Belt: the card on the left end falls off as the new one comes in.
+  if (variant === 'belt' && hand.board.length >= 3) {
+    const off = hand.board.shift()!;
+    hand.dropped = [...(hand.dropped ?? []), off];
+    hand.log.push(`${cardsText([off])} falls off the belt`);
+  }
+  if (lastStop) hand.lastStop = true;
   const from = hand.board.length;
-  for (let i = 0; i < count; i++) hand.board.push(hand.deck.shift()!);
+  for (let i = 0; i < count; i++) {
+    if (variant === 'chain') {
+      // Chain Reaction: each card has to share a rank or a suit with the one before it; the rest burn face up.
+      const card = nextLink(hand);
+      if (card) hand.board.push(card);
+      continue;
+    }
+    // Elevator: a card the climbing board already shows is set aside, so two board cards are never the same.
+    while (variant === 'elevator' && hand.deck.length > 1 && hand.board.includes(hand.deck[0])) hand.deck.push(hand.deck.shift()!);
+    hand.board.push(hand.deck.shift()!);
+  }
   // Bean Stalk: everyone still in gets another card of their own, starting left of the button.
   if (variant === 'beanstalk') {
     const n = hand.seats.length;
@@ -571,7 +600,7 @@ function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): voi
     }
   }
   hand.street = next;
-  const label = next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';
+  const label = lastStop ? 'Last stop' : next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';
   // Like Poker Now: the new card on its own after the ones already out.
   hand.log.push(
     next === 'flop'
@@ -611,7 +640,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
   hand.deadline = null;
   hand.actAt = null;
 
-  if (hand.street === 'river') {
+  if (hand.street === 'river' && !moreToCome(game)) {
     startShowdown(game, ctx);
     return;
   }
@@ -641,6 +670,8 @@ function endStreet(game: Game, ctx: ActionContext): void {
 
   // Crazy Pineapple: after the flop betting everyone still in throws a card away. Bots do it at once.
   if (askForDiscards(game, ctx)) return;
+  // Onion: after the flop and turn betting everyone still in peels a card off, face up.
+  if (askForPeels(game, ctx)) return;
   pauseBeforeNextStreet(game, ctx);
 }
 
@@ -1127,6 +1158,96 @@ export function endSlides(game: Game, ctx: ActionContext): void {
   schedule(game);
 }
 
+/** Conveyor Belt: the river's betting is done but the last stop is still to come. */
+function moreToCome(game: Game): boolean {
+  return variantOf(game) === 'belt' && !game.hand!.lastStop;
+}
+
+// ── Onion ───────────────────────────────────────────────────────────────────
+
+/** Seats the table is still waiting on for a card to peel. */
+export function pendingPeels(game: Game): Seat[] {
+  const hand = game.hand;
+  if (!hand?.peeling) return [];
+  return peelers(hand).filter((s) => !hand.peelPicked?.includes(s.playerId));
+}
+
+/**
+ * Onion: after the flop and turn betting (or the same points of a run-out), and when the river lands, everyone still
+ * in with a spare card picks one to peel. Bots pick at once; people get the clock. Returns whether the table waits.
+ */
+function askForPeels(game: Game, ctx: ActionContext): boolean {
+  const hand = game.hand!;
+  if (variantOf(game) !== 'onion' || hand.result || hand.peeling) return false;
+  const due = peelers(hand);
+  if (!due.length) return false;
+  hand.peeling = true;
+  hand.peels = {};
+  hand.peelPicked = [];
+  for (const s of due) {
+    if (!playerById(game, s.playerId)?.bot) continue;
+    hand.peels[s.playerId] = peelChoice(s.cards, hand.board);
+    hand.peelPicked.push(s.playerId);
+  }
+  if (!pendingPeels(game).length) {
+    endPeels(game, ctx);
+    return true;
+  }
+  hand.toAct = null;
+  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
+  hand.actAt = hand.deadline;
+  schedule(game);
+  return true;
+}
+
+/** A player picks the card they peel this street. Returns an error message, or null. */
+export function peelCard(game: Game, playerId: string, card: Card, ctx: ActionContext): string | null {
+  const hand = game.hand;
+  const seat = hand?.seats.find((s) => s.playerId === playerId);
+  if (!hand?.peeling || !seat || !peelers(hand).includes(seat)) return "There's nothing to peel now.";
+  if (hand.peelPicked?.includes(playerId)) return "You've already picked a card.";
+  if (!seat.cards.includes(card)) return "That's not one of your cards.";
+  hand.peels = { ...hand.peels, [playerId]: card };
+  hand.peelPicked = [...(hand.peelPicked ?? []), playerId];
+  hand.seq += 1;
+  if (!pendingPeels(game).length) endPeels(game, ctx);
+  else schedule(game);
+  return null;
+}
+
+/** Everyone has picked (or time's up: the rest peel the card that helps them least): the peeled cards turn over together. */
+export function endPeels(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  for (const s of peelers(hand)) {
+    const pick = hand.peels?.[s.playerId];
+    const card = pick && s.cards.includes(pick) ? pick : peelChoice(s.cards, hand.board);
+    s.cards = s.cards.filter((c) => c !== card);
+    hand.peeled = { ...hand.peeled, [s.playerId]: [...(hand.peeled?.[s.playerId] ?? []), card] };
+    log(game, `${nameOf(game, s.playerId)} peels ${cardsText([card])}`);
+  }
+  hand.peeling = false;
+  hand.peels = undefined;
+  hand.peelPicked = undefined;
+  hand.deadline = null;
+  hand.seq += 1;
+  const show = scaled(MOMENT_TIMING.peels, botsOnly(game));
+  hand.moment = { kind: 'peels', at: ctx.now, until: ctx.now + show };
+  if (hand.runout) {
+    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + show;
+    schedule(game);
+    return;
+  }
+  // The river's peel comes before its betting; the others after the street's betting, before the next card.
+  if (hand.street === 'river') {
+    hand.toAct = null;
+    hand.bettingAt = ctx.now + show;
+    hand.actAt = hand.bettingAt;
+    schedule(game);
+    return;
+  }
+  pauseBeforeNextStreet(game, ctx, show);
+}
+
 /** The pause is over: deal the next street and start its betting. */
 export function dealNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
@@ -1136,6 +1257,8 @@ export function dealNextStreet(game: Game, ctx: ActionContext): void {
   if (hand.imposter) botsPoint(game, ctx.rng, 0.4);
   // Slide Switch: everyone slides a card left before the street's betting.
   if (askForSlides(game, ctx)) return;
+  // Onion: when the river lands, everyone peels down to two before the river betting.
+  if (hand.street === 'river' && askForPeels(game, ctx)) return;
   // The twist plays out first (a die rolls, a red river keeps dealing...); then betting starts.
   if (hand.moment && ctx.now < hand.moment.until) {
     hand.toAct = null;
@@ -1184,7 +1307,9 @@ export function resumeBetting(game: Game, ctx: ActionContext): void {
 /** One card of an all-in run-out, or the showdown once the river is out. */
 export function runoutStep(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
-  if (hand.street === 'river') {
+  // Onion: the run-out stops for each peel, as the betting would.
+  if (askForPeels(game, ctx)) return;
+  if (hand.street === 'river' && !moreToCome(game)) {
     startShowdown(game, ctx);
     return;
   }
@@ -1193,6 +1318,7 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
   dealStreet(game, hand, ctx.rng, ctx.now);
   if (askForDiscards(game, ctx)) return;
   if (askForSlides(game, ctx)) return;
+  if (askForPeels(game, ctx)) return;
   const moment = hand.moment ? Math.max(0, hand.moment.until - ctx.now) : 0;
   hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + moment;
   holdForDice(game, ctx);
@@ -1254,12 +1380,28 @@ export function showdown(game: Game, ctx: ActionContext): void {
   };
   // Power Cards: a Shield that wins nothing gets half of what went in after it went up back, out of the pots it was in.
   if (variant === 'power') shieldRefunds(game, hand, pots, values, won);
+  // Double Board PLO: each pot is split, half to the best hand on each board.
+  const plo = variant === 'plo' ? ([0, 1] as const).map((b) => new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, ploBest(s.cards, hand.board, b)]))) : null;
+  const ploWinners: [string[][], string[][]] = [[], []];
   // Hit Me: each pot is split, half to the best poker hand and half to whoever is closest to 21.
   const counts = variant === 'bjholdem' ? new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, count21(s.cards)])) : null;
   const bjWinners: string[][] = [];
   const bjPoker: string[][] = [];
   for (const pot of pots) {
     const best = Math.max(...pot.eligible.map((id) => values.get(id)!.score));
+    if (plo) {
+      const halves = [Math.ceil(pot.amount / 2), pot.amount - Math.ceil(pot.amount / 2)];
+      const all = new Set<string>();
+      plo.forEach((board, b) => {
+        const top = Math.max(...pot.eligible.map((id) => board.get(id)!.score));
+        const winners = pot.eligible.filter((id) => board.get(id)!.score === top);
+        pay(halves[b], winners);
+        ploWinners[b].push(winners);
+        winners.forEach((id) => all.add(id));
+      });
+      pot.winners = [...all];
+      continue;
+    }
     if (counts) {
       const pokerWinners = pot.eligible.filter((id) => values.get(id)!.score === best);
       const closest = Math.max(...pot.eligible.map((id) => counts.get(id)!));
@@ -1314,8 +1456,14 @@ export function showdown(game: Game, ctx: ActionContext): void {
     if (kept) log(game, `Nobody beats the ghost: it keeps ${n0(kept)} for the next hand`);
     game.ghostPot = (game.ghostPot ?? 0) + kept;
   }
+  if (plo) {
+    for (const [id, chips] of Object.entries(won)) {
+      const boards = [0, 1].filter((b) => ploWinners[b].some((w) => w.includes(id))).map((b) => `board ${b + 1} with ${plo[b].get(id)!.detail.charAt(0).toLowerCase()}${plo[b].get(id)!.detail.slice(1)}`);
+      log(game, `${nameOf(game, id)} wins ${n0(chips)} (${boards.join(', ')})`);
+    }
+  }
   pots.forEach((pot, i) => {
-    if (!pot.winners.length || counts) return;
+    if (!pot.winners.length || counts || plo) return;
     const which = pots.length > 1 ? (i === 0 ? ' from the main pot' : ' from a side pot') : '';
     const each = Math.floor(pot.amount / pot.winners.length);
     for (const id of pot.winners)
@@ -1337,6 +1485,14 @@ export function showdown(game: Game, ctx: ActionContext): void {
     showdown: true,
     ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept } } : {}),
     ...(counts ? { blackjack: { counts: Object.fromEntries([...counts].filter(([id]) => names[id])), poker: bjPoker, winners: bjWinners } } : {}),
+    ...(plo
+      ? {
+          plo: {
+            names: [0, 1].map((b) => Object.fromEntries(Object.keys(names).map((id) => [id, plo[b].get(id)!.detail]))) as [Record<string, string>, Record<string, string>],
+            winners: ploWinners,
+          },
+        }
+      : {}),
   };
   finishHand(game, ctx, TIMING.afterShowdown);
 }

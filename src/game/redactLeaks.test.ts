@@ -34,6 +34,12 @@ function leaks(game: Game): string[] {
   for (const c of game.memory?.cards ?? []) secret.delete(c);
   for (const c of hand.dice?.out ? [hand.dice.out] : []) secret.delete(c);
   for (const c of hand.dice?.in ? [hand.dice.in] : []) secret.delete(c);
+  // Headband: everyone else's forehead card faces this phone; its own never does until the cards turn over.
+  if (hand.variant === 'headband') {
+    for (const s of hand.seats) if (s.playerId !== host.id && s.cards[1]) secret.delete(s.cards[1]);
+    const own = hand.seats.find((s) => s.playerId === host.id);
+    if (own?.cards[1] && !own.shown && !hand.result && !hand.board.includes(own.cards[1])) secret.set(own.cards[1], 'own headband card');
+  }
   // Slide Switch: a card this phone slid on, or was slid, it has held in its own hand (wherever it went next).
   for (const x of hand.slid ?? []) if (x.from === host.id || x.to === host.id) secret.delete(x.card);
   for (const [card, what] of secret) if (new RegExp(`"${card}"`).test(wire)) found.push(`${what}: ${card}`);
@@ -63,6 +69,8 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
         if (hand && !hand.result && hand.voting && mine && !hand.votes?.[host.id]) {
           const others = hand.seats.filter((x) => x.playerId !== host.id);
           r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[Math.floor(rng() * others.length)].playerId }, { deviceId: HOST, now: clock, rng });
+        } else if (hand && !hand.result && hand.peeling && mine && !mine.folded && !hand.peelPicked?.includes(host.id) && mine.cards.length > 2) {
+          r = applyAction(game, { type: 'peel', hand: hand.number, card: mine.cards[Math.floor(rng() * mine.cards.length)] }, { deviceId: HOST, now: clock, rng });
         } else if (hand && !hand.result && hand.sliding && mine && !mine.folded && mine.cards.length && !hand.slides?.[host.id]) {
           r = applyAction(game, { type: 'slide', hand: hand.number, card: mine.cards[Math.floor(rng() * mine.cards.length)] }, { deviceId: HOST, now: clock, rng });
         } else if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
@@ -80,7 +88,8 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
         if (game.hand?.number !== before) hands++;
         for (const f of leaks(game)) problems.add(f.replace(/[0-9a-z]{2}$/, 'XX'));
       }
-      expect(hands).toBeGreaterThan(5);
+      // (Imposter: with nobody able to fold, a person who calls everything can go out within a few hands)
+      expect(hands).toBeGreaterThan(v === 'imposter' ? 3 : 5);
       expect([...problems]).toEqual([]);
     });
   }

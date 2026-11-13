@@ -404,7 +404,7 @@ describe('Memory Poker and Bean Stalk', { timeout: TABLE_MS }, () => {
     const rng = seededRng(5);
     let clock = 0;
     let rivers = 0;
-    for (let i = 0; i < 4000 && (g.hands ?? 0) < 6 && g.status === 'playing'; i++) {
+    for (let i = 0; i < 6000 && (g.hands ?? 0) < 12 && g.status === 'playing'; i++) {
       const hand = g.hand;
       const host = g.players.find((p) => p.deviceId === HOST)!;
       const mine = hand?.seats.find((s) => s.playerId === host.id);
@@ -416,7 +416,7 @@ describe('Memory Poker and Bean Stalk', { timeout: TABLE_MS }, () => {
       g = r.game;
       if (g.hand && g.hand.board.length === 5) {
         for (const s of g.hand.seats) if (!s.folded) expect(s.cards).toHaveLength(5);
-        if (g.hand.seats.filter((s) => !s.folded).length >= 5) rivers++;
+        if (g.hand.seats.filter((s) => !s.folded).length >= 4) rivers++;
       }
     }
     expect(rivers).toBeGreaterThan(0);

@@ -4,7 +4,7 @@
 // place of the action buttons while they're on.
 import { Text, View } from 'react-native';
 
-import { cardName, discardWaiting, pendingSlides, pendingVoters, shortCard, slideTargets, tallyOrder, tallyShown, type Game, type Player, type Seat } from '@/engine';
+import { cardName, discardWaiting, peelers, pendingPeels, pendingSlides, pendingVoters, shortCard, slideTargets, tallyOrder, tallyShown, type Game, type Player, type Seat } from '@/engine';
 import { seatPowerBadge } from '@/state/power-view';
 import { dispatch } from '@/state/session';
 import { radius, spacing, useColors, usePlainColors } from '@/theme';
@@ -104,6 +104,47 @@ export function Slide({ game, seat, pack }: { game: Game; seat: Seat; pack?: str
       </View>
       <ThemedText variant="footnote" tone="secondaryLabel">
         You get one from the right at the same time
+      </ThemedText>
+    </View>
+  );
+}
+
+/** Onion: tap the card you peel off. Everyone's peel turns over together, face up for the whole table. */
+export function Peel({ game, seat, pack }: { game: Game; seat: Seat; pack?: string }) {
+  const hand = game.hand!;
+  const due = peelers(hand).some((s) => s.playerId === seat.playerId);
+  const mine = hand.peels?.[seat.playerId];
+  const waiting = pendingPeels(game).map((s) => s.playerId);
+  if (mine || !due) {
+    return (
+      <WaitingFaces
+        game={game}
+        ids={waiting}
+        text={`${mine ? `Peeling the ${shortCard(mine)}. ` : ''}${waiting.length ? `Waiting for ${waiting.length === 1 ? 'one player' : `${waiting.length} players`}…` : 'Here they come…'}`}
+      />
+    );
+  }
+  const w = seat.cards.length > 3 ? 52 : 64;
+  return (
+    <View style={{ alignItems: 'center', gap: spacing.xs }}>
+      <ThemedText variant="headline">Peel a card off</ThemedText>
+      <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+        {seat.cards.map((c) => (
+          <PressableScale
+            key={c}
+            accessibilityRole="button"
+            accessibilityLabel={`Peel the ${cardName(c)}`}
+            onPress={() => {
+              haptic.tap();
+              dispatch({ type: 'peel', hand: hand.number, card: c });
+            }}
+          >
+            <PlayingCard card={c} size="lg" width={w} pack={pack} />
+          </PressableScale>
+        ))}
+      </View>
+      <ThemedText variant="footnote" tone="secondaryLabel">
+        Everyone sees the card you peel
       </ThemedText>
     </View>
   );

@@ -21,6 +21,9 @@ export const RELEASES: Release[] = [
     version: '1.0.0',
     label: 'November 2026',
     items: [
+      { icon: 'sparkles', title: 'Six new games', text: 'Headband, Conveyor Belt, Onion, Chain Reaction, Elevator and Double Board PLO. Each one has its own table, how-to pictures and bots that know the rules.' },
+      { icon: 'person.3.fill', title: 'Bots that actually bet', text: 'Bots now bet a good hand when it is checked to them, take small stabs at a pot nobody wants, and keep a decent hand in against a small bet. Casual tables also liven up when the action goes quiet.' },
+      { icon: 'bolt.fill', title: 'Bots that play each game', text: 'In Imposter the bots read how the table bets and vote for the odd one out. In Secret Missions they chase their own mission, and in Power Cards they play more of their powers. In every game they comment on what just happened.' },
       { icon: 'film.stack.fill', title: 'Replay after every hand', text: 'A new house rule for bot games. After each hand you play, see what you won or lost and who took the pot, then watch it back. The next hand waits for you.' },
       { icon: 'bookmark.fill', title: 'Saved hands are free', text: 'Save any hand at the table and watch it back move by move. Replays now show every bot’s cards and a full hand log.' },
       { icon: 'graduationcap.fill', title: 'Ways to train', text: 'Range training has a free daily hand, plus Endless, Sets and Gaps with Premium. New here? How it works explains it in four steps.' },

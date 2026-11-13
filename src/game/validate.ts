@@ -134,6 +134,8 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) && isCard(a.card) ? { type: 'discard', hand: a.hand, card: a.card } : null;
     case 'slide':
       return isInt(a.hand) && isCard(a.card) ? { type: 'slide', hand: a.hand, card: a.card } : null;
+    case 'peel':
+      return isInt(a.hand) && isCard(a.card) ? { type: 'peel', hand: a.hand, card: a.card } : null;
     case 'react':
       return isReactionId(a.id) ? { type: 'react', id: a.id } : null;
     case 'sitOut':

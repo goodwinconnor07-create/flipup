@@ -28,7 +28,7 @@ import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
-import { Discard, Discuss, Slide, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
+import { Discard, Discuss, Peel, Slide, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
@@ -602,6 +602,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />
           ) : hand?.sliding && mySeat && !mySeat.folded && mySeat.cards.length ? (
             <Slide game={game} seat={mySeat} pack={me?.cardPack} />
+          ) : hand?.peeling && mySeat && !mySeat.folded ? (
+            <Peel game={game} seat={mySeat} pack={me?.cardPack} />
           ) : (
             <ActionArea
               game={game}

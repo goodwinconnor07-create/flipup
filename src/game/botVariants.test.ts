@@ -122,8 +122,11 @@ describe('game-mode sense', () => {
 
   it('reads a bettor as stronger than random', () => {
     const hand = { actions: [{ street: 'flop', playerId: 'a', move: 'raise', to: 100 }, { street: 'turn', playerId: 'a', move: 'bet', to: 200 }] } as unknown as Hand;
-    expect(draws(hand, 'a', () => 0.99)).toBe(3);
+    // Two bets read as the best of two random hands (a bet counts 0.65, up to 2.2 in all), a bettor who keeps going as three.
+    expect(draws(hand, 'a', () => 0.99)).toBe(2);
     expect(draws(hand, 'b', () => 0.99)).toBe(1);
+    const keepsGoing = { actions: [0, 1, 2, 3].map((n) => ({ street: 'flop', playerId: 'a', move: 'bet', to: 100 + n })) } as unknown as Hand;
+    expect(draws(keepsGoing, 'a', () => 0.99)).toBe(3);
   });
 
   it('votes in Imposter: finds the odd one out and listens to the table, without knowing its own role', () => {

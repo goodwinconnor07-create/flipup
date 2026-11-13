@@ -13,6 +13,7 @@ import { tableCast, tableProfile, tableInstanceSeed, type TableCast } from './ta
 import { learnPublicSession } from './sessionFeel';
 import { LEARNING_CONFIG } from './learningConfig';
 import { rememberHandStory } from './handStory';
+import { emptyDirector, noteHand, pulseOf, type DirectorState } from './director';
 export { usesEverydayBots } from '../game/botTableMode';
 
 export interface EverydayBotState {
@@ -24,6 +25,9 @@ export interface EverydayBotState {
   players: Record<string, { profile: BotProfile; memory: BotMemory }>;
   traces: DecisionTrace[];
   cast?: TableCast;
+  /** What the table director has seen of how lively the table is (Casual; see director.ts). */
+  director?: DirectorState;
+  directedHand?: number;
 }
 const eligible = (p: Player) => p.bot && !p.labStyle && p.botKind !== 'human-poker';
 const factory = new BotFactory();
@@ -60,6 +64,8 @@ export function updateEverydayMemory(game: Game): EverydayBotState | null {
         game.id,
         state.cast.focuses[p.id],
       );
+      // The director's lift is frozen for the hand, like the bot level.
+      if (state.difficulty === 'casual') profile.everyday!.lift = state.director?.lift ?? 0;
       state.players[p.id] = { profile, memory: old?.memory ?? emptyMemory(p.id, game.id) };
     }
     for (const id of Object.keys(state.players)) if (!game.players.some((p) => p.id === id && eligible(p))) delete state.players[id];
@@ -98,6 +104,15 @@ export function updateEverydayMemory(game: Game): EverydayBotState | null {
     Object.values(state.players).map((p) => p.memory),
   );
   return state;
+}
+
+/** After a hand: tell the director how lively it was. Public moves only, once per hand. */
+export function noteEverydayHand(game: Game): void {
+  const state = game.botTable,
+    hand = game.hand;
+  if (!state || !hand?.result || state.directedHand === hand.number) return;
+  state.directedHand = hand.number;
+  noteHand((state.director ??= emptyDirector()), pulseOf(hand, game.settings.bigBlind));
 }
 
 export function everydayThought(game: Game, playerId: string): BotThought | null {

@@ -12,6 +12,7 @@ import { inferRanges } from './ranges';
 import { estimateActionValues } from './actionValues';
 import { decisionRisk } from './decisionRisk';
 import { everydayReference, everydayWeights, everydaySupport } from './everyday';
+import { applyHabits } from './habits';
 import { handPlanWeights } from './handPlan';
 import { behaviorSnapshot } from './behaviorMemory';
 import { decisionPhilosophy, describeChoice, applySizingPreferences, sharedUnbeatableBoard } from './philosophy';
@@ -42,6 +43,8 @@ export interface DecisionTrace {
   philosophy: ReturnType<typeof decisionPhilosophy>;
   rationale: ReturnType<typeof describeChoice>;
   experienceVersion?: 'human-table-1';
+  /** An everyday habit that moved the final distribution (habits.ts), for diagnosis. */
+  habit?: string;
 }
 /** Backend service contract. Production must authorize the actor before constructing info. */
 export class BotService {
@@ -221,6 +224,19 @@ export class BotService {
       estimatedValueLoss = Math.max(0, baselineValue - guardValues.reduce((s, v, k) => s + v * finalDistribution[k], 0));
       if (estimatedValueLoss > budget + 1e-7) throw new Error('Philosophy support exceeded decision budget');
     }
+    // Everyday habits (bets when checked to, pairs that call a small bet): see habits.ts. Challenge gets half of it.
+    let habit: string | null = null;
+    if (profile.everyday && info.street !== 'preflop') {
+      const result = applyHabits(info, prediction.actions, finalDistribution, {
+        strength: profile.everyday.difficulty === 'challenge' ? 0.5 : 1,
+        inPosition: stateFeatures.inPosition,
+        lift: profile.everyday.lift ?? 0,
+        foldRead: read,
+        values: guardValues,
+      });
+      finalDistribution = result.distribution;
+      habit = result.note;
+    }
     const rng = seededRng(samplingSeed);
     let draw = rng(),
       selected = finalDistribution.length - 1;
@@ -253,6 +269,7 @@ export class BotService {
         finalDistribution,
       ),
       ...(liveExperience ? { experienceVersion: 'human-table-1' as const } : {}),
+      ...(habit ? { habit } : {}),
       latencyMs: performance.now() - start,
       ...(coherence ? { handPlan: coherence.plan, coherenceWeights: coherence.logWeights } : {}),
       adaptation: {

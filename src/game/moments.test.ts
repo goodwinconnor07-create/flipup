@@ -70,7 +70,8 @@ describe('moments', () => {
       const h = g.hand;
       if (h?.moment?.kind === 'bust' && !h.result) {
         seen = true;
-        if (h.toAct) {
+        // A bot's next turn waits for the bust to be seen (a person's is refused until then, checked below).
+        if (h.toAct && g.players.find((p) => p.id === h.toAct)?.bot) {
           expect(h.actAt!).toBeGreaterThanOrEqual(h.moment.until);
         }
         return true;

@@ -1,8 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
-import { applyBj, cryptoRng, isDeviceId, parseBjAction, PING, PONG, redactBj, type BjAction, type Blackjack, type BjServerMessage } from '../src/game';
+import { applyBj, closeAt, closeReason, closeReasonText, countsAsPlay, cryptoRng, newLife, type Life, isDeviceId, parseBjAction, PING, PONG, redactBj, type BjAction, type Blackjack, type BjServerMessage } from '../src/game';
 
-/** Tables are deleted this long after the last change. */
-const KEEP_FOR_MS = 24 * 60 * 60 * 1000;
+const LIFE_KEY = 'life';
 const MAX_MESSAGE_CHARS = 2 * 1024;
 const RATE_LIMIT = { count: 30, windowMs: 10_000 };
 
@@ -18,6 +17,7 @@ interface SocketMeta {
  */
 export class BlackjackRoom extends DurableObject<Env> {
   private game: Blackjack | null | undefined;
+  private life: Life | undefined;
   private rate = new WeakMap<WebSocket, { start: number; count: number }>();
 
   constructor(ctx: DurableObjectState, env: Env) {
@@ -28,6 +28,7 @@ export class BlackjackRoom extends DurableObject<Env> {
   /** RPC: store a brand-new table. Returns false if this code is already in use. */
   async create(game: Blackjack): Promise<boolean> {
     if (await this.load()) return false;
+    this.life = newLife(Date.now());
     await this.save(game);
     return true;
   }
@@ -89,6 +90,7 @@ export class BlackjackRoom extends DurableObject<Env> {
       if (from) this.send(from, { t: 'state', game: redactBj(game, deviceId), ack: id });
       return;
     }
+    if (countsAsPlay(action.type, deviceId === 'server')) (await this.lifeOf()).activeAt = Date.now();
     await this.save(result.game);
     for (const socket of this.ctx.getWebSockets()) {
       const meta = socket.deserializeAttachment() as SocketMeta;
@@ -99,17 +101,19 @@ export class BlackjackRoom extends DurableObject<Env> {
   async alarm(): Promise<void> {
     const game = await this.load();
     if (!game) return;
-    const expireAt = (await this.ctx.storage.get<number>('expireAt')) ?? 0;
-    if (Date.now() >= expireAt) {
+    const reason = closeReason(await this.lifeOf(), Date.now());
+    if (reason) {
       for (const ws of this.ctx.getWebSockets()) {
         try {
-          ws.close(4410, 'Table expired');
+          ws.close(4410, closeReasonText(reason));
         } catch {
           // Already closed.
         }
       }
+      await this.ctx.storage.deleteAlarm();
       await this.ctx.storage.deleteAll();
       this.game = null;
+      this.life = undefined;
       return;
     }
     if (game.wakeAt !== null && Date.now() >= game.wakeAt - 20) await this.apply({ type: 'tick' }, 'server');
@@ -151,14 +155,20 @@ export class BlackjackRoom extends DurableObject<Env> {
 
   private async save(game: Blackjack): Promise<void> {
     this.game = game;
-    await this.ctx.storage.put({ game, expireAt: Date.now() + KEEP_FOR_MS });
+    await this.ctx.storage.put({ game, [LIFE_KEY]: await this.lifeOf() });
     await this.scheduleAlarm();
+  }
+
+  /** When the table opened, was last played and must be gone by (30 minutes of no play, 6 hours at most). */
+  private async lifeOf(): Promise<Life> {
+    this.life ??= (await this.ctx.storage.get<Life>(LIFE_KEY)) ?? newLife(Date.now());
+    return this.life;
   }
 
   private async scheduleAlarm(): Promise<void> {
     const game = this.game;
     if (!game) return;
-    const expireAt = (await this.ctx.storage.get<number>('expireAt')) ?? Date.now() + KEEP_FOR_MS;
+    const expireAt = closeAt(await this.lifeOf());
     const at = game.wakeAt !== null ? Math.min(game.wakeAt, expireAt) : expireAt;
     await this.ctx.storage.setAlarm(Math.max(at, Date.now() + 10));
   }

@@ -33,6 +33,7 @@ export * from './campaign';
 export * from './roulette';
 export * from './blackjack';
 export * from './clock';
+export * from './lifetime';
 export { PERSONALITIES, isPersonality, type PersonalityId } from '../bot_engine/personalities';
 export * from './streak';
 export * from './reports';

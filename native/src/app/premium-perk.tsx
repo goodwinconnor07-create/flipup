@@ -8,6 +8,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { perkById, type PerkId } from '@/components/premium/perks';
 import { PressableScale } from '@/components/pressable-scale';
+import { SheetScroll } from '@/components/sheet-scroll';
 import { sampleHandData, statsData, type ShareData } from '@/components/share/data';
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
 import { PlayingCard } from '@/components/table/playing-card';
@@ -39,27 +40,25 @@ export default function PerkSheet() {
   if (!perk) return null;
   const go = GO[perk.id];
   return (
-    <View style={{ flex: 1, backgroundColor: '#070b1c' }}>
-      <ScrollView contentContainerStyle={{ padding: spacing.lg, gap: spacing.lg }}>
-        <View style={{ gap: spacing.xs }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-            <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.gold }}>
-              <Icon name={perk.icon} size={20} color={brand.goldInk} />
-            </View>
-            <ThemedText accessibilityRole="header" style={{ flex: 1, fontFamily: ROUNDED, fontSize: 26, fontWeight: '800', color: '#ffffff' }}>
-              {perk.title}
-            </ThemedText>
+    // The scroll view is the screen itself, like every other sheet: a plain View around it left iOS drawing a blank sheet.
+    <SheetScroll style={{ backgroundColor: '#070b1c' }} contentContainerStyle={{ flexGrow: 1, padding: spacing.lg, paddingTop: spacing.xl, paddingBottom: Math.max(insets.bottom, spacing.md) + spacing.md, gap: spacing.lg }}>
+      <View style={{ gap: spacing.xs }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+          <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.gold }}>
+            <Icon name={perk.icon} size={20} color={brand.goldInk} />
           </View>
-          <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.8)' }}>
-            {perk.about}
+          <ThemedText accessibilityRole="header" style={{ flex: 1, fontFamily: ROUNDED, fontSize: 26, fontWeight: '800', color: '#ffffff' }}>
+            {perk.title}
           </ThemedText>
         </View>
-        <Preview id={perk.id} />
-      </ScrollView>
-      <View style={{ padding: spacing.lg, paddingTop: spacing.sm, paddingBottom: Math.max(insets.bottom, spacing.md) }}>
-        {has && go ? <Button title={go.title} variant="party" tint="gold" size="lg" onPress={() => (router.back(), go.run())} /> : <Button title="Back" variant="secondary" size="lg" onPress={() => router.back()} />}
+        <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.8)' }}>
+          {perk.about}
+        </ThemedText>
       </View>
-    </View>
+      <Preview id={perk.id} />
+      <View style={{ flex: 1 }} />
+      {has && go ? <Button title={go.title} variant="party" tint="gold" size="lg" onPress={() => (router.back(), go.run())} /> : <Button title="Back" variant="secondary" size="lg" onPress={() => router.back()} />}
+    </SheetScroll>
   );
 }
 

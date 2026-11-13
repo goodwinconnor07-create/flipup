@@ -33,6 +33,7 @@ export type ResearchDecision = Pick<
   | 'rationale'
   | 'latencyMs'
   | 'adaptation'
+  | 'habit'
 > & {
   model: string;
   source: string;
@@ -276,6 +277,7 @@ export function stepResearch(run: ResearchRun, action?: { move: Move; to?: numbe
     rationale,
     latencyMs,
     adaptation,
+    habit,
   } = trace;
   run.decisions.push(
     structuredClone({
@@ -289,6 +291,7 @@ export function stepResearch(run: ResearchRun, action?: { move: Move; to?: numbe
       rationale,
       latencyMs,
       adaptation,
+      ...(habit ? { habit } : {}),
       model: trace.prediction.modelVersion,
       source: trace.prediction.source,
       actions: trace.prediction.actions,

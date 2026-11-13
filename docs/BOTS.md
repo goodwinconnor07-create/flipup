@@ -70,6 +70,74 @@ times. A pressing bot tilts after a big loss and a curious one hero-calls a rive
 inside the close-choice band (`philosophy.ts`). Bots you've met on this phone greet you as a regular
 (`Game.rivals`, `knownRival()`), and the phone keeps table counters for enjoyment (`native/src/state/table-feel.ts`).
 
+## Everyday habits (13 Nov 2026)
+
+Casual and Challenge Hold'em bots had one problem the models couldn't see: they were scared to bet. Measured over 1,500
+Casual hands before this change, a flop that was checked to them was bet 32% of the time (top pair 43%, a monster 70%,
+so big hands were slowplayed almost a third of the time), and a single flop bet was folded to 51% of the time (middle
+pair 53%, any pair against a half-pot bet 60%). The cause is the pipeline: every bet is priced against an imagined range
+with a reserve for the model's own uncertainty, then a deviation budget and a "close choice band" strip out anything
+the model scores a little below the best option. A habit that is only about break-even in the model is a check.
+
+`src/bot_engine/habits.ts` is a small layer applied last, after the model, the style weights and the budget. It only
+moves probability towards a habit, never away from a bet, and it is bounded:
+
+- **Bet when checked to.** Every live player checked to the bot: top pair or better bets about 85–90% of the time,
+  middle pair about 60%, a draw about 75%, a weak hand about 45% and nothing about 40% heads-up. Against two or more
+  players big hands still bet and everything else far less (nothing about 11% on the flop).
+- **C-bet as the raiser**, with the same table: about 60–70% heads-up, under 50% against two, fewer against more.
+  After a street was checked through the next one gets a bit more (the delayed c-bet and the probe). The raiser doesn't
+  autopilot the turn and river with weak hands, and a player who isn't the raiser leads only with a real hand.
+- **Don't slowplay.** A monster or two pair on a dry board (the `monster` and `strong` hand buckets) checks about 10% of the time, not 30%.
+- **Sizes people use**: a third to three quarters of the pot (bigger on wet boards with a big hand), never the
+  minimum bet, never an overbet, never a shove from a deep stack.
+- **Don't fold a pair to a small bet.** Against a single bet that nobody has raised, top pair folds at most 3–15% (by
+  price and street), middle pair 20–72%, a draw 8–50%. More players behind means more respect.
+- **Respect the rest**: a raise (or a check-raise) isn't a single bet, so the bot's own decision stands; so does a call
+  that risks 40% or more of its stack (60% for top pair); bigger river bets are folded to more, because river bets
+  are value-heavy.
+- **Never trash.** A bet is only added when the model's own value for it is within a margin of its best option (a third
+  of the pot for middle pair or a draw, 30% for a weak hand or nothing, no limit for a big hand), so a stab onto a
+  board where it would be a disaster still doesn't happen. A call habit is skipped when the model gives the call next to no chance (its value is worse than losing 95% of the call). A bot that has seen its heads-up opponent call a lot stops bluffing them. Nothing here ever adds an
+  all-in. Same public information as the rest of the bot, never a hidden card.
+
+Casual gets all of it. Challenge gets half: it moves half the distance toward each habit.
+
+**Where the numbers come from.** The published advice is mostly qualitative, and we couldn't find a source for a
+hard fold-to-c-bet or checked-to bet figure, so some bands are our own estimates (marked `est` in `feel.ts`).
+What the sources do say:
+
+- A c-bet about 70% of the time heads-up at low stakes, 50% at most against two opponents, less against more, at about
+  60% of the pot in small-stakes cash games ([Black Rain 79, how often to c-bet](https://www.blackrain79.com/2020/02/how-often-should-you-cbet-poker.html)).
+- Live $1/$2 players call a preflop raise 28% of the time (15% online), the average flop has about four players and
+  27% of flops have five or more; they are passive, rarely bluff and bluff less in multiway pots
+  ([PokerNews, donk betting in small-stakes live no-limit](https://www.pokernews.com/strategy/donk-betting-in-small-stakes-live-no-limit-hold-em-28638.htm)).
+- Micro stakes: players fail to fold second pair; small stakes: they over-fold to aggression; players call the flop and
+  fold the turn too much, under-bluff rivers so river bets are value-heavy
+  ([DeucesCracked, population tendencies](https://www.deucescracked.com/blog/poker-population-tendencies-exploits-guide);
+  [PokerNews, micro limit mistakes](https://www.pokernews.com/strategy/15-micro-limit-poker-mistakes-that-are-costing-you-money-29161.htm)).
+- A delayed c-bet is the raiser's turn bet after a flop check; a probe is the same bet by the player without the
+  initiative after the raiser checks; the value in both is in a street checked through
+  ([PokerSkill, delayed c-bet](https://www.pokerskill.com/poker-glossary/delayed-c-bet/);
+  [PokerStrategy, probe bet](https://www.pokerstrategy.com/glossary/Probe-bet/)).
+- The unwritten rules that touch how a hand is played: the last aggressor shows first and a river bettor tables their
+  cards at once when called; act at once when you have the nuts (no slow-rolling); don't act out of turn; take extra
+  time only for hard decisions ([PokerNews, unwritten rules of poker](https://www.pokernews.com/news/2025/09/unwritten-rules-of-poker-49739.htm)).
+  Timing is already independent of hand strength (`everydayThinkMs()`), so a tank never gives the nuts away.
+
+**Measuring it.** `npm run bot:feel [hands per seed] [casual|challenge] [seats]` plays six everyday bots against each
+other (three seeds) and prints each number against its band and source (`src/bot_engine/feel.ts`); it exits 1 when one
+is outside. `feel.test.ts` is a looser version for CI, and `habits.test.ts` checks the layer's rules. Casual over 2,100
+hands sat inside every band: a checked-to flop bet 62% heads-up (was 32% over all hands), big hands bet 81% (was
+about 53%), a monster checked 9% (was 30%), one flop bet folded to 42% (was 51%), middle pair 38% (was 53%, at the edge
+of its band, and some of those folds are the model seeing no chance at all) and top pair 8%, with all-ins on nothing at
+0.3 per 100 hands (no change). Challenge, at half the strength, lands just outside a few bands, as intended. These are bots against bots, so they show what the bots do, not
+what a human sees; **a lively table still needs playing by people**. Add a new habit to the lab before it goes in.
+
+Still to do from the same research: isolation raises over limpers, squeeze plays and preflop calling wider
+(live players call a raise far more than online ones do), check-raising narrow and value-heavy, and a table
+director that keeps Casual lively (the next step).
+
 ## Fair play
 
 A bot decides from its own two cards, the board, everyone's chips and the public moves. It never

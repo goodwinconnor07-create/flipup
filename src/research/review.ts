@@ -47,7 +47,8 @@ export function reviewResearch(report: ResearchReport) {
     scriptedSetupActions: report.hands.flatMap((h) => h.events).filter((e) => e.kind === 'setup').length,
     activeMinutes: report.hands.reduce((s, h) => s + h.durationMs, 0) / 60000,
     explained: decisions.filter((d) => !!d.rationale.summary && !!d.rationale.principle).length,
-    unsupportedChoices: decisions.filter((d) => !d.philosophy.actions[d.rationale.actionIndex]?.plausible).length,
+    // A choice an everyday habit made (bet when checked to, keep a pair in) may sit outside the model's close-choice band.
+    unsupportedChoices: decisions.filter((d) => !d.habit && !d.philosophy.actions[d.rationale.actionIndex]?.plausible).length,
     meanRealism: mean(report.hands.flatMap((h) => (h.feedback.realism ? [h.feedback.realism] : []))),
     meanEnjoyment: mean(report.hands.flatMap((h) => (h.feedback.enjoyment ? [h.feedback.enjoyment] : []))),
     byScenario,

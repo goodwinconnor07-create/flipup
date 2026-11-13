@@ -35,7 +35,7 @@ describe('Guided live-bot research', () => {
       const hand = play(run);
       hands.push(hand);
       expect(run.game.players.reduce((s, p) => s + p.stack, 0)).toBe(before);
-      expect(hand.decisions.every((d) => d.rationale.summary && d.philosophy.actions[d.rationale.actionIndex].plausible)).toBe(true);
+      expect(hand.decisions.every((d) => d.rationale.summary && (d.habit || d.philosophy.actions[d.rationale.actionIndex].plausible))).toBe(true);
       const metadata = { protocol: run.protocol, engine: run.engine, seed: run.seed, limit: run.limit, startedAt: run.startedAt };
       expect(parseResearchHand(JSON.parse(JSON.stringify(hand)), metadata)).not.toBeNull();
       expect(replayResearchHand(JSON.parse(JSON.stringify(hand)))).toEqual({

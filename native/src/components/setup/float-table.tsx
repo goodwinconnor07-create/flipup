@@ -40,10 +40,13 @@ export interface FloatSeat {
   person?: boolean;
 }
 
-const FACE = 48;
-const LABEL = 18;
-/** One row of faces with their names, and the most a row holds. */
-const ROW = FACE + LABEL + 10;
+/** A face's circle. Bigger since 13 Nov 2026 (the owner's ask) inside the same section: the room came out of the gaps. */
+const FACE = 56;
+/** The name under a face: its gap above and its line. */
+const NAME_GAP = 3;
+const LABEL = 14;
+/** One row of faces with their names, a fixed 76 so the section keeps its size; the most a row holds. */
+const ROW = 76;
 const PER_ROW = 5;
 const PAD = 10;
 /** The section's height for this many faces: one row, or two. */
@@ -170,7 +173,7 @@ function Floater({
       opacity: opacity.get(),
       transform: [
         { translateX: x.get() - FACE / 2 + (d - 0.5) * 2 * 5 * Math.cos(lean) },
-        { translateY: y.get() - FACE / 2 + Math.sin(d * Math.PI * 2 + lean) * 4 },
+        { translateY: y.get() - FACE / 2 + Math.sin(d * Math.PI * 2 + lean) * 2.5 },
         { scale: scale.get() },
       ],
     };
@@ -207,9 +210,9 @@ function Floater({
               transform: [{ scale: held ? 0.97 : 1 }],
             }}
           >
-            <Icon name="plus" size={20} color={brand.violetDark} />
+            <Icon name="plus" size={23} color={brand.violetDark} />
           </View>
-          <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ marginTop: 4, width: FACE + 14, textAlign: 'center', fontSize: 11, lineHeight: LABEL - 2, fontWeight: '700', color: brand.violetDark }}>
+          <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ marginTop: NAME_GAP, width: FACE + 10, textAlign: 'center', fontSize: 11, lineHeight: LABEL, fontWeight: '700', color: brand.violetDark }}>
             Add Bot
           </Text>
         </Pressable>
@@ -260,14 +263,14 @@ function Floater({
             transform: [{ scale: held ? 0.97 : 1 }],
           }}
         >
-          <Text style={{ fontSize: 25 }} maxFontSizeMultiplier={1}>
+          <Text style={{ fontSize: 30 }} maxFontSizeMultiplier={1}>
             {seat.emoji}
           </Text>
         </View>
         <Text
           numberOfLines={1}
           maxFontSizeMultiplier={1.1}
-          style={{ marginTop: 4, width: FACE + 14, textAlign: 'center', fontSize: 11, lineHeight: LABEL - 2, fontWeight: '700', color: seat.you || seat.gold ? brand.gold : '#ffffff', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}
+          style={{ marginTop: NAME_GAP, width: FACE + 10, textAlign: 'center', fontSize: 11, lineHeight: LABEL, fontWeight: '700', color: seat.you || seat.gold ? brand.gold : '#ffffff', textShadowColor: 'rgba(0,0,0,0.5)', textShadowRadius: 4 }}
         >
           {seat.name}
         </Text>

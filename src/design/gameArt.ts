@@ -445,72 +445,83 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     sparkle(86, 22, 7, WHITE),
     sparkle(84, 80, 9),
   ],
-  // Your two cards, one of them on its way to the player on your left: a curved arrow sweeping under them to the left.
+  // Your hand: the king stays, the other card is on its way face down to the player on your left, under an arrow
+  // that sweeps left beneath both.
   slide: () => [
-    card({ x: 64, y: 46, r: 11, rank: 'K', suit: '♥', s: 0.96, deal: 0 }),
-    card({ x: 33, y: 43, r: -18, rank: 'A', suit: '♠', s: 0.96, deal: 1 }),
-    ...line('M84 72C72 88 44 90 26 80', WHITE, 5.5),
-    ink('M13 77L29 70L28 88Z', WHITE, { noShadow: true }),
-    sparkle(88, 20, 7, WHITE),
-    sparkle(12, 24, 6),
+    card({ x: 33, y: 42, r: -14, s: 0.9, back: true, deal: 0 }),
+    card({ x: 66, y: 44, r: 9, rank: 'K', suit: '♥', s: 0.9, deal: 1 }),
+    ...line('M78 81C64 90 44 90 30 83', WHITE, 5),
+    ink('M15 79L32 74L29 92Z', WHITE, { noShadow: true }),
   ],
-  // A card wearing a red headband with its knot's tails flying, and a question mark: whose card is it?
+  // A face with a card held on its forehead by a red headband. The card faces out, so we can read it; its eyes roll
+  // up trying to see it.
   headband: () => [
-    card({ x: 34, y: 52, r: -14, s: 0.86, back: true, deal: 0 }),
-    card({ x: 60, y: 48, r: 8, rank: 'K', suit: '♠', s: 1, deal: 1 }),
-    ink(rr(37, 24, 46, 9, 4), RED, { t: 'rotate(8 60 28)' }),
-    ink('M82 27L95 20L93 32Z', RED, { noShadow: true }),
-    ink('M82 29L94 38L84 40Z', RED, { noShadow: true }),
-    { kind: 'glyph', x: 34, y: 57, text: '?', size: 26, bold: true, ink: WHITE },
-    sparkle(14, 22, 6),
+    card({ x: 50, y: 30, s: 0.6, rank: 'K', suit: '♣', deal: 0 }),
+    ink(oval(50, 70, 23, 22), '#ffc628'),
+    ink(rr(24, 49, 52, 9, 4.5), RED, { noShadow: true }),
+    ink('M73 51L88 44L86 58Z', RED, { noShadow: true }),
+    ink('M73 55L85 64L75 67Z', RED, { noShadow: true }),
+    ink(`${oval(41, 72, 5.4, 6.4)}${oval(59, 72, 5.4, 6.4)}`, WHITE, { noShadow: true, sw: 2.4 }),
+    flat(`${oval(41.5, 68.4, 2.8)}${oval(59.5, 68.4, 2.8)}`, INK),
+    { kind: 'path', d: 'M45 83.5Q50 81 55 83.5', stroke: INK, sw: 2.6 },
   ],
-  // Three cards riding a belt on rollers, the one on the left tipping off the end.
+  // Three cards riding a belt to the left; the card that came off the left end tips away and fades.
   belt: () => [
-    ink(rr(10, 66, 80, 14, 7), '#3b3f48'),
-    flat(`${oval(18, 73, 3.4)}${oval(36, 73, 3.4)}${oval(54, 73, 3.4)}${oval(72, 73, 3.4)}`, '#9aa3b2'),
-    card({ x: 16, y: 50, r: -38, s: 0.62, rank: '7', suit: '♣', deal: 0 }),
-    card({ x: 40, y: 45, s: 0.7, rank: 'K', suit: '♥', deal: 1 }),
-    card({ x: 62, y: 45, s: 0.7, rank: 'Q', suit: '♠', deal: 2 }),
-    card({ x: 84, y: 45, s: 0.7, rank: 'J', suit: '♦', deal: 3 }),
-    ...line('M30 88H72', WHITE, 3.4),
-    ink('M24 88L33 83V93Z', WHITE, { noShadow: true }),
+    ink(rr(26, 61, 66, 13, 6.5), '#3b3f48'),
+    flat(`${oval(34, 67.5, 3)}${oval(50.5, 67.5, 3)}${oval(67, 67.5, 3)}${oval(83.5, 67.5, 3)}`, '#9aa3b2'),
+    card({ x: 17, y: 54, r: -20, s: 0.42, rank: '7', suit: '♣', faded: true, deal: 0 }),
+    card({ x: 40, y: 46, s: 0.46, rank: 'K', suit: '♥', deal: 1 }),
+    card({ x: 60, y: 46, s: 0.46, rank: 'Q', suit: '♠', deal: 2 }),
+    card({ x: 80, y: 46, s: 0.46, rank: 'J', suit: '♦', deal: 3 }),
+    ...line('M80 86H40', WHITE, 4),
+    ink('M27 86L40 79V93Z', WHITE, { noShadow: true }),
   ],
-  // A red onion with its top sprout, and a card peeling off it.
+  // A golden onion with its sprout and roots, and a card peeled off its side, face up.
   onion: () => [
-    ink('M50 30C66 40 76 52 74 66C72 80 62 88 50 88C38 88 28 80 26 66C24 52 34 40 50 30Z', '#b5487a'),
-    { kind: 'path', d: 'M50 34C42 46 40 66 46 86M50 34C58 46 60 66 54 86M50 32C36 46 32 68 38 84M50 32C64 46 68 68 62 84', stroke: '#7d2a52', sw: 1.8, opacity: 0.6 },
-    ink('M50 30C48 22 44 16 40 12M50 30C52 22 56 16 62 13', '#7fbf4d', { noShadow: true }),
-    { kind: 'path', d: 'M50 30C48 22 44 16 40 12M50 30C52 22 56 16 62 13', stroke: '#5c9a33', sw: 3 },
-    card({ x: 77, y: 40, r: 22, s: 0.66, rank: '9', suit: '♦', deal: 0 }),
-    sparkle(16, 30, 6, WHITE),
+    ...leaf(40, 27, -112, 16, GREEN),
+    ...leaf(40, 27, -68, 14, GREEN_DARK),
+    ink('M40 25C38 33 18 44 17 61C16 76 27 87 40 87C53 87 64 76 63 61C62 44 42 33 40 25Z', '#f0b54a'),
+    { kind: 'path', d: 'M40 30C31 43 27 61 31 84M40 30C49 43 53 61 49 84M40 30C40 48 40 66 40 86', stroke: '#c47f1c', sw: 2.2 },
+    { kind: 'path', d: 'M35 88L32 93M40 88V94M45 88L48 93', stroke: INK, sw: 2.2 },
+    card({ x: 74, y: 50, r: 18, s: 0.62, rank: '9', suit: '♦', deal: 0 }),
   ],
-  // Two cards joined by chain links.
+  // Two board cards that share a rank, chained together: every card has to link to the one before it. The chain is a
+  // link seen face on at each end, behind the cards, and one seen edge on bridging them.
   chain: () => [
-    card({ x: 26, y: 48, r: -12, rank: 'A', suit: '♥', s: 0.84, deal: 0 }),
-    card({ x: 74, y: 48, r: 12, rank: 'A', suit: '♠', s: 0.84, deal: 1 }),
-    { kind: 'path', d: rr(38, 42, 16, 10, 5), stroke: '#c9ccd6', sw: 4 },
-    { kind: 'path', d: rr(48, 46, 16, 10, 5), stroke: '#e6e8ee', sw: 4 },
-    sparkle(50, 74, 8),
-    sparkle(86, 18, 6, WHITE),
+    ...line(rr(27, 40, 20, 15, 7.5), '#e6e8ee', 3.6),
+    ...line(rr(53, 40, 20, 15, 7.5), '#e6e8ee', 3.6),
+    ...line('M41 47.5H59', '#e6e8ee', 4.6),
+    card({ x: 21, y: 48, r: -10, s: 0.64, rank: '9', suit: '♥', deal: 0 }),
+    card({ x: 79, y: 48, r: 10, s: 0.64, rank: '9', suit: '♣', deal: 1 }),
   ],
-  // Two cards going up, with an elevator arrow and its floor light.
+  // An elevator with its doors open on a card, and the floor light over it showing up.
   elevator: () => [
-    card({ x: 36, y: 60, r: -8, rank: '7', suit: '♣', s: 0.8, deal: 0 }),
-    card({ x: 58, y: 42, r: 6, rank: '8', suit: '♣', s: 0.86, deal: 1 }),
-    ink('M84 46L94 60H88V80H80V60H74Z', WHITE),
-    ink(oval(84, 22, 8), GLOW),
-    { kind: 'glyph', x: 84, y: 25.5, text: '8', size: 10, bold: true, ink: INK },
+    ink(rr(22, 27, 56, 62, 6), '#dfe3ea'),
+    flat(rr(28, 33, 44, 56, 2), '#2d3140'),
+    flat(`${rr(28, 33, 8, 56, 2)}${rr(64, 33, 8, 56, 2)}`, '#aab2c0'),
+    card({ x: 50, y: 62, s: 0.56, rank: '8', suit: '♣', deal: 0 }),
+    ink(rr(35, 7, 30, 15, 5), INK),
+    flat('M42 18.5L47.5 10.5L53 18.5Z', GLOW),
+    { kind: 'glyph', x: 58.5, y: 19, text: '8', size: 11, bold: true, ink: GLOW },
   ],
-  // Five cards fanned out, and two little boards under them.
-  plo: () => [
-    card({ x: 26, y: 50, r: -24, rank: 'A', suit: '♠', s: 0.7, deal: 0 }),
-    card({ x: 38, y: 45, r: -12, rank: 'K', suit: '♦', s: 0.7, deal: 1 }),
-    card({ x: 50, y: 43, r: 0, rank: 'Q', suit: '♥', s: 0.7, deal: 2 }),
-    card({ x: 62, y: 45, r: 12, rank: 'J', suit: '♣', s: 0.7, deal: 3 }),
-    card({ x: 74, y: 50, r: 24, rank: 'T', suit: '♠', s: 0.7, deal: 4 }),
-    ink(rr(18, 78, 28, 9, 4.5), '#2fb457'),
-    ink(rr(54, 78, 28, 9, 4.5), '#2fb457'),
-  ],
+  // Five cards fanned in your hand, and two little boards of three under them.
+  plo: () => {
+    const hand: [string, string][] = [['A', '♠'], ['K', '♥'], ['Q', '♠'], ['J', '♥'], ['9', '♣']];
+    const fan = hand.map(([rank, suit], i) => {
+      const a = (i - 2) * 13;
+      const rad = (a * Math.PI) / 180;
+      return card({ x: n(50 + Math.sin(rad) * 56), y: n(92 - Math.cos(rad) * 56), r: a, s: 0.6, rank, suit, deal: i });
+    });
+    // A board: a green felt with three small face-up cards, drawn flat so they still read at this size.
+    const board = (x: number, suits: string[]): Shape[] => [
+      ink(rr(x, 72, 38, 19, 6), GREEN),
+      ...suits.flatMap((suit, i): Shape[] => {
+        const cx = x + 8 + i * 11;
+        return [flat(rr(cx - 4.5, 75, 9, 13, 2), WHITE), flat(SUIT_PATH[suit], SUIT_COLOUR[suit], { t: `translate(${cx} 81.5) scale(0.3)` })];
+      }),
+    ];
+    return [...fan, ...board(9, ['♦', '♠', '♥']), ...board(53, ['♣', '♥', '♦'])];
+  },
 };
 
 /** The suit scattered behind each game's wide picture. */

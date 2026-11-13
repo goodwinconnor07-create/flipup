@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { calibrationContexts } from './calibration';
-import { publicRangeLikelihood, summarizeRange } from './rangeAnalysis';
+import { betRead, potsBeforeActions, publicRangeLikelihood, summarizeRange } from './rangeAnalysis';
 import { inferRanges } from './ranges';
 
 const fixture = () => {
@@ -72,5 +72,51 @@ describe('Internal public-action range analysis', () => {
     expect(publicRangeLikelihood(i, opponent, ['As', 'Ah'])).toBe(before);
     const set = publicRangeLikelihood(i, opponent, ['7c', '7d']);
     expect(set).toBeGreaterThan(before);
+  });
+});
+
+describe('bet size reads (the owner\'s recorded hand: a one big blind bet into 210 read as a strong hand)', () => {
+  it('reads a smaller bet as wider and an overbet as stronger, with half to three quarters of a pot unchanged', () => {
+    const shares = [0.05, 0.15, 0.25, 0.33, 0.45, 0.5, 0.75, 1, 1.25, 3];
+    const reads = shares.map(betRead);
+    for (let n = 1; n < reads.length; n++) {
+      expect(reads[n].threshold).toBeGreaterThanOrEqual(reads[n - 1].threshold);
+      expect(reads[n].floor).toBeLessThanOrEqual(reads[n - 1].floor);
+    }
+    expect(betRead(0.5)).toEqual({ threshold: 0.42, floor: 0.06 });
+    expect(betRead(0.75)).toEqual({ threshold: 0.42, floor: 0.06 });
+    expect(betRead(0.1).threshold).toBeLessThan(0.3);
+    expect(betRead(2).threshold).toBeGreaterThan(0.45);
+  });
+
+  it('works out the pot before each postflop move from the chips in now', () => {
+    const { i, opponent } = fixture();
+    i.street = 'turn';
+    i.actions = [
+      { playerId: opponent, street: 'flop', move: 'bet', to: 20 },
+      { playerId: i.heroId, street: 'flop', move: 'raise', to: 60 },
+      { playerId: opponent, street: 'flop', move: 'call', to: 60 },
+      { playerId: opponent, street: 'turn', move: 'bet', to: 50 },
+    ];
+    // 200 before the flop; the bet of 20, the raise to 60 and the call of 40 more; then the turn bet.
+    i.players = i.players.map((p) => ({ ...p, total: 100 + 60 + (p.id === opponent ? 50 : 0), bet: p.id === opponent ? 50 : 0 }));
+    expect(potsBeforeActions(i, i.actions)).toEqual([200, 220, 280, 320]);
+  });
+
+  it('keeps a weak pair in the range of a tiny bet far more than of a pot-sized one', () => {
+    const { i, opponent } = fixture();
+    i.street = 'turn';
+    i.board = ['Ac', 'Js', 'Td', '8c'];
+    const players = (bet: number) => i.players.map((p) => ({ ...p, total: 105 + (p.id === opponent ? bet : 0), bet: p.id === opponent ? bet : 0 }));
+    const weight = (bet: number, hole: [string, string]) => {
+      i.actions = [{ playerId: opponent, street: 'turn', move: 'bet', to: bet }];
+      i.players = players(bet);
+      return publicRangeLikelihood(i, opponent, hole);
+    };
+    // Pocket fives on A-J-10-8 (a weak pair) stay in a tenth-of-the-pot bet's range more than twice as much as in a pot-sized one's.
+    expect(weight(20, ['5h', '5c'])).toBeGreaterThan(2 * weight(210, ['5h', '5c']));
+    // The made straight is likely either way.
+    expect(weight(20, ['Kh', 'Qh'])).toBeGreaterThan(0.9);
+    expect(weight(210, ['Kh', 'Qh'])).toBeGreaterThan(0.9);
   });
 });

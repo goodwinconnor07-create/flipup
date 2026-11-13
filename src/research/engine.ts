@@ -277,8 +277,9 @@ export function stepResearch(run: ResearchRun, action?: { move: Move; to?: numbe
     rationale,
     latencyMs,
     adaptation,
-    habit,
   } = trace;
+  // The deliberate layers after the model (betSizing, habits, potOdds) that moved the choice, in the order they ran.
+  const habit = [trace.sizing, trace.habit, trace.potOdds?.note].filter(Boolean).join(' ') || undefined;
   run.decisions.push(
     structuredClone({
       information,

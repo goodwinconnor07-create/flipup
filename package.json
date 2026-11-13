@@ -25,6 +25,7 @@
     "bot:everyday": "tsx scripts/evaluateEveryday.ts",
     "bot:feel": "tsx scripts/botFeel.ts",
     "bot:director": "tsx scripts/botDirector.ts",
+    "bot:small-bets": "tsx scripts/smallBetLab.ts",
     "bot:variants": "tsx scripts/variantFeel.ts",
     "bot:planning": "tsx scripts/evaluatePlanning.ts",
     "bot:ranges": "tsx scripts/analyseBotRanges.ts",

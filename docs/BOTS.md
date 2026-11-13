@@ -161,9 +161,29 @@ fifth of the pot or less went from 11.5% to 4.4% (the new `foldCheap` band, 0 to
 to 80% of the pot from 44.7% (outside its band) to 34.2%, top pair from 8.3% to 1.4%, and one flop bet folded to from
 44% to 37% (band 35 to 50). Everything else moved by noise. `potOdds.test.ts` replays the recorded hand.
 
-Still to do (the plan of 13 Nov 2026): a bet's size should change what the bot thinks the bettor holds; weak hands
-shouldn't bet into several players on scary boards; a file of known spots with right answers; a blunder counter in the
-lab; and a script that prints every bot decision in a saved hand.
+Still to do (the plan of 13 Nov 2026): weak hands shouldn't bet into several players on scary boards; a file of known
+spots with right answers; a blunder counter in the lab; and a script that prints every bot decision in a saved hand.
+
+## Reading a bet by its size (13 Nov 2026)
+
+In the recorded hand, the bots' public range model (`publicRangeLikelihood()` in `rangeAnalysis.ts`) read the one big
+blind bet into 210 the same as a three-quarter-pot bet: a hand needed about the strength of a decent pair to be likely
+to bet. So the nines judged their equity at 11%, and the model folded 85% of the time before the pot-odds check stepped in.
+
+A bet into an unopened street now reads by its size as a share of the pot before it (`betRead()`, with the pot worked
+back from the chips in now by `potsBeforeActions()`): the strength a hand needs to be likely to bet slides from 0.26 at a
+tenth of the pot or less, through 0.36 at a third, to 0.42 from half to three quarters (as before), and 0.48 at an
+overbet; the share of everything else that stays in goes from 20% down to 6%. Raises read as before. Pocket fives on
+A-J-10-8 stay in a tenth-of-the-pot bet's range more than twice as much as in a pot-sized one's (`rangeAnalysis.test.ts`).
+
+In the recorded hand the nines now judge their equity at 15% (was 11%), and the model alone folds 79% of the time (was
+85%); the rest is the look-ahead's pessimism about later streets, which the pot-odds check covers. Bots barely make small
+bets since the sizing step, so `npm run bot:feel` hardly moved (every band as before). People do, so
+`npm run bot:small-bets` seats a scripted player who pokes the minimum at pots after the flop with any two cards
+(`small-better` in `scriptedOpponents.ts`) with five Casual bots. Over 900 hands, before and after, the bots folded to a
+lone poke of under a fifth of the pot 15.3% → 11.9% of the time: middle pair 9.1% → 3.9%, weak hands 17.7% → 16.2%,
+nothing at all 38.2% → 31.0%, a monster 1.5% → 0%.
+
 
 ## Bet sizing (13 Nov 2026)
 

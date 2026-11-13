@@ -8,10 +8,15 @@
 //   ONLY=table|screens           one half only
 //   GAMES=holdem,onion           some games only (ids from VARIANTS)
 //   PLAYERS=2,6,9                player counts (default 2,6,9)
-//   SIZES=320x568,390x844        viewports (default both)
+//   SIZES=375x667,390x844        viewports (default: iPhone SE, the smallest iOS 26 runs on, and iPhone 16; 320x568 for a stress test)
 //   MOMENTS=preflop,flop,river,result   moments of the hand (default all four)
 //   SHOTS_DIR=/some/dir          saves a cropped picture of each flagged spot (the first of each group)
+//   FULL=1                       with SHOTS_DIR, also saves the whole screen of every page with a finding
 //   JSON=/some/file.json         writes every finding, ungrouped
+//   MAX=12                       kinds of problem listed per check (the rest are counted)
+//   REPORT=/some/file.json       groups a saved JSON again without opening a browser
+//   KNOWN=0                      also lists what's drawn that way on purpose (INTENDED)
+//   PROBE=regex                  prints the markup round the first text matching it (to find which component drew it)
 //   CHROMIUM_PATH                if Playwright's Chromium isn't at /opt/pw-browsers/chromium
 // Exit code 1 when anything was found. Local files only.
 import { createServer } from 'node:http';
@@ -21,7 +26,7 @@ import { chromium } from 'playwright';
 import { applyAction, BOTS, createTable, DEFAULT_SETTINGS, seededRng, VARIANTS } from '../src/game/index.ts';
 
 const dist = resolve(process.argv[2] ?? '');
-if (!process.argv[2] || !existsSync(join(dist, 'index.html'))) {
+if (!process.env.REPORT && (!process.argv[2] || !existsSync(join(dist, 'index.html')))) {
   console.error('Usage: node --import tsx scripts/layoutSweep.mjs <web export folder>');
   process.exit(2);
 }
@@ -30,7 +35,7 @@ const HOST = 'd0123456789abcdefghij';
 const T0 = Date.parse('2026-11-13T18:00:00Z');
 const GAMES = list(process.env.GAMES, VARIANTS.map((v) => v.id));
 const PLAYERS = list(process.env.PLAYERS, ['2', '6', '9']).map(Number);
-const SIZES = list(process.env.SIZES, ['320x568', '390x844']).map((s) => s.split('x').map(Number));
+const SIZES = list(process.env.SIZES, ['375x667', '390x844']).map((s) => s.split('x').map(Number));
 const MOMENTS = list(process.env.MOMENTS, ['preflop', 'flop', 'river', 'result']);
 const ONLY = process.env.ONLY;
 const SHOTS = process.env.SHOTS_DIR;
@@ -85,7 +90,7 @@ function snapshots(variant, n) {
 
 // ---------------------------------------------------------------- the in-page audit (runs in the browser)
 
-function audit() {
+function audit(probe) {
   const W = innerWidth, H = innerHeight;
   const found = [];
   const add = (check, detail, rect, extra = '') => found.push({ check, detail, rect, extra });
@@ -214,6 +219,9 @@ function audit() {
       // Only a box with words of its own counts (a pill, a bubble, a button): drawings and glows are left out.
       if (opacity(e) > 0.5 && opaque(e) && textOf(e) && !/^(svg|path|g|circle|rect)$/i.test(e.tagName)) { coverer = e; break; }
     }
+    // A show over the whole table (the die roll, the Imposter's role card) covers it on purpose.
+    const cr = coverer?.getBoundingClientRect();
+    if (coverer && cr.width * cr.height > 0.4 * W * H) coverer = null;
     if (coverer && !scrollsUnder(l.el, coverer)) add('covered', `${show(l.text)} under ${show(textOf(coverer))}`, rectOf(l.box), `${label(l.el)} | ${label(coverer)}`);
   }
   force.remove();
@@ -226,7 +234,21 @@ function audit() {
     if (r.width < 30 || r.height < 30) add('small-tap', `${el.getAttribute('aria-label') || textOf(el) || '(no label)'} ${Math.round(r.width)}×${Math.round(r.height)}`, rectOf(r));
     if (!el.getAttribute('aria-label') && !textOf(el)) add('no-label', `button with no label ${Math.round(r.width)}×${Math.round(r.height)}`, rectOf(r), label(el.parentElement ?? el));
   }
-  if (document.documentElement.scrollWidth > W + 1) add('sideways-scroll', `${document.documentElement.scrollWidth} > ${W}`, { x: 0, y: 0, w: W, h: 1 });
+  if (document.documentElement.scrollWidth > W + 1) {
+    // Name the outermost element that reaches past the right edge, so the line says what to fix.
+    let culprit = null;
+    for (const el of document.body.querySelectorAll('*')) {
+      const r = el.getBoundingClientRect();
+      if (r.right > W + 1 && r.width > 0 && !(culprit && culprit.contains(el)) && !scrollerOf(el)) { culprit = el; }
+    }
+    const r = culprit?.getBoundingClientRect();
+    add('sideways-scroll', `${document.documentElement.scrollWidth} > ${W}: ${culprit ? `${show(textOf(culprit))} ${label(culprit)} reaches x=${Math.round(r.right)} ${culprit.outerHTML.replace(/<svg[\s\S]*/, "<svg…").slice(0, 300)}` : ''}`, r ? rectOf(r) : { x: 0, y: 0, w: W, h: 1 });
+  }
+  // PROBE=text: the markup round the first words matching it, to find which component drew them.
+  if (probe) {
+    const hit = leaves.find((l) => new RegExp(probe).test(l.text));
+    if (hit) add('probe', hit.el.parentElement.parentElement.outerHTML.replace(/<svg[\s\S]*?<\/svg>/g, '<svg/>').replace(/ class="[^"]*"/g, '').slice(0, 1500));
+  }
   return { found, text: document.body.innerText.slice(0, 200) };
 }
 
@@ -241,7 +263,7 @@ const server = createServer((q, r) => {
 });
 await new Promise((ok) => server.listen(0, '127.0.0.1', ok));
 const base = `http://127.0.0.1:${server.address().port}`;
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium' });
+const browser = process.env.REPORT ? null : await chromium.launch({ executablePath: process.env.CHROMIUM_PATH ?? '/opt/pw-browsers/chromium' });
 
 /** Opens one page with this storage and clock, waits for it to settle, audits it. */
 async function visit({ path, w, h, scheme, storage, at, tag }) {
@@ -266,11 +288,12 @@ async function visit({ path, w, h, scheme, storage, at, tag }) {
   try {
     await page.goto(`${base}${path}`, { waitUntil: 'load', timeout: 30000 });
     await page.waitForTimeout(3000);
-    res = await page.evaluate(audit);
+    res = await page.evaluate(audit, process.env.PROBE ?? '');
   } catch (e) {
     res = { found: [{ check: 'load-failed', detail: String(e.message).split('\n')[0].slice(0, 120) }], text: '' };
   }
   for (const e of new Set(errors)) res.found.push({ check: e.startsWith('page') ? 'page-error' : 'console', detail: e });
+  if (SHOTS && process.env.FULL && res.found.length) await page.screenshot({ path: join(SHOTS, `${tag.replace(/[^\w]+/g, '-')}.png`) });
   if (SHOTS && res.found.some((f) => f.rect)) {
     for (const f of res.found) {
       if (!f.rect) continue;
@@ -299,8 +322,24 @@ function shiftTimes(v, delta) {
   if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, shiftTimes(x, delta)]));
   return v;
 }
-/** One line per bug: numbers and positions don't make two findings different. */
-const signature = (f) => `${f.check}|${String(f.detail).replace(/[\d,]+/g, '#')}|${(f.extra ?? '').replace(/[\d,]+/g, '#')}`;
+/** Takes out what changes from table to table (cards, bots, faces, numbers) so one bug is one line. */
+const RANKS = '(ace|king|queen|jack|ten|nine|eight|seven|six|five|four|three|two)';
+const normalize = (t) => String(t ?? '')
+  .replace(new RegExp(`${RANKS} of (hearts|diamonds|clubs|spades)`, 'gi'), 'a card')
+  .replace(/[A-Z][a-z]+ [A-Z]?,? ?a bot, [\d,]+ chips(, their turn)?(, folded)?(, offline)?/g, 'a bot seat')
+  .replace(/(Point at|Vote for|Tag) [A-Z][a-z]+( [A-Z])?/g, '$1 someone')
+  .replace(/Position [A-Z+\d]+/g, 'Position X')
+  .replace(/^[^:\[]*: how it plays/, 'game: how it plays')
+  .replace(/Your (mission|power): [^.]*\.[^\]]*/g, 'Your $1')
+  .replace(/"(High card|[A-Z][a-z]+ high|Pair of [a-z]+|Two pair|Three of a kind|Straight|Flush|Full house|Four of a kind)\b[^"]*"/g, '"<hand name>"')
+  .replace(/"(10|[2-9JQKA]|[♠♥♦♣])"/g, '"card"')
+  .replace(/\p{Extended_Pictographic}(\u200d\p{Extended_Pictographic}|\ufe0f|[\u{1F3FB}-\u{1F3FF}])*/gu, '☺')
+  .replace(/[\d,.]+/g, '#');
+/** Drawn this way on purpose (the owner's design): position marks on card backs, the small bold labels on the power
+ * and mission cards. KNOWN=0 shows them anyway. */
+const INTENDED = [/Face-down card/, /^tiny-text\|"(BTN|BB|SB|MISSION|POWER|PLAY|DONE)"/];
+const intended = (f) => process.env.KNOWN !== '0' && INTENDED.some((r) => r.test(`${f.check}|${f.detail}|${f.extra ?? ''}`));
+const signature = (f) => `${f.check}|${normalize(f.detail)}|${normalize(f.extra)}`;
 
 const baseStorage = {
   'flipup.device': JSON.stringify(HOST),
@@ -311,7 +350,10 @@ const baseStorage = {
 };
 
 const jobs = [];
-if (ONLY !== 'screens') {
+const REPORT = process.env.REPORT;
+if (REPORT) {
+  // Report only: group a saved JSON again (after changing the grouping) without opening a browser.
+} else if (ONLY !== 'screens') {
   for (const v of GAMES) {
     for (const n of PLAYERS) {
       let snaps;
@@ -325,13 +367,13 @@ if (ONLY !== 'screens') {
     }
   }
 }
-if (ONLY !== 'table') {
+if (!REPORT && ONLY !== 'table') {
   const screens = ['/', '/games', '/profile', '/settings', '/stats', '/help', '/whats-new', '/train', '/play-bots', '/premium', '/replays', '/share', '/join', '/hand-rankings', '/card-packs'];
   for (const path of screens) for (const [w, h] of SIZES) for (const scheme of ['dark', 'light']) jobs.push({ path, w, h, scheme, tag: `screen ${path} ${w}w ${scheme}`, storage: baseStorage });
 }
 
 console.error(`${jobs.length} pages to check…`);
-const all = [];
+const all = REPORT ? JSON.parse(readFileSync(REPORT, 'utf8')) : [];
 let next = 0, done = 0;
 const t0 = Date.now();
 await Promise.all(Array.from({ length: 4 }, async () => {
@@ -342,13 +384,14 @@ await Promise.all(Array.from({ length: 4 }, async () => {
     if (++done % 25 === 0) console.error(`  ${done}/${jobs.length} (${Math.round((Date.now() - t0) / 1000)}s)`);
   }
 }));
-await browser.close();
+await browser?.close();
 server.close();
 
 // ---------------------------------------------------------------- the report: one line per kind of problem
 
 const groups = new Map();
 for (const f of all) {
+  if (intended(f)) continue;
   const k = signature(f);
   const g = groups.get(k) ?? { ...f, count: 0, wheres: [] };
   g.count += 1;
@@ -363,11 +406,19 @@ const shortWhere = (ws) => {
   return u.length <= 3 ? u.join('; ') : `${u.slice(0, 3).join('; ')} (+${u.length - 3} more)`;
 };
 if (process.env.JSON) writeFileSync(process.env.JSON, JSON.stringify(all, null, 1));
-console.log(`Checked ${jobs.length} pages in ${Math.round((Date.now() - t0) / 1000)}s. ${sorted.length} kinds of problem, ${all.length} sightings.`);
-let last = '';
+const MAX = Number(process.env.MAX ?? 12);
+console.log(`Checked ${REPORT ? 'saved' : jobs.length} pages in ${Math.round((Date.now() - t0) / 1000)}s. ${sorted.length} kinds of problem, ${all.length} sightings.`);
+let last = '', shown = 0;
+const left = (c) => sorted.filter((g) => g.check === c).length - MAX;
 for (const g of sorted) {
-  if (g.check !== last) console.log(`\n## ${g.check}`);
-  last = g.check;
-  console.log(`- ${g.detail}${g.extra ? `  [${g.extra}]` : ''}  ×${g.count}: ${shortWhere(g.wheres)}${g.shot ? `  (${g.shot})` : ''}`);
+  if (g.check !== last) {
+    if (last && left(last) > 0) console.log(`- …and ${left(last)} more kinds (MAX=${MAX})`);
+    console.log(`\n## ${g.check}`);
+    last = g.check;
+    shown = 0;
+  }
+  if (++shown > MAX) continue;
+  console.log(`- ${normalize(g.detail)}${g.extra ? `  [${g.extra}]` : ''}  ×${g.count}: ${shortWhere(g.wheres)}${g.shot ? `  (${g.shot})` : ''}`);
 }
+if (last && left(last) > 0) console.log(`- …and ${left(last)} more kinds (MAX=${MAX})`);
 process.exit(sorted.length ? 1 : 0);

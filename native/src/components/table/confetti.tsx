@@ -42,7 +42,7 @@ function Burst({ origin, colors, amount }: { origin: { x: number; y: number }; c
     }),
   );
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}>
       {pieces.map((p, i) => (
         <Bit key={i} piece={p} origin={origin} />
       ))}

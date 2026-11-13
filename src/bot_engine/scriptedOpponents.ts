@@ -12,6 +12,7 @@ export const SCRIPTED_OPPONENTS = [
   'calling-station',
   'changing',
   'changing-aggression',
+  'small-better',
 ] as const;
 export type ScriptedOpponent = (typeof SCRIPTED_OPPONENTS)[number];
 export type AgentKind = 'bot' | 'baseline' | 'previous' | 'incumbent' | ScriptedOpponent;
@@ -26,6 +27,12 @@ export function scriptedMove(i: InformationSet, kind: ScriptedOpponent, rng: () 
   if (kind === 'calling-station') return passive;
   if (kind === 'changing') kind = changed ? 'calling-station' : 'river-overfolder';
   if (kind === 'changing-aggression') kind = changed ? 'loose-aggressive' : 'tight-passive';
+  // A casual player who pokes the minimum at pots after the flop with any two cards, and otherwise plays loose and passive.
+  if (kind === 'small-better') {
+    const poke = raises.find((a) => a.move === 'bet' && a.to === i.legal.minTo);
+    if (i.street !== 'preflop' && i.legal.canCheck && poke && rng() < 0.6) return poke;
+    kind = 'loose-passive';
+  }
   const ranks = i.hole.map(rankOf);
   const preStrength =
     ((ranks[0] + ranks[1] - 4) / 24) * 0.65 + (ranks[0] === ranks[1] ? 0.35 : 0) + (i.hole[0][1] === i.hole[1][1] ? 0.05 : 0);

@@ -161,10 +161,52 @@ fifth of the pot or less went from 11.5% to 4.4% (the new `foldCheap` band, 0 to
 to 80% of the pot from 44.7% (outside its band) to 34.2%, top pair from 8.3% to 1.4%, and one flop bet folded to from
 44% to 37% (band 35 to 50). Everything else moved by noise. `potOdds.test.ts` replays the recorded hand.
 
-Still to do (the plan of 13 Nov 2026): the minimum bet is about 30% of the bots' bets after the flop (it should be a
-few percent); a bet's size should change what the bot thinks the bettor holds; weak hands shouldn't bet into several
-players on scary boards; a file of known spots with right answers; a blunder counter in the lab; and a script that
-prints every bot decision in a saved hand.
+Still to do (the plan of 13 Nov 2026): weak hands shouldn't bet into several players on scary boards; a file of known
+spots with right answers; a blunder counter in the lab; and a script that prints every bot decision in a saved hand.
+
+## Reading a bet by its size (13 Nov 2026)
+
+In the recorded hand, the bots' public range model (`publicRangeLikelihood()` in `rangeAnalysis.ts`) read the one big
+blind bet into 210 the same as a three-quarter-pot bet: a hand needed about the strength of a decent pair to be likely
+to bet. So the nines judged their equity at 11%, and the model folded 85% of the time before the pot-odds check stepped in.
+
+A bet into an unopened street now reads by its size as a share of the pot before it (`betRead()`, with the pot worked
+back from the chips in now by `potsBeforeActions()`): the strength a hand needs to be likely to bet slides from 0.26 at a
+tenth of the pot or less, through 0.36 at a third, to 0.42 from half to three quarters (as before), and 0.48 at an
+overbet; the share of everything else that stays in goes from 20% down to 6%. Raises read as before. Pocket fives on
+A-J-10-8 stay in a tenth-of-the-pot bet's range more than twice as much as in a pot-sized one's (`rangeAnalysis.test.ts`).
+
+In the recorded hand the nines now judge their equity at 15% (was 11%), and the model alone folds 79% of the time (was
+85%); the rest is the look-ahead's pessimism about later streets, which the pot-odds check covers. Bots barely make small
+bets since the sizing step, so `npm run bot:feel` hardly moved (every band as before). People do, so
+`npm run bot:small-bets` seats a scripted player who pokes the minimum at pots after the flop with any two cards
+(`small-better` in `scriptedOpponents.ts`) with five Casual bots. Over 900 hands, before and after, the bots folded to a
+lone poke of under a fifth of the pot 15.3% → 11.9% of the time: middle pair 9.1% → 3.9%, weak hands 17.7% → 16.2%,
+nothing at all 38.2% → 31.0%, a monster 1.5% → 0%.
+
+
+## Bet sizing (13 Nov 2026)
+
+The same recorded hand: pocket fives on A-J-10 bet 20 into 210 on the flop and 20 into 270 on the turn. The menu of sizes
+the bots choose from (`legalActions()` in `information.ts`: the minimum, a third, three quarters and one and a quarter of
+the pot, and all in) always holds the minimum, and the model rates it close to a check (it risks little), so 29.7% of the
+bots' bets into a pot four times the minimum or more were the minimum. Low-stakes players almost never bet one big blind
+into ten.
+
+`src/bot_engine/betSizing.ts` runs after the deviation budget and before the habits (Casual and Challenge, after the
+flop). When nobody has bet and the minimum is under a quarter of the pot, the bot keeps at most 1.5% of its minimum bet
+(`MIN_BET_LEFT`; bots bet about half the time they can, so that's about 3% of their bets). The rest is shared between
+the smallest real size (about a third of the pot) and the check, by how the model rates the two with its own softmax
+(`SIZE_TEMPERATURE`, 8% of the pot): a hand that only wanted a cheap look mostly checks, a hand that wanted to bet bets
+a real size, and a size rated level with a check gets half. Raises, a bet into a small pot, a short stack's bet and the
+all-in are left alone. The menu itself is unchanged, because the calibrated providers and the research tools score
+against it. The trace notes it (`sizing`).
+
+Measured with `npm run bot:feel 400`, before and after: the minimum bet into a real pot went from 29.7% of those bets to
+4.0% (the new `tokenBet` band, 0 to 5%). Everything else stayed in its band; middle pair folding to a bet up to 80% of
+the pot went from 34.2% to 37.5% (band 0 to 38), because the bets it faces are now real ones. With few cheap bets left
+the `foldCheap` count is too small to grade (n=20); `potOdds.test.ts` still holds it. `betSizing.test.ts` replays the
+fives' spot.
 
 ## Table director (13 Nov 2026)
 

@@ -14,6 +14,7 @@ import { decisionRisk } from './decisionRisk';
 import { everydayReference, everydayWeights, everydaySupport } from './everyday';
 import { applyHabits } from './habits';
 import { applyPotOdds, type PotOddsResult } from './potOdds';
+import { applyBetSizing } from './betSizing';
 import { handPlanWeights } from './handPlan';
 import { behaviorSnapshot } from './behaviorMemory';
 import { decisionPhilosophy, describeChoice, applySizingPreferences, sharedUnbeatableBoard } from './philosophy';
@@ -46,6 +47,8 @@ export interface DecisionTrace {
   experienceVersion?: 'human-table-1';
   /** An everyday habit that moved the final distribution (habits.ts), for diagnosis. */
   habit?: string;
+  /** A token bet moved to a real size or a check (betSizing.ts), for diagnosis. */
+  sizing?: string;
   /** The pot-odds check (potOdds.ts): the price, the hand's equity and what it keeps of it, for diagnosis. */
   potOdds?: NonNullable<PotOddsResult['check']> & { note: string | null };
 }
@@ -227,6 +230,13 @@ export class BotService {
       estimatedValueLoss = Math.max(0, baselineValue - guardValues.reduce((s, v, k) => s + v * finalDistribution[k], 0));
       if (estimatedValueLoss > budget + 1e-7) throw new Error('Philosophy support exceeded decision budget');
     }
+    // Bet sizes people use: a minimum bet into a real pot becomes a third of the pot or a check (see betSizing.ts).
+    let sizing: string | null = null;
+    if (profile.everyday && info.street !== 'preflop') {
+      const result = applyBetSizing(info, prediction.actions, finalDistribution, guardValues ?? null);
+      finalDistribution = result.distribution;
+      sizing = result.note;
+    }
     // Everyday habits (bets when checked to, pairs that call a small bet): see habits.ts. Challenge gets half of it.
     let habit: string | null = null;
     if (profile.everyday && info.street !== 'preflop') {
@@ -281,6 +291,7 @@ export class BotService {
       ...(liveExperience ? { experienceVersion: 'human-table-1' as const } : {}),
       ...(habit ? { habit } : {}),
       ...(potOdds ? { potOdds } : {}),
+      ...(sizing ? { sizing } : {}),
       latencyMs: performance.now() - start,
       ...(coherence ? { handPlan: coherence.plan, coherenceWeights: coherence.logWeights } : {}),
       adaptation: {

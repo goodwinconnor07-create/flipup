@@ -42,6 +42,12 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   power: look('#d99a00', '#9e6f00', '#e8b02a', 'Everyone has a secret power. Pick your moment.', 'Secret powers', 1.08),
   missions: look('#1f7a5c', '#13513d', '#2f9273', 'Your mission, should you choose to accept it.', 'Secret missions', 0.94),
   slide: look('#74b72e', '#4f8a1c', '#8cc84b', 'Nothing stays yours for long. Pass it on.', 'Slide a card left', 1.06),
+  headband: look('#a447d6', '#7a2ca6', '#b566df', 'Everyone knows your card. Except you.', 'A card on your head', 1.04),
+  belt: look('#7a8699', '#56606f', '#8d98aa', 'One card in, one card off. Keep up.', 'The board moves', 0.95),
+  onion: look('#b5648f', '#87436a', '#c47ca2', 'Peel it back, one layer at a time.', 'Peel a card a street', 1),
+  chain: look('#c2533a', '#8f3524', '#cf6b54', 'Every card links to the last. Watch it snowball.', 'A linked board', 0.96),
+  elevator: look('#b08d57', '#80643a', '#c0a06f', 'Going up. Every card climbs a floor.', 'The board climbs', 1.08),
+  plo: look('#8c2f4a', '#621f33', '#a04663', 'Five cards, two boards, two halves of every pot.', 'Two boards, five cards', 0.92),
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
@@ -448,10 +454,67 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     sparkle(88, 20, 7, WHITE),
     sparkle(12, 24, 6),
   ],
+  // A card wearing a red headband with its knot's tails flying, and a question mark: whose card is it?
+  headband: () => [
+    card({ x: 34, y: 52, r: -14, s: 0.86, back: true, deal: 0 }),
+    card({ x: 60, y: 48, r: 8, rank: 'K', suit: '♠', s: 1, deal: 1 }),
+    ink(rr(37, 24, 46, 9, 4), RED, { t: 'rotate(8 60 28)' }),
+    ink('M82 27L95 20L93 32Z', RED, { noShadow: true }),
+    ink('M82 29L94 38L84 40Z', RED, { noShadow: true }),
+    { kind: 'glyph', x: 34, y: 57, text: '?', size: 26, bold: true, ink: WHITE },
+    sparkle(14, 22, 6),
+  ],
+  // Three cards riding a belt on rollers, the one on the left tipping off the end.
+  belt: () => [
+    ink(rr(10, 66, 80, 14, 7), '#3b3f48'),
+    flat(`${oval(18, 73, 3.4)}${oval(36, 73, 3.4)}${oval(54, 73, 3.4)}${oval(72, 73, 3.4)}`, '#9aa3b2'),
+    card({ x: 16, y: 50, r: -38, s: 0.62, rank: '7', suit: '♣', deal: 0 }),
+    card({ x: 40, y: 45, s: 0.7, rank: 'K', suit: '♥', deal: 1 }),
+    card({ x: 62, y: 45, s: 0.7, rank: 'Q', suit: '♠', deal: 2 }),
+    card({ x: 84, y: 45, s: 0.7, rank: 'J', suit: '♦', deal: 3 }),
+    ...line('M30 88H72', WHITE, 3.4),
+    ink('M24 88L33 83V93Z', WHITE, { noShadow: true }),
+  ],
+  // A red onion with its top sprout, and a card peeling off it.
+  onion: () => [
+    ink('M50 30C66 40 76 52 74 66C72 80 62 88 50 88C38 88 28 80 26 66C24 52 34 40 50 30Z', '#b5487a'),
+    { kind: 'path', d: 'M50 34C42 46 40 66 46 86M50 34C58 46 60 66 54 86M50 32C36 46 32 68 38 84M50 32C64 46 68 68 62 84', stroke: '#7d2a52', sw: 1.8, opacity: 0.6 },
+    ink('M50 30C48 22 44 16 40 12M50 30C52 22 56 16 62 13', '#7fbf4d', { noShadow: true }),
+    { kind: 'path', d: 'M50 30C48 22 44 16 40 12M50 30C52 22 56 16 62 13', stroke: '#5c9a33', sw: 3 },
+    card({ x: 77, y: 40, r: 22, s: 0.66, rank: '9', suit: '♦', deal: 0 }),
+    sparkle(16, 30, 6, WHITE),
+  ],
+  // Two cards joined by chain links.
+  chain: () => [
+    card({ x: 26, y: 48, r: -12, rank: 'A', suit: '♥', s: 0.84, deal: 0 }),
+    card({ x: 74, y: 48, r: 12, rank: 'A', suit: '♠', s: 0.84, deal: 1 }),
+    { kind: 'path', d: rr(38, 42, 16, 10, 5), stroke: '#c9ccd6', sw: 4 },
+    { kind: 'path', d: rr(48, 46, 16, 10, 5), stroke: '#e6e8ee', sw: 4 },
+    sparkle(50, 74, 8),
+    sparkle(86, 18, 6, WHITE),
+  ],
+  // Two cards going up, with an elevator arrow and its floor light.
+  elevator: () => [
+    card({ x: 36, y: 60, r: -8, rank: '7', suit: '♣', s: 0.8, deal: 0 }),
+    card({ x: 58, y: 42, r: 6, rank: '8', suit: '♣', s: 0.86, deal: 1 }),
+    ink('M84 46L94 60H88V80H80V60H74Z', WHITE),
+    ink(oval(84, 22, 8), GLOW),
+    { kind: 'glyph', x: 84, y: 25.5, text: '8', size: 10, bold: true, ink: INK },
+  ],
+  // Five cards fanned out, and two little boards under them.
+  plo: () => [
+    card({ x: 26, y: 50, r: -24, rank: 'A', suit: '♠', s: 0.7, deal: 0 }),
+    card({ x: 38, y: 45, r: -12, rank: 'K', suit: '♦', s: 0.7, deal: 1 }),
+    card({ x: 50, y: 43, r: 0, rank: 'Q', suit: '♥', s: 0.7, deal: 2 }),
+    card({ x: 62, y: 45, r: 12, rank: 'J', suit: '♣', s: 0.7, deal: 3 }),
+    card({ x: 74, y: 50, r: 24, rank: 'T', suit: '♠', s: 0.7, deal: 4 }),
+    ink(rr(18, 78, 28, 9, 4.5), '#2fb457'),
+    ink(rr(54, 78, 28, 9, 4.5), '#2fb457'),
+  ],
 };
 
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦', missions: '♠', slide: '♥' };
+const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦', missions: '♠', slide: '♥', headband: '♣', belt: '♦', onion: '♥', chain: '♠', elevator: '♣', plo: '♦' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

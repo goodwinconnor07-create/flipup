@@ -182,6 +182,8 @@ export interface HandResult {
   blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
   /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
   imposter?: { id: string; votes: Record<string, string>; caught: boolean };
+  /** Double Board PLO: each showing player's hand on each board, and who won each board's half of each pot. */
+  plo?: { names: [Record<string, string>, Record<string, string>]; winners: [string[][], string[][]] };
 }
 
 /** One finished hand, for the hand log. */
@@ -311,6 +313,22 @@ export interface Hand {
   slides?: Record<string, Card>;
   /** Slide Switch: who has picked a card to slide this street (public; which card stays secret). */
   picked?: string[];
+  /** Onion: the table is waiting for everyone still in to pick a card to peel off. */
+  peeling?: boolean;
+  /** Onion: the card each player has picked to peel this street. Phones see only their own until they turn over together. */
+  peels?: Record<string, Card>;
+  /** Onion: who has picked their peel this street (public). */
+  peelPicked?: string[];
+  /** Onion: every card each player has peeled off this hand, face up for everyone. */
+  peeled?: Record<string, Card[]>;
+  /** Conveyor Belt: cards that fell off the end of the belt, oldest first (public). */
+  dropped?: Card[];
+  /** Conveyor Belt: the last stop has been dealt (the river's second round). */
+  lastStop?: boolean;
+  /** Chain Reaction: cards burned face up because they didn't link to the board (public). */
+  burned?: Card[];
+  /** Headband: everyone's forehead card as this phone may see it. Filled in by redactForDevice (the server keeps it as each seat's second card); never your own until the cards turn over. */
+  headbands?: Record<string, Card>;
   /** Slide Switch: every slide this hand, in order: who gave which card to whom, on which street. Phones see the cards of slides they gave or got. */
   slid?: SlideRecord[];
   /** Power Cards: the power each player was dealt this hand. Phones see only their own until it's played or the hand is over. */
@@ -415,7 +433,7 @@ export interface SlideRecord {
   card: Card | '';
 }
 
-export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power' | 'slides';
+export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power' | 'slides' | 'peels';
 
 /**
  * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
@@ -609,6 +627,8 @@ export type Action =
   | { type: 'discard'; hand: number; card: Card }
   /** Slide Switch: slide this card to the next player on your left (on the flop, the turn and the river). */
   | { type: 'slide'; hand: number; card: Card }
+  /** Onion: peel this card off, face up. */
+  | { type: 'peel'; hand: number; card: Card }
   /** Imposter: who you think the imposter is. */
   | { type: 'vote'; hand: number; playerId: string }
   /** Imposter: point a finger at someone you suspect (`null` takes it back). It changes nothing but what the table sees. */

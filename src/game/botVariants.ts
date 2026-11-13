@@ -17,6 +17,7 @@ import { crowdAggression, missionPull, recalledRemoved } from './botGames';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
 import { boardSize, count21, handSets, holeCountAt, isWild, keepTwoQuick, startValue, variantOf, wildHand, type Variant, cardsToCome } from './variants';
+import { beltToCome, climb, links } from './twists';
 
 /** Seats that play the way bots did before the game-mode upgrade (the lab compares the two). */
 export const lab = { legacy: new Set<string>() };
@@ -41,7 +42,32 @@ export function variantScore(v: Variant, hole: Card[], board: Card[]): number {
 
 /** The rest of the board, dealt by the variant's rules. */
 export function finishBoard(v: Variant, board: Card[], deck: Card[], rng: () => number, toCome?: number): Card[] {
-  const out = board.slice();
+  let out = board.slice();
+  // Conveyor Belt: the flop fills the belt, then each card in pushes the oldest off the end.
+  if (v === 'belt') {
+    for (let k = 0; k < (toCome ?? 0) && deck.length; k++) {
+      if (out.length >= 3) out.shift();
+      out.push(deck.pop()!);
+    }
+    return out;
+  }
+  // Chain Reaction: each card has to link to the one before; the rest burn.
+  if (v === 'chain') {
+    while (out.length < 5 && deck.length) {
+      const card = deck.pop()!;
+      if (links(out[out.length - 1], card) || deck.length < 2) out.push(card);
+    }
+    return out;
+  }
+  // Elevator: the flop lands together; then the board climbs a rank before each new card.
+  if (v === 'elevator') {
+    while (out.length < 5 && deck.length) {
+      if (out.length >= 3) out = climb(out);
+      const card = deck.pop()!;
+      if (!out.includes(card)) out.push(card);
+    }
+    return out;
+  }
   // Power Cards: an Extra Card makes the board longer, so the cards still to come are counted by street instead.
   const target = toCome !== undefined ? board.length + toCome : boardSize(v);
   const hadRiver = out.length >= 5;
@@ -65,11 +91,15 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
   if (!others) return 1;
   if (v === 'bjholdem') return blackjackEquity(game, hand, seat, rng, runs ?? samplesFor(others));
   // Wild deuces take longest to score, so a rougher estimate there.
-  const samples = runs ?? Math.round(samplesFor(others) * (v === 'deuces' ? 0.5 : 1));
+  const samples = runs ?? Math.round(samplesFor(others) * (v === 'deuces' ? 0.5 : v === 'plo' ? 0.3 : 1));
+  // Headband: a bot can't see its own forehead card, but it sees everyone else's.
+  const headband = v === 'headband';
+  const mineSeen = headband ? seat.cards.slice(0, 1) : seat.cards;
+  const foreheads = headband ? new Map(rivals.filter((r) => r.cards[1]).map((r) => [r.playerId, r.cards[1]])) : null;
   // Memory Poker: the bots remember every card that was taken out.
   // (a bot that plays the old way remembers them all; the rest keep most of them, like a person)
   const removed = lab.legacy.has(seat.playerId) ? (hand.removed ?? []) : recalledRemoved(hand.removed, seat.playerId, hand.number);
-  const known = new Set([...seat.cards, ...hand.board, ...removed]);
+  const known = new Set([...mineSeen, ...hand.board, ...removed, ...(foreheads?.values() ?? []), ...(hand.burned ?? []), ...(hand.dropped ?? []), ...Object.values(hand.peeled ?? {}).flat()]);
   // Bean Stalk: the cards everyone still gets on the streets to come.
   const full = holeCountAt(v, 5);
   const more = v === 'beanstalk' ? full - seat.cards.length : 0;
@@ -84,22 +114,25 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
       [deck[i], deck[j]] = [deck[j], deck[i]];
     }
     const hands: Card[][] = [];
-    const size = v === 'beanstalk' ? full : holeCountAt(v, 0);
     for (const r of rivals) {
+      // Onion: each player holds as many cards as they haven't peeled yet (public); Headband: one of them is known.
+      const size = v === 'beanstalk' ? full : v === 'onion' ? r.cards.length : headband ? 1 : holeCountAt(v, 0);
+      const fixed = foreheads?.get(r.playerId);
       // A player who has bet or raised holds the best of a few random hands; a caller a little better than random.
       const tries = ranges ? draws(hand, r.playerId, rng) : 1;
       let pick = Array.from({ length: size }, () => deck.pop()!);
       for (let t = 1; t < tries && deck.length > size + 12; t++) {
         const other = Array.from({ length: size }, () => deck.pop()!);
-        const [keep, back] = proxy(v, other, hand.board) > proxy(v, pick, hand.board) ? [other, pick] : [pick, other];
+        const withFixed = (h: Card[]) => (fixed ? [fixed, ...h] : h);
+        const [keep, back] = proxy(v, withFixed(other), hand.board) > proxy(v, withFixed(pick), hand.board) ? [other, pick] : [pick, other];
         pick = keep;
         deck.unshift(...back);
       }
-      hands.push(pick);
+      hands.push(fixed ? [fixed, ...pick] : pick);
     }
-    const own = more > 0 ? [...seat.cards, ...Array.from({ length: more }, () => deck.pop()!)] : seat.cards;
+    const own = headband ? [...mineSeen, deck.pop()!] : more > 0 ? [...seat.cards, ...Array.from({ length: more }, () => deck.pop()!)] : seat.cards;
     const ghostHand = ghost ? [deck.pop()!, deck.pop()!] : null;
-    const board = finishBoard(v, hand.board, deck, rng, v === 'power' ? cardsToCome(hand.street) : undefined);
+    const board = finishBoard(v, hand.board, deck, rng, v === 'power' ? cardsToCome(hand.street) : v === 'belt' ? beltToCome(hand) : undefined);
     const mine = variantScore(v, myCards(v, own, board), board);
     let best = 0;
     let ties = 0;
@@ -175,7 +208,7 @@ function blackjackEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, 
       // Over 21 they'd have busted and folded.
       if (count21(cards) <= 21) theirs.push(cards);
     }
-    const board = finishBoard(v, hand.board, deck, rng, v === 'power' ? cardsToCome(hand.street) : undefined);
+    const board = finishBoard(v, hand.board, deck, rng, v === 'power' ? cardsToCome(hand.street) : v === 'belt' ? beltToCome(hand) : undefined);
     const mine = { poker: variantScore(v, own, board), count: count21(own) };
     const field = theirs.map((h) => ({ poker: variantScore(v, h, board), count: count21(h) }));
     const all = [mine, ...field];

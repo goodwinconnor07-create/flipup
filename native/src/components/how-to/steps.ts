@@ -168,6 +168,40 @@ const STEPS: Record<Variant, Step[]> = {
     step('river', 'board', 'Again and again', 'The same on the turn and the river: three slides every hand.', 'flop'),
     step('showdown', 'showdown', 'Showdown', 'Best five wins, with whatever cards ended up in your hand.'),
   ],
+  headband: [
+    step('cards', 'mine', 'One card you can see', "Your other card is on your forehead. Everyone can see it but you."),
+    step('yourturn', 'seats', "Read everyone's heads", "You can see everyone else's forehead card. Watch how they bet at yours."),
+    step('flop', 'board', 'Every street changes it', 'The board helps cards you can see, and the one you cannot.'),
+    step('showdown', 'showdown', 'The big reveal', 'At the showdown you finally see what was on your head.'),
+  ],
+  belt: [
+    step('cards', 'mine', 'Four cards', 'You get four cards. Your hand is the best five from yours and the belt.'),
+    step('flop', 'board', 'Three on the belt', 'The flop puts three cards on the belt.'),
+    step('river', 'board', 'One in, one off', 'Each street a new card comes in and the one on the left falls off. Then a last stop.', 'flop'),
+    step('showdown', 'showdown', 'Showdown', 'Only the three cards on the belt at the end count.'),
+  ],
+  onion: [
+    step('cards', 'mine', 'Five cards', 'You start with five cards.'),
+    step('flop', 'board', 'Peel one off', "After the flop betting, tap a card to peel it off. It's turned face up for everyone."),
+    step('river', 'board', 'Down to two', 'Peel again after the turn, and once more when the river lands.', 'flop'),
+    step('showdown', 'showdown', 'Showdown', "Your last two cards and the board, like normal Hold'em."),
+  ],
+  chain: [
+    step('flop', 'board', 'Linked cards', 'Every board card shares a rank or a suit with the one before it.'),
+    step('river', 'board', 'Snowball', "Cards that don't link burn face up. Boards get flushy and paired.", 'flop'),
+    step('showdown', 'showdown', 'Big hands', 'Full houses and flushes are everyday hands here.'),
+  ],
+  elevator: [
+    step('flop', 'board', 'The flop', 'Three cards land, the same as always.'),
+    step('river', 'board', 'Going up', 'When the next card lands, every card already out goes up a rank.', 'flop'),
+    step('showdown', 'showdown', 'Showdown', 'Your two cards and the board, after its last climb.'),
+  ],
+  plo: [
+    step('cards', 'mine', 'Five cards', 'You get five cards. On each board you use exactly two of them.'),
+    step('flop', 'board', 'Two boards', 'Two boards come out at once, each with its own flop, turn and river.'),
+    step('yourturn', 'hand', 'Pot limit', 'You can raise up to the size of the pot.'),
+    step('showdown', 'showdown', 'Half each', 'Half the pot to the best hand on each board. Win both to scoop.'),
+  ],
   imposter: [
     step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
     step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),

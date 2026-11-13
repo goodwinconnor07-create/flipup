@@ -28,6 +28,12 @@ const ART: Record<Variant, GameArt> = {
   power: { ...GAME_LOOK.power, sting: 'pop' },
   missions: { ...GAME_LOOK.missions, sting: 'sting' },
   slide: { ...GAME_LOOK.slide, sting: null },
+  headband: { ...GAME_LOOK.headband, sting: null },
+  belt: { ...GAME_LOOK.belt, sting: null },
+  onion: { ...GAME_LOOK.onion, sting: null },
+  chain: { ...GAME_LOOK.chain, sting: null },
+  elevator: { ...GAME_LOOK.elevator, sting: null },
+  plo: { ...GAME_LOOK.plo, sting: null },
 };
 
 export const cardArt = (v: Variant): GameArt => ART[v] ?? ART.holdem;

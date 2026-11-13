@@ -26,6 +26,8 @@ import {
   discardCard,
   endSlides,
   slideCard,
+  endPeels,
+  peelCard,
   endVote,
   endDiscussion,
   endTally,
@@ -1112,6 +1114,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return error ? fail(error) : done();
     }
 
+    case 'peel': {
+      const hand = game.hand;
+      if (!me) return fail("You're not at this table.");
+      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
+      const error = peelCard(game, me.id, action.card, ctx);
+      return error ? fail(error) : done();
+    }
+
     case 'point': {
       const hand = game.hand;
       if (!me) return fail("You're not at this table.");
@@ -1355,6 +1365,11 @@ function tick(game: Game, ctx: ActionContext): boolean {
 
   if (hand && !hand.result) {
     if (!due(hand.actAt)) return false;
+    // Onion: time's up for picking a card to peel.
+    if (hand.peeling) {
+      endPeels(game, ctx);
+      return true;
+    }
     // Slide Switch: time's up for picking a card to slide.
     if (hand.sliding) {
       endSlides(game, ctx);

@@ -38,6 +38,7 @@ const BANDS: Record<string, { label: string; band: [number, number]; source: str
   foldFlopBet: { label: 'Fold to one flop bet', band: [35, 50], source: 'est: sources disagree (micro under-folds, small stakes over-folds)', minN: 120 },
   foldTop: { label: 'Fold top pair to a bet up to 80% pot', band: [0, 10], source: 'est', minN: 20 },
   foldMid: { label: 'Fold middle pair to a bet up to 80% pot', band: [0, 38], source: 'PokerNews / DeucesCracked: micro stakes fail to fold second pair', minN: 40 },
+  foldCheap: { label: 'Fold a pair or a draw to a bet of a fifth of the pot or less', band: [0, 12], source: 'pot odds: a fifth of the pot needs 14% to call; nearly every pair or draw has it (est)', minN: 40 },
   trashAllIn: { label: 'All in with nothing postflop, per 100 hands', band: [0, 1], source: 'owner: no all-ins on stupid hands', minN: 1 },
 };
 
@@ -73,6 +74,12 @@ export class FeelCollector {
         if (live.length >= 2 && bucket === 'air') this.bump('checkedToAirMulti', betting);
       }
       if ((bucket === 'monster' || bucket === 'strong') && (checkedTo || pfa)) this.bump('slowplay', !betting);
+    }
+    if (!i.legal.canCheck && i.legal.toCall > 0 && (bucket === 'top' || bucket === 'mid' || bucket === 'draw')) {
+      const aggressive = acts.filter((x) => AGGRESSIVE.includes(x.move));
+      const pot = i.players.reduce((s, p) => s + p.total, 0);
+      if (aggressive.length === 1 && !acts.some((x) => x.playerId === i.heroId) && i.legal.toCall <= (pot - i.legal.toCall) * 0.2)
+        this.bump('foldCheap', a.move === 'fold');
     }
     if (!i.legal.canCheck && i.street === 'flop') {
       const aggressive = acts.filter((x) => AGGRESSIVE.includes(x.move));

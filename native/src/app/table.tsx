@@ -579,6 +579,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             const seats = Math.round(e.nativeEvent.layout.height);
             setUpper((u) => (u.seats === seats ? u : { ...u, seats }));
           }}
+          // Above the felt: on a short phone a seat's win or odds tag can touch the rail, and drawn under it was hidden.
+          style={{ zIndex: 1 }}
         >
           <SeatRow compact={compact} game={game} shown={slots.shown} hidden={slots.hidden} say={say} quiet={quiet} dimCard={dim} glowCard={glow} odds={odds} />
         </View>

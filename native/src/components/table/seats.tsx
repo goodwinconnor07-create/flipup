@@ -181,15 +181,14 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
           setOpen(true);
         }}
         style={{
-          position: 'absolute',
-          right: -2,
-          bottom: 0,
-          flexDirection: 'row',
+          // Its own slot at the row's end, a narrow capsule the seats make room for. Laid over the row it covered
+          // the last seat's cards and its win or odds tag (and moved below it, the felt's rail).
+          alignSelf: 'center',
           alignItems: 'center',
-          gap: 4,
-          minHeight: 30,
-          paddingHorizontal: 12,
-          paddingVertical: 5,
+          gap: 2,
+          width: 36,
+          marginLeft: 2,
+          paddingVertical: 8,
           borderRadius: 999,
           backgroundColor: c.surface,
           borderWidth: 1,
@@ -198,8 +197,8 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
         }}
       >
         <Icon name="person.2.fill" size={14} color={c.label} />
-        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 15, fontWeight: '700', color: c.label }}>
-          +{players.length} more
+        <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '700', color: c.label }}>
+          +{players.length}
         </Text>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
@@ -316,6 +315,7 @@ function SeatPod({
       : [];
   // Onion: the cards they've peeled off, face up beside the rest.
   const peeled = hand?.peeled?.[player.id] ?? [];
+  const held = cards.length + peeled.length;
   // The dealer button and blinds sit on the back of the last face-down card (BTN, SB, BB); heads-up the button shows BTN.
   const pos = positionOf(hand, player.id);
   const mark = pos && pos.kind !== 'other' ? (pos.kind === 'btn' ? 'BTN' : pos.label) : undefined;
@@ -425,7 +425,8 @@ function SeatPod({
             {cards.map((card, i) => (
               // Two cards overlap a little; more (Pineapple, Bean Stalk) fan tighter to stay inside the seat, and five
               // (Onion, Double Board PLO) tighter still, so four seats of five still fit across a 320pt phone.
-              <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length >= 5 ? -15 : cards.length > 3 ? -12 : -6 }}>
+              // Counted with the peeled cards (Onion), which still take room beside the backs.
+              <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : held >= 5 ? -15 : held > 3 ? -12 : -6 }}>
                 {card ? (
                   <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} />
                 ) : xray && i === 0 ? (
@@ -450,9 +451,13 @@ function SeatPod({
               </View>
             ))}
             {peeled.length > 0 && (
-              <View accessibilityLabel={`Peeled: ${peeled.join(' ')}`} style={{ flexDirection: 'row', marginLeft: 4, gap: 1, alignSelf: 'flex-end' }}>
-                {peeled.map((p) => (
-                  <PlayingCard key={p} card={p} size="sm" width={16} dim />
+              // Overlapped like the backs, so the backs and the peels together are never wider than five cards were
+              // (side by side they ran into the next seat and under the "+N more" chip at 9 players).
+              <View accessibilityLabel={`Peeled: ${peeled.join(' ')}`} style={{ flexDirection: 'row', marginLeft: 4, alignSelf: 'flex-end' }}>
+                {peeled.map((p, i) => (
+                  <View key={p} style={{ marginLeft: i === 0 ? 0 : -6 }}>
+                    <PlayingCard card={p} size="sm" width={16} dim />
+                  </View>
                 ))}
               </View>
             )}

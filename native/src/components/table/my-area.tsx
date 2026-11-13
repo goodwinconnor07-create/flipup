@@ -20,6 +20,11 @@ import { QuickMessages } from './quick-messages';
 import { pct, PositionChip } from './seats';
 import { moveSig } from './use-reactions';
 
+/** Four or five cards: how much of each card shows past the next one (its corner, rank and suit). */
+const SHOWING = 0.5;
+/** Four or five cards: how far each card turns from the one before, in degrees. */
+const FAN_DEG = 3;
+
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 /** 98.5 BB, or 120 BB: one decimal only while it's small. */
 const bigBlinds = (n: number) => (n >= 100 ? Math.round(n) : Math.round(n * 10) / 10).toLocaleString('en-US');
@@ -62,14 +67,39 @@ export function MyArea({
   const special = variantOf(game);
   const powered = special === 'power' || special === 'missions';
   const powerHole = Math.max(56, Math.min(compact ? 72 : 84, Math.floor((screen - 160) / 2.8)));
-  // Two cards at full size; three or more step down so they still fit beside the box.
-  const w = powered ? powerHole : count >= 4 ? 58 : count > 2 || compact ? 72 : 100;
-  const overlap = count >= 4 ? -32 : count > 2 ? -30 : -22;
+  // Two cards at full size; three step down so they still fit beside the box. Four or five (Conveyor Belt, Onion,
+  // Double Board PLO, Bean Stalk by the river) are sized from the screen: each card tucks under the next leaving half
+  // its width showing, which is the rank and suit in the corner, and the box keeps at least `BOX_MIN` for the chips.
+  // Bean Stalk is sized for its five from the deal, so the cards never shrink as the hand grows.
+  const room = variant === 'beanstalk' ? 5 : count;
+  const many = !powered && room >= 4;
+  const boxMin = screen >= 375 ? 128 : 108;
+  const manyW = Math.min(compact ? 62 : 68, Math.floor((screen - 32 - 12 - boxMin) / (1 + (room - 1) * SHOWING)));
+  const w = powered ? powerHole : many ? manyW : count > 2 || compact ? 72 : 100;
+  const overlap = many ? -Math.round(w * (1 - SHOWING)) : count > 2 ? -30 : -22;
+  // A hand of four or five is held as a gentle fan, like cards in a hand (the way phone poker apps show Omaha):
+  // the middle card highest, each card turned a few degrees. Bean Stalk and Hit Me grow during the hand, so their
+  // cards stay straight rather than shift as the next one lands.
+  const fan = many && variant !== 'beanstalk' && variant !== 'bjholdem';
+  const fanned = (i: number, n: number) => {
+    if (!fan) return undefined;
+    const k = i - (n - 1) / 2;
+    return [{ translateY: k * k * 1.5 }, { rotate: `${k * FAN_DEG}deg` }];
+  };
+  // With that many cards the box is narrow: the chip count shrinks to fit and your name goes (your face and position
+  // stay; everyone knows their own name).
+  const tight = many;
+  // The box's room for the count (less its padding and border), and a size that fits the number in it: the digits of
+  // SF Pro bold are about 0.62 of the font size wide. iOS would shrink the text by itself; this keeps the web build
+  // (and the first frame) right too.
+  const bb = Math.max(game.settings.bigBlind, 1);
+  const boxInner = screen - 32 - 12 - (w + (room - 1) * (w + overlap)) - 22;
+  const label = me ? (inBB ? `${bigBlinds(me.stack / bb)} BB` : chips(me.stack)) : '';
+  const fitSize = tight && label ? Math.max(18, Math.floor(boxInner / (label.length * 0.62))) : 99;
   // Your last move clears once a new street's cards land (an all in stays, it's still true).
   const last = seat?.last && (!hand || seat.last.street === hand.street || seat.last.move === 'allin') ? seat.last : null;
-  const bb = Math.max(game.settings.bigBlind, 1);
   const myTurn = !!me && !!hand && !hand.result && hand.toAct === me.id;
-  const big = compact || powered ? 32 : 38;
+  const big = Math.min(compact || powered || tight ? 32 : 38, fitSize);
   return (
     <View
       style={{
@@ -81,10 +111,11 @@ export function MyArea({
         paddingBottom: 0,
       }}
     >
-      <View style={{ flexDirection: 'row' }}>
+      {/* Bean Stalk keeps the room for all five from the deal, so the box beside it never narrows mid-hand. */}
+      <View style={{ flexDirection: 'row', paddingBottom: fan ? 6 : 0, minWidth: many ? w + (room - 1) * (w + overlap) : undefined }}>
         {seat?.cards.length
           ? seat.cards.map((card, i) => (
-              <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : overlap }}>
+              <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : overlap, transform: fanned(i, seat.cards.length + (forehead ? 1 : 0)) }}>
                 <PlayingCard
                   card={card}
                   width={w}
@@ -97,7 +128,7 @@ export function MyArea({
               </View>
             ))
           : Array.from({ length: count }, (_, i) => (
-              <View key={i} style={{ marginLeft: i === 0 ? 0 : overlap }}>
+              <View key={i} style={{ marginLeft: i === 0 ? 0 : overlap, transform: fanned(i, count) }}>
                 <CardSlot width={w} />
               </View>
             ))}
@@ -158,8 +189,9 @@ export function MyArea({
           </View>
         ) : (
           // The chip count is the biggest thing in the box, sat a little low so the corner bubbles have room above it.
-          <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: compact ? 10 : 14 }}>
+          <View style={{ flex: 1, alignSelf: 'stretch', alignItems: 'center', justifyContent: 'center', paddingTop: compact ? 10 : 14 }}>
             <Pressable
+              style={tight ? { alignSelf: 'stretch', alignItems: 'center' } : undefined}
               accessibilityRole="button"
               accessibilityLabel={`${inBB ? 'Stack in big blinds' : 'Stack in chips'}, tap to switch`}
               onPress={() => {
@@ -174,13 +206,16 @@ export function MyArea({
               ) : inBB ? (
                 <Text
                   maxFontSizeMultiplier={1.2}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit={tight}
+                  minimumFontScale={0.6}
                   style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label, fontVariant: ['tabular-nums'] }}
                 >
                   {bigBlinds(me.stack / bb)}
                   <Text style={{ fontSize: 15, fontWeight: '600', color: c.tertiaryLabel }}> BB</Text>
                 </Text>
               ) : (
-                <Count value={me.stack} style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label }} />
+                <Count value={me.stack} fit={tight} style={{ fontSize: big, lineHeight: big + 4, fontWeight: '800', color: c.label }} />
               )}
             </Pressable>
             {/* A fixed slot, so the win line coming or going never changes the box's height and moves the table. */}
@@ -193,7 +228,7 @@ export function MyArea({
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, maxWidth: '100%' }}>
           <PositionChip pos={me ? positionOf(hand, me.id) : null} />
           {me && <Avatar emoji={me.emoji} size={22} />}
-          {me && (
+          {me && !tight && (
             <Text
               numberOfLines={1}
               maxFontSizeMultiplier={1.2}

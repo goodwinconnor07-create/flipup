@@ -38,12 +38,31 @@ export function useCountUp(target: number, ms = 600): { value: number; dir: 'up'
 }
 
 /** `up`/`down` override the rising and falling colours (the pot pill uses paler ones on the felt). */
-export function Count({ value, style, up, down }: { value: number; style?: TextStyle; up?: string; down?: string }) {
+export function Count({
+  value,
+  style,
+  up,
+  down,
+  fit,
+}: {
+  value: number;
+  style?: TextStyle;
+  up?: string;
+  down?: string;
+  /** Shrinks to fit its width on one line (your box beside five cards). */
+  fit?: boolean;
+}) {
   const c = usePlainColors();
   const { value: v, dir } = useCountUp(value);
   const colour = dir === 'up' ? (up ?? c.green) : dir === 'down' ? (down ?? c.red) : undefined;
   return (
-    <Text maxFontSizeMultiplier={1.2} style={[{ fontVariant: ['tabular-nums'] }, style, colour ? { color: colour } : null]}>
+    <Text
+      maxFontSizeMultiplier={1.2}
+      numberOfLines={fit ? 1 : undefined}
+      adjustsFontSizeToFit={fit}
+      minimumFontScale={0.6}
+      style={[{ fontVariant: ['tabular-nums'] }, style, colour ? { color: colour } : null]}
+    >
       {chips(v)}
     </Text>
   );

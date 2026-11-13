@@ -18,6 +18,7 @@ import { ConnectionLost, useOfflineFor } from '@/components/table/connection-los
 import { PartyPanel } from '@/components/party/panel';
 import { Ended } from '@/components/table/ended';
 import { HandRecap } from '@/components/table/hand-recap';
+import { RulesCard } from '@/components/rules-card';
 import { HandToolsTip, SaveHandButton, ScreenshotPrompt, ShareButton } from '@/components/table/hand-tools';
 import { FeltOval, useHighlight } from '@/components/table/felt';
 import { Lobby } from '@/components/table/lobby';
@@ -35,7 +36,7 @@ import { WildDeuces } from '@/components/table/playing-card';
 import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { tableShare } from '@/state/table-share';
-import { read, save } from '@/state/storage';
+import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
 import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, retryConnection, useTable } from '@/state/session';
 import { EASE_OUT, exitMs } from '@/motion/presets';
@@ -451,15 +452,14 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [raiseTurn, setRaiseTurn] = useState('');
   const [selection, setSelection] = useState<{ street: string; action: PreAction } | null>(null);
 
-  // The first time you sit at a mini game, how it plays opens by itself (once per game, never again).
+  // The first time you sit at a mini game, its rules card comes up once (never again for that game). Against bots it
+  // was shown before the deal (Play with bots and the lobby wait for Continue), so here it's for online tables, which
+  // don't wait for anyone: five seconds and an X.
   const variant = variantOf(game);
+  const [rulesCard, setRulesCard] = useState<Variant | null>(() => (game.challenge || game.bankroll || rulesSeen(variant) ? null : variant));
   useEffect(() => {
-    if (variant === 'holdem' || game.challenge || game.bankroll) return;
-    const seen = read<string[]>('flipup.rulesseen', []);
-    if (seen.includes(variant)) return;
-    save('flipup.rulesseen', [...seen, variant]);
-    router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } });
-  }, [variant]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (rulesCard) markRulesSeen(rulesCard);
+  }, [rulesCard]);
   // Imposter: as each hand is dealt, a reminder that nobody (you included) knows who the imposter is.
   const role = hand?.variant === 'imposter' && hand.imposter && !hand.result && mySeat && me ? 'unknown' : null;
   const roleKey = role && hand ? `${game.id}:${hand.number}:${role}` : '';
@@ -662,6 +662,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
           )}
         </>
       )}
+      {rulesCard && <RulesCard variant={rulesCard} timed={!!game.code} onDone={() => setRulesCard(null)} />}
     </View>
     </WildDeuces.Provider>
   );

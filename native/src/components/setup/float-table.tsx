@@ -8,9 +8,16 @@
 // under Reduce Motion (useDrift). The pop in is ease-out from 50% and never from nothing (rule 10), the pop out is a
 // short ease-out swell then away, quicker than the arrival (rule 15), and nothing overshoots (rule 13). A face that
 // changes seat glides there with SETTLE. Under Reduce Motion faces only fade.
-import { useEffect, useState } from 'react';
+//
+// Holding a bot draws a ring round its face, clockwise from the top, so you can see the hold working: it starts after
+// 120ms (a tap never shows it), fills in a steady 530ms (a timer runs at an even pace, like the turn timer), and the
+// bot pops out the moment it closes. Let go early and the ring unwinds back to the top, ease-out in 200ms (rule 15),
+// with no overshoot. The ring is red, the app's colour for taking something away. It works the same under Reduce
+// Motion: it shows progress, it doesn't move anything.
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, Text, View, type LayoutChangeEvent } from 'react-native';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { cancelAnimation, Easing, runOnJS, useAnimatedProps, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 
 import { EASE_OUT, SETTLE } from '@/motion/presets';
 import { useDrift } from '@/motion/use-drift';
@@ -48,8 +55,21 @@ const PER_ROW = 5;
 const PAD = 10;
 /** The section's height for this many faces: one row, or two. */
 export const clusterHeight = (n: number) => Math.max(1, Math.ceil(n / PER_ROW)) * ROW + PAD * 2;
-/** How long a press must last before a bot pops out. */
-const HOLD_MS = 450;
+/** How long a press must last before a bot pops out: long enough to watch the ring go round, short enough not to drag. */
+const HOLD_MS = 650;
+/** The ring waits this long before it starts, so a quick tap never flashes it. */
+const RING_WAIT = 120;
+/** The hold ring: a little outside the face's own edge, so it reads as a ring round it, not a border. */
+const RING_GAP = 4;
+const RING_STROKE = 3;
+const RING = FACE + (RING_GAP + RING_STROKE) * 2;
+const RING_R = (RING - RING_STROKE) / 2;
+const RING_LENGTH = 2 * Math.PI * RING_R;
+/** From the face's inner edge (inside its 1pt border) out to the ring's. */
+const RING_OUT = RING_GAP + RING_STROKE + 1;
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+/** Apple's system red in dark mode: the colour for taking something away. */
+const HOLD_RED = '#ff453a';
 /** Where a new face starts (rule 10: from something, never from nothing). */
 const POP_FROM = 0.5;
 
@@ -177,6 +197,21 @@ function Floater({
   });
 
   const [held, setHeld] = useState(false);
+  // The hold ring: 0 empty, 1 closed (the bot leaves).
+  const ring = useSharedValue(0);
+  const closed = useRef(false);
+  const ringProps = useAnimatedProps(() => ({ strokeDashoffset: RING_LENGTH * (1 - ring.get()) }));
+  const ringTrack = useAnimatedStyle(() => ({ opacity: Math.min(1, ring.get() * 6) }));
+  const startRing = () => {
+    if (!canRemove) return;
+    cancelAnimation(ring);
+    ring.set(withDelay(RING_WAIT, withTiming(1, { duration: HOLD_MS - RING_WAIT, easing: Easing.linear })));
+  };
+  const dropRing = () => {
+    if (closed.current) return;
+    cancelAnimation(ring);
+    ring.set(withTiming(0, { duration: motion.exit, easing: EASE_OUT }));
+  };
   const box = [{ position: 'absolute' as const, left: 0, top: 0, width: FACE, alignItems: 'center' as const }, style];
   if (seat.add)
     // Add a bot: an empty seat the same size as a face, dashed, with a plus; a tap seats a bot that pops in.
@@ -224,8 +259,14 @@ function Floater({
         accessibilityActions={canRemove ? [{ name: 'longpress', label: 'Take off the table' }] : undefined}
         onAccessibilityAction={canRemove ? onHold : undefined}
         delayLongPress={HOLD_MS}
-        onPressIn={() => (!seat.you || seat.onPress) && setHeld(true)}
-        onPressOut={() => setHeld(false)}
+        onPressIn={() => {
+          if (!seat.you || seat.onPress) setHeld(true);
+          startRing();
+        }}
+        onPressOut={() => {
+          setHeld(false);
+          dropRing();
+        }}
         onPress={
           seat.onPress
             ? () => {
@@ -240,6 +281,9 @@ function Floater({
             haptic.failure();
             return;
           }
+          closed.current = true;
+          cancelAnimation(ring);
+          ring.set(1);
           haptic.turn();
           onHold();
         }}
@@ -260,6 +304,26 @@ function Floater({
             transform: [{ scale: held ? 0.97 : 1 }],
           }}
         >
+        {canRemove && (
+          // The hold ring, drawn round the face from 12 o'clock (the view is turned a
+          // quarter so the stroke starts at the top). Its faint track shows only once it has started.
+          <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: -RING_OUT, left: -RING_OUT, width: RING, height: RING, transform: [{ rotate: '-90deg' }] }, ringTrack]}>
+            <Svg width={RING} height={RING}>
+              <Circle cx={RING / 2} cy={RING / 2} r={RING_R} stroke="rgba(255,255,255,0.14)" strokeWidth={RING_STROKE} fill="none" />
+              <AnimatedCircle
+                cx={RING / 2}
+                cy={RING / 2}
+                r={RING_R}
+                stroke={HOLD_RED}
+                strokeWidth={RING_STROKE}
+                strokeLinecap="round"
+                fill="none"
+                strokeDasharray={`${RING_LENGTH} ${RING_LENGTH}`}
+                animatedProps={ringProps}
+              />
+            </Svg>
+          </Animated.View>
+        )}
           <Text style={{ fontSize: 25 }} maxFontSizeMultiplier={1}>
             {seat.emoji}
           </Text>

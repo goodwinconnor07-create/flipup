@@ -21,6 +21,9 @@ export const RELEASES: Release[] = [
     version: '1.0.0',
     label: 'November 2026',
     items: [
+      { icon: 'questionmark.circle.fill', title: 'Rules before your first hand', text: 'The first time you play a new game, a short card sums up the rules. Against bots, the game waits until you tap Continue. Online, it shows for five seconds and you can close it sooner.' },
+      { icon: 'suit.spade.fill', title: 'Room for five cards', text: 'In Onion and Double Board PLO your five cards sit in a neat fan beside your chips, and the board stays full size. Bean Stalk saves the room from the deal, so nothing shifts as your hand grows.' },
+      { icon: 'person.3.fill', title: 'Hold to take a bot off', text: 'Holding a bot in the lobby draws a ring round it. Let go early and it unwinds; hold until it closes and the bot leaves.' },
       { icon: 'sparkles', title: 'Six new games', text: 'Headband, Conveyor Belt, Onion, Chain Reaction, Elevator and Double Board PLO. Each one has its own table, how-to pictures and bots that know the rules.' },
       { icon: 'person.3.fill', title: 'Bots that actually bet', text: 'Bots now bet a good hand when it is checked to them, take small stabs at a pot nobody wants, and keep a decent hand in against a small bet. Casual tables also liven up when the action goes quiet.' },
       { icon: 'bolt.fill', title: 'Bots that play each game', text: 'In Imposter the bots read how the table bets and vote for the odd one out. In Secret Missions they chase their own mission, and in Power Cards they play more of their powers. In every game they comment on what just happened.' },

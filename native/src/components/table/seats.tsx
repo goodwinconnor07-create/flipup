@@ -423,8 +423,9 @@ function SeatPod({
         {cards.length > 0 && (
           <View style={{ flexDirection: 'row' }}>
             {cards.map((card, i) => (
-              // Two cards overlap a little; more (Pineapple, Bean Stalk) fan tighter to stay inside the seat.
-              <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length > 3 ? -12 : -6 }}>
+              // Two cards overlap a little; more (Pineapple, Bean Stalk) fan tighter to stay inside the seat, and five
+              // (Onion, Double Board PLO) tighter still, so four seats of five still fit across a 320pt phone.
+              <View key={card ?? i} style={{ marginLeft: i === 0 ? 0 : cards.length >= 5 ? -15 : cards.length > 3 ? -12 : -6 }}>
                 {card ? (
                   <PlayingCard card={card} size="sm" flip dim={dimCard(card)} glow={glowCard(card)} pack={player.cardPack} />
                 ) : xray && i === 0 ? (

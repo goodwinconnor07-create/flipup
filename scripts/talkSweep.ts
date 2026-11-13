@@ -12,8 +12,8 @@ import { seededRng } from '../src/game/cards';
 import { allLines, botLineText } from '../src/game/botTalk';
 import { applyAction, createTable, DEFAULT_SETTINGS } from '../src/game/reducer';
 import { reactionText } from '../src/game/reactions';
-import { VARIANTS } from '../src/game/variants';
-import type { Game, Variant } from '../src/game/types';
+import { VARIANTS, type Variant } from '../src/game/variants';
+import type { Game } from '../src/game/types';
 
 const TABLES = Number(process.argv[2] ?? 3);
 const HANDS = Number(process.argv[3] ?? 25);
@@ -119,7 +119,7 @@ function play(variant: Variant, seed: number, bots: number) {
       if (LOST.has(event) && result && winners.has(who) && winners.size === 1) add('said-when', `${event} from the bot that won`, show(event), where);
       if (event === 'foldBig' && seat && !seat.folded) add('said-when', 'foldBig from a bot still in', show(event), where);
       if (variant === 'holdem' && STREET[event] && hand && hand.board.length !== STREET[event]) add('said-when', `${event} line with ${hand.board.length} cards out`, show(event), where);
-      const stacks = g.players.filter((p) => !p.out).map((p) => p.stack);
+      const stacks = g.players.filter((p) => p.stack > 0).map((p) => p.stack);
       if (event === 'shortStack' && bot && bot.stack === Math.max(...stacks)) add('said-when', 'shortStack from the chip leader', show(event), where);
       // A big stack is 1.8 times the table's average when the hand starts (dealTalk), so only a short one is wrong.
       if (event === 'chipLead' && bot && bot.stack + (seat?.total ?? 0) < stacks.reduce((a, b) => a + b, 0) / stacks.length) add('said-when', 'chipLead from a stack under the average', show(event), where);
@@ -139,7 +139,7 @@ function play(variant: Variant, seed: number, bots: number) {
   };
 
   let guard = 0;
-  while ((g.hand?.number ?? 0) <= HANDS && !g.ended && guard++ < HANDS * 400) {
+  while ((g.hand?.number ?? 0) <= HANDS && g.status !== 'ended' && guard++ < HANDS * 400) {
     observe();
     const h = g.hand;
     if (h && h.toAct === meId && !h.result) {

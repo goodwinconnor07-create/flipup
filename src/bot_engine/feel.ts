@@ -1,4 +1,5 @@
 import { handBucket, type Bucket } from '../game/handBucket';
+import { scaryBoard, weakNoDraw } from './multiway';
 import type { BotMove } from '../game/botPlay';
 import type { InformationSet } from './information';
 
@@ -40,6 +41,7 @@ const BANDS: Record<string, { label: string; band: [number, number]; source: str
   foldMid: { label: 'Fold middle pair to a bet up to 80% pot', band: [0, 38], source: 'PokerNews / DeucesCracked: micro stakes fail to fold second pair', minN: 40 },
   foldCheap: { label: 'Fold a pair or a draw to a bet of a fifth of the pot or less', band: [0, 12], source: 'pot odds: a fifth of the pot needs 14% to call; nearly every pair or draw has it (est)', minN: 40 },
   tokenBet: { label: 'Bet the minimum into a pot four times its size or more', band: [0, 5], source: 'est: a one big blind stab into a real pot is rare at low stakes (owner\'s recorded hand, 13 Nov 2026)', minN: 100 },
+  weakIntoMany: { label: 'Bet a weak hand into two or more on a scary board', band: [0, 8], source: 'est: against two callers on A-J-10 nobody folds better (owner\'s recorded hand, 13 Nov 2026)', minN: 60 },
   trashAllIn: { label: 'All in with nothing postflop, per 100 hands', band: [0, 1], source: 'owner: no all-ins on stupid hands', minN: 1 },
 };
 
@@ -64,6 +66,8 @@ export class FeelCollector {
     const betting = AGGRESSIVE.includes(a.move);
     const allIn = a.move === 'allin' || (betting && a.to !== undefined && a.to >= hero.stack + hero.bet);
     if (allIn && (bucket === 'air' || bucket === 'weak') && hero.stack + hero.bet > i.bigBlind * 15) this.trash++;
+    if (i.legal.canCheck && i.currentBet === 0 && live.length >= 2 && scaryBoard(i.board) && weakNoDraw(i.hole, i.board))
+      this.bump('weakIntoMany', betting);
     if (i.legal.canCheck && i.currentBet === 0 && i.legal.canRaise && live.length) {
       const pot = i.players.reduce((s, p) => s + p.total, 0);
       if (pot * 0.25 > i.legal.minTo && a.move === 'bet') this.bump('tokenBet', a.to === i.legal.minTo);

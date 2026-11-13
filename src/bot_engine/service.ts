@@ -15,6 +15,7 @@ import { everydayReference, everydayWeights, everydaySupport } from './everyday'
 import { applyHabits } from './habits';
 import { applyPotOdds, type PotOddsResult } from './potOdds';
 import { applyBetSizing } from './betSizing';
+import { applyMultiwayRestraint } from './multiway';
 import { handPlanWeights } from './handPlan';
 import { behaviorSnapshot } from './behaviorMemory';
 import { decisionPhilosophy, describeChoice, applySizingPreferences, sharedUnbeatableBoard } from './philosophy';
@@ -47,6 +48,8 @@ export interface DecisionTrace {
   experienceVersion?: 'human-table-1';
   /** An everyday habit that moved the final distribution (habits.ts), for diagnosis. */
   habit?: string;
+  /** A weak hand's bet into several players on a scary board turned into a check (multiway.ts), for diagnosis. */
+  multiway?: string;
   /** A token bet moved to a real size or a check (betSizing.ts), for diagnosis. */
   sizing?: string;
   /** The pot-odds check (potOdds.ts): the price, the hand's equity and what it keeps of it, for diagnosis. */
@@ -250,6 +253,13 @@ export class BotService {
       finalDistribution = result.distribution;
       habit = result.note;
     }
+    // A weak hand with no draw checks into two or more players on a scary board (see multiway.ts).
+    let multiway: string | null = null;
+    if (profile.everyday && info.street !== 'preflop') {
+      const result = applyMultiwayRestraint(info, prediction.actions, finalDistribution);
+      finalDistribution = result.distribution;
+      multiway = result.note;
+    }
     // Last word on a fold: a hand that clears the price with room to spare calls (see potOdds.ts).
     let potOdds: DecisionTrace['potOdds'];
     if (profile.everyday && info.street !== 'preflop') {
@@ -292,6 +302,7 @@ export class BotService {
       ...(habit ? { habit } : {}),
       ...(potOdds ? { potOdds } : {}),
       ...(sizing ? { sizing } : {}),
+      ...(multiway ? { multiway } : {}),
       latencyMs: performance.now() - start,
       ...(coherence ? { handPlan: coherence.plan, coherenceWeights: coherence.logWeights } : {}),
       adaptation: {

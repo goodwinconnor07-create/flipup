@@ -1,3 +1,4 @@
+import * as Clipboard from 'expo-clipboard';
 import { router } from 'expo-router';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,6 +41,8 @@ function Bank() {
     haptic.select();
     Alert.alert(`Hand ${r.number}`, undefined, [
       { text: 'Share', onPress: () => router.push({ pathname: '/share-card', params: { kind: 'hand', id: r.id } }) },
+      // The hand as data, for a bug report about how the bots played it (`npm run bot:explain` reads it).
+      { text: 'Copy hand data', onPress: () => void Clipboard.setStringAsync(JSON.stringify(r)) },
       { text: 'Remove', style: 'destructive', onPress: () => removeReplay(r.id) },
       { text: 'Cancel', style: 'cancel' },
     ]);

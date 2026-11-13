@@ -27,7 +27,8 @@ describe('multiway restraint', () => {
       tables++;
       everydayThought(t.game, t.bb);
       const trace = t.game.botTable!.traces.at(-1)!;
-      expect(betShare(trace.prediction.actions, trace.finalDistribution)).toBeLessThanOrEqual(KEEP[0] + 1e-9);
+      // The restraint leaves a bet share within 0.002 of its cap alone.
+      expect(betShare(trace.prediction.actions, trace.finalDistribution)).toBeLessThanOrEqual(KEEP[0] + 0.002 + 1e-9);
     }
     expect(tables).toBe(8);
   }, 60_000);

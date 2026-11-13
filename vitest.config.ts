@@ -19,6 +19,7 @@ const SIMS = [
   'src/research/research.test.ts',
   'src/bot_engine/everyday.test.ts',
   'src/bot_engine/feel.test.ts',
+  'src/game/variantFeel.test.ts',
   'src/bot_engine/personalities.test.ts',
   'src/bot_engine/learning.test.ts',
   'src/bot_engine/preflop.test.ts',

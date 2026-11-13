@@ -2,7 +2,7 @@
 // before their move. This file is the pure part: what each power is, when it can be played, and how a bot picks
 // one. Playing a power changes the table in holdem.ts (`playPower()`). Rules are in docs/RULES.md (Power Cards).
 
-import { rankName, rankOf, type Card } from './cards';
+import { fullDeck, rankName, rankOf, type Card } from './cards';
 import { bestHand, startValue } from './variants';
 import type { Game, Hand, PowerId, PowerUse, Seat } from './types';
 import { powerInfo } from './powerList';
@@ -112,10 +112,10 @@ export function botPowerPlan(game: Game, hand: Hand, seat: Seat, rng: () => numb
   const chance = (p: number) => rng() < p;
   switch (effect) {
     case 'peek':
-      return chance(hand.street === 'preflop' ? 0.35 : 0.6) ? {} : null;
+      return chance(hand.street === 'preflop' ? 0.45 : 0.85) ? {} : null;
     case 'xray': {
       const targets = powerTargets(hand, seat, effect);
-      if (!targets.length || !chance(hand.street === 'preflop' ? 0.3 : 0.6)) return null;
+      if (!targets.length || !chance(hand.street === 'preflop' ? 0.5 : 0.85)) return null;
       // The player who bet, else whoever has the most chips.
       const t = targets.find((s) => s.playerId === hand.aggressorId) ?? targets.reduce((a, b) => (stackOf(b.playerId) > stackOf(a.playerId) ? b : a));
       return { target: t.playerId };
@@ -123,7 +123,7 @@ export function botPowerPlan(game: Game, hand: Hand, seat: Seat, rng: () => numb
     case 'swap': {
       // The card its hand isn't using, else the lower one, when the hand is weak.
       if (strength >= 2 || (hand.street === 'preflop' && start >= 26)) return null;
-      if (!chance(0.7)) return null;
+      if (!chance(0.9)) return null;
       const spare = seat.cards.filter((c) => !used.has(c));
       const pool = spare.length ? spare : seat.cards;
       const card = pool.reduce((a, b) => (rankOf(b) < rankOf(a) ? b : a));
@@ -131,34 +131,41 @@ export function botPowerPlan(game: Game, hand: Hand, seat: Seat, rng: () => numb
     }
     case 'reroll': {
       // A board card it doesn't use, the highest one (it helps someone else more), when its hand is a pair or less.
-      if (strength >= 2 || !chance(0.6)) return null;
+      if (strength >= 2 || !chance(0.75)) return null;
       const spare = hand.board.filter((c) => !used.has(c));
       if (!spare.length) return null;
       return { card: spare.reduce((a, b) => (rankOf(b) > rankOf(a) ? b : a)) };
     }
     case 'extra':
       // More cards help a hand that's still drawing.
-      return strength <= 1 && chance(0.5) ? {} : null;
+      return strength <= 1 && chance(0.7) ? {} : null;
     case 'passleft':
       // Chaos is good for a bad hand.
-      return (hand.street === 'preflop' ? start < 18 : strength === 0) && chance(0.6) ? {} : null;
+      return (hand.street === 'preflop' ? start < 18 : strength === 0) && chance(0.75) ? {} : null;
     case 'shield':
       // When it's paying to stay in after the flop.
-      return hand.street !== 'preflop' && toCall > 0 && chance(0.7) ? {} : null;
+      // When it's paying to stay in after the flop, or has a middling hand in a pot it's betting into.
+      return hand.street !== 'preflop' && (toCall > 0 ? chance(0.9) : strength >= 1 && chance(0.5)) ? {} : null;
     case 'silence': {
       const targets = powerTargets(hand, seat, effect);
-      if (!targets.length || hand.street === 'preflop' || !chance(0.45)) return null;
-      return { target: targets.reduce((a, b) => (stackOf(b.playerId) > stackOf(a.playerId) ? b : a)).playerId };
+      if (!targets.length || hand.street === 'preflop' || !chance(0.6)) return null;
+      // The player who bet (they can't raise again this street), else whoever has the most chips.
+      const t = targets.find((x) => x.playerId === hand.aggressorId) ?? targets.reduce((a, b) => (stackOf(b.playerId) > stackOf(a.playerId) ? b : a));
+      return { target: t.playerId };
     }
     case 'bounty': {
-      // Its own highest card: a pair with the board helps it too.
-      if (!chance(0.85)) return null;
-      const high = seat.cards.reduce((a, b) => (rankOf(b) > rankOf(a) ? b : a), seat.cards[0]);
-      return { rank: high ? rankOf(high) : 14 };
+      // The rank most likely to land: the one with the most copies still unseen (a rank in its own hand also helps it).
+      if (!chance(0.9)) return null;
+      const seen = new Set<Card>([...seat.cards, ...hand.board]);
+      const left = new Map<number, number>();
+      for (const c of fullDeck()) if (!seen.has(c)) left.set(rankOf(c), (left.get(rankOf(c)) ?? 0) + 1);
+      const mine = new Set(seat.cards.map(rankOf));
+      const best = [...left].sort((a, b) => b[1] - a[1] || +mine.has(b[0]) - +mine.has(a[0]) || b[0] - a[0])[0];
+      return { rank: best ? best[0] : 14 };
     }
     case 'foldtax':
       // Best when someone's facing a bet: when it's betting, or late in the hand.
-      return (hand.street !== 'preflop' || hand.currentBet > game.settings.bigBlind) && chance(0.55) ? {} : null;
+      return (hand.street !== 'preflop' || hand.currentBet > game.settings.bigBlind) && chance(strength >= 2 ? 0.8 : 0.6) ? {} : null;
     default:
       return null;
   }

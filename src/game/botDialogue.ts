@@ -2,6 +2,7 @@
 // No model download, network, arbitrary text generation or access to anyone's hole cards.
 import { BOTS } from './botStyles';
 import type { TalkEvent } from './botTalk';
+import type { GameTalkEvent } from './botGameLines';
 import type { BotProfile } from './botProfiles';
 import type { Game } from './types';
 
@@ -23,7 +24,7 @@ type ContextEvent =
   | 'replyThanks'
   | 'replyGoodGame';
 /** Moments the dialogue planner has no phrasing for: they use the fixed lines in botTalk.ts. */
-export type FixedLineEvent = 'cheer' | 'commiserate' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg'
+export type FixedLineEvent = GameTalkEvent | 'cheer' | 'commiserate' | 'greetBack' | 'thanks' | 'ribbed' | 'goodLuck' | 'gg'
   | 'flop' | 'turn' | 'river' | 'bigPot' | 'longHand' | 'shortStack' | 'chipLead' | 'button' | 'bigBlind' | 'handMilestone'
   | 'beforeFlop' | 'beforeTurn' | 'beforeRiver' | 'beforeShowdown' | 'addedToTable'
   | 'rememberHello' | 'rememberBluffs' | 'rememberFold3bet' | 'rememberBigBet' | 'rememberCheckRaise' | 'rememberFolds' | 'rememberCalls';

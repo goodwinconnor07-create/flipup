@@ -315,6 +315,23 @@ export interface Hand {
   missionsDone?: { by: string; mission: MissionId; paid: Record<string, number> }[];
 }
 
+/** What `variantTalk()` has already seen this hand, so each power, bust, point and mission is reacted to once. */
+export interface TalkSeen {
+  hand: number;
+  board: number;
+  powers: number;
+  busts: number;
+  hits: number;
+  missions: number;
+  race: number;
+  points: string;
+  discards: boolean;
+  dice: boolean;
+  result: boolean;
+  /** Memory Poker: the `until` of the peek already talked about. */
+  peek: number;
+}
+
 export type MissionId =
   | 'smallball'
   | 'silent'
@@ -466,6 +483,8 @@ export interface Game {
   talkAt?: Record<string, number>;
   /** When each bot's last line is done being said and read: it doesn't move before then. */
   talkDone?: Record<string, number>;
+  /** What the game-mode bot talk has already reacted to (counts, so each moment is spoken about once). See `variantTalk()`. */
+  talkSeen?: TalkSeen;
   /** A bot that has said what it's thinking, and the move it will make a moment later. Never sent to phones. */
   botPlan?: { playerId: string; seq: number; move: Move; to?: number };
   /** A bot's reply to what someone just said, due a beat later. Never sent to phones. */

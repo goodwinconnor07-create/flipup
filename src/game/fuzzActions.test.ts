@@ -85,7 +85,8 @@ describe('the engine survives whatever a phone sends', { timeout: TABLE_MS }, ()
           expect(p.stack).toBeGreaterThanOrEqual(0);
         }
       }
-      expect(accepted).toBeGreaterThan(50);
+      // (a fuzzed `end` from the host can close the table early)
+      expect(accepted).toBeGreaterThan(g.status === 'ended' ? 15 : 50);
     });
   }
 });

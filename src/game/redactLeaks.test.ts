@@ -76,7 +76,8 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
         if (game.hand?.number !== before) hands++;
         for (const f of leaks(game)) problems.add(f.replace(/[0-9a-z]{2}$/, 'XX'));
       }
-      expect(hands).toBeGreaterThan(5);
+      // (Imposter: with nobody able to fold, a person who calls everything can go out within a few hands)
+      expect(hands).toBeGreaterThan(v === 'imposter' ? 3 : 5);
       expect([...problems]).toEqual([]);
     });
   }

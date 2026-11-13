@@ -24,10 +24,14 @@ import {
   REMEMBER_FRIENDLY,
   REMEMBER_TRASH,
 } from './botLines';
+import { GAME_CHANCE, GAME_EVENTS, GAME_FRIENDLY, GAME_TRASH, type GameTalkEvent } from './botGameLines';
 import { lineBeats, sayAndReadMs } from './chat';
-import type { Game } from './types';
+import { isRed, rankOf } from './cards';
+import type { Game, TalkSeen } from './types';
+import { variantOf } from './variants';
 
-export type TalkEvent =
+export type TalkEvent = BaseTalkEvent | GameTalkEvent;
+type BaseTalkEvent =
   /** Thinking out loud before a hard decision. */
   | 'thinkHard'
   /** Thinking out loud before an easy one. */
@@ -137,7 +141,7 @@ export type TalkEvent =
   | 'rememberFolds'
   | 'rememberCalls';
 
-type Lines = Record<TalkEvent, string[]>;
+type Lines = Record<BaseTalkEvent, string[]> & Partial<Record<GameTalkEvent, string[]>>;
 
 const TRASH: Lines = {
   thinkHard: ['Hmm…', 'What do we have…', 'Let me think.', 'Sneaky…', 'You sure?'],
@@ -460,7 +464,7 @@ const VOICES: Record<StyleId, Partial<Lines>> = {
 
 // The second pass of lines, added after the first so earlier ids keep their meaning.
 const grow = (pools: Lines, more: Partial<Lines>) => {
-  for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) pools[event].push(...lines);
+  for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][]) (pools[event] ??= []).push(...lines);
 };
 grow(TRASH, NEW_TRASH);
 grow(FRIENDLY, NEW_FRIENDLY);
@@ -479,6 +483,12 @@ for (const passes of [MORE_VOICES, EXTRA_VOICES, ADDED_VOICES]) {
     for (const [event, lines] of Object.entries(more) as [TalkEvent, string[]][])
       VOICES[style][event] = [...(VOICES[style][event] ?? []), ...lines];
   }
+}
+
+// What bots say about the games themselves (botGameLines.ts), in the same two tones.
+for (const event of GAME_EVENTS) {
+  TRASH[event] = [...GAME_TRASH[event]];
+  FRIENDLY[event] = [...GAME_FRIENDLY[event]];
 }
 
 const id = (voice: string, event: string, i: number) => `b:${voice}:${event}:${i}`;
@@ -519,7 +529,7 @@ function pool(voice: string, event: TalkEvent): string[] {
   if (voice === 'friendly') return FRIENDLY[event] ?? [];
   const style = Object.hasOwn(VOICES, voice) ? styleOf(voice as StyleId) : null;
   if (!style) return [];
-  return [...(style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event], ...(VOICES[style.id][event] ?? [])];
+  return [...((style.talk.tone === 'trash' ? TRASH : FRIENDLY)[event] ?? []), ...(VOICES[style.id][event] ?? [])];
 }
 
 /** Every line a bot can say, with who says it and for what: for the chat lab and the tests that check how lines read. */
@@ -533,6 +543,7 @@ export function allLines(): { voice: string; event: TalkEvent; text: string }[] 
 
 /** How likely each kind of moment gets a word, before the bot's own chattiness. */
 const CHANCE: Record<TalkEvent, number> = {
+  ...GAME_CHANCE,
   thinkHard: 0.22,
   thinkEasy: 0.1,
   allin: 0.55,
@@ -736,3 +747,129 @@ export function dramaPause(
   const ms = botSays(game, playerId, event, rng, now);
   return ms ? Math.round(Math.min(DRAMA_MAX, ms) * (game.fast ? 0.5 : 1)) : 0;
 }
+
+/**
+ * A word about what is special in this game, said by one bot (or two), once for each moment: a deuce landing, the ghost
+ * taking a pot, a bust, a power played, a finger pointed, a mission done. It keeps its own count of what it has already
+ * reacted to (`game.talkSeen`), so it can run after every action and say nothing most of the time. Nothing when only bots are
+ * left in the hand (nobody is watching), and no hidden card is ever mentioned: every line is about something the table saw.
+ */
+export function variantTalk(game: Game, rng: () => number, now: number): void {
+  const v = variantOf(game);
+  if (v === 'holdem' || game.card || game.challenge?.quiet) return;
+  const hand = game.hand;
+  const botIds = game.players.filter((p) => p.bot).map((p) => p.id);
+  if (!botIds.length) return;
+  // Memory Poker: the twenty cards are up before there is a hand.
+  if (v === 'memory' && game.memory && game.talkSeen?.peek !== game.memory.until) {
+    game.talkSeen = { ...(game.talkSeen ?? blank(hand?.number ?? 0, game)), peek: game.memory.until };
+    const bots = game.players.filter((p) => p.bot && !p.sittingOut);
+    if (bots.length) botSays(game, pick(bots, rng).id, 'memoryPeek', rng, now);
+  }
+  if (!hand) return;
+  const fresh = game.talkSeen?.hand !== hand.number;
+  const seen: TalkSeen = fresh ? blank(hand.number, game) : { ...game.talkSeen! };
+  if (fresh && game.talkSeen) seen.peek = game.talkSeen.peek;
+  const watched = !hand.seats.every((s) => s.folded || game.players.find((p) => p.id === s.playerId)?.bot);
+  const inHand = (id: string) => hand.seats.some((s) => s.playerId === id);
+  const bots = (not: string[] = []) => game.players.filter((p) => p.bot && inHand(p.id) && !not.includes(p.id));
+  const say = (id: string | undefined, event: GameTalkEvent, to?: string, owed = false) => (id ? botSays(game, id, event, rng, now, owed, to) : 0);
+  const anyBot = (not: string[] = []) => {
+    const b = bots(not);
+    return b.length ? pick(b, rng).id : undefined;
+  };
+
+  if (hand.board.length > seen.board) {
+    const fresher = hand.board.slice(seen.board);
+    seen.board = hand.board.length;
+    const n = hand.board.length;
+    let event: GameTalkEvent | null = null;
+    if (v === 'pittsburgh' && n >= 7) event = 'threeRivers';
+    else if (v === 'redriver' && n >= 5) event = isRed(hand.board[n - 1]) ? 'redRiver' : n > 5 ? 'blackRiver' : null;
+    else if (v === 'crucifix') event = n === 5 ? 'crossFlop' : n === 9 ? 'crossRiver' : null;
+    else if (v === 'circle') event = n === 2 ? 'circleFlop' : n === 6 ? 'circleRiver' : null;
+    else if (v === 'beanstalk' && n >= 3) event = 'stalkGrows';
+    if (v === 'deuces' && fresher.some((c) => rankOf(c) === 2)) event = 'deuceLands';
+    if (event && watched) say(anyBot(), event);
+  }
+  if (hand.dice && !seen.dice) {
+    seen.dice = true;
+    if (watched) say(anyBot(), hand.dice.roll === 6 ? 'dieSix' : 'dieSwap');
+  }
+  if (v === 'pineapple' && !hand.discarding && (hand.discarded?.length ?? 0) > 0 && !seen.discards) {
+    seen.discards = true;
+    if (watched) say(anyBot(), 'discardsShown');
+  }
+  const uses = hand.powerUses ?? [];
+  for (let k = seen.powers; k < uses.length; k++) {
+    const u = uses[k];
+    if (!watched) break;
+    const target = u.target && game.players.find((p) => p.id === u.target)?.bot ? u.target : undefined;
+    if (target) say(target, 'powerOnMe', u.by);
+    else if (game.players.find((p) => p.id === u.by)?.bot && rng() < 0.5) say(u.by, 'powerMine');
+    else say(anyBot([u.by]), 'powerSeen');
+  }
+  seen.powers = uses.length;
+  const busted = hand.busted ?? [];
+  if (busted.length > seen.busts) {
+    if (watched) say(anyBot(busted), 'bjBust');
+    seen.busts = busted.length;
+  }
+  const hits = Object.entries(hand.hits ?? {});
+  const hitCount = hits.reduce((a, [, n]) => a + n, 0);
+  if (hitCount > seen.hits) {
+    const hitters = hits.filter(([id, n]) => n > 0 && game.players.find((p) => p.id === id)?.bot).map(([id]) => id);
+    if (watched && hitters.length) say(pick(hitters, rng), 'bjHit');
+    seen.hits = hitCount;
+  }
+  const points = JSON.stringify(hand.points ?? {});
+  if (points !== seen.points) {
+    const before = (seen.points ? JSON.parse(seen.points) : {}) as Record<string, string>;
+    const now_ = hand.points ?? {};
+    for (const [from, at] of Object.entries(now_)) {
+      if (before[from] === at || !watched) continue;
+      if (game.players.find((p) => p.id === from)?.bot) say(from, 'impPoint', at);
+      if (game.players.find((p) => p.id === at)?.bot && at !== from) say(at, 'impAccused', from);
+    }
+    seen.points = points;
+  }
+  const missions = hand.missionsDone ?? [];
+  if (missions.length > seen.missions) {
+    for (const m of missions.slice(seen.missions)) if (watched) say(anyBot([m.by]) ?? (game.players.find((p) => p.id === m.by)?.bot ? m.by : undefined), 'missionDone', m.by);
+    seen.missions = missions.length;
+  }
+  const race = game.missions?.last?.race ?? 0;
+  if (race > seen.race) {
+    seen.race = race;
+    if (watched) say(anyBot(), 'missionRace');
+  }
+  if (hand.result && !seen.result) {
+    seen.result = true;
+    const r = hand.result;
+    if (watched) {
+      if (r.imposter) {
+        const imp = r.imposter.id;
+        say(anyBot([imp]), r.imposter.caught ? 'impCaught' : 'impEscaped');
+        if (!r.imposter.caught && game.players.find((p) => p.id === imp)?.bot) say(imp, 'impSlipped', undefined, true);
+      }
+      if (r.ghost) say(anyBot(), r.ghost.kept > 0 ? 'ghostWins' : r.showdown ? 'ghostLoses' : 'ghostWins');
+      if (v === 'memory' && hand.removed?.length && r.showdown) say(anyBot(), 'memoryRecall');
+    }
+  }
+  game.talkSeen = seen;
+}
+
+const blank = (hand: number, game: Game): TalkSeen => ({
+  hand,
+  board: 0,
+  powers: 0,
+  busts: 0,
+  hits: 0,
+  missions: 0,
+  race: game.missions?.last?.race ?? 0,
+  points: '',
+  discards: false,
+  dice: false,
+  result: false,
+  peek: game.talkSeen?.peek ?? 0,
+});

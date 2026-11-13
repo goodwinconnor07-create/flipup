@@ -167,6 +167,68 @@ table is never as dull as one with a quiet human, so this shows the reach of the
 Not done yet: the director only steers the standard Hold'em bots. The variant bots (`botVariants.ts`) are a separate
 engine and get theirs with the variant work.
 
+## Game-mode bots (13 Nov 2026)
+
+The thirteen game modes (`botVariants.ts`) had the same fear as plain Hold'em: before this change a bot that checked a
+favourite down was common (a hand that was ahead and free to bet got bet 50 to 65% of the time, about 75% in the best
+game) and one that folded a hand that was ahead at the price was common too (6 to 23% of the time by game). Imposter's
+bots could not tell the imposter from anyone else (they pointed at the real one 14% of the time, 1 in 7 is chance),
+Power Cards played 44% of the powers it was dealt, and Memory Poker bots remembered all twenty cards.
+
+What changed, all in `botVariants.ts` unless said, and only for the bots (`lab.legacy` seats play the old way, for the
+labs):
+
+- **Everyday habits for every equity game.** After the flop a hand that is a favourite (better than 1.5 times its fair
+  share, more in the games where big hands are common: `SENSE.value`) bets 93% of the time; a middling one about half;
+  and a stab at a pot that has been checked round is small and not into a crowd. Sizes are a third to three quarters of
+  the pot. A bot that is a little short of calling a single small bet that nobody raised calls it 65% of the time
+  (Blackjack Hold'em excepted: half the pot goes by the 21 count). A bet or a call is read as "the best of a few random
+  hands" a little less (`draws()`), so one bet no longer makes every hand look beaten. No all-in with next to no chance.
+- **Imposter** (`blendIn()`, `crowdDeviation()` and `botVote()` in `botGames.ts`/`variants.ts`). Everyone but the
+  imposter holds the same two cards, so bots now play their own cards honestly, with the estimate and the dice behind it
+  seeded by the hand so that alike hands act alike, and the odd hand drifts away. Bets stay small and affordable (nobody
+  can fold, so a raised pot only grows). A bot whose own hand disagrees with the whole table follows the table, since it
+  may be the odd one out. The vote reads who acted least like the rest, with a bet into a string of checks as the
+  clearest tell (the checkers read the board the same way; the one who bets does not) and an opener whose bet everyone
+  called not counted as odd. Real detection is modest, and should be: the real imposter ranks first in that score about
+  29% of the time (14% is chance) and is caught by the table in about 24% of hands (12% before). People do the rest.
+- **Secret Missions** (`missionPull()`). A bot goes after the mission it holds, since the reward is paid by everyone
+  else: Twins, Suited Up, Seeing Red, Royalty, Lucky Seven, Deuce Is Loose, Connected and Underdog play the hands that fit
+  them wider, Slow Roll never bets, Trap Door checks a good hand to raise, Shove and Win shoves a good hand, Relentless
+  and Bully bet every street, Pressure bets the river, Hero Call calls it, Button Boss, Blind Defender and Blind Steal
+  play their position. Missions completed went from 16 to 32 per 100 hands.
+- **Power Cards** (`botPowerPlan()` in `powers.ts`). Information powers are played nearly every time they can be, Swap and
+  Reroll when the hand isn't using the card, Shield when paying to stay in, Silence on whoever just bet, and Bounty on
+  the rank with the most copies still unseen (before, its own highest card). Powers played: 44% to 54% of those dealt.
+- **Memory Poker** (`recalledRemoved()`). A bot keeps between three quarters and nineteen in twenty of the twenty cards,
+  always the same ones for that bot and hand, so it makes the kind of mistake a person makes.
+
+**What each game is for, and what the lab checks** (`src/game/variantFeel.ts`, `npm run bot:variants [hands] [runs]
+[game,game...]`: an all-bot table of each game, the one seated person played by the same brain). Every game gets the same
+five checks (bet a favourite that is free to bet; bet at all; fold a favourite at the price; call with far too little;
+shove with next to no chance) and a few of its own: Imposter is caught about as often as not (a band of 20 to 55%) and the
+bots point at the real one more than chance; Power Cards plays most of the powers it deals; Secret Missions lands a
+mission every few hands; Blackjack Hold'em busts someone in 10 to 55% of hands and a hit usually doesn't bust; Ghost
+Hold'em's ghost wins a pot in 8 to 40% of showdowns; Die on the River swaps a card five times in six. The bands are our
+estimates (the published advice is about plain Hold'em); three were widened after the first run and are marked `est`.
+Over 200 hands a game, before to after: a favourite is bet 50 to 65% to 74 to 89%, bets at all 10 to 24% to 18 to 52%,
+a favourite is folded 6 to 23% to 4 to 14%, and trash all-ins stay at about zero, except Blackjack Hold'em: its pots are
+huge (stacks go in most hands) and its call and shove numbers, 18% and 3 per 100 hands, are a poor fit for a game where
+half the pot goes by the 21 count, so those two are not gated. `variantFeel.test.ts` is a looser CI guard on three games.
+
+**What bots say about each game** (`botGameLines.ts`, `variantTalk()` in `botTalk.ts`). Twenty-eight moments, each with
+lines in the trash-talking tone and the friendly one, said by a bot that has something to say about them: the discards at
+Crazy Pineapple, a deuce on the board at Crazy Deuces, the ghost taking a pot or losing one, three rivers, the die's six or
+its swap, a red river and the black one that ends it, the cross and the circle opening and closing, the twenty cards at
+Memory Poker and a bot saying it remembered one, Bean Stalk's growing hands, a hit and a bust at Blackjack Hold'em, a
+finger pointed or accused, the imposter caught or escaping (and the imposter bot saying nobody noticed), a power played,
+aimed at a bot or seen, a mission done and a race settled. `variantTalk()` runs after every action, remembers what it has
+already reacted to (`game.talkSeen`) and mostly says nothing; every line is about something the whole table saw, never a
+hidden card. Ids are `b:<tone>:<moment>:<index>`, append-only like the rest.
+
+Not done yet: the table director and Casual/Challenge don't steer the game-mode bots (they play the same at either level),
+and the bots' habits there are tuned by the lab above, not by a person across the table.
+
 ## Fair play
 
 A bot decides from its own two cards, the board, everyone's chips and the public moves. It never

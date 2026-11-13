@@ -2,6 +2,7 @@
 // (pot limit at a Ghost table); what changes is how many cards you get, what's wild and how a hand is scored.
 
 import { score, toInt } from './botEval';
+import { crowdDeviation } from './botGames';
 import { fullDeck, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
@@ -527,16 +528,11 @@ function fingers(hand: Hand, skip: string): Map<string, number> {
 export function botVote(hand: Hand, botId: string): string | null {
   const others = hand.seats.map((s) => s.playerId).filter((id) => id !== botId);
   if (!others.length) return null;
+  // Everyone but the imposter holds the same cards, so they act alike: the one who acts least like the others is the
+  // odd one out. The table pointing somewhere moves a bot a little too.
+  const deviation = crowdDeviation(hand);
   const push = pushiness(hand);
   const crowd = fingers(hand, botId);
-  const middle = (id: string) => {
-    const rest = hand.seats
-      .map((s) => s.playerId)
-      .filter((x) => x !== id)
-      .map((x) => push.get(x) ?? 0)
-      .sort((a, b) => a - b);
-    return rest.length ? rest[Math.floor(rest.length / 2)] : 0;
-  };
-  const odd = (id: string) => Math.abs((push.get(id) ?? 0) - middle(id)) + (crowd.get(id) ?? 0) * 0.75;
-  return others.reduce((a, b) => (odd(b) > odd(a) ? b : a));
+  const odd = (id: string) => (deviation.get(id) ?? 0) * 2 + (crowd.get(id) ?? 0) * 0.6 + (push.get(id) ?? 0) * 0.01;
+  return others.reduce((x, y) => (odd(y) > odd(x) ? y : x));
 }

@@ -11,8 +11,9 @@
 import type { BotThought } from './botPlay';
 import { score, toInt } from './botEval';
 import { playerStyle } from './botStyles';
-import { fullDeck, isRed, type Card } from './cards';
+import { fullDeck, hashString, isRed, seededRng, type Card } from './cards';
 import { potTotal } from './holdem';
+import { crowdAggression, missionPull, recalledRemoved } from './botGames';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
 import { boardSize, count21, handSets, holeCountAt, isWild, keepTwoQuick, startValue, variantOf, wildHand, type Variant, cardsToCome } from './variants';
@@ -66,7 +67,9 @@ export function variantEquity(game: Game, hand: Hand, seat: Seat, rng: () => num
   // Wild deuces take longest to score, so a rougher estimate there.
   const samples = runs ?? Math.round(samplesFor(others) * (v === 'deuces' ? 0.5 : 1));
   // Memory Poker: the bots remember every card that was taken out.
-  const known = new Set([...seat.cards, ...hand.board, ...(hand.removed ?? [])]);
+  // (a bot that plays the old way remembers them all; the rest keep most of them, like a person)
+  const removed = lab.legacy.has(seat.playerId) ? (hand.removed ?? []) : recalledRemoved(hand.removed, seat.playerId, hand.number);
+  const known = new Set([...seat.cards, ...hand.board, ...removed]);
   // Bean Stalk: the cards everyone still gets on the streets to come.
   const full = holeCountAt(v, 5);
   const more = v === 'beanstalk' ? full - seat.cards.length : 0;
@@ -121,10 +124,10 @@ export function draws(hand: Hand, playerId: string, rng: () => number): number {
   let weight = 0;
   for (const a of hand.actions ?? []) {
     if (a.playerId !== playerId) continue;
-    if (a.move === 'bet' || a.move === 'raise' || a.move === 'allin') weight += 1;
-    else if (a.move === 'call') weight += 0.45;
+    if (a.move === 'bet' || a.move === 'raise' || a.move === 'allin') weight += 0.65;
+    else if (a.move === 'call') weight += 0.3;
   }
-  weight = Math.min(3, weight);
+  weight = Math.min(2.2, weight);
   return 1 + Math.floor(weight) + (rng() < weight % 1 ? 1 : 0);
 }
 
@@ -234,7 +237,7 @@ export function variantDecide(game: Game, hand: Hand, seat: Seat, rng: () => num
  * - `bluff`: how often it bets with nothing. Less where someone usually has it, none against the ghost.
  * - `draw`: cards to come that can change everything (the die, red rivers, Bean Stalk) make calls a little cheaper.
  */
-const SENSE: Partial<Record<Variant, { value: number; bluff: number; draw: number }>> = {
+export const SENSE: Partial<Record<Variant, { value: number; bluff: number; draw: number }>> = {
   pineapple: { value: 0.04, bluff: 0.8, draw: 0 },
   deuces: { value: 0.08, bluff: 0.5, draw: 0 },
   ghost: { value: 0.03, bluff: 0.3, draw: 0 },
@@ -259,12 +262,22 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
   const stack = player?.stack ?? 0;
   const preflop = hand.board.length === 0;
   const eq = variantEquity(game, hand, seat, rng, undefined, smart);
+  // Secret Missions: a bot goes after its own mission (the reward is paid by everyone else, the biggest swing at the table).
+  const pull = smart && v === 'missions' ? missionPull(game, hand, seat) : null;
+  const noBet = !!pull?.noBet;
+  const loose = pull?.loose ?? 0;
+  const acts = (hand.actions ?? []).filter((a) => a.street === hand.street && !a.outOfTurn);
+  const live = hand.seats.filter((s) => s.playerId !== seat.playerId && !s.folded && !s.allIn);
+  // Everyone still to be beaten checked to it: the spot to bet in.
+  const checkedTo = acts.length > 0 && live.length > 0 && live.every((s) => acts.some((a) => a.playerId === s.playerId && a.move === 'check'));
+  // One bet, nobody has raised it and this bot hasn't acted: a lone bet is not a reason to give a decent hand up.
+  const singleBet = acts.filter((a) => ['bet', 'raise', 'allin'].includes(a.move)).length === 1 && !acts.some((a) => a.playerId === seat.playerId);
   const opponents = hand.seats.filter((s) => s.playerId !== seat.playerId && !s.folded).length;
   // The price: what calling needs to win. Before the flop there's plenty still to win (implied odds), and loose
   // styles call wider; sticky styles call more after the flop.
   const price = o.toCall > 0 ? o.toCall / (pot + o.toCall) : 0;
   // Cards still to come that can turn a hand over (the die, red rivers, Bean Stalk) make a call a little cheaper.
-  const need = preflop ? price * (0.62 - style.pre.loose * 0.25) : price - style.post.sticky * 0.5 - sense.draw;
+  const need = (preflop ? price * (0.62 - style.pre.loose * 0.25) * (1 - loose * 0.6) : price - style.post.sticky * 0.5 - sense.draw) * (1 - (pull?.call ?? 0) * 0.8);
   // Strong enough to bet or raise for value: better than an even share of the pot, more so against a crowd.
   const fair = 1 / (opponents + 1);
   // Before the flop nothing is a favourite against a crowd (aces win about half the time six ways), so a hand is
@@ -274,14 +287,16 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
   const smartBar = smart && v !== 'imposter';
   const strong = smartBar
     ? preflop
-      ? eq > fair * 1.7 - style.pre.aggro * 0.15 * fair
+      ? eq > fair * (1.7 - loose) - style.pre.aggro * 0.15 * fair
       : eq > Math.max(0.42, fair * 1.5) + sense.value - style.post.value
     : eq > Math.max(0.55, fair * 1.6) + sense.value - style.post.value;
   const monster = smartBar ? (preflop ? eq > fair * 2.4 : eq > Math.max(0.66, fair * 2.2) + sense.value) : eq > Math.max(0.75, fair * 2.4) + sense.value;
   const stakes = Math.min(1, (o.toCall || pot * 0.5) / Math.max(1, stack));
   const done = (move: BotThought['move']): BotThought => ({ move, thinkMs: think(game, seat, rng, stakes) });
   const raiseTo = (to: number) => {
-    const t = Math.round(Math.max(o.minTo, Math.min(o.maxTo, to)));
+    // Not all in with next to no chance of winning: a bluff stays a bet.
+    const cap = smart && eq < 0.2 && stack > bb * 15 && o.maxTo > o.minTo ? o.maxTo - 1 : o.maxTo;
+    const t = Math.round(Math.max(o.minTo, Math.min(cap, to)));
     return done(t >= o.maxTo ? { move: 'allin' } : { move: o.word === 'Bet' ? 'bet' : 'raise', to: t });
   };
   const size = style.post.sizes[Math.floor(rng() * style.post.sizes.length)] ?? 0.66;
@@ -294,18 +309,42 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
 
   if (o.canCheck) {
     // Ghost: the ghost never folds, so a bluff can't win the pot on its own.
-    const bluffs = Math.max(0, 0.1 + style.post.bluff) * sense.bluff * (smart && v === 'ghost' && hand.ghost ? 0 : 1);
-    if (o.canRaise && (strong || rng() < bluffs / opponents)) {
+    const ghostBlock = smart && v === 'ghost' && !!hand.ghost;
+    const bluffs = Math.max(0, 0.1 + style.post.bluff) * sense.bluff * (ghostBlock ? 0 : 1);
+    if (smartBar && !preflop && o.canRaise && !noBet) {
+      // After the flop it bets what it has: a good hand nearly every time (nobody checks a favourite down), a middling one
+      // about half, and a stab at a pot that's been checked round, small and not into a crowd.
+      const bar = Math.max(0.2, fair * 1.5 + sense.value * 0.6 - style.post.value * 0.5);
+      const middling = fair * 1.1 + sense.value * 0.4;
+      const stab = ghostBlock ? 0 : ((checkedTo ? 0.3 : 0.1) * Math.max(0.3, 1 + style.post.bluff * 3) * sense.bluff) / Math.sqrt(opponents) + (pull?.bet ?? 0) * 0.6;
+      const chance = eq >= bar ? 0.93 : eq >= middling ? 0.45 + (pull?.bet ?? 0) * 0.3 : stab;
+      // Trap Door: a good hand checks, to raise the bet that follows.
+      if (pull?.trap && eq >= bar && rng() < 0.6) return done({ move: 'check' });
+      // Shove and Win.
+      if (pull?.shove && eq > fair * 1.8 && rng() < 0.5) return raiseTo(o.maxTo);
+      if (rng() < chance) {
+        const frac = eq >= bar ? (monster ? 0.75 : 0.5 + rng() * 0.2) : 0.33 + rng() * 0.15;
+        return raiseTo(hand.currentBet + pot * frac);
+      }
+      return done({ move: 'check' });
+    }
+    if (!noBet && o.canRaise && (strong || rng() < bluffs / opponents)) {
       const to = preflop ? Math.max(bb * style.pre.open, hand.currentBet * 3) : hand.currentBet + pot * (monster ? Math.max(size, 0.75) : size);
       return raiseTo(to);
     }
     return done({ move: 'check' });
   }
-  if (eq < need) return done(o.canFold ? { move: 'fold' } : { move: 'call' });
+  if (eq < need) {
+    // A small bet on its own isn't a reason to give up a hand that's close to good enough at the price.
+    const light = smart && v !== 'bjholdem' && !preflop && singleBet && price <= 0.3 && eq >= need * 0.82 && rng() < 0.65;
+    if (!light) return done(o.canFold ? { move: 'fold' } : { move: 'call' });
+  }
   // First in before the flop (only the blinds to call): a strong hand opens rather than limps.
   const firstIn = preflop && hand.currentBet <= bb;
-  if (smartBar && firstIn && strong && o.canRaise) return raiseTo(Math.max(bb * style.pre.open, bb * 2.5) + bb * Math.max(0, hand.seats.filter((x) => x.bet >= bb && x.playerId !== seat.playerId).length - 1));
-  if (o.canRaise && (monster || (strong && rng() < 0.35 + style.pre.aggro * 0.3))) {
+  if (smartBar && firstIn && strong && o.canRaise && !noBet) return raiseTo(Math.max(bb * style.pre.open, bb * 2.5) + bb * Math.max(0, hand.seats.filter((x) => x.bet >= bb && x.playerId !== seat.playerId).length - 1));
+  if (pull?.trap && strong && o.canRaise && !preflop && rng() < 0.8) return raiseTo(hand.currentBet + (pot + o.toCall) * 0.8);
+  if (pull?.shove && eq > fair * 1.8 && o.canRaise && !preflop && rng() < 0.5) return raiseTo(o.maxTo);
+  if (!noBet && o.canRaise && (monster || (strong && rng() < 0.35 + style.pre.aggro * 0.3))) {
     const to = preflop ? hand.currentBet * 3 : hand.currentBet + (pot + o.toCall) * Math.max(size, 0.6);
     return raiseTo(to);
   }
@@ -313,25 +352,46 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
 }
 
 /**
- * Imposter: the cards don't decide the pot, nobody can fold, and nobody knows who the imposter is (the bot included:
- * it never reads `hand.imposter`). So every bot plays to look ordinary: it mostly checks and calls like the crowd, now
- * and then makes a small probing bet to see who reacts, and never builds a huge pot on its own.
+ * Imposter: the cards don't decide the pot, nobody can fold, and nobody knows who the imposter is (the bot included: it
+ * never reads `hand.imposter`). Everyone but the imposter holds the same two cards, so a bot plays its own cards honestly
+ * (a good hand bets small, a bad one checks and calls) and the table's moves tell who is holding something different. A
+ * bot whose own hand disagrees with what the whole table is doing follows the table instead, since it may be the odd one.
+ * Bets stay small, so nobody builds a huge pot (there is no folding to get out of one).
  */
 function blendIn(game: Game, hand: Hand, seat: Seat, rng: () => number): BotThought {
   const player = game.players.find((p) => p.id === seat.playerId);
-  const style = playerStyle(player);
   const o = options(game, hand, seat);
   const pot = potTotal(hand);
   const stack = player?.stack ?? 0;
   const thinkMs = think(game, seat, rng, Math.min(1, o.toCall / Math.max(1, stack)));
-  const probe = 0.14 + Math.max(-0.08, style.post.bluff);
-  const small = hand.currentBet + Math.max(game.settings.bigBlind, pot * 0.33);
-  if (o.canRaise && quietOk(o.toCall, stack) && rng() < probe) {
-    const to = Math.round(Math.max(o.minTo, Math.min(o.maxTo, small)));
+  const opponents = Math.max(1, hand.seats.filter((s) => s.playerId !== seat.playerId && !s.folded).length);
+  const fair = 1 / (opponents + 1);
+  // It plays its own two cards honestly. Everyone but the imposter holds the same pair, so they all read the board the same
+  // way (the estimate and the dice behind it are seeded by the hand, not by the bot) and bet alike; the one holding
+  // different cards drifts away from them, which is what the table looks for.
+  const shared = seededRng(hashString(`imposter:${hand.number}:${hand.street}:${hand.board.join('')}`));
+  const eq = variantEquity(game, hand, seat, shared, 80);
+  const wish = eq > fair * 1.6 ? 0.8 : eq > fair * 1.1 ? 0.4 : 0.05;
+  // But if what it would do is far from what the table is doing, it may be the one holding the odd cards. It follows the crowd.
+  const crowd = crowdAggression(hand, seat.playerId);
+  const moves = (hand.actions ?? []).filter((a) => a.playerId !== seat.playerId && a.street === hand.street).length;
+  const follow = moves >= 2 ? Math.min(0.35, Math.abs(wish - crowd) * 0.8) : 0;
+  const chance = (1 - follow) * wish + follow * crowd;
+  // Same roll for everyone on a street (so alike hands act alike), with a little of its own.
+  const roll = rng() < 0.12 ? rng() : seededRng(hashString(`imposter-roll:${hand.number}:${hand.street}`))();
+  const frac = wish >= 0.6 ? 0.5 : 0.33;
+  const bet = hand.currentBet + Math.max(game.settings.bigBlind, pot * frac);
+  const raises = (hand.actions ?? []).filter((a) => a.street === hand.street && !a.outOfTurn && ['bet', 'raise', 'allin'].includes(a.move)).length;
+  // Nobody can fold here, so a raised pot only grows: it bets into a pot it can afford, raises a bet only with a hand that
+  // likes it (and cheaply, twice a street at most), and never goes in for its whole stack.
+  const affordable = bet - seat.bet <= stack * 0.35;
+  if (o.canRaise && affordable && o.toCall === 0 && roll < chance) {
+    const to = Math.round(Math.max(o.minTo, Math.min(o.maxTo, bet)));
     if (to < o.maxTo) return { move: { move: o.word === 'Bet' ? 'bet' : 'raise', to }, thinkMs };
+  }
+  if (o.canRaise && affordable && o.toCall > 0 && raises < 2 && wish >= 0.8 && o.toCall <= pot * 0.45 && seededRng(hashString(`imposter-raise:${hand.number}:${hand.street}`))() < 0.55) {
+    const to = Math.round(Math.max(o.minTo, Math.min(o.maxTo, bet)));
+    if (to < o.maxTo) return { move: { move: 'raise', to }, thinkMs };
   }
   return { move: o.canCheck ? { move: 'check' } : { move: 'call' }, thinkMs };
 }
-
-/** A bet small enough next to the stack that probing with it doesn't build a huge pot. */
-const quietOk = (toCall: number, stack: number) => toCall <= stack * 0.25;

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { Pressable, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
+import { Pressable, StyleSheet, type PressableProps, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 
 import { EASE_OUT, PRESS_SPRING } from '@/motion/presets';
@@ -40,6 +40,10 @@ export function PressableScale({
       transform: reduce ? [] : [{ scale: 1 - d * (1 - motion.pressScale) }],
     };
   });
+  // The look fills the press area only when the caller sizes that area (a flex share, a width, a stretch). One that
+  // hugs its content (alignSelf start or center) must not grow: iOS stretched such a pill to the scroll view's height.
+  const o = StyleSheet.flatten(outerStyle);
+  const fills = !!o && (o.flex !== undefined || o.flexGrow !== undefined || o.width !== undefined || o.alignSelf === 'stretch');
   return (
     <Pressable
       {...props}
@@ -62,7 +66,7 @@ export function PressableScale({
     >
       {/* It fills the press area only when the caller lays that out (outerStyle). Growing always let iOS stretch a
           capsule in a column that doesn't stretch it to the height of the whole scroll view (the invite ticket). */}
-      <Animated.View style={[outerStyle ? { flexGrow: 1 } : null, style, look]}>{children}</Animated.View>
+      <Animated.View style={[fills ? { flexGrow: 1 } : null, style, look]}>{children}</Animated.View>
     </Pressable>
   );
 }

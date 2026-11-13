@@ -38,7 +38,7 @@ export function ModeTiles({ locked, done, onPick }: { locked: boolean; done: boo
   const tile = Math.min(220, Math.floor((Math.min(width, 560 + spacing.md * 2) - spacing.md * 2 - spacing.sm) / 2));
   return (
     <View style={{ gap: spacing.sm }}>
-      <ThemedText variant="title2" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
+      <ThemedText variant="title3" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800', paddingHorizontal: spacing.xxs }}>
         Ways to train
       </ThemedText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', columnGap: spacing.sm, rowGap: spacing.md }}>

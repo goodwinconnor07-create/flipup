@@ -1,5 +1,6 @@
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -11,6 +12,9 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useLastHand, winnersOf } from '@/state/replays';
 import { releaseRecap, useTable } from '@/state/session';
 import { brand, motion, radius, ROUNDED, spacing } from '@/theme';
+
+/** How long the table stays clear after a hand ends before the recap card comes up. */
+const RECAP_DELAY_MS = 2500;
 
 const chips = (n: number) => Math.abs(Math.round(n)).toLocaleString('en-US');
 
@@ -24,7 +28,15 @@ export function HandRecap() {
   const t = useTable();
   const hand = useLastHand();
   const reduce = useReduceMotion();
-  if (!t.recap || !hand || hand.id !== t.recap) return null;
+  // The card waits a moment after the hand ends, so you can see the cards and who won on the table first.
+  const [shown, setShown] = useState<string | null>(null);
+  useEffect(() => {
+    if (!t.recap) return;
+    const id = t.recap;
+    const timer = setTimeout(() => setShown(id), RECAP_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [t.recap]);
+  if (!t.recap || !hand || hand.id !== t.recap || shown !== t.recap) return null;
   const winners = winnersOf(hand)
     .map((id) => hand.players.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);

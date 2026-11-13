@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { bestHand, cardsToCome, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, runoutOdds, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingVoters, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Player, type Seat, type Variant } from '../game';
+import { bestHand, cardsToCome, venueById, boardSize, count21, cardName, CIRCLE_HOURS, CROSS_CELLS, runoutOdds, streetCards, holeCount, myPlayer, options, pendingDiscards, pendingSlides, pendingVoters, shortCard, slideTargets, pot, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Player, type Seat, type Variant } from '../game';
 import { closeTable, dispatch, leaveTable, navigate, openSheet, useApp } from '../state/store';
 import { FAST, toTableTime } from '../state/clock';
 import { Avatar, CardSlot, CardText, chips, Count, PlayingCard, Spinner, useNow } from '../ui/components';
@@ -251,7 +251,7 @@ function TableBar({ game }: { game: Game | null }) {
 
 /**
  * Win and tie chances, only during an all-in run-out when every live hand is face up, played out by the game's own
- * rules (`runoutOdds()`). Ghost Hold'em leaves the ghost out until it's turned over at the showdown.
+ * rules (`runoutOdds()`). Haunted Pot leaves the ghost out until it's turned over at the showdown.
  */
 function useOdds(hand: Hand | null, ok: boolean, variant: Variant): Map<string, { win: number; tie: number }> | null {
   const live = hand?.runout && ok ? hand.seats.filter((s) => !s.folded && s.cards.length >= 2) : [];
@@ -383,7 +383,7 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
   // "Pair of kings" says more than "Pair"; the longer ones ("Two pair, kings and fives") would crowd the pill.
   const short = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? short(myValue) : null;
-  // Blackjack Hold'em: your 21 count rides along with your hand's name.
+  // Hit Me: your 21 count rides along with your hand's name.
   const myCount = variant === 'bjholdem' && mySeat && !mySeat.folded && mySeat.cards.length && !hand?.result ? count21(mySeat.cards) : null;
   const pillName = hand?.result?.showdown ? highlight?.name : myCount !== null ? `${myHandName ? `${myHandName} · ` : ''}${myCount} to 21` : myHandName;
   // The pot counts down to nothing as it's pushed to the winner.
@@ -531,6 +531,8 @@ export function Felt({ game, bare = false }: { game: Game; bare?: boolean }) {
           <Vote game={game} me={me} />
         ) : hand?.discarding && mySeat && !mySeat.folded ? (
           <Discard game={game} seat={mySeat} />
+        ) : hand?.sliding && mySeat && !mySeat.folded && mySeat.cards.length ? (
+          <Slide game={game} seat={mySeat} />
         ) : bare && (!hand || hand.result) ? null : (
           <>
             <PowerStrip game={game} me={me} seat={mySeat} myTurn={myTurn} sending={!!sending} />
@@ -587,6 +589,36 @@ function Discard({ game, seat }: { game: Game; seat: Seat }) {
   );
 }
 
+/** Slide Switch: as each street lands, tap the card you slide to the player on your left. Everyone picks at once. */
+function Slide({ game, seat }: { game: Game; seat: Seat }) {
+  const hand = game.hand!;
+  const to = game.players.find((p) => p.id === slideTargets(hand)[seat.playerId]);
+  const picked = hand.slides?.[seat.playerId];
+  const street = hand.street === 'flop' ? 'flop' : hand.street === 'turn' ? 'turn' : 'river';
+  if (picked) {
+    const waiting = pendingSlides(game).length;
+    return (
+      <p className="discard-wait">
+        {`Sliding the ${shortCard(picked)} to ${to?.name ?? 'the left'}. `}
+        {waiting ? `Waiting for ${waiting === 1 ? 'one player' : `${waiting} players`}…` : 'Here they go…'}
+      </p>
+    );
+  }
+  return (
+    <div className="discard">
+      <p className="discard-title">{`Slide a card to ${to?.name ?? 'the left'}`}</p>
+      <div className="discard-cards">
+        {seat.cards.map((c) => (
+          <button key={c} type="button" className="discard-card press" aria-label={`Slide the ${cardName(c)} to ${to?.name ?? 'the left'}`} onClick={() => dispatch({ type: 'slide', hand: hand.number, card: c })}>
+            <PlayingCard card={c} size="lg" />
+          </button>
+        ))}
+      </div>
+      <p className="slide-note">{`Everyone slides one left on the ${street}. You get one from the right.`}</p>
+    </div>
+  );
+}
+
 /** Imposter: after the river, everyone dealt in votes for who they think the imposter is. */
 function Vote({ game, me }: { game: Game; me: Player }) {
   const hand = game.hand!;
@@ -610,7 +642,7 @@ function Vote({ game, me }: { game: Game; me: Player }) {
   );
 }
 
-/** Ghost Hold'em: the ghost's two cards (face down until a showdown) and what it's holding for the next hand. */
+/** Haunted Pot: the ghost's two cards (face down until a showdown) and what it's holding for the next hand. */
 function Ghost({ game }: { game: Game }) {
   const mine = useApp((s) => myPlayer(game, s.deviceId))?.cardPack;
   const hand = game.hand;
@@ -748,7 +780,7 @@ function WinBanner({ game }: { game: Game }) {
       </div>
     );
   }
-  // Blackjack Hold'em: who took the poker half and who took the 21 half of the main pot.
+  // Hit Me: who took the poker half and who took the 21 half of the main pot.
   if (result.blackjack) {
     const name = (id: string) => (game.players.find((p) => p.id === id)?.deviceId === deviceId ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
     const [poker, count] = [result.blackjack.poker[0] ?? [], result.blackjack.winners[0] ?? []];
@@ -765,7 +797,7 @@ function WinBanner({ game }: { game: Game }) {
     );
   }
   if (!winners.length) {
-    // Ghost Hold'em: nobody beat the ghost, so it keeps the pot for the next hand.
+    // Haunted Pot: nobody beat the ghost, so it keeps the pot for the next hand.
     if (!result.ghost?.kept) return null;
     return (
       <div key={hand.number} className="win-banner pop" role="status">

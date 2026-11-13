@@ -234,7 +234,7 @@ function MyTurn({ game, hand, seat, sending, onRaise }: { game: Game; hand: Hand
     <View style={{ gap: spacing.sm }}>
       <Note strong>{silenced ? 'Your turn · 🤐 no betting this street' : 'Your turn'}</Note>
       {o.canHit && (
-        // Blackjack Hold'em: take another card before your move. Over 21 folds your hand.
+        // Hit Me: take another card before your move. Over 21 folds your hand.
         <Row>
           <TableButton label={`Hit · you're on ${count21(seat.cards)}`} tone="pre" height={48} disabled={sending} onPress={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })} />
         </Row>

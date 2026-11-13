@@ -311,6 +311,10 @@
   --theme-missions-rail-a: #d4a94e;
   --theme-missions-rail-b: #5a4214;
   --theme-missions-glow: rgba(212, 169, 78, 0.22);
+  --theme-slide-felt: #13414a;
+  --theme-slide-rail-a: #9be15d;
+  --theme-slide-rail-b: #3c6e1b;
+  --theme-slide-glow: rgba(155, 225, 93, 0.2);
   --gold: #ff9f0a;
   --gold-lo: #d97706;
   --gold-hi: #fde68a;

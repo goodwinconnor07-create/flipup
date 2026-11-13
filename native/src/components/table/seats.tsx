@@ -54,7 +54,7 @@ export function usePodSlots(
 ): { shown: Player[]; hidden: Player[]; canShow: (id: string) => boolean } {
   const [anchor, setAnchor] = useState<WindowAnchor>({ id: null, idx: 0 });
   const justFolded = useJustFolded(game.hand);
-  // The ghost takes a seat's room in Ghost Hold'em, so three players show beside it instead of four.
+  // The ghost takes a seat's room in Haunted Pot, so three players show beside it instead of four.
   const max = variantOf(game) === 'ghost' ? MAX_PODS - 1 : MAX_PODS;
   if (others.length <= max) return { shown: others, hidden: [], canShow: () => true };
   const hand = game.hand;
@@ -250,7 +250,7 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
   );
 }
 
-/** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk (Blackjack Hold'em's hits are added per seat). */
+/** How many face-down cards a player in the hand holds: three in Crazy Pineapple until the discard, more each street in Bean Stalk (Hit Me's hits are added per seat). */
 function faceDown(game: Game): number {
   const v = variantOf(game);
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);

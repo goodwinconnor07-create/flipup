@@ -28,7 +28,7 @@ import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
-import { Discard, Discuss, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
+import { Discard, Discuss, Slide, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
@@ -424,7 +424,7 @@ function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: 
 
 /**
  * Win and tie chances, only during an all-in run-out when every live hand is face up, played out by the game's own
- * rules (`runoutOdds()`). Ghost Hold'em leaves the ghost out until it's turned over at the showdown.
+ * rules (`runoutOdds()`). Haunted Pot leaves the ghost out until it's turned over at the showdown.
  */
 function useOdds(hand: Hand | null, ok: boolean, variant: Variant): Map<string, { win: number; tie: number }> | null {
   const live = hand?.runout && ok ? hand.seats.filter((s) => !s.folded && s.cards.length >= 2) : [];
@@ -600,6 +600,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             <Vote game={game} me={me} />
           ) : hand?.discarding && mySeat && !mySeat.folded ? (
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />
+          ) : hand?.sliding && mySeat && !mySeat.folded && mySeat.cards.length ? (
+            <Slide game={game} seat={mySeat} pack={me?.cardPack} />
           ) : (
             <ActionArea
               game={game}

@@ -17,7 +17,7 @@ export interface Options {
   word: 'Bet' | 'Raise';
   /** False in Imposter, where nobody folds. */
   canFold: boolean;
-  /** Blackjack Hold'em: on the flop they can take another card before moving. */
+  /** Hit Me: on the flop they can take another card before moving. */
   canHit: boolean;
   /** Power Cards: the power they can play now (and, for Copycat, the one it copies), or null. */
   power?: { power: PowerId; effect: PowerId } | null;

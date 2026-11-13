@@ -7,6 +7,7 @@ import { dealMoment, MOMENT_TIMING, scaled } from './moments';
 import { handRecord } from './record';
 import { fullDeck, isRed, rankName, rankOf, shuffle, type Card } from './cards';
 import { effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
+import { afterSlides, slideChoice, sliders, slideTargets } from './slide';
 import { drawMission, MISSION_GOAL, MISSION_SWAP_AFTER, missionDone, secretMission, raceChange, raceNeeds, raceOrder, rewardOf } from './missions';
 import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, PowerUse, Seat, Street } from './types';
@@ -273,7 +274,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     imposter = seats[at].playerId;
     seats.forEach((s, i) => (s.cards = [...(i === at ? own : same)]));
   } else for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
-  // Ghost Hold'em: the ghost's two cards come last, face down.
+  // Haunted Pot: the ghost's two cards come last, face down.
   const ghost = variant === 'ghost' ? [deck.shift()!, deck.shift()!] : undefined;
   // Whatever the ghost kept goes into this pot (even if the table has since switched to another game).
   const carry = game.ghostPot ?? 0;
@@ -472,7 +473,12 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   (hand.actions ??= []).push({ street: hand.street, playerId, move: 'fold', to: 0, outOfTurn: true });
   log(game, `${nameOf(game, playerId)} leaves and folds`);
   hand.seq += 1;
-  if (hand.seats.filter((s) => !s.folded).length === 1) winWithoutShowdown(game, ctx);
+  if (hand.seats.filter((s) => !s.folded).length === 1) {
+    hand.sliding = false;
+    hand.slides = undefined;
+    hand.picked = undefined;
+    winWithoutShowdown(game, ctx);
+  } else if (hand.sliding && !pendingSlides(game).length) endSlides(game, ctx);
   else if (hand.discarding && !pendingDiscards(game).length) endDiscards(game, ctx);
   else if (hand.voting && !pendingVoters(game).length) endVote(game, ctx);
 }
@@ -945,9 +951,9 @@ export function playPower(game: Game, plan: PowerPlan, ctx: ActionContext): stri
   return null;
 }
 
-// ── Blackjack Hold'em hits ──────────────────────────────────────────────────
+// ── Hit Me hits ──────────────────────────────────────────────────
 
-/** Whether the player to act can take another card: Blackjack Hold'em, on the flop, before their move. */
+/** Whether the player to act can take another card: Hit Me, on the flop, before their move. */
 export function canHit(game: Game, hand: Hand, seat: Seat): boolean {
   return variantOf(game) === 'bjholdem' && hand.street === 'flop' && !hand.result && !hand.runout && hand.toAct === seat.playerId && !seat.folded && !seat.allIn;
 }
@@ -1038,6 +1044,89 @@ export function endDiscards(game: Game, ctx: ActionContext): void {
   pauseBeforeNextStreet(game, ctx, show);
 }
 
+// ── Slide Switch ────────────────────────────────────────────────────────────
+
+/** Seats the table is still waiting on for a card to slide. */
+export function pendingSlides(game: Game): Seat[] {
+  const hand = game.hand;
+  if (!hand?.sliding) return [];
+  return sliders(hand).filter((s) => !hand.picked?.includes(s.playerId));
+}
+
+/**
+ * Slide Switch, as the flop, the turn or the river lands (betting or an all-in run-out): everyone still in picks a
+ * card to slide left. Bots pick at once; people get the clock. Returns whether the street now waits on the slides.
+ */
+function askForSlides(game: Game, ctx: ActionContext): boolean {
+  const hand = game.hand!;
+  if (variantOf(game) !== 'slide' || hand.street === 'preflop' || hand.result || sliders(hand).length < 2) return false;
+  hand.sliding = true;
+  hand.slides = {};
+  hand.picked = [];
+  for (const s of sliders(hand)) {
+    if (!playerById(game, s.playerId)?.bot) continue;
+    // Bots keep their better card, now and then on a hunch the other one.
+    const pick = ctx.rng() < 0.12 ? s.cards[Math.floor(ctx.rng() * s.cards.length)] : slideChoice(s.cards, hand.board);
+    hand.slides[s.playerId] = pick;
+    hand.picked.push(s.playerId);
+  }
+  if (!pendingSlides(game).length) {
+    endSlides(game, ctx);
+    return true;
+  }
+  hand.toAct = null;
+  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
+  hand.actAt = hand.deadline;
+  schedule(game);
+  return true;
+}
+
+/** A player picks the card they slide this street. Returns an error message, or null. */
+export function slideCard(game: Game, playerId: string, card: Card, ctx: ActionContext): string | null {
+  const hand = game.hand;
+  const seat = hand?.seats.find((s) => s.playerId === playerId);
+  if (!hand?.sliding || !seat || seat.folded || !seat.cards.length) return "There's nothing to slide now.";
+  if (hand.slides?.[playerId]) return "You've already picked a card.";
+  if (!seat.cards.includes(card)) return "That's not one of your cards.";
+  hand.slides = { ...hand.slides, [playerId]: card };
+  hand.picked = [...(hand.picked ?? []), playerId];
+  hand.seq += 1;
+  if (!pendingSlides(game).length) endSlides(game, ctx);
+  else schedule(game);
+  return null;
+}
+
+/** Everyone has picked (or time's up: the rest slide the card that helps them least): the cards move, all at once. */
+export function endSlides(game: Game, ctx: ActionContext): void {
+  const hand = game.hand!;
+  const picks: Record<string, Card> = { ...hand.slides };
+  for (const s of sliders(hand)) if (!picks[s.playerId] || !s.cards.includes(picks[s.playerId])) picks[s.playerId] = slideChoice(s.cards, hand.board);
+  const to = slideTargets(hand);
+  const next = afterSlides(hand, picks);
+  for (const s of sliders(hand)) {
+    hand.slid = [...(hand.slid ?? []), { street: hand.street, from: s.playerId, to: to[s.playerId], card: picks[s.playerId] }];
+    s.cards = next[s.playerId];
+  }
+  hand.sliding = false;
+  hand.slides = undefined;
+  hand.picked = undefined;
+  hand.deadline = null;
+  hand.seq += 1;
+  log(game, 'Everyone slides a card to the left');
+  const show = scaled(MOMENT_TIMING.slides, botsOnly(game));
+  hand.moment = { kind: 'slides', at: ctx.now, until: ctx.now + show };
+  // An all-in run-out picks up where it stopped.
+  if (hand.runout) {
+    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + show;
+    schedule(game);
+    return;
+  }
+  hand.toAct = null;
+  hand.bettingAt = ctx.now + show;
+  hand.actAt = hand.bettingAt;
+  schedule(game);
+}
+
 /** The pause is over: deal the next street and start its betting. */
 export function dealNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
@@ -1045,6 +1134,8 @@ export function dealNextStreet(game: Game, ctx: ActionContext): void {
   dealStreet(game, hand, ctx.rng, ctx.now);
   // Imposter: the bots form hunches as the board comes.
   if (hand.imposter) botsPoint(game, ctx.rng, 0.4);
+  // Slide Switch: everyone slides a card left before the street's betting.
+  if (askForSlides(game, ctx)) return;
   // The twist plays out first (a die rolls, a red river keeps dealing...); then betting starts.
   if (hand.moment && ctx.now < hand.moment.until) {
     hand.toAct = null;
@@ -1101,6 +1192,7 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
   if (askForDiscards(game, ctx)) return;
   dealStreet(game, hand, ctx.rng, ctx.now);
   if (askForDiscards(game, ctx)) return;
+  if (askForSlides(game, ctx)) return;
   const moment = hand.moment ? Math.max(0, hand.moment.until - ctx.now) : 0;
   hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + moment;
   holdForDice(game, ctx);
@@ -1144,7 +1236,7 @@ export function showdown(game: Game, ctx: ActionContext): void {
   const values = new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, bestHand(variant, s.cards, hand.board)]));
 
   const pots = buildPots(hand.seats);
-  // Ghost Hold'em: what the ghost was holding goes in the main pot (everyone still in can win it).
+  // Haunted Pot: what the ghost was holding goes in the main pot (everyone still in can win it).
   if (hand.carry && pots.length) pots[0].amount += hand.carry;
   const ghost = hand.ghost ? bestHand(variant, hand.ghost, hand.board) : null;
   let kept = 0;
@@ -1162,7 +1254,7 @@ export function showdown(game: Game, ctx: ActionContext): void {
   };
   // Power Cards: a Shield that wins nothing gets half of what went in after it went up back, out of the pots it was in.
   if (variant === 'power') shieldRefunds(game, hand, pots, values, won);
-  // Blackjack Hold'em: each pot is split, half to the best poker hand and half to whoever is closest to 21.
+  // Hit Me: each pot is split, half to the best poker hand and half to whoever is closest to 21.
   const counts = variant === 'bjholdem' ? new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, count21(s.cards)])) : null;
   const bjWinners: string[][] = [];
   const bjPoker: string[][] = [];

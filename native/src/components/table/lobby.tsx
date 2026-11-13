@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { variantInfo, type Game } from '@/engine';
 import { joinLink } from '@/state/api';
 import { seatKey } from '@/state/blocks';
+import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
 import { tableShareMessage } from '@/state/invite-message';
 import { changeTableCode, dispatch, me as myDevice, type TableState } from '@/state/session';
 import { ForceScheme, spacing } from '@/theme';
@@ -17,6 +19,7 @@ import { HouseRules } from '../lobby/house-rules';
 import { Players, type PlayerLine } from '../lobby/players';
 import { openPlayerMenu } from '../player-menu';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from '../setup/open-table-button';
+import { RulesCard } from '../rules-card';
 import { RoundButton } from '../tab-screen';
 import { ThemedText } from '../themed-text';
 
@@ -85,6 +88,14 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
     );
   };
 
+  // A bots-only table moving on to a mini game you've never played: its rules card first, the deal on Continue.
+  // Online the table shows everyone the timed card once it deals.
+  const [rules, setRules] = useState(false);
+  const start = () => {
+    if (!online && !rulesSeen(variant)) setRules(true);
+    else dispatch({ type: 'start' });
+  };
+
   const line = online && conn === 'offline' ? 'Reconnecting…' : host ? null : 'Waiting for the host to deal.';
 
   return (
@@ -132,7 +143,17 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
           title="Start game"
           line={game.players.length < 2 ? 'Add a bot or wait for a friend' : `${game.players.length} in · ${variantInfo(variant).name}`}
           disabled={game.players.length < 2}
-          onPress={() => dispatch({ type: 'start' })}
+          onPress={start}
+        />
+      )}
+      {rules && (
+        <RulesCard
+          variant={variant}
+          onDone={() => {
+            markRulesSeen(variant);
+            setRules(false);
+            dispatch({ type: 'start' });
+          }}
         />
       )}
     </GrainBackground>

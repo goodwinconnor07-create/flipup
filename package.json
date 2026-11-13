@@ -24,6 +24,7 @@
     "bot:personalities": "tsx scripts/evaluatePersonalities.ts",
     "bot:everyday": "tsx scripts/evaluateEveryday.ts",
     "bot:feel": "tsx scripts/botFeel.ts",
+    "bot:director": "tsx scripts/botDirector.ts",
     "bot:planning": "tsx scripts/evaluatePlanning.ts",
     "bot:ranges": "tsx scripts/analyseBotRanges.ts",
     "bot:realism": "tsx scripts/evaluateRealism.ts",

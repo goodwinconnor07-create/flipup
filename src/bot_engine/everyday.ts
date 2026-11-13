@@ -6,6 +6,7 @@ import type { InformationSet } from './information';
 import type { StrategyPrediction } from './strategy';
 import { preflopContext } from './preflopContext';
 import { ownHandBucket } from './handPlan';
+import { LIFT } from './director';
 
 export type BotDifficulty = 'casual' | 'challenge';
 export const EVERYDAY_FOCUSES = ['balanced', 'patient', 'curious', 'pressure'] as const;
@@ -15,6 +16,8 @@ export interface EverydayIdentity {
   focus: EverydayFocus;
   difficulty: BotDifficulty;
   tempo: number;
+  /** The table director's nudge for this hand, 0 to 1 (Casual only; see director.ts). */
+  lift?: number;
 }
 export const isBotDifficulty = (v: unknown): v is BotDifficulty => v === 'casual' || v === 'challenge';
 export const focusForName = (name: string): EverydayFocus => EVERYDAY_FOCUSES[hashString(name) % EVERYDAY_FOCUSES.length];
@@ -85,6 +88,8 @@ export function everydayReference(i: InformationSet, p: StrategyPrediction, prof
     // than folds) and are put off less by a big price. Challenge keeps the authored ranges.
     const casual = e.difficulty === 'casual';
     width += shift + (casual ? (context.raiseCount <= 1 ? 0.075 : 0.025) : 0);
+    // A dull table gets a little wider (the director, Casual only).
+    if (casual && context.raiseCount <= 1) width += LIFT.preflopWidth * (e.lift ?? 0);
     if (i.legal.toCall > context.effectiveTo * 0.25) width *= casual ? 0.75 : 0.6;
     const play = top <= 0.01 ? 1 : 1 / (1 + Math.exp((top - width) / 0.045));
     const raiseShare = context.raiseCount === 0 ? 0.78 : Math.max(0.12, Math.min(0.8, (0.1 - top) * 7 + 0.2));

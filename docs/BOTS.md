@@ -136,7 +136,36 @@ what a human sees; **a lively table still needs playing by people**. Add a new h
 
 Still to do from the same research: isolation raises over limpers, squeeze plays and preflop calling wider
 (live players call a raise far more than online ones do), check-raising narrow and value-heavy, and a table
-director that keeps Casual lively (the next step).
+director for the variants (the Hold'em one is above).
+
+## Table director (13 Nov 2026)
+
+`src/bot_engine/director.ts` keeps a Casual table lively without touching a card. After every hand the reducer's
+`afterHand()` tells it what the hand looked like from public moves only: a flop was dealt, it went to a showdown, how big the
+pot was in big blinds, and whether the flop was checked all the way down. Over the last eight hands (it says nothing
+before four) that becomes a dullness score from 0 to 1, and a `lift` from 0 to 1 moves towards it over a few hands,
+rising and fading rather than jumping. The Casual bots read the lift when a hand starts and keep it for that hand, like
+the bot level (`profile.everyday.lift`, set in `updateEverydayMemory()`).
+
+What a full lift does, all bounded in `LIFT`: hands that aren't for value bet up to 30% more often when it's checked
+to them (`habits.ts`), fold to a single bet 35% less (the habit caps), and come into pots 0.10 wider before the flop
+when it's an open or a limp (`everydayReference()`). It does nothing for big hands, never adds an all-in and sits
+inside the habit guards. Challenge never gets it.
+
+**What it never reads or does** (the promise in EVERYDAY_TABLES.md, "no adaptive difficulty", still holds): who won or
+lost, anyone's chips, the human's results or how long they've played, and it never changes a deal. Table activity includes
+what the human does (a human who folds everything makes the table quieter), which is what a lively table means.
+The thresholds (`LIVELY`) are our estimates, set below what six Casual bots do against each other (59% flops, 20%
+showdowns, 27bb pots) so a normal table doesn't trip it.
+
+`npm run bot:director [hands per seed]` plays the same deals with no director, the director reading the table and the
+lift held at 1. Over 750 hands each: with the director on, the lift averaged 0.14 and was above 0.3 in 17% of hands on
+an ordinary table; held at 1, flops went from 59% to 68%, showdowns from 20% to 23%, pots grew about five big blinds,
+a checked-to flop was bet 70% of the time against 60%, and all-ins on nothing stayed at 0.27 per 100 hands. The simulated
+table is never as dull as one with a quiet human, so this shows the reach of the knob, not how often it fires.
+
+Not done yet: the director only steers the standard Hold'em bots. The variant bots (`botVariants.ts`) are a separate
+engine and get theirs with the variant work.
 
 ## Fair play
 

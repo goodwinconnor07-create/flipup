@@ -2,6 +2,7 @@ import { boardTexture, handBucket, type Bucket } from '../game/handBucket';
 import type { BotMove } from '../game/botPlay';
 import type { InformationSet } from './information';
 import { sharedUnbeatableBoard } from './philosophy';
+import { LIFT } from './director';
 
 /**
  * Everyday habits: what ordinary players at a pub game or home tournament do without thinking, applied to the
@@ -48,6 +49,8 @@ export interface HabitContext {
   /** 1 for Casual, less for Challenge. */
   strength: number;
   inPosition: boolean;
+  /** The table director's nudge, 0 to 1: dull table, bet and call a little more. */
+  lift?: number;
   /** What the bot has seen of a lone opponent: how likely they are to fold to a bet. */
   foldRead?: { mean: number; confidence: number } | null;
   /** Estimated chip value of each action (the model's own), used to keep a habit from becoming a blunder. */
@@ -122,6 +125,8 @@ function bet(i: InformationSet, actions: BotMove[], dist: number[], ctx: HabitCo
   }
   // A player who has been seen to call a lot is not bluffed.
   if (!value && ctx.foldRead && ctx.foldRead.confidence >= 0.3 && (bucket === 'air' || bucket === 'weak')) target *= 0.5 + ctx.foldRead.mean;
+  // A dull table (the director): the hands that were not for value bet a little more.
+  if (!value) target *= 1 + LIFT.bet * (ctx.lift ?? 0);
   target = Math.min(0.97, target);
 
   const bets = actions.map((a, k) => ({ a, k })).filter(({ a }) => AGGRESSIVE.includes(a.move) && a.to !== undefined);
@@ -180,6 +185,7 @@ function facing(i: InformationSet, actions: BotMove[], dist: number[], ctx: Habi
   // A bet into several players means more than a bet into one.
   const others = opponents.length - 1;
   cap = Math.min(1, cap + (bucket === 'top' ? 0.04 : 0.08) * Math.min(2, others));
+  cap *= 1 - LIFT.fold * (ctx.lift ?? 0);
   const values = ctx.values ?? null;
   // The model's own value for calling against folding, measured against the call: a call it gives next to no chance (a board
   // that beats us, the other hand has us crushed) is not made because it is a pair.

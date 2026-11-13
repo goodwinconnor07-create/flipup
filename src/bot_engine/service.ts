@@ -230,6 +230,7 @@ export class BotService {
       const result = applyHabits(info, prediction.actions, finalDistribution, {
         strength: profile.everyday.difficulty === 'challenge' ? 0.5 : 1,
         inPosition: stateFeatures.inPosition,
+        lift: profile.everyday.lift ?? 0,
         foldRead: read,
         values: guardValues,
       });

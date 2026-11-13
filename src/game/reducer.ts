@@ -5,7 +5,7 @@ import { decide, handBucket, updateReads, type BotMove } from './botPlay';
 import { humanPokerThought, updateHumanPokerMemory } from '../bot_engine/live';
 import { isPersonality } from '../bot_engine/personalities';
 import { balancedBotPool, isBotDifficulty } from '../bot_engine/everyday';
-import { everydayThought, updateEverydayMemory, usesEverydayBots } from '../bot_engine/everydayLive';
+import { everydayThought, noteEverydayHand, updateEverydayMemory, usesEverydayBots } from '../bot_engine/everydayLive';
 import { boardInfo, tierWith, toInt } from './botEval';
 import { cardsShown, mindOf, updateMinds } from './botMind';
 import { STRENGTH } from './botRange';
@@ -593,6 +593,7 @@ function noteBusts(game: Game, hand: NonNullable<Game['hand']>): void {
 
 function afterHand(game: Game, ctx: ActionContext): void {
   updateEverydayMemory(game);
+  noteEverydayHand(game);
   updateHumanPokerMemory(game);
   const hand = game.hand!;
   const result = hand.result!;

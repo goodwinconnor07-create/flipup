@@ -176,9 +176,9 @@ export interface HandResult {
   names: Record<string, string>;
   /** True if it went to a showdown; false if everyone else folded. */
   showdown: boolean;
-  /** Ghost Hold'em: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
+  /** Haunted Pot: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
   ghost?: { cards: Card[]; name: string; kept: number };
-  /** Blackjack Hold'em: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
+  /** Hit Me: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
   blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
   /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
   imposter?: { id: string; votes: Record<string, string>; caught: boolean };
@@ -268,9 +268,9 @@ export interface Hand {
   ranOut?: boolean;
   /** Each player's chips before the blinds. */
   startStacks?: Record<string, number>;
-  /** Ghost Hold'em: the ghost's two cards. Sent to phones only once the hand reaches a showdown. */
+  /** Haunted Pot: the ghost's two cards. Sent to phones only once the hand reaches a showdown. */
   ghost?: Card[];
-  /** Ghost Hold'em: chips the ghost kept from earlier hands, in this pot too. */
+  /** Haunted Pot: chips the ghost kept from earlier hands, in this pot too. */
   carry?: number;
   /** Crazy Pineapple: the flop betting is over and everyone still in throws a card away before the turn. */
   discarding?: boolean;
@@ -279,9 +279,9 @@ export interface Hand {
   /** Die on the River: what the die rolled, and the board card it swapped (out) for a new one (in). A 6 swaps nothing. */
   /** `until`: when the roll's show ends on the phones (the river's betting waits for it). */
   dice?: { roll: number; out?: Card; in?: Card; until?: number };
-  /** Blackjack Hold'em: how many cards each player has hit (public; the cards themselves are face down). */
+  /** Hit Me: how many cards each player has hit (public; the cards themselves are face down). */
   hits?: Record<string, number>;
-  /** Blackjack Hold'em: players who went over 21 and were folded. */
+  /** Hit Me: players who went over 21 and were folded. */
   busted?: string[];
   /** Memory Poker: the 20 cards taken out of the deck before this hand. Phones only get them once the hand is over. */
   removed?: Card[];
@@ -305,6 +305,14 @@ export interface Hand {
   discarded?: string[];
   /** Crazy Pineapple: the cards thrown away. Phones see their own until everyone is done. */
   discards?: Record<string, Card>;
+  /** Slide Switch: the table is waiting for everyone still in to pick a card to slide left. */
+  sliding?: boolean;
+  /** Slide Switch: the card each player has picked to slide this street. Phones see only their own. */
+  slides?: Record<string, Card>;
+  /** Slide Switch: who has picked a card to slide this street (public; which card stays secret). */
+  picked?: string[];
+  /** Slide Switch: every slide this hand, in order: who gave which card to whom, on which street. Phones see the cards of slides they gave or got. */
+  slid?: SlideRecord[];
   /** Power Cards: the power each player was dealt this hand. Phones see only their own until it's played or the hand is over. */
   powers?: Record<string, PowerId>;
   /** Power Cards: every power played this hand, in order (public, except what a Peek or an X-ray showed). */
@@ -399,7 +407,15 @@ export interface PowerUse {
   refund?: number;
 }
 
-export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power';
+/** Slide Switch: one card slid to the next player on the left. `card` is empty for phones that weren't part of it. */
+export interface SlideRecord {
+  street: Street;
+  from: string;
+  to: string;
+  card: Card | '';
+}
+
+export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power' | 'slides';
 
 /**
  * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
@@ -534,7 +550,7 @@ export interface Game {
   card?: CardScene;
   /** Secret Missions: the race and everyone's missions. */
   missions?: MissionRace;
-  /** Ghost Hold'em: chips the ghost is holding, which go into the next hand's pot. */
+  /** Haunted Pot: chips the ghost is holding, which go into the next hand's pot. */
   ghostPot?: number;
   /** Memory Poker: the cards being taken out for the next hand, shown to everyone until it's dealt at `until`. Public. */
   memory?: { cards: Card[]; until: number };
@@ -585,12 +601,14 @@ export type Action =
   | { type: 'start' }
   | { type: 'act'; hand: number; seq: number; move: Move; to?: number }
   | { type: 'next'; hand: number }
-  /** Blackjack Hold'em: on your turn on the flop, take another card. */
+  /** Hit Me: on your turn on the flop, take another card. */
   | { type: 'hit'; hand: number; seq: number }
   /** Power Cards: play your power on your turn, before your move. `target` (X-ray, Silence), `card` (Swap: yours; Reroll: the board's), `rank` (Bounty). */
   | { type: 'power'; hand: number; seq: number; target?: string; card?: Card; rank?: number }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
+  /** Slide Switch: slide this card to the next player on your left (on the flop, the turn and the river). */
+  | { type: 'slide'; hand: number; card: Card }
   /** Imposter: who you think the imposter is. */
   | { type: 'vote'; hand: number; playerId: string }
   /** Imposter: point a finger at someone you suspect (`null` takes it back). It changes nothing but what the table sees. */

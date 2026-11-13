@@ -225,7 +225,7 @@ function MyTurn({ game, hand, seat, sending }: { game: Game; hand: Hand; seat: S
         Your turn
       </p>
       {o.canHit && !raising && (
-        // Blackjack Hold'em: take another card before your move. Over 21 folds your hand.
+        // Hit Me: take another card before your move. Over 21 folds your hand.
         <button type="button" className="btn btn-outline hit-btn" disabled={sending} onClick={() => dispatch({ type: 'hit', hand: hand.number, seq: hand.seq })}>
           Hit <span className="num">· you're on {count21(seat.cards)}</span>
         </button>

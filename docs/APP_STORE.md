@@ -124,7 +124,7 @@ deleted and how a person asks for deletion.
 
 **What we'll do:** write the policy as a static page at `https://gtoduel.online/privacy` (URL kept in
 `native/appInfo.ts`). It covers: the random device ID made on the phone, the friend code with its name and
-emoji, what an online table or party keeps while it runs, how long each is kept (tables 3 days, parties 2 days,
+emoji, what an online table or party keeps while it runs, how long each is kept (tables and parties close after 30 minutes with no play and 6 hours at most, 8 for a 12-game party,
 friend codes 120 days after their last use, all deleted automatically), Cloudflare as the host that processes it,
 no ads, no analytics, no tracking, purchases handled by Apple, and how to delete everything from the app. Link it
 from Settings and from the Premium sheet.
@@ -239,7 +239,7 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 |---|---|
 | Identifiers > User ID | The friend code, and the screen name shown at tables, parties and on the friend card ("screen name, handle ... assigned user ID") |
 | Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat or friend code. Not the advertising ID or the vendor ID |
-| User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted 3 days after it goes quiet) |
+| User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted after 30 minutes with no play, and at most 6 hours after it opens, 8 for a 12-game party) |
 | User Content > Other User Content | The emoji picture on a friend card and at tables |
 
 Premium: the server keeps Apple's original transaction id and the device ids it was shown on (Purchases, linked to
@@ -316,7 +316,7 @@ the iPad release.
 **Order (11 November 2026).** Lead with a mini game table, not Texas Hold'em: the variants are what no other poker
 app has. Suggested order: 1. a Crucifix or Pittsburgh table mid-hand (the cross or three rivers on the felt), 2.
 Die on the River's roll, 3. Home's game swiper on a mini game, 4. the Play with friends lobby with the game code, 5.
-a Ghost Hold'em showdown, 6. the Range training daily quiz, 7. Texas Hold'em with bots talking, 8. Saved hands and a
+a Haunted Pot showdown, 6. the Range training daily quiz, 7. Texas Hold'em with bots talking, 8. Saved hands and a
 share card (Premium). Every one from the real native build (2.3.3).
 
 ### App icon
@@ -399,8 +399,8 @@ Store listing:
    **Answer:** Yes. (Changed 11 November 2026: only normal Texas Hold'em is free, with the ten original bots and one daily range quiz; everything else is Premium.) The game modes past Hold'em are Premium, and anyone without Premium can
    (changed 4 November 2026: no ads) host a Premium game without Premium. When someone joins a Premium game with a
    code, only the host needs Premium; the people joining don't.
-   - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Ghost Hold'em, Pittsburgh.
-   - Premium: Die on the River, Red River, Imposter, Crucifix, Circle Hold'em, Memory Poker, Bean
+   - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Haunted Pot, Pittsburgh.
+   - Premium: Die on the River, Red River, Imposter, Crucifix, Round the Clock, Memory Poker, Bean
      Stalk.
 2. Does the desktop version need its own layout changes beyond sharing the new tokens?
    **Answer:** Yes. Parts of it are laid out like the phone app and don't use the whole screen. The board is good,

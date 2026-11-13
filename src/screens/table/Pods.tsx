@@ -313,7 +313,7 @@ const faceDown = (game: Game) => {
   return v === 'pineapple' && threeCardsLeft(game) ? 3 : 2;
 };
 
-/** Blackjack Hold'em: two cards plus however many this player has hit. */
+/** Hit Me: two cards plus however many this player has hit. */
 const cardsHeld = (game: Game, playerId: string) => faceDown(game) + (game.hand?.hits?.[playerId] ?? 0);
 
 const threeCardsLeft = (game: Game) => {

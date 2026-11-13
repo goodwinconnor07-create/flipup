@@ -423,7 +423,7 @@ describe('Memory Poker and Bean Stalk', { timeout: TABLE_MS }, () => {
   });
 });
 
-describe("Blackjack Hold'em", { timeout: TABLE_MS }, () => {
+describe("Hit Me", { timeout: TABLE_MS }, () => {
   it('counts like blackjack: aces 1 or 11, picture cards 10', () => {
     expect(count21(h('Ah Kd'))).toBe(21);
     expect(count21(h('Ah Ad'))).toBe(12);

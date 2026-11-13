@@ -8,7 +8,7 @@ import type { Variant } from './variants';
 export const BLIND_MINUTE_MAX = 20;
 
 /**
- * Ghost Hold'em starts at 2,000 chips and 10/20: 100 big blinds, deep enough that a pot the ghost keeps doesn't
+ * Haunted Pot starts at 2,000 chips and 10/20: 100 big blinds, deep enough that a pot the ghost keeps doesn't
  * wipe anyone out, shallow enough that something is at stake (at 500 big blinds nothing ever was).
  */
 const GHOST_START: Pick<Settings, 'startingStack' | 'smallBlind' | 'bigBlind'> = { startingStack: 2000, smallBlind: 10, bigBlind: 20 };

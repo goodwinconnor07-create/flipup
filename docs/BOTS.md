@@ -57,7 +57,7 @@ exploratory; perceived realism and enjoyment still need human playtesting.
 **Game-mode bots** (`src/game/botVariants.ts`). On top of the run-outs, each mini game's bots now read a bettor as
 holding the best of a few random hands (`draws()`), want more before betting for value where big hands are common
 (`SENSE`: wild deuces, three rivers, the cross, Bean Stalk), never bluff the ghost, call a little lighter where cards
-still to come can turn a hand over, work out Blackjack Hold'em's real bust chance and risk less with a good poker
+still to come can turn a hand over, work out Hit Me's real bust chance and risk less with a good poker
 hand, keep Crazy Pineapple's two cards by every turn and river still to come (`keepTwo()`; run-outs use the quick
 `keepTwoQuick()`), and in Imposter the innocents vote for whoever played least like the table while the imposter
 only checks and calls and backs the innocent the table suspects. `scripts/variantLab.ts` plays half the bots the old

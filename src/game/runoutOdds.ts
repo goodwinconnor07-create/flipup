@@ -2,7 +2,7 @@
 // give anything away (see docs/RULES.md). Plain Hold'em counts every run-out exactly (`equity()`); the mini games
 // play the rest of the hand out by their own rules, the way the bots do (`finishBoard()`, `variantScore()`): wild
 // deuces, three rivers, the die, red rivers that keep coming, the cross and the clock, Bean Stalk's extra cards,
-// Blackjack Hold'em's half pot for 21. Imposter has no odds: a vote decides its pot.
+// Hit Me's half pot for 21. Imposter has no odds: a vote decides its pot.
 import { finishBoard, variantScore } from './botVariants';
 import { fullDeck, hashString, isRed, seededRng, type Card } from './cards';
 import { equity, type Equity } from './equity';

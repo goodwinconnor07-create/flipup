@@ -1719,6 +1719,13 @@ html[data-theme='dark'] .btn-dark {
   background: none;
 }
 
+.slide-note {
+  margin: 0;
+  font-size: var(--fs-caption);
+  color: var(--ink-3);
+  text-align: center;
+}
+
 /* ── Game tables ─────────────────────────────────────────────────────────────
    Each Hold'em variant has its own felt, rail, a big faded emblem behind the board and a glow behind the table. */
 
@@ -1833,6 +1840,13 @@ html[data-theme='dark'] .btn-dark {
   --theme-rail-a: var(--theme-missions-rail-a);
   --theme-rail-b: var(--theme-missions-rail-b);
   --theme-glow: var(--theme-missions-glow);
+}
+
+.theme-slide {
+  --theme-felt: var(--theme-slide-felt);
+  --theme-rail-a: var(--theme-slide-rail-a);
+  --theme-rail-b: var(--theme-slide-rail-b);
+  --theme-glow: var(--theme-slide-glow);
 }
 
 /* Power Cards: your power for the hand, one line over the move buttons (Play on your turn), and a banner across
@@ -1976,7 +1990,7 @@ html[data-theme='dark'] .btn-dark {
   font-weight: 600;
 }
 
-/* Blackjack Hold'em: Hit sits over the move buttons on the flop, with your count beside it. */
+/* Hit Me: Hit sits over the move buttons on the flop, with your count beside it. */
 .hit-btn {
   width: 100%;
   min-height: 48px;

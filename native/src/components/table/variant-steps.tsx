@@ -1,9 +1,10 @@
-// The extra steps the mini games add to a hand: Crazy Pineapple's discard after the flop betting, Imposter's
+// The extra steps the mini games add to a hand: Crazy Pineapple's discard after the flop betting, Slide Switch's
+// slide as each street lands, Imposter's
 // pointing, talking, voting and the vote being read out, and the bar of suspects under the felt. They take the
 // place of the action buttons while they're on.
 import { Text, View } from 'react-native';
 
-import { cardName, discardWaiting, pendingVoters, tallyOrder, tallyShown, type Game, type Player, type Seat } from '@/engine';
+import { cardName, discardWaiting, pendingSlides, pendingVoters, shortCard, slideTargets, tallyOrder, tallyShown, type Game, type Player, type Seat } from '@/engine';
 import { seatPowerBadge } from '@/state/power-view';
 import { dispatch } from '@/state/session';
 import { radius, spacing, useColors, usePlainColors } from '@/theme';
@@ -63,6 +64,47 @@ export function Discard({ game, seat, pack }: { game: Game; seat: Seat; pack?: s
           {waiting.length - 1} other{waiting.length === 2 ? '' : 's'} still choosing
         </ThemedText>
       )}
+    </View>
+  );
+}
+
+/** Slide Switch: as the flop, the turn and the river land, tap the card you slide to the player on your left. */
+export function Slide({ game, seat, pack }: { game: Game; seat: Seat; pack?: string }) {
+  const hand = game.hand!;
+  const to = game.players.find((p) => p.id === slideTargets(hand)[seat.playerId]);
+  const name = to?.name ?? 'the left';
+  const picked = hand.slides?.[seat.playerId];
+  const waiting = pendingSlides(game).map((s) => s.playerId);
+  if (picked) {
+    return (
+      <WaitingFaces
+        game={game}
+        ids={waiting}
+        text={`Sliding the ${shortCard(picked)} to ${name}. ${waiting.length ? `Waiting for ${waiting.length === 1 ? 'one player' : `${waiting.length} players`}…` : 'Here they go…'}`}
+      />
+    );
+  }
+  return (
+    <View style={{ alignItems: 'center', gap: spacing.xs }}>
+      <ThemedText variant="headline">{`Slide a card to ${name}`}</ThemedText>
+      <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+        {seat.cards.map((c) => (
+          <PressableScale
+            key={c}
+            accessibilityRole="button"
+            accessibilityLabel={`Slide the ${cardName(c)} to ${name}`}
+            onPress={() => {
+              haptic.tap();
+              dispatch({ type: 'slide', hand: hand.number, card: c });
+            }}
+          >
+            <PlayingCard card={c} size="lg" pack={pack} />
+          </PressableScale>
+        ))}
+      </View>
+      <ThemedText variant="footnote" tone="secondaryLabel">
+        You get one from the right at the same time
+      </ThemedText>
     </View>
   );
 }

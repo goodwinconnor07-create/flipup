@@ -300,7 +300,7 @@ function act(v: Variant, t: Game, h: Hand, p: Played, myId: string, myTurn: bool
   }
   if (!myTurn) return;
   if (waited < 1500) return;
-  // Blackjack Hold'em: one hit on the flop when it can't bust.
+  // Hit Me: one hit on the flop when it can't bust.
   if (v === 'bjholdem' && h.street === 'flop' && !p.hitDone && count21(seat.cards) <= 11 && !seat.allIn) {
     p.hitDone = true;
     dispatch({ type: 'hit', hand: h.number, seq: h.seq });

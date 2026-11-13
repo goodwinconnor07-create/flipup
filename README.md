@@ -2,7 +2,7 @@
 
 Live at **https://flipup.kavishahtemu11.workers.dev**
 
-Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mini games (Crazy Pineapple, Crazy Deuces, Ghost, Pittsburgh, Die on the River, Red River, Imposter, Crucifix and Circle Hold'em), each with its own look: the host opens a table, friends join on their own phones with a 5-letter code or link, and bots fill any empty seats. Or play the bots on your own, offline.
+Poker night on your phones. No-limit Texas Hold'em for play chips, plus silly mini games (Crazy Pineapple, Crazy Deuces, Ghost, Pittsburgh, Die on the River, Red River, Imposter, Crucifix and Round the Clock), each with its own look: the host opens a table, friends join on their own phones with a 5-letter code or link, and bots fill any empty seats. Or play the bots on your own, offline.
 
 - A bold, Apple-like design with big cards, the system font and emoji profile pictures (pick one or type any emoji)
 - Real Hold'em rules: moving button, heads-up blinds, min-raises, short all-ins that don't reopen betting, side pots, split pots, showdown order and auto-muck. See [docs/RULES.md](docs/RULES.md).

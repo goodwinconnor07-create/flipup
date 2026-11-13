@@ -25,6 +25,8 @@ export const MOMENT_TIMING = {
   suspenseWild: 1400,
   /** Crazy Pineapple: the thrown-away cards are shown for this long before the turn. */
   discards: 3000,
+  /** Slide Switch: the cards slide round the table for this long before the street's betting. */
+  slides: 1600,
   /** Imposter: the table talks it over this long before the vote (or less when everyone has pointed). */
   discuss: 14000,
   /** Only one person at the table (the rest are bots): nobody to talk it over with, so a short beat. */
@@ -33,7 +35,7 @@ export const MOMENT_TIMING = {
   /** Imposter: each vote is read out, then the imposter is named. */
   tallyStep: 1100,
   tallyEnd: 2600,
-  /** Blackjack Hold'em: a bust is shown for this long before the next player acts. */
+  /** Hit Me: a bust is shown for this long before the next player acts. */
   bust: 2000,
   /** Power Cards: the table stops this long when a power is played, so everyone sees it. */
   power: 1800,
@@ -108,6 +110,8 @@ export function momentCaption(variant: Variant, hand: Hand, now: number): string
       return null;
     case 'discards':
       return '🍍 Cards thrown away';
+    case 'slides':
+      return '🔄 Cards slide to the left';
     case 'reveal':
       return variant === 'beanstalk' && hand.board.length >= 3 ? '🌱 Everyone grows a card' : null;
     default:

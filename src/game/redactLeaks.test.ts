@@ -34,6 +34,8 @@ function leaks(game: Game): string[] {
   for (const c of game.memory?.cards ?? []) secret.delete(c);
   for (const c of hand.dice?.out ? [hand.dice.out] : []) secret.delete(c);
   for (const c of hand.dice?.in ? [hand.dice.in] : []) secret.delete(c);
+  // Slide Switch: a card this phone slid on, or was slid, it has held in its own hand (wherever it went next).
+  for (const x of hand.slid ?? []) if (x.from === host.id || x.to === host.id) secret.delete(x.card);
   for (const [card, what] of secret) if (new RegExp(`"${card}"`).test(wire)) found.push(`${what}: ${card}`);
   // Raw device ids of other people, bot internals and the host's own secret on someone else's view.
   for (const p of game.players) if (p.deviceId && p.deviceId !== HOST && wire.includes(p.deviceId)) found.push(`raw device id of ${p.id}`);
@@ -61,6 +63,8 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
         if (hand && !hand.result && hand.voting && mine && !hand.votes?.[host.id]) {
           const others = hand.seats.filter((x) => x.playerId !== host.id);
           r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[Math.floor(rng() * others.length)].playerId }, { deviceId: HOST, now: clock, rng });
+        } else if (hand && !hand.result && hand.sliding && mine && !mine.folded && mine.cards.length && !hand.slides?.[host.id]) {
+          r = applyAction(game, { type: 'slide', hand: hand.number, card: mine.cards[Math.floor(rng() * mine.cards.length)] }, { deviceId: HOST, now: clock, rng });
         } else if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
           r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
         } else if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {

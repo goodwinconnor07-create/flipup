@@ -57,7 +57,7 @@ describe('the seat row with more players than fit', () => {
   });
 
   it('settles when two players speak at once from opposite ends (it used to swing for ever and close the table)', () => {
-    // Ghost Hold'em before the deal: four others, three fit, nobody to act, the first and the last both talking.
+    // Haunted Pot before the deal: four others, three fit, nobody to act, the first and the last both talking.
     const four = ['a', 'b', 'c', 'd'];
     let anchor: WindowAnchor = { id: null, idx: 0 };
     const seen: number[] = [];

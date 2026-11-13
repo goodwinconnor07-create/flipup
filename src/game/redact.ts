@@ -46,7 +46,7 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     hand: hand && {
       ...hand,
       deck: [],
-      // Ghost Hold'em: the ghost's cards stay face down until a showdown.
+      // Haunted Pot: the ghost's cards stay face down until a showdown.
       ghost: hand.result?.showdown ? hand.ghost : undefined,
       // Memory Poker: the cards taken out were shown before the deal; during the hand players have to remember them.
       removed: hand.result ? hand.removed : undefined,
@@ -56,6 +56,10 @@ export function redactForDevice(game: Game, deviceId: string): Game {
       votes: hand.votes && (hand.result || hand.tally ? hand.votes : Object.fromEntries(Object.keys(hand.votes).map((k) => [k, mine.has(k) ? hand.votes![k] : '']))),
       // Crazy Pineapple: the cards thrown away are turned up together, once everyone has chosen.
       discards: hand.discards && (hand.discarding ? Object.fromEntries(Object.entries(hand.discards).filter(([k]) => mine.has(k))) : hand.discards),
+      // Slide Switch: the card someone has picked stays theirs until the cards move, and a slide's card is only known
+      // to the two players it passed between.
+      slides: hand.slides && Object.fromEntries(Object.entries(hand.slides).filter(([k]) => mine.has(k))),
+      slid: hand.slid?.map((x) => (peek || mine.has(x.from) || mine.has(x.to) ? x : { ...x, card: '' as const })),
       // Power Cards: other players' powers stay secret until they're played (or the hand is over), and what a Peek or
       // an X-ray showed is only for the player who played it.
       powers: hand.powers && (hand.result ? hand.powers : Object.fromEntries(Object.entries(hand.powers).filter(([k]) => mine.has(k) || hand.powerUses?.some((u) => u.by === k)))),

@@ -24,7 +24,8 @@ export type Variant =
   | 'beanstalk'
   | 'bjholdem'
   | 'power'
-  | 'missions';
+  | 'missions'
+  | 'slide';
 
 export interface VariantInfo {
   id: Variant;
@@ -69,7 +70,7 @@ export const VARIANTS: VariantInfo[] = [
   },
   {
     id: 'ghost',
-    name: "Ghost Hold'em",
+    name: 'Haunted Pot',
     emoji: '👻',
     tagline: 'Beat your friends, then beat the ghost, or the pot stays.',
     rules: [
@@ -143,7 +144,7 @@ export const VARIANTS: VariantInfo[] = [
   },
   {
     id: 'circle',
-    name: "Circle Hold'em",
+    name: 'Round the Clock',
     emoji: '⭕',
     tagline: 'Six cards round a clock. Use three in a row with both of yours.',
     rules: [
@@ -178,7 +179,7 @@ export const VARIANTS: VariantInfo[] = [
   },
   {
     id: 'bjholdem',
-    name: "Blackjack Hold'em",
+    name: 'Hit Me',
     emoji: '♠️',
     tagline: 'Hit on the flop. Half the pot to the best hand, half to closest to 21.',
     rules: [
@@ -218,6 +219,21 @@ export const VARIANTS: VariantInfo[] = [
       ...SECRET_MISSIONS.map((m) => `${m.emoji} ${m.name} (${MISSION_REWARD[m.tier]} big blinds from each player): ${m.text}`),
     ],
   },
+  {
+    id: 'slide',
+    name: 'Slide Switch',
+    emoji: '🔄',
+    tagline: 'Every street, slide one of your cards to the player on your left.',
+    rules: [
+      "Normal Texas Hold'em, except your cards don't stay yours.",
+      'When the flop lands, everyone still in picks one of their two cards and slides it face down to the next player still in on their left. At the same moment you get one from the player on your right. Then the flop betting starts.',
+      'The same again when the turn lands, and again when the river lands: three slides every hand.',
+      'Everyone picks at the same time, so nobody knows what they are getting until it arrives. You know one card the player on your left has, until they slide it on.',
+      'All in? You still slide. Out of time? The app slides the card that helps you least.',
+      'Heads-up, you and your opponent swap a card each time.',
+      "No win odds during an all-in run-out here: the slides still to come can change everyone's hand.",
+    ],
+  },
 ];
 
 /** The game being played: the hand's own (settings changed mid-hand wait for the next one), else the table's. */
@@ -239,7 +255,7 @@ export function holeCountAt(v: Variant, boardLength: number): number {
   if (v !== 'beanstalk') return holeCount(v);
   return 2 + (boardLength >= 5 ? 3 : boardLength === 4 ? 2 : boardLength === 3 ? 1 : 0);
 }
-/** Blackjack Hold'em: your own cards counted like blackjack (aces 1 or 11, picture cards 10). */
+/** Hit Me: your own cards counted like blackjack (aces 1 or 11, picture cards 10). */
 export function count21(cards: Card[]): number {
   let total = 0;
   let aces = 0;
@@ -268,7 +284,7 @@ export const boardSize = (v: Variant) => streetCards(v, 'flop') + streetCards(v,
 /** Bets are capped at the size of the pot. */
 export const potLimit = (v: Variant) => v === 'ghost';
 /** Win odds can be worked out for the all-in run-out (only plain Hold'em: the others score hands differently). */
-export const showsOdds = (v: Variant) => v !== 'imposter';
+export const showsOdds = (v: Variant) => v !== 'imposter' && v !== 'slide';
 /** Everyone puts in this many big blinds before the blinds (dead money in the middle). */
 export const anteBigBlinds = (v: Variant) => (v === 'imposter' ? 1 : 0);
 /** Imposter needs three players to be a guessing game. */

@@ -161,6 +161,13 @@ const STEPS: Record<Variant, Step[]> = {
     step('showdown', 'showdown', 'Mission complete', 'Pull it off and every other player pays you 5 to 10 big blinds. Then you get a new one.'),
     step('river', 'showdown', 'The race', 'First to five missions wins the race: up to +150% on your stack. The last places lose chips.', 'showdown'),
   ],
+  slide: [
+    step('cards', 'mine', 'Two cards, for now', "They won't stay yours for long."),
+    step('flop', 'hand', 'Slide one left', 'When the flop lands, tap a card to slide to the player on your left. You get one from your right.'),
+    step('yourturn', 'lower', 'Then bet', 'Bet with your new hand. You know one card your left neighbour holds.'),
+    step('river', 'board', 'Again and again', 'The same on the turn and the river: three slides every hand.', 'flop'),
+    step('showdown', 'showdown', 'Showdown', 'Best five wins, with whatever cards ended up in your hand.'),
+  ],
   imposter: [
     step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
     step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),

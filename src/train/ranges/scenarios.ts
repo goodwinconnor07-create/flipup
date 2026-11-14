@@ -6847,7 +6847,7 @@ export const SCENARIOS: Scenario[] = [
         pre: 'Cold call',
         range: [
           { label: 'Trips: A-4, 5-4', hands: 'Ac4c, As4s, 54s', role: 'value' },
-          { label: 'Full houses and sets: 7-7, 8-8, A-A, K-K', hands: '77, 88, AA, KK', role: 'value' },
+          { label: 'Full houses and sets: 7-7, 8-8, A-A', hands: '77, 88, AA', role: 'value' },
           { label: 'A straight: 6-5 suited', hands: '65s', role: 'value' },
           { label: 'Backdoor diamond flushes', hands: 'QdJd, QdTd, JdTd, Jd9d, Td9d', role: 'value' },
         ],

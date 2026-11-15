@@ -18,26 +18,20 @@ export interface Release {
 
 export const RELEASES: Release[] = [
   {
+    // Version 1.0 is the first on the App Store, so its list is what's in FlipUp, not what changed since a test build.
     version: '1.0.0',
     label: 'November 2026',
     items: [
-      { icon: 'person.3.fill', title: 'Smarter bots in Texas Hold’em', text: 'Bots call a small bet when the price is right, bet real amounts instead of one big blind, read a tiny bet as the weak hand it usually is, and stop betting junk into a crowd.' },
-      { icon: 'person.2.fill', title: 'A tidier table', text: 'The players out of view are a small button at the end of the row, so it never covers anyone’s cards or winnings. Onion’s peeled cards stay inside their seat, and every board’s winning hand fits on its line.' },
-      { icon: 'questionmark.circle.fill', title: 'Rules before your first hand', text: 'The first time you play a new game, a short card sums up the rules. Against bots, the game waits until you tap Continue. Online, it shows for five seconds and you can close it sooner.' },
-      { icon: 'suit.spade.fill', title: 'Room for five cards', text: 'In Onion and Double Board PLO your five cards sit in a neat fan beside your chips, and the board stays full size. Bean Stalk saves the room from the deal, so nothing shifts as your hand grows.' },
-      { icon: 'person.3.fill', title: 'Hold to take a bot off', text: 'Holding a bot in the lobby draws a ring round it. Let go early and it unwinds; hold until it closes and the bot leaves.' },
-      { icon: 'sparkles', title: 'Six new games', text: 'Headband, Conveyor Belt, Onion, Chain Reaction, Elevator and Double Board PLO. Each one has its own table, how-to pictures and bots that know the rules.' },
-      { icon: 'person.3.fill', title: 'Bots that actually bet', text: 'Bots now bet a good hand when it is checked to them, take small stabs at a pot nobody wants, and keep a decent hand in against a small bet. Casual tables also liven up when the action goes quiet.' },
-      { icon: 'bolt.fill', title: 'Bots that play each game', text: 'In Imposter the bots read how the table bets and vote for the odd one out. In Secret Missions they chase their own mission, and in Power Cards they play more of their powers. In every game they comment on what just happened.' },
-      { icon: 'film.stack.fill', title: 'Replay after every hand', text: 'A new house rule for bot games. After each hand you play, see what you won or lost and who took the pot, then watch it back. The next hand waits for you.' },
-      { icon: 'bookmark.fill', title: 'Saved hands are free', text: 'Save any hand at the table and watch it back move by move. Replays now show every bot’s cards and a full hand log.' },
-      { icon: 'graduationcap.fill', title: 'Ways to train', text: 'Range training has a free daily hand, plus Endless, Sets and Gaps with Premium. New here? How it works explains it in four steps.' },
-      { icon: 'person.3.fill', title: 'A livelier bots lobby', text: 'Your table floats on a little felt. New bots pop in, and holding one takes it off. More bot names, and not all of them have a surname.' },
-      { icon: 'sparkles', title: 'Secret Missions', text: 'A new game. Everyone holds a secret mission each hand. Complete yours and the table pays you. First to five missions wins the race. Your mission is a card beside your hole cards: tap it for the details and the race.' },
-      { icon: 'bolt.fill', title: 'Power Cards', text: 'Your power is now a card beside your hole cards. Tap it to play it. The table no longer jumps around while you choose.' },
-      { icon: 'suit.spade.fill', title: 'Nine mini games with Texas Hold’em', text: 'Host a table and friends join with a game code. Bots fill empty seats, and Premium opens every game.' },
-      { icon: 'star.fill', title: 'Range training and the daily hand', text: 'One real hand a day, the same for everyone. Practise more with Premium.' },
-      { icon: 'questionmark.circle.fill', title: 'What’s New', text: 'This page. It lists the new things in each version.' },
+      { icon: 'suit.spade.fill', title: 'Poker night on your phones', text: 'Host a table and your friends join on their own phones with a six-character game code or a QR code. Bots fill any empty seats.' },
+      { icon: 'cpu.fill', title: 'Play bots anywhere', text: 'Play against bots on your own, even with no signal. Every bot has a style of its own and plenty to say about the hand.' },
+      { icon: 'sparkles', title: '13 mini games', text: 'Texas Hold’em plus games with a twist, like Haunted Pot, Imposter, Die on the River and Power Cards. Each has its own table and a short How to Play.' },
+      { icon: 'party.popper.fill', title: 'Party nights', text: 'Line up 4 to 12 games, play a short table of each, and see who tops the board at the end.' },
+      { icon: 'graduationcap.fill', title: 'Range training', text: 'A free hand every day, taken from a published strategy breakdown. Pick your play, then see why the expert chose theirs.' },
+      { icon: 'film.stack.fill', title: 'Saved hands', text: 'Save any hand from the table and watch it back move by move. Once it’s over, you see what every bot had.' },
+      { icon: 'square.and.arrow.up', title: 'Share cards', text: 'Turn a big hand or your stats into a picture worth sending.' },
+      { icon: 'questionmark.circle.fill', title: 'Rules when you need them', text: 'The first time you play a game, a short card sums up its rules before the first hand.' },
+      { icon: 'crown.fill', title: 'FlipUp Premium', text: 'Host every mini game and play the whole bot roster. Range training opens up too, and friends always join your games free.' },
+      { icon: 'hand.raised.fill', title: 'Play chips only', text: 'Chips have no cash value. They can’t be bought, sold or won.' },
     ],
   },
 ];

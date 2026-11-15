@@ -46,6 +46,9 @@ describe('the engine survives whatever a phone sends', { timeout: TABLE_MS }, ()
     it(`${v}: random and invalid actions never throw and never create or lose a chip`, () => {
       const rng = seededRng(21);
       let g = createTable({ hostDeviceId: HOST, name: 'Host', emoji: '😎', settings: { ...DEFAULT_SETTINGS, startingStack: 1000, turnSeconds: 5, variant: v as Variant }, bots: 3, code: null, now: 0, rng: seededRng(3) });
+      // A fixed table id: the bots' personalities are seeded from it, and a random one (newId() reads crypto) seated
+      // different bots each run, so now and then the fuzzed `end` came before 15 moves were accepted.
+      g.id = `fuzz-${v}`;
       const started = applyAction(g, { type: 'start' }, { deviceId: HOST, now: 0, rng: seededRng(3) });
       if (!started.ok) throw new Error(started.error);
       g = started.game;

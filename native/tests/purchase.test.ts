@@ -143,7 +143,7 @@ it('buys the chosen plan as a subscription and works out the yearly saving', asy
   await startStore();
   void buyPremium('yearly');
   await vi.waitFor(() => expect(store.request).toHaveBeenCalledWith({ type: 'subs', request: { apple: { sku: 'flipup.premium.yearly' } } }));
-  expect(yearlySaving({ monthly: { price: '$7.00', amount: 7, intro: null, introDays: null, introFree: false }, yearly: { price: '$50.00', amount: 50, intro: null, introDays: null, introFree: false } })).toBe(40);
+  expect(yearlySaving({ monthly: { price: '$7.00', amount: 7, intro: null, introDays: null, introLength: null, introFree: false }, yearly: { price: '$50.00', amount: 50, intro: null, introDays: null, introLength: null, introFree: false } })).toBe(40);
   expect(yearlySaving({ monthly: null, yearly: null })).toBeNull();
 });
 
@@ -176,5 +176,21 @@ it("reads an introductory offer's length from StoreKit's own description of it",
   expect(introDaysOf(product('P1Y', 1, 'Promotional'), 2, 'week')).toBe(14);
   expect(introDaysOf('not json', 3, 'day')).toBe(3);
   expect(introDaysOf(null, 1, '')).toBeNull();
+});
+
+it("words an introductory offer's length in the App Store's own units", async () => {
+  const { introLengthOf } = await import('../src/state/purchase');
+  const product = (period: string, numOfPeriods: number, type = 'IntroOffer') => JSON.stringify({ attributes: { offers: [{ discounts: [{ type, numOfPeriods, recurringSubscriptionPeriod: period, modeType: 'PayUpFront' }] }] } });
+  // App Store Connect's shortest paid-up-front offer is a month; a month is never "30 days".
+  expect(introLengthOf(product('P1M', 1), 1, 'month')).toBe('1 month');
+  expect(introLengthOf(product('P2W', 1), 1, 'week')).toBe('2 weeks');
+  expect(introLengthOf(product('P1W', 1), 1, 'week')).toBe('1 week');
+  expect(introLengthOf(product('P14D', 1), 1, 'day')).toBe('2 weeks');
+  expect(introLengthOf(product('P3D', 1), 1, 'day')).toBe('3 days');
+  expect(introLengthOf(product('P1M', 3), 3, 'month')).toBe('3 months');
+  // No offer in the JSON, or no JSON at all: the flat fields, and null when they say nothing.
+  expect(introLengthOf(product('P1Y', 1, 'Promotional'), 1, 'year')).toBe('1 year');
+  expect(introLengthOf('not json', 3, 'day')).toBe('3 days');
+  expect(introLengthOf(null, 1, '')).toBeNull();
 });
 

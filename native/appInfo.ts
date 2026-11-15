@@ -23,17 +23,19 @@ export const APP_INFO = {
   premiumProductId: 'flipup.premium.unlock',
   /**
    * FlipUp Premium as auto-renewing subscriptions, one subscription group ("FlipUp Premium") in App Store Connect:
-   * monthly at $7.00 and yearly at $50.00. Each has an introductory offer: pay up front, $1.00 for 14 days. The prices on screen always come from the App Store. TODO(owner): make both in App Store
+   * monthly at $7.00 and yearly at $50.00. Each has an introductory offer: pay up front, $1.00 for the first month (the owner's call, 15 Nov 2026: App Store Connect's shortest pay-up-front offer is a month, so the planned 14 days can't be set). The prices on screen always come from the App Store. TODO(owner): make both in App Store
    * Connect with these ids and offers before the next build (docs/APP_STORE.md).
    */
   premiumMonthlyId: 'flipup.premium.monthly',
   premiumYearlyId: 'flipup.premium.yearly',
 
   /**
-   * Testing tools for TestFlight builds: Settings gets "View as a free player", which hides Premium on this phone so
-   * the locked screens can be checked while subscribed. TODO(owner): set to false before the App Store build.
+   * Testing tools: Settings gets "View as a free player", which hides Premium on this phone so the locked screens can
+   * be checked while subscribed. Off for the App Store: the build sent to TestFlight is the same one App Review sees,
+   * and a "Testing" section that names TestFlight reads as an unfinished app (App Review 2.1, 2.2). Turn it on only
+   * for a build that will never be submitted.
    */
-  testingTools: true,
+  testingTools: false as boolean,
 
   /** The server the app talks to (the same Cloudflare Worker as the web app). The domain will change later. */
   apiOrigin: 'https://playflipup.com',

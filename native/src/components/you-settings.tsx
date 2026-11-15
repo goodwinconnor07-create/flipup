@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 
 import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
@@ -21,6 +21,9 @@ import { ThemedText } from './themed-text';
  */
 export function YouSettings({ header, online = false }: { header?: string; online?: boolean }) {
   const colors = useColors();
+  // The segmented controls give up a little width on a narrow phone (iPhone SE, 375pt), so "Appearance" keeps one line.
+  const { width } = useWindowDimensions();
+  const segW = width < 390 ? 140 : 156;
   const muted = useMuted();
   const talk = useTalkLevel();
   const calm = useCalm();
@@ -39,7 +42,7 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
           icon={{ symbol: 'moon.fill', color: colors.indigo as string }}
           chevron={false}
           trailing={
-            <View style={{ width: 156 }}>
+            <View style={{ width: segW }}>
               <SegmentedControl<AppearancePref>
                 label="Appearance"
                 value={appearance}

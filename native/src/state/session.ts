@@ -250,6 +250,8 @@ function schedule(minDelay = 0): void {
 let recapHeld = false;
 /** The last hand a recap was shown for, so it comes up once per hand. */
 let recapDone = '';
+/** True while a saved table is being put back at launch: the hand it holds was played before the app closed, so no recap for it. */
+let restoring = false;
 
 function holdForRecap(next: Session | null): void {
   const hand = lastHand();
@@ -261,6 +263,7 @@ function holdForRecap(next: Session | null): void {
     return;
   }
   recapDone = hand.id;
+  if (restoring) return;
   if (!playedPastPreflop(hand)) return;
   recapHeld = true;
   publish({ recap: hand.id });
@@ -602,7 +605,14 @@ try {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Session | null;
   const p = JSON.parse(localStorage.getItem('flipup.profile') ?? 'null') as { name?: string; emoji?: string } | null;
   profile = { name: p?.name ?? '', emoji: p?.emoji ?? '' };
-  if (saved?.mode === 'local' && saved.game) set(saved);
+  if (saved?.mode === 'local' && saved.game) {
+    restoring = true;
+    try {
+      set(saved);
+    } finally {
+      restoring = false;
+    }
+  }
   else if (saved?.mode === 'online' && saved.code) {
     set({ mode: 'online', code: saved.code, game: saved.game });
     connect(saved.code);

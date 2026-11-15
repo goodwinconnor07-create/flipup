@@ -16,7 +16,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
 import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { freeThisWeek, isPremiumVariant, variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } from '@/engine';
+import { freeThisWeek, isPremiumVariant, variantNeedsPremium, isOffered, VARIANTS, variantInfo, type Variant } from '@/engine';
 import { usePartyRef } from '@/state/party';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
@@ -62,7 +62,8 @@ export default function Home() {
   // The game in the middle: the one you picked here, else the one you played last, else Texas Hold'em.
   const stored = useStored<string | null>(PICK, null);
   const last = record.games.at(-1)?.variant;
-  const variant: Variant = isVariant(stored) ? stored : (last ?? 'holdem');
+  // Only a game this build offers: a phone that played a held-back game (engine/index.ts) on an earlier build starts on Hold'em.
+  const variant: Variant = isOffered(stored) ? stored : isOffered(last) ? last : 'holdem';
   const info = variantInfo(variant);
   const look = gameLook(variant);
   // The parts arrive one after another, 30ms apart, when the app opens (phone only: the web build's layout animations misplace rows).

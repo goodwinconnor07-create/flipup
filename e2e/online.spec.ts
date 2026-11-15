@@ -1,18 +1,18 @@
 import { expect, test, type Page } from '@playwright/test';
 import { myTurn, setName, shot, tableCode, watchErrors } from './helpers';
 
-/** Whichever phone's turn it is goes all in, and the other calls. */
+/** Whichever phone's turn it is goes all in, and the other calls. Raise is green and Call/Check blue (T1, T2). */
 async function allInAndCall(host: Page, friend: Page) {
   for (let i = 0; i < 40; i++) {
     for (const page of [host, friend]) {
       if (!(await myTurn(page))) continue;
-      const allin = page.locator('.action-buttons .btn-blue');
+      const allin = page.locator('.action-buttons .btn-green');
       if (await allin.isVisible()) {
         await allin.click();
         await page.locator('.raise-panel .preset[aria-label="All in"]').click();
-        await page.locator('.raise-panel .btn-blue').click();
+        await page.locator('.raise-panel .btn-green').click();
       } else {
-        await page.locator('.action-buttons .btn-green').click();
+        await page.locator('.action-buttons .btn-blue').click();
       }
     }
     if (await host.locator('.odds-box').isVisible()) return;
@@ -34,13 +34,14 @@ test('two phones: join with a code, play a hand, see odds only once both hands a
   await host.getByRole('button', { name: 'Next' }).click();
   await host.getByRole('button', { name: 'Open the table' }).click();
   const code = await tableCode(host);
-  expect(code).toMatch(/^[A-Z]{5}$/);
+  // Table codes are a poker word and two numbers (ACES42) since the code change (newTableCode()).
+  expect(code).toMatch(/^[A-Z0-9]{6}$/);
   await shot(host, '10-host-lobby');
 
   // The friend follows the join link.
   await friend.goto(`/${code}`);
   await expect(friend.getByText("Kavi's table")).toBeVisible();
-  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await friend.getByRole('button', { name: 'Play in your browser' }).click();
   await setName(friend, 'Remi', '🐸');
   await friend.getByRole('button', { name: 'Take a seat' }).click();
   await expect(friend.getByText("You're in!")).toBeVisible();
@@ -77,7 +78,8 @@ test('a wrong code says so', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('button', { name: 'Join with a code' }).click();
   const dialog = page.getByRole('dialog', { name: 'Join a table' });
-  for (const letter of 'BCDFG') await dialog.getByRole('button', { name: letter, exact: true }).click();
+  // Six letters or digits, like a real table code (ACES42); nobody holds this one.
+  for (const key of 'QZQZ00') await dialog.getByRole('button', { name: key, exact: true }).click();
   await expect(page.getByText("There's no table with that code")).toBeVisible();
 });
 
@@ -94,7 +96,7 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
   await host.getByRole('button', { name: 'Open the table' }).click();
   const code = await tableCode(host);
   await friend.goto(`/${code}`);
-  await friend.getByRole('button', { name: 'Take a seat' }).click();
+  await friend.getByRole('button', { name: 'Play in your browser' }).click();
   await setName(friend, 'Oliver');
   await friend.getByRole('button', { name: 'Take a seat' }).click();
   await expect(host.locator('.roster-item', { hasText: 'Oliver' })).toBeVisible();
@@ -105,12 +107,12 @@ test('heads-up: when one player has all the chips, the game ends on the podium',
     if (await host.getByText(/wins?!$/).isVisible()) break;
     for (const page of [host, friend]) {
       if (!(await myTurn(page))) continue;
-      const raise = page.locator('.action-buttons .btn-blue');
+      const raise = page.locator('.action-buttons .btn-green');
       if (await raise.isVisible()) {
         await raise.click();
         await page.locator('.raise-panel .preset[aria-label="All in"]').click();
-        await page.locator('.raise-panel .btn-blue').click();
-      } else await page.locator('.action-buttons .btn-green').click();
+        await page.locator('.raise-panel .btn-green').click();
+      } else await page.locator('.action-buttons .btn-blue').click();
     }
     const next = host.getByRole('button', { name: 'Next hand' });
     if (await next.isVisible()) await next.click().catch(() => undefined);

@@ -96,12 +96,11 @@ export default function PremiumSheet() {
         <View style={{ height: has ? spacing.lg : 0 }} />
         <Plans store={store} has={has} onBought={() => (pageRef.current?.scrollTo({ y: 0, animated: false }), setCelebrate(Date.now()))} />
 
-        <PerkList has={has} />
-
+        {/* The terms sit right under the plans, beside the buttons that buy them (App Review 3.1.2), not under the perks. */}
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm }}>
           {!has && ON_SALE && (
             <ThemedText variant="caption1" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
-              Subscriptions renew until you cancel in Settings, at least a day before they renew. Play chips only, no cash value. Friends always join your games free.
+              Payment is charged to your Apple Account. A subscription renews automatically at the price shown unless you cancel it at least 24 hours before the period ends; cancel anytime in Settings, Apple Account, Subscriptions. Play chips only, no cash value. Friends always join your games free.
             </ThemedText>
           )}
           {ON_SALE && (
@@ -112,6 +111,8 @@ export default function PremiumSheet() {
             </View>
           )}
         </View>
+
+        <PerkList has={has} />
       <Celebration at={celebrate} />
     </ScrollView>
   );
@@ -472,9 +473,9 @@ function Plans({ store, has, onBought }: { store: StoreState; has: boolean; onBo
   const yearly = store.plans.yearly;
   const monthly = store.plans.monthly;
   // The offer in the App Store's own terms: a free trial says free, a paid one its price, and the length only when StoreKit gave one.
-  const offerOf = (p: StoreState['plans'][Plan]) => (!p?.intro ? null : `${p.introDays ? `${p.introDays} days` : 'your first period'} ${p.introFree ? 'free' : `for ${p.intro}`}`);
+  const offerOf = (p: StoreState['plans'][Plan]) => (!p?.intro ? null : `${p.introLength ?? (p.introDays ? `${p.introDays} days` : 'your first period')} ${p.introFree ? 'free' : `for ${p.intro}`}`);
   const trialOf = (p: StoreState['plans'][Plan]) => (offerOf(p) ? `${offerOf(p)}, then ` : '');
-  const tryOf = (p: StoreState['plans'][Plan], plain: string) => (!p?.intro ? plain : p.introDays ? `Try ${offerOf(p)}` : p.introFree ? 'Start free trial' : `Start for ${p.intro}`);
+  const tryOf = (p: StoreState['plans'][Plan], plain: string) => (!p?.intro ? plain : p.introLength || p.introDays ? `Try ${offerOf(p)}` : p.introFree ? 'Start free trial' : `Start for ${p.intro}`);
   const cards: PlanInfo[] = [
     {
       plan: 'yearly',

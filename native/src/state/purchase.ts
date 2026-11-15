@@ -1,5 +1,5 @@
 // FlipUp Premium through StoreKit 2 (expo-iap), docs/APP_STORE.md 3.1.1. Premium is sold as two auto-renewing
-// subscriptions in one group (`APP_INFO.premiumMonthlyId`, `premiumYearlyId`), each with a $1 for 14 days introductory
+// subscriptions in one group (`APP_INFO.premiumMonthlyId`, `premiumYearlyId`), each with a $1 for the first month introductory
 // offer. The old one-time purchase (`premiumProductId`) is no longer sold, but owning it still means Premium for good.
 // Prices always come from the App Store. A live subscription or the old purchase is the only thing that sets
 // `flipup.premium`. The web build uses purchase.web.ts, which sells nothing.
@@ -38,6 +38,8 @@ export interface PlanPrice {
   intro: string | null;
   /** How long the introductory offer lasts, in days. */
   introDays: number | null;
+  /** The same length in the App Store's own units, for the words on screen ("2 weeks", "1 month"). */
+  introLength: string | null;
   /** The introductory offer is a free trial (nothing is charged until it ends). */
   introFree: boolean;
 }
@@ -185,6 +187,42 @@ export function introDaysOf(json: string | null | undefined, periods: number, un
   return DAYS[unit] ? periods * DAYS[unit] : null;
 }
 
+const UNIT_WORD: Record<'D' | 'W' | 'M' | 'Y', string> = { D: 'day', W: 'week', M: 'month', Y: 'year' };
+const FLAT_UNIT: Record<string, 'D' | 'W' | 'M' | 'Y'> = { day: 'D', week: 'W', month: 'M', year: 'Y' };
+
+/**
+ * The introductory offer's length in the App Store's own units ("2 weeks", "1 month", "3 days"), read the same way as
+ * `introDaysOf()`. A month stays a month: "30 days" would be wrong for a one-month offer that starts in February.
+ * Null when it can't be told.
+ */
+export function introLengthOf(json: string | null | undefined, periods: number, unit: string): string | null {
+  let count = 0;
+  let u: 'D' | 'W' | 'M' | 'Y' | undefined;
+  try {
+    const offers = (JSON.parse(json ?? 'null') as { attributes?: { offers?: { discounts?: { type?: string; numOfPeriods?: number; recurringSubscriptionPeriod?: string }[] }[] } } | null)?.attributes?.offers ?? [];
+    for (const o of offers)
+      for (const d of o.discounts ?? []) {
+        const m = !u && d.type === 'IntroOffer' ? /^P(\d+)([DWMY])$/.exec(d.recurringSubscriptionPeriod ?? '') : null;
+        if (m) {
+          count = Number(m[1]) * (d.numOfPeriods || 1);
+          u = m[2] as 'D' | 'W' | 'M' | 'Y';
+        }
+      }
+  } catch {
+    // Not JSON: use the flat fields.
+  }
+  if (!u) {
+    u = FLAT_UNIT[unit];
+    count = periods;
+  }
+  if (!u || !(count > 0)) return null;
+  if (u === 'D' && count % 7 === 0) {
+    u = 'W';
+    count /= 7;
+  }
+  return `${count} ${UNIT_WORD[u]}${count === 1 ? '' : 's'}`;
+}
+
 async function loadPrices(): Promise<void> {
   const products = (await fetchProducts({ skus: [SKU.monthly, SKU.yearly], type: 'subs' })) ?? [];
   const plans: Record<Plan, PlanPrice | null> = { monthly: null, yearly: null };
@@ -213,6 +251,7 @@ async function loadPrices(): Promise<void> {
       amount: typeof p.price === 'number' ? p.price : null,
       intro: eligible && p.introductoryPriceIOS ? p.introductoryPriceIOS : null,
       introDays: eligible && p.introductoryPriceIOS ? introDaysOf(p.jsonRepresentationIOS, periods, unit) : null,
+      introLength: eligible && p.introductoryPriceIOS ? introLengthOf(p.jsonRepresentationIOS, periods, unit) : null,
       introFree: p.introductoryPricePaymentModeIOS === 'free-trial',
     };
   }

@@ -4,8 +4,10 @@ What Apple asks of FlipUp's iPhone and iPad app, what we'll do about each rule, 
 Everything below was checked against Apple's own pages on **2 November 2026** unless a line says otherwise.
 The App Review Guidelines page showed "Last Updated: October 16, 2026" that day.
 
-Status: **Phase 1 done, waiting for the owner's review.** Phase 2 doesn't start until the change list at the
-end and the questions under it have answers.
+Status (15 November 2026): **ready to submit once the owner's steps in `docs/SUBMISSION.md` are done.** A full test
+and review pass ran that day (every test suite, the layout sweep at four iPhone sizes, the bot labs, the live server and
+pages); what it found and fixed is in the pull request "App Store prep". The eight newest games are held back from 1.0
+(`HELD_BACK` in `native/src/engine/index.ts`).
 
 Sources:
 [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) ·
@@ -78,8 +80,10 @@ you have a restore mechanism for any restorable in-app purchases."
 **Subscriptions (November 2026, the owner's call): Premium is now sold as auto-renewing subscriptions.**
 - One subscription group, "FlipUp Premium", with two products: `flipup.premium.monthly` at $7.00 a month and
   `flipup.premium.yearly` at $50.00 a year (`native/appInfo.ts`). Each has an introductory offer, **pay up front,
-  $1.00 for 14 days** (set it per product in App Store Connect > Subscriptions > Subscription Prices > Introductory
-  Offers). **TODO(owner): make the group, both products and both offers in App Store Connect before the next build**,
+  $1.00 for the first month** (set it per product in App Store Connect > Subscriptions > Subscription Prices >
+  Introductory Offers). The plan was $1 for 14 days, but Apple's shortest pay-up-front offer is one month (free
+  trials can be 3 days, 1 or 2 weeks, or longer; checked 15 November 2026), so the owner picked a month. The app
+  words whatever is set from StoreKit (`introLengthOf()` in `state/purchase.ts`: "Try 1 month for $1.00"). **TODO(owner): make the group, both products and both offers in App Store Connect before the next build**,
   and add the two ids to the review build's sandbox testers.
 - The old one-time `flipup.premium.unlock` is no longer sold. Anyone who bought it keeps Premium for good (the app and
   the server both still accept it); don't remove it from sale in a way that breaks Restore.
@@ -267,25 +271,39 @@ manifests the React Native and Expo modules ship with:
 Recheck after every `npx expo install` of a native module: open the built `.ipa` and compare, since Apple emails
 after upload when a reason is missing.
 
-### Review access (draft review notes)
+### Review access (review notes, updated 15 November 2026)
 
-> FlipUp needs no account or login. To play right away, tap **Play bots** on the Play screen, then **Start game**.
-> The bots fill the table and the game runs on the phone, so no second device is needed. To see an online table, tap
-> **PLAY**: it opens a lobby with a six-character game code, **Add a bot** fills the seats, and **Start game** deals.
-> A second device joins with **Join a game** and that code. Party mode is on the same lobby page: **Start a party**,
-> pick the games, **Save**, then **Start party**. The Train tab's daily quiz (five hands) is free.
+Paste this into App Store Connect > the version > App Review Information > Notes. It names the buttons as they are in
+the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a game).
+
+> FlipUp needs no account or login. To play right away: on the Play tab, tap **Play bots**, then **Start game**. The
+> bots fill the table and the game runs on the phone, so no second device or connection is needed.
 >
-> Chips are play chips only. They can't be bought, cashed out or exchanged, and there's no real-money play.
+> Online play: tap **Host a game**. The lobby shows a six-character game code; tap **Add Bot** to fill seats and
+> **Start game** to deal. A second device joins with **Join a game** and that code (or by scanning the QR code under
+> **QR**). With one device, you can also open playflipup.com/CODE in Safari on a Mac or iPad and tap **Play in your
+> browser** to sit a second player at the same table. Party mode starts from the same lobby: **Start a party**, pick
+> the games, **Save playlist**, then **Start party**.
 >
-> Premium is an auto-renewing subscription (`flipup.premium.monthly`, `flipup.premium.yearly`, each with an
-> introductory offer). Open it from the crown button on the Play screen, or by picking any game other than Texas
-> Hold'em and tapping Start game. Buy it with a sandbox account; **Restore** is on the same page and in Settings, and
-> **Manage subscription** is in Settings once subscribed. Texas Hold'em, ten bots and the daily quiz are free. The
-> other twelve games, the rest of the bots and the other training sets need Premium to host or open; anyone can join
-> any game with a code for free, so only the host needs it. There are no ads and no referral rewards. To check
-> account deletion: profile (top right) > Settings > Delete my data.
+> Chips are play chips only. They can't be bought, sold, won or exchanged, and there's no real-money play.
 >
-> Reporting and blocking: tap a player's seat at an online table, then Report or Block.
+> Premium is an auto-renewing subscription in one group, monthly (`flipup.premium.monthly`) or yearly
+> (`flipup.premium.yearly`), each with an introductory offer of $1.00 for the first month. Open it from the **Premium**
+> button (crown) on the Play tab, or swipe to any game with a crown and tap **Host a game** or **Play bots**. Buy it
+> with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
+> once subscribed. Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day. Premium: hosting the
+> 13 mini games, the rest of the bots and the rest of Range training. One mini game is free for everyone each week
+> (marked "Free this week"), so that one won't ask for Premium. Anyone can join any game with a code for free; only
+> the host needs Premium. There are no ads and no tracking.
+>
+> Account deletion: **Settings** (the gear on the Play tab) > **Delete my data**.
+>
+> Reporting and blocking need another person at the table: tap their seat at an online table, or their face in the
+> lobby's Players, then **Report…** or **Block**. Blocked players are listed in Settings > Blocked players. Nothing
+> typed is ever shown to other players; table talk is a fixed list of quick messages.
+>
+> Permissions are asked only when used: the camera for **Scan a QR code** on Join a game, notifications for the
+> optional daily reminder on the Train tab, and Photos only to add a picture when you tap Save Image on a share card.
 
 ### Performance
 
@@ -341,14 +359,14 @@ share card (Premium). Every one from the real native build (2.3.3).
 | 2 | Bundle ID `com.goodwin.flipup`, in `native/appInfo.ts` | Done |
 | 3 | EAS project ID `55f84d03-0b82-48a2-9fa8-a4f76a7d112a`, in `native/appInfo.ts` | Done |
 | 4 | Support email is `support@playflipup.com` (Cloudflare Email Routing to the owner's inbox). Done | Owner |
-| 5 | Real static pages at `/privacy` and `/support` (today both return the web app) | Claude, Phase 2 |
+| 5 | Real static pages at `/privacy` and `/support`: live (checked 15 November 2026); the corrected text goes live with the next Deploy | Done |
 | 6 | The first EAS build may need the Apple team type (individual or company). If the build asks, set `EXPO_APPLE_TEAM_TYPE` in the workflow | Owner says which |
 | 7 | `eas submit` may need the App Store Connect app ID (the number in the app's URL) if it can't find the app from the bundle ID | Owner, if asked |
 | 8 | App icon and splash made for FlipUp: done (`scripts/makeAppIcon.mjs`). Check the layered icon in Icon Composer or on a TestFlight build, since it was written by hand, not exported | Done, check on device |
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
-| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy | Owner |
-| 12 | **Join links open the app.** Put your Apple Developer Team ID (10 characters) in `APPLE_TEAM_ID` in `wrangler.jsonc` and deploy, so the Worker can answer `/.well-known/apple-app-site-association`. The app needs a new build too (`associatedDomains` in `app.config.ts`). Check with `curl https://gtoduel.online/.well-known/apple-app-site-association`, then tap a link in Messages on a phone with the build installed. If the domain changes, the app and the Worker both follow `apiOrigin` | Owner (the Team ID), then Claude |
+| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy. Enforcement is live (the server refused a Premium game to a phone without Premium on 15 November 2026); the notifications URL is still the owner's step | Owner (URL) |
+| 12 | **Join links open the app.** Put your Apple Developer Team ID (10 characters) in `APPLE_TEAM_ID` in `wrangler.jsonc` and deploy, so the Worker can answer `/.well-known/apple-app-site-association`. The app needs a new build too (`associatedDomains` in `app.config.ts`). Check with `curl https://gtoduel.online/.well-known/apple-app-site-association`, then tap a link in Messages on a phone with the build installed. If the domain changes, the app and the Worker both follow `apiOrigin` | Done: the Team ID is set and the file is live (checked 15 November 2026); the 1.0 build carries `associatedDomains` |
 
 ---
 

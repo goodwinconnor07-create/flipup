@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 
 import { FriendsSetup } from '@/components/setup/friends-setup';
-import { isVariant } from '@/engine';
+import { isOffered } from '@/engine';
 import { useFreshDraft } from '@/state/setup-draft';
 
 /**
@@ -10,6 +10,6 @@ import { useFreshDraft } from '@/state/setup-draft';
  */
 export default function PlayFriendsScreen() {
   const params = useLocalSearchParams<{ variant?: string; invite?: string }>();
-  const s = useFreshDraft('friends', isVariant(params.variant) ? params.variant : undefined);
+  const s = useFreshDraft('friends', isOffered(params.variant) ? params.variant : undefined);
   return <FriendsSetup settings={s} invite={params.invite} />;
 }

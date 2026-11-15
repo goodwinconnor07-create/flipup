@@ -211,9 +211,13 @@ const STEPS: Record<Variant, Step[]> = {
   ],
 };
 
-/** A game's steps that have a picture, each with it. */
-export function stepsFor(v: Variant): (Step & { image: number })[] {
+/**
+ * A game's steps that have a picture, each with it. A game with no pictures recorded yet keeps every step as a
+ * written one (no `image`: How to Play draws the game's own picture over the words), so its walkthrough is never empty.
+ */
+export function stepsFor(v: Variant): (Step & { image?: number })[] {
   const pictures = SHOTS[v] ?? {};
+  if (!Object.keys(pictures).length) return STEPS[v].map((s) => ({ ...s }));
   return STEPS[v].flatMap((s) => {
     const image = pictures[s.shot] ?? (s.or ? pictures[s.or] : undefined);
     return image ? [{ ...s, image }] : [];

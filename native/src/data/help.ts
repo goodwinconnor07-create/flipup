@@ -25,15 +25,15 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'How do I play on my own?',
-        a: 'Tap Play with bots on the Play screen, pick a game, add or remove bots, and tap Start game. It runs entirely on your phone, so it works without internet.',
+        a: 'Swipe to the game you want on the Play screen, tap Play bots, add or remove bots, and tap Start game. It runs entirely on your phone, so it works without internet.',
       },
       {
         q: 'How do I play with friends?',
-        a: 'Tap Play with friends and share the game code, the QR code or the link at the top of the page. Your friends open FlipUp, tap Join a game, and type the code or scan the QR code. Add bots to fill any empty seats, then tap Start game.',
+        a: 'Swipe to the game you want on the Play screen, tap Host a game and share the game code, the QR code or the link at the top of the page. Your friends open FlipUp, tap Join a game, and type the code or scan the QR code. Add bots to fill any empty seats, then tap Start game.',
       },
       {
         q: 'How do I join a friend’s game?',
-        a: 'Tap Join a game on the Play screen. Type the code your friend shared (letters and numbers, no spaces) or tap Scan to read their QR code, then tap Sit down.',
+        a: 'Tap Join a game on the Play screen. Type the code your friend shared (letters and numbers, no spaces) or tap Scan a QR code to read theirs, then tap Sit down.',
       },
       {
         q: 'Do I need internet?',
@@ -56,7 +56,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'How do the mini games work?',
-        a: 'Each game has its own rules and its own look. Tap its picture on the Play screen for How to Play, a short walkthrough of a real hand. The game’s name at the top of the table also opens its rules.',
+        a: 'Each game has its own rules and its own look. Pick it on the Play screen and tap How to play for a short walkthrough of a hand. The game’s name at the top of the table also opens its rules.',
       },
       {
         q: 'What are Casual and Challenge bots?',
@@ -87,7 +87,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'What does Premium unlock?',
-        a: 'Premium is a subscription, monthly or yearly, bought through your Apple Account. It unlocks hosting every mini game, the whole bot roster, every Range training hand, saved hands with Replay, share card designs, the gold name and the card backs. Texas Hold’em with ten bots and Range training’s daily hand are free. Only the person hosting a table needs Premium; friends who join play every game free.',
+        a: 'Premium is a subscription, monthly or yearly, bought through your Apple Account. It unlocks hosting every mini game, the whole bot roster, every Range training hand, share card designs, the gold name and the card backs. Texas Hold’em with ten bots, Saved hands and Replay, and Range training’s daily hand are free. Only the person hosting a table needs Premium; friends who join play every game free.',
       },
       {
         q: 'How do I cancel Premium?',
@@ -149,7 +149,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'What does FlipUp keep about me?',
-        a: 'Your stats and settings stay on your phone. Online tables keep only what they need to run, and delete it automatically after a few days. The full details are in the privacy policy, linked in Settings.',
+        a: 'Your stats and settings stay on your phone. Online tables and parties keep only what they need to run, and are deleted automatically after 30 minutes with no play, or 6 hours at most. The full details are in the privacy policy, linked in Settings.',
       },
     ],
   },

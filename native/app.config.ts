@@ -42,6 +42,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       CADisableMinimumFrameDurationOnPhone: true,
       // The QR scanner on the join sheet.
       NSCameraUsageDescription: 'FlipUp uses the camera to scan a table or party QR code so you can join it.',
+      // Share cards and results go out as pictures through the share sheet, which offers Save Image. Without this
+      // string iOS closes the app the moment Save Image is tapped. FlipUp only adds pictures; it never reads Photos.
+      NSPhotoLibraryAddUsageDescription: 'FlipUp saves the share cards you choose to save to your photos.',
     },
     privacyManifests: {
       // FlipUp never tracks anyone and asks for no App Tracking Transparency prompt.

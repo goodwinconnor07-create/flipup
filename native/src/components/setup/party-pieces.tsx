@@ -10,7 +10,7 @@ import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { TextButton } from '../lobby/code-card';
-import { Card, NumberRow, SwitchRow } from '../lobby/house-rules';
+import { Card, NumberRow, RulesFold, SwitchRow } from '../lobby/house-rules';
 import { PressableScale } from '../pressable-scale';
 import { Stepper } from '../stepper';
 import { ThemedText } from '../themed-text';
@@ -141,10 +141,7 @@ export function PartyRules({ rules, onChange }: { rules: PartyRulesValue; onChan
     );
   };
   return (
-    <View style={{ gap: spacing.sm }}>
-      <ThemedText variant="title2" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
-        House rules
-      </ThemedText>
+    <RulesFold summary={`${chips(rules.stack)} chips each game · 20 sec to act · ${rules.fill === 0 ? 'No bots' : `Bots fill to ${rules.fill}`} · No rebuys`}>
       <Card>
         {[
           pick('Chips each game', rules.stack, PARTY_STACKS, chips, 'stack'),
@@ -154,6 +151,6 @@ export function PartyRules({ rules, onChange }: { rules: PartyRulesValue; onChan
         ]}
       </Card>
       <Card>{[<SwitchRow key="rebuys" label="Rebuys" line="Off in a party. Bust out and you're out for that game." value={false} />]}</Card>
-    </View>
+    </RulesFold>
   );
 }

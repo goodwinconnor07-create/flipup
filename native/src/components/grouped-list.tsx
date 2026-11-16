@@ -1,7 +1,7 @@
 import { Children, isValidElement, type ReactNode } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { brand, ROUNDED, spacing, useColors, useScheme, useShadows } from '@/theme';
+import { brand, ROUNDED, spacing, useColors, useIncreaseContrast, useReduceTransparency, useScheme, useShadows } from '@/theme';
 
 import { haptic } from './haptics';
 import { Icon, type IconName } from './icon';
@@ -11,10 +11,14 @@ import { ThemedText } from './themed-text';
 export function usePanel() {
   const colors = useColors();
   const dark = useScheme() === 'dark';
+  const solid = useReduceTransparency();
+  const contrast = useIncreaseContrast();
+  // Reduce Transparency: nothing shows through, so the page's moving light can't change the text's contrast.
+  // Increase Contrast: a clear edge and hairlines.
   return {
-    fill: dark ? 'rgba(255, 255, 255, 0.085)' : (colors.cell as string),
-    edge: dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
-    hairline: dark ? 'rgba(255, 255, 255, 0.1)' : (colors.separator as string),
+    fill: dark ? (solid ? '#17213f' : 'rgba(255, 255, 255, 0.085)') : (colors.cell as string),
+    edge: contrast ? (dark ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.45)') : dark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.04)',
+    hairline: contrast ? (dark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.35)') : dark ? 'rgba(255, 255, 255, 0.1)' : (colors.separator as string),
     pressed: dark ? 'rgba(255, 255, 255, 0.07)' : (colors.cellPressed as string),
   };
 }

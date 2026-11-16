@@ -8,6 +8,7 @@ import { Appearance, useColorScheme } from 'react-native';
 import { CrashScreen } from '@/components/crash-screen';
 import { RequestTimeoutPopup } from '@/components/request-timeout-popup';
 import { LaunchCover } from '@/components/launch-cover';
+import { UndoToast } from '@/components/undo-toast';
 import { ThumbSnapper } from '@/components/thumb-snaps';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { startStore } from '@/state/purchase';
@@ -112,6 +113,7 @@ export default function RootLayout() {
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
       </Stack>
       <RequestTimeoutPopup />
+      <UndoToast />
       <LaunchCover />
       {/* Saves the game tiles as pictures in the background, so lists of games show images, not SVGs. */}
       <ThumbSnapper />

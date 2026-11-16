@@ -67,12 +67,13 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
       // In the mini games the cards land on the moment's clock (see moments.ts), so the sounds follow it.
       const m = hand.moment;
       const sinceDeal = m ? toTableTime(Date.now(), latest.current.fast) - m.at : 0;
-      // A soft tap as each lands, while you're still in the hand.
+      // A soft tap as the street lands, while you're still in the hand (sound for each card, one tap for the street).
       const inHand = hand.seats.some((x) => x.playerId === myId && !x.folded);
       for (let i = 0; i < snap.board - before.board; i++) {
         const at = m?.offsets ? Math.max(0, (m.offsets[i] ?? i * 160) - sinceDeal) : i * 160;
         playSound('place', at);
-        if (inHand) haptic.card(at);
+        // One soft tap for a street, however many cards it brings: three buzzes for the flop read as a rattle.
+        if (inHand && i === 0) haptic.card(at);
       }
     }
     let k = 0;

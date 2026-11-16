@@ -6,3 +6,4 @@ export { gradient } from './gradient';
 export { useShadows } from './shadows';
 export { maxScale, ROUNDED, typography, type TypeStyle } from './typography';
 export { ForceScheme, useForcedScheme, useScheme, type Scheme } from './scheme';
+export { useIncreaseContrast, useReduceTransparency } from './a11y';

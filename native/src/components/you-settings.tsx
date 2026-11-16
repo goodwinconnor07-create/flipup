@@ -5,7 +5,7 @@ import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { setGoldName, useGoldName, useProfile, wornLook } from '@/state/profile';
 import { useReplays } from '@/state/replays';
-import { setAppearance, setCalm, setFast, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
+import { setAppearance, setCalm, setFast, setHaptics, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useHaptics, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
 import { brand, spacing, useColors } from '@/theme';
 
 import { Row, Section } from './grouped-list';
@@ -25,6 +25,7 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
   const { width } = useWindowDimensions();
   const segW = width < 390 ? 140 : 156;
   const muted = useMuted();
+  const haptics = useHaptics();
   const talk = useTalkLevel();
   const calm = useCalm();
   const fast = useFast();
@@ -57,6 +58,7 @@ export function YouSettings({ header, online = false }: { header?: string; onlin
           }
         />
         <Row title="Sound" icon={{ symbol: 'speaker.wave.2.fill', color: colors.violet as string }} chevron={false} trailing={<Switch label="Sound" value={!muted} onValueChange={(on) => setMuted(!on)} />} />
+        <Row title="Haptics" icon={{ symbol: 'iphone.radiowaves.left.and.right', color: colors.violet as string }} chevron={false} trailing={<Switch label="Haptics" value={haptics} onValueChange={setHaptics} />} />
         <Row title="Animations" icon={{ symbol: 'bolt.fill', color: colors.gold as string }} chevron={false} trailing={<Switch label="Animations" value={!calm} onValueChange={(on) => setCalm(!on)} />} />
         <Row
           title="Bot talk"

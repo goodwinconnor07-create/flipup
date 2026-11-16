@@ -1,9 +1,9 @@
 import { BlurView } from 'expo-blur';
 import { GlassView, isGlassEffectAPIAvailable, isLiquidGlassAvailable } from 'expo-glass-effect';
 import type { ReactNode } from 'react';
-import { type StyleProp, type ViewStyle } from 'react-native';
+import { View, type StyleProp, type ViewStyle } from 'react-native';
 
-import { useForcedScheme, useScheme } from '@/theme';
+import { useForcedScheme, useReduceTransparency, useScheme } from '@/theme';
 
 /** Checked once: Liquid Glass needs iOS 26, and some early iOS 26 builds lack the API. */
 const liquid = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
@@ -15,6 +15,13 @@ const liquid = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 export function GlassSurface({ children, style, interactive }: { children?: ReactNode; style?: StyleProp<ViewStyle>; interactive?: boolean }) {
   const dark = useScheme() === 'dark';
   const forced = useForcedScheme();
+  const solid = useReduceTransparency();
+  // Reduce Transparency: a solid surface with a clear edge, nothing showing through.
+  if (solid) {
+    return (
+      <View style={[{ overflow: 'hidden', backgroundColor: dark ? '#1c2748' : '#f2f2f7', borderWidth: 1, borderColor: dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.25)' }, style]}>{children}</View>
+    );
+  }
   if (liquid) {
     return (
       <GlassView isInteractive={interactive} colorScheme={forced ?? undefined} style={style}>

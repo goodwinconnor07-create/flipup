@@ -11,7 +11,7 @@ import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useLastHand, winnersOf } from '@/state/replays';
 import { releaseRecap, useTable } from '@/state/session';
-import { brand, motion, radius, ROUNDED, spacing } from '@/theme';
+import { brand, motion, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
 
 /** How long the table stays clear after a hand ends before the recap card comes up. */
 const RECAP_DELAY_MS = 2500;
@@ -28,6 +28,7 @@ export function HandRecap() {
   const t = useTable();
   const hand = useLastHand();
   const reduce = useReduceMotion();
+  const solid = useReduceTransparency();
   // The card waits a moment after the hand ends, so you can see the cards and who won on the table first.
   const [shown, setShown] = useState<string | null>(null);
   useEffect(() => {
@@ -57,8 +58,8 @@ export function HandRecap() {
       style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 30, alignItems: 'center', justifyContent: 'center', padding: spacing.lg }}
     >
       {/* A light blur and a little shade: the table is still there, just out of focus. */}
-      <BlurView tint="dark" intensity={12} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.28)' }} />
+      {!solid && <BlurView tint="dark" intensity={12} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: solid ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.28)' }} />
       <Animated.View
         entering={reduce ? undefined : popIn()}
         accessibilityViewIsModal

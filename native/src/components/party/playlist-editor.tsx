@@ -4,9 +4,10 @@ import Animated, { interpolateColor, useAnimatedStyle, useSharedValue, withSprin
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { variantNeedsPremium, PARTY_MAX_GAMES, PARTY_MIN_GAMES, variantInfo, VARIANTS, type Variant } from '@/engine';
-import { EASE_OUT, enter, exit, SETTLE } from '@/motion/presets';
+import { EASE_OUT, enter, exit, releaseSpring, releaseVelocity, SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
+import { insertAt, offerUndo } from '@/state/undo';
 import { brand, ROUNDED, spacing, useColors } from '@/theme';
 
 import { GameThumb } from '../game-picture';
@@ -61,7 +62,7 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
   const scrollY = useRef(0);
   const content = useRef(0);
   const listTop = useRef(0);
-  const finger = useRef({ x: 0, y: 0 });
+  const finger = useRef({ x: 0, y: 0, t: 0 });
   const itemsRef = useRef(items);
   const gapRef = useRef<number | null>(null);
   const hold = useRef<{ drag: Drag; timer?: ReturnType<typeof setTimeout>; start: { x: number; y: number }; active: boolean; moved: boolean; grab: number } | null>(null);
@@ -71,6 +72,8 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
   const [pressed, setPressed] = useState<Variant | null>(null);
 
   const dragTop = useSharedValue(0);
+  const releaseV = useSharedValue(0);
+  const trail = useRef<{ t: number; v: number }[]>([]);
   const heldId = useSharedValue(-1);
   const listH = useSharedValue(Math.max(items.length, 1) * ROW);
   const ghostX = useSharedValue(0);
@@ -108,6 +111,8 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
       const id = h.drag.id;
       const top = heldTop(fy, h.grab, list.length);
       dragTop.set(top);
+      trail.current.push({ t: finger.current.t, v: top });
+      if (trail.current.length > 12) trail.current.shift();
       const at = list.findIndex((x) => x.id === id);
       const to = slotOfTop(top, list.length);
       if (at >= 0 && to !== at) {
@@ -180,7 +185,10 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
       ghostOn.set(withTiming(0, { duration: 200, easing: EASE_OUT }));
     } else {
       haptic.tap();
+      // The finger's speed goes into the settle, so a flicked row carries on the way it was going.
+      releaseV.set(cancelled ? 0 : releaseVelocity(trail.current));
     }
+    trail.current = [];
     gapRef.current = null;
     setGap(null);
     setDrag(null);
@@ -204,7 +212,7 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
   }, [drag]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const touch = (e: GestureResponderEvent) => {
-    finger.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
+    finger.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY, t: e.nativeEvent.timestamp };
   };
   /** The touch handlers for a game in the list or in Add a game: hold to lift, tap (tiles) to add. */
   const grab = (what: Drag) => ({
@@ -235,7 +243,14 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
 
   const remove = (id: number) => {
     haptic.tap();
-    commit(itemsRef.current.filter((x) => x.id !== id));
+    const list = itemsRef.current;
+    const at = list.findIndex((x) => x.id === id);
+    if (at < 0) return;
+    const gone = list[at];
+    commit(list.filter((x) => x.id !== id));
+    offerUndo(`${variantInfo(gone.v).name} removed`, () => {
+      if (itemsRef.current.length < PARTY_MAX_GAMES && !itemsRef.current.some((x) => x.id === gone.id)) commit(insertAt(itemsRef.current, gone, at));
+    });
   };
 
   const ghost = useAnimatedStyle(() => ({
@@ -299,6 +314,7 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
               slot={slotTop(i, gap)}
               held={drag?.kind === 'row' && drag.id === item.id}
               dragTop={dragTop}
+              releaseV={releaseV}
               heldId={heldId}
               crown={!premium && variantNeedsPremium(item.v)}
               reduce={reduce}
@@ -408,6 +424,7 @@ function PlaylistRow({
   slot,
   held,
   dragTop,
+  releaseV,
   heldId,
   crown,
   reduce,
@@ -419,6 +436,7 @@ function PlaylistRow({
   slot: number;
   held: boolean;
   dragTop: SharedValue<number>;
+  releaseV: SharedValue<number>;
   heldId: SharedValue<number>;
   crown: boolean;
   reduce: boolean;
@@ -436,13 +454,15 @@ function PlaylistRow({
       lift.set(withTiming(1, { duration: 120, easing: EASE_OUT }));
       return;
     }
+    const wasHeld = was.current;
     if (was.current) {
       // Let go: settle from where the finger left the row.
       was.current = false;
       top.set(dragTop.get());
     }
     lift.set(withTiming(0, { duration: 200, easing: EASE_OUT }));
-    top.set(reduce ? slot : withSpring(slot, SETTLE));
+    top.set(reduce ? slot : withSpring(slot, wasHeld ? releaseSpring(releaseV.get()) : SETTLE));
+    releaseV.set(0);
   }, [held, slot, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const place = useAnimatedStyle(() => ({

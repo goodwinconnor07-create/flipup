@@ -33,6 +33,18 @@ export function isMuted(): boolean {
   }
 }
 
+/** Haptics: on until switched off (a separate switch from Sound, so each can be had without the other). */
+export const useHaptics = (): boolean => useStored<boolean>('flipup.haptics', true) !== false;
+export const setHaptics = (on: boolean): void => save('flipup.haptics', on);
+/** Read without a hook, for the haptics module. */
+export function isHapticsOn(): boolean {
+  try {
+    return JSON.parse(localStorage.getItem('flipup.haptics') ?? 'true') !== false;
+  } catch {
+    return true;
+  }
+}
+
 /** Read without a hook, under one of the web's keys. */
 function peek<T>(key: string, fallback: T): T {
   try {

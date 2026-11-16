@@ -15,6 +15,7 @@ import { isVariant, variantInfo, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { EASE_OUT } from '@/motion/presets';
 import { motion, radius, ROUNDED, spacing } from '@/theme';
+import { TightText } from '@/components/themed-text';
 
 /** The pictures are a phone screen, this shape. */
 const ASPECT = SHOT_ASPECT;
@@ -28,7 +29,7 @@ const STEP_MS = 6500;
  * pause. Full screen, so the bars and the close button sit at the top edge. The layout is measured: the picture takes
  * the room between the bars and the words. A game with no pictures yet shows its steps written, over its drawing.
  */
-export default function HowToPlay() {
+function HowToPlayInner() {
   const { id, from } = useLocalSearchParams<{ id: string; from?: string }>();
   const variant: Variant = isVariant(id) ? id : 'holdem';
   const info = variantInfo(variant);
@@ -170,5 +171,14 @@ export default function HowToPlay() {
         <Button variant="party" tint="green" size="lg" title={`Play ${info.name}`} onPress={play} />
       </View>
     </View>
+  );
+}
+
+// Fixed layout: text keeps its lower Dynamic Type caps here (TightText).
+export default function HowToPlay() {
+  return (
+    <TightText>
+      <HowToPlayInner />
+    </TightText>
   );
 }

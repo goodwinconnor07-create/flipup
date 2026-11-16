@@ -11,6 +11,7 @@ import { joinLink } from '@/state/api';
 import { askForName } from '@/state/ask-name';
 import { tableShareMessage } from '@/state/table-share';
 import { usePremium } from '@/state/premium';
+import { insertAt, offerUndo } from '@/state/undo';
 import { readProfile, useProfile } from '@/state/profile';
 import { abandonLobby, changeTableCode, currentTable, dispatch, me as myDevice, openOnlineTable, useTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
@@ -266,7 +267,9 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   };
 
   const removeBot = (b: RowBot) => {
+    const at = bots.findIndex((x) => x.key === b.key);
     setBots((have) => have.filter((x) => x.key !== b.key));
+    offerUndo(`${b.name} removed`, () => setBots((have) => (have.some((x) => x.key === b.key) ? have : insertAt(have, b, at))));
   };
   const rows: PlayerLine[] = [
     { key: 'you', name: profile.name || 'You', emoji: profile.emoji || '🙂', line: 'You · Host', you: true },

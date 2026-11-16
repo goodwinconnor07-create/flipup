@@ -1,6 +1,8 @@
-import { Fragment, type ReactNode } from 'react';
-import { PANEL_RADIUS, usePanel } from '../grouped-list';
+import { Fragment, useState, type ReactNode } from 'react';
 import { View } from 'react-native';
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+
+import { PANEL_RADIUS, usePanel } from '../grouped-list';
 
 import {
   BLIND_CAP_CHOICES,
@@ -14,8 +16,12 @@ import {
   withStack,
   type Settings,
 } from '@/engine';
-import { radius, ROUNDED, spacing, useColors } from '@/theme';
+import { EASE_OUT, enter, exit } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { motion, radius, ROUNDED, spacing, useColors } from '@/theme';
 
+import { Icon } from '../icon';
+import { PressableScale } from '../pressable-scale';
 import { SegmentedControl } from '../segmented-control';
 import { Stepper } from '../stepper';
 import { Switch } from '../switch';
@@ -148,12 +154,65 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
   ].filter(Boolean);
 
   return (
+    <RulesFold summary={rulesSummary(s, online)}>
+      <Card>{numbers}</Card>
+      <Card>{switches}</Card>
+    </RulesFold>
+  );
+}
+
+/** The rules in one line, for the folded House rules: "1,500 chips · Blinds 10/20 · 30s to act · No rebuys". */
+export function rulesSummary(s: Settings, online: boolean): string {
+  const parts = [`${chips(s.startingStack)} chips`, `Blinds ${blindsLabel([s.smallBlind, s.bigBlind])}`];
+  if (online) parts.push(s.turnSeconds === 0 ? 'No clock' : `${timerLabel(s.turnSeconds)} to act`);
+  parts.push(s.rebuys ? 'Rebuys' : 'No rebuys');
+  return parts.join(' · ');
+}
+
+/**
+ * House rules start folded to one line (Apple: the common path first, the detail one level down; 17 Nov 2026), so
+ * the lobby's players and Start game stay in view. A tap opens every row. One chevron turns (motion rule 20) and the
+ * rows rise in with `enter()`; under Reduce Motion they only fade.
+ */
+export function RulesFold({ summary, children }: { summary: string; children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const reduce = useReduceMotion();
+  const panel = usePanel();
+  const turn = useSharedValue(0);
+  const chevron = useAnimatedStyle(() => ({ transform: [{ rotate: `${turn.get() * 180}deg` }] }));
+  const toggle = () => {
+    const next = !open;
+    setOpen(next);
+    turn.set(reduce ? (next ? 1 : 0) : withTiming(next ? 1 : 0, { duration: next ? motion.base : motion.exit, easing: EASE_OUT }));
+  };
+  return (
     <View style={{ gap: spacing.sm }}>
       <ThemedText variant="title2" accessibilityRole="header" style={{ fontFamily: ROUNDED, fontWeight: '800' }}>
         House rules
       </ThemedText>
-      <Card>{numbers}</Card>
-      <Card>{switches}</Card>
+      <View style={{ borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge, overflow: 'hidden' }}>
+        <PressableScale
+          accessibilityRole="button"
+          accessibilityLabel={`House rules, ${summary}`}
+          accessibilityState={{ expanded: open }}
+          accessibilityHint={open ? 'Hides the rules' : 'Shows every rule'}
+          onPress={toggle}
+          outerStyle={{ width: '100%' }}
+          style={{ minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: spacing.md, paddingVertical: spacing.sm }}
+        >
+          <ThemedText variant="subhead" tone="secondaryLabel" style={{ flex: 1 }}>
+            {summary}
+          </ThemedText>
+          <Animated.View style={chevron}>
+            <Icon name="chevron.down" size={16} color={panel.hairline} />
+          </Animated.View>
+        </PressableScale>
+      </View>
+      {open && (
+        <Animated.View entering={enter(reduce)} exiting={exit(reduce)} style={{ gap: spacing.sm }}>
+          {children}
+        </Animated.View>
+      )}
     </View>
   );
 }

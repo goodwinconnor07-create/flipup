@@ -37,6 +37,7 @@ export const TIMING = {
   sitOutAfterOffline: 3,
   /** A new game: this long after Deal before the first cards come, so there's time to take the table in. */
   startDelay: 3000,
+  startDelayLocal: 1500,
   /** Die on the River: how long the roll is shown (the count from 3, the die landing, the result) before the river betting starts. Not on a table where only bots are left in the hand. */
   diceShow: 6000,
   /** Memory Poker: how long everyone sees the 20 cards taken out before the hand is dealt. */
@@ -70,8 +71,12 @@ export const endsAtOnce = (game: Game): boolean => !game.settings.rebuys || !!ga
 /** How long a new game waits before its first greeting. */
 export const greetWait = (_game: Game): number => TIMING.greeting;
 
-/** The first deal comes after the countdown; saying the greeting can move it to after the greeting has been read. */
-export const startWait = (_game: Game): number => TIMING.startDelay;
+/**
+ * The first deal comes after the countdown; saying the greeting can move it to after the greeting has been read.
+ * An online table waits the full countdown so friends can see the table fill; a bots-only table on one phone has
+ * nobody to wait for, so it deals sooner (17 Nov 2026, from Apple's "kill latency").
+ */
+export const startWait = (game: Game): number => (game.code ? TIMING.startDelay : TIMING.startDelayLocal);
 
 /** Hands kept in the hand log. */
 export const MAX_LOGS = 150;

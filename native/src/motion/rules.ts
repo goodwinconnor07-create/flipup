@@ -45,6 +45,30 @@ export function arcPoint(t: number, from: { x: number; y: number }, to: { x: num
   return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t - bow * 4 * t * (1 - t) };
 }
 
+/**
+ * A drag's speed in points a second from its last few touches (`t` in ms), so a release can hand the finger's speed
+ * to the spring instead of starting it from rest. Looks only at the last 100ms; 0 when the finger had stopped.
+ */
+export function releaseVelocity(samples: readonly { t: number; v: number }[]): number {
+  const last = samples[samples.length - 1];
+  if (!last) return 0;
+  const recent = samples.filter((s) => last.t - s.t <= 100);
+  const first = recent[0];
+  if (!first || last.t - first.t < 8) return 0;
+  return ((last.v - first.v) / (last.t - first.t)) * 1000;
+}
+
+/** Below this speed (points a second) a release is a set-down, above it a flick. */
+export const FLICK_SPEED = 600;
+
+/**
+ * Rule 13, with Apple's one exception: something thrown or flicked may overshoot a little (damping ratio 0.8),
+ * because the gesture carried momentum. A set-down or a menu never does; those use `settleSpring`.
+ */
+export function flickSpring(mass = 1, stiffness = 300): { mass: number; stiffness: number; damping: number } {
+  return { mass, stiffness, damping: 0.8 * 2 * Math.sqrt(stiffness * mass) };
+}
+
 /** Rule 13: a spring that arrives and stops, with no overshoot (critically damped: damping = 2 × √(stiffness × mass)). */
 export function settleSpring(mass = 1, stiffness = 300): { mass: number; stiffness: number; damping: number } {
   return { mass, stiffness, damping: 2 * Math.sqrt(stiffness * mass) };

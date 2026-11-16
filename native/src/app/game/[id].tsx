@@ -1,4 +1,5 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
+import type { ReactNode } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
 
 import { BlurView } from 'expo-blur';
@@ -15,19 +16,31 @@ import { gameLook } from '@design/gameArt';
 import { freeThisWeek, freeWeekEnds, isPremiumVariant, variantNeedsPremium, isVariant, variantInfo, variantNote, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { unlockToHost } from '@/state/unlock';
-import { brand, radius, ROUNDED, spacing } from '@/theme';
+import { brand, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
 
 /**
  * A game's sheet from Home: its picture and mood, the two ways to start it, then how it plays. A Premium game
  * without Premium says so before any setup: the sheet explains the game and Continue opens the offer with that
  * game's picture first (PLAY, Play bots and the lobby's game list all come here for a locked game).
  */
+/** The lock over a Premium game's buttons: a blur, or a solid shade under Reduce Transparency. */
+function LockVeil({ solid, children }: { solid: boolean; children: ReactNode }) {
+  const style = { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs } as const;
+  if (solid) return <View style={[style, { backgroundColor: 'rgba(0, 0, 0, 0.78)' }]}>{children}</View>;
+  return (
+    <BlurView intensity={40} tint="dark" style={[style, { backgroundColor: 'rgba(0, 0, 0, 0.25)' }]}>
+      {children}
+    </BlurView>
+  );
+}
+
 export default function GameSheet() {
   const { id, rules } = useLocalSearchParams<{ id: string; rules?: string }>();
   const variant: Variant = isVariant(id) ? id : 'holdem';
   const info = variantInfo(variant);
   const { width } = useWindowDimensions();
   const premium = usePremium();
+  const solid = useReduceTransparency();
   const locked = !premium && variantNeedsPremium(variant);
   const unlock = () => {
     router.back();
@@ -84,7 +97,7 @@ export default function GameSheet() {
               }}
               style={{ position: 'absolute', inset: 0 }}
             >
-              <BlurView intensity={40} tint="dark" style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing.xs, backgroundColor: 'rgba(0, 0, 0, 0.25)' }}>
+              <LockVeil solid={solid}>
                 <Icon name="lock.fill" size={30} color="#ffffff" />
                 <Text maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 20, fontWeight: '800', color: '#ffffff' }}>
                   Unlock Premium to play
@@ -92,7 +105,7 @@ export default function GameSheet() {
                 <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', color: 'rgba(255, 255, 255, 0.8)' }}>
                   Friends who join play {info.name} free
                 </Text>
-              </BlurView>
+              </LockVeil>
             </Pressable>
           )}
         </View>

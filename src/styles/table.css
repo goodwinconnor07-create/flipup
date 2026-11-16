@@ -1206,13 +1206,13 @@ html.calm .pod.won .pod-pic {
 }
 
 .pos-chip {
-  min-width: 17px;
-  height: 17px;
-  padding: 0 4px;
-  border-radius: 9px;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
   line-height: 1;
   white-space: nowrap;
@@ -2186,7 +2186,7 @@ html.calm .pod-cards.shimmer::after {
   background: rgba(0, 0, 0, 0.42);
   color: rgba(255, 255, 255, 0.88);
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.28);
-  font-size: 8px;
+  font-size: 11px;
   font-style: normal;
   font-weight: 700;
   line-height: 1.1;

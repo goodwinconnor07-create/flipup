@@ -2,7 +2,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 import { motion } from '@design/tokens';
-import { arcPoint, exitMs, knobStretch, rubber, settleSpring, stagger } from '../src/motion/rules';
+import { arcPoint, exitMs, FLICK_SPEED, flickSpring, knobStretch, releaseVelocity, rubber, settleSpring, stagger } from '../src/motion/rules';
 
 // "The 20 rules" in docs/MOTION.md, as checks. The first half tests the numbers; the second half reads the source
 // so new code can't quietly break the rules that can be seen in text. If one fails, fix the animation, not the test.
@@ -42,6 +42,18 @@ describe('the numbers', () => {
     expect(arcPoint(1, a, b)).toEqual(b);
     expect(arcPoint(0.5, a, b).y).toBeCloseTo(-32);
   });
+  it('rule 13: a flick spring overshoots only a little (damping ratio 0.8) and a slow release has no speed to hand over', () => {
+    const f = flickSpring(1, 300);
+    expect(f.damping / (2 * Math.sqrt(300))).toBeCloseTo(0.8);
+    expect(releaseVelocity([])).toBe(0);
+    expect(releaseVelocity([{ t: 0, v: 100 }])).toBe(0);
+    expect(releaseVelocity([{ t: 0, v: 100 }, { t: 50, v: 100 }])).toBe(0);
+    expect(releaseVelocity([{ t: 0, v: 100 }, { t: 50, v: 150 }])).toBeCloseTo(1000);
+    // Only the last 100ms count: a stop after a long drag is a set-down.
+    expect(releaseVelocity([{ t: 0, v: 0 }, { t: 400, v: 300 }, { t: 500, v: 300 }])).toBe(0);
+    expect(FLICK_SPEED).toBeGreaterThan(0);
+  });
+
   it('rule 13: the settle spring is critically damped', () => {
     const s = settleSpring(1, 300);
     expect(s.damping).toBeCloseTo(2 * Math.sqrt(300));

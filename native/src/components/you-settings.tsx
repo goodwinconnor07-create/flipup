@@ -4,7 +4,7 @@ import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { setGoldName, useGoldName, useProfile, wornLook } from '@/state/profile';
 import { useReplays } from '@/state/replays';
-import { setAppearance, setCalm, setFast, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
+import { setAppearance, setCalm, setFast, setHaptics, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useHaptics, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
 
 import type { MenuGroup } from './native-menu.types';
 
@@ -15,6 +15,7 @@ import type { MenuGroup } from './native-menu.types';
  */
 export function useYouGroups({ header, online = false }: { header?: string; online?: boolean }): MenuGroup[] {
   const muted = useMuted();
+  const haptics = useHaptics();
   const talk = useTalkLevel();
   const calm = useCalm();
   const fast = useFast();
@@ -43,6 +44,7 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
           onChange: (v) => setAppearance(v as AppearancePref),
         },
         { kind: 'toggle', id: 'sound', title: 'Sound', value: !muted, onChange: (on) => setMuted(!on) },
+        { kind: 'toggle', id: 'haptics', title: 'Haptics', value: haptics, onChange: setHaptics },
         { kind: 'toggle', id: 'animations', title: 'Animations', value: !calm, onChange: (on) => setCalm(!on) },
         {
           kind: 'segmented',

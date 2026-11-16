@@ -28,7 +28,7 @@ import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
 import { Discard, Discuss, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText, TightText } from '@/components/themed-text';
 import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
 import { myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
@@ -62,7 +62,7 @@ export function ErrorBoundary(props: ErrorBoundaryProps) {
  * The table, laid out as on the web: the bar (menu, blinds, hand number), the other players along the top, the
  * felt with the pot and board, whose turn it is and your buttons, then your cards and your box at the bottom.
  */
-export default function TableScreen() {
+function TableScreenInner() {
   const t = useTable();
   const game = t.game;
   const online = t.mode === 'online';
@@ -655,5 +655,14 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
       {rulesCard && <RulesCard variant={rulesCard} timed={!!game.code} onDone={() => setRulesCard(null)} />}
     </View>
     </WildDeuces.Provider>
+  );
+}
+
+// Fixed layout: text keeps its lower Dynamic Type caps here (TightText).
+export default function TableScreen() {
+  return (
+    <TightText>
+      <TableScreenInner />
+    </TightText>
   );
 }

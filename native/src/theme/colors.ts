@@ -7,6 +7,7 @@ import { Platform, type ColorValue } from 'react-native';
 import { palette, type PaletteColor } from '@design/tokens';
 
 import { brand } from './brand';
+import { useIncreaseContrast } from './a11y';
 import { useForcedScheme, useScheme } from './scheme';
 
 export type Colors = Record<PaletteColor, ColorValue>;
@@ -44,12 +45,28 @@ function branded(dark: boolean): Partial<Colors> {
   };
 }
 
+/**
+ * The pages with the moving blue light (forced dark) put text on see-through panels, and where two lights cross
+ * Apple's usual 60% grey reads at about 3.4:1 (measured against the brightest the field gets). Small text there
+ * is lighter, as Apple does over translucent materials: 80% for second lines (4.6:1 and up), 66% for the quietest
+ * ones. Increase Contrast pushes both further.
+ */
+function onMovingPage(on: boolean, contrast: boolean): Partial<Colors> {
+  if (!on) return {};
+  return {
+    secondaryLabel: contrast ? 'rgba(235, 235, 245, 0.95)' : 'rgba(235, 235, 245, 0.8)',
+    tertiaryLabel: contrast ? 'rgba(235, 235, 245, 0.82)' : 'rgba(235, 235, 245, 0.66)',
+  };
+}
+
 /** Today's colours. Call it inside a component so a switch between light and dark redraws. */
 export function useColors(): Colors {
   const scheme = useScheme();
   // The system colours follow the phone, not the page, so a page that forces its scheme uses the palette's own.
-  const system = useForcedScheme() ? {} : SYSTEM;
-  return { ...palette[scheme], ...system, ...branded(scheme === 'dark') };
+  const forced = useForcedScheme();
+  const contrast = useIncreaseContrast();
+  const system = forced ? {} : SYSTEM;
+  return { ...palette[scheme], ...system, ...branded(scheme === 'dark'), ...onMovingPage(forced === 'dark', contrast) };
 }
 
 /**

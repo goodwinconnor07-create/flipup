@@ -21,7 +21,7 @@ const TILE = 168;
 const LAUNCHED = 'flipup.launched';
 /** How long the first launch holds the icon (the arrival, then the shimmer crossing it) before handing over to the app. */
 const FIRST_MS = 1500;
-const RETURNING_MS = 800;
+const RETURNING_MS = 500;
 const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
 const SWEEP = Easing.bezier(0.45, 0, 0.25, 1);
 

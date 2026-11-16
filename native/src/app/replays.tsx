@@ -14,7 +14,8 @@ import { signed } from '@/components/share/data';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo } from '@/engine';
-import { clearReplays, KEEP, removeReplay, useReplays, useStars, type Replay } from '@/state/replays';
+import { clearReplays, KEEP, removeReplay, restoreReplay, useReplays, useStars, type Replay } from '@/state/replays';
+import { offerUndo } from '@/state/undo';
 import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
 
 /**
@@ -56,7 +57,14 @@ function Bank() {
       { text: 'Share', onPress: () => router.push({ pathname: '/share-card', params: { kind: 'hand', id: r.id } }) },
       // The hand as data, for a bug report about how the bots played it (`npm run bot:explain` reads it).
       { text: 'Copy hand data', onPress: () => void Clipboard.setStringAsync(JSON.stringify(r)) },
-      { text: 'Remove', style: 'destructive', onPress: () => removeReplay(r.id) },
+      {
+        text: 'Remove',
+        style: 'destructive',
+        onPress: () => {
+          removeReplay(r.id);
+          offerUndo(`Hand ${r.number} removed`, () => restoreReplay(r));
+        },
+      },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };

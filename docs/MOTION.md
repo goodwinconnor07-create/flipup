@@ -43,7 +43,7 @@ are in `motion` (`src/design/tokens.ts`), the pure helpers in `native/src/motion
 | 10 | Popovers start at 0.95, never 0 | `popIn()`, `motion.popFrom`, `--pop-from`; `ZoomIn` is only allowed inside `presets.ts` |
 | 11 | Enter from the trigger | set `transformOrigin` to the trigger's corner (the web build's `Menu`) |
 | 12 | Exit toward the trigger | the same origin on the way out |
-| 13 | No bounce on everyday UI | `SETTLE` (critically damped) and `popIn()`; any spring in numbers keeps a damping ratio of 0.7 or more; no easing curve with a y above 1 |
+| 13 | No bounce on everyday UI | `SETTLE` (critically damped) and `popIn()`; any spring in numbers keeps a damping ratio of 0.7 or more; no easing curve with a y above 1. **One exception, Apple's (17 Nov 2026):** a thing let go while moving fast (over `FLICK_SPEED`, 600pt/s) settles with `releaseSpring(velocity)`, which hands the finger's speed to the spring and uses `FLICK` (damping ratio 0.8, a hair of overshoot) because the gesture carried momentum. A set-down, a menu or anything that wasn't flicked never bounces. Used by the playlist's rows |
 | 14 | Don't tween while held | while a finger is down, a thing is exactly under it (the bet slider, the hand fan, `SwipeAway`); springs only on release |
 | 15 | Exits 20% shorter than entrances | `motion.exit` (200) against `motion.base` (250), `exitMs()`, `--dur-exit` |
 | 16 | Overlap the old and the new state | `Swap` (`components/swap.tsx`): the old leaves while the new arrives, no blank beat. Used by `Button` (title and spinner), `TableButton`, the Lock it in pill, Next hand |

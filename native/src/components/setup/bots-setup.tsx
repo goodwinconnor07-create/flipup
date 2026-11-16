@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type Settings } from '@/engine';
 import { usePremium } from '@/state/premium';
+import { insertAt, offerUndo } from '@/state/undo';
 import { useProfile } from '@/state/profile';
 import { dispatch, openLocalTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
@@ -103,7 +104,11 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           bots={bots}
           room={room}
           onAdd={addBot}
-          onRemove={(b) => setBots((have) => have.filter((x) => x.key !== b.key))}
+          onRemove={(b) => {
+            const at = bots.findIndex((x) => x.key === b.key);
+            setBots((have) => have.filter((x) => x.key !== b.key));
+            offerUndo(`${b.name} removed`, () => setBots((have) => (have.some((x) => x.key === b.key) ? have : insertAt(have, b, at))));
+          }}
         />
 
         <GameCard variant={variant} host />

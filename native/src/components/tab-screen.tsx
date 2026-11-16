@@ -4,7 +4,7 @@ import { Platform, useColorScheme, View, type ScrollView, type ScrollViewProps }
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { spacing, useScheme } from '@/theme';
+import { spacing, useColors, useReduceTransparency, useScheme } from '@/theme';
 
 import { GlassSurface } from './glass-surface';
 import { Icon, type IconName } from './icon';
@@ -43,6 +43,8 @@ export function TabScreen({ title, accessory, children, contentStyle, scrollRef,
   const onScroll = useAnimatedScrollHandler((e) => {
     y.set(e.contentOffset.y);
   });
+  const solid = useReduceTransparency();
+  const pageColor = useColors().background;
   const veil = useAnimatedStyle(() => ({ opacity: interpolate(y.get(), [0, 24], [0, 1], 'clamp') }));
   // iOS adds the status bar's height to a scroll view on its own (automatic insets); the web build doesn't.
   const top = Platform.OS === 'ios' ? 0 : insets.top;
@@ -66,7 +68,7 @@ export function TabScreen({ title, accessory, children, contentStyle, scrollRef,
         {children}
       </Animated.ScrollView>
       <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: 0, right: 0, height: insets.top }, veil]}>
-        <BlurView tint={dark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'} intensity={80} style={{ flex: 1 }} />
+        {solid ? <View style={{ flex: 1, backgroundColor: pageColor }} /> : <BlurView tint={dark ? 'systemChromeMaterialDark' : 'systemChromeMaterialLight'} intensity={80} style={{ flex: 1 }} />}
       </Animated.View>
       {footer ? (
         // Nothing behind the bar: the buttons are glass themselves (Range training's GlassButton), so the page shows

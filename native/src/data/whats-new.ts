@@ -31,6 +31,8 @@ export const RELEASES: Release[] = [
       { icon: 'chart.line.uptrend.xyaxis', title: 'Stats in big blinds', text: 'Your stats count in big blinds, so a bigger stack or a rebuy never changes them.' },
       { icon: 'square.and.arrow.up', title: 'Share cards', text: 'Turn a big hand or your stats into a picture worth sending.' },
       { icon: 'questionmark.circle.fill', title: 'Rules when you need them', text: 'The first time you play a game, a short card sums up its rules before the first hand.' },
+      { icon: 'eye.fill', title: 'Easy to read', text: 'FlipUp follows Reduce Transparency, Increase Contrast and your text size, and a Haptics switch in Settings turns the buzzes off without muting the sounds.' },
+      { icon: 'arrow.uturn.backward', title: 'Undo', text: 'Removed a bot, a game from the playlist or a saved hand by mistake? Tap Undo for a few seconds. House rules fold to one line in the lobby, and a game against bots deals sooner.' },
       { icon: 'crown.fill', title: 'FlipUp Premium', text: 'Host every mini game and play the whole bot roster. Range training opens up too, and friends always join your games free.' },
       { icon: 'hand.raised.fill', title: 'Play chips only', text: 'Chips have no cash value. They can’t be bought, sold or won.' },
     ],

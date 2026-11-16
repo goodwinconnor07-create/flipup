@@ -16,7 +16,7 @@ import { basicsOf } from '@/data/game-basics';
 import { variantInfo, type Variant } from '@/engine';
 import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { brand, motion, radius, ROUNDED, spacing } from '@/theme';
+import { brand, motion, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
 
 import { GameThumb } from './game-picture';
 import { haptic } from './haptics';
@@ -38,6 +38,7 @@ export function RulesCard({
   onDone: () => void;
 }) {
   const reduce = useReduceMotion();
+  const solid = useReduceTransparency();
   const info = variantInfo(variant);
   const lines = basicsOf(variant);
   const left = useSharedValue(1);
@@ -71,8 +72,8 @@ export function RulesCard({
       style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 40, alignItems: 'center', justifyContent: 'center', padding: spacing.lg }}
     >
       {/* The page stays where it is, out of focus behind the card. */}
-      <BlurView tint="dark" intensity={18} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
-      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.32)' }} />
+      {!solid && <BlurView tint="dark" intensity={18} style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />}
+      <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: solid ? 'rgba(0,0,0,0.7)' : 'rgba(0,0,0,0.32)' }} />
       <Animated.View
         entering={reduce ? undefined : popIn()}
         accessibilityViewIsModal

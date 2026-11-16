@@ -4,9 +4,9 @@ import { Easing, FadeIn, FadeInDown, FadeOut, FadeOutDown, ReduceMotion, withTim
 
 import { motion } from '@design/tokens';
 
-import { settleSpring, stagger } from './rules';
+import { FLICK_SPEED, flickSpring, settleSpring, stagger } from './rules';
 
-export { arcPoint, exitMs, knobStretch, rubber, settleSpring, stagger } from './rules';
+export { arcPoint, exitMs, FLICK_SPEED, flickSpring, knobStretch, releaseVelocity, rubber, settleSpring, stagger } from './rules';
 
 /** Strong ease-out for anything entering or leaving. Never ease-in on UI. */
 export const EASE_OUT = Easing.bezier(0.23, 1, 0.32, 1);
@@ -36,6 +36,18 @@ export function exit(reduce: boolean) {
  */
 export function popIn() {
   return ZoomIn.duration(motion.base).easing(EASE_OUT).withInitialValues({ transform: [{ scale: motion.popFrom }] });
+}
+
+/** The spring for something let go while moving fast (a flick): a hair of overshoot, damping ratio 0.8. */
+export const FLICK = { ...flickSpring(1, 300), reduceMotion: ReduceMotion.Never } as const;
+
+/**
+ * The spring to settle with after a release: the finger's own speed is handed over (no seam between dragging and
+ * animating), and a fast flick may overshoot a little (`FLICK`); a slow set-down never does (`SETTLE`).
+ */
+export function releaseSpring(velocity: number) {
+  'worklet';
+  return { ...(Math.abs(velocity) > FLICK_SPEED ? FLICK : SETTLE), velocity };
 }
 
 /** A spring that settles without overshooting, for a thing that lets go and comes to rest (rule 13). */

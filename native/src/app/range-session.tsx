@@ -20,7 +20,7 @@ import { shareDaily } from '@/components/range/train-home';
 import { BackText } from '@/components/setup/setup-header';
 import { FooterContext } from '@/components/tab-screen';
 import { PressableScale } from '@/components/pressable-scale';
-import { ThemedText } from '@/components/themed-text';
+import { ThemedText, TightText } from '@/components/themed-text';
 import { EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
@@ -33,7 +33,7 @@ import type { Grade } from '@train/ranges/model';
 /** How long the room stays warm or cool after an answer. */
 const MOOD_MS = 2600;
 
-export default function RangeSessionScreen() {
+function RangeSessionScreenInner() {
   const premium = usePremium();
   const { daily, endless } = useLocalSearchParams<{ daily?: string; endless?: string }>();
   // Without Premium only the daily hand opens here, however the screen was reached.
@@ -282,5 +282,14 @@ function PinnedPage({ children, fixed, scrollRef }: { children: ReactNode; fixed
         </View>
       </View>
     </FooterContext.Provider>
+  );
+}
+
+// Fixed layout: text keeps its lower Dynamic Type caps here (TightText).
+export default function RangeSessionScreen() {
+  return (
+    <TightText>
+      <RangeSessionScreenInner />
+    </TightText>
   );
 }

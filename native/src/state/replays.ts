@@ -123,6 +123,13 @@ export function removeReplay(id: string): void {
   if (stars.includes(id)) save(STARS, stars.filter((s) => s !== id));
 }
 
+/** Puts a removed hand back where its date says it belongs (the Undo after Remove). */
+export function restoreReplay(r: Replay): void {
+  const have = allReplays();
+  if (have.some((x) => x.id === r.id)) return;
+  save(KEY, [r, ...have].sort((a, b) => b.at - a.at));
+}
+
 // ── The last hand, held until the next one finishes ─────────────────────────
 
 let last: Replay | null = null;

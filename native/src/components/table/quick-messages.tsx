@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Modal, Pressable, Text, View } from 'react-native';
 
-import { EMOJI_REACTIONS, IMPOSTER_REACTIONS, REACTIONS } from '@/engine';
+import { EMOJI_REACTIONS, REACTIONS } from '@/engine';
 import { dispatch } from '@/state/session';
 import { radius, spacing, useColors } from '@/theme';
 
@@ -11,7 +11,7 @@ import { haptic } from '../haptics';
 import { Icon } from '../icon';
 import { PressableScale } from '../pressable-scale';
 
-export function QuickMessages({ imposter = false }: { imposter?: boolean }) {
+export function QuickMessages() {
   const colors = useColors();
   const [open, setOpen] = useState(false);
   const [cooling, setCooling] = useState(false);
@@ -58,7 +58,7 @@ export function QuickMessages({ imposter = false }: { imposter?: boolean }) {
               ))}
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>
-              {(imposter ? [...IMPOSTER_REACTIONS, ...REACTIONS] : REACTIONS)
+              {REACTIONS
                 .filter((r) => /[A-Za-z]/.test(r.text))
                 .map((r) => (
                   <PressableScale

@@ -93,39 +93,31 @@ export function useTableSounds(game: Game, myId: string | undefined): void {
     if (snap.myTurn && !before.myTurn) playSound('turn', 150);
   }, [hand, myId, game.settings.bigBlind]);
 
-  // The mini games' own moments: the die, the ghost taking a pot, the vote, a red river.
+  // The mini games' own moments: the die, the ghost taking a pot, a red river.
   const dice = hand?.dice ? `${hand.number}` : '';
   const kept = hand?.result?.ghost?.kept ? `${hand.number}` : '';
-  const voting = hand?.variant === 'imposter' && hand.result?.imposter ? `${hand.number}` : '';
-  const tally = hand?.tally ? `${hand.number}` : '';
   const busted = hand?.moment?.kind === 'bust' ? `${hand.number}:${hand.moment.at}` : '';
   // Crazy Deuces: five of a kind is the best hand there is.
   const five = hand?.variant === 'deuces' && Object.values(hand.result?.names ?? {}).some((n) => n.startsWith('Five of a kind')) ? `${hand.number}` : '';
   const reds = hand?.variant === 'redriver' && hand.board.length > 5 ? `${hand.number}:${hand.board.length}` : '';
   const seen = useRef<Record<string, string> | null>(null);
   useEffect(() => {
-    const now = { dice, kept, voting, reds, tally, busted, five };
+    const now = { dice, kept, reds, busted, five };
     const before = seen.current;
     seen.current = now;
     if (!before) return;
     const { hand, fast } = latest.current;
     if (dice && dice !== before.dice) playSound('dice');
     if (kept && kept !== before.kept) playSound('spook');
-    if (voting && voting !== before.voting) playSound('sting');
     if (reds && reds !== before.reds) {
       // One splash for every extra card, as each lands.
       const m = hand?.moment;
       const since = m ? toTableTime(Date.now(), fast) - m.at : 0;
       (m?.offsets?.slice(1) ?? [0]).forEach((o) => playSound('splash', Math.max(0, o - since)));
     }
-    if (tally && tally !== before.tally && hand?.moment) {
-      // A tick for every vote as it is read out.
-      const n = Object.keys(hand.votes ?? {}).length;
-      for (let i = 0; i < n; i++) playSound('tick', i * (hand.moment.step ?? 1100));
-    }
     if (busted && busted !== before.busted) playSound('fold');
     if (five && five !== before.five) playSound('pop', 400);
-  }, [dice, kept, voting, reds, tally, busted, five]);
+  }, [dice, kept, reds, busted, five]);
 
   // A tick for each of your last five seconds.
   const deadline = snapTurn(game, myId);

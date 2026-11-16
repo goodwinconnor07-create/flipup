@@ -129,16 +129,6 @@ Zooms: **mine** (your cards and box), **lower** (the bottom half), **hand** (you
 | 3 | Hit | hand | It counts twice | A card you hit plays in your poker hand too. |
 | 4 | Showdown | showdown | Two winners | Half the pot to the best hand, half to whoever's closest to 21. |
 
-## Imposter
-
-| # | Moment | Zoom | Title | Line |
-|---|---|---|---|---|
-| 1 | Deal | mine | Same cards | Everyone gets the same two cards, except one player. Nobody knows who. Maybe you. |
-| 2 | Your turn | seats | No folding | Nobody can fold. Watch who bets like they don't belong. |
-| 3 | Talk it over | showdown | Point a finger | After the river, point at who you think it is. The bots will too. |
-| 4 | Vote | vote | Vote | Everyone votes in secret. You can't vote for yourself. |
-| 5 | Reveal | showdown | The reveal | Catch the imposter and the rest share the pot. Miss, and they take it all. |
-
 ## Power Cards
 
 | # | Moment | Zoom | Title | Line |

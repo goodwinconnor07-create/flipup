@@ -1,19 +1,19 @@
 // How bots play the Hold'em variants. Plain Hold'em uses the full bot brain (botPlay.ts); a variant changes what a
 // hand is worth (wild deuces, three rivers, a ghost to beat...), so here a bot plays out the rest of the hand many
 // times by the table's own rules to see how often it wins, then bets, calls or folds against the price, in its
-// own style. In Imposter the cards don't matter, so it plays to blend in.
+// own style.
 //
 // On top of the run-outs, each bot knows a little about how its game is won (`variantDecide()`): players who bet
 // and raise hold better than random cards (`rangeDraws()`), Pot-limit Ghost and its rolling pot, the wild deuces,
-// Hit Me's bust risk, Crazy Pineapple's draws and Imposter's crowd (nobody, bots included, knows the imposter). `lab.legacy` plays a seat the old way,
+// Hit Me's bust risk, Crazy Pineapple's draws. `lab.legacy` plays a seat the old way,
 // for scripts/variantLab.ts only.
 
 import type { BotThought } from './botPlay';
 import { score, toInt } from './botEval';
 import { playerStyle } from './botStyles';
-import { fullDeck, hashString, isRed, seededRng, type Card } from './cards';
+import { fullDeck, isRed, type Card } from './cards';
 import { potTotal } from './holdem';
-import { crowdAggression, recalledRemoved } from './botGames';
+import { recalledRemoved } from './botGames';
 import { options } from './selectors';
 import type { Game, Hand, Seat } from './types';
 import { boardSize, count21, handSets, holeCountAt, isWild, keepTwoQuick, startValue, variantOf, wildHand, type Variant, cardsToCome } from './variants';
@@ -226,7 +226,6 @@ export function variantDecide(game: Game, hand: Hand, seat: Seat, rng: () => num
   const v = variantOf(game);
   if (v === 'holdem') return null;
   const legacy = lab.legacy.has(seat.playerId);
-  if (v === 'imposter' && hand.imposter) return blendIn(game, hand, seat, rng);
   return byEquity(game, hand, seat, rng, !legacy);
 }
 
@@ -280,7 +279,7 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
   // strong when it's well ahead of its share. After the flop a hand that hit bets: the bar drops a little for each
   // extra player, since a pair or better that leads the field is worth charging. Without this the mini games
   // checked down tiny pots.
-  const smartBar = smart && v !== 'imposter';
+  const smartBar = smart;
   const strong = smartBar
     ? preflop
       ? eq > fair * 1.7 - style.pre.aggro * 0.15 * fair
@@ -343,47 +342,3 @@ function byEquity(game: Game, hand: Hand, seat: Seat, rng: () => number, smart =
   return done({ move: 'call' });
 }
 
-/**
- * Imposter: the cards don't decide the pot, nobody can fold, and nobody knows who the imposter is (the bot included: it
- * never reads `hand.imposter`). Everyone but the imposter holds the same two cards, so a bot plays its own cards honestly
- * (a good hand bets small, a bad one checks and calls) and the table's moves tell who is holding something different. A
- * bot whose own hand disagrees with what the whole table is doing follows the table instead, since it may be the odd one.
- * Bets stay small, so nobody builds a huge pot (there is no folding to get out of one).
- */
-function blendIn(game: Game, hand: Hand, seat: Seat, rng: () => number): BotThought {
-  const player = game.players.find((p) => p.id === seat.playerId);
-  const o = options(game, hand, seat);
-  const pot = potTotal(hand);
-  const stack = player?.stack ?? 0;
-  const thinkMs = think(game, seat, rng, Math.min(1, o.toCall / Math.max(1, stack)));
-  const opponents = Math.max(1, hand.seats.filter((s) => s.playerId !== seat.playerId && !s.folded).length);
-  const fair = 1 / (opponents + 1);
-  // It plays its own two cards honestly. Everyone but the imposter holds the same pair, so they all read the board the same
-  // way (the estimate and the dice behind it are seeded by the hand, not by the bot) and bet alike; the one holding
-  // different cards drifts away from them, which is what the table looks for.
-  const shared = seededRng(hashString(`imposter:${hand.number}:${hand.street}:${hand.board.join('')}`));
-  const eq = variantEquity(game, hand, seat, shared, 80);
-  const wish = eq > fair * 1.6 ? 0.8 : eq > fair * 1.1 ? 0.4 : 0.05;
-  // But if what it would do is far from what the table is doing, it may be the one holding the odd cards. It follows the crowd.
-  const crowd = crowdAggression(hand, seat.playerId);
-  const moves = (hand.actions ?? []).filter((a) => a.playerId !== seat.playerId && a.street === hand.street).length;
-  const follow = moves >= 2 ? Math.min(0.35, Math.abs(wish - crowd) * 0.8) : 0;
-  const chance = (1 - follow) * wish + follow * crowd;
-  // Same roll for everyone on a street (so alike hands act alike), with a little of its own.
-  const roll = rng() < 0.12 ? rng() : seededRng(hashString(`imposter-roll:${hand.number}:${hand.street}`))();
-  const frac = wish >= 0.6 ? 0.5 : 0.33;
-  const bet = hand.currentBet + Math.max(game.settings.bigBlind, pot * frac);
-  const raises = (hand.actions ?? []).filter((a) => a.street === hand.street && !a.outOfTurn && ['bet', 'raise', 'allin'].includes(a.move)).length;
-  // Nobody can fold here, so a raised pot only grows: it bets into a pot it can afford, raises a bet only with a hand that
-  // likes it (and cheaply, twice a street at most), and never goes in for its whole stack.
-  const affordable = bet - seat.bet <= stack * 0.35;
-  if (o.canRaise && affordable && o.toCall === 0 && roll < chance) {
-    const to = Math.round(Math.max(o.minTo, Math.min(o.maxTo, bet)));
-    if (to < o.maxTo) return { move: { move: o.word === 'Bet' ? 'bet' : 'raise', to }, thinkMs };
-  }
-  if (o.canRaise && affordable && o.toCall > 0 && raises < 2 && wish >= 0.8 && o.toCall <= pot * 0.45 && seededRng(hashString(`imposter-raise:${hand.number}:${hand.street}`))() < 0.55) {
-    const to = Math.round(Math.max(o.minTo, Math.min(o.maxTo, bet)));
-    if (to < o.maxTo) return { move: { move: 'raise', to }, thinkMs };
-  }
-  return { move: o.canCheck ? { move: 'check' } : { move: 'call' }, thinkMs };
-}

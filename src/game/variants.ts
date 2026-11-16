@@ -2,7 +2,6 @@
 // (pot limit at a Ghost table); what changes is how many cards you get, what's wild and how a hand is scored.
 
 import { score, toInt } from './botEval';
-import { crowdDeviation } from './botGames';
 import { fullDeck, rankLabel, rankName, rankOf, suitOf, SUITS, type Card } from './cards';
 import { describeHand, scoreHand, type HandValue } from './evaluate';
 import type { Game, Hand, Seat } from './types';
@@ -16,7 +15,6 @@ export type Variant =
   | 'pittsburgh'
   | 'dice'
   | 'redriver'
-  | 'imposter'
   | 'crucifix'
   | 'circle'
   | 'memory'
@@ -111,20 +109,6 @@ export const VARIANTS: VariantInfo[] = [
       'If the river is red (a heart or a diamond), another card is dealt, and another, until a black card (a spade or a club) comes.',
       'Every card on the board counts: make your best five from your two and all of them.',
       "Then there's one round of river betting.",
-    ],
-  },
-  {
-    id: 'imposter',
-    name: 'Imposter',
-    emoji: '🕵️',
-    tagline: 'Everyone has the same hand but one. Find the imposter.',
-    rules: [
-      "Everyone gets the same two cards, except the imposter, who gets a different hand. Nobody is told who it is, not even the imposter: you might be it.",
-      "How strong your cards are doesn't matter, and nobody can fold: everyone plays every hand to the end. Bet, raise and call to read the table, and try not to stand out yourself.",
-      "Everyone antes a big blind each hand, so there's money in the middle from the start.",
-      'After the river everyone votes for who they think the imposter is.',
-      'If the most votes go to the imposter, the innocent players still in split the pot. If not (a tie counts as not), the imposter takes it all.',
-      "Needs three or more players: with two, the hand is plain Hold'em.",
     ],
   },
   {
@@ -251,12 +235,6 @@ export const cardsToCome = (street: 'preflop' | 'flop' | 'turn' | 'river'): numb
 export const boardSize = (v: Variant) => streetCards(v, 'flop') + streetCards(v, 'turn') + streetCards(v, 'river');
 /** Bets are capped at the size of the pot. */
 export const potLimit = (v: Variant) => v === 'ghost';
-/** Win odds can be worked out for the all-in run-out (only plain Hold'em: the others score hands differently). */
-export const showsOdds = (v: Variant) => v !== 'imposter';
-/** Everyone puts in this many big blinds before the blinds (dead money in the middle). */
-export const anteBigBlinds = (v: Variant) => (v === 'imposter' ? 1 : 0);
-/** Imposter needs three players to be a guessing game. */
-export const IMPOSTER_MIN = 3;
 
 // ── Wild deuces ─────────────────────────────────────────────────────────────
 
@@ -483,40 +461,3 @@ export function botView(game: Game, hand: Hand, seat: Seat): { game: Game; hand:
   return { game: { ...game, hand: view }, hand: view, seat: mine };
 }
 
-// ── Imposter votes ──────────────────────────────────────────────────────────
-
-/** How pushy each player has been this hand: bets, raises and all-ins count, calls a little. */
-function pushiness(hand: Hand): Map<string, number> {
-  const score = new Map(hand.seats.map((s) => [s.playerId, 0]));
-  for (const a of hand.actions ?? [])
-    score.set(
-      a.playerId,
-      (score.get(a.playerId) ?? 0) + (a.move === 'bet' || a.move === 'raise' || a.move === 'allin' ? 2 : a.move === 'call' ? 1 : 0),
-    );
-  return score;
-}
-
-/** How many fingers point at each player (from everyone but `skip`). */
-function fingers(hand: Hand, skip: string): Map<string, number> {
-  const out = new Map<string, number>();
-  for (const [from, at] of Object.entries(hand.points ?? {})) if (from !== skip) out.set(at, (out.get(at) ?? 0) + 1);
-  return out;
-}
-
-/**
- * A bot's vote. Nobody knows their own role, so a bot plays the odds that it's innocent: the innocents all hold the
- * same cards and should play alike, so it suspects whoever played least like the rest of the table (their pushiness
- * against the middle of everyone else's), and listens a little to where the table is pointing. It never reads
- * `hand.imposter`: a person in its seat couldn't.
- */
-export function botVote(hand: Hand, botId: string): string | null {
-  const others = hand.seats.map((s) => s.playerId).filter((id) => id !== botId);
-  if (!others.length) return null;
-  // Everyone but the imposter holds the same cards, so they act alike: the one who acts least like the others is the
-  // odd one out. The table pointing somewhere moves a bot a little too.
-  const deviation = crowdDeviation(hand);
-  const push = pushiness(hand);
-  const crowd = fingers(hand, botId);
-  const odd = (id: string) => (deviation.get(id) ?? 0) * 2 + (crowd.get(id) ?? 0) * 0.6 + (push.get(id) ?? 0) * 0.01;
-  return others.reduce((x, y) => (odd(y) > odd(x) ? y : x));
-}

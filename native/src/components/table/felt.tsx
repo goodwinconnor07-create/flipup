@@ -15,8 +15,6 @@ import {
   explainHand,
   momentCaption,
   pot,
-  tallyOrder,
-  tallyShown,
   visibleBoard,
   wildText,
   rankLabel,
@@ -66,7 +64,7 @@ export function useHighlight(game: Game, me: Player | undefined) {
   const mySeat = seatFor(hand, me?.id);
   const variant = variantOf(game);
   return useMemo(() => {
-    if (!hand || hand.board.length < 3 || hand.variant === 'imposter') return null;
+    if (!hand || hand.board.length < 3) return null;
     if (hand.result?.showdown) {
       // A split pot lights every winner's five, so nobody's winning hand is left greyed out.
       const wins = (hand.result.pots[0]?.winners ?? [])
@@ -106,10 +104,8 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
   const felt = theme?.felt ?? look.felt;
   const rail = theme?.rail ?? RAILS.find((r) => r.id === look.rail)!.colors;
   const info = variantInfo(variant);
-  // Imposter: nobody is told their role (it could be you), so the pill just asks the question.
-  const role = hand?.variant === 'imposter' && hand.imposter && mySeat && !hand.result ? 'unknown' : null;
   const myValue =
-    mySeat && !mySeat.folded && mySeat.cards.length && hand?.variant !== 'imposter'
+    mySeat && !mySeat.folded && mySeat.cards.length
       ? bestHand(variant, mySeat.cards, hand?.board ?? [])
       : null;
   const named = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
@@ -156,7 +152,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
     >
       <TurnTimer
         game={game}
-        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2) || (!!hand.voting && !hand.votes?.[me.id]))}
+        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2))}
       />
       <View
         style={{
@@ -229,7 +225,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
             </View>
           )}
         </View>
-        {/* The pot always shows whole: a long game pill ("Imposter? Could be you") gives way and is cut short instead. */}
+        {/* The pot always shows whole: a long game pill (a power's name, a roll) gives way and is cut short instead. */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, minHeight: 28, maxWidth: '100%', paddingHorizontal: spacing.md }}>
           {variant !== 'holdem' && (
             <Pressable
@@ -241,8 +237,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
               onPress={() => router.push({ pathname: '/game/[id]', params: { id: variant, rules: '1' } })}
             >
               <VariantPill
-                text={role === 'unknown' ? '🕵️ Imposter? Could be you' : hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : (powerPill(hand, width < 350) ?? `${info.emoji} ${info.name}`)}
-                hot={!!role}
+                text={hand?.dice ? `🎲 Rolled ${hand.dice.roll}` : (powerPill(hand, width < 350) ?? `${info.emoji} ${info.name}`)}
               />
             </Pressable>
           )}
@@ -473,7 +468,7 @@ function PotPill({ value, bigBlind }: { value: number; bigBlind: number }) {
   );
 }
 
-/** The game's name (or your Imposter role), a tap away from how it plays. */
+/** The game's name, a tap away from how it plays. */
 function VariantPill({ text, hot }: { text: string; hot?: boolean }) {
   const c = usePlainColors();
   const dark = useColorScheme() === 'dark';
@@ -516,20 +511,7 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   let title: string;
   let how: string | undefined;
   let face: string;
-  if (result.imposter) {
-    // Imposter: who it was, and whether the table found them.
-    const imp = game.players.find((p) => p.id === result.imposter!.id);
-    const tally = Object.values(result.imposter.votes).filter((v) => v === result.imposter!.id).length;
-    const total = Object.keys(result.imposter.votes).length;
-    const all = Object.values(result.won).reduce((a, b) => a + b, 0);
-    title = result.imposter.caught
-      ? `Caught! Innocents split ${chips(all)}`
-      : winners.length === 1 && winners[0].id === result.imposter.id
-        ? `${imp?.name ?? 'Imposter'} got away: ${chips(all)}`
-        : `Innocents split ${chips(all)}`;
-    how = `Imposter: ${imp?.name ?? '?'} · ${tally} of ${total} votes`;
-    face = '🕵️';
-  } else if (result.blackjack && !(result.blackjack.poker[0]?.length === 1 && result.blackjack.winners[0]?.length === 1 && result.blackjack.poker[0][0] === result.blackjack.winners[0][0])) {
+  if (result.blackjack && !(result.blackjack.poker[0]?.length === 1 && result.blackjack.winners[0]?.length === 1 && result.blackjack.poker[0][0] === result.blackjack.winners[0][0])) {
     return <HalvesBanner game={game} me={me} />;
   } else if (result.blackjack) {
     // Hit Me: who took the poker half and who took the 21 half of the main pot.
@@ -627,11 +609,11 @@ function momentLine(game: Game, now: number): boolean {
   const hand = game.hand;
   const m = hand?.moment;
   if (!hand || !m || hand.result || now >= m.until) return false;
-  if (m.kind === 'bust' || m.kind === 'discards' || m.kind === 'tally') return true;
+  if (m.kind === 'bust' || m.kind === 'discards') return true;
   return !!momentCaption(variantOf(game), hand, now);
 }
 
-/** The moment in words: a bust, the thrown-away cards turned up together, the vote count so far, or a caption. */
+/** The moment in words: a bust, the thrown-away cards turned up together, or a caption. */
 function MomentLine({ game, now, reduce, meId }: { game: Game; now: number; reduce: boolean; meId?: string }) {
   const hand = game.hand!;
   const m = hand.moment!;
@@ -657,11 +639,6 @@ function MomentLine({ game, now, reduce, meId }: { game: Game; now: number; redu
         ))}
       </View>
     );
-  }
-  if (m.kind === 'tally') {
-    const order = tallyOrder(hand);
-    const shown = tallyShown(hand, order, now);
-    return <HandPill text={`🗳 Votes read out: ${Math.min(shown, order.length)} of ${order.length}`} />;
   }
   const text = momentCaption(variantOf(game), hand, now);
   return (

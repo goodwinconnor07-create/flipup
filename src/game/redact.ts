@@ -46,10 +46,6 @@ export function redactForDevice(game: Game, deviceId: string): Game {
       ghost: hand.result?.showdown ? hand.ghost : undefined,
       // Memory Poker: the cards taken out were shown before the deal; during the hand players have to remember them.
       removed: hand.result ? hand.removed : undefined,
-      // Imposter: nobody is told who it is, not even the imposter, until the hand is over; votes stay secret until then too.
-      // Before then it's '?': phones still know it's an Imposter hand (no Fold button), just not whose.
-      imposter: hand.result ? hand.imposter : hand.imposter ? '?' : undefined,
-      votes: hand.votes && (hand.result || hand.tally ? hand.votes : Object.fromEntries(Object.keys(hand.votes).map((k) => [k, mine.has(k) ? hand.votes![k] : '']))),
       // Crazy Pineapple: the cards thrown away are turned up together, once everyone has chosen.
       discards: hand.discards && (hand.discarding ? Object.fromEntries(Object.entries(hand.discards).filter(([k]) => mine.has(k))) : hand.discards),
       // Power Cards: other players' powers stay secret until they're played (or the hand is over), and what a Peek or

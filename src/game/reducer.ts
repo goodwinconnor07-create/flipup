@@ -17,15 +17,10 @@ import {
   botsOnly,
   canDeal,
   cardsText,
-  castVote,
   dealNextStreet,
   showdown,
   endsAtOnce,
   discardCard,
-  endVote,
-  endDiscussion,
-  endTally,
-  pointAt,
   resumeBetting,
   endDiscards,
   foldOutOfTurn,
@@ -780,22 +775,6 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
       return error ? fail(error) : done();
     }
 
-    case 'point': {
-      const hand = game.hand;
-      if (!me) return fail("You're not at this table.");
-      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
-      const error = pointAt(game, me.id, action.playerId, ctx);
-      return error ? fail(error) : done();
-    }
-
-    case 'vote': {
-      const hand = game.hand;
-      if (!me) return fail("You're not at this table.");
-      if (!hand || hand.result || hand.number !== action.hand) return fail('That hand is over.');
-      const error = castVote(game, me.id, action.playerId, ctx);
-      return error ? fail(error) : done();
-    }
-
     case 'next': {
       const hand = game.hand;
       if (!me || game.status !== 'playing') return done(false);
@@ -1019,20 +998,6 @@ function tick(game: Game, ctx: ActionContext): boolean {
     // Crazy Pineapple: time's up for throwing a card away.
     if (hand.discarding) {
       endDiscards(game, ctx);
-      return true;
-    }
-    // Imposter: time's up for voting.
-    if (hand.voting) {
-      endVote(game, ctx);
-      return true;
-    }
-    // Imposter: the talking is over, or the votes have all been read out.
-    if (hand.discussing) {
-      endDiscussion(game, ctx);
-      return true;
-    }
-    if (hand.tally) {
-      endTally(game, ctx);
       return true;
     }
     // A moment (a die, a red river...) is over: betting starts.

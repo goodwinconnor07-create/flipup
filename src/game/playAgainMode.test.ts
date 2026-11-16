@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { actionNeedsPremium, freeThisWeek, applyAction, createTable, DEFAULT_SETTINGS, parseAction, seededRng, type Game } from './index';
 
-/** A week whose free game isn't Imposter, so the checks below are about Premium, not the weekly free game. */
-const NOT_IMPOSTER_WEEK = [0, 1, 2].map((w) => Date.UTC(2026, 0, 5) + w * 7 * 86_400_000).find((t) => freeThisWeek(t) !== 'imposter')!;
+/** A week whose free game isn't Haunted Pot, so the checks below are about Premium, not the weekly free game. */
+const NOT_GHOST_WEEK = [0, 1, 2].map((w) => Date.UTC(2026, 0, 5) + w * 7 * 86_400_000).find((t) => freeThisWeek(t) !== 'ghost')!;
 
 const HOST = 'host-device-secret-0001';
 const GUEST = 'guest-device-secret-002';
@@ -35,7 +35,7 @@ describe('Play again in another mode', () => {
 
   it("ignores a guest's mode: a guest only says they're in", () => {
     const g = endedTable();
-    const r = applyAction(g, { type: 'playAgain', variant: 'imposter' }, { deviceId: GUEST, now: 2, rng: seededRng(3) });
+    const r = applyAction(g, { type: 'playAgain', variant: 'ghost' }, { deviceId: GUEST, now: 2, rng: seededRng(3) });
     expect(r.ok && r.game.status).toBe('ended');
     expect(r.ok && r.game.settings.variant).toBe('holdem');
   });
@@ -50,8 +50,8 @@ describe('Play again in another mode', () => {
 
 describe('opening a Premium game after the table is made', () => {
   it('needs Premium whether the host changes the mode or plays again in one', () => {
-    expect(actionNeedsPremium({ type: 'playAgain', variant: 'imposter' }, NOT_IMPOSTER_WEEK)).toBe(true);
-    expect(actionNeedsPremium({ type: 'settings', settings: { variant: 'imposter' } }, NOT_IMPOSTER_WEEK)).toBe(true);
+    expect(actionNeedsPremium({ type: 'playAgain', variant: 'ghost' }, NOT_GHOST_WEEK)).toBe(true);
+    expect(actionNeedsPremium({ type: 'settings', settings: { variant: 'ghost' } }, NOT_GHOST_WEEK)).toBe(true);
   });
   it('does not need it for the free mode or when no mode changes', () => {
     expect(actionNeedsPremium({ type: 'playAgain', variant: 'holdem' })).toBe(false);

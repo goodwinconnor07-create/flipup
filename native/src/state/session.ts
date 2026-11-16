@@ -23,6 +23,7 @@ import {
   type Settings,
   FREE_BOT_NAMES,
   isFreeBot,
+  isVariant,
 } from '@/engine';
 
 import { createOnlineTable, PremiumRequiredError } from './api';
@@ -606,7 +607,10 @@ try {
   const saved = JSON.parse(localStorage.getItem(KEY) ?? 'null') as Session | null;
   const p = JSON.parse(localStorage.getItem('flipup.profile') ?? 'null') as { name?: string; emoji?: string } | null;
   profile = { name: p?.name ?? '', emoji: p?.emoji ?? '' };
-  if (saved?.mode === 'local' && saved.game) {
+  // A table of a game that has since left the app (Imposter, say) can't be played on: it's dropped.
+  const known = !saved?.game || ![saved.game.settings?.variant, saved.game.hand?.variant].some((v) => v && !isVariant(v));
+  if (!known) save(KEY, null);
+  else if (saved?.mode === 'local' && saved.game) {
     restoring = true;
     try {
       set(saved);

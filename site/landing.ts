@@ -15,7 +15,6 @@ const GAMES: Record<string, string> = {
   pittsburgh: 'Pittsburgh',
   dice: 'Die on the River',
   redriver: 'Red River',
-  imposter: 'Imposter',
   crucifix: 'Crucifix',
   circle: 'Round the Clock',
   memory: 'Memory Poker',

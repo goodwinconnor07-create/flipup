@@ -22,9 +22,8 @@ describe('table setup rules', () => {
     expect(withStack({ ...DEFAULT_SETTINGS, smallBlind: 1, bigBlind: 2 }, 10_000)).toMatchObject({ smallBlind: 100, bigBlind: 200 });
   });
 
-  it('Ghost goes deep and Imposter plays for bigger blinds', () => {
+  it('Ghost goes deep', () => {
     expect(withVariant(DEFAULT_SETTINGS, 'ghost')).toMatchObject({ variant: 'ghost', startingStack: 2000, smallBlind: 10, bigBlind: 20 });
-    expect(withVariant(DEFAULT_SETTINGS, 'imposter')).toMatchObject({ variant: 'imposter', bigBlind: 20 });
     expect(withVariant(DEFAULT_SETTINGS, 'deuces')).toEqual({ ...DEFAULT_SETTINGS, variant: 'deuces' });
   });
 });

@@ -155,13 +155,6 @@ const STEPS: Record<Variant, Step[]> = {
     step('played', 'showdown', 'Everyone sees it', 'The table stops while a power is played, so everyone knows who used what.'),
     step('showdown', 'showdown', 'Showdown', 'Best five still wins. A Shield or a Bounty can still move some chips.'),
   ],
-  imposter: [
-    step('cards', 'mine', 'Same cards', 'Everyone gets the same two cards, except one player. Nobody knows who. Maybe you.'),
-    step('yourturn', 'seats', 'No folding', "Nobody can fold. Watch who bets like they don't belong."),
-    step('discuss', 'showdown', 'Point a finger', 'After the river, point at who you think it is. The bots will too.'),
-    step('vote', 'vote', 'Vote', "Everyone votes in secret. You can't vote for yourself."),
-    step('reveal', 'showdown', 'The reveal', 'Catch the imposter and the rest share the pot. Miss, and they take it all.'),
-  ],
 };
 
 /**

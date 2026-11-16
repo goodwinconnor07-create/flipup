@@ -72,8 +72,8 @@ export function noteHand(game: Game, myId: string): void {
     const mine = result.pots.filter((p) => p.winners.includes(myId)).reduce((sum, p) => sum + Math.floor(p.amount / p.winners.length), 0);
     const mineBB = game.settings.bigBlind > 0 ? Math.round((mine / game.settings.bigBlind) * 10) / 10 : 0;
     let best = r.best;
-    // Your best hand: only one you made to the river and showed down (Imposter's showdowns are votes, not hands).
-    if (result.showdown && !seat.folded && hand.variant !== 'imposter' && hand.board.length >= 5) {
+    // Your best hand: only one you made to the river and showed down.
+    if (result.showdown && !seat.folded && hand.board.length >= 5) {
       try {
         const v = bestHand(hand.variant ?? 'holdem', seat.cards, hand.board);
         if (!best || v.score > best.score) best = { score: v.score, name: v.detail, cards: v.best, variant: hand.variant ?? 'holdem' };

@@ -1,5 +1,5 @@
 // Moments: the beats that make the mini games feel different from plain Hold'em. A die rolls, a red river keeps
-// dealing, the ghost turns over its cards, the table argues about the imposter. The engine sets `hand.moment` with
+// dealing, the ghost turns over its cards, The engine sets `hand.moment` with
 // the table times, holds the betting until it is over, and the screens play it from the clock (`visibleBoard()`,
 // `momentCaption()`), so every phone sees the same thing at the same time.
 
@@ -29,14 +29,6 @@ export const MOMENT_TIMING = {
   slides: 1600,
   /** Onion: the peeled cards turn over together and stay up this long. */
   peels: 2200,
-  /** Imposter: the table talks it over this long before the vote (or less when everyone has pointed). */
-  discuss: 14000,
-  /** Only one person at the table (the rest are bots): nobody to talk it over with, so a short beat. */
-  discussSolo: 6000,
-  discussMin: 5000,
-  /** Imposter: each vote is read out, then the imposter is named. */
-  tallyStep: 1100,
-  tallyEnd: 2600,
   /** Hit Me: a bust is shown for this long before the next player acts. */
   bust: 2000,
   /** Power Cards: the table stops this long when a power is played, so everyone sees it. */
@@ -102,8 +94,6 @@ export function momentCaption(variant: Variant, hand: Hand, now: number): string
       return '🌉 Three rivers. Your hand uses one';
     case 'suspense':
       return variant === 'ghost' ? '👻 Can anyone beat the ghost?' : variant === 'bjholdem' ? '♠️ Best hand and closest to 21…' : '🤪 Working out the wild cards…';
-    case 'discuss':
-      return '🕵️ Who is the imposter? Point a finger';
     case 'bust':
       return null;
     case 'discards':
@@ -114,13 +104,6 @@ export function momentCaption(variant: Variant, hand: Hand, now: number): string
     default:
       return null;
   }
-}
-
-/** Imposter's tally: how many votes have been read out by now, and in what order. */
-export function tallyShown(hand: Hand, order: string[], now: number): number {
-  const m = hand.moment;
-  if (!hand.tally || !m || m.kind !== 'tally') return order.length;
-  return Math.min(order.length, Math.max(0, Math.floor((now - m.at) / (m.step ?? T.tallyStep)) + 1));
 }
 
 // ── Which cards make a hand, in words ────────────────────────────────────────
@@ -187,15 +170,3 @@ export function wildText(e: HandExplain): string {
   return e.wilds.map((w) => `${rankLabel(w.card)}${SYM[suitOf(w.card)]} = ${w.as}`).join(', ');
 }
 
-/** Imposter's tally: who voted, in the order the votes are read out (seat order from the button). */
-export function tallyOrder(hand: Hand): string[] {
-  const voted = hand.votes ?? {};
-  const n = hand.seats.length;
-  const from = Math.max(0, hand.seats.findIndex((s) => s.playerId === hand.buttonId));
-  const out: string[] = [];
-  for (let i = 1; i <= n; i++) {
-    const id = hand.seats[(from + i) % n].playerId;
-    if (id in voted) out.push(id);
-  }
-  return out;
-}

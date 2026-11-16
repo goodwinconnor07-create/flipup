@@ -38,7 +38,6 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   memory: look('#5b63e6', '#3c42ad', '#737aec', 'Twenty cards gone. Do you remember which?', 'Remember the 20', 1.08),
   beanstalk: look('#4db5ee', '#2b83b8', '#6ac3f2', 'Your hand keeps growing. How high can it climb?', 'Your hand grows', 1.1),
   bjholdem: look('#2a2e3d', '#191c27', '#3a3f52', 'Hit or stand. Half for the best hand, half for 21.', 'Hit, then bet', 0.97),
-  imposter: look('#6a5f8f', '#4a4169', '#7f74a3', 'Trust nobody. Watch the bets.', 'Find the imposter', 0.88),
   power: look('#d99a00', '#9e6f00', '#e8b02a', 'Everyone has a secret power. Pick your moment.', 'Secret powers', 1.08),
 };
 
@@ -390,15 +389,6 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     { kind: 'glyph', x: 75, y: 81, text: '21', size: 17, bold: true, ink: INK },
   ],
   // Three cards that look the same, and the one that's watching you.
-  imposter: () => [
-    card({ x: 26, y: 53, r: -15, s: 0.82, back: true, deal: 0 }),
-    card({ x: 74, y: 53, r: 15, s: 0.82, back: true, deal: 1 }),
-    card({ x: 50, y: 48, s: 1, back: true, backFill: RED, deal: 2 }),
-    flat(rr(31, 33, 38, 22, 5), RED),
-    ink(`${oval(41.5, 43, 6.6, 7.6)}${oval(58.5, 43, 6.6, 7.6)}`, WHITE, { noShadow: true, sw: 2.4 }),
-    flat(`${oval(44, 44.5, 3)}${oval(61, 44.5, 3)}`, INK),
-    { kind: 'path', d: 'M34 33.5L47 36.5M66 33.5L53 36.5', stroke: INK, sw: 2.8 },
-  ],
   // Your hand, and the power card dealt with it: a midnight card (the table's felt) with the rail's electric frame and
   // a gold bolt. Laid out like Hold'em's two cards so it reads as one of the family.
   power: () => [
@@ -418,7 +408,7 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
 };
 
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦' };
+const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', power: '♦' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

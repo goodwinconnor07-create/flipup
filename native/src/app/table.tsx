@@ -27,11 +27,11 @@ import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
-import { Discard, Discuss, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
+import { Discard } from '@/components/table/variant-steps';
 import { ThemedText, TightText } from '@/components/themed-text';
 import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
-import { myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
+import { myPlayer, runoutOdds, options, seatFor, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { tableShare } from '@/state/table-share';
 import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
@@ -423,8 +423,8 @@ function EmptyTableCountdown({ game, emptyAt, onLeave }: { game: Game; emptyAt: 
  * Win and tie chances, only during an all-in run-out when every live hand is face up, played out by the game's own
  * rules (`runoutOdds()`). Haunted Pot leaves the ghost out until it's turned over at the showdown.
  */
-function useOdds(hand: Hand | null, ok: boolean, variant: Variant): Map<string, { win: number; tie: number }> | null {
-  const live = hand?.runout && ok ? hand.seats.filter((s) => !s.folded && s.cards.length >= 2) : [];
+function useOdds(hand: Hand | null, variant: Variant): Map<string, { win: number; tie: number }> | null {
+  const live = hand?.runout ? hand.seats.filter((s) => !s.folded && s.cards.length >= 2) : [];
   const ghost = hand?.ghost?.length ? hand.ghost : undefined;
   const key = hand?.runout ? `${variant}/${live.map((s) => s.cards.join('')).join('|')}/${hand.board.join('')}/${ghost?.join('') ?? ''}` : '';
   return useMemo(() => {
@@ -456,17 +456,6 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   useEffect(() => {
     if (rulesCard) markRulesSeen(rulesCard);
   }, [rulesCard]);
-  // Imposter: as each hand is dealt, a reminder that nobody (you included) knows who the imposter is.
-  const role = hand?.variant === 'imposter' && hand.imposter && !hand.result && mySeat && me ? 'unknown' : null;
-  const roleKey = role && hand ? `${game.id}:${hand.number}:${role}` : '';
-  const [dismissedRole, setDismissedRole] = useState('');
-  const flash = roleKey && roleKey !== dismissedRole ? role : null;
-  useEffect(() => {
-    if (!roleKey) return;
-    const t = setTimeout(() => setDismissedRole(roleKey), 2800);
-    return () => clearTimeout(t);
-  }, [roleKey, role]);
-
   // A buzz when it's your turn; the raise panel closes when it isn't.
   const turnKey = myTurn ? `${game.id}-${hand!.number}-${hand!.seq}` : '';
   const raising = !!turnKey && raiseTurn === turnKey;
@@ -516,12 +505,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [available, setAvailable] = useState(0);
   const compact = available > 0 && available < 700;
   // Reserve the action area and hole cards before sizing the felt; a board that can't fit shrinks to the room left.
-  const pointing = variantOf(game) === 'imposter';
   // Measured, not guessed: the room the seats and the felt share, less the seat row. On a 320pt phone (an SE with
   // Display Zoom) the old fixed reserve left the felt at its 60% floor; now it gets exactly what's there.
   const [upper, setUpper] = useState({ room: 0, seats: 0 });
   const narrow = width < 350;
-  const guess = available > 0 ? available - (compact ? 260 : 310) - 180 - (pointing ? 44 : 0) : undefined;
+  const guess = available > 0 ? available - (compact ? 260 : 310) - 180 : undefined;
   const feltBudget = upper.room > 0 && upper.seats > 0 ? upper.room - upper.seats - (compact ? 8 : 24) - (narrow ? 4 : 20) : guess;
 
   // Table talk (only from players who can be seen), the seats in view, and the sounds.
@@ -533,9 +521,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
     speakerOk.current = slots.canShow;
   }, [slots.canShow]);
   useTableSounds(game, me?.id);
-  const odds = useOdds(hand, showsOdds(variantOf(game)), variantOf(game));
+  const odds = useOdds(hand, variantOf(game));
   // At a showdown the winning five lift and glow and the rest grey out. Never while the hand is being played.
-  const showPointing = pointing && !!hand && !hand.result && !hand.voting && !hand.tally && !hand.discussing && !!mySeat;
   const highlight = useHighlight(game, me);
   const lit = new Set(highlight?.best ?? []);
   const showdown = !!hand?.result?.showdown && !!highlight;
@@ -545,22 +532,6 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   return (
     <WildDeuces.Provider value={variantOf(game) === 'deuces'}>
     <View style={{ flex: 1 }} onLayout={(e) => setAvailable(e.nativeEvent.layout.height)}>
-      {flash && (
-        <Animated.View
-          pointerEvents="none"
-          entering={FadeIn}
-          exiting={FadeOut}
-          style={{ position: 'absolute', top: '30%', left: 0, right: 0, zIndex: 20, alignItems: 'center' }}
-        >
-          <View style={{ paddingHorizontal: 22, paddingVertical: 14, borderRadius: 22, borderCurve: 'continuous', backgroundColor: 'rgba(40,40,60,0.94)', alignItems: 'center', gap: 2 }}>
-            <Text style={{ fontSize: 34 }}>🕵️</Text>
-            <Text style={{ color: '#ffffff', fontSize: 20, fontWeight: '800' }}>One of you is the imposter</Text>
-            <Text style={{ color: 'rgba(255,255,255,0.85)', fontSize: 14, fontWeight: '600', textAlign: 'center' }}>
-              {"Nobody knows who. It could be you. Don't stand out."}
-            </Text>
-          </View>
-        </Animated.View>
-      )}
       {/* The table is locked: it never scrolls or bounces (the felt shrinks to fit instead, see FeltOval). */}
       <View
         onLayout={(e) => {
@@ -587,15 +558,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
       </View>
       <View style={{ gap: 4, paddingTop: 4 }}>
         <View style={{ paddingHorizontal: spacing.md, minHeight: narrow ? 96 : 112, justifyContent: 'flex-end' }}>
-          {/* Imposter: point a finger at someone while the betting goes on. */}
-          {showPointing && me && <SuspectBar game={game} me={me} />}
-          {hand?.tally ? (
-            <Tally game={game} />
-          ) : hand?.discussing && mySeat && me ? (
-            <Discuss game={game} me={me} />
-          ) : hand?.voting && mySeat && me ? (
-            <Vote game={game} me={me} />
-          ) : hand?.discarding && mySeat && !mySeat.folded ? (
+          {hand?.discarding && mySeat && !mySeat.folded ? (
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />
 
           ) : (

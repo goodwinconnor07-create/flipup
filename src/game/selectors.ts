@@ -15,7 +15,6 @@ export interface Options {
   maxTo: number;
   /** Bet (nothing to match yet) or raise. */
   word: 'Bet' | 'Raise';
-  /** False in Imposter, where nobody folds. */
   canFold: boolean;
   /** Hit Me: on the flop they can take another card before moving. */
   canHit: boolean;
@@ -39,7 +38,7 @@ export function options(game: Game, hand: Hand, seat: Seat): Options {
     minTo,
     maxTo,
     word: hand.currentBet > 0 ? 'Raise' : 'Bet',
-    canFold: !hand.imposter,
+    canFold: true,
     canHit: canHit(game, hand, seat),
     power: playablePower(game, hand, seat),
   };

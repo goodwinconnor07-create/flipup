@@ -40,7 +40,7 @@ App Store Connect key the iOS build uses and prints `ok` or `FIX` for each thing
 It can't see these, so check them by hand: **Business** (Agreements, Tax, and Banking) has the **Paid Apps**
 agreement **Active** with tax and bank filled in (without it the Premium page says "Can't reach the App Store" and
 review rejects the app), and **Users and Access > Sandbox** has a tester for your own purchase tests. The review note
-for each subscription: "Opened from Premium on the Play tab. Unlocks hosting the 13 mini games, the full bot roster
+for each subscription: "Opened from Premium on the Play tab. Unlocks hosting the 12 mini games, the full bot roster
 and all Range training hands. Restore is on the same page and in Settings."
 
 ## 3. Build and test (GitHub Actions, then your iPhone)
@@ -61,7 +61,7 @@ and all Range training hands. Restore is on the same page and in Settings."
      shows the small join page with the code and Open in FlipUp.
    - There is no Friends tab, no friend rows anywhere, and the app never asks for Contacts.
    - Settings > Delete my data, then Premium > Restore.
-   - Only the 14 games show (Texas Hold'em and 13 mini games). The 8 newer ones are out of the app's code entirely
+   - Only the 13 games show (Texas Hold'em and 12 mini games). The 8 newer ones and Imposter are out of the app's code entirely
      and kept in `parked/games/` for later.
 
 ## 4. Screenshots (GitHub Actions)
@@ -85,7 +85,7 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 | Name | FlipUp: Poker with Friends |
 | Subtitle | Variants and party nights |
 | Category | Games; subcategory Card |
-| Promotional text | Poker night on your phones: host a table, friends join with a code, and bots fill the empty seats. Texas Hold'em plus 13 mini games with a twist. |
+| Promotional text | Poker night on your phones: host a table, friends join with a code, and bots fill the empty seats. Texas Hold'em plus 12 mini games with a twist. |
 | Keywords | `poker,holdem,texas,cards,friends,party,bots,game night,mini games,pineapple,range,training,offline` |
 | Support URL | https://playflipup.com/support |
 | Marketing URL | https://playflipup.com |
@@ -102,8 +102,8 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 > Host a table and your friends join from their own iPhones with a six-character code or a QR code. There are no
 > accounts and nothing to sign up for. Bots fill any empty seats, each with its own style and plenty to say.
 >
-> Play Texas Hold'em, or one of 13 mini games with a twist. In Haunted Pot you have to beat the ghost as well as your
-> friends. In Imposter everyone holds the same two cards except one player. Die on the River lets a die swap a board
+> Play Texas Hold'em, or one of 12 mini games with a twist. In Haunted Pot you have to beat the ghost as well as your
+> friends. Die on the River lets a die swap a board
 > card, and Crucifix lays the board out as a cross. Every game has its own table and a short How to Play.
 >
 > Line up a party of 4 to 12 games and see who's on top of the board at the end of the night. No friends around? Play

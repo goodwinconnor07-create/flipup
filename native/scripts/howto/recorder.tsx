@@ -13,11 +13,11 @@ import { currentTable, dispatch, leaveTable, me, openLocalTable } from '@/state/
 import { save } from '@/state/storage';
 
 const HOST = 'http://127.0.0.1:8123';
-const ALL: Variant[] = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'imposter', 'power'];
+const ALL: Variant[] = ['holdem', 'pineapple', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'beanstalk', 'bjholdem', 'power'];
 /** How long each game may play for its best hand. */
 const BUDGET_MS = 7 * 60_000;
 /** A hand scoring this much is as good as it gets: stop there. */
-const ENOUGH: Partial<Record<Variant, number>> = { deuces: 5, redriver: 9, dice: 5, imposter: 2, power: 6 };
+const ENOUGH: Partial<Record<Variant, number>> = { deuces: 5, redriver: 9, dice: 5, power: 6 };
 
 const sleep = (ms: number) => new Promise<void>((ok) => setTimeout(ok, ms));
 
@@ -91,8 +91,6 @@ interface Played {
   street: string;
   dice?: number;
   hitDone?: boolean;
-  pointed?: boolean;
-  voted?: boolean;
   discarded?: boolean;
   nextSent?: boolean;
   /** Notes for the score. */
@@ -219,20 +217,13 @@ async function shootGame(v: Variant): Promise<void> {
           }
         }
         if (h.discarding && !p.shots.has('discard') && !plan.some((x) => x.name === 'discard')) want('discard', 1100);
-        if (h.discussing && !p.pointed) {
-          p.pointed = true;
-          const other = h.seats.find((s) => s.playerId !== mine?.id);
-          if (other) setTimeout(() => dispatch({ type: 'point', hand: h.number, playerId: other.playerId }), 1200);
-          want('discuss', 3600);
-        }
-        if (h.voting && !h.discussing && !p.shots.has('vote') && !plan.some((x) => x.name === 'vote')) want('vote', 1200);
         if (h.result) {
           p.doneAt = now;
           p.reachedShowdown = h.result.showdown && !!seat && !seat.folded;
           p.won = !!mine && (h.result.won[mine.id] ?? 0) > 0;
           p.shown = h.seats.filter((x) => x.playerId !== mine?.id && x.cards.length > 0).length;
           plan = plan.filter((x) => x.name !== 'yourturn' || p.shots.has('yourturn'));
-          want(h.result.imposter ? 'reveal' : 'showdown', settle + 2600);
+          want('showdown', settle + 2600);
         }
       }
 
@@ -290,14 +281,6 @@ function act(v: Variant, t: Game, h: Hand, p: Played, myId: string, myTurn: bool
     dispatch({ type: 'discard', hand: h.number, card: worst });
     return;
   }
-  if (h.voting && !h.discussing && !p.voted) {
-    const other = h.seats.find((s) => s.playerId !== myId);
-    if (other) {
-      p.voted = true;
-      dispatch({ type: 'vote', hand: h.number, playerId: other.playerId });
-    }
-    return;
-  }
   if (!myTurn) return;
   if (waited < 1500) return;
   // Hit Me: one hit on the flop when it can't bust.
@@ -328,8 +311,8 @@ function act(v: Variant, t: Game, h: Hand, p: Played, myId: string, myTurn: bool
 function scoreOf(v: Variant, p: Played, h: Hand): number {
   const s = p.shots;
   const need = (...names: string[]) => names.every((n) => s.has(n));
-  if (!p.reachedShowdown && !h.result?.imposter) return -1;
-  if (!need('cards', v === 'imposter' ? 'reveal' : 'showdown')) return -1;
+  if (!p.reachedShowdown) return -1;
+  if (!need('cards', 'showdown')) return -1;
   // A showdown worth showing: someone else's cards face up, and you winning.
   const won = (p.shown ? 2 : 0) + (p.won ? 1 : 0);
   switch (v) {
@@ -357,8 +340,6 @@ function scoreOf(v: Variant, p: Played, h: Hand): number {
       return need('peek', 'flop', 'river') ? 1 + won : -1;
     case 'bjholdem':
       return need('flop', 'hit') ? 1 + won : -1;
-    case 'imposter':
-      return need('discuss', 'vote') ? 2 : -1;
     case 'power':
       return need('yourturn', 'played') ? 1 + (p.playedMine ? 2 : 0) + won : -1;
   }

@@ -1,5 +1,5 @@
 // What bots say about the games themselves: a deuce landing in Crazy Deuces, the ghost taking a pot, a bust at Blackjack
-// Hold'em, a finger pointed at someone in Imposter, a power played, a mission done. They're fixed lines like the rest of
+// Hold'em, a power played, a mission done. They're fixed lines like the rest of
 // the bot talk (botTalk.ts), in the same two tones, and said through the same bubbles: `|` starts the next message right
 // away, `||` is a second thought a beat later (chat.ts). Short, so each fits one line of a seat's bubble.
 //
@@ -35,12 +35,6 @@ export type GameTalkEvent =
   // Blackjack Hold'em
   | 'bjHit'
   | 'bjBust'
-  // Imposter
-  | 'impPoint'
-  | 'impAccused'
-  | 'impCaught'
-  | 'impEscaped'
-  | 'impSlipped'
   // Power Cards
   | 'powerMine'
   | 'powerSeen'
@@ -65,11 +59,6 @@ export const GAME_EVENTS: GameTalkEvent[] = [
   'stalkGrows',
   'bjHit',
   'bjBust',
-  'impPoint',
-  'impAccused',
-  'impCaught',
-  'impEscaped',
-  'impSlipped',
   'powerMine',
   'powerSeen',
   'powerOnMe',
@@ -95,11 +84,6 @@ export const GAME_CHANCE: Record<GameTalkEvent, number> = {
   stalkGrows: 0.3,
   bjHit: 0.5,
   bjBust: 0.9,
-  impPoint: 0.9,
-  impAccused: 0.95,
-  impCaught: 0.95,
-  impEscaped: 0.95,
-  impSlipped: 1,
   powerMine: 0.6,
   powerSeen: 0.75,
   powerOnMe: 1,
@@ -124,11 +108,6 @@ export const GAME_TRASH: Record<GameTalkEvent, string[]> = {
   stalkGrows: ['Another card.|Greedy.', 'Stalk grows.|So do pots.', 'More cards.|More lies.', 'Up it goes.', 'Fresh beans.', 'Beans for all.|Count them.'],
   bjHit: ['Hit me.|I’m brave.', 'Another one.|Why not.', 'Hit.|Let’s see.', 'Card.|Now.', 'One more.|Easy.', 'Dare I?|I dare.'],
   bjBust: ['Bust.|Greedy.', 'Over 21.|Ouch.', 'Too many cards.|Rookie.', 'Busted!|Ha.', 'Went over.|Cute.', 'Twenty-what?|Bust.'],
-  impPoint: ['That’s the imposter.|Watch {you}.', 'I see you,|{you}.', 'Something’s off|about {you}.', '{you}.|Explain yourself.', 'Pointing at {you}.|Sus.', 'Funny betting,|{you}.'],
-  impAccused: ['Me?|Please.', 'Wrong guess.|Try again.', 'You’re wrong.|Look closer.', 'Not me.|Obviously.', 'Cute accusation.|Wrong.', 'Pointing at me?|Bold.'],
-  impCaught: ['Got you.|Told you.', 'Caught.|Easy.', 'The imposter.|Finally.', 'Knew it all along.', 'Busted.|Hand it over.', 'Never in doubt.'],
-  impEscaped: ['Who was it?!|Nobody got it.', 'You lot|are hopeless.', 'Missed it.|All of you.', 'Wrong again.|Impressive.', 'The imposter won.|Embarrassing.'],
-  impSlipped: ['Nobody even|noticed me.', 'Easy.|You all voted wrong.', 'Hid in plain sight.', 'Thanks for|the pot.', 'Sus? Me?|Never.'],
   powerMine: ['Power time.', 'Using it.|Watch.', 'Here goes.|My power.', 'Played it.|Deal with it.', 'Power up.', 'Surprise.'],
   powerSeen: ['A power.|Of course.', 'Careful.|Power on the table.', 'Sneaky.|I saw that.', 'Oh, a power.|Cute.', 'Powers.|Here we go.', 'Noted.|Power played.'],
   powerOnMe: ['Hey!|Aimed at me?', 'Targeting me?|Rude.', 'Not me!|Pick someone else.', 'Seriously.|Me?', 'That’s personal.', 'Bold move.|At me.'],
@@ -153,11 +132,6 @@ export const GAME_FRIENDLY: Record<GameTalkEvent, string[]> = {
   stalkGrows: ['It grows!', 'More cards!', 'Another bean!', 'Up we go!', 'Stalk’s growing!'],
   bjHit: ['Hit me!', 'One more!', 'Feeling brave.', 'Another card!', 'Let’s see!', 'Why not!'],
   bjBust: ['Bust!|Oh no.', 'Over 21!', 'Ouch, bust.', 'Too many!', 'Went over!', 'So close!'],
-  impPoint: ['I’m pointing|at {you}.', '{you}?|Something’s off.', 'Sorry {you}.|Suspicious.', 'I think it’s {you}.', 'Hmm, {you}.', 'Watching {you}.'],
-  impAccused: ['Me? Nope!', 'Not me, I swear!', 'It’s not me!', 'Wrong person!', 'Why me?!', 'Come on!|Not me.'],
-  impCaught: ['Got them!', 'Caught!|Nice work.', 'There they are!', 'We did it!', 'Knew it!', 'Great teamwork!'],
-  impEscaped: ['Who was it?!', 'We missed them!', 'Argh,|wrong vote.', 'They got away!', 'Sneaky!', 'Next time!'],
-  impSlipped: ['Ha, you missed me!', 'Sorry, it was me!', 'Hid well.|Thanks!', 'Nobody guessed!', 'It was me!'],
   powerMine: ['Using my power!', 'Here goes!', 'Power time!', 'Let’s try this.', 'Ooh, my power.'],
   powerSeen: ['Ooh, a power!', 'Nice one!', 'Sneaky!', 'A power!|Fun.', 'Watch out!', 'Powers!'],
   powerOnMe: ['Hey, me?!', 'Aimed at me!', 'Not me!', 'Aw, me?', 'Ha, targeted!', 'Really?|Me?'],

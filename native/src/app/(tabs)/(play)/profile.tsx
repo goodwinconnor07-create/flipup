@@ -1,13 +1,14 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
-import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Keyboard, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { popIn } from '@/motion/presets';
 
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
-import { MenuRow, MenuSection, useMenuColors } from '@/components/menu-list';
+import { NativeMenu } from '@/components/native-menu';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -26,10 +27,8 @@ const PIC = 150;
  */
 export default function ProfileScreen() {
   const colors = useColors();
-  const menu = useMenuColors();
+  const insets = useSafeAreaInsets();
   const dark = useScheme() === 'dark';
-  // Row glyphs: a pale blue over the dark panels, the brand blue on light ones.
-  const tint = dark ? '#cfe0ff' : brand.violet;
   const reduce = useReduceMotion();
   const profile = useProfile();
   const premium = usePremium();
@@ -52,15 +51,14 @@ export default function ProfileScreen() {
   const stats = record.hands ? `${record.hands.toLocaleString('en-US')} hands · ${Math.round((record.won / record.hands) * 100)}% won` : 'Play a hand to start';
 
   return (
-    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: menu.page }}>
+    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack.Screen options={{ title: '', headerTransparent: true }} />
       {/* The Games-app header: a deep blue glow behind your face that fades into the page. */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${menu.page} 100%)`), opacity: dark ? 1 : 0.9 }} />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }}
-      >
+      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${colors.background as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
+      <NativeMenu
+        transparent
+        top={
+          <View style={{ paddingTop: insets.top + 56, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
         <View style={{ alignItems: 'center', gap: spacing.sm, paddingTop: spacing.md }}>
           <Pressable
             accessibilityRole="button"
@@ -127,18 +125,20 @@ export default function ProfileScreen() {
             </ThemedText>
           )}
         </View>
-
-        <MenuSection header="Your poker">
-          <MenuRow title="Your stats" detail={stats} icon={{ symbol: 'chart.bar.xaxis', color: tint }} onPress={() => router.push('/stats')} />
-          <MenuRow title="Settings" detail="Sound, looks and your data" icon={{ symbol: 'gearshape.fill', color: tint }} onPress={() => router.push('/settings')} />
-          <MenuRow
-            title="FlipUp Premium"
-            detail={premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`}
-            icon={{ symbol: 'crown.fill', color: brand.gold }}
-            onPress={() => router.push('/premium')}
-          />
-        </MenuSection>
-      </ScrollView>
+          </View>
+        }
+        groups={[
+          {
+            id: 'poker',
+            header: 'Your poker',
+            items: [
+              { kind: 'link', id: 'stats', title: 'Your stats', detail: stats, onPress: () => router.push('/stats') },
+              { kind: 'link', id: 'settings', title: 'Settings', detail: 'Sound, looks and your data', onPress: () => router.push('/settings') },
+              { kind: 'link', id: 'premium', title: 'FlipUp Premium', detail: premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`, trailingCrown: true, onPress: () => router.push('/premium') },
+            ],
+          },
+        ]}
+      />
     </KeyboardAvoidingView>
   );
 }

@@ -7,7 +7,7 @@ import { popIn } from '@/motion/presets';
 
 import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
-import { Row, Section } from '@/components/grouped-list';
+import { MenuRow, MenuSection, useMenuColors } from '@/components/menu-list';
 import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
@@ -26,6 +26,7 @@ const PIC = 150;
  */
 export default function ProfileScreen() {
   const colors = useColors();
+  const menu = useMenuColors();
   const dark = useScheme() === 'dark';
   // Row glyphs: a pale blue over the dark panels, the brand blue on light ones.
   const tint = dark ? '#cfe0ff' : brand.violet;
@@ -51,10 +52,10 @@ export default function ProfileScreen() {
   const stats = record.hands ? `${record.hands.toLocaleString('en-US')} hands · ${Math.round((record.won / record.hands) * 100)}% won` : 'Play a hand to start';
 
   return (
-    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.background }}>
+    <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: menu.page }}>
       <Stack.Screen options={{ title: '', headerTransparent: true }} />
       {/* The Games-app header: a deep blue glow behind your face that fades into the page. */}
-      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${colors.background as string} 100%)`), opacity: dark ? 1 : 0.9 }} />
+      <View pointerEvents="none" style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 480, ...gradient(`linear-gradient(180deg, ${brand.violet} 0%, ${brand.violetDeep} 45%, ${menu.page} 100%)`), opacity: dark ? 1 : 0.9 }} />
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         keyboardShouldPersistTaps="handled"
@@ -127,16 +128,16 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        <Section header="Your poker">
-          <Row title="Your stats" detail={stats} icon={{ symbol: 'chart.bar.xaxis', color: tint }} onPress={() => router.push('/stats')} />
-          <Row title="Settings" detail="Sound, looks and your data" icon={{ symbol: 'gearshape.fill', color: tint }} onPress={() => router.push('/settings')} />
-          <Row
+        <MenuSection header="Your poker">
+          <MenuRow title="Your stats" detail={stats} icon={{ symbol: 'chart.bar.xaxis', color: tint }} onPress={() => router.push('/stats')} />
+          <MenuRow title="Settings" detail="Sound, looks and your data" icon={{ symbol: 'gearshape.fill', color: tint }} onPress={() => router.push('/settings')} />
+          <MenuRow
             title="FlipUp Premium"
             detail={premium ? 'Unlocked' : `Card packs and ${VARIANTS.length - FREE_VARIANTS} more games`}
             icon={{ symbol: 'crown.fill', color: brand.gold }}
             onPress={() => router.push('/premium')}
           />
-        </Section>
+        </MenuSection>
       </ScrollView>
     </KeyboardAvoidingView>
   );

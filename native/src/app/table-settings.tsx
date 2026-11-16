@@ -8,11 +8,12 @@ import { SettingsFields } from '@/components/settings-fields';
 import { ThemedText } from '@/components/themed-text';
 import type { Settings } from '@/engine';
 import { dispatch, useTable } from '@/state/session';
-import { spacing, useColors } from '@/theme';
+import { useMenuColors } from '@/components/menu-list';
+import { spacing } from '@/theme';
 
 /** The host changes the table's chips, blinds and house rules. Mid-game, changes start next hand. */
 export default function TableSettings() {
-  const colors = useColors();
+  const menu = useMenuColors();
   const t = useTable();
   const [settings, setSettings] = useState<Settings | null>(t.game?.settings ?? null);
   if (!t.game || !settings) return null;
@@ -20,10 +21,10 @@ export default function TableSettings() {
     if (dispatch({ type: 'settings', settings }) === null) router.back();
   };
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }} style={{ backgroundColor: menu.page }}>
       <Stack.Screen options={{ title: 'Table settings' }} />
       {t.game.status === 'playing' && (
-        <ThemedText variant="subhead" tone="tertiaryLabel">
+        <ThemedText variant="footnote" tone="secondaryLabel" style={{ paddingHorizontal: spacing.md, marginBottom: -spacing.lg }}>
           Changes start next hand. A new stack size is for rebuys and new players.
         </ThemedText>
       )}

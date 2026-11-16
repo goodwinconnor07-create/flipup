@@ -5,7 +5,7 @@ import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { SheetScroll } from '@/components/sheet-scroll';
-import { Row, Section } from '@/components/grouped-list';
+import { MenuRow, MenuSection, useMenuColors } from '@/components/menu-list';
 import { YouSettings } from '@/components/you-settings';
 import { myPlayer } from '@/engine';
 import { tableShare } from '@/state/table-share';
@@ -19,6 +19,7 @@ import { spacing, useColors } from '@/theme';
  */
 export default function TableMenu() {
   const colors = useColors();
+  const menu = useMenuColors();
   const t = useTable();
   const game = t.game;
   const online = t.mode === 'online';
@@ -79,17 +80,17 @@ export default function TableMenu() {
   }
 
   return (
-    <SheetScroll contentContainerStyle={{ paddingVertical: spacing.lg, gap: spacing.lg }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }} style={{ backgroundColor: menu.page }}>
       <Stack.Screen options={{ title: 'Menu' }} />
-      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.sm, paddingHorizontal: spacing.md }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.sm }}>
         {tiles.map((t) => (
           <MenuTile key={t.label} {...t} />
         ))}
       </View>
-      <Section header="Table">
-        {started && <Row title="Standings" icon={{ symbol: 'trophy.fill', color: colors.gold as string }} onPress={() => router.push('/table-standings')} />}
+      <MenuSection header="Table">
+        {started && <MenuRow title="Standings" icon={{ symbol: 'trophy.fill', color: colors.gold as string }} onPress={() => router.push('/table-standings')} />}
         {started && (
-          <Row
+          <MenuRow
             title="Hand log"
             icon={{ symbol: 'list.bullet', color: colors.accent as string }}
             onPress={() => {
@@ -99,16 +100,16 @@ export default function TableMenu() {
           />
         )}
         {online && t.code && !ended && (
-          <Row
+          <MenuRow
             title="Invite friends"
             detail={t.code}
             icon={{ symbol: 'square.and.arrow.up', color: colors.green as string }}
             onPress={() => void Share.share(tableShare(game, t.code!))}
           />
         )}
-        {host && !ended && <Row title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}
-        {host && playing && game.players.length < 9 && <Row title="Add a bot" icon={{ symbol: 'person.badge.plus', color: colors.green as string }} chevron={false} onPress={quick(() => dispatch({ type: 'addBot' }))} />}
-      </Section>
+        {host && !ended && <MenuRow title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}
+        {host && playing && game.players.length < 9 && <MenuRow title="Add a bot" icon={{ symbol: 'person.badge.plus', color: colors.green as string }} chevron={false} onPress={quick(() => dispatch({ type: 'addBot' }))} />}
+      </MenuSection>
       <YouSettings header="You" online={online} />
     </SheetScroll>
   );
@@ -118,10 +119,10 @@ type TileProps = { label: string; symbol: string; color: string; onPress: () => 
 
 /** One large app-style icon with its label under it; the row shares the width, so two to four tiles all look full. */
 function MenuTile({ label, symbol, color, onPress }: TileProps) {
-  const colors = useColors();
+  const menu = useMenuColors();
   return (
     <PressableScale accessibilityRole="button" accessibilityLabel={label} onPress={onPress} outerStyle={{ flex: 1, maxWidth: 120 }} style={{ alignItems: 'center', gap: spacing.xs }}>
-      <View style={{ width: 72, height: 72, borderRadius: 20, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell as string }}>
+      <View style={{ width: 72, height: 72, borderRadius: 22, borderCurve: 'continuous', alignItems: 'center', justifyContent: 'center', backgroundColor: menu.fill }}>
         <Icon name={symbol as never} size={34} color={color} />
       </View>
       <ThemedText variant="footnote" style={{ fontWeight: '600', textAlign: 'center' }} numberOfLines={1}>

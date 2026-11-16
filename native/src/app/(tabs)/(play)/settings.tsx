@@ -5,7 +5,7 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share } from 'react-native';
 
-import { Row, Section } from '@/components/grouped-list';
+import { MenuRow, MenuSection, useMenuColors } from '@/components/menu-list';
 import { haptic } from '@/components/haptics';
 import { YouSettings } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
@@ -24,6 +24,7 @@ import { APP_INFO } from '../../../../appInfo';
  */
 export default function SettingsScreen() {
   const colors = useColors();
+  const menu = useMenuColors();
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
   const blocked = useBlocked();
@@ -82,13 +83,13 @@ export default function SettingsScreen() {
   };
 
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }}>
+    <ScrollView contentInsetAdjustmentBehavior="automatic" style={{ backgroundColor: menu.page }} contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xxl }}>
       <Stack.Screen options={{ title: 'Settings' }} />
       <YouSettings />
 
       {ON_SALE && (
-        <Section header="FlipUp Premium" footer={premium ? planLine(store) : 'Bought Premium before, or on another iPhone? Restore brings it back.'}>
-          <Row
+        <MenuSection header="FlipUp Premium" footer={premium ? planLine(store) : 'Bought Premium before, or on another iPhone? Restore brings it back.'}>
+          <MenuRow
             title={store.busy ? 'Restoring…' : 'Restore Purchases'}
             icon={{ symbol: 'arrow.clockwise', color: colors.gold as string }}
             chevron={false}
@@ -97,35 +98,35 @@ export default function SettingsScreen() {
           />
           {/* Apple's own page for changing or cancelling the plan (App Store Review 3.1.2: easy to find). */}
           {premium && (store.owned === 'monthly' || store.owned === 'yearly') && (
-            <Row title="Manage subscription" icon={{ symbol: 'creditcard.fill', color: colors.accent as string }} onPress={() => void manageSubscription()} />
+            <MenuRow title="Manage subscription" icon={{ symbol: 'creditcard.fill', color: colors.accent as string }} onPress={() => void manageSubscription()} />
           )}
-        </Section>
+        </MenuSection>
       )}
 
-      <Section footer="To report or block someone, tap their seat at a table or their row on a party board.">
-        <Row title="Blocked players" detail={blocked.length ? String(blocked.length) : undefined} icon={{ symbol: 'hand.raised.slash.fill', color: colors.red as string }} onPress={() => router.push('/blocked')} />
-      </Section>
+      <MenuSection footer="To report or block someone, tap their seat at a table or their row on a party board.">
+        <MenuRow title="Blocked players" detail={blocked.length ? String(blocked.length) : undefined} icon={{ symbol: 'hand.raised.slash.fill', color: colors.red as string }} onPress={() => router.push('/blocked')} />
+      </MenuSection>
 
-      <Section>
-        <Row title="What’s New" detail={`Version ${version}${build ? ` (${build})` : ''}`} icon={{ symbol: 'sparkles', color: colors.gold as string }} onPress={() => router.push('/whats-new')} />
-      </Section>
+      <MenuSection>
+        <MenuRow title="What’s New" detail={`Version ${version}${build ? ` (${build})` : ''}`} icon={{ symbol: 'sparkles', color: colors.gold as string }} onPress={() => router.push('/whats-new')} />
+      </MenuSection>
 
-      <Section header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
-        <Row title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />
-        <Row title="Help" icon={{ symbol: 'questionmark.circle.fill', color: colors.accent as string }} onPress={() => router.push('/help')} />
-        <Row title="Share FlipUp" icon={{ symbol: 'square.and.arrow.up', color: colors.accent as string }} chevron={false} onPress={share} />
-        <Row title="Rate FlipUp" icon={{ symbol: 'star.fill', color: colors.gold as string }} onPress={rate} />
-        <Row title="Support" icon={{ symbol: 'lifepreserver.fill', color: colors.green as string }} onPress={() => open(APP_INFO.supportUrl)} />
-        <Row
+      <MenuSection header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
+        <MenuRow title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />
+        <MenuRow title="Help" icon={{ symbol: 'questionmark.circle.fill', color: colors.accent as string }} onPress={() => router.push('/help')} />
+        <MenuRow title="Share FlipUp" icon={{ symbol: 'square.and.arrow.up', color: colors.accent as string }} chevron={false} onPress={share} />
+        <MenuRow title="Rate FlipUp" icon={{ symbol: 'star.fill', color: colors.gold as string }} onPress={rate} />
+        <MenuRow title="Support" icon={{ symbol: 'lifepreserver.fill', color: colors.green as string }} onPress={() => open(APP_INFO.supportUrl)} />
+        <MenuRow
           title="Email us"
           subtitle={APP_INFO.supportEmail}
           icon={{ symbol: 'envelope.fill', color: colors.indigo as string }}
           onPress={() => void Linking.openURL(`mailto:${APP_INFO.supportEmail}?subject=${encodeURIComponent('FlipUp')}`)}
         />
-      </Section>
+      </MenuSection>
 
-      <Section footer="Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.">
-        <Row
+      <MenuSection footer="Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.">
+        <MenuRow
           title={deleting ? 'Deleting…' : 'Delete my data'}
           icon={{ symbol: 'trash.fill', color: colors.red as string }}
           destructive
@@ -133,7 +134,7 @@ export default function SettingsScreen() {
           trailing={deleting ? <ActivityIndicator /> : undefined}
           onPress={deleting ? undefined : confirmDelete}
         />
-      </Section>
+      </MenuSection>
 
       <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }} selectable>
         FlipUp {version}

@@ -15,7 +15,7 @@ import {
 import { useSuggestChallenge } from '@/state/table-feel';
 import { party, spacing, useColors } from '@/theme';
 
-import { Row, Section } from './grouped-list';
+import { MenuRow, MenuSection } from './menu-list';
 import { SegmentedControl } from './segmented-control';
 import { Stepper } from './stepper';
 import { Switch } from './switch';
@@ -61,7 +61,7 @@ export function SettingsFields({
   const color = (own: string) => tint ?? own;
 
   const chipRows = [
-    <Row
+    <MenuRow
       key="stack"
       title="Starting chips"
       detail={chips(settings.startingStack)}
@@ -76,7 +76,7 @@ export function SettingsFields({
         />
       }
     />,
-    <Row
+    <MenuRow
       key="blinds"
       title="Blinds"
       detail={blindsLabel([settings.smallBlind, settings.bigBlind])}
@@ -91,7 +91,7 @@ export function SettingsFields({
         />
       }
     />,
-    <Row
+    <MenuRow
       key="rise"
       title="Blinds go up"
       detail={settings.blindMinutes ? `${settings.blindMinutes} min` : 'Never'}
@@ -107,7 +107,7 @@ export function SettingsFields({
       }
     />,
     !!settings.blindMinutes && (
-      <Row
+      <MenuRow
         key="cap"
         title="Blinds stop at"
         detail={caps[capIndex] ? blindsLabel([caps[capIndex] / 2, caps[capIndex]]) : 'No limit'}
@@ -121,8 +121,8 @@ export function SettingsFields({
 
   const ruleRows = [
     (settings.variant ?? 'holdem') === 'holdem' && (
-      <View key="bot-level" style={{ padding: spacing.md, gap: spacing.xs }}>
-        <ThemedText>Bot level</ThemedText>
+      <View key="bot-level" style={{ padding: spacing.md, gap: spacing.sm }}>
+        <ThemedText variant="body">Bot level</ThemedText>
         <SegmentedControl
           label="Bot level"
           value={settings.botDifficulty ?? 'casual'}
@@ -132,7 +132,7 @@ export function SettingsFields({
           ]}
           onChange={(botDifficulty) => set({ botDifficulty })}
         />
-        <ThemedText variant="caption1" tone="secondaryLabel">
+        <ThemedText variant="footnote" tone="secondaryLabel">
           {beatingCasual && (settings.botDifficulty ?? 'casual') === 'casual'
             ? "You've beaten Casual three tables running. Try Challenge."
             : 'Challenge makes fewer small mistakes. Changes next hand.'}
@@ -140,8 +140,8 @@ export function SettingsFields({
       </View>
     ),
     online && (
-      <View key="clock" style={{ padding: spacing.md, paddingBottom: spacing.sm, gap: spacing.xs }}>
-        <ThemedText>Time to act</ThemedText>
+      <View key="clock" style={{ padding: spacing.md, gap: spacing.sm }}>
+        <ThemedText variant="body">Time to act</ThemedText>
         <SegmentedControl
           label="Time to act"
           value={String(settings.turnSeconds)}
@@ -150,7 +150,7 @@ export function SettingsFields({
         />
       </View>
     ),
-    <Row
+    <MenuRow
       key="rebuys"
       title="Rebuys"
       subtitle={online ? 'Busted players can buy back in' : 'If you bust, you can buy back in and keep playing'}
@@ -158,7 +158,7 @@ export function SettingsFields({
       accessory={<Switch label="Rebuys" value={settings.rebuys} onValueChange={(rebuys) => set({ rebuys })} />}
     />,
     !online && (
-      <Row
+      <MenuRow
         key="replay"
         title="Replay after every hand"
         subtitle="See what you won or lost and who took the pot, then watch it back"
@@ -169,7 +169,7 @@ export function SettingsFields({
       />
     ),
     online && (
-      <Row
+      <MenuRow
         key="peek"
         title="Busted players peek"
         subtitle="Once you're out, you see everyone's cards"
@@ -183,20 +183,20 @@ export function SettingsFields({
 
   if (merged) {
     return (
-      <Section header={merged.header} footer={[blindsFoot, clockFoot].filter(Boolean).join(' ')}>
+      <MenuSection header={merged.header} footer={[blindsFoot, clockFoot].filter(Boolean).join(' ')}>
         {chipRows}
         {ruleRows}
-      </Section>
+      </MenuSection>
     );
   }
   return (
     <>
-      <Section header="Chips and blinds" footer={blindsFoot}>
+      <MenuSection header="Chips and blinds" footer={blindsFoot}>
         {chipRows}
-      </Section>
-      <Section header="House rules" footer={clockFoot}>
+      </MenuSection>
+      <MenuSection header="House rules" footer={clockFoot}>
         {ruleRows}
-      </Section>
+      </MenuSection>
     </>
   );
 }

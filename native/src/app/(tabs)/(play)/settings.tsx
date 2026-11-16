@@ -3,31 +3,31 @@ import { openBrowserAsync } from 'expo-web-browser';
 import { useState } from 'react';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
-import { ActivityIndicator, Alert, Linking, Platform, ScrollView, Share } from 'react-native';
+import { Alert, Linking, Platform, Share } from 'react-native';
 
-import { Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
-import { YouSettings } from '@/components/you-settings';
+import { NativeMenu } from '@/components/native-menu';
+import type { MenuGroup } from '@/components/native-menu.types';
+import { useYouGroups } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
 import { usePremium } from '@/state/premium';
 import { manageSubscription, ON_SALE, restorePremium, storeError, useStore, type StoreState } from '@/state/purchase';
-import { ThemedText } from '@/components/themed-text';
-import { spacing, useColors } from '@/theme';
 
 import { APP_INFO } from '../../../../appInfo';
 
 /**
  * Settings, from your profile: how the app looks and sounds (the same rows as the table's menu), then what the App
  * Store asks for (docs/APP_STORE.md): the privacy policy, support and its email, the play-chips line, and Delete my
- * data, which removes the friend code from the server and everything FlipUp keeps on this phone.
+ * data, which removes the friend code from the server and everything FlipUp keeps on this phone. Drawn as Apple's own
+ * grouped list (`NativeMenu`).
  */
 export default function SettingsScreen() {
-  const colors = useColors();
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
   const blocked = useBlocked();
   const store = useStore();
+  const you = useYouGroups({});
   const restore = async () => {
     if (await restorePremium()) {
       haptic.success();
@@ -41,11 +41,9 @@ export default function SettingsScreen() {
   // The app's link for sharing and for the rating page.
   const storeUrl = `https://apps.apple.com/app/id${APP_INFO.appStoreId}`;
   const share = () => {
-    haptic.tap();
     void Share.share({ message: `Poker night on your phones. Play FlipUp with me: ${storeUrl}`, url: storeUrl }).catch(() => undefined);
   };
   const rate = () => {
-    haptic.tap();
     const review = `itms-apps://apps.apple.com/app/id${APP_INFO.appStoreId}?action=write-review`;
     void Linking.openURL(Platform.OS === 'ios' ? review : storeUrl).catch(() => Linking.openURL(storeUrl));
   };
@@ -81,65 +79,54 @@ export default function SettingsScreen() {
     ]);
   };
 
+  const groups: MenuGroup[] = [
+    ...you,
+    {
+      id: 'store',
+      header: 'FlipUp Premium',
+      footer: premium ? planLine(store) : 'Bought Premium before, or on another iPhone? Restore brings it back.',
+      items: ON_SALE
+        ? [
+            { kind: 'button', id: 'restore', title: store.busy ? 'Restoring' : 'Restore Purchases', busy: store.busy, onPress: () => void restore() },
+            // Apple's own page for changing or cancelling the plan (App Store Review 3.1.2: easy to find).
+            premium && (store.owned === 'monthly' || store.owned === 'yearly') && { kind: 'link', id: 'manage', title: 'Manage subscription', onPress: () => void manageSubscription() },
+          ]
+        : [],
+    },
+    {
+      id: 'blocked',
+      footer: 'To report or block someone, tap their seat at a table or their row on a party board.',
+      items: [{ kind: 'link', id: 'blocked', title: 'Blocked players', detail: blocked.length ? String(blocked.length) : undefined, onPress: () => router.push('/blocked') }],
+    },
+    {
+      id: 'new',
+      items: [{ kind: 'link', id: 'new', title: 'What’s New', detail: `Version ${version}${build ? ` (${build})` : ''}`, onPress: () => router.push('/whats-new') }],
+    },
+    {
+      id: 'help',
+      header: 'Help and privacy',
+      footer: "Play chips only. They have no cash value and can't be bought or won.",
+      items: [
+        { kind: 'link', id: 'privacy', title: 'Privacy policy', onPress: () => open(APP_INFO.privacyUrl) },
+        { kind: 'link', id: 'help', title: 'Help', onPress: () => router.push('/help') },
+        { kind: 'button', id: 'share', title: 'Share FlipUp', symbol: 'square.and.arrow.up', onPress: share },
+        { kind: 'link', id: 'rate', title: 'Rate FlipUp', onPress: rate },
+        { kind: 'link', id: 'support', title: 'Support', onPress: () => open(APP_INFO.supportUrl) },
+        { kind: 'link', id: 'email', title: 'Email us', subtitle: APP_INFO.supportEmail, onPress: () => void Linking.openURL(`mailto:${APP_INFO.supportEmail}?subject=${encodeURIComponent('FlipUp')}`) },
+      ],
+    },
+    {
+      id: 'delete',
+      footer: `Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.\n\nFlipUp ${version}${build ? ` (${build})` : ''}`,
+      items: [{ kind: 'button', id: 'delete', title: deleting ? 'Deleting' : 'Delete my data', destructive: true, busy: deleting, onPress: confirmDelete }],
+    },
+  ];
+
   return (
-    <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }}>
+    <>
       <Stack.Screen options={{ title: 'Settings' }} />
-      <YouSettings />
-
-      {ON_SALE && (
-        <Section header="FlipUp Premium" footer={premium ? planLine(store) : 'Bought Premium before, or on another iPhone? Restore brings it back.'}>
-          <Row
-            title={store.busy ? 'Restoring…' : 'Restore Purchases'}
-            icon={{ symbol: 'arrow.clockwise', color: colors.gold as string }}
-            chevron={false}
-            trailing={store.busy ? <ActivityIndicator /> : undefined}
-            onPress={store.busy ? undefined : () => void restore()}
-          />
-          {/* Apple's own page for changing or cancelling the plan (App Store Review 3.1.2: easy to find). */}
-          {premium && (store.owned === 'monthly' || store.owned === 'yearly') && (
-            <Row title="Manage subscription" icon={{ symbol: 'creditcard.fill', color: colors.accent as string }} onPress={() => void manageSubscription()} />
-          )}
-        </Section>
-      )}
-
-      <Section footer="To report or block someone, tap their seat at a table or their row on a party board.">
-        <Row title="Blocked players" detail={blocked.length ? String(blocked.length) : undefined} icon={{ symbol: 'hand.raised.slash.fill', color: colors.red as string }} onPress={() => router.push('/blocked')} />
-      </Section>
-
-      <Section>
-        <Row title="What’s New" detail={`Version ${version}${build ? ` (${build})` : ''}`} icon={{ symbol: 'sparkles', color: colors.gold as string }} onPress={() => router.push('/whats-new')} />
-      </Section>
-
-      <Section header="Help and privacy" footer="Play chips only. They have no cash value and can't be bought or won.">
-        <Row title="Privacy policy" icon={{ symbol: 'hand.raised.fill', color: colors.accent as string }} onPress={() => open(APP_INFO.privacyUrl)} />
-        <Row title="Help" icon={{ symbol: 'questionmark.circle.fill', color: colors.accent as string }} onPress={() => router.push('/help')} />
-        <Row title="Share FlipUp" icon={{ symbol: 'square.and.arrow.up', color: colors.accent as string }} chevron={false} onPress={share} />
-        <Row title="Rate FlipUp" icon={{ symbol: 'star.fill', color: colors.gold as string }} onPress={rate} />
-        <Row title="Support" icon={{ symbol: 'lifepreserver.fill', color: colors.green as string }} onPress={() => open(APP_INFO.supportUrl)} />
-        <Row
-          title="Email us"
-          subtitle={APP_INFO.supportEmail}
-          icon={{ symbol: 'envelope.fill', color: colors.indigo as string }}
-          onPress={() => void Linking.openURL(`mailto:${APP_INFO.supportEmail}?subject=${encodeURIComponent('FlipUp')}`)}
-        />
-      </Section>
-
-      <Section footer="Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.">
-        <Row
-          title={deleting ? 'Deleting…' : 'Delete my data'}
-          icon={{ symbol: 'trash.fill', color: colors.red as string }}
-          destructive
-          chevron={false}
-          trailing={deleting ? <ActivityIndicator /> : undefined}
-          onPress={deleting ? undefined : confirmDelete}
-        />
-      </Section>
-
-      <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center' }} selectable>
-        FlipUp {version}
-        {build ? ` (${build})` : ''}
-      </ThemedText>
-    </ScrollView>
+      <NativeMenu groups={groups} />
+    </>
   );
 }
 

@@ -5,6 +5,7 @@ import { sendReport } from '@/state/api';
 import { block, isBlocked, unblock } from '@/state/blocks';
 import { me } from '@/state/session';
 
+import { choose } from './choose';
 import { haptic } from './haptics';
 
 export interface MenuTarget {
@@ -21,12 +22,12 @@ export interface MenuTarget {
 
 /**
  * The menu on another person's seat or party row (App Store guideline 1.2): Report, Block or Unblock, and any
- * extra buttons the place adds (the host's Remove). iOS shows it as an alert with a row of buttons.
+ * extra buttons the place adds (the host's Remove). On iPhone it's an action sheet, as choices after a tap should be.
  */
 export function openPlayerMenu(t: MenuTarget, title: string, message?: string, extra: AlertButton[] = []): void {
   haptic.tap();
   const blocked = isBlocked(t.key);
-  Alert.alert(title, message, [
+  choose(title, message, [
     ...extra,
     { text: 'Report…', onPress: () => askReason(t) },
     blocked
@@ -45,7 +46,7 @@ export function openPlayerMenu(t: MenuTarget, title: string, message?: string, e
 }
 
 function askReason(t: MenuTarget): void {
-  Alert.alert(`Report ${t.name}`, 'What’s wrong? We look at every report within 24 hours.', [
+  choose(`Report ${t.name}`, 'What’s wrong? We look at every report within 24 hours.', [
     ...REPORT_REASONS.map((r) => ({ text: r.label, onPress: () => void send(t, r.id) })),
     { text: 'Cancel', style: 'cancel' as const },
   ]);

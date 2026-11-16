@@ -31,6 +31,7 @@ import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { lobbyRows, usePartyView } from '../party/panel';
 import { PartyCard, PartyRules, StartPartyButton } from './party-pieces';
 import { NavRow } from './setup-header';
+import { choose } from '@/components/choose';
 
 /**
  * Play with friends, laid out after the owner's reference video in FlipUp's own look (the deep blue moving field,
@@ -286,9 +287,9 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
             ? openPlayerMenu({ key, name: p.name, emoji: p.emoji, where: 'table', code: lobby, playerId: p.id }, p.name, undefined, [
                 { text: 'Remove', style: 'destructive', onPress: remove },
               ])
-            : Alert.alert(p.name, undefined, [
-                { text: 'Cancel', style: 'cancel' },
+            : choose(p.name, undefined, [
                 { text: 'Remove', style: 'destructive', onPress: remove },
+                { text: 'Cancel', style: 'cancel' },
               ]),
       };
     }),

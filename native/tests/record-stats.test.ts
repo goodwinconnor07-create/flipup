@@ -32,7 +32,7 @@ function game(s: Spec): Game {
     status: 'playing',
     settings: { variant: s.variant ?? 'holdem', startingStack: 1000, bigBlind: 10, smallBlind: 5 },
     players: [
-      { id: 'me', name: 'Me', stack: end },
+      { id: 'me', name: 'Me', stack: end, bought: 1000 },
       { id: 'b1', name: 'Bot', bot: true, stack: 2000 - end },
     ],
     hand: {
@@ -58,17 +58,17 @@ describe('the bigger stats', () => {
     let r = play(EMPTY_STATS, { start: 1000, end: 1300 });
     r = play(r, { number: 2, start: 1300, end: 900 });
     expect(r.tracked).toBe(2);
-    expect(r.chipsWon).toBe(600);
-    expect(r.net).toBe(-100);
-    expect(r.biggestLoss).toBe(400);
-    expect(r.nets).toEqual([300, -400]);
+    expect(r.chipsWon).toBe(60);
+    expect(r.net).toBe(-10);
+    expect(r.biggestLoss).toBe(40);
+    expect(r.nets).toEqual([30, -40]);
   });
 
   it('keeps only the last 100 hands for the chips line', () => {
     let r = EMPTY_STATS;
     for (let i = 0; i < TRAIL + 5; i++) r = play(r, { number: i + 1, start: 1000, end: 1000 + i });
     expect(r.nets.length).toBe(TRAIL);
-    expect(r.nets[0]).toBe(5);
+    expect(r.nets[0]).toBe(0.5);
   });
 
   it('counts the hands you play and how hard you play them, and names your style', () => {
@@ -133,12 +133,12 @@ describe('the bigger stats', () => {
     r = play(r, { number: 3, me: ['7c', '2h'], start: 1700, end: 1600 });
     r = play(r, { number: 4, me: ['2d', '7s'], start: 1600, end: 1400 });
     r = play(r, { number: 5, me: ['Qc', 'Qd'], start: 1400, end: 2000 });
-    expect(r.starts.AKs).toMatchObject({ n: 2, net: 700, cards: ['Ad', 'Kd'] });
+    expect(r.starts.AKs).toMatchObject({ n: 2, net: 70, cards: ['Ad', 'Kd'] });
     const { lucky, nemesis } = startExtremes(r);
     expect(lucky?.[0]).toBe('AKs');
     // Pocket queens won more but only once: a lucky hand needs two.
     expect(nemesis?.[0]).toBe('72o');
-    expect(nemesis?.[1].net).toBe(-300);
+    expect(nemesis?.[1].net).toBe(-30);
   });
 
   it('names starting hands', () => {
@@ -164,6 +164,29 @@ describe('the bigger stats', () => {
 
   it('reads broken storage as empty', () => {
     expect(cleanStats(null)).toEqual(EMPTY_STATS);
-    expect(cleanStats({ tracked: -3, nets: ['x', 4] as unknown as number[], worstBeat: 7 } as Partial<MoreStats>)).toMatchObject({ tracked: 0, nets: [4], worstBeat: null });
+    expect(cleanStats({ units: 'bb', tracked: -3, nets: ['x', 4] as unknown as number[], worstBeat: 7 } as Partial<MoreStats>)).toMatchObject({ tracked: 0, nets: [4], worstBeat: null });
+  });
+
+  it('counts in big blinds, so the same play is the same number at any stack or blind level', () => {
+    const small = play(EMPTY_STATS, { start: 1000, end: 1300 });
+    const big = tallyHand(EMPTY_STATS, { ...game({ start: 10000, end: 13000 }), settings: { variant: 'holdem', startingStack: 10000, bigBlind: 100, smallBlind: 50 } } as unknown as Game, 'me', NOW, null);
+    expect(big.net).toBe(small.net);
+    expect(big.chipsWon).toBe(small.chipsWon);
+  });
+
+  it('leaves a rebuy out of the numbers and out of the comeback', () => {
+    let r = play(EMPTY_STATS, { id: 'rb', start: 1000, end: 0 });
+    expect(r.net).toBe(-100);
+    // Bought back in for another 1000, then won the table: the new stack isn't a comeback from nothing.
+    const again = game({ id: 'rb', number: 2, start: 1000, end: 1500 });
+    (again.players[0] as { bought: number }).bought = 2000;
+    r = tallyHand(r, again, 'me', NOW, null);
+    expect(r.net).toBe(-50);
+    expect(tallyGame(r, game({ id: 'rb', end: 1500 }), 'me', 1).comeback).toBeNull();
+  });
+
+  it('starts the chip figures over when a save is from before they were in big blinds', () => {
+    const old = cleanStats({ tracked: 9, chipsWon: 5000, net: 300, biggestLoss: 800, nets: [100, -200], starts: { AA: { n: 2, net: 400, cards: ['As', 'Ah'] } } } as Partial<MoreStats>);
+    expect(old).toMatchObject({ tracked: 9, chipsWon: 0, net: 0, biggestLoss: 0, nets: [], starts: {} });
   });
 });

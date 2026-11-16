@@ -11,11 +11,11 @@ import { GameThumb } from '@/components/game-picture';
 import { PressableScale } from '@/components/pressable-scale';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { AccuracyBars, BigNumber, ChipsLine, Heading, Meter, n, Pair, Panel, pct, signed, Tile, TileHead, WeekDots } from '@/components/stats/stat-parts';
+import { AccuracyBars, BigNumber, ChipsLine, Heading, Meter, n, Pair, Panel, pct, Tile, TileHead, WeekDots } from '@/components/stats/stat-parts';
 import { streakInfo, variantInfo, type Card as PlayCard, type Variant } from '@/engine';
 import { rangeStats, runOf, useRangeHistory } from '@/state/range-history';
 import { usePokerRecord, type PokerRecord } from '@/state/record';
-import { startExtremes, startWords, STYLE_AFTER, styleOf, type MoreStats, type StartLine } from '@/state/record-stats';
+import { bbLabel, bbSigned, startExtremes, startWords, STYLE_AFTER, styleOf, type MoreStats, type StartLine } from '@/state/record-stats';
 import { useReplays } from '@/state/replays';
 import { brand, cardColors, ROUNDED, spacing, useColors, useShadows } from '@/theme';
 
@@ -53,7 +53,7 @@ export default function StatsScreen() {
         {record.hands > 0 && <GamesYouPlay record={record} />}
 
         <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center', paddingTop: spacing.md, color: colors.tertiaryLabel }}>
-          Counted on this phone. Play chips only.
+          Counted on this phone, in big blinds. Rebuys don&apos;t count. Play chips only.
         </ThemedText>
       </ScrollView>
     </>
@@ -103,15 +103,15 @@ function ChipsSection({ more }: { more: MoreStats }) {
   const c = more.comeback;
   return (
     <>
-      <Heading title="Chips" />
+      <Heading title="Big blinds" note="Every chip figure is in big blinds, so it's the same at any table size" />
       {more.nets.length > 0 && <ChipsLine nets={more.nets} />}
       <Pair>
-        <Tile icon="dollarsign.circle.fill" tint="gold" label="Chips won" value={more.tracked ? n(more.chipsWon) : null} note="From every pot you took" />
-        <Tile icon="chart.line.uptrend.xyaxis" label="Overall" value={more.tracked ? signed(more.net) : null} note="Chips won minus chips lost" />
+        <Tile icon="dollarsign.circle.fill" tint="gold" label="Won" value={more.tracked ? bbLabel(more.chipsWon) : null} note="From every pot you took" />
+        <Tile icon="chart.line.uptrend.xyaxis" label="Overall" value={more.tracked ? bbSigned(more.net) : null} note="Won minus lost, rebuys don't count" />
       </Pair>
       <Pair>
-        <Tile icon="arrow.down.right" tint="grey" label="Biggest pot lost" value={more.biggestLoss ? n(more.biggestLoss) : more.tracked ? '0' : null} note="The most you lost in one hand" />
-        <Tile icon="arrow.uturn.up" tint="gold" label="Biggest comeback" value={c ? pct(c.low / c.start) : null} note={c ? `Won after dropping to ${n(c.low)} of ${n(c.start)}` : 'Win a table after being way down'} />
+        <Tile icon="arrow.down.right" tint="grey" label="Biggest pot lost" value={more.biggestLoss ? bbLabel(more.biggestLoss) : more.tracked ? '0 BB' : null} note="The most you lost in one hand" />
+        <Tile icon="arrow.uturn.up" tint="gold" label="Biggest comeback" value={c ? pct(c.low / c.start) : null} note={c ? `Won a table after dropping to ${pct(c.low / c.start)} of your starting stack` : 'Win a table after being way down'} />
       </Pair>
     </>
   );
@@ -181,7 +181,7 @@ function StreakSection({ more }: { more: MoreStats }) {
 /** The starting hands that have won and lost you the most, then your best hand. */
 function CardsSection({ record }: { record: PokerRecord }) {
   const { lucky, nemesis } = startExtremes(record.more);
-  const hand = ([name, s]: [string, StartLine]) => ({ value: signed(s.net), note: `${startWords(name)} · ${s.n} hands`, cards: s.cards });
+  const hand = ([name, s]: [string, StartLine]) => ({ value: bbSigned(s.net), note: `${startWords(name)} · ${s.n} hands`, cards: s.cards });
   const l = lucky && hand(lucky);
   const m = nemesis && hand(nemesis);
   return (

@@ -1,6 +1,7 @@
 // The pieces of the Stats page (`(play)/stats.tsx`): a heading for each group, equal tiles two to a row (an icon in
 // a coloured square, the label, one big number and a line under it), the chips line, the trainer bars, a meter and
 // the week of days. Every surface is the page's one panel (`usePanel()`), so the page reads as one even grid.
+import { bbSigned } from '@/state/record-stats';
 import { useState, type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
@@ -140,7 +141,7 @@ export function Meter({ label, value, shown, left, right }: { label: string; val
   );
 }
 
-/** Running total of chips won or lost over the hands given, as a line over a soft fill, gold when up and red when down. */
+/** Running total of big blinds won or lost over the hands given, as a line over a soft fill, gold when up and red when down. */
 export function ChipsLine({ nets }: { nets: number[] }) {
   const c = usePlainColors();
   const panel = usePanel();
@@ -159,16 +160,16 @@ export function ChipsLine({ nets }: { nets: number[] }) {
   const line = series.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
   const fill = `${line} L${x(series.length - 1).toFixed(1)} ${y(0).toFixed(1)} L${x(0).toFixed(1)} ${y(0).toFixed(1)} Z`;
   return (
-    <Panel label={`Chips over your last ${nets.length} hands: ${signed(total)}`}>
+    <Panel label={`Big blinds over your last ${nets.length} hands: ${bbSigned(total)}`}>
       <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm }}>
         <View style={{ flex: 1, gap: 2 }}>
           <TileHead icon="chart.line.uptrend.xyaxis" tint="blue" label={`Your last ${nets.length} ${nets.length === 1 ? 'hand' : 'hands'}`} />
         </View>
       </View>
       <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: spacing.xs }}>
-        <BigNumber size={34}>{signed(total)}</BigNumber>
+        <BigNumber size={34}>{bbSigned(total)}</BigNumber>
         <ThemedText variant="subhead" tone="tertiaryLabel">
-          chips
+          over this stretch
         </ThemedText>
       </View>
       <View onLayout={(e) => setW(Math.floor(e.nativeEvent.layout.width))} style={{ height: h, marginTop: spacing.xxs }}>

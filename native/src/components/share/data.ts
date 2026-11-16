@@ -3,6 +3,7 @@
 import { variantInfo, type Card } from '@/engine';
 import { handName, mainOpponent, momentOf, oddsByStreet, type HandMoment, type StreetOdds } from '@/state/hand-moments';
 import type { GameLine, PokerRecord } from '@/state/record';
+import { bbLabel } from '@/state/record-stats';
 import type { Replay } from '@/state/replays';
 
 export interface ShareWho {
@@ -71,7 +72,7 @@ export function statsData(record: Omit<PokerRecord, 'more'>, streak: number, who
     stats: [
       { label: 'HANDS', value: n(record.hands) },
       { label: 'POTS WON', value: n(record.won) },
-      { label: 'BIGGEST POT', value: n(record.biggestPot) },
+      { label: 'BIGGEST POT', value: bbLabel(record.biggestPot) },
       streak > 0 ? { label: 'STREAK', value: `${streak}d` } : { label: 'GAMES', value: n(record.games.length) },
     ],
     ...(record.best ? { game: `Best hand · ${record.best.name}` } : {}),
@@ -80,7 +81,7 @@ export function statsData(record: Omit<PokerRecord, 'more'>, streak: number, who
       { left: 'Hands played', right: n(record.hands) },
       { left: 'Pots won', right: n(record.won) },
       { left: 'Win rate', right: `${pct(record.won, record.hands)}%` },
-      { left: 'Biggest pot', right: n(record.biggestPot) },
+      { left: 'Biggest pot', right: bbLabel(record.biggestPot) },
       { left: 'Games', right: n(record.games.length) },
       ...(streak > 0 ? [{ left: 'Streak', right: `${streak} days` }] : []),
       ...(record.best ? [{ left: 'Best hand', right: record.best.name }] : []),

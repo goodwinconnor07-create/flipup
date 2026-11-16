@@ -6,7 +6,8 @@ vi.mock('react-native', () => ({ Platform: { OS: 'ios' } }));
 import { DEFAULT_SETTINGS, applyAction, createTable, type Game } from '@game/index';
 
 import { handData, shareText, statsData } from '../src/components/share/data';
-import { forgetLastHand, lastHand, momentsOf, netOf, noteReplay, playedPastPreflop, putIn, saveLastHand, allReplays, winnersOf, type Replay } from '../src/state/replays';
+import { save } from '../src/state/storage';
+import { clearReplays, forgetLastHand, KEEP, lastHand, unsaveLastHand, momentsOf, netOf, noteReplay, playedPastPreflop, putIn, saveLastHand, allReplays, winnersOf, type Replay } from '../src/state/replays';
 import { redactForDevice } from '@game/index';
 
 beforeEach(() => {
@@ -51,7 +52,7 @@ describe('hand bank', () => {
     noteReplay(game, ME, 'bots');
     expect(lastHand()?.number).toBe(1);
     expect(allReplays()).toHaveLength(0);
-    expect(saveLastHand()).toBe(`${game.id}/1`);
+    expect(saveLastHand()).toBe('saved');
     expect(allReplays()).toHaveLength(1);
     // Saving twice keeps one copy.
     saveLastHand();
@@ -67,6 +68,21 @@ describe('hand bank', () => {
     // Nobody's chips appear or vanish: the nets add up to nothing.
     expect(r.players.reduce((sum, p) => sum + netOf(r, p.id), 0)).toBe(0);
     expect(r.holes[r.me]).toHaveLength(2);
+  });
+
+  it('takes a saved hand back out, and stops at the cap instead of pushing one out', () => {
+    clearReplays();
+    const game = finishedHand();
+    noteReplay(game, ME, 'bots');
+    expect(saveLastHand()).toBe('saved');
+    unsaveLastHand();
+    expect(allReplays()).toHaveLength(0);
+    // A full list refuses the next save and keeps every hand it has.
+    const filler = Array.from({ length: KEEP }, (_, i) => ({ id: `old/${i}` }));
+    save('flipup.replays', filler);
+    expect(saveLastHand()).toBe('full');
+    expect(allReplays()).toHaveLength(KEEP);
+    clearReplays();
   });
 
   it('picks the hands worth sharing', () => {
@@ -93,7 +109,7 @@ describe('share card data', () => {
     expect(shareText(d)).toContain('FlipUp');
   });
   it('turns your record into a card', () => {
-    const d = statsData({ hands: 10, won: 4, biggestPot: 300, best: null, games: [], played: [], seen: [] }, 3, who);
+    const d = statsData({ hands: 10, won: 4, biggestPot: 30, best: null, games: [], played: [], seen: [] }, 3, who);
     expect(d.headline).toBe('40%');
     expect(d.stats?.find((s) => s.label === 'STREAK')?.value).toBe('3d');
   });

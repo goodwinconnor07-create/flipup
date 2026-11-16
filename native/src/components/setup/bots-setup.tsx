@@ -11,14 +11,12 @@ import { useProfile } from '@/state/profile';
 import { dispatch, openLocalTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
 import { unlockToHost } from '@/state/unlock';
-import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
 import { ForceScheme, ROUNDED, spacing } from '@/theme';
 
 import { GrainBackground } from '../grain-background';
 import { GameCard } from '../lobby/game-card';
 import { HouseRules } from '../lobby/house-rules';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
-import { RulesCard } from '../rules-card';
 import { ThemedText } from '../themed-text';
 import { randomBot, type RowBot } from './row-bot';
 import { FloatTable } from './float-table';
@@ -58,8 +56,6 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
     return out;
   });
   const [busy, setBusy] = useState(false);
-  // A mini game you've never played: its rules card comes up first, and the deal waits for Continue.
-  const [rulesFor, setRulesFor] = useState<typeof variant | null>(null);
   const room = MAX_SEATS - 1 - bots.length;
 
   const addBot = () => {
@@ -72,10 +68,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   const deal = () => {
     if (busy || !bots.length) return;
     if (!unlockToHost([variant], premium)) return;
-    if (!rulesSeen(variant)) {
-      setRulesFor(variant);
-      return;
-    }
+    // A mini game you've never played shows its rules card on the table, which holds the deal until Continue.
     openAndDeal();
   };
   const openAndDeal = () => {
@@ -138,16 +131,6 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
         disabled={!bots.length}
         onPress={deal}
       />
-      {rulesFor && (
-        <RulesCard
-          variant={rulesFor}
-          onDone={() => {
-            markRulesSeen(rulesFor);
-            setRulesFor(null);
-            openAndDeal();
-          }}
-        />
-      )}
     </GrainBackground>
   );
 }

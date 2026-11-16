@@ -543,7 +543,6 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
   } else if (!winners.length) {
     if (!result.ghost?.kept) return null;
     title = `The ghost keeps ${chips(result.ghost.kept)}`;
-    how = result.ghost.name;
     face = '👻';
   } else {
     const top = winners[0];

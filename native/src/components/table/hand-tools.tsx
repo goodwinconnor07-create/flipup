@@ -9,24 +9,35 @@ import { haptic } from '@/components/haptics';
 import { SwapIcon } from '@/components/swap';
 import { Icon, type IconName } from '@/components/icon';
 import { read, save as store } from '@/state/storage';
-import { lastHand, saveLastHand, useLastHand, useLastSaved } from '@/state/replays';
+import { KEEP, lastHand, saveLastHand, unsaveLastHand, useLastHand, useLastSaved } from '@/state/replays';
 import { brand, radius, spacing, useColors } from '@/theme';
 
-/** Puts the last finished hand in Saved hands (free). */
-export function useSaveHand(): { can: boolean; saved: boolean; save: () => void } {
-  const hand = useLastHand();
-  const saved = useLastSaved();
-  return {
-    can: !!hand,
-    saved,
-    save: () => {
-      if (!hand) return;
-      if (saveLastHand()) haptic.success();
-    },
-  };
+/** Puts the last finished hand in Saved hands (free). When the list is full it says so and offers to open it. */
+export function trySaveHand(): void {
+  const result = saveLastHand();
+  if (result === 'saved') haptic.success();
+  else if (result === 'full') {
+    haptic.failure();
+    Alert.alert('Saved hands are full', `You can keep ${KEEP} saved hands. Delete one to make room for this one.`, [
+      { text: 'Open Saved hands', onPress: () => router.push('/replays') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  }
 }
 
-function BarButton({ icon, label, onPress, tint, dim }: { icon: IconName; label: string; onPress: () => void; tint?: string; dim?: boolean }) {
+/** Takes the last hand back out of Saved hands. */
+export function unsaveHand(): void {
+  unsaveLastHand();
+  haptic.tap();
+}
+
+export function useSaveHand(): { can: boolean; saved: boolean; save: () => void; unsave: () => void } {
+  const hand = useLastHand();
+  const saved = useLastSaved();
+  return { can: !!hand, saved, save: () => hand && trySaveHand(), unsave: unsaveHand };
+}
+
+function BarButton({ icon, label, onPress, onLongPress, tint, dim }: { icon: IconName; label: string; onPress: () => void; onLongPress?: () => void; tint?: string; dim?: boolean }) {
   const colors = useColors();
   return (
     <Pressable
@@ -34,6 +45,7 @@ function BarButton({ icon, label, onPress, tint, dim }: { icon: IconName; label:
       accessibilityLabel={label}
       accessibilityState={{ disabled: dim }}
       onPress={onPress}
+      onLongPress={onLongPress}
       hitSlop={4}
       style={({ pressed }) => ({ width: 40, height: 40, borderRadius: 20, backgroundColor: colors.cell, alignItems: 'center', justifyContent: 'center', opacity: dim ? 0.4 : pressed ? 0.6 : 1 })}
     >
@@ -42,22 +54,25 @@ function BarButton({ icon, label, onPress, tint, dim }: { icon: IconName; label:
   );
 }
 
-/** The bookmark in the table bar: saves the hand that just finished to your bank. Gold once it's in. */
+/** The bookmark in the table bar: saves the hand that just finished. Gold once it's in; tap it again to take it back
+ * out, hold it to open Saved hands. */
 export function SaveHandButton() {
-  const { can, saved, save } = useSaveHand();
+  const { can, saved, save, unsave } = useSaveHand();
   const hand = useLastHand();
   return (
     <BarButton
       icon={saved ? 'bookmark.fill' : 'bookmark'}
-      label={!can ? 'Save hand: no finished hand yet' : saved ? `Hand ${hand?.number} is in Saved hands` : `Save hand ${hand?.number}`}
+      label={!can ? 'Save hand: no finished hand yet' : saved ? `Hand ${hand?.number} is saved. Tap to remove it.` : `Save hand ${hand?.number}`}
       tint={saved ? brand.gold : undefined}
       dim={!can}
+      onLongPress={() => {
+        haptic.select();
+        router.push('/replays');
+      }}
       onPress={() => {
         if (!can) return;
-        if (saved) {
-          haptic.tap();
-          router.push('/replays');
-        } else save();
+        if (saved) unsave();
+        else save();
       }}
     />
   );
@@ -65,15 +80,16 @@ export function SaveHandButton() {
 
 /** The table's small share button: share the last hand as a card, save it, or share your stats. */
 export function ShareButton() {
-  const { can, saved, save } = useSaveHand();
-  return <BarButton icon="square.and.arrow.up" label="Share" onPress={() => shareMenu(can, saved, save)} />;
+  const { can, saved, save, unsave } = useSaveHand();
+  return <BarButton icon="square.and.arrow.up" label="Share" onPress={() => shareMenu(can, saved, save, unsave)} />;
 }
 
-function shareMenu(can: boolean, saved: boolean, save: () => void): void {
+function shareMenu(can: boolean, saved: boolean, save: () => void, unsave: () => void): void {
   haptic.tap();
   const items: { title: string; go: () => void }[] = [
     ...(can ? [{ title: 'Share the last hand', go: () => router.push({ pathname: '/share-card', params: { kind: 'hand', id: 'last' } }) }] : []),
-    ...(can && !saved ? [{ title: 'Save the last hand', go: save }] : []),
+    ...(can ? [saved ? { title: 'Remove the last hand from Saved hands', go: unsave } : { title: 'Save the last hand', go: save }] : []),
+    { title: 'Saved hands', go: () => router.push('/replays') },
     { title: 'Share my stats', go: () => router.push({ pathname: '/share-card', params: { kind: 'stats' } }) },
     { title: 'All share cards', go: () => router.push('/share') },
   ];

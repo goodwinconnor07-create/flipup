@@ -227,6 +227,29 @@ describe('variant tables', { timeout: TABLE_MS }, () => {
     });
     expect(shown).toBeGreaterThan(0);
   });
+
+  it("builds the ghost's bounty when it wins and pays it to whoever beats it", () => {
+    let grew = 0;
+    let paid = 0;
+    let bounty = 0;
+    play('ghost', 60, (g) => {
+      const r = g.hand?.result;
+      if (!r?.ghost) return;
+      const held = g.hand!.carry ?? 0;
+      // Its bounty after the hand is exactly what it kept (the old bounty rides in the main pot: kept if the ghost
+      // wins that pot, paid out if somebody beats it).
+      expect(g.ghostPot).toBe(r.ghost.kept);
+      if (r.ghost.kept > 0) grew++;
+      if (r.ghost.paid) {
+        paid++;
+        expect(r.ghost.paid).toBe(held);
+        expect(r.pots[0].winners.length).toBeGreaterThan(0);
+      }
+      bounty = g.ghostPot ?? 0;
+    });
+    expect(grew + paid).toBeGreaterThan(0);
+    expect(bounty).toBeGreaterThanOrEqual(0);
+  });
 });
 
 describe('the second batch', { timeout: TABLE_MS }, () => {

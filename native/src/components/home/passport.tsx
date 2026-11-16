@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
 import { usePokerRecord } from '@/state/record';
+import { bbLabel } from '@/state/record-stats';
 import { cardColors, radius, ROUNDED, spacing } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -40,7 +41,7 @@ export function PassportCard({ full }: { full?: boolean }) {
         <Stat label="Win rate" value={`${pct(record.won, record.hands)}%`} note="of hands you played" big />
       </View>
       <View style={{ flexDirection: 'row', gap: spacing.md }}>
-        <Stat label="Biggest pot" value={n(record.biggestPot)} grow={1.6} />
+        <Stat label="Biggest pot" value={bbLabel(record.biggestPot)} grow={1.6} />
         <Stat label="Games" value={n(record.games.length)} />
         <Stat label="Table wins" value={n(wins)} />
       </View>

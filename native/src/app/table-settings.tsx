@@ -1,34 +1,37 @@
 import { router, Stack } from 'expo-router';
 import { useState } from 'react';
 
-
-import { SheetScroll } from '@/components/sheet-scroll';
-import { Button } from '@/components/button';
-import { SettingsFields } from '@/components/settings-fields';
-import { ThemedText } from '@/components/themed-text';
+import { NativeMenu } from '@/components/native-menu';
+import { useSettingsGroups } from '@/components/settings-fields';
 import type { Settings } from '@/engine';
 import { dispatch, useTable } from '@/state/session';
-import { spacing, useColors } from '@/theme';
 
 /** The host changes the table's chips, blinds and house rules. Mid-game, changes start next hand. */
 export default function TableSettings() {
-  const colors = useColors();
   const t = useTable();
-  const [settings, setSettings] = useState<Settings | null>(t.game?.settings ?? null);
-  if (!t.game || !settings) return null;
+  if (!t.game) return null;
+  return <Editor start={t.game.settings} playing={t.game.status === 'playing'} online={t.mode === 'online'} />;
+}
+
+function Editor({ start, playing, online }: { start: Settings; playing: boolean; online: boolean }) {
+  const [settings, setSettings] = useState<Settings>(start);
+  const groups = useSettingsGroups({ settings, onChange: setSettings, online });
   const save = () => {
     if (dispatch({ type: 'settings', settings }) === null) router.back();
   };
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.xl }} style={{ backgroundColor: colors.background }}>
+    <>
       <Stack.Screen options={{ title: 'Table settings' }} />
-      {t.game.status === 'playing' && (
-        <ThemedText variant="subhead" tone="tertiaryLabel">
-          Changes start next hand. A new stack size is for rebuys and new players.
-        </ThemedText>
-      )}
-      <SettingsFields settings={settings} onChange={setSettings} online={t.mode === 'online'} />
-      <Button variant="primary" size="lg" title="Save" onPress={save} />
-    </SheetScroll>
+      <NativeMenu
+        groups={[
+          ...groups,
+          {
+            id: 'save',
+            footer: playing ? 'Changes start next hand. A new stack size is for rebuys and new players.' : undefined,
+            items: [{ kind: 'button', id: 'save', title: 'Save', onPress: save }],
+          },
+        ]}
+      />
+    </>
   );
 }

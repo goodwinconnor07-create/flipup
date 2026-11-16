@@ -325,7 +325,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
   log(game, `-- Hand #${hand.number} (dealer: ${button.name}) --`);
   if (raised) log(game, `Blinds go up to ${n0(game.settings.smallBlind)}/${n0(game.settings.bigBlind)}`);
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
-  if (carry) log(game, `The ghost's ${n0(carry)} is in the pot`);
+  if (carry) log(game, `The ghost's ${n0(carry)} bounty is in the pot`);
 
   // Antes (Imposter): dead money from everyone before the blinds. It counts in the pot but isn't a bet on the street.
   const ante = anteBigBlinds(variant) * game.settings.bigBlind;
@@ -1074,6 +1074,7 @@ export function showdown(game: Game, ctx: ActionContext): void {
   if (hand.carry && pots.length) pots[0].amount += hand.carry;
   const ghost = hand.ghost ? bestHand(variant, hand.ghost, hand.board) : null;
   let kept = 0;
+  let paid = 0;
   const won: Record<string, number> = {};
   /** Shares chips out between winners; odd chips go to the winners closest to the left of the button. */
   const pay = (amount: number, winners: string[]) => {
@@ -1147,6 +1148,11 @@ export function showdown(game: Game, ctx: ActionContext): void {
     log(game, `The ghost shows ${cardsText(hand.ghost!)} (${ghost.detail})`);
     if (kept) log(game, `Nobody beats the ghost: it keeps ${n0(kept)} for the next hand`);
     game.ghostPot = (game.ghostPot ?? 0) + kept;
+    // Its bounty sits in the main pot: whoever beats the ghost for that pot takes it too.
+    if (hand.carry && pots[0]?.winners.length) {
+      paid = hand.carry;
+      log(game, `${pots[0].winners.map((id) => nameOf(game, id)).join(' and ')} beat${pots[0].winners.length === 1 ? 's' : ''} the ghost and ${pots[0].winners.length === 1 ? 'takes' : 'take'} its ${n0(paid)} bounty`);
+    }
   }
   pots.forEach((pot, i) => {
     if (!pot.winners.length || counts) return;
@@ -1169,7 +1175,7 @@ export function showdown(game: Game, ctx: ActionContext): void {
     won,
     names,
     showdown: true,
-    ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept } } : {}),
+    ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept, ...(paid ? { paid } : {}) } } : {}),
     ...(counts ? { blackjack: { counts: Object.fromEntries([...counts].filter(([id]) => names[id])), poker: bjPoker, winners: bjWinners } } : {}),
   };
   finishHand(game, ctx, TIMING.afterShowdown);

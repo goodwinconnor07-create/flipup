@@ -641,8 +641,6 @@ export function botSays(game: Game, playerId: string, event: TalkEvent, rng: () 
   if (!player?.bot) return 0;
   // Scroll cards are quiet, so nothing muddies the lesson.
   if (game.card) return 0;
-  // A Style Detective table is quiet too: every style has lines of its own, which would give the answer away.
-  if (game.challenge?.quiet) return 0;
   const everyday = usesEverydayBots(game);
   // At ordinary tables the talk is spaced out a little more than at the old styles' tables.
   const tableLast = Math.max(-Infinity, ...Object.values(game.talkAt ?? {}));
@@ -765,7 +763,7 @@ export function dramaPause(
  */
 export function variantTalk(game: Game, rng: () => number, now: number): void {
   const v = variantOf(game);
-  if (v === 'holdem' || game.card || game.challenge?.quiet) return;
+  if (v === 'holdem' || game.card) return;
   const hand = game.hand;
   const botIds = game.players.filter((p) => p.bot).map((p) => p.id);
   if (!botIds.length) return;
@@ -842,16 +840,6 @@ export function variantTalk(game: Game, rng: () => number, now: number): void {
     }
     seen.points = points;
   }
-  const missions = hand.missionsDone ?? [];
-  if (missions.length > seen.missions) {
-    for (const m of missions.slice(seen.missions)) if (watched) say(anyBot([m.by]) ?? (game.players.find((p) => p.id === m.by)?.bot ? m.by : undefined), 'missionDone', m.by);
-    seen.missions = missions.length;
-  }
-  const race = game.missions?.last?.race ?? 0;
-  if (race > seen.race) {
-    seen.race = race;
-    if (watched) say(anyBot(), 'missionRace');
-  }
   if (hand.result && !seen.result) {
     seen.result = true;
     const r = hand.result;
@@ -874,8 +862,6 @@ const blank = (hand: number, game: Game): TalkSeen => ({
   powers: 0,
   busts: 0,
   hits: 0,
-  missions: 0,
-  race: game.missions?.last?.race ?? 0,
   points: '',
   discards: false,
   dice: false,

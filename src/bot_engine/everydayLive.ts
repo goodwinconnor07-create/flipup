@@ -29,7 +29,7 @@ export interface EverydayBotState {
   director?: DirectorState;
   directedHand?: number;
 }
-const eligible = (p: Player) => p.bot && !p.labStyle && p.botKind !== 'human-poker';
+const eligible = (p: Player) => p.bot && !p.labStyle;
 const factory = new BotFactory();
 const casual = new BotService(new EverydayProvider(96), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });
 const challenge = new BotService(new EverydayProvider(160), 'contextual', LEARNING_CONFIG, { experience: 'human-table-1' });

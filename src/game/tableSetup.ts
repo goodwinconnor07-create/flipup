@@ -44,7 +44,7 @@ export function withBlindCap(settings: Settings): Settings {
 
 /** The settings a game plays best with: Ghost wants deep stacks, Imposter bigger blinds. */
 export function withVariant(settings: Settings, variant: Variant): Settings {
-  let next: Settings = { ...settings, variant, ...(variant !== 'holdem' && settings.humanPoker ? { humanPoker: false } : {}) };
+  let next: Settings = { ...settings, variant };
   // The ghost's own start (the host can still change it after picking the game).
   if (variant === 'ghost' && settings.variant !== 'ghost') next = { ...next, ...GHOST_START };
   // Imposter plays for bigger blinds (about 50 big blinds deep), so every hand matters.

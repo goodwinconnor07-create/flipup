@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { crowdAggression, crowdDeviation, missionPull, recalledRemoved } from './botGames';
+import { crowdAggression, crowdDeviation, recalledRemoved } from './botGames';
 import { GAME_EVENTS, GAME_FRIENDLY, GAME_TRASH } from './botGameLines';
 import { botLineText, variantTalk } from './botTalk';
 import { splitBeats, ONE_LINE } from './chat';
@@ -26,29 +26,6 @@ describe('Memory Poker recall', () => {
     expect(total / 40).toBeLessThan(19.5);
   });
   it('is nothing when no cards were taken out', () => expect(recalledRemoved(undefined, 'x', 1)).toEqual([]));
-});
-
-describe('Secret Missions bots', () => {
-  const game = (mission: string | null) => ({ missions: { race: 1, finished: [], players: { me: { mission, since: 1, done: 0 } } } }) as unknown as Game;
-  const seat = (cards: string[]) => ({ playerId: 'me', cards }) as unknown as Hand['seats'][number];
-  const hand = { street: 'flop', buttonId: 'x', bbId: 'y', sbId: 'z' } as unknown as Hand;
-  it('plays more hands that fit a mission about its cards, and no more when they do not', () => {
-    expect(missionPull(game('twins'), hand, seat(['9s', '9d'])).loose).toBeGreaterThan(0.4);
-    expect(missionPull(game('twins'), hand, seat(['9s', 'Kd'])).loose).toBe(0);
-    expect(missionPull(game('red'), hand, seat(['9h', 'Kd'])).loose).toBeGreaterThan(0);
-    expect(missionPull(game('red'), hand, seat(['9s', 'Kd'])).loose).toBe(0);
-    expect(missionPull(game('lucky7'), hand, seat(['7s', 'Kd'])).loose).toBeGreaterThan(0);
-  });
-  it('turns the play to the goal: no betting to slow roll, check-raising for the trap, shoving to shove', () => {
-    expect(missionPull(game('slowroll'), hand, seat(['9s', 'Kd'])).noBet).toBe(true);
-    expect(missionPull(game('trapdoor'), hand, seat(['9s', 'Kd'])).trap).toBe(true);
-    expect(missionPull(game('shove'), hand, seat(['9s', 'Kd'])).shove).toBe(true);
-    expect(missionPull(game('relentless'), hand, seat(['9s', 'Kd'])).bet).toBeGreaterThan(0.3);
-  });
-  it('does nothing without a mission', () => {
-    const none = missionPull(game(null), hand, seat(['9s', 'Kd']));
-    expect(none).toMatchObject({ loose: 0, bet: 0, call: 0, noBet: false, trap: false, shove: false });
-  });
 });
 
 describe('Imposter reading', () => {

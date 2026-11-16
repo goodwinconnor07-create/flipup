@@ -25,7 +25,6 @@ interface Member {
   deviceId: string;
   name: string;
   emoji: string;
-  friendCode?: string;
   points: number[];
 }
 
@@ -47,7 +46,6 @@ interface Stored {
 export interface PartyPerson {
   name: string;
   emoji: string;
-  friendCode?: string;
 }
 
 type Result = { ok: true; view: PartyView } | { ok: false; error: string };
@@ -87,7 +85,7 @@ export class PartyRoom extends DurableObject<Env> {
     if (!data) return { ok: false, error: 'No party with that code.' };
     const have = data.members.find((m) => m.deviceId === deviceId);
     if (have) {
-      Object.assign(have, { name: this.uniqueName(data, cleanName(person.name), have.id), emoji: person.emoji, friendCode: person.friendCode });
+      Object.assign(have, { name: this.uniqueName(data, cleanName(person.name), have.id), emoji: person.emoji });
     } else {
       if (data.status !== 'lobby') return { ok: false, error: 'That party has already started.' };
       if (data.members.length >= PARTY_MAX_PLAYERS) return { ok: false, error: 'That party is full.' };
@@ -226,7 +224,7 @@ export class PartyRoom extends DurableObject<Env> {
 
   private member(deviceId: string, person: PartyPerson): Member {
     const name = cleanName(person.name);
-    return { id: newId(8), deviceId, name: isNameBlocked(name) ? 'Player' : name, emoji: person.emoji, friendCode: person.friendCode, points: [] };
+    return { id: newId(8), deviceId, name: isNameBlocked(name) ? 'Player' : name, emoji: person.emoji, points: [] };
   }
 
   private uniqueName(data: Stored, name: string, exceptId: string): string {
@@ -280,7 +278,7 @@ export class PartyRoom extends DurableObject<Env> {
       round: data.round,
       table: data.table,
       nextAt: data.nextAt,
-      members: data.members.map(({ id, name, emoji, friendCode, points }) => ({ id, name, emoji, ...(friendCode ? { friendCode } : {}), points })),
+      members: data.members.map(({ id, name, emoji, points }) => ({ id, name, emoji, points })),
       live: data.live,
     };
   }

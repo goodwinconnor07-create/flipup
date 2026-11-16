@@ -39,8 +39,6 @@ export interface PartyMemberView {
   id: string;
   name: string;
   emoji: string;
-  /** Their friend code, if they have one, so others can add them. */
-  friendCode?: string;
   /** Points earned in each finished round, in order. */
   points: number[];
 }

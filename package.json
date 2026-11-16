@@ -11,7 +11,6 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
-    "e2e": "playwright test",
     "check": "npm run typecheck && npm run test && npm run build",
     "dead": "node scripts/deadCode.mjs",
     "deploy": "npm run build && wrangler deploy",
@@ -34,9 +33,6 @@
     "bot:responses": "tsx scripts/calibrateResponses.ts",
     "bot:responses-v2": "tsx scripts/calibrateResponsesV2.ts",
     "bot:heads-up": "tsx scripts/diagnoseHeadsUp.ts",
-    "bot:research-check": "tsx scripts/evaluateBotResearch.ts",
-    "bot:unpack-research": "tsx scripts/unpackResearchShare.ts",
-    "bot:review-research": "tsx scripts/reviewBotResearch.ts",
     "bot:experience": "tsx scripts/evaluateLiveExperience.ts",
     "bot:decision-worlds": "tsx scripts/reviewHeadsUpDecisions.ts",
     "bot:compare-responses": "tsx scripts/evaluateCalibrated.ts",
@@ -50,19 +46,10 @@
   "engines": {
     "node": ">=22.13"
   },
-  "dependencies": {
-    "jsqr": "^1.4.0",
-    "qrcode-generator": "^2.0.4",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
-  },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.63.1",
     "@playwright/test": "1.56.1",
     "@types/node": "^22.20.5",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
     "prettier": "^3.8.1",
     "tsx": "4.20.6",
     "typescript": "^7.0.2",

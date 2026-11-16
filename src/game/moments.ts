@@ -112,15 +112,8 @@ export function momentCaption(variant: Variant, hand: Hand, now: number): string
       return null;
     case 'discards':
       return '🍍 Cards thrown away';
-    case 'slides':
-      return '🔄 Cards slide to the left';
-    case 'peels':
-      return '🧅 Everyone peels a card';
     case 'reveal':
       if (variant === 'beanstalk' && hand.board.length >= 3) return '🌱 Everyone grows a card';
-      if (variant === 'elevator' && hand.board.length >= 4) return '⬆️ The board goes up a floor';
-      if (variant === 'belt' && hand.dropped?.length) return hand.lastStop ? '🛤️ Last stop: one more falls off' : '🛤️ One card in, one falls off';
-      if (variant === 'chain' && hand.burned?.length) return "🔗 Cards that don't link burn";
       return null;
     default:
       return null;

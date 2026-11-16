@@ -1,7 +1,6 @@
 // Messages between the app and the table server (a Cloudflare Durable Object).
 
 import type { Action, Game, HandLog, Settings, Status } from './types';
-import type { CampaignCard } from './campaign';
 
 /** What the join screen needs to know about a table. */
 export interface TableInfo {
@@ -11,8 +10,6 @@ export interface TableInfo {
   players: { name: string; emoji: string; bot: boolean }[];
   settings: Settings;
   seatsLeft: number;
-  /** A campaign table with friends: what it costs to sit down, and for a tournament the prize drawn. */
-  campaign?: Game['campaign'];
 }
 
 export interface CreateTableRequest {
@@ -48,22 +45,3 @@ export type ServerMessage =
 /** Heartbeats are fixed strings so the server can answer without waking up. */
 export const PING = '{"t":"ping"}';
 export const PONG = '{"t":"pong"}';
-
-/** A friend code's public details. */
-export interface FriendCardInfo {
-  code: string;
-  name: string;
-  emoji: string;
-  /** Their username, once they've chosen one. Friends find each other by it. */
-  username?: string;
-  /** How their campaign is going, if they've shared it. */
-  campaign?: CampaignCard;
-  /** Their country (ISO 3166 two letters), only if they chose to show it. Shown as a flag on the boards. */
-  country?: string;
-  /** Their best Bankroll badge ("TOP10 NOV"), if they've earned one. */
-  badge?: string;
-}
-
-export interface CreateFriendCardResponse {
-  code: string;
-}

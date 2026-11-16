@@ -27,13 +27,9 @@
     "bindings": [
       { "name": "TABLE_ROOM", "class_name": "TableRoom" },
       { "name": "PARTY_ROOM", "class_name": "PartyRoom" },
-      { "name": "FRIEND_CARD", "class_name": "FriendCard" },
-      { "name": "BLACKJACK_ROOM", "class_name": "BlackjackRoom" },
       { "name": "REPORT_BOX", "class_name": "ReportBox" },
-      { "name": "BOT_RESEARCH", "class_name": "BotResearchRoom" },
       { "name": "ENTITLEMENTS", "class_name": "Entitlements" },
-      { "name": "BANKROLL_ROOM", "class_name": "BankrollRoom" },
-      { "name": "LEADERBOARD", "class_name": "Leaderboard" },
+      { "name": "WAITLIST", "class_name": "Waitlist" },
     ],
   },
   // Production already recorded v3 without the classes below ever being created, so they are all made in v4.
@@ -55,9 +51,10 @@
     { "tag": "v9", "new_sqlite_classes": ["BankrollRoom", "Leaderboard"] },
     // Private, opt-in bot research sessions. Each expires after 30 days.
     { "tag": "v10", "new_sqlite_classes": ["BotResearchRoom"] },
+    // 15 Nov 2026: the website app is gone and the iPhone app is the only client. Its web-only rooms go, and their
+    // data with them (friend cards, Blackjack tables, bot research, Bankroll and its boards). The launch waitlist comes.
+    { "tag": "v11", "deleted_classes": ["FriendCard", "BlackjackRoom", "BotResearchRoom", "BankrollRoom", "Leaderboard"], "new_sqlite_classes": ["Waitlist"] },
   ],
-  // Every hour: the Sunday cut once it's due, and closing last month's board (badges) on the 1st. Both are safe to run twice.
-  "triggers": { "crons": ["0 * * * *"] },
   "vars": {
     // "1" makes the server refuse Premium games and looks to phones that haven't shown a purchase. Leave it "0" until the
     // iPhone app is the only client that can host them (the web app has no payment yet) and the App Store Server Notifications URL is set.

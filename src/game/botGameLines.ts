@@ -44,10 +44,7 @@ export type GameTalkEvent =
   // Power Cards
   | 'powerMine'
   | 'powerSeen'
-  | 'powerOnMe'
-  // Secret Missions
-  | 'missionDone'
-  | 'missionRace';
+  | 'powerOnMe';
 
 export const GAME_EVENTS: GameTalkEvent[] = [
   'discardsShown',
@@ -76,8 +73,6 @@ export const GAME_EVENTS: GameTalkEvent[] = [
   'powerMine',
   'powerSeen',
   'powerOnMe',
-  'missionDone',
-  'missionRace',
 ];
 
 /** How often a bot with something to say about it says it (before its chattiness): these are the point of the game, so high. */
@@ -108,8 +103,6 @@ export const GAME_CHANCE: Record<GameTalkEvent, number> = {
   powerMine: 0.6,
   powerSeen: 0.75,
   powerOnMe: 1,
-  missionDone: 0.9,
-  missionRace: 1,
 };
 
 export const GAME_TRASH: Record<GameTalkEvent, string[]> = {
@@ -139,8 +132,6 @@ export const GAME_TRASH: Record<GameTalkEvent, string[]> = {
   powerMine: ['Power time.', 'Using it.|Watch.', 'Here goes.|My power.', 'Played it.|Deal with it.', 'Power up.', 'Surprise.'],
   powerSeen: ['A power.|Of course.', 'Careful.|Power on the table.', 'Sneaky.|I saw that.', 'Oh, a power.|Cute.', 'Powers.|Here we go.', 'Noted.|Power played.'],
   powerOnMe: ['Hey!|Aimed at me?', 'Targeting me?|Rude.', 'Not me!|Pick someone else.', 'Seriously.|Me?', 'That’s personal.', 'Bold move.|At me.'],
-  missionDone: ['Mission done.|Pay up.', 'Someone’s on|a mission.', 'There’s the reward.|Ugh.', 'A mission.|Again.', 'Guess it was|a mission.', 'Paid.|Fine.'],
-  missionRace: ['Race over.|Chips shuffled.', 'The race is run.', 'Standings changed.|Wow.', 'Race settled.|Ouch.', 'New race.|Here we go.'],
 };
 
 export const GAME_FRIENDLY: Record<GameTalkEvent, string[]> = {
@@ -170,6 +161,4 @@ export const GAME_FRIENDLY: Record<GameTalkEvent, string[]> = {
   powerMine: ['Using my power!', 'Here goes!', 'Power time!', 'Let’s try this.', 'Ooh, my power.'],
   powerSeen: ['Ooh, a power!', 'Nice one!', 'Sneaky!', 'A power!|Fun.', 'Watch out!', 'Powers!'],
   powerOnMe: ['Hey, me?!', 'Aimed at me!', 'Not me!', 'Aw, me?', 'Ha, targeted!', 'Really?|Me?'],
-  missionDone: ['Mission done!', 'Nice, a mission!', 'Reward time!', 'Well played!', 'Someone’s mission!', 'Paying up.'],
-  missionRace: ['Race over!', 'The race is done!', 'Chips moved!', 'New race!', 'Wow, standings!'],
 };

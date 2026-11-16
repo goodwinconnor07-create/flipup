@@ -5,14 +5,9 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(BASE)) throw new Error('l
 const DEV = 'dev' + Math.random().toString(36).slice(2, 14);
 const paths = [
   '/api/health', '/api/tables', '/api/tables/ACES42', '/api/tables/%00', '/api/tables/' + 'A'.repeat(5000),
-  '/api/friends', '/api/friends/123456', '/api/friends/123456/invite', '/api/friends/123456/invites', '/api/friends/123456/uninvite',
-  '/api/friends/123456/decline', '/api/friends/123456/request', '/api/friends/123456/requests', '/api/friends/123456/answer',
-  '/api/friends/123456/unfriend', '/api/friends/123456/inbox', '/api/friends/123456/username', '/api/friends/%zz', '/api/friends/ABCDE/inbox',
-  '/api/usernames/bob', '/api/usernames/' + 'a'.repeat(3000), '/api/usernames/%E0%A4%A', '/api/usernames/..%2f..%2f',
   '/api/parties', '/api/parties/ACES42', '/api/parties/ACES42/join', '/api/parties/ACES42/leave', '/api/parties/ACES42/start',
   '/api/parties/ACES42/skip', '/api/parties/ACES42/settings', '/api/parties/%zz',
-  '/api/blackjack', '/api/blackjack/ABCDE/ws', '/api/reports', '/api/boards/bankroll', '/api/boards/daily:9999-99-99', '/api/boards/%zz',
-  '/api/daily/score', '/api/daily/%zz', '/api/bankroll/123456', '/api/bankroll/123456/sit', '/api/bankroll/123456/rebuy', '/api/bankroll/12/ws', '/api/bankroll/%zz',
+  '/api/reports', '/api/waitlist', '/api/waitlist/confirm?t=00', '/api/waitlist/leave?t=%zz', '/api/waitlist/count', '/api/waitlist/launch',
   '/api/premium/verify', '/api/premium/status', '/api/premium/restore', '/api/apple/notifications', '/api/nope', '/', '/%00', '/..%2f..%2fetc/passwd', '/.well-known/apple-app-site-association',
 ];
 const bodies = [
@@ -55,6 +50,5 @@ for (const p of paths) for (const m of methods) for (const b of bodies) {
 }
 // header tricks on a few routes
 for (const h of [{ origin: 'https://evil.example' }, { origin: 'null' }, { origin: 'http://localhost.evil.example' }, { 'cf-connecting-ip': '1.2.3.4, 5.6.7.8' }, { 'x-forwarded-for': '<script>' }, { host: 'evil.example' }])
-  for (const p of ['/api/tables', '/api/reports', '/api/friends/123456/request']) await hit('POST', p, JSON.stringify({ deviceId: DEV }), h);
 console.log(`${n} requests in ${((Date.now() - t0) / 1000).toFixed(1)}s, ${bad.size} distinct problems`);
 for (const [k, v] of bad) console.log('-', k, '\n    body:', JSON.stringify(v.body), '\n    reply:', JSON.stringify(v.text));

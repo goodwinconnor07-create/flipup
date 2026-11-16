@@ -7,10 +7,7 @@ import { dealMoment, MOMENT_TIMING, scaled } from './moments';
 import { handRecord } from './record';
 import { fullDeck, isRed, rankName, rankOf, shuffle, type Card } from './cards';
 import { effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
-import { afterSlides, slideChoice, sliders, slideTargets } from './slide';
-import { climb, nextLink, peelChoice, peelers } from './twists';
-import { drawMission, MISSION_GOAL, MISSION_SWAP_AFTER, missionDone, secretMission, raceChange, raceNeeds, raceOrder, rewardOf } from './missions';
-import { anteBigBlinds, bestHand, botVote, ploBest, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
+import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, PowerUse, Seat, Street } from './types';
 
 export const TIMING = {
@@ -274,7 +271,7 @@ export function startHand(game: Game, ctx: ActionContext): void {
     const at = Math.floor(ctx.rng() * n);
     imposter = seats[at].playerId;
     seats.forEach((s, i) => (s.cards = [...(i === at ? own : same)]));
-  } else for (let round = 0; round < holeCount(variant, n); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
+  } else for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
   // Haunted Pot: the ghost's two cards come last, face down.
   const ghost = variant === 'ghost' ? [deck.shift()!, deck.shift()!] : undefined;
   // Whatever the ghost kept goes into this pot (even if the table has since switched to another game).
@@ -320,7 +317,6 @@ export function startHand(game: Game, ctx: ActionContext): void {
   };
   game.hand = hand;
   game.hands = (game.hands ?? 0) + 1;
-  if (variant === 'missions') dealMissions(game, hand, ctx.rng);
   log(game, `-- Hand #${hand.number} (dealer: ${button.name}) --`);
   if (raised) log(game, `Blinds go up to ${n0(game.settings.smallBlind)}/${n0(game.settings.bigBlind)}`);
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
@@ -475,16 +471,8 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   log(game, `${nameOf(game, playerId)} leaves and folds`);
   hand.seq += 1;
   if (hand.seats.filter((s) => !s.folded).length === 1) {
-    hand.sliding = false;
-    hand.slides = undefined;
-    hand.picked = undefined;
-    hand.peeling = false;
-    hand.peels = undefined;
-    hand.peelPicked = undefined;
     winWithoutShowdown(game, ctx);
-  } else if (hand.sliding && !pendingSlides(game).length) endSlides(game, ctx);
-  else if (hand.peeling && !pendingPeels(game).length) endPeels(game, ctx);
-  else if (hand.discarding && !pendingDiscards(game).length) endDiscards(game, ctx);
+  } else if (hand.discarding && !pendingDiscards(game).length) endDiscards(game, ctx);
   else if (hand.voting && !pendingVoters(game).length) endVote(game, ctx);
 }
 
@@ -559,37 +547,13 @@ const NEXT_STREET: Record<Street, Street | null> = { preflop: 'flop', flop: 'tur
 
 function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): void {
   const variant = variantOf(game);
-  // Conveyor Belt: after the river comes the last stop, one more card and one more round, still called the river.
-  const lastStop = variant === 'belt' && hand.street === 'river';
-  const next = lastStop ? 'river' : NEXT_STREET[hand.street]!;
+  const next = NEXT_STREET[hand.street]!;
   // Crazy Pineapple: anyone who still has three cards when the turn comes (all in, out of time) keeps their best two.
   if (next === 'turn' && variant === 'pineapple') for (const s of hand.seats) if (!s.folded && s.cards.length > 2) throwAway(game, s, null);
   if (burns(variant)) hand.deck.shift(); // burn
   const count = streetCards(variant, next as 'flop' | 'turn' | 'river');
-  // Elevator: every card already out goes up a rank before the new one lands.
-  if (variant === 'elevator' && hand.board.length) {
-    hand.board = climb(hand.board);
-    hand.log.push(`The board goes up a floor: ${cardsText(hand.board)}`);
-  }
-  // Conveyor Belt: the card on the left end falls off as the new one comes in.
-  if (variant === 'belt' && hand.board.length >= 3) {
-    const off = hand.board.shift()!;
-    hand.dropped = [...(hand.dropped ?? []), off];
-    hand.log.push(`${cardsText([off])} falls off the belt`);
-  }
-  if (lastStop) hand.lastStop = true;
   const from = hand.board.length;
-  for (let i = 0; i < count; i++) {
-    if (variant === 'chain') {
-      // Chain Reaction: each card has to share a rank or a suit with the one before it; the rest burn face up.
-      const card = nextLink(hand);
-      if (card) hand.board.push(card);
-      continue;
-    }
-    // Elevator: a card the climbing board already shows is set aside, so two board cards are never the same.
-    while (variant === 'elevator' && hand.deck.length > 1 && hand.board.includes(hand.deck[0])) hand.deck.push(hand.deck.shift()!);
-    hand.board.push(hand.deck.shift()!);
-  }
+  for (let i = 0; i < count; i++) hand.board.push(hand.deck.shift()!);
   // Bean Stalk: everyone still in gets another card of their own, starting left of the button.
   if (variant === 'beanstalk') {
     const n = hand.seats.length;
@@ -600,7 +564,7 @@ function dealStreet(game: Game, hand: Hand, rng: () => number, now: number): voi
     }
   }
   hand.street = next;
-  const label = lastStop ? 'Last stop' : next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';
+  const label = next === 'flop' ? 'Flop' : next === 'turn' ? 'Turn' : 'River';
   // Like Poker Now: the new card on its own after the ones already out.
   hand.log.push(
     next === 'flop'
@@ -640,7 +604,7 @@ function endStreet(game: Game, ctx: ActionContext): void {
   hand.deadline = null;
   hand.actAt = null;
 
-  if (hand.street === 'river' && !moreToCome(game)) {
+  if (hand.street === 'river') {
     startShowdown(game, ctx);
     return;
   }
@@ -670,8 +634,6 @@ function endStreet(game: Game, ctx: ActionContext): void {
 
   // Crazy Pineapple: after the flop betting everyone still in throws a card away. Bots do it at once.
   if (askForDiscards(game, ctx)) return;
-  // Onion: after the flop and turn betting everyone still in peels a card off, face up.
-  if (askForPeels(game, ctx)) return;
   pauseBeforeNextStreet(game, ctx);
 }
 
@@ -736,83 +698,6 @@ export function startShowdown(game: Game, ctx: ActionContext): void {
     return;
   }
   showdown(game, ctx);
-}
-
-// ── Secret Missions ─────────────────────────────────────────────────────────
-
-/**
- * At the deal: everyone without a mission (new to the race, or completed one last hand) gets one, and a mission held
- * for `MISSION_SWAP_AFTER` hands without being completed is swapped for a new one.
- */
-export function dealMissions(game: Game, hand: Hand, rng: () => number): void {
-  const m = (game.missions ??= { race: 1, players: {}, finished: [] });
-  for (const s of hand.seats) {
-    const cur = m.players[s.playerId];
-    if (!cur) m.players[s.playerId] = { mission: drawMission(rng), since: hand.number, done: 0 };
-    else if (!cur.mission) Object.assign(cur, { mission: drawMission(rng), since: hand.number });
-    else if (hand.number - cur.since >= MISSION_SWAP_AFTER) {
-      Object.assign(cur, { mission: drawMission(rng, cur.mission), since: hand.number });
-      log(game, `${nameOf(game, s.playerId)}'s mission is swapped for a new one`);
-    }
-  }
-}
-
-/**
- * At the end of a hand: every mission completed in it is paid (each other player dealt in pays its reward, or what
- * they have left), and once half the table has completed the goal the race is settled: each place changes that
- * player's stack by its share (chips are made or taken away here, and only here), and a new race starts.
- * Returns whether a race was settled.
- */
-export function settleMissions(game: Game, hand: Hand): boolean {
-  const m = game.missions;
-  if (!m || !hand.result) return false;
-  // Who completed theirs, worked out before anyone pays (paying can't change what happened in the hand).
-  const done = hand.seats.filter((s) => {
-    const mine = m.players[s.playerId];
-    return !!mine?.mission && missionDone(game, hand, s.playerId, mine.mission);
-  });
-  for (const s of done) {
-    const mine = m.players[s.playerId];
-    const mission = mine.mission!;
-    const hunter = playerById(game, s.playerId);
-    if (!hunter) continue;
-    const reward = rewardOf(mission) * game.settings.bigBlind;
-    const paid: Record<string, number> = {};
-    for (const o of hand.seats) {
-      if (o.playerId === s.playerId) continue;
-      const p = playerById(game, o.playerId);
-      const chips = p ? Math.min(reward, p.stack) : 0;
-      if (!p || !chips) continue;
-      p.stack -= chips;
-      hunter.stack += chips;
-      paid[o.playerId] = chips;
-    }
-    (hand.missionsDone ??= []).push({ by: s.playerId, mission, paid });
-    mine.done += 1;
-    mine.mission = null;
-    const total = Object.values(paid).reduce((a, b) => a + b, 0);
-    log(game, `${hunter.name} completes the mission ${secretMission(mission).name} (${mine.done}/${MISSION_GOAL}) and collects ${n0(total)}`);
-    if (mine.done >= MISSION_GOAL && !m.finished.includes(s.playerId)) {
-      m.finished.push(s.playerId);
-      log(game, `${hunter.name} finishes race ${m.race} in place ${m.finished.length}`);
-    }
-  }
-  const racers = Object.keys(m.players).filter((id) => game.players.some((p) => p.id === id && !p.leaving));
-  if (!m.finished.length || m.finished.length < raceNeeds(racers.length)) return false;
-  // The race is over: places, then each stack moves by its place's share.
-  const places = raceOrder(game).map((id, i) => {
-    const p = playerById(game, id)!;
-    const pct = raceChange(i);
-    const before = p.stack;
-    p.stack = Math.max(0, Math.round(before * (1 + pct)));
-    return { id, pct, chips: p.stack - before };
-  });
-  m.last = { race: m.race, hand: hand.number, places };
-  log(game, `Race ${m.race} is over: ${places.map((x, i) => `${i + 1}. ${nameOf(game, x.id)} ${x.pct > 0 ? '+' : ''}${Math.round(x.pct * 100)}%`).join(' · ')}`);
-  m.race += 1;
-  m.finished = [];
-  for (const id of Object.keys(m.players)) Object.assign(m.players[id], { done: 0, mission: null });
-  return true;
 }
 
 // ── Power Cards ─────────────────────────────────────────────────────────────
@@ -1075,190 +960,12 @@ export function endDiscards(game: Game, ctx: ActionContext): void {
   pauseBeforeNextStreet(game, ctx, show);
 }
 
-// ── Slide Switch ────────────────────────────────────────────────────────────
-
-/** Seats the table is still waiting on for a card to slide. */
-export function pendingSlides(game: Game): Seat[] {
-  const hand = game.hand;
-  if (!hand?.sliding) return [];
-  return sliders(hand).filter((s) => !hand.picked?.includes(s.playerId));
-}
-
-/**
- * Slide Switch, as the flop, the turn or the river lands (betting or an all-in run-out): everyone still in picks a
- * card to slide left. Bots pick at once; people get the clock. Returns whether the street now waits on the slides.
- */
-function askForSlides(game: Game, ctx: ActionContext): boolean {
-  const hand = game.hand!;
-  if (variantOf(game) !== 'slide' || hand.street === 'preflop' || hand.result || sliders(hand).length < 2) return false;
-  hand.sliding = true;
-  hand.slides = {};
-  hand.picked = [];
-  for (const s of sliders(hand)) {
-    if (!playerById(game, s.playerId)?.bot) continue;
-    // Bots keep their better card, now and then on a hunch the other one.
-    const pick = ctx.rng() < 0.12 ? s.cards[Math.floor(ctx.rng() * s.cards.length)] : slideChoice(s.cards, hand.board);
-    hand.slides[s.playerId] = pick;
-    hand.picked.push(s.playerId);
-  }
-  if (!pendingSlides(game).length) {
-    endSlides(game, ctx);
-    return true;
-  }
-  hand.toAct = null;
-  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
-  hand.actAt = hand.deadline;
-  schedule(game);
-  return true;
-}
-
-/** A player picks the card they slide this street. Returns an error message, or null. */
-export function slideCard(game: Game, playerId: string, card: Card, ctx: ActionContext): string | null {
-  const hand = game.hand;
-  const seat = hand?.seats.find((s) => s.playerId === playerId);
-  if (!hand?.sliding || !seat || seat.folded || !seat.cards.length) return "There's nothing to slide now.";
-  if (hand.slides?.[playerId]) return "You've already picked a card.";
-  if (!seat.cards.includes(card)) return "That's not one of your cards.";
-  hand.slides = { ...hand.slides, [playerId]: card };
-  hand.picked = [...(hand.picked ?? []), playerId];
-  hand.seq += 1;
-  if (!pendingSlides(game).length) endSlides(game, ctx);
-  else schedule(game);
-  return null;
-}
-
-/** Everyone has picked (or time's up: the rest slide the card that helps them least): the cards move, all at once. */
-export function endSlides(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  const picks: Record<string, Card> = { ...hand.slides };
-  for (const s of sliders(hand)) if (!picks[s.playerId] || !s.cards.includes(picks[s.playerId])) picks[s.playerId] = slideChoice(s.cards, hand.board);
-  const to = slideTargets(hand);
-  const next = afterSlides(hand, picks);
-  for (const s of sliders(hand)) {
-    hand.slid = [...(hand.slid ?? []), { street: hand.street, from: s.playerId, to: to[s.playerId], card: picks[s.playerId] }];
-    s.cards = next[s.playerId];
-  }
-  hand.sliding = false;
-  hand.slides = undefined;
-  hand.picked = undefined;
-  hand.deadline = null;
-  hand.seq += 1;
-  log(game, 'Everyone slides a card to the left');
-  const show = scaled(MOMENT_TIMING.slides, botsOnly(game));
-  hand.moment = { kind: 'slides', at: ctx.now, until: ctx.now + show };
-  // An all-in run-out picks up where it stopped.
-  if (hand.runout) {
-    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + show;
-    schedule(game);
-    return;
-  }
-  hand.toAct = null;
-  hand.bettingAt = ctx.now + show;
-  hand.actAt = hand.bettingAt;
-  schedule(game);
-}
-
-/** Conveyor Belt: the river's betting is done but the last stop is still to come. */
-function moreToCome(game: Game): boolean {
-  return variantOf(game) === 'belt' && !game.hand!.lastStop;
-}
-
-// ── Onion ───────────────────────────────────────────────────────────────────
-
-/** Seats the table is still waiting on for a card to peel. */
-export function pendingPeels(game: Game): Seat[] {
-  const hand = game.hand;
-  if (!hand?.peeling) return [];
-  return peelers(hand).filter((s) => !hand.peelPicked?.includes(s.playerId));
-}
-
-/**
- * Onion: after the flop and turn betting (or the same points of a run-out), and when the river lands, everyone still
- * in with a spare card picks one to peel. Bots pick at once; people get the clock. Returns whether the table waits.
- */
-function askForPeels(game: Game, ctx: ActionContext): boolean {
-  const hand = game.hand!;
-  if (variantOf(game) !== 'onion' || hand.result || hand.peeling) return false;
-  const due = peelers(hand);
-  if (!due.length) return false;
-  hand.peeling = true;
-  hand.peels = {};
-  hand.peelPicked = [];
-  for (const s of due) {
-    if (!playerById(game, s.playerId)?.bot) continue;
-    hand.peels[s.playerId] = peelChoice(s.cards, hand.board);
-    hand.peelPicked.push(s.playerId);
-  }
-  if (!pendingPeels(game).length) {
-    endPeels(game, ctx);
-    return true;
-  }
-  hand.toAct = null;
-  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
-  hand.actAt = hand.deadline;
-  schedule(game);
-  return true;
-}
-
-/** A player picks the card they peel this street. Returns an error message, or null. */
-export function peelCard(game: Game, playerId: string, card: Card, ctx: ActionContext): string | null {
-  const hand = game.hand;
-  const seat = hand?.seats.find((s) => s.playerId === playerId);
-  if (!hand?.peeling || !seat || !peelers(hand).includes(seat)) return "There's nothing to peel now.";
-  if (hand.peelPicked?.includes(playerId)) return "You've already picked a card.";
-  if (!seat.cards.includes(card)) return "That's not one of your cards.";
-  hand.peels = { ...hand.peels, [playerId]: card };
-  hand.peelPicked = [...(hand.peelPicked ?? []), playerId];
-  hand.seq += 1;
-  if (!pendingPeels(game).length) endPeels(game, ctx);
-  else schedule(game);
-  return null;
-}
-
-/** Everyone has picked (or time's up: the rest peel the card that helps them least): the peeled cards turn over together. */
-export function endPeels(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  for (const s of peelers(hand)) {
-    const pick = hand.peels?.[s.playerId];
-    const card = pick && s.cards.includes(pick) ? pick : peelChoice(s.cards, hand.board);
-    s.cards = s.cards.filter((c) => c !== card);
-    hand.peeled = { ...hand.peeled, [s.playerId]: [...(hand.peeled?.[s.playerId] ?? []), card] };
-    log(game, `${nameOf(game, s.playerId)} peels ${cardsText([card])}`);
-  }
-  hand.peeling = false;
-  hand.peels = undefined;
-  hand.peelPicked = undefined;
-  hand.deadline = null;
-  hand.seq += 1;
-  const show = scaled(MOMENT_TIMING.peels, botsOnly(game));
-  hand.moment = { kind: 'peels', at: ctx.now, until: ctx.now + show };
-  if (hand.runout) {
-    hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + show;
-    schedule(game);
-    return;
-  }
-  // The river's peel comes before its betting; the others after the street's betting, before the next card.
-  if (hand.street === 'river') {
-    hand.toAct = null;
-    hand.bettingAt = ctx.now + show;
-    hand.actAt = hand.bettingAt;
-    schedule(game);
-    return;
-  }
-  pauseBeforeNextStreet(game, ctx, show);
-}
-
-/** The pause is over: deal the next street and start its betting. */
 export function dealNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.nextStreetAt = null;
   dealStreet(game, hand, ctx.rng, ctx.now);
   // Imposter: the bots form hunches as the board comes.
   if (hand.imposter) botsPoint(game, ctx.rng, 0.4);
-  // Slide Switch: everyone slides a card left before the street's betting.
-  if (askForSlides(game, ctx)) return;
-  // Onion: when the river lands, everyone peels down to two before the river betting.
-  if (hand.street === 'river' && askForPeels(game, ctx)) return;
   // The twist plays out first (a die rolls, a red river keeps dealing...); then betting starts.
   if (hand.moment && ctx.now < hand.moment.until) {
     hand.toAct = null;
@@ -1307,9 +1014,7 @@ export function resumeBetting(game: Game, ctx: ActionContext): void {
 /** One card of an all-in run-out, or the showdown once the river is out. */
 export function runoutStep(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
-  // Onion: the run-out stops for each peel, as the betting would.
-  if (askForPeels(game, ctx)) return;
-  if (hand.street === 'river' && !moreToCome(game)) {
+  if (hand.street === 'river') {
     startShowdown(game, ctx);
     return;
   }
@@ -1317,8 +1022,6 @@ export function runoutStep(game: Game, ctx: ActionContext): void {
   if (askForDiscards(game, ctx)) return;
   dealStreet(game, hand, ctx.rng, ctx.now);
   if (askForDiscards(game, ctx)) return;
-  if (askForSlides(game, ctx)) return;
-  if (askForPeels(game, ctx)) return;
   const moment = hand.moment ? Math.max(0, hand.moment.until - ctx.now) : 0;
   hand.actAt = ctx.now + (botsOnly(game) ? TIMING.fastRunout : TIMING.runoutStep) + moment;
   holdForDice(game, ctx);
@@ -1380,28 +1083,12 @@ export function showdown(game: Game, ctx: ActionContext): void {
   };
   // Power Cards: a Shield that wins nothing gets half of what went in after it went up back, out of the pots it was in.
   if (variant === 'power') shieldRefunds(game, hand, pots, values, won);
-  // Double Board PLO: each pot is split, half to the best hand on each board.
-  const plo = variant === 'plo' ? ([0, 1] as const).map((b) => new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, ploBest(s.cards, hand.board, b)]))) : null;
-  const ploWinners: [string[][], string[][]] = [[], []];
   // Hit Me: each pot is split, half to the best poker hand and half to whoever is closest to 21.
   const counts = variant === 'bjholdem' ? new Map(hand.seats.filter((s) => !s.folded).map((s) => [s.playerId, count21(s.cards)])) : null;
   const bjWinners: string[][] = [];
   const bjPoker: string[][] = [];
   for (const pot of pots) {
     const best = Math.max(...pot.eligible.map((id) => values.get(id)!.score));
-    if (plo) {
-      const halves = [Math.ceil(pot.amount / 2), pot.amount - Math.ceil(pot.amount / 2)];
-      const all = new Set<string>();
-      plo.forEach((board, b) => {
-        const top = Math.max(...pot.eligible.map((id) => board.get(id)!.score));
-        const winners = pot.eligible.filter((id) => board.get(id)!.score === top);
-        pay(halves[b], winners);
-        ploWinners[b].push(winners);
-        winners.forEach((id) => all.add(id));
-      });
-      pot.winners = [...all];
-      continue;
-    }
     if (counts) {
       const pokerWinners = pot.eligible.filter((id) => values.get(id)!.score === best);
       const closest = Math.max(...pot.eligible.map((id) => counts.get(id)!));
@@ -1456,14 +1143,8 @@ export function showdown(game: Game, ctx: ActionContext): void {
     if (kept) log(game, `Nobody beats the ghost: it keeps ${n0(kept)} for the next hand`);
     game.ghostPot = (game.ghostPot ?? 0) + kept;
   }
-  if (plo) {
-    for (const [id, chips] of Object.entries(won)) {
-      const boards = [0, 1].filter((b) => ploWinners[b].some((w) => w.includes(id))).map((b) => `board ${b + 1} with ${plo[b].get(id)!.detail.charAt(0).toLowerCase()}${plo[b].get(id)!.detail.slice(1)}`);
-      log(game, `${nameOf(game, id)} wins ${n0(chips)} (${boards.join(', ')})`);
-    }
-  }
   pots.forEach((pot, i) => {
-    if (!pot.winners.length || counts || plo) return;
+    if (!pot.winners.length || counts) return;
     const which = pots.length > 1 ? (i === 0 ? ' from the main pot' : ' from a side pot') : '';
     const each = Math.floor(pot.amount / pot.winners.length);
     for (const id of pot.winners)
@@ -1485,14 +1166,6 @@ export function showdown(game: Game, ctx: ActionContext): void {
     showdown: true,
     ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept } } : {}),
     ...(counts ? { blackjack: { counts: Object.fromEntries([...counts].filter(([id]) => names[id])), poker: bjPoker, winners: bjWinners } } : {}),
-    ...(plo
-      ? {
-          plo: {
-            names: [0, 1].map((b) => Object.fromEntries(Object.keys(names).map((id) => [id, plo[b].get(id)!.detail]))) as [Record<string, string>, Record<string, string>],
-            winners: ploWinners,
-          },
-        }
-      : {}),
   };
   finishHand(game, ctx, TIMING.afterShowdown);
 }
@@ -1711,13 +1384,6 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   if (usesEverydayBots(game) && !game.code) usualPause = Math.min(usualPause, usualPause === TIMING.afterFold ? 2500 : 5000);
   const hand = game.hand!;
   if (hand.variant === 'power') payBounties(game, hand);
-  // Secret Missions: completed missions are paid, and a finished race changes everyone's stack. The table waits a
-  // little longer so the stamps (and the race result) can be seen.
-  if (hand.variant === 'missions') {
-    const settled = settleMissions(game, hand);
-    if (hand.missionsDone?.length) usualPause += 2000;
-    if (settled) usualPause += 3500;
-  }
   const pause = botsOnly(game) ? Math.round(usualPause * TIMING.fastAfter) : usualPause;
   for (const s of hand.seats) s.bet = 0;
   hand.runout = false;
@@ -1749,10 +1415,7 @@ function finishHand(game: Game, ctx: ActionContext, usualPause: number): void {
   }
   game.ready = [];
   // One player left with chips: the others get a short window to rebuy, then the game ends.
-  // A campaign cash table where the person still has chips fills its empty seats with new bots instead.
-  // A Bankroll table always goes on to its deal, which tops up, refills or closes it (bankrollDeal in reducer.ts).
-  const refills = (game.campaign?.kind === 'cash' && game.players.some((p) => !p.bot && p.stack > 0)) || !!game.bankroll;
-  game.nextHandAt = lastStanding(game) && !refills ? ctx.now + TIMING.rebuyWindow : canDeal(game) || refills ? ctx.now + pause : null;
+  game.nextHandAt = lastStanding(game) ? ctx.now + TIMING.rebuyWindow : canDeal(game) ? ctx.now + pause : null;
   schedule(game);
 }
 

@@ -1,5 +1,6 @@
 import { router, Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
+import { SheetScroll } from '@/components/sheet-scroll';
 import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -48,7 +49,8 @@ export default function YourNameSheet() {
   return (
     <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
       <Stack.Screen options={{ title: 'Your name' }} />
-      <View style={{ flex: 1, padding: spacing.md, gap: spacing.lg }}>
+      {/* A scroll view so iOS keeps the first row clear of the sheet's title bar (automatic insets). */}
+      <SheetScroll keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, padding: spacing.md, gap: spacing.lg }}>
         <View style={{ alignItems: 'center', gap: spacing.xs }}>
           <Animated.View key={profile.emoji} entering={reduce ? undefined : popIn()}>
             <Avatar emoji={profile.emoji} size={88} />
@@ -118,7 +120,7 @@ export default function YourNameSheet() {
           )}
         </View>
         <Button variant="party" tint="blue" size="lg" title="Continue" disabled={!ok} onPress={go} />
-      </View>
+      </SheetScroll>
     </KeyboardAvoidingView>
   );
 }

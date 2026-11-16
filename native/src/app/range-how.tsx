@@ -33,7 +33,7 @@ const STEPS: { icon: IconName; title: string; line: string }[] = [
 export default function RangeHow() {
   const colors = useColors();
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.md }}>
       <Stack.Screen options={{ title: 'How it works' }} />
       <ThemedText variant="body" tone="secondaryLabel">
         Range training teaches you to think about what the other players could have, not just your own cards.

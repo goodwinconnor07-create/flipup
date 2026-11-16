@@ -1,4 +1,4 @@
-import { Children, useState, type ReactNode } from 'react';
+import { Children, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, Text, useColorScheme, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
@@ -110,6 +110,15 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
   const now = useTableNow(game.fast, hand?.moment?.gate || waiting ? 200 : 60_000);
   const recap = useTable();
+  // Real time for the Review countdown (the table's clock can run fast); ticks only while it counts.
+  const [wall, setWall] = useState(0);
+  useEffect(() => {
+    if (!recap.recapEnds) return;
+    const tick = () => setWall(Date.now());
+    tick();
+    const id = setInterval(tick, 200);
+    return () => clearInterval(id);
+  }, [recap.recapEnds]);
 
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
@@ -185,8 +194,9 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   // Review after every hand: a 10 second countdown to the deal instead (it stops once Review is opened).
   const reviewing = !!recap.recap && recap.recap === lastHand()?.id;
   const counting = reviewing && recap.recapEnds !== null;
-  const secsLeft = counting ? Math.max(0, Math.ceil((recap.recapEnds! - Date.now()) / 1000)) : 0;
-  const left = counting ? Math.max(0, Math.min(1, (recap.recapEnds! - Date.now()) / RECAP_COUNTDOWN_MS)) : reviewing ? undefined : Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
+  const wallNow = wall || (recap.recapEnds ? recap.recapEnds - RECAP_COUNTDOWN_MS : 0);
+  const secsLeft = counting ? Math.max(0, Math.ceil((recap.recapEnds! - wallNow) / 1000)) : 0;
+  const left = counting ? Math.max(0, Math.min(1, (recap.recapEnds! - wallNow) / RECAP_COUNTDOWN_MS)) : reviewing ? undefined : Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
   const next = <TableButton label={ready ? 'Waiting for the others…' : counting ? `Next hand · ${secsLeft}` : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
   const review = reviewing ? <TableButton label="Review" tone="blue" onPress={() => (haptic.tap(), startReview())} /> : null;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn

@@ -65,13 +65,12 @@ function HandBlock({ title, lines, mine, share }: { title: string; lines: string
 
 /** Every hand at this table, newest first, move by move. A finished hand can be shared as text. */
 export default function TableLog() {
-  const colors = useColors();
   const { game, logs } = useTable();
   const me = game?.players.find((p) => p.deviceId === myDevice);
   const live = game?.hand && !game.hand.result ? game.hand : null;
   const myLive = live?.seats.find((s) => s.playerId === me?.id)?.cards ?? [];
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}>
       <Stack.Screen options={{ title: 'Hand log' }} />
       {live && <HandBlock title={`Hand #${live.number} · now`} lines={live.log} mine={myLive} />}
       {logs === null ? (

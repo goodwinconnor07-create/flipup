@@ -17,7 +17,7 @@ export default function TableStandings() {
   const game = useTable().game;
   if (!game) return null;
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}>
       <Stack.Screen options={{ title: 'Standings' }} />
       <ThemedText variant="subhead" tone="tertiaryLabel" style={{ marginBottom: spacing.xs }}>
         Chips now, minus everything bought in for.

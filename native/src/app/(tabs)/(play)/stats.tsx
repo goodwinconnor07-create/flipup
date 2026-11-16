@@ -1,4 +1,5 @@
 import { router, Stack } from 'expo-router';
+import { useState } from 'react';
 import { PANEL_RADIUS, usePanel } from '@/components/grouped-list';
 import { ScrollView, Share, Text, View } from 'react-native';
 
@@ -14,7 +15,8 @@ import { ThemedText } from '@/components/themed-text';
 import { AccuracyBars, BigNumber, ChipsLine, Heading, Meter, n, Pair, Panel, pct, Tile, TileHead, WeekDots } from '@/components/stats/stat-parts';
 import { streakInfo, variantInfo, type Card as PlayCard, type Variant } from '@/engine';
 import { rangeStats, runOf, useRangeHistory } from '@/state/range-history';
-import { usePokerRecord, type PokerRecord } from '@/state/record';
+import { recordFor, usePokerRecord, type PokerRecord, type StatsMode } from '@/state/record';
+import { SegmentedControl } from '@/components/segmented-control';
 import { bbLabel, bbSigned, startExtremes, startWords, STYLE_AFTER, styleOf, type MoreStats, type StartLine } from '@/state/record-stats';
 import { useReplays } from '@/state/replays';
 import { brand, cardColors, ROUNDED, spacing, useColors, useShadows } from '@/theme';
@@ -28,15 +30,28 @@ const place = (p: number) => (p === 1 ? '1st' : p === 2 ? '2nd' : p === 3 ? '3rd
  * is counted on this phone (`flipup.record`, the new groups in `record.more` from `state/record-stats.ts`).
  */
 export default function StatsScreen() {
-  const record = usePokerRecord();
+  const all = usePokerRecord();
   const colors = useColors();
+  // Switch the whole page between everything, Texas Hold'em alone and the mini games alone.
+  const [mode, setMode] = useState<StatsMode>('all');
+  const record = recordFor(all, mode);
   const more = record.more;
   const fresh = more.tracked === 0 && record.hands > 0;
   return (
     <>
       <Stack.Screen options={{ title: 'Your stats', headerLargeTitleEnabled: false }} />
       <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxxl, gap: spacing.sm, width: '100%', maxWidth: 560 + spacing.md * 2, alignSelf: 'center' }}>
-        {record.hands === 0 ? <NoHandsYet /> : <PassportCard full />}
+        <SegmentedControl
+          label="Show stats for"
+          value={mode}
+          onChange={(m) => (haptic.select(), setMode(m))}
+          options={[
+            { value: 'all', label: 'All' },
+            { value: 'holdem', label: "Hold'em" },
+            { value: 'variants', label: 'Mini games' },
+          ]}
+        />
+        {record.hands === 0 ? <NoHandsYet mode={mode} splitStarted={all.hands > 0} /> : <PassportCard full record={record} scope={mode === 'holdem' ? "TEXAS HOLD'EM" : mode === 'variants' ? 'MINI GAMES' : 'ALL-TIME'} />}
         {fresh && (
           <ThemedText variant="footnote" tone="secondaryLabel" style={{ textAlign: 'center', paddingTop: spacing.xs }}>
             The new stats count from your next hand. Play a few and they fill in.
@@ -48,9 +63,9 @@ export default function StatsScreen() {
         <LuckSection more={more} />
         <StreakSection more={more} />
         <CardsSection record={record} />
-        <TrainingSection more={more} />
+        {mode === 'all' && <TrainingSection more={more} />}
 
-        {record.hands > 0 && <GamesYouPlay record={record} />}
+        {record.hands > 0 && mode !== 'holdem' && <GamesYouPlay record={record} />}
 
         <ThemedText variant="footnote" tone="tertiaryLabel" style={{ textAlign: 'center', paddingTop: spacing.md, color: colors.tertiaryLabel }}>
           Counted on this phone, in big blinds. Rebuys don&apos;t count. Play chips only.
@@ -273,7 +288,7 @@ function TrainingSection({ more }: { more: MoreStats }) {
 }
 
 /** Before your first hand: no grid of zeros, just what will be here and the way to get it. */
-function NoHandsYet() {
+function NoHandsYet({ mode, splitStarted }: { mode: StatsMode; splitStarted: boolean }) {
   const panel = usePanel();
   return (
     <View style={{ padding: spacing.lg, gap: spacing.md, alignItems: 'center', borderRadius: PANEL_RADIUS, borderCurve: 'continuous', backgroundColor: panel.fill, borderWidth: 1, borderColor: panel.edge }}>
@@ -283,7 +298,9 @@ function NoHandsYet() {
           No hands yet
         </ThemedText>
         <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center' }}>
-          Play a few hands and your win rate, biggest pot and best hand show up here.
+          {mode !== 'all' && splitStarted
+            ? `The ${mode === 'holdem' ? "Hold'em" : 'mini-game'} numbers are counted from now on. Play a few hands and they show up here.`
+            : 'Play a few hands and your win rate, biggest pot and best hand show up here.'}
         </ThemedText>
       </View>
       <Button

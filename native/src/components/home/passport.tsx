@@ -1,7 +1,7 @@
 import { router } from 'expo-router';
 import { Text, View } from 'react-native';
 
-import { usePokerRecord } from '@/state/record';
+import { usePokerRecord, type PokerRecord } from '@/state/record';
 import { bbLabel } from '@/state/record-stats';
 import { cardColors, radius, ROUNDED, spacing } from '@/theme';
 
@@ -17,8 +17,9 @@ const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) 
  * Your poker on one card, after Flighty's Passport: deep blue, small spaced capitals, big rounded numbers, and on
  * Home a bar along the bottom to every stat. Counted on this phone.
  */
-export function PassportCard({ full }: { full?: boolean }) {
-  const record = usePokerRecord();
+export function PassportCard({ full, record: shown, scope = 'ALL-TIME' }: { full?: boolean; /** What to count (Stats passes one mode's); your whole record when left out. */ record?: PokerRecord; /** The small line under the title: "ALL-TIME", "TEXAS HOLD'EM"... */ scope?: string }) {
+  const own = usePokerRecord();
+  const record = shown ?? own;
   const wins = record.games.filter((g) => g.place === 1).length;
   return (
     <LivingCard colors={cardColors.night} style={{ padding: spacing.lg, gap: spacing.lg }}>
@@ -28,7 +29,7 @@ export function PassportCard({ full }: { full?: boolean }) {
             YOUR POKER
           </Text>
           <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', letterSpacing: 1.2, color: 'rgba(255,255,255,0.65)' }}>
-            ALL-TIME · ON THIS PHONE
+            {scope} · ON THIS PHONE
           </Text>
         </View>
         <PressableScale accessibilityRole="button" accessibilityLabel="Share cards: your stats, top hands and games" onPress={() => router.push('/share')} style={{ width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)' }}>

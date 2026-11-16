@@ -58,6 +58,10 @@ export interface TableState {
   /** Replay after every hand (a bots-only house rule): the finished hand the table is waiting on, by its replay id.
    * The next deal holds until `releaseRecap()`. */
   recap: string | null;
+  /** While the Review countdown runs: when it ends (real time, ms). Null once it's stopped by opening Review. */
+  recapEnds: number | null;
+  /** The Review card is open. */
+  review: boolean;
   /** A mini game you've never played: its rules card is up on the table and a bots-only table's first deal waits for
    * Continue (`releaseRules()`). */
   rules: Variant | null;
@@ -67,7 +71,7 @@ export let me = deviceId();
 
 let session: Session | null = null;
 let identityVersion = 0;
-let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, rules: null };
+let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null };
 let conn: Connection | null = null;
 let sendingId: string | null = null;
 let profile = { name: '', emoji: '' };
@@ -196,6 +200,10 @@ function schedule(minDelay = 0): void {
 
 /** True while the recap is up and the next deal waits. */
 let recapHeld = false;
+/** Ends the countdown: the next hand deals when it fires unless Review was opened. */
+let recapTimer: ReturnType<typeof setTimeout> | undefined;
+/** Seconds the table waits after a hand you played, when Review after every hand is on. */
+export const RECAP_COUNTDOWN_MS = 10_000;
 /** The last hand a recap was shown for, so it comes up once per hand. */
 let recapDone = '';
 /** True while a saved table is being put back at launch: the hand it holds was played before the app closed, so no recap for it. */
@@ -214,14 +222,29 @@ function holdForRecap(next: Session | null): void {
   if (restoring) return;
   if (!playedPastPreflop(hand)) return;
   recapHeld = true;
-  publish({ recap: hand.id });
+  clearTimeout(recapTimer);
+  recapTimer = setTimeout(releaseRecap, RECAP_COUNTDOWN_MS);
+  publish({ recap: hand.id, recapEnds: Date.now() + RECAP_COUNTDOWN_MS, review: false });
+}
+
+/** Review: the countdown stops and the Review card opens. The deal waits until Next hand. */
+export function startReview(): void {
+  if (!recapHeld) return;
+  clearTimeout(recapTimer);
+  publish({ recapEnds: null, review: true });
+}
+
+/** Back to the table from the Review card: the countdown stays stopped, Next hand deals. */
+export function closeReview(): void {
+  if (state.review) publish({ review: false });
 }
 
 /** Next hand on the recap: it goes away and the table deals as soon as it's due (at once if it already was). */
 export function releaseRecap(): void {
   if (!recapHeld && !state.recap) return;
   recapHeld = false;
-  publish({ recap: null });
+  clearTimeout(recapTimer);
+  publish({ recap: null, recapEnds: null, review: false });
   if (session?.mode !== 'local') return;
   const hand = session.game.hand;
   // You've seen it: deal now rather than wait out the rest of the pause.
@@ -282,7 +305,8 @@ function forgetRules(): void {
 function forgetRecap(): void {
   recapHeld = false;
   recapDone = '';
-  if (state.recap) publish({ recap: null });
+  clearTimeout(recapTimer);
+  if (state.recap) publish({ recap: null, recapEnds: null, review: false });
 }
 
 /** How long the clock waits before looking again when a tick that was due changed nothing. */
@@ -574,7 +598,7 @@ export function resetSessionIdentity(): void {
   me = deviceId();
   forgetRecap();
   forgetRules();
-  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, rules: null });
+  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, recapEnds: null, review: false, rules: null });
 }
 
 // A table you were at comes back after the app is closed: a bots-only one as it was, an online one by reconnecting.

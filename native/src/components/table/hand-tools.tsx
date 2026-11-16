@@ -134,6 +134,16 @@ export function HandToolsTip() {
         </Text>
         <Icon name="square.and.arrow.up" size={18} color={colors.label} />
       </Pressable>
+      {/* The X sits on the card's top corner, half over the edge. */}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close tip"
+        hitSlop={10}
+        onPress={() => setShown(false)}
+        style={{ position: 'absolute', top: -10, right: -6, width: 24, height: 24, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.cell, borderWidth: 1, borderColor: colors.separator, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }}
+      >
+        <Icon name="xmark" size={11} color={colors.label} />
+      </Pressable>
     </Animated.View>
   );
 }

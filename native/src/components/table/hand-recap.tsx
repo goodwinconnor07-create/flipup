@@ -1,43 +1,33 @@
 import { BlurView } from 'expo-blur';
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
 import { haptic } from '@/components/haptics';
+import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { ThemedText } from '@/components/themed-text';
 import { popIn } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useLastHand, winnersOf } from '@/state/replays';
-import { releaseRecap, useTable } from '@/state/session';
+import { closeReview, releaseRecap, useTable } from '@/state/session';
 import { brand, motion, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
-
-/** How long the table stays clear after a hand ends before the recap card comes up. */
-const RECAP_DELAY_MS = 2500;
 
 const chips = (n: number) => Math.abs(Math.round(n)).toLocaleString('en-US');
 
 /**
- * Replay after every hand (a bots-only house rule): once a hand you played past preflop is over, the table blurs a
- * little and this small card says what you won or lost and who took the pot, faces and names only. The deal waits
- * (`recap` in `session.ts`): Next hand lets it go, Replay opens the hand in the replay screen, and closing that
- * comes back here.
+ * Review after every hand (a bots-only house rule): a hand you played past preflop gets a blue Review button beside
+ * Next hand, with a 10 second countdown to the deal. Tapping Review stops the countdown and opens this small card:
+ * what you won or lost and who took the pot, Replay (opens the hand in the replay screen; closing that comes back
+ * here), Next hand (deals) and the X (back to the table, countdown still stopped).
  */
 export function HandRecap() {
   const t = useTable();
   const hand = useLastHand();
   const reduce = useReduceMotion();
   const solid = useReduceTransparency();
-  // The card waits a moment after the hand ends, so you can see the cards and who won on the table first.
-  const [shown, setShown] = useState<string | null>(null);
-  useEffect(() => {
-    if (!t.recap) return;
-    const id = t.recap;
-    const timer = setTimeout(() => setShown(id), RECAP_DELAY_MS);
-    return () => clearTimeout(timer);
-  }, [t.recap]);
-  if (!t.recap || !hand || hand.id !== t.recap || shown !== t.recap) return null;
+  // Only after Review is tapped in the action row (that also stops the countdown).
+  if (!t.recap || !t.review || !hand || hand.id !== t.recap) return null;
   const winners = winnersOf(hand)
     .map((id) => hand.players.find((p) => p.id === id))
     .filter((p): p is NonNullable<typeof p> => !!p);
@@ -77,6 +67,9 @@ export function HandRecap() {
           boxShadow: '0 20px 48px rgba(0,0,0,0.45)',
         }}
       >
+        <PressableScale accessibilityRole="button" accessibilityLabel="Back to the table" hitSlop={10} onPress={() => (haptic.tap(), closeReview())} style={{ position: 'absolute', top: 10, right: 10, width: 32, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.1)' }}>
+          <Icon name="xmark" size={14} color="#ffffff" />
+        </PressableScale>
         <View accessible accessibilityLabel={`Hand ${hand.number}. ${net === 0 ? 'You broke even' : net > 0 ? `You won ${chips(net)}` : `You lost ${chips(net)}`}.`} style={{ alignItems: 'center', gap: 2 }}>
           <ThemedText variant="caption1" style={{ color: 'rgba(255,255,255,0.55)', fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' }}>
             Hand {hand.number}

@@ -5,7 +5,8 @@ import Animated from 'react-native-reanimated';
 import { count21, lastStanding, options, pot, type Game, type Hand, type Player, type Seat } from '@/engine';
 import { detail, rise, sink } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { dispatch, me as myDevice } from '@/state/session';
+import { lastHand } from '@/state/replays';
+import { dispatch, me as myDevice, RECAP_COUNTDOWN_MS, startReview, useTable } from '@/state/session';
 import { brand, minTap, radius, spacing, useColors, usePlainColors, useShadows } from '@/theme';
 
 import { haptic } from '../haptics';
@@ -108,6 +109,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   const hand = game.hand;
   const waiting = game.nextHandAt !== null && (!hand || !!hand.result);
   const now = useTableNow(game.fast, hand?.moment?.gate || waiting ? 200 : 60_000);
+  const recap = useTable();
 
   if (!me) return <Note>You&apos;re watching this table.</Note>;
 
@@ -180,14 +182,21 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
   const ready = game.ready.includes(me.id);
   // The next hand deals itself when the bar along the bottom of the button runs out.
   const total = waitFor(hand.number, game.nextHandAt - now);
-  const left = Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
-  const next = <TableButton label={ready ? 'Waiting for the others…' : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  // Review after every hand: a 10 second countdown to the deal instead (it stops once Review is opened).
+  const reviewing = !!recap.recap && recap.recap === lastHand()?.id;
+  const counting = reviewing && recap.recapEnds !== null;
+  const secsLeft = counting ? Math.max(0, Math.ceil((recap.recapEnds! - Date.now()) / 1000)) : 0;
+  const left = counting ? Math.max(0, Math.min(1, (recap.recapEnds! - Date.now()) / RECAP_COUNTDOWN_MS)) : reviewing ? undefined : Math.max(0, Math.min(1, (game.nextHandAt - now) / total));
+  const next = <TableButton label={ready ? 'Waiting for the others…' : counting ? `Next hand · ${secsLeft}` : 'Next hand'} tone="dark" disabled={ready} fill={left} onPress={() => dispatch({ type: 'next', hand: hand.number })} />;
+  const review = reviewing ? <TableButton label="Review" tone="blue" onPress={() => (haptic.tap(), startReview())} /> : null;
   // Your cards stayed hidden (you folded, won without a showdown, or mucked): once the hand is over you can turn
   // them over. Tapping sends the `show` action; the greyed cards turn white as the answer. Never during play.
   const canShow = !!seat && !seat.shown && seat.cards.length > 0;
-  if (!canShow) return next;
+  if (!canShow && !review) return next;
   return (
     <View style={{ flexDirection: 'row', gap: spacing.xs }}>
+      {review && <View>{review}</View>}
+      {canShow && (
       <View>
         <TableButton
           label="Show cards"
@@ -198,6 +207,7 @@ export function ActionArea({ game, me, seat, myTurn, sending, pre, setPre, onRai
           }}
         />
       </View>
+      )}
       <View style={{ flex: 1 }}>{next}</View>
     </View>
   );

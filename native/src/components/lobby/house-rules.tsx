@@ -136,8 +136,8 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
     !online && (
       <SwitchRow
         key="replay"
-        label="Replay after every hand"
-        line="See what you won or lost and who took the pot, then watch it back"
+        label="Review after every hand"
+        line="A blue Review button and a 10 second countdown to the next hand"
         value={!!s.replayEachHand}
         onChange={edit ? (replayEachHand) => set({ replayEachHand }) : undefined}
       />

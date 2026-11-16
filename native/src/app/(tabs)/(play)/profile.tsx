@@ -18,6 +18,7 @@ import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
 import { brand, gradient, ROUNDED, spacing, useColors, useScheme } from '@/theme';
+import { Announce } from '@/components/announce';
 
 const PIC = 150;
 
@@ -119,6 +120,7 @@ export default function ProfileScreen() {
               </ThemedText>
             )}
           </Swap>
+          <Announce text={blocked ? NAME_BLOCKED : null} />
           {blocked && (
             <ThemedText variant="footnote" tone="red" accessibilityLiveRegion="polite" style={{ textAlign: 'center' }}>
               {NAME_BLOCKED}

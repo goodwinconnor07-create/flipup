@@ -13,6 +13,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { finishAskName } from '@/state/ask-name';
 import { saveProfile, useProfile } from '@/state/profile';
 import { radius, spacing, typography, useColors } from '@/theme';
+import { Announce } from '@/components/announce';
 
 /**
  * "What should we call you?": a name and a face, asked on top of the screen that needed them (joining a table,
@@ -111,6 +112,7 @@ export default function YourNameSheet() {
               borderColor: blocked ? colors.red : 'transparent',
             }}
           />
+          <Announce text={blocked ? NAME_BLOCKED : null} />
           {blocked && (
             <ThemedText variant="footnote" tone="red" accessibilityLiveRegion="polite" style={{ textAlign: 'center' }}>
               {NAME_BLOCKED}

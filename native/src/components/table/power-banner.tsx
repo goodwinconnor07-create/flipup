@@ -13,11 +13,13 @@ import { brand, motion } from '@/theme';
 
 import { PlayingCard } from './playing-card';
 import { useMomentNow } from './use-moment';
+import { useAnnounce } from '../announce';
 
 export function PowerBanner({ game, meId }: { game: Game; meId: string | undefined }) {
   const reduce = useReduceMotion();
   const now = useMomentNow(game);
   const b = powerBanner(game, meId, now);
+  useAnnounce(b?.text, b?.key);
   return (
     <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'flex-end', paddingBottom: 6 }}>
       {b && (

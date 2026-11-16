@@ -44,6 +44,7 @@ import { FELT_WEAVE, WOOD_GRAIN } from './textures';
 import { TurnTimer } from './turn-timer';
 import { useMomentNow } from './use-moment';
 import { useTableNow } from './use-now';
+import { Announce } from '../announce';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -560,6 +561,7 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
       key={hand.number}
       accessibilityRole="text"
       accessibilityLiveRegion="polite"
+      accessibilityLabel={`${title}${how ? `. ${how}` : ''}`}
       entering={reduce ? FadeIn : bubblePop}
       style={{
         flexDirection: 'row',
@@ -573,6 +575,7 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
         boxShadow: '0 0 0 3px rgba(245,158,11,0.7), 0 6px 16px -6px rgba(0,0,0,0.5)',
       }}
     >
+      <Announce text={`${title}${how ? `. ${how}` : ''}`} again={hand.number} />
       <Avatar emoji={face} size={34} />
       <View style={{ maxWidth: width - 150 }}>
         <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ color: c.label, fontWeight: '700', fontSize: 15 }}>
@@ -616,6 +619,7 @@ function HalvesBanner({ game, me }: { game: Game; me: Player | undefined }) {
   );
   return (
     <Animated.View key={hand.number} accessibilityRole="text" accessibilityLiveRegion="polite" entering={reduce ? FadeIn : bubblePop} style={{ gap: 3, alignItems: 'center' }}>
+      <Announce text={`Best hand: ${poker.map(name).join(' and ')}. Closest to 21: ${count.map(name).join(' and ')}`} again={hand.number} />
       {row('Best hand', poker, shortName(hand.result!.names[poker[0]]))}
       {row('Closest to 21', count, String(bj.counts[count[0]] ?? '?'))}
     </Animated.View>

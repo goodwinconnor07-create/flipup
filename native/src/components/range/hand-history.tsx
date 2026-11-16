@@ -12,6 +12,7 @@ import { ThemedText } from '@/components/themed-text';
 import { bb, boardAt, seatName, streetsOf, type Action, type HandEvent } from '@/state/range-view';
 import { radius, spacing, useColors } from '@/theme';
 import type { Pos, Replay, Scenario, Street } from '@train/ranges/model';
+import { Announce } from '@/components/announce';
 
 const STREET: Record<Street, string> = { preflop: 'Preflop', flop: 'Flop', turn: 'Turn', river: 'River' };
 const VERB: Record<Action, string> = { fold: 'folds', check: 'checks', call: 'calls', bet: 'bets', raise: 'raises to' };
@@ -81,6 +82,7 @@ export function ReplayStrip({
         <Pill label="Next" disabled={done} onPress={() => (onPlaying(false), onStep(Math.min(total, step + 1)))} />
         <Pill label="Done" onPress={() => (onPlaying(false), onStep(null))} />
       </View>
+      <Announce text={narration} again={step} />
       <ThemedText
         variant="callout"
         accessibilityLiveRegion="polite"

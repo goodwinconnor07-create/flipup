@@ -14,6 +14,7 @@ import { ThemedText } from '../themed-text';
 import { PlayingCard } from './playing-card';
 import { useMomentNow } from './use-moment';
 import { useTableNow } from './use-now';
+import { Announce } from '../announce';
 
 /** Faces of the players the table is still waiting for. */
 function WaitingFaces({ game, ids, text }: { game: Game; ids: string[]; text: string }) {
@@ -205,6 +206,7 @@ export function Tally({ game }: { game: Game }) {
   const lead = [...counts.entries()].sort((a, b) => b[1] - a[1])[0];
   return (
     <View accessibilityLiveRegion="polite" style={{ alignItems: 'center', gap: 4, paddingVertical: spacing.xs }}>
+      <Announce text={last ? `${name(last)} votes for ${name(hand.votes![last])}` : null} again={shown} />
       <ThemedText variant="headline">{shown >= order.length ? 'And the imposter is…' : 'Reading out the votes…'}</ThemedText>
       <ThemedText variant="callout" tone="secondaryLabel">
         {last ? `${name(last)} votes for ${name(hand.votes![last])}` : ' '}

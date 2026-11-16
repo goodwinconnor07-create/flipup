@@ -17,6 +17,7 @@ import { BET_WORDS, VERDICT, type Pile } from '@/state/range-result';
 import type { HandNumbers } from '@/state/ranges';
 import { brand, radius, spacing, useColors, useScheme, useShadows } from '@/theme';
 import { bb, type Grade, type OptionId } from '@train/ranges/model';
+import { useAnnounce } from '@/components/announce';
 
 const NUM = { fontVariant: ['tabular-nums' as const] };
 const pct = (x: number) => `${Math.round(x * 100)}%`;
@@ -64,6 +65,8 @@ export function ResultCard({
   };
   const tone = look[grade];
   const sub = pick === best ? `You played ${label(pick)}` : `Best was ${label(best)}`;
+  // The verdict arrives by itself, so VoiceOver is told (iPhone has no live regions).
+  useAnnounce(`${VERDICT[grade]}. ${sub}.`);
   return (
     <Animated.View
       entering={rise(reduce)}

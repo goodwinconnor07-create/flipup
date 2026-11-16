@@ -10730,4 +10730,57 @@ export const SCENARIOS: Scenario[] = [
       note: 'An 8-handed cash hand, 100bb deep; the article gives the pots (6.5, 20.9 and 62.7bb) and the 7.2bb check-raise but not the open, the flop bet or the jam, so a 3bb open and a 2bb c-bet are used and the jam is the rest of the stack. Played on a six-seat table here.',
     },
   },
+  {
+    id: 'middle-pair-fold-river-after-turn-pot-lead',
+    title: 'Middle pair after a pot-sized turn lead',
+    concept: 'Hand reading',
+    table: 6,
+    hero: { pos: 'BTN', cards: ['Qh', '8h'], pre: 'BTN open' },
+    stack: 100,
+    board: ['Kc', 'Qc', '9d', '3h', '4s'],
+    actions: [
+      { street: 'preflop', who: 'BTN', move: 'raise', to: 3 },
+      { street: 'preflop', who: 'BB', move: 'call' },
+      { street: 'flop', who: 'BB', move: 'check' },
+      { street: 'flop', who: 'BTN', move: 'check' },
+      { street: 'turn', who: 'BB', move: 'bet', to: 6.5 },
+      { street: 'turn', who: 'BTN', move: 'call' },
+      { street: 'river', who: 'BB', move: 'bet', to: 11.7 },
+    ],
+    opponents: [
+      {
+        pos: 'BB',
+        type: 'Straightforward player',
+        pre: 'BB vs late open',
+        range: [
+          { label: 'The straight: J-T', hands: 'JTs, JTo', role: 'value' },
+          { label: 'Sets: 9-9, 4-4, 3-3', hands: '99, 44, 33', role: 'value' },
+          { label: 'Two pair', hands: 'K9s, K9o, Q9s, Q9o, K4s, K3s, Q4s, Q3s, 43s', role: 'value' },
+          {
+            label: 'Missed club and straight draws',
+            hands: 'AcJc, AcTc, Ac8c, Ac7c, Ac5c, Jc8c, Tc8c, AJs, AJo, ATs, ATo',
+            role: 'bluff',
+            weight: 0.25,
+          },
+        ],
+      },
+    ],
+    best: 'fold',
+    clues: [
+      { street: 'preflop', text: '100bb deep, you open Q♥8♥ on the button and the big blind calls.' },
+      { street: 'flop', text: 'K♣Q♣9♦: they check and you check back with middle pair.' },
+      { street: 'turn', text: 'The 3♥: they bet the pot. That’s J-T, sets, two pair, and club or straight draws semi-bluffing. You call.' },
+      {
+        street: 'river',
+        text: 'The 4♠ and they bet 60% of the pot. Straightforward players don’t bluff this river after potting the turn: they give up their missed draws and bet with something.',
+      },
+    ],
+    why: 'Their value is straights, sets and two pair, and every one beats middle pair. The missed draws you beat mostly give up against a straightforward player. Even the solver folds Q-8 here; call only against a loose, splashy player who barrels every draw.',
+    source: {
+      by: 'Jonathan Little (PokerCoaching)',
+      title: 'Middle Pair Poker Strategy with Q8s: BTN vs BB in a 100bb Cash Game',
+      url: 'https://pokercoaching.com/blog/middle-pair-poker-strategy-with-q8s-btn-vs-bb-in-a-100bb-cash-game/',
+      note: 'An 8-handed cash hand, 100bb deep, played on a six-seat table here. The article gives the pots (6.5 and 19.5bb) and the bets but not the open, so a 3bb open is used. It names the value as straights, sets and two pair; the hands are those that make them. The missed draws are at a quarter weight because the author says straightforward players don’t bluff this river.',
+    },
+  },
 ];

@@ -311,7 +311,7 @@ function HeroPager({ perks, wanted }: { perks: Perk[]; wanted?: string }) {
 const SAMPLE = statsData(
   { hands: 1284, won: 402, biggestPot: 6420, best: { score: 0, name: 'Full house', cards: ['Ks', 'Kd', 'Kh', '5c', '5s'], variant: 'holdem' }, games: [], played: [], seen: [] },
   9,
-  { name: 'You', emoji: '😎', username: 'you' },
+  { name: 'You', emoji: '😎' },
 );
 
 /** A soft shadow under the pictures, so they sit on the light. */
@@ -333,7 +333,7 @@ function HeroPicture({ id }: { id: PerkId }) {
       );
     }
     case 'packs': {
-      const packs = CARD_PACKS.filter((p) => !p.venue).slice(0, 5);
+      const packs = CARD_PACKS.slice(0, 5);
       return (
         <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: 190 }}>
           {packs.map((p, i) => (

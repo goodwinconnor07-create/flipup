@@ -5,7 +5,6 @@ import { Platform, Share } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { haptic } from '@/components/haptics';
-import { useMyUsername } from '@/state/pals';
 import { useProfile } from '@/state/profile';
 
 import { shareText, type ShareData, type ShareWho } from './data';
@@ -13,8 +12,7 @@ import { CARD_H, CARD_W } from './designs';
 
 export function useWho(): ShareWho {
   const profile = useProfile();
-  const { username } = useMyUsername();
-  return { name: profile.name || 'Me', emoji: profile.emoji || '🙂', username };
+  return { name: profile.name || 'Me', emoji: profile.emoji || '🙂' };
 }
 
 /** A ref to put on the card's view, and `share()` that saves it as a picture and opens the share sheet. */

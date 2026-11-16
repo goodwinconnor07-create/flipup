@@ -16,7 +16,6 @@ export * from './validate';
 export * from './protocol';
 export * from './redact';
 export * from './record';
-export * from './scope';
 export * from './tableSetup';
 export * from './handText';
 export * from './reactions';

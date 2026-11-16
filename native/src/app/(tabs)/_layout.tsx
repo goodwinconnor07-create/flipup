@@ -1,17 +1,9 @@
 import { NativeTabs } from 'expo-router/native-tabs';
-import { Platform } from 'react-native';
 
-import { FRIENDS_ON } from '@/scope';
-import { useFriendBox } from '@/state/pals';
-
-// Apple's own tab bar (Liquid Glass on iOS 26), which stays full size when a page scrolls (minimizeBehavior never): Play, Train and Friends. A party starts from Play with
-// friends, and joining a table or party is the round button in Play's title row (the `join` sheet). Tabs are peers,
-// so switching never slides.
+// Apple's own tab bar (Liquid Glass on iOS 26), which stays full size when a page scrolls (minimizeBehavior never):
+// Play and Train. A party starts from Play with friends, and joining a table or party is Play's Join a game (the
+// `join` sheet). Tabs are peers, so switching never slides.
 export default function TabsLayout() {
-  // Friend requests and table invites arrive while the app is open (the check runs in the root layout); the
-  // Friends tab shows how many are waiting.
-  const box = useFriendBox();
-  const waiting = box.requests.length + box.invites.length;
   return (
     <NativeTabs minimizeBehavior="never">
       <NativeTabs.Trigger name="(play)">
@@ -21,13 +13,6 @@ export default function TabsLayout() {
       <NativeTabs.Trigger name="(train)">
         <NativeTabs.Trigger.Icon sf="graduationcap.fill" md="school" />
         <NativeTabs.Trigger.Label>Train</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
-      {/* Hidden while friends are off (scope.ts): people join with the game code. */}
-      <NativeTabs.Trigger name="(friends)" hidden={!FRIENDS_ON}>
-        <NativeTabs.Trigger.Icon sf="person.2.fill" md="group" />
-        <NativeTabs.Trigger.Label>Friends</NativeTabs.Trigger.Label>
-        {/* The web build's tab bar ignores `hidden` and showed a red 0, so there the badge is left out at zero. */}
-        {(Platform.OS !== 'web' || waiting > 0) && <NativeTabs.Trigger.Badge hidden={waiting === 0}>{String(waiting)}</NativeTabs.Trigger.Badge>}
       </NativeTabs.Trigger>
     </NativeTabs>
   );

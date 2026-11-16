@@ -19,12 +19,12 @@ import { brand, radius, ROUNDED, spacing } from '@/theme';
 
 /** The designs that need a hand show this one, made the first time it's needed (its odds take a moment). */
 let sampleHand: ShareData | null = null;
-const handSample = () => (sampleHand ??= sampleHandData({ name: 'You', emoji: '😎', username: 'you' }));
+const handSample = () => (sampleHand ??= sampleHandData({ name: 'You', emoji: '😎' }));
 
 const SAMPLE = statsData(
   { hands: 1284, won: 402, biggestPot: 6420, best: { score: 0, name: 'Full house', cards: ['Ks', 'Kd', 'Kh', '5c', '5s'], variant: 'holdem' }, games: [], played: [], seen: [] },
   9,
-  { name: 'You', emoji: '😎', username: 'you' },
+  { name: 'You', emoji: '😎' },
 );
 
 /**
@@ -167,7 +167,7 @@ function Preview({ id }: { id: PerkId }) {
     case 'packs':
       return (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, justifyContent: 'center' }}>
-          {CARD_PACKS.filter((p) => !p.venue).map((p) => (
+          {CARD_PACKS.map((p) => (
             <View key={p.id} style={{ alignItems: 'center', gap: 4, width: 72 }}>
               <PlayingCard back size="md" pack={p.id} />
               <ThemedText variant="caption2" numberOfLines={1} style={{ color: '#ffffff' }}>

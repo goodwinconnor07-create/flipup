@@ -13,4 +13,8 @@ describe('parseReport', () => {
     expect(parseReport({ ...good, name: 'x'.repeat(41) })).toBeNull();
     expect(parseReport(null)).toBeNull();
   });
+  it("takes a report about a party member, whose party has a six-character code like a table's", () => {
+    expect(parseReport({ ...good, where: 'party', code: 'aces42' })?.code).toBe('ACES42');
+    expect(parseReport({ ...good, where: 'board', code: '123456' })).toBeNull();
+  });
 });

@@ -13,8 +13,6 @@ import { Icon } from '@/components/icon';
 import { ThemedText } from '@/components/themed-text';
 import { cleanName, FREE_VARIANTS, isNameBlocked, LIMITS, NAME_BLOCKED, VARIANTS } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { FRIENDS_ON } from '@/scope';
-import { ensureMyCode, myPalCode } from '@/state/pals';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
 import { usePokerRecord } from '@/state/record';
@@ -44,8 +42,6 @@ export default function ProfileScreen() {
     if (!ok) return;
     saveProfile({ name: clean, emoji: profile.emoji });
     haptic.success();
-    // Friends see the new name on your friend code.
-    if (FRIENDS_ON && myPalCode()) void ensureMyCode().catch(() => undefined);
     // Stay here: a new player still has their emoji to pick, and Back is one tap away.
     Keyboard.dismiss();
   };

@@ -4,19 +4,16 @@ import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type PartySettings, type Settings } from '@/engine';
-import { FRIENDS_ON } from '@/scope';
 import { seatKey } from '@/state/blocks';
 import { configureParty, createParty, leaveParty, startParty } from '@/state/party';
 import { clearPartyDraft, setPartyRules, usePartyDraft, type PartyDraft } from '@/state/party-draft';
-import { takeBackInvites, useDeclined, usePals, type Pal } from '@/state/pals';
 import { joinLink } from '@/state/api';
 import { askForName } from '@/state/ask-name';
-import { tableShareMessage } from '@/state/invite-message';
+import { tableShareMessage } from '@/state/table-share';
 import { usePremium } from '@/state/premium';
 import { readProfile, useProfile } from '@/state/profile';
 import { abandonLobby, changeTableCode, currentTable, dispatch, me as myDevice, openOnlineTable, useTable } from '@/state/session';
 import { saveSettings, setDraft } from '@/state/setup-draft';
-import { clearInvites, invitePal, uninvitePal, useInviteWatch, useTableInvites, waitingInvites } from '@/state/table-invites';
 import { unlockToHost } from '@/state/unlock';
 import { ForceScheme, spacing } from '@/theme';
 
@@ -28,8 +25,7 @@ import { HouseRules } from '../lobby/house-rules';
 import { Players, type PlayerLine } from '../lobby/players';
 import { openPlayerMenu } from '../player-menu';
 import { ThemedText } from '../themed-text';
-import { randomBot, type RowBot } from './bots-row';
-import { InviteFriendsRow } from './invite-friends-row';
+import { randomBot, type RowBot } from './row-bot';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { lobbyRows, usePartyView } from '../party/panel';
 import { PartyCard, PartyRules, StartPartyButton } from './party-pieces';
@@ -44,29 +40,26 @@ import { NavRow } from './setup-header';
  *  3. "Want to play more than one game? Start a party." (`StartPartyButton`)
  *  4. `HouseRules`: each number with its − + stepper, then the switches
  *  5. `Players`: you, anyone who sat down with the code, the bots you added, and Add a bot
- * and Start game pinned at the bottom. Friends join with the code (the friends list is off, `FRIENDS_ON`).
+ * and Start game pinned at the bottom. Friends join with the code.
  *
  * Once a party's playlist is saved (state/party-draft.ts) the page is still this same lobby, with a party in it: the
  * party is made at that moment (so its game code is real), the playlist card takes the game card's place, the party's
  * rules (rebuys locked off) take the house rules' place, the players are who's joined the party, and Start party
  * starts it. Editing the playlist or the rules updates the party for everyone who's already in.
  */
-export function FriendsSetup({ settings, invite }: { settings: Settings; invite?: string }) {
+export function FriendsSetup({ settings }: { settings: Settings }) {
   return (
     <ForceScheme scheme="dark">
-      <FriendsSetupPage settings={settings} invite={invite} />
+      <FriendsSetupPage settings={settings} />
     </ForceScheme>
   );
 }
 
-function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?: string }) {
+function FriendsSetupPage({ settings: s }: { settings: Settings }) {
   const insets = useSafeAreaInsets();
   const variant = s.variant ?? 'holdem';
   const profile = useProfile();
   const premium = usePremium();
-  const pals = usePals();
-  const declined = useDeclined();
-  const invites = useTableInvites();
   const table = useTable();
   const [bots, setBots] = useState<RowBot[]>([]);
   const [busy, setBusy] = useState(false);
@@ -92,7 +85,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     },
     !!partyCode,
   );
-  // The lobby made for the invites (once), whether it's still being made, and whether Open table took you to it.
+  // The lobby made for this page (once), whether it's still being made, and whether Open table took you to it.
   const made = useRef<{ code: string | null; making: Promise<string> | null; opened: boolean }>({
     code: null,
     making: null,
@@ -103,14 +96,11 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     latest.current = s;
   }, [s]);
   const game = lobby && table.code === lobby ? table.game : null;
-  useInviteWatch(lobby, game, pals, declined);
 
-  const status = (code: string) => invites[code]?.status;
-  const asked = pals.filter((p) => status(p.code) === 'invited').length;
-  const joined = pals.filter((p) => status(p.code) === 'joined').length;
-  // Seats: you, every friend who's in or still has an invite out, and the bots.
-  const taken = 1 + asked + joined + bots.length + Number(!!s.humanPoker);
-  const full = taken >= MAX_SEATS;
+  // Everyone who has sat down at the table with the code, but you.
+  const others = (game?.players ?? []).filter((p) => !p.bot && p.deviceId !== myDevice);
+  // Seats: you, everyone who sat down with the code, and the bots.
+  const full = 1 + others.length + bots.length >= MAX_SEATS;
 
   const makeLobby = (): Promise<string> => {
     const m = made.current;
@@ -127,14 +117,6 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         m.making = null;
       });
     return m.making;
-  };
-
-  const sendInvite = (pal: Pal) => {
-    if (full) return;
-    if (!unlockToHost([variant], premium)) return;
-    invitePal(pal, makeLobby).catch((e: unknown) =>
-      Alert.alert("Couldn't send the invite", e instanceof Error ? e.message : 'Check your connection and try again.'),
-    );
   };
 
   // A saved playlist makes the party (once), keeps it up to date as it's edited, and going back to one game ends it.
@@ -183,18 +165,15 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     return () => clearTimeout(t);
   }, [partyDraft, partyCode]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // A fresh page starts with no invites. Leaving it without opening ends the lobby and takes back what's still out.
+  // A fresh page starts with no party. Leaving it without opening ends the lobby.
   useEffect(() => {
-    clearInvites();
     clearPartyDraft();
-    const pal = invite ? pals.find((p) => p.code === invite) : undefined;
     // A new player is asked for a name first (the table is made with it); closing that goes back to Play.
     let live = true;
     void askForName().then((named) => {
       if (!live) return;
       if (!named) return router.back();
-      if (pal) sendInvite(pal);
-      else makeLobby().catch(() => setFailed(true));
+      makeLobby().catch(() => setFailed(true));
     });
     return () => {
       live = false;
@@ -203,11 +182,9 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
       if (party.current.code && !party.current.started) void leaveParty(party.current.code); // eslint-disable-line react-hooks/exhaustive-deps
       const m = made.current; // eslint-disable-line react-hooks/exhaustive-deps
       if (!m.code || m.opened) return;
-      void takeBackInvites(waitingInvites(), m.code);
       abandonLobby(m.code);
-      clearInvites();
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const addBot = () => {
     if (full) return;
@@ -216,7 +193,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     else if (!premium) router.push({ pathname: '/premium', params: { reason: 'bots' } });
   };
 
-  /** Starts the party: the final playlist and rules go up first, then round one. The lobby made for invites ends with this page. */
+  /** Starts the party: the final playlist and rules go up first, then round one. The lobby made for this page ends with it. */
   const startThisParty = async () => {
     const p = party.current;
     if (busy || !p.code || !partyDraft) return;
@@ -258,10 +235,8 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
     }
   };
 
-  // Everyone who has sat down at the table but you (friends from an invite and anyone with the code).
-  const others = (game?.players ?? []).filter((p) => !p.bot && p.deviceId !== myDevice);
-  const inNow = 1 + Math.max(joined, others.length) + bots.length + Number(!!s.humanPoker);
-  const line = [`${inNow} in`, asked ? `${asked} invited` : '', variantInfo(variant).name].filter(Boolean).join(' · ');
+  const inNow = 1 + others.length + bots.length;
+  const line = [`${inNow} in`, variantInfo(variant).name].join(' · ');
 
   // The host's own code: the table moves to it (settings and seated bots come along) and the old one ends.
   const changeCode = async (code: string): Promise<string | null> => {
@@ -389,16 +364,9 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
 
             <Players rows={rows} onAdd={addBot} />
 
-            {FRIENDS_ON && (
-              <InviteFriendsRow pals={pals} invites={invites} full={full} onInvite={sendInvite} onUninvite={(p) => uninvitePal(p.code)} />
-            )}
-
             <HouseRules
               settings={s}
-              onChange={(next) => {
-                if (next.humanPoker) setBots((b) => b.slice(0, Math.max(0, MAX_SEATS - 2 - asked - joined)));
-                setDraft(next);
-              }}
+              onChange={setDraft}
               online
               bots={bots.length}
             />
@@ -423,7 +391,7 @@ function FriendsSetupPage({ settings: s, invite }: { settings: Settings; invite?
         disabled={partyDraft ? !partyReady : inNow < 2}
         onPress={() => void open()}
       />
-      <LoadingCover variant={variant} visible={held || (!lobby && !failed && !invite)} text={invite ? 'Opening your lobby' : 'Creating your lobby'} />
+      <LoadingCover variant={variant} visible={held || (!lobby && !failed)} text="Creating your lobby" />
     </GrainBackground>
   );
 }

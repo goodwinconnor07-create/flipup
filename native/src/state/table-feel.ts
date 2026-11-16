@@ -86,7 +86,7 @@ export function noteFeel(
   now: number,
 ): { rivals: Rivals; store: FeelStore } | null {
   const me = game.players.find((p) => p.id === myId);
-  if (!me || game.status === 'lobby' || game.challenge || game.campaign) return null;
+  if (!me || game.status === 'lobby') return null;
   let changed = false;
   const tables = store.tables.slice();
   let seen = store.seen;

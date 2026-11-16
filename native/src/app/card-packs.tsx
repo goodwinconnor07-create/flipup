@@ -29,7 +29,7 @@ export default function CardPacks() {
   );
   const choices = [
     { id: null, name: 'Classic', note: 'The plain back', locked: false, preview: preview() },
-    ...CARD_PACKS.filter((p) => !p.venue).map((p) => ({ id: p.id, name: p.name, note: p.note, locked: !premium, preview: preview(p.id) })),
+    ...CARD_PACKS.map((p) => ({ id: p.id, name: p.name, note: p.note, locked: !premium, preview: preview(p.id) })),
   ];
   return (
     <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>

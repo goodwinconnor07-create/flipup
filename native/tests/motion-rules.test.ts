@@ -115,19 +115,14 @@ describe('the app source', () => {
   });
 });
 
-describe('the web stylesheets', () => {
-  const css = ['global', 'table', 'screens', 'premium', 'home'].map((n) => ({ n, text: readFileSync(new URL(`../../src/styles/${n}.css`, import.meta.url), 'utf8') }));
+describe("the website's stylesheet (the landing page)", () => {
+  const text = readFileSync(new URL('../../site/landing.css', import.meta.url), 'utf8');
   it('rule 13: no easing curve overshoots (a y above 1)', () => {
-    const bad: string[] = [];
-    for (const { n, text } of css) {
-      for (const m of text.matchAll(/cubic-bezier\(\s*[\d.]+,\s*([\d.]+),\s*[\d.]+,\s*([\d.]+)\s*\)/g)) if (Number(m[1]) > 1 || Number(m[2]) > 1) bad.push(`${n}.css: ${m[0]}`);
-    }
+    const bad = [...text.matchAll(/cubic-bezier\(\s*[\d.]+,\s*([\d.]+),\s*[\d.]+,\s*([\d.]+)\s*\)/g)].filter((m) => Number(m[1]) > 1 || Number(m[2]) > 1).map((m) => m[0]);
     expect(bad).toEqual([]);
   });
-  it('rule 10: pop starts from the --pop-from token, not from a tiny scale', () => {
-    const g = css[0].text;
-    expect(g).toContain('--pop-from: 0.95');
-    expect(g).not.toMatch(/@keyframes pop \{\s*0% \{\s*transform: scale\(0\./);
+  it('respects Reduce Motion', () => {
+    expect(text).toContain('prefers-reduced-motion: reduce');
   });
 });
 

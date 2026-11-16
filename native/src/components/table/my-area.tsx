@@ -14,7 +14,6 @@ import { haptic } from '../haptics';
 import { bubbleOut, bubblePop, MoveBubble, moveTone, pinnedTop, Thread } from './bubbles';
 import { Count } from './count';
 import { CardSlot, PlayingCard } from './playing-card';
-import { MissionCard } from './mission-card';
 import { PowerCard, powerCardWidth } from './power-card';
 import { QuickMessages } from './quick-messages';
 import { pct, PositionChip } from './seats';
@@ -42,7 +41,7 @@ export function MyArea({
 }: {
   game: Game;
   compact?: boolean;
-  /** Power Cards and Secret Missions: a tap on your power or mission card opens its panel. */
+  /** Power Cards: a tap on your power card opens its panel. */
   onPower?: () => void;
   me: Player | undefined;
   talk?: Talk;
@@ -57,18 +56,14 @@ export function MyArea({
   const inBB = useStored<boolean>('flipup.bb', false) === true;
   const won = me ? (hand?.result?.won[me.id] ?? 0) : 0;
   const variant = variantOf(game);
-  // Headband: your forehead card isn't sent to you until the cards turn over, but it's still one of your two.
-  const forehead = variant === 'headband' && !!seat && seat.cards.length === 1;
-  const count = forehead ? 2 : seat?.cards.length || holeCount(variant, hand?.seats.length ?? 0);
+  const count = seat?.cards.length || holeCount(variant);
   const { width: screen } = useWindowDimensions();
   // Power Cards: your power is a card beside your two, so the hole cards step down to leave the box room (it keeps
-  // about 130pt for the chip count). The size depends only on the screen, so it's the same every hand. Secret
-  // Missions lays out the same way, with your mission as the third card.
-  const special = variantOf(game);
-  const powered = special === 'power' || special === 'missions';
+  // about 130pt for the chip count). The size depends only on the screen, so it's the same every hand.
+  const powered = variant === 'power';
   const powerHole = Math.max(56, Math.min(compact ? 72 : 84, Math.floor((screen - 160) / 2.8)));
-  // Two cards at full size; three step down so they still fit beside the box. Four or five (Conveyor Belt, Onion,
-  // Double Board PLO, Bean Stalk by the river) are sized from the screen: each card tucks under the next leaving half
+  // Two cards at full size; three step down so they still fit beside the box. Four or five (Bean Stalk by the river)
+  // are sized from the screen: each card tucks under the next leaving half
   // its width showing, which is the rank and suit in the corner, and the box keeps at least `BOX_MIN` for the chips.
   // Bean Stalk is sized for its five from the deal, so the cards never shrink as the hand grows.
   const room = variant === 'beanstalk' ? 5 : count;
@@ -118,7 +113,7 @@ export function MyArea({
       <View style={{ flexDirection: 'row', paddingBottom: fan ? 6 : 0, minWidth: many ? w + (room - 1) * (w + overlap) : undefined }}>
         {seat?.cards.length
           ? seat.cards.map((card, i) => (
-              <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : overlap, transform: fanned(i, seat.cards.length + (forehead ? 1 : 0)) }}>
+              <View key={`${hand!.number}-${card}`} style={{ marginLeft: i === 0 ? 0 : overlap, transform: fanned(i, seat.cards.length) }}>
                 <PlayingCard
                   card={card}
                   width={w}
@@ -142,22 +137,9 @@ export function MyArea({
               <CardSlot width={w} fill={c.background} dashed />
             </View>
           ))}
-        {forehead && (
-          // Headband: your forehead card, face down for you, with a headband over it.
-          <View accessibilityLabel="Your headband card. Everyone else can see it, you can't." style={{ marginLeft: overlap }}>
-            <PlayingCard back width={w} pack={me?.cardPack} />
-            <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
-              <Text style={{ fontSize: Math.round(w * 0.42) }}>🤕</Text>
-            </View>
-          </View>
-        )}
         {powered && (
           <View style={{ marginLeft: 8, justifyContent: 'center' }}>
-            {special === 'missions' ? (
-              <MissionCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
-            ) : (
-              <PowerCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
-            )}
+            <PowerCard game={game} meId={me?.id} width={powerCardWidth(w)} height={Math.round(w * 1.4)} onOpen={() => onPower?.()} />
           </View>
         )}
       </View>

@@ -175,7 +175,7 @@ describe('the moment', () => {
   });
 
   it('goes on the share card', () => {
-    const d = handData(sevenTwo(), 'Big win', { name: 'Me', emoji: '🦊', username: 'me' });
+    const d = handData(sevenTwo(), 'Big win', { name: 'Me', emoji: '🦊' });
     expect(d.moment?.headline).toBe('Called with 7-2. Hit a boat.');
     expect(d.odds?.map((o) => Math.round(o.you * 100))).toEqual([expect.any(Number), 18, 82, 100]);
     // A person shows as Opponent; a bot keeps its name.

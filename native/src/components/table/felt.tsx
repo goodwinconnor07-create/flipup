@@ -10,13 +10,10 @@ import { peekCard, powerPill } from '@/state/power-view';
 import {
   bestHand,
   boardSize,
-  shortCard,
   CIRCLE_HOURS,
   CROSS_CELLS,
   explainHand,
   momentCaption,
-  ploBest,
-  PLO_BOARDS,
   pot,
   tallyOrder,
   tallyShown,
@@ -117,12 +114,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
       : null;
   const named = (v: { name: string; detail?: string }) => (v.detail && v.detail.length <= 16 ? v.detail : v.name);
   const myHandName = myValue && (hand!.board.length >= 3 || myValue.category > 0) ? named(myValue) : null;
-  // Double Board PLO: your hand on each board.
-  const ploName =
-    variant === 'plo' && mySeat && !mySeat.folded && mySeat.cards.length && hand && hand.board.length >= 6 && !hand.result
-      ? `1: ${named(ploBest(mySeat.cards, hand.board, 0))} · 2: ${named(ploBest(mySeat.cards, hand.board, 1))}`
-      : null;
-  const basePill = hand?.result?.showdown ? highlight?.name : (ploName ?? myHandName);
+  const basePill = hand?.result?.showdown ? highlight?.name : myHandName;
   const potNow = hand && !hand.result ? pot(hand) : 0;
   const pack = me?.cardPack;
   const now = useMomentNow(game);
@@ -164,7 +156,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
     >
       <TurnTimer
         game={game}
-        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2) || (!!hand.sliding && !!mySeat && !mySeat.folded && !hand.slides?.[me.id]) || (!!hand.peeling && !!mySeat && !mySeat.folded && !hand.peels?.[me.id]) || (!!hand.voting && !hand.votes?.[me.id]))}
+        mine={!!hand && !hand.result && !!me && (hand.toAct === me.id || (!!hand.discarding && !!mySeat && !mySeat.folded && mySeat.cards.length > 2) || (!!hand.voting && !hand.votes?.[me.id]))}
       />
       <View
         style={{
@@ -320,8 +312,7 @@ function Board({
   const variant = variantOf(game);
   // A Peek's card waits in the next slot, which an Extra Card can push past the usual five.
   const peekAt = peek && hand ? hand.board.length : -1;
-  // Conveyor Belt: always three spots, the cards moving along them.
-  const slots = variant === 'belt' ? 3 : Math.max(boardSize(variant), hand?.board.length ?? 0, peekAt + 1);
+  const slots = Math.max(boardSize(variant), hand?.board.length ?? 0, peekAt + 1);
   // Cards land on the clock while a street's twist plays (see moments.ts): not-yet-dealt ones are empty slots.
   const shown = hand ? visibleBoard(hand, now) : [];
   if (recap && hand?.removed) return <MemoryPeek game={{ ...game, memory: { cards: hand.removed, until: 0 } }} width={width} pack={pack} />;
@@ -377,21 +368,6 @@ function Board({
       </View>
     );
   }
-  if (variant === 'plo') {
-    // Two boards of five, one over the other, numbered.
-    const room = width - spacing.md * 2 - 22 - spacing.lg * 2 - 18;
-    const w = Math.min(42, Math.floor((room - 4 * 4) / 5));
-    return (
-      <View accessibilityLabel="Two boards" style={{ gap: 6 }}>
-        {PLO_BOARDS.map((row, b) => (
-          <View key={b} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-            <Text style={{ width: 14, color: 'rgba(255,255,255,0.7)', fontWeight: '800', fontSize: 13 }}>{b + 1}</Text>
-            {row.map((i) => card(i, w))}
-          </View>
-        ))}
-      </View>
-    );
-  }
   const wide = slots > 5;
   const perRow = Math.min(slots, 7);
   const gap = wide ? 4 : 6;
@@ -403,25 +379,7 @@ function Board({
       {Array.from({ length: slots }, (_, i) => card(i, w, variant === 'pittsburgh' && i === 4 ? { marginLeft: 8 } : undefined))}
     </View>
   );
-  const gone = hand?.dropped ?? hand?.burned ?? [];
-  if (variant !== 'belt' && variant !== 'chain') return row;
-  // Conveyor Belt's fallen cards and Chain Reaction's burned ones, small and faint under the board.
-  return (
-    <View style={{ alignItems: 'center', gap: 6 }}>
-      {row}
-      <View
-        accessibilityLabel={gone.length ? `${variant === 'belt' ? 'Fell off the belt' : 'Burned'}: ${gone.map(short).join(' ')}` : undefined}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 3, minHeight: 28, opacity: 0.85 }}
-      >
-        {gone.length > 0 && (
-          <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 11, fontWeight: '700', marginRight: 4 }}>{variant === 'belt' ? 'OFF THE BELT' : 'BURNED'}</Text>
-        )}
-        {gone.slice(-7).map((c) => (
-          <PlayingCard key={c} card={c} size="sm" width={18} dim />
-        ))}
-      </View>
-    </View>
-  );
+  return row;
 }
 
 /**
@@ -571,8 +529,6 @@ function WinBanner({ game, me }: { game: Game; me: Player | undefined }) {
         : `Innocents split ${chips(all)}`;
     how = `Imposter: ${imp?.name ?? '?'} · ${tally} of ${total} votes`;
     face = '🕵️';
-  } else if (result.plo) {
-    return <BoardsBanner game={game} me={me} />;
   } else if (result.blackjack && !(result.blackjack.poker[0]?.length === 1 && result.blackjack.winners[0]?.length === 1 && result.blackjack.poker[0][0] === result.blackjack.winners[0][0])) {
     return <HalvesBanner game={game} me={me} />;
   } else if (result.blackjack) {
@@ -667,37 +623,6 @@ function HalvesBanner({ game, me }: { game: Game; me: Player | undefined }) {
   );
 }
 
-/** Double Board PLO: who won each board's half of the main pot, and with what. */
-function BoardsBanner({ game, me }: { game: Game; me: Player | undefined }) {
-  const reduce = useReduceMotion();
-  const c = usePlainColors();
-  const { width } = useWindowDimensions();
-  const hand = game.hand!;
-  const plo = hand.result!.plo!;
-  const name = (id: string) => (id === me?.id ? 'You' : (game.players.find((p) => p.id === id)?.name ?? '?'));
-  const face = (id: string) => game.players.find((p) => p.id === id)?.emoji ?? '♦️';
-  return (
-    <Animated.View key={hand.number} accessibilityRole="text" accessibilityLiveRegion="polite" entering={reduce ? FadeIn : bubblePop} style={{ gap: 3, alignItems: 'center' }}>
-      {([0, 1] as const).map((b) => {
-        const ids = plo.winners[b][0] ?? [];
-        if (!ids.length) return null;
-        return (
-          <View
-            key={b}
-            style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingLeft: 4, paddingRight: 12, paddingVertical: 2, borderRadius: 999, backgroundColor: c.surface, boxShadow: '0 0 0 2px rgba(232,195,122,0.75)' }}
-          >
-            <Avatar emoji={face(ids[0])} size={24} />
-            <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ maxWidth: width - 170, color: c.label, fontWeight: '700', fontSize: 13 }}>
-              {`Board ${b + 1} · ${ids.map(name).join(' & ')}`}
-              <Text style={{ color: c.tertiaryLabel, fontWeight: '600' }}>{`  ${shortName(plo.names[b][ids[0]])}`}</Text>
-            </Text>
-          </View>
-        );
-      })}
-    </Animated.View>
-  );
-}
-
 /** Whether a moment has something to say in the felt's bottom slot right now. */
 function momentLine(game: Game, now: number): boolean {
   const hand = game.hand;
@@ -712,15 +637,6 @@ function MomentLine({ game, now, reduce, meId }: { game: Game; now: number; redu
   const hand = game.hand!;
   const m = hand.moment!;
   const name = (id?: string) => game.players.find((p) => p.id === id)?.name ?? '?';
-  // Slide Switch: the card that just came to you, and who from.
-  const got = m.kind === 'slides' ? hand.slid?.filter((x) => x.street === hand.street && x.to === meId && x.card).at(-1) : undefined;
-  if (got) {
-    return (
-      <Animated.View key={`slide-${hand.street}`} entering={reduce ? FadeIn : bubblePop}>
-        <HandPill text={`🔄 ${name(got.from)} slid you the ${shortCard(got.card as Card)}`} />
-      </Animated.View>
-    );
-  }
   if (m.kind === 'bust') {
     return (
       <Animated.View key="bust" entering={reduce ? FadeIn : bubblePop}>

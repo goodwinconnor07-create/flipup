@@ -6,13 +6,10 @@ import { useEffect } from 'react';
 import { Appearance, useColorScheme } from 'react-native';
 
 import { CrashScreen } from '@/components/crash-screen';
-import { InviteBanner } from '@/components/invite-banner';
 import { RequestTimeoutPopup } from '@/components/request-timeout-popup';
 import { LaunchCover } from '@/components/launch-cover';
 import { ThumbSnapper } from '@/components/thumb-snaps';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { useFriendWatch } from '@/state/pals';
-import { FRIENDS_ON } from '@/scope';
 import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
 import { useColors, usePlainColors } from '@/theme';
@@ -39,18 +36,9 @@ void startStore();
 
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
 // grab handle, dismissed by a swipe down. Each tab has its own stack inside (see (tabs)/*/_layout.tsx).
-/**
- * Friends, requests and table invites stay fresh on every screen, so an invite's banner moves on wherever you are.
- * Only while friends are on (scope.ts).
- */
 /** Opened from Home's PLAY, whose card has already grown to fill the screen: the page fades in over it instead of sliding. */
 function fadeAfterFill(route: { params?: object }) {
   return (route.params as { fill?: string } | undefined)?.fill ? { animation: 'fade' as const, animationDuration: 200 } : {};
-}
-
-function FriendWatch() {
-  useFriendWatch();
-  return <InviteBanner />;
 }
 
 export default function RootLayout() {
@@ -91,13 +79,7 @@ export default function RootLayout() {
         <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
         {/* How to Play: a story on black, full screen so its bars sit at the top edge; the X closes it. */}
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
-        {/* Challenges: the start sheet, a seat's tag, Detective's check, and Rewind's two sheets. */}
-        <Stack.Screen name="challenge/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Challenge', headerShown: false }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
-        <Stack.Screen name="challenge-tag" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], title: 'Tag a style' }} />
-        <Stack.Screen name="challenge-check" options={{ ...sheet, sheetAllowedDetents: [1], gestureEnabled: false, headerShown: false, title: 'Read the table' }} />
-        <Stack.Screen name="rewind" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Rewind' }} />
-        <Stack.Screen name="rewind-result" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'What happened' }} />
         <Stack.Screen name="premium" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'FlipUp Premium' }} />
         <Stack.Screen name="premium-perk" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'Premium' }} />
         {/* Share cards, the hand bank and Replay. */}
@@ -122,10 +104,6 @@ export default function RootLayout() {
         {/* Asked on top of joining or opening a table when the player has no name yet (state/ask-name.ts). */}
         <Stack.Screen name="your-name" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Your name' }} />
         <Stack.Screen name="emoji" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Your emoji' }} />
-        <Stack.Screen name="friend/[code]" options={{ ...sheet, sheetAllowedDetents: [0.7, 1], title: 'Friend' }} />
-        <Stack.Screen name="friend-requests" options={{ ...sheet, sheetAllowedDetents: [0.5, 1], title: 'Friend requests' }} />
-        <Stack.Screen name="invite-contacts" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Invite friends' }} />
-        <Stack.Screen name="add-friend" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Add a friend' }} />
         {/* Join with a code: Play's round button. The keyboard comes up as it opens; a table or party code, or a QR code. */}
         <Stack.Screen name="join" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Join' }} />
         {/* Join links: they only pass the code on to the Join sheet. */}
@@ -133,8 +111,6 @@ export default function RootLayout() {
         <Stack.Screen name="party/[code]" options={{ headerShown: false, animation: 'none' }} />
         <Stack.Screen name="party-sheet" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Party' }} />
       </Stack>
-      {/* A friend's table invite drops in over any screen. */}
-      {FRIENDS_ON && <FriendWatch />}
       <RequestTimeoutPopup />
       <LaunchCover />
       {/* Saves the game tiles as pictures in the background, so lists of games show images, not SVGs. */}

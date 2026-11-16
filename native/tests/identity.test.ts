@@ -10,7 +10,6 @@ vi.mock('../src/state/api', () => ({
   createOnlineTable: vi.fn(),
   PremiumRequiredError: class extends Error {},
 }));
-vi.mock('../src/state/pals', () => ({ myPalCode: () => null }));
 vi.mock('../src/state/party', () => ({ leaveParty: vi.fn(), loadPartyRef: () => null }));
 
 afterEach(() => {

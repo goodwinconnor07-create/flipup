@@ -17,14 +17,6 @@ export const GAME_BASICS: Record<Exclude<Variant, 'holdem'>, string[]> = {
   beanstalk: ['You start with two cards.', 'You get one more on the flop, the turn and the river.', 'Best five from your five and the board.'],
   bjholdem: ['On the flop you can Hit for another card.', 'Over 21 and you bust: your hand folds.', 'Half the pot to the best hand, half to closest to 21.'],
   power: ['Everyone gets a secret power each hand.', 'Tap your power card to play it on your turn.', "Once a hand. Unplayed, it's gone."],
-  missions: ['You get a secret mission, like "win with a pair".', 'Pull it off and everyone pays you.', 'First to five missions wins the race.'],
-  slide: ['When each street lands, slide one card to your left.', 'You get one from your right at the same time.', 'Three slides a hand. Pick the card you need least.'],
-  headband: ['One of your cards faces out: everyone sees it but you.', 'Read how they bet to guess what it is.', 'It turns over at the showdown.'],
-  belt: ['You get four cards.', 'Three cards ride a belt: one in, one off each street.', 'Best five from your four and the belt at the end.'],
-  onion: ['You get five cards.', 'Peel one off, face up, on each street.', 'You play the river with your last two.'],
-  chain: ['Each board card must share a rank or suit with the last.', "Cards that don't link burn face up.", 'Boards come out paired and flushy.'],
-  elevator: ['Before each new card lands, the board goes up a rank.', 'A 7 becomes an 8, an ace becomes a 2.', 'Your own cards never change.'],
-  plo: ['Five cards each and two boards. Pot limit.', 'On each board use exactly two of yours and three of its.', 'Half the pot on each board. Win both to scoop.'],
 };
 
 /** The short rundown for a game, or nothing for Texas Hold'em. */

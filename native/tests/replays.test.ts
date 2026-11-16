@@ -83,7 +83,7 @@ describe('hand bank', () => {
 });
 
 describe('share card data', () => {
-  const who = { name: 'Me', emoji: '🙂', username: 'me' };
+  const who = { name: 'Me', emoji: '🙂' };
   it('turns a hand into a card with the hand line by line', () => {
     const game = finishedHand();
     noteReplay(game, ME, 'bots');

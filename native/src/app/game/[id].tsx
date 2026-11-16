@@ -12,7 +12,7 @@ import { SheetScroll } from '@/components/sheet-scroll';
 import { HowToPicture } from '@/components/how-to-picture';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
-import { freeThisWeek, freeWeekEnds, isPremiumVariant, variantNeedsPremium, isOffered, isVariant, variantInfo, variantNote, type Variant } from '@/engine';
+import { freeThisWeek, freeWeekEnds, isPremiumVariant, variantNeedsPremium, isVariant, variantInfo, variantNote, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { unlockToHost } from '@/state/unlock';
 import { brand, radius, ROUNDED, spacing } from '@/theme';
@@ -65,9 +65,8 @@ export default function GameSheet() {
         )}
       </View>
       {/* Opened from a table's game pill: only how it plays. Otherwise the same buttons as Home, on the game's own
-          colour; without Premium a blur and a lock sit over them, and a tap anywhere on it opens the offer. A game this
-          build doesn't offer to host (engine/index.ts) only shows how it plays, for a table joined from elsewhere. */}
-      {!rules && isOffered(variant) && (
+          colour; without Premium a blur and a lock sit over them, and a tap anywhere on it opens the offer. */}
+      {!rules && (
         <View style={{ borderRadius: radius.xl, borderCurve: 'continuous', overflow: 'hidden', backgroundColor: shade(look.card[0], 0.5) }}>
           <View style={{ padding: spacing.md, gap: spacing.sm }}>
             <PlayButton label="Host a game" line="with friends · share a code" ink={shade(look.band, 0.35)} onPress={() => go('friends')} />

@@ -19,7 +19,7 @@ import { HouseRules } from '../lobby/house-rules';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { RulesCard } from '../rules-card';
 import { ThemedText } from '../themed-text';
-import { randomBot, type RowBot } from './bots-row';
+import { randomBot, type RowBot } from './row-bot';
 import { FloatTable } from './float-table';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 
@@ -59,8 +59,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
   const [busy, setBusy] = useState(false);
   // A mini game you've never played: its rules card comes up first, and the deal waits for Continue.
   const [rulesFor, setRulesFor] = useState<typeof variant | null>(null);
-  const extra = Number(!!s.humanPoker);
-  const room = MAX_SEATS - 1 - extra - bots.length;
+  const room = MAX_SEATS - 1 - bots.length;
 
   const addBot = () => {
     if (room <= 0) return;
@@ -70,7 +69,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
     else if (!premium) router.push({ pathname: '/premium', params: { reason: 'bots' } });
   };
   const deal = () => {
-    if (busy || (!bots.length && !extra)) return;
+    if (busy || !bots.length) return;
     if (!unlockToHost([variant], premium)) return;
     if (!rulesSeen(variant)) {
       setRulesFor(variant);
@@ -108,7 +107,6 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
         <NavRow title="Play with bots" />
 
         <BotsCard
-          humanPoker={!!s.humanPoker}
           bots={bots}
           room={room}
           onAdd={addBot}
@@ -119,10 +117,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
 
         <HouseRules
           settings={s}
-          onChange={(next) => {
-            if (next.humanPoker) setBots((b) => b.slice(0, MAX_SEATS - 2));
-            setDraft(next);
-          }}
+          onChange={setDraft}
           online={false}
           bots={bots.length}
         />
@@ -130,12 +125,12 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
       <OpenTableButton
         title="Start game"
         line={
-          bots.length + extra
-            ? `You and ${bots.length + extra} ${bots.length + extra === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
+          bots.length
+            ? `You and ${bots.length} ${bots.length === 1 ? 'bot' : 'bots'} · ${variantInfo(variant).name}`
             : 'Add a bot first'
         }
         busy={busy}
-        disabled={!bots.length && !extra}
+        disabled={!bots.length}
         onPress={deal}
       />
       {rulesFor && (
@@ -159,13 +154,11 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
  * to guess, and no hello lines: bots talk at the table.
  */
 function BotsCard({
-  humanPoker,
   bots,
   room,
   onAdd,
   onRemove,
 }: {
-  humanPoker: boolean;
   bots: RowBot[];
   room: number;
   onAdd: () => void;
@@ -176,7 +169,7 @@ function BotsCard({
   // Bots on their way out: still drawn while they pop out, but no longer counted.
   const [leaving, setLeaving] = useState<string[]>([]);
   const staying = bots.filter((b) => !leaving.includes(b.key));
-  const min = humanPoker ? 0 : 1;
+  const min = 1;
   const popOut = (key: string) => setLeaving((l) => (l.includes(key) ? l : [...l, key]));
 
   return (
@@ -186,7 +179,7 @@ function BotsCard({
           At the table
         </ThemedText>
         <ThemedText variant="subhead" tone="secondaryLabel">
-          {staying.length + 1 + Number(humanPoker)} of {MAX_SEATS} seats
+          {staying.length + 1} of {MAX_SEATS} seats
         </ThemedText>
       </View>
       <View

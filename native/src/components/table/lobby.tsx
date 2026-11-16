@@ -7,7 +7,7 @@ import { variantInfo, type Game } from '@/engine';
 import { joinLink } from '@/state/api';
 import { seatKey } from '@/state/blocks';
 import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
-import { tableShareMessage } from '@/state/invite-message';
+import { tableShareMessage } from '@/state/table-share';
 import { changeTableCode, dispatch, me as myDevice, type TableState } from '@/state/session';
 import { ForceScheme, spacing } from '@/theme';
 

@@ -28,8 +28,6 @@ export default function TableMenu() {
   const playing = game.status === 'playing';
   const started = game.status !== 'lobby';
   const ended = game.status === 'ended';
-  // A challenge plays by its own rules: no settings, extra bots, sitting out or ending it early.
-  const challenge = !!game.challenge;
   const close = () => router.back();
   const quick = (fn: () => void) => () => {
     fn();
@@ -52,7 +50,7 @@ export default function TableMenu() {
   // Big icons in one row at the top, each with its label under it. Bots-only games have no Leave game (it would
   // only run without you): End game and Home are there, and Leave only to close a finished table.
   const tiles: TileProps[] = [];
-  if (host && !ended && !challenge && (online || playing)) {
+  if (host && !ended && (online || playing)) {
     tiles.push({
       label: 'End game',
       symbol: 'stop.circle.fill',
@@ -64,7 +62,7 @@ export default function TableMenu() {
         }),
     });
   }
-  if (online || ended || challenge) {
+  if (online || ended) {
     tiles.push({
       label: ended ? 'Close table' : 'Leave game',
       symbol: 'rectangle.portrait.and.arrow.right',
@@ -76,7 +74,7 @@ export default function TableMenu() {
     });
   }
   if (!ended) tiles.push({ label: 'Home', symbol: 'house.fill', color: colors.accent as string, onPress: goHome });
-  if (me && playing && !challenge) {
+  if (me && playing) {
     tiles.push({ label: me.sittingOut ? "I'm back" : 'Sit out', symbol: 'clock.fill', color: (me.sittingOut ? colors.accent : colors.slate) as string, onPress: quick(() => dispatch({ type: 'sitOut', out: !me.sittingOut })) });
   }
 
@@ -108,8 +106,8 @@ export default function TableMenu() {
             onPress={() => void Share.share(tableShare(game, t.code!))}
           />
         )}
-        {host && !ended && !challenge && <Row title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}
-        {host && playing && !challenge && game.players.length < 9 && <Row title="Add a bot" icon={{ symbol: 'person.badge.plus', color: colors.green as string }} chevron={false} onPress={quick(() => dispatch({ type: 'addBot' }))} />}
+        {host && !ended && <Row title="Table settings" icon={{ symbol: 'gearshape.fill', color: colors.slate as string }} onPress={() => router.push('/table-settings')} />}
+        {host && playing && game.players.length < 9 && <Row title="Add a bot" icon={{ symbol: 'person.badge.plus', color: colors.green as string }} chevron={false} onPress={quick(() => dispatch({ type: 'addBot' }))} />}
       </Section>
       <YouSettings header="You" online={online} />
     </SheetScroll>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isCode, isFriendCode, isTableCode, newTableCode, normalizeTableCode, parseReport, TABLE_CODE_WORDS, tableCodeProblem } from '.';
+import { isCode, isTableCode, newTableCode, normalizeTableCode, parseReport, TABLE_CODE_WORDS, tableCodeProblem } from '.';
 
 describe('table codes', () => {
   it('are a poker word and two numbers', () => {
@@ -32,15 +32,15 @@ describe('table codes', () => {
     expect(tableCodeProblem('TACO42')).toBeNull();
   });
 
-  it('leave party and friend codes as they were', () => {
+  it('leave the older party codes as they were', () => {
     expect(isCode('TACO42')).toBe(false);
-    expect(isFriendCode('BCDFG')).toBe(true);
+    expect(isCode('BCDFG')).toBe(true);
   });
 
-  it('are accepted in reports about a table', () => {
+  it('are accepted in reports about a table or a party (parties get the same six-character codes)', () => {
     const base = { deviceId: 'd'.repeat(24), reason: 'cheat', name: 'Sam', emoji: '🙂', playerId: 'p1' };
     expect(parseReport({ ...base, where: 'table', code: 'aces42' })?.code).toBe('ACES42');
     expect(parseReport({ ...base, where: 'table', code: 'BCDFG' })?.code).toBe('BCDFG');
-    expect(parseReport({ ...base, where: 'party', code: 'ACES42' })).toBeNull();
+    expect(parseReport({ ...base, where: 'party', code: 'ACES42' })?.code).toBe('ACES42');
   });
 });

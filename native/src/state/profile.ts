@@ -1,4 +1,4 @@
-import { cleanName, DEFAULT_EMOJI, isEmoji, isPackId, packById } from '@/engine';
+import { cleanName, DEFAULT_EMOJI, isEmoji, isPackId } from '@/engine';
 
 import { read as readStored, save, useStored } from './storage';
 import { hasPremium } from './premium';
@@ -17,7 +17,7 @@ function clean(p: Partial<Profile> | null | undefined): Profile {
   return {
     name: typeof p?.name === 'string' ? p.name : '',
     emoji: isEmoji(p?.emoji) ? p.emoji : DEFAULT_EMOJI,
-    ...(isPackId(p?.cardPack) && !packById(p.cardPack)?.venue ? { cardPack: p.cardPack } : {}),
+    ...(isPackId(p?.cardPack) ? { cardPack: p.cardPack } : {}),
   };
 }
 

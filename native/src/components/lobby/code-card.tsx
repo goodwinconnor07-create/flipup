@@ -6,12 +6,12 @@ import Animated, { LinearTransition } from 'react-native-reanimated';
 import { normalizeTableCode, TABLE_CODE_LENGTH, tableCodeProblem } from '@/engine';
 import { EASE_IN_OUT, enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { inviteLink } from '@/state/invite-message';
+import { joinLink } from '@/state/api';
 import { brand, radius, ROUNDED, spacing, useColors } from '@/theme';
 
 import { haptic } from '../haptics';
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
-import { GrowingQR } from '../invite-ticket';
+import { GrowingQR } from '../growing-qr';
 import { Swap } from '../swap';
 import { ThemedText } from '../themed-text';
 
@@ -219,7 +219,7 @@ export function CodeCard({
           exiting={exit(reduce)}
           style={{ alignItems: 'center', gap: spacing.xs, paddingTop: spacing.sm }}
         >
-          <GrowingQR link={inviteLink(code)} big reduce={reduce} />
+          <GrowingQR link={joinLink(code)} big reduce={reduce} />
           <ThemedText variant="footnote" tone="secondaryLabel" style={{ textAlign: 'center' }}>
             Friends scan it from Join on FlipUp&apos;s Play tab.
           </ThemedText>

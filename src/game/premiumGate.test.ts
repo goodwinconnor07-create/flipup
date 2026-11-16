@@ -11,8 +11,7 @@ describe('Premium gate', () => {
     expect(premiumBubble('green')).toBe(false);
     expect(premiumBubble(undefined)).toBe(false);
     expect(premiumBubble('galaxy')).toBe(true);
-    expect(CARD_PACKS.filter((p) => !p.venue).every((p) => premiumPack(p.id))).toBe(true);
-    expect(CARD_PACKS.filter((p) => p.venue).some((p) => premiumPack(p.id))).toBe(false);
+    expect(CARD_PACKS.every((p) => premiumPack(p.id))).toBe(true);
     expect(BUBBLE_STYLES.filter((b) => !b.free).every((b) => premiumBubble(b.id))).toBe(true);
   });
 

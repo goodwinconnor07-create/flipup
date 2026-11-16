@@ -3,14 +3,13 @@
 // (full colour on their turn), the stack counting as it changes, their cards (with an orange shimmer sweeping over
 // them while it's their turn), and a tag under them: what they've put in this round, a win, their odds during a
 // run-out, or Offline.
-import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, FadeIn, FadeOut, LinearTransition, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
 
-import { holeCount, holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
+import { holeCountAt, moveLabel, myPlayer, positionOf, seatFor, variantOf, type Card, type Game, type Player, type Position, type Seat, type Talk } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { me as myDevice, dispatch, useTable } from '@/state/session';
+import { me as myDevice, dispatch } from '@/state/session';
 import { EASE_OUT } from '@/motion/presets';
 import { usePlainColors, brand, motion } from '@/theme';
 
@@ -21,7 +20,6 @@ import { seatKey } from '@/state/blocks';
 import { xrayCard } from '@/state/power-view';
 import { ThemedText } from '../themed-text';
 import { bubbleOut, bubblePop, MoveBubble, moveTone, pinned, Thread, TypingBubble } from './bubbles';
-import { TagChip } from './challenge';
 import { Count } from './count';
 import { GhostDivider, GhostSeat } from './ghost-seat';
 import { PlayingCard } from './playing-card';
@@ -254,9 +252,6 @@ function faceDown(game: Game, playerId?: string): number {
   const v = variantOf(game);
   if (v === 'beanstalk') return holeCountAt(v, game.hand?.board.length ?? 0);
   const hand = game.hand;
-  // Onion: five, less what they've peeled; Conveyor Belt four; Double Board PLO five (four at a full table of nine).
-  if (v === 'onion') return 5 - (playerId ? (hand?.peeled?.[playerId]?.length ?? 0) : 0);
-  if (v === 'belt' || v === 'plo') return holeCount(v, hand?.seats.length ?? 0);
   const three =
     !!hand && (hand.board.length < 3 || (hand.board.length === 3 && !hand.discarding && hand.nextStreetAt == null && hand.showdownAt == null && !hand.result));
   return v === 'pineapple' && three ? 3 : 2;
@@ -287,7 +282,6 @@ function SeatPod({
 }) {
   const c = usePlainColors();
   const { width } = useWindowDimensions();
-  const tag = useTable().challenge?.tags[player.id];
   const hand = game.hand;
   const host = game.hostDeviceId === myDevice;
   const turn = !!hand && !hand.result && hand.toAct === player.id;
@@ -305,17 +299,13 @@ function SeatPod({
   // Another person (not a bot, not you) at an online table can be reported or blocked.
   const other = !player.bot && !!game.code && !!player.deviceId && player.deviceId !== myDevice;
   const canPeek = host && !!hand?.result && player.bot && !!seat && !seat.shown && seat.cards.length === 0;
-  // Headband: their forehead card faces you (the second of the two).
-  const forehead = hand?.headbands?.[player.id];
   const cards: (Card | null)[] =
     seat && (!seat.folded || seat.cards.length > 0)
       ? seat.cards.length
         ? seat.cards
-        : Array.from({ length: faceDown(game, player.id) + (hand?.hits?.[player.id] ?? 0) }, (_, i) => (i === 1 && forehead ? forehead : null))
+        : Array.from({ length: faceDown(game, player.id) + (hand?.hits?.[player.id] ?? 0) }, () => null)
       : [];
-  // Onion: the cards they've peeled off, face up beside the rest.
-  const peeled = hand?.peeled?.[player.id] ?? [];
-  const held = cards.length + peeled.length;
+  const held = cards.length;
   // The dealer button and blinds sit on the back of the last face-down card (BTN, SB, BB); heads-up the button shows BTN.
   const pos = positionOf(hand, player.id);
   const mark = pos && pos.kind !== 'other' ? (pos.kind === 'btn' ? 'BTN' : pos.label) : undefined;
@@ -326,12 +316,10 @@ function SeatPod({
   return (
     <Pressable
       accessibilityLabel={`${player.name}${player.bot ? ', a bot' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
-      accessibilityHint={game.challenge?.id === 'detective' && player.bot ? 'Tag it with a style' : canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
+      accessibilityHint={canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
       disabled={!host && !other}
       onPress={() => {
         haptic.tap();
-        // Style Detective: a bot's seat takes a tag.
-        if (game.challenge?.id === 'detective' && player.bot) return router.push({ pathname: '/challenge-tag', params: { id: player.id } });
         // After a hand, the host's tap turns a bot's cards over.
         if (canPeek && hand) return dispatch({ type: 'revealBots', hand: hand.number, playerId: player.id });
         const inHand = !!seat && !!hand && !hand.result;
@@ -371,11 +359,6 @@ function SeatPod({
           <SeatFace emoji={player.emoji} size={compact ? 36 : 50} turn={turn} />
         </View>
         <SeatBadge game={game} playerId={player.id} />
-        {tag && (
-          <View pointerEvents="none" style={{ position: 'absolute', left: -22, bottom: 6 }}>
-            <TagChip label={tag} />
-          </View>
-        )}
         {/* The bubble sits over the top of the face, as on the web. */}
         <View pointerEvents="none" style={{ position: 'absolute', bottom: compact ? 34 : 48, left: -40, right: -40, height: 0 }}>
           {talk ? (
@@ -450,17 +433,6 @@ function SeatPod({
                 )}
               </View>
             ))}
-            {peeled.length > 0 && (
-              // Overlapped like the backs, so the backs and the peels together are never wider than five cards were
-              // (side by side they ran into the next seat and under the "+N more" chip at 9 players).
-              <View accessibilityLabel={`Peeled: ${peeled.join(' ')}`} style={{ flexDirection: 'row', marginLeft: 4, alignSelf: 'flex-end' }}>
-                {peeled.map((p, i) => (
-                  <View key={p} style={{ marginLeft: i === 0 ? 0 : -6 }}>
-                    <PlayingCard card={p} size="sm" width={16} dim />
-                  </View>
-                ))}
-              </View>
-            )}
           </View>
         )}
         {/* A fixed slot, so a tag coming or going never changes the row's height and moves the table. */}

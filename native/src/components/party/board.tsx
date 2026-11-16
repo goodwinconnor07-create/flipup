@@ -1,17 +1,13 @@
-import { useEffect, useState } from 'react';
-import { Alert, Pressable, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { Pressable, Text, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
 import type { PartyRow } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { BLOCKED_EMOJI, BLOCKED_NAME, memberKey, useBlocked } from '@/state/blocks';
-import { FRIENDS_ON } from '@/scope';
-import { sendFriendRequest, usePals } from '@/state/pals';
 import { radius, spacing, usePlainColors } from '@/theme';
 
 import { Avatar } from '../avatar';
-import { haptic } from '../haptics';
-import { Icon } from '../icon';
 import { SwapIcon } from '../swap';
 import { openPlayerMenu } from '../player-menu';
 
@@ -25,21 +21,20 @@ const SLIDE = { duration: 700, easing: Easing.bezier(0.2, 0.9, 0.3, 1) };
  * slides to its new place instead of the list jumping.
  */
 export function PartyBoard({ rows: raw, you, running, code }: { rows: PartyRow[]; you: string | null; running: boolean; code?: string }) {
-  const pals = usePals();
   // A blocked member's name and picture are hidden here too.
   const blocked = new Set(useBlocked().map((b) => b.key));
-  const rows = raw.map((r) => (blocked.has(memberKey(r.id)) ? { ...r, name: BLOCKED_NAME, emoji: BLOCKED_EMOJI, friendCode: undefined } : r));
+  const rows = raw.map((r) => (blocked.has(memberKey(r.id)) ? { ...r, name: BLOCKED_NAME, emoji: BLOCKED_EMOJI } : r));
   const stable = [...rows].sort((a, b) => (a.id < b.id ? -1 : 1));
   return (
     <View accessibilityRole="list" accessibilityLabel="Leaderboard" style={{ height: rows.length * ROW - 4 }}>
       {stable.map((r) => (
-        <BoardRow key={r.id} row={r} me={r.id === you} running={running} canAdd={r.id !== you && !!r.friendCode && !pals.some((p) => p.code === r.friendCode)} code={code} />
+        <BoardRow key={r.id} row={r} me={r.id === you} running={running} code={code} />
       ))}
     </View>
   );
 }
 
-function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: boolean; running: boolean; canAdd: boolean; code?: string }) {
+function BoardRow({ row: r, me, running, code }: { row: PartyRow; me: boolean; running: boolean; code?: string }) {
   const c = usePlainColors();
   const reduce = useReduceMotion();
   const target = (r.rank - 1) * ROW;
@@ -120,42 +115,6 @@ function BoardRow({ row: r, me, running, canAdd, code }: { row: PartyRow; me: bo
           </Text>
         )}
       </View>
-      {FRIENDS_ON && canAdd && r.friendCode && <AddFriend code={r.friendCode} name={r.name} emoji={r.emoji} />}
     </Animated.View>
-  );
-}
-
-/** "+ Friend" on someone else's row, once the server has checked their phone owns that friend code. It sends a friend request. */
-function AddFriend({ code, name, emoji }: { code: string; name: string; emoji: string }) {
-  const c = usePlainColors();
-  const [busy, setBusy] = useState(false);
-  const add = async () => {
-    if (busy) return;
-    setBusy(true);
-    try {
-      const status = await sendFriendRequest(code, { name, emoji });
-      haptic.success();
-      if (status === 'sent') Alert.alert('Friend request sent', `${name} will see it in their Friends tab.`);
-    } catch (e) {
-      haptic.failure();
-      Alert.alert("Couldn't add them", e instanceof Error ? e.message : 'Try again.');
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Add ${name} as a friend`}
-      hitSlop={8}
-      disabled={busy}
-      onPress={() => void add()}
-      style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: 2, paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.full, backgroundColor: c.blueBg, opacity: pressed || busy ? 0.6 : 1 })}
-    >
-      <Icon name="plus" size={11} color={c.blueInk} />
-      <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 13, fontWeight: '600', color: c.blueInk }}>
-        Friend
-      </Text>
-    </Pressable>
   );
 }

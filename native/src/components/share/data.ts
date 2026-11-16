@@ -8,7 +8,6 @@ import type { Replay } from '@/state/replays';
 export interface ShareWho {
   name: string;
   emoji: string;
-  username: string | null;
 }
 
 /** One side of a hand, for the designs that put you against your opponent. */

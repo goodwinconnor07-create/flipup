@@ -11,10 +11,21 @@ export const STYLE_AFTER = 20;
 /** Your chance to win when the money went in: at least this and losing is a bad beat; at most 1 minus it and winning is a suckout. */
 export const BEAT_EDGE = 0.6;
 
+/** A number of big blinds as text: "12.5", "340". Every chip figure in the stats is in big blinds, so a table's
+ * starting stack, a rebuy or a blind level never changes what a number means (owner, 16 Nov 2026). */
+export const bbText = (v: number): string => {
+  const a = Math.abs(v);
+  return a >= 100 ? Math.round(a).toLocaleString('en-US') : String(Math.round(a * 10) / 10);
+};
+export const bbLabel = (v: number): string => `${bbText(v)} BB`;
+export const bbSigned = (v: number): string => `${Math.round(Math.abs(v) * 10) / 10 === 0 ? '' : v > 0 ? '+' : '−'}${bbLabel(v)}`;
+/** Chips to big blinds, to two places. */
+const inBB = (chips: number, bigBlind: number): number => (bigBlind > 0 ? Math.round((chips / bigBlind) * 100) / 100 : 0);
+
 export interface StartLine {
   /** Hands dealt. */
   n: number;
-  /** Chips won or lost with it. */
+  /** Big blinds won or lost with it. */
   net: number;
   /** The last time you had it, to draw. */
   cards: Card[];
@@ -23,13 +34,15 @@ export interface StartLine {
 export interface MoreStats {
   /** Hands counted for these stats (the all-time hand count above started earlier). */
   tracked: number;
-  /** Chips from every pot you took. */
+  /** Set once the chip numbers below are in big blinds (older saves held raw chips and start over). */
+  units?: 'bb';
+  /** Big blinds from every pot you took. */
   chipsWon: number;
-  /** Chips won minus chips lost. */
+  /** Big blinds won minus big blinds lost. A rebuy isn't a win or a loss, so it never shows here. */
   net: number;
-  /** The most you lost in one hand. */
+  /** The most you lost in one hand, in big blinds. */
   biggestLoss: number;
-  /** Chips won or lost in each of your last 100 hands, oldest first. */
+  /** Big blinds won or lost in each of your last 100 hands, oldest first. */
   nets: number[];
   /** Hands where you put chips in before the flop yourself (blinds don't count). */
   vpip: number;
@@ -56,8 +69,9 @@ export interface MoreStats {
   starts: Record<string, StartLine>;
   /** Days with a hand played ("2026-11-12"). */
   days: string[];
-  /** Tables in play: your chips at the first hand and the lowest after any hand since. */
-  tables: { id: string; start: number; low: number }[];
+  /** Tables in play: your chips at the first hand and the lowest after any hand since (a ratio, so chips are fine).
+   * `bought` is what you'd bought in for at the first hand; a rebuy later marks the table `rebought`. */
+  tables: { id: string; start: number; low: number; bought?: number; rebought?: boolean }[];
   /** The table you won from furthest down. */
   comeback: { low: number; start: number; variant: Variant } | null;
   /** Saved hands watched back. */
@@ -65,6 +79,7 @@ export interface MoreStats {
 }
 
 export const EMPTY_STATS: MoreStats = {
+  units: 'bb',
   tracked: 0,
   chipsWon: 0,
   net: 0,
@@ -98,18 +113,21 @@ const chance = (v: unknown) => (typeof v === 'number' && v >= 0 && v <= 1 ? v : 
 /** The stored stats with anything broken put back to empty. */
 export function cleanStats(r: Partial<MoreStats> | null | undefined): MoreStats {
   const starts: Record<string, StartLine> = {};
-  if (r?.starts && typeof r.starts === 'object') {
+  // Saves from before the stats were in big blinds held raw chips: those figures start over.
+  const old = r?.units !== 'bb';
+  if (!old && r?.starts && typeof r.starts === 'object') {
     for (const [k, v] of Object.entries(r.starts)) {
       if (v && typeof v.n === 'number' && typeof v.net === 'number' && Array.isArray(v.cards)) starts[k] = { n: v.n, net: v.net, cards: v.cards.slice(0, 2) };
     }
   }
   const c = r?.comeback;
   return {
+    units: 'bb',
     tracked: num(r?.tracked),
-    chipsWon: num(r?.chipsWon),
-    net: num(r?.net, true),
-    biggestLoss: num(r?.biggestLoss),
-    nets: Array.isArray(r?.nets) ? r.nets.filter((x) => typeof x === 'number' && Number.isFinite(x)).slice(-TRAIL) : [],
+    chipsWon: old ? 0 : num(r?.chipsWon),
+    net: old ? 0 : num(r?.net, true),
+    biggestLoss: old ? 0 : num(r?.biggestLoss),
+    nets: !old && Array.isArray(r?.nets) ? r.nets.filter((x) => typeof x === 'number' && Number.isFinite(x)).slice(-TRAIL) : [],
     vpip: num(r?.vpip),
     aggr: num(r?.aggr),
     calls: num(r?.calls),
@@ -186,9 +204,12 @@ export function tallyHand(r: MoreStats, game: Game, myId: string, now: Date, cha
   if (!hand || !result || !seat || !meNow || seat.cards.length === 0) return r;
   const variant: Variant = hand.variant ?? 'holdem';
   const start = hand.startStacks?.[myId];
+  const bigBlind = game.settings.bigBlind;
   const took = result.pots.filter((p) => p.winners.includes(myId)).reduce((sum, p) => sum + Math.floor(p.amount / p.winners.length), 0);
   // What the hand did to your chips (missions and powers that move chips included).
-  const net = start !== undefined ? meNow.stack - start : took - seat.total;
+  // From the stack you sat down to the hand with, so a rebuy between hands is never part of it.
+  const chipNet = start !== undefined ? meNow.stack - start : took - seat.total;
+  const net = inBB(chipNet, bigBlind);
   const mine = (hand.actions ?? []).filter((a) => a.playerId === myId);
   const wonPot = took > 0;
   const allIn = seat.allIn || mine.some((a) => a.move === 'allin');
@@ -216,20 +237,22 @@ export function tallyHand(r: MoreStats, game: Game, myId: string, now: Date, cha
   if (TWO_CARD_GAMES.has(variant) && seat.cards.length === 2) {
     const key = startName(seat.cards);
     const was = starts[key] ?? { n: 0, net: 0, cards: [] };
-    starts[key] = { n: was.n + 1, net: was.net + net, cards: [...seat.cards] };
+    starts[key] = { n: was.n + 1, net: Math.round((was.net + net) * 100) / 100, cards: [...seat.cards] };
   }
 
   const winRun = wonPot ? r.winRun + 1 : 0;
   const dryRun = wonPot ? 0 : r.dryRun + 1;
   const tables = r.tables.filter((t) => t.id !== game.id);
-  const table = r.tables.find((t) => t.id === game.id) ?? { id: game.id, start: start ?? meNow.stack, low: start ?? meNow.stack };
-  tables.push({ ...table, low: Math.min(table.low, meNow.stack) });
+  const table = r.tables.find((t) => t.id === game.id) ?? { id: game.id, start: start ?? meNow.stack, low: start ?? meNow.stack, bought: meNow.bought };
+  // Busting and buying back in is a new stack, not a comeback.
+  const rebought = table.rebought || (table.bought !== undefined && meNow.bought > table.bought);
+  tables.push({ ...table, low: Math.min(table.low, meNow.stack), rebought });
 
   return {
     ...r,
     tracked: r.tracked + 1,
-    chipsWon: r.chipsWon + took,
-    net: r.net + net,
+    chipsWon: Math.round((r.chipsWon + inBB(took, bigBlind)) * 100) / 100,
+    net: Math.round((r.net + net) * 100) / 100,
     biggestLoss: Math.max(r.biggestLoss, -net),
     nets: [...r.nets, net].slice(-TRAIL),
     vpip: r.vpip + (mine.some((a) => a.street === 'preflop' && (a.move === 'call' || aggressive(a.move))) ? 1 : 0),
@@ -257,7 +280,7 @@ export function tallyHand(r: MoreStats, game: Game, myId: string, now: Date, cha
 export function tallyGame(r: MoreStats, game: Game, myId: string, place: number): MoreStats {
   const t = r.tables.find((x) => x.id === game.id);
   const tables = r.tables.filter((x) => x.id !== game.id);
-  if (!t || place !== 1 || t.start <= 0) return { ...r, tables };
+  if (!t || place !== 1 || t.start <= 0 || t.rebought) return { ...r, tables };
   const best = r.comeback;
   const comeback = !best || t.low / t.start < best.low / best.start ? { low: t.low, start: t.start, variant: game.hand?.variant ?? game.settings.variant ?? 'holdem' } : best;
   return { ...r, tables, comeback };

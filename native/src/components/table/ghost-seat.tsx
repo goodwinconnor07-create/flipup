@@ -3,13 +3,14 @@ import { Text, View } from 'react-native';
 import { variantOf, type Game } from '@/engine';
 import { usePlainColors } from '@/theme';
 
+import { Count } from './count';
 import { SeatFace } from './seats';
 import { PlayingCard } from './playing-card';
 
 /**
  * Haunted Pot's ghost, locked in at the left end of the seat row behind a divider while the other players cycle
- * past on the right of it. It has no chips and no turn: its face, its two cards (face down until a showdown) and,
- * no speech: the ghost never talks. It is drawn the same size as the bots' seats.
+ * past on the right of it. It has no turn and never talks: its face, its two cards (face down until a showdown) and
+ * its chips, which are a bounty: whatever it wins stays here, and whoever beats it takes the lot. It is drawn the same size as the bots' seats.
  */
 export function GhostSeat({ game, compact = false }: { game: Game; compact?: boolean }) {
   const c = usePlainColors();
@@ -17,6 +18,7 @@ export function GhostSeat({ game, compact = false }: { game: Game; compact?: boo
   if (variantOf(game) !== 'ghost') return null;
   const shown = hand?.result?.ghost ?? null;
   const cards = shown?.cards ?? hand?.ghost ?? [null, null];
+  // The bounty: while a hand is on, what it brought in; once it's over, what it holds now (grown if it won, empty if beaten).
   const holding = hand && !hand.result ? (hand.carry ?? 0) : (game.ghostPot ?? 0);
   const size = compact ? 15 : 17;
   // Laid out exactly like a bot's seat: bubble over the face, name, a line, then its cards.
@@ -28,10 +30,8 @@ export function GhostSeat({ game, compact = false }: { game: Game; compact?: boo
       <Text numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ fontSize: compact ? 13 : 15, lineHeight: compact ? 15 : 17, fontWeight: '700', color: c.tertiaryLabel }}>
         Ghost
       </Text>
-      {/* What it holds (just the number, like a stack), so it fits the seat on the smallest phone. */}
-      <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ maxWidth: '100%', fontSize: size, lineHeight: size + 1, fontWeight: '700', color: c.label }}>
-        {holding && !shown ? Math.round(holding).toLocaleString('en-US') : ' '}
-      </Text>
+      {/* Its bounty (just the number, like a stack, in gold), so it fits the seat on the smallest phone. Always shown. */}
+      <Count value={holding} up={c.gold} down={c.gold} style={{ fontSize: size, lineHeight: size + 1, fontWeight: '700', color: c.gold }} />
       <View style={{ alignItems: 'center', gap: 4, minHeight: 52, paddingTop: 4 }}>
         <View style={{ flexDirection: 'row' }}>
           {cards.map((card, i) => (
@@ -40,11 +40,6 @@ export function GhostSeat({ game, compact = false }: { game: Game; compact?: boo
             </View>
           ))}
         </View>
-        {shown && (
-          <Text maxFontSizeMultiplier={1.2} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ maxWidth: '100%', fontSize: 11, fontWeight: '600', color: c.secondaryLabel }}>
-            {shown.name}
-          </Text>
-        )}
       </View>
     </View>
   );

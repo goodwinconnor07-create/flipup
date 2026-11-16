@@ -13,8 +13,9 @@ import { read, save, useStored } from './storage';
 
 const KEY = 'flipup.replays';
 const STARS = 'flipup.replaystars';
-/** Hands the bank holds, newest first. About a kilobyte each. */
-export const KEEP = 500;
+/** Most hands Saved hands holds at once (owner, 16 Nov 2026). Nothing is dropped to make room: when it's full, Save
+ * asks you to delete one first. About a kilobyte each. */
+export const KEEP = 50;
 
 export interface ReplayPlayer {
   id: string;
@@ -113,10 +114,13 @@ export function toggleStar(id: string): void {
 
 export function clearReplays(): void {
   save(KEY, null);
+  save(STARS, null);
 }
 
 export function removeReplay(id: string): void {
   save(KEY, allReplays().filter((r) => r.id !== id));
+  const stars = read<string[] | null>(STARS, null) ?? [];
+  if (stars.includes(id)) save(STARS, stars.filter((s) => s !== id));
 }
 
 // ── The last hand, held until the next one finishes ─────────────────────────
@@ -136,15 +140,22 @@ export function useLastHand(): Replay | null {
 }
 export const lastHand = (): Replay | null => last;
 
-/** Puts the last hand in your bank. Returns its id, or null if there's no finished hand to save. */
-export function saveLastHand(): string | null {
-  if (!last) return null;
+/** 'saved' (now in Saved hands, or already was), 'full' (`KEEP` hands are saved: delete one first) or 'none' (no finished hand). */
+export type SaveResult = 'saved' | 'full' | 'none';
+
+/** Puts the last hand in Saved hands. Never pushes another hand out: a full list says so instead. */
+export function saveLastHand(): SaveResult {
+  if (!last) return 'none';
   const have = allReplays();
-  if (!have.some((r) => r.id === last!.id)) {
-    const stars = new Set(read<string[] | null>(STARS, null) ?? []);
-    save(KEY, [{ ...last, at: Date.now() }, ...have].filter((r, i) => i < KEEP || stars.has(r.id)));
-  }
-  return last.id;
+  if (have.some((r) => r.id === last!.id)) return 'saved';
+  if (have.length >= KEEP) return 'full';
+  save(KEY, [{ ...last, at: Date.now() }, ...have]);
+  return 'saved';
+}
+
+/** Takes the last hand back out of Saved hands (the bookmark tapped again). */
+export function unsaveLastHand(): void {
+  if (last) removeReplay(last.id);
 }
 
 /** True once the last hand is in the bank. */

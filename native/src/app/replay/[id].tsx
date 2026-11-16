@@ -21,7 +21,8 @@ import { variantInfo, type Card, type HandAction, type Street } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useTableLook } from '@/state/prefs';
 import { noteWatched } from '@/state/record';
-import { netOf, putIn, saveLastHand, toggleStar, useLastHand, useReplays, useStars, winnersOf, type Replay } from '@/state/replays';
+import { trySaveHand } from '@/components/table/hand-tools';
+import { netOf, putIn, toggleStar, useLastHand, useReplays, useStars, winnersOf, type Replay } from '@/state/replays';
 import { brand, ForceScheme, gradient, radius, ROUNDED, spacing } from '@/theme';
 
 /** How long each move stays up while playing, in ms. */
@@ -184,7 +185,7 @@ function Viewer() {
           {saved ? (
             <RoundButton icon="star.fill" label={starred ? 'Unstar' : 'Star'} tint={starred ? brand.gold : undefined} onPress={() => (haptic.select(), toggleStar(r.id))} />
           ) : (
-            <RoundButton icon="bookmark" label="Save to Saved hands" onPress={() => saveLastHand() && haptic.success()} />
+            <RoundButton icon="bookmark" label="Save to Saved hands" onPress={trySaveHand} />
           )}
           <RoundButton icon="square.and.arrow.up" label="Share" onPress={() => router.push({ pathname: '/share-card', params: { kind: 'hand', id: fromTable && !saved ? 'last' : r.id } })} />
         </View>

@@ -36,7 +36,7 @@ import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { tableShare } from '@/state/table-share';
 import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
 import { forgetParty } from '@/state/party';
-import { leaveTable, dispatch, me as myDevice, retryConnection, useTable } from '@/state/session';
+import { leaveTable, dispatch, me as myDevice, releaseRules, retryConnection, useTable } from '@/state/session';
 import { EASE_OUT, exitMs } from '@/motion/presets';
 import { gradient, motion, radius, spacing, useColors, usePlainColors } from '@/theme';
 
@@ -98,6 +98,7 @@ export default function TableScreen() {
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
       <HandRecap />
+      {t.rules && <RulesCard variant={t.rules} onDone={releaseRules} />}
       <DealWipe />
       {!game && lost ? (
         <ConnectionLost variant="page" onRetry={retryConnection} onLeave={leave} />
@@ -447,11 +448,11 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const [raiseTurn, setRaiseTurn] = useState('');
   const [selection, setSelection] = useState<{ street: string; action: PreAction } | null>(null);
 
-  // The first time you sit at a mini game, its rules card comes up once (never again for that game). Against bots it
-  // was shown before the deal (Play with bots and the lobby wait for Continue), so here it's for online tables, which
-  // don't wait for anyone: five seconds and an X.
+  // The first time you sit at an online mini game, its rules card comes up once (never again for that game): five
+  // seconds and an X, since an online table doesn't wait for anyone. Against bots the table screen shows it and holds
+  // the deal until Continue (`RulesGate`).
   const variant = variantOf(game);
-  const [rulesCard, setRulesCard] = useState<Variant | null>(() => (rulesSeen(variant) ? null : variant));
+  const [rulesCard, setRulesCard] = useState<Variant | null>(() => (game.code && !rulesSeen(variant) ? variant : null));
   useEffect(() => {
     if (rulesCard) markRulesSeen(rulesCard);
   }, [rulesCard]);

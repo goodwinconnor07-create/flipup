@@ -26,6 +26,7 @@ import { PlayingCard } from './playing-card';
 import { planWindow, type WindowAnchor } from './pod-window';
 import { moveSig } from './use-reactions';
 import { SeatBadge } from './variant-steps';
+import { choose } from '../choose';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 export const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -200,7 +201,7 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
         </Text>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }} onPress={() => setOpen(false)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }} onPress={() => setOpen(false)}>
           <View
             style={{
               position: 'absolute',
@@ -315,6 +316,7 @@ function SeatPod({
   const room = Math.floor((width + 8) / Math.max(n, 1)) - 4;
   return (
     <Pressable
+      accessibilityRole={host || other ? 'button' : undefined}
       accessibilityLabel={`${player.name}${player.bot ? ', a bot' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
       accessibilityHint={canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
       disabled={!host && !other}
@@ -350,7 +352,7 @@ function SeatPod({
             info,
             remove,
           );
-        Alert.alert(player.name, info, [{ text: 'Cancel', style: 'cancel' }, ...remove]);
+        choose(player.name, info, [...remove, { text: 'Cancel', style: 'cancel' }]);
       }}
       style={{ alignItems: 'center' }}
     >
@@ -504,10 +506,10 @@ export function PositionChip({ pos }: { pos: Position | null }) {
     <View
       accessibilityLabel={`Position ${pos.label}`}
       style={{
-        minWidth: 20,
-        height: 18,
-        paddingHorizontal: 4,
-        borderRadius: 9,
+        minWidth: 24,
+        height: 20,
+        paddingHorizontal: 5,
+        borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
         // The ink ring is drawn inside the fill, not as a border, so its antialiased edge leaves no stray outline.
@@ -515,7 +517,7 @@ export function PositionChip({ pos }: { pos: Position | null }) {
         boxShadow: look.edge ? `inset 0 0 0 1.5px ${look.edge}` : undefined,
       }}
     >
-      <Text maxFontSizeMultiplier={1} style={{ fontSize: 9, fontWeight: '800', color: look.ink }}>
+      <Text maxFontSizeMultiplier={1} style={{ fontSize: 11, fontWeight: '800', color: look.ink }}>
         {pos.label}
       </Text>
     </View>

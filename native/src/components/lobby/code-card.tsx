@@ -14,6 +14,7 @@ import { PANEL_RADIUS, usePanel } from '../grouped-list';
 import { GrowingQR } from '../growing-qr';
 import { Swap } from '../swap';
 import { ThemedText } from '../themed-text';
+import { Announce } from '../announce';
 
 /**
  * The first card on Play with friends: the game code friends type in Join, big, with Copy, QR and Change as plain
@@ -207,6 +208,7 @@ export function CodeCard({
         </View>
       )}
 
+      <Announce text={error ? helper : null} />
       {helper ? (
         <ThemedText variant="footnote" tone={error ? 'red' : 'tertiaryLabel'} accessibilityLiveRegion="polite">
           {helper}

@@ -39,6 +39,7 @@ import { forgetParty } from '@/state/party';
 import { leaveTable, dispatch, me as myDevice, releaseRules, retryConnection, useTable } from '@/state/session';
 import { EASE_OUT, exitMs } from '@/motion/presets';
 import { gradient, motion, radius, spacing, useColors, usePlainColors } from '@/theme';
+import { useAnnounce } from '@/components/announce';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
@@ -151,6 +152,7 @@ function PartyEnded({ code, onLeave }: { code: string; onLeave: () => void }) {
 /** A small status capsule under the bar. */
 function Pill({ text }: { text: string }) {
   const colors = useColors();
+  useAnnounce(text);
   return (
     <View
       accessibilityRole="text"
@@ -305,6 +307,7 @@ function BlindNews({ game }: { game: Game }) {
   const bigBlind = game.settings.bigBlind;
   const last = useRef(bigBlind);
   const [news, setNews] = useState<{ id: number; text: string } | null>(null);
+  useAnnounce(news?.text, news?.id);
   useEffect(() => {
     if (bigBlind > last.current && game.status === 'playing') {
       setNews({ id: Date.now(), text: `Blinds are now ${chips(game.settings.smallBlind)}/${chips(bigBlind)} 🚨` });
@@ -445,6 +448,8 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   const hand = game.hand;
   const mySeat = seatFor(hand, me?.id);
   const myTurn = !!hand && !hand.result && !!me && hand.toAct === me.id;
+  // VoiceOver hears the turn arrive: nothing else on the table says so out loud.
+  useAnnounce(myTurn ? 'Your turn' : null, hand?.number);
   const [raiseTurn, setRaiseTurn] = useState('');
   const [selection, setSelection] = useState<{ street: string; action: PreAction } | null>(null);
 
@@ -598,6 +603,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
         <>
           {/* A tap anywhere else closes the sizer, as on the web. */}
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Close the raise panel"
             onPress={() => setRaiseTurn('')}
             style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }}
@@ -608,6 +614,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
       {powerOpen && !raising && (
         <>
           <Pressable
+            accessibilityRole="button"
             accessibilityLabel="Close the power panel"
             onPress={() => setPowerFor('')}
             style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }}

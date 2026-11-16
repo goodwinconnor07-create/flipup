@@ -89,14 +89,15 @@ export function CardBack({ w, pack, small, mark, ghost }: { w: number; pack?: st
  * card pack. It lives on the back only; a face never draws it, so nothing is left after the flip.
  */
 function BackMark({ mark, small, w }: { mark: string; small?: boolean; w: number }) {
-  const size = small ? 7 : Math.max(9, w * 0.14);
+  // 11 is Apple's smallest readable text size, so the chip never goes below it, even on a small card.
+  const size = Math.max(11, small ? 0 : w * 0.14);
   return (
     <View pointerEvents="none" style={{ position: 'absolute', inset: 0, alignItems: 'center', justifyContent: 'center' }}>
       <View
         accessibilityLabel={`Position ${mark}`}
         style={{
           paddingHorizontal: small ? 3 : 5,
-          height: small ? 11 : size + 8,
+          height: size + (small ? 5 : 8),
           borderRadius: 999,
           alignItems: 'center',
           justifyContent: 'center',

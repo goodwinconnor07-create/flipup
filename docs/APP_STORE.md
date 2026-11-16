@@ -49,8 +49,7 @@ reviewer and functional."
 - Replace every Expo placeholder: the icon (`assets/expo.icon`, `assets/images/icon.png`) and the splash image. Done: both are drawn by `scripts/makeAppIcon.mjs`.
 - Remove every `ComingNext` screen (`native/src/components/coming-next.tsx`): Phase 5 uses them as stand-ins for
   steps it hasn't built yet. `grep -r ComingNext native/src` must find nothing but the file itself, then delete it.
-- `/privacy` and `/support` on gtoduel.online answer today, but only with the web app's page (the single-page
-  fallback), not a policy. Make them real static pages before submitting.
+- `/privacy` and `/support` on playflipup.com are real static pages (`public/privacy.html`, `public/support.html`).
 - Premium must be buyable in the review build with a sandbox account, and the review notes say where it is.
 - Keep the Worker up during review. `/api/health` already exists for a quick check.
 
@@ -128,7 +127,7 @@ equivalent private login (Sign in with Apple is the usual one).
 It must say what's collected and how it's used, that third parties protect it equally, and how data is kept,
 deleted and how a person asks for deletion.
 
-**What we'll do:** write the policy as a static page at `https://gtoduel.online/privacy` (URL kept in
+**What we'll do:** the policy is a static page at `https://playflipup.com/privacy` (URL kept in
 `native/appInfo.ts`). It covers: the random device ID made on the phone, the name and
 emoji shown at tables, what an online table or party keeps while it runs, how long each is kept (tables and parties close after 30 minutes with no play and 6 hours at most, 8 for a 12-game party,
 all deleted automatically), Cloudflare as the host that processes it,
@@ -349,8 +348,9 @@ share card (Premium). Every one from the real native build (2.3.3).
 
 ## Open items before submission
 
-- **Rewarded ads (Bankroll's rebuy).** No ad network is connected: `native/src/state/ads.ts` opens a placeholder. Before one is connected: answer App Tracking Transparency (most networks want the IDFA; FlipUp could run them without tracking), update the App Privacy label (Advertising Data, Device ID for third-party advertising if tracked) and `NSPrivacyTracking`/`NSPrivacyTrackingDomains` in `app.config.ts`, and verify rewards on the server (`TODO` in `worker/bankroll.ts`).
-- **Public boards and country.** Usernames, emojis, scores and badges are public on the Global tab. Country is optional and off by default, picked in Settings (suggested from the phone's region setting, never IP location), shown publicly on the boards, and removed with Delete my data. The hosted privacy policy needs `APP_INFO.privacyBoards` added. Board rows have Report and Block (guideline 1.2).
+- Rewarded ads, Bankroll, the Global tab and its public boards were all taken out before 1.0 (16 November 2026), so
+  nothing about ads, tracking or public boards is open. The audit of 16 November 2026 (`docs/AUDIT_2026-11.md`) lists
+  what's left for the owner to decide.
 
 | # | Item | Who |
 |---|---|---|
@@ -364,8 +364,8 @@ share card (Premium). Every one from the real native build (2.3.3).
 | 8 | App icon and splash made for FlipUp: done (`scripts/makeAppIcon.mjs`). Check the layered icon in Icon Composer or on a TestFlight build, since it was written by hand, not exported | Done, check on device |
 | 9 | Availability: leave out **South Korea** and **China mainland** (decided 2 November 2026) | Owner sets it in App Store Connect |
 | 10 | **Fix web payments.** The web's Premium purchase is still a stand-in that always succeeds. The web waits for a real payment provider before launch | Owner picks a provider, then Claude |
-| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://gtoduel.online/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy. Enforcement is live (the server refused a Premium game to a phone without Premium on 15 November 2026); the notifications URL is still the owner's step | Owner (URL) |
-| 12 | **Join links open the app.** Put your Apple Developer Team ID (10 characters) in `APPLE_TEAM_ID` in `wrangler.jsonc` and deploy, so the Worker can answer `/.well-known/apple-app-site-association`. The app needs a new build too (`associatedDomains` in `app.config.ts`). Check with `curl https://gtoduel.online/.well-known/apple-app-site-association`, then tap a link in Messages on a phone with the build installed. If the domain changes, the app and the Worker both follow `apiOrigin` | Done: the Team ID is set and the file is live (checked 15 November 2026); the 1.0 build carries `associatedDomains` |
+| 11 | ~~Google AdMob account~~ Dropped: no ads (4 November 2026). Instead: set the App Store Server Notifications V2 URL to `https://playflipup.com/api/apple/notifications` (production and sandbox), then set `PREMIUM_ENFORCED` to `"1"` in `wrangler.jsonc` and deploy. Enforcement is live (the server refused a Premium game to a phone without Premium on 15 November 2026); the notifications URL is still the owner's step | Owner (URL) |
+| 12 | **Join links open the app.** Put your Apple Developer Team ID (10 characters) in `APPLE_TEAM_ID` in `wrangler.jsonc` and deploy, so the Worker can answer `/.well-known/apple-app-site-association`. The app needs a new build too (`associatedDomains` in `app.config.ts`). Check with `curl https://playflipup.com/.well-known/apple-app-site-association`, then tap a link in Messages on a phone with the build installed. If the domain changes, the app and the Worker both follow `apiOrigin` | Done: the Team ID is set and the file is live (checked 15 November 2026); the 1.0 build carries `associatedDomains` |
 
 ---
 
@@ -377,7 +377,7 @@ Native build:
 2. Premium through StoreKit only, the price from StoreKit, a working Restore Purchases button on the Premium
    sheet and in Settings, no stand-in purchase code.
 3. Never sell or give chips for money; Premium unlocks looks and modes only.
-3a. Game modes: only normal Texas Hold'em free, the other games need Premium to host (free hosts also seat only the ten original bots; Range training is one set of five hands a day, and Premium has every hand). Only the host needs it; people joining
+3a. Game modes: only normal Texas Hold'em free, the other games need Premium to host (free hosts also seat only the ten original bots; Range training is one hand a day, and Premium has every hand). Only the host needs it; people joining
    by code don't. The server checks it (see "Premium, checked on the server"). No ads.
 3b. "Type any emoji" free for everyone.
 4. A "play chips only" line in the app and in the description.
@@ -442,8 +442,9 @@ Store listing:
 
 ### What Premium unlocks now
 
-Card packs, chat bubble effects, and hosting the seven Premium game modes. AI Legends and "Type any
-emoji" are no longer Premium unlocks (Legends aren't in the native app; any emoji is free).
+As of 16 November 2026: hosting the 13 mini games (one is free for everyone each week), the whole bot roster, all of
+Range training past the free daily hand, the card backs, the Premium share-card designs and the gold name. "Type any
+emoji" is free for everyone. Chat bubble effects and AI Legends are no longer in the app.
 
 ### Rewarded ads: dropped (4 November 2026)
 

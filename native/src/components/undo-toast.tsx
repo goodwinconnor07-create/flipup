@@ -7,12 +7,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { enter, exit } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { dismissUndo, UNDO_MS, useUndoOffer } from '@/state/undo';
-import { radius, spacing } from '@/theme';
+import { radius, spacing, useScreenReader } from '@/theme';
 
 import { Icon } from './icon';
 import { haptic } from './haptics';
 import { PressableScale } from './pressable-scale';
 import { ThemedText } from './themed-text';
+import { useAnnounce } from './announce';
 
 /**
  * The toast that offers to take a removal back ("Bot removed · Undo"), floating over the bottom of every screen
@@ -29,11 +30,14 @@ export function UndoToast() {
   // A new screen (a sheet, a page, a tab) ends the offer.
   const path = usePathname();
   useEffect(() => dismissUndo(), [path]);
+  // VoiceOver takes longer to reach the button than five seconds, so the toast waits four times as long for it.
+  const reader = useScreenReader();
+  useAnnounce(offer ? `${offer.message}. Undo is at the bottom of the screen.` : null, id);
   useEffect(() => {
     if (id === undefined) return;
-    const t = setTimeout(() => dismissUndo(id), UNDO_MS);
+    const t = setTimeout(() => dismissUndo(id), reader ? UNDO_MS * 4 : UNDO_MS);
     return () => clearTimeout(t);
-  }, [id]);
+  }, [id, reader]);
   return (
     <View pointerEvents="box-none" style={{ position: 'absolute', left: 0, right: 0, bottom: insets.bottom + 84, alignItems: 'center', paddingHorizontal: spacing.md, zIndex: 50 }}>
       {offer && (

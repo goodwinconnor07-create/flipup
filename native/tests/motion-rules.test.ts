@@ -145,4 +145,20 @@ describe('UI-thread helpers', () => {
       expect(src).toMatch(new RegExp(`export function ${name}\\([^\\n]*\\{\\n\\s*'worklet';`));
     }
   });
+
+  it('only use constants declared above them (a worklet captures them where it is defined)', () => {
+    // `releaseSpring` sat above `SETTLE` once: the web build stopped at launch and the phone lost the settle spring.
+    const bad: string[] = [];
+    for (const f of readdirSync(NATIVE, { recursive: true }) as string[]) {
+      if (!/\.(ts|tsx)$/.test(f)) continue;
+      const text = readFileSync(new URL(f, NATIVE), 'utf8');
+      for (const m of text.matchAll(/^(?:export )?function (\w+)\([^\n]*\{\n\s*'worklet';[\s\S]*?^\}/gm)) {
+        for (const name of new Set(m[0].match(/\b[A-Z][A-Z0-9_]{2,}\b/g) ?? [])) {
+          const declared = text.search(new RegExp(`^(?:export )?const ${name}\\b`, 'm'));
+          if (declared > (m.index ?? 0)) bad.push(`${f}: ${m[1]}() uses ${name}, declared below it`);
+        }
+      }
+    }
+    expect(bad).toEqual([]);
+  });
 });

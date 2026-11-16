@@ -21,7 +21,7 @@ import { botFace, BOTS, CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, isVariant, V
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { usePremium } from '@/state/premium';
 import { buyPremium, manageSubscription, ON_SALE, restorePremium, startStore, storeError, useStore, yearlySaving, type Plan, type StoreState } from '@/state/purchase';
-import { brand, gradient, radius, ROUNDED, spacing } from '@/theme';
+import { brand, gradient, radius, ROUNDED, spacing, useScreenReader } from '@/theme';
 
 import { APP_INFO } from '../../appInfo';
 
@@ -99,7 +99,7 @@ export default function PremiumSheet() {
         {/* The terms sit right under the plans, beside the buttons that buy them (App Review 3.1.2), not under the perks. */}
         <View style={{ paddingHorizontal: spacing.lg, paddingTop: spacing.md, gap: spacing.sm }}>
           {!has && ON_SALE && (
-            <ThemedText variant="caption1" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+            <ThemedText variant="caption1" style={{ textAlign: 'center', color: 'rgba(255,255,255,0.72)' }}>
               Payment is charged to your Apple Account. A subscription renews automatically at the price shown unless you cancel it at least 24 hours before the period ends; cancel anytime in Settings, Apple Account, Subscriptions. Play chips only, no cash value. Friends always join your games free.
             </ThemedText>
           )}
@@ -240,20 +240,22 @@ const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
 function HeroPager({ perks, wanted }: { perks: Perk[]; wanted?: string }) {
   const { width } = useWindowDimensions();
   const reduce = useReduceMotion();
+  // Under VoiceOver the pictures only move when the person swipes them: a page that changes while it's being read is lost.
+  const reader = useScreenReader();
   const focused = useIsFocused();
   const ref = useRef<ComponentRef<typeof ScrollView>>(null);
   const [page, setPage] = useState(0);
   const [held, setHeld] = useState(false);
 
   useEffect(() => {
-    if (reduce || held || !focused || perks.length < 2) return;
+    if (reduce || reader || held || !focused || perks.length < 2) return;
     const t = setTimeout(() => {
       const next = (page + 1) % perks.length;
       ref.current?.scrollTo({ x: next * width, animated: next !== 0 });
       setPage(next);
     }, HERO_MS);
     return () => clearTimeout(t);
-  }, [page, held, reduce, focused, perks.length, width]);
+  }, [page, held, reduce, reader, focused, perks.length, width]);
 
   const settle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
@@ -618,7 +620,7 @@ function BlueButton({ title, onPress, loading, disabled }: { title: string; onPr
 function Link({ text, onPress }: { text: string; onPress: () => void }) {
   return (
     <Pressable accessibilityRole="link" onPress={onPress} hitSlop={8}>
-      <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.65)', textDecorationLine: 'underline' }}>
+      <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.8)', textDecorationLine: 'underline' }}>
         {text}
       </ThemedText>
     </Pressable>

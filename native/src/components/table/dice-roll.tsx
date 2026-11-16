@@ -10,6 +10,7 @@ import { gradient, ROUNDED } from '@/theme';
 
 import { haptic } from '../haptics';
 import { PlayingCard } from './playing-card';
+import { useAnnounce } from '../announce';
 
 /** The show, in ms from its start: three counts, the die falling and tumbling, then the result until `dice.until`. */
 const COUNT_MS = 800;
@@ -73,6 +74,8 @@ function Show({ at, dice }: { at: number; dice: NonNullable<NonNullable<Game['ha
   useEffect(() => {
     if (result) haptic.success();
   }, [result]);
+
+  useAnnounce(result ? resultWords(dice) : 'Rolling the die');
 
   return (
     <Animated.View

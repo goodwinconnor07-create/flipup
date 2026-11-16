@@ -193,7 +193,7 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
               style={{ paddingHorizontal: 14, height: 32, borderRadius: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', boxShadow: '0 6px 16px -4px rgba(0, 0, 0, 0.5)' }}
             >
               <Text maxFontSizeMultiplier={1.1} numberOfLines={1} style={{ fontSize: 14, fontWeight: '800', color: '#0b1533' }}>
-                Click me to learn how to play
+                Tap me to learn how to play
               </Text>
             </PressableScale>
           </Animated.View>

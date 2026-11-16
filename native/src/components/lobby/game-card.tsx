@@ -65,7 +65,8 @@ export function GameCard({ variant, host, table = false }: { variant: Variant; h
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`How ${info.name} plays`}
-        hitSlop={8}
+        // A line of text is about 20pt tall: 12 above and below makes the 44pt Apple asks for.
+        hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}
         onPress={() => {
           haptic.tap();
           router.push({ pathname: '/how-to-play/[id]', params: { id: variant, from: 'game' } });

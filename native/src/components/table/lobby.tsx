@@ -19,6 +19,7 @@ import { openPlayerMenu } from '../player-menu';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from '../setup/open-table-button';
 import { RoundButton } from '../tab-screen';
 import { ThemedText } from '../themed-text';
+import { choose } from '@/components/choose';
 
 /**
  * A table before its deal (after Play again, or for a friend who joined and waits), drawn from the same pieces as
@@ -62,7 +63,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
           : () =>
               !p.bot && key && game.code
                 ? openPlayerMenu({ key, name: p.name, emoji: p.emoji, where: 'table', code: game.code, playerId: p.id }, p.name, undefined, removeOption)
-                : Alert.alert(p.name, undefined, [{ text: 'Cancel', style: 'cancel' }, ...removeOption]),
+                : choose(p.name, undefined, [...removeOption, { text: 'Cancel', style: 'cancel' }]),
     };
   });
 

@@ -119,7 +119,8 @@ export function syncLook(): void {
   if (((mine.cardPack ?? '') === (want.cardPack ?? '') && !!mine.gold === !!want.gold) || lookSent === key) return;
   lookSent = key;
   // After this update has gone out, so a bots-only table doesn't change inside its own set().
-  setTimeout(() => dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
+  // (Only if it's still the same table by then: a table opened in the meantime has its own name and look.)
+  setTimeout(() => session?.game?.id === game.id && dispatch({ type: 'setLook', name: mine.name, emoji: mine.emoji, ...want }), 0);
 }
 
 /** A finished hand you were dealt into counts once toward your poker record; a table that ends is noted once. */

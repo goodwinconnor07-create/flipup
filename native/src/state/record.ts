@@ -19,7 +19,10 @@ export interface PokerRecord {
   hands: number;
   /** Hands where you took at least part of a pot. */
   won: number;
+  /** The most you took from one hand, in big blinds (so a bigger starting stack or a rebuy never changes it). */
   biggestPot: number;
+  /** Set once `biggestPot` is in big blinds; older saves held chips and start over. */
+  units?: 'bb';
   best: { score: number; name: string; cards: Card[]; variant: Variant } | null;
   games: GameLine[];
   /** Every game you've been dealt a hand of, so Home can stop explaining one you know. */
@@ -35,7 +38,8 @@ function clean(r: Partial<PokerRecord> | null): PokerRecord {
   return {
     hands: n(r?.hands),
     won: n(r?.won),
-    biggestPot: n(r?.biggestPot),
+    units: 'bb',
+    biggestPot: r?.units === 'bb' ? n(r?.biggestPot) : 0,
     best: r?.best && Array.isArray(r.best.cards) && typeof r.best.name === 'string' ? r.best : null,
     games: Array.isArray(r?.games) ? r.games.filter((g) => g && typeof g.variant === 'string' && typeof g.place === 'number') : [],
     played: Array.isArray(r?.played) ? r.played.filter((v): v is Variant => typeof v === 'string') : [],
@@ -66,6 +70,7 @@ export function noteHand(game: Game, myId: string): void {
   update((r) => {
     if (r.seen.includes(key)) return null;
     const mine = result.pots.filter((p) => p.winners.includes(myId)).reduce((sum, p) => sum + Math.floor(p.amount / p.winners.length), 0);
+    const mineBB = game.settings.bigBlind > 0 ? Math.round((mine / game.settings.bigBlind) * 10) / 10 : 0;
     let best = r.best;
     // Your best hand: only one you made to the river and showed down (Imposter's showdowns are votes, not hands).
     if (result.showdown && !seat.folded && hand.variant !== 'imposter' && hand.board.length >= 5) {
@@ -78,7 +83,7 @@ export function noteHand(game: Game, myId: string): void {
     }
     const v: Variant = hand.variant ?? 'holdem';
     const more = tallyHand(r.more, game, myId, new Date());
-    return { ...r, more, played: r.played.includes(v) ? r.played : [...r.played, v], hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mine), best, seen: [...r.seen, key] };
+    return { ...r, more, played: r.played.includes(v) ? r.played : [...r.played, v], hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mineBB), best, seen: [...r.seen, key] };
   });
 }
 

@@ -22,7 +22,7 @@ let sampleHand: ShareData | null = null;
 const handSample = () => (sampleHand ??= sampleHandData({ name: 'You', emoji: '😎' }));
 
 const SAMPLE = statsData(
-  { hands: 1284, won: 402, biggestPot: 6420, best: { score: 0, name: 'Full house', cards: ['Ks', 'Kd', 'Kh', '5c', '5s'], variant: 'holdem' }, games: [], played: [], seen: [] },
+  { hands: 1284, won: 402, biggestPot: 64, best: { score: 0, name: 'Full house', cards: ['Ks', 'Kd', 'Kh', '5c', '5s'], variant: 'holdem' }, games: [], played: [], seen: [] },
   9,
   { name: 'You', emoji: '😎' },
 );

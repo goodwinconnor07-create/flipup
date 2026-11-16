@@ -15,6 +15,8 @@ import {
   redactLogs,
   toTableTime,
   type Action,
+  variantOf,
+  type Variant,
   type Game,
   type HandLog,
   type ServerMessage,
@@ -35,6 +37,7 @@ import { noteGame, noteHand } from './record';
 import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
 import { forgetLastHand, lastHand, noteReplay, playedPastPreflop } from './replays';
+import { markRulesSeen, rulesSeen } from './rules-seen';
 import { save, subscribe } from './storage';
 
 const KEY = 'flipup.session';
@@ -55,13 +58,16 @@ export interface TableState {
   /** Replay after every hand (a bots-only house rule): the finished hand the table is waiting on, by its replay id.
    * The next deal holds until `releaseRecap()`. */
   recap: string | null;
+  /** A mini game you've never played: its rules card is up on the table and a bots-only table's first deal waits for
+   * Continue (`releaseRules()`). */
+  rules: Variant | null;
 }
 
 export let me = deviceId();
 
 let session: Session | null = null;
 let identityVersion = 0;
-let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null };
+let state: TableState = { mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, rules: null };
 let conn: Connection | null = null;
 let sendingId: string | null = null;
 let profile = { name: '', emoji: '' };
@@ -163,6 +169,8 @@ function schedule(minDelay = 0): void {
     () => {
       if (session?.mode !== 'local') return;
       const now = toTableTime(Date.now(), session.game.fast);
+      // The rules card is up on a first mini game: nothing moves until Continue.
+      if (rulesHeld) return;
       // Replay after every hand: the recap is up, so the deal waits for Next hand (bots may still talk).
       if (recapHeld && dealDue(session.game, now)) return;
       let r: ReturnType<typeof applyAction>;
@@ -228,6 +236,46 @@ export function releaseRecap(): void {
     }
   }
   schedule();
+}
+
+// ── The first-time rules card ───────────────────────────────────────────────
+// The first time you play a mini game against bots, its rules card comes up on the table itself (the owner, 16 Nov
+// 2026: in the game screen, not before it opens). The table's first deal and the greeting wait for Continue, and the
+// clock shifts by however long the card was up, so "Dealing in 3…" still counts from the start.
+
+/** True while the rules card is up and a bots-only table's clock waits. */
+let rulesHeld = false;
+/** When the card came up, in table time. */
+let rulesAt = 0;
+
+function holdForRules(): void {
+  if (session?.mode !== 'local') return;
+  const v = variantOf(session.game);
+  if (rulesSeen(v)) return;
+  rulesHeld = true;
+  rulesAt = toTableTime(Date.now(), session.game.fast);
+  publish({ rules: v });
+}
+
+/** Continue on the rules card: it's marked seen and the table carries on from where it waited. */
+export function releaseRules(): void {
+  if (!rulesHeld && !state.rules) return;
+  const v = state.rules;
+  rulesHeld = false;
+  if (v) markRulesSeen(v);
+  publish({ rules: null });
+  if (session?.mode !== 'local') return;
+  const gap = Math.max(0, toTableTime(Date.now(), session.game.fast) - rulesAt);
+  const g = structuredClone(session.game);
+  if (g.nextHandAt != null) g.nextHandAt += gap;
+  if (g.wakeAt != null) g.wakeAt += gap;
+  if (g.pendingTalk) g.pendingTalk.at += gap;
+  set({ ...session, game: g });
+}
+
+function forgetRules(): void {
+  rulesHeld = false;
+  if (state.rules) publish({ rules: null });
 }
 
 function forgetRecap(): void {
@@ -318,7 +366,11 @@ export function dispatch(action: Action): string | null {
     notify(r.error);
     return r.error;
   }
-  if (r.changed) set({ ...session, game: r.game });
+  if (r.changed) {
+    const first = action.type === 'start' && session.mode === 'local' && session.game.status === 'lobby';
+    set({ ...session, game: r.game });
+    if (first) holdForRules();
+  }
   return null;
 }
 
@@ -485,6 +537,7 @@ export function joinOnlineTable(code: string, name: string, emoji: string): void
 export function leaveTable(): void {
   forgetLastHand();
   forgetRecap();
+  forgetRules();
   const mine = session?.mode === 'online' ? session.game?.players.find((p) => p.deviceId === me) : undefined;
   if (mine && session?.game?.status !== 'ended') conn?.send({ t: 'act', id: newId(8), a: { type: 'remove', playerId: mine.id } });
   const old = conn;
@@ -519,7 +572,8 @@ export function resetSessionIdentity(): void {
   joinSent = false;
   me = deviceId();
   forgetRecap();
-  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null });
+  forgetRules();
+  publish({ mode: null, code: null, game: null, conn: 'none', sending: false, notice: null, logs: null, recap: null, rules: null });
 }
 
 // A table you were at comes back after the app is closed: a bots-only one as it was, an online one by reconnecting.

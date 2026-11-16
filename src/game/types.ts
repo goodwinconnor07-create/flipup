@@ -165,8 +165,9 @@ export interface HandResult {
   names: Record<string, string>;
   /** True if it went to a showdown; false if everyone else folded. */
   showdown: boolean;
-  /** Haunted Pot: the ghost's hand, and the chips it kept for the next hand because nobody beat it. */
-  ghost?: { cards: Card[]; name: string; kept: number };
+  /** Haunted Pot: the ghost's hand, the chips it kept for the next hand because nobody beat it (its bounty grows by
+   * that), and `paid`, the bounty it had built up that a player took by beating it this hand. */
+  ghost?: { cards: Card[]; name: string; kept: number; paid?: number };
   /** Hit Me: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
   blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
   /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */

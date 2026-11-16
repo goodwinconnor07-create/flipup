@@ -12,6 +12,7 @@ import { n, signed } from '@/components/share/data';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo } from '@/engine';
 import { usePokerRecord } from '@/state/record';
+import { bbLabel } from '@/state/record-stats';
 import { momentOf } from '@/state/hand-moments';
 import { momentsOf, useReplays, useStars, type Moment } from '@/state/replays';
 import { brand, ForceScheme, radius, ROUNDED, spacing } from '@/theme';
@@ -49,7 +50,7 @@ function Hub() {
 
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <BigTile icon="chart.bar.xaxis" title="My stats" value={`${record.hands ? Math.round((record.won / record.hands) * 100) : 0}%`} line={`${n(record.hands)} hands`} onPress={() => open({ kind: 'stats' })} />
-          <BigTile icon="trophy.fill" title="Best pot" value={record.biggestPot.toLocaleString('en-US')} line={`${n(record.won)} pots won`} gold onPress={() => open({ kind: 'stats' })} />
+          <BigTile icon="trophy.fill" title="Best pot" value={bbLabel(record.biggestPot)} line={`${n(record.won)} pots won`} gold onPress={() => open({ kind: 'stats' })} />
         </View>
 
         <View style={{ gap: spacing.sm }}>

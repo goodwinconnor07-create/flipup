@@ -261,7 +261,7 @@ export function FeltOval({ game, me, heightLimit }: { game: Game; me: Player | u
             <View style={{ alignItems: 'center', gap: 4 }}>
               <WinBanner key={hand.number} game={game} me={me} />
               {variant === 'memory' && !!hand.removed?.length && (
-                <Pressable accessibilityRole="button" onPress={() => setRecapHand(recap ? null : recapKey)} hitSlop={8}>
+                <Pressable accessibilityRole="button" onPress={() => setRecapHand(recap ? null : recapKey)} hitSlop={{ top: 12, bottom: 12, left: 8, right: 8 }}>
                   <VariantPill text={recap ? '🧠 Back to the board' : '🧠 The 20 that were out'} />
                 </Pressable>
               )}

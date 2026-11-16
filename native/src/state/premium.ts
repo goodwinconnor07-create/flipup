@@ -20,3 +20,11 @@ export const premiumStored = (): boolean => read<boolean>(KEY, false) === true;
 export function setPremium(on: boolean): void {
   save(KEY, on ? true : null);
 }
+
+const RESET = 'flipup.premiumreset';
+
+/** Set by Delete my data: Premium stays off on this phone until Restore Purchases or a new purchase, even if Apple still has the subscription. */
+export const premiumDeclined = (): boolean => read<boolean>(RESET, false) === true;
+export function setPremiumDeclined(on: boolean): void {
+  save(RESET, on ? true : null);
+}

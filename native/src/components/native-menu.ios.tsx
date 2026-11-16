@@ -1,6 +1,6 @@
 import { Host } from '@expo/ui';
 import { Button, DisclosureGroup, Form, HStack, Image, Picker, Section, Spacer, Stepper, Text, Toggle, VStack } from '@expo/ui/swift-ui';
-import { buttonStyle, contentShape, controlSize, fixedSize, font, foregroundStyle, labelsHidden, padding, pickerStyle, scrollContentBackground, shapes, tag, tint } from '@expo/ui/swift-ui/modifiers';
+import { buttonStyle, contentShape, controlSize, fixedSize, font, frame, foregroundStyle, labelsHidden, padding, pickerStyle, scrollContentBackground, shapes, tag, tint } from '@expo/ui/swift-ui/modifiers';
 import { Fragment } from 'react';
 import { View } from 'react-native';
 
@@ -12,6 +12,7 @@ import type { MenuItem, NativeMenuProps } from './native-menu.types';
 const SECONDARY = foregroundStyle({ type: 'hierarchical', style: 'secondary' });
 const TERTIARY = foregroundStyle({ type: 'hierarchical', style: 'tertiary' });
 const PRIMARY = foregroundStyle({ type: 'hierarchical', style: 'primary' });
+const DESTRUCTIVE = '#ff453a';
 const sf = (name: string | undefined) => name as never;
 
 /**
@@ -67,12 +68,12 @@ function row(item: MenuItem) {
           </HStack>
         </Button>
       );
-    case 'button':
+    case 'button': {
+      // Drawn by hand, not as a Label: a Label sizes each symbol by its own shape, so the icons sat at different widths and
+      // kept the tint while the text went red. One fixed icon column and one colour for the glyph and its words.
+      const colour = item.destructive ? DESTRUCTIVE : brand.violet;
       return (
         <Button
-          role={item.destructive ? 'destructive' : 'default'}
-          label={item.busy ? `${item.title}…` : item.title}
-          systemImage={item.symbol ? sf(item.symbol) : undefined}
           onPress={
             item.onPress && !item.busy
               ? () => {
@@ -81,8 +82,20 @@ function row(item: MenuItem) {
                 }
               : undefined
           }
-        />
+          modifiers={[buttonStyle('plain')]}
+        >
+          <HStack spacing={12} modifiers={[contentShape(shapes.rectangle())]}>
+            {item.symbol && (
+              <HStack modifiers={[frame({ width: 28, alignment: 'center' })]}>
+                <Image systemName={sf(item.symbol)} size={20} modifiers={[foregroundStyle(colour)]} />
+              </HStack>
+            )}
+            <Text modifiers={[foregroundStyle(colour)]}>{item.busy ? `${item.title}…` : item.title}</Text>
+            <Spacer />
+          </HStack>
+        </Button>
       );
+    }
     case 'toggle':
       return (
         <Toggle

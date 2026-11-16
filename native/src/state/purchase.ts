@@ -22,8 +22,7 @@ import { useSyncExternalStore } from 'react';
 
 import { APP_INFO } from '../../appInfo';
 import { bindPurchase } from './entitlement';
-import { premiumStored, setPremium } from './premium';
-import { read, save } from './storage';
+import { premiumDeclined, premiumStored, setPremium, setPremiumDeclined } from './premium';
 
 export type Plan = 'monthly' | 'yearly';
 const SKU: Record<Plan, string> = { monthly: APP_INFO.premiumMonthlyId, yearly: APP_INFO.premiumYearlyId };
@@ -70,12 +69,11 @@ let waiting: { done: (ok: boolean) => void } | null = null;
 
 // After Delete my data the phone starts over without Premium, even though Apple still has the subscription. Until the
 // person taps Restore (or buys again) nothing turns Premium back on by itself, at launch or from a renewal.
-const RESET = 'flipup.premiumreset';
-const declined = (): boolean => read<boolean>(RESET, false) === true;
+const declined = premiumDeclined;
 
 /** Delete my data: Premium goes off on this phone and stays off until Restore or a new purchase. */
 export function forgetPremium(): void {
-  save(RESET, true);
+  setPremiumDeclined(true);
   setPremium(false);
   publish({ owned: null, period: null, pending: false });
 }
@@ -285,7 +283,7 @@ async function checkOwned(force = false): Promise<boolean> {
 /** Opens Apple's purchase sheet for a plan. Resolves true once Premium is on, false if cancelled or refused. */
 export async function buyPremium(plan: Plan = 'yearly'): Promise<boolean> {
   if (state.busy) return false;
-  save(RESET, null);
+  setPremiumDeclined(false);
   publish({ busy: true, error: null });
   if (!(await startStore())) {
     publish({ busy: false });
@@ -308,16 +306,16 @@ export const storeError = (): string | null => state.error;
 export async function restorePremium(): Promise<boolean> {
   if (state.busy) return false;
   const was = declined();
-  save(RESET, null);
+  setPremiumDeclined(false);
   publish({ busy: true, error: null });
   try {
-    if (!(await startStore())) return was ? (save(RESET, true), false) : false;
+    if (!(await startStore())) return was ? (setPremiumDeclined(true), false) : false;
     await restorePurchases();
     const found = await checkOwned(true);
-    if (!found && was) save(RESET, true);
+    if (!found && was) setPremiumDeclined(true);
     return found;
   } catch (e) {
-    if (was) save(RESET, true);
+    if (was) setPremiumDeclined(true);
     publish({ error: e instanceof Error ? e.message : "Couldn't reach the App Store." });
     return false;
   } finally {

@@ -23,6 +23,4 @@ export const CARD_PACKS: CardPack[] = [
   { id: 'circuit', name: 'Circuit', note: 'Green traces on a dark board' },
 ];
 
-export const packById = (id: string | undefined): CardPack | undefined => CARD_PACKS.find((p) => p.id === id);
-
 export const isPackId = (v: unknown): v is string => typeof v === 'string' && CARD_PACKS.some((p) => p.id === v);

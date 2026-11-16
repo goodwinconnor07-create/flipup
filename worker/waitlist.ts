@@ -83,7 +83,7 @@ export class Waitlist extends DurableObject<Env> {
   }
 }
 
-type Vars = { RESEND_API_KEY?: string; WAITLIST_FROM?: string; WAITLIST_TOKEN?: string };
+type Vars = { RESEND_API_KEY?: string; WAITLIST_FROM?: string; REPORT_FROM?: string; WAITLIST_TOKEN?: string };
 
 /** A plain email address check: something@something.something, no spaces, a sane length. */
 export function cleanEmail(value: unknown): string | null {
@@ -105,7 +105,8 @@ const back = (to: string): Response => new Response(null, { status: 303, headers
 function email(to: string, subject: string, lines: string[], leave: string, vars: Vars) {
   const text = [...lines, '', `Don't want these? Leave the list: ${leave}`, '', 'FlipUp · playflipup.com'].join('\n');
   return {
-    from: vars.WAITLIST_FROM ?? 'FlipUp <hello@mail.playflipup.com>',
+    // The report emails' sender (a domain already verified in Resend), as hello@ on the same domain, unless set.
+    from: vars.WAITLIST_FROM ?? (vars.REPORT_FROM?.includes('<') ? vars.REPORT_FROM.replace(/<[^@>]+@/, '<hello@').replace(/^[^<]*</, 'FlipUp <') : 'FlipUp <hello@mail.playflipup.com>'),
     to: [to],
     subject,
     text,

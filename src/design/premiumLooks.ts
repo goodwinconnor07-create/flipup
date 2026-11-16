@@ -58,5 +58,3 @@ export const BUBBLE_LOOKS: Record<string, BubbleLook> = {
   frost: { fill: ['#f2fbff', '#a9dcff'], ink: DARK_INK },
   toxic: { fill: ['#b6ff3b', '#39d353'], ink: DARK_INK },
 };
-
-export const bubbleLook = (fx: string | undefined): BubbleLook | undefined => (fx ? BUBBLE_LOOKS[fx] : undefined);

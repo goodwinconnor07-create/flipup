@@ -6,8 +6,10 @@ The App Review Guidelines page showed "Last Updated: October 16, 2026" that day.
 
 Status (15 November 2026): **ready to submit once the owner's steps in `docs/SUBMISSION.md` are done.** A full test
 and review pass ran that day (every test suite, the layout sweep at four iPhone sizes, the bot labs, the live server and
-pages); what it found and fixed is in the pull request "App Store prep". The eight newest games are held back from 1.0
-(`HELD_BACK` in `native/src/engine/index.ts`).
+pages); what it found and fixed is in the pull request "App Store prep". On 16 November 2026 everything the app
+doesn't show was taken out of the code (the owner: no switched-off features in the submitted app): Friends, contacts,
+challenges, the testing switch, the website's game, Bankroll, Campaign and Blackjack. The eight newest games are in
+`parked/games/` for later.
 
 Sources:
 [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/) ·
@@ -127,9 +129,9 @@ It must say what's collected and how it's used, that third parties protect it eq
 deleted and how a person asks for deletion.
 
 **What we'll do:** write the policy as a static page at `https://gtoduel.online/privacy` (URL kept in
-`native/appInfo.ts`). It covers: the random device ID made on the phone, the friend code with its name and
-emoji, what an online table or party keeps while it runs, how long each is kept (tables and parties close after 30 minutes with no play and 6 hours at most, 8 for a 12-game party,
-friend codes 120 days after their last use, all deleted automatically), Cloudflare as the host that processes it,
+`native/appInfo.ts`). It covers: the random device ID made on the phone, the name and
+emoji shown at tables, what an online table or party keeps while it runs, how long each is kept (tables and parties close after 30 minutes with no play and 6 hours at most, 8 for a 12-game party,
+all deleted automatically), Cloudflare as the host that processes it,
 no ads, no analytics, no tracking, purchases handled by Apple, and how to delete everything from the app. Link it
 from Settings and from the Premium sheet.
 
@@ -141,14 +143,12 @@ for the user. Do I need to include an option to initiate account deletion? Yes."
 the option to delete automatically generated accounts (sometimes called 'guest' accounts)." Deactivating isn't
 enough.
 
-**Is a device ID an account?** On its own, no: it never leaves the phone except to prove a phone owns its seat.
-But a **friend code** is a record on our server (a name, an emoji and the owning device ID in a `FriendCard`
-Durable Object, kept for 120 days after last use) that others look up. That's a guest account in Apple's words.
-
-**What we'll do:** add "Delete my data" to Settings. It asks once, then:
-1. calls a new `DELETE /api/friends/:code` (only the owning device may) which clears that `FriendCard`,
-2. leaves any open table or party,
-3. wipes every `flipup.*` key on the phone, including the device ID and the friend list,
+**Is a device ID an account?** No: it never leaves the phone except to prove a phone owns its seat, and since
+Friends came out (16 November 2026) the server keeps no lasting record of a person (the friend codes were the one
+that counted as a guest account). Settings still has "Delete my data". It asks once, then:
+1. leaves any open table or party,
+2. drops the Premium link between the device ID and the purchase on the server,
+3. wipes every `flipup.*` key on the phone, including the device ID,
 4. tells the person it's done. Premium survives because Apple keeps that record, and Restore brings it back.
 
 ### 1.2 User-generated content
@@ -241,10 +241,10 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 
 | Apple's data type | What it is in FlipUp |
 |---|---|
-| Identifiers > User ID | The friend code, and the screen name shown at tables, parties and on the friend card ("screen name, handle ... assigned user ID") |
-| Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat or friend code. Not the advertising ID or the vendor ID |
+| Identifiers > User ID | The screen name shown at tables and parties ("screen name, handle ... assigned user ID") |
+| Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat. Not the advertising ID or the vendor ID |
 | User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted after 30 minutes with no play, and at most 6 hours after it opens, 8 for a 12-game party) |
-| User Content > Other User Content | The emoji picture on a friend card and at tables |
+| User Content > Other User Content | The emoji picture shown at tables and parties |
 
 Premium: the server keeps Apple's original transaction id and the device ids it was shown on (Purchases, linked to
 the device id, for App Functionality). It keeps no name, email or card details. "Delete my data" removes the device
@@ -281,8 +281,7 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 >
 > Online play: tap **Host a game**. The lobby shows a six-character game code; tap **Add Bot** to fill seats and
 > **Start game** to deal. A second device joins with **Join a game** and that code (or by scanning the QR code under
-> **QR**). With one device, you can also open playflipup.com/CODE in Safari on a Mac or iPad and tap **Play in your
-> browser** to sit a second player at the same table. Party mode starts from the same lobby: **Start a party**, pick
+> **QR**). Party mode starts from the same lobby: **Start a party**, pick
 > the games, **Save playlist**, then **Start party**.
 >
 > Chips are play chips only. They can't be bought, sold, won or exchanged, and there's no real-money play.
@@ -475,4 +474,4 @@ still join one for free. `unlockToHost()` in `native/src/state/unlock.ts` opens 
 - **Family Sharing** is off for the purchase (a shared purchase is refused by the check).
 - **Not done:** Apple offer codes (unconfirmed for non-consumables), a referral reward (see `docs/PREMIUM_PLAN.md`).
 
-- Contacts (November 2026): the Invite from contacts sheet reads names and phone numbers on the phone only, after the system permission prompt (`NSContactsUsageDescription` from the expo-contacts plugin). Nothing is uploaded, so the privacy label needs no Contacts data type; say so in review notes if asked.
+- Contacts: removed with Friends on 16 November 2026 (expo-contacts is gone, so the app never asks).

@@ -1,5 +1,4 @@
 import { fullDeck, rankOf, type Card } from '../game/cards';
-import { scoreHand } from '../game/evaluate';
 import type { InformationSet } from './information';
 import { handBucket } from '../game/handBucket';
 import { preflopLikelihood } from './preflopContext';
@@ -118,24 +117,4 @@ export function sampleDeal(i: InformationSet, ranges: OpponentRange[], rng: () =
     deck.splice(at, 1);
   }
   return { opponents, board };
-}
-
-export function estimateEquity(
-  i: InformationSet,
-  ranges: OpponentRange[],
-  rng: () => number,
-  samples: number,
-): { mean: number; standardError: number } {
-  let sum = 0,
-    squares = 0;
-  for (let n = 0; n < samples; n++) {
-    const deal = sampleDeal(i, ranges, rng);
-    const scores = [i.hole, ...deal.opponents].map((h) => scoreHand([...h, ...deal.board]));
-    const best = Math.max(...scores);
-    const share = scores[0] === best ? 1 / scores.filter((s) => s === best).length : 0;
-    sum += share;
-    squares += share * share;
-  }
-  const mean = sum / samples;
-  return { mean, standardError: samples > 1 ? Math.sqrt(Math.max(0, (squares - samples * mean * mean) / (samples - 1)) / samples) : 0.5 };
 }

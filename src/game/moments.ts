@@ -72,10 +72,6 @@ export function dealMoment(variant: Variant, now: number, from: number, count: n
   return m;
 }
 
-/** True while the table is holding everyone back. */
-export const momentOn = (hand: Hand | null | undefined, now: number): boolean => !!hand?.moment && now < hand.moment.until;
-export const gated = (hand: Hand | null | undefined, now: number): boolean => !!hand?.moment?.gate && now < hand.moment.until;
-
 /**
  * The board as it should look right now: cards that haven't landed yet are null, and on a die swap the old card
  * stays until the swap. Once the moment is over (or on a phone that joined late) it's the whole board.

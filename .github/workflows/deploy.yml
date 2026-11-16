@@ -1,6 +1,7 @@
 # Deploys the website and Worker to Cloudflare (npm run deploy). Runs by hand only
 # (Actions tab > Deploy > Run workflow). Needs two repository secrets:
-# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. Secret values never go in the repository.
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID. WAITLIST_TOKEN, when set, is copied to the Worker as the owner's key
+# for the waitlist's count and launch email (docs/SUBMISSION.md). Secret values never go in the repository.
 name: Deploy
 
 on:
@@ -29,3 +30,11 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      - name: Set the waitlist owner key
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          WAITLIST_TOKEN: ${{ secrets.WAITLIST_TOKEN }}
+        run: |
+          if [ -z "$WAITLIST_TOKEN" ]; then echo "No WAITLIST_TOKEN secret: skipped."; exit 0; fi
+          printf '%s' "$WAITLIST_TOKEN" | npx wrangler secret put WAITLIST_TOKEN

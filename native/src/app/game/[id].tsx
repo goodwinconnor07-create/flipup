@@ -13,7 +13,7 @@ import { SheetScroll } from '@/components/sheet-scroll';
 import { HowToPicture } from '@/components/how-to-picture';
 import { ThemedText } from '@/components/themed-text';
 import { gameLook } from '@design/gameArt';
-import { freeThisWeek, freeWeekEnds, isPremiumVariant, variantNeedsPremium, isVariant, variantInfo, variantNote, type Variant } from '@/engine';
+import { variantNeedsPremium, isVariant, variantInfo, variantNote, type Variant } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { unlockToHost } from '@/state/unlock';
 import { brand, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
@@ -63,11 +63,6 @@ export default function GameSheet() {
         <ThemedText variant="callout" tone="tertiaryLabel">
           {gameLook(variant).mood}
         </ThemedText>
-        {!premium && isPremiumVariant(variant) && variant === freeThisWeek() && (
-          <ThemedText variant="subhead" style={{ color: brand.gold, fontWeight: '700', marginTop: spacing.xs }}>
-            Free this week: host it without Premium until {new Date(freeWeekEnds()).toLocaleDateString(undefined, { weekday: 'long' })}.
-          </ThemedText>
-        )}
         {locked && (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.xs }}>
             <Icon name="crown.fill" size={15} color={brand.gold} />

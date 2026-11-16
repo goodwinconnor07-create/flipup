@@ -14,6 +14,6 @@ export function nextModes(current: Variant, played: readonly { variant: Variant;
   const start = ids.indexOf(current);
   const ring = [...ids.slice(start + 1), ...ids.slice(0, Math.max(0, start))];
   const tonight = new Set(played.filter((g) => now - g.at < TONIGHT_MS).map((g) => g.variant));
-  const open = ring.filter((id) => premium || !variantNeedsPremium(id, now));
+  const open = ring.filter((id) => premium || !variantNeedsPremium(id));
   return [...open.filter((id) => !tonight.has(id)), ...open.filter((id) => tonight.has(id))];
 }

@@ -16,7 +16,7 @@ import { PressableScale } from '@/components/pressable-scale';
 import { Swap } from '@/components/swap';
 import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
-import { freeThisWeek, isPremiumVariant, variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } from '@/engine';
+import { variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } from '@/engine';
 import { usePartyRef } from '@/state/party';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
@@ -125,12 +125,6 @@ export default function Home() {
                   {info.name}
                 </Text>
               </Swap>
-              {/* Free this week: one Premium game anyone can host, said where the game is picked. */}
-              {!premium && isPremiumVariant(variant) && variant === freeThisWeek() && (
-                <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, fontWeight: '800', letterSpacing: 0.6, color: brand.gold, textTransform: 'uppercase' }}>
-                  Free this week
-                </Text>
-              )}
               {!narrow && (
                 <Text maxFontSizeMultiplier={1.2} numberOfLines={2} style={{ fontSize: 16, lineHeight: 20, fontWeight: '500', color: 'rgba(255, 255, 255, 0.78)', textAlign: 'center' }}>
                   {look.hook}

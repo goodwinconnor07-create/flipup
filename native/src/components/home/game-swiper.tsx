@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { PanResponder, Text, View } from 'react-native';
 import Animated, { FadeIn, FadeOut, withTiming, type EntryExitAnimationFunction, cancelAnimation, interpolate, runOnJS, useAnimatedReaction, useAnimatedStyle, useSharedValue, withSpring, type SharedValue } from 'react-native-reanimated';
 
-import { freeThisWeek, isPremiumVariant, variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
+import { variantNeedsPremium, VARIANTS, type Variant } from '@/engine';
 import { EASE_OUT, rubber, SETTLE } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { useDrift } from '@/motion/use-drift';
@@ -167,7 +167,6 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
           locked={!premium && variantNeedsPremium(v.id)}
           // The pill sits over the crown on the chosen icon, so the crown steps aside while it shows.
           hideBadge={hint && i === start}
-          freeWeek={!premium && isPremiumVariant(v.id) && v.id === freeThisWeek()}
           onPress={() => {
             // The web build can still deliver the tap a drag began with.
             if (Date.now() - drag.current.ended < 300) return;
@@ -203,7 +202,7 @@ export function GameSwiper({ variant, onChange, size, width }: { variant: Varian
   );
 }
 
-function Card({ variant, index, x, step, size, left, offsets, locked, hideBadge, freeWeek, onPress }: { variant: Variant; index: number; x: SharedValue<number>; step: number; size: number; left: number; offsets: number[]; locked: boolean; hideBadge: boolean; /** This week's free Premium game, for a player without Premium. */ freeWeek: boolean; onPress: () => void }) {
+function Card({ variant, index, x, step, size, left, offsets, locked, hideBadge, onPress }: { variant: Variant; index: number; x: SharedValue<number>; step: number; size: number; left: number; offsets: number[]; locked: boolean; hideBadge: boolean; onPress: () => void }) {
   const style = useAnimatedStyle(() => {
     const d = index - x.get() / step;
     const a = Math.abs(d);
@@ -219,17 +218,6 @@ function Card({ variant, index, x, step, size, left, offsets, locked, hideBadge,
       <PressableScale accessible={false} onPress={onPress} haptics={false}>
         <View style={{ borderRadius: size * 0.24, borderCurve: 'continuous', boxShadow: '0 18px 36px -12px rgba(0, 0, 0, 0.65)' }}>
           <GameThumb variant={variant} size={size} />
-          {/* A gold header inside the icon on this week's free game: it can be tried without Premium. */}
-          {freeWeek && (
-            <View pointerEvents="none" style={{ position: 'absolute', top: 0, left: 0, right: 0, borderTopLeftRadius: size * 0.24, borderTopRightRadius: size * 0.24, borderCurve: 'continuous', overflow: 'hidden', alignItems: 'center', paddingTop: size * 0.07, paddingBottom: size * 0.04, backgroundColor: brand.gold }}>
-              <Text maxFontSizeMultiplier={1} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.7} style={{ fontSize: Math.max(10, size * 0.092), lineHeight: Math.max(12, size * 0.11), fontWeight: '900', letterSpacing: 0.6, color: brand.goldInk }}>
-                FREE THIS WEEK
-              </Text>
-              <Text maxFontSizeMultiplier={1} numberOfLines={1} style={{ fontSize: Math.max(9, size * 0.07), lineHeight: Math.max(11, size * 0.085), fontWeight: '700', color: brand.goldInk, opacity: 0.8 }}>
-                Try it now
-              </Text>
-            </View>
-          )}
         </View>
         {locked && !hideBadge && (
           <Animated.View entering={FadeIn.duration(250)} exiting={FadeOut.duration(200)} style={{ position: 'absolute', top: -8, right: -8, width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0b1533', borderWidth: 2, borderColor: brand.gold }}>

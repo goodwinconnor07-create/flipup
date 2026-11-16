@@ -290,8 +290,7 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 > button (crown) on the Play tab, or swipe to any game with a crown and tap **Host a game** or **Play bots**. Buy it
 > with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
 > once subscribed. Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day. Premium: hosting the
-> 12 mini games, the rest of the bots and the rest of Range training. One mini game is free for everyone each week
-> (marked "Free this week"), so that one won't ask for Premium. Anyone can join any game with a code for free; only
+> 12 mini games, the rest of the bots and the rest of Range training. Anyone can join any game with a code for free; only
 > the host needs Premium. There are no ads and no tracking.
 >
 > Account deletion: **Settings** (the gear on the Play tab) > **Delete my data**.

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GrainBackground } from '@/components/grain-background';
+import { GRAIN_NIGHT, GrainBackground } from '@/components/grain-background';
 import { haptic } from '@/components/haptics';
 import { SwapIcon } from '@/components/swap';
 import { Icon } from '@/components/icon';
@@ -68,9 +68,14 @@ function Bank() {
     ]);
   };
   return (
-    <GrainBackground>
-      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}>
-        {list.length > 0 && (
+    // The scroll view is the screen (not inside the background), so the large title sits clear on the page and the bar blurs only once it scrolls.
+    <ScrollView
+      style={{ backgroundColor: GRAIN_NIGHT[0] }}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}
+    >
+      <GrainBackground style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }} />
+      {list.length > 0 && (
           <ThemedText variant="callout" tone="secondaryLabel">
             {list.length ? `${list.length} of ${KEEP} saved. ${editing ? 'Tap the red button to remove a hand.' : 'Tap one to watch it back.'}` : undefined}
           </ThemedText>
@@ -165,7 +170,6 @@ function Bank() {
             </PressableScale>
           ))}
         </View>
-      </ScrollView>
-    </GrainBackground>
+    </ScrollView>
   );
 }

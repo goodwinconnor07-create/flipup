@@ -6,7 +6,7 @@
 import { router } from 'expo-router';
 import { useEffect } from 'react';
 
-import { DEFAULT_SETTINGS, freeThisWeek, rankOf, toTableTime, VARIANTS, withVariant, type Game, type Hand, type Variant } from '@/engine';
+import { DEFAULT_SETTINGS, rankOf, toTableTime, VARIANTS, withVariant, type Game, type Hand, type Variant } from '@/engine';
 import { saveLastHand } from '@/state/replays';
 import { currentTable, dispatch, leaveTable, me, openLocalTable } from '@/state/session';
 import { save } from '@/state/storage';
@@ -95,7 +95,7 @@ async function run(): Promise<void> {
   leaveTable();
   // 3. Home's game swiper on a mini game: never this week's free one, whose banner would be out of date a week later.
   if (wanted('03')) {
-    const game = (['dice', 'ghost', 'memory'] as Variant[]).find((v) => v !== freeThisWeek()) ?? 'dice';
+    const game = 'dice' as Variant;
     await page('03-home', () => {
       save('flipup.homegame', game);
       router.dismissAll();

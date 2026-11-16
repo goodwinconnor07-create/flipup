@@ -7,12 +7,12 @@
 // Nothing is dealt here; sets play full screen in app/range-session.tsx.
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Platform, Share, View } from 'react-native';
+import { Alert, Linking, Platform, Share, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 
 import { Row, Section, usePanel } from '@/components/grouped-list';
 import { Switch } from '@/components/switch';
-import { setReminder, useReminder } from '@/state/reminder';
+import { reminderBlocked, setReminder, useReminder } from '@/state/reminder';
 import { haptic } from '@/components/haptics';
 import { Icon, type IconName } from '@/components/icon';
 import { LivingCard } from '@/components/living-card';
@@ -249,6 +249,15 @@ export function TrainHome({ history, grades }: { history: Answer[]; grades: Reco
               value={reminder.on}
               onValueChange={(on) => {
                 haptic.select();
+                // Turned off for FlipUp in Settings earlier: iOS won't ask again, so say where to turn it back on.
+                if (on)
+                  void reminderBlocked().then((blocked) => {
+                    if (!blocked) return;
+                    Alert.alert('Notifications are off for FlipUp', 'Turn them on in Settings to get the daily reminder.', [
+                      { text: 'Not now', style: 'cancel' },
+                      { text: 'Settings', onPress: () => void Linking.openSettings() },
+                    ]);
+                  });
                 void setReminder(on);
               }}
             />

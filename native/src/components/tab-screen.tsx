@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
 import { createContext, useContext, useEffect, useState, type ComponentRef, type ReactNode, type RefObject } from 'react';
-import { Platform, useColorScheme, View, type ScrollView, type ScrollViewProps } from 'react-native';
+import { Platform, View, type ScrollView, type ScrollViewProps } from 'react-native';
 import Animated, { interpolate, useAnimatedScrollHandler, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -34,7 +34,8 @@ export function useTabFooter(node: ReactNode): void {
  */
 export function TabScreen({ title, accessory, children, contentStyle, scrollRef, ...scroll }: { title: string; accessory?: ReactNode; children: ReactNode; contentStyle?: ScrollViewProps['contentContainerStyle']; /** To scroll the page from outside (Range training's Next hand goes back to the top). */ scrollRef?: RefObject<ComponentRef<typeof ScrollView> | null> } & Omit<ScrollViewProps, 'contentContainerStyle' | 'children'>) {
   const insets = useSafeAreaInsets();
-  const dark = useColorScheme() === 'dark';
+  // The page's own scheme (Train is always dark), not the phone's: a light blur over a dark page is the grey smear.
+  const dark = useScheme() === 'dark';
   const y = useSharedValue(0);
   // A bar pinned under the page (see useTabFooter): it sits on the bottom safe area, which on a tab includes the tab
   // bar, and the page gets that much extra room at its end.

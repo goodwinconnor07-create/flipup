@@ -1,11 +1,8 @@
 // The table and everything in it. One Game is one table, from lobby to the last hand.
 
-import type { BankrollTag } from './bankroll';
 import type { Style } from './botStyles';
 import type { Card } from './cards';
 import type { Variant } from './variants';
-import type { LiveBotState } from '../bot_engine/live';
-import type { PersonalityId } from '../bot_engine/personalities';
 import type { BotDifficulty } from '../bot_engine/everyday';
 import type { EverydayBotState } from '../bot_engine/everydayLive';
 
@@ -16,10 +13,6 @@ export type Move = 'fold' | 'check' | 'call' | 'bet' | 'raise' | 'allin';
 export interface Settings {
   /** Normal Hold'em opponents. Missing defaults to Casual; changes apply next hand. */
   botDifficulty?: BotDifficulty;
-  /** Opt in to one experimental BOT_001 seat at a standard Hold'em table. */
-  humanPoker?: boolean;
-  /** Missing keeps the original BOT_001 profile. Changes take effect next hand. */
-  botPersonality?: PersonalityId | 'original';
   /** Chips each player sits down with (and gets again on a rebuy). */
   startingStack: number;
   smallBlind: number;
@@ -75,10 +68,6 @@ export interface Player {
   labStyle?: Style;
   /** Stable bot identity, private on online tables. */
   botProfile?: string;
-  /** Private choice of decision engine, independent of legacy style identity. */
-  botKind?: 'human-poker';
-  /** 0 to 1: how much less well this bot plays than its style, at an easy campaign table (see `dulled()`). Stripped before the table is sent to any phone. */
-  dull?: number;
 }
 
 /** What the bots have seen a player do, from public moves only. */
@@ -182,8 +171,6 @@ export interface HandResult {
   blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
   /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
   imposter?: { id: string; votes: Record<string, string>; caught: boolean };
-  /** Double Board PLO: each showing player's hand on each board, and who won each board's half of each pot. */
-  plo?: { names: [Record<string, string>, Record<string, string>]; winners: [string[][], string[][]] };
 }
 
 /** One finished hand, for the hand log. */
@@ -307,97 +294,27 @@ export interface Hand {
   discarded?: string[];
   /** Crazy Pineapple: the cards thrown away. Phones see their own until everyone is done. */
   discards?: Record<string, Card>;
-  /** Slide Switch: the table is waiting for everyone still in to pick a card to slide left. */
-  sliding?: boolean;
-  /** Slide Switch: the card each player has picked to slide this street. Phones see only their own. */
-  slides?: Record<string, Card>;
-  /** Slide Switch: who has picked a card to slide this street (public; which card stays secret). */
-  picked?: string[];
-  /** Onion: the table is waiting for everyone still in to pick a card to peel off. */
-  peeling?: boolean;
-  /** Onion: the card each player has picked to peel this street. Phones see only their own until they turn over together. */
-  peels?: Record<string, Card>;
-  /** Onion: who has picked their peel this street (public). */
-  peelPicked?: string[];
-  /** Onion: every card each player has peeled off this hand, face up for everyone. */
-  peeled?: Record<string, Card[]>;
-  /** Conveyor Belt: cards that fell off the end of the belt, oldest first (public). */
-  dropped?: Card[];
-  /** Conveyor Belt: the last stop has been dealt (the river's second round). */
-  lastStop?: boolean;
-  /** Chain Reaction: cards burned face up because they didn't link to the board (public). */
-  burned?: Card[];
-  /** Headband: everyone's forehead card as this phone may see it. Filled in by redactForDevice (the server keeps it as each seat's second card); never your own until the cards turn over. */
-  headbands?: Record<string, Card>;
-  /** Slide Switch: every slide this hand, in order: who gave which card to whom, on which street. Phones see the cards of slides they gave or got. */
-  slid?: SlideRecord[];
   /** Power Cards: the power each player was dealt this hand. Phones see only their own until it's played or the hand is over. */
   powers?: Record<string, PowerId>;
   /** Power Cards: every power played this hand, in order (public, except what a Peek or an X-ray showed). */
   powerUses?: PowerUse[];
   /** Power Cards: players who can't bet or raise, and on which street (Silence). */
   silenced?: Record<string, Street>;
-  /** Secret Missions: missions completed in this hand, in the order they were paid (public). */
-  missionsDone?: { by: string; mission: MissionId; paid: Record<string, number> }[];
 }
 
-/** What `variantTalk()` has already seen this hand, so each power, bust, point and mission is reacted to once. */
+/** What `variantTalk()` has already seen this hand, so each power, bust and point is reacted to once. */
 export interface TalkSeen {
   hand: number;
   board: number;
   powers: number;
   busts: number;
   hits: number;
-  missions: number;
-  race: number;
   points: string;
   discards: boolean;
   dice: boolean;
   result: boolean;
   /** Memory Poker: the `until` of the peek already talked about. */
   peek: number;
-}
-
-export type MissionId =
-  | 'smallball'
-  | 'silent'
-  | 'slowroll'
-  | 'herocall'
-  | 'pressure'
-  | 'lucky7'
-  | 'biggame'
-  | 'relentless'
-  | 'monster'
-  | 'knockout'
-  | 'bluffmaster'
-  | 'suited'
-  | 'twins'
-  | 'red'
-  | 'royalty'
-  | 'button'
-  | 'defender'
-  | 'steal'
-  | 'riverrat'
-  | 'underdog'
-  | 'connected'
-  | 'twopair'
-  | 'trapdoor'
-  | 'shove'
-  | 'crowd'
-  | 'deuce'
-  | 'bully'
-  | 'chop';
-
-/** Secret Missions: the race in progress, kept from hand to hand. Phones see only their own mission (others' are null). */
-export interface MissionRace {
-  /** 1 for the first race at the table. */
-  race: number;
-  /** Each player's current mission (null once completed, until the next deal), the hand it was dealt on, and missions completed this race. */
-  players: Record<string, { mission: MissionId | null; since: number; done: number }>;
-  /** Players who reached the goal this race, in the order they did. */
-  finished: string[];
-  /** The last race that was settled: each player's place, the change to their stack (a share) and in chips. */
-  last?: { race: number; hand: number; places: { id: string; pct: number; chips: number }[] };
 }
 
 export type PowerId = 'peek' | 'xray' | 'swap' | 'reroll' | 'extra' | 'passleft' | 'shield' | 'silence' | 'bounty' | 'foldtax' | 'copycat';
@@ -425,15 +342,7 @@ export interface PowerUse {
   refund?: number;
 }
 
-/** Slide Switch: one card slid to the next player on the left. `card` is empty for phones that weren't part of it. */
-export interface SlideRecord {
-  street: Street;
-  from: string;
-  to: string;
-  card: Card | '';
-}
-
-export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power' | 'slides' | 'peels';
+export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power';
 
 /**
  * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
@@ -480,8 +389,6 @@ export interface Game {
   legacyBotSimulation?: true;
   /** Private, independent observer memories and stable everyday bot profiles. */
   botTable?: EverydayBotState;
-  /** Private observer memory, persisted with the table and stripped from public views. */
-  humanPoker?: LiveBotState;
   id: string;
   /** Join code for online tables. null for bots-only tables on one phone. */
   code: string | null;
@@ -566,45 +473,14 @@ export interface Game {
   dialogue?: Record<string, { recent: string[]; lastIntent: string }>;
   /** A Scroll card's set-up. Its presence means one hand, dealt to order, with quiet bots. Never sent to phones. */
   card?: CardScene;
-  /** Secret Missions: the race and everyone's missions. */
-  missions?: MissionRace;
   /** Haunted Pot: chips the ghost is holding, which go into the next hand's pot. */
   ghostPot?: number;
   /** Memory Poker: the cards being taken out for the next hand, shown to everyone until it's dealt at `until`. Public. */
   memory?: { cards: Card[]; until: number };
   /** This table is one round of a party tournament (see party.ts). Public. */
   party?: { code: string; round: number; total: number };
-  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. Campaign sit and gos keep it too. */
+  /** Party rounds: player ids in the order they ran out of chips (or left), first out first. */
   busted?: string[];
-  /**
-   * A campaign table (see campaign.ts): a cash game whose empty seats fill with new bots, or a tournament of `seats` players.
-   * On this phone for bots only, or online (it has a code) with friends. `venue` is a stake id for cash, a venue id for a tournament.
-   * Public: every phone pays its own buy-in and works out its own prize from it.
-   */
-  campaign?: {
-    kind: 'cash' | 'sng';
-    venue: string;
-    seats: number;
-    /** Tournaments: the format, and the prize drawn for this one. */
-    format?: 'sng' | 'jackpot';
-    prize?: number;
-    /** What it costs to sit down: a tournament's buy-in, or an online cash table's fixed stack. */
-    buyIn?: number;
-    /** Sometimes a tournament puts a bounty on one bot: knock it out yourself for the reward. */
-    bounty?: { playerId: string; reward: number };
-  };
-  /** Tournaments: who knocked out whom (the winners of the pots the busted player was in), by the busted player's id. */
-  knocked?: Record<string, string[]>;
-  /**
-   * A solo challenge on this phone (see challenges.ts). Public: it holds only which challenge it is, never an
-   * answer. `quiet` keeps the bots from talking, since each style has its own lines (Style Detective).
-   */
-  challenge?: { id: 'shortStack' | 'detective' | 'rewind'; quiet?: boolean };
-  /**
-   * A Bankroll table (see bankroll.ts): you and five bots on the server, your stack capped at 100 big blinds with the
-   * rest of your bankroll in `bank`, the bots' stacks matched to yours at every deal. Public: only its player sees it.
-   */
-  bankroll?: BankrollTag;
 }
 
 export type Action =
@@ -625,10 +501,6 @@ export type Action =
   | { type: 'power'; hand: number; seq: number; target?: string; card?: Card; rank?: number }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
-  /** Slide Switch: slide this card to the next player on your left (on the flop, the turn and the river). */
-  | { type: 'slide'; hand: number; card: Card }
-  /** Onion: peel this card off, face up. */
-  | { type: 'peel'; hand: number; card: Card }
   /** Imposter: who you think the imposter is. */
   | { type: 'vote'; hand: number; playerId: string }
   /** Imposter: point a finger at someone you suspect (`null` takes it back). It changes nothing but what the table sees. */

@@ -34,18 +34,10 @@ function leaks(game: Game): string[] {
   for (const c of game.memory?.cards ?? []) secret.delete(c);
   for (const c of hand.dice?.out ? [hand.dice.out] : []) secret.delete(c);
   for (const c of hand.dice?.in ? [hand.dice.in] : []) secret.delete(c);
-  // Headband: everyone else's forehead card faces this phone; its own never does until the cards turn over.
-  if (hand.variant === 'headband') {
-    for (const s of hand.seats) if (s.playerId !== host.id && s.cards[1]) secret.delete(s.cards[1]);
-    const own = hand.seats.find((s) => s.playerId === host.id);
-    if (own?.cards[1] && !own.shown && !hand.result && !hand.board.includes(own.cards[1])) secret.set(own.cards[1], 'own headband card');
-  }
-  // Slide Switch: a card this phone slid on, or was slid, it has held in its own hand (wherever it went next).
-  for (const x of hand.slid ?? []) if (x.from === host.id || x.to === host.id) secret.delete(x.card);
   for (const [card, what] of secret) if (new RegExp(`"${card}"`).test(wire)) found.push(`${what}: ${card}`);
   // Raw device ids of other people, bot internals and the host's own secret on someone else's view.
   for (const p of game.players) if (p.deviceId && p.deviceId !== HOST && wire.includes(p.deviceId)) found.push(`raw device id of ${p.id}`);
-  for (const key of ['"style"', '"botProfile"', '"botKind"', '"labStyle"', '"reads"', '"minds"', '"botPlan"', '"deck":["', '"dull"']) if (wire.includes(key)) found.push(`internal field ${key}`);
+  for (const key of ['"style"', '"botProfile"', '"botKind"', '"labStyle"', '"reads"', '"minds"', '"botPlan"', '"deck":["']) if (wire.includes(key)) found.push(`internal field ${key}`);
   if (!hand.result && hand.imposter && view.hand?.imposter && view.hand.imposter !== '?') found.push('imposter id');
   // The hand log: only its own cards and shown ones.
   for (const l of redactLogs(game, HOST)) for (const id of Object.keys(l.holes)) if (!l.shown.includes(id) && id !== host.id) found.push(`log hole cards of ${id}`);
@@ -69,10 +61,6 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
         if (hand && !hand.result && hand.voting && mine && !hand.votes?.[host.id]) {
           const others = hand.seats.filter((x) => x.playerId !== host.id);
           r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[Math.floor(rng() * others.length)].playerId }, { deviceId: HOST, now: clock, rng });
-        } else if (hand && !hand.result && hand.peeling && mine && !mine.folded && !hand.peelPicked?.includes(host.id) && mine.cards.length > 2) {
-          r = applyAction(game, { type: 'peel', hand: hand.number, card: mine.cards[Math.floor(rng() * mine.cards.length)] }, { deviceId: HOST, now: clock, rng });
-        } else if (hand && !hand.result && hand.sliding && mine && !mine.folded && mine.cards.length && !hand.slides?.[host.id]) {
-          r = applyAction(game, { type: 'slide', hand: hand.number, card: mine.cards[Math.floor(rng() * mine.cards.length)] }, { deviceId: HOST, now: clock, rng });
         } else if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
           r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
         } else if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {

@@ -7,44 +7,41 @@ The rules behind each answer are in `docs/APP_STORE.md`.
 
 ## 1. Merge and deploy (GitHub)
 
-1. Merge the App Store prep pull request into `main`.
-2. Merge **#110** ("Don't show the hand recap for a restored table"): it's your own bug fix and isn't on `main` yet.
-   **#111** and **#112** (six more Range training hands) are optional, but merge them now if you want them in 1.0:
-   the daily hand is picked from the app's list of hands, so phones on different lists get different daily hands.
-3. Actions > **Deploy** > Run workflow (on `main`). This puts the corrected privacy policy and support page live.
-   Check them in a browser afterwards: https://playflipup.com/privacy should say "Last updated 15 November 2026".
+Done by Claude on 16 November 2026: the clean-up pull request is merged and deployed, so the website is the landing
+page and the server has no Friends, Bankroll, Campaign or Blackjack left. Check https://playflipup.com shows the
+landing page and https://playflipup.com/privacy says "Last updated 16 November 2026".
 
-## 2. App Store Connect: money and subscriptions
+**The waitlist's owner key** (once): make a long random password (at least 24 characters, for example from your
+password manager), add it in GitHub as a repository secret named `WAITLIST_TOKEN` (Settings > Secrets and variables
+> Actions), then run Actions > **Deploy** again. The Deploy workflow copies it to the Worker. Then you can see how many
+people have signed up:
 
-Without these the reviewer's Premium page says "Can't reach the App Store" and the app is rejected (2.1).
+```
+curl -H "Authorization: Bearer YOUR_TOKEN" https://playflipup.com/api/waitlist/count
+```
 
-1. **Business** (Agreements, Tax, and Banking): the **Paid Apps** agreement must be **Active**, with the tax forms and
-   a bank account filled in. A free app that sells subscriptions still needs it.
-2. Your app > **Monetization > Subscriptions** > create a subscription group. Reference name `FlipUp Premium`; add a
-   group localization (English) with the display name `FlipUp Premium`.
-3. In that group, create two subscriptions. The product IDs must be exactly these (the app and the server use them):
+The confirm emails go out from the address your report emails use (the `REPORT_FROM` Worker secret, as `hello@` on
+the same domain), or `hello@mail.playflipup.com` when that isn't set. That domain must be verified in Resend. Sign up
+once yourself on https://playflipup.com and check the confirm email arrives (look in spam too).
 
-   | | Monthly | Yearly |
-   |---|---|---|
-   | Reference name | Premium Monthly | Premium Yearly |
-   | Product ID | `flipup.premium.monthly` | `flipup.premium.yearly` |
-   | Duration | 1 month | 1 year |
-   | Price (US) | $7.00 | $50.00 |
-   | Display name | FlipUp Premium Monthly | FlipUp Premium Yearly |
-   | Description (55 characters at most) | Every game, every bot, every training hand. | Every game, every bot, every training hand. |
-   | Family Sharing | Off | Off |
+## 2. App Store Connect: check the subscriptions
 
-   Put both on the **same level** in the group (they give the same thing; only the billing differs).
-4. For each subscription: **Subscription Prices > Introductory Offers > Create**. All countries, start today, no end
-   date, **Pay up front**, **1 month**, **$1.00**. (Apple doesn't allow a 14-day paid offer; its shortest pay-up-front
-   offer is a month. The app reads the offer from the App Store and says "Try 1 month for $1.00".)
-5. Each subscription's **Review Information**: a screenshot of the Premium page (take it on your phone from a TestFlight
-   build: Play > Premium) and this note: "Opened from Premium on the Play tab. Unlocks hosting the 13 mini games, the
-   full bot roster and all Range training hands. Restore is on the same page and in Settings."
-6. Ignore the old one-time `flipup.premium.unlock` if it's there: don't attach it to the version.
-7. Your app > **App Information > App Store Server Notifications**: Version 2, Production URL and Sandbox URL both
-   `https://playflipup.com/api/apple/notifications`. Renewals, expiries and refunds reach the server this way.
-8. **Users and Access > Sandbox** > add a sandbox tester (any email you control) for your own purchase tests.
+You've made the subscriptions. Run Actions > **App Store Connect check** (no inputs). It reads them with the same
+App Store Connect key the iOS build uses and prints `ok` or `FIX` for each thing the app and server rely on:
+
+- Both product IDs exactly `flipup.premium.monthly` and `flipup.premium.yearly`, in one group, 1 month and 1 year.
+- US prices $7.00 and $50.00 (a different price is fine if you chose it; the app shows whatever the App Store says).
+- An introductory offer on each (the plan was pay up front, 1 month, $1.00; the app words whatever is set).
+- A localization (display name and description) and a review screenshot on each.
+- Family Sharing off (the server ties Premium to one purchase).
+- App Information > **App Store Server Notifications**: Version 2, with production and sandbox URLs both
+  `https://playflipup.com/api/apple/notifications`, so renewals, expiries and refunds reach the server.
+
+It can't see these, so check them by hand: **Business** (Agreements, Tax, and Banking) has the **Paid Apps**
+agreement **Active** with tax and bank filled in (without it the Premium page says "Can't reach the App Store" and
+review rejects the app), and **Users and Access > Sandbox** has a tester for your own purchase tests. The review note
+for each subscription: "Opened from Premium on the Play tab. Unlocks hosting the 13 mini games, the full bot roster
+and all Range training hands. Restore is on the same page and in Settings."
 
 ## 3. Build and test (GitHub Actions, then your iPhone)
 
@@ -60,10 +57,12 @@ Without these the reviewer's Premium page says "Can't reach the App Store" and t
    - Settings: there is **no "Testing" section** any more.
    - At a table, the share button > a share card > Share > **Save Image**: it saves (this crashed the app before).
    - Host a game on one phone, Join a game on another (code and QR). Tap the other player's face: Report… and Block.
-   - A join link (`https://playflipup.com/` + code) tapped in Messages opens the app.
+   - A join link (`https://playflipup.com/` + code) tapped in Messages opens the app. On a phone without the app it
+     shows the small join page with the code and Open in FlipUp.
+   - There is no Friends tab, no friend rows anywhere, and the app never asks for Contacts.
    - Settings > Delete my data, then Premium > Restore.
-   - The 8 held-back games (Secret Missions, Slide Switch, Headband, Conveyor Belt, Onion, Chain Reaction, Elevator,
-     Double Board PLO) appear nowhere: not on Home, See all, the lobby's game list or the party playlist.
+   - Only the 14 games show (Texas Hold'em and 13 mini games). The 8 newer ones are out of the app's code entirely
+     and kept in `parked/games/` for later.
 
 ## 4. Screenshots (GitHub Actions)
 
@@ -79,7 +78,7 @@ Without these the reviewer's Premium page says "Can't reach the App Store" and t
 
 ## 5. App Store Connect: the listing
 
-Version 1.0 page and App Information:
+Version 1.0 page and App Information. Your App Store name and legal name: Connor Joel Goodwin.
 
 | Field | What to put |
 |---|---|
@@ -89,9 +88,9 @@ Version 1.0 page and App Information:
 | Promotional text | Poker night on your phones: host a table, friends join with a code, and bots fill the empty seats. Texas Hold'em plus 13 mini games with a twist. |
 | Keywords | `poker,holdem,texas,cards,friends,party,bots,game night,mini games,pineapple,range,training,offline` |
 | Support URL | https://playflipup.com/support |
-| Marketing URL | https://playflipup.com (optional) |
+| Marketing URL | https://playflipup.com |
 | Privacy Policy URL | https://playflipup.com/privacy |
-| Copyright | 2026 and your legal name or company |
+| Copyright | 2026 Connor Joel Goodwin |
 | Price | Free |
 | Availability | Every country except **China mainland** and **South Korea** (South Korea needs a rating number for simulated gambling) |
 | Version release | Manually release this version (so you choose the day) |
@@ -144,10 +143,18 @@ app. A first subscription can only be approved together with an app version.
 **Build**: pick the TestFlight build from step 3. Export compliance is already answered in the build (it uses only
 Apple's own HTTPS), so it shouldn't ask.
 
-**Content rights**: App Store Connect asks whether the app shows third-party content. Range training describes hands
-from published articles (seats, cards, the action and the author's answer, with a link to each source) and doesn't copy
-their text or pictures. That's your call; if you're unsure, answer Yes and keep the source list in
-`docs/RANGE_SOURCES.md` handy.
+**Content rights**: App Store Connect asks "Does your app contain, show, or access third-party content?" The safe
+answers are **Yes**, then **Yes, I have the necessary rights**. FlipUp has two kinds of third-party material, and you
+have the rights to both:
+
+- The table sounds `deal`, `flip`, `fold`, `check`, `chip` and `place` are recordings from Kenney's Casino Audio pack,
+  released under CC0 (public domain): free to use in a paid app with no credit needed.
+- Range training's hands come from published strategy articles. The app uses the facts of each hand (seats, stacks,
+  cards, the action and the expert's choice), which aren't anyone's property, writes every explanation in its own
+  words, quotes nothing, shows none of their pictures and links to each source. `docs/RANGE_SOURCES.md` lists them.
+
+Everything else (the icon, the game pictures, the bots' lines, the text) was made for FlipUp. Saying Yes costs
+nothing and matches the truth; saying No would be wrong because of the sounds and the sourced hands.
 
 ## 6. Submit
 
@@ -159,7 +166,24 @@ exist until then).
 ## What only the owner can do
 
 - Everything in App Store Connect (steps 2, 5 and 6) and the Apple Developer site.
+- The `WAITLIST_TOKEN` secret (step 1), and on launch day the waitlist email (below).
 - Run the Deploy, iOS build and App Store screenshots workflows (they use the repository's secrets and macOS minutes).
 - Merge pull requests.
 - Send one test report from the app after Deploy, to confirm the report email arrives (the Worker's `RESEND_API_KEY`,
   `REPORT_TO` and `REPORT_FROM` secrets can't be read from here).
+
+## Launch day: email the waitlist
+
+Once FlipUp is live on the App Store:
+
+1. In `site/landing.ts` set `LAUNCHED = true` (the waitlist form becomes a Get it on the App Store button), merge,
+   and run Deploy.
+2. Send the email. It goes to everyone who confirmed, at most 300 a call, and deletes each address as it's sent, so
+   run it again until it says `"left": 0`. With `{}` it sends the standard email (subject "FlipUp is on the App
+   Store", two lines and the App Store link); to word it yourself, send `{"subject": "...", "lines": ["...", "..."]}`
+   and put the link in a line.
+
+```
+curl -X POST https://playflipup.com/api/waitlist/launch \
+  -H "Authorization: Bearer YOUR_TOKEN" -H "content-type: application/json" -d '{}'
+```

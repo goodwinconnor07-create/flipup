@@ -13,7 +13,6 @@ export function redactForDevice(game: Game, deviceId: string): Game {
   // With the host's setting on, someone who has gone broke sees every hole card (no one still in a hand does).
   const peek =
     !!game.settings.showToBusted &&
-    !game.campaign &&
     !!hand &&
     mine.size > 0 &&
     game.players.filter((p) => mine.has(p.id)).every((p) => p.stack === 0) &&
@@ -24,10 +23,9 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     ...game,
     hostDeviceId: shown(game.hostDeviceId),
     // Bots' styles and identities and their notes on players stay on the server.
-    players: game.players.map(({ style: _style, labStyle: _labStyle, botProfile: _profile, botKind: _kind, dull: _dull, ...p }) =>
+    players: game.players.map(({ style: _style, labStyle: _labStyle, botProfile: _profile, ...p }) =>
       p.deviceId ? { ...p, deviceId: shown(p.deviceId) } : p,
     ),
-    humanPoker: undefined,
     botTable: undefined,
     legacyBotSimulation: undefined,
     reads: undefined,
@@ -40,8 +38,6 @@ export function redactForDevice(game: Game, deviceId: string): Game {
     minds: undefined,
     dialogue: undefined,
     card: undefined,
-    // Secret Missions: everyone's progress is public; only your own mission is sent to you.
-    missions: game.missions && { ...game.missions, players: Object.fromEntries(Object.entries(game.missions.players).map(([id, p]) => [id, mine.has(id) ? p : { ...p, mission: null }])) },
     logs: [],
     hand: hand && {
       ...hand,
@@ -56,30 +52,11 @@ export function redactForDevice(game: Game, deviceId: string): Game {
       votes: hand.votes && (hand.result || hand.tally ? hand.votes : Object.fromEntries(Object.keys(hand.votes).map((k) => [k, mine.has(k) ? hand.votes![k] : '']))),
       // Crazy Pineapple: the cards thrown away are turned up together, once everyone has chosen.
       discards: hand.discards && (hand.discarding ? Object.fromEntries(Object.entries(hand.discards).filter(([k]) => mine.has(k))) : hand.discards),
-      // Slide Switch: the card someone has picked stays theirs until the cards move, and a slide's card is only known
-      // to the two players it passed between.
-      slides: hand.slides && Object.fromEntries(Object.entries(hand.slides).filter(([k]) => mine.has(k))),
-      slid: hand.slid?.map((x) => (peek || mine.has(x.from) || mine.has(x.to) ? x : { ...x, card: '' as const })),
       // Power Cards: other players' powers stay secret until they're played (or the hand is over), and what a Peek or
       // an X-ray showed is only for the player who played it.
       powers: hand.powers && (hand.result ? hand.powers : Object.fromEntries(Object.entries(hand.powers).filter(([k]) => mine.has(k) || hand.powerUses?.some((u) => u.by === k)))),
       powerUses: hand.powerUses?.map((u) => (mine.has(u.by) || !u.seen ? u : { ...u, seen: undefined })),
-      // Onion: a peel stays with its player until everyone's turns over together.
-      peels: hand.peels && Object.fromEntries(Object.entries(hand.peels).filter(([k]) => mine.has(k))),
-      // Headband: everyone's forehead card faces the rest of the table, never its owner, until the cards turn over.
-      headbands:
-        hand.variant === 'headband'
-          ? Object.fromEntries(hand.seats.filter((s) => s.cards[1] && (peek || s.shown || hand.result || !mine.has(s.playerId))).map((s) => [s.playerId, s.cards[1]]))
-          : undefined,
-      seats: hand.seats.map((s) =>
-        peek || s.shown
-          ? s
-          : mine.has(s.playerId)
-            ? hand.variant === 'headband' && !hand.result
-              ? { ...s, cards: s.cards.slice(0, 1) }
-              : s
-            : { ...s, cards: [] },
-      ),
+      seats: hand.seats.map((s) => (peek || s.shown || mine.has(s.playerId) ? s : { ...s, cards: [] })),
     },
   };
 }

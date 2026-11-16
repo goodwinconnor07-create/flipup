@@ -10,9 +10,7 @@ import { haptic } from '@/components/haptics';
 import { Icon } from '@/components/icon';
 import { ActionArea, RaisePanel, type PreAction } from '@/components/table/actions';
 import { PowerBanner } from '@/components/table/power-banner';
-import { MissionPanel } from '@/components/table/mission-card';
 import { PowerPanel } from '@/components/table/power-panel';
-import { ChallengeEnded, ChallengeStrip, useChallengeSheets } from '@/components/table/challenge';
 import { Confetti } from '@/components/table/confetti';
 import { ConnectionLost, useOfflineFor } from '@/components/table/connection-lost';
 import { PartyPanel } from '@/components/party/panel';
@@ -29,11 +27,11 @@ import { useTableNow } from '@/components/table/use-now';
 import { useReactions } from '@/components/table/use-reactions';
 import { useTableSounds } from '@/components/table/use-table-sounds';
 import { DealWipe } from '@/components/deal-wipe';
-import { Discard, Discuss, Peel, Slide, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
+import { Discard, Discuss, SuspectBar, Tally, Vote } from '@/components/table/variant-steps';
 import { ThemedText } from '@/components/themed-text';
 import { DiceRoll } from '@/components/table/dice-roll';
 import { WildDeuces } from '@/components/table/playing-card';
-import { challengeById, myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
+import { myPlayer, runoutOdds, options, seatFor, showsOdds, variantInfo, variantOf, type Card, type Game, type Hand, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { tableShare } from '@/state/table-share';
 import { markRulesSeen, rulesSeen } from '@/state/rules-seen';
@@ -78,8 +76,6 @@ export default function TableScreen() {
   // Every automatic retry passes through 'connecting', so that counts as down too or the 20 seconds would restart each time.
   const down = online && (t.conn === 'offline' || t.conn === 'connecting');
   const lost = useOfflineFor(down);
-  // A challenge's own sheets (Detective's check, Rewind's result) open by themselves when they're due.
-  useChallengeSheets(t.challenge);
   // Before the first deal the lobby is the whole screen, on the same grain page as Play with friends.
   if (game?.status === 'lobby') {
     return (
@@ -98,7 +94,6 @@ export default function TableScreen() {
       <HandToolsTip />
       <ScreenshotPrompt />
       {game && <BlindNews game={game} />}
-      {game && t.challenge && <ChallengeStrip game={game} view={t.challenge} />}
       {down && (game && lost ? <ConnectionLost variant="card" onRetry={retryConnection} onLeave={leave} /> : t.conn === 'offline' && !lost ? <Pill text="Reconnecting…" /> : null)}
       {game && <EmptyTablePopup game={game} onLeave={leave} />}
       {t.notice && <Notice key={t.notice.id} notice={t.notice} />}
@@ -127,7 +122,7 @@ export default function TableScreen() {
       ) : (
         <>
           {game.status === 'playing' && <Playing game={game} sending={t.sending} />}
-          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : game.challenge ? <ChallengeEnded game={game} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
+          {game.status === 'ended' && (game.party ? <PartyEnded code={game.party.code} onLeave={leave} /> : <Ended game={game} onLeave={leave} />)}
         </>
       )}
       {/* Die on the River's roll covers the whole screen, the bar and the notch included. */}
@@ -236,7 +231,7 @@ function TableBar({ game, online, code }: { game: Game | null; online: boolean; 
               Blinds {chips(game.settings.smallBlind)}/{chips(game.settings.bigBlind)}
             </Text>
             <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 13, lineHeight: 15, fontWeight: '600', color: colors.tertiaryLabel }}>
-              {game.challenge ? challengeById(game.challenge.id)?.name : game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
+              {game.hand && game.status === 'playing' ? `Hand ${game.hand.number}` : online ? 'Online table' : 'You vs the bots'}
               {game.status === 'playing' && !!game.settings.blindMinutes && game.blindsRaiseAt != null && <BlindClock at={game.blindsRaiseAt} fast={game.fast} />}
             </Text>
           </>
@@ -456,7 +451,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   // was shown before the deal (Play with bots and the lobby wait for Continue), so here it's for online tables, which
   // don't wait for anyone: five seconds and an X.
   const variant = variantOf(game);
-  const [rulesCard, setRulesCard] = useState<Variant | null>(() => (game.challenge || game.bankroll || rulesSeen(variant) ? null : variant));
+  const [rulesCard, setRulesCard] = useState<Variant | null>(() => (rulesSeen(variant) ? null : variant));
   useEffect(() => {
     if (rulesCard) markRulesSeen(rulesCard);
   }, [rulesCard]);
@@ -477,8 +472,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
   // Power Cards: the power panel, open for the hand it was opened in (the next deal closes it).
   const handKey = hand ? `${game.id}-${hand.number}` : '';
   const [powerFor, setPowerFor] = useState('');
-  // Secret Missions uses the same slot for the mission panel.
-  const powerOpen = !!handKey && powerFor === handKey && (variantOf(game) === 'power' || variantOf(game) === 'missions');
+  const powerOpen = !!handKey && powerFor === handKey && variantOf(game) === 'power';
   useEffect(() => {
     if (turnKey) haptic.turn();
   }, [turnKey]);
@@ -602,10 +596,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             <Vote game={game} me={me} />
           ) : hand?.discarding && mySeat && !mySeat.folded ? (
             <Discard game={game} seat={mySeat} pack={me?.cardPack} />
-          ) : hand?.sliding && mySeat && !mySeat.folded && mySeat.cards.length ? (
-            <Slide game={game} seat={mySeat} pack={me?.cardPack} />
-          ) : hand?.peeling && mySeat && !mySeat.folded ? (
-            <Peel game={game} seat={mySeat} pack={me?.cardPack} />
+
           ) : (
             <ActionArea
               game={game}
@@ -657,11 +648,7 @@ function Playing({ game, sending }: { game: Game; sending: boolean }) {
             onPress={() => setPowerFor('')}
             style={{ position: 'absolute', top: -200, left: 0, right: 0, bottom: 0 }}
           />
-          {variantOf(game) === 'missions' ? (
-            <MissionPanel game={game} meId={me?.id} inset={bottomInset} onClose={() => setPowerFor('')} />
-          ) : (
-            <PowerPanel game={game} meId={me?.id} inset={bottomInset} sending={sending} onClose={() => setPowerFor('')} />
-          )}
+          <PowerPanel game={game} meId={me?.id} inset={bottomInset} sending={sending} onClose={() => setPowerFor('')} />
         </>
       )}
       {rulesCard && <RulesCard variant={rulesCard} timed={!!game.code} onDone={() => setRulesCard(null)} />}

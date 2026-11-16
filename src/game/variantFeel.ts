@@ -137,7 +137,6 @@ export class VariantFeel {
       this.add('powersPlayed', (hand.powerUses ?? []).length);
       for (const u of hand.powerUses ?? []) this.add(`power:${u.power}`);
     }
-    if (v === 'missions') this.add('missionsDone', (hand.missionsDone ?? []).length);
     if (v === 'bjholdem') {
       const hits = Object.values(hand.hits ?? {}).reduce((a, b) => a + b, 0);
       this.add('hits', hits);
@@ -208,10 +207,6 @@ export class VariantFeel {
         note: 'est: a power is played when it helps, not always',
         pass: share === null ? null : share >= 50 && share <= 90,
       });
-    }
-    if (this.variant === 'missions') {
-      const per = (100 * (this.extra.missionsDone ?? 0)) / hands;
-      out.push({ id: 'missions', label: 'Missions completed per 100 hands', value: per, n: this.hands, band: [15, 60], note: 'est: a goal that lands every few hands', pass: per >= 15 && per <= 60 });
     }
     return out;
   }

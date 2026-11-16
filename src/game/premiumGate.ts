@@ -10,8 +10,8 @@ import { isPremiumVariant, VARIANTS, type Variant } from './variants';
 /** A chat bubble that only Premium may wear. The free ones, and the plain default, are open to everyone. */
 export const premiumBubble = (id: string | undefined): boolean => id !== undefined && BUBBLE_STYLES.some((b) => b.id === id && !b.free);
 
-/** A card pack that only Premium may use. A campaign trophy back is won, not bought, so it isn't one. */
-export const premiumPack = (id: string | undefined): boolean => id !== undefined && CARD_PACKS.some((p) => p.id === id && !p.venue);
+/** A card pack that only Premium may use. */
+export const premiumPack = (id: string | undefined): boolean => id !== undefined && CARD_PACKS.some((p) => p.id === id);
 
 const WEEK = 7 * 24 * 60 * 60 * 1000;
 /** Monday 5 January 2026, 00:00 UTC: weeks are counted from here, the same on every phone and on the server. */

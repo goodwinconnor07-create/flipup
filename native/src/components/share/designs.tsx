@@ -87,7 +87,7 @@ function Cards({ data, width, gap = 6, boardWidth }: { data: ShareData; width: n
   );
 }
 
-const handle = (data: ShareData) => (data.who.username ? `@${data.who.username}` : data.who.name);
+const handle = (data: ShareData) => data.who.name;
 
 // ── Night ───────────────────────────────────────────────────────────────────
 

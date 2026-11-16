@@ -9,7 +9,6 @@ import { isPackId } from './cardPacks';
 import { BOTS } from './botStyles';
 import { LIMITS, validSettings, DEFAULT_SETTINGS } from './reducer';
 import type { Action, Move, Settings } from './types';
-import { isPersonality } from '../bot_engine/personalities';
 import { isBotDifficulty } from '../bot_engine/everyday';
 
 const MOVES: Move[] = ['fold', 'check', 'call', 'bet', 'raise', 'allin'];
@@ -25,14 +24,6 @@ export function parseSettings(raw: unknown, partial: boolean): Partial<Settings>
   if (r.botDifficulty !== undefined) {
     if (!isBotDifficulty(r.botDifficulty)) return null;
     out.botDifficulty = r.botDifficulty;
-  }
-  if (r.botPersonality !== undefined) {
-    if (r.botPersonality !== 'original' && !isPersonality(r.botPersonality)) return null;
-    out.botPersonality = r.botPersonality;
-  }
-  if (r.humanPoker !== undefined) {
-    if (typeof r.humanPoker !== 'boolean') return null;
-    out.humanPoker = r.humanPoker;
   }
   for (const key of ['startingStack', 'smallBlind', 'bigBlind', 'turnSeconds', 'blindMinutes', 'blindCap', 'blindHands'] as const) {
     if (r[key] === undefined) continue;
@@ -132,10 +123,6 @@ export function parseAction(raw: unknown): Action | null {
       return isInt(a.hand) && (a.playerId === null || isId(a.playerId)) ? { type: 'point', hand: a.hand, playerId: a.playerId as string | null } : null;
     case 'discard':
       return isInt(a.hand) && isCard(a.card) ? { type: 'discard', hand: a.hand, card: a.card } : null;
-    case 'slide':
-      return isInt(a.hand) && isCard(a.card) ? { type: 'slide', hand: a.hand, card: a.card } : null;
-    case 'peel':
-      return isInt(a.hand) && isCard(a.card) ? { type: 'peel', hand: a.hand, card: a.card } : null;
     case 'react':
       return isReactionId(a.id) ? { type: 'react', id: a.id } : null;
     case 'sitOut':

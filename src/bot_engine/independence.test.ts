@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import { decisionFixture } from './testFixtures';
 import { informationFor } from './information';
 import { updateEverydayMemory, everydayThought } from './everydayLive';
-import { updateHumanPokerMemory } from './live';
 import { makeMove, dealNextStreet } from '../game/holdem';
 import { validateMemory } from './memory';
 
@@ -26,7 +25,6 @@ describe('Independent table agents', () => {
       if (p.id !== actor) {
         p.bot = !p.bot;
         p.name = 'Different hidden system identity';
-        p.botKind = 'human-poker';
         const privateState = changed.botTable!.players[p.id];
         if (privateState) {
           privateState.profile.traits.aggression = 1;
@@ -103,25 +101,5 @@ describe('Independent table agents', () => {
       expect(value.memory.sessionFeel).toBeUndefined();
     }
     expect(fresh.traces).toEqual([]);
-  });
-
-  it('also gives the experimental variant a fresh private instance for each table', () => {
-    const { game, actor } = table();
-    game.players.forEach((p) => {
-      delete p.botKind;
-    });
-    game.players.find((p) => p.id === actor)!.botKind = 'human-poker';
-    const state = updateHumanPokerMemory(game)!;
-    const loaded = JSON.parse(JSON.stringify(game));
-    expect(updateHumanPokerMemory(loaded)).toEqual(state);
-    loaded.id += '-new-table';
-    const fresh = updateHumanPokerMemory(loaded)!;
-    expect(fresh.instanceBase!.seed).not.toBe(state.instanceBase!.seed);
-    expect(fresh.instanceBase!.latent).not.toEqual(state.instanceBase!.latent);
-    expect(fresh.profile).not.toBe(fresh.instanceBase);
-    const previous = structuredClone(state);
-    fresh.profile!.traits.aggression = 1;
-    expect(state).toEqual(previous);
-    expect(fresh.memory.opponents).toEqual({});
   });
 });

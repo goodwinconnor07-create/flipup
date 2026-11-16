@@ -400,9 +400,6 @@ function softmax(values: number[], temp: number): number[] {
 
 /** For tuning (scripts/botLab.ts): sees each decision's numbers. Never set in the app. */
 let tracer: ((info: Record<string, unknown>) => void) | null = null;
-export function traceBots(fn: typeof tracer): void {
-  tracer = fn;
-}
 
 export interface BotThought {
   move: BotMove;

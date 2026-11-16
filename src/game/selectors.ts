@@ -106,11 +106,6 @@ export function standings(game: Game): Player[] {
   return [...game.players].sort((a, b) => net(b) - net(a) || b.stack - a.stack);
 }
 
-/** A hand is being played right now. */
-export function handLive(game: Game): boolean {
-  return game.status === 'playing' && !!game.hand && !game.hand.result;
-}
-
 /** What a player's last move says in their speech bubble: "Call 150", "Fold". */
 export function moveLabel(last: NonNullable<Seat['last']>): string {
   const n = Math.round(last.amount).toLocaleString('en-US');

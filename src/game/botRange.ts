@@ -754,7 +754,6 @@ export function sampleHand(
   return null;
 }
 
-export const intsOf = (cards: string[]) => cards.map(toInt);
 export const boardCards = (hand: Hand) => hand.board.slice(0, STREET_CARDS[hand.street]).map(toInt);
 
 /** The opponents still in the hand, with their stories and reads. */

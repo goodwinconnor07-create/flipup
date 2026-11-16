@@ -1,9 +1,9 @@
 // What the bots know about each game on top of the run-outs in botVariants.ts: how to play when nobody can fold and the
-// cards don't decide the pot (Imposter), how to chase a secret mission (Missions), how well a person remembers twenty cards
+// cards don't decide the pot (Imposter), how well a person remembers twenty cards
 // for nine seconds (Memory Poker). Pure functions of what a bot at that seat can see; nothing here reads a hidden card.
 
-import { hashString, rankOf, seededRng, suitOf, isRed, type Card } from './cards';
-import type { Game, Hand, MissionId, Seat } from './types';
+import { hashString, seededRng, type Card } from './cards';
+import type { Hand } from './types';
 
 const AGGRESSIVE = ['bet', 'raise', 'allin'];
 
@@ -19,121 +19,6 @@ export function recalledRemoved(removed: Card[] | undefined, botId: string, hand
   const sharp = 0.75 + (hashString(`memory:${botId}`) % 21) / 100;
   const rng = seededRng(hashString(`recall:${botId}:${handNo}`));
   return removed.filter(() => rng() < sharp);
-}
-
-// ── Secret Missions ─────────────────────────────────────────────────────────
-
-/** How a mission bends a bot's play: each is a pull, 0 (none) to 1 (as hard as it can). */
-export interface MissionPull {
-  /** Play more hands before the flop that fit the mission. */
-  loose: number;
-  /** Bet and bluff more. */
-  bet: number;
-  /** Call more. */
-  call: number;
-  /** Never bet or raise (Slow Roll). */
-  noBet: boolean;
-  /** Check with a good hand, then raise the bet (Trap Door). */
-  trap: boolean;
-  /** Put it all in with a good hand (Shove and Win). */
-  shove: boolean;
-}
-const NONE: MissionPull = { loose: 0, bet: 0, call: 0, noBet: false, trap: false, shove: false };
-
-const ranks = (cards: Card[]) => cards.map(rankOf).sort((a, b) => b - a);
-const isPair = (c: Card[]) => c.length >= 2 && rankOf(c[0]) === rankOf(c[1]);
-const connected = (c: Card[]) => {
-  const [a, b] = ranks(c);
-  return a - b === 1 || (a === 14 && b === 2);
-};
-
-/** Does the bot's starting hand suit its mission? (Only the missions that depend on the cards it holds.) */
-function fits(mission: MissionId, cards: Card[]): boolean {
-  if (cards.length < 2) return false;
-  switch (mission) {
-    case 'suited':
-      return suitOf(cards[0]) === suitOf(cards[1]);
-    case 'twins':
-      return isPair(cards);
-    case 'red':
-      return isRed(cards[0]) && isRed(cards[1]);
-    case 'royalty':
-      return cards.some((c) => rankOf(c) >= 11 && rankOf(c) <= 13);
-    case 'lucky7':
-      return cards.some((c) => rankOf(c) === 7);
-    case 'deuce':
-      return cards.some((c) => rankOf(c) === 2);
-    case 'connected':
-      return connected(cards);
-    case 'underdog':
-      return ranks(cards)[0] <= 9;
-    case 'monster':
-      return connected(cards) || suitOf(cards[0]) === suitOf(cards[1]);
-    case 'twopair':
-      return ranks(cards)[0] >= 8 && !isPair(cards);
-    default:
-      return false;
-  }
-}
-
-/**
- * What a bot's own mission asks of it this hand. The reward is paid by every other player, so a bot that holds one goes
- * after it (it's the biggest swing at the table). A bot only knows its own mission, which the table sends to its phone.
- */
-export function missionPull(game: Game, hand: Hand, seat: Seat): MissionPull {
-  const mission = game.missions?.players[seat.playerId]?.mission;
-  if (!mission) return NONE;
-  const street = hand.street;
-  const late = hand.buttonId === seat.playerId;
-  switch (mission) {
-    case 'suited':
-    case 'twins':
-    case 'red':
-    case 'royalty':
-    case 'lucky7':
-    case 'deuce':
-    case 'connected':
-    case 'underdog':
-    case 'monster':
-    case 'twopair':
-      return fits(mission, seat.cards) ? { ...NONE, loose: 0.55, call: 0.2, bet: 0.1 } : NONE;
-    case 'smallball':
-      return { ...NONE, loose: 0.2, bet: 0.2, call: 0.1 };
-    case 'silent':
-      return { ...NONE, bet: street === 'preflop' ? 0 : 0.35, loose: 0.2 };
-    case 'slowroll':
-      return { ...NONE, noBet: true, call: 0.25, loose: 0.3 };
-    case 'herocall':
-      return { ...NONE, call: street === 'river' ? 0.5 : 0.2, loose: 0.2 };
-    case 'pressure':
-      return { ...NONE, bet: street === 'river' ? 0.5 : 0.25 };
-    case 'biggame':
-      return { ...NONE, bet: 0.25, call: 0.25 };
-    case 'relentless':
-    case 'bully':
-      return { ...NONE, bet: 0.5 };
-    case 'trapdoor':
-      return { ...NONE, trap: street !== 'preflop', call: 0.1 };
-    case 'shove':
-      return { ...NONE, shove: street !== 'preflop', bet: 0.1 };
-    case 'crowd':
-    case 'riverrat':
-      return { ...NONE, loose: 0.4, call: 0.3 };
-    case 'button':
-      return late ? { ...NONE, loose: 0.5, bet: 0.15 } : NONE;
-    case 'defender':
-      return hand.bbId === seat.playerId ? { ...NONE, loose: 0.5, call: 0.3 } : NONE;
-    case 'steal':
-      return late || hand.sbId === seat.playerId ? { ...NONE, loose: 0.5, bet: 0.3 } : NONE;
-    case 'bluffmaster':
-      return { ...NONE, bet: 0.4, call: 0.2 };
-    case 'knockout':
-      return { ...NONE, bet: 0.2, call: 0.2 };
-    case 'chop':
-      return { ...NONE, call: 0.2 };
-    default:
-      return NONE;
-  }
 }
 
 // ── Imposter ────────────────────────────────────────────────────────────────

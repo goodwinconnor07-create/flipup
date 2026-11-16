@@ -40,14 +40,6 @@ export const GAME_LOOK: Record<Variant, GameLook> = {
   bjholdem: look('#2a2e3d', '#191c27', '#3a3f52', 'Hit or stand. Half for the best hand, half for 21.', 'Hit, then bet', 0.97),
   imposter: look('#6a5f8f', '#4a4169', '#7f74a3', 'Trust nobody. Watch the bets.', 'Find the imposter', 0.88),
   power: look('#d99a00', '#9e6f00', '#e8b02a', 'Everyone has a secret power. Pick your moment.', 'Secret powers', 1.08),
-  missions: look('#1f7a5c', '#13513d', '#2f9273', 'Your mission, should you choose to accept it.', 'Secret missions', 0.94),
-  slide: look('#74b72e', '#4f8a1c', '#8cc84b', 'Nothing stays yours for long. Pass it on.', 'Slide a card left', 1.06),
-  headband: look('#a447d6', '#7a2ca6', '#b566df', 'Everyone knows your card. Except you.', 'A card on your head', 1.04),
-  belt: look('#7a8699', '#56606f', '#8d98aa', 'One card in, one card off. Keep up.', 'The board moves', 0.95),
-  onion: look('#b5648f', '#87436a', '#c47ca2', 'Peel it back, one layer at a time.', 'Peel a card a street', 1),
-  chain: look('#c2533a', '#8f3524', '#cf6b54', 'Every card links to the last. Watch it snowball.', 'A linked board', 0.96),
-  elevator: look('#b08d57', '#80643a', '#c0a06f', 'Going up. Every card climbs a floor.', 'The board climbs', 1.08),
-  plo: look('#8c2f4a', '#621f33', '#a04663', 'Five cards, two boards, two halves of every pot.', 'Two boards, five cards', 0.92),
 };
 
 export const gameLook = (v: Variant): GameLook => GAME_LOOK[v] ?? GAME_LOOK.holdem;
@@ -275,9 +267,6 @@ const RED = SUIT_COLOUR['♥'];
 /** Power Cards' own card: the game's midnight felt, framed in its electric rail (tableThemes.power in tokens.ts). */
 const POWER_CARD = '#1b2556';
 const POWER_FRAME = '#3ee0ff';
-/** Secret Missions' own card: the game's green felt, a shade lighter so it reads on the green field, in its gold rail (tableThemes.missions). */
-const MISSION_CARD = '#174a3a';
-const MISSION_FRAME = '#d4a94e';
 
 /** Each game's subject on a 100 × 100 square, back to front. It keeps clear of the bottom 6 (the band overlaps it). */
 const SUBJECTS: Record<Variant, () => Shape[]> = {
@@ -426,106 +415,10 @@ const SUBJECTS: Record<Variant, () => Shape[]> = {
     sparkle(86, 22, 7, WHITE),
     sparkle(84, 80, 9),
   ],
-  // Your hand, and the mission card dealt with it, laid out exactly like Power Cards: the mission card is the game's
-  // green felt (tableThemes.missions) in its gold rail, with a target on it. Every mark is a path, no font glyphs.
-  missions: () => [
-    card({ x: 35, y: 48, r: -13, rank: 'A', suit: '♠', s: 0.94, deal: 0 }),
-    {
-      kind: 'group',
-      t: 'translate(62 50) rotate(9) scale(1.06)',
-      shapes: [
-        ink(rr(-21, -30, 42, 60, 6.5), MISSION_CARD, { sw: OUTLINE / 1.06 }),
-        { kind: 'path', d: rr(-15.5, -24.5, 31, 49, 3.5), stroke: MISSION_FRAME, sw: 2.2, opacity: 0.9 },
-        ink(oval(0, 0, 11.5), WHITE, { noShadow: true, sw: OUTLINE / 1.06 }),
-        flat(oval(0, 0, 7.6), RED),
-        flat(oval(0, 0, 4.4), WHITE),
-        flat(oval(0, 0, 2), RED),
-      ],
-    },
-    sparkle(86, 22, 7, WHITE),
-    sparkle(84, 80, 9),
-  ],
-  // Your hand: the king stays, the other card is on its way face down to the player on your left, under an arrow
-  // that sweeps left beneath both.
-  slide: () => [
-    card({ x: 33, y: 42, r: -14, s: 0.9, back: true, deal: 0 }),
-    card({ x: 66, y: 44, r: 9, rank: 'K', suit: '♥', s: 0.9, deal: 1 }),
-    ...line('M78 81C64 90 44 90 30 83', WHITE, 5),
-    ink('M15 79L32 74L29 92Z', WHITE, { noShadow: true }),
-  ],
-  // A face with a card held on its forehead by a red headband. The card faces out, so we can read it; its eyes roll
-  // up trying to see it.
-  headband: () => [
-    card({ x: 50, y: 30, s: 0.6, rank: 'K', suit: '♣', deal: 0 }),
-    ink(oval(50, 70, 23, 22), '#ffc628'),
-    ink(rr(24, 49, 52, 9, 4.5), RED, { noShadow: true }),
-    ink('M73 51L88 44L86 58Z', RED, { noShadow: true }),
-    ink('M73 55L85 64L75 67Z', RED, { noShadow: true }),
-    ink(`${oval(41, 72, 5.4, 6.4)}${oval(59, 72, 5.4, 6.4)}`, WHITE, { noShadow: true, sw: 2.4 }),
-    flat(`${oval(41.5, 68.4, 2.8)}${oval(59.5, 68.4, 2.8)}`, INK),
-    { kind: 'path', d: 'M45 83.5Q50 81 55 83.5', stroke: INK, sw: 2.6 },
-  ],
-  // Three cards riding a belt to the left; the card that came off the left end tips away and fades.
-  belt: () => [
-    ink(rr(26, 61, 66, 13, 6.5), '#3b3f48'),
-    flat(`${oval(34, 67.5, 3)}${oval(50.5, 67.5, 3)}${oval(67, 67.5, 3)}${oval(83.5, 67.5, 3)}`, '#9aa3b2'),
-    card({ x: 17, y: 54, r: -20, s: 0.42, rank: '7', suit: '♣', faded: true, deal: 0 }),
-    card({ x: 40, y: 46, s: 0.46, rank: 'K', suit: '♥', deal: 1 }),
-    card({ x: 60, y: 46, s: 0.46, rank: 'Q', suit: '♠', deal: 2 }),
-    card({ x: 80, y: 46, s: 0.46, rank: 'J', suit: '♦', deal: 3 }),
-    ...line('M80 86H40', WHITE, 4),
-    ink('M27 86L40 79V93Z', WHITE, { noShadow: true }),
-  ],
-  // A golden onion with its sprout and roots, and a card peeled off its side, face up.
-  onion: () => [
-    ...leaf(40, 27, -112, 16, GREEN),
-    ...leaf(40, 27, -68, 14, GREEN_DARK),
-    ink('M40 25C38 33 18 44 17 61C16 76 27 87 40 87C53 87 64 76 63 61C62 44 42 33 40 25Z', '#f0b54a'),
-    { kind: 'path', d: 'M40 30C31 43 27 61 31 84M40 30C49 43 53 61 49 84M40 30C40 48 40 66 40 86', stroke: '#c47f1c', sw: 2.2 },
-    { kind: 'path', d: 'M35 88L32 93M40 88V94M45 88L48 93', stroke: INK, sw: 2.2 },
-    card({ x: 74, y: 50, r: 18, s: 0.62, rank: '9', suit: '♦', deal: 0 }),
-  ],
-  // Two board cards that share a rank, chained together: every card has to link to the one before it. The chain is a
-  // link seen face on at each end, behind the cards, and one seen edge on bridging them.
-  chain: () => [
-    ...line(rr(27, 40, 20, 15, 7.5), '#e6e8ee', 3.6),
-    ...line(rr(53, 40, 20, 15, 7.5), '#e6e8ee', 3.6),
-    ...line('M41 47.5H59', '#e6e8ee', 4.6),
-    card({ x: 21, y: 48, r: -10, s: 0.64, rank: '9', suit: '♥', deal: 0 }),
-    card({ x: 79, y: 48, r: 10, s: 0.64, rank: '9', suit: '♣', deal: 1 }),
-  ],
-  // An elevator with its doors open on a card, and the floor light over it showing up.
-  elevator: () => [
-    ink(rr(22, 27, 56, 62, 6), '#dfe3ea'),
-    flat(rr(28, 33, 44, 56, 2), '#2d3140'),
-    flat(`${rr(28, 33, 8, 56, 2)}${rr(64, 33, 8, 56, 2)}`, '#aab2c0'),
-    card({ x: 50, y: 62, s: 0.56, rank: '8', suit: '♣', deal: 0 }),
-    ink(rr(35, 7, 30, 15, 5), INK),
-    flat('M42 18.5L47.5 10.5L53 18.5Z', GLOW),
-    { kind: 'glyph', x: 58.5, y: 19, text: '8', size: 11, bold: true, ink: GLOW },
-  ],
-  // Five cards fanned in your hand, and two little boards of three under them.
-  plo: () => {
-    const hand: [string, string][] = [['A', '♠'], ['K', '♥'], ['Q', '♠'], ['J', '♥'], ['9', '♣']];
-    const fan = hand.map(([rank, suit], i) => {
-      const a = (i - 2) * 13;
-      const rad = (a * Math.PI) / 180;
-      return card({ x: n(50 + Math.sin(rad) * 56), y: n(92 - Math.cos(rad) * 56), r: a, s: 0.6, rank, suit, deal: i });
-    });
-    // A board: a green felt with three small face-up cards, drawn flat so they still read at this size.
-    const board = (x: number, suits: string[]): Shape[] => [
-      ink(rr(x, 72, 38, 19, 6), GREEN),
-      ...suits.flatMap((suit, i): Shape[] => {
-        const cx = x + 8 + i * 11;
-        return [flat(rr(cx - 4.5, 75, 9, 13, 2), WHITE), flat(SUIT_PATH[suit], SUIT_COLOUR[suit], { t: `translate(${cx} 81.5) scale(0.3)` })];
-      }),
-    ];
-    return [...fan, ...board(9, ['♦', '♠', '♥']), ...board(53, ['♣', '♥', '♦'])];
-  },
 };
 
 /** The suit scattered behind each game's wide picture. */
-const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦', missions: '♠', slide: '♥', headband: '♣', belt: '♦', onion: '♥', chain: '♠', elevator: '♣', plo: '♦' };
+const SCATTER: Record<Variant, string> = { holdem: '♠', pineapple: '♦', deuces: '♥', ghost: '♠', pittsburgh: '♣', dice: '♦', redriver: '♥', crucifix: '♠', circle: '♣', memory: '♦', beanstalk: '♣', bjholdem: '♠', imposter: '♣', power: '♦' };
 
 /** A game's small square picture on a 100 × 100 box, back to front: a soft spot, then the subject. */
 export const gameThumb = (v: Variant): Shape[] => {

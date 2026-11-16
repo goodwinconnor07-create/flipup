@@ -11,7 +11,7 @@ export interface CardBackLook {
   glow: string;
 }
 
-/** The plain back everyone has, and each pack in CARD_PACKS (the venue trophies too). */
+/** The plain back everyone has, and each pack in CARD_PACKS. */
 export const CARD_BACKS: Record<string, CardBackLook> = {
   plain: { base: ['#1f2937', '#0b0b12'], ink: 'rgba(255, 255, 255, 0.12)', glow: 'transparent' },
   gold: { base: ['#fff3b0', '#ffd24a', '#f59e0b', '#a85a00'], ink: 'rgba(120, 70, 0, 0.32)', glow: 'rgba(255, 196, 61, 0.55)' },
@@ -25,14 +25,6 @@ export const CARD_BACKS: Record<string, CardBackLook> = {
   sakura: { base: ['#ffb3d0', '#e0679a'], ink: 'rgba(255, 255, 255, 0.55)', glow: 'rgba(255, 150, 200, 0.5)' },
   galaxy: { base: ['#3b1f8a', '#0c0628'], ink: 'rgba(255, 90, 200, 0.45)', glow: 'rgba(140, 80, 255, 0.55)' },
   circuit: { base: ['#0f3326', '#06140f'], ink: 'rgba(60, 255, 150, 0.35)', glow: 'rgba(40, 255, 140, 0.45)' },
-  'v-garage': { base: ['#ffb340', '#e0701a'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
-  'v-backroom': { base: ['#2bb673', '#0f6b4a'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
-  'v-riverboat': { base: ['#3aa0ff', '#1c4fb8'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
-  'v-casino': { base: ['#ff5f6d', '#b0124a'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
-  'v-strip': { base: ['#c04bff', '#5b21b6'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
-  'v-monaco': { base: ['#ff9f0a', '#c2410c'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
-  'v-penthouse': { base: ['#3f4a5c', '#0b0f19'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
-  'v-yacht': { base: ['#ffd60a', '#0a84ff'], ink: 'rgba(255, 255, 255, 0.16)', glow: 'rgba(255, 255, 255, 0.3)' },
 };
 
 export const cardBack = (pack: string | undefined): CardBackLook => (pack && CARD_BACKS[pack]) || CARD_BACKS.plain;
@@ -66,5 +58,3 @@ export const BUBBLE_LOOKS: Record<string, BubbleLook> = {
   frost: { fill: ['#f2fbff', '#a9dcff'], ink: DARK_INK },
   toxic: { fill: ['#b6ff3b', '#39d353'], ink: DARK_INK },
 };
-
-export const bubbleLook = (fx: string | undefined): BubbleLook | undefined => (fx ? BUBBLE_LOOKS[fx] : undefined);

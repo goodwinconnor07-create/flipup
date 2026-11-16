@@ -25,6 +25,4 @@ export const BUBBLE_STYLES: BubbleStyle[] = [
   { id: 'toxic', name: 'Toxic', note: 'Glowing slime green' },
 ];
 
-export const bubbleById = (id: string | undefined): BubbleStyle | undefined => BUBBLE_STYLES.find((b) => b.id === id);
-
 export const isBubbleId = (v: unknown): v is string => typeof v === 'string' && BUBBLE_STYLES.some((b) => b.id === v);

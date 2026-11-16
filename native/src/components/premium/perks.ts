@@ -17,7 +17,7 @@ export interface Perk {
 }
 
 const games = VARIANTS.length - FREE_VARIANTS;
-const packs = CARD_PACKS.filter((p) => !p.venue).length;
+const packs = CARD_PACKS.length;
 /** The share card designs Premium adds, by name: "Felt, Gold Foil, ... and Broadcast". */
 const designs = SHARE_DESIGNS.filter((d) => d.premium).map((d) => d.name);
 const designList = designs.length > 1 ? `${designs.slice(0, -1).join(', ')} and ${designs[designs.length - 1]}` : designs.join('');

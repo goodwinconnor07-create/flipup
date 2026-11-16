@@ -1,28 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { PERSONALITIES, withPersonality, personalityWeights } from './personalities';
-import { BotFactory, validateProfile } from './identity';
+import { withPersonality, personalityWeights } from './personalities';
+import { BotFactory } from './identity';
 import { decisionFixture } from './testFixtures';
 import { BotService } from './service';
 import { emptyMemory } from './memory';
 import { simulate } from './simulation';
 import { calibrationContexts } from './calibration';
-import { parseSettings } from '../game/validate';
-import { applyAction } from '../game/reducer';
-import { updateHumanPokerMemory } from './live';
 import { legalActions } from './information';
 import { BaselineProvider, type StrategyPrediction } from './strategy';
 
 describe('Persistent, distinct personalities', () => {
-  it('validates the wire value and keeps old profiles readable', () => {
-    const base = new BotFactory().generate('hero', 1001);
-    expect(() => validateProfile(base)).not.toThrow();
-    for (const p of PERSONALITIES) {
-      expect(() => validateProfile(withPersonality(base, p.id))).not.toThrow();
-      expect(parseSettings({ botPersonality: p.id }, true)).toEqual({ botPersonality: p.id });
-    }
-    expect(parseSettings({ botPersonality: 'original' }, true)).toEqual({ botPersonality: 'original' });
-    expect(parseSettings({ botPersonality: 'cheater' }, true)).toBeNull();
-  });
   it('changes decisions in matching contexts, stays inside its cost budget and replays identically', () => {
     const contexts = [...calibrationContexts(), decisionFixture([27, 65, 130, 40], [30, 'call']).info];
     // Compare identities on the same independently copied strategy predictions.
@@ -54,24 +41,6 @@ describe('Persistent, distinct personalities', () => {
         contexts.length;
       expect(tv).toBeGreaterThan(0.01);
     }
-  });
-  it('keeps the active personality until next hand, preserves memory and rejects non-host edits', () => {
-    const { game, ctx } = decisionFixture([100, 100]);
-    const bot = game.players[1];
-    bot.bot = true;
-    bot.botKind = 'human-poker';
-    game.settings.humanPoker = true;
-    game.settings.botPersonality = 'patient';
-    const before = updateHumanPokerMemory(game)!;
-    expect(before.profile?.personality).toBe('patient');
-    const action = { type: 'settings' as const, settings: { botPersonality: 'curious' as const } };
-    expect(applyAction(game, action, { ...ctx, deviceId: 'stranger' }).ok).toBe(false);
-    const changed = applyAction(game, action, { ...ctx, deviceId: game.hostDeviceId });
-    if (!changed.ok) throw new Error(changed.error);
-    expect(changed.game.humanPoker?.profile?.personality).toBe('patient');
-    expect(changed.game.humanPoker?.memory).toEqual(before.memory);
-    changed.game.hand!.number++;
-    expect(updateHumanPokerMemory(changed.game)!.profile?.personality).toBe('curious');
   });
   it('prefers larger sizes for pressure and extra draw calls for curiosity in the same decision', () => {
     const info = calibrationContexts().find((i) => i.street === 'flop' && !i.legal.canCheck)!;

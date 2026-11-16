@@ -170,8 +170,6 @@ export interface HandResult {
   ghost?: { cards: Card[]; name: string; kept: number; paid?: number };
   /** Hit Me: each showing player's 21 count, and who won each pot's poker half and 21 half (by pot). */
   blackjack?: { counts: Record<string, number>; poker: string[][]; winners: string[][] };
-  /** Imposter: who it was, how everyone voted (voter to suspect) and whether the innocents caught them. */
-  imposter?: { id: string; votes: Record<string, string>; caught: boolean };
 }
 
 /** One finished hand, for the hand log. */
@@ -275,22 +273,10 @@ export interface Hand {
   busted?: string[];
   /** Memory Poker: the 20 cards taken out of the deck before this hand. Phones only get them once the hand is over. */
   removed?: Card[];
-  /** Imposter: the imposter's id. Phones only get it if it's them, or once the hand is over. */
-  imposter?: string;
-  /** Imposter: everyone dealt in is voting for who the imposter is. */
-  voting?: boolean;
-  /** Imposter: votes so far, voter to suspect. Phones see who has voted, not for whom, until the votes are counted. */
-  votes?: Record<string, string>;
   /** A timed beat the table waits on (a die roll, a red river, the ghost turning over...), see moments.ts. */
   moment?: Moment | null;
   /** Betting on this street starts at this time, once the moment has played. */
   bettingAt?: number | null;
-  /** Imposter: the table is talking it over before the vote. */
-  discussing?: boolean;
-  /** Imposter: the votes are being read out one at a time before the result. */
-  tally?: boolean;
-  /** Imposter: who each player is pointing a finger at (public, can change until the vote). */
-  points?: Record<string, string>;
   /** Crazy Pineapple: who has thrown their card away (public). */
   discarded?: string[];
   /** Crazy Pineapple: the cards thrown away. Phones see their own until everyone is done. */
@@ -303,14 +289,13 @@ export interface Hand {
   silenced?: Record<string, Street>;
 }
 
-/** What `variantTalk()` has already seen this hand, so each power, bust and point is reacted to once. */
+/** What `variantTalk()` has already seen this hand, so each power and bust is reacted to once. */
 export interface TalkSeen {
   hand: number;
   board: number;
   powers: number;
   busts: number;
   hits: number;
-  points: string;
   discards: boolean;
   dice: boolean;
   result: boolean;
@@ -343,7 +328,7 @@ export interface PowerUse {
   refund?: number;
 }
 
-export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'discuss' | 'tally' | 'bust' | 'power';
+export type MomentKind = 'reveal' | 'rivers' | 'redriver' | 'suspense' | 'discards' | 'bust' | 'power';
 
 /**
  * A beat in a hand that the table waits on. Cards dealt with it appear one at a time (`offsets`, ms after `at`, for
@@ -356,8 +341,6 @@ export interface Moment {
   from?: number;
   offsets?: number[];
   gate?: boolean;
-  /** Imposter's tally: ms between votes. */
-  step?: number;
   /** Bust: who, and with what count. Power: who played it. */
   who?: string;
   value?: number;
@@ -502,10 +485,6 @@ export type Action =
   | { type: 'power'; hand: number; seq: number; target?: string; card?: Card; rank?: number }
   /** Crazy Pineapple: throw this card away after the flop. */
   | { type: 'discard'; hand: number; card: Card }
-  /** Imposter: who you think the imposter is. */
-  | { type: 'vote'; hand: number; playerId: string }
-  /** Imposter: point a finger at someone you suspect (`null` takes it back). It changes nothing but what the table sees. */
-  | { type: 'point'; hand: number; playerId: string | null }
   /** Turn your cards face up once the hand is over. */
   | { type: 'show'; hand: number }
   /** After a hand, the host turns every bot's cards face up for everyone. */

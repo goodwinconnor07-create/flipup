@@ -149,7 +149,7 @@ that counted as a guest account). Settings still has "Delete my data". It asks o
 1. leaves any open table or party,
 2. drops the Premium link between the device ID and the purchase on the server,
 3. wipes every `flipup.*` key on the phone, including the device ID,
-4. tells the person it's done. Premium survives because Apple keeps that record, and Restore brings it back.
+4. tells the person it's done. Premium goes off on the phone (`flipup.premiumreset` stops it coming back by itself); Apple keeps the subscription, and Restore brings it back.
 
 ### 1.2 User-generated content
 
@@ -291,7 +291,7 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 > button (crown) on the Play tab, or swipe to any game with a crown and tap **Host a game** or **Play bots**. Buy it
 > with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
 > once subscribed. Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day. Premium: hosting the
-> 13 mini games, the rest of the bots and the rest of Range training. One mini game is free for everyone each week
+> 12 mini games, the rest of the bots and the rest of Range training. One mini game is free for everyone each week
 > (marked "Free this week"), so that one won't ask for Premium. Anyone can join any game with a code for free; only
 > the host needs Premium. There are no ads and no tracking.
 >
@@ -417,7 +417,7 @@ Store listing:
    (changed 4 November 2026: no ads) host a Premium game without Premium. When someone joins a Premium game with a
    code, only the host needs Premium; the people joining don't.
    - Free, in `VARIANTS` order: Texas Hold'em, Crazy Pineapple, Crazy Deuces, Haunted Pot, Pittsburgh.
-   - Premium: Die on the River, Red River, Imposter, Crucifix, Round the Clock, Memory Poker, Bean
+   - Premium: Die on the River, Red River, Crucifix, Round the Clock, Memory Poker, Bean
      Stalk.
 2. Does the desktop version need its own layout changes beyond sharing the new tokens?
    **Answer:** Yes. Parts of it are laid out like the phone app and don't use the whole screen. The board is good,

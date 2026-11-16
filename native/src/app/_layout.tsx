@@ -13,7 +13,9 @@ import { ThumbSnapper } from '@/components/thumb-snaps';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { startStore } from '@/state/purchase';
 import { loadAppearance, useAppearance, type AppearancePref } from '@/state/prefs';
-import { useColors, usePlainColors } from '@/theme';
+import { haptic } from '@/components/haptics';
+import { GLASS_SHEETS } from '@/components/sheet-material';
+import { useColors, usePlainColors, useReduceTransparency } from '@/theme';
 
 /** Appearance in Settings: follow the phone, or always light or dark. */
 const applyAppearance = (a: AppearancePref) => {
@@ -35,6 +37,12 @@ export const unstable_settings = { initialRouteName: '(tabs)' };
 // Connect to the App Store at launch: purchases that finish later still land, and Premium comes back on its own.
 void startStore();
 
+/** Every screen that opens as a bottom sheet: each gets a light tap as it rises and as it goes, and a tick when its detent changes. */
+const SHEETS = new Set([
+  'game/[id]', 'lobby-game', 'premium', 'premium-perk', 'share-card', 'table-menu', 'table-standings', 'table-theme', 'table-settings', 'range-breakdown',
+  'range-how', 'hand-rankings', 'table-log', 'card-packs', 'blocked', 'your-name', 'emoji', 'join', 'party-sheet', 'how-to-play/[id]',
+]);
+
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
 // grab handle, dismissed by a swipe down. Each tab has its own stack inside (see (tabs)/*/_layout.tsx).
 /** Opened from Home's PLAY, whose card has already grown to fill the screen: the page fades in over it instead of sliding. */
@@ -51,6 +59,7 @@ export default function RootLayout() {
   const reduce = useReduceMotion();
   const colors = useColors();
   const plain = usePlainColors();
+  const solid = useReduceTransparency();
   // The navigation chrome (headers, titles, hairlines) takes the same tokens as the screens.
   const base = dark ? DarkTheme : DefaultTheme;
   const theme = {
@@ -61,11 +70,33 @@ export default function RootLayout() {
     presentation: 'formSheet' as const,
     sheetAllowedDetents: [0.6, 1],
     sheetGrabberVisible: true,
-    contentStyle: { backgroundColor: colors.background },
+    contentStyle: { backgroundColor: GLASS_SHEETS && !solid ? 'transparent' : colors.background },
+  };
+  // Apple's own navigation bar on the dark pages: a large title that collapses, a blur under it once the page scrolls, "‹ Back".
+  const darkPage = {
+    headerShown: true,
+    headerTransparent: true,
+    headerLargeTitle: true,
+    headerLargeTitleShadowVisible: false,
+    headerBlurEffect: 'systemMaterialDark' as const,
+    headerTintColor: colors.accent as string,
+    headerTitleStyle: { color: '#ffffff' },
+    headerLargeTitleStyle: { color: '#ffffff' },
+    headerBackButtonDisplayMode: 'default' as const,
+    headerBackTitle: 'Back',
+    statusBarStyle: 'light' as const,
   };
   return (
     <ThemeProvider value={theme}>
-      <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background }, animation: reduce ? 'fade' : 'default' }}>
+      <Stack
+        screenListeners={({ route }) =>
+          ({
+            transitionStart: () => SHEETS.has(route.name) && haptic.tap(),
+            sheetDetentChange: () => haptic.select(),
+          }) as never
+        }
+        screenOptions={{ contentStyle: { backgroundColor: colors.background }, animation: reduce ? 'fade' : 'default' }}
+      >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         {/* The table covers the tab bar and can't be swiped away mid-hand: you leave it from its menu. */}
         {/* Play with friends: its own dark grain page, over the tabs so the tab bar never covers Open table. */}
@@ -78,15 +109,16 @@ export default function RootLayout() {
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />
         {/* Play with friends' Change on the game card: every game in a list, Premium under a gold line. */}
         <Stack.Screen name="lobby-game" options={{ ...sheet, sheetAllowedDetents: [0.6, 1], headerShown: false, title: 'Change the game' }} />
-        {/* How to Play: a story on black, full screen so its bars sit at the top edge; the X closes it. */}
-        <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
+        {/* How to Play: a story on black in a sheet at full height (a black page, so it keeps its own fill); the X closes it. */}
+        <Stack.Screen name="how-to-play/[id]" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
         <Stack.Screen name="premium" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'FlipUp Premium' }} />
-        <Stack.Screen name="premium-perk" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'Premium' }} />
+        {/* A perk sheet is only as tall as what it says (the games list is long, so it gets the two detents). */}
+        <Stack.Screen name="premium-perk" options={({ route }) => ({ ...sheet, sheetAllowedDetents: (route.params as { id?: string } | undefined)?.id === 'games' ? [0.75, 1] : 'fitToContents', headerShown: false, title: 'Premium' })} />
         {/* Share cards, the hand bank and Replay. */}
-        <Stack.Screen name="share" options={{ headerShown: false, title: 'Share', statusBarStyle: 'light' }} />
+        <Stack.Screen name="share" options={{ ...darkPage, title: 'Share' }} />
         <Stack.Screen name="share-card" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Share card' }} />
-        <Stack.Screen name="replays" options={{ headerShown: false, title: 'Saved hands', statusBarStyle: 'light' }} />
+        <Stack.Screen name="replays" options={{ ...darkPage, title: 'Saved hands' }} />
         <Stack.Screen name="replay/[id]" options={{ headerShown: false, title: 'Replay', statusBarStyle: 'light' }} />
         <Stack.Screen name="table-menu" options={{ ...sheet, title: 'Menu' }} />
         <Stack.Screen name="table-standings" options={{ ...sheet, title: 'Standings' }} />

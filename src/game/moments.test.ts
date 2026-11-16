@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyAction, createTable, DEFAULT_SETTINGS, explainHand, options, redactForDevice, seededRng, tallyOrder, tallyShown, visibleBoard, type Game, type Variant } from './index';
+import { applyAction, createTable, DEFAULT_SETTINGS, explainHand, options, redactForDevice, seededRng, visibleBoard, type Game, type Variant } from './index';
 
 const HOST = 'host-device';
 
@@ -22,10 +22,7 @@ function run(variant: Variant, seed: number, until: (g: Game, clock: number) => 
     const host = game.players.find((p) => p.deviceId === HOST)!;
     const mine = hand?.seats.find((s) => s.playerId === host.id);
     let r;
-    if (hand && !hand.result && hand.voting && !hand.votes?.[host.id]) {
-      const others = hand.seats.filter((x) => x.playerId !== host.id);
-      r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[0].playerId }, { deviceId: HOST, now: clock, rng });
-    } else if (hand && !hand.result && hand.discarding && mine && mine.cards.length === 3) {
+    if (hand && !hand.result && hand.discarding && mine && mine.cards.length === 3) {
       r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[0] }, { deviceId: HOST, now: clock, rng });
     } else if (hand && !hand.result && hand.toAct === host.id && mine) {
       const o = options(game, hand, mine);
@@ -110,42 +107,6 @@ describe('moments', () => {
     const hand = done!.game.hand!;
     expect(Object.keys(redactForDevice(done!.game, HOST).hand!.discards!).length).toBe(Object.keys(hand.discards!).length);
     expect(hand.moment!.until - hand.moment!.at).toBeGreaterThanOrEqual(2500);
-  });
-});
-
-describe('Imposter', () => {
-  it('talks it over, lets people point, reads the votes out one by one, then settles', () => {
-    const found = run('imposter', 9, (g) => !!g.hand?.discussing);
-    const g = found!.game;
-    const hand = g.hand!;
-    const host = g.players.find((p) => p.deviceId === HOST)!;
-    expect(hand.voting).toBeFalsy();
-    expect(hand.moment!.kind).toBe('discuss');
-    // Bots already have hunches; the host points at someone and everyone sees it.
-    expect(Object.keys(hand.points ?? {}).length).toBeGreaterThan(0);
-    const target = hand.seats.find((s) => s.playerId !== host.id)!.playerId;
-    const p = applyAction(g, { type: 'point', hand: hand.number, playerId: target }, { deviceId: HOST, now: found!.clock, rng: seededRng(1) });
-    expect(p.ok).toBe(true);
-    if (!p.ok) return;
-    expect(p.game.hand!.points![host.id]).toBe(target);
-    expect(redactForDevice(p.game, 'someone-else').hand!.points![host.id]).toBe(target);
-    // Pointing at yourself is refused; so is pointing out of the hand.
-    expect(applyAction(g, { type: 'point', hand: hand.number, playerId: host.id }, { deviceId: HOST, now: found!.clock, rng: seededRng(1) }).ok).toBe(false);
-    // Everyone has pointed: the talking wraps up early.
-    expect(p.game.hand!.moment!.until).toBeLessThanOrEqual(hand.moment!.until);
-
-    // The vote, then the tally.
-    const tallied = run('imposter', 9, (gg) => !!gg.hand?.tally);
-    const th = tallied!.game.hand!;
-    const order = tallyOrder(th);
-    expect(order.length).toBe(Object.keys(th.votes!).length);
-    expect(tallyShown(th, order, th.moment!.at)).toBe(1);
-    expect(tallyShown(th, order, th.moment!.until)).toBe(order.length);
-    // Votes are readable by every phone now, and the result comes only after the tally.
-    expect(redactForDevice(tallied!.game, 'someone-else').hand!.votes).toEqual(th.votes);
-    expect(th.result).toBeNull();
-    const after = applyAction(tallied!.game, { type: 'tick' }, { deviceId: 'server', now: th.moment!.until + 1, rng: seededRng(1) });
-    expect(after.ok && after.game.hand!.result?.imposter).toBeTruthy();
   });
 });
 

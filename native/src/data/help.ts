@@ -145,7 +145,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'How do I delete my data?',
-        a: 'Open your profile, then Settings, then Delete my data. It clears what our server keeps about your phone and everything FlipUp keeps on it. Premium stays with your Apple Account and Restore Purchases brings it back.',
+        a: 'Open your profile, then Settings, then Delete my data. It clears what our server keeps about your phone and everything FlipUp keeps on it. It also turns Premium off on your phone. Your subscription stays with your Apple Account and Restore Purchases brings it back.',
       },
       {
         q: 'What does FlipUp keep about me?',

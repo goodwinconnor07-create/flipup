@@ -11,7 +11,7 @@ import { spacing, useColors } from '@/theme';
 export default function HandRankings() {
   const colors = useColors();
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, gap: spacing.xs }}>
       <Stack.Screen options={{ title: 'Hand rankings' }} />
       <ThemedText variant="subhead" tone="tertiaryLabel" style={{ marginBottom: spacing.xs }}>
         Best at the top. You make the best five-card hand from your two cards and the five on the board.

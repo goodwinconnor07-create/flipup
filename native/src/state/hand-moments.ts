@@ -2,7 +2,7 @@
 // flop. Won anyway."). Pure: it reads a `Replay` (state/replays.ts), which only ever holds cards this phone was
 // allowed to see, so a moment never gives away a hand nobody showed. Share cards put it in the headline
 // (`handData()` in components/share/data.ts); the Share page's Top hands rows use it without odds, which is quick.
-import { bestHand, rankOf, runoutOdds, showsOdds, type Card, type HandValue, type Street, type Variant } from '@/engine';
+import { bestHand, rankOf, runoutOdds, type Card, type HandValue, type Street, type Variant } from '@/engine';
 
 import { isAir, putIn, type Replay } from './replays';
 
@@ -29,7 +29,7 @@ export interface HandMoment {
 // ── Odds by street ──────────────────────────────────────────────────────────
 
 /** Games whose odds can be worked out from a saved hand. The ghost's cards and Power Cards aren't in one. */
-const oddsGame = (v: Variant) => showsOdds(v) && v !== 'ghost' && v !== 'power';
+const oddsGame = (v: Variant) => v !== 'ghost' && v !== 'power';
 
 /** The board as each street was dealt. */
 function boardAt(r: Replay, street: Street): Card[] | null {
@@ -109,7 +109,7 @@ export function chenScore(cards: Card[]): number {
 }
 
 /** Two-card games where a junk hand means something (wild deuces make 7-2 good). */
-const twoCardGame = (v: Variant) => !['pineapple', 'deuces', 'beanstalk', 'imposter'].includes(v);
+const twoCardGame = (v: Variant) => !['pineapple', 'deuces', 'beanstalk'].includes(v);
 
 /** The hand you'd have folded: a Chen score of 2 or less. */
 export const isJunk = (cards: Card[] | undefined): boolean => !!cards && cards.length === 2 && chenScore(cards) <= 2;
@@ -125,7 +125,7 @@ function madeLine(v: HandValue): string {
 /** Your best hand at the end, when you saw the whole board. */
 function finalHand(r: Replay, id: string): HandValue | null {
   const cards = r.holes[id];
-  if (!cards?.length || r.variant === 'imposter' || r.board.length < 5) return null;
+  if (!cards?.length || r.board.length < 5) return null;
   if (r.actions.some((a) => a.playerId === id && a.move === 'fold')) return null;
   try {
     return bestHand(r.variant, cards, r.board);

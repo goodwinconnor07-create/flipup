@@ -108,9 +108,6 @@ describe('odds by street', () => {
     expect(oddsByStreet(shown).map((o) => o.street)).toEqual(['preflop', 'flop', 'turn', 'river']);
   });
 
-  it('has no odds in Imposter', () => {
-    expect(oddsByStreet(sevenTwo({ id: 't1/46', variant: 'imposter' }))).toEqual([]);
-  });
 });
 
 describe('the moment', () => {

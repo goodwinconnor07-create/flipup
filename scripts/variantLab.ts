@@ -6,8 +6,8 @@
 // ALL_LEGACY=1 plays every bot the old way, to see the noise. Imposter is mostly noise: nobody can fold, so pots are huge.
 
 import { lab, variantDecide } from '../src/game/botVariants';
-import { pendingDiscards, pendingVoters } from '../src/game/holdem';
-import { botVote, keepTwoQuick } from '../src/game/variants';
+import { pendingDiscards } from '../src/game/holdem';
+import { keepTwoQuick } from '../src/game/variants';
 import { seededRng } from '../src/game/cards';
 import { applyAction, createTable, DEFAULT_SETTINGS } from '../src/game/reducer';
 import type { Action, Game } from '../src/game/types';
@@ -61,10 +61,6 @@ function play(variant: Variant, seed: number, legacyEven: boolean): { upgraded: 
       const seat = hand.seats.find((x) => x.playerId === host.id);
       if (seat && hand.discarding && pendingDiscards(game).some((x) => x.playerId === host.id)) {
         step({ type: 'discard', hand: hand.number, card: seat.cards.find((c) => !keepTwoQuick(seat.cards, hand.board.slice(0, 3)).includes(c))! });
-        continue;
-      }
-      if (seat && hand.voting && pendingVoters(game).some((x) => x.playerId === host.id)) {
-        step({ type: 'vote', hand: hand.number, playerId: botVote(hand, host.id)! });
         continue;
       }
       if (seat && hand.toAct === host.id && !hand.runout) {

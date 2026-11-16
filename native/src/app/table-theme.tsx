@@ -31,7 +31,7 @@ export default function TableTheme() {
   );
   return (
     <>
-      <Stack.Screen options={{ title: 'Table theme' }} />
+      <Stack.Screen options={{ title: 'Table theme', headerTransparent: false }} />
       <NativeMenu
         top={preview}
         groups={[

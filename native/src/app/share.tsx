@@ -7,7 +7,7 @@ import { haptic } from '@/components/haptics';
 import { Icon, type IconName } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
 import { PlayingCard } from '@/components/table/playing-card';
-import { SetupHeader, SetupRowTitle } from '@/components/setup/setup-header';
+import { SetupRowTitle } from '@/components/setup/setup-header';
 import { n, signed } from '@/components/share/data';
 import { ThemedText } from '@/components/themed-text';
 import { variantInfo } from '@/engine';
@@ -45,8 +45,10 @@ function Hub() {
 
   return (
     <GrainBackground>
-      <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.xl }}>
-        <SetupHeader title="Share" line="Pick a moment, pick a look, send it." />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.xl }}>
+        <ThemedText variant="callout" tone="secondaryLabel">
+          Pick a moment, pick a look, send it.
+        </ThemedText>
 
         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
           <BigTile icon="chart.bar.xaxis" title="My stats" value={`${record.hands ? Math.round((record.won / record.hands) * 100) : 0}%`} line={`${n(record.hands)} hands`} onPress={() => open({ kind: 'stats' })} />

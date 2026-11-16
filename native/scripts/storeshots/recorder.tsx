@@ -95,7 +95,7 @@ async function run(): Promise<void> {
   leaveTable();
   // 3. Home's game swiper on a mini game: never this week's free one, whose banner would be out of date a week later.
   if (wanted('03')) {
-    const game = (['imposter', 'dice', 'ghost'] as Variant[]).find((v) => v !== freeThisWeek()) ?? 'imposter';
+    const game = (['dice', 'ghost', 'memory'] as Variant[]).find((v) => v !== freeThisWeek()) ?? 'dice';
     await page('03-home', () => {
       save('flipup.homegame', game);
       router.dismissAll();
@@ -153,7 +153,6 @@ async function playUntil(ready: TableScene['ready'], settle: number, budget: num
   let turnKey = '';
   let turnSince = 0;
   let discarded = -1;
-  let voted = -1;
   let nextAsked = -1;
   while (Date.now() < end) {
     const g = currentTable().game;
@@ -183,12 +182,6 @@ async function playUntil(ready: TableScene['ready'], settle: number, budget: num
       if (h.discarding && discarded !== h.number && seat.cards.length > 2 && !seat.folded) {
         discarded = h.number;
         dispatch({ type: 'discard', hand: h.number, card: [...seat.cards].sort((a, b) => rankOf(a) - rankOf(b))[0] });
-      } else if (h.voting && !h.discussing && voted !== h.number) {
-        const other = h.seats.find((x) => x.playerId !== mine);
-        if (other) {
-          voted = h.number;
-          dispatch({ type: 'vote', hand: h.number, playerId: other.playerId });
-        }
       } else if (h.toAct === mine && !(h.bettingAt && h.bettingAt > tableNow)) {
         const k = `${h.number}-${h.seq}`;
         if (k !== turnKey) {

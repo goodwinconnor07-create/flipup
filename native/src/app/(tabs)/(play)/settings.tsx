@@ -66,7 +66,7 @@ export default function SettingsScreen() {
       setDeleting(false);
     }
   };
-  const ASK = 'This deletes what FlipUp’s server keeps about this phone, leaves any party or table you’re in, and clears your name, emoji, stats, saved hands and settings from this phone. It can’t be undone. Premium stays: Restore brings it back.';
+  const ASK = 'This deletes what FlipUp’s server keeps about this phone, leaves any party or table you’re in, and clears your name, emoji, stats, saved hands and settings from this phone. It can’t be undone. Premium turns off on this phone too: Restore Purchases brings it back.';
   const confirmDelete = () => {
     // The web build's Alert has no buttons, so it asks with the browser's own confirm.
     if (process.env.EXPO_OS === 'web') {

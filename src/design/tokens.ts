@@ -131,7 +131,6 @@ export const confettiColors = {
  */
 export const tableThemes = {
   ghost: { felt: '#2e2650', rail: ['#5b4d8a', '#120d22'] },
-  imposter: { felt: '#5b1e22', rail: ['#c9a46a', '#4a3518'] },
   pineapple: { felt: '#0e8577', rail: ['#ffd34d', '#a8740c'] },
   deuces: { felt: '#6b2bd6', rail: ['#ff5fae', '#6e1650'] },
   pittsburgh: { felt: '#1d1d20', rail: ['#ffbf2e', '#6b4c00'] },

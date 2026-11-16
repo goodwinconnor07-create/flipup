@@ -229,7 +229,7 @@ export function MyArea({
         {/* Quick messages: top-left corner, half over the box's edge. */}
         {me && (
           <View style={{ position: 'absolute', top: -15, left: -9 }}>
-            <QuickMessages imposter={variantOf(game) === 'imposter'} />
+            <QuickMessages />
           </View>
         )}
         {/* What you just did or said: a small pill whose top is pinned to the top-right corner, a little outside the box's edge, mirroring the

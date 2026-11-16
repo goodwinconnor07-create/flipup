@@ -829,26 +829,10 @@ export function variantTalk(game: Game, rng: () => number, now: number): void {
     if (watched && hitters.length) say(pick(hitters, rng), 'bjHit');
     seen.hits = hitCount;
   }
-  const points = JSON.stringify(hand.points ?? {});
-  if (points !== seen.points) {
-    const before = (seen.points ? JSON.parse(seen.points) : {}) as Record<string, string>;
-    const now_ = hand.points ?? {};
-    for (const [from, at] of Object.entries(now_)) {
-      if (before[from] === at || !watched) continue;
-      if (game.players.find((p) => p.id === from)?.bot) say(from, 'impPoint', at);
-      if (game.players.find((p) => p.id === at)?.bot && at !== from) say(at, 'impAccused', from);
-    }
-    seen.points = points;
-  }
   if (hand.result && !seen.result) {
     seen.result = true;
     const r = hand.result;
     if (watched) {
-      if (r.imposter) {
-        const imp = r.imposter.id;
-        say(anyBot([imp]), r.imposter.caught ? 'impCaught' : 'impEscaped');
-        if (!r.imposter.caught && game.players.find((p) => p.id === imp)?.bot) say(imp, 'impSlipped', undefined, true);
-      }
       if (r.ghost) say(anyBot(), r.ghost.kept > 0 ? 'ghostWins' : r.showdown ? 'ghostLoses' : 'ghostWins');
       if (v === 'memory' && hand.removed?.length && r.showdown) say(anyBot(), 'memoryRecall');
     }
@@ -862,7 +846,6 @@ const blank = (hand: number, game: Game): TalkSeen => ({
   powers: 0,
   busts: 0,
   hits: 0,
-  points: '',
   discards: false,
   dice: false,
   result: false,

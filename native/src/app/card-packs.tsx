@@ -9,11 +9,10 @@ import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { saveProfile, useProfile } from '@/state/profile';
 import { syncLook } from '@/state/session';
-import { spacing, useColors } from '@/theme';
+import { spacing } from '@/theme';
 
 /** Card packs: the back of your cards, which everyone at the table sees. The plain back is free, the rest Premium. */
 export default function CardPacks() {
-  const colors = useColors();
   const premium = usePremium();
   const profile = useProfile();
   const value = premium ? (profile.cardPack ?? null) : null;
@@ -32,7 +31,7 @@ export default function CardPacks() {
     ...CARD_PACKS.map((p) => ({ id: p.id, name: p.name, note: p.note, locked: !premium, preview: preview(p.id) })),
   ];
   return (
-    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} style={{ backgroundColor: colors.background }}>
+    <SheetScroll contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }}>
       <Stack.Screen options={{ title: 'Card packs' }} />
       <ThemedText tone="tertiaryLabel">Everyone at your table sees your pack on the back of your cards.</ThemedText>
       <LookGrid

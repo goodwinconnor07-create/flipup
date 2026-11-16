@@ -87,7 +87,7 @@ export function useSettingsGroups({ settings, onChange, online }: { settings: Se
           onChange: (v) => set({ turnSeconds: Number(v) }),
         },
         { kind: 'toggle', id: 'rebuys', title: 'Rebuys', subtitle: online ? 'Busted players can buy back in' : 'If you bust, you can buy back in and keep playing', value: settings.rebuys, onChange: (rebuys) => set({ rebuys }) },
-        !online && { kind: 'toggle', id: 'replay', title: 'Replay after every hand', subtitle: 'See what you won or lost and who took the pot, then watch it back', value: !!settings.replayEachHand, onChange: (replayEachHand) => set({ replayEachHand }) },
+        !online && { kind: 'toggle', id: 'replay', title: 'Review after every hand', subtitle: 'A blue Review button and a 10 second countdown to the next hand', value: !!settings.replayEachHand, onChange: (replayEachHand) => set({ replayEachHand }) },
         online && { kind: 'toggle', id: 'peek', title: 'Busted players peek', subtitle: "Once you're out, you see everyone's cards", value: !!settings.showToBusted, onChange: (showToBusted) => set({ showToBusted }) },
       ],
     },

@@ -10,7 +10,6 @@ export const GAME_BASICS: Record<Exclude<Variant, 'holdem'>, string[]> = {
   pittsburgh: ['Three rivers come instead of one.', 'Your hand uses the flop, the turn and one river.', 'The app picks the river that suits you best.'],
   dice: ["Normal Hold'em until the river.", 'Then a die rolls: 1 to 5 swaps that board card.', 'Roll a 6 and the board stays.'],
   redriver: ["Normal Hold'em until the river.", 'A red river means another card, until a black one lands.', 'Every board card counts.'],
-  imposter: ['Everyone has the same two cards but one player.', 'Nobody knows who the imposter is, maybe you.', 'Vote after the river. Catch them to split the pot.'],
   crucifix: ['The board is a cross of nine cards.', 'Use one line: the five across or the five down.', 'Plus your two cards. The app picks the line.'],
   circle: ['Six board cards sit round a clock.', 'Use both your cards and three in a row.', 'The app picks the best three for you.'],
   memory: ['Before each hand, 20 cards are shown, then taken out.', "Nobody can have them and they can't come.", 'Remember what\'s gone to work out your odds.'],

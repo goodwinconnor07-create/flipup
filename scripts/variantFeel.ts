@@ -1,8 +1,8 @@
 import { seededRng } from '../src/game/cards';
 import { botHits, variantDecide } from '../src/game/botVariants';
-import { canHit, pendingDiscards, pendingVoters } from '../src/game/holdem';
+import { canHit, pendingDiscards } from '../src/game/holdem';
 import { botPowerPlan, playablePower } from '../src/game/powers';
-import { botVote, keepTwoQuick } from '../src/game/variants';
+import { keepTwoQuick } from '../src/game/variants';
 import { applyAction, createTable, DEFAULT_SETTINGS } from '../src/game/reducer';
 import { VariantFeel } from '../src/game/variantFeel';
 import { VARIANTS, type Variant } from '../src/game/variants';
@@ -56,14 +56,6 @@ function play(variant: Variant, seed: number, feel: VariantFeel): void {
       if (hand.discarding && pendingDiscards(game).some((x) => x.playerId === host.id)) {
         const card = seat.cards.find((c) => !keepTwoQuick(seat.cards, hand.board.slice(0, 3)).includes(c));
         if (card && step({ type: 'discard', hand: hand.number, card })) continue;
-      }
-      if (hand.discussing && !hand.points?.[host.id]) {
-        const pick = botVote(hand, host.id);
-        if (pick && step({ type: 'point', hand: hand.number, playerId: pick })) continue;
-      }
-      if (hand.voting && pendingVoters(game).some((x) => x.playerId === host.id)) {
-        const pick = botVote(hand, host.id);
-        if (pick && step({ type: 'vote', hand: hand.number, playerId: pick })) continue;
       }
       if (hand.toAct === host.id && !hand.runout) {
         if (playablePower(game, hand, seat)) {

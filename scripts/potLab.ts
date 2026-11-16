@@ -4,11 +4,11 @@
 //   npx tsx scripts/potLab.ts [hands] [game,game...]
 
 import { variantDecide } from '../src/game/botVariants';
-import { pendingDiscards, pendingVoters } from '../src/game/holdem';
+import { pendingDiscards } from '../src/game/holdem';
 import { seededRng } from '../src/game/cards';
 import { applyAction, createTable, DEFAULT_SETTINGS } from '../src/game/reducer';
 import type { Action, Game } from '../src/game/types';
-import { botVote, keepTwoQuick, VARIANTS, type Variant } from '../src/game/variants';
+import { keepTwoQuick, VARIANTS, type Variant } from '../src/game/variants';
 
 const HANDS = Number(process.argv[2] ?? 150);
 const only = process.argv[3]?.split(',');
@@ -46,7 +46,6 @@ function play(variant: Variant, seed: number): { pots: number[]; flops: number }
     if (hand && !hand.result) {
       const seat = hand.seats.find((x) => x.playerId === host.id);
       if (seat && hand.discarding && pendingDiscards(game).some((x) => x.playerId === host.id)) { step({ type: 'discard', hand: hand.number, card: seat.cards.find((c) => !keepTwoQuick(seat.cards, hand.board.slice(0, 3)).includes(c))! }); continue; }
-      if (seat && hand.voting && pendingVoters(game).some((x) => x.playerId === host.id)) { step({ type: 'vote', hand: hand.number, playerId: botVote(hand, host.id)! }); continue; }
       if (seat && hand.toAct === host.id && !hand.runout) { const t = variantDecide(game, hand, seat, rng); if (t) { step({ type: 'act', hand: hand.number, seq: hand.seq, ...t.move } as Action); continue; } }
     }
     const r = applyAction(game, { type: 'tick' }, { deviceId: 'server', now: clock, rng });
@@ -55,7 +54,7 @@ function play(variant: Variant, seed: number): { pots: number[]; flops: number }
   return { pots, flops };
 }
 
-for (const v of VARIANTS.map((x) => x.id).filter((id) => id !== 'holdem' && id !== 'imposter' && (!only || only.includes(id))) as Variant[]) {
+for (const v of VARIANTS.map((x) => x.id).filter((id) => id !== 'holdem' && (!only || only.includes(id))) as Variant[]) {
   const { pots, flops } = play(v, 7);
   const sorted = [...pots].sort((a, b) => a - b);
   const avg = pots.reduce((a, b) => a + b, 0) / Math.max(1, pots.length);

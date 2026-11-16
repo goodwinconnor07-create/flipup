@@ -22,7 +22,7 @@ import { useSyncExternalStore } from 'react';
 
 import { APP_INFO } from '../../appInfo';
 import { bindPurchase } from './entitlement';
-import { premiumStored, setPremium } from './premium';
+import { premiumDeclined, premiumStored, setPremium, setPremiumDeclined } from './premium';
 
 export type Plan = 'monthly' | 'yearly';
 const SKU: Record<Plan, string> = { monthly: APP_INFO.premiumMonthlyId, yearly: APP_INFO.premiumYearlyId };
@@ -66,6 +66,17 @@ let subscriptions: { remove(): void }[] = [];
 const granting = new Map<string, Promise<void>>();
 const finished = new Set<string>();
 let waiting: { done: (ok: boolean) => void } | null = null;
+
+// After Delete my data the phone starts over without Premium, even though Apple still has the subscription. Until the
+// person taps Restore (or buys again) nothing turns Premium back on by itself, at launch or from a renewal.
+const declined = premiumDeclined;
+
+/** Delete my data: Premium goes off on this phone and stays off until Restore or a new purchase. */
+export function forgetPremium(): void {
+  setPremiumDeclined(true);
+  setPremium(false);
+  publish({ owned: null, period: null, pending: false });
+}
 
 function publish(patch: Partial<StoreState>): void {
   state = { ...state, ...patch };
@@ -136,6 +147,7 @@ export function startStore(): Promise<boolean> {
           return;
         }
         if (!live(p)) return;
+        if (declined() && !waiting) return;
         void grant(p).then(() => {
           publish({ busy: false, pending: false });
           waiting?.done(true);
@@ -259,7 +271,8 @@ async function loadPrices(): Promise<void> {
 }
 
 /** True when this Apple Account has Premium now (a live subscription or the old lifetime purchase). Turns it on if so. */
-async function checkOwned(): Promise<boolean> {
+async function checkOwned(force = false): Promise<boolean> {
+  if (declined() && !force) return false;
   const owned = (await getAvailablePurchases()).filter(live);
   const best = owned.find((p) => p.productId === LIFETIME) ?? owned.find((p) => p.productId === SKU.yearly) ?? owned[0];
   publish({ owned: best ? planOf(best.productId) : null, period: best && planOf(best.productId) !== 'lifetime' ? periodOf(best) : null });
@@ -270,6 +283,7 @@ async function checkOwned(): Promise<boolean> {
 /** Opens Apple's purchase sheet for a plan. Resolves true once Premium is on, false if cancelled or refused. */
 export async function buyPremium(plan: Plan = 'yearly'): Promise<boolean> {
   if (state.busy) return false;
+  setPremiumDeclined(false);
   publish({ busy: true, error: null });
   if (!(await startStore())) {
     publish({ busy: false });
@@ -291,12 +305,17 @@ export const storeError = (): string | null => state.error;
 /** Restore Purchases: asks the App Store for this Apple Account's purchases. Resolves true if Premium is among them. */
 export async function restorePremium(): Promise<boolean> {
   if (state.busy) return false;
+  const was = declined();
+  setPremiumDeclined(false);
   publish({ busy: true, error: null });
   try {
-    if (!(await startStore())) return false;
+    if (!(await startStore())) return was ? (setPremiumDeclined(true), false) : false;
     await restorePurchases();
-    return await checkOwned();
+    const found = await checkOwned(true);
+    if (!found && was) setPremiumDeclined(true);
+    return found;
   } catch (e) {
+    if (was) setPremiumDeclined(true);
     publish({ error: e instanceof Error ? e.message : "Couldn't reach the App Store." });
     return false;
   } finally {

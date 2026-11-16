@@ -8,6 +8,7 @@ const store = vi.hoisted(() => ({
   finish: vi.fn(),
   owned: vi.fn(),
   premium: false,
+  declined: false,
   grant: vi.fn(),
   pass: vi.fn(),
   end: vi.fn(),
@@ -40,6 +41,10 @@ vi.mock('expo-iap', () => ({
 vi.mock('../src/state/premium', () => ({
   hasPremium: () => store.premium,
   premiumStored: () => store.premium,
+  premiumDeclined: () => store.declined,
+  setPremiumDeclined: (on: boolean) => {
+    store.declined = on;
+  },
   setPremium: (on: boolean) => {
     store.premium = on;
     store.grant(on);
@@ -53,6 +58,7 @@ beforeEach(() => {
   store.updates.clear();
   store.errors.clear();
   store.premium = false;
+  store.declined = false;
   store.init.mockResolvedValue(true);
   store.finish.mockResolvedValue(undefined);
   store.owned.mockResolvedValue([]);
@@ -194,3 +200,13 @@ it("words an introductory offer's length in the App Store's own units", async ()
   expect(introLengthOf(null, 1, '')).toBeNull();
 });
 
+
+it('after Delete my data nothing turns Premium back on until Restore', async () => {
+  store.owned.mockResolvedValue([{ ...purchase('purchased', 'sub9'), productId: 'flipup.premium.yearly' } as Purchase]);
+  const { startStore, forgetPremium, restorePremium } = await import('../src/state/purchase');
+  forgetPremium();
+  await startStore();
+  expect(store.premium).toBe(false);
+  expect(await restorePremium()).toBe(true);
+  expect(store.premium).toBe(true);
+});

@@ -42,27 +42,15 @@ export function withBlindCap(settings: Settings): Settings {
   return { ...settings, blindCap: BLIND_CAP_CHOICES.find((c) => c > settings.bigBlind) ?? 0 };
 }
 
-/** The settings a game plays best with: Ghost wants deep stacks, Imposter bigger blinds. */
+/** The settings a game plays best with: Ghost wants deep stacks. */
 export function withVariant(settings: Settings, variant: Variant): Settings {
   let next: Settings = { ...settings, variant };
   // The ghost's own start (the host can still change it after picking the game).
   if (variant === 'ghost' && settings.variant !== 'ghost') next = { ...next, ...GHOST_START };
-  // Imposter plays for bigger blinds (about 50 big blinds deep), so every hand matters.
-  if (variant === 'imposter' && settings.bigBlind < next.startingStack / 50) {
-    const [smallBlind, bigBlind] = [...BLIND_LEVELS].reverse().find(([, bb]) => bb <= next.startingStack / 50) ?? [
-      settings.smallBlind,
-      settings.bigBlind,
-    ];
-    next = { ...next, smallBlind, bigBlind };
-  }
   return withBlindCap(next);
 }
 
 /** A game's note under its rules: who it's best with. */
 export function variantNote(variant: Variant): string {
-  return variant === 'imposter'
-    ? "Needs three or more players, so it's best with friends."
-    : variant === 'holdem'
-      ? "Bots here play full-strength Hold'em."
-      : "Bots play this the best they can, but it's most fun with friends.";
+  return variant === 'holdem' ? "Bots here play full-strength Hold'em." : "Bots play this the best they can, but it's most fun with friends.";
 }

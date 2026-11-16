@@ -292,14 +292,8 @@ labs):
   the pot. A bot that is a little short of calling a single small bet that nobody raised calls it 65% of the time
   (Blackjack Hold'em excepted: half the pot goes by the 21 count). A bet or a call is read as "the best of a few random
   hands" a little less (`draws()`), so one bet no longer makes every hand look beaten. No all-in with next to no chance.
-- **Imposter** (`blendIn()`, `crowdDeviation()` and `botVote()` in `botGames.ts`/`variants.ts`). Everyone but the
-  imposter holds the same two cards, so bots now play their own cards honestly, with the estimate and the dice behind it
-  seeded by the hand so that alike hands act alike, and the odd hand drifts away. Bets stay small and affordable (nobody
-  can fold, so a raised pot only grows). A bot whose own hand disagrees with the whole table follows the table, since it
-  may be the odd one out. The vote reads who acted least like the rest, with a bet into a string of checks as the
-  clearest tell (the checkers read the board the same way; the one who bets does not) and an opener whose bet everyone
-  called not counted as odd. Real detection is modest, and should be: the real imposter ranks first in that score about
-  29% of the time (14% is chance) and is caught by the table in about 24% of hands (12% before). People do the rest.
+- **Imposter** (parked 17 Nov 2026, see `parked/games/README.md`): its bots played their own cards honestly, followed
+  the table when they disagreed with it and voted for whoever acted least like the rest.
 - **Secret Missions** (`missionPull()`). A bot goes after the mission it holds, since the reward is paid by everyone
   else: Twins, Suited Up, Seeing Red, Royalty, Lucky Seven, Deuce Is Loose, Connected and Underdog play the hands that fit
   them wider, Slow Roll never bets, Trap Door checks a good hand to raise, Shove and Win shoves a good hand, Relentless

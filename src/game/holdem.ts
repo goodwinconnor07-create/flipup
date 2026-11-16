@@ -7,7 +7,7 @@ import { dealMoment, MOMENT_TIMING, scaled } from './moments';
 import { handRecord } from './record';
 import { fullDeck, isRed, rankName, rankOf, shuffle, type Card } from './cards';
 import { effectOf, playablePower, powerLine, powerTargets, POWER_IDS, type PowerPlan } from './powers';
-import { anteBigBlinds, bestHand, botVote, holeCount, IMPOSTER_MIN, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
+import { bestHand, holeCount, burns, count21, keepTwo, MEMORY_REMOVED, potLimit, streetCards, variantOf, type Variant } from './variants';
 import type { ActionContext, Game, Hand, Move, Player, PotResult, PowerUse, Seat, Street } from './types';
 
 export const TIMING = {
@@ -265,18 +265,8 @@ export function startHand(game: Game, ctx: ActionContext): void {
     ctx.rng,
   );
   // One card at a time, starting left of the button, until everyone has two (three in Crazy Pineapple).
-  // Imposter needs three players; with two the hand is plain Hold'em.
-  const chosen: Variant = game.settings.variant ?? 'holdem';
-  const variant: Variant = chosen === 'imposter' && n < IMPOSTER_MIN ? 'holdem' : chosen;
-  let imposter: string | undefined;
-  if (variant === 'imposter') {
-    // Everyone gets the same two cards except one player, picked at random, who gets their own.
-    const same = [deck.shift()!, deck.shift()!];
-    const own = [deck.shift()!, deck.shift()!];
-    const at = Math.floor(ctx.rng() * n);
-    imposter = seats[at].playerId;
-    seats.forEach((s, i) => (s.cards = [...(i === at ? own : same)]));
-  } else for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
+  const variant: Variant = game.settings.variant ?? 'holdem';
+  for (let round = 0; round < holeCount(variant); round++) for (let i = 1; i <= n; i++) seats[(b + i) % n].cards.push(deck.shift()!);
   // Haunted Pot: the ghost's two cards come last, face down.
   const ghost = variant === 'ghost' ? [deck.shift()!, deck.shift()!] : undefined;
   // Whatever the ghost kept goes into this pot (even if the table has since switched to another game).
@@ -313,7 +303,6 @@ export function startHand(game: Game, ctx: ActionContext): void {
     actions: [],
     startStacks: Object.fromEntries(players.map((p) => [p.id, p.stack])),
     ...(variant !== 'holdem' ? { variant } : {}),
-    ...(imposter ? { imposter } : {}),
     ...(removed ? { removed } : {}),
     ...(ghost ? { ghost } : {}),
     ...(carry ? { carry } : {}),
@@ -327,17 +316,6 @@ export function startHand(game: Game, ctx: ActionContext): void {
   log(game, `Stacks: ${players.map((p) => `${p.name} ${n0(p.stack)}`).join(' · ')}`);
   if (carry) log(game, `The ghost's ${n0(carry)} bounty is in the pot`);
 
-  // Antes (Imposter): dead money from everyone before the blinds. It counts in the pot but isn't a bet on the street.
-  const ante = anteBigBlinds(variant) * game.settings.bigBlind;
-  if (ante) {
-    seats.forEach((seat, i) => {
-      const chips = Math.min(ante, players[i].stack);
-      players[i].stack -= chips;
-      seat.total += chips;
-      if (players[i].stack === 0) seat.allIn = true;
-    });
-    log(game, `Everyone antes ${n0(ante)}`);
-  }
   put(seats[sb], players[sb], game.settings.smallBlind);
   seats[sb].last = { move: 'sb', amount: seats[sb].bet, street: 'preflop' };
   log(game, `${players[sb].name} posts the small blind ${n0(seats[sb].bet)}`);
@@ -385,8 +363,6 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
   // Over the pot limit: the bet goes in at the limit.
   if (potLimit(variantOf(game)) && (move === 'bet' || move === 'raise') && to !== undefined && to > cap && cap > hand.currentBet) to = cap;
 
-  // Imposter: nobody can fold (only someone leaving the table folds).
-  if (move === 'fold' && hand.imposter && !player.leaving) return "There's no folding in Imposter.";
   switch (move) {
     case 'fold':
       seat.folded = true;
@@ -454,10 +430,10 @@ export function makeMove(game: Game, move: Move, to: number | undefined, ctx: Ac
   return null;
 }
 
-/** What happens when a player doesn't choose (out of time, or a bot's move didn't fit): check, else fold, or in Imposter (no folding) call. */
+/** What happens when a player doesn't choose (out of time, or a bot's move didn't fit): check, else fold. */
 export function passiveMove(hand: Hand, seat: Seat): Move {
   if (hand.currentBet - seat.bet <= 0) return 'check';
-  return hand.imposter ? 'call' : 'fold';
+  return 'fold';
 }
 
 /** Someone left the table mid-hand, out of turn: their hand is folded straight away. */
@@ -478,7 +454,6 @@ export function foldOutOfTurn(game: Game, playerId: string, ctx: ActionContext):
   if (hand.seats.filter((s) => !s.folded).length === 1) {
     winWithoutShowdown(game, ctx);
   } else if (hand.discarding && !pendingDiscards(game).length) endDiscards(game, ctx);
-  else if (hand.voting && !pendingVoters(game).length) endVote(game, ctx);
 }
 
 /** After a move (or the blinds): next player, next street, or the end of the hand. */
@@ -691,7 +666,7 @@ export function startShowdown(game: Game, ctx: ActionContext): void {
   // The ghost, the 21 count and the wild cards get a beat of their own before the hands turn over.
   const v = variantOf(game);
   const beat = v === 'ghost' ? MOMENT_TIMING.suspenseGhost : v === 'bjholdem' ? MOMENT_TIMING.suspenseBlackjack : v === 'deuces' ? MOMENT_TIMING.suspenseWild : 0;
-  const suspense = beat && !hand.imposter ? scaled(beat, botsOnly(game)) : 0;
+  const suspense = beat ? scaled(beat, botsOnly(game)) : 0;
   const wait = talk + suspense;
   if (suspense) hand.moment = { kind: 'suspense', at: ctx.now, until: ctx.now + wait };
   if (wait > 0) {
@@ -969,8 +944,6 @@ export function dealNextStreet(game: Game, ctx: ActionContext): void {
   const hand = game.hand!;
   hand.nextStreetAt = null;
   dealStreet(game, hand, ctx.rng, ctx.now);
-  // Imposter: the bots form hunches as the board comes.
-  if (hand.imposter) botsPoint(game, ctx.rng, 0.4);
   // The twist plays out first (a die rolls, a red river keeps dealing...); then betting starts.
   if (hand.moment && ctx.now < hand.moment.until) {
     hand.toAct = null;
@@ -1058,12 +1031,6 @@ export function showdown(game: Game, ctx: ActionContext): void {
   hand.toAct = null;
   hand.actAt = null;
   hand.deadline = null;
-  // Imposter: the hand isn't decided by the cards but by the vote.
-  if (hand.imposter) {
-    if (!hand.votes && !hand.discussing) startDiscussion(game, ctx);
-    else if (hand.votes) imposterShowdown(game, ctx);
-    return;
-  }
   const n = hand.seats.length;
   const button = Math.max(0, indexOf(hand, hand.buttonId));
   const variant: Variant = variantOf(game);
@@ -1178,196 +1145,6 @@ export function showdown(game: Game, ctx: ActionContext): void {
     ...(ghost ? { ghost: { cards: hand.ghost!, name: ghost.detail, kept, ...(paid ? { paid } : {}) } } : {}),
     ...(counts ? { blackjack: { counts: Object.fromEntries([...counts].filter(([id]) => names[id])), poker: bjPoker, winners: bjWinners } } : {}),
   };
-  finishHand(game, ctx, TIMING.afterShowdown);
-}
-
-// ── Imposter ────────────────────────────────────────────────────────────────
-
-/** Players who still have to vote: everyone dealt in who's still at the table. */
-export function pendingVoters(game: Game): Seat[] {
-  const hand = game.hand;
-  if (!hand?.voting) return [];
-  return hand.seats.filter((s) => {
-    const p = playerById(game, s.playerId);
-    return p && !p.leaving && !hand.votes?.[s.playerId];
-  });
-}
-
-/** Bots point a finger at whoever they suspect (the same read they vote with). */
-function botsPoint(game: Game, rng: () => number, share: number): void {
-  const hand = game.hand!;
-  for (const s of hand.seats) {
-    if (!playerById(game, s.playerId)?.bot || rng() >= share) continue;
-    const pick = botVote(hand, s.playerId);
-    if (pick) hand.points = { ...hand.points, [s.playerId]: pick };
-  }
-}
-
-/** After the river and before the vote, the table talks it over: everyone can point a finger. */
-function startDiscussion(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  const people = hand.seats.filter((s) => {
-    const p = playerById(game, s.playerId);
-    return p && !p.bot && !p.leaving;
-  }).length;
-  hand.discussing = true;
-  botsPoint(game, ctx.rng, 1);
-  // Fourteen seconds with friends; with only you and the bots, a short beat to see who they point at.
-  const until = ctx.now + (people > 1 ? MOMENT_TIMING.discuss : people === 1 ? MOMENT_TIMING.discussSolo : 800);
-  hand.moment = { kind: 'discuss', at: ctx.now, until };
-  hand.toAct = null;
-  hand.deadline = null;
-  hand.actAt = until;
-  log(game, 'The table talks it over');
-  schedule(game);
-}
-
-/** Discussion is over: the vote. */
-export function endDiscussion(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  hand.discussing = false;
-  hand.moment = null;
-  startVote(game, ctx);
-}
-
-/** A player points a finger at someone (or takes it back). It changes nothing in the hand but what the table sees. */
-export function pointAt(game: Game, playerId: string, target: string | null, ctx: ActionContext): string | null {
-  const hand = game.hand;
-  if (!hand?.imposter || hand.result || hand.voting || hand.tally) return "There's nobody to point at now.";
-  if (!hand.seats.some((s) => s.playerId === playerId)) return "You weren't dealt in.";
-  if (target !== null && (target === playerId || !hand.seats.some((s) => s.playerId === target))) return "You can't point at them.";
-  const points = { ...hand.points };
-  if (target === null) delete points[playerId];
-  else points[playerId] = target;
-  hand.points = points;
-  // Once every person has picked someone, the talking wraps up soon.
-  if (hand.discussing && hand.moment) {
-    const people = hand.seats.filter((s) => {
-      const p = playerById(game, s.playerId);
-      return p && !p.bot && !p.leaving;
-    });
-    if (people.every((s) => points[s.playerId])) {
-      const until = Math.min(hand.moment.until, Math.max(ctx.now + 1500, hand.moment.at + MOMENT_TIMING.discussMin));
-      hand.moment = { ...hand.moment, until };
-      hand.actAt = until;
-    }
-  }
-  schedule(game);
-  return null;
-}
-
-/** After the river: everyone dealt in votes for who they think the imposter is. Bots vote straight away. */
-function startVote(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  hand.votes = {};
-  hand.voting = true;
-  log(game, 'Time to vote: who is the imposter?');
-  for (const s of pendingVoters(game)) {
-    if (!playerById(game, s.playerId)?.bot) continue;
-    const pick = botVote(hand, s.playerId);
-    if (pick) hand.votes[s.playerId] = pick;
-  }
-  if (!pendingVoters(game).length) {
-    endVote(game, ctx);
-    return;
-  }
-  hand.deadline = game.settings.turnSeconds > 0 ? ctx.now + game.settings.turnSeconds * 1000 : null;
-  hand.actAt = hand.deadline;
-  schedule(game);
-}
-
-/** A player's vote. Returns an error message, or null. */
-export function castVote(game: Game, voterId: string, suspectId: string, ctx: ActionContext): string | null {
-  const hand = game.hand;
-  if (!hand?.voting || !hand.votes) return "There's no vote on.";
-  if (!hand.seats.some((s) => s.playerId === voterId)) return "You weren't dealt in.";
-  if (hand.votes[voterId]) return "You've already voted.";
-  if (suspectId === voterId || !hand.seats.some((s) => s.playerId === suspectId)) return "You can't vote for them.";
-  hand.votes[voterId] = suspectId;
-  log(game, `${nameOf(game, voterId)} votes`);
-  hand.seq += 1;
-  if (!pendingVoters(game).length) endVote(game, ctx);
-  else schedule(game);
-  return null;
-}
-
-/** Everyone has voted (or time's up): count the votes and settle the pot. */
-export function endVote(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  hand.voting = false;
-  hand.deadline = null;
-  // The votes are read out one at a time, then the imposter is named.
-  const step = MOMENT_TIMING.tallyStep;
-  const until = ctx.now + Object.keys(hand.votes ?? {}).length * step + MOMENT_TIMING.tallyEnd;
-  hand.tally = true;
-  hand.moment = { kind: 'tally', at: ctx.now, until, step };
-  hand.actAt = until;
-  schedule(game);
-}
-
-/** The votes have all been read out: count them and settle the pot. */
-export function endTally(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  hand.tally = false;
-  hand.actAt = null;
-  imposterShowdown(game, ctx);
-}
-
-/** Pays one pot out evenly to its winners; odd chips go to the winners closest to the left of the button. */
-function splitPot(hand: Hand, pot: PotResult, won: Record<string, number>): void {
-  const n = hand.seats.length;
-  const button = Math.max(0, indexOf(hand, hand.buttonId));
-  const share = Math.floor(pot.amount / pot.winners.length);
-  let odd = pot.amount - share * pot.winners.length;
-  for (let i = 1; i <= n; i++) {
-    const id = hand.seats[(button + i) % n].playerId;
-    if (!pot.winners.includes(id)) continue;
-    won[id] = (won[id] ?? 0) + share + (odd > 0 ? 1 : 0);
-    if (odd > 0) odd--;
-  }
-}
-
-/**
- * The most votes on the imposter (and no tie): the innocents still in split the pot. Otherwise the imposter takes it.
- * If the imposter folded, the innocents still in split it either way.
- */
-function imposterShowdown(game: Game, ctx: ActionContext): void {
-  const hand = game.hand!;
-  const imp = hand.imposter!;
-  const votes = hand.votes ?? {};
-  const tally = new Map<string, number>();
-  for (const suspect of Object.values(votes)) tally.set(suspect, (tally.get(suspect) ?? 0) + 1);
-  const top = Math.max(0, ...tally.values());
-  const leaders = [...tally].filter(([, n]) => n === top).map(([id]) => id);
-  const caught = top > 0 && leaders.length === 1 && leaders[0] === imp;
-  const live = hand.seats.filter((s) => !s.folded).map((s) => s.playerId);
-  const innocents = live.filter((id) => id !== imp);
-  const impIn = live.includes(imp);
-  const winners = !impIn || caught ? innocents : [imp];
-
-  const pots = buildPots(hand.seats);
-  if (hand.carry && pots.length) pots[0].amount += hand.carry;
-  const won: Record<string, number> = {};
-  for (const pot of pots) {
-    // A side pot the winners can't win goes to whoever can.
-    const mine = pot.eligible.filter((id) => winners.includes(id));
-    pot.winners = mine.length ? mine : pot.eligible;
-    splitPot(hand, pot, won);
-  }
-  const names: Record<string, string> = {};
-  for (const s of hand.seats) {
-    if (s.folded) continue;
-    s.shown = true;
-    names[s.playerId] = s.playerId === imp ? 'The imposter' : 'Innocent';
-  }
-  log(game, `The imposter was ${nameOf(game, imp)} with ${cardsText(hand.seats.find((s) => s.playerId === imp)!.cards)}`);
-  log(game, caught ? 'The innocents found the imposter!' : impIn ? `${nameOf(game, imp)} got away with it` : 'The imposter folded');
-  for (const [id, chips] of Object.entries(won)) {
-    const p = playerById(game, id);
-    if (p) p.stack += chips;
-    log(game, `${nameOf(game, id)} wins ${n0(chips)}`);
-  }
-  hand.result = { pots, won, names, showdown: true, imposter: { id: imp, votes, caught } };
   finishHand(game, ctx, TIMING.afterShowdown);
 }
 

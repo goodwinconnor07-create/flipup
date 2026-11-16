@@ -234,7 +234,7 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
   const pot = result.pots.reduce((sum, p) => sum + p.amount, 0);
   let myHand: string | undefined;
   let myScore: number | undefined;
-  if (!seat.folded && variant !== 'imposter' && hand.board.length >= 5) {
+  if (!seat.folded && hand.board.length >= 5) {
     try {
       const v = bestHand(variant, seat.cards, hand.board);
       myHand = v.detail;
@@ -283,7 +283,7 @@ export function noteReplay(game: Game | null, myDeviceId: string, mode: 'bots' |
 /** Hand names for everyone whose cards you can see: the showdown's, plus anyone who showed after it. */
 function shownNames(variant: Variant, seats: { playerId: string; cards: Card[] }[], board: Card[], names: Record<string, string>): Record<string, string> {
   const out = { ...names };
-  if (variant === 'imposter' || board.length < 5) return out;
+  if (board.length < 5) return out;
   for (const s of seats) {
     if (out[s.playerId] || s.cards.length === 0) continue;
     try {

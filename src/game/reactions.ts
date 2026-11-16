@@ -35,19 +35,9 @@ export const REACTIONS: Reaction[] = [
 /** The emoji reactions, sent with one tap from the row along the top of the quick messages. */
 export const EMOJI_REACTIONS: Reaction[] = REACTIONS.filter((r) => !/[A-Za-z]/.test(r.text));
 
-/** Extra messages for an Imposter table: accusations and alibis, all fixed lines like the rest. */
-export const IMPOSTER_REACTIONS: Reaction[] = [
-  { id: 'sus', text: 'Sus… 👀' },
-  { id: 'notme', text: "It's not me!" },
-  { id: 'trust', text: 'I trust you' },
-  { id: 'liar', text: 'Somebody is lying' },
-  { id: 'bluff', text: 'That bet was odd' },
-  { id: 'innocent', text: "I'm innocent!" },
-];
+export const isReactionId = (v: unknown): v is string => typeof v === 'string' && (REACTIONS.some((r) => r.id === v));
 
-export const isReactionId = (v: unknown): v is string => typeof v === 'string' && (REACTIONS.some((r) => r.id === v) || IMPOSTER_REACTIONS.some((r) => r.id === v));
-
-const template = (id: string): string => REACTIONS.find((r) => r.id === id)?.text ?? IMPOSTER_REACTIONS.find((r) => r.id === id)?.text ?? botLineText(id);
+const template = (id: string): string => REACTIONS.find((r) => r.id === id)?.text ?? botLineText(id);
 
 /** A message as plain words. `you` is who a bot is talking to, for lines that name them ({you}); without it the name is left out. */
 export const reactionText = (id: string, you?: string): string => lineText(template(id), you);

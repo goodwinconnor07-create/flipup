@@ -9,7 +9,6 @@ import { haptic } from '@/components/haptics';
 import { SwapIcon } from '@/components/swap';
 import { Icon } from '@/components/icon';
 import { PressableScale } from '@/components/pressable-scale';
-import { SetupHeader } from '@/components/setup/setup-header';
 import { signed } from '@/components/share/data';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
@@ -70,8 +69,12 @@ function Bank() {
   };
   return (
     <GrainBackground>
-      <ScrollView contentInsetAdjustmentBehavior="never" contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: insets.top + spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}>
-        <SetupHeader title="Saved hands" line={list.length ? `${list.length} of ${KEEP} saved. ${editing ? 'Tap the red button to remove a hand.' : 'Tap one to watch it back.'}` : undefined} />
+      <ScrollView contentInsetAdjustmentBehavior="automatic" contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: insets.bottom + spacing.xl, gap: spacing.lg }}>
+        {list.length > 0 && (
+          <ThemedText variant="callout" tone="secondaryLabel">
+            {list.length ? `${list.length} of ${KEEP} saved. ${editing ? 'Tap the red button to remove a hand.' : 'Tap one to watch it back.'}` : undefined}
+          </ThemedText>
+        )}
         {list.length > 0 && (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: -spacing.sm }}>
             <PressableScale accessibilityRole="button" accessibilityLabel={editing ? 'Done editing' : 'Edit saved hands'} onPress={() => (haptic.select(), setEditing((e) => !e))} style={{ paddingVertical: spacing.xs, paddingRight: spacing.md }}>

@@ -31,6 +31,32 @@ export interface PokerRecord {
   seen: string[];
   /** The bigger stats (style, chips line, all-ins and luck, streaks, starting hands), counted since they came in. */
   more: MoreStats;
+  /** The same numbers for Texas Hold'em alone and for the mini games alone (the Stats page's switch), counted since they came in. */
+  modes: { holdem: ModeSlice; variants: ModeSlice };
+}
+
+/** One mode's share of your record: what Stats shows when it's switched to Hold'em or to the mini games. */
+export interface ModeSlice {
+  hands: number;
+  won: number;
+  biggestPot: number;
+  best: PokerRecord['best'];
+  more: MoreStats;
+}
+
+export type StatsMode = 'all' | 'holdem' | 'variants';
+const modeOf = (v: Variant): 'holdem' | 'variants' => (v === 'holdem' ? 'holdem' : 'variants');
+
+function cleanSlice(s: Partial<ModeSlice> | null | undefined): ModeSlice {
+  const n = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : 0);
+  return { hands: n(s?.hands), won: n(s?.won), biggestPot: n(s?.biggestPot), best: s?.best && Array.isArray(s.best.cards) && typeof s.best.name === 'string' ? s.best : null, more: cleanStats(s?.more) };
+}
+
+/** The record as Stats should draw it for a mode: all of it, or only Hold'em's or only the mini games' hands, games and numbers. */
+export function recordFor(r: PokerRecord, mode: StatsMode): PokerRecord {
+  if (mode === 'all') return r;
+  const s = r.modes[mode];
+  return { ...r, hands: s.hands, won: s.won, biggestPot: s.biggestPot, best: s.best, more: s.more, games: r.games.filter((g) => modeOf(g.variant) === mode) };
 }
 
 function clean(r: Partial<PokerRecord> | null): PokerRecord {
@@ -45,6 +71,7 @@ function clean(r: Partial<PokerRecord> | null): PokerRecord {
     played: Array.isArray(r?.played) ? r.played.filter((v): v is Variant => typeof v === 'string') : [],
     seen: Array.isArray(r?.seen) ? r.seen.filter((s) => typeof s === 'string') : [],
     more: cleanStats(r?.more),
+    modes: { holdem: cleanSlice(r?.modes?.holdem), variants: cleanSlice(r?.modes?.variants) },
   };
 }
 
@@ -71,19 +98,25 @@ export function noteHand(game: Game, myId: string): void {
     if (r.seen.includes(key)) return null;
     const mine = result.pots.filter((p) => p.winners.includes(myId)).reduce((sum, p) => sum + Math.floor(p.amount / p.winners.length), 0);
     const mineBB = game.settings.bigBlind > 0 ? Math.round((mine / game.settings.bigBlind) * 10) / 10 : 0;
-    let best = r.best;
-    // Your best hand: only one you made to the river and showed down (Imposter's showdowns are votes, not hands).
-    if (result.showdown && !seat.folded && hand.variant !== 'imposter' && hand.board.length >= 5) {
+    // Your best hand: only one you made to the river and showed down.
+    const better = (prev: PokerRecord['best']): PokerRecord['best'] => {
+      if (!(result.showdown && !seat.folded && hand.board.length >= 5)) return prev;
       try {
         const v = bestHand(hand.variant ?? 'holdem', seat.cards, hand.board);
-        if (!best || v.score > best.score) best = { score: v.score, name: v.detail, cards: v.best, variant: hand.variant ?? 'holdem' };
+        return !prev || v.score > prev.score ? { score: v.score, name: v.detail, cards: v.best, variant: hand.variant ?? 'holdem' } : prev;
       } catch {
         // A board this game can't score yet: leave the best hand as it was.
+        return prev;
       }
-    }
+    };
+    const best = better(r.best);
     const v: Variant = hand.variant ?? 'holdem';
-    const more = tallyHand(r.more, game, myId, new Date());
-    return { ...r, more, played: r.played.includes(v) ? r.played : [...r.played, v], hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mineBB), best, seen: [...r.seen, key] };
+    const now = new Date();
+    const more = tallyHand(r.more, game, myId, now);
+    const m = modeOf(v);
+    const slice = r.modes[m];
+    const modes = { ...r.modes, [m]: { hands: slice.hands + 1, won: slice.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(slice.biggestPot, mineBB), best: better(slice.best), more: tallyHand(slice.more, game, myId, now) } };
+    return { ...r, more, modes, played: r.played.includes(v) ? r.played : [...r.played, v], hands: r.hands + 1, won: r.won + (mine > 0 ? 1 : 0), biggestPot: Math.max(r.biggestPot, mineBB), best, seen: [...r.seen, key] };
   });
 }
 
@@ -96,7 +129,9 @@ export function noteGame(game: Game, myId: string): void {
     if (!r.seen.some((s) => s.startsWith(`${game.id}/`))) return null;
     const order = [...game.players].sort((a, b) => b.stack - a.stack);
     const place = order.findIndex((p) => p.id === myId) + 1;
-    return { ...r, more: tallyGame(r.more, game, myId, place), games: [...r.games, { at: Date.now(), variant: variantOf(game), place, players: game.players.length }], seen: [...r.seen, game.id] };
+    const m = modeOf(variantOf(game));
+    const modes = { ...r.modes, [m]: { ...r.modes[m], more: tallyGame(r.modes[m].more, game, myId, place) } };
+    return { ...r, more: tallyGame(r.more, game, myId, place), modes, games: [...r.games, { at: Date.now(), variant: variantOf(game), place, players: game.players.length }], seen: [...r.seen, game.id] };
   });
 }
 

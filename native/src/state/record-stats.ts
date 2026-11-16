@@ -170,7 +170,7 @@ export function startWords(name: string): string {
 /** Games whose all-in odds are worked out the plain way (two cards each, a board that only grows). */
 const LUCK_GAMES: Partial<Record<Variant, Variant>> = { holdem: 'holdem', deuces: 'deuces', pittsburgh: 'pittsburgh', crucifix: 'crucifix', circle: 'circle' };
 /** Games where your two cards are your starting hand all the way through. */
-const TWO_CARD_GAMES = new Set<Variant>(['holdem', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'imposter', 'crucifix', 'circle', 'memory', 'power']);
+const TWO_CARD_GAMES = new Set<Variant>(['holdem', 'deuces', 'ghost', 'pittsburgh', 'dice', 'redriver', 'crucifix', 'circle', 'memory', 'power']);
 
 const aggressive = (move: string) => move === 'bet' || move === 'raise' || move === 'allin';
 
@@ -225,7 +225,7 @@ export function tallyHand(r: MoreStats, game: Game, myId: string, now: Date, cha
       bestSuckout = Math.min(bestSuckout ?? 1, chance);
     }
   }
-  if (result.showdown && !seat.folded && !wonPot && variant !== 'imposter' && hand.board.length >= 3) {
+  if (result.showdown && !seat.folded && !wonPot && hand.board.length >= 3) {
     try {
       if (bestHand(variant, seat.cards, hand.board).category >= 6) coolers++;
     } catch {

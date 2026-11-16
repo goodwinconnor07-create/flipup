@@ -29,7 +29,7 @@ function leaks(game: Game): string[] {
   if (!hand.result) for (const c of hand.removed ?? []) if (!game.memory?.cards.includes(c)) secret.set(c, 'memory card taken out');
   // Folded or mucked cards a showdown never turned up stay private, but cards on the board are public: drop those.
   for (const c of hand.board) secret.delete(c);
-  // Cards this phone legitimately holds (Imposter deals every non-imposter the same two) and the 20 Memory Poker shows everyone first.
+  // Cards this phone legitimately holds and the 20 Memory Poker shows everyone first.
   for (const c of hand.seats.find((s) => s.playerId === host.id)?.cards ?? []) secret.delete(c);
   for (const c of game.memory?.cards ?? []) secret.delete(c);
   for (const c of hand.dice?.out ? [hand.dice.out] : []) secret.delete(c);
@@ -38,7 +38,6 @@ function leaks(game: Game): string[] {
   // Raw device ids of other people, bot internals and the host's own secret on someone else's view.
   for (const p of game.players) if (p.deviceId && p.deviceId !== HOST && wire.includes(p.deviceId)) found.push(`raw device id of ${p.id}`);
   for (const key of ['"style"', '"botProfile"', '"botKind"', '"labStyle"', '"reads"', '"minds"', '"botPlan"', '"deck":["']) if (wire.includes(key)) found.push(`internal field ${key}`);
-  if (!hand.result && hand.imposter && view.hand?.imposter && view.hand.imposter !== '?') found.push('imposter id');
   // The hand log: only its own cards and shown ones.
   for (const l of redactLogs(game, HOST)) for (const id of Object.keys(l.holes)) if (!l.shown.includes(id) && id !== host.id) found.push(`log hole cards of ${id}`);
   return found;
@@ -58,10 +57,7 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
         const host = game.players.find((p) => p.deviceId === HOST)!;
         const mine = hand?.seats.find((s) => s.playerId === host.id);
         let r;
-        if (hand && !hand.result && hand.voting && mine && !hand.votes?.[host.id]) {
-          const others = hand.seats.filter((x) => x.playerId !== host.id);
-          r = applyAction(game, { type: 'vote', hand: hand.number, playerId: others[Math.floor(rng() * others.length)].playerId }, { deviceId: HOST, now: clock, rng });
-        } else if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
+        if (hand && !hand.result && hand.discarding && mine && !mine.folded && mine.cards.length === 3) {
           r = applyAction(game, { type: 'discard', hand: hand.number, card: mine.cards[Math.floor(rng() * 3)] }, { deviceId: HOST, now: clock, rng });
         } else if (hand && !hand.result && hand.toAct === host.id && mine && !(hand.moment?.gate && clock < hand.moment.until)) {
           const o = options(game, hand, mine);
@@ -76,8 +72,7 @@ describe('what a phone is sent never holds what it must not see', { timeout: TAB
         if (game.hand?.number !== before) hands++;
         for (const f of leaks(game)) problems.add(f.replace(/[0-9a-z]{2}$/, 'XX'));
       }
-      // (Imposter: with nobody able to fold, a person who calls everything can go out within a few hands)
-      expect(hands).toBeGreaterThan(v === 'imposter' ? 3 : 5);
+      expect(hands).toBeGreaterThan(5);
       expect([...problems]).toEqual([]);
     });
   }

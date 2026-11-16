@@ -1,17 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { crowdAggression, crowdDeviation, recalledRemoved } from './botGames';
+import { recalledRemoved } from './botGames';
 import { GAME_EVENTS, GAME_FRIENDLY, GAME_TRASH } from './botGameLines';
 import { botLineText, variantTalk } from './botTalk';
 import { splitBeats, ONE_LINE } from './chat';
 import { seededRng } from './cards';
 import { createTable, DEFAULT_SETTINGS } from './reducer';
 import { startHand } from './holdem';
-import { botVote, VARIANTS, type Variant } from './variants';
-import type { Game, Hand, HandAction } from './types';
-
-const act = (playerId: string, street: HandAction['street'], move: HandAction['move']): HandAction => ({ playerId, street, move, to: 0 });
-const handWith = (actions: HandAction[], ids = ['a', 'b', 'c', 'd']) =>
-  ({ seats: ids.map((playerId) => ({ playerId })), actions, board: [], buttonId: 'a', bbId: 'b', sbId: 'a', street: 'river' }) as unknown as Hand;
+import { VARIANTS, type Variant } from './variants';
+import type { Game } from './types';
 
 describe('Memory Poker recall', () => {
   const removed = Array.from({ length: 20 }, (_, i) => `${'23456789TJQKA'[i % 13]}${'shdc'[Math.floor(i / 13)]}`);
@@ -26,28 +22,6 @@ describe('Memory Poker recall', () => {
     expect(total / 40).toBeLessThan(19.5);
   });
   it('is nothing when no cards were taken out', () => expect(recalledRemoved(undefined, 'x', 1)).toEqual([]));
-});
-
-describe('Imposter reading', () => {
-  it('sees who acts unlike the rest of the table, and votes for them', () => {
-    // a, b and c check and call along; d bets where the others check.
-    const h = handWith([
-      act('a', 'flop', 'check'), act('b', 'flop', 'check'), act('c', 'flop', 'check'), act('d', 'flop', 'bet'),
-      act('a', 'turn', 'check'), act('b', 'turn', 'check'), act('c', 'turn', 'check'), act('d', 'turn', 'bet'),
-    ]);
-    const dev = crowdDeviation(h);
-    expect(dev.get('d')!).toBeGreaterThan(dev.get('a')!);
-    expect(botVote(h, 'a')).toBe('d');
-    expect(botVote(h, 'b')).toBe('d');
-  });
-  it('is quiet when nobody stands out', () => {
-    const h = handWith([act('a', 'flop', 'check'), act('b', 'flop', 'check'), act('c', 'flop', 'check'), act('d', 'flop', 'check')]);
-    for (const v of crowdDeviation(h).values()) expect(v).toBe(0);
-  });
-  it('knows how aggressive the rest of the table has been', () => {
-    const h = handWith([act('b', 'flop', 'bet'), act('c', 'flop', 'call'), act('a', 'flop', 'check')]);
-    expect(crowdAggression(h, 'a')).toBeCloseTo(0.5);
-  });
 });
 
 describe('game talk lines', () => {
@@ -77,22 +51,6 @@ describe('what bots say at each game', () => {
     return game;
   };
   const said = (game: Game) => Object.values(game.reactions ?? {}).map((r) => r.id);
-  it('points a finger and answers one at an Imposter table', () => {
-    const game = table('imposter');
-    const [a, b] = game.players.filter((p) => p.bot);
-    game.hand!.points = { [a.id]: b.id };
-    variantTalk(game, () => 0, 100_000);
-    expect(said(game).some((id) => id.includes(':impPoint:') || id.includes(':impAccused:'))).toBe(true);
-  });
-  it('says nothing twice about the same finger', () => {
-    const game = table('imposter');
-    const [a, b] = game.players.filter((p) => p.bot);
-    game.hand!.points = { [a.id]: b.id };
-    variantTalk(game, () => 0, 100_000);
-    const first = JSON.stringify(game.reactions);
-    variantTalk(game, () => 0, 200_000);
-    expect(JSON.stringify(game.reactions)).toBe(first);
-  });
   it('reacts to a bust at Blackjack Hold’em and to a power at Power Cards', () => {
     const bj = table('bjholdem');
     bj.hand!.busted = [bj.players.find((p) => p.bot)!.id];

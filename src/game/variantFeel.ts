@@ -7,7 +7,7 @@ import type { Variant } from './variants';
 /**
  * How a game mode feels, measured from the bots' own play at an all-bot table: do they bet a good hand that was checked
  * to them, fold a hand that is a favourite at the price, call with nothing, shove junk; and each game's own goals (the
- * imposter gets caught about as often as not, powers get played, missions get done, a hit usually doesn't bust).
+ * powers get played, missions get done, a hit usually doesn't bust).
  * `scripts/variantFeel.ts` prints them; `variantFeel.test.ts` holds the general ones. Bands are our estimates (marked
  * `est`): the published advice is about plain Hold'em, not these games.
  */
@@ -69,7 +69,7 @@ export class VariantFeel {
   before(game: Game, rng: () => number): void {
     this.snap = null;
     const hand = game.hand;
-    if (!hand || hand.result || hand.runout || !hand.toAct || this.variant === 'imposter') return;
+    if (!hand || hand.result || hand.runout || !hand.toAct) return;
     const seat = hand.seats.find((s) => s.playerId === hand.toAct);
     const player = game.players.find((p) => p.id === hand.toAct);
     if (!seat || !(player?.bot || player?.id === this.hostId) || seat.folded || seat.allIn) return;
@@ -121,17 +121,6 @@ export class VariantFeel {
     this.pulses.push(pulseOf(hand, game.settings.bigBlind));
     const r = hand.result!;
     const v = this.variant;
-    if (v === 'imposter' && r.imposter) {
-      this.bump('imposterCaught', r.imposter.caught);
-      const voters = Object.entries(r.imposter.votes);
-      for (const [from, at] of Object.entries(hand.points ?? {})) {
-        if (from === r.imposter.id) continue;
-        this.bump('pointAccuracy', at === r.imposter.id);
-      }
-      this.add('imposterHands');
-      this.add('votesOnImposter', voters.filter(([, at]) => at === r.imposter!.id).length);
-      this.add('voters', voters.length);
-    }
     if (v === 'power') {
       this.add('powersDealt', Object.keys(hand.powers ?? {}).length);
       this.add('powersPlayed', (hand.powerUses ?? []).length);
@@ -185,10 +174,6 @@ export class VariantFeel {
       pass: null,
     });
     const own = (id: string, label: string, band: [number, number] | null, minN: number, note: string) => pct(id, { label, band, minN, note });
-    if (this.variant === 'imposter') {
-      own('imposterCaught', 'Imposter caught by the table', [20, 55], 40, 'est: bots read bets into checks only, so they catch it now and then; people do the rest');
-      own('pointAccuracy', 'Bots point at the real imposter', null, 40, 'chance is 1 in (players - 1); above that is real detection');
-    }
     if (this.variant === 'bjholdem') {
       own('anyBust', 'Hands where someone busts', [10, 55], 40, 'est');
       out.push({ id: 'hits', label: 'Hits per hand', value: (this.extra.hits ?? 0) / hands, n: this.hands, band: null, note: 'info', pass: null });

@@ -103,16 +103,6 @@ export const SHOTS: Partial<Record<Variant, Partial<Record<Shot, number>>>> = {
     turn: require('../../../assets/howto/bjholdem/turn.webp'),
     yourturn: require('../../../assets/howto/bjholdem/yourturn.webp'),
   },
-  imposter: {
-    cards: require('../../../assets/howto/imposter/cards.webp'),
-    discuss: require('../../../assets/howto/imposter/discuss.webp'),
-    flop: require('../../../assets/howto/imposter/flop.webp'),
-    reveal: require('../../../assets/howto/imposter/reveal.webp'),
-    river: require('../../../assets/howto/imposter/river.webp'),
-    turn: require('../../../assets/howto/imposter/turn.webp'),
-    vote: require('../../../assets/howto/imposter/vote.webp'),
-    yourturn: require('../../../assets/howto/imposter/yourturn.webp'),
-  },
   power: {
     cards: require('../../../assets/howto/power/cards.webp'),
     played: require('../../../assets/howto/power/played.webp'),

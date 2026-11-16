@@ -3,222 +3,84 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#ffffff" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="FlipUp" />
+    <meta name="theme-color" content="#070f2a" />
+    <meta name="color-scheme" content="dark" />
     <meta name="format-detection" content="telephone=no" />
-    <meta name="description" content="Poker night on your phones. Texas Hold'em and silly mini games with friends and bots." />
+    <title>FlipUp</title>
+    <meta name="description" content="Poker night on your phones. Texas Hold'em and thirteen mini games for play chips, with friends or bots. Coming soon to iPhone." />
     <meta property="og:type" content="website" />
     <meta property="og:title" content="FlipUp: poker night on your phones" />
-    <meta property="og:description" content="Pull up a chair. Join my table." />
-    <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <meta property="og:description" content="Pull up a chair. Coming soon to iPhone." />
+    <meta property="og:image" content="https://playflipup.com/icons/icon-512.png" />
+    <meta name="apple-itunes-app" content="app-id=6829639428" />
+    <link rel="icon" href="/icons/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
-    <title>FlipUp</title>
-    <!--
-      The loading screen: drawn from this page alone (no script or stylesheet yet), so it shows the moment the
-      page arrives instead of a blank screen while the app downloads. main.tsx fades it out once the app has drawn.
-      Its colours copy the tokens in global.css (white / #f2f2f7 cells, true black / #1c1c1e in dark mode, the
-      four-colour deck's red and black), since that stylesheet isn't loaded yet.
-    -->
-    <script>
-      try {
-        var a = JSON.parse(localStorage.getItem('flipup.appearance') || '"auto"');
-        var dark = a === 'dark' || (a !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
-        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-        if (dark) document.querySelector('meta[name="theme-color"]').setAttribute('content', '#000000');
-      } catch (e) {}
-    </script>
-    <style>
-      #splash {
-        --sp-bg: #ffffff;
-        --sp-ink: #000000;
-        --sp-dim: #6c6c70;
-        --sp-face: #ffffff;
-        --sp-edge: rgba(18, 18, 40, 0.12);
-        --sp-red: #e5322d;
-        --sp-black: #16161d;
-        --sp-green: #16a34a;
-        --sp-back-a: #2f7bff;
-        --sp-back-b: #5b3df0;
-        --sp-btn: #f2f2f7;
-        position: fixed;
-        inset: 0;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 24px;
-        padding: 24px;
-        background: var(--sp-bg);
-        color: var(--sp-ink);
-        font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, system-ui, sans-serif;
-        transition: opacity 0.35s ease;
-      }
-      html[data-theme='dark'] #splash {
-        --sp-bg: #000000;
-        --sp-ink: #ffffff;
-        --sp-dim: #98989f;
-        --sp-face: #1c1c1e;
-        --sp-edge: rgba(255, 255, 255, 0.16);
-        --sp-red: #ff453a;
-        --sp-black: #ffffff;
-        --sp-btn: #1c1c1e;
-      }
-      html[data-theme='dark'] body {
-        background: #000000;
-      }
-      #splash.gone {
-        opacity: 0;
-        pointer-events: none;
-      }
-      .sp-cards {
-        display: flex;
-        gap: 12px;
-        perspective: 600px;
-      }
-      .sp-card {
-        position: relative;
-        width: 64px;
-        height: 90px;
-        transform-style: preserve-3d;
-        animation: sp-flip 2.4s cubic-bezier(0.45, 0, 0.2, 1) infinite;
-      }
-      /* The fan's tilt sits on a wrapper, so the flip's own transform doesn't undo it. */
-      .sp-tilt:nth-child(1) {
-        transform: rotate(-8deg);
-      }
-      .sp-tilt:nth-child(2) {
-        margin-top: -12px;
-      }
-      .sp-tilt:nth-child(3) {
-        transform: rotate(8deg);
-      }
-      .sp-tilt:nth-child(2) .sp-card {
-        animation-delay: 0.6s;
-      }
-      .sp-tilt:nth-child(3) .sp-card {
-        animation-delay: 1.2s;
-      }
-      .sp-card i {
-        position: absolute;
-        inset: 0;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        padding: 6px 8px;
-        border-radius: 10px;
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
-        font-style: normal;
-        font-size: 26px;
-        font-weight: 700;
-        line-height: 1;
-        background: var(--sp-face);
-        box-shadow:
-          0 0 0 1.5px var(--sp-edge),
-          0 8px 18px -10px rgba(0, 0, 0, 0.45);
-      }
-      .sp-card i small {
-        font-size: 22px;
-      }
-      .sp-card i:last-child {
-        transform: rotateY(180deg);
-        background:
-          repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.18) 0 2px, transparent 2px 8px),
-          linear-gradient(160deg, var(--sp-back-a), var(--sp-back-b));
-      }
-      .sp-red {
-        color: var(--sp-red);
-      }
-      .sp-black {
-        color: var(--sp-black);
-      }
-      .sp-green {
-        color: var(--sp-green);
-      }
-      @keyframes sp-flip {
-        0%,
-        30% {
-          transform: rotateY(0deg);
-        }
-        50%,
-        80% {
-          transform: rotateY(180deg);
-        }
-        100% {
-          transform: rotateY(360deg);
-        }
-      }
-      .sp-name {
-        margin: 0;
-        font-size: 44px;
-        font-weight: 800;
-        letter-spacing: -0.035em;
-      }
-      .sp-note {
-        min-height: 44px;
-        margin: -12px 0 0;
-        font-size: 17px;
-        text-align: center;
-        color: var(--sp-dim);
-      }
-      .sp-note span {
-        display: block;
-      }
-      /* After a while on a slow connection, say so; after much longer, offer to try again. */
-      .sp-slow,
-      #splash button {
-        opacity: 0;
-        visibility: hidden;
-        animation: sp-show 0.4s ease forwards;
-      }
-      .sp-slow {
-        animation-delay: 6s;
-      }
-      #splash button {
-        min-height: 52px;
-        padding: 0 28px;
-        border: 0;
-        border-radius: 999px;
-        font: inherit;
-        font-size: 17px;
-        font-weight: 600;
-        color: var(--sp-ink);
-        background: var(--sp-btn);
-        animation-delay: 20s;
-      }
-      @keyframes sp-show {
-        to {
-          opacity: 1;
-          visibility: visible;
-        }
-      }
-      @media (prefers-reduced-motion: reduce) {
-        .sp-card {
-          animation: none;
-        }
-      }
-    </style>
+    <script type="module" src="/site/landing.ts"></script>
   </head>
   <body>
-    <div id="splash" role="status" aria-label="Loading FlipUp">
-      <div class="sp-cards" aria-hidden="true">
-        <div class="sp-tilt"><div class="sp-card"><i class="sp-black">A<small>♠</small></i><i></i></div></div>
-        <div class="sp-tilt"><div class="sp-card"><i class="sp-red">K<small>♥</small></i><i></i></div></div>
-        <div class="sp-tilt"><div class="sp-card"><i class="sp-green">Q<small>♣</small></i><i></i></div></div>
-      </div>
-      <p class="sp-name">FlipUp</p>
-      <p class="sp-note">
-        Shuffling the deck…
-        <span class="sp-slow">Slow connection. Still dealing…</span>
-      </p>
-      <button type="button" onclick="location.reload()">Try again</button>
-    </div>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <div class="field" aria-hidden="true"><i></i><i></i><i></i></div>
+
+    <header class="top">
+      <a class="brand" href="/"><img src="/icons/mark.png" alt="" width="32" height="32" />FlipUp</a>
+      <nav><a href="/support">Support</a><a href="/privacy">Privacy</a></nav>
+    </header>
+
+    <!-- A join link (/ACES42, /party/ACES42) shows this instead of the home page. landing.ts fills it in. -->
+    <main id="join" class="join" hidden>
+      <p class="eyebrow" id="join-kind">You're invited to a table</p>
+      <h1 class="code" id="join-code" aria-label="Game code"></h1>
+      <p class="join-who" id="join-who"></p>
+      <a class="button primary" id="join-open" href="flipup://">Open in FlipUp</a>
+      <p class="fine">Got the app? This opens the table in it. Or type the code on Join a game.</p>
+      <div class="join-get" id="join-get"></div>
+    </main>
+
+    <main id="home">
+      <section class="hero">
+        <div class="hero-words">
+          <p class="pill"><span class="dot" aria-hidden="true"></span>Coming soon to iPhone</p>
+          <h1>Poker night on your phones.</h1>
+          <p class="lead">No-limit Texas Hold'em and thirteen strange mini games, played for play chips. Friends join with a six-letter code, and bots fill the empty seats.</p>
+          <div id="get"></div>
+        </div>
+        <figure class="phone hero-phone"><img src="/shots/holdem.webp" alt="A Texas Hold'em table in FlipUp: a split pot, two pair, queens and nines." width="603" height="1311" fetchpriority="high" /></figure>
+      </section>
+
+      <section class="shots" aria-label="Screens from the app">
+        <figure><div class="phone"><img src="/shots/deuces.webp" alt="Crazy Deuces: every 2 is wild and shines gold." width="603" height="1311" loading="lazy" /></div><figcaption><b>Crazy Deuces</b>Every 2 is wild, and shines gold so you never miss one.</figcaption></figure>
+        <figure><div class="phone"><img src="/shots/dice.webp" alt="Die on the River: the die rolled a 4 and swapped a board card." width="603" height="1311" loading="lazy" /></div><figcaption><b>Die on the River</b>The river lands, a die rolls, and the board can change.</figcaption></figure>
+        <figure><div class="phone"><img src="/shots/imposter.webp" alt="Imposter: everyone votes on who had different cards." width="603" height="1311" loading="lazy" /></div><figcaption><b>Imposter</b>Everyone has the same cards but one. Vote them out.</figcaption></figure>
+        <figure><div class="phone"><img src="/shots/memory.webp" alt="Memory Poker: twenty cards to remember before the deal." width="603" height="1311" loading="lazy" /></div><figcaption><b>Memory Poker</b>Twenty cards flash up and leave the deck. Remember them.</figcaption></figure>
+      </section>
+
+      <section class="points">
+        <div><h2>Your table, one code</h2><p>Host a game and friends join from their own phones with a code or a QR scan. Up to nine at a table.</p></div>
+        <div><h2>Bots that play like people</h2><p>Dozens of characters, each with its own style and things to say. They fill empty seats or play you on your own, even offline.</p></div>
+        <div><h2>Parties</h2><p>Line up four to twelve games and play them back to back, with a leaderboard between rounds.</p></div>
+        <div><h2>Range training</h2><p>Real hands from published breakdowns. Make the call, then see why the pros made theirs.</p></div>
+      </section>
+
+      <section class="last">
+        <h2>Be first to the table.</h2>
+        <p>One email the day FlipUp is on the App Store. Nothing else.</p>
+        <div id="get-2"></div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <p>Play chips only. No real money, no ads, no tracking.</p>
+      <p>© 2026 Connor Joel Goodwin · <a href="/privacy">Privacy</a> · <a href="/support">Support</a></p>
+    </footer>
+
+    <template id="waitlist">
+      <form class="waitlist" novalidate>
+        <label class="sr">Email</label>
+        <input type="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required />
+        <!-- Left empty by people; bots fill it in. -->
+        <input class="trap" type="text" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" />
+        <button class="button primary" type="submit">Tell me</button>
+        <p class="note" role="status" aria-live="polite">One email when it's out. We'll ask you to confirm first.</p>
+      </form>
+    </template>
   </body>
 </html>

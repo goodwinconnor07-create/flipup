@@ -1,5 +1,5 @@
 // Cloudflare config for FlipUp.
-// One Worker serves the built app (static assets) and the online table API.
+// One Worker serves the website (a landing page, join links, privacy and support) and the iPhone app's API.
 // Each table lives in its own TableRoom Durable Object, keyed by join code.
 {
   "$schema": "node_modules/wrangler/config-schema.json",

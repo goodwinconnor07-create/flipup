@@ -305,7 +305,11 @@ export default {
 
     if (pathname === '/api/reports') return request.method === 'POST' ? reportRoute(request, env, ctx) : json({ error: 'Use POST.' }, 405);
     if (pathname === '/api/health') return json({ ok: true });
-    if (pathname === '/api/waitlist' || pathname.startsWith('/api/waitlist/')) return waitlistRoute(request, env, pathname, search, ctx);
+    if (pathname === '/api/waitlist' || pathname.startsWith('/api/waitlist/')) {
+      // Each sign-up sends an email, so a few an hour from one address is plenty.
+      if (pathname === '/api/waitlist' && request.method === 'POST' && limited(request, 'waitlist', 6, 3_600_000)) return json({ error: 'Too many tries. Try again in a while.' }, 429);
+      return waitlistRoute(request, env, pathname, search, ctx);
+    }
     if (pathname === '/api/tables') {
       return request.method === 'POST' ? createTableRoute(request, env) : json({ error: 'Use POST.' }, 405);
     }

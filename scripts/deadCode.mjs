@@ -4,7 +4,7 @@
 // memory, sharing and tests kept running in CI long after the feature was gone). Run this after removing a feature, and
 // delete what it lists in the same change, with the tests. It only reports; it never deletes and never fails a build.
 //
-// "In the product" means reachable by imports from the website (`src/main.tsx`), the Worker (`worker/index.ts`) or an
+// "In the product" means reachable by imports from the website (`site/landing.ts`), the Worker (`worker/index.ts`) or an
 // iPhone screen (`native/src/app/**`, `native/modules/**`). Tests and scripts don't count: a function only a test or a
 // lab script calls is still dead weight in the app. Code that is hidden behind a flag on purpose (Legends, the Campaign:
 // see `EXTRAS_ON` in `src/game/scope.ts`) is still reached by imports, so it isn't listed; ask the owner before removing it.
@@ -25,7 +25,7 @@ function walk(dir, out = []) {
   return out;
 }
 
-const files = ['src', 'worker', 'native/src', 'native/modules', 'native/tests', 'scripts', 'e2e'].map((d) => join(root, d)).flatMap((d) => (statSync(d, { throwIfNoEntry: false })?.isDirectory() ? walk(d) : []));
+const files = ['src', 'site', 'worker', 'native/src', 'native/modules', 'native/tests', 'scripts', 'e2e'].map((d) => join(root, d)).flatMap((d) => (statSync(d, { throwIfNoEntry: false })?.isDirectory() ? walk(d) : []));
 const all = new Set(files);
 const rel = (f) => f.slice(root.length + 1);
 const isTest = (f) => /\.test\.tsx?$|\/tests\/|\/e2e\//.test(f);
@@ -72,7 +72,7 @@ function reach(entries) {
   return seen;
 }
 
-const product = reach(files.filter((f) => /^(src\/main\.tsx|worker\/index\.ts|native\/src\/app\/|native\/modules\/)/.test(rel(f)) || f.endsWith('.d.ts')));
+const product = reach(files.filter((f) => /^(site\/landing\.ts|worker\/index\.ts|native\/src\/app\/|native\/modules\/)/.test(rel(f)) || f.endsWith('.d.ts')));
 const viaScripts = reach(files.filter(isScript));
 const viaTests = reach(files.filter(isTest));
 

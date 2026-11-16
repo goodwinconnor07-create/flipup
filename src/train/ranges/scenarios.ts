@@ -9874,7 +9874,7 @@ export const SCENARIOS: Scenario[] = [
       by: 'Bart Hanson on Crush Live Poker',
       title: 'From a Bluff to a Bluff Catcher',
       url: 'https://crushlivepoker.com/articles/from-a-bluff-to-a-bluff-catcher',
-      note: 'Live $5-$10 at Commerce; you have $5,000 and the small blind $4,000. Bart folded; they showed A♦T♠.',
+      note: 'Live $5-$10 at Commerce; you have $5,000 and the small blind $4,000. Bart folded; they showed A-T offsuit (the suits aren’t given).',
     },
   },
   {

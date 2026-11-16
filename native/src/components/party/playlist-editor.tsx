@@ -253,6 +253,18 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
     });
   };
 
+  /** Moving a game one place without a drag: VoiceOver's Move up and Move down, since it can't hold and carry a row. */
+  const nudge = (id: number, by: -1 | 1) => {
+    const list = itemsRef.current;
+    const at = list.findIndex((x) => x.id === id);
+    const to = at + by;
+    if (at < 0 || to < 0 || to >= list.length) return;
+    haptic.select();
+    const next = [...list];
+    [next[at], next[to]] = [next[to], next[at]];
+    commit(next);
+  };
+
   const ghost = useAnimatedStyle(() => ({
     opacity: ghostOn.get(),
     transform: [{ translateX: ghostX.get() }, { translateY: ghostY.get() }, { scale: 0.95 + 0.1 * ghostOn.get() }],
@@ -319,6 +331,7 @@ export function PlaylistEditor({ items, onChange, footer }: { items: PlaylistIte
               crown={!premium && variantNeedsPremium(item.v)}
               reduce={reduce}
               onRemove={() => remove(item.id)}
+              onNudge={(by) => nudge(item.id, by)}
               touches={grab({ kind: 'row', id: item.id })}
             />
           ))}
@@ -429,6 +442,7 @@ function PlaylistRow({
   crown,
   reduce,
   onRemove,
+  onNudge,
   touches,
 }: {
   item: PlaylistItem;
@@ -441,6 +455,7 @@ function PlaylistRow({
   crown: boolean;
   reduce: boolean;
   onRemove: () => void;
+  onNudge: (by: -1 | 1) => void;
   touches: object;
 }) {
   const colors = useColors();
@@ -484,8 +499,12 @@ function PlaylistRow({
       style={[{ position: 'absolute', left: 0, right: 0, height: ROW, ...NO_SELECT }, place]}
       accessible
       accessibilityLabel={`${index + 1}. ${info.name}`}
-      accessibilityActions={[{ name: 'delete', label: 'Remove' }]}
-      onAccessibilityAction={onRemove}
+      accessibilityActions={[
+        { name: 'up', label: 'Move up' },
+        { name: 'down', label: 'Move down' },
+        { name: 'delete', label: 'Remove' },
+      ]}
+      onAccessibilityAction={(e) => (e.nativeEvent.actionName === 'up' ? onNudge(-1) : e.nativeEvent.actionName === 'down' ? onNudge(1) : onRemove())}
       {...touches}
     >
       {index > 0 && <Animated.View pointerEvents="none" style={[{ position: 'absolute', top: 0, left: spacing.md + 22 + spacing.sm + THUMB + spacing.sm, right: 0, height: 0.5, backgroundColor: colors.separator }, hairline]} />}

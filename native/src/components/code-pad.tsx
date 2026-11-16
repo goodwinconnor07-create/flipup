@@ -9,6 +9,7 @@ import { radius, spacing, usePlainColors } from '@/theme';
 
 import { haptic } from './haptics';
 import { ThemedText } from './themed-text';
+import { Announce } from './announce';
 
 // Typing a code over the iPhone's own keyboard: a hidden text field takes the typing (and a pasted code); the boxes
 // show it. A table code is six letters or numbers (ACES42); a party code is five letters with no vowels or Y, so
@@ -222,6 +223,7 @@ export function CodePad({ state, label, focus = true }: { state: CodeState; labe
         />
       </Animated.View>
 
+      <Announce text={busy ? 'Looking it up' : error} />
       <View accessibilityLiveRegion="polite" style={{ minHeight: 28, alignItems: 'center', justifyContent: 'center' }}>
         {busy ? (
           <ActivityIndicator accessibilityLabel="Looking it up" />

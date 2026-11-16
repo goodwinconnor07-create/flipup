@@ -50,6 +50,19 @@ export async function setReminder(on: boolean, hour: number = REMINDER_HOUR): Pr
   }
 }
 
+/**
+ * True when iOS won't ask again because notifications were turned off for FlipUp earlier: the switch can't work until
+ * they're back on in Settings, so the Train tab says so instead of the switch quietly sliding back.
+ */
+export async function reminderBlocked(): Promise<boolean> {
+  try {
+    const p = await Notifications.getPermissionsAsync();
+    return !p.granted && !p.canAskAgain;
+  } catch {
+    return false;
+  }
+}
+
 /** A tap on the reminder opens the Train tab. Mounted once, in the root layout. */
 export function useReminderTaps(open: (url: string) => void): void {
   useEffect(() => {

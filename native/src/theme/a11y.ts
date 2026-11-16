@@ -1,10 +1,10 @@
-// The phone's Reduce Transparency and Increase Contrast settings (iPhone only; both read false elsewhere).
+// The phone's Reduce Transparency, Increase Contrast and VoiceOver settings (iPhone only; all read false elsewhere).
 // One question and one listener for the whole app, like useReduceMotion.
 import { useSyncExternalStore } from 'react';
 import { AccessibilityInfo, Platform } from 'react-native';
 
-type Flag = 'transparency' | 'contrast';
-const state: Record<Flag, boolean> = { transparency: false, contrast: false };
+type Flag = 'transparency' | 'contrast' | 'reader';
+const state: Record<Flag, boolean> = { transparency: false, contrast: false, reader: false };
 const listeners = new Set<() => void>();
 let started = false;
 
@@ -23,7 +23,11 @@ function start() {
   AccessibilityInfo.isDarkerSystemColorsEnabled()
     .then((on) => set('contrast', on))
     .catch(() => undefined);
+  AccessibilityInfo.isScreenReaderEnabled()
+    .then((on) => set('reader', on))
+    .catch(() => undefined);
   AccessibilityInfo.addEventListener('reduceTransparencyChanged', (on) => set('transparency', on));
+  AccessibilityInfo.addEventListener('screenReaderChanged', (on) => set('reader', on));
   AccessibilityInfo.addEventListener('darkerSystemColorsChanged', (on) => set('contrast', on));
 }
 
@@ -41,4 +45,12 @@ export function useReduceTransparency(): boolean {
 /** True while Increase Contrast ("Darker System Colors") is on: surfaces get a clear edge and stronger text. */
 export function useIncreaseContrast(): boolean {
   return useSyncExternalStore(subscribe, () => state.contrast, () => false);
+}
+
+/**
+ * True while VoiceOver is on. Anything on a timer (a toast, a story that moves on by itself, a carousel) waits for the
+ * person instead: VoiceOver takes longer to reach a thing than the timer allows.
+ */
+export function useScreenReader(): boolean {
+  return useSyncExternalStore(subscribe, () => state.reader, () => false);
 }

@@ -38,7 +38,7 @@ export function QuickMessages() {
         <Icon name="bubble.left" size={17} color={colors.tertiaryLabel} />
       </PressableScale>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'flex-end', padding: spacing.md, paddingBottom: 180 }} onPress={() => setOpen(false)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.25)', justifyContent: 'flex-end', padding: spacing.md, paddingBottom: 180 }} onPress={() => setOpen(false)}>
           <View accessibilityRole="menu" style={{ gap: spacing.sm, padding: spacing.sm, borderRadius: radius.xl, borderCurve: 'continuous', backgroundColor: colors.cell, boxShadow: '0 16px 40px rgba(0,0,0,0.3)' }}>
             {/* Emoji first, one tap each: quicker than picking a sentence. All fixed, nothing typed. */}
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs }}>

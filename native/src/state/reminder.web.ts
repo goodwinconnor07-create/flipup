@@ -6,4 +6,5 @@ export interface Reminder {
 }
 export const useReminder = (): Reminder => ({ on: false, hour: REMINDER_HOUR });
 export const setReminder = async (_on: boolean, _hour?: number): Promise<boolean> => false;
+export const reminderBlocked = async (): Promise<boolean> => false;
 export const useReminderTaps = (_open: (url: string) => void): void => undefined;

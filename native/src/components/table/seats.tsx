@@ -26,6 +26,7 @@ import { PlayingCard } from './playing-card';
 import { planWindow, type WindowAnchor } from './pod-window';
 import { moveSig } from './use-reactions';
 import { SeatBadge } from './variant-steps';
+import { choose } from '../choose';
 
 const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 export const pct = (n: number) => `${Math.round(n * 100)}%`;
@@ -200,7 +201,7 @@ function HiddenPlayers({ game, players }: { game: Game; players: Player[] }) {
         </Text>
       </Pressable>
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-        <Pressable accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }} onPress={() => setOpen(false)}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close" style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.2)' }} onPress={() => setOpen(false)}>
           <View
             style={{
               position: 'absolute',
@@ -315,6 +316,7 @@ function SeatPod({
   const room = Math.floor((width + 8) / Math.max(n, 1)) - 4;
   return (
     <Pressable
+      accessibilityRole={host || other ? 'button' : undefined}
       accessibilityLabel={`${player.name}${player.bot ? ', a bot' : ''}, ${chips(player.stack)} chips${turn ? ', their turn' : ''}${seat?.folded ? ', folded' : ''}${player.offline ? ', offline' : ''}`}
       accessibilityHint={canPeek ? 'Shows their cards' : host || other ? 'Options for this player' : undefined}
       disabled={!host && !other}
@@ -350,7 +352,7 @@ function SeatPod({
             info,
             remove,
           );
-        Alert.alert(player.name, info, [{ text: 'Cancel', style: 'cancel' }, ...remove]);
+        choose(player.name, info, [...remove, { text: 'Cancel', style: 'cancel' }]);
       }}
       style={{ alignItems: 'center' }}
     >

@@ -38,20 +38,23 @@ export function popIn() {
   return ZoomIn.duration(motion.base).easing(EASE_OUT).withInitialValues({ transform: [{ scale: motion.popFrom }] });
 }
 
+/** A spring that settles without overshooting, for a thing that lets go and comes to rest (rule 13). */
+export const SETTLE = { ...settleSpring(1, 300), reduceMotion: ReduceMotion.Never } as const;
+
 /** The spring for something let go while moving fast (a flick): a hair of overshoot, damping ratio 0.8. */
 export const FLICK = { ...flickSpring(1, 300), reduceMotion: ReduceMotion.Never } as const;
 
 /**
  * The spring to settle with after a release: the finger's own speed is handed over (no seam between dragging and
  * animating), and a fast flick may overshoot a little (`FLICK`); a slow set-down never does (`SETTLE`).
+ * `SETTLE` and `FLICK` must stay above this: a worklet captures what it closes over where it is defined, so a
+ * constant declared below it isn't there yet (the web build stopped at launch with "Cannot access before
+ * initialization", and on the phone the settle spring would have been missing).
  */
 export function releaseSpring(velocity: number) {
   'worklet';
   return { ...(Math.abs(velocity) > FLICK_SPEED ? FLICK : SETTLE), velocity };
 }
-
-/** A spring that settles without overshooting, for a thing that lets go and comes to rest (rule 13). */
-export const SETTLE = { ...settleSpring(1, 300), reduceMotion: ReduceMotion.Never } as const;
 
 // Rules 16, 17 and 18: one thing replacing another. The old one leaves while the new one arrives (they overlap,
 // there is no empty beat). An icon crossfades with scale and blur; text slides through a mask (the container

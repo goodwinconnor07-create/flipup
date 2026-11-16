@@ -24,6 +24,7 @@ import { noteWatched } from '@/state/record';
 import { trySaveHand } from '@/components/table/hand-tools';
 import { netOf, putIn, toggleStar, useLastHand, useReplays, useStars, winnersOf, type Replay } from '@/state/replays';
 import { brand, ForceScheme, gradient, radius, ROUNDED, spacing } from '@/theme';
+import { Announce } from '@/components/announce';
 
 /** How long each move stays up while playing, in ms. */
 const STEP_MS = 1100;
@@ -192,6 +193,7 @@ function Viewer() {
 
         <ReplayFelt r={r} board={f.board} pot={f.done ? r.pot : f.pot} name={f.done && r.showdown && winners.length === 1 ? r.names[winners[0]] : undefined} />
 
+        <Announce text={what} />
         <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.xs, minHeight: 28 }}>
           {!f.done && <Tag text={STREET_NAME[f.street].toUpperCase()} />}
           <ThemedText variant="headline" numberOfLines={2} style={{ flexShrink: 1, textAlign: 'center', fontFamily: ROUNDED, fontWeight: '800', color: f.done && r.net > 0 ? brand.gold : '#ffffff' }}>
@@ -446,7 +448,7 @@ function LogLine({ text, at, step, onJump, quiet, fold, gold }: { text: string; 
 function Tag({ text }: { text: string }) {
   return (
     <View style={{ paddingHorizontal: 5, paddingVertical: 1, borderRadius: 4, backgroundColor: 'rgba(255,255,255,0.18)' }}>
-      <ThemedText style={{ fontSize: 9, fontWeight: '800', color: '#ffffff' }}>{text}</ThemedText>
+      <ThemedText style={{ fontSize: 11, fontWeight: '800', color: '#ffffff' }}>{text}</ThemedText>
     </View>
   );
 }

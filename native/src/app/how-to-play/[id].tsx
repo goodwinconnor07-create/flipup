@@ -5,6 +5,7 @@ import { Pressable, Text, useWindowDimensions, View, type LayoutChangeEvent } fr
 import Animated, { cancelAnimation, Easing, FadeIn, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useAnnounce } from '@/components/announce';
 import { Button } from '@/components/button';
 import { GamePicture } from '@/components/game-picture';
 import { haptic } from '@/components/haptics';
@@ -14,7 +15,7 @@ import { Icon } from '@/components/icon';
 import { isVariant, variantInfo, type Variant } from '@/engine';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { EASE_OUT } from '@/motion/presets';
-import { motion, radius, ROUNDED, spacing } from '@/theme';
+import { motion, radius, ROUNDED, spacing, useScreenReader } from '@/theme';
 import { TightText } from '@/components/themed-text';
 
 /** The pictures are a phone screen, this shape. */
@@ -37,6 +38,8 @@ function HowToPlayInner() {
   const insets = useSafeAreaInsets();
   const { width: screenW } = useWindowDimensions();
   const reduce = useReduceMotion();
+  // With VoiceOver the story never moves on by itself: each step is read out and waits for Next.
+  const reader = useScreenReader();
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const [room, setRoom] = useState<{ width: number; height: number } | null>(null);
@@ -54,7 +57,7 @@ function HowToPlayInner() {
 
   // The bar fills over the step's time, then the next step comes (the last one stays).
   useEffect(() => {
-    if (paused || !steps.length) {
+    if (paused || reader || !steps.length) {
       cancelAnimation(progress);
       return;
     }
@@ -66,7 +69,7 @@ function HowToPlayInner() {
       setIndex((i) => Math.min(last, i + 1));
     }, left);
     return () => clearTimeout(timer);
-  }, [index, paused, last, steps.length, progress]);
+  }, [index, paused, reader, last, steps.length, progress]);
   const filling = useAnimatedStyle(() => ({ width: `${progress.get() * 100}%` }));
 
   // The zoom: the frame takes the shape of the step's part of the picture, as big as the room allows.
@@ -102,6 +105,7 @@ function HowToPlayInner() {
   });
   // Tap anywhere: the left third goes back, the rest goes on.
   const tap = (pageX: number) => go(pageX < screenW / 3 ? index - 1 : index + 1);
+  useAnnounce(reader && step ? `Step ${index + 1} of ${steps.length}. ${step.title}. ${step.text}` : null, index);
 
   return (
     <View style={{ flex: 1, backgroundColor: '#000000', paddingTop: insets.top + spacing.xxs, paddingBottom: insets.bottom + spacing.md, gap: spacing.sm }}>
@@ -131,7 +135,13 @@ function HowToPlayInner() {
 
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`${step?.title ?? info.name}. Tap for the next step`}
+        accessibilityLabel={`${info.name}${steps.length ? `, step ${index + 1} of ${steps.length}` : ''}. ${step?.title ?? info.name}. ${step?.text ?? info.rules[0]}`}
+        accessibilityHint={index < last ? 'Double tap for the next step' : undefined}
+        accessibilityActions={[
+          { name: 'next', label: 'Next step' },
+          { name: 'previous', label: 'Previous step' },
+        ]}
+        onAccessibilityAction={(e) => go(e.nativeEvent.actionName === 'previous' ? index - 1 : index + 1)}
         onPressIn={() => setPaused(true)}
         onPressOut={() => setPaused(false)}
         onPress={(e) => tap(e.nativeEvent.pageX)}

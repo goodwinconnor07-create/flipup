@@ -506,10 +506,10 @@ export function PositionChip({ pos }: { pos: Position | null }) {
     <View
       accessibilityLabel={`Position ${pos.label}`}
       style={{
-        minWidth: 20,
-        height: 18,
-        paddingHorizontal: 4,
-        borderRadius: 9,
+        minWidth: 24,
+        height: 20,
+        paddingHorizontal: 5,
+        borderRadius: 10,
         alignItems: 'center',
         justifyContent: 'center',
         // The ink ring is drawn inside the fill, not as a border, so its antialiased edge leaves no stray outline.
@@ -517,7 +517,7 @@ export function PositionChip({ pos }: { pos: Position | null }) {
         boxShadow: look.edge ? `inset 0 0 0 1.5px ${look.edge}` : undefined,
       }}
     >
-      <Text maxFontSizeMultiplier={1} style={{ fontSize: 9, fontWeight: '800', color: look.ink }}>
+      <Text maxFontSizeMultiplier={1} style={{ fontSize: 11, fontWeight: '800', color: look.ink }}>
         {pos.label}
       </Text>
     </View>

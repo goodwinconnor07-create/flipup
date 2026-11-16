@@ -10,7 +10,7 @@ export interface UndoOffer {
 }
 
 /** How long the offer stays up. */
-export const UNDO_MS = 5000;
+export const UNDO_MS = 4000;
 
 let current: UndoOffer | null = null;
 let next = 1;

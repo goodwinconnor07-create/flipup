@@ -4,7 +4,7 @@ const KEY = 'flipup.premium';
 
 /**
  * Whether this phone has FlipUp Premium. Set only from a StoreKit purchase or restore of
- * `APP_INFO.premiumProductId` (`state/purchase.ts`); Delete my data keeps it, since Apple keeps the record.
+ * `APP_INFO.premiumProductId` (`state/purchase.ts`); Delete my data turns it off (`flipup.premiumreset`) until Restore, since Apple keeps the record.
  */
 export function usePremium(): boolean {
   return useStored<boolean>(KEY, false) === true;

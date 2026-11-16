@@ -47,7 +47,7 @@ export default function PerkSheet() {
           <View style={{ width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: brand.gold }}>
             <Icon name={perk.icon} size={20} color={brand.goldInk} />
           </View>
-          <ThemedText accessibilityRole="header" style={{ flex: 1, fontFamily: ROUNDED, fontSize: 26, fontWeight: '800', color: '#ffffff' }}>
+          <ThemedText accessibilityRole="header" style={{ flex: 1, fontFamily: ROUNDED, fontSize: 26, lineHeight: 34, fontWeight: '800', color: '#ffffff' }}>
             {perk.title}
           </ThemedText>
         </View>
@@ -56,7 +56,6 @@ export default function PerkSheet() {
         </ThemedText>
       </View>
       <Preview id={perk.id} />
-      <View style={{ flex: 1 }} />
       {has && go ? <Button title={go.title} variant="party" tint="gold" size="lg" onPress={() => (router.back(), go.run())} /> : <Button title="Back" variant="secondary" size="lg" onPress={() => router.back()} />}
     </SheetScroll>
   );

@@ -82,7 +82,8 @@ export default function RootLayout() {
         <Stack.Screen name="how-to-play/[id]" options={{ presentation: 'fullScreenModal', animation: reduce ? 'fade' : 'slide_from_bottom', headerShown: false, title: 'How to play', contentStyle: { backgroundColor: '#000000' } }} />
         {/* Range training's table: its own night room over the tabs, like Play with bots, so nothing covers the answers. */}
         <Stack.Screen name="premium" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'FlipUp Premium' }} />
-        <Stack.Screen name="premium-perk" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], headerShown: false, title: 'Premium' }} />
+        {/* A perk sheet is only as tall as what it says (the games list is long, so it gets the two detents). */}
+        <Stack.Screen name="premium-perk" options={({ route }) => ({ ...sheet, sheetAllowedDetents: (route.params as { id?: string } | undefined)?.id === 'games' ? [0.75, 1] : 'fitToContents', headerShown: false, title: 'Premium' })} />
         {/* Share cards, the hand bank and Replay. */}
         <Stack.Screen name="share" options={{ headerShown: false, title: 'Share', statusBarStyle: 'light' }} />
         <Stack.Screen name="share-card" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Share card' }} />

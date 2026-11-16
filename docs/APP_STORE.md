@@ -149,7 +149,7 @@ that counted as a guest account). Settings still has "Delete my data". It asks o
 1. leaves any open table or party,
 2. drops the Premium link between the device ID and the purchase on the server,
 3. wipes every `flipup.*` key on the phone, including the device ID,
-4. tells the person it's done. Premium survives because Apple keeps that record, and Restore brings it back.
+4. tells the person it's done. Premium goes off on the phone (`flipup.premiumreset` stops it coming back by itself); Apple keeps the subscription, and Restore brings it back.
 
 ### 1.2 User-generated content
 

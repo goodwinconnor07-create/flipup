@@ -108,6 +108,10 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 > in Die on the River. Beat the ghost as well as your friends in Haunted Pot. Read the board as a cross in Crucifix.
 > Every game has its own table and a short How to Play.
 >
+> ON YOUR LOCK SCREEN
+> At a table with friends, your cards, the board and the pot stay on your Lock Screen and in the Dynamic Island. It
+> turns gold when it's your turn, with your clock counting down, and you can check right from it.
+>
 > PARTY NIGHTS
 > Line up 4 to 12 games and see who tops the board at the end of the night.
 >

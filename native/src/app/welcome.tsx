@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
-import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
+import { Keyboard, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -42,6 +42,9 @@ function Welcome() {
   const { host, game, code } = useLocalSearchParams<{ host?: string; game?: string; code?: string }>();
   const [name, setName] = useState('');
   const done = useRef(false);
+  const page = useRef<ComponentRef<typeof ScrollView>>(null);
+  // While the keyboard is up it covers the home indicator's room, so the pinned button sits right on top of it.
+  const [typing, setTyping] = useState(false);
   const face = profile.emoji || FACES[0];
   const clean = cleanName(name);
   const blocked = isNameBlocked(clean);
@@ -54,6 +57,20 @@ function Welcome() {
     },
     [],
   );
+
+  // The way Apple's own sign-up pages behave: the keyboard comes up, the page scrolls the name field into view above it,
+  // and the button stays pinned just over the keyboard instead of hiding under it.
+  useEffect(() => {
+    const ios = process.env.EXPO_OS === 'ios';
+    const show = Keyboard.addListener(ios ? 'keyboardWillShow' : 'keyboardDidShow', () => setTyping(true));
+    const shown = Keyboard.addListener('keyboardDidShow', () => page.current?.scrollToEnd({ animated: true }));
+    const hide = Keyboard.addListener(ios ? 'keyboardWillHide' : 'keyboardDidHide', () => setTyping(false));
+    return () => {
+      show.remove();
+      shown.remove();
+      hide.remove();
+    };
+  }, []);
 
   const go = () => {
     if (!ok) return;
@@ -69,8 +86,12 @@ function Welcome() {
       <Stack.Screen options={{ headerShown: false, title: 'Welcome' }} />
       <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
         <ScrollView
+          ref={page}
+          style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
-          contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg, paddingHorizontal: spacing.lg }}
+          // Dragging the page down puts the keyboard away, like Messages and Settings do.
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + spacing.xl, paddingBottom: spacing.lg, paddingHorizontal: spacing.lg }}
         >
           <View style={{ alignItems: 'center', gap: spacing.xs }}>
             <Animated.View
@@ -149,7 +170,7 @@ function Welcome() {
                 autoCapitalize="words"
                 autoCorrect={false}
                 returnKeyType="done"
-                onSubmitEditing={go}
+                onSubmitEditing={ok ? go : Keyboard.dismiss}
                 maxFontSizeMultiplier={1.4}
                 style={{ minHeight: 44, fontSize: 20, fontWeight: '600', color: '#ffffff', paddingVertical: spacing.xs }}
               />
@@ -160,15 +181,17 @@ function Welcome() {
             </Text>
           </View>
 
-          <View style={{ flexGrow: 1, minHeight: spacing.xl }} />
+        </ScrollView>
 
-          <View style={{ gap: spacing.md }}>
-            <Button variant="party" tint="blue" size="lg" title={host ? `Sit down at ${host}'s table` : 'Continue'} disabled={!ok} onPress={go} />
+        {/* Pinned under the page, outside the scroll: it rides on top of the keyboard and is never hidden by it. */}
+        <View style={{ gap: spacing.md, paddingHorizontal: spacing.lg, paddingTop: spacing.sm, paddingBottom: typing ? spacing.sm : insets.bottom + spacing.lg }}>
+          <Button variant="party" tint="blue" size="lg" title={host ? `Sit down at ${host}'s table` : 'Continue'} disabled={!ok} onPress={go} />
+          {!typing && (
             <Text maxFontSizeMultiplier={1.6} style={{ fontSize: 13, lineHeight: 18, color: QUIET, textAlign: 'center' }}>
               You can change both on your profile.
             </Text>
-          </View>
-        </ScrollView>
+          )}
+        </View>
       </KeyboardAvoidingView>
     </GrainBackground>
   );

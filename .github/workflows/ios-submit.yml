@@ -1,0 +1,96 @@
+# Sends a build that's already made to App Store Connect (TestFlight), without building it again.
+# Runs by hand only (Actions tab > iOS submit > Run workflow). Give it the run ID of an earlier "iOS build" run on
+# GitHub's Mac: the number at the end of that run's address (.../actions/runs/44016468702). That run's FlipUp-ipa
+# download is kept for 7 days, so a build can be sent any time in that week. Submitting needs the owner's yes, as
+# with the build workflow's own submit. Builds made on Expo's servers have no FlipUp-ipa; send those from expo.dev.
+name: iOS submit
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Run ID of the "iOS build" run whose .ipa to send (from its address)
+        type: string
+        required: true
+
+# Shares the build's queue, so a submit never races a build that's still running.
+concurrency:
+  group: ios-build
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  # To download the .ipa kept by the earlier run.
+  actions: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: native
+    steps:
+      - name: Check the run ID
+        working-directory: .
+        env:
+          RUN_ID: ${{ inputs.run_id }}
+        run: |
+          case "$RUN_ID" in ''|*[!0-9]*) echo "::error::The run ID is the number at the end of the build run's address."; exit 1;; esac
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.23.4
+          cache: npm
+          cache-dependency-path: native/package-lock.json
+
+      - uses: expo/expo-github-action@9da89d3617bb88139671bad31b09c65714c2ee06 # v9
+        with:
+          eas-version: 27.2.0
+          token: ${{ secrets.EXPO_API_TOKEN }}
+
+      # EAS reads the app config, which needs the app's packages.
+      - run: npm ci
+
+      - name: Get the .ipa from that run
+        uses: actions/download-artifact@v4 # pin to a commit SHA when convenient, like the others
+        with:
+          name: FlipUp-ipa
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ github.token }}
+          path: ${{ runner.temp }}/ipa
+
+      - name: Write the App Store Connect key
+        env:
+          KEY: ${{ secrets.APPLE_KEY }}
+        run: |
+          umask 077
+          printf '%s' "$KEY" > "$RUNNER_TEMP/AuthKey.p8"
+
+      - name: Submit to App Store Connect
+        env:
+          ASC_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          EXPO_ASC_API_KEY_PATH: ${{ runner.temp }}/AuthKey.p8
+          EXPO_ASC_KEY_ID: ${{ secrets.APPLE_KEY_ID }}
+          EXPO_ASC_ISSUER_ID: ${{ secrets.APPLE_ISSUER_ID }}
+          EXPO_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          EXPO_APPLE_TEAM_TYPE: COMPANY_OR_ORGANIZATION
+        # Same as the build workflow's submit: this run's copy of eas.json points at the key file (never committed,
+        # never printed). App Store Connect turns away a build number it already has, so a build sent once can't go twice.
+        run: |
+          node -e '
+            const fs = require("fs"); const j = JSON.parse(fs.readFileSync("eas.json", "utf8"));
+            Object.assign(j.submit.production.ios, { ascApiKeyPath: process.env.ASC_KEY_PATH, ascApiKeyId: process.env.ASC_KEY_ID, ascApiKeyIssuerId: process.env.ASC_ISSUER_ID });
+            fs.writeFileSync("eas.json", JSON.stringify(j, null, 2));
+          '
+          ls -l "$RUNNER_TEMP/ipa"
+          eas submit --platform ios --path "$RUNNER_TEMP/ipa/FlipUp.ipa" --non-interactive
+
+      - name: Delete the App Store Connect key
+        if: always()
+        working-directory: .
+        run: rm -f "$RUNNER_TEMP/AuthKey.p8"

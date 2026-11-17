@@ -154,6 +154,38 @@ it('buys the chosen plan as a subscription and works out the yearly saving', asy
   expect(yearlySaving({ monthly: null, yearly: null })).toBeNull();
 });
 
+it("finishes a buy by itself when the account already owns Premium and StoreKit sends no purchase signal", async () => {
+  vi.useFakeTimers();
+  try {
+    const { startStore, buyPremium } = await import('../src/state/purchase');
+    await startStore();
+    // The account owns the yearly plan from before (a data reset, or another phone), but only once Apple's sheet is done.
+    store.owned.mockResolvedValue([{ id: 'tx9', transactionId: 'tx9', productId: 'flipup.premium.yearly', purchaseState: 'purchased' } as Purchase]);
+    const bought = buyPremium('yearly');
+    // The sheet closes (requestPurchase answers) and no listener ever fires.
+    await vi.advanceTimersByTimeAsync(2_600);
+    expect(await bought).toBe(true);
+    expect(store.premium).toBe(true);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
+it('keeps waiting for the purchase signal when the account owns nothing', async () => {
+  vi.useFakeTimers();
+  try {
+    const { startStore, buyPremium } = await import('../src/state/purchase');
+    await startStore();
+    let settled = false;
+    void buyPremium('yearly').then(() => (settled = true));
+    await vi.advanceTimersByTimeAsync(30_000);
+    expect(settled).toBe(false);
+    expect(store.premium).toBe(false);
+  } finally {
+    vi.useRealTimers();
+  }
+});
+
 it('grants a live subscription and the old lifetime purchase, never an expired one', async () => {
   const { startStore } = await import('../src/state/purchase');
   await startStore();

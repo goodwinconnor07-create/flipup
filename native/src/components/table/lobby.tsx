@@ -1,3 +1,4 @@
+import { userMessage } from '@/state/user-error';
 import { router } from 'expo-router';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -73,7 +74,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
         await changeTableCode(code);
         return null;
       } catch (e) {
-        return e instanceof Error ? e.message : "Couldn't change the code. Try again.";
+        return userMessage(e, "Couldn't change the code. Try again.");
       }
     };
     const others = people.length - 1;

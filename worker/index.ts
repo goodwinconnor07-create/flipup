@@ -41,7 +41,7 @@ const MAX_BODY_CHARS = 16 * 1024;
  * rule on /api/tables in the dashboard.
  */
 const hits = new Map<string, number[]>();
-function limited(request: Request, bucket: string, max: number, windowMs: number): boolean {
+function limitedHere(request: Request, bucket: string, max: number, windowMs: number): boolean {
   const key = `${bucket}:${request.headers.get('cf-connecting-ip') ?? 'unknown'}`;
   const now = Date.now();
   const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
@@ -49,6 +49,20 @@ function limited(request: Request, bucket: string, max: number, windowMs: number
   hits.set(key, recent);
   if (hits.size > 5000) for (const [k, v] of hits) if (now - v[v.length - 1] > windowMs) hits.delete(k);
   return recent.length > max;
+}
+
+/**
+ * The hourly cap above, then Cloudflare's own limiter (the `ratelimits` bindings in wrangler.jsonc), which every
+ * Worker instance shares. A missing binding (a test, an old config) leaves just the hourly cap.
+ */
+async function limited(request: Request, bucket: string, max: number, windowMs: number, edge?: RateLimit): Promise<boolean> {
+  if (limitedHere(request, bucket, max, windowMs)) return true;
+  if (!edge) return false;
+  try {
+    return !(await edge.limit({ key: `${bucket}:${request.headers.get('cf-connecting-ip') ?? 'unknown'}` })).success;
+  } catch {
+    return false; // The limiter is down: the hourly cap still holds, and a player isn't locked out for it.
+  }
 }
 
 /**
@@ -109,7 +123,7 @@ async function readJson(request: Request, max = MAX_BODY_CHARS): Promise<unknown
 
 /** POST /api/tables: open a new table with this phone as host, and give it a join code. */
 async function createTableRoute(request: Request, env: Env): Promise<Response> {
-  if (limited(request, 'create', 20, 60 * 60_000)) return json({ error: 'Too many tables opened. Try again later.' }, 429);
+  if (await limited(request, 'create', 20, 60 * 60_000, env.LIMIT_CREATE)) return json({ error: 'Too many tables opened. Try again later.' }, 429);
   const body = (await readJson(request)) as Record<string, unknown> | null;
   if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
   const name = typeof body.name === 'string' ? cleanName(body.name) : '';
@@ -179,7 +193,7 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
 
   if (!code) {
     if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-    if (limited(request, 'party-create', 20, 60 * 60_000)) return json({ error: 'Too many parties opened. Try again later.' }, 429);
+    if (await limited(request, 'party-create', 20, 60 * 60_000, env.LIMIT_CREATE)) return json({ error: 'Too many parties opened. Try again later.' }, 429);
     const body = (await readJson(request)) as Record<string, unknown> | null;
     if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
     const look = lookFields(body);
@@ -215,7 +229,7 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
   }
 
   if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-  if (limited(request, 'party-act', 240, 60_000)) return json({ error: 'Slow down a little.' }, 429);
+  if (await limited(request, 'party-act', 240, 60_000)) return json({ error: 'Slow down a little.' }, 429);
   const body = (await readJson(request)) as Record<string, unknown> | null;
   if (!body || !isDeviceId(body.deviceId)) return json({ error: 'Missing device id.' }, 400);
   let result;
@@ -239,7 +253,7 @@ async function partyRoute(request: Request, env: Env, pathname: string, search: 
 
 /** POST /api/reports: a player reports someone at their table or party. Stored, then emailed to support. */
 async function reportRoute(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-  if (limited(request, 'report', 10, 60 * 60_000)) return json({ error: 'Too many reports. Try again later.' }, 429);
+  if (await limited(request, 'report', 10, 60 * 60_000, env.LIMIT_REPORT)) return json({ error: 'Too many reports. Try again later.' }, 429);
   const report = parseReport(await readJson(request));
   if (!report) return json({ error: "That report isn't complete." }, 400);
   const found =
@@ -258,7 +272,8 @@ const verifyJson = (r: VerifyResult): Response => (r.ok ? json({ ok: true }) : j
 /** POST /api/premium/verify (ties a phone to its purchase), /forget (Delete my data); POST /api/apple/notifications is Apple's own webhook. */
 async function premiumRoute(request: Request, env: Env, pathname: string): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-  if (limited(request, 'premium', 60, 60 * 60_000)) return json({ error: 'Slow down a little.' }, 429);
+  // Apple's own notifications come from Apple's addresses and are checked by their signature, so only phones are limited.
+  if (pathname !== '/api/apple/notifications' && (await limited(request, 'premium', 60, 60 * 60_000, env.LIMIT_PREMIUM))) return json({ error: 'Slow down a little.' }, 429);
   const body = (await readJson(request, 24 * 1024)) as Record<string, unknown> | null;
   if (!body) return json({ error: 'Bad request.' }, 400);
   if (pathname === '/api/apple/notifications') return (await handleNotification(env, body)) ? json({ ok: true }) : json({ error: 'Not from Apple.' }, 400);
@@ -307,7 +322,7 @@ export default {
     if (pathname === '/api/health') return json({ ok: true });
     if (pathname === '/api/waitlist' || pathname.startsWith('/api/waitlist/')) {
       // Each sign-up sends an email, so a few an hour from one address is plenty.
-      if (pathname === '/api/waitlist' && request.method === 'POST' && limited(request, 'waitlist', 6, 3_600_000)) return json({ error: 'Too many tries. Try again in a while.' }, 429);
+      if (pathname === '/api/waitlist' && request.method === 'POST' && (await limited(request, 'waitlist', 6, 3_600_000, env.LIMIT_WAITLIST))) return json({ error: 'Too many tries. Try again in a while.' }, 429);
       return waitlistRoute(request, env, pathname, search, ctx);
     }
     if (pathname === '/api/tables') {

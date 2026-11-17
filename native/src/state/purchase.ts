@@ -158,7 +158,7 @@ export function startStore(): Promise<boolean> {
         publish({ busy: false });
         waiting?.done(false);
         waiting = null;
-        if (!isUserCancelledError(e)) publish({ error: e.message || "The App Store couldn't finish the purchase." });
+        if (!isUserCancelledError(e)) publish({ error: "The App Store couldn't finish the purchase. Try again." });
       }),
     ];
   ready = (async () => {
@@ -292,7 +292,7 @@ export async function buyPremium(plan: Plan = 'yearly'): Promise<boolean> {
   return new Promise<boolean>((done) => {
     waiting = { done };
     requestPurchase({ type: 'subs', request: { apple: { sku: SKU[plan] } } }).catch((e: unknown) => {
-      publish({ busy: false, error: e instanceof Error ? e.message : "The App Store couldn't start the purchase." });
+      publish({ busy: false, error: "The App Store couldn't start the purchase. Try again." });
       waiting = null;
       done(false);
     });
@@ -314,9 +314,9 @@ export async function restorePremium(): Promise<boolean> {
     const found = await checkOwned(true);
     if (!found && was) setPremiumDeclined(true);
     return found;
-  } catch (e) {
+  } catch {
     if (was) setPremiumDeclined(true);
-    publish({ error: e instanceof Error ? e.message : "Couldn't reach the App Store." });
+    publish({ error: "Couldn't reach the App Store. Check your connection and try again." });
     return false;
   } finally {
     publish({ busy: false });

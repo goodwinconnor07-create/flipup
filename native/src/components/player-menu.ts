@@ -1,3 +1,5 @@
+import { showToast } from '@/state/toast';
+import { userMessage } from '@/state/user-error';
 import { Alert, type AlertButton } from 'react-native';
 
 import { REPORT_REASONS, type ReportReason } from '@/engine';
@@ -63,6 +65,6 @@ async function send(t: MenuTarget, reason: ReportReason): Promise<void> {
     ]);
   } catch (e) {
     haptic.failure();
-    Alert.alert("Couldn't send the report", e instanceof Error ? e.message : 'Try again.');
+    showToast(userMessage(e, "Couldn't send the report. Try again."));
   }
 }

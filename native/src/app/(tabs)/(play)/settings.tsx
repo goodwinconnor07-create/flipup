@@ -1,3 +1,5 @@
+import { showToast } from '@/state/toast';
+import { userMessage } from '@/state/user-error';
 import { router, Stack } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useState } from 'react';
@@ -35,7 +37,8 @@ export default function SettingsScreen() {
     } else {
       // Read after the restore ran: `store` here is the state from before it.
       const error = storeError();
-      Alert.alert(error ? "Couldn't reach the App Store" : 'Nothing to restore', error ?? 'This Apple Account hasn’t bought FlipUp Premium.');
+      if (error) showToast(error);
+      else Alert.alert('Nothing to restore', 'This Apple Account hasn’t bought FlipUp Premium.');
     }
   };
   // The app's link for sharing and for the rating page.
@@ -61,7 +64,7 @@ export default function SettingsScreen() {
       router.dismissTo('/');
     } catch (e) {
       haptic.failure();
-      Alert.alert("Couldn't delete your data", e instanceof Error ? e.message : 'Check your connection and try again.');
+      showToast(userMessage(e, "Couldn't delete your data. Check your connection and try again."));
     } finally {
       setDeleting(false);
     }

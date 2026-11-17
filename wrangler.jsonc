@@ -55,6 +55,14 @@
     // data with them (friend cards, Blackjack tables, bot research, Bankroll and its boards). The launch waitlist comes.
     { "tag": "v11", "deleted_classes": ["FriendCard", "BlackjackRoom", "BotResearchRoom", "BankrollRoom", "Leaderboard"], "new_sqlite_classes": ["Waitlist"] },
   ],
+  // Firm rate limits, shared by every Worker instance (the in-memory counters in worker/index.ts only see their own).
+  // Cloudflare counts per key (the caller's address plus the route) over 10 or 60 seconds. The hourly caps stay in the Worker.
+  "ratelimits": [
+    { "name": "LIMIT_CREATE", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } },
+    { "name": "LIMIT_REPORT", "namespace_id": "1002", "simple": { "limit": 5, "period": 60 } },
+    { "name": "LIMIT_WAITLIST", "namespace_id": "1003", "simple": { "limit": 3, "period": 60 } },
+    { "name": "LIMIT_PREMIUM", "namespace_id": "1004", "simple": { "limit": 20, "period": 60 } },
+  ],
   "vars": {
     // "1" makes the server refuse Premium games and looks to phones that haven't shown a purchase. Leave it "0" until the
     // iPhone app is the only client that can host them (the web app has no payment yet) and the App Store Server Notifications URL is set.

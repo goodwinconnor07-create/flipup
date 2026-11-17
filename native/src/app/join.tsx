@@ -1,3 +1,4 @@
+import { userMessage } from '@/state/user-error';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Clipboard from 'expo-clipboard';
 import { router, Stack, useIsFocused, useLocalSearchParams } from 'expo-router';
@@ -65,7 +66,7 @@ export default function JoinSheet() {
       }
       return 'No table or party with that code. Check the letters and fix it above.';
     } catch (e) {
-      return e instanceof Error ? e.message : 'Something went wrong. Try again.';
+      return userMessage(e, 'Something went wrong. Try again.');
     }
   }, 'table');
 

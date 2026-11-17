@@ -5,9 +5,9 @@ with the owner, one asset at a time, from Apple's [asset best practices](https:/
 
 ## Screenshots (`screenshots/`)
 
-Eight slides on white, in upload order, at the two iPhone sizes App Store Connect takes: `6.9in-1320x2868` (the
+Nine slides on white, in upload order, at the two iPhone sizes App Store Connect takes: `6.9in-1320x2868` (the
 iPhone Pro Max class) and `6.3in-1206x2622` (the required medium Dynamic Island class). JPEG, no transparency. Ten are
-allowed, so two slots are free (one is kept for the update that brings back the parked games).
+allowed, so one slot is free, kept for the update that brings back the parked games.
 
 1. Your friends. One table. (Hold'em with chat bubbles)
 2. Add friends with a code. Free. (the lobby, its game code pulled out)
@@ -16,7 +16,8 @@ allowed, so two slots are free (one is kept for the update that brings back the 
 5. Roll the die. Swap the river. (Die on the River; Premium tag)
 6. Bend the rules. Play a power card. (Power Cards, the Fold Tax panel pulled out; Premium tag)
 7. Make the right call. Built-in range trainer. See why, hand by hand. (the daily hand's Best play, free)
-8. No one around? Bots fill the seats. (a Crazy Pineapple table; no tag, the owner's call)
+8. Save any hand. Replay every move. (the owner's replay screenshot, its controls pulled out; free, no tag)
+9. No one around? Bots fill the seats. (a Crazy Pineapple table; no tag, the owner's call)
 
 A slide that shows a Premium game wears a small gold "Premium" tag with a crown above its headline (`premium()` in
 `slides.cjs`; the owner's call, 17 Nov 2026), so nobody downloads expecting every game free.
@@ -29,8 +30,8 @@ session). The layouts are `scripts/slides.cjs` and `scripts/slides.html`; the pi
 
 - `holdem-yourturn.png`, `pineapple-discard.png`, `pineapple-yourturn.png`, `dice-dice.png`: How to Play's iPhone 17
   Pro simulator shots (`native/assets/howto`), which are 804 pixels wide, so the slides are a little soft.
-- `lobby-sb.png`, `power-sb.png`, `power-panel.png`: the owner's own iPhone screenshots of the lobby and a Power Cards
-  table and its Fold Tax panel, with a clean 9:41 status bar drawn over the real one. They show the owner's name on
+- `lobby-sb.png`, `power-sb.png`, `power-panel.png`, `replay-sb.png`, `replay-controls.png`: the owner's own iPhone
+  screenshots of the lobby, a Power Cards table and its Fold Tax panel, and a hand replay, with a clean 9:41 status bar drawn over the real one. They show the owner's name on
   their seat.
 - `web-hand-sb.png`, `bestplay.png`, `chart.png`: Range training from the app's web build (its icons and font are the
   web's stand-ins), with a drawn status bar.

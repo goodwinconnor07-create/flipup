@@ -30,6 +30,7 @@ export function RaiseSlider({
   valueText,
   notches = NOTCHES,
   onDrag,
+  reach = 0,
 }: {
   value: number;
   min: number;
@@ -45,6 +46,8 @@ export function RaiseSlider({
   notches?: number;
   /** A finger went down on it (true) or came off (false): a scrolling page holds still meanwhile. */
   onDrag?: (dragging: boolean) => void;
+  /** Extra touch room above and below the track, in points (the track is drawn the same). A touch that just misses a slider on a page of sliders still moves it, instead of starting a swipe or a scroll. */
+  reach?: number;
 }) {
   const colors = useColors();
   const reduce = useReduceMotion();
@@ -124,7 +127,7 @@ export function RaiseSlider({
       onResponderMove={at}
       onResponderRelease={letGo}
       onResponderTerminate={letGo}
-      style={{ height: 44, justifyContent: 'center' }}
+      style={reach ? { height: 44 + reach * 2, marginVertical: -reach, justifyContent: 'center', zIndex: 1 } : { height: 44, justifyContent: 'center' }}
     >
       <View style={{ height: 8, borderRadius: 4, backgroundColor: colors.cellPressed, overflow: 'hidden' }}>
         <Animated.View style={[{ height: '100%', borderRadius: 4, backgroundColor: tint }, fill]} />

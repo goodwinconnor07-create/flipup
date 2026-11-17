@@ -13,6 +13,9 @@ import { brand, ROUNDED } from '@/theme';
 import { RaiseSlider } from '../table/raise-slider';
 import { ThemedText } from '../themed-text';
 
+/** Touch room above and below each slider, so a finger that lands near it still turns it (see `reach` in RaiseSlider). */
+const REACH = 14;
+
 export function DialSlider({ dial, value, onChange, onDrag }: { dial: LabDial; value: number; onChange: (v: number) => void; onDrag?: (dragging: boolean) => void }) {
   return (
     <View style={{ gap: 2 }}>
@@ -40,6 +43,7 @@ export function DialSlider({ dial, value, onChange, onDrag }: { dial: LabDial; v
         valueText={`${value}, ${dialWord(dial, value)}`}
         onChange={onChange}
         onDrag={onDrag}
+        reach={REACH}
       />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: -4 }} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         <Text maxFontSizeMultiplier={1.2} numberOfLines={1} style={{ fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.66)', flexShrink: 1 }}>

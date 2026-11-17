@@ -111,7 +111,8 @@ export default function RootLayout() {
         <Stack.Screen name="play-bots" options={({ route }) => ({ headerShown: false, title: 'Play with bots', statusBarStyle: 'light', ...fadeAfterFill(route) })} />
         {/* Bot Lab, from Settings: your own bots, and the editor for one. Dark pages of their own, like Play with bots. */}
         <Stack.Screen name="bot-lab" options={{ headerShown: false, title: 'Bot Lab', statusBarStyle: 'light' }} />
-        <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, title: 'Bot', statusBarStyle: 'light' }} />
+        {/* No swipe back here: a finger that just misses a slider and drifts sideways used to pull the whole page away (iOS 26 swipes back from anywhere). The page has its own Back, Save and Delete. */}
+        <Stack.Screen name="bot-lab-edit" options={{ headerShown: false, gestureEnabled: false, title: 'Bot', statusBarStyle: 'light' }} />
         <Stack.Screen name="table" options={{ headerShown: false, gestureEnabled: false, animation: 'fade', animationDuration: 200 }} />
         {/* Nearly full height (a gap at the top, still swipes away), so Play and How it plays show at once. */}
         <Stack.Screen name="game/[id]" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Game', headerShown: false }} />

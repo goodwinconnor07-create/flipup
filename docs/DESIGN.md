@@ -85,7 +85,7 @@
 > Play with bots: your bots two to a row on the see-through panels, a round + at the top right. The editor puts the
 > face big (a tap opens the faces under it) and the name as the big rounded title, then "How it plays": eight settings
 > one a row on one panel, each the table's raise slider from 0 to 10 (17 Nov 2026: the round dials fought the
-> page's scroll), with its name and a word for where it sits, the number on the right and its two ends under it, then Table talk. + Add Bot in any lobby opens a small card out of the button: Random bot,
+> page's scroll), with its name and a word for where it sits, the number on the right and its two ends under it, then Table talk. The editor has no swipe back (17 Nov 2026, the owner: a finger that just missed a slider and drifted sideways pulled the whole page away, since iOS 26 swipes back from anywhere), and each slider has 14pt of extra touch room above and below (`reach`); the page has its own Back, Save and Delete. + Add Bot in any lobby opens a small card out of the button: Random bot,
 > your bots, Bot Lab. Bot Lab is Premium, and it's the Premium page's bots perk now (the roster is mentioned in its line).
 
 > **Power Cards table (owner, 2026-11-12, built without a mockup at the owner's ask, after playing it):** the power is

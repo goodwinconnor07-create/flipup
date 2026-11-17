@@ -64,17 +64,16 @@ and all Range training hands. Restore is on the same page and in Settings."
    - Only the 13 games show (Texas Hold'em and 12 mini games). The 8 newer ones and Imposter are out of the app's code entirely
      and kept in `parked/games/` for later.
 
-## 4. Screenshots (GitHub Actions)
+## 4. Screenshots (already made, in `store/`)
 
-1. Actions > **App Store screenshots** > Run workflow on `main` (dark, all screens). It takes about an hour on a Mac
-   runner and uses no secrets.
-2. Download **store-screenshots** from the run's page. It has two folders: `6.9-inch-1320x2868` (iPhone 17 Pro Max)
-   and `6.3-inch-1206x2622` (iPhone 17 Pro). Open the run's log first: a line ending "time ran out" means that
-   screen's moment didn't come in time; run it again for that screen only (the `only` box takes numbers, like `02`).
-3. Upload in this order (the variants first: they're what no other poker app has): 01 Crucifix, 02 Die on the River's
-   roll, 03 Home, 04 the lobby with the game code (or 04b Play bots, whichever reads better), 05 Haunted Pot,
-   06 Range training's daily hand, 07 Texas Hold'em, 08 a share card. The 6.9" folder goes in the iPhone 6.9" slot;
-   the 6.3" folder in the 6.3"/6.1" slot if App Store Connect shows one (smaller sizes are made from these).
+The nine slides are finished: `store/screenshots/6.9in-1320x2868/` and `store/screenshots/6.3in-1206x2622/`, each
+`01-friends.jpg` to `09-bots.jpg` in upload order (what each shows is in `store/README.md`).
+
+1. On the version page, **Previews and Screenshots**: upload the 6.9" folder into the iPhone 6.9" slot and the 6.3"
+   folder into the 6.3" slot, 01 to 09 in order (App Store Connect makes the smaller sizes from these).
+2. Optional key art (the header and search banner on newer iOS): `store/creative/universal-belts-13.png`. Not the
+   22-game one until those games are back in the app.
+3. One slot of ten is free. A Lock Screen Live Activity slide could go there once there's a real screenshot of it.
 
 ## 5. App Store Connect: the listing
 

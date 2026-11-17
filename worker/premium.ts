@@ -12,8 +12,28 @@ export function premiumProducts(env: Env): string[] {
 /** Whether this server refuses Premium games and looks to phones that haven't shown a purchase. Off until the owner turns it on. */
 export const premiumEnforced = (env: Env): boolean => vars(env).PREMIUM_ENFORCED === '1';
 
+// Every table, party and seat asks the one Entitlements object whether a phone has Premium, so a "yes" is remembered in
+// this Worker for half a minute (a refund or an expiry is felt within that). Only "yes" is kept: a phone that has just
+// bought Premium must never be told "no" from memory. The cache is per Worker instance and holds at most 500 phones.
+const PREMIUM_CACHE_MS = 30_000;
+const PREMIUM_CACHE_MAX = 500;
+const premiumYes = new Map<string, number>();
+
+/** Forget what's remembered about a phone (it just bought, or asked to be forgotten). */
+const forgetPremiumCache = (deviceId: string): void => void premiumYes.delete(deviceId);
+
 /** True when this phone is tied to a Premium purchase that Apple hasn't refunded and, for a subscription, hasn't run out. */
-export const hasPremium = async (env: Env, deviceId: string): Promise<boolean> => (await env.ENTITLEMENTS.getByName('premium').status(deviceId, Date.now())) === 'ok';
+export async function hasPremium(env: Env, deviceId: string): Promise<boolean> {
+  const now = Date.now();
+  const until = premiumYes.get(deviceId);
+  if (until !== undefined && until > now) return true;
+  const ok = (await env.ENTITLEMENTS.getByName('premium').status(deviceId, now)) === 'ok';
+  if (ok) {
+    if (premiumYes.size >= PREMIUM_CACHE_MAX) premiumYes.delete(premiumYes.keys().next().value as string);
+    premiumYes.set(deviceId, now + PREMIUM_CACHE_MS);
+  } else premiumYes.delete(deviceId);
+  return ok;
+}
 
 /** What a host needs to open a table or party with Premium games: true if enforcement is off or the phone owns Premium. */
 export async function mayHostPremium(env: Env, deviceId: string): Promise<boolean> {
@@ -67,4 +87,4 @@ export async function handleNotification(env: Env, body: Record<string, unknown>
 }
 
 /** Delete my data: forget this phone's binding. */
-export const forgetDevice = (env: Env, deviceId: string): Promise<void> => env.ENTITLEMENTS.getByName('premium').forget(deviceId);
+export const forgetDevice = (env: Env, deviceId: string): Promise<void> => (forgetPremiumCache(deviceId), env.ENTITLEMENTS.getByName('premium').forget(deviceId));

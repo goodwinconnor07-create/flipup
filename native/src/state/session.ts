@@ -365,6 +365,7 @@ export function dispatch(action: Action): string | null {
     }
     sendingId = id;
     publish({ sending: true });
+    previewMove(action);
     // If no answer comes back, don't leave the buttons waiting.
     setTimeout(() => {
       if (sendingId === id) {
@@ -400,6 +401,33 @@ export function dispatch(action: Action): string | null {
   return null;
 }
 
+/**
+ * Optimistic move: your fold, check, call or raise shows on the table the moment you tap, while the server's answer is
+ * on its way. The phone has no deck, so it only shows a move that stays inside the street (nothing is dealt, no hand
+ * ends); anything else waits for the server. The server's table replaces this one when it arrives, and a refusal puts
+ * the table back as it was.
+ */
+function previewMove(action: Action): void {
+  if (action.type !== 'act' || session?.mode !== 'online' || !session.game) return;
+  const before = session.game;
+  try {
+    const r = applyAction(structuredClone(before), action, {
+      deviceId: me,
+      now: toTableTime(Date.now(), false),
+      rng: () => {
+        throw new Error('no deck on a phone');
+      },
+    });
+    if (!r.ok || !r.changed) return;
+    const a = before.hand;
+    const b = r.game.hand;
+    if (!a || !b || a.number !== b.number || a.street !== b.street || a.board.length !== b.board.length || b.result) return;
+    publish({ game: maskBlocked(r.game) });
+  } catch {
+    // Not something the phone can work out alone: wait for the server.
+  }
+}
+
 function onServerMessage(msg: ServerMessage): void {
   if (session?.mode !== 'online') return;
   if (msg.t === 'state') {
@@ -425,6 +453,8 @@ function onServerMessage(msg: ServerMessage): void {
     if (msg.id && msg.id === sendingId) {
       sendingId = null;
       publish({ sending: false });
+      // Take back the move that was shown ahead of the server.
+      if (session.game) publish({ game: maskBlocked(session.game) });
     }
     notify(msg.error);
   }

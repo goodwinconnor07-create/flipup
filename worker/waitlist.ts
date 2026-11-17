@@ -28,6 +28,8 @@ export class Waitlist extends DurableObject<Env> {
     ctx.storage.sql.exec(
       'CREATE TABLE IF NOT EXISTS entries (email TEXT PRIMARY KEY, token TEXT NOT NULL UNIQUE, status TEXT NOT NULL, created INTEGER NOT NULL, sent INTEGER NOT NULL)',
     );
+    // The counts and the launch batch both go by status (and the batch by sign-up time).
+    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS entries_by_status ON entries (status, created)');
   }
 
   private forgetStale(): void {
@@ -79,7 +81,12 @@ export class Waitlist extends DurableObject<Env> {
 
   /** RPC: these got their launch email: forget them (the privacy policy says so). */
   async done(emails: string[]): Promise<void> {
-    for (const e of emails) this.ctx.storage.sql.exec('DELETE FROM entries WHERE email = ?', e);
+    // One statement for the batch, not one per address.
+    // (a Durable Object allows 100 bound values per statement.)
+    for (let i = 0; i < emails.length; i += 90) {
+      const part = emails.slice(i, i + 90);
+      this.ctx.storage.sql.exec(`DELETE FROM entries WHERE email IN (${part.map(() => '?').join(',')})`, ...part);
+    }
   }
 }
 

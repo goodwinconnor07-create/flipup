@@ -40,7 +40,7 @@ void startStore();
 /** Every screen that opens as a bottom sheet: each gets a light tap as it rises and as it goes, and a tick when its detent changes. */
 const SHEETS = new Set([
   'game/[id]', 'lobby-game', 'premium', 'premium-perk', 'share-card', 'table-menu', 'table-standings', 'table-theme', 'table-settings', 'range-breakdown',
-  'range-how', 'hand-rankings', 'table-log', 'card-packs', 'blocked', 'your-name', 'emoji', 'join', 'party-sheet', 'how-to-play/[id]',
+  'range-how', 'hand-rankings', 'table-log', 'card-packs', 'blocked', 'emoji', 'join', 'party-sheet', 'how-to-play/[id]',
 ]);
 
 // The root: the tab bar, and the sheets that open over it. Sheets are real iOS form sheets with detents and a
@@ -134,8 +134,8 @@ export default function RootLayout() {
         <Stack.Screen name="table-log" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Hand log' }} />
         <Stack.Screen name="card-packs" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Card packs' }} />
         <Stack.Screen name="blocked" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Blocked players' }} />
-        {/* Asked on top of joining or opening a table when the player has no name yet (state/ask-name.ts). */}
-        <Stack.Screen name="your-name" options={{ ...sheet, sheetAllowedDetents: [1], title: 'Your name' }} />
+        {/* The welcome: a face and a name, once, before a first table (state/ask-name.ts). Full screen, no swipe away. */}
+        <Stack.Screen name="welcome" options={{ presentation: 'fullScreenModal', gestureEnabled: false, headerShown: false, title: 'Welcome', statusBarStyle: 'light' }} />
         <Stack.Screen name="emoji" options={{ ...sheet, sheetAllowedDetents: [0.75, 1], title: 'Your emoji' }} />
         {/* Join with a code: Play's round button. The keyboard comes up as it opens; a table or party code, or a QR code. */}
         <Stack.Screen name="join" options={{ ...sheet, sheetAllowedDetents: [1], headerShown: false, title: 'Join' }} />

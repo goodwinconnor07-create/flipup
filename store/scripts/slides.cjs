@@ -1,4 +1,4 @@
-// App Store screenshots: the eight slides on white, written to store/screenshots in upload order at both iPhone
+// App Store screenshots: the nine slides on white, written to store/screenshots in upload order at both iPhone
 // sizes App Store Connect takes (6.9" 1320 x 2868 and 6.3" 1206 x 2622). Pictures come from ./sources (real iPhone
 // simulator shots, the owner's own lobby screenshot and the web build's Range training, see ../README.md).
 //   node store/scripts/slides.cjs            (CHROMIUM_PATH=/opt/pw-browsers/chromium if Playwright has no browser)
@@ -41,10 +41,13 @@ const S = {
  '8-power': `${glow('rgba(40,170,235,.35)','rgba(245,183,0,.14)')}${premium()}<h1 style="top:200px">Bend the rules.<br><span>Play a power card.</span></h1>
   ${phone('power-sb.png',{x:155,y:640,dim:true})}
   <div class="panel" style="left:70px;right:70px;top:1800px;padding:56px 0 50px"><img src="${img('power-panel.png')}" style="width:1100px;display:block;margin:0 auto"></div>`,
+ '9-replay': `${glow('rgba(37,87,214,.45)')}<h1 style="top:200px">Save any hand.<br><span>Replay every move.</span></h1><div style="position:absolute;left:0;right:0;top:492px;text-align:center;font-size:36px;font-weight:500;letter-spacing:.01em;color:var(--mute);opacity:.85">Every card against bots. Online, only the cards that were shown.</div>
+  ${phone('replay-sb.png',{x:155,y:640})}
+  <div class="panel" style="left:60px;right:60px;top:2330px;padding:34px 0 30px;background:#080e24;border-color:rgba(255,255,255,.10)"><img src="${img('replay-controls.png')}" style="width:1200px;display:block;margin:0 auto"></div>`,
  '5-bots': `${glow('rgba(37,87,214,.45)')}<h1 style="top:200px">No one around?<br><span>Bots fill the seats.</span></h1>
   ${phone('pineapple-yourturn.png',{x:155,y:640})}`,
 };
-const ORDER = ['1-friends','7-lobby','2-games','3-pineapple','4-dice','8-power','6-training','5-bots'];
+const ORDER = ['1-friends','7-lobby','2-games','3-pineapple','4-dice','8-power','6-training','9-replay','5-bots'];
 const OUT = '../screenshots';
 (async()=>{const b=await chromium.launch(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{});
 for (const [dir, scale, h] of [['6.9in-1320x2868', 1, 2868], ['6.3in-1206x2622', 1206/1320, 2872]]) {

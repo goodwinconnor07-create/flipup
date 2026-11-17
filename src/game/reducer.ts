@@ -641,6 +641,7 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
           ...newPlayer(game, { name: uniqueName(game, action.lab.name), emoji: action.lab.emoji, deviceId: null, bot: true }),
           style: 'pro',
           lab: { ...action.lab.dials },
+          labBot: true,
         });
       } else if (action.name !== undefined) {
         // A bot picked by name on the setup page.

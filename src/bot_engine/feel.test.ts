@@ -21,5 +21,9 @@ describe('table feel (Casual)', () => {
     expect(v('foldTop')).toBeLessThan(18);
     expect(v('foldMid')).toBeLessThan(48);
     expect(v('trashAllIn')).toBeLessThan(2);
+    // Home game preflop (17 Nov 2026): flops are shared. The old Casual bots sat at 30% and 3.5% here; the new ones at
+    // 58% and 27% (the bands in feel.ts are 55 to 90 and 22 to 60; these are looser for a 500 hand sample).
+    expect(v('flopThree')).toBeGreaterThan(46);
+    expect(v('flopFour')).toBeGreaterThan(14);
   }, 400_000);
 });

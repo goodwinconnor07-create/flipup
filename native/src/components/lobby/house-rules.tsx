@@ -33,7 +33,7 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
  * The house rules, laid out like the lobby in the owner's reference (no presets, the owner's call): each number as a
  * row with its name over its value and the − + stepper on the right, then the switches. `onChange` is the host's; without it (everyone else) the rows only show the values.
  */
-export function HouseRules({ settings: s, onChange, online, bots = 0, started = false }: { settings: Settings; onChange?: (s: Settings) => void; online: boolean; bots?: number; started?: boolean }) {
+export function HouseRules({ settings: s, onChange, online, bots = 0, started = false }: { settings: Settings; onChange?: (s: Settings) => void; online: boolean; /** Bots the Casual / Challenge level applies to: the everyday bots, not ones made in Bot Lab (they play their own dials). */ bots?: number; started?: boolean }) {
   // Every change keeps "Blinds stop at" above the blinds (`withBlindCap`), as a new stack keeps the blinds in reach.
   const set = (patch: Partial<Settings>) => onChange?.(withBlindCap({ ...s, ...patch }));
   const levels = levelsFor(s.startingStack);
@@ -106,8 +106,9 @@ export function HouseRules({ settings: s, onChange, online, bots = 0, started = 
   ].filter(Boolean);
 
   const switches: ReactNode[] = [
-    // Bot level only means something to the host of a table with bots in it: a guest, or a lobby of people only,
-    // never sees settings for players who aren't there.
+    // Bot level only means something to the host of a table with everyday bots in it: a guest, a lobby of people
+    // only, or a table of nothing but Bot Lab bots (they play their own dials) never sees a setting for players it
+    // doesn't change.
     (s.variant ?? 'holdem') === 'holdem' && edit && bots > 0 && (
       <View key="bot-level" style={{ padding: spacing.md, gap: spacing.xs }}>
         <ThemedText>Bot level</ThemedText>

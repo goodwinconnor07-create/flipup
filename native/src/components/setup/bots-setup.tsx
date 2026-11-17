@@ -121,7 +121,7 @@ function BotsSetupPage({ settings: s }: { settings: Settings }) {
           settings={s}
           onChange={setDraft}
           online={false}
-          bots={bots.length}
+          bots={bots.filter((b) => !b.lab).length}
         />
       </ScrollView>
       <OpenTableButton

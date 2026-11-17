@@ -51,6 +51,14 @@ export function everydayProfile(
     },
   };
 }
+/**
+ * Casual's home-game preflop (the owner, 17 Nov 2026). Widths are shares of all starting hands added to what a bot
+ * plays: `open` unopened, `call` facing one raise, `perCaller` for each limper or caller already in (up to three),
+ * `bigBlind` for the big blind defending. `raiseTop` is the hand percentile below which a Casual bot opens with a
+ * raise rather than a limp (`openRaiseFloor` is the least it raises); `anchor` is how much it leans on the charts.
+ */
+export const HOME = { open: 0.06, call: 0.07, perCaller: 0.045, bigBlind: 0.08, raiseTop: 0.16, openRaiseFloor: 0.3, anchor: 0.1 };
+
 const normalized = (p: number[]) => {
   const sum = p.reduce((s, v) => s + v, 0);
   return p.map((v) => v / sum);
@@ -88,11 +96,25 @@ export function everydayReference(i: InformationSet, p: StrategyPrediction, prof
     // than folds) and are put off less by a big price. Challenge keeps the authored ranges.
     const casual = e.difficulty === 'casual';
     width += shift + (casual ? (context.raiseCount <= 1 ? 0.075 : 0.025) : 0);
+    // Home game (the owner, 17 Nov 2026: a table of five never saw a five-way flop in 50 hands). Casual bots play
+    // like friends at a kitchen table: more limps, more calls behind other callers (the price gets better and the
+    // pot bigger), and the big blind defends; premium hands still raise. FLOP_FEEL in feel.ts holds the result.
+    const bigBlind = hero.bet === i.bigBlind && !i.actions.some((a) => a.street === 'preflop' && a.playerId === i.heroId);
+    if (casual && context.raiseCount === 0) width += HOME.open + HOME.perCaller * Math.min(3, context.callers);
+    if (casual && context.raiseCount === 1)
+      width += HOME.call + HOME.perCaller * Math.min(3, context.callers) + (bigBlind ? HOME.bigBlind : 0);
     // A dull table gets a little wider (the director, Casual only).
     if (casual && context.raiseCount <= 1) width += LIFT.preflopWidth * (e.lift ?? 0);
     if (i.legal.toCall > context.effectiveTo * 0.25) width *= casual ? 0.75 : 0.6;
     const play = top <= 0.01 ? 1 : 1 / (1 + Math.exp((top - width) / 0.045));
-    const raiseShare = context.raiseCount === 0 ? 0.78 : Math.max(0.12, Math.min(0.8, (0.1 - top) * 7 + 0.2));
+    // How much of what it plays it raises. Unopened, Challenge raises nearly all of it; a Casual bot limps the
+    // middle of its range and, behind limpers, mostly limps along, saving the raise for its best hands.
+    const raiseShare =
+      context.raiseCount === 0
+        ? casual
+          ? Math.max(context.callers ? 0.08 : HOME.openRaiseFloor, Math.min(0.85, (HOME.raiseTop - top) * (context.callers ? 6 : 5) + (context.callers ? 0.1 : HOME.openRaiseFloor)))
+          : 0.78
+        : Math.max(0.12, Math.min(0.8, (0.1 - top) * 7 + 0.2)) * (casual && context.callers ? 0.75 : 1);
     const raises = p.actions.map((a, k) => ({ a, k })).filter(({ a }) => a.to !== undefined);
     const target = context.raiseTo;
     const chosen = raises.length ? raises.reduce((a, b) => (Math.abs(a.a.to! - target) <= Math.abs(b.a.to! - target) ? a : b)).k : -1;
@@ -100,8 +122,9 @@ export function everydayReference(i: InformationSet, p: StrategyPrediction, prof
     const weights = p.actions.map((a, k) =>
       k === chosen ? raise : a.to !== undefined ? 0 : a.move === 'check' ? 1 - raise : a.move === 'fold' ? 1 - play : play - raise,
     );
-    // Retain an anchor to the shipped frequencies only for supported exact chart states.
-    const anchor = p.source === 'shipped-preflop-frequency' ? 0.25 : 0;
+    // Retain an anchor to the shipped frequencies only for supported exact chart states. The charts raise or fold,
+    // so Casual leans on them less (a home game limps and calls).
+    const anchor = p.source === 'shipped-preflop-frequency' ? (casual ? HOME.anchor : 0.25) : 0;
     return normalized(weights.map((v, k) => v * (1 - anchor) + p.probabilities[k] * anchor));
   }
   // Keep ordinary deep-stack bets in familiar pot-sized ranges; short stacks may commit.

@@ -10,12 +10,12 @@ import { dispatch, useTable } from '@/state/session';
 export default function TableSettings() {
   const t = useTable();
   if (!t.game) return null;
-  return <Editor start={t.game.settings} playing={t.game.status === 'playing'} online={t.mode === 'online'} />;
+  return <Editor start={t.game.settings} playing={t.game.status === 'playing'} online={t.mode === 'online'} bots={t.game.players.filter((p) => p.bot && !p.labBot).length} />;
 }
 
-function Editor({ start, playing, online }: { start: Settings; playing: boolean; online: boolean }) {
+function Editor({ start, playing, online, bots }: { start: Settings; playing: boolean; online: boolean; bots: number }) {
   const [settings, setSettings] = useState<Settings>(start);
-  const groups = useSettingsGroups({ settings, onChange: setSettings, online });
+  const groups = useSettingsGroups({ settings, onChange: setSettings, online, bots });
   const save = () => {
     if (dispatch({ type: 'settings', settings }) === null) router.back();
   };

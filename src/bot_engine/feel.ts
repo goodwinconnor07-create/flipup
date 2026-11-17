@@ -35,7 +35,7 @@ const BANDS: Record<string, { label: string; band: [number, number]; source: str
   cbet3: { label: 'C-bet the flop, three or more', band: [8, 45], source: 'Black Rain 79: drops further (est)', minN: 15 },
   checkedToHU: { label: 'Bet when checked to (flop, heads-up)', band: [52, 75], source: 'est, from the c-bet figure and delayed bets', minN: 60 },
   checkedToValue: { label: 'Bet a big hand when checked to (all streets)', band: [78, 100], source: 'est: nobody checks top pair or better down; a river thin value bet is a choice', minN: 60 },
-  checkedToAirMulti: { label: 'Stab with nothing when checked to (multiway)', band: [8, 24], source: 'est: a pot checked round is the classic stab, but far fewer than heads-up', minN: 25 },
+  checkedToAirMulti: { label: 'Stab with nothing when checked to (multiway)', band: [4, 24], source: 'est: a pot checked round is the classic stab, but far fewer than heads-up, and rarer still into three or four players (floor 8 to 4 on 17 Nov 2026: with the Home game preflop half the flops have three or more, 6.0% on 168 cases; two opponents still sit near 10%)', minN: 25 },
   slowplay: { label: 'Check a big hand when able to bet', band: [0, 15], source: 'est: slowplays are the exception', minN: 40 },
   foldFlopBet: { label: 'Fold to one flop bet', band: [35, 50], source: 'est: sources disagree (micro under-folds, small stakes over-folds)', minN: 120 },
   foldTop: { label: 'Fold top pair to a bet up to 80% pot', band: [0, 10], source: 'est', minN: 20 },
@@ -45,12 +45,15 @@ const BANDS: Record<string, { label: string; band: [number, number]; source: str
   weakIntoMany: { label: 'Bet a weak hand into two or more on a scary board', band: [0, 8], source: 'est: against two callers on A-J-10 nobody folds better (owner\'s recorded hand, 13 Nov 2026)', minN: 60 },
   blunderFold: { label: 'Blunder: fold getting twice the price needed', band: [0, 3], source: 'pot odds: winning twice as often as the call needs is a call (bets up to 30% of the pot after calling)', minN: 40 },
   foldMonster: { label: 'Blunder: fold three of a kind or better (not on the board)', band: [0, 2], source: 'est: a monster is rarely folded, even to a raise', minN: 40 },
+  flopThree: { label: 'Flops seen by three or more players', band: [55, 90], source: 'est: a home game or low-stakes full ring sees about three or four players at a flop; online six-max about three', minN: 150 },
+  flopFour: { label: 'Flops seen by four or more players', band: [22, 60], source: 'est: a limping, calling table gets four or more at a quarter to half of its flops (the owner could not get one in 50 hands, 17 Nov 2026)', minN: 150 },
   trashAllIn: { label: 'All in with nothing postflop, per 100 hands', band: [0, 1], source: 'owner: no all-ins on stupid hands', minN: 1 },
 };
 
 export class FeelCollector {
   private t: Record<string, Tally> = {};
   private hands = new Set<string>();
+  private flops = new Set<string>();
   private trash = 0;
   private bump(id: string, hit: boolean) {
     const t = (this.t[id] ??= { n: 0, hit: 0 });
@@ -60,6 +63,13 @@ export class FeelCollector {
   /** Feed every decision from `simulate({ onAction })`. */
   observe(i: InformationSet, a: BotMove): void {
     this.hands.add(`${i.tableId}:${i.hand}`);
+    // How many players see each flop: counted once, at the first decision on it (everyone still in saw it).
+    if (i.street === 'flop' && !this.flops.has(`${i.tableId}:${i.hand}`)) {
+      this.flops.add(`${i.tableId}:${i.hand}`);
+      const seen = i.players.filter((p) => !p.folded).length;
+      this.bump('flopThree', seen >= 3);
+      this.bump('flopFour', seen >= 4);
+    }
     if (i.street === 'preflop') return;
     const hero = i.players.find((p) => p.id === i.heroId)!;
     const bucket = handBucket(i.hole, i.board);

@@ -23,6 +23,7 @@
     "bot:personalities": "tsx scripts/evaluatePersonalities.ts",
     "bot:everyday": "tsx scripts/evaluateEveryday.ts",
     "bot:feel": "tsx scripts/botFeel.ts",
+    "bot:flops": "tsx scripts/flopLab.ts",
     "bot:director": "tsx scripts/botDirector.ts",
     "bot:small-bets": "tsx scripts/smallBetLab.ts",
     "bot:explain": "tsx scripts/explainHand.ts",

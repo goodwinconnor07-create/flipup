@@ -60,7 +60,7 @@ export const HELP: HelpSection[] = [
       },
       {
         q: 'What are Casual and Challenge bots?',
-        a: 'Casual bots play a relaxed, friendly game. Challenge bots play tighter and punish mistakes. Pick one in the game’s settings before you start.',
+        a: 'Casual bots play a relaxed home game: they limp, call and see lots of flops. Challenge bots play tighter and punish mistakes. Pick one in the game’s settings before you start. Bots you make in Bot Lab play their own way, so the level doesn’t apply to them.',
       },
       {
         q: 'How does the turn clock work?',

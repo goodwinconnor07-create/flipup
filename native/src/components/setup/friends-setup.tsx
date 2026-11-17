@@ -370,7 +370,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
               settings={s}
               onChange={setDraft}
               online
-              bots={bots.length}
+              bots={bots.filter((b) => !b.lab).length}
             />
           </>
         )}

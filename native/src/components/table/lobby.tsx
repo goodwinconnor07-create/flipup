@@ -132,7 +132,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
 
         <Players rows={rows} onAdd={host ? () => dispatch({ type: 'addBot' }) : undefined} onAddLab={host ? (b) => dispatch({ type: 'addBot', lab: labSpec(b) }) : undefined} />
 
-        <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot).length} />
+        <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot && !p.labBot).length} />
       </ScrollView>
       {host && (
         <OpenTableButton

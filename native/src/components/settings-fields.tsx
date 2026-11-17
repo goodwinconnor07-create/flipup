@@ -18,9 +18,10 @@ const chips = (n: number) => Math.round(n).toLocaleString('en-US');
 
 /**
  * Chips and blinds, and the house rules, as groups for `NativeMenu` (the table's settings sheet). `online` adds the
- * time to act and the busted players' peek, which only matter with friends.
+ * time to act and the busted players' peek, which only matter with friends. `bots` is how many everyday bots are at
+ * the table (not Bot Lab ones): Bot level only shows when there are some, as in the lobby's House rules.
  */
-export function useSettingsGroups({ settings, onChange, online }: { settings: Settings; onChange: (s: Settings) => void; online: boolean }): MenuGroup[] {
+export function useSettingsGroups({ settings, onChange, online, bots }: { settings: Settings; onChange: (s: Settings) => void; online: boolean; bots: number }): MenuGroup[] {
   const beatingCasual = useSuggestChallenge();
   const set = (patch: Partial<Settings>) => onChange(withBlindCap({ ...settings, ...patch }));
   const levels = levelsFor(settings.startingStack);
@@ -61,7 +62,7 @@ export function useSettingsGroups({ settings, onChange, online }: { settings: Se
       header: 'House rules',
       footer: clockFoot,
       items: [
-        (settings.variant ?? 'holdem') === 'holdem' && {
+        (settings.variant ?? 'holdem') === 'holdem' && bots > 0 && {
           kind: 'segmented',
           id: 'bot-level',
           title: 'Bot level',

@@ -69,6 +69,11 @@ export interface Player {
   labStyle?: Style;
   /** A bot made in the app's Bot Lab: its dials, played through `labStyle()` (botLab.ts). Stripped like `style`. */
   lab?: LabDials;
+  /**
+   * A bot the host made in Bot Lab. Public (the dials stay private in `lab`): the Casual / Challenge level only
+   * changes the everyday bots, so a screen hides it when every bot at the table is one of these.
+   */
+  labBot?: boolean;
   /** Stable bot identity, private on online tables. */
   botProfile?: string;
 }

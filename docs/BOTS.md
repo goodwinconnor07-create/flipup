@@ -275,6 +275,40 @@ table is never as dull as one with a quiet human, so this shows the reach of the
 Not done yet: the director only steers the standard Hold'em bots. The variant bots (`botVariants.ts`) are a separate
 engine and get theirs with the variant work.
 
+## Home game preflop (17 Nov 2026)
+
+The owner played 50 hands at a table of bots and never saw every player see the flop. Measured with `npm run bot:flops`
+(`scripts/flopLab.ts`: you plus four or five Casual bots through the real engine, you always check or call, 300 hands), the old Casual
+bots entered about 33 to 38% of hands but **raised 21 to 26% of all hands**, and every raise thins the field: a six
+player table averaged 2.51 players at a flop, four or more saw 6.6% of flops and all six saw one in 300 hands. Nothing
+in the tests measured it, so it was never caught.
+
+`everydayReference()` in `src/bot_engine/everyday.ts` now plays Casual like a home game (`HOME`, Challenge is untouched):
+
+- **More limps and calls.** Unopened, a Casual bot plays 6 points of the deck wider; against one raise 7 points wider,
+  and 4.5 points wider for each limper or caller already in (up to three), because the price is good and the pot is big.
+  The big blind defends 8 points wider against a single raise.
+- **Fewer raises.** Unopened it raises its top hands (about the best 16%, never less than 30% of what it plays) and
+  limps the rest, where it used to raise 78% of everything it played. Behind a limper it mostly limps along (a raise
+  share of about 8% down to 25% for the best hands), and facing a raise with callers already in it raises a quarter less.
+- **Less anchored to the charts** (10% not 25%), which only ever raise or fold.
+
+Same lab, same seeds, old to new: five-player table 2.32 to 2.77 players at a flop, four or more 3.7% to 20%, five-way
+flops 0 to 6 in 300 hands; six-player table 2.51 to 3.30, four or more 6.6% to 37%, five or more 0.6% to 15%, all six
+1 to 5 in 300 hands. The bots enter about the same share of hands (38 to 39% at five, 33 to 44% at six) but raise 13%
+of hands, not 26%, and limp or call 26 to 31%, not 12.
+
+`npm run bot:feel` has two new bands, `flopThree` (flops seen by three or more, 55 to 90%) and `flopFour` (four or more,
+22 to 60%): the old bots measured 29.6% and 3.5%, the new ones 58.4% and 26.9% over 1,350 hands. The other bands stayed
+in (middle pair folding 36.0%, top pair 8.3%, one flop bet folded to 46.5%) except `checkedToAirMulti`, a stab with
+nothing into a checked round, which sat at 6.0% on 168 cases (the old bots had only 13 to measure) and had its floor
+moved from 8 to 4: with half the flops now three or four-way, stabs are rarer by nature, and two opponents still sit near 10%.
+`feel.test.ts` holds the two flop figures, and `npm run bot:flops [bots] [hands] [seed]` prints the spread.
+
+Not done: Challenge keeps its tight, chart-based preflop; and the Bot level setting isn't shown when every bot at the
+table was made in Bot Lab (those play their own dials, so it changes nothing): the lobby's House rules and the table's
+settings sheet count only the bots without `labBot`.
+
 ## Game-mode bots (13 Nov 2026)
 
 The thirteen game modes (`botVariants.ts`) had the same fear as plain Hold'em: before this change a bot that checked a

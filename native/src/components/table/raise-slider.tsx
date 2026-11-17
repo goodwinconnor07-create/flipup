@@ -8,7 +8,7 @@ import { useColors } from '@/theme';
 
 import { haptic } from '../haptics';
 
-/** Haptic notches across the track: a tick every 5% of the way. */
+/** Haptic notches across the track: a tick every 5% of the way (the bet); Bot Lab's 0 to 10 sliders tick once a step. */
 const NOTCHES = 20;
 const THUMB = 30;
 
@@ -17,20 +17,48 @@ const THUMB = 30;
  * a light tick every twentieth of the range and a firmer one at the minimum and at all in. While your finger is down
  * the thumb is exactly under it (never tweened: motion rule 14); the 12% stretch while held (rule 5) and the settle
  * onto the amount when you let go are the weight. Drawn in React Native (not the system slider) so the ticks are
- * possible.
+ * possible. Bot Lab's sliders are the same control (`label`, `valueText`, `notches`, `onDrag`).
  */
-export function RaiseSlider({ value, min, max, step, tint, onChange }: { value: number; min: number; max: number; step: number; tint: string; onChange: (v: number) => void }) {
+export function RaiseSlider({
+  value,
+  min,
+  max,
+  step,
+  tint,
+  onChange,
+  label = 'Bet amount',
+  valueText,
+  notches = NOTCHES,
+  onDrag,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  step: number;
+  tint: string;
+  onChange: (v: number) => void;
+  /** What VoiceOver calls it. */
+  label?: string;
+  /** What VoiceOver says for the value, when the number alone isn't enough ("7, aggressive"). */
+  valueText?: string;
+  /** Haptic ticks across the whole track. */
+  notches?: number;
+  /** A finger went down on it (true) or came off (false): a scrolling page holds still meanwhile. */
+  onDrag?: (dragging: boolean) => void;
+}) {
   const colors = useColors();
   const reduce = useReduceMotion();
   const track = useRef<{ measureInWindow: (cb: (x: number, y: number, w: number) => void) => void } | null>(null);
-  const [box, setBox] = useState({ left: 0, width: 0 });
+  // `width` is the track's own width, for drawing; `left` and `scale` map a finger's page position onto it (the
+  // Premium page shows a scaled-down copy, where the window width and the layout width differ).
+  const [box, setBox] = useState({ left: 0, width: 0, scale: 1 });
   const span = Math.max(1, max - min);
   // When the smallest raise is already all in there's nothing to slide: the thumb sits at the all-in end.
   const frac = (v: number) => (max <= min ? 1 : Math.min(1, Math.max(0, (v - min) / span)));
   const pos = useSharedValue(frac(value));
   const held = useSharedValue(0);
   const down = useRef(false);
-  const notch = useRef(Math.round(frac(value) * NOTCHES));
+  const notch = useRef(Math.round(frac(value) * notches));
 
   useEffect(() => {
     // While the finger is down `at()` places the thumb itself; this only moves it for a change from outside.
@@ -39,16 +67,16 @@ export function RaiseSlider({ value, min, max, step, tint, onChange }: { value: 
     pos.set(reduce ? f : withSpring(f, SETTLE));
   }, [value, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const measure = () => track.current?.measureInWindow((x, _y, w) => setBox({ left: x, width: w }));
+  const measure = () => track.current?.measureInWindow((x, _y, w) => setBox((b) => ({ left: x, width: b.width || w, scale: b.width ? w / b.width : 1 })));
 
   const at = (e: GestureResponderEvent) => {
     if (!box.width) return;
-    const f = Math.min(1, Math.max(0, (e.nativeEvent.pageX - box.left - THUMB / 2) / Math.max(1, box.width - THUMB)));
+    const f = Math.min(1, Math.max(0, ((e.nativeEvent.pageX - box.left) / box.scale - THUMB / 2) / Math.max(1, box.width - THUMB)));
     let v = min + Math.round((f * span) / step) * step;
     if (v + step > max || f >= 0.995) v = max;
     v = Math.max(min, Math.min(max, v));
     if (down.current) pos.set(f);
-    const n = Math.round(frac(v) * NOTCHES);
+    const n = Math.round(frac(v) * notches);
     if (n !== notch.current) {
       notch.current = n;
       if (v === max || v === min) haptic.turn();
@@ -60,6 +88,7 @@ export function RaiseSlider({ value, min, max, step, tint, onChange }: { value: 
   // Let go: the thumb settles onto the amount that's set, without overshooting.
   const letGo = () => {
     down.current = false;
+    onDrag?.(false);
     held.set(withTiming(0, { duration: 160, easing: EASE_OUT }));
     const f = frac(value);
     pos.set(reduce ? f : withSpring(f, SETTLE));
@@ -71,11 +100,15 @@ export function RaiseSlider({ value, min, max, step, tint, onChange }: { value: 
   return (
     <View
       ref={track as never}
-      onLayout={measure}
+      onLayout={(e) => {
+        const w = e.nativeEvent.layout.width;
+        setBox((b) => ({ ...b, width: w }));
+        measure();
+      }}
       accessible
       accessibilityRole="adjustable"
-      accessibilityLabel="Bet amount"
-      accessibilityValue={{ min, max, now: value }}
+      accessibilityLabel={label}
+      accessibilityValue={{ min, max, now: value, ...(valueText ? { text: valueText } : {}) }}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={(e) => onChange(Math.max(min, Math.min(max, value + (e.nativeEvent.actionName === 'increment' ? step : -step))))}
       onStartShouldSetResponder={() => true}
@@ -84,6 +117,7 @@ export function RaiseSlider({ value, min, max, step, tint, onChange }: { value: 
       onResponderGrant={(e) => {
         measure();
         down.current = true;
+        onDrag?.(true);
         held.set(withTiming(1, { duration: 100, easing: EASE_OUT }));
         at(e);
       }}

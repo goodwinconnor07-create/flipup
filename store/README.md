@@ -16,7 +16,9 @@ allowed, so one slot is free, kept for the update that brings back the parked ga
 5. Roll the die. Swap the river. (Die on the River; Premium tag)
 6. Bend the rules. Play a power card. (Power Cards, the Fold Tax panel pulled out; Premium tag)
 7. Make the right call. Built-in range trainer. See why, hand by hand. (the daily hand's Best play, free)
-8. Save any hand. Replay every move. (the owner's replay screenshot, its controls pulled out; free, no tag)
+8. Save any hand. Replay every move. Every card against bots. Online, only the cards that were shown. (the owner's
+   replay screenshot, its controls pulled out; free, no tag; the small line is there so nobody thinks an online replay
+   shows other people's cards)
 9. No one around? Bots fill the seats. (a Crazy Pineapple table; no tag, the owner's call)
 
 A slide that shows a Premium game wears a small gold "Premium" tag with a crown above its headline (`premium()` in

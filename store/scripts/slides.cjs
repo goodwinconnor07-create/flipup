@@ -41,7 +41,7 @@ const S = {
  '8-power': `${glow('rgba(40,170,235,.35)','rgba(245,183,0,.14)')}${premium()}<h1 style="top:200px">Bend the rules.<br><span>Play a power card.</span></h1>
   ${phone('power-sb.png',{x:155,y:640,dim:true})}
   <div class="panel" style="left:70px;right:70px;top:1800px;padding:56px 0 50px"><img src="${img('power-panel.png')}" style="width:1100px;display:block;margin:0 auto"></div>`,
- '9-replay': `${glow('rgba(37,87,214,.45)')}<h1 style="top:200px">Save any hand.<br><span>Replay every move.</span></h1>
+ '9-replay': `${glow('rgba(37,87,214,.45)')}<h1 style="top:200px">Save any hand.<br><span>Replay every move.</span></h1><div style="position:absolute;left:0;right:0;top:492px;text-align:center;font-size:36px;font-weight:500;letter-spacing:.01em;color:var(--mute);opacity:.85">Every card against bots. Online, only the cards that were shown.</div>
   ${phone('replay-sb.png',{x:155,y:640})}
   <div class="panel" style="left:60px;right:60px;top:2330px;padding:34px 0 30px;background:#080e24;border-color:rgba(255,255,255,.10)"><img src="${img('replay-controls.png')}" style="width:1200px;display:block;margin:0 auto"></div>`,
  '5-bots': `${glow('rgba(37,87,214,.45)')}<h1 style="top:200px">No one around?<br><span>Bots fill the seats.</span></h1>

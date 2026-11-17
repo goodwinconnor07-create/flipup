@@ -996,7 +996,6 @@ export const SCENARIOS: Scenario[] = [
         pre: 'BB vs late open',
         range: [
           { label: 'Two pair: Q-9', hands: 'Q9s, Q9o', role: 'value' },
-          { label: 'Full houses: 9-9, 4-4, Q-5, 9-5, 5-4', hands: '99, 44, Q5s, 95s, 54s', role: 'value' },
           { label: 'Missed diamond draws', hands: 'AdKd, AdJd, AdTd, Ad3d, Ad2d, KdJd, KdTd, JdTd, Td8d, 8d7d, 7d6d', role: 'bluff', weight: 0.8 },
           { label: 'Missed straight draws: J-T, K-J, K-T', hands: 'JTs, JTo, KJs, KJo, KTs, KTo', role: 'bluff', weight: 0.1 },
         ],
@@ -1005,9 +1004,9 @@ export const SCENARIOS: Scenario[] = [
     best: 'call',
     clues: [
       { street: 'preflop', text: 'Blind against blind: the big blind defends very wide.' },
-      { street: 'flop', text: '9♠Q♦4♦: they check-raise your c-bet. Two pair and sets, plus lots of diamond draws and straight draws like J-T and K-J.' },
+      { street: 'flop', text: '9♠Q♦4♦: they check-raise your c-bet. Q-9 for value, plus lots of diamond draws and straight draws like J-T and K-J.' },
       { street: 'turn', text: 'The 5♠: you check, they bet again. Same range: value, and draws still betting.' },
-      { street: 'river', text: 'The 5♥ pairs the board and misses every draw. They shove for more than the pot. Value: Q-9 and the full houses. Bluffs: every missed diamond, and J-T, K-J, K-T.' },
+      { street: 'river', text: 'The 5♥ pairs the board and misses every draw. They shove for more than the pot. Value: Q-9. Bluffs: every missed diamond, and J-T, K-J, K-T.' },
     ],
     why: 'Against a balanced shove this size you have to call with about 45% of your range, and A-Q is near the top of it. Your queen blocks their Q-9; you block none of the missed diamonds or straight draws. Call.',
   },
@@ -1543,8 +1542,7 @@ export const SCENARIOS: Scenario[] = [
         type: 'Live player, 60bb deep',
         pre: 'BB vs middle open',
         range: [
-          { label: 'Sets and two pair', hands: '88, 77, 33, 22, 87s', role: 'value', weight: 0.5 },
-          { label: 'Pairs that didn’t 3-bet: T-T, J-J, Q-Q', hands: 'TT, JJ, QQ', role: 'value', weight: 0.5 },
+          { label: 'Pairs below yours: T-T, J-J, Q-Q', hands: 'TT, JJ, QQ', role: 'value' },
           { label: 'Eights: A-8, K-8, 9-8, 8-6, 8-5', hands: 'A8s, K8s, 98s, 86s, 85s', role: 'value' },
           { label: 'Club draws', hands: 'AcQc, AcJc, AcTc, Ac9c, Ac6c, Ac5c, Ac4c, QcJc, JcTc, Tc9c, 6c5c, 5c4c', role: 'bluff' },
           { label: 'Straight draws: T-9, 6-5', hands: 'Td9d, Th9h, Ts9s, 6d5d, 6h5h, 6s5s', role: 'bluff' },
@@ -1557,7 +1555,7 @@ export const SCENARIOS: Scenario[] = [
       { street: 'flop', text: '8♣7♣2♥ is wet: straight draws and flush draws. Kings are still well ahead with two players in, so c-bet. The big blind calls: eights, pairs, draws.' },
       { street: 'turn', text: 'The 3♥ changes little, and the big blind shoves for nearly twice the pot. With 60bb that’s a range of one-pair hands like T-T to Q-Q and eights, plus the flush and straight draws.' },
     ],
-    why: 'An overbet needs you to be good more often, but at this stack depth the shove is weaker than it looks: worse pairs, eights and draws. Kings beat all of those and win often enough to call. Only sets and 8-7 have you, and some of those raised the flop.',
+    why: 'An overbet needs you to be good more often, but at this stack depth the shove is weaker than it looks: worse pairs, eights and draws. Kings beat every one of those made hands, and only the draws can catch up: you win often enough to call.',
   },
   {
     id: 'turned-nuts-river-check-raise',

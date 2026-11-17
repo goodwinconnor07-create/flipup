@@ -41,7 +41,7 @@ const S = {
  '8-power': `${glow('rgba(40,170,235,.35)','rgba(245,183,0,.14)')}${premium()}<h1 style="top:200px">Bend the rules.<br><span>Play a power card.</span></h1>
   ${phone('power-sb.png',{x:155,y:640,dim:true})}
   <div class="panel" style="left:70px;right:70px;top:1800px;padding:56px 0 50px"><img src="${img('power-panel.png')}" style="width:1100px;display:block;margin:0 auto"></div>`,
- '5-bots': `${glow('rgba(37,87,214,.45)')}${premium()}<h1 style="top:200px">No one around?<br><span>Bots fill the seats.</span></h1>
+ '5-bots': `${glow('rgba(37,87,214,.45)')}<h1 style="top:200px">No one around?<br><span>Bots fill the seats.</span></h1>
   ${phone('pineapple-yourturn.png',{x:155,y:640})}`,
 };
 const ORDER = ['1-friends','7-lobby','2-games','3-pineapple','4-dice','8-power','6-training','5-bots'];

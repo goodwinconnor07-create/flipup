@@ -16,7 +16,7 @@ allowed, so two slots are free (one is kept for the update that brings back the 
 5. Roll the die. Swap the river. (Die on the River; Premium tag)
 6. Bend the rules. Play a power card. (Power Cards, the Fold Tax panel pulled out; Premium tag)
 7. Make the right call. Built-in range trainer. See why, hand by hand. (the daily hand's Best play, free)
-8. No one around? Bots fill the seats. (a Crazy Pineapple table; Premium tag)
+8. No one around? Bots fill the seats. (a Crazy Pineapple table; no tag, the owner's call)
 
 A slide that shows a Premium game wears a small gold "Premium" tag with a crown above its headline (`premium()` in
 `slides.cjs`; the owner's call, 17 Nov 2026), so nobody downloads expecting every game free.

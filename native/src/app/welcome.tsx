@@ -1,0 +1,175 @@
+import { router, Stack, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import Animated from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { Announce } from '@/components/announce';
+import { Button } from '@/components/button';
+import { GrainBackground } from '@/components/grain-background';
+import { haptic } from '@/components/haptics';
+import { cleanName, EMOJIS, isNameBlocked, LIMITS, NAME_BLOCKED } from '@/engine';
+import { popIn } from '@/motion/presets';
+import { useReduceMotion } from '@/motion/use-reduce-motion';
+import { finishAskName } from '@/state/ask-name';
+import { saveProfile, useProfile } from '@/state/profile';
+import { brand, ForceScheme, ROUNDED, spacing } from '@/theme';
+
+/** The faces on offer here: the first three rows of the full picker (the profile has all of them, and any emoji). */
+const FACES = EMOJIS.slice(0, 18);
+const PER_ROW = 6;
+const PIC = 120;
+const SOFT = 'rgba(255,255,255,0.8)';
+const QUIET = 'rgba(255,255,255,0.66)';
+
+/**
+ * The welcome (the owner's pick, 17 Nov 2026): one screen, shown once, before a player without a name reaches a
+ * table. A face (saved as you tap) and a name, then Continue. From a join link it names the table you're headed to
+ * and Continue sits you down there. No skip: a name is the one thing every table needs. Opened by `askForName()`.
+ */
+export default function WelcomeScreen() {
+  return (
+    <ForceScheme scheme="dark">
+      <Welcome />
+    </ForceScheme>
+  );
+}
+
+function Welcome() {
+  const insets = useSafeAreaInsets();
+  const reduce = useReduceMotion();
+  const profile = useProfile();
+  const { host, game, code } = useLocalSearchParams<{ host?: string; game?: string; code?: string }>();
+  const [name, setName] = useState('');
+  const done = useRef(false);
+  const face = profile.emoji || FACES[0];
+  const clean = cleanName(name);
+  const blocked = isNameBlocked(clean);
+  const ok = clean.length > 0 && !blocked;
+
+  // Leaving without a name tells whoever asked.
+  useEffect(
+    () => () => {
+      if (!done.current) finishAskName(false);
+    },
+    [],
+  );
+
+  const go = () => {
+    if (!ok) return;
+    saveProfile({ name: clean, emoji: face });
+    haptic.success();
+    done.current = true;
+    finishAskName(true);
+    router.back();
+  };
+
+  return (
+    <GrainBackground>
+      <Stack.Screen options={{ headerShown: false, title: 'Welcome' }} />
+      <KeyboardAvoidingView behavior={process.env.EXPO_OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flexGrow: 1, paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg, paddingHorizontal: spacing.lg }}
+        >
+          <View style={{ alignItems: 'center', gap: spacing.xs }}>
+            <Animated.View
+              key={face}
+              entering={reduce ? undefined : popIn()}
+              style={{ width: PIC, height: PIC, borderRadius: PIC / 2, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', boxShadow: '0 12px 32px rgba(0, 0, 0, 0.35)' }}
+            >
+              <Text maxFontSizeMultiplier={1} style={{ fontSize: PIC * 0.55 }}>
+                {face}
+              </Text>
+            </Animated.View>
+            <Text accessibilityRole="header" maxFontSizeMultiplier={1.4} style={{ marginTop: spacing.md, fontFamily: ROUNDED, fontSize: 34, lineHeight: 40, fontWeight: '800', color: '#ffffff', textAlign: 'center' }}>
+              Welcome to FlipUp
+            </Text>
+            <Text maxFontSizeMultiplier={1.6} style={{ fontSize: 17, lineHeight: 23, color: SOFT, textAlign: 'center' }}>
+              Poker night on your phones. Pick a face and a name for the table.
+            </Text>
+            {!!host && (
+              // From a join link: where Continue takes you, on its own line with room around it.
+              <View style={{ marginTop: spacing.md, flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: 999, backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.12)' }}>
+                <Text maxFontSizeMultiplier={1.4} numberOfLines={1} style={{ fontSize: 15, lineHeight: 20, color: '#ffffff', flexShrink: 1 }}>
+                  <Text style={{ fontWeight: '700' }}>{host}'s table</Text>
+                  {[game, code].filter(Boolean).map((t) => ` · ${t}`).join('')}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          <View accessibilityRole="radiogroup" accessibilityLabel="Your face" style={{ marginTop: spacing.xl, flexDirection: 'row', flexWrap: 'wrap', rowGap: spacing.xs }}>
+            {FACES.map((e) => {
+              const on = e === face;
+              return (
+                <View key={e} style={{ width: `${100 / PER_ROW}%`, alignItems: 'center' }}>
+                  <Pressable
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: on }}
+                    accessibilityLabel={e}
+                    onPress={() => {
+                      haptic.select();
+                      saveProfile({ emoji: e });
+                    }}
+                    style={({ pressed }) => ({
+                      width: 48,
+                      height: 48,
+                      borderRadius: 24,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: on ? 'rgba(91,139,255,0.22)' : pressed ? 'rgba(255,255,255,0.08)' : 'transparent',
+                      borderWidth: 2,
+                      borderColor: on ? brand.violetDark : 'transparent',
+                    })}
+                  >
+                    <Text maxFontSizeMultiplier={1} style={{ fontSize: 28 }}>
+                      {e}
+                    </Text>
+                  </Pressable>
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={{ marginTop: spacing.lg, gap: spacing.xs }}>
+            <View style={{ borderRadius: 18, borderCurve: 'continuous', backgroundColor: 'rgba(255,255,255,0.085)', borderWidth: 1, borderColor: blocked ? '#ff453a' : 'rgba(255,255,255,0.12)', paddingHorizontal: spacing.md, paddingTop: spacing.xs }}>
+              <Text maxFontSizeMultiplier={1.4} style={{ fontSize: 13, lineHeight: 18, color: QUIET }}>
+                Your name
+              </Text>
+              <TextInput
+                value={name}
+                onChangeText={setName}
+                placeholder="What should we call you?"
+                placeholderTextColor="rgba(255,255,255,0.45)"
+                accessibilityLabel="Your name"
+                maxLength={LIMITS.maxNameLength}
+                autoComplete="given-name"
+                textContentType="givenName"
+                autoCapitalize="words"
+                autoCorrect={false}
+                returnKeyType="done"
+                onSubmitEditing={go}
+                maxFontSizeMultiplier={1.4}
+                style={{ minHeight: 44, fontSize: 20, fontWeight: '600', color: '#ffffff', paddingVertical: spacing.xs }}
+              />
+            </View>
+            <Announce text={blocked ? NAME_BLOCKED : null} />
+            <Text maxFontSizeMultiplier={1.6} style={{ paddingHorizontal: spacing.md, fontSize: 13, lineHeight: 18, color: blocked ? '#ff6961' : QUIET }}>
+              {blocked ? NAME_BLOCKED : 'Everyone at the table sees your name and face.'}
+            </Text>
+          </View>
+
+          <View style={{ flexGrow: 1, minHeight: spacing.xl }} />
+
+          <View style={{ gap: spacing.md }}>
+            <Button variant="party" tint="blue" size="lg" title={host ? `Sit down at ${host}'s table` : 'Continue'} disabled={!ok} onPress={go} />
+            <Text maxFontSizeMultiplier={1.6} style={{ fontSize: 13, lineHeight: 18, color: QUIET, textAlign: 'center' }}>
+              You can change both on your profile.
+            </Text>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </GrainBackground>
+  );
+}

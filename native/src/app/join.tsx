@@ -104,7 +104,7 @@ export default function JoinSheet() {
   const sitDown = async () => {
     if (!found) return;
     // A new player is asked for a name right here, on top of this sheet, and carries on to the table.
-    if (!(await askForName())) return;
+    if (!(await askForName({ host: found.hostName, game: variantInfo(found.settings.variant).name, code: found.code }))) return;
     const me = readProfile();
     joinOnlineTable(found.code, me.name, me.emoji);
     router.back();

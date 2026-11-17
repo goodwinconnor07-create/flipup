@@ -1,4 +1,4 @@
-import { router, Stack } from 'expo-router';
+import { router, Stack, useIsFocused } from 'expo-router';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Platform, Pressable, Text, useWindowDimensions, View } from 'react-native';
 import Animated, { cancelAnimation, Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
@@ -17,6 +17,7 @@ import { Swap } from '@/components/swap';
 import { detail, EASE_OUT } from '@/motion/presets';
 import { useReduceMotion } from '@/motion/use-reduce-motion';
 import { variantNeedsPremium, isVariant, VARIANTS, variantInfo, type Variant } from '@/engine';
+import { askForName } from '@/state/ask-name';
 import { usePartyRef } from '@/state/party';
 import { usePremium } from '@/state/premium';
 import { useProfile } from '@/state/profile';
@@ -58,6 +59,16 @@ export default function Home() {
     const t = setTimeout(() => void maybeAskForReview(games, bestPlays), 2500);
     return () => clearTimeout(t);
   }, [games, bestPlays]);
+
+  // A first launch (no name yet): the welcome opens over Home. Only while Home is on top, so a join link's sheet
+  // asks in its own way (with the table it found) rather than twice.
+  const focused = useIsFocused();
+  const hasName = !!profile.name.trim();
+  useEffect(() => {
+    if (hasName || !focused) return;
+    const t = setTimeout(() => void askForName(), 400);
+    return () => clearTimeout(t);
+  }, [hasName, focused]);
 
   // The game in the middle: the one you picked here, else the one you played last, else Texas Hold'em.
   const stored = useStored<string | null>(PICK, null);

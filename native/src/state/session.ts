@@ -648,6 +648,12 @@ try {
       restoring = false;
     }
   }
+  else if (saved?.mode === 'online' && saved.code && saved.game?.status === 'lobby' && saved.game.hostDeviceId === me) {
+    // The host's lobby was only open behind the Play with friends page, and closing the app ended that page. Putting
+    // it back as a second, half-built lobby behind Rejoin was confusing; it's dropped (the server closes an unused
+    // table by itself).
+    save(KEY, null);
+  }
   else if (saved?.mode === 'online' && saved.code) {
     set({ mode: 'online', code: saved.code, game: saved.game });
     connect(saved.code);

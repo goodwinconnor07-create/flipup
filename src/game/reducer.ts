@@ -635,7 +635,14 @@ export function applyAction(input: Game, action: Action, ctx: ActionContext): Ac
     case 'addBot': {
       if (!host) return fail('Only the host can add bots.');
       if (game.players.length >= MAX_SEATS) return fail('The table is full.');
-      if (action.name !== undefined) {
+      if (action.lab) {
+        // A bot the host made in Bot Lab: its own name (made unique at the table), face and dials.
+        game.players.push({
+          ...newPlayer(game, { name: uniqueName(game, action.lab.name), emoji: action.lab.emoji, deviceId: null, bot: true }),
+          style: 'pro',
+          lab: { ...action.lab.dials },
+        });
+      } else if (action.name !== undefined) {
         // A bot picked by name on the setup page.
         if (!seatBotNamed(game, action.name)) return fail('That bot is already at the table.');
       } else addBot(game, undefined, ctx.rng);

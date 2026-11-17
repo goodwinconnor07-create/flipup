@@ -1,3 +1,5 @@
+import { showToast } from '@/state/toast';
+import { userMessage } from '@/state/user-error';
 import { router, Stack } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useState } from 'react';
@@ -11,6 +13,7 @@ import type { MenuGroup } from '@/components/native-menu.types';
 import { useYouGroups } from '@/components/you-settings';
 import { deleteMyData } from '@/state/account';
 import { useBlocked } from '@/state/blocks';
+import { useLabBots } from '@/state/bot-lab';
 import { usePremium } from '@/state/premium';
 import { manageSubscription, ON_SALE, restorePremium, storeError, useStore, type StoreState } from '@/state/purchase';
 
@@ -26,6 +29,7 @@ export default function SettingsScreen() {
   const [deleting, setDeleting] = useState(false);
   const premium = usePremium();
   const blocked = useBlocked();
+  const labCount = useLabBots().length;
   const store = useStore();
   const you = useYouGroups({});
   const restore = async () => {
@@ -35,7 +39,8 @@ export default function SettingsScreen() {
     } else {
       // Read after the restore ran: `store` here is the state from before it.
       const error = storeError();
-      Alert.alert(error ? "Couldn't reach the App Store" : 'Nothing to restore', error ?? 'This Apple Account hasn’t bought FlipUp Premium.');
+      if (error) showToast(error);
+      else Alert.alert('Nothing to restore', 'This Apple Account hasn’t bought FlipUp Premium.');
     }
   };
   // The app's link for sharing and for the rating page.
@@ -61,7 +66,7 @@ export default function SettingsScreen() {
       router.dismissTo('/');
     } catch (e) {
       haptic.failure();
-      Alert.alert("Couldn't delete your data", e instanceof Error ? e.message : 'Check your connection and try again.');
+      showToast(userMessage(e, "Couldn't delete your data. Check your connection and try again."));
     } finally {
       setDeleting(false);
     }
@@ -94,6 +99,15 @@ export default function SettingsScreen() {
         : [],
     },
     {
+      id: 'botlab',
+      footer: premium ? 'Make your own bots and seat them from + Add Bot in any lobby you host.' : 'Make your own bots and set how they play. Bot Lab comes with Premium.',
+      items: [
+        premium
+          ? { kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', detail: labCount ? String(labCount) : undefined, onPress: () => router.push('/bot-lab') }
+          : { kind: 'link', id: 'botlab', title: 'Bot Lab', symbol: 'flask.fill', trailingCrown: true, onPress: () => router.push({ pathname: '/premium', params: { reason: 'botlab' } }) },
+      ],
+    },
+    {
       id: 'blocked',
       footer: 'To report or block someone, tap their seat at a table or their row on a party board.',
       items: [{ kind: 'link', id: 'blocked', title: 'Blocked players', detail: blocked.length ? String(blocked.length) : undefined, onPress: () => router.push('/blocked') }],
@@ -117,7 +131,7 @@ export default function SettingsScreen() {
     },
     {
       id: 'delete',
-      footer: `Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.\n\nFlipUp ${version}${build ? ` (${build})` : ''}`,
+      footer: `Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.\n\nFlipUp ${version}${build ? ` (${build})` : ''}${store.storefront ? ` · App Store ${store.storefront}` : ''}`,
       items: [{ kind: 'button', id: 'delete', title: deleting ? 'Deleting' : 'Delete my data', destructive: true, busy: deleting, onPress: confirmDelete }],
     },
   ];

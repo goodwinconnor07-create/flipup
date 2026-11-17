@@ -5,6 +5,8 @@ import { MAX_SEATS } from '@/engine';
 import { ROUNDED, spacing, useShadows } from '@/theme';
 
 import { PANEL_RADIUS, usePanel } from '../grouped-list';
+import type { LabBot } from '@/state/bot-lab';
+
 import { FloatTable } from '../setup/float-table';
 import { ThemedText } from '../themed-text';
 
@@ -29,7 +31,7 @@ export interface PlayerLine {
  * for the host. People come first and wear a solid white ring (you, gold); bots follow with a faint one. A tap on a
  * person opens their menu; holding a bot pops it off. Friends come in with the game code.
  */
-export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => void }) {
+export function Players({ rows, onAdd, onAddLab }: { rows: PlayerLine[]; onAdd?: () => void; /** Seats a Bot Lab bot; the Add button then opens the add menu. */ onAddLab?: (bot: LabBot) => void }) {
   const panel = usePanel();
   const shadows = useShadows();
   // Bots on their way out: still drawn while they pop out, then their `onRemove` runs.
@@ -89,6 +91,7 @@ export function Players({ rows, onAdd }: { rows: PlayerLine[]; onAdd?: () => voi
               rows.find((r) => r.key === key)?.onRemove?.();
             }}
             onAdd={onAdd && room > 0 ? onAdd : undefined}
+            onAddLab={onAdd && room > 0 ? onAddLab : undefined}
           />
           {canHold && (
             <ThemedText variant="footnote" tone="secondaryLabel" style={{ textAlign: 'center' }}>

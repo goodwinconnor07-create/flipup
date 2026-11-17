@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyAction, createTable, DEFAULT_SETTINGS, options, redactForDevice, redactLogs, seededRng, VARIANTS, type Game, type Variant } from './index';
+import { applyAction, createTable, DEFAULT_SETTINGS, liveState, options, redactForDevice, redactLogs, seededRng, VARIANTS, type Game, type Variant } from './index';
 
 const HOST = 'host-device-secret-0001';
 /** Whole tables play dozens of hands, each bot move a small simulation. */
@@ -35,6 +35,10 @@ function leaks(game: Game): string[] {
   for (const c of hand.dice?.out ? [hand.dice.out] : []) secret.delete(c);
   for (const c of hand.dice?.in ? [hand.dice.in] : []) secret.delete(c);
   for (const [card, what] of secret) if (new RegExp(`"${card}"`).test(wire)) found.push(`${what}: ${card}`);
+  // The Live Activity pushed to this phone's Lock Screen (liveActivity.ts) is held to the same rule.
+  const live = JSON.stringify(liveState(game, HOST, Number.MAX_SAFE_INTEGER));
+  for (const [card, what] of secret) if (new RegExp(`"${card}"`).test(live)) found.push(`live activity, ${what}: ${card}`);
+  for (const p of game.players) if (p.deviceId && live.includes(p.deviceId)) found.push(`live activity, device id of ${p.id}`);
   // Raw device ids of other people, bot internals and the host's own secret on someone else's view.
   for (const p of game.players) if (p.deviceId && p.deviceId !== HOST && wire.includes(p.deviceId)) found.push(`raw device id of ${p.id}`);
   for (const key of ['"style"', '"botProfile"', '"botKind"', '"labStyle"', '"reads"', '"minds"', '"botPlan"', '"deck":["']) if (wire.includes(key)) found.push(`internal field ${key}`);

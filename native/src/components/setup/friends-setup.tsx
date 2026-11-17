@@ -5,6 +5,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { MAX_SEATS, variantInfo, type PartySettings, type Settings } from '@/engine';
 import { seatKey } from '@/state/blocks';
+import { showToast } from '@/state/toast';
+import { userMessage, UserError } from '@/state/user-error';
 import { configureParty, createParty, leaveParty, startParty } from '@/state/party';
 import { clearPartyDraft, setPartyRules, usePartyDraft, type PartyDraft } from '@/state/party-draft';
 import { joinLink } from '@/state/api';
@@ -26,7 +28,7 @@ import { HouseRules } from '../lobby/house-rules';
 import { Players, type PlayerLine } from '../lobby/players';
 import { openPlayerMenu } from '../player-menu';
 import { ThemedText } from '../themed-text';
-import { randomBot, type RowBot } from './row-bot';
+import { labRowBot, randomBot, type RowBot } from './row-bot';
 import { OPEN_BUTTON_ROOM, OpenTableButton } from './open-table-button';
 import { lobbyRows, usePartyView } from '../party/panel';
 import { PartyCard, PartyRules, StartPartyButton } from './party-pieces';
@@ -151,7 +153,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
         .catch((e: unknown) => {
           setPartyFailed(true);
           clearPartyDraft();
-          Alert.alert("Couldn't open the party", e instanceof Error ? e.message : 'Check your connection and try again.');
+          showToast(userMessage(e, "Couldn't open the party. Check your connection and try again."));
         })
         .finally(() => {
           p.making = false;
@@ -161,7 +163,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
     const code = p.code;
     const t = setTimeout(() => {
       configureParty(code, partySettings(partyDraft)).catch((e: unknown) =>
-        Alert.alert("Couldn't update the party", e instanceof Error ? e.message : 'Try again.'),
+        showToast(userMessage(e, "Couldn't update the party. Try again.")),
       );
     }, 350);
     return () => clearTimeout(t);
@@ -207,7 +209,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
       router.back();
       router.push('/party-room');
     } catch (e) {
-      Alert.alert("Couldn't start the party", e instanceof Error ? e.message : 'Try again.');
+      showToast(userMessage(e, "Couldn't start the party. Try again."));
       setBusy(false);
     }
   };
@@ -222,16 +224,12 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
       const m = made.current;
       if (m.making) await m.making;
       if (!m.code) await makeLobby();
-      await catchUp(
-        m.code!,
-        s,
-        bots.map((b) => b.name),
-      );
-      if (dispatch({ type: 'start' })) throw new Error("You're offline. Try again in a moment.");
+      await catchUp(m.code!, s, bots);
+      if (dispatch({ type: 'start' })) throw new UserError("You're offline. Try again in a moment.");
       m.opened = true;
       router.push('/table');
     } catch (e) {
-      Alert.alert("Couldn't deal", e instanceof Error ? e.message : 'Try again.');
+      showToast(userMessage(e, "Couldn't deal. Try again."));
     } finally {
       setBusy(false);
     }
@@ -251,7 +249,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
         setLobby(fresh);
         return null;
       } catch (e) {
-        return e instanceof Error ? e.message : "Couldn't change the code. Try again.";
+        return userMessage(e, "Couldn't change the code. Try again.");
       }
     };
     if (!others.length) return go();
@@ -366,7 +364,7 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
               <StartPartyButton />
             </View>
 
-            <Players rows={rows} onAdd={addBot} />
+            <Players rows={rows} onAdd={addBot} onAddLab={(b) => !full && setBots((have) => [...have, labRowBot(b)])} />
 
             <HouseRules
               settings={s}
@@ -404,14 +402,14 @@ function FriendsSetupPage({ settings: s }: { settings: Settings }) {
  * Brings the lobby made for the invites up to date before you go to it: the settings as they are now and the bots
  * you picked. Waits a few seconds for the table to come through first. Throws if it doesn't.
  */
-async function catchUp(code: string, settings: Settings, botNames: string[]): Promise<void> {
+async function catchUp(code: string, settings: Settings, bots: RowBot[]): Promise<void> {
   for (let i = 0; i < 25 && !(currentTable().code === code && currentTable().game && currentTable().conn === 'open'); i++)
     await new Promise((r) => setTimeout(r, 200));
   const t = currentTable();
-  if (t.code !== code || !t.game) throw new Error("Your table didn't answer. Check your connection and try again.");
+  if (t.code !== code || !t.game) throw new UserError("Your table didn't answer. Check your connection and try again.");
   if (JSON.stringify({ ...t.game.settings, ...settings }) !== JSON.stringify(t.game.settings) && dispatch({ type: 'settings', settings }))
-    throw new Error("You're offline. Try again in a moment.");
-  for (const name of botNames) if (!t.game.players.some((p) => p.name === name)) dispatch({ type: 'addBot', name });
+    throw new UserError("You're offline. Try again in a moment.");
+  for (const b of bots) if (!t.game.players.some((p) => p.name === b.name)) dispatch(b.lab ? { type: 'addBot', lab: b.lab } : { type: 'addBot', name: b.name });
 }
 
 /** What the server is told about a party. */

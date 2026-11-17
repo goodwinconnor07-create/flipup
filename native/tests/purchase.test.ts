@@ -20,6 +20,7 @@ vi.mock('expo-iap', () => ({
   endConnection: store.end,
   finishTransaction: store.finish,
   getAvailablePurchases: store.owned,
+  getStorefront: async () => 'AUS',
   fetchProducts: async () => [
     { id: 'flipup.premium.monthly', displayPrice: '$7.00', price: 7, introductoryPriceIOS: '$1.00', introductoryPriceNumberOfPeriodsIOS: '2', introductoryPriceSubscriptionPeriodIOS: 'week', subscriptionGroupIdIOS: 'g' },
     { id: 'flipup.premium.yearly', displayPrice: '$50.00', price: 50, introductoryPriceIOS: '$1.00', introductoryPriceNumberOfPeriodsIOS: '2', introductoryPriceSubscriptionPeriodIOS: 'week', subscriptionGroupIdIOS: 'g' },

@@ -13,6 +13,9 @@ export const APP_INFO = {
   /** The bundle ID made in the Apple Developer portal under the name FlipUp. */
   bundleId: 'com.goodwin.flipup',
 
+  /** The Apple Developer Team ID (Membership details), the same as APPLE_TEAM_ID in wrangler.jsonc. Not a secret. */
+  appleTeamId: '9FAJRHL979',
+
   /** The EAS project ID, made by the build workflow's `eas init` on 2 November 2026. */
   easProjectId: '55f84d03-0b82-48a2-9fa8-a4f76a7d112a',
 

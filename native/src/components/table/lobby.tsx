@@ -1,3 +1,4 @@
+import { userMessage } from '@/state/user-error';
 import { router } from 'expo-router';
 import { Alert, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -5,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { variantInfo, type Game } from '@/engine';
 import { joinLink } from '@/state/api';
 import { seatKey } from '@/state/blocks';
+import { labSpec } from '@/state/bot-lab';
 import { tableShareMessage } from '@/state/table-share';
 import { changeTableCode, dispatch, me as myDevice, type TableState } from '@/state/session';
 import { ForceScheme, spacing } from '@/theme';
@@ -73,7 +75,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
         await changeTableCode(code);
         return null;
       } catch (e) {
-        return e instanceof Error ? e.message : "Couldn't change the code. Try again.";
+        return userMessage(e, "Couldn't change the code. Try again.");
       }
     };
     const others = people.length - 1;
@@ -128,7 +130,7 @@ function LobbyPage({ game, online, conn }: { game: Game; online: boolean; conn: 
 
         <GameCard variant={variant} host={host} table />
 
-        <Players rows={rows} onAdd={host ? () => dispatch({ type: 'addBot' }) : undefined} />
+        <Players rows={rows} onAdd={host ? () => dispatch({ type: 'addBot' }) : undefined} onAddLab={host ? (b) => dispatch({ type: 'addBot', lab: labSpec(b) }) : undefined} />
 
         <HouseRules settings={s} onChange={host ? (next) => dispatch({ type: 'settings', settings: next }) : undefined} online={online} bots={game.players.filter((p) => p.bot).length} />
       </ScrollView>

@@ -13,7 +13,7 @@ import { sampleHandData, statsData, type ShareData } from '@/components/share/da
 import { CARD_H, CARD_W, SHARE_DESIGNS, ShareCard } from '@/components/share/designs';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, VARIANTS } from '@/engine';
+import { CARD_PACKS, FAMILIAR_COUNT, FREE_BOT_NAMES, FREE_VARIANTS, LAB_DIALS, VARIANTS } from '@/engine';
 import { GLASS_SHEETS } from '@/components/sheet-material';
 import { usePremium } from '@/state/premium';
 import { brand, radius, ROUNDED, spacing, useReduceTransparency } from '@/theme';
@@ -68,6 +68,7 @@ const GO: Partial<Record<PerkId, { title: string; run: () => void }>> = {
   packs: { title: 'Pick a card back', run: () => router.push('/card-packs') },
   range: { title: 'Start training', run: () => router.push('/range-session') },
   gold: { title: 'Gold name settings', run: () => router.push('/settings') },
+  botlab: { title: 'Open Bot Lab', run: () => router.push('/bot-lab') },
 };
 
 function Preview({ id }: { id: PerkId }) {
@@ -154,14 +155,24 @@ function Preview({ id }: { id: PerkId }) {
           </ThemedText>
         </View>
       );
-    case 'bots':
+    case 'botlab':
+      // The eight dials, each from one end to the other, then the roster line.
       return (
-        <View style={{ ...box, gap: spacing.xs }}>
-          <ThemedText variant="callout" style={{ color: '#ffffff', fontWeight: '700' }}>
-            Free: {FREE_BOT_NAMES.join(', ')}.
-          </ThemedText>
-          <ThemedText variant="callout" style={{ color: 'rgba(255,255,255,0.75)' }}>
-            Premium: all {FAMILIAR_COUNT} characters and hundreds of regulars, in every playing style.
+        <View style={{ gap: spacing.sm }}>
+          <View style={{ ...box, gap: spacing.sm }}>
+            {LAB_DIALS.map((d) => (
+              <View key={d.id} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                <ThemedText variant="callout" style={{ flex: 1, color: '#ffffff', fontWeight: '700' }}>
+                  {d.name}
+                </ThemedText>
+                <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  {d.low} to {d.high}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
+          <ThemedText variant="footnote" style={{ color: 'rgba(255,255,255,0.75)' }}>
+            Premium also opens all {FAMILIAR_COUNT} characters and hundreds of regulars. Free tables get {FREE_BOT_NAMES.join(', ')}.
           </ThemedText>
         </View>
       );

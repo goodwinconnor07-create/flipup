@@ -242,6 +242,7 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 |---|---|
 | Identifiers > User ID | The screen name shown at tables and parties ("screen name, handle ... assigned user ID") |
 | Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat. Not the advertising ID or the vendor ID |
+| Identifiers > Device ID (also) | A Live Activity's push token from Apple, kept by the table with the device ID while you're seated, deleted with the table (`worker/live.ts`). Covered by the same Device ID answer; nothing new to tick |
 | User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted after 30 minutes with no play, and at most 6 hours after it opens, 8 for a 12-game party) |
 | User Content > Other User Content | The emoji picture shown at tables and parties |
 
@@ -290,7 +291,7 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 > button (crown) on the Play tab, or swipe to any game with a crown and tap **Host a game** or **Play bots**. Buy it
 > with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
 > once subscribed. Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day. Premium: hosting the
-> 12 mini games, the rest of the bots and the rest of Range training. Anyone can join any game with a code for free; only
+> 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots) and the rest of Range training. Anyone can join any game with a code for free; only
 > the host needs Premium. There are no ads and no tracking.
 >
 > Account deletion: **Settings** (the gear on the Play tab) > **Delete my data**.

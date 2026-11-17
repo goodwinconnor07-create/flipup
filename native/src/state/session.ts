@@ -21,6 +21,7 @@ import {
   type HandLog,
   type ServerMessage,
   type Settings,
+  type LabBotSpec,
   FREE_BOT_NAMES,
   isFreeBot,
   isVariant,
@@ -32,11 +33,13 @@ import { hasPremium } from './premium';
 import { restorePremium } from './purchase';
 import { Connection, type ConnStatus } from './connection';
 import { deviceId } from './device';
+import { UserError } from './user-error';
 import { isFast } from './prefs';
 import { wornLook } from './profile';
 import { noteGame, noteHand } from './record';
 import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
+import { endAllLive, syncLive } from './live-activity';
 import { forgetLastHand, lastHand, noteReplay, playedPastPreflop } from './replays';
 import { markRulesSeen, rulesSeen } from './rules-seen';
 import { save, subscribe } from './storage';
@@ -100,6 +103,8 @@ function set(next: Session | null): void {
   if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online', next.mode === 'local' ? next.game : null);
   holdForRecap(next);
   syncLook();
+  // The Lock Screen and Dynamic Island, for an online table you're seated at.
+  syncLive(next?.mode === 'online' ? next.code : null, next?.mode === 'online' ? next.game : null, me);
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => save(KEY, session), next ? 600 : 0);
@@ -342,7 +347,12 @@ function notify(text: string): void {
 export function dispatch(action: Action): string | null {
   if (!session) return 'No table.';
   // Without Premium the host's bots come from the free ten, even when the button asks for a random one.
-  if (action.type === 'addBot' && !hasPremium()) {
+  // Bot Lab is Premium: its bots sit down only for a host who has it.
+  if (action.type === 'addBot' && action.lab && !hasPremium()) {
+    notify('Bot Lab bots need FlipUp Premium.');
+    return 'premium';
+  }
+  if (action.type === 'addBot' && !action.lab && !hasPremium()) {
     if (action.name !== undefined && !isFreeBot(action.name)) {
       notify('That bot needs FlipUp Premium.');
       return 'premium';
@@ -508,10 +518,10 @@ export function requestLogs(): void {
 }
 
 /** Opens a bots-only table on this phone and seats you at it. */
-export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[]): void {
+export function openLocalTable(settings: Settings, bots: number, name: string, emoji: string, botNames?: string[], labs: LabBotSpec[] = []): void {
   closeConnection();
   const fast = isFast();
-  const game = createTable({
+  let game = createTable({
     hostDeviceId: me,
     name: cleanName(name) || 'You',
     emoji,
@@ -522,6 +532,11 @@ export function openLocalTable(settings: Settings, bots: number, name: string, e
     now: toTableTime(Date.now(), fast),
   });
   if (fast) game.fast = true;
+  // Bots you made in Bot Lab sit down after the named ones, the same way an online host seats them.
+  for (const lab of labs) {
+    const r = applyAction(game, { type: 'addBot', lab }, { deviceId: me, now: game.createdAt, rng: cryptoRng });
+    if (r.ok) game = r.game;
+  }
   // Bots you've played on this phone before know you: one greets you as a regular.
   const rivals = rivalsFor(game.players.filter((p) => p.bot).map((p) => p.name));
   if (Object.keys(rivals).length) game.rivals = rivals;
@@ -545,7 +560,7 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
     if (!(await bindPurchase(null))) throw e;
     code = await createOnlineTable(body);
   }
-  if (version !== identityVersion) throw new Error('Your data was reset. Open a new table to continue.');
+  if (version !== identityVersion) throw new UserError('Your data was reset. Open a new table to continue.');
   set({ mode: 'online', code, game: null });
   connect(code);
   return code;
@@ -558,7 +573,7 @@ export async function openOnlineTable(settings: Settings, bots: number, name: st
  */
 export async function changeTableCode(code: string): Promise<string> {
   const old = session?.mode === 'online' ? session.game : null;
-  if (!old || session?.mode !== 'online' || old.status !== 'lobby' || old.hostDeviceId !== me) throw new Error('Only the host can change the code, before the deal.');
+  if (!old || session?.mode !== 'online' || old.status !== 'lobby' || old.hostDeviceId !== me) throw new UserError('Only the host can change the code, before the deal.');
   if (old.code === code) return code;
   const host = old.players.find((p) => p.deviceId === me);
   const fresh = await createOnlineTable({
@@ -618,6 +633,7 @@ export function abandonLobby(code: string): void {
 /** After deletion, all table consumers and API calls must share the new identity. */
 export function resetSessionIdentity(): void {
   identityVersion++;
+  endAllLive();
   closeConnection();
   clearTimeout(timer);
   clearTimeout(saveTimer);

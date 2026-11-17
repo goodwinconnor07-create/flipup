@@ -67,7 +67,8 @@
 > (`native/targets/live`). It answers one question: is it my turn? A near-black card (`LivePalette.card`), 22pt in
 > from the sides and 20pt top and bottom so nothing meets the rounded corners, in four rows: a small top row
 > (FlipUp's spade on blue, the game's name, the hand number or party round in grey on the right); a big middle row
-> (your cards 44pt wide, white, rank over an SF Symbol suit, hearts and diamonds red, with your made hand under them
+> (your cards 44pt wide, drawn like the app's own cards: 5:7, the rank top left and the suit glyph under it in the
+> four-colour deck, with your made hand under them
 > in a soft light blue; the board on the right, only the cards that have landed, "Before the flop" until then, with
 > the pot under it); a hairline; and a status row. On your turn the card warms towards gold (`turnCard`), the
 > hairline is the gold clock draining, the countdown is the biggest thing on the card (34pt gold) with "Your turn ·

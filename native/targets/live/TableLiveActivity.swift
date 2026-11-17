@@ -162,7 +162,7 @@ struct YourHand: View {
         Text("Sitting out")
           .font(.system(.headline, design: .rounded).weight(.bold))
           .foregroundStyle(LivePalette.quiet)
-          .frame(height: width * 1.38, alignment: .leading)
+          .frame(height: width * 1.4, alignment: .leading)
       } else {
         HoleCards(cards: state.cards, width: width)
           .opacity(state.phase == "folded" ? 0.4 : 1)

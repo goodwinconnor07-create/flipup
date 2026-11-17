@@ -1,15 +1,12 @@
 import SwiftUI
 
-// Playing cards for the Live Activity: a white rounded card with the rank over an SF Symbol suit, hearts and diamonds
-// red, spades and clubs black. The board shows only the cards that have landed.
+// Playing cards for the Live Activity, drawn like the app's own (playing-card.tsx) in its four-colour deck. The board shows only the cards that have landed.
 
 enum LivePalette {
-  /** The app's deep blue (brand.violet, #2557d6) and its night end, for the activity's background. */
+  /** The app's deep blue (brand.violet, #2557d6), for the FlipUp mark and the island's edge. */
   static let blue = Color(red: 0x25 / 255, green: 0x57 / 255, blue: 0xd6 / 255)
-  static let night = Color(red: 0x0d / 255, green: 0x21 / 255, blue: 0x60 / 255)
   /** Gold (brand.gold, #f5b700): your turn and your wins, nothing else. */
   static let gold = Color(red: 0xf5 / 255, green: 0xb7 / 255, blue: 0x00 / 255)
-  static let red = Color(red: 0xd9 / 255, green: 0x1e / 255, blue: 0x36 / 255)
   static let quiet = Color.white.opacity(0.62)
   /** The card behind everything: near black, like Flighty's, so the cards and gold carry the colour. */
   static let card = Color(red: 0.03, green: 0.04, blue: 0.08).opacity(0.86)
@@ -37,6 +34,9 @@ struct FlipUpMark: View {
   }
 }
 
+/** A card drawn to the app's own measurements (`playing-card.tsx`): 5:7, corners at a fifth of the width, a faint
+ *  edge, the rank top left at 54% of the width in the plain system font and the suit glyph under it at 40%, in the
+ *  app's four-colour deck (spades near black, hearts red, diamonds blue, clubs green). */
 struct LiveCard: View {
   let card: String
   var width: CGFloat = 26
@@ -44,23 +44,54 @@ struct LiveCard: View {
   var body: some View {
     let rank = Self.rank(card)
     let suit = card.last.map(String.init) ?? "s"
-    let red = suit == "h" || suit == "d"
-    RoundedRectangle(cornerRadius: width * 0.2, style: .continuous)
+    let small = width < 32
+    let rankSize = width * 0.54
+    RoundedRectangle(cornerRadius: width / 5, style: .continuous)
       .fill(.white)
       .overlay {
-        VStack(spacing: -width * 0.04) {
-          Text(rank)
-            .font(.system(size: width * 0.5, weight: .bold, design: .rounded))
-            .minimumScaleFactor(0.6)
-            .lineLimit(1)
-          Image(systemName: Self.symbol(suit))
-            .font(.system(size: width * 0.36, weight: .semibold))
-        }
-        .foregroundStyle(red ? LivePalette.red : Color.black)
-        .padding(.horizontal, width * 0.06)
+        RoundedRectangle(cornerRadius: width / 5, style: .continuous)
+          .strokeBorder(Color(red: 18 / 255, green: 18 / 255, blue: 40 / 255).opacity(0.1), lineWidth: 1)
       }
-      .frame(width: width, height: width * 1.38)
+      .overlay(alignment: .topLeading) {
+        VStack(alignment: .leading, spacing: 0) {
+          Text(rank)
+            .font(.system(size: rankSize, weight: small ? .semibold : .medium))
+            .tracking(small ? 0 : -0.04 * rankSize)
+            .minimumScaleFactor(0.7)
+            .lineLimit(1)
+          Spacer(minLength: 0)
+          Text(Self.glyph(suit))
+            .font(.system(size: width * 0.4))
+        }
+        .foregroundStyle(Self.ink(suit))
+        .padding(.top, width * 0.1)
+        .padding(.leading, width * (small ? 0.14 : 0.16))
+        .padding(.trailing, width * 0.08)
+        .padding(.bottom, width * 0.14)
+      }
+      .frame(width: width, height: width * 1.4)
+      .accessibilityElement(children: .ignore)
       .accessibilityLabel(Self.spoken(rank: rank, suit: suit))
+  }
+
+  /** The app's four-colour deck (INK in playing-card.tsx). */
+  static func ink(_ suit: String) -> Color {
+    switch suit {
+    case "h": return Color(red: 0xe5 / 255, green: 0x32 / 255, blue: 0x2d / 255)
+    case "d": return Color(red: 0x25 / 255, green: 0x63 / 255, blue: 0xeb / 255)
+    case "c": return Color(red: 0x16 / 255, green: 0xa3 / 255, blue: 0x4a / 255)
+    default: return Color(red: 0x16 / 255, green: 0x16 / 255, blue: 0x1d / 255)
+    }
+  }
+
+  /** The same suit glyphs the app draws, held to their text look (never the emoji). */
+  static func glyph(_ suit: String) -> String {
+    switch suit {
+    case "h": return "\u{2665}\u{FE0E}"
+    case "d": return "\u{2666}\u{FE0E}"
+    case "c": return "\u{2663}\u{FE0E}"
+    default: return "\u{2660}\u{FE0E}"
+    }
   }
 
   static func rank(_ card: String) -> String {
@@ -68,15 +99,6 @@ struct LiveCard: View {
     case "T"?: return "10"
     case let c?: return String(c)
     case nil: return ""
-    }
-  }
-
-  static func symbol(_ suit: String) -> String {
-    switch suit {
-    case "h": return "suit.heart.fill"
-    case "d": return "suit.diamond.fill"
-    case "c": return "suit.club.fill"
-    default: return "suit.spade.fill"
     }
   }
 
@@ -117,7 +139,7 @@ struct BoardRow: View {
       Text("Before the flop")
         .font(.system(.subheadline, design: .rounded).weight(.semibold))
         .foregroundStyle(LivePalette.quiet)
-        .frame(height: width * 1.38, alignment: .center)
+        .frame(height: width * 1.4, alignment: .center)
     } else {
       let w = board.count > 5 ? width * 5.4 / CGFloat(board.count) : width
       HStack(spacing: w * 0.16) {

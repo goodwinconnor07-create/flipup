@@ -271,7 +271,7 @@ manifests the React Native and Expo modules ship with:
 Recheck after every `npx expo install` of a native module: open the built `.ipa` and compare, since Apple emails
 after upload when a reason is missing.
 
-### Review access (review notes, updated 15 November 2026)
+### Review access (review notes, updated 17 November 2026)
 
 Paste this into App Store Connect > the version > App Review Information > Notes. It names the buttons as they are in
 the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a game).
@@ -287,12 +287,17 @@ the 1.0 build (Home is the game swiper with Host a game, Play bots and Join a ga
 > Chips are play chips only. They can't be bought, sold, won or exchanged, and there's no real-money play.
 >
 > Premium is an auto-renewing subscription in one group, monthly (`flipup.premium.monthly`) or yearly
-> (`flipup.premium.yearly`), each with an introductory offer of $1.00 for the first month. Open it from the **Premium**
+> (`flipup.premium.yearly`), each with an introductory offer for the first month. Open it from the **Premium**
 > button (crown) on the Play tab, or swipe to any game with a crown and tap **Host a game** or **Play bots**. Buy it
 > with a sandbox account; **Restore** is on the same page and in Settings, and **Manage subscription** is in Settings
 > once subscribed. Free: Texas Hold'em, ten bots, Saved hands and one Range training hand a day. Premium: hosting the
 > 12 mini games, the rest of the bots, Bot Lab (Settings > Bot Lab: make your own bots) and the rest of Range training. Anyone can join any game with a code for free; only
 > the host needs Premium. There are no ads and no tracking.
+>
+> Live Activity: while you're seated at an online table (Host a game, then Start game), lock the phone. The Lock
+> Screen and Dynamic Island show your cards, the board, the pot and, on your turn, your clock and a Check button when
+> checking is free. This is the only use of push notifications: the server updates the Live Activity through APNs. It
+> can be turned off in Settings > Live Activity. Tables against bots on the phone don't show one.
 >
 > Account deletion: **Settings** (the gear on the Play tab) > **Delete my data**.
 >

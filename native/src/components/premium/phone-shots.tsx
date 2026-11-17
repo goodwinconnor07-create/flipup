@@ -4,17 +4,17 @@
 // the app's own pieces laid out at the iPhone 17 Pro's 402 points and scaled to the frame, so it's the app's type,
 // panels and colours, not a drawing of them. Nothing on these screens can be tapped.
 import type { ReactNode } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import { Dial } from '@/components/bot-lab/dial';
 import { Face } from '@/components/bot-lab/face';
-import { SHOTS } from '@/components/how-to/shots';
+import { GameThumb } from '@/components/game-picture';
 import { sampleHandData } from '@/components/share/data';
 import { CARD_H, CARD_W, ShareCard } from '@/components/share/designs';
 import { FloatTable } from '@/components/setup/float-table';
 import { PlayingCard } from '@/components/table/playing-card';
 import { ThemedText } from '@/components/themed-text';
-import { CARD_PACKS, LAB_DIALS, labPersona, type LabDials } from '@/engine';
+import { CARD_PACKS, FREE_VARIANTS, LAB_DIALS, labPersona, VARIANTS, type LabDials } from '@/engine';
 import { brand, gradient, ROUNDED, spacing } from '@/theme';
 
 import { PANEL_RADIUS } from '../grouped-list';
@@ -22,8 +22,8 @@ import { Icon } from '../icon';
 import type { PerkId } from './perks';
 
 /** The screen the pictures are laid out on: an iPhone 17 Pro, in points. */
-export const SCREEN_W = 402;
-export const SCREEN_H = 874;
+const SCREEN_W = 402;
+const SCREEN_H = 874;
 /** The app's dark blue page, still (the moving one stays on the real page around the phone). */
 const PAGE = 'linear-gradient(180deg, #0d2160 0%, #081433 45%, #050b1f 100%)';
 const PANEL = 'rgba(255,255,255,0.085)';
@@ -56,7 +56,7 @@ export function PhoneFrame({ width, show = 1, children }: { width: number; show?
 export function PerkScreen({ id }: { id: PerkId }) {
   switch (id) {
     case 'games':
-      return <Image source={SHOTS.deuces?.showdown ?? SHOTS.holdem?.flop} style={{ width: SCREEN_W, height: SCREEN_H }} />;
+      return <GamesScreen />;
     case 'botlab':
       return <BotLabScreen />;
     case 'range':
@@ -173,6 +173,27 @@ function GoldScreen() {
           onGone={noop}
         />
       </Panel>
+    </Page>
+  );
+}
+
+/** Every game Premium adds, together: the game modes page with each one's picture and name, nothing locked. */
+function GamesScreen() {
+  const games = VARIANTS.slice(FREE_VARIANTS);
+  const size = Math.floor((SCREEN_W - spacing.md * 2 - spacing.sm * 2) / 3);
+  return (
+    <Page title="Game modes">
+      <Heading title="Every game, unlocked" detail={`${games.length} games`} />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, rowGap: spacing.md }}>
+        {games.map((g) => (
+          <View key={g.id} style={{ width: size, alignItems: 'center', gap: 6 }}>
+            <GameThumb variant={g.id} size={size} rounded={size * 0.24} />
+            <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: '600', color: '#ffffff' }}>
+              {g.name}
+            </Text>
+          </View>
+        ))}
+      </View>
     </Page>
   );
 }

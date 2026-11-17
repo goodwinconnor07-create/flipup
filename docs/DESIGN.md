@@ -58,11 +58,9 @@
 > The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
 > they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
 
-> **Premium carousel (owner, 2026-11-17, after Flighty Pro's page):** the perks slide past one at a time, each a big
-> rounded title and a line over a phone that runs down under the plan cards. Where the App Store slides have a real
-> screen (Pineapple's discard, Power Cards' Fold Tax, Die on the River's roll, the range trainer's Best play), the phone
-> shows it a little dimmed and the moment that matters is pulled out over it, bigger, with a lifted shadow
-> (`assets/premium`, cut by `store/scripts/premium-shots.py`). Bot Lab comes second; Bot Lab and the looks are drawn.
+> **Premium carousel (owner, 2026-11-17, after Flighty Pro's page):** one perk at a time, a big rounded title and a
+> line over an iPhone running down under the plan cards. No pop-outs over the phone (tried and dropped the same day).
+> Games is one slide, every extra game mode together on the Game modes screen, never a slide per game.
 
 > **Live Activity (owner, 2026-11-17, asked for and built without a mockup):** an online table you're seated at shows
 > on the Lock Screen and in the Dynamic Island (`native/targets/live`). It answers one question: is it my turn? Your

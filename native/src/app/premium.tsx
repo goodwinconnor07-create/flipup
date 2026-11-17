@@ -1,4 +1,3 @@
-import { Image } from 'expo-image';
 import { router, useIsFocused, useLocalSearchParams } from 'expo-router';
 import { openBrowserAsync } from 'expo-web-browser';
 import { useEffect, useRef, useState, type ComponentRef, type ReactNode } from 'react';
@@ -11,8 +10,8 @@ import { GrainBackground } from '@/components/grain-background';
 import { PANEL_RADIUS, Row, Section } from '@/components/grouped-list';
 import { haptic } from '@/components/haptics';
 import { Icon, type IconName } from '@/components/icon';
-import { isReason, PERKS, REASON_PERK, type PerkId } from '@/components/premium/perks';
-import { PerkScreen, PhoneFrame, SCREEN_H, SCREEN_W } from '@/components/premium/phone-shots';
+import { isReason, PERKS, REASON_PERK, type Perk, type PerkId } from '@/components/premium/perks';
+import { PerkScreen, PhoneFrame } from '@/components/premium/phone-shots';
 import { PressableScale } from '@/components/pressable-scale';
 import { Confetti } from '@/components/table/confetti';
 import { Swap } from '@/components/swap';
@@ -61,6 +60,7 @@ function PremiumPage() {
   useEffect(() => void startStore(), []);
   const open = (url: string) => void openBrowserAsync(url).catch(() => Linking.openURL(url));
   const lit = reason ? REASON_PERK[reason] : undefined;
+  const perks = lit ? [...PERKS.filter((p) => p.id === lit), ...PERKS.filter((p) => p.id !== lit)] : PERKS;
 
   // Just bought: a moment to enjoy it before the page closes.
   const [celebrate, setCelebrate] = useState(0);
@@ -89,7 +89,7 @@ function PremiumPage() {
         </View>
 
         {/* With Premium there's nothing to sell: the plan card, then what's unlocked. */}
-        {!has && <HeroPager lit={lit} wanted={reason === 'game' ? wanted : undefined} />}
+        {!has && <HeroPager perks={perks} wanted={reason === 'game' ? wanted : undefined} />}
 
         {/* The plans cut across the bottom of the phone, as the reference does. */}
         <View style={{ marginTop: has ? spacing.md : -spacing.xxl }}>
@@ -208,70 +208,20 @@ function BrandPill() {
 }
 
 /** The words over each perk's picture: shorter and louder than the grid's. */
-/** A slide that shows the app itself: an App Store screenshot on the phone, and its key moment pulled out bigger. */
-interface Shot {
-  screen: number;
-  zoom: number;
-  /** The pulled-out picture's width over its height. */
-  aspect: number;
-}
-
-interface Slide {
-  key: string;
-  /** The perk a tap opens, and the one a `?reason=` puts first. */
-  perk: PerkId;
-  title: string;
-  line: string;
-  /** Without one, the phone shows the perk drawn from the app's own pieces (`PerkScreen`). */
-  shot?: Shot;
-}
+const HERO_WORDS: Partial<Record<PerkId, { title: string; line: string }>> = {
+  range: { title: 'Every range hand', line: 'Every real spot, as many sets as you like.' },
+  botlab: { title: 'Bot Lab', line: 'Make your own bots and set how they play.' },
+  games: { title: `${VARIANTS.length - FREE_VARIANTS} more games`, line: 'Host every mini game. Friends join free.' },
+  share: { title: 'Share cards', line: 'Your best hands and nights, as a picture.' },
+  gold: { title: 'Gold name', line: 'Everyone at the table sees it.' },
+  packs: { title: 'Card backs', line: 'On your cards, for the whole table to see.' },
+};
 
 /**
- * The carousel, in order (owner, 17 Nov 2026, after Flighty Pro's page and our App Store screenshots): what the App
- * Store slides show comes from their own pictures (`store/scripts/premium-shots.py` cuts them into `assets/premium`),
- * with the moment that matters pulled out over the phone; Bot Lab and the looks are drawn from the app's pieces.
+ * One perk at a time: a big picture with its title and line under it. It moves on by itself every few seconds and
+ * loops; a swipe takes over. It stays put under Reduce Motion and while the page is covered (a sheet over it).
  */
-const SLIDES: Slide[] = [
-  {
-    key: 'pineapple',
-    perk: 'games',
-    title: `${VARIANTS.length - FREE_VARIANTS} more games`,
-    line: 'Host Pineapple, Power Cards and more.',
-    shot: { screen: require('../../assets/premium/pineapple-screen.webp'), zoom: require('../../assets/premium/pineapple-zoom.webp'), aspect: 504 / 262 },
-  },
-  { key: 'botlab', perk: 'botlab', title: 'Bot Lab', line: 'Make your own bots and set how they play.' },
-  {
-    key: 'power',
-    perk: 'games',
-    title: 'Power Cards',
-    line: 'Bend the rules for one hand.',
-    shot: { screen: require('../../assets/premium/power-screen.webp'), zoom: require('../../assets/premium/power-zoom.webp'), aspect: 760 / 527 },
-  },
-  {
-    key: 'dice',
-    perk: 'games',
-    title: 'Die on the River',
-    line: 'Roll the die. Swap a board card.',
-    shot: { screen: require('../../assets/premium/dice-screen.webp'), zoom: require('../../assets/premium/dice-zoom.webp'), aspect: 564 / 335 },
-  },
-  {
-    key: 'range',
-    perk: 'range',
-    title: 'Every range hand',
-    line: 'Find the best play, then see why.',
-    shot: { screen: require('../../assets/premium/range-screen.webp'), zoom: require('../../assets/premium/range-zoom.webp'), aspect: 760 / 197 },
-  },
-  { key: 'share', perk: 'share', title: 'Share cards', line: 'Your best hands and nights, as a picture.' },
-  { key: 'packs', perk: 'packs', title: 'Card backs', line: 'On your cards, for the whole table to see.' },
-  { key: 'gold', perk: 'gold', title: 'Gold name', line: 'Everyone at the table sees it.' },
-];
-
-/**
- * One feature at a time, laid out like Flighty Pro's: a big rounded title and a line, then the app in a phone running
- * down under the plan cards, with its key moment pulled out bigger over it. It moves on by itself every few seconds and
- * loops; a swipe takes over. It stays put under Reduce Motion, under VoiceOver and while the page is covered.
- */
-function HeroPager({ lit, wanted }: { lit?: PerkId; wanted?: string }) {
+function HeroPager({ perks, wanted }: { perks: Perk[]; wanted?: string }) {
   const { width } = useWindowDimensions();
   const reduce = useReduceMotion();
   // Under VoiceOver the pictures only move when the person swipes them: a page that changes while it's being read is lost.
@@ -280,17 +230,16 @@ function HeroPager({ lit, wanted }: { lit?: PerkId; wanted?: string }) {
   const ref = useRef<ComponentRef<typeof ScrollView>>(null);
   const [page, setPage] = useState(0);
   const [held, setHeld] = useState(false);
-  const slides = lit ? [...SLIDES.filter((s) => s.perk === lit), ...SLIDES.filter((s) => s.perk !== lit)] : SLIDES;
 
   useEffect(() => {
-    if (reduce || reader || held || !focused || slides.length < 2) return;
+    if (reduce || reader || held || !focused || perks.length < 2) return;
     const t = setTimeout(() => {
-      const next = (page + 1) % slides.length;
+      const next = (page + 1) % perks.length;
       ref.current?.scrollTo({ x: next * width, animated: next !== 0 });
       setPage(next);
     }, HERO_MS);
     return () => clearTimeout(t);
-  }, [page, held, reduce, reader, focused, slides.length, width]);
+  }, [page, held, reduce, reader, focused, perks.length, width]);
 
   const settle = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     setPage(Math.round(e.nativeEvent.contentOffset.x / width));
@@ -300,23 +249,31 @@ function HeroPager({ lit, wanted }: { lit?: PerkId; wanted?: string }) {
 
   return (
     <View>
-      <View accessible accessibilityLabel={`${page + 1} of ${slides.length}`} style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: spacing.md }}>
-        {slides.map((s, i) => (
-          <View key={s.key} style={{ width: i === page ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: i === page ? '#ffffff' : 'rgba(255,255,255,0.35)' }} />
+      <View accessible accessibilityLabel={`${page + 1} of ${perks.length}`} style={{ flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: spacing.md }}>
+        {perks.map((p, i) => (
+          <View key={p.id} style={{ width: i === page ? 16 : 6, height: 6, borderRadius: 3, backgroundColor: i === page ? '#ffffff' : 'rgba(255,255,255,0.35)' }} />
         ))}
       </View>
-      <ScrollView ref={ref} horizontal pagingEnabled showsHorizontalScrollIndicator={false} onScrollBeginDrag={() => setHeld(true)} onMomentumScrollEnd={settle}>
-        {slides.map((s, i) => {
-          const title = i === 0 && wanted && s.perk === 'games' ? `Host ${variantInfo(wanted as never).name}` : s.title;
+      <ScrollView
+        ref={ref}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onScrollBeginDrag={() => setHeld(true)}
+        onMomentumScrollEnd={settle}
+      >
+        {perks.map((p, i) => {
+          const words = HERO_WORDS[p.id] ?? { title: p.title, line: p.short };
+          const title = i === 0 && wanted && p.id === 'games' ? `Host ${variantInfo(wanted as never).name}` : words.title;
           return (
-            // Each feature the way the App Store shows the app: its name and a line, then the phone showing it.
+            // Each perk the way the App Store shows the app: its name and a line, then the phone showing it.
             <Pressable
-              key={s.key}
+              key={p.id}
               accessibilityRole="button"
-              accessibilityLabel={`${title}. ${s.line} Show me more.`}
+              accessibilityLabel={`${title}. ${words.line} Show me more.`}
               onPress={() => {
                 haptic.select();
-                router.push({ pathname: '/premium-perk', params: { id: s.perk } });
+                router.push({ pathname: '/premium-perk', params: { id: p.id } });
               }}
               style={{ width, alignItems: 'center', paddingHorizontal: spacing.lg, gap: spacing.lg }}
             >
@@ -324,47 +281,17 @@ function HeroPager({ lit, wanted }: { lit?: PerkId; wanted?: string }) {
                 <ThemedText variant="largeTitle" numberOfLines={1} adjustsFontSizeToFit style={{ fontFamily: ROUNDED, fontWeight: '800', textAlign: 'center' }}>
                   {title}
                 </ThemedText>
-                <ThemedText variant="callout" tone="secondaryLabel" numberOfLines={2} style={{ textAlign: 'center' }}>
-                  {s.line}
+                <ThemedText variant="callout" tone="secondaryLabel" style={{ textAlign: 'center' }}>
+                  {words.line}
                 </ThemedText>
               </View>
-              {s.shot ? (
-                <ShotPhone shot={s.shot} phone={phone} page={width} />
-              ) : (
-                <PhoneFrame width={phone} show={PHONE_SHOW}>
-                  <PerkScreen id={s.perk} />
-                </PhoneFrame>
-              )}
+              <PhoneFrame width={phone} show={PHONE_SHOW}>
+                <PerkScreen id={p.id} />
+              </PhoneFrame>
             </Pressable>
           );
         })}
       </ScrollView>
-    </View>
-  );
-}
-
-/**
- * An App Store screenshot on the phone, a little dimmed, with its key moment pulled out over it at a bigger size and a
- * lifted shadow (Flighty's alerts over its phone). The moment sits low, clear of where the plan cards cut across.
- */
-function ShotPhone({ shot, phone, page }: { shot: Shot; phone: number; page: number }) {
-  const bezel = Math.round(phone * 0.034);
-  const shown = ((SCREEN_H * (phone - bezel * 2)) / SCREEN_W + bezel * 2) * PHONE_SHOW;
-  const zoomW = Math.min(page - spacing.lg * 2, 370);
-  const zoomH = Math.round(zoomW / shot.aspect);
-  // The plan cards reach spacing.xxl up over the phone's bottom.
-  const zoomTop = Math.max(spacing.xl, shown - spacing.xxl - spacing.md - zoomH);
-  return (
-    <View style={{ width: phone }}>
-      <PhoneFrame width={phone} show={PHONE_SHOW}>
-        <Image source={shot.screen} style={{ width: SCREEN_W, height: SCREEN_H }} contentFit="cover" accessibilityIgnoresInvertColors />
-        <View style={{ position: 'absolute', top: 0, left: 0, width: SCREEN_W, height: SCREEN_H, backgroundColor: 'rgba(2,4,12,0.34)' }} />
-      </PhoneFrame>
-      <View style={{ position: 'absolute', top: zoomTop, left: (phone - zoomW) / 2, width: zoomW, height: zoomH, borderRadius: 20, borderCurve: 'continuous', boxShadow: '0 18px 40px rgba(0,0,0,0.6)' }}>
-        <View style={{ flex: 1, borderRadius: 20, borderCurve: 'continuous', overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)', backgroundColor: '#000000' }}>
-          <Image source={shot.zoom} style={{ width: '100%', height: '100%' }} contentFit="cover" accessibilityIgnoresInvertColors />
-        </View>
-      </View>
     </View>
   );
 }

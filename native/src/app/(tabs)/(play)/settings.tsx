@@ -120,7 +120,7 @@ export default function SettingsScreen() {
     },
     {
       id: 'delete',
-      footer: `Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.\n\nFlipUp ${version}${build ? ` (${build})` : ''}`,
+      footer: `Deletes what FlipUp's server keeps about this phone and everything the app keeps on it.\n\nFlipUp ${version}${build ? ` (${build})` : ''}${store.storefront ? ` · App Store ${store.storefront}` : ''}`,
       items: [{ kind: 'button', id: 'delete', title: deleting ? 'Deleting' : 'Delete my data', destructive: true, busy: deleting, onPress: confirmDelete }],
     },
   ];

@@ -9,6 +9,7 @@ import {
   fetchProducts,
   finishTransaction,
   getAvailablePurchases,
+  getStorefront,
   initConnection,
   isEligibleForIntroOfferIOS,
   isUserCancelledError,
@@ -57,9 +58,11 @@ export interface StoreState {
   pending: boolean;
   /** The live subscription's current period: when it ends, and whether it renews then (null when StoreKit didn't say). */
   period: { ends: number; renews: boolean | null } | null;
+  /** The App Store country this phone buys from ("AUS"), which sets the prices and offers it sees. Null until known. */
+  storefront: string | null;
 }
 
-let state: StoreState = { plans: { monthly: null, yearly: null }, owned: null, busy: false, error: null, pending: false, period: null };
+let state: StoreState = { plans: { monthly: null, yearly: null }, owned: null, busy: false, error: null, pending: false, period: null, storefront: null };
 const listeners = new Set<() => void>();
 let ready: Promise<boolean> | null = null;
 let subscriptions: { remove(): void }[] = [];
@@ -158,12 +161,13 @@ export function startStore(): Promise<boolean> {
         publish({ busy: false });
         waiting?.done(false);
         waiting = null;
-        if (!isUserCancelledError(e)) publish({ error: "The App Store couldn't finish the purchase. Try again." });
+        if (!isUserCancelledError(e)) publish({ error: `The App Store couldn't finish the purchase.${e.code ? ` (${String(e.code)})` : ''} Try again.` });
       }),
     ];
   ready = (async () => {
     try {
       await initConnection();
+      void getStorefront().then((storefront) => publish({ storefront: storefront || null }), () => {});
       const [, owned] = await Promise.all([loadPrices(), checkOwned()]);
       // The App Store answered and this Apple Account has nothing live: the subscription ended or was refunded.
       if (!owned && premiumStored()) setPremium(false);

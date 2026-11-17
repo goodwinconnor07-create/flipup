@@ -1,7 +1,7 @@
 import SwiftUI
 
 // Playing cards for the Live Activity: a white rounded card with the rank over an SF Symbol suit, hearts and diamonds
-// red, spades and clubs black. A faint filled slot holds the place of a board card still to come.
+// red, spades and clubs black. The board shows only the cards that have landed.
 
 enum LivePalette {
   /** The app's deep blue (brand.violet, #2557d6) and its night end, for the activity's background. */
@@ -13,7 +13,28 @@ enum LivePalette {
   static let quiet = Color.white.opacity(0.62)
   /** The card behind everything: near black, like Flighty's, so the cards and gold carry the colour. */
   static let card = Color(red: 0.03, green: 0.04, blue: 0.08).opacity(0.86)
+  /** Your turn: the same card warmed towards gold, so you can tell it's you from across the room. */
+  static let turnCard = Color(red: 0.13, green: 0.10, blue: 0.02).opacity(0.9)
   static let hairline = Color.white.opacity(0.14)
+  /** Your made hand: a soft light blue, set apart from the plain labels without taking gold's place. */
+  static let handBlue = Color(red: 0x9c / 255, green: 0xbe / 255, blue: 1)
+}
+
+/** FlipUp's mark: the white spade on the app's blue, a small rounded square like the Home Screen icon. */
+struct FlipUpMark: View {
+  var size: CGFloat = 18
+
+  var body: some View {
+    RoundedRectangle(cornerRadius: size * 0.28, style: .continuous)
+      .fill(LivePalette.blue)
+      .overlay {
+        Image(systemName: "suit.spade.fill")
+          .font(.system(size: size * 0.58, weight: .bold))
+          .foregroundStyle(.white)
+      }
+      .frame(width: size, height: size)
+      .accessibilityHidden(true)
+  }
 }
 
 struct LiveCard: View {
@@ -66,18 +87,6 @@ struct LiveCard: View {
   }
 }
 
-/** A board slot not dealt yet. */
-struct EmptySlot: View {
-  var width: CGFloat = 26
-
-  var body: some View {
-    RoundedRectangle(cornerRadius: width * 0.2, style: .continuous)
-      .fill(Color.white.opacity(0.08))
-      .frame(width: width, height: width * 1.38)
-      .accessibilityHidden(true)
-  }
-}
-
 /** Your hole cards. Face down until the phone is unlocked: anyone can see a Lock Screen. */
 struct HoleCards: View {
   let cards: [String]
@@ -97,20 +106,25 @@ struct HoleCards: View {
   }
 }
 
-/** The board: what's landed, then dashed slots up to five. Games with more than five board cards draw them smaller. */
+/** The board: only what's landed, lined up to the right. Before the flop it says so in grey. Games with more than five
+ *  board cards draw them smaller so the row keeps its width. */
 struct BoardRow: View {
   let board: [String]
   var width: CGFloat = 24
 
   var body: some View {
-    let slots = max(5, board.count)
-    let w = board.count > 5 ? width * 5.4 / CGFloat(slots) : width
-    HStack(spacing: w * 0.16) {
-      ForEach(0..<slots, id: \.self) { i in
-        if i < board.count { LiveCard(card: board[i], width: w) } else { EmptySlot(width: w) }
+    if board.isEmpty {
+      Text("Before the flop")
+        .font(.system(.subheadline, design: .rounded).weight(.semibold))
+        .foregroundStyle(LivePalette.quiet)
+        .frame(height: width * 1.38, alignment: .center)
+    } else {
+      let w = board.count > 5 ? width * 5.4 / CGFloat(board.count) : width
+      HStack(spacing: w * 0.16) {
+        ForEach(Array(board.enumerated()), id: \.offset) { _, card in LiveCard(card: card, width: w) }
       }
+      .accessibilityElement(children: .combine)
+      .accessibilityLabel("Board")
     }
-    .accessibilityElement(children: .combine)
-    .accessibilityLabel(board.isEmpty ? "No board cards yet" : "Board")
   }
 }

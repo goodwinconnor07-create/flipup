@@ -62,21 +62,23 @@
 > line over an iPhone running down under the plan cards. No pop-outs over the phone (tried and dropped the same day).
 > Games is one slide, every extra game mode together on the Game modes screen, never a slide per game.
 
-> **Live Activity (owner, 2026-11-17; redrawn the same day after Flighty's, the first looked "really ugly and gets
-> cut off on the corners"):** an online table you're seated at shows on the Lock Screen and in the Dynamic Island
+> **Live Activity (owner, 2026-11-17; redrawn twice the same day after Flighty's, the first looked "really ugly and
+> gets cut off on the corners"):** an online table you're seated at shows on the Lock Screen and in the Dynamic Island
 > (`native/targets/live`). It answers one question: is it my turn? A near-black card (`LivePalette.card`), 22pt in
-> from the sides and 20pt top and bottom so nothing meets the rounded corners, in four rows: a small top row (the
-> game's emoji and name, the hand number or party round on the right in grey); a big middle row (your cards, white,
-> rank over an SF Symbol suit, hearts and diamonds red, with your made hand under them; the board on the right with
-> faint filled slots for cards to come and the pot under it); a hairline; and a status line with a grey line under it
-> (chips behind) and a pill on the right, like Flighty's gate. On your turn the hairline is the gold clock draining,
-> the line reads "Your turn" with the countdown in gold, and the pill is a gold Check button when checking is free, or
-> "Call 2 bb" outlined in gold (a tap opens the app: anything that costs chips is done there). After a hand the pill
-> is your net, filled gold when you won. Before the deal and after the game: the top row and one big line. Compact
-> island: your two cards left; right the gold ring on your turn, `+12 bb` in gold after a win, else the pot. Minimal:
-> the ring, or a spade. Expanded: your hand left, board and pot right, then the hairline and the status row. Your
-> cards and made hand are `.privacySensitive()`, so they stay hidden until the phone is unlocked. Chips are in big
-> blinds. Bots-only tables have none (their clock stops when the app does).
+> from the sides and 20pt top and bottom so nothing meets the rounded corners, in four rows: a small top row
+> (FlipUp's spade on blue, the game's name, the hand number or party round in grey on the right); a big middle row
+> (your cards 44pt wide, white, rank over an SF Symbol suit, hearts and diamonds red, with your made hand under them
+> in a soft light blue; the board on the right, only the cards that have landed, "Before the flop" until then, with
+> the pot under it); a hairline; and a status row. On your turn the card warms towards gold (`turnCard`), the
+> hairline is the gold clock draining, the countdown is the biggest thing on the card (34pt gold) with "Your turn ·
+> free to check" or "Your turn · 4 bb to call" (the cost in gold) under it, and a gold Check button sits on the right
+> only when checking is free: only real buttons look like buttons, and anything that costs chips is done in the app.
+> Otherwise the row is the line ("Mia is thinking", "Two pair took it", "Mia took the pot") over your chips behind,
+> with your net as a pill after a hand (filled gold when you won); the line never repeats the pill's number. Before
+> the deal and after the game: the top row and one big line. Compact island: your two cards left; right the gold ring
+> on your turn, `+12 bb` in gold after a win, else the pot. Minimal: the ring, or a spade. Expanded: your hand left,
+> board and pot right, then the hairline and the status row. Your cards and made hand are `.privacySensitive()`, so
+> they stay hidden until the phone is unlocked. Chips are in big blinds. Bots-only tables have none.
 
 > **Bot Lab (owner, 2026-11-17, built without a mockup at the owner's ask):** Settings > Bot Lab is a dark page like
 > Play with bots: your bots two to a row on the see-through panels, a round + at the top right. The editor puts the

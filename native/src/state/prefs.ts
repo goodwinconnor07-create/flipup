@@ -74,3 +74,9 @@ export const setCalm = (calm: boolean): void => save('flipup.calm', calm);
 export const useFast = (): boolean => useStored<boolean>('flipup.fast', false) === true;
 export const isFast = (): boolean => peek<boolean>('flipup.fast', false) === true;
 export const setFast = (on: boolean): void => save('flipup.fast', on);
+
+/** Live Activity: a table you're seated at on the Lock Screen and in the Dynamic Island (state/live-activity.ts). On until switched off. */
+export const useLiveActivity = (): boolean => useStored<boolean>('flipup.liveactivity', true) !== false;
+export const setLiveActivity = (on: boolean): void => save('flipup.liveactivity', on);
+/** Read without a hook, for the Live Activity. */
+export const isLiveActivityOn = (): boolean => peek<unknown>('flipup.liveactivity', true) !== false;

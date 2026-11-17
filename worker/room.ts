@@ -25,10 +25,22 @@ import {
   countsAsPlay,
   newLife,
   type Life,
+  liveAlert,
+  liveAttributes,
+  livePriority,
+  liveState,
+  newId,
 } from '../src/game';
+import { canPush, sendLive, type LiveReg } from './live';
 import { mayHostPremium } from './premium';
 
 const LIFE_KEY = 'life';
+/** Live Activities registered at this table, by device id (worker/live.ts). */
+const LIVE_KEY = 'live';
+/** Phones a table pushes Live Activities to. One each, so this is everyone with room to spare. */
+const MAX_LIVE = 16;
+/** An activity with no news for this long greys out its clock, so a table that died quietly doesn't look live. */
+const LIVE_STALE_S = 15 * 60;
 
 const MAX_MESSAGE_CHARS = 4 * 1024;
 /** Per connection: at most this many actions in each window. */
@@ -52,6 +64,9 @@ export class TableRoom extends DurableObject<Env> {
   private game: Game | null | undefined;
   private life: Life | undefined;
   private rate = new WeakMap<WebSocket, { start: number; count: number }>();
+  private live: Record<string, LiveReg> | undefined;
+  /** Live Activity pushes go out one table change at a time, in order. */
+  private liveChain: Promise<void> = Promise.resolve();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -182,6 +197,7 @@ export class TableRoom extends DurableObject<Env> {
     if (countsAsPlay(action.type, deviceId === 'server')) (await this.lifeOf()).activeAt = Date.now();
     await this.save(result.game);
     if (result.game.party) this.ctx.waitUntil(this.reportToParty(result.game));
+    this.queueLive(result.game);
     for (const socket of this.ctx.getWebSockets()) {
       const meta = socket.deserializeAttachment() as SocketMeta | null;
       if (!meta) continue;
@@ -219,6 +235,8 @@ export class TableRoom extends DurableObject<Env> {
     if (!game) return;
     const reason = closeReason(await this.lifeOf(), Date.now());
     if (reason) {
+      // Every Live Activity on this table says so and leaves the Lock Screen a minute later.
+      await this.queueLive(game, closeReasonText(reason));
       for (const ws of this.ctx.getWebSockets()) {
         try {
           ws.close(4410, closeReasonText(reason));
@@ -230,6 +248,7 @@ export class TableRoom extends DurableObject<Env> {
       await this.ctx.storage.deleteAll();
       this.game = null;
       this.life = undefined;
+      this.live = undefined;
       return;
     }
     if (game.wakeAt !== null && Date.now() >= game.wakeAt - 20) await this.apply({ type: 'tick' }, 'server');
@@ -263,6 +282,99 @@ export class TableRoom extends DurableObject<Env> {
       if (meta) online.add(meta.deviceId);
     }
     await this.apply({ type: 'presence', online: [...online] }, 'server');
+  }
+
+  /**
+   * RPC: a phone at this table started a Live Activity and has its push token. Returns the key its Check button sends
+   * back, or null when the phone has no seat here. The current state is pushed at once.
+   */
+  async registerLive(deviceId: string, token: string, sandbox: boolean): Promise<{ act: string; pushes: boolean } | null> {
+    const game = await this.load();
+    if (!game || !game.players.some((p) => p.deviceId === deviceId)) return null;
+    const live = await this.liveRegs();
+    const old = live[deviceId];
+    if (!old && Object.keys(live).length >= MAX_LIVE) return null;
+    // A new token for the same phone (iOS rotates them) keeps its key, and the next push is sent whatever it holds.
+    live[deviceId] = { token, act: old?.act ?? newId(24), sandbox, last: null };
+    await this.ctx.storage.put(LIVE_KEY, live);
+    this.queueLive(game);
+    return { act: live[deviceId].act, pushes: canPush(this.env) };
+  }
+
+  /** RPC: the phone ended its Live Activity (it left, or turned them off). */
+  async stopLive(deviceId: string): Promise<void> {
+    const live = await this.liveRegs();
+    if (!live[deviceId]) return;
+    delete live[deviceId];
+    await this.ctx.storage.put(LIVE_KEY, live);
+  }
+
+  /**
+   * RPC: the Check button on a Live Activity. `act` is the key that activity was given; it only ever checks, only on
+   * the turn it was shown on (`hand`, `seq`), and only when a check is free.
+   */
+  async liveCheck(act: string, hand: number, seq: number): Promise<{ ok: true } | { ok: false; error: string }> {
+    const live = await this.liveRegs();
+    const deviceId = Object.keys(live).find((d) => live[d].act === act);
+    const game = await this.load();
+    if (!deviceId || !game) return { ok: false, error: 'This table has closed.' };
+    const state = liveState(game, deviceId, Date.now(), act);
+    if (!state || state.phase !== 'turn' || state.hand !== hand || state.seq !== seq) return { ok: false, error: "It's not your turn any more." };
+    if (!state.canCheck) return { ok: false, error: 'Checking is not free here. Open FlipUp to play.' };
+    const before = this.game?.version;
+    await this.apply({ type: 'act', hand, seq, move: 'check' }, deviceId);
+    return this.game?.version !== before ? { ok: true } : { ok: false, error: "That didn't go through. Open FlipUp to play." };
+  }
+
+  /** Queues this table's Live Activity pushes after a change (or, with `closing`, the last one as the table closes). */
+  private queueLive(game: Game, closing?: string): Promise<void> {
+    const run = this.liveChain.then(() => this.pushLive(game, closing)).catch(() => {});
+    this.liveChain = run;
+    this.ctx.waitUntil(run);
+    return run;
+  }
+
+  /** Sends each registered phone its own view, when it changed. A phone no longer seated gets an end push and is dropped. */
+  private async pushLive(game: Game, closing?: string): Promise<void> {
+    const live = await this.liveRegs();
+    const devices = Object.keys(live);
+    if (!devices.length || !canPush(this.env)) return;
+    const now = Date.now();
+    const attrs = liveAttributes(game);
+    let dirty = false;
+    await Promise.all(
+      devices.map(async (deviceId) => {
+        const reg = live[deviceId];
+        const state = liveState(game, deviceId, now, reg.act);
+        if (closing || !state) {
+          const last = state ?? reg.last;
+          if (last) {
+            const words = closing ?? 'You left the table';
+            await sendLive(this.env, reg, { event: 'end', state: { ...last, phase: last.phase === 'ended' ? 'ended' : 'waiting', line: words, turnStart: null, turnEnd: null }, priority: 10, dismissAt: Math.floor(now / 1000) + 60 });
+          }
+          delete live[deviceId];
+          dirty = true;
+          return;
+        }
+        if (reg.last && JSON.stringify(reg.last) === JSON.stringify(state)) return;
+        const outcome = await sendLive(this.env, reg, {
+          event: 'update',
+          state,
+          priority: livePriority(reg.last, state),
+          alert: liveAlert(reg.last, state, attrs),
+          staleAt: Math.floor(now / 1000) + LIVE_STALE_S,
+        });
+        if (outcome === 'gone') delete live[deviceId];
+        else if (outcome === 'sent') reg.last = state;
+        dirty = true;
+      }),
+    );
+    if (dirty && !closing) await this.ctx.storage.put(LIVE_KEY, live);
+  }
+
+  private async liveRegs(): Promise<Record<string, LiveReg>> {
+    this.live ??= (await this.ctx.storage.get<Record<string, LiveReg>>(LIVE_KEY)) ?? {};
+    return this.live;
   }
 
   private async load(): Promise<Game | null> {

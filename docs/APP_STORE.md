@@ -242,6 +242,7 @@ What FlipUp collects, all **linked to the user**, all for **App Functionality** 
 |---|---|
 | Identifiers > User ID | The screen name shown at tables and parties ("screen name, handle ... assigned user ID") |
 | Identifiers > Device ID | The random ID the app makes on first launch (`flipup.device`), which proves a phone owns its seat. Not the advertising ID or the vendor ID |
+| Identifiers > Device ID (also) | A Live Activity's push token from Apple, kept by the table with the device ID while you're seated, deleted with the table (`worker/live.ts`). Covered by the same Device ID answer; nothing new to tick |
 | User Content > Gameplay Content | Online tables and parties: seats, moves, chips and results while the table runs (deleted after 30 minutes with no play, and at most 6 hours after it opens, 8 for a 12-game party) |
 | User Content > Other User Content | The emoji picture shown at tables and parties |
 

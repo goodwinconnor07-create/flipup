@@ -4,7 +4,9 @@ import { CARD_PACKS } from '@/engine';
 import { usePremium } from '@/state/premium';
 import { setGoldName, useGoldName, useProfile, wornLook } from '@/state/profile';
 import { useReplays } from '@/state/replays';
-import { setAppearance, setCalm, setFast, setHaptics, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useHaptics, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
+import { setAppearance, setCalm, setFast, setHaptics, setLiveActivity, setMuted, setTalkLevel, useAppearance, useCalm, useFast, useHaptics, useLiveActivity, useMuted, useTalkLevel, type AppearancePref, type TalkLevel } from '@/state/prefs';
+
+import { FlipupLive } from '../../modules/flipup-live';
 
 import type { MenuGroup } from './native-menu.types';
 
@@ -16,6 +18,7 @@ import type { MenuGroup } from './native-menu.types';
 export function useYouGroups({ header, online = false }: { header?: string; online?: boolean }): MenuGroup[] {
   const muted = useMuted();
   const haptics = useHaptics();
+  const live = useLiveActivity();
   const talk = useTalkLevel();
   const calm = useCalm();
   const fast = useFast();
@@ -45,6 +48,8 @@ export function useYouGroups({ header, online = false }: { header?: string; onli
         },
         { kind: 'toggle', id: 'sound', title: 'Sound', value: !muted, onChange: (on) => setMuted(!on) },
         { kind: 'toggle', id: 'haptics', title: 'Haptics', value: haptics, onChange: setHaptics },
+        // Only on an iPhone build that has the Live Activity in it (never the web build).
+        FlipupLive && { kind: 'toggle', id: 'live', title: 'Live Activity', value: live, onChange: setLiveActivity },
         { kind: 'toggle', id: 'animations', title: 'Animations', value: !calm, onChange: (on) => setCalm(!on) },
         {
           kind: 'segmented',

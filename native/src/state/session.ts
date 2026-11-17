@@ -37,6 +37,7 @@ import { wornLook } from './profile';
 import { noteGame, noteHand } from './record';
 import { recordFeel, rivalsFor } from './table-feel';
 import { BLOCKED_KEY, isBlocked, maskBlocked, seatKey } from './blocks';
+import { endAllLive, syncLive } from './live-activity';
 import { forgetLastHand, lastHand, noteReplay, playedPastPreflop } from './replays';
 import { markRulesSeen, rulesSeen } from './rules-seen';
 import { save, subscribe } from './storage';
@@ -100,6 +101,8 @@ function set(next: Session | null): void {
   if (next) noteReplay(state.game, me, next.mode === 'local' ? 'bots' : 'online', next.mode === 'local' ? next.game : null);
   holdForRecap(next);
   syncLook();
+  // The Lock Screen and Dynamic Island, for an online table you're seated at.
+  syncLive(next?.mode === 'online' ? next.code : null, next?.mode === 'online' ? next.game : null, me);
   // Writing the whole table on every move is a lot of work mid-hand, so it waits a moment and goes in one go.
   clearTimeout(saveTimer);
   saveTimer = setTimeout(() => save(KEY, session), next ? 600 : 0);
@@ -618,6 +621,7 @@ export function abandonLobby(code: string): void {
 /** After deletion, all table consumers and API calls must share the new identity. */
 export function resetSessionIdentity(): void {
   identityVersion++;
+  endAllLive();
   closeConnection();
   clearTimeout(timer);
   clearTimeout(saveTimer);

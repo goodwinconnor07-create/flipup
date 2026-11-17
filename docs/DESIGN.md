@@ -55,6 +55,18 @@
 > The owner said to build it without a mockup. Share cards come in five designs that are pictures, not app screens, so
 > they keep their own looks (felt, gold foil, receipt, poster) whatever this box says.
 
+> **Live Activity (owner, 2026-11-17, asked for and built without a mockup):** an online table you're seated at shows
+> on the Lock Screen and in the Dynamic Island (`native/targets/live`). It answers one question: is it my turn? Your
+> turn is gold (a YOUR TURN label, a draining clock bar and countdown on the Lock Screen, a draining gold ring in the
+> island, a short alert as it starts); everything else is calm white on the night blue (`#0d2160`). Lock Screen: the
+> game's emoji and name with the hand number (or the party round), your cards (white cards, rank over an SF Symbol
+> suit, hearts and diamonds red) with your made hand under them, the board on the right with dashed slots for cards
+> to come (more than five draw smaller), then the status line and the pot. One button only, Check, and only when
+> checking is free: anything that costs chips opens the app. Compact island: your two cards left; right the gold ring
+> on your turn, `+12 bb` in gold after a win, else the pot. Minimal: the ring, or a spade. Expanded: cards, pot and
+> stack, the board, and the status line. Your cards are `.privacySensitive()`, so they stay hidden until the phone is
+> unlocked. Chips are in big blinds. Bots-only tables have none (their clock stops when the app does).
+
 > **Power Cards table (owner, 2026-11-12, built without a mockup at the owner's ask, after playing it):** the power is
 > a card, not a strip. It sits beside your two cards (`PowerCard`: gold foil frame, deep blue face, the power's
 > picture and name; face down between hands so its place never moves), and the hole cards step down to make room.

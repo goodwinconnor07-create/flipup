@@ -39,6 +39,7 @@ const WEB = {
   'circle.grid.3x3.fill': 'dialpad',
   'person.3.fill': 'groups',
   'lock.fill': 'lock',
+  'iphone': 'smartphone',
   'paintbrush.fill': 'palette',
   'dollarsign.circle.fill': 'paid',
   'chart.line.uptrend.xyaxis': 'trending_up',

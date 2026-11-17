@@ -36,3 +36,4 @@ export * from './premiumGate';
 export { addedLine, voiceKind } from './botTalk';
 export { botFace } from './botProfiles';
 export { balancedBotPool, type BotDifficulty } from '../bot_engine/everyday';
+export * from './liveActivity';

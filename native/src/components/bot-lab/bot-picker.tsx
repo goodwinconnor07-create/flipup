@@ -142,7 +142,7 @@ export function BotPicker({
           <Text accessibilityRole="header" maxFontSizeMultiplier={1.2} style={{ fontFamily: ROUNDED, fontSize: 17, fontWeight: '800', color: '#ffffff', paddingHorizontal: spacing.sm, paddingTop: 6, paddingBottom: 4 }}>
             Add a bot
           </Text>
-          {row('random', 'Random bot', 'Someone from the roster', round('dice.fill'), onRandom)}
+          {row('random', 'Random bot', 'A bot picked for you', round('dice.fill'), onRandom)}
           {bots.length > 0 && (
             <Text maxFontSizeMultiplier={1.2} style={{ fontSize: 12, fontWeight: '700', letterSpacing: 0.6, color: 'rgba(255,255,255,0.5)', paddingHorizontal: spacing.sm, paddingTop: spacing.sm, paddingBottom: 2 }}>
               YOUR BOTS

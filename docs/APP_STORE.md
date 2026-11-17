@@ -442,7 +442,7 @@ Store listing:
 
 ### What Premium unlocks now
 
-As of 16 November 2026: hosting the 13 mini games (one is free for everyone each week), the whole bot roster, all of
+As of 17 November 2026: hosting the 12 mini games (no free game of the week), Bot Lab and every bot past the free ten, all of
 Range training past the free daily hand, the card backs, the Premium share-card designs and the gold name. "Type any
 emoji" is free for everyone. Chat bubble effects and AI Legends are no longer in the app.
 

@@ -40,7 +40,7 @@ App Store Connect key the iOS build uses and prints `ok` or `FIX` for each thing
 It can't see these, so check them by hand: **Business** (Agreements, Tax, and Banking) has the **Paid Apps**
 agreement **Active** with tax and bank filled in (without it the Premium page says "Can't reach the App Store" and
 review rejects the app), and **Users and Access > Sandbox** has a tester for your own purchase tests. The review note
-for each subscription: "Opened from Premium on the Play tab. Unlocks hosting the 12 mini games, the full bot roster
+for each subscription: "Opened from Premium on the Play tab. Unlocks hosting the 12 mini games, Bot Lab, every bot
 and all Range training hands. Restore is on the same page and in Settings."
 
 ## 3. Build and test (GitHub Actions, then your iPhone)
@@ -123,7 +123,7 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 > Save your best hands, replay them move by move, and turn them into share cards.
 >
 > FLIPUP PREMIUM
-> Premium lets you host every mini game, play the whole bot roster and opens all of the range trainer, with more share
+> Premium lets you host every mini game, make your own bots in Bot Lab and opens all of the range trainer, with more share
 > card designs, card backs and a gold name. Friends always join your games free. Premium is an auto-renewing
 > subscription, monthly or yearly, with an introductory offer for new subscribers. Payment is charged to your Apple Account, and a subscription renews unless you cancel it at
 > least 24 hours before the end of the period. Manage or cancel it in your Apple Account settings.

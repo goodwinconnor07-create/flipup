@@ -25,7 +25,6 @@ export const RELEASES: Release[] = [
       { icon: 'suit.spade.fill', title: 'Poker night on your phones', text: 'Host a table and your friends join on their own phones with a six-character game code or a QR code. Bots fill any empty seats.' },
       { icon: 'cpu.fill', title: 'Play bots anywhere', text: 'Play against bots on your own, even with no signal. Every bot has a style of its own and plenty to say about the hand.' },
       { icon: 'sparkles', title: '12 mini games', text: 'Texas Hold’em plus games with a twist, like Haunted Pot, Crazy Pineapple, Die on the River and Power Cards. Each has its own table and a short How to Play.' },
-      { icon: 'iphone', title: 'Your table on the Lock Screen', text: 'At a table with friends, your cards, the board and the pot show on the Lock Screen and in the Dynamic Island. It lights up gold when it’s your turn, with your clock, and you can check right from it.' },
       { icon: 'flask.fill', title: 'Bot Lab', text: 'Make up to 25 bots of your own in Settings: a name, a face and dials for how they play and talk. Seat them from + Add Bot in any lobby you host. Part of Premium.' },
       { icon: 'party.popper.fill', title: 'Party nights', text: 'Line up 4 to 12 games, play a short table of each, and see who tops the board at the end.' },
       { icon: 'graduationcap.fill', title: 'Range training', text: 'A free hand every day. Pick your play, then see why it’s best.' },

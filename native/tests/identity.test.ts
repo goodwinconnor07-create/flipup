@@ -11,7 +11,6 @@ vi.mock('../src/state/api', () => ({
   PremiumRequiredError: class extends Error {},
 }));
 vi.mock('../src/state/party', () => ({ leaveParty: vi.fn(), loadPartyRef: () => null }));
-vi.mock('../modules/flipup-live', () => ({ FlipupLive: null }));
 
 afterEach(() => {
   vi.useRealTimers();

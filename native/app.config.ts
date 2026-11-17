@@ -1,9 +1,17 @@
+import { withEntitlementsPlist, type ConfigPlugin } from 'expo/config-plugins';
 import type { ConfigContext, ExpoConfig } from 'expo/config';
 
 import { APP_INFO } from './appInfo.ts';
 
 // The EAS project: from appInfo.ts, or from the build workflow until the ID has been copied there.
 const projectId = APP_INFO.easProjectId || process.env.EAS_PROJECT_ID || '';
+
+/** Takes `aps-environment` back out of the entitlements, whatever added it. */
+const withoutPush: ConfigPlugin = (config) =>
+  withEntitlementsPlist(config, (c) => {
+    delete c.modResults['aps-environment'];
+    return c;
+  });
 
 // The iPhone and iPad app. iOS only: there's no Google Play release.
 export default ({ config }: ConfigContext): ExpoConfig => ({
@@ -19,8 +27,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     icon: './assets/expo.icon',
     ...(APP_INFO.bundleId ? { bundleIdentifier: APP_INFO.bundleId } : {}),
-    // The Live Activity's widget extension (targets/live, built by @bacons/apple-targets) is signed by the same team.
-    appleTeamId: APP_INFO.appleTeamId,
     // iPhone first: the iPad layout comes after the iPhone version is approved. Until then iPads run it in iPhone mode.
     supportsTablet: false,
     // Join links (playflipup.com/ACES42) open the app when it's installed. The Worker serves the matching file at
@@ -39,10 +45,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       // Share cards and results go out as pictures through the share sheet, which offers Save Image. Without this
       // string iOS closes the app the moment Save Image is tapped. FlipUp only adds pictures; it never reads Photos.
       NSPhotoLibraryAddUsageDescription: 'FlipUp saves the share cards you choose to save to your photos.',
-      // A table you're seated at shows on the Lock Screen and in the Dynamic Island (targets/live). The table's server
-      // keeps it up to date with Live Activity pushes, several a hand, so it asks for frequent updates.
-      NSSupportsLiveActivities: true,
-      NSSupportsLiveActivitiesFrequentUpdates: true,
     },
     privacyManifests: {
       // FlipUp never tracks anyone and asks for no App Tracking Transparency prompt.
@@ -73,11 +75,9 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   plugins: [
     'expo-router',
-    // Push Notifications are on (expo-notifications adds `aps-environment`) for one thing only: Live Activity updates
-    // from the table's server (worker/live.ts). The daily reminder is still a local notification, and the app never
-    // asks for a push token or sends ordinary push notifications.
-    // The Live Activity's widget extension: every folder in targets/ becomes an Xcode target at prebuild.
-    '@bacons/apple-targets',
+    // The daily reminder is a local notification: no push, so no Push Notifications capability (the signing profile
+    // doesn't have it). expo-notifications adds `aps-environment` on its own; this takes it back out.
+    withoutPush as never,
     'expo-iap',
     ['expo-camera', { cameraPermission: 'FlipUp uses the camera to scan a table or party QR code so you can join it.', microphonePermission: false, recordAudioAndroid: false }],
     ['expo-build-properties', { ios: { deploymentTarget: APP_INFO.iosDeploymentTarget } }],

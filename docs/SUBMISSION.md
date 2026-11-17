@@ -73,7 +73,7 @@ The nine slides are finished: `store/screenshots/6.9in-1320x2868/` and `store/sc
    folder into the 6.3" slot, 01 to 09 in order (App Store Connect makes the smaller sizes from these).
 2. Optional key art (the header and search banner on newer iOS): `store/creative/universal-belts-13.png`. Not the
    22-game one until those games are back in the app.
-3. One slot of ten is free. A Lock Screen Live Activity slide could go there once there's a real screenshot of it.
+3. One slot of ten is free, kept for the update that brings back the parked games.
 
 ## 5. App Store Connect: the listing
 
@@ -106,10 +106,6 @@ Version 1.0 page and App Information. Your App Store name and legal name: Connor
 > Texas Hold'em, plus 12 mini games with a twist. Throw a card away in Crazy Pineapple. Roll a die to swap the river
 > in Die on the River. Beat the ghost as well as your friends in Haunted Pot. Read the board as a cross in Crucifix.
 > Every game has its own table and a short How to Play.
->
-> ON YOUR LOCK SCREEN
-> At a table with friends, your cards, the board and the pot stay on your Lock Screen and in the Dynamic Island. It
-> turns gold when it's your turn, with your clock counting down, and you can check right from it.
 >
 > PARTY NIGHTS
 > Line up 4 to 12 games and see who tops the board at the end of the night.
